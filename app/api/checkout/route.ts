@@ -3,8 +3,8 @@ import stripe from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 
 const PRICE_IDS: Record<string, string> = {
-  monthly: process.env.STRIPE_PRICE_BUSINESS_MONTHLY!,
-  annual: process.env.STRIPE_PRICE_BUSINESS_ANNUAL!,
+  monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_MONTHLY!,
+  annual: process.env.NEXT_PUBLIC_STRIPE_PRICE_BUSINESS_ANNUAL!,
 };
 
 export async function POST(request: Request) {
@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid billing period' }, { status: 400 });
   }
 
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ie';
 
-  try {
+try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
@@ -61,8 +61,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json({ url: session.url });
-  } catch (err) {
-    console.error('Stripe checkout error:', err);
-    return NextResponse.json({ error: 'Failed to create checkout session' }, { status: 500 });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('Stripe checkout error:', message);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

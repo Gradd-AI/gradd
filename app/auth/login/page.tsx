@@ -102,7 +102,7 @@ export default function LoginPage() {
 
         <p className="auth-footer" style={{ marginTop: 20 }}>
           Don&rsquo;t have an account?{' '}
-          <Link href="/signup">Sign up</Link>
+          <Link href="/auth/signup">Sign up</Link>
         </p>
       </div>
     </div>
