@@ -31,17 +31,18 @@ export default function ChatInterface({
   const [ended, setEnded] = useState(false);
   const [ending, setEnding] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, []);
+const lastAssistantRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages, scrollToBottom]);
+const scrollToLatestMessage = useCallback(() => {
+  lastAssistantRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}, []);
+
+useEffect(() => {
+  scrollToLatestMessage();
+}, [messages.length, scrollToLatestMessage]);
 
   // Auto-resize textarea
   useEffect(() => {
@@ -381,7 +382,6 @@ export default function ChatInterface({
             </div>
           )}
 
-          <div ref={messagesEndRef} />
         </div>
       </div>
 

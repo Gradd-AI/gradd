@@ -5,7 +5,7 @@ import ChatInterface from '@/components/chat/ChatInterface';
 export const dynamic = 'force-dynamic';
 
 export default async function SessionPage() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const {
     data: { user },

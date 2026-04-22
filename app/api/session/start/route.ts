@@ -7,9 +7,12 @@ import {
 } from '@/lib/system-prompt';
 import { determineSessionType } from '@/lib/session-type';
 import { NextResponse } from 'next/server';
+export const runtime = 'nodejs';
 
 export async function POST() {
-  const supabase = createServerClient();
+  console.log('Session start called');
+  const supabase = await createServerClient();
+  
 
   // 1. Auth check
   const {
