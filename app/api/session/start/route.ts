@@ -11,8 +11,9 @@ export const runtime = 'nodejs';
 
 export async function POST() {
   console.log('Session start called');
-  const supabase = await createServerClient();
+  const supabase = createServerClient();
   
+  const supabase = createServerClient();
 
   // 1. Auth check
   const {
