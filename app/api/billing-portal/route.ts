@@ -3,7 +3,7 @@ import stripe from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 
 export async function POST() {
-  const supabase = createServerClient();
+  const supabase = await createServerClient();
 
   const {
     data: { user },
