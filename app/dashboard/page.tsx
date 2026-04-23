@@ -429,7 +429,7 @@ export default async function DashboardPage() {
               Weak areas to revisit
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {weakAreas.map(area => (
+              {weakAreas.map((area: any) => (
                 <div
                   key={area.id}
                   style={{
