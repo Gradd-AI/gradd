@@ -326,7 +326,7 @@ function Toggle({
   onChange: (m: ViewMode) => void
 }) {
   return (
-    className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1"
+    <div className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-100 p-1">
       {(['parent', 'student'] as ViewMode[]).map((m) => (
         <button
           key={m}
