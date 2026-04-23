@@ -492,7 +492,7 @@ export default async function DashboardPage() {
               Recent sessions
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {recentSessions.map(s => (
+              {recentSessions.map((s: any) => (
                 <div
                   key={s.session_number}
                   style={{
