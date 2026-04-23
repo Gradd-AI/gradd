@@ -192,8 +192,20 @@ export function useDashboardData(): DashboardData {
         throw progressRes.error
       }
 
+      type RawSession = {
+        id: string
+        session_number: number
+        session_type: string
+        lesson_code: string | null
+        concepts_covered: string[]
+        weak_flags_count: number
+        started_at: string
+        ended_at: string | null
+        apply_scores: string | null
+      }
+
       const progress = progressRes.data as StudentProgress | null
-      const rawLastSession = lastSessionRes.data
+      const rawLastSession = lastSessionRes.data as RawSession | null
       const totalLessons = totalLessonsRes.count ?? 279
       const totalLessonsCompleted = completedCountRes.count ?? 0
       const weakAreasCount = weakAreasCountRes.count ?? 0
