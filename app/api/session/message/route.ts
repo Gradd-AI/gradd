@@ -90,9 +90,12 @@ export async function POST(request: Request) {
   const currentHistory = (session.message_history as Array<{ role: string; content: string }>) ?? [];
 
   // Append student message
-  const updatedHistory = [
-    ...currentHistory,
-    { role: 'user' as const, content: studentMessage },
+  const updatedHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
+  ...currentHistory.map((m: { role: string; content: string }) => ({
+    role: m.role as 'user' | 'assistant',
+    content: m.content,
+  })),
+  { role: 'user' as const, content: studentMessage },
   ];
 
   // Fire Anthropic streaming
