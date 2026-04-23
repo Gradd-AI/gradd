@@ -1,27 +1,19 @@
 // app/dashboard/page.tsx
-// Dashboard page — authenticated, subscription-gated.
-// Fetches all data via useDashboardData hook and renders the toggle dashboard.
-// Replace the existing dashboard page body with this file.
-
 'use client'
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { useDashboardData } from '@/hooks/useDashboardData'
 import ParentStudentDashboard from '@/components/dashboard/ParentStudentDashboard'
-
-// ─── Subscription gate ──────────────────────────────────────────────────────
 
 interface Profile {
   student_name: string
   subscription_status: string
 }
 
-// ─── Page ───────────────────────────────────────────────────────────────────
-
 export default function DashboardPage() {
-  const supabase = createClientComponentClient()
+  const supabase = getSupabaseBrowserClient()
   const router = useRouter()
   const dashboardData = useDashboardData()
 
@@ -51,7 +43,6 @@ export default function DashboardPage() {
         return
       }
 
-      // Gate: redirect to subscribe if no active subscription
       if (data.subscription_status !== 'active') {
         router.replace('/subscribe')
         return
@@ -79,7 +70,6 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Nav — minimal, matches existing app nav */}
       <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
           <span className="text-lg font-bold text-teal-700 tracking-tight">Gradd</span>
@@ -103,7 +93,6 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Main */}
       <main className="mx-auto max-w-2xl px-4 py-6">
         <ParentStudentDashboard
           dashboardData={dashboardData}

@@ -1,9 +1,8 @@
 // hooks/useDashboardData.ts
-// Fetches all data required for the parent and student dashboard views.
-// Called once on dashboard mount; re-fetched after each session completes.
+'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -12,7 +11,7 @@ export interface LastSession {
   session_number: number
   session_type: string
   lesson_code: string | null
-  lesson_name: string | null          // resolved from lessons table
+  lesson_name: string | null
   concepts_covered: string[]
   weak_flags_count: number
   started_at: string
@@ -70,8 +69,8 @@ export interface DashboardData {
 
 function getMondayThisWeek(): Date {
   const now = new Date()
-  const day = now.getDay()                       // 0 = Sun, 1 = Mon …
-  const diff = day === 0 ? -6 : 1 - day          // days back to Monday
+  const day = now.getDay()
+  const diff = day === 0 ? -6 : 1 - day
   const monday = new Date(now)
   monday.setDate(now.getDate() + diff)
   monday.setHours(0, 0, 0, 0)
@@ -87,7 +86,7 @@ function prettifySlug(slug: string): string {
 // ─── Hook ──────────────────────────────────────────────────────────────────
 
 export function useDashboardData(): DashboardData {
-  const supabase = createClientComponentClient()
+  const supabase = getSupabaseBrowserClient()
 
   const [data, setData] = useState<Omit<DashboardData, 'refetch'>>({
     progress: null,
@@ -96,14 +95,14 @@ export function useDashboardData(): DashboardData {
     weakAreas: [],
     weakAreasCount: 0,
     totalLessonsCompleted: 0,
-    totalLessons: 279,               // matches lessons_seed.sql row count
+    totalLessons: 279,
     sessionsThisWeek: 0,
     curriculumPercent: 0,
     loading: true,
     error: null,
   })
 
-  const fetch = useCallback(async () => {
+  const fetchData = useCallback(async () => {
     setData((prev) => ({ ...prev, loading: true, error: null }))
 
     try {
@@ -117,7 +116,6 @@ export function useDashboardData(): DashboardData {
       const userId = user.id
       const mondayISO = getMondayThisWeek().toISOString()
 
-      // Run all queries in parallel — no waterfalls
       const [
         progressRes,
         lastSessionRes,
@@ -128,7 +126,6 @@ export function useDashboardData(): DashboardData {
         totalLessonsRes,
         sessionsThisWeekRes,
       ] = await Promise.all([
-        // 1. Student progress row
         supabase
           .from('student_progress')
           .select(
@@ -139,7 +136,6 @@ export function useDashboardData(): DashboardData {
           .eq('student_id', userId)
           .single(),
 
-        // 2. Most recent completed session
         supabase
           .from('sessions')
           .select(
@@ -152,7 +148,6 @@ export function useDashboardData(): DashboardData {
           .limit(1)
           .maybeSingle(),
 
-        // 3. Recent sessions (last 5, for parent view list)
         supabase
           .from('sessions')
           .select(
@@ -163,7 +158,6 @@ export function useDashboardData(): DashboardData {
           .order('started_at', { ascending: false })
           .limit(5),
 
-        // 4. Active weak areas (top 5 for display)
         supabase
           .from('weak_areas')
           .select('id, concept_slug, error_description, lesson_code, occurrence_count')
@@ -172,25 +166,21 @@ export function useDashboardData(): DashboardData {
           .order('occurrence_count', { ascending: false })
           .limit(5),
 
-        // 5. Total active weak area count
         supabase
           .from('weak_areas')
           .select('*', { count: 'exact', head: true })
           .eq('student_id', userId)
           .is('resolved_at', null),
 
-        // 6. Total lessons completed (all time)
         supabase
           .from('lesson_completions')
           .select('*', { count: 'exact', head: true })
           .eq('student_id', userId),
 
-        // 7. Total lessons in platform (from static lessons table)
         supabase
           .from('lessons')
           .select('*', { count: 'exact', head: true }),
 
-        // 8. Sessions started this week (Mon–now)
         supabase
           .from('sessions')
           .select('*', { count: 'exact', head: true })
@@ -198,19 +188,17 @@ export function useDashboardData(): DashboardData {
           .gte('started_at', mondayISO),
       ])
 
-      // Throw on any hard failures
-      for (const res of [progressRes, recentSessionsRes, weakAreasRes, weakAreasCountRes, completedCountRes]) {
-        if (res.error && res.error.code !== 'PGRST116') throw res.error
+      if (progressRes.error && progressRes.error.code !== 'PGRST116') {
+        throw progressRes.error
       }
 
       const progress = progressRes.data as StudentProgress | null
       const rawLastSession = lastSessionRes.data
-      const totalLessons = (totalLessonsRes.count ?? 279)
+      const totalLessons = totalLessonsRes.count ?? 279
       const totalLessonsCompleted = completedCountRes.count ?? 0
       const weakAreasCount = weakAreasCountRes.count ?? 0
       const sessionsThisWeek = sessionsThisWeekRes.count ?? 0
 
-      // Resolve lesson name for last session
       let lastSession: LastSession | null = null
       if (rawLastSession) {
         let lessonName: string | null = null
@@ -255,8 +243,8 @@ export function useDashboardData(): DashboardData {
   }, [supabase])
 
   useEffect(() => {
-    fetch()
-  }, [fetch])
+    fetchData()
+  }, [fetchData])
 
-  return { ...data, refetch: fetch }
+  return { ...data, refetch: fetchData }
 }
