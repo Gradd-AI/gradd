@@ -1,7 +1,4 @@
 // components/dashboard/DashboardClient.tsx
-// Client Component — handles parent/student toggle only.
-// All data arrives as props from the Server Component.
-
 'use client';
 
 import { useState } from 'react';
@@ -77,6 +74,11 @@ function formatDate(iso: string): string {
   return `${dd}/${mm} at ${hh}:${min}`;
 }
 
+function formatDateShort(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}`;
+}
+
 function sessionLabel(type: string): string {
   const map: Record<string, string> = {
     NEW_TOPIC: 'New Topic', REVISION: 'Revision', EXAM_PRACTICE: 'Exam Practice',
@@ -85,9 +87,42 @@ function sessionLabel(type: string): string {
   return map[type] ?? type;
 }
 
-function formatDateShort(iso: string): string {
-  const d = new Date(iso);
-  return `${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}`;
+/** Days until LC Business exam — 06/06/2026 */
+function daysToExam(): number {
+  const exam = new Date('2026-06-06T09:00:00');
+  const now = new Date();
+  return Math.max(0, Math.ceil((exam.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+/** Consecutive days with at least one session, counting back from today */
+function calcStreak(sessions: RecentSession[]): number {
+  if (sessions.length === 0) return 0;
+  const days = new Set(
+    sessions.map(s => new Date(s.started_at).toDateString())
+  );
+  let streak = 0;
+  const d = new Date();
+  // Allow today or yesterday as start of streak
+  if (!days.has(d.toDateString())) {
+    d.setDate(d.getDate() - 1);
+    if (!days.has(d.toDateString())) return 0;
+  }
+  while (days.has(d.toDateString())) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
+
+/** Sessions started this calendar week (Mon–today) */
+function sessionsThisWeek(sessions: RecentSession[]): number {
+  const now = new Date();
+  const day = now.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return sessions.filter(s => new Date(s.started_at) >= monday).length;
 }
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -114,28 +149,29 @@ function Nav({ studentName }: { studentName: string }) {
 
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
-type ViewMode = 'student' | 'parent';
+type ViewMode = 'parent' | 'student';
 
 function Toggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
   return (
     <div style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, gap: 2 }}>
-      {(['student', 'parent'] as ViewMode[]).map(m => (
+      {(['parent', 'student'] as ViewMode[]).map(m => (
         <button key={m} onClick={() => onChange(m)} style={{
-          padding: '6px 16px', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
+          padding: '6px 16px', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none',
+          cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
           background: mode === m ? 'var(--surface)' : 'transparent',
           color: mode === m ? 'var(--text)' : 'var(--text-muted)',
           boxShadow: mode === m ? 'var(--shadow-sm)' : 'none',
         }}>
-          {m === 'student' ? 'My view' : 'Parent view'}
+          {m === 'parent' ? 'Parent view' : 'My view'}
         </button>
       ))}
     </div>
   );
 }
 
-// ─── Hero card ────────────────────────────────────────────────────────────────
+// ─── Student hero card (with CTA) ─────────────────────────────────────────────
 
-function HeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due }: {
+function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due }: {
   currentLessonName: string; currentUnitName: string; sessionType: string;
   spaced_rep_due: boolean; abq_drill_due: boolean;
 }) {
@@ -151,6 +187,31 @@ function HeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_
       <Link href="/session" style={{ background: 'var(--accent)', color: '#fff', padding: '14px 32px', borderRadius: 10, fontWeight: 700, fontSize: 15, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
         Start session →
       </Link>
+    </div>
+  );
+}
+
+// ─── Parent position card (no CTA) ───────────────────────────────────────────
+
+function ParentPositionCard({ currentLessonName, currentUnitName, sessionType, lastSession }: {
+  currentLessonName: string; currentUnitName: string; sessionType: string;
+  lastSession: LastSession | null;
+}) {
+  return (
+    <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '28px 36px', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <p style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Currently studying</p>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4, letterSpacing: '-0.3px' }}>{currentLessonName}</h2>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{currentUnitName} · {sessionType}</p>
+        </div>
+        {lastSession && (
+          <div style={{ textAlign: 'right' }}>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Last active</p>
+            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 600 }}>{formatDateShort(lastSession.started_at)}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -172,13 +233,13 @@ function LastSessionCard({ s }: { s: LastSession }) {
         <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 2 }}>{s.lesson_name ?? s.lesson_code ?? '—'}</p>
         {s.apply_scores && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>Apply score: <strong style={{ color: 'var(--brand)' }}>{s.apply_scores}</strong></p>}
         {s.concepts_covered.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 12 }}>
             {s.concepts_covered.map(c => (
               <span key={c} style={{ fontSize: 12, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', color: 'var(--text-muted)' }}>{c}</span>
             ))}
           </div>
         )}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ marginTop: 8 }}>
           {s.weak_flags_count > 0
             ? <span style={{ fontSize: 13, fontWeight: 600, color: '#7a5c00' }}>⚠ {s.weak_flags_count} concept{s.weak_flags_count !== 1 ? 's' : ''} to revisit</span>
             : <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>✓ All clear — no weak flags</span>
@@ -191,28 +252,32 @@ function LastSessionCard({ s }: { s: LastSession }) {
 
 // ─── Stat cards ───────────────────────────────────────────────────────────────
 
-function StatCards({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, unitsCompleted }: {
+function StatCards({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays }: {
   curriculumPercent: number; totalCompleted: number; totalLessons: number;
-  totalSessions: number; weakAreasCount: number; unitsCompleted: string[];
+  totalSessions: number; weakAreasCount: number; streak: number; thisWeek: number; examDays: number;
 }) {
+  const stats = [
+    { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
+    { label: 'Sessions completed', value: totalSessions, sub: 'total sessions' },
+    { label: 'This week', value: thisWeek, sub: 'sessions Mon–today' },
+    { label: 'Study streak', value: streak, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
+    { label: 'Weak areas', value: weakAreasCount, sub: 'active flags', warn: weakAreasCount > 0 },
+    { label: 'Days to exam', value: examDays, sub: 'LC Business · 06/06/2026' },
+  ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 32 }}>
-      {[
-        { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
-        { label: 'Sessions completed', value: totalSessions, sub: 'total sessions' },
-        { label: 'Weak areas flagged', value: weakAreasCount, sub: 'active flags', warn: weakAreasCount > 0 },
-      ].map(({ label, value, sub, warn }) => (
-        <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '24px 28px' }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{label}</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 36, fontWeight: 700, color: warn ? '#a07000' : 'var(--brand)', lineHeight: 1, marginBottom: 6 }}>{value}</p>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>{sub}</p>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+      {stats.map(({ label, value, sub, warn, accent }) => (
+        <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '20px 24px' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{label}</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: warn ? '#a07000' : accent ? 'var(--success)' : 'var(--brand)', lineHeight: 1, marginBottom: 4 }}>{value}</p>
+          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sub}</p>
         </div>
       ))}
     </div>
   );
 }
 
-// ─── Curriculum progress section ──────────────────────────────────────────────
+// ─── Curriculum progress ──────────────────────────────────────────────────────
 
 function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculumPercent, totalCompleted, totalLessons }: {
   units: Unit[]; currentUnitCode: string; unitsCompleted: string[];
@@ -227,7 +292,7 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
       <div style={{ height: 8, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden', marginBottom: 20 }}>
         <div style={{ height: '100%', width: `${curriculumPercent}%`, background: 'var(--brand)', borderRadius: 4, transition: 'width 0.5s ease' }} />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {units.map(unit => {
           const isCompleted = unitsCompleted.includes(unit.code);
           const isCurrent = unit.code === currentUnitCode && !isCompleted;
@@ -249,37 +314,7 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
   );
 }
 
-// ─── Recent sessions section ──────────────────────────────────────────────────
-
-function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
-  if (sessions.length === 0) return null;
-  return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Recent sessions</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {sessions.map(s => (
-          <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', minWidth: 28 }}>#{s.session_number}</span>
-              <div>
-                <span style={{ fontSize: 14, color: 'var(--text)' }}>{s.lesson_code ?? '—'}</span>
-                <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-muted)' }}>{sessionLabel(s.session_type)}</span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              {s.weak_flags_count > 0 && (
-                <span style={{ fontSize: 12, color: '#7a5c00', fontWeight: 600 }}>⚠ {s.weak_flags_count}</span>
-              )}
-              <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDateShort(s.started_at)}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ─── Weak areas section ───────────────────────────────────────────────────────
+// ─── Weak areas ───────────────────────────────────────────────────────────────
 
 function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
   if (weakAreas.length === 0) return null;
@@ -303,75 +338,121 @@ function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
   );
 }
 
-// ─── Main export ──────────────────────────────────────────────────────────────
+// ─── Recent sessions ──────────────────────────────────────────────────────────
+
+function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
+  if (sessions.length === 0) return null;
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
+      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Recent sessions</h3>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {sessions.map(s => (
+          <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', minWidth: 28 }}>#{s.session_number}</span>
+              <div>
+                <span style={{ fontSize: 14, color: 'var(--text)' }}>{s.lesson_code ?? '—'}</span>
+                <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-muted)' }}>{sessionLabel(s.session_type)}</span>
+              </div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              {s.weak_flags_count > 0 && <span style={{ fontSize: 12, color: '#7a5c00', fontWeight: 600 }}>⚠ {s.weak_flags_count}</span>}
+              <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDateShort(s.started_at)}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Parent insight banner ────────────────────────────────────────────────────
+
+function InsightBanner({ totalSessions, thisWeek, streak, weakAreasCount, studentName }: {
+  totalSessions: number; thisWeek: number; streak: number; weakAreasCount: number; studentName: string;
+}) {
+  let message = '';
+  if (totalSessions === 0) {
+    message = `${studentName} hasn't started yet — share the link and get the first session in.`;
+  } else if (thisWeek === 0) {
+    message = `No sessions this week yet. A gentle nudge goes a long way.`;
+  } else if (streak >= 5) {
+    message = `${streak}-day streak — excellent consistency. This is what exam results are built on.`;
+  } else if (weakAreasCount >= 3) {
+    message = `${weakAreasCount} weak areas active. Aoife is tracking and will revisit these — no action needed from you.`;
+  } else if (thisWeek >= 3) {
+    message = `${thisWeek} sessions this week — strong week. Keep the routine going.`;
+  } else {
+    message = `${thisWeek} session${thisWeek !== 1 ? 's' : ''} this week. Aim for 3–5 per week for steady exam progress.`;
+  }
+
+  return (
+    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 18px', marginBottom: 24, fontSize: 14, color: 'var(--text-muted)' }}>
+      {message}
+    </div>
+  );
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardClient(props: Props) {
-  const [mode, setMode] = useState<ViewMode>('student');
-  const { studentName, examLevel, sessionNumber } = props;
+  // Default: parent view — buyers check first, students tap through to theirs
+  const [mode, setMode] = useState<ViewMode>('parent');
+
+  const streak = calcStreak(props.recentSessions);
+  const thisWeek = sessionsThisWeek(props.recentSessions);
+  const examDays = daysToExam();
+
+  const emptyState = (
+    <div style={{ background: 'var(--surface-2)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius)', padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+      Your first session summary will appear here after completing a session with Aoife.
+    </div>
+  );
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <Nav studentName={studentName} />
+      <Nav studentName={props.studentName} />
       <main style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 32px' }}>
 
         {/* Header */}
         <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.5px', marginBottom: 6 }}>
-              {mode === 'student' ? `Good to see you, ${studentName}.` : `${studentName}'s progress`}
+              {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
-              LC Business · {examLevel} · Session {sessionNumber} completed
+              LC Business · {props.examLevel} · Session {props.sessionNumber} completed
             </p>
           </div>
           <Toggle mode={mode} onChange={setMode} />
         </div>
 
-        {/* Hero card — both views */}
-        <HeroCard
-          currentLessonName={props.currentLessonName}
-          currentUnitName={props.currentUnitName}
-          sessionType={props.sessionType}
-          spaced_rep_due={props.spaced_rep_due}
-          abq_drill_due={props.abq_drill_due}
-        />
-
-        {/* Last session — both views */}
-        {props.lastSession
-          ? <LastSessionCard s={props.lastSession} />
-          : (
-            <div style={{ background: 'var(--surface-2)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius)', padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
-              Your first session summary will appear here after you complete a session with Aoife.
-            </div>
-          )
-        }
-
-        {/* Student view stops here */}
-        {mode === 'student' && (
-          <>
-            {props.spaced_rep_due && (
-              <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>
-                🔁 Aoife will start today with a quick recall block — a few questions from recent sessions to lock the material in.
-              </div>
-            )}
-            {props.abq_drill_due && (
-              <div style={{ background: '#f5f0ff', border: '1px solid #d5c3f5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#3a1a7a', marginBottom: 16 }}>
-                📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Parent view — full stats + progress + sessions + weak areas */}
+        {/* ── PARENT VIEW ── */}
         {mode === 'parent' && (
           <>
+            <InsightBanner
+              totalSessions={props.totalSessions}
+              thisWeek={thisWeek}
+              streak={streak}
+              weakAreasCount={props.weakAreasCount}
+              studentName={props.studentName}
+            />
+            <ParentPositionCard
+              currentLessonName={props.currentLessonName}
+              currentUnitName={props.currentUnitName}
+              sessionType={props.sessionType}
+              lastSession={props.lastSession}
+            />
+            {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
             <StatCards
               curriculumPercent={props.curriculumPercent}
               totalCompleted={props.totalCompleted}
               totalLessons={props.totalLessons}
               totalSessions={props.totalSessions}
               weakAreasCount={props.weakAreasCount}
-              unitsCompleted={props.unitsCompleted}
+              streak={streak}
+              thisWeek={thisWeek}
+              examDays={examDays}
             />
             <CurriculumProgress
               units={props.units}
@@ -383,6 +464,44 @@ export default function DashboardClient(props: Props) {
             />
             <WeakAreasSection weakAreas={props.weakAreas} />
             <RecentSessions sessions={props.recentSessions} />
+          </>
+        )}
+
+        {/* ── STUDENT VIEW ── */}
+        {mode === 'student' && (
+          <>
+            <StudentHeroCard
+              currentLessonName={props.currentLessonName}
+              currentUnitName={props.currentUnitName}
+              sessionType={props.sessionType}
+              spaced_rep_due={props.spaced_rep_due}
+              abq_drill_due={props.abq_drill_due}
+            />
+            {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
+            {props.spaced_rep_due && (
+              <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>
+                🔁 Aoife will start today with a quick recall block — a few questions from recent sessions to lock the material in.
+              </div>
+            )}
+            {props.abq_drill_due && (
+              <div style={{ background: '#f5f0ff', border: '1px solid #d5c3f5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#3a1a7a', marginBottom: 16 }}>
+                📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
+              </div>
+            )}
+            {/* Compact stats for student */}
+            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+              {[
+                { label: 'Progress', value: `${props.curriculumPercent}%` },
+                { label: 'Sessions', value: props.totalSessions },
+                { label: 'Streak', value: `${streak}d` },
+                { label: 'To exam', value: `${examDays}d` },
+              ].map(({ label, value }) => (
+                <div key={label} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', textAlign: 'center' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--brand)', lineHeight: 1 }}>{value}</p>
+                </div>
+              ))}
+            </div>
           </>
         )}
 
