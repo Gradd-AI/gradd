@@ -5,22 +5,19 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServerClient } from '@/lib/supabase/server';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2025-03-31.basil',
 });
 
 export async function POST() {
-  const supabase = createRouteHandlerClient({ cookies });
+  const supabase = await createServerClient();
 
   // ── 1. Auth check ─────────────────────────────────────────────
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  if (!session) {
+  if (!user) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
@@ -28,7 +25,7 @@ export async function POST() {
   const { data: profile, error: profileError } = await supabase
     .from('profiles')
     .select('stripe_customer_id')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single();
 
   if (profileError || !profile?.stripe_customer_id) {
