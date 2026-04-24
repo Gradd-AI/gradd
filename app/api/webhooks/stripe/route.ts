@@ -61,7 +61,6 @@ export async function POST(request: Request) {
     }
 
     default:
-      // Unhandled event — that's fine
       break;
   }
 
@@ -96,17 +95,34 @@ async function handleSubscriptionChange(
   const customerId = subscription.customer as string;
   const status = mapStripeStatus(subscription.status);
 
+  const updatePayload = {
+    subscription_status: status,
+    stripe_customer_id: customerId,   // write it even if missing
+    stripe_subscription_id: subscription.id,
+    trial_ends_at: subscription.trial_end
+      ? new Date(subscription.trial_end * 1000).toISOString()
+      : null,
+    updated_at: new Date().toISOString(),
+  };
+
+  // ── Primary: match by stripe_customer_id ─────────────────────
+  const { data: byCustomer } = await supabase
+    .from('profiles')
+    .update(updatePayload)
+    .eq('stripe_customer_id', customerId)
+    .select('id');
+
+  if (byCustomer && byCustomer.length > 0) return;
+
+  // ── Fallback: match by supabase_user_id in subscription metadata
+  // Fires on first subscription where stripe_customer_id not yet written
+  const userId = subscription.metadata?.supabase_user_id;
+  if (!userId) return;
+
   await supabase
     .from('profiles')
-    .update({
-      subscription_status: status,
-      stripe_subscription_id: subscription.id,
-      trial_ends_at: subscription.trial_end
-        ? new Date(subscription.trial_end * 1000).toISOString()
-        : null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('stripe_customer_id', customerId);
+    .update(updatePayload)
+    .eq('id', userId);
 }
 
 async function handleSubscriptionCancelled(

@@ -50,7 +50,7 @@ function SuccessPoller() {
         return;
       }
 
-      if (attempt >= 9) {
+      if (attempt >= 14) {
         setTimedOut(true);
         return;
       }
