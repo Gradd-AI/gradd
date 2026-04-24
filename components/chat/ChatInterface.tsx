@@ -1,5 +1,6 @@
 'use client';
 
+import MessageRenderer from '@/components/chat/MessageRenderer';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 
@@ -563,7 +564,6 @@ function MessageBubble({
             fontSize: 15,
             color: '#fff',
             lineHeight: 1.55,
-            whiteSpace: 'pre-wrap',
           }}
         >
           {displayContent}
@@ -612,7 +612,7 @@ function MessageBubble({
             whiteSpace: 'pre-wrap',
           }}
         >
-          <FormattedMessage content={displayContent} />
+          <MessageRenderer content={displayContent} />
         </div>
       </div>
     </div>
@@ -643,8 +643,6 @@ function AvatarAoife() {
   );
 }
 
-// Basic markdown-like formatting for Aoife's responses
-function FormattedMessage({ content }: { content: string }) {
   // Split on double newline for paragraphs, handle bold **text** and bullet points
   const lines = content.split('\n');
 
