@@ -116,14 +116,38 @@ const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border
 function Nav({ studentName }: { studentName: string }) {
   const router = useRouter();
   const supabase = createClient();
+  const [portalLoading, setPortalLoading] = useState(false);
+
+  const handleManageSubscription = async () => {
+    setPortalLoading(true);
+    try {
+      const res = await fetch('/api/stripe/portal', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setPortalLoading(false);
+      }
+    } catch {
+      setPortalLoading(false);
+    }
+  };
+
   return (
     <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <div style={{ width: 32, height: 32, background: 'var(--brand)', borderRadius: 7, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700 }}>G</div>
         <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--brand)' }}>Gradd</span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{studentName}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <span style={{ fontSize: 14, color: 'var(--text-muted)', marginRight: 6 }}>{studentName}</span>
+        <button
+          onClick={handleManageSubscription}
+          disabled={portalLoading}
+          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--text-muted)', cursor: portalLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: portalLoading ? 0.6 : 1 }}
+        >
+          {portalLoading ? 'Opening…' : 'Manage subscription'}
+        </button>
         <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
           style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
           Sign out
