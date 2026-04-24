@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 
 type BillingPeriod = 'monthly' | 'annual';
 
@@ -20,11 +21,89 @@ const PLANS = {
   },
 };
 
+// ── Post-payment polling ──────────────────────────────────────
+// Stripe redirects back to /subscribe?success=true before the webhook
+// has updated subscription_status. Poll until it flips to active,
+// then redirect to dashboard. Gives up after 10 seconds.
+
+function SuccessPoller() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [attempt, setAttempt] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (timedOut) return;
+
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/login'); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.subscription_status === 'active') {
+        router.push('/dashboard');
+        return;
+      }
+
+      if (attempt >= 9) {
+        setTimedOut(true);
+        return;
+      }
+
+      setTimeout(() => setAttempt(a => a + 1), 1000);
+    };
+
+    check();
+  }, [attempt, timedOut]);
+
+  if (timedOut) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16, padding: 32 }}>
+        <div style={{ width: 48, height: 48, background: 'var(--brand)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>G</div>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--brand)', fontWeight: 700 }}>Payment received</h2>
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 380 }}>
+          Your payment went through but we're still activating your account. This usually takes a few seconds — refresh the page or go to your dashboard.
+        </p>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="btn btn-primary"
+          style={{ marginTop: 8 }}
+        >
+          Go to dashboard
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16 }}>
+      <div style={{ width: 48, height: 48, background: 'var(--brand)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>G</div>
+      <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
+      <p style={{ fontSize: 15, color: 'var(--text-muted)', marginTop: 8 }}>Setting up your account…</p>
+    </div>
+  );
+}
+
+// ── Main subscribe page ───────────────────────────────────────
+
 export default function SubscribePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const paymentSuccess = searchParams.get('success') === 'true';
+
   const [billing, setBilling] = useState<BillingPeriod>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // If Stripe has redirected back after payment, show the poller
+  if (paymentSuccess) {
+    return <SuccessPoller />;
+  }
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -53,88 +132,37 @@ export default function SubscribePage() {
     <div className="auth-page" style={{ background: 'var(--bg)' }}>
       <div style={{ width: '100%', maxWidth: 520 }}>
         {/* Logo */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 40,
-            justifyContent: 'center',
-          }}
-        >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40, justifyContent: 'center' }}>
           <div className="auth-logo-mark">G</div>
           <span className="auth-logo-name">Gradd</span>
         </div>
 
-        <div
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)',
-            padding: '48px 40px',
-            boxShadow: 'var(--shadow-lg)',
-          }}
-        >
-          <h1
-            className="auth-heading"
-            style={{ textAlign: 'center', marginBottom: 8 }}
-          >
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '48px 40px', boxShadow: 'var(--shadow-lg)' }}>
+          <h1 className="auth-heading" style={{ textAlign: 'center', marginBottom: 8 }}>
             Start learning today
           </h1>
-          <p
-            style={{
-              textAlign: 'center',
-              color: 'var(--text-muted)',
-              fontSize: 15,
-              marginBottom: 36,
-            }}
-          >
+          <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 15, marginBottom: 36 }}>
             LC Business — full curriculum, Aoife as your personal tutor.
           </p>
 
           {/* Billing toggle */}
-          <div
-            style={{
-              display: 'flex',
-              background: 'var(--surface-2)',
-              borderRadius: 'var(--radius-sm)',
-              padding: 4,
-              marginBottom: 32,
-              gap: 4,
-            }}
-          >
+          <div style={{ display: 'flex', background: 'var(--surface-2)', borderRadius: 'var(--radius-sm)', padding: 4, marginBottom: 32, gap: 4 }}>
             {(['monthly', 'annual'] as BillingPeriod[]).map(b => (
               <button
                 key={b}
                 onClick={() => setBilling(b)}
                 style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: 'none',
+                  flex: 1, padding: '10px 16px', borderRadius: 'var(--radius-sm)', border: 'none',
                   background: billing === b ? 'var(--surface)' : 'transparent',
                   color: billing === b ? 'var(--brand)' : 'var(--text-muted)',
-                  fontWeight: billing === b ? 700 : 500,
-                  fontSize: 14,
-                  cursor: 'pointer',
+                  fontWeight: billing === b ? 700 : 500, fontSize: 14, cursor: 'pointer',
                   boxShadow: billing === b ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s ease',
-                  fontFamily: 'var(--font-body)',
+                  transition: 'all 0.15s ease', fontFamily: 'var(--font-body)',
                 }}
               >
                 {b === 'monthly' ? 'Monthly' : 'Annual'}
                 {b === 'annual' && (
-                  <span
-                    style={{
-                      marginLeft: 6,
-                      background: 'var(--accent)',
-                      color: '#fff',
-                      fontSize: 11,
-                      padding: '2px 6px',
-                      borderRadius: 4,
-                      fontWeight: 700,
-                    }}
-                  >
+                  <span style={{ marginLeft: 6, background: 'var(--accent)', color: '#fff', fontSize: 11, padding: '2px 6px', borderRadius: 4, fontWeight: 700 }}>
                     Best value
                   </span>
                 )}
@@ -144,51 +172,17 @@ export default function SubscribePage() {
 
           {/* Price display */}
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: 52,
-                fontWeight: 700,
-                color: 'var(--brand)',
-                lineHeight: 1,
-                letterSpacing: '-1px',
-              }}
-            >
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 52, fontWeight: 700, color: 'var(--brand)', lineHeight: 1, letterSpacing: '-1px' }}>
               {plan.price}
             </div>
-            <div
-              style={{
-                color: 'var(--text-muted)',
-                fontSize: 16,
-                marginTop: 6,
-              }}
-            >
-              {plan.period}
-            </div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 16, marginTop: 6 }}>{plan.period}</div>
             {plan.saving && (
-              <div
-                style={{
-                  marginTop: 8,
-                  color: 'var(--success)',
-                  fontSize: 14,
-                  fontWeight: 600,
-                }}
-              >
-                {plan.saving}
-              </div>
+              <div style={{ marginTop: 8, color: 'var(--success)', fontSize: 14, fontWeight: 600 }}>{plan.saving}</div>
             )}
           </div>
 
           {/* Features */}
-          <ul
-            style={{
-              listStyle: 'none',
-              marginBottom: 32,
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 12,
-            }}
-          >
+          <ul style={{ listStyle: 'none', marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
               'Full LC Business curriculum — all 6 units',
               'Structured lessons from scratch to exam-ready',
@@ -197,36 +191,10 @@ export default function SubscribePage() {
               'Exam technique & past paper practice',
               'Cancel anytime',
             ].map(feature => (
-              <li
-                key={feature}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  fontSize: 14,
-                  color: 'var(--text)',
-                }}
-              >
-                <span
-                  style={{
-                    width: 20,
-                    height: 20,
-                    background: 'var(--brand)',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
+              <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--text)' }}>
+                <span style={{ width: 20, height: 20, background: 'var(--brand)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
-                    <path
-                      d="M1 4L4 7L10 1"
-                      stroke="white"
-                      strokeWidth="1.8"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
+                    <path d="M1 4L4 7L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </span>
                 {feature}
@@ -242,35 +210,18 @@ export default function SubscribePage() {
             disabled={loading}
           >
             {loading ? (
-              <>
-                <span className="spinner" />
-                Redirecting to checkout…
-              </>
+              <><span className="spinner" />Redirecting to checkout…</>
             ) : (
               `Subscribe — ${plan.price}${plan.period}`
             )}
           </button>
 
-          <p
-            style={{
-              textAlign: 'center',
-              marginTop: 16,
-              fontSize: 12,
-              color: 'var(--text-light)',
-            }}
-          >
+          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--text-light)' }}>
             Secure payment via Stripe. Cancel anytime in account settings.
           </p>
         </div>
 
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: 24,
-            fontSize: 13,
-            color: 'var(--text-muted)',
-          }}
-        >
+        <p style={{ textAlign: 'center', marginTop: 24, fontSize: 13, color: 'var(--text-muted)' }}>
           Less than one grind session — for an entire month of structured study.
         </p>
       </div>

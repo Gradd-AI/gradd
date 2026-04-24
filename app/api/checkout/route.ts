@@ -55,7 +55,7 @@ try {
       metadata: {
         supabase_user_id: user.id,
       },
-      success_url: `${appUrl}/dashboard?subscribed=1`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe?success=true`,
       cancel_url: `${appUrl}/subscribe`,
       allow_promotion_codes: true,
     });
