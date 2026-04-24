@@ -6,124 +6,110 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
 interface Unit { code: string; name: string; }
-
 interface RecentSession {
-  id: string;
-  session_number: number;
-  session_type: string;
-  lesson_code: string | null;
-  started_at: string;
-  ended_at: string | null;
-  weak_flags_count: number;
+  id: string; session_number: number; session_type: string;
+  lesson_code: string | null; started_at: string; ended_at: string | null; weak_flags_count: number;
 }
-
 interface WeakArea {
-  id: string;
-  concept_slug: string;
-  error_description: string;
-  lesson_code: string;
-  occurrence_count: number;
+  id: string; concept_slug: string; error_description: string;
+  lesson_code: string; occurrence_count: number;
 }
-
 interface LastSession {
-  id: string;
-  session_number: number;
-  session_type: string;
-  lesson_code: string | null;
-  lesson_name: string | null;
-  concepts_covered: string[];
-  weak_flags_count: number;
-  started_at: string;
-  apply_scores: string | null;
+  id: string; session_number: number; session_type: string;
+  lesson_code: string | null; lesson_name: string | null; concepts_covered: string[];
+  weak_flags_count: number; started_at: string; apply_scores: string | null;
 }
-
 interface Props {
-  studentName: string;
-  examLevel: string;
-  sessionNumber: number;
-  currentLessonCode: string;
-  currentLessonName: string;
-  currentUnitName: string;
-  currentUnitCode: string;
-  sessionType: string;
-  curriculumPercent: number;
-  totalCompleted: number;
-  totalLessons: number;
-  totalSessions: number;
-  weakAreasCount: number;
-  unitsCompleted: string[];
-  units: Unit[];
-  recentSessions: RecentSession[];
-  weakAreas: WeakArea[];
-  lastSession: LastSession | null;
-  spaced_rep_due: boolean;
-  abq_drill_due: boolean;
+  studentName: string; examLevel: string; sessionNumber: number;
+  currentLessonCode: string; currentLessonName: string;
+  currentUnitName: string; currentUnitCode: string; sessionType: string;
+  curriculumPercent: number; totalCompleted: number; totalLessons: number;
+  totalSessions: number; weakAreasCount: number; unitsCompleted: string[];
+  units: Unit[]; recentSessions: RecentSession[]; weakAreas: WeakArea[];
+  lastSession: LastSession | null; spaced_rep_due: boolean; abq_drill_due: boolean;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const hh = String(d.getHours()).padStart(2, '0');
-  const min = String(d.getMinutes()).padStart(2, '0');
-  return `${dd}/${mm} at ${hh}:${min}`;
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')} at ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
 function formatDateShort(iso: string): string {
   const d = new Date(iso);
-  return `${d.getDate()} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()]}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}`;
 }
 
 function sessionLabel(type: string): string {
-  const map: Record<string, string> = {
+  const map: Record<string,string> = {
     NEW_TOPIC: 'New Topic', REVISION: 'Revision', EXAM_PRACTICE: 'Exam Practice',
     ABQ_DRILL: 'ABQ Drill', SHORT_Q_DRILL: 'Short Q Drill', UNIT_CHECKPOINT: 'Unit Checkpoint',
   };
   return map[type] ?? type;
 }
 
-/** Days until LC Business exam — 06/06/2026 */
-function daysToExam(): number {
-  const exam = new Date('2026-06-06T09:00:00');
-  const now = new Date();
-  return Math.max(0, Math.ceil((exam.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+const EXAM_DATE = new Date('2026-06-08T09:00:00');
+function daysToExam() { return Math.max(0, Math.ceil((EXAM_DATE.getTime() - Date.now()) / 86400000)); }
+function weeksToExam() { return Math.max(0.5, daysToExam() / 7); }
+
+function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number): number {
+  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeksToExam());
 }
 
-/** Consecutive days with at least one session, counting back from today */
 function calcStreak(sessions: RecentSession[]): number {
-  if (sessions.length === 0) return 0;
-  const days = new Set(
-    sessions.map(s => new Date(s.started_at).toDateString())
-  );
-  let streak = 0;
+  if (!sessions.length) return 0;
+  const days = new Set(sessions.map(s => new Date(s.started_at).toDateString()));
   const d = new Date();
-  // Allow today or yesterday as start of streak
   if (!days.has(d.toDateString())) {
     d.setDate(d.getDate() - 1);
     if (!days.has(d.toDateString())) return 0;
   }
-  while (days.has(d.toDateString())) {
-    streak++;
-    d.setDate(d.getDate() - 1);
-  }
+  let streak = 0;
+  while (days.has(d.toDateString())) { streak++; d.setDate(d.getDate() - 1); }
   return streak;
 }
 
-/** Sessions started this calendar week (Mon–today) */
 function sessionsThisWeek(sessions: RecentSession[]): number {
   const now = new Date();
-  const day = now.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
   const monday = new Date(now);
-  monday.setDate(now.getDate() + diff);
-  monday.setHours(0, 0, 0, 0);
+  monday.setDate(now.getDate() - (now.getDay() === 0 ? 6 : now.getDay() - 1));
+  monday.setHours(0,0,0,0);
   return sessions.filter(s => new Date(s.started_at) >= monday).length;
 }
+
+function avgSessionsPerWeek(sessions: RecentSession[]): number {
+  if (!sessions.length) return 0;
+  const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 28);
+  const recent = sessions.filter(s => new Date(s.started_at) >= cutoff);
+  return Math.round((recent.length / 4) * 10) / 10;
+}
+
+function last7Days(sessions: RecentSession[]): { label: string; had: boolean }[] {
+  const sessionDays = new Set(sessions.map(s => new Date(s.started_at).toDateString()));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    return { label: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()], had: sessionDays.has(d.toDateString()) };
+  });
+}
+
+type Pace = 'on-track' | 'behind' | 'ahead' | 'no-data';
+function calcPace(avg: number, needed: number): Pace {
+  if (avg === 0) return 'no-data';
+  const r = avg / needed;
+  if (r >= 1.1) return 'ahead';
+  if (r >= 0.85) return 'on-track';
+  return 'behind';
+}
+const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border: string }> = {
+  'ahead':    { label: 'Ahead of pace',  color: '#1e7e44', bg: '#f0faf4', border: '#b7e4c7' },
+  'on-track': { label: 'On track',       color: '#1a4a7a', bg: '#f0f7ff', border: '#c3daf5' },
+  'behind':   { label: 'Falling behind', color: '#7a5c00', bg: '#fffbf0', border: '#e8d89a' },
+  'no-data':  { label: 'No data yet',    color: 'var(--text-muted)', bg: 'var(--surface-2)', border: 'var(--border)' },
+};
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 
@@ -138,10 +124,10 @@ function Nav({ studentName }: { studentName: string }) {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{studentName}</span>
-        <button
-          onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
-          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}
-        >Sign out</button>
+        <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
+          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+          Sign out
+        </button>
       </div>
     </nav>
   );
@@ -150,7 +136,6 @@ function Nav({ studentName }: { studentName: string }) {
 // ─── Toggle ───────────────────────────────────────────────────────────────────
 
 type ViewMode = 'parent' | 'student';
-
 function Toggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
   return (
     <div style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, gap: 2 }}>
@@ -169,7 +154,7 @@ function Toggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) =>
   );
 }
 
-// ─── Student hero card (with CTA) ─────────────────────────────────────────────
+// ─── Hero cards ───────────────────────────────────────────────────────────────
 
 function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due }: {
   currentLessonName: string; currentUnitName: string; sessionType: string;
@@ -191,11 +176,8 @@ function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spac
   );
 }
 
-// ─── Parent position card (no CTA) ───────────────────────────────────────────
-
 function ParentPositionCard({ currentLessonName, currentUnitName, sessionType, lastSession }: {
-  currentLessonName: string; currentUnitName: string; sessionType: string;
-  lastSession: LastSession | null;
+  currentLessonName: string; currentUnitName: string; sessionType: string; lastSession: LastSession | null;
 }) {
   return (
     <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '28px 36px', marginBottom: 24 }}>
@@ -224,14 +206,14 @@ function LastSessionCard({ s }: { s: LastSession }) {
       <div style={{ background: 'var(--brand-light)', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.65)' }}>Last session</span>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>·</span>
+          <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{formatDate(s.started_at)}</span>
         </div>
         <span style={{ fontSize: 11, fontWeight: 600, background: 'rgba(200,151,46,0.25)', color: 'var(--accent)', padding: '2px 10px', borderRadius: 99 }}>{sessionLabel(s.session_type)}</span>
       </div>
       <div style={{ padding: '16px 20px' }}>
         <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 2 }}>{s.lesson_name ?? s.lesson_code ?? '—'}</p>
-        {s.apply_scores && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>Apply score: <strong style={{ color: 'var(--brand)' }}>{s.apply_scores}</strong></p>}
+        {s.apply_scores && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Apply score: <strong style={{ color: 'var(--brand)' }}>{s.apply_scores}</strong></p>}
         {s.concepts_covered.length > 0 && (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 12 }}>
             {s.concepts_covered.map(c => (
@@ -242,35 +224,84 @@ function LastSessionCard({ s }: { s: LastSession }) {
         <div style={{ marginTop: 8 }}>
           {s.weak_flags_count > 0
             ? <span style={{ fontSize: 13, fontWeight: 600, color: '#7a5c00' }}>⚠ {s.weak_flags_count} concept{s.weak_flags_count !== 1 ? 's' : ''} to revisit</span>
-            : <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>✓ All clear — no weak flags</span>
-          }
+            : <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>✓ All clear — no weak flags</span>}
         </div>
       </div>
     </div>
   );
 }
 
-// ─── Stat cards ───────────────────────────────────────────────────────────────
+// ─── 7-day activity strip ─────────────────────────────────────────────────────
 
-function StatCards({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays }: {
-  curriculumPercent: number; totalCompleted: number; totalLessons: number;
-  totalSessions: number; weakAreasCount: number; streak: number; thisWeek: number; examDays: number;
+function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
+  const days = last7Days(sessions);
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '20px 24px', marginBottom: 24 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Last 7 days</h3>
+        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{days.filter(d => d.had).length} of 7 days active</span>
+      </div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {days.map(({ label, had }) => (
+          <div key={label} style={{ flex: 1, textAlign: 'center' }}>
+            <div style={{
+              height: 36, borderRadius: 6, marginBottom: 6,
+              background: had ? 'var(--brand)' : 'var(--surface-2)',
+              border: `1px solid ${had ? 'var(--brand-mid)' : 'var(--border)'}`,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              {had && <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 700 }}>✓</span>}
+            </div>
+            <span style={{ fontSize: 10, fontWeight: 600, color: had ? 'var(--text)' : 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Pace banner ──────────────────────────────────────────────────────────────
+
+function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: number; needed: number; studentName: string }) {
+  const conf = PACE_CONF[pace];
+  let msg = '';
+  if (pace === 'no-data') msg = `${studentName} hasn't completed enough sessions to assess pace yet. Target is ${needed} sessions per week.`;
+  else if (pace === 'ahead') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is ahead of pace — exam preparation is on track.`;
+  else if (pace === 'on-track') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is on track to complete the curriculum before the exam.`;
+  else msg = `Averaging ${avg}/week but need ${needed} to stay on track. ${studentName} needs to pick up the pace — ${needed - avg} more session${(needed - avg) !== 1 ? 's' : ''}/week required.`;
+  return (
+    <div style={{ background: conf.bg, border: `1px solid ${conf.border}`, borderRadius: 'var(--radius-sm)', padding: '12px 18px', marginBottom: 20, fontSize: 14, color: conf.color, fontWeight: 500 }}>
+      {msg}
+    </div>
+  );
+}
+
+// ─── Stat grid ────────────────────────────────────────────────────────────────
+
+function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace }: {
+  curriculumPercent: number; totalCompleted: number; totalLessons: number; totalSessions: number;
+  weakAreasCount: number; streak: number; thisWeek: number; examDays: number;
+  neededPerWeek: number; avgPerWeek: number; pace: Pace;
 }) {
+  const timeHrs = Math.round((totalSessions * 45) / 60 * 10) / 10;
+  const paceConf = PACE_CONF[pace];
   const stats = [
     { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
-    { label: 'Sessions completed', value: totalSessions, sub: 'total sessions' },
-    { label: 'This week', value: thisWeek, sub: 'sessions Mon–today' },
-    { label: 'Study streak', value: streak, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
-    { label: 'Weak areas', value: weakAreasCount, sub: 'active flags', warn: weakAreasCount > 0 },
-    { label: 'Days to exam', value: examDays, sub: 'LC Business · 06/06/2026' },
+    { label: 'Sessions completed', value: totalSessions, sub: `≈ ${timeHrs} hrs invested` },
+    { label: 'This week', value: thisWeek, sub: `target: ${neededPerWeek}/wk` },
+    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam())} weeks to exam`, warn: neededPerWeek > 10 },
+    { label: '4-wk avg / week', value: avgPerWeek, sub: paceConf.label.toLowerCase(), accent: pace === 'ahead' || pace === 'on-track', warn: pace === 'behind' },
+    { label: 'Days to exam', value: examDays, sub: 'LC Business · 08/06/2026' },
+    { label: 'Study streak', value: `${streak}d`, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
+    { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : 'Aoife is tracking', warn: weakAreasCount > 0 },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
       {stats.map(({ label, value, sub, warn, accent }) => (
-        <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '20px 24px' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{label}</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: warn ? '#a07000' : accent ? 'var(--success)' : 'var(--brand)', lineHeight: 1, marginBottom: 4 }}>{value}</p>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{sub}</p>
+        <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{label}</p>
+          <p style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: warn ? '#a07000' : accent ? 'var(--success)' : 'var(--brand)', lineHeight: 1, marginBottom: 4 }}>{value}</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sub}</p>
         </div>
       ))}
     </div>
@@ -298,12 +329,10 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
           const isCurrent = unit.code === currentUnitCode && !isCompleted;
           return (
             <div key={unit.code} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: isCurrent ? 'var(--brand)' : 'transparent' }}>
-              <div style={{ width: 20, height: 20, borderRadius: '50%', background: isCompleted ? 'var(--success)' : isCurrent ? 'var(--accent)' : 'var(--border)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isCompleted ? 'var(--success)' : isCurrent ? 'var(--accent)' : 'var(--border)' }}>
                 {isCompleted && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>}
               </div>
-              <span style={{ fontSize: 14, color: isCurrent ? '#fff' : isCompleted ? 'var(--text)' : 'var(--text-light)', fontWeight: isCurrent || isCompleted ? 600 : 400 }}>
-                {unit.name}
-              </span>
+              <span style={{ fontSize: 14, color: isCurrent ? '#fff' : isCompleted ? 'var(--text)' : 'var(--text-light)', fontWeight: isCurrent || isCompleted ? 600 : 400 }}>{unit.name}</span>
               {isCurrent && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current</span>}
               {isCompleted && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--success)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Done</span>}
             </div>
@@ -317,7 +346,7 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
 // ─── Weak areas ───────────────────────────────────────────────────────────────
 
 function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
-  if (weakAreas.length === 0) return null;
+  if (!weakAreas.length) return null;
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
       <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Weak areas to watch</h3>
@@ -327,9 +356,7 @@ function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
             <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#f5e49a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#7a5c00', flexShrink: 0, marginTop: 1 }}>!</div>
             <div>
               <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{w.error_description}</p>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                Lesson {w.lesson_code}{w.occurrence_count > 1 ? ` · flagged ${w.occurrence_count}×` : ''}
-              </p>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Lesson {w.lesson_code}{w.occurrence_count > 1 ? ` · flagged ${w.occurrence_count}×` : ''}</p>
             </div>
           </div>
         ))}
@@ -341,7 +368,7 @@ function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
 // ─── Recent sessions ──────────────────────────────────────────────────────────
 
 function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
-  if (sessions.length === 0) return null;
+  if (!sessions.length) return null;
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
       <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Recent sessions</h3>
@@ -366,42 +393,17 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
   );
 }
 
-// ─── Parent insight banner ────────────────────────────────────────────────────
-
-function InsightBanner({ totalSessions, thisWeek, streak, weakAreasCount, studentName }: {
-  totalSessions: number; thisWeek: number; streak: number; weakAreasCount: number; studentName: string;
-}) {
-  let message = '';
-  if (totalSessions === 0) {
-    message = `${studentName} hasn't started yet — share the link and get the first session in.`;
-  } else if (thisWeek === 0) {
-    message = `No sessions this week yet. A gentle nudge goes a long way.`;
-  } else if (streak >= 5) {
-    message = `${streak}-day streak — excellent consistency. This is what exam results are built on.`;
-  } else if (weakAreasCount >= 3) {
-    message = `${weakAreasCount} weak areas active. Aoife is tracking and will revisit these — no action needed from you.`;
-  } else if (thisWeek >= 3) {
-    message = `${thisWeek} sessions this week — strong week. Keep the routine going.`;
-  } else {
-    message = `${thisWeek} session${thisWeek !== 1 ? 's' : ''} this week. Aim for 3–5 per week for steady exam progress.`;
-  }
-
-  return (
-    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 18px', marginBottom: 24, fontSize: 14, color: 'var(--text-muted)' }}>
-      {message}
-    </div>
-  );
-}
-
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardClient(props: Props) {
-  // Default: parent view — buyers check first, students tap through to theirs
   const [mode, setMode] = useState<ViewMode>('parent');
 
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);
   const examDays = daysToExam();
+  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons);
+  const avgPerWeek = avgSessionsPerWeek(props.recentSessions);
+  const pace = calcPace(avgPerWeek, neededPerWeek);
 
   const emptyState = (
     <div style={{ background: 'var(--surface-2)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius)', padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
@@ -427,60 +429,33 @@ export default function DashboardClient(props: Props) {
           <Toggle mode={mode} onChange={setMode} />
         </div>
 
-        {/* ── PARENT VIEW ── */}
+        {/* PARENT VIEW */}
         {mode === 'parent' && (
           <>
-            <InsightBanner
-              totalSessions={props.totalSessions}
-              thisWeek={thisWeek}
-              streak={streak}
-              weakAreasCount={props.weakAreasCount}
-              studentName={props.studentName}
-            />
-            <ParentPositionCard
-              currentLessonName={props.currentLessonName}
-              currentUnitName={props.currentUnitName}
-              sessionType={props.sessionType}
-              lastSession={props.lastSession}
-            />
+            <PaceBanner pace={pace} avg={avgPerWeek} needed={neededPerWeek} studentName={props.studentName} />
+            <ParentPositionCard currentLessonName={props.currentLessonName} currentUnitName={props.currentUnitName} sessionType={props.sessionType} lastSession={props.lastSession} />
             {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
-            <StatCards
-              curriculumPercent={props.curriculumPercent}
-              totalCompleted={props.totalCompleted}
-              totalLessons={props.totalLessons}
-              totalSessions={props.totalSessions}
-              weakAreasCount={props.weakAreasCount}
-              streak={streak}
-              thisWeek={thisWeek}
-              examDays={examDays}
+            <ActivityStrip sessions={props.recentSessions} />
+            <StatGrid
+              curriculumPercent={props.curriculumPercent} totalCompleted={props.totalCompleted}
+              totalLessons={props.totalLessons} totalSessions={props.totalSessions}
+              weakAreasCount={props.weakAreasCount} streak={streak} thisWeek={thisWeek}
+              examDays={examDays} neededPerWeek={neededPerWeek} avgPerWeek={avgPerWeek} pace={pace}
             />
-            <CurriculumProgress
-              units={props.units}
-              currentUnitCode={props.currentUnitCode}
-              unitsCompleted={props.unitsCompleted}
-              curriculumPercent={props.curriculumPercent}
-              totalCompleted={props.totalCompleted}
-              totalLessons={props.totalLessons}
-            />
+            <CurriculumProgress units={props.units} currentUnitCode={props.currentUnitCode} unitsCompleted={props.unitsCompleted} curriculumPercent={props.curriculumPercent} totalCompleted={props.totalCompleted} totalLessons={props.totalLessons} />
             <WeakAreasSection weakAreas={props.weakAreas} />
             <RecentSessions sessions={props.recentSessions} />
           </>
         )}
 
-        {/* ── STUDENT VIEW ── */}
+        {/* STUDENT VIEW */}
         {mode === 'student' && (
           <>
-            <StudentHeroCard
-              currentLessonName={props.currentLessonName}
-              currentUnitName={props.currentUnitName}
-              sessionType={props.sessionType}
-              spaced_rep_due={props.spaced_rep_due}
-              abq_drill_due={props.abq_drill_due}
-            />
+            <StudentHeroCard currentLessonName={props.currentLessonName} currentUnitName={props.currentUnitName} sessionType={props.sessionType} spaced_rep_due={props.spaced_rep_due} abq_drill_due={props.abq_drill_due} />
             {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
             {props.spaced_rep_due && (
               <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>
-                🔁 Aoife will start today with a quick recall block — a few questions from recent sessions to lock the material in.
+                🔁 Aoife will start today with a quick recall block — locking in recent material before moving forward.
               </div>
             )}
             {props.abq_drill_due && (
@@ -488,17 +463,16 @@ export default function DashboardClient(props: Props) {
                 📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
               </div>
             )}
-            {/* Compact stats for student */}
-            <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 8 }}>
               {[
                 { label: 'Progress', value: `${props.curriculumPercent}%` },
                 { label: 'Sessions', value: props.totalSessions },
                 { label: 'Streak', value: `${streak}d` },
                 { label: 'To exam', value: `${examDays}d` },
               ].map(({ label, value }) => (
-                <div key={label} style={{ flex: 1, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', textAlign: 'center' }}>
+                <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', textAlign: 'center' }}>
                   <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</p>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: 'var(--brand)', lineHeight: 1 }}>{value}</p>
+                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--brand)', lineHeight: 1 }}>{value}</p>
                 </div>
               ))}
             </div>
