@@ -643,39 +643,6 @@ function AvatarAoife() {
   );
 }
 
-  // Split on double newline for paragraphs, handle bold **text** and bullet points
-  const lines = content.split('\n');
-
-  return (
-    <>
-      {lines.map((line, i) => {
-        if (line.startsWith('**') && line.endsWith('**') && line.length > 4) {
-          return (
-            <p key={i} style={{ fontWeight: 700, marginBottom: 4 }}>
-              {line.slice(2, -2)}
-            </p>
-          );
-        }
-        if (line.startsWith('• ') || line.startsWith('- ')) {
-          return (
-            <p key={i} style={{ paddingLeft: 16, marginBottom: 4 }}>
-              {applyInlineBold(line.replace(/^[•-]\s/, '→ '))}
-            </p>
-          );
-        }
-        if (line === '') {
-          return <br key={i} />;
-        }
-        return (
-          <p key={i} style={{ marginBottom: 4 }}>
-            {applyInlineBold(line)}
-          </p>
-        );
-      })}
-    </>
-  );
-}
-
 function applyInlineBold(text: string): React.ReactNode {
   const parts = text.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, i) => {
