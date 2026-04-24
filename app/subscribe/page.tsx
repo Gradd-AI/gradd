@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -91,7 +91,7 @@ function SuccessPoller() {
 
 // ── Main subscribe page ───────────────────────────────────────
 
-export default function SubscribePage() {
+function SubscribePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const paymentSuccess = searchParams.get('success') === 'true';
@@ -226,5 +226,13 @@ export default function SubscribePage() {
         </p>
       </div>
     </div>
+  );
+}
+
+export default function SubscribePage() {
+  return (
+    <Suspense>
+      <SubscribePageInner />
+    </Suspense>
   );
 }
