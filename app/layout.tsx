@@ -28,7 +28,39 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${playfair.variable} ${jakarta.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <footer
+          style={{
+            borderTop: '1px solid #E0E0D8',
+            background: '#FAFAF7',
+            padding: '24px 32px',
+            textAlign: 'center',
+            fontFamily: 'var(--font-body), sans-serif',
+          }}
+        >
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#888880',
+              margin: '0 0 8px 0',
+            }}
+          >
+            © {new Date().getFullYear()} Gradd. All rights reserved.
+          </p>
+          <p style={{ fontSize: '13px', color: '#888880', margin: 0 }}>
+            <a href="/terms" style={{ color: '#1B3D2F', textDecoration: 'underline', marginRight: '16px' }}>
+              Terms of Service
+            </a>
+            <a href="/privacy" style={{ color: '#1B3D2F', textDecoration: 'underline', marginRight: '16px' }}>
+              Privacy Policy
+            </a>
+            <a href="/cookies" style={{ color: '#1B3D2F', textDecoration: 'underline' }}>
+              Cookie Policy
+            </a>
+          </p>
+        </footer>
+      </body>
     </html>
   );
 }
