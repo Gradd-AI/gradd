@@ -61,6 +61,17 @@ export default function SignupPage() {
         .eq('id', user.id);
     }
 
+    // Fire welcome email — non-blocking, failure doesn't affect signup flow
+    try {
+      await fetch('/api/auth/confirm-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sendWelcome: true }),
+      });
+    } catch {
+      // Non-fatal — user proceeds regardless
+    }
+
     router.push('/subscribe');
   };
 
