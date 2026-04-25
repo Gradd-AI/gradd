@@ -31,8 +31,8 @@ export async function proxy(request: NextRequest) {
   );
 
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
 
@@ -40,7 +40,7 @@ export async function proxy(request: NextRequest) {
   const isProtectedPath = protectedPaths.some(p => pathname.startsWith(p));
 
   if (isProtectedPath) {
-    if (!session) {
+    if (!user) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
@@ -48,7 +48,7 @@ export async function proxy(request: NextRequest) {
       const { data: profile } = await supabase
         .from('profiles')
         .select('subscription_status')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
 
       if (!profile || profile.subscription_status !== 'active') {
@@ -57,7 +57,7 @@ export async function proxy(request: NextRequest) {
     }
   }
 
-  if (session && (pathname === '/auth/login' || pathname === '/auth/signup')) {
+  if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
