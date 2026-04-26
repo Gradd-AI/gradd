@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import Link from 'next/link';
 
 type BillingPeriod = 'monthly' | 'annual';
 
@@ -24,7 +25,7 @@ const PLANS = {
 // ── Post-payment polling ──────────────────────────────────────
 // Stripe redirects back to /subscribe?success=true before the webhook
 // has updated subscription_status. Poll until it flips to active,
-// then redirect to dashboard. Gives up after 10 seconds.
+// then redirect to dashboard. Gives up after 15 seconds.
 
 function SuccessPoller() {
   const router = useRouter();
@@ -37,7 +38,7 @@ function SuccessPoller() {
 
     const check = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.push('/login'); return; }
+      if (!user) { router.push('/auth/login'); return; }
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -100,7 +101,6 @@ function SubscribePageInner() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // If Stripe has redirected back after payment, show the poller
   if (paymentSuccess) {
     return <SuccessPoller />;
   }
@@ -181,7 +181,7 @@ function SubscribePageInner() {
             )}
           </div>
 
-          {/* Features */}
+          {/* What's included */}
           <ul style={{ listStyle: 'none', marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
               'Full LC Business curriculum — all 6 units',
@@ -189,7 +189,7 @@ function SubscribePageInner() {
               'Aoife — your personal AI tutor',
               'Progress tracking & weak area alerts',
               'Exam technique & past paper practice',
-              'Cancel anytime',
+              'Cancel any time',
             ].map(feature => (
               <li key={feature} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 14, color: 'var(--text)' }}>
                 <span style={{ width: 20, height: 20, background: 'var(--brand)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -201,6 +201,15 @@ function SubscribePageInner() {
               </li>
             ))}
           </ul>
+
+          {/* Parent reassurance */}
+          <div style={{
+            background: 'var(--surface-2)', border: '1px solid var(--border)',
+            borderRadius: 'var(--radius-sm)', padding: '12px 16px',
+            marginBottom: 24, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5,
+          }}>
+            <strong style={{ color: 'var(--text)', fontWeight: 600 }}>For parents:</strong> Gradd is a structured academic tool, not open-ended AI chat. Every session follows the SEC syllabus. You can view your child's progress from the parent dashboard at any time.
+          </div>
 
           {error && <div className="alert alert-error">{error}</div>}
 
@@ -217,7 +226,10 @@ function SubscribePageInner() {
           </button>
 
           <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: 'var(--text-light)' }}>
-            Secure payment via Stripe. Cancel anytime in account settings.
+            Secure payment via Stripe. 7-day money-back guarantee. Cancel any time in account settings.{' '}
+            <Link href="/terms" style={{ color: 'var(--text-light)', textDecoration: 'underline' }}>Terms</Link>
+            {' '}·{' '}
+            <Link href="/privacy" style={{ color: 'var(--text-light)', textDecoration: 'underline' }}>Privacy</Link>
           </p>
         </div>
 

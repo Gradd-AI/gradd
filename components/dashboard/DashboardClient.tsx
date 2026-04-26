@@ -420,7 +420,7 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardClient(props: Props) {
-  const [mode, setMode] = useState<ViewMode>('parent');
+const [mode, setMode] = useState<ViewMode>('parent');
 
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);
