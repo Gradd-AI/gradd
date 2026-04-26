@@ -46,8 +46,18 @@ export async function buildInjectedSystemPrompt(vars: ContextVariables): Promise
     throw new Error(`System prompt not found at ${promptPath}`);
   }
 
-  // Strip developer notes block before injection
+  // Strip the file header block (title, version, status, curriculum reference lines)
+  // These are developer metadata — the model must never see them
+  prompt = prompt.replace(/^#.*?\n(##.*?\n)*/, '');
+
+  // Strip developer notes blockquote before the first ---
   prompt = prompt.replace(/> \*\*DEVELOPER NOTES.*?^---/ms, '---');
+
+  // Strip the footer developer note at the very end of the file
+  prompt = prompt.replace(/\*Error Watch Lists.*$/ms, '');
+
+  // Collapse any leading whitespace/newlines left after stripping
+  prompt = prompt.trimStart();
 
   const replacements: Record<string, string> = {
     '{{STUDENT_NAME}}': vars.STUDENT_NAME,
@@ -90,7 +100,6 @@ export function formatLessonsCompletedThisUnit(
   currentUnitCode: string
 ): string {
   if (!completions || completions.length === 0) return 'NONE';
-  // Derive unit prefix from code: UNIT_1 -> '1', UNIT_4C -> '4C'
   const prefix = currentUnitCode.replace('UNIT_', '');
   const unitCompletions = completions.filter(c => c.lesson_code.startsWith(prefix + '.'));
   if (unitCompletions.length === 0) return 'NONE';

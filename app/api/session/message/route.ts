@@ -137,7 +137,7 @@ export async function POST(request: Request) {
           .update({
             message_history: finalHistory,
             // Store actual response text (overwrite the system prompt placeholder)
-            raw_final_response: fullResponseText,
+            raw_final_response: session.raw_final_response,
             input_tokens: (session.input_tokens ?? 0) + usage.input_tokens,
             output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
           })
