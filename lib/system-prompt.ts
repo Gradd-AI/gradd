@@ -46,17 +46,22 @@ export async function buildInjectedSystemPrompt(vars: ContextVariables): Promise
     throw new Error(`System prompt not found at ${promptPath}`);
   }
 
-  // Strip the file header block (title, version, status, curriculum reference lines)
-  // These are developer metadata — the model must never see them
-  prompt = prompt.replace(/^#.*?\n(##.*?\n)*/, '');
+  // 1. Strip the file header block (title, version, status, curriculum ref lines at top)
+  prompt = prompt.replace(/^(#[^\n]*\n)+/, '');
 
-  // Strip developer notes blockquote before the first ---
+  // 2. Strip developer notes blockquote
   prompt = prompt.replace(/> \*\*DEVELOPER NOTES.*?^---/ms, '---');
 
-  // Strip the footer developer note at the very end of the file
-  prompt = prompt.replace(/\*Error Watch Lists.*$/ms, '');
+  // 3. Strip all intermediate layer continuation headers (# Parts N-N lines)
+  prompt = prompt.replace(/^# ━━━[^\n]*\n(#[^\n]*\n)*/gm, '');
 
-  // Collapse any leading whitespace/newlines left after stripping
+  // 4. Strip all italic developer footers (*Appended to..., *Total document parts..., etc.)
+  prompt = prompt.replace(/^\*[^\n]*(Version|Appended|Date:|Parts:|Total document|Developer note)[^\n]*\n/gm, '');
+
+  // 5. Strip orphaned double dividers left after footer removal
+  prompt = prompt.replace(/^---\n---\n/gm, '---\n');
+
+  // 6. Collapse leading whitespace
   prompt = prompt.trimStart();
 
   const replacements: Record<string, string> = {
