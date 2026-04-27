@@ -20,7 +20,7 @@ export default async function SessionPage() {
       .single(),
     supabase
       .from('student_progress')
-      .select('current_lesson_name, current_unit_name, session_number')
+      .select('current_lesson_name, current_unit_name, session_number, current_lesson_code')
       .eq('student_id', user.id)
       .single(),
   ]);
