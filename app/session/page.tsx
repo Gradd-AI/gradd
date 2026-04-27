@@ -33,7 +33,7 @@ export default async function SessionPage() {
       lessonName={progress?.current_lesson_name ?? 'First Lesson'}
       unitName={progress?.current_unit_name ?? 'Unit 1'}
       sessionNumber={(progress?.session_number ?? 0) + 1}
-      lessonCode={progress.current_lesson_code}
+      lessonCode={progress?.current_lesson_code ?? undefined}
     />
   );
 }
