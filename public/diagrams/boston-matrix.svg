@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" role="img" aria-label="Boston Matrix (BCG)">
+  <title>Boston Matrix</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .quad-title { font-size: 14px; font-weight: 700; }
+    .quad-sub { font-size: 11px; }
+    .axis-label { font-size: 11px; font-weight: 600; fill: #444; letter-spacing: 0.8px; }
+  </style>
+
+  <!-- Axis labels -->
+  <text x="200" y="22" text-anchor="middle" class="axis-label">HIGH MARKET SHARE</text>
+  <text x="390" y="22" text-anchor="middle" class="axis-label">LOW MARKET SHARE</text>
+  <text x="22" y="155" text-anchor="middle" class="axis-label" transform="rotate(-90 22 155)">HIGH GROWTH</text>
+  <text x="22" y="320" text-anchor="middle" class="axis-label" transform="rotate(-90 22 320)">LOW GROWTH</text>
+
+  <!-- Star — high share, high growth -->
+  <rect x="45" y="35" width="235" height="165" rx="4" fill="#1B3D2F"/>
+  <text x="162" y="75" text-anchor="middle" class="quad-title" fill="#FAFAF7">★  Star</text>
+  <text x="70" y="100" class="quad-sub" fill="#FAFAF7" opacity="0.9">High growth, high market share.</text>
+  <text x="70" y="119" class="quad-sub" fill="#FAFAF7" opacity="0.9">Generates &amp; uses lots of cash.</text>
+  <text x="70" y="138" class="quad-sub" fill="#FAFAF7" opacity="0.9">Strategy: invest to maintain</text>
+  <text x="70" y="157" class="quad-sub" fill="#FAFAF7" opacity="0.9">position. Future cash cow.</text>
+  <text x="70" y="182" class="quad-sub" fill="#7EC8A4" font-weight="600">→ Invest &amp; grow</text>
+
+  <!-- Question Mark — low share, high growth -->
+  <rect x="288" y="35" width="212" height="165" rx="4" fill="#e67e22"/>
+  <text x="394" y="75" text-anchor="middle" class="quad-title" fill="#FAFAF7">?  Question Mark</text>
+  <text x="308" y="100" class="quad-sub" fill="#FAFAF7" opacity="0.9">High growth, low share.</text>
+  <text x="308" y="119" class="quad-sub" fill="#FAFAF7" opacity="0.9">Uses cash, earns little.</text>
+  <text x="308" y="138" class="quad-sub" fill="#FAFAF7" opacity="0.9">Strategy: invest to build</text>
+  <text x="308" y="157" class="quad-sub" fill="#FAFAF7" opacity="0.9">share, or divest.</text>
+  <text x="308" y="182" class="quad-sub" fill="#FAFAF7" font-weight="600">→ Invest or divest</text>
+
+  <!-- Cash Cow — high share, low growth -->
+  <rect x="45" y="208" width="235" height="165" rx="4" fill="#2980b9"/>
+  <text x="162" y="248" text-anchor="middle" class="quad-title" fill="#FAFAF7">💰  Cash Cow</text>
+  <text x="70" y="273" class="quad-sub" fill="#FAFAF7" opacity="0.9">Low growth, high share.</text>
+  <text x="70" y="292" class="quad-sub" fill="#FAFAF7" opacity="0.9">Generates more cash than</text>
+  <text x="70" y="311" class="quad-sub" fill="#FAFAF7" opacity="0.9">it needs. Profits fund stars.</text>
+  <text x="70" y="330" class="quad-sub" fill="#FAFAF7" opacity="0.9">Strategy: milk profits,</text>
+  <text x="70" y="349" class="quad-sub" fill="#FAFAF7" opacity="0.9">minimal investment.</text>
+  <text x="70" y="368" class="quad-sub" fill="#FAFAF7" font-weight="600">→ Milk for cash</text>
+
+  <!-- Dog — low share, low growth -->
+  <rect x="288" y="208" width="212" height="165" rx="4" fill="#7f8c8d"/>
+  <text x="394" y="248" text-anchor="middle" class="quad-title" fill="#FAFAF7">🐕  Dog</text>
+  <text x="308" y="273" class="quad-sub" fill="#FAFAF7" opacity="0.9">Low growth, low share.</text>
+  <text x="308" y="292" class="quad-sub" fill="#FAFAF7" opacity="0.9">Generates &amp; uses little cash.</text>
+  <text x="308" y="311" class="quad-sub" fill="#FAFAF7" opacity="0.9">Often a liability. May be</text>
+  <text x="308" y="330" class="quad-sub" fill="#FAFAF7" opacity="0.9">kept for market coverage.</text>
+  <text x="308" y="368" class="quad-sub" fill="#FAFAF7" font-weight="600">→ Divest or hold</text>
+
+  <!-- Divider lines -->
+  <line x1="45" y1="200" x2="500" y2="200" stroke="#FAFAF7" stroke-width="2" opacity="0.3"/>
+  <line x1="280" y1="35" x2="280" y2="373" stroke="#FAFAF7" stroke-width="2" opacity="0.3"/>
+
+  <!-- Bottom credit -->
+  <text x="282" y="410" text-anchor="middle" font-family="Arial" font-size="10" fill="#888" letter-spacing="0.5">LC Business — Boston Consulting Group Matrix</text>
+</svg>

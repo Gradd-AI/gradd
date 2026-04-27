@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" role="img" aria-label="Ansoff Matrix">
+  <title>Ansoff Matrix</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .quad-title { font-size: 13px; font-weight: 700; }
+    .quad-body { font-size: 11px; }
+    .axis-label { font-size: 11px; font-weight: 600; fill: #1B3D2F; letter-spacing: 0.8px; }
+    .risk { font-size: 10px; font-weight: 600; }
+  </style>
+
+  <!-- Axis labels -->
+  <text x="200" y="22" text-anchor="middle" class="axis-label">EXISTING MARKETS</text>
+  <text x="400" y="22" text-anchor="middle" class="axis-label">NEW MARKETS</text>
+  <text x="22" y="160" text-anchor="middle" class="axis-label" transform="rotate(-90 22 160)">EXISTING PRODUCTS</text>
+  <text x="22" y="330" text-anchor="middle" class="axis-label" transform="rotate(-90 22 330)">NEW PRODUCTS</text>
+
+  <!-- Market Penetration -->
+  <rect x="50" y="35" width="240" height="170" rx="4" fill="#e8f5ee"/>
+  <text x="170" y="68" text-anchor="middle" class="quad-title" fill="#1B3D2F">Market Penetration</text>
+  <text x="75" y="93" class="quad-body" fill="#2d6642">Sell more of the same product</text>
+  <text x="75" y="113" class="quad-body" fill="#2d6642">to existing customers.</text>
+  <text x="75" y="140" class="quad-body" fill="#2d6642">e.g. Promotions, loyalty</text>
+  <text x="75" y="158" class="quad-body" fill="#2d6642">programmes, price cuts.</text>
+  <rect x="75" y="172" width="78" height="20" rx="3" fill="#7EC8A4"/>
+  <text x="114" y="186" text-anchor="middle" class="risk" fill="#1B3D2F">Lowest risk</text>
+
+  <!-- Market Development -->
+  <rect x="298" y="35" width="210" height="170" rx="4" fill="#d4ede0"/>
+  <text x="403" y="68" text-anchor="middle" class="quad-title" fill="#1B3D2F">Market Development</text>
+  <text x="318" y="93" class="quad-body" fill="#2d6642">Sell existing product in</text>
+  <text x="318" y="113" class="quad-body" fill="#2d6642">new markets or segments.</text>
+  <text x="318" y="140" class="quad-body" fill="#2d6642">e.g. Exporting, targeting</text>
+  <text x="318" y="158" class="quad-body" fill="#2d6642">a new age group.</text>
+  <rect x="318" y="172" width="60" height="20" rx="3" fill="#5aad7c"/>
+  <text x="348" y="186" text-anchor="middle" class="risk" fill="#FAFAF7">Medium</text>
+
+  <!-- Product Development -->
+  <rect x="50" y="215" width="240" height="170" rx="4" fill="#c0e2cf"/>
+  <text x="170" y="248" text-anchor="middle" class="quad-title" fill="#1B3D2F">Product Development</text>
+  <text x="75" y="273" class="quad-body" fill="#1B3D2F">Develop new products for</text>
+  <text x="75" y="293" class="quad-body" fill="#1B3D2F">existing customers.</text>
+  <text x="75" y="320" class="quad-body" fill="#1B3D2F">e.g. New flavours, upgraded</text>
+  <text x="75" y="338" class="quad-body" fill="#1B3D2F">models, extensions.</text>
+  <rect x="75" y="352" width="60" height="20" rx="3" fill="#5aad7c"/>
+  <text x="105" y="366" text-anchor="middle" class="risk" fill="#FAFAF7">Medium</text>
+
+  <!-- Diversification -->
+  <rect x="298" y="215" width="210" height="170" rx="4" fill="#1B3D2F"/>
+  <text x="403" y="248" text-anchor="middle" class="quad-title" fill="#FAFAF7">Diversification</text>
+  <text x="318" y="273" class="quad-body" fill="#FAFAF7" opacity="0.88">New products in entirely</text>
+  <text x="318" y="293" class="quad-body" fill="#FAFAF7" opacity="0.88">new markets.</text>
+  <text x="318" y="320" class="quad-body" fill="#FAFAF7" opacity="0.88">e.g. Apple entering music,</text>
+  <text x="318" y="338" class="quad-body" fill="#FAFAF7" opacity="0.88">Amazon entering cloud.</text>
+  <rect x="318" y="352" width="70" height="20" rx="3" fill="#e74c3c"/>
+  <text x="353" y="366" text-anchor="middle" class="risk" fill="#FAFAF7">Highest risk</text>
+
+  <!-- Divider lines -->
+  <line x1="50" y1="207" x2="508" y2="207" stroke="#1B3D2F" stroke-width="2" opacity="0.15"/>
+  <line x1="290" y1="35" x2="290" y2="385" stroke="#1B3D2F" stroke-width="2" opacity="0.15"/>
+
+  <!-- Bottom credit -->
+  <text x="282" y="408" text-anchor="middle" font-family="Arial" font-size="10" fill="#888" letter-spacing="0.5">LC Business — Ansoff Matrix (Igor Ansoff, 1957)</text>
+</svg>

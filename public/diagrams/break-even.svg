@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400" role="img" aria-label="Break-even chart">
+  <title>Break-even chart</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .label { font-size: 11px; fill: #1B3D2F; }
+    .axis-title { font-size: 11px; font-weight: 600; fill: #444; }
+    .annotation { font-size: 10px; fill: #555; }
+  </style>
+
+  <!-- Axes -->
+  <line x1="70" y1="340" x2="480" y2="340" stroke="#1B3D2F" stroke-width="1.5" opacity="0.5"/>
+  <line x1="70" y1="40" x2="70" y2="340" stroke="#1B3D2F" stroke-width="1.5" opacity="0.5"/>
+
+  <!-- Axis arrow tips -->
+  <polygon points="480,336 488,340 480,344" fill="#1B3D2F" opacity="0.5"/>
+  <polygon points="66,40 70,32 74,40" fill="#1B3D2F" opacity="0.5"/>
+
+  <!-- Grid lines -->
+  <line x1="70" y1="255" x2="480" y2="255" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="70" y1="170" x2="480" y2="170" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="70" y1="85" x2="480" y2="85" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="195" y1="40" x2="195" y2="340" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,4"/>
+  <line x1="320" y1="40" x2="320" y2="340" stroke="#ccc" stroke-width="0.5" stroke-dasharray="4,4"/>
+
+  <!-- Fixed Costs — horizontal line -->
+  <line x1="70" y1="255" x2="480" y2="255" stroke="#e74c3c" stroke-width="2"/>
+
+  <!-- Total Costs — rises from Fixed Costs intercept -->
+  <line x1="70" y1="255" x2="480" y2="90" stroke="#e67e22" stroke-width="2"/>
+
+  <!-- Total Revenue — rises from origin -->
+  <line x1="70" y1="340" x2="480" y2="55" stroke="#1B3D2F" stroke-width="2.5"/>
+
+  <!-- Break-even point intersection -->
+  <!-- TR at x=280: 340 - (280-70)*(285/410) = 340 - 210*0.695 = 340 - 145.9 = 194 -->
+  <!-- TC at x=280: 255 - (280-70)*(165/410) = 255 - 210*0.402 = 255 - 84.5 = 170.5 -->
+  <!-- Intersection: TR=TC. Let me compute properly. -->
+  <!-- TR: y = 340 - (x-70)*(285/410) where x is SVG x -->
+  <!-- TC: y = 255 - (x-70)*(165/410) -->
+  <!-- TR=TC: 340 - (x-70)*0.695 = 255 - (x-70)*0.402 -->
+  <!-- 340-255 = (x-70)*0.695 - (x-70)*0.402 = (x-70)*0.293 -->
+  <!-- 85 = (x-70)*0.293 → x-70 = 290 → x = 360 -->
+  <!-- y = 340 - 290*0.695 = 340 - 201.5 = 138.5 ≈ 139 -->
+
+  <!-- BEP vertical drop line -->
+  <line x1="360" y1="139" x2="360" y2="340" stroke="#1B3D2F" stroke-width="1" stroke-dasharray="5,3" opacity="0.6"/>
+
+  <!-- BEP dot -->
+  <circle cx="360" cy="139" r="5" fill="#1B3D2F"/>
+
+  <!-- Loss region shading -->
+  <polygon points="70,340 70,255 360,139 360,340" fill="#e74c3c" opacity="0.06"/>
+
+  <!-- Profit region shading -->
+  <polygon points="360,139 360,340 480,340 480,90" fill="#1B3D2F" opacity="0.06"/>
+
+  <!-- Axis labels -->
+  <text x="490" y="344" class="label">Output</text>
+  <text x="40" y="36" class="axis-title" transform="rotate(-90 40 160)" text-anchor="middle">Costs &amp; Revenue (€)</text>
+
+  <!-- Tick labels on Y axis -->
+  <text x="60" y="259" text-anchor="end" class="annotation">FC</text>
+  <text x="60" y="174" text-anchor="end" class="annotation">2FC</text>
+  <text x="60" y="89" text-anchor="end" class="annotation">3FC</text>
+
+  <!-- BEP label -->
+  <text x="363" y="130" class="label" font-weight="700" fill="#1B3D2F">BEP</text>
+  <text x="363" y="356" class="annotation" text-anchor="middle" fill="#1B3D2F">Q BEP</text>
+
+  <!-- Line labels -->
+  <text x="456" y="70" class="label" fill="#1B3D2F" font-weight="600">TR</text>
+  <text x="456" y="103" class="label" fill="#e67e22" font-weight="600">TC</text>
+  <text x="456" y="260" class="label" fill="#e74c3c" font-weight="600">FC</text>
+
+  <!-- Region labels -->
+  <text x="200" y="290" class="annotation" fill="#e74c3c" font-weight="600">LOSS</text>
+  <text x="410" y="290" class="annotation" fill="#1B3D2F" font-weight="600">PROFIT</text>
+
+  <!-- Margin of safety -->
+  <line x1="360" y1="330" x2="480" y2="330" stroke="#1B3D2F" stroke-width="1.5" marker-start="url(#ms)" marker-end="url(#ms)"/>
+  <text x="420" y="325" text-anchor="middle" class="annotation" fill="#1B3D2F">Margin of safety</text>
+
+  <!-- Bottom credit -->
+  <text x="282" y="392" text-anchor="middle" font-family="Arial" font-size="10" fill="#888" letter-spacing="0.5">LC Business — Break-even Analysis</text>
+</svg>

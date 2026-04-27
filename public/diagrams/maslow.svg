@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400" role="img" aria-label="Maslow's Hierarchy of Needs">
+  <title>Maslow's Hierarchy of Needs</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .tier-label { font-size: 12px; font-weight: 700; fill: #FAFAF7; }
+    .tier-sub { font-size: 10px; fill: #FAFAF7; opacity: 0.85; }
+    .side-label { font-size: 10px; fill: #444; }
+  </style>
+
+  <!-- Level 5 — Self-Actualisation (apex) -->
+  <polygon points="260,28 195,100 325,100" fill="#1B3D2F"/>
+  <text x="260" y="70" text-anchor="middle" class="tier-label" font-size="11">Self-Actualisation</text>
+  <text x="260" y="87" text-anchor="middle" class="tier-sub" font-size="9">Fulfil potential</text>
+
+  <!-- Level 4 — Esteem -->
+  <polygon points="195,106 165,170 355,170 325,106" fill="#2d6642"/>
+  <text x="260" y="138" text-anchor="middle" class="tier-label">Esteem Needs</text>
+  <text x="260" y="156" text-anchor="middle" class="tier-sub">Status · Recognition · Achievement</text>
+
+  <!-- Level 3 — Social -->
+  <polygon points="165,176 130,245 390,245 355,176" fill="#3d7a5a"/>
+  <text x="260" y="210" text-anchor="middle" class="tier-label">Social / Love Needs</text>
+  <text x="260" y="228" text-anchor="middle" class="tier-sub">Belonging · Friendship · Teams</text>
+
+  <!-- Level 2 — Safety -->
+  <polygon points="130,251 95,320 425,320 390,251" fill="#5a9970"/>
+  <text x="260" y="282" text-anchor="middle" class="tier-label">Safety Needs</text>
+  <text x="260" y="300" text-anchor="middle" class="tier-sub">Job security · Safe workplace · Pension</text>
+
+  <!-- Level 1 — Physiological (base) -->
+  <polygon points="95,326 60,390 460,390 425,326" fill="#7ab88a"/>
+  <text x="260" y="354" text-anchor="middle" class="tier-label">Physiological Needs</text>
+  <text x="260" y="372" text-anchor="middle" class="tier-sub">Salary to buy food · shelter · warmth</text>
+
+  <!-- Left annotation: LOWER ORDER -->
+  <text x="38" y="360" class="side-label" transform="rotate(-90 38 310)" text-anchor="middle">LOWER ORDER (Herzberg: Hygiene)</text>
+
+  <!-- Right annotation: HIGHER ORDER -->
+  <text x="492" y="250" class="side-label" transform="rotate(90 492 200)" text-anchor="middle">HIGHER ORDER (Herzberg: Motivators)</text>
+
+  <!-- Bracket lines -->
+  <line x1="52" y1="258" x2="52" y2="390" stroke="#aaa" stroke-width="1"/>
+  <line x1="52" y1="258" x2="58" y2="258" stroke="#aaa" stroke-width="1"/>
+  <line x1="52" y1="390" x2="58" y2="390" stroke="#aaa" stroke-width="1"/>
+
+  <line x1="478" y1="28" x2="478" y2="244" stroke="#aaa" stroke-width="1"/>
+  <line x1="472" y1="28" x2="478" y2="28" stroke="#aaa" stroke-width="1"/>
+  <line x1="472" y1="244" x2="478" y2="244" stroke="#aaa" stroke-width="1"/>
+</svg>

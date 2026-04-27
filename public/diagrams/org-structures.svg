@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 420" role="img" aria-label="Organisational chart structures">
+  <title>Organisational chart structures</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .label { font-size: 10px; fill: #FAFAF7; text-anchor: middle; }
+    .sub { font-size: 10px; fill: #555; text-anchor: middle; }
+    .title { font-size: 12px; font-weight: 700; fill: #1B3D2F; text-anchor: middle; }
+  </style>
+
+  <!-- === HIERARCHICAL (tall, traditional) === -->
+  <text x="130" y="20" class="title">Hierarchical</text>
+  <text x="130" y="35" class="sub">Many levels, narrow span of control</text>
+
+  <!-- CEO -->
+  <rect x="90" y="45" width="80" height="28" rx="3" fill="#1B3D2F"/>
+  <text x="130" y="63" class="label">CEO</text>
+  <line x1="130" y1="73" x2="130" y2="88" stroke="#1B3D2F" stroke-width="1.2"/>
+
+  <!-- Manager row -->
+  <line x1="70" y1="88" x2="190" y2="88" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="70" y1="88" x2="70" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="190" y1="88" x2="190" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+  <rect x="35" y="100" width="70" height="24" rx="3" fill="#2d6642"/>
+  <text x="70" y="116" class="label">Manager</text>
+  <rect x="155" y="100" width="70" height="24" rx="3" fill="#2d6642"/>
+  <text x="190" y="116" class="label">Manager</text>
+
+  <!-- Staff row -->
+  <line x1="55" y1="124" x2="55" y2="137" stroke="#1B3D2F" stroke-width="1"/>
+  <line x1="85" y1="124" x2="85" y2="137" stroke="#1B3D2F" stroke-width="1"/>
+  <line x1="173" y1="124" x2="173" y2="137" stroke="#1B3D2F" stroke-width="1"/>
+  <line x1="205" y1="124" x2="205" y2="137" stroke="#1B3D2F" stroke-width="1"/>
+  <rect x="34" y="137" width="42" height="22" rx="3" fill="#3d7a5a"/>
+  <text x="55" y="151" class="label" font-size="9">Staff</text>
+  <rect x="64" y="137" width="42" height="22" rx="3" fill="#3d7a5a"/>
+  <text x="85" y="151" class="label" font-size="9">Staff</text>
+  <rect x="152" y="137" width="42" height="22" rx="3" fill="#3d7a5a"/>
+  <text x="173" y="151" class="label" font-size="9">Staff</text>
+  <rect x="184" y="137" width="42" height="22" rx="3" fill="#3d7a5a"/>
+  <text x="205" y="151" class="label" font-size="9">Staff</text>
+
+  <!-- Hierarchical labels -->
+  <text x="130" y="178" class="sub">Tall structure · Clear chain of command</text>
+  <text x="130" y="192" class="sub">Slow decisions · Good for large firms</text>
+
+  <!-- === FLAT (wide, modern) === -->
+  <text x="400" y="20" class="title">Flat</text>
+  <text x="400" y="35" class="sub">Few levels, wide span of control</text>
+
+  <!-- MD -->
+  <rect x="360" y="45" width="80" height="28" rx="3" fill="#1B3D2F"/>
+  <text x="400" y="63" class="label">Director</text>
+
+  <!-- Direct reports — wider span -->
+  <line x1="400" y1="73" x2="400" y2="88" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="305" y1="88" x2="495" y2="88" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="305" y1="88" x2="305" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="355" y1="88" x2="355" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="400" y1="88" x2="400" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="445" y1="88" x2="445" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+  <line x1="495" y1="88" x2="495" y2="100" stroke="#1B3D2F" stroke-width="1.2"/>
+
+  <rect x="280" y="100" width="50" height="24" rx="3" fill="#2d6642"/>
+  <text x="305" y="116" class="label" font-size="9">Sales</text>
+  <rect x="330" y="100" width="50" height="24" rx="3" fill="#2d6642"/>
+  <text x="355" y="116" class="label" font-size="9">Finance</text>
+  <rect x="375" y="100" width="50" height="24" rx="3" fill="#2d6642"/>
+  <text x="400" y="116" class="label" font-size="9">HR</text>
+  <rect x="420" y="100" width="50" height="24" rx="3" fill="#2d6642"/>
+  <text x="445" y="116" class="label" font-size="9">IT</text>
+  <rect x="470" y="100" width="50" height="24" rx="3" fill="#2d6642"/>
+  <text x="495" y="116" class="label" font-size="9">Ops</text>
+
+  <text x="400" y="155" class="sub">Wide span · Fast decisions</text>
+  <text x="400" y="169" class="sub">Empowered staff · Suits SMEs</text>
+
+  <!-- === MATRIX === -->
+  <text x="260" y="215" class="title">Matrix Structure</text>
+  <text x="260" y="230" class="sub">Employees report to both functional manager and project manager</text>
+
+  <!-- Column headers (functional) -->
+  <rect x="158" y="248" width="70" height="24" rx="3" fill="#1B3D2F"/>
+  <text x="193" y="264" class="label" font-size="9">Marketing</text>
+  <rect x="238" y="248" width="70" height="24" rx="3" fill="#1B3D2F"/>
+  <text x="273" y="264" class="label" font-size="9">Finance</text>
+  <rect x="318" y="248" width="70" height="24" rx="3" fill="#1B3D2F"/>
+  <text x="353" y="264" class="label" font-size="9">Production</text>
+  <rect x="398" y="248" width="70" height="24" rx="3" fill="#1B3D2F"/>
+  <text x="433" y="264" class="label" font-size="9">R&amp;D</text>
+
+  <!-- Row headers (project) -->
+  <rect x="68" y="282" width="80" height="24" rx="3" fill="#2d6642"/>
+  <text x="108" y="298" class="label" font-size="9">Project A</text>
+  <rect x="68" y="316" width="80" height="24" rx="3" fill="#2d6642"/>
+  <text x="108" y="332" class="label" font-size="9">Project B</text>
+  <rect x="68" y="350" width="80" height="24" rx="3" fill="#2d6642"/>
+  <text x="108" y="366" class="label" font-size="9">Project C</text>
+
+  <!-- Matrix cells -->
+  <rect x="158" y="282" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="238" y="282" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="318" y="282" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="398" y="282" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="158" y="316" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="238" y="316" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="318" y="316" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="398" y="316" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="158" y="350" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="238" y="350" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="318" y="350" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+  <rect x="398" y="350" width="70" height="24" rx="2" fill="#e8f5ee" stroke="#7EC8A4" stroke-width="0.8"/>
+
+  <text x="260" y="395" class="sub">Flexible · Efficient resource use · Risk: conflicting instructions ("two bosses")</text>
+
+  <!-- Bottom credit -->
+  <text x="260" y="412" text-anchor="middle" font-family="Arial" font-size="10" fill="#888" letter-spacing="0.5">LC Business — Organisational Structures</text>
+</svg>

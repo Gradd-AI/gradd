@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400" role="img" aria-label="Balance sheet layout">
+  <title>Balance sheet layout</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .heading { font-size: 13px; font-weight: 700; fill: #1B3D2F; }
+    .section { font-size: 11px; font-weight: 700; fill: #1B3D2F; }
+    .item { font-size: 11px; fill: #333; }
+    .amount { font-size: 11px; fill: #333; }
+    .total { font-size: 11px; font-weight: 700; fill: #1B3D2F; }
+    .note { font-size: 10px; fill: #888; font-style: italic; }
+    .eq { font-size: 12px; font-weight: 700; fill: #1B3D2F; }
+  </style>
+
+  <!-- Title -->
+  <text x="260" y="25" text-anchor="middle" class="heading" font-size="14">Balance Sheet of XYZ Ltd as at 31/12/20XX</text>
+
+  <!-- Left column: Assets -->
+  <rect x="28" y="38" width="228" height="340" rx="4" fill="#f5f8f6" stroke="#cce0d5" stroke-width="1"/>
+  <!-- Assets header -->
+  <rect x="28" y="38" width="228" height="28" rx="4" fill="#1B3D2F"/>
+  <text x="142" y="57" text-anchor="middle" font-size="12" font-weight="700" fill="#FAFAF7">ASSETS</text>
+
+  <!-- Fixed Assets section -->
+  <text x="42" y="85" class="section">Fixed / Non-Current Assets</text>
+  <line x1="38" y1="90" x2="250" y2="90" stroke="#cce0d5" stroke-width="0.8"/>
+  <text x="42" y="108" class="item">Land &amp; Buildings</text>
+  <text x="235" y="108" text-anchor="end" class="amount">€XXX,000</text>
+  <text x="42" y="124" class="item">Plant &amp; Machinery</text>
+  <text x="235" y="124" text-anchor="end" class="amount">€XXX,000</text>
+  <text x="42" y="140" class="item">Motor Vehicles</text>
+  <text x="235" y="140" text-anchor="end" class="amount">€XXX,000</text>
+  <line x1="185" y1="145" x2="248" y2="145" stroke="#1B3D2F" stroke-width="0.8"/>
+  <text x="135" y="160" class="total">Total Fixed Assets</text>
+  <text x="235" y="160" text-anchor="end" class="total">€XXX,000</text>
+
+  <!-- Current Assets section -->
+  <text x="42" y="184" class="section">Current Assets</text>
+  <line x1="38" y1="189" x2="250" y2="189" stroke="#cce0d5" stroke-width="0.8"/>
+  <text x="42" y="207" class="item">Closing Stock</text>
+  <text x="235" y="207" text-anchor="end" class="amount">€XX,000</text>
+  <text x="42" y="223" class="item">Debtors</text>
+  <text x="235" y="223" text-anchor="end" class="amount">€XX,000</text>
+  <text x="42" y="239" class="item">Bank / Cash</text>
+  <text x="235" y="239" text-anchor="end" class="amount">€XX,000</text>
+  <line x1="185" y1="244" x2="248" y2="244" stroke="#1B3D2F" stroke-width="0.8"/>
+  <text x="135" y="259" class="total">Total Current Assets</text>
+  <text x="235" y="259" text-anchor="end" class="total">€XX,000</text>
+
+  <!-- TOTAL ASSETS -->
+  <line x1="38" y1="270" x2="250" y2="270" stroke="#1B3D2F" stroke-width="1.5"/>
+  <text x="42" y="286" class="total" font-size="12">TOTAL ASSETS</text>
+  <text x="235" y="286" text-anchor="end" class="total" font-size="12">€XXX,000</text>
+  <line x1="38" y1="292" x2="250" y2="292" stroke="#1B3D2F" stroke-width="0.8"/>
+  <line x1="38" y1="295" x2="250" y2="295" stroke="#1B3D2F" stroke-width="0.8"/>
+
+  <!-- Right column: Capital + Liabilities -->
+  <rect x="264" y="38" width="228" height="340" rx="4" fill="#f5f8f6" stroke="#cce0d5" stroke-width="1"/>
+  <rect x="264" y="38" width="228" height="28" rx="4" fill="#2d6642"/>
+  <text x="378" y="57" text-anchor="middle" font-size="12" font-weight="700" fill="#FAFAF7">CAPITAL &amp; LIABILITIES</text>
+
+  <!-- Capital section -->
+  <text x="278" y="85" class="section">Capital / Equity</text>
+  <line x1="274" y1="90" x2="486" y2="90" stroke="#cce0d5" stroke-width="0.8"/>
+  <text x="278" y="108" class="item">Issued Share Capital</text>
+  <text x="484" y="108" text-anchor="end" class="amount">€XXX,000</text>
+  <text x="278" y="124" class="item">Reserves &amp; Retained Profits</text>
+  <text x="484" y="124" text-anchor="end" class="amount">€XXX,000</text>
+  <line x1="430" y1="130" x2="486" y2="130" stroke="#1B3D2F" stroke-width="0.8"/>
+  <text x="330" y="146" class="total">Total Capital</text>
+  <text x="484" y="146" text-anchor="end" class="total">€XXX,000</text>
+
+  <!-- Long-term Liabilities -->
+  <text x="278" y="170" class="section">Long-Term Liabilities</text>
+  <line x1="274" y1="175" x2="486" y2="175" stroke="#cce0d5" stroke-width="0.8"/>
+  <text x="278" y="193" class="item">Bank Loans (5+ years)</text>
+  <text x="484" y="193" text-anchor="end" class="amount">€XXX,000</text>
+  <text x="278" y="209" class="item">Debentures / Bonds</text>
+  <text x="484" y="209" text-anchor="end" class="amount">€XXX,000</text>
+  <line x1="430" y1="215" x2="486" y2="215" stroke="#1B3D2F" stroke-width="0.8"/>
+
+  <!-- Current Liabilities -->
+  <text x="278" y="238" class="section">Current Liabilities</text>
+  <line x1="274" y1="243" x2="486" y2="243" stroke="#cce0d5" stroke-width="0.8"/>
+  <text x="278" y="261" class="item">Creditors</text>
+  <text x="484" y="261" text-anchor="end" class="amount">€XX,000</text>
+  <text x="278" y="277" class="item">Bank Overdraft</text>
+  <text x="484" y="277" text-anchor="end" class="amount">€XX,000</text>
+
+  <!-- TOTAL -->
+  <line x1="274" y1="288" x2="486" y2="288" stroke="#1B3D2F" stroke-width="1.5"/>
+  <text x="278" y="304" class="total" font-size="12">TOTAL CAP + LIABILITIES</text>
+  <text x="484" y="304" text-anchor="end" class="total" font-size="12">€XXX,000</text>
+  <line x1="274" y1="310" x2="486" y2="310" stroke="#1B3D2F" stroke-width="0.8"/>
+  <line x1="274" y1="313" x2="486" y2="313" stroke="#1B3D2F" stroke-width="0.8"/>
+
+  <!-- Key equation -->
+  <text x="260" y="355" text-anchor="middle" class="eq">Assets = Capital + Liabilities</text>
+  <text x="260" y="372" text-anchor="middle" class="note">Both sides must always balance — that's why it's called a balance sheet.</text>
+
+  <!-- Bottom credit -->
+  <text x="260" y="390" text-anchor="middle" font-family="Arial" font-size="10" fill="#888" letter-spacing="0.5">LC Business — Balance Sheet Layout</text>
+</svg>

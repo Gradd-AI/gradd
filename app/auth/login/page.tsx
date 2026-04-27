@@ -44,7 +44,7 @@ export default function LoginPage() {
 
         <h1 className="auth-heading">Welcome back</h1>
         <p className="auth-subheading">
-          Continue where you left off with Aoife.
+          Your AI-powered Leaving Cert Business tutor — guided lessons, exam technique, and progress tracking.
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -95,12 +95,24 @@ export default function LoginPage() {
                 Signing in…
               </>
             ) : (
-              'Sign in'
+              'Sign in to continue with Aoife'
             )}
           </button>
         </form>
 
-        <p className="auth-footer" style={{ marginTop: 20 }}>
+        <p
+          style={{
+            textAlign: 'center',
+            fontSize: 12,
+            color: 'var(--muted)',
+            marginTop: 16,
+            letterSpacing: '0.01em',
+          }}
+        >
+          Built for Irish Leaving Cert Business students.
+        </p>
+
+        <p className="auth-footer" style={{ marginTop: 12 }}>
           Don&rsquo;t have an account?{' '}
           <Link href="/auth/signup">Sign up</Link>
         </p>

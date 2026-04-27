@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 44" width="150" height="44" role="img" aria-label="Gradd">
+  <title>Gradd</title>
+  <text
+    x="0"
+    y="36"
+    font-family="'Playfair Display', Georgia, 'Times New Roman', serif"
+    font-size="40"
+    font-weight="700"
+    fill="#1B3D2F"
+    letter-spacing="-0.5"
+  >Gradd</text>
+  <!-- cx=132: ~9px past observed text right edge (~123px). cy=22: mid-cap. -->
+  <circle cx="132" cy="22" r="5" fill="#7EC8A4"/>
+</svg>

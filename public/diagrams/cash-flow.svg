@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 400" role="img" aria-label="Cash flow statement structure">
+  <title>Cash flow statement</title>
+  <style>
+    text { font-family: 'Plus Jakarta Sans', Arial, sans-serif; }
+    .heading { font-size: 13px; font-weight: 700; }
+    .section { font-size: 11px; font-weight: 700; }
+    .item { font-size: 11px; }
+    .pos { fill: #1B3D2F; }
+    .neg { fill: #e74c3c; }
+    .total { font-size: 11px; font-weight: 700; fill: #1B3D2F; }
+    .note { font-size: 10px; fill: #888; font-style: italic; }
+    .hdr { fill: #FAFAF7; font-size: 11px; font-weight: 700; }
+  </style>
+
+  <!-- Title -->
+  <text x="260" y="25" text-anchor="middle" class="heading" fill="#1B3D2F" font-size="13">Cash Flow Statement — XYZ Ltd (January 20XX)</text>
+
+  <!-- Header row -->
+  <rect x="28" y="36" width="464" height="26" rx="3" fill="#1B3D2F"/>
+  <text x="42" y="54" class="hdr">Item</text>
+  <text x="310" y="54" text-anchor="end" class="hdr">Receipts (€)</text>
+  <text x="420" y="54" text-anchor="end" class="hdr">Payments (€)</text>
+  <text x="484" y="54" text-anchor="end" class="hdr">Net (€)</text>
+
+  <!-- Operating Activities section -->
+  <rect x="28" y="68" width="464" height="18" rx="2" fill="#e8f5ee"/>
+  <text x="42" y="81" class="section" fill="#1B3D2F">Operating / Trading Activities</text>
+
+  <text x="42" y="100" class="item" fill="#333">Sales receipts (cash)</text>
+  <text x="310" y="100" text-anchor="end" class="item pos">€120,000</text>
+  <line x1="28" y1="106" x2="492" y2="106" stroke="#e0e0e0" stroke-width="0.6"/>
+
+  <text x="42" y="122" class="item" fill="#333">Payments to suppliers</text>
+  <text x="420" y="122" text-anchor="end" class="item neg">€65,000</text>
+  <line x1="28" y1="128" x2="492" y2="128" stroke="#e0e0e0" stroke-width="0.6"/>
+
+  <text x="42" y="144" class="item" fill="#333">Wages &amp; salaries paid</text>
+  <text x="420" y="144" text-anchor="end" class="item neg">€28,000</text>
+  <line x1="28" y1="150" x2="492" y2="150" stroke="#e0e0e0" stroke-width="0.6"/>
+
+  <text x="42" y="166" class="item" fill="#333">Overheads paid (rent, light)</text>
+  <text x="420" y="166" text-anchor="end" class="item neg">€8,000</text>
+  <line x1="28" y1="172" x2="492" y2="172" stroke="#1B3D2F" stroke-width="0.8"/>
+
+  <text x="200" y="186" text-anchor="end" class="total">Net Operating Cash Flow</text>
+  <text x="484" y="186" text-anchor="end" class="total pos">€19,000</text>
+
+  <!-- Investing Activities section -->
+  <rect x="28" y="196" width="464" height="18" rx="2" fill="#e8f5ee"/>
+  <text x="42" y="209" class="section" fill="#1B3D2F">Investing Activities</text>
+
+  <text x="42" y="228" class="item" fill="#333">Purchase of equipment</text>
+  <text x="420" y="228" text-anchor="end" class="item neg">€15,000</text>
+  <line x1="28" y1="234" x2="492" y2="234" stroke="#e0e0e0" stroke-width="0.6"/>
+  <text x="42" y="250" class="item" fill="#333">Proceeds from asset sale</text>
+  <text x="310" y="250" text-anchor="end" class="item pos">€5,000</text>
+  <line x1="28" y1="256" x2="492" y2="256" stroke="#1B3D2F" stroke-width="0.8"/>
+  <text x="200" y="270" text-anchor="end" class="total">Net Investing Cash Flow</text>
+  <text x="484" y="270" text-anchor="end" class="total neg">–€10,000</text>
+
+  <!-- Financing Activities section -->
+  <rect x="28" y="280" width="464" height="18" rx="2" fill="#e8f5ee"/>
+  <text x="42" y="293" class="section" fill="#1B3D2F">Financing Activities</text>
+
+  <text x="42" y="312" class="item" fill="#333">Loan received</text>
+  <text x="310" y="312" text-anchor="end" class="item pos">€20,000</text>
+  <line x1="28" y1="318" x2="492" y2="318" stroke="#e0e0e0" stroke-width="0.6"/>
+  <text x="42" y="334" class="item" fill="#333">Loan repayment</text>
+  <text x="420" y="334" text-anchor="end" class="item neg">€8,000</text>
+  <line x1="28" y1="340" x2="492" y2="340" stroke="#1B3D2F" stroke-width="1.5"/>
+
+  <!-- Net cash -->
+  <text x="42" y="358" class="total" font-size="12">Net Cash Change for Period</text>
+  <text x="484" y="358" text-anchor="end" class="total pos" font-size="12">€21,000</text>
+  <line x1="28" y1="364" x2="492" y2="364" stroke="#1B3D2F" stroke-width="0.8"/>
+  <line x1="28" y1="367" x2="492" y2="367" stroke="#1B3D2F" stroke-width="0.8"/>
+
+  <!-- Bottom note -->
+  <text x="260" y="385" text-anchor="middle" class="note">Opening balance + Net change = Closing balance</text>
+
+  <!-- Bottom credit -->
+  <text x="260" y="396" text-anchor="middle" font-family="Arial" font-size="10" fill="#ccc" letter-spacing="0.5">LC Business — Cash Flow Statement</text>
+</svg>
