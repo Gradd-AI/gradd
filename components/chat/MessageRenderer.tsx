@@ -1,6 +1,7 @@
 // components/chat/MessageRenderer.tsx
 // Renders Aoife's markdown output into styled HTML.
-// Handles: # ## ### headers, **bold**, *italic*, --- dividers, paragraphs.
+// Handles: # ## ### headers, === headers, **bold**, *italic*,
+//          --- dividers, bullet/numbered lists, paragraphs.
 // No external dependencies — custom parser matching exactly what Aoife produces.
 
 interface Props {
@@ -10,7 +11,6 @@ interface Props {
 // Inline markdown: bold, italic
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  // Match **bold** and *italic*
   const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
   let last = 0;
   let match;
@@ -42,7 +42,13 @@ export default function MessageRenderer({ content }: Props) {
     const text = paraBuffer.join(' ').trim();
     if (text) {
       elements.push(
-        <p key={`p-${i++}`} style={{ margin: '0 0 12px 0', lineHeight: 1.65, color: 'var(--chat-text)' }}>
+        <p key={`p-${i++}`} style={{
+          margin: '0 0 12px 0',
+          lineHeight: 1.65,
+          color: 'var(--chat-text)',
+          wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
+        }}>
           {renderInline(text)}
         </p>
       );
@@ -53,7 +59,37 @@ export default function MessageRenderer({ content }: Props) {
   for (const raw of lines) {
     const line = raw.trimEnd();
 
-    // H1 — session open banner (# — LC BUSINESS TUTOR — SESSION OPEN —)
+    // === SECTION HEADER === — Aoife uses this for stage/part labels
+    if (/^={2,}.*={2,}$/.test(line.trim())) {
+      flushParagraph();
+      const text = line.trim().replace(/^=+\s*/, '').replace(/\s*=+$/, '').trim();
+      elements.push(
+        <div key={`eq-${i++}`} style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          marginTop: 20,
+          marginBottom: 10,
+        }}>
+          <div style={{ height: 1, flex: 1, background: 'var(--chat-border)', flexShrink: 0, minWidth: 12 }} />
+          <span style={{
+            fontSize: 10,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'var(--chat-accent)',
+            wordBreak: 'break-word',
+            textAlign: 'center',
+          }}>
+            {text}
+          </span>
+          <div style={{ height: 1, flex: 1, background: 'var(--chat-border)', flexShrink: 0, minWidth: 12 }} />
+        </div>
+      );
+      continue;
+    }
+
+    // H1 — session open banner
     if (/^#\s+/.test(line) && !/^##/.test(line)) {
       flushParagraph();
       const text = line.replace(/^#\s+/, '').replace(/^—\s*|\s*—$/g, '').trim();
@@ -64,7 +100,14 @@ export default function MessageRenderer({ content }: Props) {
           marginBottom: 16,
           marginTop: 4,
         }}>
-          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--chat-muted)' }}>
+          <span style={{
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: 'var(--chat-muted)',
+            wordBreak: 'break-word',
+          }}>
             {text}
           </span>
         </div>
@@ -72,7 +115,7 @@ export default function MessageRenderer({ content }: Props) {
       continue;
     }
 
-    // H2 — lesson heading (## Lesson 1.1.1 — Introduction to...)
+    // H2 — lesson heading
     if (/^##\s+/.test(line) && !/^###/.test(line)) {
       flushParagraph();
       const text = line.replace(/^##\s+/, '');
@@ -86,6 +129,8 @@ export default function MessageRenderer({ content }: Props) {
           marginTop: 16,
           letterSpacing: '-0.2px',
           lineHeight: 1.3,
+          wordBreak: 'break-word',
+          overflowWrap: 'anywhere',
         }}>
           {renderInline(text)}
         </h2>
@@ -93,30 +138,31 @@ export default function MessageRenderer({ content }: Props) {
       continue;
     }
 
-    // H3 — stage label (### STAGE 1 — EXPLAIN)
+    // H3 — stage label
     if (/^###\s+/.test(line)) {
       flushParagraph();
-      const text = line.replace(/^###\s+/, '');
+      const text = line.replace(/^###\s+/, '').replace(/^—\s*|\s*—$/g, '').trim();
       elements.push(
         <div key={`h3-${i++}`} style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 10,
+          gap: 8,
           marginTop: 20,
           marginBottom: 10,
         }}>
-          <div style={{ height: 1, flex: 1, background: 'var(--chat-border)' }} />
+          <div style={{ height: 1, flex: 1, background: 'var(--chat-border)', flexShrink: 0, minWidth: 12 }} />
           <span style={{
             fontSize: 10,
             fontWeight: 700,
             textTransform: 'uppercase',
             letterSpacing: '0.12em',
             color: 'var(--chat-accent)',
-            whiteSpace: 'nowrap',
+            wordBreak: 'break-word',    // was nowrap — that was the overflow bug
+            textAlign: 'center',
           }}>
-            {text.replace(/^—\s*|\s*—$/g, '').trim()}
+            {text}
           </span>
-          <div style={{ height: 1, flex: 1, background: 'var(--chat-border)' }} />
+          <div style={{ height: 1, flex: 1, background: 'var(--chat-border)', flexShrink: 0, minWidth: 12 }} />
         </div>
       );
       continue;
@@ -142,7 +188,9 @@ export default function MessageRenderer({ content }: Props) {
       elements.push(
         <div key={`li-${i++}`} style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
           <span style={{ color: 'var(--chat-accent)', flexShrink: 0, marginTop: 2, fontSize: 13 }}>›</span>
-          <span style={{ color: 'var(--chat-text)', lineHeight: 1.6 }}>{renderInline(text)}</span>
+          <span style={{ color: 'var(--chat-text)', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+            {renderInline(text)}
+          </span>
         </div>
       );
       continue;
@@ -155,8 +203,12 @@ export default function MessageRenderer({ content }: Props) {
       const text = line.replace(/^\d+\.\s+/, '');
       elements.push(
         <div key={`nl-${i++}`} style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
-          <span style={{ color: 'var(--chat-accent)', flexShrink: 0, fontWeight: 700, minWidth: 18, fontSize: 13 }}>{num}.</span>
-          <span style={{ color: 'var(--chat-text)', lineHeight: 1.6 }}>{renderInline(text)}</span>
+          <span style={{ color: 'var(--chat-accent)', flexShrink: 0, fontWeight: 700, minWidth: 18, fontSize: 13 }}>
+            {num}.
+          </span>
+          <span style={{ color: 'var(--chat-text)', lineHeight: 1.6, wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+            {renderInline(text)}
+          </span>
         </div>
       );
       continue;

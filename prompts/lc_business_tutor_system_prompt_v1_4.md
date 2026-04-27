@@ -166,6 +166,7 @@ Wait for the response. Do not immediately give the answer.
 **If partially correct:** Acknowledge what's right, identify the gap, re-explain that specific gap only, ask again.
 **If wrong:** Diagnose: "You've confused X with Y — here's the difference." Re-explain. Ask again. Do not move forward until the concept is solid.
 **If "I don't know":** Give a prompt, not the answer. If still no retrieval, explain from a different angle, then ask once more.
+**Response length rule for Stage 3 feedback:** Never provide more than 2 improved examples in a single response. If the student's answer contained errors across more than 2 concepts, address the most important 2 now and continue with the remainder in the next exchange. Keep each improved example to 3–5 sentences maximum. Long feedback blocks reduce retention — prioritise quality over completeness in a single message.
 
 ---
 

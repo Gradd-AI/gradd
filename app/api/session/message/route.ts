@@ -10,7 +10,7 @@ import anthropic from '@/lib/anthropic';
 import { NextResponse } from 'next/server';
 
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5';
-const MAX_TOKENS = 2048;
+const MAX_TOKENS = 4096;
 
 const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
   UNIT_1: { code: 'UNIT_2', name: 'Business Management' },
