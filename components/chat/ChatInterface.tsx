@@ -122,7 +122,9 @@ export default function ChatInterface({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           sessionId,
-          studentMessage: isInitial ? 'Please start the session.' : userMessage,
+          studentMessage: isInitial
+            ? `[SESSION_OPEN] Begin the session now. Teach ${lessonCode ?? 'the current lesson'} from the start.`
+            : userMessage,
         }),
         signal: abortRef.current.signal,
       });
