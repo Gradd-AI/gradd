@@ -130,13 +130,30 @@ ABSOLUTE RULES FOR THIS RESPONSE:
 - If the student's message is short or ambiguous, treat it as their answer to your last question and respond accordingly.
 `;
 
-  const systemWithLiveContext = injectedSystemPrompt + liveContextAnchor;
+
+
+  // Two system blocks for prompt caching:
+  // Block 1 — static injected prompt marked ephemeral. Anthropic caches this
+  //   after the first call; cost drops 90% on system prompt tokens for the rest
+  //   of the session. Cache TTL = 5 minutes, warm throughout any normal session.
+  // Block 2 — live context anchor, changes per message, not cached.
+  const systemBlocks = [
+    {
+      type: 'text' as const,
+      text: injectedSystemPrompt,
+      cache_control: { type: 'ephemeral' as const },
+    },
+    {
+      type: 'text' as const,
+      text: liveContextAnchor,
+    },
+  ];
 
   // Fire Anthropic streaming
   const stream = anthropic.messages.stream({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    system: systemWithLiveContext,
+    system: systemBlocks,
     messages: updatedHistory,
   });
 
