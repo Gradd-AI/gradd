@@ -250,15 +250,18 @@ export default function ChatInterface({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
 
-      {/* Header */}
-      <header style={{ padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Link href="/dashboard" style={{ color: 'var(--chat-muted)', fontSize: 20, textDecoration: 'none', lineHeight: 1 }}>←</Link>
+      {/* Header — sticky so End session is always visible regardless of scroll position */}
+      <header style={{ padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+            <img src="/gradd-logo.svg" alt="Gradd" height={28} style={{ display: "block" }} />
+          </Link>
+          <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--chat-text)' }}>{lessonName}</div>
-            <div style={{ fontSize: 12, color: 'var(--chat-muted)' }}>{unitName} · Session {sessionNumber}</div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--chat-text)" }}>{lessonName}</div>
+            <div style={{ fontSize: 12, color: "var(--chat-muted)" }}>{unitName} · Session {sessionNumber}</div>
           </div>
         </div>
 
