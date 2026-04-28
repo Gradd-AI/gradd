@@ -19,6 +19,15 @@ export const metadata: Metadata = {
   description:
     'Full Leaving Certificate Business curriculum delivered by AI. Study at your own pace, from scratch to exam-ready.',
   metadataBase: new URL('https://gradd.ie'),
+  icons: {
+    icon: [
+      { url: '/gradd-icon.svg', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/gradd-icon.svg', type: 'image/svg+xml' },
+    ],
+    shortcut: '/gradd-icon.svg',
+  },
 };
 
 export default function RootLayout({

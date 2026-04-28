@@ -52,7 +52,6 @@ export default function SignupPage() {
       return;
     }
 
-    // Update profile with exam level (auth trigger creates profile row)
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase
@@ -61,7 +60,6 @@ export default function SignupPage() {
         .eq('id', user.id);
     }
 
-    // Fire welcome email — non-blocking, failure doesn't affect signup flow
     try {
       await fetch('/api/auth/confirm-signup', {
         method: 'POST',
@@ -69,7 +67,7 @@ export default function SignupPage() {
         body: JSON.stringify({ sendWelcome: true }),
       });
     } catch {
-      // Non-fatal — user proceeds regardless
+      // Non-fatal
     }
 
     router.push('/subscribe');
@@ -78,9 +76,11 @@ export default function SignupPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">
-          <div className="auth-logo-mark">G</div>
-          <span className="auth-logo-name">Gradd</span>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Link href="/">
+            <img src="/gradd-logo.svg" alt="Gradd" height="34" style={{ display: 'block' }} />
+          </Link>
         </div>
 
         <h1 className="auth-heading">Create your account</h1>
@@ -92,9 +92,7 @@ export default function SignupPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="fullName">
-              Your name (parent or student)
-            </label>
+            <label className="form-label" htmlFor="fullName">Your name (parent or student)</label>
             <input
               id="fullName"
               name="fullName"
@@ -109,9 +107,7 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="studentName">
-              Student's first name
-            </label>
+            <label className="form-label" htmlFor="studentName">Student's first name</label>
             <input
               id="studentName"
               name="studentName"
@@ -128,9 +124,7 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="examLevel">
-              Exam level
-            </label>
+            <label className="form-label" htmlFor="examLevel">Exam level</label>
             <select
               id="examLevel"
               name="examLevel"
@@ -145,9 +139,7 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="email">
-              Email address
-            </label>
+            <label className="form-label" htmlFor="email">Email address</label>
             <input
               id="email"
               name="email"
@@ -162,9 +154,7 @@ export default function SignupPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">
-              Password
-            </label>
+            <label className="form-label" htmlFor="password">Password</label>
             <input
               id="password"
               name="password"
@@ -184,14 +174,7 @@ export default function SignupPage() {
             disabled={loading}
             style={{ marginTop: 8 }}
           >
-            {loading ? (
-              <>
-                <span className="spinner" />
-                Creating account…
-              </>
-            ) : (
-              'Create account'
-            )}
+            {loading ? (<><span className="spinner" />Creating account…</>) : 'Create account'}
           </button>
         </form>
 
@@ -200,14 +183,7 @@ export default function SignupPage() {
           <Link href="/login">Sign in</Link>
         </p>
 
-        <p
-          style={{
-            textAlign: 'center',
-            marginTop: 20,
-            fontSize: 12,
-            color: 'var(--text-light)',
-          }}
-        >
+        <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text-light)' }}>
           By creating an account you agree to our Terms &amp; Privacy Policy.
         </p>
       </div>

@@ -37,9 +37,11 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">
-          <div className="auth-logo-mark">G</div>
-          <span className="auth-logo-name">Gradd</span>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
+          <Link href="/">
+            <img src="/gradd-logo.svg" alt="Gradd" height="34" style={{ display: 'block' }} />
+          </Link>
         </div>
 
         <h1 className="auth-heading">Welcome back</h1>
@@ -51,9 +53,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label" htmlFor="email">
-              Email address
-            </label>
+            <label className="form-label" htmlFor="email">Email address</label>
             <input
               id="email"
               type="email"
@@ -68,9 +68,7 @@ export default function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="password">
-              Password
-            </label>
+            <label className="form-label" htmlFor="password">Password</label>
             <input
               id="password"
               type="password"
@@ -89,26 +87,11 @@ export default function LoginPage() {
             disabled={loading}
             style={{ marginTop: 8 }}
           >
-            {loading ? (
-              <>
-                <span className="spinner" />
-                Signing in…
-              </>
-            ) : (
-              'Sign in to continue with Aoife'
-            )}
+            {loading ? (<><span className="spinner" />Signing in…</>) : 'Sign in to continue with Aoife'}
           </button>
         </form>
 
-        <p
-          style={{
-            textAlign: 'center',
-            fontSize: 12,
-            color: 'var(--muted)',
-            marginTop: 16,
-            letterSpacing: '0.01em',
-          }}
-        >
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 16 }}>
           Built for Irish Leaving Cert Business students.
         </p>
 

@@ -1,6 +1,4 @@
 // app/page.tsx
-// Replace the existing file with this — adds metadata export, preserves auth logic
-
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import LandingPage from '@/components/landing/LandingPage';
@@ -33,7 +31,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: 'https://gradd.ie/og-image.png', // replace with actual OG image path when built
+        url: 'https://gradd.ie/og-image.svg',
         width: 1200,
         height: 630,
         alt: 'Gradd — AI Leaving Cert Business Tutor for Irish Students',
@@ -44,7 +42,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Gradd — AI Leaving Cert Business Tutor',
     description: 'Full LC Business curriculum from €24.99/month. Built for Irish students.',
-    images: ['https://gradd.ie/og-image.png'],
+    images: ['https://gradd.ie/og-image.svg'],
   },
   robots: {
     index: true,

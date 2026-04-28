@@ -544,7 +544,9 @@ export default function LandingPage() {
         {/* ── NAVIGATION ── */}
         <nav className={`lp-nav${scrolled ? ' lp-scrolled' : ''}`}>
           <div className="lp-nav-inner">
-            <Link href="/" className="lp-logo">Gradd<span>.</span></Link>
+            <Link href="/" className="lp-logo" style={{ display: 'flex', alignItems: 'center' }}>
+              <img src="/gradd-logo.svg" alt="Gradd" height="30" style={{ display: 'block' }} />
+            </Link>
             <ul className="lp-nav-links">
               <li><a href="#how-it-works">How it works</a></li>
               <li><a href="#curriculum">Curriculum</a></li>
@@ -864,7 +866,9 @@ export default function LandingPage() {
         {/* ── FOOTER ── */}
         <footer className="lp-footer">
           <div className="lp-footer-inn">
-            <Link href="/" className="lp-flogo">Gradd<span>.</span></Link>
+            <Link href="/" className="lp-flogo">
+              <img src="/gradd-logo.svg" alt="Gradd" height="26" style={{ display: 'block', filter: 'brightness(0) invert(1)' }} />
+            </Link>
             <ul className="lp-flinks">
               <li><Link href="/privacy">Privacy</Link></li>
               <li><Link href="/terms">Terms</Link></li>
