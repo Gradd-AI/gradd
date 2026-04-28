@@ -40,6 +40,9 @@ export default function ChatInterface({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
+  // WS0A: Synchronous lock — prevents double-submit during the React state update gap.
+  // React setState is async; this ref is read/written synchronously so no race condition.
+  const isSubmittingRef = useRef(false);
 
   // Resolve diagram path from lessonCode
   const diagramPath = lessonCode ? getDiagramPath(lessonCode) : null;
@@ -97,8 +100,14 @@ export default function ChatInterface({
   }, [sessionId]);
 
   async function sendMessage(text: string, isInitial = false) {
+    // WS0A: Check synchronous ref FIRST — catches rapid double-submits before
+    // React state (loading/streaming) has had a chance to propagate.
+    if (isSubmittingRef.current) return;
     if (!sessionId || loading || streaming) return;
     if (!isInitial && !text.trim()) return;
+
+    // WS0A: Set the lock synchronously — no await, no state update delay.
+    isSubmittingRef.current = true;
 
     const userMessage = isInitial ? '' : text.trim();
 
@@ -160,6 +169,9 @@ export default function ChatInterface({
         setMessages(prev => prev.slice(0, -1));
       }
     } finally {
+      // WS0A: Release the lock only after stream is fully complete and state is updated.
+      // This is the correct moment — both streaming and loading cleared together.
+      isSubmittingRef.current = false;
       setStreaming(false);
       setLoading(false);
     }
@@ -351,12 +363,14 @@ export default function ChatInterface({
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={initialising ? 'Starting session…' : 'Reply to Aoife…'}
+                  // WS0A: disabled covers the visual state; isSubmittingRef covers the race condition
                   disabled={loading || streaming || initialising || ended}
                   rows={1}
                   style={{ flex: 1, resize: 'none', background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 12, padding: '12px 16px', fontSize: 15, color: 'var(--chat-text)', fontFamily: 'var(--font-body)', outline: 'none', lineHeight: 1.5, minHeight: 48, maxHeight: 160, overflowY: 'auto' }}
                 />
                 <button
                   onClick={() => sendMessage(input)}
+                  // WS0A: button disabled during loading OR streaming — no gap
                   disabled={loading || streaming || !input.trim() || initialising}
                   style={{ width: 48, height: 48, borderRadius: 12, border: 'none', background: streaming ? 'var(--chat-border)' : 'var(--accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s ease' }}
                 >

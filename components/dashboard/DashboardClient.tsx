@@ -96,8 +96,12 @@ function last7Days(sessions: RecentSession[]): { label: string; had: boolean }[]
   });
 }
 
-type Pace = 'on-track' | 'behind' | 'ahead' | 'no-data';
+// WS6: Late-starter threshold — suppress sessions/week number above this
+const LATE_STARTER_THRESHOLD = 15;
+
+type Pace = 'on-track' | 'behind' | 'ahead' | 'no-data' | 'late-starter';
 function calcPace(avg: number, needed: number): Pace {
+  if (needed > LATE_STARTER_THRESHOLD) return 'late-starter';
   if (avg === 0) return 'no-data';
   const r = avg / needed;
   if (r >= 1.1) return 'ahead';
@@ -105,10 +109,11 @@ function calcPace(avg: number, needed: number): Pace {
   return 'behind';
 }
 const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border: string }> = {
-  'ahead':    { label: 'Ahead of pace',  color: '#1e7e44', bg: '#f0faf4', border: '#b7e4c7' },
-  'on-track': { label: 'On track',       color: '#1a4a7a', bg: '#f0f7ff', border: '#c3daf5' },
-  'behind':   { label: 'Falling behind', color: '#7a5c00', bg: '#fffbf0', border: '#e8d89a' },
-  'no-data':  { label: 'No data yet',    color: 'var(--text-muted)', bg: 'var(--surface-2)', border: 'var(--border)' },
+  'ahead':        { label: 'Ahead of pace',  color: '#1e7e44', bg: '#f0faf4', border: '#b7e4c7' },
+  'on-track':     { label: 'On track',       color: '#1a4a7a', bg: '#f0f7ff', border: '#c3daf5' },
+  'behind':       { label: 'Falling behind', color: '#7a5c00', bg: '#fffbf0', border: '#e8d89a' },
+  'no-data':      { label: 'No data yet',    color: 'var(--text-muted)', bg: 'var(--surface-2)', border: 'var(--border)' },
+  'late-starter': { label: 'Exam focus mode', color: '#1a4a7a', bg: '#f0f7ff', border: '#c3daf5' },
 };
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -288,11 +293,27 @@ function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
 
 function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: number; needed: number; studentName: string }) {
   const conf = PACE_CONF[pace];
+
+  // WS6: Late-starter gets a focused exam guidance message instead of an alarming pace calculation
+  if (pace === 'late-starter') {
+    return (
+      <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 'var(--radius-sm)', padding: '14px 18px', marginBottom: 20 }}>
+        <p style={{ fontSize: 14, color: '#1a4a7a', fontWeight: 600, marginBottom: 4 }}>
+          📚 Exam focus mode
+        </p>
+        <p style={{ fontSize: 14, color: '#1a4a7a', fontWeight: 400, lineHeight: 1.5 }}>
+          With limited time before the exam, focus on Units 1–3 first — these carry the highest question weight. Aoife will prioritise the most-tested topics.
+        </p>
+      </div>
+    );
+  }
+
   let msg = '';
   if (pace === 'no-data') msg = `${studentName} hasn't completed enough sessions to assess pace yet. Target is ${needed} sessions per week.`;
   else if (pace === 'ahead') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is ahead of pace — exam preparation is on track.`;
   else if (pace === 'on-track') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is on track to complete the curriculum before the exam.`;
   else msg = `Averaging ${avg}/week but need ${needed} to stay on track. ${studentName} needs to pick up the pace — ${needed - avg} more session${(needed - avg) !== 1 ? 's' : ''}/week required.`;
+
   return (
     <div style={{ background: conf.bg, border: `1px solid ${conf.border}`, borderRadius: 'var(--radius-sm)', padding: '12px 18px', marginBottom: 20, fontSize: 14, color: conf.color, fontWeight: 500 }}>
       {msg}
@@ -309,11 +330,21 @@ function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessio
 }) {
   const timeHrs = Math.round((totalSessions * 45) / 60 * 10) / 10;
   const paceConf = PACE_CONF[pace];
+
+  // WS6: Suppress sessions/week number when it exceeds the late-starter threshold.
+  // Show a dash and a unit-focus hint instead of an alarming number.
+  const isLateStarter = neededPerWeek > LATE_STARTER_THRESHOLD;
+
   const stats = [
     { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
     { label: 'Sessions completed', value: totalSessions, sub: `≈ ${timeHrs} hrs invested` },
-    { label: 'This week', value: thisWeek, sub: `target: ${neededPerWeek}/wk` },
-    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam())} weeks to exam`, warn: neededPerWeek > 10 },
+    { label: 'This week', value: thisWeek, sub: isLateStarter ? 'keep going' : `target: ${neededPerWeek}/wk` },
+    {
+      label: 'Sessions/wk needed',
+      value: isLateStarter ? '—' : neededPerWeek,
+      sub: isLateStarter ? 'focus on Units 1–3' : `${Math.round(weeksToExam())} weeks to exam`,
+      warn: !isLateStarter && neededPerWeek > 10,
+    },
     { label: '4-wk avg / week', value: avgPerWeek, sub: paceConf.label.toLowerCase(), accent: pace === 'ahead' || pace === 'on-track', warn: pace === 'behind' },
     { label: 'Days to exam', value: examDays, sub: 'LC Business · 08/06/2026' },
     { label: 'Study streak', value: `${streak}d`, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
@@ -420,7 +451,7 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardClient(props: Props) {
-const [mode, setMode] = useState<ViewMode>('parent');
+  const [mode, setMode] = useState<ViewMode>('parent');
 
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);

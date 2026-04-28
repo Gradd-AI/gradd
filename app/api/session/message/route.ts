@@ -12,6 +12,10 @@ import { NextResponse } from 'next/server';
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5';
 const MAX_TOKENS = 4096;
 
+// WS2: Cap the history sent to Anthropic at the last 20 exchanges (40 messages).
+// Full history is always persisted to DB — trimming is Anthropic-call-only.
+const MAX_HISTORY_MESSAGES = 40;
+
 const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
   UNIT_1: { code: 'UNIT_2', name: 'Business Management' },
   UNIT_2: { code: 'UNIT_3', name: 'Business Management (cont.)' },
@@ -95,7 +99,7 @@ export async function POST(request: Request) {
     });
   }
 
-  // Build message history
+  // Build full message history (always persisted to DB in full)
   const currentHistory = (session.message_history as Array<{ role: string; content: string }>) ?? [];
 
   const updatedHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
@@ -106,9 +110,18 @@ export async function POST(request: Request) {
     { role: 'user' as const, content: studentMessage },
   ];
 
-  // Append a live context anchor to the system prompt on every message.
-  // This prevents Aoife from losing her place in long sessions — she always
-  // knows exactly how many exchanges have happened and must not restart.
+  // WS2: Trim history sent to Anthropic — cap at last 20 exchanges (40 messages).
+  // Always keep the first message (session opener from Aoife) as context anchor.
+  // The full updatedHistory is preserved and written back to DB below.
+  let trimmedHistory = updatedHistory;
+  if (updatedHistory.length > MAX_HISTORY_MESSAGES + 1) {
+    const opener = updatedHistory[0]; // first Aoife session-open message
+    const recent = updatedHistory.slice(-MAX_HISTORY_MESSAGES);
+    trimmedHistory = [opener, ...recent];
+  }
+
+  // Live context anchor — uses real exchange count from full history so Aoife
+  // knows the true session depth regardless of trimming.
   const exchangeCount = Math.floor(updatedHistory.length / 2);
   const liveContextAnchor = `
 
@@ -129,9 +142,8 @@ ABSOLUTE RULES FOR THIS RESPONSE:
 - DO continue teaching from exactly where the conversation left off.
 - If the student's message is short or ambiguous, treat it as their answer to your last question and respond accordingly.
 - The full conversation history is in the messages array. Every message the student has sent is visible to you. Never claim you cannot see a previous message. Never ask the student to repeat or paste something they already sent. If you can see your own previous response referencing their answer, you have already seen their answer.
+- If the message history contains two consecutive identical user messages, treat it as a single message — a UI glitch caused a duplicate submission. Acknowledge it naturally ("looks like that came through twice") and continue teaching from the last question. Never break session flow due to duplicate messages.
 `;
-
-
 
   // Two system blocks for prompt caching:
   // Block 1 — static injected prompt marked ephemeral. Anthropic caches this
@@ -150,12 +162,12 @@ ABSOLUTE RULES FOR THIS RESPONSE:
     },
   ];
 
-  // Fire Anthropic streaming
+  // Fire Anthropic streaming — use trimmedHistory, not updatedHistory
   const stream = anthropic.messages.stream({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     system: systemBlocks,
-    messages: updatedHistory,
+    messages: trimmedHistory, // WS2: trimmed for cost/reliability
   });
 
   let fullResponseText = '';
@@ -175,9 +187,9 @@ ABSOLUTE RULES FOR THIS RESPONSE:
           }
         }
 
-        // Persist updated message history and token counts
+        // Persist FULL history to DB (not trimmed) + token counts
         const finalHistory = [
-          ...updatedHistory,
+          ...updatedHistory, // WS2: full history, not trimmedHistory
           { role: 'assistant', content: fullResponseText },
         ];
 

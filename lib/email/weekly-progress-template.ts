@@ -55,13 +55,9 @@ export function buildWeeklyProgressEmail(data: WeeklyProgressData): {
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#1B3D2F;padding:32px 40px 28px;">
-              <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">
-                Gradd.
-              </p>
-              <p style="margin:8px 0 0;font-size:14px;color:#A8C5B5;letter-spacing:0.3px;">
-                Weekly progress update
-              </p>
+            <td style="padding:0;line-height:0;font-size:0;">
+              <img src="https://gradd.ie/gradd-email-header.svg" alt="Gradd" width="600" height="72"
+                style="display:block;border:0;width:100%;max-width:600px;" />
             </td>
           </tr>
 
