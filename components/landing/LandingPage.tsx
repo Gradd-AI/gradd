@@ -875,7 +875,7 @@ export default function LandingPage() {
               <li><Link href="/cookies">Cookies</Link></li>
               <li><a href="mailto:hello@gradd.ie">hello@gradd.ie</a></li>
             </ul>
-            <p>© 2025 Gradd. Irish-built, Irish-focused.</p>
+            <p>© 2026 Gradd.AI Irish-built, Irish-focused.</p>
           </div>
         </footer>
 

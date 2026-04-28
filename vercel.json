@@ -4,5 +4,18 @@
       "path": "/api/cron/weekly-email",
       "schedule": "0 7 * * 1"
     }
+  ],
+  "functions": {
+    "app/api/session/message/route.ts": {
+      "maxDuration": 60
+    }
+  },
+  "ratelimit": [
+    {
+      "matcher": "/api/session/message",
+      "limit": 200,
+      "window": "3600s",
+      "scope": "ip"
+    }
   ]
 }
