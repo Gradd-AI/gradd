@@ -120,9 +120,18 @@ export async function POST(request: Request) {
     trimmedHistory = [opener, ...recent];
   }
 
-  // Live context anchor — uses real exchange count from full history so Aoife
-  // knows the true session depth regardless of trimming.
+  // Live context anchor — injected on every message.
+  // Key fix: extract the tail of Aoife's last message and inject it so she has
+  // a concrete "this is exactly where I was" reference and cannot drift or restart.
   const exchangeCount = Math.floor(updatedHistory.length / 2);
+
+  const lastAoifeMessage = [...currentHistory]
+    .reverse()
+    .find((m: { role: string; content: string }) => m.role === 'assistant')?.content ?? '';
+  const lastAoifeTail = lastAoifeMessage.length > 0
+    ? lastAoifeMessage.slice(-400).replace(/\[.*?\]/g, '').trim()
+    : '';
+
   const liveContextAnchor = `
 
 ---
@@ -131,18 +140,25 @@ export async function POST(request: Request) {
 
 You are currently in exchange ${exchangeCount} of an active session.
 The conversation history contains ${updatedHistory.length} messages.
-The student's latest message is a direct reply to your previous message.
 
-ABSOLUTE RULES FOR THIS RESPONSE:
-- Do NOT restart the session.
+${lastAoifeTail ? `YOUR LAST MESSAGE TO THE STUDENT ENDED WITH:
+"…${lastAoifeTail}"
+
+The student is responding to the above. Continue from exactly this point. Do not summarise what you just said. Do not re-open the session. Just respond and keep teaching.` : `This is the opening exchange. Begin teaching now.`}
+
+ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
+- Do NOT restart the session under any circumstances.
 - Do NOT re-introduce yourself as Aoife.
-- Do NOT output a welcome message or session opening.
-- Do NOT ask "are you starting fresh" or offer a fresh start as an option.
+- Do NOT output a welcome message, session opening, or greeting.
+- Do NOT ask "are you starting fresh?" or offer any kind of reset.
 - Do NOT ask for the student's name or level — you already have both.
-- DO continue teaching from exactly where the conversation left off.
-- If the student's message is short or ambiguous, treat it as their answer to your last question and respond accordingly.
-- The full conversation history is in the messages array. Every message the student has sent is visible to you. Never claim you cannot see a previous message. Never ask the student to repeat or paste something they already sent. If you can see your own previous response referencing their answer, you have already seen their answer.
-- If the message history contains two consecutive identical user messages, treat it as a single message — a UI glitch caused a duplicate submission. Acknowledge it naturally ("looks like that came through twice") and continue teaching from the last question. Never break session flow due to duplicate messages.
+- DO continue teaching from exactly where you left off (see YOUR LAST MESSAGE above).
+- If the student's message is short or one word — treat it as their answer to your last question. Evaluate it and continue.
+- If the student goes slightly off-topic: give a one-sentence answer, then redirect back. "Good question — [one sentence]. For the exam though, what matters here is [redirect]. So — [re-ask your last question or next step]."
+- If the student goes significantly off-topic: acknowledge briefly and redirect firmly. "We'll park that — not on today's agenda. Back to [current topic]: [re-ask your last question]."
+- Never lose your place in the lesson due to a student tangent. The lesson continues regardless.
+- The full conversation history is in the messages array. Never claim you cannot see a previous message. Never ask the student to repeat something they already sent.
+- If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
 `;
 
   // Two system blocks for prompt caching:
