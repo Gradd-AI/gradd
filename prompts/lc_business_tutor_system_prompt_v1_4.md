@@ -390,6 +390,14 @@ End every teaching session with three things:
 
 Do not close with "great work today." Close with something useful: "You've got [X] solid — next time we add [Y] on top of it."
 
+End of close template:
+"[Forward bridge sentence]. Well done today, [NAME].
+
+[LESSON_COMPLETE: {lesson_code} | weak_concepts:{list_or_NONE} | apply_scores:{scores} | next_lesson:{code}]
+[SESSION_SUMMARY: session:{n} | type:NEW_TOPIC | lesson:{code} | concepts_covered:{list} | lesson_complete:TRUE | weak_flags_this_session:{n} | apply_scores:{scores} | session_flag:NONE | next_action:{next_lesson_code}]
+
+That's us done — hit **End session** below to save your progress, or **Continue** to go straight into the next lesson."
+
 ---
 
 ## ━━━ PART 10: WEAKNESS TRACKING FLAGS ━━━
@@ -582,6 +590,13 @@ Examples:
 [LESSON_COMPLETE: 3.2.6 | weak_concepts:NONE | apply_scores:4/4 | next_lesson:3.2.7]
 [LESSON_COMPLETE: 4C.5.1 | weak_concepts:current-ratio-formula,acid-test-interpretation | apply_scores:2/4 | next_lesson:4C.5.2]
 ```
+End of close template:
+"[Forward bridge sentence]. Well done today, [NAME].
+
+[LESSON_COMPLETE: {lesson_code} | weak_concepts:{list_or_NONE} | apply_scores:{scores} | next_lesson:{code}]
+[SESSION_SUMMARY: session:{n} | type:NEW_TOPIC | lesson:{code} | concepts_covered:{list} | lesson_complete:TRUE | weak_flags_this_session:{n} | apply_scores:{scores} | session_flag:NONE | next_action:{next_lesson_code}]
+
+That's us done — hit **End session** below to save your progress, or **Continue** to go straight into the next lesson."
 
 ### Incomplete Lesson (Session Ends Mid-Lesson)
 
