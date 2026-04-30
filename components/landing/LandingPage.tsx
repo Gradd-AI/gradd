@@ -10,7 +10,8 @@ const UNITS = [
   { code: 'Unit 2', title: 'Enterprise', desc: 'Business planning, forms of business ownership, expansion, and government enterprise agencies. ABQ-heavy unit.', sessions: '20–24 sessions' },
   { code: 'Unit 3', title: 'Managing 1 — People & Leadership', desc: 'HRM, motivation theories, leadership styles, management functions, and organisational structure.', sessions: '22–26 sessions' },
   { code: 'Unit 4A', title: 'Managing 2 — Marketing', desc: 'The full marketing mix, market research, branding, pricing strategies, and consumer behaviour.', sessions: '18–22 sessions' },
-  { code: 'Unit 4C', title: 'Managing 2 — Finance', desc: 'Accounts, ratio analysis, cash flow, sources of finance, and financial planning. The highest-weight unit in the paper.', sessions: '35–40 sessions' },
+  { code: 'Unit 4B', title: 'Managing 2 — Finance', desc: 'Accounts, ratio analysis, cash flow, sources of finance, and financial planning. The highest-weight unit in the paper.', sessions: '35–40 sessions' },
+  { code: 'Unit 5', title: 'Domestic Environment', desc: 'Business and the economy, government policy, taxation, inflation, employment trends, and the role of state agencies in Ireland.', sessions: '14–18 sessions' },
   { code: 'Unit 6', title: 'International Business', desc: 'Globalisation, FDI, EU, IDA, Enterprise Ireland, international marketing, and economic integration.', sessions: '18–22 sessions' },
 ];
 
@@ -45,7 +46,7 @@ const COMPARISON_ROWS: [string, string, string, string, string][] = [
 ];
 
 const PRICING_FEATURES = [
-  'Full LC Business curriculum — all 6 units, Higher and Ordinary Level',
+  'Full LC Business curriculum — all 7 units, Higher and Ordinary Level',
   '155+ structured AI tutor sessions with Aoife',
   'SRP exam technique and past-paper answer marking',
   'ABQ preparation woven in from Unit 3 onwards',
@@ -448,10 +449,9 @@ export default function LandingPage() {
         .lp-price-sec .lp-tag  { color: var(--g200); }
         .lp-price-sec .lp-h2   { color: var(--white); }
         .lp-price-sec .lp-sub  { color: rgba(255,255,255,.58); }
-        .lp-price-wrap { display: flex; justify-content: center; margin-top: 3.5rem; }
         .lp-pcard {
           background: var(--white); border-radius: 20px;
-          padding: 2.5rem 3rem; max-width: 520px; width: 100%; position: relative;
+          padding: 2.5rem 2.5rem; position: relative;
         }
         .lp-pbadge {
           position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
@@ -578,7 +578,7 @@ export default function LandingPage() {
             <p className="lp-hero-note">7-day money-back guarantee. Cancel any time.</p>
             <div className="lp-stats">
               <div className="lp-stat"><span className="lp-stat-n">155+</span><span className="lp-stat-l">structured AI sessions</span></div>
-              <div className="lp-stat"><span className="lp-stat-n">6</span><span className="lp-stat-l">full syllabus units</span></div>
+              <div className="lp-stat"><span className="lp-stat-n">7</span><span className="lp-stat-l">full syllabus units</span></div>
               <div className="lp-stat"><span className="lp-stat-n">€24.99</span><span className="lp-stat-l">per month, all in</span></div>
               <div className="lp-stat"><span className="lp-stat-n">€0</span><span className="lp-stat-l">textbooks needed</span></div>
             </div>
@@ -667,7 +667,7 @@ export default function LandingPage() {
         <section className="lp-sec lp-curr" id="curriculum">
           <div className="lp-inn">
             <span className="lp-tag">Full syllabus coverage</span>
-            <h2 className="lp-h2">All six units. Nothing left out.</h2>
+            <h2 className="lp-h2">All seven units. Nothing left out.</h2>
             <p className="lp-sub">The complete SEC Leaving Certificate Business syllabus — Higher and Ordinary Level. 155+ structured AI sessions across 10–12 months at 4 sessions per week.</p>
             <div className="lp-units">
               {UNITS.map(u => (
@@ -804,20 +804,21 @@ export default function LandingPage() {
           <div className="lp-inn" style={{ textAlign: 'center' }}>
             <span className="lp-tag">Pricing</span>
             <h2 className="lp-h2">One plan. Everything included.</h2>
-            <p className="lp-sub" style={{ margin: '0 auto' }}>No tiers, no add-ons. One flat subscription covers the complete LC Business curriculum.</p>
-            <div className="lp-price-wrap">
-              <div className="lp-pcard">
+            <p className="lp-sub" style={{ margin: '0 auto' }}>No tiers, no add-ons. Choose monthly or save two months with an annual subscription.</p>
+
+            {/* Two-card pricing layout */}
+            <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center', flexWrap: 'wrap', marginTop: '3.5rem' }}>
+
+              {/* Monthly card */}
+              <div className="lp-pcard" style={{ flex: '1 1 340px', maxWidth: 420 }}>
                 <div className="lp-pbadge">7-day money-back guarantee</div>
                 <div className="lp-prdisp">
                   <span className="lp-pr-curr">€</span>
                   <span className="lp-pr-amt">24.99</span>
                   <span className="lp-pr-per">/ month</span>
                 </div>
-                <p style={{ fontSize: '.88rem', color: 'var(--g600)', fontWeight: 500, marginBottom: '.75rem' }}>
-                  Or €199/year — save two months
-                </p>
                 <p style={{ fontSize: '.95rem', color: 'var(--ink500)', marginBottom: '2rem', textAlign: 'left' }}>
-                  Less than one grind session. Covers the full SEC Business syllabus. Cancel any time — no questions, no penalties.
+                  Less than one grind session. Full SEC Business syllabus. Cancel any time — no questions, no penalties.
                 </p>
                 <ul className="lp-pfeats">
                   {PRICING_FEATURES.map(f => (
@@ -831,7 +832,7 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/subscribe" className="lp-btn-sub">Subscribe now — €24.99/month</Link>
+                <Link href="/subscribe" className="lp-btn-sub">Subscribe monthly — €24.99/month</Link>
                 <p className="lp-pguarantee">
                   7-day money-back guarantee. Cancel any time.{' '}
                   <Link href="/terms" style={{ color: 'var(--ink300)', textDecoration: 'underline' }}>Terms</Link>
@@ -839,7 +840,44 @@ export default function LandingPage() {
                   <Link href="/privacy" style={{ color: 'var(--ink300)', textDecoration: 'underline' }}>Privacy</Link>
                 </p>
               </div>
+
+              {/* Annual card */}
+              <div className="lp-pcard" style={{ flex: '1 1 340px', maxWidth: 420, border: '2px solid var(--amber)' }}>
+                <div className="lp-pbadge" style={{ background: 'var(--g700)', color: 'var(--white)' }}>Best value — save 2 months</div>
+                <div className="lp-prdisp">
+                  <span className="lp-pr-curr">€</span>
+                  <span className="lp-pr-amt">199</span>
+                  <span className="lp-pr-per">/ year</span>
+                </div>
+                <p style={{ fontSize: '.88rem', color: 'var(--g600)', fontWeight: 600, marginBottom: '.4rem' }}>
+                  Equivalent to €16.58/month
+                </p>
+                <p style={{ fontSize: '.95rem', color: 'var(--ink500)', marginBottom: '2rem', textAlign: 'left' }}>
+                  Pay once for the full academic year. Two months free versus monthly billing. Ideal for students starting in September.
+                </p>
+                <ul className="lp-pfeats">
+                  {PRICING_FEATURES.map(f => (
+                    <li key={f}>
+                      <div className="lp-pcheck">
+                        <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+                          <path d="M1 4L4 7L10 1" stroke="#2e6e39" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </div>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link href="/subscribe" className="lp-btn-sub" style={{ background: 'var(--g700)' }}>Subscribe annually — €199/year</Link>
+                <p className="lp-pguarantee">
+                  7-day money-back guarantee. Cancel any time.{' '}
+                  <Link href="/terms" style={{ color: 'var(--ink300)', textDecoration: 'underline' }}>Terms</Link>
+                  {' '}·{' '}
+                  <Link href="/privacy" style={{ color: 'var(--ink300)', textDecoration: 'underline' }}>Privacy</Link>
+                </p>
+              </div>
+
             </div>
+
             <p className="lp-pcmp">
               Compare: one weekly grind session = <span>€200+/month</span>.
               Gradd = <span>€24.99/month</span> — or <span>€199/year</span>. Full curriculum. Any time. Any pace.
@@ -875,7 +913,7 @@ export default function LandingPage() {
               <li><Link href="/cookies">Cookies</Link></li>
               <li><a href="mailto:hello@gradd.ie">hello@gradd.ie</a></li>
             </ul>
-            <p>© 2026 Gradd.AI Irish-built, Irish-focused.</p>
+            <p>© 2026 Gradd. Irish-built, Irish-focused.</p>
           </div>
         </footer>
 
