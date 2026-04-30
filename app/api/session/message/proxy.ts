@@ -1,4 +1,5 @@
 import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 import {
   buildInjectedSystemPrompt,
   formatWeakAreasList,
@@ -12,15 +13,29 @@ import { NextResponse } from 'next/server';
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5';
 const MAX_TOKENS = 4096;
 
+// Cap history sent to Anthropic at last 20 exchanges (40 messages).
+// Full history is always persisted to DB — trimming is Anthropic-call-only.
+const MAX_HISTORY_MESSAGES = 40;
+
+// Service role client — bypasses RLS for all server-side writes.
+// Auth reads still use the SSR client (cookie-based) for security.
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
+
 const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
-  UNIT_1: { code: 'UNIT_2', name: 'Business Management' },
-  UNIT_2: { code: 'UNIT_3', name: 'Business Management (cont.)' },
-  UNIT_3: { code: 'UNIT_4A', name: 'Finance — Accounts' },
-  UNIT_4A: { code: 'UNIT_4B', name: 'Finance — Ratios' },
-  UNIT_4B: { code: 'UNIT_4C', name: 'Finance — Cash Flow' },
-  UNIT_4C: { code: 'UNIT_5', name: 'Domestic Environment' },
-  UNIT_5: { code: 'UNIT_6', name: 'International Environment' },
-  UNIT_6: { code: 'EXAM_PREP', name: 'Exam Preparation' },
+  UNIT_1:  { code: 'UNIT_2',    name: 'Business Management' },
+  UNIT_2:  { code: 'UNIT_3',    name: 'Business Management (cont.)' },
+  UNIT_3:  { code: 'UNIT_4A',   name: 'Finance — Accounts' },
+  UNIT_4A: { code: 'UNIT_4B',   name: 'Finance — Ratios' },
+  UNIT_4B: { code: 'UNIT_4C',   name: 'Finance — Cash Flow' },
+  UNIT_4C: { code: 'UNIT_5',    name: 'Domestic Environment' },
+  UNIT_5:  { code: 'UNIT_6',    name: 'International Environment' },
+  UNIT_6:  { code: 'EXAM_PREP', name: 'Exam Preparation' },
 };
 
 export async function POST(request: Request) {
@@ -31,14 +46,13 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createServerClient();
+  const serviceSupabase = getServiceClient();
 
-  // Auth check
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // ── Auth check ────────────────────────────────────────────────────────────
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
-  // Subscription check
+  // ── Subscription check ────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_status, student_name, exam_level')
@@ -49,7 +63,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
   }
 
-  // Load session
+  // ── Load session ──────────────────────────────────────────────────────────
   const { data: session } = await supabase
     .from('sessions')
     .select('*')
@@ -59,28 +73,57 @@ export async function POST(request: Request) {
 
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
-  // Retrieve or rebuild the injected system prompt
+  // ── Build injected system prompt ──────────────────────────────────────────
   let injectedSystemPrompt: string;
 
   const storedPrompt = session.raw_final_response as string | null;
   if (storedPrompt?.startsWith('__SYSTEM_PROMPT__')) {
     injectedSystemPrompt = storedPrompt.replace('__SYSTEM_PROMPT__', '');
   } else {
-    const [{ data: progress }, { data: weakAreas }, { data: lessonCompletions }, { data: unitCompletions }] =
-      await Promise.all([
-        supabase.from('student_progress').select('*').eq('student_id', user.id).single(),
-        supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
-        supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
-        supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
-      ]);
+    const [
+      { data: progress },
+      { data: weakAreas },
+      { data: lessonCompletions },
+      { data: unitCompletions },
+    ] = await Promise.all([
+      supabase.from('student_progress').select('*').eq('student_id', user.id).single(),
+      supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
+      supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
+      supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
+    ]);
+
+    const currentLessonCode = progress?.current_lesson_code ?? '1.1.1';
+
+    // Fetch next lesson from the lessons table using next_lesson_code.
+    // This gives Aoife the exact name and code to announce in her forward bridge.
+    // She is prohibited from improvising the curriculum sequence.
+    const { data: currentLessonRow } = await supabase
+      .from('lessons')
+      .select('next_lesson_code')
+      .eq('lesson_code', currentLessonCode)
+      .single();
+
+    const nextLessonCode = currentLessonRow?.next_lesson_code ?? '';
+
+    const { data: nextLessonRow } = nextLessonCode
+      ? await supabase
+          .from('lessons')
+          .select('lesson_name')
+          .eq('lesson_code', nextLessonCode)
+          .single()
+      : { data: null };
+
+    const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
     injectedSystemPrompt = await buildInjectedSystemPrompt({
       STUDENT_NAME: profile.student_name,
       EXAM_LEVEL: profile.exam_level,
       CURRENT_UNIT_CODE: progress?.current_unit_code ?? 'UNIT_1',
       CURRENT_UNIT_NAME: progress?.current_unit_name ?? 'People in Business',
-      CURRENT_LESSON_CODE: progress?.current_lesson_code ?? '1.1.1',
+      CURRENT_LESSON_CODE: currentLessonCode,
       CURRENT_LESSON_NAME: progress?.current_lesson_name ?? 'Introduction to People in Business',
+      NEXT_LESSON_CODE: nextLessonCode,
+      NEXT_LESSON_NAME: nextLessonName,
       LESSONS_COMPLETED_THIS_UNIT: formatLessonsCompletedThisUnit(
         lessonCompletions ?? [],
         progress?.current_unit_code ?? 'UNIT_1'
@@ -95,7 +138,7 @@ export async function POST(request: Request) {
     });
   }
 
-  // Build message history
+  // ── Build message history ─────────────────────────────────────────────────
   const currentHistory = (session.message_history as Array<{ role: string; content: string }>) ?? [];
 
   const updatedHistory: Array<{ role: 'user' | 'assistant'; content: string }> = [
@@ -106,10 +149,24 @@ export async function POST(request: Request) {
     { role: 'user' as const, content: studentMessage },
   ];
 
-  // Append a live context anchor to the system prompt on every message.
-  // This prevents Aoife from losing her place in long sessions — she always
-  // knows exactly how many exchanges have happened and must not restart.
+  // Trim to last 20 exchanges for Anthropic call. Always preserve opener (index 0).
+  let trimmedHistory = updatedHistory;
+  if (updatedHistory.length > MAX_HISTORY_MESSAGES + 1) {
+    const opener = updatedHistory[0];
+    const recent = updatedHistory.slice(-MAX_HISTORY_MESSAGES);
+    trimmedHistory = [opener, ...recent];
+  }
+
+  // ── Live context anchor ───────────────────────────────────────────────────
   const exchangeCount = Math.floor(updatedHistory.length / 2);
+
+  const lastAoifeMessage = [...currentHistory]
+    .reverse()
+    .find((m: { role: string; content: string }) => m.role === 'assistant')?.content ?? '';
+  const lastAoifeTail = lastAoifeMessage.length > 0
+    ? lastAoifeMessage.slice(-400).replace(/\[.*?\]/g, '').trim()
+    : '';
+
   const liveContextAnchor = `
 
 ---
@@ -118,34 +175,56 @@ export async function POST(request: Request) {
 
 You are currently in exchange ${exchangeCount} of an active session.
 The conversation history contains ${updatedHistory.length} messages.
-The student's latest message is a direct reply to your previous message.
 
-ABSOLUTE RULES FOR THIS RESPONSE:
-- Do NOT restart the session.
+${lastAoifeTail
+  ? `YOUR LAST MESSAGE TO THE STUDENT ENDED WITH:
+"…${lastAoifeTail}"
+
+The student is responding to the above. Continue from exactly this point. Do not summarise what you just said. Do not re-open the session. Just respond and keep teaching.`
+  : `This is the opening exchange. Begin teaching now.`}
+
+ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
+- Do NOT restart the session under any circumstances.
 - Do NOT re-introduce yourself as Aoife.
-- Do NOT output a welcome message or session opening.
-- Do NOT ask "are you starting fresh" or offer a fresh start as an option.
+- Do NOT output a welcome message, session opening, or greeting.
+- Do NOT ask "are you starting fresh?" or offer any kind of reset.
 - Do NOT ask for the student's name or level — you already have both.
-- DO continue teaching from exactly where the conversation left off.
-- If the student's message is short or ambiguous, treat it as their answer to your last question and respond accordingly.
+- DO continue teaching from exactly where you left off (see YOUR LAST MESSAGE above).
+- If the student's message is short or one word — treat it as their answer to your last question. Evaluate it and continue.
+- If the student goes slightly off-topic: give a one-sentence answer, then redirect back. "Good question — [one sentence]. For the exam though, what matters here is [redirect]. So — [re-ask your last question or next step]."
+- If the student goes significantly off-topic: acknowledge briefly and redirect firmly. "We'll park that — not on today's agenda. Back to [current topic]: [re-ask your last question]."
+- Never lose your place in the lesson due to a student tangent. The lesson continues regardless.
+- The full conversation history is in the messages array. Never claim you cannot see a previous message. Never ask the student to repeat something they already sent.
+- If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
 `;
 
-  const systemWithLiveContext = injectedSystemPrompt + liveContextAnchor;
+  // ── Anthropic streaming ───────────────────────────────────────────────────
+  const systemBlocks = [
+    {
+      type: 'text' as const,
+      text: injectedSystemPrompt,
+      cache_control: { type: 'ephemeral' as const },
+    },
+    {
+      type: 'text' as const,
+      text: liveContextAnchor,
+    },
+  ];
 
-  // Fire Anthropic streaming
   const stream = anthropic.messages.stream({
     model: MODEL,
     max_tokens: MAX_TOKENS,
-    system: systemWithLiveContext,
-    messages: updatedHistory,
+    system: systemBlocks,
+    messages: trimmedHistory,
   });
 
   let fullResponseText = '';
-
   const encoder = new TextEncoder();
+
   const readable = new ReadableStream({
     async start(controller) {
       try {
+        // ── Stream to client ──────────────────────────────────────────────
         for await (const chunk of stream) {
           if (
             chunk.type === 'content_block_delta' &&
@@ -157,7 +236,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
           }
         }
 
-        // Persist updated message history and token counts
+        // ── Persist full history + token counts ───────────────────────────
         const finalHistory = [
           ...updatedHistory,
           { role: 'assistant', content: fullResponseText },
@@ -166,19 +245,17 @@ ABSOLUTE RULES FOR THIS RESPONSE:
         const finalMessage = await stream.finalMessage();
         const usage = finalMessage.usage;
 
-        await supabase
+        await serviceSupabase
           .from('sessions')
           .update({
             message_history: finalHistory,
-            raw_final_response: session.raw_final_response, // preserve stored system prompt
+            raw_final_response: session.raw_final_response,
             input_tokens: (session.input_tokens ?? 0) + usage.input_tokens,
             output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
           })
           .eq('id', sessionId);
 
-        // --- SIGNAL PROCESSING ---
-        // Parse signals from the completed response and write to Supabase immediately.
-        // This ensures progress is saved even if the student closes the browser.
+        // ── Signal processing ─────────────────────────────────────────────
         const signals = parseSignals(fullResponseText);
 
         const hasSignals =
@@ -189,8 +266,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
           signals.lessonIncomplete;
 
         if (hasSignals) {
-          // Load current progress (needed for progression logic)
-          const { data: progress } = await supabase
+          const { data: progress } = await serviceSupabase
             .from('student_progress')
             .select('*')
             .eq('student_id', user.id)
@@ -201,9 +277,9 @@ ABSOLUTE RULES FOR THIS RESPONSE:
               updated_at: new Date().toISOString(),
             };
 
-            // --- WEAK_AREA_FLAGS ---
+            // ── WEAK_AREA_FLAGS ───────────────────────────────────────────
             for (const flag of signals.weakAreaFlags ?? []) {
-              const { data: existing } = await supabase
+              const { data: existing } = await serviceSupabase
                 .from('weak_areas')
                 .select('id, occurrence_count')
                 .eq('student_id', user.id)
@@ -213,7 +289,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
                 .single();
 
               if (existing) {
-                await supabase
+                await serviceSupabase
                   .from('weak_areas')
                   .update({
                     occurrence_count: (existing.occurrence_count ?? 1) + 1,
@@ -222,7 +298,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
                   })
                   .eq('id', existing.id);
               } else {
-                await supabase.from('weak_areas').insert({
+                await serviceSupabase.from('weak_areas').insert({
                   student_id: user.id,
                   lesson_code: flag.lessonCode,
                   concept_slug: flag.conceptSlug,
@@ -233,11 +309,11 @@ ABSOLUTE RULES FOR THIS RESPONSE:
               }
             }
 
-            // --- LESSON_COMPLETE ---
+            // ── LESSON_COMPLETE ───────────────────────────────────────────
             if (signals.lessonComplete) {
               const lc = signals.lessonComplete;
 
-              await supabase.from('lesson_completions').upsert({
+              await serviceSupabase.from('lesson_completions').upsert({
                 student_id: user.id,
                 lesson_code: lc.lessonCode,
                 completed_at: new Date().toISOString(),
@@ -247,16 +323,27 @@ ABSOLUTE RULES FOR THIS RESPONSE:
                 next_lesson_code: lc.nextLesson,
               });
 
-              if (lc.nextLesson && lc.nextLesson !== 'NONE') {
-                const { data: nextLesson } = await supabase
+              // Advance current_lesson_code using DB-authoritative next_lesson_code.
+              // We look up the next lesson from the lessons table using the completed
+              // lesson code — not Aoife's signal value — so she cannot jump the sequence.
+              const { data: completedLessonRow } = await serviceSupabase
+                .from('lessons')
+                .select('next_lesson_code')
+                .eq('lesson_code', lc.lessonCode)
+                .single();
+
+              const authoritativeNextCode = completedLessonRow?.next_lesson_code ?? lc.nextLesson;
+
+              if (authoritativeNextCode && authoritativeNextCode !== 'NONE') {
+                const { data: nextLessonData } = await serviceSupabase
                   .from('lessons')
                   .select('lesson_name, unit_code, unit_name')
-                  .eq('lesson_code', lc.nextLesson)
+                  .eq('lesson_code', authoritativeNextCode)
                   .single();
 
-                if (nextLesson) {
-                  progressUpdates.current_lesson_code = lc.nextLesson;
-                  progressUpdates.current_lesson_name = nextLesson.lesson_name;
+                if (nextLessonData) {
+                  progressUpdates.current_lesson_code = authoritativeNextCode;
+                  progressUpdates.current_lesson_name = nextLessonData.lesson_name;
                 }
               }
 
@@ -267,8 +354,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
 
               progressUpdates.resume_from_concept = null;
 
-              // Update session row with completion data
-              await supabase
+              await serviceSupabase
                 .from('sessions')
                 .update({
                   lesson_complete: true,
@@ -277,17 +363,17 @@ ABSOLUTE RULES FOR THIS RESPONSE:
                 .eq('id', sessionId);
             }
 
-            // --- LESSON_INCOMPLETE ---
+            // ── LESSON_INCOMPLETE ─────────────────────────────────────────
             if (signals.lessonIncomplete) {
               progressUpdates.resume_from_concept = signals.lessonIncomplete.resumeFrom;
             }
 
-            // --- UNIT_COMPLETE ---
+            // ── UNIT_COMPLETE ─────────────────────────────────────────────
             if (signals.unitComplete) {
               const uc = signals.unitComplete;
               const scoreNum = parseInt(uc.checkpointScore.split('/')[0]);
 
-              await supabase.from('unit_completions').upsert({
+              await serviceSupabase.from('unit_completions').upsert({
                 student_id: user.id,
                 unit_code: uc.unitCode,
                 completed_at: new Date().toISOString(),
@@ -312,7 +398,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
               }
             }
 
-            // --- SESSION_SUMMARY ---
+            // ── SESSION_SUMMARY ───────────────────────────────────────────
             if (signals.sessionSummary) {
               const s = signals.sessionSummary;
 
@@ -353,7 +439,7 @@ ABSOLUTE RULES FOR THIS RESPONSE:
                 progressUpdates.session_type = 'NEW_TOPIC';
               }
 
-              await supabase
+              await serviceSupabase
                 .from('sessions')
                 .update({
                   concepts_covered: s.conceptsCovered,
@@ -366,9 +452,9 @@ ABSOLUTE RULES FOR THIS RESPONSE:
                 .eq('id', sessionId);
             }
 
-            // Write all progress updates in one shot
+            // ── Write all progress updates in one shot ────────────────────
             if (Object.keys(progressUpdates).length > 1) {
-              await supabase
+              await serviceSupabase
                 .from('student_progress')
                 .update(progressUpdates)
                 .eq('student_id', user.id);
