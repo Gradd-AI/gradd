@@ -22,6 +22,8 @@ export interface ContextVariables {
   CURRENT_UNIT_NAME: string;
   CURRENT_LESSON_CODE: string;
   CURRENT_LESSON_NAME: string;
+  NEXT_LESSON_CODE: string;   // fetched from lessons.next_lesson_code
+  NEXT_LESSON_NAME: string;   // fetched from lessons.lesson_name for next lesson
   LESSONS_COMPLETED_THIS_UNIT: string;
   UNITS_COMPLETED_LIST: string;
   SESSION_NUMBER: number;
@@ -71,6 +73,8 @@ export async function buildInjectedSystemPrompt(vars: ContextVariables): Promise
     '{{CURRENT_UNIT_NAME}}': vars.CURRENT_UNIT_NAME,
     '{{CURRENT_LESSON_CODE}}': vars.CURRENT_LESSON_CODE,
     '{{CURRENT_LESSON_NAME}}': vars.CURRENT_LESSON_NAME,
+    '{{NEXT_LESSON_CODE}}': vars.NEXT_LESSON_CODE,
+    '{{NEXT_LESSON_NAME}}': vars.NEXT_LESSON_NAME,
     '{{LESSONS_COMPLETED_THIS_UNIT}}': vars.LESSONS_COMPLETED_THIS_UNIT,
     '{{UNITS_COMPLETED_LIST}}': vars.UNITS_COMPLETED_LIST,
     '{{SESSION_NUMBER}}': String(vars.SESSION_NUMBER),
