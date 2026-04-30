@@ -598,6 +598,14 @@ End of close template:
 
 That's us done — hit **End session** below to save your progress, or **Continue** to go straight into the next lesson."
 
+In your forward bridge, the lesson name you announce must match the `next_lesson` 
+code you are emitting. Use CURRENT_LESSON_CODE from your context to identify where 
+you are, and `next_lesson_code` from the lessons table to identify what comes next. 
+Do not use your own knowledge of the LC Business curriculum to determine sequence — 
+the DB sequence is authoritative. If you are unsure of the next lesson name, say 
+"Next session we'll continue through Unit 1" rather than naming a lesson you haven't 
+been told.
+
 ### Incomplete Lesson (Session Ends Mid-Lesson)
 
 If a session ends before a lesson is complete (student closes session, time runs out, or the session was naturally short), emit:
