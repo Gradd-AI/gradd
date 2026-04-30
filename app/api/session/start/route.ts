@@ -56,13 +56,33 @@ export async function POST() {
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
     ]);
 
-  // 4. Determine session type
+  // 4. Fetch next lesson from DB — gives Aoife the exact name and code to announce.
+  //    She is prohibited from improvising the curriculum sequence.
+  const { data: currentLessonRow } = await supabase
+    .from('lessons')
+    .select('next_lesson_code')
+    .eq('lesson_code', progress.current_lesson_code)
+    .single();
+
+  const nextLessonCode = currentLessonRow?.next_lesson_code ?? '';
+
+  const { data: nextLessonRow } = nextLessonCode
+    ? await supabase
+        .from('lessons')
+        .select('lesson_name')
+        .eq('lesson_code', nextLessonCode)
+        .single()
+    : { data: null };
+
+  const nextLessonName = nextLessonRow?.lesson_name ?? '';
+
+  // 5. Determine session type
   const sessionType = determineSessionType(progress);
 
-  // 5. Increment session number
+  // 6. Increment session number
   const newSessionNumber = (progress.session_number ?? 0) + 1;
 
-  // 6. Assemble context variables
+  // 7. Assemble context variables
   const contextVars = {
     STUDENT_NAME: profile.student_name,
     EXAM_LEVEL: profile.exam_level,
@@ -70,6 +90,8 @@ export async function POST() {
     CURRENT_UNIT_NAME: progress.current_unit_name,
     CURRENT_LESSON_CODE: progress.current_lesson_code,
     CURRENT_LESSON_NAME: progress.current_lesson_name,
+    NEXT_LESSON_CODE: nextLessonCode,
+    NEXT_LESSON_NAME: nextLessonName,
     LESSONS_COMPLETED_THIS_UNIT: formatLessonsCompletedThisUnit(
       lessonCompletions ?? [],
       progress.current_unit_code
@@ -83,7 +105,7 @@ export async function POST() {
     ABQ_DRILL_DUE: progress.abq_drill_due ? 'TRUE' : 'FALSE',
   };
 
-  // 7. Build injected system prompt (server-side only — never sent to client)
+  // 8. Build injected system prompt (server-side only — never sent to client)
   let injectedSystemPrompt: string;
   try {
     injectedSystemPrompt = await buildInjectedSystemPrompt(contextVars);
@@ -92,7 +114,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Failed to build session' }, { status: 500 });
   }
 
-  // 8. Create session row
+  // 9. Create session row
   const { data: session, error: sessionError } = await supabase
     .from('sessions')
     .insert({
@@ -110,7 +132,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
 
-  // 9. Update progress counters
+  // 10. Update progress counters
   await supabase
     .from('student_progress')
     .update({
@@ -120,7 +142,7 @@ export async function POST() {
     })
     .eq('student_id', user.id);
 
-  // 10. Store injected system prompt server-side in session row for message route
+  // 11. Store injected system prompt server-side in session row for message route
   await supabase
     .from('sessions')
     .update({ raw_final_response: `__SYSTEM_PROMPT__${injectedSystemPrompt}` })
