@@ -1,4 +1,15 @@
 import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
+
+// Service role client — bypasses RLS for all server-side writes.
+// Auth reads still use the SSR client (cookie-based) for security.
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } }
+  );
+}
 import {
   buildInjectedSystemPrompt,
   formatWeakAreasList,
@@ -186,6 +197,10 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
     messages: trimmedHistory, // WS2: trimmed for cost/reliability
   });
 
+  // Service client for all writes — bypasses RLS which blocks UPDATE on sessions
+  // for the SSR client. Auth reads above still use the cookie-based client.
+  const serviceSupabase = getServiceClient();
+
   let fullResponseText = '';
 
   const encoder = new TextEncoder();
@@ -212,7 +227,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
         const finalMessage = await stream.finalMessage();
         const usage = finalMessage.usage;
 
-        await supabase
+        await serviceSupabase
           .from('sessions')
           .update({
             message_history: finalHistory,
@@ -236,7 +251,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 
         if (hasSignals) {
           // Load current progress (needed for progression logic)
-          const { data: progress } = await supabase
+          const { data: progress } = await serviceSupabase
             .from('student_progress')
             .select('*')
             .eq('student_id', user.id)
@@ -249,7 +264,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 
             // --- WEAK_AREA_FLAGS ---
             for (const flag of signals.weakAreaFlags ?? []) {
-              const { data: existing } = await supabase
+              const { data: existing } = await serviceSupabase
                 .from('weak_areas')
                 .select('id, occurrence_count')
                 .eq('student_id', user.id)
@@ -268,7 +283,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
                   })
                   .eq('id', existing.id);
               } else {
-                await supabase.from('weak_areas').insert({
+                await serviceSupabase.from('weak_areas').insert({
                   student_id: user.id,
                   lesson_code: flag.lessonCode,
                   concept_slug: flag.conceptSlug,
@@ -283,7 +298,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
             if (signals.lessonComplete) {
               const lc = signals.lessonComplete;
 
-              await supabase.from('lesson_completions').upsert({
+              await serviceSupabase.from('lesson_completions').upsert({
                 student_id: user.id,
                 lesson_code: lc.lessonCode,
                 completed_at: new Date().toISOString(),
@@ -294,7 +309,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
               });
 
               if (lc.nextLesson && lc.nextLesson !== 'NONE') {
-                const { data: nextLesson } = await supabase
+                const { data: nextLesson } = await serviceSupabase
                   .from('lessons')
                   .select('lesson_name, unit_code, unit_name')
                   .eq('lesson_code', lc.nextLesson)
@@ -333,7 +348,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
               const uc = signals.unitComplete;
               const scoreNum = parseInt(uc.checkpointScore.split('/')[0]);
 
-              await supabase.from('unit_completions').upsert({
+              await serviceSupabase.from('unit_completions').upsert({
                 student_id: user.id,
                 unit_code: uc.unitCode,
                 completed_at: new Date().toISOString(),
@@ -414,7 +429,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 
             // Write all progress updates in one shot
             if (Object.keys(progressUpdates).length > 1) {
-              await supabase
+              await serviceSupabase
                 .from('student_progress')
                 .update(progressUpdates)
                 .eq('student_id', user.id);
