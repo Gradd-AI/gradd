@@ -534,8 +534,25 @@ export default function LandingPage() {
         @media (max-width: 520px) {
           .lp-sol-grid, .lp-steps, .lp-units, .lp-tgrid { grid-template-columns: 1fr; }
           .lp-nav-links { display: none; }
+          .lp-mobile-nav { display: flex; }
           .lp-h1 { font-size: 2rem; }
           .lp-hero { padding: 4rem 1.5rem 4rem; }
+        }
+        @media (min-width: 521px) {
+          .lp-mobile-nav { display: none; }
+        }
+        .lp-mobile-nav {
+          align-items: center; gap: .6rem;
+        }
+        .lp-mobile-login {
+          font-size: .85rem; font-weight: 500; color: var(--ink500);
+          text-decoration: none; padding: .4rem .6rem;
+        }
+        .lp-mobile-cta {
+          background: var(--g700); color: var(--white);
+          font-size: .85rem; font-weight: 600;
+          padding: .45rem 1rem; border-radius: 6px; text-decoration: none;
+          white-space: nowrap;
         }
       `}</style>
 
@@ -554,6 +571,11 @@ export default function LandingPage() {
               <li><Link href="/auth/login" className="lp-nav-login">Log in</Link></li>
               <li><Link href="/subscribe" className="lp-nav-cta">Start learning</Link></li>
             </ul>
+            {/* Mobile-only nav: login + CTA */}
+            <div className="lp-mobile-nav">
+              <Link href="/auth/login" className="lp-mobile-login">Log in</Link>
+              <Link href="/subscribe" className="lp-mobile-cta">Start →</Link>
+            </div>
           </div>
         </nav>
 
@@ -867,7 +889,7 @@ export default function LandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/subscribe" className="lp-btn-sub" style={{ background: 'var(--g700)' }}>Subscribe annually — €199/year</Link>
+                <Link href="/subscribe" className="lp-btn-sub" style={{ background: 'var(--g700)', color: 'var(--white)' }}>Subscribe annually — €199/year</Link>
                 <p className="lp-pguarantee">
                   7-day money-back guarantee. Cancel any time.{' '}
                   <Link href="/terms" style={{ color: 'var(--ink300)', textDecoration: 'underline' }}>Terms</Link>
