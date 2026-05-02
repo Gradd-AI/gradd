@@ -24,6 +24,7 @@ const PAIN_CARDS = [
 
 const FEATURES = [
   { title: "Teaches, doesn't tell", body: 'Explanations, examples, check questions — every session uses the same four-stage loop that great teachers use.' },
+  { title: 'Built for marks, not just notes', body: 'Aoife teaches the SRP structure (State, Relevance, Point) that SEC examiners reward — and drills it from Session 1, not the week before the exam.' },
   { title: 'Real Irish examples', body: 'AIB, Ryanair, Penneys, the WRC — the same names your examiner expects to see on the day.' },
   { title: 'Marks your written answers', body: 'Submit your answer. Aoife marks it against the SRP framework, identifies exactly where marks were lost, and shows you how to fix it.' },
   { title: 'Progress tracked automatically', body: 'Every session is logged. Weak areas are flagged and revisited. You always know exactly where you stand.' },
@@ -632,7 +633,7 @@ export default function LandingPage() {
             </h1>
             <p className="lp-hero-sub">
               Full curriculum. From Unit 1 to exam day. No textbook, no teacher, no grinds required.
-              Gradd's AI tutor knows the SEC syllabus inside out — and works around your homeschool schedule.
+              Gradd's AI tutor knows the SEC syllabus inside out — teaches the course in order, checks understanding, and builds the exam answers that get the marks.
             </p>
             <div className="lp-ctas">
               <Link href="/subscribe" className="lp-btn-a">Start learning — €24.99/month</Link>
@@ -753,6 +754,7 @@ export default function LandingPage() {
                 <span className="lp-tag">Meet your tutor</span>
                 <h2 className="lp-h2">Aoife knows every line of the SEC syllabus.</h2>
                 <p className="lp-sub">She teaches in plain English, uses Irish companies as examples, and never lets you move on until a concept is properly understood. She marks your answers the way an SEC examiner would.</p>
+                <p style={{ fontSize: '.9rem', color: 'var(--ink500)', marginTop: '1rem', lineHeight: 1.65, maxWidth: 480 }}>Gradd isn't a chatbot you ask questions to. It follows the course in order — teaching each topic, checking understanding, correcting mistakes — until the student can answer exam questions properly.</p>
                 <ul className="lp-tfeats">
                   {FEATURES.map(f => (
                     <li key={f.title} className="lp-tfeat">
