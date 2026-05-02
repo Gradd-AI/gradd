@@ -35,13 +35,9 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
 
           <!-- Header -->
           <tr>
-            <td style="background-color:#1B3D2F;padding:32px 40px 28px;">
-              <p style="margin:0;font-family:Georgia,'Times New Roman',serif;font-size:28px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">
-                Gradd.
-              </p>
-              <p style="margin:8px 0 0;font-size:14px;color:#A8C5B5;letter-spacing:0.3px;">
-                LC Business · Powered by Aoife
-              </p>
+            <td style="padding:0;line-height:0;font-size:0;">
+              <img src="https://gradd.ie/gradd-email-header.svg" alt="Gradd" width="600" height="72"
+                style="display:block;border:0;width:100%;max-width:600px;" />
             </td>
           </tr>
 
@@ -74,7 +70,7 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
                 <tr><td style="padding-bottom:8px;"></td></tr>
               </table>
 
-              <!-- Aoife's voice — one warm sentence -->
+              <!-- Aoife quote -->
               <table width="100%" cellpadding="0" cellspacing="0" border="0"
                 style="margin:0 0 28px;background-color:#EBF4EF;border-radius:8px;border-left:3px solid #1B3D2F;">
                 <tr>
@@ -128,7 +124,7 @@ export function buildWelcomeEmail(data: WelcomeEmailData): {
                 <a href="https://gradd.ie" style="color:#2D6A4F;text-decoration:none;">gradd.ie</a>
               </p>
               <p style="margin:12px 0 0;font-size:12px;color:#CBCBCB;">
-                © 2025 Gradd. Irish-built, Irish-focused.
+                © 2026 Gradd. Irish-built, Irish-focused.
               </p>
             </td>
           </tr>

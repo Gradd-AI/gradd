@@ -1,7 +1,11 @@
 import { createServiceClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
+import { Resend } from 'resend';
+import { buildWelcomeEmail } from '@/lib/email/welcome-template';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
+
+const resend = new Resend(process.env.RESEND_API_KEY!);
 
 export async function POST(request: Request) {
   const body = await request.text();
@@ -86,6 +90,34 @@ async function handleCheckoutComplete(
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+
+  // ── Send welcome email via Resend ─────────────────────────────
+  // Fetch profile to get names for the email
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('email, full_name, student_name')
+    .eq('id', userId)
+    .single();
+
+  if (profile?.email) {
+    try {
+      const { subject, html } = buildWelcomeEmail({
+        studentName: profile.student_name || 'your student',
+        parentEmail: profile.email,
+        fullName: profile.full_name || 'there',
+      });
+
+      await resend.emails.send({
+        from: 'Gradd <hello@gradd.ie>',
+        to: profile.email,
+        subject,
+        html,
+      });
+    } catch (err) {
+      // Log but don't fail the webhook — subscription is already activated
+      console.error('[webhook] Failed to send welcome email:', err);
+    }
+  }
 }
 
 async function handleSubscriptionChange(
@@ -97,7 +129,7 @@ async function handleSubscriptionChange(
 
   const updatePayload = {
     subscription_status: status,
-    stripe_customer_id: customerId,   // write it even if missing
+    stripe_customer_id: customerId,
     stripe_subscription_id: subscription.id,
     trial_ends_at: subscription.trial_end
       ? new Date(subscription.trial_end * 1000).toISOString()
@@ -115,7 +147,6 @@ async function handleSubscriptionChange(
   if (byCustomer && byCustomer.length > 0) return;
 
   // ── Fallback: match by supabase_user_id in subscription metadata
-  // Fires on first subscription where stripe_customer_id not yet written
   const userId = subscription.metadata?.supabase_user_id;
   if (!userId) return;
 
