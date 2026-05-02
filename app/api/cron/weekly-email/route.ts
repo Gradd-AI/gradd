@@ -1,197 +1,218 @@
 // app/api/cron/weekly-email/route.ts
-// Gradd — Weekly Progress Email Cron Job
-// Schedule: Monday 07:00 UTC (= 08:00 IST summer / 07:00 GMT winter)
-// Auth: CRON_SECRET header (set in Vercel env vars)
-// Sends via Resend to all active subscribers
+// Runs every Monday at 07:00 UTC via Vercel cron.
+// Sends personalised weekly progress email to all active subscribers.
+// Early mode (<4 weeks): counts only.
+// Established mode (4+ weeks): named lessons, weak areas, trajectory coaching.
 
-import { NextRequest, NextResponse } from 'next/server';
-import { Resend } from 'resend';
-import { createClient } from '@supabase/supabase-js';
-import {
-  buildWeeklyProgressEmail,
-  buildCoachingLine,
-  type WeeklyProgressData,
-} from '@/lib/email/weekly-progress-template';
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { Resend } from 'resend'
+import { generateWeeklyProgressEmail, WeeklyEmailData } from '@/lib/email/weekly-progress-template'
 
-// ── LC exam date — update each academic year ──────────────────
-// LC Business written paper: typically first week of June.
-// 2025: Wednesday 04/06/2025
-const LC_EXAM_DATE = new Date('2025-06-04T09:00:00.000Z');
+const resend = new Resend(process.env.RESEND_API_KEY)
 
-// ── Total lessons in the curriculum ──────────────────────────
-const TOTAL_LESSONS = 279;
+const EXAM_DATE = new Date('2026-06-08')
+const WEEKS_FOR_DETAILED_EMAIL = 4
 
-// ── Clients ──────────────────────────────────────────────────
-const resend = new Resend(process.env.RESEND_API_KEY!);
+function daysToExam(): number {
+  const now = new Date()
+  const diff = EXAM_DATE.getTime() - now.getTime()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
+function weeksActive(createdAt: string): number {
+  const created = new Date(createdAt)
+  const now = new Date()
+  return Math.floor((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24 * 7))
+}
+
+function getWindowStart(daysAgo: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - daysAgo)
+  d.setHours(0, 0, 0, 0)
+  return d.toISOString()
+}
 
 function getServiceClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } }
-  );
+  )
 }
 
-// ── Handler ───────────────────────────────────────────────────
-export async function GET(request: NextRequest) {
-  // Verify cron secret — Vercel passes this automatically when configured
-  const secret = request.headers.get('authorization');
-  if (secret !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+export async function GET(request: Request) {
+  // Verify this is a legitimate Vercel cron call
+  const authHeader = request.headers.get('authorization')
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const supabase = getServiceClient();
-  const now = new Date();
+  const supabase = getServiceClient()
+  const thisWeekStart = getWindowStart(7)
+  const lastWeekStart = getWindowStart(14)
+  const examDays = daysToExam()
 
-  // Weeks to exam — floor to avoid fractional weeks
-  const msToExam = LC_EXAM_DATE.getTime() - now.getTime();
-  const weeksToExam = Math.max(Math.floor(msToExam / (1000 * 60 * 60 * 24 * 7)), 0);
-
-  // ── 1. Fetch all active subscribers ──────────────────────────
-  const { data: activeProfiles, error: profilesError } = await supabase
+  // ── Fetch all active subscribers with profile + progress ─────────────────
+  const { data: subscribers, error: subError } = await supabase
     .from('profiles')
-    .select('id, email, full_name, student_name')
-    .eq('subscription_status', 'active');
+    .select(`
+      id,
+      email,
+      full_name,
+      student_name,
+      created_at,
+      student_progress (
+        current_lesson_name,
+        current_unit_name,
+        total_session_count
+      )
+    `)
+    .eq('subscription_status', 'active')
 
-  if (profilesError) {
-    console.error('[weekly-email] Failed to fetch profiles:', profilesError);
-    return NextResponse.json(
-      { error: 'Failed to fetch profiles', detail: profilesError.message },
-      { status: 500 }
-    );
+  if (subError || !subscribers) {
+    console.error('[weekly-email] Failed to fetch subscribers:', subError?.message)
+    return NextResponse.json({ error: 'Failed to fetch subscribers' }, { status: 500 })
   }
 
-  if (!activeProfiles || activeProfiles.length === 0) {
-    return NextResponse.json({ sent: 0, message: 'No active subscribers' });
-  }
+  const results = { sent: 0, failed: 0, skipped: 0 }
 
-  const studentIds = activeProfiles.map((p) => p.id);
-
-  // ── 2. Batch fetch progress data ─────────────────────────────
-
-  // student_progress: current position
-  const { data: progressRows } = await supabase
-    .from('student_progress')
-    .select('student_id, current_lesson_name')
-    .in('student_id', studentIds);
-
-  // lesson_completions: count per student
-  const { data: completionCounts } = await supabase
-    .from('lesson_completions')
-    .select('student_id')
-    .in('student_id', studentIds);
-
-  // sessions this week: started_at >= 7 days ago
-  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
-  const { data: recentSessions } = await supabase
-    .from('sessions')
-    .select('student_id, started_at')
-    .in('student_id', studentIds)
-    .gte('started_at', sevenDaysAgo);
-
-  // weak areas: unresolved
-  const { data: weakAreaRows } = await supabase
-    .from('weak_areas')
-    .select('student_id')
-    .in('student_id', studentIds)
-    .is('resolved_at', null);
-
-  // ── 3. Build lookup maps ──────────────────────────────────────
-
-  const progressMap = new Map(
-    (progressRows ?? []).map((r) => [r.student_id, r.current_lesson_name])
-  );
-
-  // lesson completions per student
-  const completionsMap = new Map<string, number>();
-  for (const row of completionCounts ?? []) {
-    completionsMap.set(row.student_id, (completionsMap.get(row.student_id) ?? 0) + 1);
-  }
-
-  // sessions this week per student
-  const sessionsWeekMap = new Map<string, number>();
-  for (const row of recentSessions ?? []) {
-    sessionsWeekMap.set(row.student_id, (sessionsWeekMap.get(row.student_id) ?? 0) + 1);
-  }
-
-  // weak areas per student
-  const weakMap = new Map<string, number>();
-  for (const row of weakAreaRows ?? []) {
-    weakMap.set(row.student_id, (weakMap.get(row.student_id) ?? 0) + 1);
-  }
-
-  // ── 4. Send emails ────────────────────────────────────────────
-
-  let sent = 0;
-  let failed = 0;
-  const errors: { email: string; error: string }[] = [];
-
-  for (const profile of activeProfiles) {
+  for (const subscriber of subscribers) {
     try {
-      const lessonsCompleted = completionsMap.get(profile.id) ?? 0;
-      const curriculumPercent = Math.min(
-        Math.round((lessonsCompleted / TOTAL_LESSONS) * 100),
-        100
-      );
-      const sessionsThisWeek = sessionsWeekMap.get(profile.id) ?? 0;
-      const weakAreasCount = weakMap.get(profile.id) ?? 0;
-      const nextLessonName =
-        progressMap.get(profile.id) ?? 'Unit 1 — Introduction to People in Business';
+      const progress = subscriber.student_progress?.[0]
+      if (!progress) {
+        results.skipped++
+        continue
+      }
 
-      // Sessions per week needed — use 0.65× lesson count to account for revision sessions
-      // (backlog B2: remaining lessons × 0.65 = realistic session estimate)
-      const remainingLessons = TOTAL_LESSONS - lessonsCompleted;
-      const remainingSessionsEstimate = Math.ceil(remainingLessons * 0.65);
-      const sessionsPerWeekNeeded =
-        weeksToExam > 0 ? Math.ceil(remainingSessionsEstimate / weeksToExam) : 0;
+      const weeks = weeksActive(subscriber.created_at)
+      const isEstablished = weeks >= WEEKS_FOR_DETAILED_EMAIL
 
-      const coachingLine = buildCoachingLine(
-        sessionsThisWeek,
-        sessionsPerWeekNeeded,
-        weakAreasCount,
-        profile.student_name
-      );
+      // ── Sessions this week ───────────────────────────────────────────────
+      const { count: sessionsThisWeek } = await supabase
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', subscriber.id)
+        .gte('started_at', thisWeekStart)
 
-      const emailData: WeeklyProgressData = {
-        studentName: profile.student_name,
-        parentEmail: profile.email,
-        curriculumPercent,
-        sessionsThisWeek,
-        sessionsPerWeekNeeded,
-        weakAreasCount,
-        nextLessonName,
-        coachingLine,
-        weeksToExam,
-      };
+      // ── Sessions last week ───────────────────────────────────────────────
+      const { count: sessionsLastWeek } = await supabase
+        .from('sessions')
+        .select('*', { count: 'exact', head: true })
+        .eq('student_id', subscriber.id)
+        .gte('started_at', lastWeekStart)
+        .lt('started_at', thisWeekStart)
 
-      const { subject, html } = buildWeeklyProgressEmail(emailData);
+      // ── Study streak ────────────────────────────────────────────────────
+      // Count consecutive days with at least one session, going back from today
+      const { data: recentSessions } = await supabase
+        .from('sessions')
+        .select('started_at')
+        .eq('student_id', subscriber.id)
+        .gte('started_at', getWindowStart(30))
+        .order('started_at', { ascending: false })
+
+      const studyStreakDays = calculateStreak(recentSessions ?? [])
+
+      // ── Lessons completed this week (established only) ──────────────────
+      let lessonsCompletedThisWeek: { lesson_code: string; lesson_name: string }[] = []
+      if (isEstablished) {
+        const { data: completions } = await supabase
+          .from('lesson_completions')
+          .select('lesson_code, completed_at')
+          .eq('student_id', subscriber.id)
+          .gte('completed_at', thisWeekStart)
+          .order('completed_at', { ascending: true })
+
+        if (completions && completions.length > 0) {
+          // Join with lessons table to get names
+          const codes = completions.map(c => c.lesson_code)
+          const { data: lessonRows } = await supabase
+            .from('lessons')
+            .select('lesson_code, lesson_name')
+            .in('lesson_code', codes)
+
+          const nameMap = new Map(lessonRows?.map(l => [l.lesson_code, l.lesson_name]) ?? [])
+          lessonsCompletedThisWeek = completions.map(c => ({
+            lesson_code: c.lesson_code,
+            lesson_name: nameMap.get(c.lesson_code) ?? c.lesson_code,
+          }))
+        }
+      }
+
+      // ── Active weak areas (established only, max 3) ─────────────────────
+      let activeWeakAreas: { concept_slug: string; error_description: string }[] = []
+      if (isEstablished) {
+        const { data: weakRows } = await supabase
+          .from('weak_areas')
+          .select('concept_slug, error_description')
+          .eq('student_id', subscriber.id)
+          .is('resolved_at', null)
+          .order('occurrence_count', { ascending: false })
+          .limit(3)
+
+        activeWeakAreas = weakRows ?? []
+      }
+
+      // ── Build email data ─────────────────────────────────────────────────
+      const emailData: WeeklyEmailData = {
+        studentName: subscriber.student_name,
+        parentName: subscriber.full_name,
+        email: subscriber.email,
+        sessionsThisWeek: sessionsThisWeek ?? 0,
+        sessionsLastWeek: sessionsLastWeek ?? 0,
+        studyStreakDays,
+        totalSessionCount: progress.total_session_count,
+        currentLessonName: progress.current_lesson_name,
+        currentUnitName: progress.current_unit_name,
+        lessonsCompletedThisWeek,
+        activeWeakAreas,
+        weeksActive: weeks,
+        daysToExam: examDays,
+      }
+
+      const html = generateWeeklyProgressEmail(emailData)
 
       await resend.emails.send({
-        from: 'Gradd <progress@gradd.ie>',
-        to: profile.email,
-        subject,
+        from: 'Gradd <hello@gradd.ie>',
+        to: subscriber.email,
+        subject: `${subscriber.student_name}'s weekly progress with Aoife`,
         html,
-      });
+      })
 
-      sent++;
+      results.sent++
     } catch (err) {
-      failed++;
-      errors.push({
-        email: profile.email,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      console.error(`[weekly-email] Failed to send to ${profile.email}:`, err);
+      console.error(`[weekly-email] Failed for ${subscriber.email}:`, err)
+      results.failed++
     }
   }
 
-  console.log(
-    `[weekly-email] Complete — sent: ${sent}, failed: ${failed}, total: ${activeProfiles.length}`
-  );
+  console.log(`[weekly-email] Done — sent: ${results.sent}, failed: ${results.failed}, skipped: ${results.skipped}`)
+  return NextResponse.json(results)
+}
 
-  return NextResponse.json({
-    sent,
-    failed,
-    total: activeProfiles.length,
-    ...(errors.length > 0 && { errors }),
-  });
+// ── Streak calculation ───────────────────────────────────────────────────────
+// Counts consecutive days with at least one session, going back from today.
+function calculateStreak(sessions: { started_at: string }[]): number {
+  if (sessions.length === 0) return 0
+
+  const sessionDays = new Set(
+    sessions.map(s => new Date(s.started_at).toISOString().split('T')[0])
+  )
+
+  let streak = 0
+  const today = new Date()
+
+  for (let i = 0; i < 30; i++) {
+    const d = new Date(today)
+    d.setDate(d.getDate() - i)
+    const key = d.toISOString().split('T')[0]
+    if (sessionDays.has(key)) {
+      streak++
+    } else {
+      break
+    }
+  }
+
+  return streak
 }
