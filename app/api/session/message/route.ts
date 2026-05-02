@@ -9,6 +9,7 @@ import {
 import { parseSignals } from '@/lib/signal-parser';
 import anthropic from '@/lib/anthropic';
 import { NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rateLimit'
 
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5';
 const MAX_TOKENS = 4096;
@@ -52,6 +53,28 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
+  const { allowed, remaining, resetAt } = await checkRateLimit(user.id)
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        error: 'rate_limited',
+        message:
+          "You've sent a lot of messages this hour — Aoife needs a short break! " +
+          "You can continue in " +
+          Math.ceil((resetAt.getTime() - Date.now()) / 60000) +
+          " minutes.",
+      },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': '50',
+          'X-RateLimit-Remaining': String(remaining),
+          'X-RateLimit-Reset': resetAt.toISOString(),
+        },
+      }
+    )
+  }
+ 
   // ── Subscription check ────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
