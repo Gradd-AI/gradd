@@ -140,7 +140,7 @@ export default function TermsPage() {
         </p>
         <div style={styles.divider} />
         <p style={styles.headerTitle}>Terms of Service</p>
-        <p style={styles.lastUpdated}>Last updated: 24 April 2025</p>
+        <p style={styles.lastUpdated}>Last updated: 01 May 2026</p>
       </header>
 
       {/* Body */}
