@@ -22,11 +22,6 @@ const PLANS = {
   },
 };
 
-// ── Post-payment polling ──────────────────────────────────────
-// Stripe redirects back to /subscribe?success=true before the webhook
-// has updated subscription_status. Poll until it flips to active,
-// then redirect to dashboard. Gives up after 15 seconds.
-
 function SuccessPoller() {
   const router = useRouter();
   const supabase = createClient();
@@ -65,7 +60,7 @@ function SuccessPoller() {
   if (timedOut) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16, padding: 32 }}>
-        <div style={{ width: 48, height: 48, background: 'var(--brand)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>G</div>
+        <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--brand)', fontWeight: 700 }}>Payment received</h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 380 }}>
           Your payment went through but we're still activating your account. This usually takes a few seconds — refresh the page or go to your dashboard.
@@ -83,14 +78,12 @@ function SuccessPoller() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16 }}>
-      <div style={{ width: 48, height: 48, background: 'var(--brand)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, marginBottom: 8 }}>G</div>
+      <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
       <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
       <p style={{ fontSize: 15, color: 'var(--text-muted)', marginTop: 8 }}>Setting up your account…</p>
     </div>
   );
 }
-
-// ── Main subscribe page ───────────────────────────────────────
 
 function SubscribePageInner() {
   const router = useRouter();
@@ -132,9 +125,8 @@ function SubscribePageInner() {
     <div className="auth-page" style={{ background: 'var(--bg)' }}>
       <div style={{ width: '100%', maxWidth: 520 }}>
         {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40, justifyContent: 'center' }}>
-          <div className="auth-logo-mark">G</div>
-          <span className="auth-logo-name">Gradd</span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
+          <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block' }} />
         </div>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '48px 40px', boxShadow: 'var(--shadow-lg)' }}>
@@ -184,7 +176,7 @@ function SubscribePageInner() {
           {/* What's included */}
           <ul style={{ listStyle: 'none', marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              'Full LC Business curriculum — all 6 units',
+              'Full LC Business curriculum — all 7 units',
               'Structured lessons from scratch to exam-ready',
               'Aoife — your personal AI tutor',
               'Progress tracking & weak area alerts',
