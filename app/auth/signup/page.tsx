@@ -5,6 +5,23 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+// Password strength checker
+function checkPassword(pw: string): { score: number; label: string; color: string; issues: string[] } {
+  const issues: string[] = [];
+  if (pw.length < 12) issues.push('At least 12 characters');
+  if (!/[A-Z]/.test(pw)) issues.push('One uppercase letter');
+  if (!/[a-z]/.test(pw)) issues.push('One lowercase letter');
+  if (!/[0-9]/.test(pw)) issues.push('One number');
+  if (!/[^A-Za-z0-9]/.test(pw)) issues.push('One symbol (!@#$%...)');
+
+  const score = 5 - issues.length;
+  if (score <= 1) return { score, label: 'Too weak', color: '#dc2626', issues };
+  if (score <= 2) return { score, label: 'Weak', color: '#ea580c', issues };
+  if (score <= 3) return { score, label: 'Fair', color: '#d97706', issues };
+  if (score <= 4) return { score, label: 'Good', color: '#16a34a', issues };
+  return { score, label: 'Strong', color: '#15803d', issues };
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -18,6 +35,9 @@ export default function SignupPage() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showStrength, setShowStrength] = useState(false);
+
+  const pwStrength = checkPassword(formData.password);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -26,13 +46,15 @@ export default function SignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters.');
-      setLoading(false);
+    // Client-side password validation
+    const { issues } = checkPassword(formData.password);
+    if (issues.length > 0) {
+      setError('Password must have: ' + issues.join(', ') + '.');
       return;
     }
+
+    setLoading(true);
 
     const { error: signUpError } = await supabase.auth.signUp({
       email: formData.email,
@@ -160,12 +182,41 @@ export default function SignupPage() {
               name="password"
               type="password"
               className="input"
-              placeholder="At least 8 characters"
+              placeholder="Min. 12 characters"
               value={formData.password}
               onChange={handleChange}
+              onFocus={() => setShowStrength(true)}
               required
               autoComplete="new-password"
             />
+
+            {/* Password strength indicator */}
+            {showStrength && formData.password.length > 0 && (
+              <div style={{ marginTop: 8 }}>
+                {/* Bar */}
+                <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
+                  {[1,2,3,4,5].map(i => (
+                    <div key={i} style={{
+                      flex: 1, height: 4, borderRadius: 2,
+                      background: i <= pwStrength.score ? pwStrength.color : 'var(--border)',
+                      transition: 'background 0.2s'
+                    }} />
+                  ))}
+                </div>
+                <p style={{ fontSize: 12, fontWeight: 600, color: pwStrength.color, marginBottom: 4 }}>
+                  {pwStrength.label}
+                </p>
+                {pwStrength.issues.length > 0 && (
+                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                    {pwStrength.issues.map(issue => (
+                      <li key={issue} style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                        {issue}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
           </div>
 
           <button
@@ -179,7 +230,7 @@ export default function SignupPage() {
         </form>
 
         <p className="auth-footer">
-          Already have an account?{' '}
+          Already have an account?{'  '}
           <Link href="/login">Sign in</Link>
         </p>
 
