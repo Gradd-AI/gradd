@@ -59,9 +59,13 @@ const PRICING_FEATURES = [
 
 export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
+  const [showTop, setShowTop] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+      setShowTop(window.scrollY > 600);
+    };
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -412,7 +416,27 @@ export default function LandingPage() {
 
         /* ── COMPARISON ── */
         .lp-vs { background: var(--white); }
-        .lp-twrap { overflow-x: auto; margin-top: 3rem; }
+        .lp-twrap { overflow-x: auto; margin-top: 3rem; -webkit-overflow-scrolling: touch; }
+        .lp-scroll-hint {
+          display: none; font-size: .8rem; color: var(--ink300);
+          text-align: right; margin-bottom: .5rem;
+        }
+        @media (max-width: 780px) {
+          .lp-scroll-hint { display: block; }
+          .lp-mobile-summary { display: flex; flex-direction: column; gap: .6rem; margin-top: 2rem; margin-bottom: 1.5rem; }
+        }
+        @media (min-width: 781px) {
+          .lp-mobile-summary { display: none; }
+        }
+        .lp-mobile-summary { display: none; }
+        .lp-msrow {
+          display: flex; align-items: center; justify-content: space-between;
+          background: var(--g50); border: 1px solid var(--g200);
+          border-radius: 8px; padding: .65rem 1rem;
+          font-size: .9rem;
+        }
+        .lp-msrow-label { color: var(--ink700); font-weight: 500; }
+        .lp-msrow-val { color: var(--g600); font-weight: 700; }
         .lp-ctable {
           width: 100%; border-collapse: collapse;
           font-size: .95rem; min-width: 640px;
@@ -504,6 +528,22 @@ export default function LandingPage() {
         .lp-fcta-btn:hover { background: var(--amber-lt); transform: translateY(-1px); }
         .lp-fcta-note { font-size: .82rem; color: rgba(255,255,255,.28); margin-top: 1rem; }
 
+        /* ── SCROLL TO TOP ── */
+        .lp-scroll-top {
+          position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 200;
+          width: 42px; height: 42px; border-radius: 50%;
+          background: var(--g700); color: var(--white);
+          border: none; cursor: pointer; font-size: 1.1rem;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 12px rgba(0,0,0,.2);
+          opacity: 0; pointer-events: none;
+          transition: opacity .2s, transform .2s;
+        }
+        .lp-scroll-top.lp-visible {
+          opacity: 1; pointer-events: auto;
+        }
+        .lp-scroll-top:hover { transform: translateY(-2px); background: var(--g600); }
+
         /* ── FOOTER ── */
         .lp-footer {
           background: var(--ink900); padding: 3rem 2rem;
@@ -547,6 +587,7 @@ export default function LandingPage() {
         .lp-mobile-login {
           font-size: .85rem; font-weight: 500; color: var(--ink500);
           text-decoration: none; padding: .4rem .6rem;
+          white-space: nowrap;
         }
         .lp-mobile-cta {
           background: var(--g700); color: var(--white);
@@ -789,6 +830,17 @@ export default function LandingPage() {
             <span className="lp-tag">How we compare</span>
             <h2 className="lp-h2">Gradd vs. everything else</h2>
             <p className="lp-sub">One honest comparison. Judge for yourself.</p>
+            {/* Mobile: Gradd summary — shown instead of scrollable table on small screens */}
+            <div className="lp-mobile-summary">
+              <div className="lp-msrow"><span className="lp-msrow-label">Full curriculum delivery</span><span className="lp-msrow-val">✓ Gradd</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">SEC exam technique built in</span><span className="lp-msrow-val">✓ Gradd</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Works around your schedule</span><span className="lp-msrow-val">✓ Gradd</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Answers marked with feedback</span><span className="lp-msrow-val">✓ Gradd</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Progress tracked automatically</span><span className="lp-msrow-val">✓ Gradd</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Monthly cost</span><span className="lp-msrow-val">€24.99 vs €160–240+</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Built for homeschool students</span><span className="lp-msrow-val">✓ Only Gradd</span></div>
+            </div>
+            <p className="lp-scroll-hint">← Swipe to compare all options →</p>
             <div className="lp-twrap">
               <table className="lp-ctable">
                 <thead>
@@ -865,7 +917,7 @@ export default function LandingPage() {
 
               {/* Annual card */}
               <div className="lp-pcard" style={{ flex: '1 1 340px', maxWidth: 420, border: '2px solid var(--amber)' }}>
-                <div className="lp-pbadge" style={{ background: 'var(--g700)', color: 'var(--white)' }}>Best value — save 2 months</div>
+                <div className="lp-pbadge" style={{ background: '#0d4a28', color: '#ffffff', border: '1px solid rgba(255,255,255,0.2)' }}>Best value — save 2 months</div>
                 <div className="lp-prdisp">
                   <span className="lp-pr-curr">€</span>
                   <span className="lp-pr-amt">199</span>
@@ -922,6 +974,15 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── SCROLL TO TOP ── */}
+        <button
+          className={`lp-scroll-top${showTop ? ' lp-visible' : ''}`}
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="Scroll to top"
+        >
+          ↑
+        </button>
 
         {/* ── FOOTER ── */}
         <footer className="lp-footer">
