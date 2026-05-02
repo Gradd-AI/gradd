@@ -181,16 +181,21 @@ export async function POST(request: Request) {
   }
 
   // ── Live context anchor ───────────────────────────────────────────────────
-  const exchangeCount = Math.floor(updatedHistory.length / 2);
+// ── Live context anchor ───────────────────────────────────────────────────
+const exchangeCount = Math.floor(updatedHistory.length / 2);
 
-  const lastAoifeMessage = [...currentHistory]
-    .reverse()
-    .find((m: { role: string; content: string }) => m.role === 'assistant')?.content ?? '';
-  const lastAoifeTail = lastAoifeMessage.length > 0
-    ? lastAoifeMessage.slice(-400).replace(/\[.*?\]/g, '').trim()
-    : '';
+const lastAoifeMessage = [...currentHistory]
+  .reverse()
+  .find((m: { role: string; content: string }) => m.role === 'assistant')?.content ?? '';
+const lastAoifeTail = lastAoifeMessage.length > 0
+  ? lastAoifeMessage.slice(-400).replace(/\[.*?\]/g, '').trim()
+  : '';
 
-  const liveContextAnchor = `
+// Detect spaced rep due from the substituted system prompt
+const spacedRepDue = injectedSystemPrompt.includes('SPACED_REP_DUE: TRUE') ||
+  injectedSystemPrompt.includes('Spaced repetition due: TRUE');
+
+const liveContextAnchor = `
 
 ---
 
@@ -204,7 +209,13 @@ ${lastAoifeTail
 "…${lastAoifeTail}"
 
 The student is responding to the above. Continue from exactly this point. Do not summarise what you just said. Do not re-open the session. Just respond and keep teaching.`
-  : `This is the opening exchange. Begin teaching now.`}
+  : spacedRepDue
+    ? `This is the opening exchange. SPACED_REP_DUE is TRUE.
+
+MANDATORY FIRST ACTION — DO THIS BEFORE ANY NEW CONTENT:
+Run the 5-question rapid recall block as specified in your instructions. Open with: "Before we start today, five quick ones from what we covered recently." Complete all 5 questions, mark them, then transition to the lesson.
+Do NOT skip this. Do NOT start new content first. The recall block runs before anything else.`
+    : `This is the opening exchange. Begin teaching now.`}
 
 ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Do NOT restart the session under any circumstances.
