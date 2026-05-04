@@ -42,7 +42,8 @@ const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
 };
 
 export async function POST(request: Request) {
-  const { sessionId, studentMessage } = await request.json();
+  try {
+    const { sessionId, studentMessage } = await request.json();
 
   if (!sessionId || !studentMessage) {
     return NextResponse.json({ error: 'sessionId and studentMessage required' }, { status: 400 });
