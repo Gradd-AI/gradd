@@ -114,3 +114,74 @@ export function formatLessonsCompletedThisUnit(
   if (unitCompletions.length === 0) return 'NONE';
   return unitCompletions.map(c => c.lesson_code).join(', ');
 }
+
+
+export interface IBEconomicsContextVariables {
+  STUDENT_NAME: string;
+  EXAM_LEVEL: string;
+  CURRENT_UNIT_CODE: string;
+  CURRENT_UNIT_NAME: string;
+  CURRENT_LESSON_CODE: string;
+  CURRENT_LESSON_NAME: string;
+  NEXT_LESSON_CODE: string;
+  NEXT_LESSON_NAME: string;
+  LESSONS_COMPLETED_THIS_UNIT: string;
+  UNITS_COMPLETED_LIST: string;
+  SESSION_NUMBER: number;
+  SESSION_TYPE: string;
+  WEAK_AREAS_LIST: string;
+  LAST_SESSION_SUMMARY: string;
+  COURSE_POSITION: string;
+}
+
+export async function buildIBEconomicsPrompt(
+  vars: IBEconomicsContextVariables
+): Promise<string> {
+  const promptPath = path.join(
+    process.cwd(),
+    'prompts',
+    'ib_economics_tutor_system_prompt_v1_0.md'
+  );
+
+  let prompt: string;
+  try {
+    prompt = fs.readFileSync(promptPath, 'utf-8');
+  } catch {
+    throw new Error(`IB Economics prompt not found at ${promptPath}`);
+  }
+
+  const replacements: Record<string, string> = {
+    '{{STUDENT_NAME}}':               vars.STUDENT_NAME,
+    '{{EXAM_LEVEL}}':                 vars.EXAM_LEVEL,
+    '{{CURRENT_UNIT_CODE}}':          vars.CURRENT_UNIT_CODE,
+    '{{CURRENT_UNIT_NAME}}':          vars.CURRENT_UNIT_NAME,
+    '{{CURRENT_LESSON_CODE}}':        vars.CURRENT_LESSON_CODE,
+    '{{CURRENT_LESSON_NAME}}':        vars.CURRENT_LESSON_NAME,
+    '{{NEXT_LESSON_CODE}}':           vars.NEXT_LESSON_CODE,
+    '{{NEXT_LESSON_NAME}}':           vars.NEXT_LESSON_NAME,
+    '{{LESSONS_COMPLETED_THIS_UNIT}}': vars.LESSONS_COMPLETED_THIS_UNIT,
+    '{{UNITS_COMPLETED_LIST}}':       vars.UNITS_COMPLETED_LIST,
+    '{{SESSION_NUMBER}}':             String(vars.SESSION_NUMBER),
+    '{{SESSION_TYPE}}':               vars.SESSION_TYPE,
+    '{{WEAK_AREAS_LIST}}':            vars.WEAK_AREAS_LIST,
+    '{{LAST_SESSION_SUMMARY}}':       vars.LAST_SESSION_SUMMARY || 'No previous session.',
+    '{{COURSE_POSITION}}':            vars.COURSE_POSITION,
+  };
+
+  for (const [token, value] of Object.entries(replacements)) {
+    prompt = prompt.replaceAll(token, value);
+  }
+
+  return prompt;
+}
+
+export function deriveCoursePosition(
+  lessonOrder: number,
+  examLevel: string
+): string {
+  const total = examLevel === 'HL' ? 210 : 144;
+  const pct = lessonOrder / total;
+  if (pct < 0.33) return 'beginning';
+  if (pct < 0.67) return 'mid-programme';
+  return 'exam-prep';
+}

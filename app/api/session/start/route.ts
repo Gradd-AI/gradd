@@ -1,6 +1,8 @@
 import { createServerClient } from '@/lib/supabase/server';
 import {
   buildInjectedSystemPrompt,
+  buildIBEconomicsPrompt,
+  deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
   formatLessonsCompletedThisUnit,
@@ -82,33 +84,57 @@ export async function POST() {
   // 6. Increment session number
   const newSessionNumber = (progress.session_number ?? 0) + 1;
 
-  // 7. Assemble context variables
-  const contextVars = {
-    STUDENT_NAME: profile.student_name,
-    EXAM_LEVEL: profile.exam_level,
-    CURRENT_UNIT_CODE: progress.current_unit_code,
-    CURRENT_UNIT_NAME: progress.current_unit_name,
-    CURRENT_LESSON_CODE: progress.current_lesson_code,
-    CURRENT_LESSON_NAME: progress.current_lesson_name,
-    NEXT_LESSON_CODE: nextLessonCode,
-    NEXT_LESSON_NAME: nextLessonName,
-    LESSONS_COMPLETED_THIS_UNIT: formatLessonsCompletedThisUnit(
-      lessonCompletions ?? [],
-      progress.current_unit_code
-    ),
-    UNITS_COMPLETED_LIST: formatUnitsCompletedList(unitCompletions ?? []),
-    SESSION_NUMBER: newSessionNumber,
-    SESSION_TYPE: sessionType,
-    WEAK_AREAS_LIST: formatWeakAreasList(weakAreas ?? []),
-    LAST_SESSION_SUMMARY: progress.last_session_summary ?? '',
-    SPACED_REP_DUE: progress.spaced_rep_due ? 'TRUE' : 'FALSE',
-    ABQ_DRILL_DUE: progress.abq_drill_due ? 'TRUE' : 'FALSE',
-  };
-
-  // 8. Build injected system prompt (server-side only — never sent to client)
+ // 7 + 8. Build system prompt — branched by subject
+  const subject = profile.subject ?? 'LC_BUSINESS';
   let injectedSystemPrompt: string;
+
   try {
-    injectedSystemPrompt = await buildInjectedSystemPrompt(contextVars);
+    if (subject === 'IB_ECONOMICS') {
+      const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_ECON_', '') ?? '1');
+      injectedSystemPrompt = await buildIBEconomicsPrompt({
+        STUDENT_NAME:                 profile.student_name,
+        EXAM_LEVEL:                   profile.exam_level, // 'SL' or 'HL'
+        CURRENT_UNIT_CODE:            progress.current_unit_code,
+        CURRENT_UNIT_NAME:            progress.current_unit_name,
+        CURRENT_LESSON_CODE:          progress.current_lesson_code,
+        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        NEXT_LESSON_CODE:             nextLessonCode,
+        NEXT_LESSON_NAME:             nextLessonName,
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
+                                        lessonCompletions ?? [],
+                                        progress.current_unit_code
+                                      ),
+        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
+        SESSION_NUMBER:               newSessionNumber,
+        SESSION_TYPE:                 sessionType,
+        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
+        LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
+        COURSE_POSITION:              deriveCoursePosition(lessonOrder, profile.exam_level),
+      });
+    } else {
+      // LC Business — existing logic unchanged
+      injectedSystemPrompt = await buildInjectedSystemPrompt({
+        STUDENT_NAME:                 profile.student_name,
+        EXAM_LEVEL:                   profile.exam_level,
+        CURRENT_UNIT_CODE:            progress.current_unit_code,
+        CURRENT_UNIT_NAME:            progress.current_unit_name,
+        CURRENT_LESSON_CODE:          progress.current_lesson_code,
+        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        NEXT_LESSON_CODE:             nextLessonCode,
+        NEXT_LESSON_NAME:             nextLessonName,
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
+                                        lessonCompletions ?? [],
+                                        progress.current_unit_code
+                                      ),
+        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
+        SESSION_NUMBER:               newSessionNumber,
+        SESSION_TYPE:                 sessionType,
+        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
+        LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
+        SPACED_REP_DUE:               progress.spaced_rep_due ? 'TRUE' : 'FALSE',
+        ABQ_DRILL_DUE:                progress.abq_drill_due ? 'TRUE' : 'FALSE',
+      });
+    }
   } catch (err) {
     console.error('System prompt build failed:', err);
     return NextResponse.json({ error: 'Failed to build session' }, { status: 500 });

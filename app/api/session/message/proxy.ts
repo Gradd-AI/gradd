@@ -2,6 +2,8 @@ import { createServerClient } from '@/lib/supabase/server';
 import { createClient } from '@supabase/supabase-js';
 import {
   buildInjectedSystemPrompt,
+  buildIBEconomicsPrompt,
+  deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
   formatLessonsCompletedThisUnit,
@@ -78,7 +80,7 @@ export async function POST(request: Request) {
   // ── Subscription check ────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, student_name, exam_level')
+    .select('subscription_status, student_name, exam_level, subject')
     .eq('id', user.id)
     .single();
 
@@ -97,7 +99,7 @@ export async function POST(request: Request) {
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
   // ── Build injected system prompt ──────────────────────────────────────────
-  let injectedSystemPrompt: string;
+  let injectedSystemPrompt: string = '';
 
   const storedPrompt = session.raw_final_response as string | null;
   if (storedPrompt?.startsWith('__SYSTEM_PROMPT__')) {
@@ -138,28 +140,58 @@ export async function POST(request: Request) {
 
     const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
-    injectedSystemPrompt = await buildInjectedSystemPrompt({
-      STUDENT_NAME: profile.student_name,
-      EXAM_LEVEL: profile.exam_level,
-      CURRENT_UNIT_CODE: progress?.current_unit_code ?? 'UNIT_1',
-      CURRENT_UNIT_NAME: progress?.current_unit_name ?? 'People in Business',
-      CURRENT_LESSON_CODE: currentLessonCode,
-      CURRENT_LESSON_NAME: progress?.current_lesson_name ?? 'Introduction to People in Business',
-      NEXT_LESSON_CODE: nextLessonCode,
-      NEXT_LESSON_NAME: nextLessonName,
-      LESSONS_COMPLETED_THIS_UNIT: formatLessonsCompletedThisUnit(
-        lessonCompletions ?? [],
-        progress?.current_unit_code ?? 'UNIT_1'
-      ),
-      UNITS_COMPLETED_LIST: formatUnitsCompletedList(unitCompletions ?? []),
-      SESSION_NUMBER: session.session_number,
-      SESSION_TYPE: session.session_type,
-      WEAK_AREAS_LIST: formatWeakAreasList(weakAreas ?? []),
-      LAST_SESSION_SUMMARY: progress?.last_session_summary ?? '',
-      SPACED_REP_DUE: progress?.spaced_rep_due ? 'TRUE' : 'FALSE',
-      ABQ_DRILL_DUE: progress?.abq_drill_due ? 'TRUE' : 'FALSE',
-    });
-  }
+    const subject = profile.subject ?? 'LC_BUSINESS';
+
+    if (subject === 'IB_ECONOMICS') {
+      const lessonOrder = parseInt(
+        progress?.current_lesson_code?.replace('IB_ECON_', '') ?? '1'
+      );
+      injectedSystemPrompt = await buildIBEconomicsPrompt({
+        STUDENT_NAME:                 profile.student_name,
+        EXAM_LEVEL:                   profile.exam_level,
+        CURRENT_UNIT_CODE:            progress?.current_unit_code ?? 'UNIT_1',
+        CURRENT_UNIT_NAME:            progress?.current_unit_name ?? 'Introduction to Economics',
+        CURRENT_LESSON_CODE:          currentLessonCode,
+        CURRENT_LESSON_NAME:          progress?.current_lesson_name ?? 'Economics as a Social Science',
+        NEXT_LESSON_CODE:             nextLessonCode,
+        NEXT_LESSON_NAME:             nextLessonName,
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
+                                        lessonCompletions ?? [],
+                                        progress?.current_unit_code ?? 'UNIT_1'
+                                      ),
+        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
+        SESSION_NUMBER:               session.session_number,
+        SESSION_TYPE:                 session.session_type,
+        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
+        LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
+        COURSE_POSITION:              deriveCoursePosition(
+                                        lessonOrder,
+                                        profile.exam_level
+                                      ),
+      });
+    } else {
+      injectedSystemPrompt = await buildInjectedSystemPrompt({
+        STUDENT_NAME:                 profile.student_name,
+        EXAM_LEVEL:                   profile.exam_level,
+        CURRENT_UNIT_CODE:            progress?.current_unit_code ?? 'UNIT_1',
+        CURRENT_UNIT_NAME:            progress?.current_unit_name ?? 'People in Business',
+        CURRENT_LESSON_CODE:          currentLessonCode,
+        CURRENT_LESSON_NAME:          progress?.current_lesson_name ?? 'Introduction to People in Business',
+        NEXT_LESSON_CODE:             nextLessonCode,
+        NEXT_LESSON_NAME:             nextLessonName,
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
+                                        lessonCompletions ?? [],
+                                        progress?.current_unit_code ?? 'UNIT_1'
+                                      ),
+        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
+        SESSION_NUMBER:               session.session_number,
+        SESSION_TYPE:                 session.session_type,
+        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
+        LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
+        SPACED_REP_DUE:               progress?.spaced_rep_due ? 'TRUE' : 'FALSE',
+        ABQ_DRILL_DUE:                progress?.abq_drill_due ? 'TRUE' : 'FALSE',
+      });
+    }
 
   // ── Build message history ─────────────────────────────────────────────────
   const currentHistory = (session.message_history as Array<{ role: string; content: string }>) ?? [];
@@ -219,7 +251,7 @@ Do NOT skip this. Do NOT start new content first. The recall block runs before a
 
 ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Do NOT restart the session under any circumstances.
-- Do NOT re-introduce yourself as Aoife.
+- Do NOT re-introduce yourself. The student already knows who you are.
 - Do NOT output a welcome message, session opening, or greeting.
 - Do NOT ask "are you starting fresh?" or offer any kind of reset.
 - Do NOT ask for the student's name or level — you already have both.
@@ -512,4 +544,5 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
       'Cache-Control': 'no-cache',
     },
   });
+}
 }
