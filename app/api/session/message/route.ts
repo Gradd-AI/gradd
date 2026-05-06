@@ -193,6 +193,7 @@ export async function POST(request: Request) {
         ABQ_DRILL_DUE:                progress?.abq_drill_due ? 'TRUE' : 'FALSE',
       });
     }
+  }
 
   // ── Build message history ─────────────────────────────────────────────────
   const currentHistory = (session.message_history as Array<{ role: string; content: string }>) ?? [];
@@ -545,5 +546,8 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
       'Cache-Control': 'no-cache',
     },
   });
-}
+  } catch (err) {
+    console.error('ROUTE FATAL ERROR:', err);
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }
