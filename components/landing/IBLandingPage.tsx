@@ -433,28 +433,21 @@ export default function IBLandingPage() {
         .ib-tfeat h4 { font-size: .95rem; font-weight: 600; color: var(--ink900); margin-bottom: .15rem; }
         .ib-tfeat p  { font-size: .85rem; color: var(--ink500); line-height: 1.5; }
 
-        /* ── TESTIMONIALS ── */
-        .ib-social { background: var(--cream); }
-        .ib-tgrid {
-          display: grid; grid-template-columns: repeat(3,1fr);
-          gap: 1.5rem; margin-top: 3rem;
+        /* ── WHY GRADD STATS ── */
+        .ib-why { background: var(--cream); }
+        .ib-why-grid {
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 2rem; margin-top: 3rem;
         }
-        .ib-tcard {
+        .ib-why-stat {
           background: var(--white); border: 1px solid var(--ink100);
-          border-radius: 12px; padding: 1.75rem; position: relative;
+          border-radius: 12px; padding: 2rem 1.75rem; text-align: center;
         }
-        .ib-tcard.ib-placeholder {
-          border-style: dashed; background: var(--cream);
-          display: flex; flex-direction: column; align-items: center;
-          justify-content: center; text-align: center; min-height: 190px;
+        .ib-why-num {
+          font-family: var(--fd); font-size: 3rem; font-weight: 700;
+          color: var(--g700); line-height: 1; margin-bottom: .6rem; display: block;
         }
-        .ib-tplaceholder-ico { font-size: 1.75rem; margin-bottom: .85rem; }
-        .ib-tplaceholder-title {
-          font-family: var(--fd); font-size: .95rem; font-weight: 600;
-          color: var(--ink700); margin-bottom: .35rem;
-        }
-        .ib-tplaceholder-body { font-size: .82rem; color: var(--ink300); line-height: 1.5; }
-        .ib-proof-note { text-align: center; margin-top: 2rem; font-size: .82rem; color: var(--ink300); }
+        .ib-why-label { font-size: .88rem; color: var(--ink500); line-height: 1.5; }
 
         /* ── COMPARISON ── */
         .ib-vs { background: var(--white); }
@@ -625,12 +618,13 @@ export default function IBLandingPage() {
         }
         @media (max-width: 780px) {
           .ib-prob-grid, .ib-tutor-grid, .ib-subj-grid { grid-template-columns: 1fr; gap: 2rem; }
-          .ib-sol-grid, .ib-steps, .ib-tgrid { grid-template-columns: 1fr 1fr; }
+          .ib-sol-grid, .ib-steps { grid-template-columns: 1fr 1fr; }
+          .ib-why-grid { grid-template-columns: 1fr; }
           .ib-steps::before { display: none; }
           .ib-stats { gap: 1.5rem; }
         }
         @media (max-width: 520px) {
-          .ib-sol-grid, .ib-steps, .ib-tgrid { grid-template-columns: 1fr; }
+          .ib-sol-grid, .ib-steps { grid-template-columns: 1fr; }
           .ib-nav-links { display: none; }
           .ib-mobile-nav { display: flex !important; }
           .ib-h1 { font-size: 2rem; }
@@ -686,14 +680,13 @@ export default function IBLandingPage() {
               <em>full IB curriculum</em> from scratch
             </h1>
             <p className="ib-hero-sub">
-              Structured lessons, IB exam technique, progress tracking — available 24 hours a day,
-              anywhere in the world. Less than a single Lanterna session per month.
+              Lanterna charges £720 for 10 hours. Gradd delivers the full IB Economics or Business Management curriculum for €44.99 per month — structured lessons, IB exam technique, progress tracking, 24/7.
             </p>
             <div className="ib-ctas">
               <Link href="/auth/signup" className="ib-btn-a">Start Free Lesson</Link>
               <a href="#how-it-works" className="ib-btn-b">See how it works</a>
             </div>
-            <p className="ib-hero-note">7-day money-back guarantee. Cancel any time.</p>
+            <p className="ib-hero-note">One full lesson free. No card required.</p>
             <div className="ib-stats">
               <div className="ib-stat">
                 <span className="ib-stat-n">2</span>
@@ -795,7 +788,10 @@ export default function IBLandingPage() {
                   </div>
                   <div className="ib-subj-price-row">
                     <div className="ib-subj-price">€44.99<span> / month</span></div>
-                    <Link href="/auth/signup" className="ib-subj-btn">Start Free Lesson</Link>
+                    <div style={{ textAlign: 'center' }}>
+                      <Link href="/auth/signup" className="ib-subj-btn">Start Free Lesson</Link>
+                      <p style={{ fontSize: '.72rem', color: 'var(--ink300)', marginTop: '.3rem' }}>No card required</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -820,12 +816,22 @@ export default function IBLandingPage() {
                   </div>
                   <div className="ib-subj-price-row">
                     <div className="ib-subj-price">€44.99<span> / month</span></div>
-                    <Link href="/auth/signup" className="ib-subj-btn">Start Free Lesson</Link>
+                    <div style={{ textAlign: 'center' }}>
+                      <Link href="/auth/signup" className="ib-subj-btn">Start Free Lesson</Link>
+                      <p style={{ fontSize: '.72rem', color: 'var(--ink300)', marginTop: '.3rem' }}>No card required</p>
+                    </div>
                   </div>
                 </div>
               </div>
 
             </div>
+            <p style={{ fontSize: '.85rem', color: 'var(--ink300)', lineHeight: 1.65, marginTop: '2.5rem', maxWidth: 700 }}>
+              Looking for an <strong style={{ fontWeight: 600, color: 'var(--ink500)' }}>IB Economics tutor</strong> or{' '}
+              <strong style={{ fontWeight: 600, color: 'var(--ink500)' }}>IB Business Management tutor</strong> that covers the complete syllabus?
+              Gradd delivers structured <strong style={{ fontWeight: 600, color: 'var(--ink500)' }}>IB revision</strong> for{' '}
+              <strong style={{ fontWeight: 600, color: 'var(--ink500)' }}>Paper 1, Paper 2, and Paper 3</strong> — teaching every concept in
+              sequence, from Unit 1 to exam day, for both SL and HL students.
+            </p>
           </div>
         </section>
 
@@ -912,33 +918,25 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── TESTIMONIALS (PLACEHOLDER) ── */}
-        <section className="ib-sec ib-social" id="testimonials">
+        {/* ── WHY STUDENTS CHOOSE GRADD ── */}
+        <section className="ib-sec ib-why">
           <div className="ib-inn">
-            <span className="ib-tag">Early access</span>
-            <h2 className="ib-h2">Testimonials coming soon</h2>
-            <p className="ib-sub">Gradd for IB is in early access. Our first students are working through the curriculum now. Here's where their stories will go.</p>
-            <div className="ib-tgrid">
-              <div className="ib-tcard ib-placeholder">
-                <div className="ib-tplaceholder-ico">📖</div>
-                <div className="ib-tplaceholder-title">IB Economics · SL student</div>
-                <div className="ib-tplaceholder-body">Spot reserved for our first IB Economics testimonial.</div>
+            <span className="ib-tag">Why students choose Gradd</span>
+            <h2 className="ib-h2">Built for the full IB curriculum. Not just revision.</h2>
+            <div className="ib-why-grid">
+              <div className="ib-why-stat">
+                <span className="ib-why-num">210</span>
+                <div className="ib-why-label">structured IB Economics lessons across Units 1–4, SL and HL</div>
               </div>
-              <div className="ib-tcard ib-placeholder">
-                <div className="ib-tplaceholder-ico">📊</div>
-                <div className="ib-tplaceholder-title">IB Business Management · HL student</div>
-                <div className="ib-tplaceholder-body">Spot reserved for our first IB Business Management testimonial.</div>
+              <div className="ib-why-stat">
+                <span className="ib-why-num">136</span>
+                <div className="ib-why-label">structured IB Business Management lessons across Units 1–5, SL and HL</div>
               </div>
-              <div className="ib-tcard ib-placeholder">
-                <div className="ib-tplaceholder-ico">🌍</div>
-                <div className="ib-tplaceholder-title">IB student · International school</div>
-                <div className="ib-tplaceholder-body">Students joining from international schools across 20+ countries this term.</div>
+              <div className="ib-why-stat">
+                <span className="ib-why-num">2022</span>
+                <div className="ib-why-label">IBO first assessment spec · curriculum fully aligned</div>
               </div>
             </div>
-            <p className="ib-proof-note">
-              Gradd for IB is live now. Early student? Share your experience at{' '}
-              <a href="mailto:hello@gradd.ai" style={{ color: 'var(--ink500)' }}>hello@gradd.ai</a>.
-            </p>
           </div>
         </section>
 
@@ -1020,7 +1018,7 @@ export default function IBLandingPage() {
                   ))}
                 </ul>
                 <Link href="/auth/signup" className="ib-btn-sub">Start Free Lesson — IB Economics</Link>
-                <p className="ib-pguarantee">7-day money-back guarantee. Cancel any time.</p>
+                <p className="ib-pguarantee">No card required · 7-day money-back guarantee · Cancel any time.</p>
               </div>
 
               {/* Bundle */}
@@ -1049,7 +1047,7 @@ export default function IBLandingPage() {
                   ))}
                 </ul>
                 <Link href="/auth/signup" className={`ib-btn-sub ib-btn-sub-green`}>Start Free Lesson — Bundle</Link>
-                <p className="ib-pguarantee">7-day money-back guarantee. Cancel any time.</p>
+                <p className="ib-pguarantee">No card required · 7-day money-back guarantee · Cancel any time.</p>
               </div>
 
               {/* IB Business Management */}
@@ -1075,7 +1073,7 @@ export default function IBLandingPage() {
                   ))}
                 </ul>
                 <Link href="/auth/signup" className="ib-btn-sub">Start Free Lesson — IB Business</Link>
-                <p className="ib-pguarantee">7-day money-back guarantee. Cancel any time.</p>
+                <p className="ib-pguarantee">No card required · 7-day money-back guarantee · Cancel any time.</p>
               </div>
 
             </div>
@@ -1097,8 +1095,11 @@ export default function IBLandingPage() {
                 Full IB curriculum. Command term technique built in. Progress tracked automatically.
                 Available 24/7, wherever you are in the world.
               </p>
+              <p style={{ fontSize: '.95rem', color: 'rgba(255,255,255,.6)', marginBottom: '2rem', fontStyle: 'italic', lineHeight: 1.6 }}>
+                IB Year 1 starting in September? The students who start now arrive at their first exam with the full curriculum covered.
+              </p>
               <Link href="/auth/signup" className="ib-fcta-btn">Start Free Lesson</Link>
-              <p className="ib-fcta-note">7-day money-back guarantee. Cancel any time. No lock-in.</p>
+              <p className="ib-fcta-note">No card required · 7-day money-back guarantee · No lock-in.</p>
             </div>
           </div>
         </section>
