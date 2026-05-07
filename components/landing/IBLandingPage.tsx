@@ -79,6 +79,7 @@ const PRICING_FEATURES_BUNDLE = [
 export default function IBLandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
 
   useEffect(() => {
     const onScroll = () => {
@@ -564,6 +565,36 @@ export default function IBLandingPage() {
         }
         .ib-pcmp span { color: rgba(255,255,255,.7); font-weight: 500; }
 
+        /* ── BILLING TOGGLE ── */
+        .ib-billing-toggle {
+          display: inline-flex; align-items: center;
+          background: rgba(255,255,255,.1); border-radius: 100px;
+          padding: .25rem; margin-top: 1.75rem; margin-bottom: 0;
+        }
+        .ib-billing-opt {
+          font-family: var(--fb); font-size: .875rem; font-weight: 600;
+          padding: .5rem 1.25rem; border-radius: 100px; cursor: pointer;
+          border: none; background: transparent; color: rgba(255,255,255,.55);
+          transition: background .2s, color .2s; line-height: 1;
+          display: flex; align-items: center; gap: .5rem;
+        }
+        .ib-billing-opt.ib-billing-active { background: var(--white); color: var(--ink900); }
+        .ib-billing-save-pill {
+          font-size: .7rem; font-weight: 700; letter-spacing: .05em;
+          text-transform: uppercase; background: var(--amber); color: var(--ink900);
+          padding: .2rem .5rem; border-radius: 100px;
+        }
+        .ib-pr-annual-mo {
+          font-size: .82rem; color: var(--ink400); margin-top: .15rem;
+          margin-bottom: .75rem; text-align: left;
+        }
+        .ib-pr-save {
+          display: inline-block; background: #d4f0dd; color: #1a5c30;
+          font-family: var(--fb); font-size: .75rem; font-weight: 700;
+          letter-spacing: .05em; text-transform: uppercase;
+          padding: .25rem .75rem; border-radius: 100px; margin-bottom: 1rem;
+        }
+
         /* ── FINAL CTA ── */
         .ib-fcta { background: var(--g900); text-align: center; }
         .ib-fcta-inn { max-width: 600px; margin: 0 auto; }
@@ -995,6 +1026,16 @@ export default function IBLandingPage() {
             <span className="ib-tag">Pricing</span>
             <h2 className="ib-h2">Simple pricing. Full curriculum.</h2>
             <p className="ib-sub" style={{ margin: '0 auto' }}>One subject or both. Cancel any time. Everything included from day one.</p>
+            <div role="group" aria-label="Billing period" className="ib-billing-toggle">
+              <button
+                className={`ib-billing-opt${billingPeriod === 'monthly' ? ' ib-billing-active' : ''}`}
+                onClick={() => setBillingPeriod('monthly')}
+              >Monthly</button>
+              <button
+                className={`ib-billing-opt${billingPeriod === 'annual' ? ' ib-billing-active' : ''}`}
+                onClick={() => setBillingPeriod('annual')}
+              >Annual <span className="ib-billing-save-pill">Save 35%</span></button>
+            </div>
             <div className="ib-pcards">
 
               {/* IB Economics */}
@@ -1004,9 +1045,15 @@ export default function IBLandingPage() {
                 <h3>Full curriculum, SL & HL</h3>
                 <div className="ib-prdisp">
                   <span className="ib-pr-curr">€</span>
-                  <span className="ib-pr-amt">44.99</span>
-                  <span className="ib-pr-per">/ month</span>
+                  <span className="ib-pr-amt">{billingPeriod === 'annual' ? '349' : '44.99'}</span>
+                  <span className="ib-pr-per">{billingPeriod === 'annual' ? '/ year' : '/ month'}</span>
                 </div>
+                {billingPeriod === 'annual' && (
+                  <>
+                    <p className="ib-pr-annual-mo">€29.08 / month</p>
+                    <span className="ib-pr-save">Save €190</span>
+                  </>
+                )}
                 <ul className="ib-pfeats">
                   {PRICING_FEATURES_ECON.map(f => (
                     <li key={f}>
@@ -1025,16 +1072,26 @@ export default function IBLandingPage() {
 
               {/* Bundle */}
               <div className="ib-pcard ib-bundle">
-                <div className="ib-pbadge ib-pbadge-dark">Best value — save €15/month</div>
+                <div className="ib-pbadge ib-pbadge-dark">
+                  {billingPeriod === 'annual' ? 'Best value — save €321/year' : 'Best value — save €15/month'}
+                </div>
                 <div className="ib-psubject">IB Economics + IB Business Management</div>
                 <h3>Both subjects, one subscription</h3>
                 <div className="ib-prdisp">
                   <span className="ib-pr-curr">€</span>
-                  <span className="ib-pr-amt">74.99</span>
-                  <span className="ib-pr-per">/ month</span>
+                  <span className="ib-pr-amt">{billingPeriod === 'annual' ? '579' : '74.99'}</span>
+                  <span className="ib-pr-per">{billingPeriod === 'annual' ? '/ year' : '/ month'}</span>
                 </div>
+                {billingPeriod === 'annual' && (
+                  <>
+                    <p className="ib-pr-annual-mo">€48.25 / month</p>
+                    <span className="ib-pr-save">Save €321</span>
+                  </>
+                )}
                 <p style={{ fontSize: '.85rem', color: 'var(--g600)', fontWeight: 600, marginBottom: '1.25rem', textAlign: 'left' }}>
-                  Save €15/month versus subscribing to each subject individually
+                  {billingPeriod === 'annual'
+                    ? 'Save €119/year versus two individual annual plans'
+                    : 'Save €15/month versus subscribing to each subject individually'}
                 </p>
                 <ul className="ib-pfeats">
                   {PRICING_FEATURES_BUNDLE.map(f => (
@@ -1059,9 +1116,15 @@ export default function IBLandingPage() {
                 <h3>Full curriculum, SL & HL</h3>
                 <div className="ib-prdisp">
                   <span className="ib-pr-curr">€</span>
-                  <span className="ib-pr-amt">44.99</span>
-                  <span className="ib-pr-per">/ month</span>
+                  <span className="ib-pr-amt">{billingPeriod === 'annual' ? '349' : '44.99'}</span>
+                  <span className="ib-pr-per">{billingPeriod === 'annual' ? '/ year' : '/ month'}</span>
                 </div>
+                {billingPeriod === 'annual' && (
+                  <>
+                    <p className="ib-pr-annual-mo">€29.08 / month</p>
+                    <span className="ib-pr-save">Save €190</span>
+                  </>
+                )}
                 <ul className="ib-pfeats">
                   {PRICING_FEATURES_BM.map(f => (
                     <li key={f}>
@@ -1081,8 +1144,9 @@ export default function IBLandingPage() {
             </div>
             <p className="ib-pcmp">
               Compare: Lanterna charges <span>£720 for 10 hours</span> of human tutoring.
-              Gradd delivers the full IB curriculum for <span>€44.99/subject/month</span> — or{' '}
-              <span>€74.99/month for both subjects</span>.
+              {billingPeriod === 'annual'
+                ? <> Gradd delivers the full IB curriculum for <span>€349/subject/year</span> — or <span>€579/year for both subjects</span>.</>
+                : <> Gradd delivers the full IB curriculum for <span>€44.99/subject/month</span> — or <span>€74.99/month for both subjects</span>.</>}
             </p>
           </div>
         </section>
