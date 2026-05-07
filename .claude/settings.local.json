@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx tsc *)",
       "Bash(git add *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npx vercel *)",
+      "Bash(Get-ChildItem -Recurse -Path \"C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\" -Force)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(xargs grep -l \"hostname\\\\|origin\\\\|req.headers\")"
     ]
   }
 }
