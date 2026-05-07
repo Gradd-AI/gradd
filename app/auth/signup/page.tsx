@@ -26,6 +26,11 @@ export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  // Detect domain client-side — no SSR needed since it's a client component
+  const isIBDomain = typeof window !== 'undefined' &&
+    (window.location.hostname.includes('gradd.ai') ||
+     process.env.NEXT_PUBLIC_DOMAIN === 'ib');
+
   const [formData, setFormData] = useState({
     fullName: '',
     studentName: '',
@@ -75,7 +80,7 @@ export default function SignupPage() {
     }
 
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
+    if (user && !isIBDomain) {
       await supabase
         .from('profiles')
         .update({ exam_level: formData.examLevel })
@@ -92,7 +97,8 @@ export default function SignupPage() {
       // Non-fatal
     }
 
-    router.push('/subscribe');
+    // IB students go to onboarding; LC Business students go to subscribe
+    router.push(isIBDomain ? '/onboarding' : '/subscribe');
   };
 
   return (
@@ -107,7 +113,9 @@ export default function SignupPage() {
 
         <h1 className="auth-heading">Create your account</h1>
         <p className="auth-subheading">
-          Start studying for the Leaving Cert — no textbook required.
+          {isIBDomain
+            ? 'Start your first free lesson — no payment required.'
+            : 'Start studying for the Leaving Cert — no textbook required.'}
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -135,30 +143,32 @@ export default function SignupPage() {
               name="studentName"
               type="text"
               className="input"
-              placeholder="e.g. Ciarán"
+              placeholder={isIBDomain ? 'e.g. Sofia' : 'e.g. Ciarán'}
               value={formData.studentName}
               onChange={handleChange}
               required
             />
             <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>
-              Aoife will use this in sessions.
+              {isIBDomain ? 'Mia will use this in sessions.' : 'Aoife will use this in sessions.'}
             </p>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="examLevel">Exam level</label>
-            <select
-              id="examLevel"
-              name="examLevel"
-              className="input"
-              value={formData.examLevel}
-              onChange={handleChange}
-              style={{ cursor: 'pointer' }}
-            >
-              <option value="higher">Higher Level</option>
-              <option value="ordinary">Ordinary Level</option>
-            </select>
-          </div>
+          {!isIBDomain && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="examLevel">Exam level</label>
+              <select
+                id="examLevel"
+                name="examLevel"
+                className="input"
+                value={formData.examLevel}
+                onChange={handleChange}
+                style={{ cursor: 'pointer' }}
+              >
+                <option value="higher">Higher Level</option>
+                <option value="ordinary">Ordinary Level</option>
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email address</label>

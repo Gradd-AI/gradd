@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import {
   buildInjectedSystemPrompt,
   buildIBEconomicsPrompt,
+  buildIBBusinessPrompt,
   deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
@@ -11,7 +12,17 @@ import { determineSessionType } from '@/lib/session-type';
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
-export async function POST() {
+const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'] as const;
+const IB_FIRST_LESSON_CODES = ['IB_ECON_001', 'IB_BM_001'] as const;
+
+function getEffectiveSubject(profileSubject: string, lessonCode: string): string {
+  if (profileSubject === 'IB_BUNDLE') {
+    return lessonCode.startsWith('IB_BM_') ? 'IB_BUSINESS' : 'IB_ECONOMICS';
+  }
+  return profileSubject;
+}
+
+export async function POST(request: Request) {
   console.log('Session start called');
   const supabase = await createServerClient();
 
@@ -24,28 +35,60 @@ export async function POST() {
     return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
   }
 
-  // 2. Subscription gate
+  // 2. Parse optional subject param (Bundle students pass which subject they're studying)
+  let requestSubject: string | undefined;
+  try {
+    const body = await request.json().catch(() => ({}));
+    requestSubject = body.subject;
+  } catch {
+    // No body — fine
+  }
+
+  // 3. Load profile
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single();
 
-  if (!profile || profile.subscription_status !== 'active') {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
+  if (!profile) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
-  // 3. Load student state
-  const { data: progress } = await supabase
+  const profileSubject: string = profile.subject ?? 'LC_BUSINESS';
+  const isIBStudent = (IB_SUBJECTS as readonly string[]).includes(profileSubject);
+
+  // 4. Load student progress — use subject filter for IB students
+  let progressQuery = supabase
     .from('student_progress')
     .select('*')
-    .eq('student_id', user.id)
-    .single();
+    .eq('student_id', user.id);
+
+  if (isIBStudent) {
+    // For Bundle: use the subject passed in the request; for single-subject, use profile subject
+    const progressSubject = profileSubject === 'IB_BUNDLE'
+      ? (requestSubject ?? 'IB_ECONOMICS')
+      : profileSubject;
+    progressQuery = progressQuery.eq('subject', progressSubject);
+  }
+
+  const { data: progress } = await progressQuery.single();
 
   if (!progress) {
     return NextResponse.json({ error: 'Progress record not found' }, { status: 500 });
   }
 
+  // 5. Subscription gate — free lesson 1 for IB students
+  const isFirstLesson = (IB_FIRST_LESSON_CODES as readonly string[]).includes(
+    progress.current_lesson_code ?? ''
+  );
+  const isFreeLessonAllowed = isIBStudent && isFirstLesson;
+
+  if (profile.subscription_status !== 'active' && !isFreeLessonAllowed) {
+    return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
+  }
+
+  // 6. Load supporting data
   const [{ data: weakAreas }, { data: lessonCompletions }, { data: unitCompletions }] =
     await Promise.all([
       supabase
@@ -58,8 +101,7 @@ export async function POST() {
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
     ]);
 
-  // 4. Fetch next lesson from DB — gives Aoife the exact name and code to announce.
-  //    She is prohibited from improvising the curriculum sequence.
+  // 7. Fetch next lesson from DB
   const { data: currentLessonRow } = await supabase
     .from('lessons')
     .select('next_lesson_code')
@@ -78,38 +120,59 @@ export async function POST() {
 
   const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
-  // 5. Determine session type
+  // 8. Determine session type
   const sessionType = determineSessionType(progress);
 
-  // 6. Increment session number
+  // 9. Increment session number
   const newSessionNumber = (progress.session_number ?? 0) + 1;
 
- // 7 + 8. Build system prompt — branched by subject
-  const subject = profile.subject ?? 'LC_BUSINESS';
+  // 10. Build system prompt — branched by effective subject
+  const effectiveSubject = getEffectiveSubject(profileSubject, progress.current_lesson_code ?? '');
   let injectedSystemPrompt: string;
 
+  // For IB: use exam_level from the correct subject-specific column
+  const ibExamLevel = effectiveSubject === 'IB_BUSINESS'
+    ? (profile.ib_business_level ?? profile.exam_level)
+    : (profile.ib_economics_level ?? profile.exam_level);
+
   try {
-    if (subject === 'IB_ECONOMICS') {
+    if (effectiveSubject === 'IB_ECONOMICS') {
       const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_ECON_', '') ?? '1');
       injectedSystemPrompt = await buildIBEconomicsPrompt({
         STUDENT_NAME:                 profile.student_name,
-        EXAM_LEVEL:                   profile.exam_level, // 'SL' or 'HL'
+        EXAM_LEVEL:                   ibExamLevel,
         CURRENT_UNIT_CODE:            progress.current_unit_code,
         CURRENT_UNIT_NAME:            progress.current_unit_name,
         CURRENT_LESSON_CODE:          progress.current_lesson_code,
         CURRENT_LESSON_NAME:          progress.current_lesson_name,
         NEXT_LESSON_CODE:             nextLessonCode,
         NEXT_LESSON_NAME:             nextLessonName,
-        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
-                                        lessonCompletions ?? [],
-                                        progress.current_unit_code
-                                      ),
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(lessonCompletions ?? [], progress.current_unit_code),
         UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
         SESSION_NUMBER:               newSessionNumber,
         SESSION_TYPE:                 sessionType,
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
-        COURSE_POSITION:              deriveCoursePosition(lessonOrder, profile.exam_level),
+        COURSE_POSITION:              progress.course_position ?? deriveCoursePosition(lessonOrder, ibExamLevel),
+      });
+    } else if (effectiveSubject === 'IB_BUSINESS') {
+      const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_BM_', '') ?? '1');
+      injectedSystemPrompt = await buildIBBusinessPrompt({
+        STUDENT_NAME:                 profile.student_name,
+        EXAM_LEVEL:                   ibExamLevel,
+        CURRENT_UNIT_CODE:            progress.current_unit_code,
+        CURRENT_UNIT_NAME:            progress.current_unit_name,
+        CURRENT_LESSON_CODE:          progress.current_lesson_code,
+        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        NEXT_LESSON_CODE:             nextLessonCode,
+        NEXT_LESSON_NAME:             nextLessonName,
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(lessonCompletions ?? [], progress.current_unit_code),
+        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
+        SESSION_NUMBER:               newSessionNumber,
+        SESSION_TYPE:                 sessionType,
+        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
+        LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
+        COURSE_POSITION:              progress.course_position ?? deriveCoursePosition(lessonOrder, ibExamLevel),
       });
     } else {
       // LC Business — existing logic unchanged
@@ -122,10 +185,7 @@ export async function POST() {
         CURRENT_LESSON_NAME:          progress.current_lesson_name,
         NEXT_LESSON_CODE:             nextLessonCode,
         NEXT_LESSON_NAME:             nextLessonName,
-        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
-                                        lessonCompletions ?? [],
-                                        progress.current_unit_code
-                                      ),
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(lessonCompletions ?? [], progress.current_unit_code),
         UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
         SESSION_NUMBER:               newSessionNumber,
         SESSION_TYPE:                 sessionType,
@@ -140,7 +200,7 @@ export async function POST() {
     return NextResponse.json({ error: 'Failed to build session' }, { status: 500 });
   }
 
-  // 9. Create session row
+  // 11. Create session row
   const { data: session, error: sessionError } = await supabase
     .from('sessions')
     .insert({
@@ -158,8 +218,8 @@ export async function POST() {
     return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
   }
 
-  // 10. Update progress counters
-  await supabase
+  // 12. Update progress counters — use subject filter for IB students
+  let progressUpdateQuery = supabase
     .from('student_progress')
     .update({
       session_number: newSessionNumber,
@@ -168,17 +228,23 @@ export async function POST() {
     })
     .eq('student_id', user.id);
 
-  // 11. Store injected system prompt server-side in session row for message route
+  if (isIBStudent) {
+    progressUpdateQuery = progressUpdateQuery.eq('subject', progress.subject ?? profileSubject);
+  }
+
+  await progressUpdateQuery;
+
+  // 13. Store injected system prompt server-side
   await supabase
     .from('sessions')
     .update({ raw_final_response: `__SYSTEM_PROMPT__${injectedSystemPrompt}` })
     .eq('id', session.id);
 
-  // Return session metadata only — NEVER the system prompt
   return NextResponse.json({
     sessionId: session.id,
     sessionNumber: newSessionNumber,
     sessionType,
+    isFreeLessonAllowed,
     currentLesson: {
       code: progress.current_lesson_code,
       name: progress.current_lesson_name,

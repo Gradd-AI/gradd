@@ -20,14 +20,35 @@ interface LastSession {
   lesson_code: string | null; lesson_name: string | null; concepts_covered: string[];
   weak_flags_count: number; started_at: string; apply_scores: string | null;
 }
+interface BundleSubject {
+  subject: string; lessonName: string; unitName: string; lessonCode: string;
+}
 interface Props {
   studentName: string; examLevel: string; sessionNumber: number;
+  subject: string;
   currentLessonCode: string; currentLessonName: string;
   currentUnitName: string; currentUnitCode: string; sessionType: string;
   curriculumPercent: number; totalCompleted: number; totalLessons: number;
   totalSessions: number; weakAreasCount: number; unitsCompleted: string[];
   units: Unit[]; recentSessions: RecentSession[]; weakAreas: WeakArea[];
   lastSession: LastSession | null; spaced_rep_due: boolean; abq_drill_due: boolean;
+  bundleSubjects?: BundleSubject[];
+}
+
+const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'];
+
+function getTutorName(subject: string): string {
+  return IB_SUBJECTS.includes(subject) ? 'Mia' : 'Aoife';
+}
+
+function getSubjectLabel(subject: string): string {
+  const map: Record<string, string> = {
+    LC_BUSINESS: 'LC Business',
+    IB_ECONOMICS: 'IB Economics',
+    IB_BUSINESS: 'IB Business Management',
+    IB_BUNDLE: 'IB Bundle',
+  };
+  return map[subject] ?? subject;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -52,12 +73,17 @@ function sessionLabel(type: string): string {
   return map[type] ?? type;
 }
 
-const EXAM_DATE = new Date('2026-06-08T09:00:00');
-function daysToExam() { return Math.max(0, Math.ceil((EXAM_DATE.getTime() - Date.now()) / 86400000)); }
-function weeksToExam() { return Math.max(0.5, daysToExam() / 7); }
+const LC_EXAM_DATE = new Date('2026-06-08T09:00:00');
+const IB_EXAM_DATE = new Date('2027-05-12T09:00:00'); // IB May session
 
-function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number): number {
-  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeksToExam());
+function daysToExam(subject: string) {
+  const date = IB_SUBJECTS.includes(subject) ? IB_EXAM_DATE : LC_EXAM_DATE;
+  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000));
+}
+function weeksToExam(subject: string) { return Math.max(0.5, daysToExam(subject) / 7); }
+
+function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number, subject: string): number {
+  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeksToExam(subject));
 }
 
 function calcStreak(sessions: RecentSession[]): number {
@@ -179,10 +205,42 @@ function Toggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) =>
 
 // ─── Hero cards ───────────────────────────────────────────────────────────────
 
-function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due }: {
+function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due, isBundle, bundleSubjects }: {
   currentLessonName: string; currentUnitName: string; sessionType: string;
   spaced_rep_due: boolean; abq_drill_due: boolean;
+  isBundle: boolean; bundleSubjects?: { subject: string; lessonName: string; unitName: string; lessonCode: string }[];
 }) {
+  const SUBJECT_SHORT: Record<string, string> = {
+    IB_ECONOMICS: 'IB Economics',
+    IB_BUSINESS: 'IB Business Management',
+  };
+
+  if (isBundle && bundleSubjects && bundleSubjects.length > 0) {
+    return (
+      <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '28px 32px', marginBottom: 24 }}>
+        <p style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 16 }}>
+          Choose a subject to study
+        </p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {bundleSubjects.map(bs => (
+            <Link
+              key={bs.subject}
+              href={`/session?subject=${bs.subject}`}
+              style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', textDecoration: 'none' }}
+            >
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{SUBJECT_SHORT[bs.subject] ?? bs.subject}</p>
+                <p style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 2 }}>{bs.lessonName}</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{bs.unitName}</p>
+              </div>
+              <span style={{ color: 'var(--accent)', fontSize: 20, fontWeight: 700 }}>→</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '32px 40px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
       <div>
@@ -301,22 +359,23 @@ function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: numbe
 
 // ─── Stat grid ────────────────────────────────────────────────────────────────
 
-function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace }: {
+function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace, subject, tutorName }: {
   curriculumPercent: number; totalCompleted: number; totalLessons: number; totalSessions: number;
   weakAreasCount: number; streak: number; thisWeek: number; examDays: number;
-  neededPerWeek: number; avgPerWeek: number; pace: Pace;
+  neededPerWeek: number; avgPerWeek: number; pace: Pace; subject: string; tutorName: string;
 }) {
   const timeHrs = Math.round((totalSessions * 45) / 60 * 10) / 10;
   const paceConf = PACE_CONF[pace];
+  const examLabel = IB_SUBJECTS.includes(subject) ? `${getSubjectLabel(subject)} · May 2027` : 'LC Business · 08/06/2026';
   const stats = [
     { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
     { label: 'Sessions completed', value: totalSessions, sub: `≈ ${timeHrs} hrs invested` },
     { label: 'This week', value: thisWeek, sub: `target: ${neededPerWeek}/wk` },
-    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam())} weeks to exam`, warn: neededPerWeek > 10 },
+    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam(subject))} weeks to exam`, warn: neededPerWeek > 10 },
     { label: '4-wk avg / week', value: avgPerWeek, sub: paceConf.label.toLowerCase(), accent: pace === 'ahead' || pace === 'on-track', warn: pace === 'behind' },
-    { label: 'Days to exam', value: examDays, sub: 'LC Business · 08/06/2026' },
+    { label: 'Days to exam', value: examDays, sub: examLabel },
     { label: 'Study streak', value: `${streak}d`, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
-    { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : 'Aoife is tracking', warn: weakAreasCount > 0 },
+    { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : `${tutorName} is tracking`, warn: weakAreasCount > 0 },
   ];
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
@@ -423,14 +482,17 @@ export default function DashboardClient(props: Props) {
 
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);
-  const examDays = daysToExam();
-  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons);
+  const examDays = daysToExam(props.subject);
+  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons, props.subject);
   const avgPerWeek = avgSessionsPerWeek(props.recentSessions);
   const pace = calcPace(avgPerWeek, neededPerWeek);
+  const tutorName = getTutorName(props.subject);
+  const subjectLabel = getSubjectLabel(props.subject);
+  const isBundle = props.subject === 'IB_BUNDLE';
 
   const emptyState = (
     <div style={{ background: 'var(--surface-2)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius)', padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
-      Your first session summary will appear here after completing a session with Aoife.
+      Your first session summary will appear here after completing a session with {tutorName}.
     </div>
   );
 
@@ -446,7 +508,7 @@ export default function DashboardClient(props: Props) {
               {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
-              LC Business · {props.examLevel} · Session {props.sessionNumber} completed
+              {subjectLabel} · {props.examLevel} · Session {props.sessionNumber} completed
             </p>
           </div>
           <Toggle mode={mode} onChange={setMode} />
@@ -464,6 +526,7 @@ export default function DashboardClient(props: Props) {
               totalLessons={props.totalLessons} totalSessions={props.totalSessions}
               weakAreasCount={props.weakAreasCount} streak={streak} thisWeek={thisWeek}
               examDays={examDays} neededPerWeek={neededPerWeek} avgPerWeek={avgPerWeek} pace={pace}
+              subject={props.subject} tutorName={tutorName}
             />
             <CurriculumProgress units={props.units} currentUnitCode={props.currentUnitCode} unitsCompleted={props.unitsCompleted} curriculumPercent={props.curriculumPercent} totalCompleted={props.totalCompleted} totalLessons={props.totalLessons} />
             <WeakAreasSection weakAreas={props.weakAreas} />
@@ -474,7 +537,7 @@ export default function DashboardClient(props: Props) {
         {/* STUDENT VIEW */}
         {mode === 'student' && (
           <>
-            <StudentHeroCard currentLessonName={props.currentLessonName} currentUnitName={props.currentUnitName} sessionType={props.sessionType} spaced_rep_due={props.spaced_rep_due} abq_drill_due={props.abq_drill_due} />
+            <StudentHeroCard currentLessonName={props.currentLessonName} currentUnitName={props.currentUnitName} sessionType={props.sessionType} spaced_rep_due={props.spaced_rep_due} abq_drill_due={props.abq_drill_due} isBundle={isBundle} bundleSubjects={props.bundleSubjects} />
             {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
             {props.spaced_rep_due && (
               <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>

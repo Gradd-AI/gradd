@@ -7,7 +7,12 @@
       "Bash(npx vercel *)",
       "Bash(Get-ChildItem -Recurse -Path \"C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\" -Force)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(xargs grep -l \"hostname\\\\|origin\\\\|req.headers\")"
+      "Bash(xargs grep -l \"hostname\\\\|origin\\\\|req.headers\")",
+      "Bash(npx plugins *)",
+      "Bash(vercel *)",
+      "Bash(npm i *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\" -Force)",
+      "Bash(Select-Object Name, FullName)"
     ]
   }
 }

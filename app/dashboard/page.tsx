@@ -1,14 +1,11 @@
 // app/dashboard/page.tsx
-// Server Component — all data fetched server-side, no loading states.
-// Passes data to DashboardClient for the parent/student toggle.
-
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
 
 export const dynamic = 'force-dynamic';
 
-const UNITS = [
+const LC_UNITS = [
   { code: 'UNIT_1',    name: 'People in Business' },
   { code: 'UNIT_2',    name: 'Business Management' },
   { code: 'UNIT_3',    name: 'Business Management (cont.)' },
@@ -20,25 +17,60 @@ const UNITS = [
   { code: 'EXAM_PREP', name: 'Exam Preparation' },
 ];
 
+const IB_ECON_UNITS = [
+  { code: 'UNIT_1', name: 'Introduction to Economics' },
+  { code: 'UNIT_2', name: 'Microeconomics' },
+  { code: 'UNIT_3', name: 'Macroeconomics' },
+  { code: 'UNIT_4', name: 'The Global Economy' },
+];
+
+const IB_BM_UNITS = [
+  { code: 'UNIT_1', name: 'Business Organisation and Environment' },
+  { code: 'UNIT_2', name: 'Human Resource Management' },
+  { code: 'UNIT_3', name: 'Finance and Accounts' },
+  { code: 'UNIT_4', name: 'Marketing' },
+  { code: 'UNIT_5', name: 'Operations Management' },
+];
+
+function getUnits(subject: string): { code: string; name: string }[] {
+  if (subject === 'IB_ECONOMICS') return IB_ECON_UNITS;
+  if (subject === 'IB_BUSINESS') return IB_BM_UNITS;
+  return LC_UNITS;
+}
+
+function getTotalLessons(subject: string): number {
+  if (subject === 'IB_ECONOMICS') return 150;
+  if (subject === 'IB_BUSINESS') return 150;
+  return 279;
+}
+
+function formatExamLevel(subject: string, examLevel: string): string {
+  if (subject === 'LC_BUSINESS') {
+    return examLevel === 'higher' ? 'Higher Level' : 'Ordinary Level';
+  }
+  return examLevel; // Already 'SL' or 'HL' for IB
+}
+
 export default async function DashboardPage() {
   const supabase = await createServerClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
 
-  // All queries in parallel
   const [profileRes, progressRes, sessionsRes, weakAreasRes, completionsRes] =
     await Promise.all([
       supabase
         .from('profiles')
-        .select('student_name, exam_level, subscription_status')
+        .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
         .eq('id', user.id)
         .single(),
 
       supabase
         .from('student_progress')
-        .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary')
+        .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary, subject')
         .eq('student_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .single(),
 
       supabase
@@ -66,16 +98,25 @@ export default async function DashboardPage() {
   const profile = profileRes.data;
   if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
 
+  const subject = profile.subject ?? 'LC_BUSINESS';
+  const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
+
+  // For IB students, use the subject-specific exam level
+  const displayExamLevel = isIBStudent
+    ? (subject === 'IB_BUSINESS'
+        ? (profile.ib_business_level ?? profile.exam_level)
+        : (profile.ib_economics_level ?? profile.exam_level))
+    : profile.exam_level;
+
   const progress = progressRes.data;
   const sessions = sessionsRes.data ?? [];
   const weakAreas = weakAreasRes.data ?? [];
   const totalCompleted = completionsRes.count ?? 0;
-  const totalLessons = 279;
+  const totalLessons = getTotalLessons(progress?.subject ?? subject);
   const curriculumPercent = Math.min(100, Math.round((totalCompleted / totalLessons) * 100));
   const unitsCompleted: string[] = (progress?.units_completed as string[]) ?? [];
   const lastSession = sessions[0] ?? null;
 
-  // Resolve lesson name for last session
   let lastSessionLessonName: string | null = null;
   if (lastSession?.lesson_code) {
     const { data: lessonRow } = await supabase
@@ -86,14 +127,36 @@ export default async function DashboardPage() {
     lastSessionLessonName = lessonRow?.lesson_name ?? null;
   }
 
+  // For Bundle students, load both progress rows
+  let bundleSubjects: { subject: string; lessonName: string; unitName: string; lessonCode: string }[] = [];
+  if (subject === 'IB_BUNDLE') {
+    const { data: allProgress } = await supabase
+      .from('student_progress')
+      .select('subject, current_lesson_name, current_unit_name, current_lesson_code')
+      .eq('student_id', user.id)
+      .in('subject', ['IB_ECONOMICS', 'IB_BUSINESS']);
+
+    bundleSubjects = (allProgress ?? []).map(p => ({
+      subject: p.subject,
+      lessonName: p.current_lesson_name ?? '',
+      unitName: p.current_unit_name ?? '',
+      lessonCode: p.current_lesson_code ?? '',
+    }));
+  }
+
+  const units = subject === 'IB_BUNDLE'
+    ? IB_ECON_UNITS // Default to econ units for bundle; client shows both
+    : getUnits(progress?.subject ?? subject);
+
   return (
     <DashboardClient
       studentName={profile.student_name}
-      examLevel={profile.exam_level === 'higher' ? 'Higher Level' : 'Ordinary Level'}
+      subject={subject}
+      examLevel={formatExamLevel(subject, displayExamLevel ?? '')}
       sessionNumber={progress?.session_number ?? 0}
-      currentLessonCode={progress?.current_lesson_code ?? '1.1.1'}
-      currentLessonName={progress?.current_lesson_name ?? 'Introduction to People in Business'}
-      currentUnitName={progress?.current_unit_name ?? 'People in Business'}
+      currentLessonCode={progress?.current_lesson_code ?? (isIBStudent ? 'IB_ECON_001' : '1.1.1')}
+      currentLessonName={progress?.current_lesson_name ?? 'First Lesson'}
+      currentUnitName={progress?.current_unit_name ?? 'Unit 1'}
       currentUnitCode={progress?.current_unit_code ?? 'UNIT_1'}
       sessionType={progress?.session_number === 0 ? 'New Topic' : 'New Topic'}
       curriculumPercent={curriculumPercent}
@@ -102,7 +165,7 @@ export default async function DashboardPage() {
       totalSessions={sessions.length}
       weakAreasCount={weakAreas.length}
       unitsCompleted={unitsCompleted}
-      units={UNITS}
+      units={units}
       recentSessions={sessions.map(s => ({
         id: s.id,
         session_number: s.session_number,
@@ -122,6 +185,7 @@ export default async function DashboardPage() {
       } : null}
       spaced_rep_due={progress?.spaced_rep_due ?? false}
       abq_drill_due={progress?.abq_drill_due ?? false}
+      bundleSubjects={bundleSubjects}
     />
   );
 }

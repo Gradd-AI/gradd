@@ -338,7 +338,7 @@ export default function IBLandingPage() {
           font-size: .92rem; font-weight: 600; color: var(--ink900);
           margin-bottom: .15rem; line-height: 1.3;
         }
-        .ib-subj-unit-info p { font-size: .8rem; color: var(--ink500); line-height: 1.45; }
+        .ib-subj-unit-info p { font-size: .8rem; color: var(--ink500); line-height: 1.45; text-align: left; }
         .ib-subj-price-row {
           display: flex; align-items: center; justify-content: space-between;
           padding-top: 1.25rem; border-top: 1px solid var(--ink100);
@@ -446,7 +446,8 @@ export default function IBLandingPage() {
         }
         .ib-why-num {
           font-family: var(--fd); font-size: 3rem; font-weight: 700;
-          color: var(--g700); line-height: 1; margin-bottom: .6rem; display: block;
+          color: var(--g700); line-height: 1.1; margin-bottom: .6rem; display: block;
+          word-break: break-word; overflow-wrap: break-word;
         }
         .ib-why-label { font-size: .88rem; color: var(--ink500); line-height: 1.5; }
 
@@ -470,7 +471,7 @@ export default function IBLandingPage() {
         .ib-msrow-label { color: var(--ink700); font-weight: 500; }
         .ib-msrow-val { color: var(--g600); font-weight: 700; }
         .ib-ctable {
-          width: 100%; border-collapse: collapse;
+          width: 100%; border-collapse: separate; border-spacing: 0;
           font-size: .95rem; min-width: 640px;
         }
         .ib-ctable thead th {
@@ -512,6 +513,7 @@ export default function IBLandingPage() {
         .ib-pcard {
           background: var(--white); border-radius: 20px;
           padding: 2.25rem 2rem; position: relative;
+          text-align: left;
         }
         .ib-pcard.ib-bundle { border: 2px solid var(--amber); }
         .ib-pbadge {
@@ -574,7 +576,7 @@ export default function IBLandingPage() {
         .ib-billing-opt {
           font-family: var(--fb); font-size: .875rem; font-weight: 600;
           padding: .5rem 1.25rem; border-radius: 100px; cursor: pointer;
-          border: none; background: transparent; color: rgba(255,255,255,.55);
+          border: none; background: transparent; color: rgba(255,255,255,.8);
           transition: background .2s, color .2s; line-height: 1;
           display: flex; align-items: center; gap: .5rem;
         }
@@ -585,7 +587,7 @@ export default function IBLandingPage() {
           padding: .2rem .5rem; border-radius: 100px;
         }
         .ib-pr-annual-mo {
-          font-size: .82rem; color: var(--ink400); margin-top: .15rem;
+          font-size: .82rem; color: var(--ink500); margin-top: .15rem;
           margin-bottom: .75rem; text-align: left;
         }
         .ib-pr-save {
@@ -660,6 +662,9 @@ export default function IBLandingPage() {
           .ib-mobile-nav { display: flex !important; }
           .ib-h1 { font-size: 2rem; }
           .ib-hero { padding: 4rem 1.5rem 4rem; }
+          .ib-stat { flex: 1 1 45%; min-width: 0; }
+          .ib-stat-n { font-size: 1.5rem; }
+          .ib-stats { gap: 1.25rem 1.5rem; }
         }
         .ib-mobile-nav {
           display: none;

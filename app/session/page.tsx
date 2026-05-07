@@ -4,28 +4,52 @@ import ChatInterface from '@/components/chat/ChatInterface';
 
 export const dynamic = 'force-dynamic';
 
-export default async function SessionPage() {
+const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'] as const;
+const IB_FIRST_LESSON_CODES = ['IB_ECON_001', 'IB_BM_001'] as const;
+
+export default async function SessionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ subject?: string }>;
+}) {
   const supabase = await createServerClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/auth/login');
 
-  const [{ data: profile }, { data: progress }] = await Promise.all([
-    supabase
-      .from('profiles')
-      .select('student_name, exam_level, subscription_status')
-      .eq('id', user.id)
-      .single(),
-    supabase
-      .from('student_progress')
-      .select('current_lesson_name, current_unit_name, session_number, current_lesson_code')
-      .eq('student_id', user.id)
-      .single(),
-  ]);
+  const params = await searchParams;
 
-  if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
+  // Load profile first so we can use subject for the progress query
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
+    .eq('id', user.id)
+    .single();
+
+  if (!profile) redirect('/auth/login');
+
+  const profileSubject = profile.subject ?? 'LC_BUSINESS';
+  const isIBStudent = (IB_SUBJECTS as readonly string[]).includes(profileSubject);
+
+  // For bundle students, use the URL subject param; otherwise use profile subject
+  const progressSubject = params.subject ?? (profileSubject === 'IB_BUNDLE' ? 'IB_ECONOMICS' : profileSubject);
+
+  const { data: progress } = await supabase
+    .from('student_progress')
+    .select('current_lesson_name, current_unit_name, session_number, current_lesson_code, subject')
+    .eq('student_id', user.id)
+    .eq('subject', progressSubject)
+    .single();
+
+  const currentLessonCode = progress?.current_lesson_code ?? '';
+  const isFirstLesson = (IB_FIRST_LESSON_CODES as readonly string[]).includes(currentLessonCode);
+  const isFreeLessonAllowed = isIBStudent && isFirstLesson;
+
+  if (profile.subscription_status !== 'active' && !isFreeLessonAllowed) {
+    redirect('/subscribe');
+  }
+
+  const sessionSubject = params.subject ?? (profileSubject === 'IB_BUNDLE' ? 'IB_ECONOMICS' : profileSubject);
 
   return (
     <ChatInterface
@@ -33,7 +57,10 @@ export default async function SessionPage() {
       lessonName={progress?.current_lesson_name ?? 'First Lesson'}
       unitName={progress?.current_unit_name ?? 'Unit 1'}
       sessionNumber={(progress?.session_number ?? 0) + 1}
-      lessonCode={progress?.current_lesson_code ?? undefined}
+      lessonCode={currentLessonCode || undefined}
+      subscriptionStatus={profile.subscription_status ?? null}
+      subject={profileSubject}
+      sessionSubject={sessionSubject}
     />
   );
 }
