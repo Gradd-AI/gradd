@@ -935,8 +935,8 @@ export default function IBLandingPage() {
                 <div className="ib-why-label">structured IB Business Management lessons across Units 1–5, SL and HL</div>
               </div>
               <div className="ib-why-stat">
-                <span className="ib-why-num">2022</span>
-                <div className="ib-why-label">First assessment 2022 · fully aligned to current IBO spec</div>
+                <span className="ib-why-num">2022 & 2024</span>
+                <div className="ib-why-label">Current IBO specifications</div>
               </div>
             </div>
           </div>
