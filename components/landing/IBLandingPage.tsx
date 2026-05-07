@@ -680,7 +680,9 @@ export default function IBLandingPage() {
               <em>full IB curriculum</em> from scratch
             </h1>
             <p className="ib-hero-sub">
-              Lanterna charges £720 for 10 hours. Gradd delivers the full IB Economics or Business Management curriculum for €44.99 per month — structured lessons, IB exam technique, progress tracking, 24/7.
+              Lanterna charges £720 for 10 hours. Gradd delivers the full IB Economics or Business Management curriculum for €44.99 per month.
+              <br />
+              Structured lessons, IB exam technique, progress tracking. 24/7.
             </p>
             <div className="ib-ctas">
               <Link href="/auth/signup" className="ib-btn-a">Start Free Lesson</Link>
@@ -800,7 +802,7 @@ export default function IBLandingPage() {
               <div className="ib-subj-card">
                 <div className="ib-subj-hd">
                   <h3>IB Business Management</h3>
-                  <p>SL & HL · Papers 1 & 2</p>
+                  <p>Tutor: Mia · SL & HL · Papers 1 & 2</p>
                 </div>
                 <div className="ib-subj-body">
                   <div className="ib-subj-units">
@@ -934,7 +936,7 @@ export default function IBLandingPage() {
               </div>
               <div className="ib-why-stat">
                 <span className="ib-why-num">2022</span>
-                <div className="ib-why-label">IBO first assessment spec · curriculum fully aligned</div>
+                <div className="ib-why-label">First assessment 2022 · fully aligned to current IBO spec</div>
               </div>
             </div>
           </div>
