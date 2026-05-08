@@ -1,11 +1,14 @@
 // app/dashboard/page.tsx
+// Server Component — all data fetched server-side, no loading states.
+// Passes data to DashboardClient for the parent/student toggle.
+
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
 
 export const dynamic = 'force-dynamic';
 
-const LC_UNITS = [
+const UNITS = [
   { code: 'UNIT_1',    name: 'People in Business' },
   { code: 'UNIT_2',    name: 'Business Management' },
   { code: 'UNIT_3',    name: 'Business Management (cont.)' },
@@ -17,62 +20,25 @@ const LC_UNITS = [
   { code: 'EXAM_PREP', name: 'Exam Preparation' },
 ];
 
-const IB_ECON_UNITS = [
-  { code: 'UNIT_1', name: 'Introduction to Economics' },
-  { code: 'UNIT_2', name: 'Microeconomics' },
-  { code: 'UNIT_3', name: 'Macroeconomics' },
-  { code: 'UNIT_4', name: 'The Global Economy' },
-];
-
-const IB_BM_UNITS = [
-  { code: 'UNIT_1', name: 'Business Organisation and Environment' },
-  { code: 'UNIT_2', name: 'Human Resource Management' },
-  { code: 'UNIT_3', name: 'Finance and Accounts' },
-  { code: 'UNIT_4', name: 'Marketing' },
-  { code: 'UNIT_5', name: 'Operations Management' },
-];
-
-function getUnits(subject: string): { code: string; name: string }[] {
-  if (subject === 'IB_ECONOMICS') return IB_ECON_UNITS;
-  if (subject === 'IB_BUSINESS') return IB_BM_UNITS;
-  return LC_UNITS;
-}
-
-function getTotalLessons(subject: string): number {
-  if (subject === 'IB_ECONOMICS') return 150;
-  if (subject === 'IB_BUSINESS') return 150;
-  return 279;
-}
-
-function formatExamLevel(subject: string, examLevel: string): string {
-  if (subject === 'LC_BUSINESS') {
-    return examLevel === 'higher' ? 'Higher Level' : 'Ordinary Level';
-  }
-  return examLevel; // Already 'SL' or 'HL' for IB
-}
-
 export default async function DashboardPage() {
   const supabase = await createServerClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
 
+  // All queries in parallel
   const [profileRes, progressRes, sessionsRes, weakAreasRes, completionsRes] =
     await Promise.all([
-      // Select IB columns where available; PostgREST returns data:null on
-      // unknown-column errors, so we fall back to a minimal query below.
       supabase
         .from('profiles')
-        .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
+        .select('student_name, exam_level, subscription_status')
         .eq('id', user.id)
         .single(),
 
       supabase
         .from('student_progress')
-        .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary, subject')
+        .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary')
         .eq('student_id', user.id)
-        .order('updated_at', { ascending: false })
-        .limit(1)
         .single(),
 
       supabase
@@ -97,55 +63,19 @@ export default async function DashboardPage() {
         .eq('student_id', user.id),
     ]);
 
-  // If the full query failed (IB columns not yet in DB), fall back to the
-  // LC-safe select so LC Business students can still reach their dashboard.
-  let profile = profileRes.data;
-  if (!profile && profileRes.error) {
-    const { data: fallback } = await supabase
-      .from('profiles')
-      .select('student_name, exam_level, subscription_status')
-      .eq('id', user.id)
-      .single();
-    profile = fallback as typeof profile;
-  }
-
-  // Redirect to /subscribe, not /auth/login — the proxy bounces authenticated
-  // users from /auth/login straight back to /dashboard, creating a loop.
-  if (!profile) redirect('/subscribe');
-
-  // Treat profile as a partial type — IB columns may be absent on pre-migration installs
-  const p = profile as {
-    student_name: string;
-    exam_level: string;
-    subscription_status: string;
-    subject?: string | null;
-    ib_economics_level?: string | null;
-    ib_business_level?: string | null;
-  };
-
-  const subject = p.subject ?? 'LC_BUSINESS';
-  const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
-
-  // IB students always have access — free lesson 1 gate lives in /session and /api/session/*
-  // LC students must subscribe before reaching the dashboard
-  if (!isIBStudent && p.subscription_status !== 'active') redirect('/subscribe');
-
-  // For IB students, use the subject-specific exam level
-  const displayExamLevel = isIBStudent
-    ? (subject === 'IB_BUSINESS'
-        ? (p.ib_business_level ?? p.exam_level)
-        : (p.ib_economics_level ?? p.exam_level))
-    : profile.exam_level;
+  const profile = profileRes.data;
+  if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
 
   const progress = progressRes.data;
   const sessions = sessionsRes.data ?? [];
   const weakAreas = weakAreasRes.data ?? [];
   const totalCompleted = completionsRes.count ?? 0;
-  const totalLessons = getTotalLessons(progress?.subject ?? subject);
+  const totalLessons = 279;
   const curriculumPercent = Math.min(100, Math.round((totalCompleted / totalLessons) * 100));
   const unitsCompleted: string[] = (progress?.units_completed as string[]) ?? [];
   const lastSession = sessions[0] ?? null;
 
+  // Resolve lesson name for last session
   let lastSessionLessonName: string | null = null;
   if (lastSession?.lesson_code) {
     const { data: lessonRow } = await supabase
@@ -156,36 +86,14 @@ export default async function DashboardPage() {
     lastSessionLessonName = lessonRow?.lesson_name ?? null;
   }
 
-  // For Bundle students, load both progress rows
-  let bundleSubjects: { subject: string; lessonName: string; unitName: string; lessonCode: string }[] = [];
-  if (subject === 'IB_BUNDLE') {
-    const { data: allProgress } = await supabase
-      .from('student_progress')
-      .select('subject, current_lesson_name, current_unit_name, current_lesson_code')
-      .eq('student_id', user.id)
-      .in('subject', ['IB_ECONOMICS', 'IB_BUSINESS']);
-
-    bundleSubjects = (allProgress ?? []).map(row => ({
-      subject: row.subject,
-      lessonName: row.current_lesson_name ?? '',
-      unitName: row.current_unit_name ?? '',
-      lessonCode: row.current_lesson_code ?? '',
-    }));
-  }
-
-  const units = subject === 'IB_BUNDLE'
-    ? IB_ECON_UNITS // Default to econ units for bundle; client shows both
-    : getUnits(progress?.subject ?? subject);
-
   return (
     <DashboardClient
-      studentName={p.student_name}
-      subject={subject}
-      examLevel={formatExamLevel(subject, displayExamLevel ?? '')}
+      studentName={profile.student_name}
+      examLevel={profile.exam_level === 'higher' ? 'Higher Level' : 'Ordinary Level'}
       sessionNumber={progress?.session_number ?? 0}
-      currentLessonCode={progress?.current_lesson_code ?? (isIBStudent ? 'IB_ECON_001' : '1.1.1')}
-      currentLessonName={progress?.current_lesson_name ?? 'First Lesson'}
-      currentUnitName={progress?.current_unit_name ?? 'Unit 1'}
+      currentLessonCode={progress?.current_lesson_code ?? '1.1.1'}
+      currentLessonName={progress?.current_lesson_name ?? 'Introduction to People in Business'}
+      currentUnitName={progress?.current_unit_name ?? 'People in Business'}
       currentUnitCode={progress?.current_unit_code ?? 'UNIT_1'}
       sessionType={progress?.session_number === 0 ? 'New Topic' : 'New Topic'}
       curriculumPercent={curriculumPercent}
@@ -194,7 +102,7 @@ export default async function DashboardPage() {
       totalSessions={sessions.length}
       weakAreasCount={weakAreas.length}
       unitsCompleted={unitsCompleted}
-      units={units}
+      units={UNITS}
       recentSessions={sessions.map(s => ({
         id: s.id,
         session_number: s.session_number,
@@ -214,7 +122,6 @@ export default async function DashboardPage() {
       } : null}
       spaced_rep_due={progress?.spaced_rep_due ?? false}
       abq_drill_due={progress?.abq_drill_due ?? false}
-      bundleSubjects={bundleSubjects}
     />
   );
 }

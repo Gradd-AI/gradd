@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import {
   buildInjectedSystemPrompt,
   buildIBEconomicsPrompt,
-  buildIBBusinessPrompt,
   deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
@@ -31,7 +30,7 @@ function getServiceClient() {
   );
 }
 
-const LC_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
+const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
   UNIT_1:  { code: 'UNIT_2',    name: 'Business Management' },
   UNIT_2:  { code: 'UNIT_3',    name: 'Business Management (cont.)' },
   UNIT_3:  { code: 'UNIT_4A',   name: 'Finance — Accounts' },
@@ -41,31 +40,6 @@ const LC_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
   UNIT_5:  { code: 'UNIT_6',    name: 'International Environment' },
   UNIT_6:  { code: 'EXAM_PREP', name: 'Exam Preparation' },
 };
-
-const IB_ECON_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
-  UNIT_1: { code: 'UNIT_2', name: 'Microeconomics' },
-  UNIT_2: { code: 'UNIT_3', name: 'Macroeconomics' },
-  UNIT_3: { code: 'UNIT_4', name: 'The Global Economy' },
-};
-
-const IB_BM_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
-  UNIT_1: { code: 'UNIT_2', name: 'Human Resource Management' },
-  UNIT_2: { code: 'UNIT_3', name: 'Finance and Accounts' },
-  UNIT_3: { code: 'UNIT_4', name: 'Marketing' },
-  UNIT_4: { code: 'UNIT_5', name: 'Operations Management' },
-};
-
-function getLessonSubject(lessonCode: string): string {
-  if (lessonCode.startsWith('IB_ECON_')) return 'IB_ECONOMICS';
-  if (lessonCode.startsWith('IB_BM_')) return 'IB_BUSINESS';
-  return 'LC_BUSINESS';
-}
-
-function getUnitSequence(subject: string): Record<string, { code: string; name: string }> {
-  if (subject === 'IB_ECONOMICS') return IB_ECON_UNIT_SEQUENCE;
-  if (subject === 'IB_BUSINESS') return IB_BM_UNIT_SEQUENCE;
-  return LC_UNIT_SEQUENCE;
-}
 
 export async function POST(request: Request) {
   try {
@@ -88,7 +62,7 @@ export async function POST(request: Request) {
       {
         error: 'rate_limited',
         message:
-          "You've sent a lot of messages this hour — your tutor needs a short break! " +
+          "You've sent a lot of messages this hour — Aoife needs a short break! " +
           "You can continue in " +
           Math.ceil((resetAt.getTime() - Date.now()) / 60000) +
           " minutes.",
@@ -104,19 +78,14 @@ export async function POST(request: Request) {
     )
   }
  
-  // ── Load profile ─────────────────────────────────────────────────────────
+  // ── Subscription check ────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, student_name, exam_level, subject, ib_economics_level, ib_business_level')
+    .select('subscription_status, student_name, exam_level, subject')
     .eq('id', user.id)
     .single();
 
-  if (!profile) return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-
-  // Quick LC check before loading session (avoids DB roundtrip for most users)
-  const profileSubjectEarly = profile.subject ?? 'LC_BUSINESS';
-  const isIBEarly = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(profileSubjectEarly);
-  if (profile?.subscription_status !== 'active' && !isIBEarly) {
+  if (profile?.subscription_status !== 'active') {
     return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
   }
 
@@ -129,15 +98,6 @@ export async function POST(request: Request) {
     .single();
 
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
-
-  // ── IB free-lesson gate (requires session.lesson_code) ────────────────────
-  if (profile?.subscription_status !== 'active' && isIBEarly) {
-    const sessionLessonCode = (session as { lesson_code?: string })?.lesson_code ?? '';
-    const isFreeLessonOk = ['IB_ECON_001', 'IB_BM_001'].includes(sessionLessonCode);
-    if (!isFreeLessonOk) {
-      return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-    }
-  }
 
   // ── Build injected system prompt ──────────────────────────────────────────
   let injectedSystemPrompt: string = '';
@@ -152,12 +112,7 @@ export async function POST(request: Request) {
       { data: lessonCompletions },
       { data: unitCompletions },
     ] = await Promise.all([
-      (() => {
-        const fallbackSubject = getLessonSubject((session as { lesson_code?: string })?.lesson_code ?? '');
-        let q = supabase.from('student_progress').select('*').eq('student_id', user.id);
-        if (fallbackSubject !== 'LC_BUSINESS') q = q.eq('subject', fallbackSubject);
-        return q.single();
-      })(),
+      supabase.from('student_progress').select('*').eq('student_id', user.id).single(),
       supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
       supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
@@ -186,23 +141,15 @@ export async function POST(request: Request) {
 
     const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
-    const profileSubject = profile.subject ?? 'LC_BUSINESS';
-    const lessonCode = session.lesson_code ?? currentLessonCode;
-    const effectiveSubject = profileSubject === 'IB_BUNDLE'
-      ? (lessonCode.startsWith('IB_BM_') ? 'IB_BUSINESS' : 'IB_ECONOMICS')
-      : profileSubject;
+    const subject = profile.subject ?? 'LC_BUSINESS';
 
-    const ibExamLevel = effectiveSubject === 'IB_BUSINESS'
-      ? (profile.ib_business_level ?? profile.exam_level)
-      : (profile.ib_economics_level ?? profile.exam_level);
-
-    if (effectiveSubject === 'IB_ECONOMICS') {
+    if (subject === 'IB_ECONOMICS') {
       const lessonOrder = parseInt(
         progress?.current_lesson_code?.replace('IB_ECON_', '') ?? '1'
       );
       injectedSystemPrompt = await buildIBEconomicsPrompt({
         STUDENT_NAME:                 profile.student_name,
-        EXAM_LEVEL:                   ibExamLevel,
+        EXAM_LEVEL:                   profile.exam_level,
         CURRENT_UNIT_CODE:            progress?.current_unit_code ?? 'UNIT_1',
         CURRENT_UNIT_NAME:            progress?.current_unit_name ?? 'Introduction to Economics',
         CURRENT_LESSON_CODE:          currentLessonCode,
@@ -218,31 +165,10 @@ export async function POST(request: Request) {
         SESSION_TYPE:                 session.session_type,
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
-        COURSE_POSITION:              progress?.course_position ?? deriveCoursePosition(lessonOrder, ibExamLevel),
-      });
-    } else if (effectiveSubject === 'IB_BUSINESS') {
-      const lessonOrder = parseInt(
-        progress?.current_lesson_code?.replace('IB_BM_', '') ?? '1'
-      );
-      injectedSystemPrompt = await buildIBBusinessPrompt({
-        STUDENT_NAME:                 profile.student_name,
-        EXAM_LEVEL:                   ibExamLevel,
-        CURRENT_UNIT_CODE:            progress?.current_unit_code ?? 'UNIT_1',
-        CURRENT_UNIT_NAME:            progress?.current_unit_name ?? 'Introduction to Business Management',
-        CURRENT_LESSON_CODE:          currentLessonCode,
-        CURRENT_LESSON_NAME:          progress?.current_lesson_name ?? 'What is a Business?',
-        NEXT_LESSON_CODE:             nextLessonCode,
-        NEXT_LESSON_NAME:             nextLessonName,
-        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
-                                        lessonCompletions ?? [],
-                                        progress?.current_unit_code ?? 'UNIT_1'
+        COURSE_POSITION:              deriveCoursePosition(
+                                        lessonOrder,
+                                        profile.exam_level
                                       ),
-        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
-        SESSION_NUMBER:               session.session_number,
-        SESSION_TYPE:                 session.session_type,
-        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
-        LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
-        COURSE_POSITION:              progress?.course_position ?? deriveCoursePosition(lessonOrder, ibExamLevel),
       });
     } else {
       injectedSystemPrompt = await buildInjectedSystemPrompt({
@@ -408,18 +334,11 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
           signals.lessonIncomplete;
 
         if (hasSignals) {
-          const progressSubject = getLessonSubject(
-            (session as { lesson_code?: string })?.lesson_code ?? ''
-          );
-
-          let progressQuery = serviceSupabase
+          const { data: progress } = await serviceSupabase
             .from('student_progress')
             .select('*')
-            .eq('student_id', user.id);
-          if (progressSubject !== 'LC_BUSINESS') {
-            progressQuery = progressQuery.eq('subject', progressSubject);
-          }
-          const { data: progress } = await progressQuery.single();
+            .eq('student_id', user.id)
+            .single();
 
           if (progress) {
             const progressUpdates: Record<string, unknown> = {
@@ -537,7 +456,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
                 progressUpdates.units_completed = [...completedUnits, uc.unitCode];
               }
 
-              const nextUnit = getUnitSequence(progressSubject)[uc.unitCode];
+              const nextUnit = UNIT_SEQUENCE[uc.unitCode];
               if (nextUnit) {
                 progressUpdates.current_unit_code = nextUnit.code;
                 progressUpdates.current_unit_name = nextUnit.name;
@@ -603,14 +522,10 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 
             // ── Write all progress updates in one shot ────────────────────
             if (Object.keys(progressUpdates).length > 1) {
-              let updateQ = serviceSupabase
+              await serviceSupabase
                 .from('student_progress')
                 .update(progressUpdates)
                 .eq('student_id', user.id);
-              if (progressSubject !== 'LC_BUSINESS') {
-                updateQ = updateQ.eq('subject', progressSubject);
-              }
-              await updateQ;
             }
           }
         }
