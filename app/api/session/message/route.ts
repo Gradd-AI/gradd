@@ -31,7 +31,7 @@ function getServiceClient() {
   );
 }
 
-const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
+const LC_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
   UNIT_1:  { code: 'UNIT_2',    name: 'Business Management' },
   UNIT_2:  { code: 'UNIT_3',    name: 'Business Management (cont.)' },
   UNIT_3:  { code: 'UNIT_4A',   name: 'Finance — Accounts' },
@@ -41,6 +41,31 @@ const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
   UNIT_5:  { code: 'UNIT_6',    name: 'International Environment' },
   UNIT_6:  { code: 'EXAM_PREP', name: 'Exam Preparation' },
 };
+
+const IB_ECON_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
+  UNIT_1: { code: 'UNIT_2', name: 'Microeconomics' },
+  UNIT_2: { code: 'UNIT_3', name: 'Macroeconomics' },
+  UNIT_3: { code: 'UNIT_4', name: 'The Global Economy' },
+};
+
+const IB_BM_UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
+  UNIT_1: { code: 'UNIT_2', name: 'Human Resource Management' },
+  UNIT_2: { code: 'UNIT_3', name: 'Finance and Accounts' },
+  UNIT_3: { code: 'UNIT_4', name: 'Marketing' },
+  UNIT_4: { code: 'UNIT_5', name: 'Operations Management' },
+};
+
+function getLessonSubject(lessonCode: string): string {
+  if (lessonCode.startsWith('IB_ECON_')) return 'IB_ECONOMICS';
+  if (lessonCode.startsWith('IB_BM_')) return 'IB_BUSINESS';
+  return 'LC_BUSINESS';
+}
+
+function getUnitSequence(subject: string): Record<string, { code: string; name: string }> {
+  if (subject === 'IB_ECONOMICS') return IB_ECON_UNIT_SEQUENCE;
+  if (subject === 'IB_BUSINESS') return IB_BM_UNIT_SEQUENCE;
+  return LC_UNIT_SEQUENCE;
+}
 
 export async function POST(request: Request) {
   try {
@@ -63,7 +88,7 @@ export async function POST(request: Request) {
       {
         error: 'rate_limited',
         message:
-          "You've sent a lot of messages this hour — Aoife needs a short break! " +
+          "You've sent a lot of messages this hour — your tutor needs a short break! " +
           "You can continue in " +
           Math.ceil((resetAt.getTime() - Date.now()) / 60000) +
           " minutes.",
@@ -127,7 +152,12 @@ export async function POST(request: Request) {
       { data: lessonCompletions },
       { data: unitCompletions },
     ] = await Promise.all([
-      supabase.from('student_progress').select('*').eq('student_id', user.id).single(),
+      (() => {
+        const fallbackSubject = getLessonSubject((session as { lesson_code?: string })?.lesson_code ?? '');
+        let q = supabase.from('student_progress').select('*').eq('student_id', user.id);
+        if (fallbackSubject !== 'LC_BUSINESS') q = q.eq('subject', fallbackSubject);
+        return q.single();
+      })(),
       supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
       supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
@@ -378,11 +408,18 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
           signals.lessonIncomplete;
 
         if (hasSignals) {
-          const { data: progress } = await serviceSupabase
+          const progressSubject = getLessonSubject(
+            (session as { lesson_code?: string })?.lesson_code ?? ''
+          );
+
+          let progressQuery = serviceSupabase
             .from('student_progress')
             .select('*')
-            .eq('student_id', user.id)
-            .single();
+            .eq('student_id', user.id);
+          if (progressSubject !== 'LC_BUSINESS') {
+            progressQuery = progressQuery.eq('subject', progressSubject);
+          }
+          const { data: progress } = await progressQuery.single();
 
           if (progress) {
             const progressUpdates: Record<string, unknown> = {
@@ -500,7 +537,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
                 progressUpdates.units_completed = [...completedUnits, uc.unitCode];
               }
 
-              const nextUnit = UNIT_SEQUENCE[uc.unitCode];
+              const nextUnit = getUnitSequence(progressSubject)[uc.unitCode];
               if (nextUnit) {
                 progressUpdates.current_unit_code = nextUnit.code;
                 progressUpdates.current_unit_name = nextUnit.name;
@@ -566,10 +603,14 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 
             // ── Write all progress updates in one shot ────────────────────
             if (Object.keys(progressUpdates).length > 1) {
-              await serviceSupabase
+              let updateQ = serviceSupabase
                 .from('student_progress')
                 .update(progressUpdates)
                 .eq('student_id', user.id);
+              if (progressSubject !== 'LC_BUSINESS') {
+                updateQ = updateQ.eq('subject', progressSubject);
+              }
+              await updateQ;
             }
           }
         }

@@ -15,3 +15,13 @@ ALTER TABLE student_progress ADD COLUMN IF NOT EXISTS course_position TEXT;
 -- Backfill existing LC rows so .eq('subject', ...) queries work correctly
 UPDATE student_progress SET subject = 'LC_BUSINESS' WHERE subject IS NULL;
 UPDATE profiles SET subject = 'LC_BUSINESS' WHERE subject IS NULL;
+
+-- ── unique constraint on (student_id, subject) ───────────────────────────────
+-- Required for onboarding upsert: .upsert(row, { onConflict: 'student_id,subject' })
+-- If student_progress already has a UNIQUE constraint on student_id alone, drop it first:
+--   SELECT conname FROM pg_constraint WHERE conrelid='student_progress'::regclass AND contype='u';
+--   ALTER TABLE student_progress DROP CONSTRAINT <conname>;
+-- Then run:
+ALTER TABLE student_progress
+  ADD CONSTRAINT IF NOT EXISTS student_progress_student_id_subject_key
+  UNIQUE (student_id, subject);

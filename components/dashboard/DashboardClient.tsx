@@ -541,7 +541,7 @@ export default function DashboardClient(props: Props) {
             {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
             {props.spaced_rep_due && (
               <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>
-                🔁 Aoife will start today with a quick recall block — locking in recent material before moving forward.
+                🔁 {tutorName} will start today with a quick recall block — locking in recent material before moving forward.
               </div>
             )}
             {props.abq_drill_due && (
