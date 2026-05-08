@@ -34,12 +34,17 @@ export default async function SessionPage({
   // For bundle students, use the URL subject param; otherwise use profile subject
   const progressSubject = params.subject ?? (profileSubject === 'IB_BUNDLE' ? 'IB_ECONOMICS' : profileSubject);
 
-  const { data: progress } = await supabase
+  let progressQuery = supabase
     .from('student_progress')
     .select('current_lesson_name, current_unit_name, session_number, current_lesson_code, subject')
-    .eq('student_id', user.id)
-    .eq('subject', progressSubject)
-    .single();
+    .eq('student_id', user.id);
+
+  // Only filter by subject for IB students — LC rows may have subject NULL on older installs
+  if (isIBStudent) {
+    progressQuery = progressQuery.eq('subject', progressSubject);
+  }
+
+  const { data: progress } = await progressQuery.single();
 
   const currentLessonCode = progress?.current_lesson_code ?? '';
   const isFirstLesson = (IB_FIRST_LESSON_CODES as readonly string[]).includes(currentLessonCode);
