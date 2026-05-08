@@ -2,6 +2,7 @@ import { createServerClient } from '@/lib/supabase/server';
 import {
   buildInjectedSystemPrompt,
   buildIBEconomicsPrompt,
+  buildIBBusinessPrompt,
   deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
@@ -94,6 +95,28 @@ export async function POST() {
       injectedSystemPrompt = await buildIBEconomicsPrompt({
         STUDENT_NAME:                 profile.student_name,
         EXAM_LEVEL:                   profile.exam_level, // 'SL' or 'HL'
+        CURRENT_UNIT_CODE:            progress.current_unit_code,
+        CURRENT_UNIT_NAME:            progress.current_unit_name,
+        CURRENT_LESSON_CODE:          progress.current_lesson_code,
+        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        NEXT_LESSON_CODE:             nextLessonCode,
+        NEXT_LESSON_NAME:             nextLessonName,
+        LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
+                                        lessonCompletions ?? [],
+                                        progress.current_unit_code
+                                      ),
+        UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
+        SESSION_NUMBER:               newSessionNumber,
+        SESSION_TYPE:                 sessionType,
+        WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
+        LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
+        COURSE_POSITION:              deriveCoursePosition(lessonOrder, profile.exam_level),
+      });
+    } else if (subject === 'IB_BUSINESS') {
+      const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_BM_', '') ?? '1');
+      injectedSystemPrompt = await buildIBBusinessPrompt({
+        STUDENT_NAME:                 profile.student_name,
+        EXAM_LEVEL:                   profile.exam_level,
         CURRENT_UNIT_CODE:            progress.current_unit_code,
         CURRENT_UNIT_NAME:            progress.current_unit_name,
         CURRENT_LESSON_CODE:          progress.current_lesson_code,
