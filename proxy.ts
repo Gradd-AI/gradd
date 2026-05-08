@@ -7,9 +7,9 @@ export async function proxy(request: NextRequest) {
   const domainOverride = process.env.NEXT_PUBLIC_DOMAIN ?? '';
   const isIB = host.includes('gradd.ai') || domainOverride === 'ib';
 
-  let response = NextResponse.next({
-    request: { headers: request.headers },
-  });
+  // Must use NextResponse.next({ request }) so that any cookies set by setAll
+  // below (refreshed auth tokens) are forwarded to server components.
+  let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,9 +20,9 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
+          // Mutate the request cookies so server components see the new tokens.
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          // Reassign response so the Set-Cookie headers reach the browser.
           response = NextResponse.next({ request });
           cookiesToSet.forEach(({ name, value, options }) =>
             response.cookies.set(name, value, options)
@@ -32,38 +32,36 @@ export async function proxy(request: NextRequest) {
     }
   );
 
-  const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+  // Refresh the session. On any auth error treat as unauthenticated rather
+  // than crashing — pages perform their own getUser() + redirect logic.
+  let user: { id: string } | null = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch {
+    user = null;
+  }
 
   const pathname = request.nextUrl.pathname;
-  const protectedPaths = ['/dashboard', '/session'];
-  const isProtectedPath = protectedPaths.some(p => pathname.startsWith(p));
 
-  if (isProtectedPath) {
-    if (!user) {
-      return NextResponse.redirect(new URL('/auth/login', request.url));
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('subscription_status, subject')
-      .eq('id', user.id)
-      .single();
-
-    const subject = profile?.subject ?? 'LC_BUSINESS';
-    const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
-
-    // IB students always pass — free lesson gate is enforced in /session and /api/session/*
-    // LC students must subscribe before accessing protected routes
-    if (!isIBStudent && (!profile || profile.subscription_status !== 'active')) {
-      return NextResponse.redirect(new URL('/subscribe', request.url));
-    }
+  // Redirect unauthenticated requests away from protected paths.
+  const protectedPaths = ['/dashboard', '/session', '/onboarding'];
+  if (!user && protectedPaths.some(p => pathname.startsWith(p))) {
+    const loginUrl = new URL('/auth/login', request.url);
+    // Copy any refreshed auth cookies so the browser doesn't lose them.
+    const redirect = NextResponse.redirect(loginUrl);
+    response.cookies.getAll().forEach(c => redirect.cookies.set(c.name, c.value, c));
+    return redirect;
   }
 
+  // Redirect authenticated users away from auth pages.
   if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    const redirect = NextResponse.redirect(new URL('/dashboard', request.url));
+    response.cookies.getAll().forEach(c => redirect.cookies.set(c.name, c.value, c));
+    return redirect;
   }
 
-  // Set gradd-domain cookie so client components read it without re-detecting hostname
+  // Set gradd-domain cookie so client components read it without re-detecting hostname.
   response.cookies.set('gradd-domain', isIB ? 'ib' : 'lc', {
     httpOnly: false,
     secure: process.env.NODE_ENV === 'production',
