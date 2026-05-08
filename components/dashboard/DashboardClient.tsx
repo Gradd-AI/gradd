@@ -22,6 +22,7 @@ interface LastSession {
 }
 interface Props {
   studentName: string; examLevel: string; sessionNumber: number;
+  subject?: string;
   currentLessonCode: string; currentLessonName: string;
   currentUnitName: string; currentUnitCode: string; sessionType: string;
   curriculumPercent: number; totalCompleted: number; totalLessons: number;
@@ -29,6 +30,25 @@ interface Props {
   units: Unit[]; recentSessions: RecentSession[]; weakAreas: WeakArea[];
   lastSession: LastSession | null; spaced_rep_due: boolean; abq_drill_due: boolean;
 }
+
+const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'];
+
+function getTutorName(subject?: string): string {
+  return subject && IB_SUBJECTS.includes(subject) ? 'Mia' : 'Aoife';
+}
+
+function getSubjectLabel(subject?: string): string {
+  const map: Record<string, string> = {
+    LC_BUSINESS:  'LC Business',
+    IB_ECONOMICS: 'IB Economics',
+    IB_BUSINESS:  'IB Business Management',
+    IB_BUNDLE:    'IB Bundle',
+  };
+  return (subject && map[subject]) ? map[subject] : 'LC Business';
+}
+
+const LC_EXAM_DATE = new Date('2026-06-08T09:00:00');
+const IB_EXAM_DATE = new Date('2027-05-12T09:00:00');
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,12 +72,14 @@ function sessionLabel(type: string): string {
   return map[type] ?? type;
 }
 
-const EXAM_DATE = new Date('2026-06-08T09:00:00');
-function daysToExam() { return Math.max(0, Math.ceil((EXAM_DATE.getTime() - Date.now()) / 86400000)); }
-function weeksToExam() { return Math.max(0.5, daysToExam() / 7); }
+function daysToExam(subject?: string) {
+  const date = subject && IB_SUBJECTS.includes(subject) ? IB_EXAM_DATE : LC_EXAM_DATE;
+  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000));
+}
+function weeksToExam(subject?: string) { return Math.max(0.5, daysToExam(subject) / 7); }
 
-function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number): number {
-  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeksToExam());
+function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number, subject?: string): number {
+  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeksToExam(subject));
 }
 
 function calcStreak(sessions: RecentSession[]): number {
@@ -301,22 +323,26 @@ function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: numbe
 
 // ─── Stat grid ────────────────────────────────────────────────────────────────
 
-function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace }: {
+function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace, subject, tutorName }: {
   curriculumPercent: number; totalCompleted: number; totalLessons: number; totalSessions: number;
   weakAreasCount: number; streak: number; thisWeek: number; examDays: number;
-  neededPerWeek: number; avgPerWeek: number; pace: Pace;
+  neededPerWeek: number; avgPerWeek: number; pace: Pace; subject?: string; tutorName: string;
 }) {
   const timeHrs = Math.round((totalSessions * 45) / 60 * 10) / 10;
   const paceConf = PACE_CONF[pace];
+  const isIB = subject && IB_SUBJECTS.includes(subject);
+  const examLabel = isIB
+    ? `${getSubjectLabel(subject)} · May 2027`
+    : 'LC Business · 08/06/2026';
   const stats = [
     { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
     { label: 'Sessions completed', value: totalSessions, sub: `≈ ${timeHrs} hrs invested` },
     { label: 'This week', value: thisWeek, sub: `target: ${neededPerWeek}/wk` },
-    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam())} weeks to exam`, warn: neededPerWeek > 10 },
+    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam(subject))} weeks to exam`, warn: neededPerWeek > 10 },
     { label: '4-wk avg / week', value: avgPerWeek, sub: paceConf.label.toLowerCase(), accent: pace === 'ahead' || pace === 'on-track', warn: pace === 'behind' },
-    { label: 'Days to exam', value: examDays, sub: 'LC Business · 08/06/2026' },
+    { label: 'Days to exam', value: examDays, sub: examLabel },
     { label: 'Study streak', value: `${streak}d`, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
-    { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : 'Aoife is tracking', warn: weakAreasCount > 0 },
+    { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : `${tutorName} is tracking`, warn: weakAreasCount > 0 },
   ];
   return (
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
@@ -421,16 +447,20 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
 export default function DashboardClient(props: Props) {
   const [mode, setMode] = useState<ViewMode>('parent');
 
+  const subject = props.subject ?? 'LC_BUSINESS';
+  const tutorName = getTutorName(subject);
+  const subjectLabel = getSubjectLabel(subject);
+
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);
-  const examDays = daysToExam();
-  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons);
+  const examDays = daysToExam(subject);
+  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons, subject);
   const avgPerWeek = avgSessionsPerWeek(props.recentSessions);
   const pace = calcPace(avgPerWeek, neededPerWeek);
 
   const emptyState = (
     <div style={{ background: 'var(--surface-2)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius)', padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
-      Your first session summary will appear here after completing a session with Aoife.
+      Your first session summary will appear here after completing a session with {tutorName}.
     </div>
   );
 
@@ -446,7 +476,7 @@ export default function DashboardClient(props: Props) {
               {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
-              LC Business · {props.examLevel} · Session {props.sessionNumber} completed
+              {subjectLabel} · {props.examLevel} · Session {props.sessionNumber} completed
             </p>
           </div>
           <Toggle mode={mode} onChange={setMode} />
@@ -464,6 +494,7 @@ export default function DashboardClient(props: Props) {
               totalLessons={props.totalLessons} totalSessions={props.totalSessions}
               weakAreasCount={props.weakAreasCount} streak={streak} thisWeek={thisWeek}
               examDays={examDays} neededPerWeek={neededPerWeek} avgPerWeek={avgPerWeek} pace={pace}
+              subject={subject} tutorName={tutorName}
             />
             <CurriculumProgress units={props.units} currentUnitCode={props.currentUnitCode} unitsCompleted={props.unitsCompleted} curriculumPercent={props.curriculumPercent} totalCompleted={props.totalCompleted} totalLessons={props.totalLessons} />
             <WeakAreasSection weakAreas={props.weakAreas} />
@@ -478,7 +509,7 @@ export default function DashboardClient(props: Props) {
             {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
             {props.spaced_rep_due && (
               <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>
-                🔁 Aoife will start today with a quick recall block — locking in recent material before moving forward.
+                🔁 {tutorName} will start today with a quick recall block — locking in recent material before moving forward.
               </div>
             )}
             {props.abq_drill_due && (

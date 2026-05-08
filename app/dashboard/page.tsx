@@ -8,7 +8,7 @@ import DashboardClient from '@/components/dashboard/DashboardClient';
 
 export const dynamic = 'force-dynamic';
 
-const UNITS = [
+const LC_UNITS = [
   { code: 'UNIT_1',    name: 'People in Business' },
   { code: 'UNIT_2',    name: 'Business Management' },
   { code: 'UNIT_3',    name: 'Business Management (cont.)' },
@@ -20,62 +20,111 @@ const UNITS = [
   { code: 'EXAM_PREP', name: 'Exam Preparation' },
 ];
 
+const IB_ECON_UNITS = [
+  { code: 'UNIT_1', name: 'Introduction to Economics' },
+  { code: 'UNIT_2', name: 'Microeconomics' },
+  { code: 'UNIT_3', name: 'Macroeconomics' },
+  { code: 'UNIT_4', name: 'The Global Economy' },
+];
+
+const IB_BM_UNITS = [
+  { code: 'UNIT_1', name: 'Business Organisation and Environment' },
+  { code: 'UNIT_2', name: 'Human Resource Management' },
+  { code: 'UNIT_3', name: 'Finance and Accounts' },
+  { code: 'UNIT_4', name: 'Marketing' },
+  { code: 'UNIT_5', name: 'Operations Management' },
+];
+
 export default async function DashboardPage() {
   const supabase = await createServerClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
 
-  // All queries in parallel
-  const [profileRes, progressRes, sessionsRes, weakAreasRes, completionsRes] =
-    await Promise.all([
-      supabase
-        .from('profiles')
-        .select('student_name, exam_level, subscription_status')
-        .eq('id', user.id)
-        .single(),
+  // Try to read IB columns; fall back to LC-safe select if they don't exist yet.
+  const { data: fullProfile, error: profileError } = await supabase
+    .from('profiles')
+    .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
+    .eq('id', user.id)
+    .single();
 
-      supabase
-        .from('student_progress')
-        .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary')
-        .eq('student_id', user.id)
-        .single(),
+  type ProfileRow = {
+    student_name: string;
+    exam_level: string;
+    subscription_status: string;
+    subject?: string | null;
+    ib_economics_level?: string | null;
+    ib_business_level?: string | null;
+  };
 
-      supabase
-        .from('sessions')
-        .select('id, session_number, session_type, lesson_code, concepts_covered, weak_flags_count, started_at, ended_at, apply_scores')
-        .eq('student_id', user.id)
-        .not('ended_at', 'is', null)
-        .order('started_at', { ascending: false })
-        .limit(5),
+  let profile: ProfileRow | null = fullProfile as ProfileRow | null;
+  if (!profile && profileError) {
+    const { data: lcProfile } = await supabase
+      .from('profiles')
+      .select('student_name, exam_level, subscription_status')
+      .eq('id', user.id)
+      .single();
+    profile = lcProfile as ProfileRow | null;
+  }
 
-      supabase
-        .from('weak_areas')
-        .select('id, concept_slug, error_description, lesson_code, occurrence_count')
-        .eq('student_id', user.id)
-        .is('resolved_at', null)
-        .order('occurrence_count', { ascending: false })
-        .limit(5),
-
-      supabase
-        .from('lesson_completions')
-        .select('*', { count: 'exact', head: true })
-        .eq('student_id', user.id),
-    ]);
-
-  const profile = profileRes.data;
+  // Subscription gate — unchanged from original LC Business logic.
   if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
+
+  // Derive subject-dependent display values. Defaults keep LC Business working
+  // exactly as before if subject column is missing or null.
+  const subject = profile.subject ?? 'LC_BUSINESS';
+  const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
+
+  const displayExamLevel = isIBStudent
+    ? (subject === 'IB_BUSINESS'
+        ? (profile.ib_business_level ?? profile.exam_level)
+        : (profile.ib_economics_level ?? profile.exam_level))
+    : (profile.exam_level === 'higher' ? 'Higher Level' : 'Ordinary Level');
+
+  const totalLessons = subject === 'IB_ECONOMICS' || subject === 'IB_BUSINESS' ? 150 : 279;
+
+  const units = subject === 'IB_ECONOMICS' ? IB_ECON_UNITS
+    : subject === 'IB_BUSINESS' ? IB_BM_UNITS
+    : LC_UNITS;
+
+  // All remaining queries are identical to the original.
+  const [progressRes, sessionsRes, weakAreasRes, completionsRes] = await Promise.all([
+    supabase
+      .from('student_progress')
+      .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary')
+      .eq('student_id', user.id)
+      .single(),
+
+    supabase
+      .from('sessions')
+      .select('id, session_number, session_type, lesson_code, concepts_covered, weak_flags_count, started_at, ended_at, apply_scores')
+      .eq('student_id', user.id)
+      .not('ended_at', 'is', null)
+      .order('started_at', { ascending: false })
+      .limit(5),
+
+    supabase
+      .from('weak_areas')
+      .select('id, concept_slug, error_description, lesson_code, occurrence_count')
+      .eq('student_id', user.id)
+      .is('resolved_at', null)
+      .order('occurrence_count', { ascending: false })
+      .limit(5),
+
+    supabase
+      .from('lesson_completions')
+      .select('*', { count: 'exact', head: true })
+      .eq('student_id', user.id),
+  ]);
 
   const progress = progressRes.data;
   const sessions = sessionsRes.data ?? [];
   const weakAreas = weakAreasRes.data ?? [];
   const totalCompleted = completionsRes.count ?? 0;
-  const totalLessons = 279;
   const curriculumPercent = Math.min(100, Math.round((totalCompleted / totalLessons) * 100));
   const unitsCompleted: string[] = (progress?.units_completed as string[]) ?? [];
   const lastSession = sessions[0] ?? null;
 
-  // Resolve lesson name for last session
   let lastSessionLessonName: string | null = null;
   if (lastSession?.lesson_code) {
     const { data: lessonRow } = await supabase
@@ -89,7 +138,8 @@ export default async function DashboardPage() {
   return (
     <DashboardClient
       studentName={profile.student_name}
-      examLevel={profile.exam_level === 'higher' ? 'Higher Level' : 'Ordinary Level'}
+      subject={subject}
+      examLevel={displayExamLevel ?? ''}
       sessionNumber={progress?.session_number ?? 0}
       currentLessonCode={progress?.current_lesson_code ?? '1.1.1'}
       currentLessonName={progress?.current_lesson_name ?? 'Introduction to People in Business'}
@@ -102,7 +152,7 @@ export default async function DashboardPage() {
       totalSessions={sessions.length}
       weakAreasCount={weakAreas.length}
       unitsCompleted={unitsCompleted}
-      units={UNITS}
+      units={units}
       recentSessions={sessions.map(s => ({
         id: s.id,
         session_number: s.session_number,
