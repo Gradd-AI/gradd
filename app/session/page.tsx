@@ -19,14 +19,35 @@ export default async function SessionPage({
 
   const params = await searchParams;
 
-  // Load profile first so we can use subject for the progress query
-  const { data: profile } = await supabase
+  // Load profile — IB columns may not exist on pre-migration installs.
+  // If the full query errors, fall back to an LC-safe select.
+  const { data: fullProfile, error: profileError } = await supabase
     .from('profiles')
     .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
     .eq('id', user.id)
     .single();
 
-  if (!profile) redirect('/auth/login');
+  let profile = fullProfile as {
+    student_name: string;
+    exam_level: string;
+    subscription_status: string | null;
+    subject?: string | null;
+    ib_economics_level?: string | null;
+    ib_business_level?: string | null;
+  } | null;
+
+  if (!profile && profileError) {
+    const { data: lcProfile } = await supabase
+      .from('profiles')
+      .select('student_name, exam_level, subscription_status')
+      .eq('id', user.id)
+      .single();
+    profile = lcProfile as typeof profile;
+  }
+
+  // Redirect to /subscribe (not /auth/login) — the proxy bounces authenticated
+  // users from /auth/login back to /dashboard, not back to /session.
+  if (!profile) redirect('/subscribe');
 
   const profileSubject = profile.subject ?? 'LC_BUSINESS';
   const isIBStudent = (IB_SUBJECTS as readonly string[]).includes(profileSubject);
