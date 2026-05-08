@@ -96,10 +96,14 @@ export default async function DashboardPage() {
     ]);
 
   const profile = profileRes.data;
-  if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
+  if (!profile) redirect('/auth/login');
 
   const subject = profile.subject ?? 'LC_BUSINESS';
   const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
+
+  // IB students always have access — free lesson 1 gate lives in /session and /api/session/*
+  // LC students must subscribe before reaching the dashboard
+  if (!isIBStudent && profile.subscription_status !== 'active') redirect('/subscribe');
 
   // For IB students, use the subject-specific exam level
   const displayExamLevel = isIBStudent
