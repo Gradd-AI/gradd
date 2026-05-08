@@ -59,6 +59,8 @@ export default async function DashboardPage() {
 
   const [profileRes, progressRes, sessionsRes, weakAreasRes, completionsRes] =
     await Promise.all([
+      // Select IB columns where available; PostgREST returns data:null on
+      // unknown-column errors, so we fall back to a minimal query below.
       supabase
         .from('profiles')
         .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
@@ -95,21 +97,44 @@ export default async function DashboardPage() {
         .eq('student_id', user.id),
     ]);
 
-  const profile = profileRes.data;
-  if (!profile) redirect('/auth/login');
+  // If the full query failed (IB columns not yet in DB), fall back to the
+  // LC-safe select so LC Business students can still reach their dashboard.
+  let profile = profileRes.data;
+  if (!profile && profileRes.error) {
+    const { data: fallback } = await supabase
+      .from('profiles')
+      .select('student_name, exam_level, subscription_status')
+      .eq('id', user.id)
+      .single();
+    profile = fallback as typeof profile;
+  }
 
-  const subject = profile.subject ?? 'LC_BUSINESS';
+  // Redirect to /subscribe, not /auth/login — the proxy bounces authenticated
+  // users from /auth/login straight back to /dashboard, creating a loop.
+  if (!profile) redirect('/subscribe');
+
+  // Treat profile as a partial type — IB columns may be absent on pre-migration installs
+  const p = profile as {
+    student_name: string;
+    exam_level: string;
+    subscription_status: string;
+    subject?: string | null;
+    ib_economics_level?: string | null;
+    ib_business_level?: string | null;
+  };
+
+  const subject = p.subject ?? 'LC_BUSINESS';
   const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
 
   // IB students always have access — free lesson 1 gate lives in /session and /api/session/*
   // LC students must subscribe before reaching the dashboard
-  if (!isIBStudent && profile.subscription_status !== 'active') redirect('/subscribe');
+  if (!isIBStudent && p.subscription_status !== 'active') redirect('/subscribe');
 
   // For IB students, use the subject-specific exam level
   const displayExamLevel = isIBStudent
     ? (subject === 'IB_BUSINESS'
-        ? (profile.ib_business_level ?? profile.exam_level)
-        : (profile.ib_economics_level ?? profile.exam_level))
+        ? (p.ib_business_level ?? p.exam_level)
+        : (p.ib_economics_level ?? p.exam_level))
     : profile.exam_level;
 
   const progress = progressRes.data;
@@ -140,11 +165,11 @@ export default async function DashboardPage() {
       .eq('student_id', user.id)
       .in('subject', ['IB_ECONOMICS', 'IB_BUSINESS']);
 
-    bundleSubjects = (allProgress ?? []).map(p => ({
-      subject: p.subject,
-      lessonName: p.current_lesson_name ?? '',
-      unitName: p.current_unit_name ?? '',
-      lessonCode: p.current_lesson_code ?? '',
+    bundleSubjects = (allProgress ?? []).map(row => ({
+      subject: row.subject,
+      lessonName: row.current_lesson_name ?? '',
+      unitName: row.current_unit_name ?? '',
+      lessonCode: row.current_lesson_code ?? '',
     }));
   }
 
@@ -154,7 +179,7 @@ export default async function DashboardPage() {
 
   return (
     <DashboardClient
-      studentName={profile.student_name}
+      studentName={p.student_name}
       subject={subject}
       examLevel={formatExamLevel(subject, displayExamLevel ?? '')}
       sessionNumber={progress?.session_number ?? 0}
