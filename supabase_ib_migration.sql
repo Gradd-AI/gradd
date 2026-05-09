@@ -22,6 +22,15 @@ UPDATE profiles SET subject = 'LC_BUSINESS' WHERE subject IS NULL;
 --   SELECT conname FROM pg_constraint WHERE conrelid='student_progress'::regclass AND contype='u';
 --   ALTER TABLE student_progress DROP CONSTRAINT <conname>;
 -- Then run:
-ALTER TABLE student_progress
-  ADD CONSTRAINT IF NOT EXISTS student_progress_student_id_subject_key
-  UNIQUE (student_id, subject);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+    WHERE conrelid = 'student_progress'::regclass
+    AND conname = 'student_progress_student_id_subject_key'
+  ) THEN
+    ALTER TABLE student_progress
+      ADD CONSTRAINT student_progress_student_id_subject_key
+      UNIQUE (student_id, subject);
+  END IF;
+END $$;

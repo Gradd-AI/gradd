@@ -253,6 +253,15 @@ Raise IB to €59.99/month after 50 students with proven results. No earlier.
 
 ---
 
+## BRANDING
+
+gradd.ai wordmark: implement as HTML/CSS component using Unicode interpunct · between "gradd" and "ai" in Playfair Display — "gradd" in dark green #1a3d28, ".ai" in amber #d97706 italic
+Replace SVG text logo in gradd.ai nav with this component
+Convert gradd-ai-icon-final-512.svg to PNG for Stripe branding and favicon
+Add favicon to /public/ and update Next.js layout
+
+---
+
 *This document is the single source of truth for Gradd product decisions.
 Reference it at the start of every build session.
 Measure every decision against the north star.*

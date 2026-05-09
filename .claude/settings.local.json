@@ -7,7 +7,10 @@
       "Bash(npx vercel *)",
       "Bash(Get-ChildItem -Recurse -Path \"C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\" -Force)",
       "Bash(Select-Object -ExpandProperty FullName)",
-      "Bash(xargs grep -l \"hostname\\\\|origin\\\\|req.headers\")"
+      "Bash(xargs grep -l \"hostname\\\\|origin\\\\|req.headers\")",
+      "Bash(xargs grep -l \"TODO.*IB\\\\|FIXME.*IB\\\\|onboarding\")",
+      "Bash(vercel *)",
+      "Bash(git checkout *)"
     ]
   }
 }
