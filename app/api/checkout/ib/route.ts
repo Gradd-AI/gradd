@@ -38,12 +38,19 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createServerClient();
-  let { data: { user } } = await supabase.auth.getUser();
+  const { data: { user: cookieUser }, error: authError } = await supabase.auth.getUser();
+
+  console.error('IB CHECKOUT AUTH DEBUG:', {
+    hasUser: !!cookieUser,
+    userId: cookieUser?.id,
+    authError: authError?.message,
+    hasAuthHeader: !!request.headers.get('Authorization'),
+    origin: request.headers.get('origin'),
+  });
+
+  let user = cookieUser;
 
   // Fallback: read Bearer token from Authorization header.
-  // Used by the IB signup page which sends the access_token from the
-  // signUp() response directly — the session cookie may not be set yet
-  // when this request fires in the same JS tick as account creation.
   if (!user) {
     const token = request.headers.get('Authorization')?.replace('Bearer ', '');
     if (token) {
