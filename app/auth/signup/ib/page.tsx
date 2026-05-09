@@ -430,7 +430,7 @@ export default function IBSignupPage() {
 
     setLoading(true);
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+    const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -450,20 +450,6 @@ export default function IBSignupPage() {
       return;
     }
 
-    // signUp() returns a valid session even when email confirmation is pending —
-    // Supabase does not block this session, only signInWithPassword() checks
-    // email_confirmed_at. Explicitly commit the tokens to cookies so the
-    // server-side createServerClient().auth.getUser() can read them before
-    // the checkout fetch fires (browser navigation would flush naturally but
-    // an in-page fetch fires before the async cookie write completes).
-    if (signUpData.session) {
-      await supabase.auth.setSession({
-        access_token:  signUpData.session.access_token,
-        refresh_token: signUpData.session.refresh_token,
-      });
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.from('profiles').update({
         subject,
@@ -490,7 +476,10 @@ export default function IBSignupPage() {
 
     const checkoutRes = await fetch('/api/checkout/ib', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
+      },
       body: JSON.stringify({ billing, subject, exam_level: examLevel }),
     });
 

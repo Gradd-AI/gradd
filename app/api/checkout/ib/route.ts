@@ -38,7 +38,20 @@ export async function POST(request: Request) {
   }
 
   const supabase = await createServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let { data: { user } } = await supabase.auth.getUser();
+
+  // Fallback: read Bearer token from Authorization header.
+  // Used by the IB signup page which sends the access_token from the
+  // signUp() response directly — the session cookie may not be set yet
+  // when this request fires in the same JS tick as account creation.
+  if (!user) {
+    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    if (token) {
+      const { data } = await supabase.auth.getUser(token);
+      user = data.user;
+    }
+  }
+
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   const { data: profile } = await supabase
