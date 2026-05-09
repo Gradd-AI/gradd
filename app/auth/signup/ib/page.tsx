@@ -423,7 +423,7 @@ export default function IBSignupPage() {
       // Non-fatal
     }
 
-    router.push('/subscribe');
+    router.push(`/subscribe/ib?subject=${subject}`);
   };
 
   return (
