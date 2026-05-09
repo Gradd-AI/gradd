@@ -356,9 +356,13 @@ function IBOnboardingInner() {
     setError('');
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const res = await fetch('/api/onboarding/ib', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
+        },
         body: JSON.stringify({
           subject,
           economicsLevel: economicsLevel ?? undefined,

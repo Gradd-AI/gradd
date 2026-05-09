@@ -15,7 +15,18 @@ interface OnboardingPayload {
 export async function POST(request: Request) {
   const supabase = await createServerClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const authHeader = request.headers.get('Authorization');
+  const token = authHeader?.replace('Bearer ', '');
+
+  let user = null;
+  const { data: { user: cookieUser } } = await supabase.auth.getUser();
+  if (cookieUser) {
+    user = cookieUser;
+  } else if (token) {
+    const { data: { user: tokenUser } } = await supabase.auth.getUser(token);
+    user = tokenUser;
+  }
+
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
   let body: OnboardingPayload;
