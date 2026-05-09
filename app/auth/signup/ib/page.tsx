@@ -450,6 +450,16 @@ export default function IBSignupPage() {
       return;
     }
 
+    // signUp alone does not reliably flush auth cookies before a server-side
+    // API call reads them. Sign in explicitly so the session cookie is set
+    // before /api/checkout/ib calls createServerClient().auth.getUser().
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (signInError) {
+      setError('Account created but sign-in failed: ' + signInError.message);
+      setLoading(false);
+      return;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.from('profiles').update({
