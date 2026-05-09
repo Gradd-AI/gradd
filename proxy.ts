@@ -61,6 +61,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
+  // gradd.ai → serve IB signup at the same URL (unauthenticated users only)
+  const host = request.headers.get('host') ?? '';
+  if (pathname === '/auth/signup' && (host === 'gradd.ai' || host.startsWith('gradd.ai:'))) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/auth/signup/ib';
+    return NextResponse.rewrite(url);
+  }
+
   return response;
 }
 
