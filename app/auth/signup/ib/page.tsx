@@ -216,6 +216,7 @@ function StepAccount({
   studentName, setStudentName,
   email, setEmail,
   password, setPassword,
+  billing, setBilling,
   onBack,
   onSubmit,
   loading,
@@ -227,6 +228,8 @@ function StepAccount({
   setEmail: (v: string) => void;
   password: string;
   setPassword: (v: string) => void;
+  billing: 'monthly' | 'annual';
+  setBilling: (v: 'monthly' | 'annual') => void;
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
   loading: boolean;
@@ -239,12 +242,62 @@ function StepAccount({
     <div>
       <h1 className="auth-heading" style={{ marginBottom: 6 }}>Create your account</h1>
       <p className="auth-subheading" style={{ marginBottom: 24 }}>
-        Your IB tutor Mia is ready when you are.
+        7-day free trial — no charge until the trial ends.
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       <form onSubmit={onSubmit}>
+        <div className="form-group">
+          <p className="form-label" style={{ marginBottom: 8 }}>After your trial</p>
+          <div style={{
+            display: 'flex',
+            background: 'var(--surface-2)',
+            borderRadius: 'var(--radius-sm)',
+            padding: 4,
+            gap: 4,
+          }}>
+            {(['monthly', 'annual'] as const).map(b => (
+              <button
+                key={b}
+                type="button"
+                onClick={() => setBilling(b)}
+                style={{
+                  flex: 1,
+                  padding: '10px 16px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: 'none',
+                  background: billing === b ? 'var(--surface)' : 'transparent',
+                  color: billing === b ? 'var(--brand)' : 'var(--text-muted)',
+                  fontWeight: billing === b ? 700 : 500,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  boxShadow: billing === b ? 'var(--shadow-sm)' : 'none',
+                  transition: 'all 0.15s ease',
+                  fontFamily: 'var(--font-body)',
+                }}
+              >
+                {b === 'monthly' ? 'Monthly' : 'Annual'}
+                {b === 'annual' && (
+                  <span style={{
+                    marginLeft: 6,
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: 11,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    fontWeight: 700,
+                  }}>
+                    Best value
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 6 }}>
+            You can change or cancel at any time during or after the trial.
+          </p>
+        </div>
         <div className="form-group">
           <label className="form-label" htmlFor="studentName">Student's first name</label>
           <input
@@ -331,7 +384,7 @@ function StepAccount({
             className="btn btn-primary btn-full btn-lg"
             disabled={loading}
           >
-            {loading ? (<><span className="spinner" />Creating account…</>) : 'Create account'}
+            {loading ? (<><span className="spinner" />Setting up…</>) : 'Start free trial →'}
           </button>
         </div>
       </form>
@@ -351,7 +404,6 @@ function StepAccount({
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 export default function IBSignupPage() {
-  const router = useRouter();
   const supabase = createClient();
 
   const [step, setStep] = useState<1 | 2>(1);
@@ -361,6 +413,7 @@ export default function IBSignupPage() {
   const [studentName, setStudentName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -406,13 +459,6 @@ export default function IBSignupPage() {
       }).eq('id', user.id);
     }
 
-    // Persist IB selections for the subscribe page (1 hour)
-    const opts = 'path=/; max-age=3600; SameSite=Lax';
-    document.cookie = `curriculum=ib; ${opts}`;
-    document.cookie = `ib_subject=${subject}; ${opts}`;
-    if (econLevel) document.cookie = `ib_econ_level=${econLevel}; ${opts}`;
-    if (bmLevel)   document.cookie = `ib_bm_level=${bmLevel}; ${opts}`;
-
     try {
       await fetch('/api/auth/confirm-signup', {
         method: 'POST',
@@ -423,7 +469,27 @@ export default function IBSignupPage() {
       // Non-fatal
     }
 
-    router.push(`/subscribe/ib?subject=${subject}`);
+    // Derive a single exam_level for checkout metadata
+    const examLevel =
+      subject === 'IB_ECONOMICS' ? econLevel :
+      subject === 'IB_BUSINESS'  ? bmLevel :
+      (econLevel === 'HL' || bmLevel === 'HL') ? 'HL' : 'SL';
+
+    const checkoutRes = await fetch('/api/checkout/ib', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ billing, subject, exam_level: examLevel }),
+    });
+
+    const checkoutData = await checkoutRes.json();
+
+    if (!checkoutRes.ok || !checkoutData.url) {
+      setError(checkoutData.error ?? 'Failed to start checkout. Please try again.');
+      setLoading(false);
+      return;
+    }
+
+    window.location.href = checkoutData.url;
   };
 
   return (
@@ -466,6 +532,8 @@ export default function IBSignupPage() {
             setEmail={setEmail}
             password={password}
             setPassword={setPassword}
+            billing={billing}
+            setBilling={setBilling}
             onBack={() => setStep(1)}
             onSubmit={handleSubmit}
             loading={loading}

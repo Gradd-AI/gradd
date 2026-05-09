@@ -99,16 +99,8 @@ export async function POST(request: Request) {
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
     // ── Subscription gate ─────────────────────────────────────────────────────
-    // LC Business: must have active subscription — no exceptions.
-    // IB: lesson 1 (IB_ECON_001 / IB_BM_001) is free — no subscription required.
-    // All other IB lessons require an active subscription.
     if (profile?.subscription_status !== 'active') {
-      const subject = profile?.subject ?? 'LC_BUSINESS';
-      const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
-      const isFirstLesson = ['IB_ECON_001', 'IB_BM_001'].includes(session.lesson_code ?? '');
-      if (!isIBStudent || !isFirstLesson) {
-        return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-      }
+      return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
     }
 
     // ── Build injected system prompt ──────────────────────────────────────────

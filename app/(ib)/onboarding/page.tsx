@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
 
 type IBSubject = 'IB_ECONOMICS' | 'IB_BUSINESS' | 'IB_BUNDLE';
 type IBLevel = 'SL' | 'HL';
@@ -209,12 +210,13 @@ function StepLevel({
 // ── Step 3 — Course position ───────────────────────────────────────────────────
 
 function StepPosition({
-  value, onChange, onNext, onBack,
+  value, onChange, onNext, onBack, compact,
 }: {
   value: CoursePosition | null;
   onChange: (p: CoursePosition) => void;
   onNext: () => void;
   onBack: () => void;
+  compact?: boolean;
 }) {
   const positions: { id: CoursePosition; title: string; desc: string }[] = [
     { id: 'beginning',     title: 'Just starting',     desc: "I haven't studied this subject yet." },
@@ -225,7 +227,7 @@ function StepPosition({
   return (
     <div>
       <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
-        Step 3 of 4
+        {compact ? 'Step 1 of 2' : 'Step 3 of 4'}
       </p>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.4px', marginBottom: 8 }}>
         Where are you in your course?
@@ -244,9 +246,11 @@ function StepPosition({
       </div>
 
       <div style={{ display: 'flex', gap: 12 }}>
-        <button className="btn btn-outline" onClick={onBack} style={{ flex: '0 0 auto' }}>
-          ← Back
-        </button>
+        {!compact && (
+          <button className="btn btn-outline" onClick={onBack} style={{ flex: '0 0 auto' }}>
+            ← Back
+          </button>
+        )}
         <button className="btn btn-primary btn-full" onClick={onNext} disabled={!value}>
           Continue →
         </button>
@@ -258,17 +262,18 @@ function StepPosition({
 // ── Step 4 — IA boundary ───────────────────────────────────────────────────────
 
 function StepIA({
-  loading, error, onConfirm, onBack,
+  loading, error, onConfirm, onBack, compact,
 }: {
   loading: boolean;
   error: string;
   onConfirm: () => void;
   onBack: () => void;
+  compact?: boolean;
 }) {
   return (
     <div>
       <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
-        Step 4 of 4
+        {compact ? 'Step 2 of 2' : 'Step 4 of 4'}
       </p>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.4px', marginBottom: 24 }}>
         One thing before you start
@@ -304,16 +309,46 @@ function StepIA({
 
 // ── Main page ──────────────────────────────────────────────────────────────────
 
-export default function IBOnboardingPage() {
+function IBOnboardingInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const supabase = createClient();
 
-  const [step, setStep] = useState(1);
-  const [subject, setSubject] = useState<IBSubject | null>(null);
-  const [economicsLevel, setEconomicsLevel] = useState<IBLevel | null>(null);
-  const [businessLevel, setBusinessLevel] = useState<IBLevel | null>(null);
+  const urlSubject   = searchParams.get('subject')    as IBSubject | null;
+  const urlExamLevel = searchParams.get('exam_level') as IBLevel   | null;
+
+  // compact = arrived from new trial flow (subject already collected at signup)
+  const compact = !!urlSubject;
+
+  const [step, setStep] = useState(compact ? 3 : 1);
+  const [subject, setSubject] = useState<IBSubject | null>(urlSubject);
+  const [economicsLevel, setEconomicsLevel] = useState<IBLevel | null>(
+    urlSubject === 'IB_ECONOMICS' || urlSubject === 'IB_BUNDLE' ? urlExamLevel : null
+  );
+  const [businessLevel, setBusinessLevel] = useState<IBLevel | null>(
+    urlSubject === 'IB_BUSINESS'  || urlSubject === 'IB_BUNDLE' ? urlExamLevel : null
+  );
   const [coursePosition, setCoursePosition] = useState<CoursePosition | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Hydrate individual levels from profile — more precise than derived exam_level
+  useEffect(() => {
+    if (!compact) return;
+    (async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subject, ib_economics_level, ib_business_level')
+        .eq('id', user.id)
+        .single();
+      if (!profile) return;
+      if (profile.subject && !urlSubject) setSubject(profile.subject as IBSubject);
+      if (profile.ib_economics_level)     setEconomicsLevel(profile.ib_economics_level as IBLevel);
+      if (profile.ib_business_level)      setBusinessLevel(profile.ib_business_level   as IBLevel);
+    })();
+  }, [compact]);
 
   const handleComplete = async () => {
     if (!subject || !coursePosition) return;
@@ -327,7 +362,7 @@ export default function IBOnboardingPage() {
         body: JSON.stringify({
           subject,
           economicsLevel: economicsLevel ?? undefined,
-          businessLevel: businessLevel ?? undefined,
+          businessLevel:  businessLevel  ?? undefined,
           coursePosition,
         }),
       });
@@ -354,10 +389,15 @@ export default function IBOnboardingPage() {
       padding: '32px 24px',
     }}>
       <div style={{ width: '100%', maxWidth: 520 }}>
-        {/* Logo */}
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-          <Link href="/">
-            <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block' }} />
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 22, fontWeight: 700,
+              color: 'var(--brand)', letterSpacing: '-0.3px',
+            }}>
+              Gradd.ai
+            </span>
           </Link>
         </div>
 
@@ -392,6 +432,7 @@ export default function IBOnboardingPage() {
               onChange={setCoursePosition}
               onNext={() => setStep(4)}
               onBack={() => setStep(2)}
+              compact={compact}
             />
           )}
 
@@ -401,10 +442,19 @@ export default function IBOnboardingPage() {
               error={error}
               onConfirm={handleComplete}
               onBack={() => setStep(3)}
+              compact={compact}
             />
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+export default function IBOnboardingPage() {
+  return (
+    <Suspense>
+      <IBOnboardingInner />
+    </Suspense>
   );
 }

@@ -63,10 +63,13 @@ export async function POST(request: Request) {
       customer: profile.stripe_customer_id ?? undefined,
       customer_email: profile.stripe_customer_id ? undefined : profile.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { metadata: sharedMeta },
+      subscription_data: {
+        trial_period_days: 7,
+        metadata: sharedMeta,
+      },
       metadata: sharedMeta,
-      success_url: `${origin}/onboarding?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/subscribe`,
+      success_url: `${origin}/onboarding?subject=${subject}&exam_level=${exam_level ?? ''}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/subscribe/ib`,
       allow_promotion_codes: true,
     });
 
