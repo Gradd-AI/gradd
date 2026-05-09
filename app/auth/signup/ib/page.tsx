@@ -430,7 +430,7 @@ export default function IBSignupPage() {
 
     setLoading(true);
 
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -450,14 +450,17 @@ export default function IBSignupPage() {
       return;
     }
 
-    // signUp alone does not reliably flush auth cookies before a server-side
-    // API call reads them. Sign in explicitly so the session cookie is set
-    // before /api/checkout/ib calls createServerClient().auth.getUser().
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
-    if (signInError) {
-      setError('Account created but sign-in failed: ' + signInError.message);
-      setLoading(false);
-      return;
+    // signUp() returns a valid session even when email confirmation is pending —
+    // Supabase does not block this session, only signInWithPassword() checks
+    // email_confirmed_at. Explicitly commit the tokens to cookies so the
+    // server-side createServerClient().auth.getUser() can read them before
+    // the checkout fetch fires (browser navigation would flush naturally but
+    // an in-page fetch fires before the async cookie write completes).
+    if (signUpData.session) {
+      await supabase.auth.setSession({
+        access_token:  signUpData.session.access_token,
+        refresh_token: signUpData.session.refresh_token,
+      });
     }
 
     const { data: { user } } = await supabase.auth.getUser();
