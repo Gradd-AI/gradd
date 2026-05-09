@@ -109,7 +109,13 @@ export async function POST(request: Request) {
       .upsert(row, { onConflict: 'student_id,subject' });
 
     if (progressError) {
-      console.error('Progress upsert error:', progressError);
+      console.error('IB ONBOARDING PROGRESS ERROR:', JSON.stringify({
+        message: progressError.message,
+        code: progressError.code,
+        details: progressError.details,
+        hint: progressError.hint,
+        row,
+      }));
       return NextResponse.json({ error: 'Failed to save progress' }, { status: 500 });
     }
   }
