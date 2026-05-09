@@ -16,6 +16,7 @@ interface ChatInterfaceProps {
   unitName: string;
   sessionNumber: number;
   lessonCode?: string;
+  subject?: string;
 }
 
 export default function ChatInterface({
@@ -24,7 +25,10 @@ export default function ChatInterface({
   unitName,
   sessionNumber,
   lessonCode,
+  subject = 'LC_BUSINESS',
 }: ChatInterfaceProps) {
+  const isIB = subject.startsWith('IB_');
+  const tutorName = isIB ? 'Mia' : 'Aoife';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -256,7 +260,13 @@ export default function ChatInterface({
       <header style={{ padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <img src="/gradd-logo.svg" alt="Gradd" height={28} style={{ display: "block" }} />
+            {isIB ? (
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--chat-text)', letterSpacing: '-0.3px', lineHeight: 1 }}>
+                Gradd.ai
+              </span>
+            ) : (
+              <img src="/gradd-logo.svg" alt="Gradd" height={28} style={{ display: "block" }} />
+            )}
           </Link>
           <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
           <div>
@@ -268,7 +278,7 @@ export default function ChatInterface({
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
-            <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>Aoife</span>
+            <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
           </div>
           <button
             onClick={endSession}
@@ -338,7 +348,7 @@ export default function ChatInterface({
             const isLastMsg = i === messages.length - 1;
             return (
               <div key={i} ref={isLastMsg ? lastMessageRef : undefined}>
-                <MessageBubble message={msg} studentName={studentName} />
+                <MessageBubble message={msg} studentName={studentName} tutorInitial={tutorName[0]} />
               </div>
             );
           })}
@@ -365,7 +375,7 @@ export default function ChatInterface({
                   value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder={initialising ? 'Starting session…' : 'Reply to Aoife…'}
+                  placeholder={initialising ? 'Starting session…' : `Reply to ${tutorName}…`}
                   // WS0A: disabled covers the visual state; isSubmittingRef covers the race condition
                   disabled={loading || streaming || initialising || ended}
                   rows={1}
@@ -427,7 +437,7 @@ function LessonCompletePanel({ onContinue, onEnd, ending }: { onContinue: () => 
 
 // --- MessageBubble ---
 
-function MessageBubble({ message, studentName }: { message: Message; studentName: string }) {
+function MessageBubble({ message, studentName, tutorInitial }: { message: Message; studentName: string; tutorInitial: string }) {
   const isUser = message.role === 'user';
 
   const displayContent = message.content
@@ -442,7 +452,7 @@ function MessageBubble({ message, studentName }: { message: Message; studentName
   if (!displayContent && message.role === 'assistant') {
     return (
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
-        <AvatarAoife />
+        <AvatarTutor initial={tutorInitial} />
         <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', display: 'flex', gap: 5, alignItems: 'center' }}>
           {[0, 1, 2].map(i => (
             <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--chat-muted)', display: 'inline-block', animation: `bounce 1.1s ease-in-out ${i * 0.18}s infinite` }} />
@@ -470,7 +480,7 @@ function MessageBubble({ message, studentName }: { message: Message; studentName
 
   return (
     <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
-      <AvatarAoife />
+      <AvatarTutor initial={tutorInitial} />
       <div style={{ maxWidth: '80%' }}>
         <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', fontSize: 15, color: 'var(--chat-text)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
           <MessageRenderer content={displayContent} />
@@ -480,10 +490,10 @@ function MessageBubble({ message, studentName }: { message: Message; studentName
   );
 }
 
-function AvatarAoife() {
+function AvatarTutor({ initial }: { initial: string }) {
   return (
     <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)', flexShrink: 0, marginTop: 2 }}>
-      A
+      {initial}
     </div>
   );
 }

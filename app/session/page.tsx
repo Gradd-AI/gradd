@@ -15,7 +15,7 @@ export default async function SessionPage() {
   const [{ data: profile }, { data: progress }] = await Promise.all([
     supabase
       .from('profiles')
-      .select('student_name, exam_level, subscription_status')
+      .select('student_name, exam_level, subscription_status, subject')
       .eq('id', user.id)
       .single(),
     supabase
@@ -34,6 +34,7 @@ export default async function SessionPage() {
       unitName={progress?.current_unit_name ?? 'Unit 1'}
       sessionNumber={(progress?.session_number ?? 0) + 1}
       lessonCode={progress?.current_lesson_code ?? undefined}
+      subject={profile.subject ?? 'LC_BUSINESS'}
     />
   );
 }

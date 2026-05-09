@@ -36,14 +36,21 @@ export async function POST() {
     return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
   }
 
-  // 3. Load student state
-  const { data: progress } = await supabase
+  // 3. Load student state — filter by subject so IB students with multiple
+  //    progress rows don't cause .single() to fail with "multiple rows returned"
+  const { data: progress, error: progressError } = await supabase
     .from('student_progress')
     .select('*')
     .eq('student_id', user.id)
+    .eq('subject', profile.subject ?? 'LC_BUSINESS')
     .single();
 
   if (!progress) {
+    console.error('SESSION START: progress not found', {
+      userId: user.id,
+      subject: profile.subject,
+      error: progressError?.message,
+    });
     return NextResponse.json({ error: 'Progress record not found' }, { status: 500 });
   }
 
