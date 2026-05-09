@@ -432,8 +432,17 @@ export default function IBSignupPage() {
       <div className="auth-card" style={{ maxWidth: 500 }}>
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <Link href="/">
-            <img src="/gradd-logo.svg" alt="Gradd" height="34" style={{ display: 'block' }} />
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <span style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'var(--brand)',
+              letterSpacing: '-0.3px',
+              display: 'block',
+            }}>
+              Gradd.ai
+            </span>
           </Link>
         </div>
 

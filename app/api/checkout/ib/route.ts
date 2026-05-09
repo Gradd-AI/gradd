@@ -18,7 +18,7 @@ const IB_PRICE_IDS: Record<string, Record<string, string>> = {
 };
 
 export async function POST(request: Request) {
-  const { billing, subject } = await request.json();
+  const { billing, subject, exam_level } = await request.json();
 
   if (!billing || !subject) {
     return NextResponse.json({ error: 'billing and subject required' }, { status: 400 });
@@ -49,7 +49,12 @@ export async function POST(request: Request) {
 
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ai';
+  const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ai';
+  const sharedMeta = {
+    supabase_user_id: user.id,
+    ib_subject: subject,
+    ...(exam_level && { exam_level }),
+  };
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -58,15 +63,10 @@ export async function POST(request: Request) {
       customer: profile.stripe_customer_id ?? undefined,
       customer_email: profile.stripe_customer_id ? undefined : profile.email,
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: {
-        metadata: { supabase_user_id: user.id, ib_subject: subject },
-      },
-      metadata: {
-        supabase_user_id: user.id,
-        ib_subject: subject,
-      },
-      success_url: `${appUrl}/subscribe?success=true`,
-      cancel_url: `${appUrl}/dashboard`,
+      subscription_data: { metadata: sharedMeta },
+      metadata: sharedMeta,
+      success_url: `${origin}/onboarding?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/subscribe`,
       allow_promotion_codes: true,
     });
 
