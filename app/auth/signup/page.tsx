@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-// Password strength checker
 function checkPassword(pw: string): { score: number; label: string; color: string; issues: string[] } {
   const issues: string[] = [];
   if (pw.length < 12) issues.push('At least 12 characters');
@@ -22,10 +21,26 @@ function checkPassword(pw: string): { score: number; label: string; color: strin
   return { score, label: 'Strong', color: '#15803d', issues };
 }
 
+const CURRICULA = [
+  {
+    value: 'lc' as const,
+    title: 'Leaving Certificate',
+    region: 'Ireland',
+    desc: 'LC Business, Higher and Ordinary Level',
+  },
+  {
+    value: 'ib' as const,
+    title: 'IB Diploma Programme',
+    region: 'International',
+    desc: 'IB Economics and Business Management, SL & HL',
+  },
+];
+
 export default function SignupPage() {
   const router = useRouter();
   const supabase = createClient();
 
+  const [curriculum, setCurriculum] = useState<'lc' | 'ib'>('lc');
   const [formData, setFormData] = useState({
     fullName: '',
     studentName: '',
@@ -37,6 +52,14 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [showStrength, setShowStrength] = useState(false);
 
+  useEffect(() => {
+    const host = window.location.hostname;
+    if (host === 'gradd.ai' || host.endsWith('.gradd.ai')) {
+      setCurriculum('ib');
+    }
+    // gradd.ie and localhost both default to 'lc' (initial state)
+  }, []);
+
   const pwStrength = checkPassword(formData.password);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -47,7 +70,6 @@ export default function SignupPage() {
     e.preventDefault();
     setError('');
 
-    // Client-side password validation
     const { issues } = checkPassword(formData.password);
     if (issues.length > 0) {
       setError('Password must have: ' + issues.join(', ') + '.');
@@ -63,7 +85,7 @@ export default function SignupPage() {
         data: {
           full_name: formData.fullName,
           student_name: formData.studentName,
-          exam_level: formData.examLevel,
+          ...(curriculum === 'lc' && { exam_level: formData.examLevel }),
         },
       },
     });
@@ -74,13 +96,18 @@ export default function SignupPage() {
       return;
     }
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
-        .from('profiles')
-        .update({ exam_level: formData.examLevel })
-        .eq('id', user.id);
+    if (curriculum === 'lc') {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ exam_level: formData.examLevel })
+          .eq('id', user.id);
+      }
     }
+
+    // Cookie tells subscribe page which product to show (1 hour TTL)
+    document.cookie = `curriculum=${curriculum}; path=/; max-age=3600; SameSite=Lax`;
 
     try {
       await fetch('/api/auth/confirm-signup', {
@@ -95,6 +122,8 @@ export default function SignupPage() {
     router.push('/subscribe');
   };
 
+  const tutorName = curriculum === 'ib' ? 'Mia' : 'Aoife';
+
   return (
     <div className="auth-page">
       <div className="auth-card">
@@ -105,9 +134,72 @@ export default function SignupPage() {
           </Link>
         </div>
 
+        {/* Curriculum selector — shown before anything else */}
+        <div style={{ marginBottom: 28 }}>
+          <p className="form-label" style={{ marginBottom: 10 }}>Choose your curriculum</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {CURRICULA.map(({ value, title, region, desc }) => {
+              const selected = curriculum === value;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setCurriculum(value)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 14,
+                    padding: '14px 16px',
+                    background: selected ? '#eef4f0' : 'var(--surface)',
+                    border: `1.5px solid ${selected ? 'var(--brand)' : 'var(--border)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'border-color 0.15s ease, background 0.15s ease',
+                    width: '100%',
+                  }}
+                >
+                  <div
+                    style={{
+                      flexShrink: 0,
+                      width: 18,
+                      height: 18,
+                      borderRadius: '50%',
+                      border: `2px solid ${selected ? 'var(--brand)' : 'var(--border)'}`,
+                      background: selected ? 'var(--brand)' : 'transparent',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      marginTop: 2,
+                      transition: 'border-color 0.15s ease, background 0.15s ease',
+                    }}
+                  >
+                    {selected && (
+                      <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />
+                    )}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', lineHeight: 1.3 }}>
+                      {title}{' '}
+                      <span style={{ fontWeight: 400, fontSize: 12, color: 'var(--text-muted)' }}>
+                        {region}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 3 }}>
+                      {desc}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         <h1 className="auth-heading">Create your account</h1>
         <p className="auth-subheading">
-          Start studying for the Leaving Cert — no textbook required.
+          {curriculum === 'lc'
+            ? 'Start studying for the Leaving Cert — no textbook required.'
+            : 'Start studying for the IB Diploma — no textbook required.'}
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -141,24 +233,26 @@ export default function SignupPage() {
               required
             />
             <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 4 }}>
-              Aoife will use this in sessions.
+              {tutorName} will use this in sessions.
             </p>
           </div>
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="examLevel">Exam level</label>
-            <select
-              id="examLevel"
-              name="examLevel"
-              className="input"
-              value={formData.examLevel}
-              onChange={handleChange}
-              style={{ cursor: 'pointer' }}
-            >
-              <option value="higher">Higher Level</option>
-              <option value="ordinary">Ordinary Level</option>
-            </select>
-          </div>
+          {curriculum === 'lc' && (
+            <div className="form-group">
+              <label className="form-label" htmlFor="examLevel">Exam level</label>
+              <select
+                id="examLevel"
+                name="examLevel"
+                className="input"
+                value={formData.examLevel}
+                onChange={handleChange}
+                style={{ cursor: 'pointer' }}
+              >
+                <option value="higher">Higher Level</option>
+                <option value="ordinary">Ordinary Level</option>
+              </select>
+            </div>
+          )}
 
           <div className="form-group">
             <label className="form-label" htmlFor="email">Email address</label>
@@ -190,12 +284,10 @@ export default function SignupPage() {
               autoComplete="new-password"
             />
 
-            {/* Password strength indicator */}
             {showStrength && formData.password.length > 0 && (
               <div style={{ marginTop: 8 }}>
-                {/* Bar */}
                 <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-                  {[1,2,3,4,5].map(i => (
+                  {[1, 2, 3, 4, 5].map(i => (
                     <div key={i} style={{
                       flex: 1, height: 4, borderRadius: 2,
                       background: i <= pwStrength.score ? pwStrength.color : 'var(--border)',
