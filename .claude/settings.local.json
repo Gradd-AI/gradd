@@ -11,7 +11,9 @@
       "Bash(xargs grep -l \"TODO.*IB\\\\|FIXME.*IB\\\\|onboarding\")",
       "Bash(vercel *)",
       "Bash(git checkout *)",
-      "Bash(Get-Content \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-grant-Downloads-GitHub-gradd\\\\7eda3f66-1a29-448e-9278-8ec4df26817a\\\\tasks\\\\b439pgnw9.output\" -Wait -Tail 0)"
+      "Bash(Get-Content \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-grant-Downloads-GitHub-gradd\\\\7eda3f66-1a29-448e-9278-8ec4df26817a\\\\tasks\\\\b439pgnw9.output\" -Wait -Tail 0)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\grant\\\\Downloads\\\\GitHub\\\\gradd\" -Force)",
+      "Bash(Select-Object Name, Mode)"
     ]
   }
 }
