@@ -17,6 +17,7 @@ interface ChatInterfaceProps {
   sessionNumber: number;
   lessonCode?: string;
   subject?: string;
+  tutorName: string;
 }
 
 export default function ChatInterface({
@@ -26,9 +27,9 @@ export default function ChatInterface({
   sessionNumber,
   lessonCode,
   subject = 'LC_BUSINESS',
+  tutorName,
 }: ChatInterfaceProps) {
   const isIB = subject.startsWith('IB_');
-  const tutorName = isIB ? 'Mia' : 'Aoife';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -96,7 +97,7 @@ export default function ChatInterface({
     startSession();
   }, []);
 
-  // Get first message from Aoife once session is started
+  // Get first message from tutor once session is started
   useEffect(() => {
     if (!sessionId || messages.length > 0) return;
     sendMessage('__SESSION_START__', true);

@@ -95,8 +95,7 @@ Raise IB to €59.99/month after 50 students with proven results. No earlier.
 - [ ] ACCA Stripe price IDs created and wired in
 - [ ] gradd.ai domain added to Vercel
 - [ ] Domain-aware landing — gradd.ai serves IB/ACCA homepage
-- [ ] Free first lesson gate — one full lesson, no card required
-- [ ] Paywall triggers correctly after free lesson
+- [ ] Stripe 7-day free trial — trial_period_days: 7 on all IB subscriptions
 - [ ] Student progress dashboard — visible curriculum map, lessons completed, units done
 - [ ] Weak area surfaced in UI — student sees it, not just Supabase write
 - [ ] Session summary visible to student after every session

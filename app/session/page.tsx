@@ -2,6 +2,10 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import ChatInterface from '@/components/chat/ChatInterface';
 
+function getTutorName(subject: string): string {
+  return subject === 'IB_ECONOMICS' || subject === 'IB_BUSINESS' ? 'Mia' : 'Aoife';
+}
+
 export const dynamic = 'force-dynamic';
 
 export default async function SessionPage() {
@@ -35,6 +39,7 @@ export default async function SessionPage() {
       sessionNumber={(progress?.session_number ?? 0) + 1}
       lessonCode={progress?.current_lesson_code ?? undefined}
       subject={profile.subject ?? 'LC_BUSINESS'}
+      tutorName={getTutorName(profile.subject ?? 'LC_BUSINESS')}
     />
   );
 }
