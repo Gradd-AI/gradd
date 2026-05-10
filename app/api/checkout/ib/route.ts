@@ -63,11 +63,15 @@ export async function POST(request: Request) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, stripe_customer_id')
+    .select('email, stripe_customer_id, ia_scope_acknowledged')
     .eq('id', user.id)
     .single();
 
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
+
+  if (!profile.ia_scope_acknowledged) {
+    return NextResponse.json({ error: 'IA acknowledgement required' }, { status: 400 });
+  }
 
   const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ai';
   const sharedMeta = {

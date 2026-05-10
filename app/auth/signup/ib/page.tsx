@@ -224,7 +224,66 @@ function StepChoose({
   );
 }
 
-// ── Step 2 — Account details ──────────────────────────────────────────────────
+// ── Step 2 — IA scope acknowledgement ────────────────────────────────────────
+
+function StepIAScope({ onBack, onNext }: { onBack: () => void; onNext: () => void }) {
+  const [acknowledged, setAcknowledged] = useState(false);
+
+  return (
+    <div>
+      <h1 className="auth-heading" style={{ marginBottom: 6 }}>Before you continue</h1>
+      <p className="auth-subheading" style={{ marginBottom: 24 }}>What Gradd covers</p>
+
+      <div style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '16px 18px',
+        marginBottom: 24,
+        fontSize: 14,
+        color: 'var(--text)',
+        lineHeight: 1.65,
+      }}>
+        Gradd delivers the full IB written examination curriculum: Paper 1, Paper 2, and Paper 3 (HL only). The Internal Assessment (IA) is a separate piece of coursework supervised by your school teacher. Gradd does not cover the IA.
+      </div>
+
+      <label style={{
+        display: 'flex',
+        gap: 12,
+        alignItems: 'flex-start',
+        cursor: 'pointer',
+        marginBottom: 28,
+        fontSize: 14,
+        color: 'var(--text)',
+        lineHeight: 1.5,
+      }}>
+        <input
+          type="checkbox"
+          checked={acknowledged}
+          onChange={e => setAcknowledged(e.target.checked)}
+          style={{ marginTop: 2, flexShrink: 0, width: 16, height: 16, cursor: 'pointer', accentColor: 'var(--brand)' }}
+        />
+        I understand that Gradd covers the written examination curriculum only and does not include Internal Assessment (IA) support.
+      </label>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button type="button" className="btn btn-outline" onClick={onBack} style={{ flexShrink: 0 }}>
+          ← Back
+        </button>
+        <button
+          type="button"
+          className="btn btn-primary btn-full btn-lg"
+          disabled={!acknowledged}
+          onClick={onNext}
+        >
+          Continue →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Step 3 — Account details ──────────────────────────────────────────────────
 
 function StepAccount({
   studentName, setStudentName,
@@ -426,10 +485,11 @@ function StepAccount({
 export default function IBSignupPage() {
   const supabase = createClient();
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [subject, setSubject] = useState<IBSubject | null>(null);
   const [econLevel, setEconLevel] = useState<IBLevel | null>(null);
   const [bmLevel, setBmLevel] = useState<IBLevel | null>(null);
+  const [iaAcknowledged, setIaAcknowledged] = useState(false);
   const [studentName, setStudentName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -473,6 +533,8 @@ export default function IBSignupPage() {
     if (user) {
       await supabase.from('profiles').update({
         subject,
+        ia_scope_acknowledged: iaAcknowledged,
+        ia_scope_acknowledged_at: iaAcknowledged ? new Date().toISOString() : null,
         ...(econLevel && { ib_economics_level: econLevel }),
         ...(bmLevel && { ib_business_level: bmLevel }),
       }).eq('id', user.id);
@@ -546,7 +608,14 @@ export default function IBSignupPage() {
           />
         )}
 
-        {step === 2 && subject && (
+        {step === 2 && (
+          <StepIAScope
+            onBack={() => setStep(1)}
+            onNext={() => { setIaAcknowledged(true); setStep(3); }}
+          />
+        )}
+
+        {step === 3 && subject && (
           <StepAccount
             studentName={studentName}
             setStudentName={setStudentName}
@@ -556,7 +625,7 @@ export default function IBSignupPage() {
             setPassword={setPassword}
             billing={billing}
             setBilling={setBilling}
-            onBack={() => setStep(1)}
+            onBack={() => setStep(2)}
             onSubmit={handleSubmit}
             loading={loading}
             error={error}
