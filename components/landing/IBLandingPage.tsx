@@ -690,7 +690,7 @@ export default function IBLandingPage() {
               <li><a href="#how-it-works">How it works</a></li>
               <li><a href="#pricing">Pricing</a></li>
               <li><Link href="/auth/login" className="ib-nav-login">Log in</Link></li>
-              <li><Link href="/auth/signup" className="ib-nav-cta">Start Free Lesson</Link></li>
+              <li><Link href="/auth/signup" className="ib-nav-cta">Start 7-day free trial</Link></li>
             </ul>
             <div className="ib-mobile-nav">
               <Link href="/auth/login" className="ib-mobile-login">Log in</Link>
@@ -716,10 +716,10 @@ export default function IBLandingPage() {
               Structured lessons, IB exam technique, progress tracking. 24/7.
             </p>
             <div className="ib-ctas">
-              <Link href="/auth/signup" className="ib-btn-a">Start Free Lesson</Link>
+              <Link href="/auth/signup" className="ib-btn-a">Start 7-day free trial</Link>
               <a href="#how-it-works" className="ib-btn-b">See how it works</a>
             </div>
-            <p className="ib-hero-note">One full lesson free. No card required.</p>
+            <p className="ib-hero-note">Cancel any time before day 7. No charge.</p>
             <div className="ib-stats">
               <div className="ib-stat">
                 <span className="ib-stat-n">2</span>
@@ -822,8 +822,8 @@ export default function IBLandingPage() {
                   <div className="ib-subj-price-row">
                     <div className="ib-subj-price">€44.99<span> / month</span></div>
                     <div style={{ textAlign: 'center' }}>
-                      <Link href="/auth/signup" className="ib-subj-btn">Start Free Lesson</Link>
-                      <p style={{ fontSize: '.72rem', color: 'var(--ink300)', marginTop: '.3rem' }}>No card required</p>
+                      <Link href="/auth/signup" className="ib-subj-btn">Start 7-day free trial</Link>
+                      <p style={{ fontSize: '.72rem', color: 'var(--ink300)', marginTop: '.3rem' }}>Cancel any time before day 7. No charge.</p>
                     </div>
                   </div>
                 </div>
@@ -850,8 +850,8 @@ export default function IBLandingPage() {
                   <div className="ib-subj-price-row">
                     <div className="ib-subj-price">€44.99<span> / month</span></div>
                     <div style={{ textAlign: 'center' }}>
-                      <Link href="/auth/signup" className="ib-subj-btn">Start Free Lesson</Link>
-                      <p style={{ fontSize: '.72rem', color: 'var(--ink300)', marginTop: '.3rem' }}>No card required</p>
+                      <Link href="/auth/signup" className="ib-subj-btn">Start 7-day free trial</Link>
+                      <p style={{ fontSize: '.72rem', color: 'var(--ink300)', marginTop: '.3rem' }}>Cancel any time before day 7. No charge.</p>
                     </div>
                   </div>
                 </div>
@@ -1066,8 +1066,8 @@ export default function IBLandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/auth/signup" className="ib-btn-sub">Start Free Lesson — IB Economics</Link>
-                <p className="ib-pguarantee">No card required · 7-day money-back guarantee · Cancel any time.</p>
+                <Link href="/auth/signup" className="ib-btn-sub">Start 7-day free trial — IB Economics</Link>
+                <p className="ib-pguarantee">Cancel any time before day 7. No charge.</p>
               </div>
 
               {/* Bundle */}
@@ -1105,8 +1105,8 @@ export default function IBLandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/auth/signup" className={`ib-btn-sub ib-btn-sub-green`}>Start Free Lesson — Bundle</Link>
-                <p className="ib-pguarantee">No card required · 7-day money-back guarantee · Cancel any time.</p>
+                <Link href="/auth/signup" className={`ib-btn-sub ib-btn-sub-green`}>Start 7-day free trial — Bundle</Link>
+                <p className="ib-pguarantee">Cancel any time before day 7. No charge.</p>
               </div>
 
               {/* IB Business Management */}
@@ -1137,8 +1137,8 @@ export default function IBLandingPage() {
                     </li>
                   ))}
                 </ul>
-                <Link href="/auth/signup" className="ib-btn-sub">Start Free Lesson — IB Business</Link>
-                <p className="ib-pguarantee">No card required · 7-day money-back guarantee · Cancel any time.</p>
+                <Link href="/auth/signup" className="ib-btn-sub">Start 7-day free trial — IB Business</Link>
+                <p className="ib-pguarantee">Cancel any time before day 7. No charge.</p>
               </div>
 
             </div>
@@ -1164,8 +1164,8 @@ export default function IBLandingPage() {
               <p style={{ fontSize: '.95rem', color: 'rgba(255,255,255,.6)', marginBottom: '2rem', fontStyle: 'italic', lineHeight: 1.6 }}>
                 IB Year 1 starting in September? The students who start now arrive at their first exam with the full curriculum covered.
               </p>
-              <Link href="/auth/signup" className="ib-fcta-btn">Start Free Lesson</Link>
-              <p className="ib-fcta-note">No card required · 7-day money-back guarantee · No lock-in.</p>
+              <Link href="/auth/signup" className="ib-fcta-btn">Start 7-day free trial</Link>
+              <p className="ib-fcta-note">Cancel any time before day 7. No charge.</p>
             </div>
           </div>
         </section>

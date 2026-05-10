@@ -192,6 +192,20 @@ function StepChoose({
         </div>
       )}
 
+      <div style={{
+        background: 'var(--surface-2)',
+        border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-sm)',
+        padding: '12px 16px',
+        marginBottom: 20,
+        fontSize: 13,
+        color: 'var(--text-muted)',
+        lineHeight: 1.5,
+      }}>
+        <strong style={{ color: 'var(--text)', display: 'block', marginBottom: 3 }}>Written examination only</strong>
+        Gradd covers the full IB written examination curriculum — Papers 1, 2, and 3. The Internal Assessment (IA) is supervised by your school teacher and is not covered here.
+      </div>
+
       <button
         type="button"
         className="btn btn-primary btn-full btn-lg"
@@ -370,7 +384,13 @@ function StepAccount({
           )}
         </div>
 
-        <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+        <style>{`
+          @media (max-width: 479px) {
+            .ib-signup-btns { flex-direction: column-reverse !important; }
+            .ib-signup-btns button { width: 100%; }
+          }
+        `}</style>
+        <div className="ib-signup-btns" style={{ display: 'flex', gap: 10, marginTop: 8 }}>
           <button
             type="button"
             className="btn btn-outline"
