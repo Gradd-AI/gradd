@@ -175,17 +175,6 @@ export async function buildIBEconomicsPrompt(
   return prompt;
 }
 
-export function deriveCoursePosition(
-  lessonOrder: number,
-  examLevel: string
-): string {
-  const total = examLevel === 'HL' ? 210 : 144;
-  const pct = lessonOrder / total;
-  if (pct < 0.33) return 'beginning';
-  if (pct < 0.67) return 'mid-programme';
-  return 'exam-prep';
-}
-
 export async function buildIBBusinessPrompt(
   vars: IBEconomicsContextVariables
 ): Promise<string> {
@@ -225,4 +214,15 @@ export async function buildIBBusinessPrompt(
   }
 
   return prompt;
+}
+
+export function deriveCoursePosition(
+  lessonOrder: number,
+  examLevel: string
+): string {
+  const total = examLevel === 'HL' ? 210 : 144;
+  const pct = lessonOrder / total;
+  if (pct < 0.33) return 'beginning';
+  if (pct < 0.67) return 'mid-programme';
+  return 'exam-prep';
 }

@@ -1,7 +1,6 @@
 'use client';
 
 import MessageRenderer from '@/components/chat/MessageRenderer';
-import IBPaywallModal from '@/components/chat/IBPaywallModal';
 import { getDiagramPath } from '@/lib/diagram-map';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
@@ -17,16 +16,8 @@ interface ChatInterfaceProps {
   unitName: string;
   sessionNumber: number;
   lessonCode?: string;
-  subscriptionStatus?: string | null;
   subject?: string;
-  sessionSubject?: string;
-}
-
-const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'];
-
-function getTutorName(subject?: string): string {
-  if (!subject) return 'Aoife';
-  return IB_SUBJECTS.includes(subject) ? 'Mia' : 'Aoife';
+  tutorName: string;
 }
 
 export default function ChatInterface({
@@ -35,10 +26,10 @@ export default function ChatInterface({
   unitName,
   sessionNumber,
   lessonCode,
-  subscriptionStatus,
-  subject,
-  sessionSubject,
+  subject = 'LC_BUSINESS',
+  tutorName,
 }: ChatInterfaceProps) {
+  const isIB = subject.startsWith('IB_');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -50,18 +41,15 @@ export default function ChatInterface({
   const [ending, setEnding] = useState(false);
   const [lessonComplete, setLessonComplete] = useState(false);
   const [diagramDismissed, setDiagramDismissed] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   // WS0A: Synchronous lock — prevents double-submit during the React state update gap.
+  // React setState is async; this ref is read/written synchronously so no race condition.
   const isSubmittingRef = useRef(false);
 
-  const isIBStudent = subject ? IB_SUBJECTS.includes(subject) : false;
-  const isFirstLesson = lessonCode === 'IB_ECON_001' || lessonCode === 'IB_BM_001';
-  const tutorName = getTutorName(subject);
-
+  // Resolve diagram path from lessonCode
   const diagramPath = lessonCode ? getDiagramPath(lessonCode) : null;
 
   const scrollToLatestMessage = useCallback(() => {
@@ -72,6 +60,7 @@ export default function ChatInterface({
     scrollToLatestMessage();
   }, [messages.length, scrollToLatestMessage]);
 
+  // Auto-resize textarea
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
@@ -79,6 +68,7 @@ export default function ChatInterface({
     ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`;
   }, [input]);
 
+  // beforeunload warning — fires when student closes/navigates away mid-session
   useEffect(() => {
     if (!sessionId || ended) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -89,18 +79,11 @@ export default function ChatInterface({
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [sessionId, ended]);
 
+  // Initialise session on mount
   useEffect(() => {
     async function startSession() {
       try {
-        const body = sessionSubject && subject === 'IB_BUNDLE'
-          ? JSON.stringify({ subject: sessionSubject })
-          : undefined;
-
-        const res = await fetch('/api/session/start', {
-          method: 'POST',
-          headers: body ? { 'Content-Type': 'application/json' } : undefined,
-          body,
-        });
+        const res = await fetch('/api/session/start', { method: 'POST' });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         setSessionId(data.sessionId);
@@ -114,6 +97,7 @@ export default function ChatInterface({
     startSession();
   }, []);
 
+  // Get first message from tutor once session is started
   useEffect(() => {
     if (!sessionId || messages.length > 0) return;
     sendMessage('__SESSION_START__', true);
@@ -121,10 +105,13 @@ export default function ChatInterface({
   }, [sessionId]);
 
   async function sendMessage(text: string, isInitial = false) {
+    // WS0A: Check synchronous ref FIRST — catches rapid double-submits before
+    // React state (loading/streaming) has had a chance to propagate.
     if (isSubmittingRef.current) return;
     if (!sessionId || loading || streaming) return;
     if (!isInitial && !text.trim()) return;
 
+    // WS0A: Set the lock synchronously — no await, no state update delay.
     isSubmittingRef.current = true;
 
     const userMessage = isInitial ? '' : text.trim();
@@ -180,10 +167,6 @@ export default function ChatInterface({
 
       if (fullText.includes('[LESSON_COMPLETE:')) {
         setLessonComplete(true);
-        // Show paywall for IB students after lesson 1 if not subscribed
-        if (isIBStudent && isFirstLesson && subscriptionStatus !== 'active') {
-          setShowPaywall(true);
-        }
       }
     } catch (err: unknown) {
       if ((err as Error).name !== 'AbortError') {
@@ -191,6 +174,8 @@ export default function ChatInterface({
         setMessages(prev => prev.slice(0, -1));
       }
     } finally {
+      // WS0A: Release the lock only after stream is fully complete and state is updated.
+      // This is the correct moment — both streaming and loading cleared together.
       isSubmittingRef.current = false;
       setStreaming(false);
       setLoading(false);
@@ -229,15 +214,29 @@ export default function ChatInterface({
 
   if (ended) {
     return (
-      <div style={{
-        minHeight: '100vh', background: 'var(--chat-bg)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexDirection: 'column', gap: 20, padding: 32,
-      }}>
-        <div style={{
-          width: 64, height: 64, background: 'var(--brand-light)',
-          borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'var(--chat-bg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          gap: 20,
+          padding: 32,
+        }}
+      >
+        <div
+          style={{
+            width: 64,
+            height: 64,
+            background: 'var(--brand-light)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
           <svg width="28" height="22" viewBox="0 0 28 22" fill="none">
             <path d="M2 11L10 19L26 3" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -258,22 +257,17 @@ export default function ChatInterface({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
 
-      {/* Paywall modal — shown over the session after IB lesson 1 completes */}
-      {showPaywall && (
-        <IBPaywallModal
-          subject={subject ?? 'IB_ECONOMICS'}
-          onClose={() => {
-            setShowPaywall(false);
-            endSession();
-          }}
-        />
-      )}
-
-      {/* Header */}
+      {/* Header — sticky so End session is always visible regardless of scroll position */}
       <header style={{ padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <img src="/gradd-logo.svg" alt="Gradd" height={28} style={{ display: "block" }} />
+            {isIB ? (
+              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--chat-text)', letterSpacing: '-0.3px', lineHeight: 1 }}>
+                Gradd.ai
+              </span>
+            ) : (
+              <img src="/gradd-logo.svg" alt="Gradd" height={28} style={{ display: "block" }} />
+            )}
           </Link>
           <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
           <div>
@@ -301,16 +295,43 @@ export default function ChatInterface({
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
 
+          {/* Diagram panel — shown above first message if a diagram exists for this lesson */}
           {diagramPath && !diagramDismissed && messages.length > 0 && (
-            <div style={{ marginBottom: 24, borderRadius: 10, border: '1px solid var(--chat-border)', background: 'var(--chat-surface)', overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderBottom: '1px solid var(--chat-border)' }}>
+            <div
+              style={{
+                marginBottom: 24,
+                borderRadius: 10,
+                border: '1px solid var(--chat-border)',
+                background: 'var(--chat-surface)',
+                overflow: 'hidden',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderBottom: '1px solid var(--chat-border)',
+                }}
+              >
                 <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chat-muted)', letterSpacing: '0.5px' }}>
                   REFERENCE DIAGRAM — {lessonName.toUpperCase()}
                 </span>
-                <button onClick={() => setDiagramDismissed(true)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--chat-muted)', fontSize: 16, lineHeight: 1, padding: '0 2px' }} aria-label="Dismiss diagram">×</button>
+                <button
+                  onClick={() => setDiagramDismissed(true)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--chat-muted)', fontSize: 16, lineHeight: 1, padding: '0 2px' }}
+                  aria-label="Dismiss diagram"
+                >
+                  ×
+                </button>
               </div>
               <div style={{ padding: '16px', overflowX: 'auto' }}>
-                <img src={diagramPath} alt={`Reference diagram for ${lessonName}`} style={{ maxWidth: '100%', height: 'auto', display: 'block' }} />
+                <img
+                  src={diagramPath}
+                  alt={`Reference diagram for ${lessonName}`}
+                  style={{ maxWidth: '100%', height: 'auto', display: 'block' }}
+                />
               </div>
             </div>
           )}
@@ -328,7 +349,7 @@ export default function ChatInterface({
             const isLastMsg = i === messages.length - 1;
             return (
               <div key={i} ref={isLastMsg ? lastMessageRef : undefined}>
-                <MessageBubble message={msg} studentName={studentName} tutorName={tutorName} />
+                <MessageBubble message={msg} studentName={studentName} tutorInitial={tutorName[0]} />
               </div>
             );
           })}
@@ -345,7 +366,7 @@ export default function ChatInterface({
       <div style={{ borderTop: '1px solid var(--chat-border)', padding: '16px 24px', flexShrink: 0, background: 'var(--chat-bg)' }}>
         <div style={{ maxWidth: 760, margin: '0 auto' }}>
 
-          {lessonComplete && !streaming && !showPaywall ? (
+          {lessonComplete && !streaming ? (
             <LessonCompletePanel onContinue={continueToNextLesson} onEnd={endSession} ending={ending} />
           ) : (
             <>
@@ -356,12 +377,14 @@ export default function ChatInterface({
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={initialising ? 'Starting session…' : `Reply to ${tutorName}…`}
+                  // WS0A: disabled covers the visual state; isSubmittingRef covers the race condition
                   disabled={loading || streaming || initialising || ended}
                   rows={1}
                   style={{ flex: 1, resize: 'none', background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 12, padding: '12px 16px', fontSize: 15, color: 'var(--chat-text)', fontFamily: 'var(--font-body)', outline: 'none', lineHeight: 1.5, minHeight: 48, maxHeight: 160, overflowY: 'auto' }}
                 />
                 <button
                   onClick={() => sendMessage(input)}
+                  // WS0A: button disabled during loading OR streaming — no gap
                   disabled={loading || streaming || !input.trim() || initialising}
                   style={{ width: 48, height: 48, borderRadius: 12, border: 'none', background: streaming ? 'var(--chat-border)' : 'var(--accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s ease' }}
                 >
@@ -384,6 +407,8 @@ export default function ChatInterface({
     </div>
   );
 }
+
+// --- Lesson complete panel ---
 
 function LessonCompletePanel({ onContinue, onEnd, ending }: { onContinue: () => void; onEnd: () => void; ending: boolean }) {
   return (
@@ -411,7 +436,9 @@ function LessonCompletePanel({ onContinue, onEnd, ending }: { onContinue: () => 
   );
 }
 
-function MessageBubble({ message, studentName, tutorName }: { message: Message; studentName: string; tutorName: string }) {
+// --- MessageBubble ---
+
+function MessageBubble({ message, studentName, tutorInitial }: { message: Message; studentName: string; tutorInitial: string }) {
   const isUser = message.role === 'user';
 
   const displayContent = message.content
@@ -426,7 +453,7 @@ function MessageBubble({ message, studentName, tutorName }: { message: Message; 
   if (!displayContent && message.role === 'assistant') {
     return (
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
-        <TutorAvatar name={tutorName} />
+        <AvatarTutor initial={tutorInitial} />
         <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '12px 16px', display: 'flex', gap: 5, alignItems: 'center' }}>
           {[0, 1, 2].map(i => (
             <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--chat-muted)', display: 'inline-block', animation: `bounce 1.1s ease-in-out ${i * 0.18}s infinite` }} />
@@ -454,7 +481,7 @@ function MessageBubble({ message, studentName, tutorName }: { message: Message; 
 
   return (
     <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
-      <TutorAvatar name={tutorName} />
+      <AvatarTutor initial={tutorInitial} />
       <div style={{ maxWidth: '80%' }}>
         <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', fontSize: 15, color: 'var(--chat-text)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
           <MessageRenderer content={displayContent} />
@@ -464,10 +491,10 @@ function MessageBubble({ message, studentName, tutorName }: { message: Message; 
   );
 }
 
-function TutorAvatar({ name }: { name: string }) {
+function AvatarTutor({ initial }: { initial: string }) {
   return (
     <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)', flexShrink: 0, marginTop: 2 }}>
-      {name[0]}
+      {initial}
     </div>
   );
 }

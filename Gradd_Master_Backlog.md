@@ -95,8 +95,7 @@ Raise IB to €59.99/month after 50 students with proven results. No earlier.
 - [ ] ACCA Stripe price IDs created and wired in
 - [ ] gradd.ai domain added to Vercel
 - [ ] Domain-aware landing — gradd.ai serves IB/ACCA homepage
-- [ ] Free first lesson gate — one full lesson, no card required
-- [ ] Paywall triggers correctly after free lesson
+- [ ] Stripe 7-day free trial — trial_period_days: 7 on all IB subscriptions
 - [ ] Student progress dashboard — visible curriculum map, lessons completed, units done
 - [ ] Weak area surfaced in UI — student sees it, not just Supabase write
 - [ ] Session summary visible to student after every session
@@ -250,6 +249,15 @@ Raise IB to €59.99/month after 50 students with proven results. No earlier.
 - Auth: @supabase/ssr only — never use deprecated auth-helpers
 - Model: claude-haiku-4-5-20251001 default, claude-sonnet-4-6 for complex tasks
 - IA (Internal Assessment): OUT OF SCOPE for V1 — tutor acknowledges, does not deliver
+
+---
+
+## BRANDING
+
+gradd.ai wordmark: implement as HTML/CSS component using Unicode interpunct · between "gradd" and "ai" in Playfair Display — "gradd" in dark green #1a3d28, ".ai" in amber #d97706 italic
+Replace SVG text logo in gradd.ai nav with this component
+Convert gradd-ai-icon-final-512.svg to PNG for Stripe branding and favicon
+Add favicon to /public/ and update Next.js layout
 
 ---
 

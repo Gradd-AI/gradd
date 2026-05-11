@@ -1,5 +1,5 @@
 # Gradd — Domain Routing Separation Specification
-# Version: 1.0 | Created: May 2026
+# Version: 1.1 | Updated: May 2026
 # Status: Active — reference this before any routing, onboarding, or UI build
 
 ---
@@ -177,15 +177,16 @@ One sentence displayed as an info box, not a warning:
 "The Internal Assessment is handled by your school teacher — Gradd covers the full written examination curriculum: Papers 1, 2, and 3."
 Single "Got it" button.
 
-### Screen 5 — Free lesson starts
-No payment required for lesson 1.
-Session starts immediately.
-After lesson 1 completes → Stripe checkout triggered.
+### Screen 5 — Trial starts
+No charge for 7 days. Card collected via Stripe checkout before this screen.
+Session starts immediately after onboarding completes.
+No paywall mid-session. No interruption between lessons.
 
 ### On completion of onboarding
 Supabase writes:
 - `profiles.subject` set to selected subject
 - `profiles.exam_level` set to SL or HL
+- `profiles.subscription_status` set to `trialing`
 - `student_progress` row created with correct defaults
 - `sessions` row created for session 1
 
@@ -193,14 +194,26 @@ Resend welcome email triggered.
 
 ---
 
-## FREE LESSON GATE
+## TRIAL MODEL (LOCKED)
 
-- Lesson 1 is always free — no card required
-- On `LESSON_COMPLETE` signal for lesson 1 → paywall modal shown
-- Student must complete Stripe checkout before lesson 2 starts
-- If payment fails or is abandoned → student stays at lesson 1
-- If payment succeeds → `profiles.subscription_status` set to `active`, lesson 2 starts
-- 7-day money back guarantee shown on paywall modal
+No free lesson gate. No paywall after lesson 1. Stripe trial handles access control entirely.
+
+- Stripe subscription created at signup with `trial_period_days: 7`
+- Card collected upfront at signup — no charge for 7 days
+- Student has full access from lesson 1 immediately after payment screen
+- Trial ends after 7 days — Stripe charges automatically
+- Cancel before day 7 → no charge, access revoked
+- 7-day money back guarantee shown as reassurance on pricing page and checkout
+- Free lesson gate code is NOT built — do not implement it
+
+**Flow:**
+Signup → Subject + Level selected → Stripe checkout (7-day trial) → Onboarding screens → Lesson 1 starts immediately
+
+**Why trial not free lesson:**
+- Parents are the primary buyer for school-age students — they will not sit through a 20-minute lesson to reach a payment screen
+- One path for all users removes complexity
+- Stripe trial is standard SaaS — universally understood by buyers
+- Conversion is higher with card-first + trial than lesson-first + paywall
 
 ---
 
@@ -218,6 +231,8 @@ These must be created manually in the Stripe dashboard by Grant, then added to `
 | IB Bundle | Annual | €579 | STRIPE_IB_BUNDLE_ANNUAL |
 
 The checkout flow reads the correct price ID based on `profile.subject` and billing period selected.
+All IB Stripe subscriptions must include `trial_period_days: 7` in `subscription_data`.
+LC Business subscriptions are unchanged — no trial period.
 
 ---
 
@@ -233,6 +248,7 @@ The dashboard must never hardcode subject or tutor name. All display values read
 | Session summary text | derived from subject | "completing a session with Aoife" | "completing a session with Mia" |
 | Next session card | student_progress | LC lesson name | IB lesson name |
 | Exam countdown | derived from subject + exam dates | LC exam date | IB exam date (May each year) |
+| Trial banner | profiles.subscription_status | n/a | Show "X days left in your free trial" if status = trialing |
 
 ---
 
@@ -256,10 +272,11 @@ Two email templates required:
 - Tutor: Aoife
 
 ### IB welcome (to build)
-- Triggered on: gradd.ai signup completion
+- Triggered on: gradd.ai onboarding completion
 - Tone: International, no Irish references
 - Confirms: subject selected, level (SL/HL), what Gradd covers
 - Mentions: IA is out of scope
+- Mentions: 7-day free trial — no charge until day 8
 - Tutor: Mia
 - Template file: to be created in Resend dashboard
 
@@ -275,43 +292,37 @@ Complete these in sequence. Each depends on the previous.
 **Depends on:** Nothing
 **Claude Code instruction:** "Add hostname detection to middleware.ts. Detect whether the request is coming from gradd.ai or gradd.ie. Store the result in a cookie called `gradd-domain` with values `ib` or `lc`. Use this in layout and page components to serve domain-appropriate content."
 
-### Step 2 — IB Onboarding flow (R4)
+### Step 2 — IB Stripe checkout with 7-day trial (R5)
+**Files:** `app/api/checkout/ib/route.ts`
+**What:** Stripe checkout session for IB subscriptions. Must include `trial_period_days: 7` in `subscription_data`. success_url → `/onboarding?subject=X&exam_level=Y&session_id={CHECKOUT_SESSION_ID}`.
+**Depends on:** Stripe IB price IDs exist in env
+**Claude Code instruction:** "In app/api/checkout/ib/route.ts, ensure the Stripe checkout session includes trial_period_days: 7 in subscription_data. success_url must go to /onboarding with subject and exam_level as query params. cancel_url returns to /signup. Pass subject and exam_level through metadata and subscription_data.metadata."
+
+### Step 3 — IB Onboarding flow (R4)
 **Files:** `app/(ib)/onboarding/page.tsx`, `app/api/onboarding/ib/route.ts`
-**What:** Subject selection → level selection → course position → IA boundary → free lesson starts. Creates Supabase rows automatically.
-**Depends on:** R1 (middleware)
-**Claude Code instruction:** "Build the IB onboarding flow at app/(ib)/onboarding. Four screens: subject selection (Economics/BM/Bundle), level selection (SL/HL), course position (beginning/mid/exam-prep), IA boundary acknowledgement. On completion, create the profiles and student_progress rows in Supabase with correct defaults. Match the existing design system exactly — warm beige palette, Georgia font, CSS variables, no Tailwind."
+**What:** Onboarding screens after Stripe checkout. Reads subject and exam_level from query params. Writes profiles and student_progress rows. Triggers welcome email. Redirects to /session on completion.
+**Depends on:** R5 (Stripe checkout), R1 (middleware)
+**Claude Code instruction:** "Build the IB onboarding flow at app/(ib)/onboarding. Four screens: level selection (SL/HL), course position (beginning/mid/exam-prep), IA boundary acknowledgement, ready to start. Read subject and exam_level from URL query params passed from Stripe success_url. On completion, write profiles.subject, profiles.exam_level, profiles.subscription_status = trialing, and create student_progress row with correct defaults. Trigger Resend IB welcome email. Redirect to /session. Match existing design system — warm beige palette, Georgia font, CSS variables, no Tailwind."
 
-### Step 3 — Dashboard subject-awareness (R6)
+### Step 4 — Dashboard subject-awareness (R6)
 **Files:** Dashboard components that hardcode Aoife/LC Business
-**What:** Replace all hardcoded tutor names and subject labels with database-driven values.
+**What:** Replace all hardcoded tutor names and subject labels with database-driven values. Add trial banner for IB students in trial period.
 **Depends on:** Nothing (can be done independently)
-**Claude Code instruction:** "Find every place in the dashboard and session UI that hardcodes 'Aoife', 'LC Business', or 'Ordinary Level'/'Higher Level' as static text. Replace each with a value derived from profiles.subject and profiles.exam_level. IB Economics → 'IB Economics', SL → 'Standard Level', HL → 'Higher Level', tutor name for IB subjects → 'Mia'."
-
-### Step 4 — Free lesson gate (R7)
-**Files:** Session completion handler, new paywall component
-**What:** After LESSON_COMPLETE signal on lesson 1, show Stripe checkout. Continue only on payment success.
-**Depends on:** R5 (Stripe price IDs must exist)
-**Claude Code instruction:** "Build the free lesson gate. After the first lesson completes (LESSON_COMPLETE signal on lesson_order=1), intercept the session end and show a payment modal. The modal shows the subject, price, and 7-day money back guarantee. On Stripe checkout success, set profiles.subscription_status to active and allow the next session to start. On failure or abandonment, return student to lesson 1."
+**Claude Code instruction:** "Find every place in the dashboard and session UI that hardcodes 'Aoife', 'LC Business', or 'Ordinary Level'/'Higher Level' as static text. Replace each with a value derived from profiles.subject and profiles.exam_level. IB Economics → 'IB Economics', SL → 'Standard Level', HL → 'Higher Level', tutor name for IB subjects → 'Mia'. Add a trial banner to the IB dashboard that shows 'X days left in your free trial' when profiles.subscription_status = trialing."
 
 ### Step 5 — gradd.ai homepage (R2)
 **File:** `app/(ib)/page.tsx` or domain-aware root page
-**What:** IB/ACCA landing page with Lanterna comparison, subject cards, pricing, CTA.
+**What:** IB/ACCA landing page with Lanterna comparison, subject cards, pricing, CTA. All CTAs say "Start free — 7 days on us". No mention of free lesson.
 **Depends on:** R1 (middleware to serve it correctly)
-**Note:** Claude Code may already be building this — review output before re-instructing.
 
-### Step 6 — Stripe price IDs (R5)
-**Who:** Grant creates manually in Stripe dashboard
-**What:** Create 6 products with the prices in the table above. Copy the price_... IDs into .env.local and Vercel environment variables using the env variable names in the table above.
-**Claude Code then:** Wire the price IDs into the checkout flow using the env variable names.
-
-### Step 7 — IB subject landing pages (R9)
+### Step 6 — IB subject landing pages (R9)
 **Files:** `app/(ib)/economics/page.tsx`, `app/(ib)/business-management/page.tsx`, `app/(ib)/bundle/page.tsx`
 **What:** Subject-specific pages with syllabus overview, paper structure, pricing, CTA.
 **Depends on:** R1 (middleware), R2 (homepage design pattern)
 
-### Step 8 — Welcome email IB template (R8)
+### Step 7 — Welcome email IB template (R8)
 **Who:** Grant creates template in Resend dashboard
-**Claude Code then:** Wire the trigger into the onboarding completion handler — send IB welcome email on successful gradd.ai signup.
+**Claude Code then:** Wire the trigger into the onboarding completion handler — send IB welcome email on successful onboarding completion. Email must mention 7-day trial and confirm no charge until day 8.
 
 ---
 
@@ -321,19 +332,23 @@ Run these manually before promoting to production:
 
 - [ ] gradd.ai shows IB homepage, not LC Business homepage
 - [ ] gradd.ie shows LC Business homepage unchanged
-- [ ] IB onboarding completes and creates correct Supabase rows automatically
+- [ ] IB signup flow: subject + level selection carries through to Stripe checkout correctly
+- [ ] Stripe checkout shows 7-day trial — "your card will not be charged for 7 days"
+- [ ] After Stripe checkout, user lands on /onboarding with correct subject and exam_level in URL
+- [ ] IB onboarding completes and creates correct Supabase rows — profiles.subject, profiles.exam_level, profiles.subscription_status = trialing, student_progress defaults
+- [ ] After onboarding, user lands directly in /session — no dead ends
 - [ ] SL student gets SL session — no HL extension content appears
 - [ ] HL student gets HL session — HL extension content appears throughout
 - [ ] Dashboard shows correct subject and level for IB student
 - [ ] Dashboard shows Mia, not Aoife, for IB student
-- [ ] Free lesson completes — paywall shown — payment accepted — lesson 2 starts
-- [ ] Free lesson completes — payment abandoned — student stays at lesson 1
+- [ ] Dashboard shows trial banner with days remaining for trialing students
+- [ ] No paywall appears mid-session or between lessons
 - [ ] IA boundary: ask Mia about IA — she explains once and moves on
 - [ ] LESSON_COMPLETE signal fires and advances lesson in Supabase
 - [ ] WEAK_AREA_FLAG signal fires and writes to weak_areas table
 - [ ] SESSION_SUMMARY signal fires and updates student_progress
-- [ ] LC Business student on gradd.ie unaffected — Aoife still works
-- [ ] Stripe test mode: all 6 IB price IDs work in test checkout
+- [ ] LC Business student on gradd.ie unaffected — Aoife still works, no trial shown
+- [ ] Stripe test mode: all 6 IB price IDs work in test checkout with trial period visible
 - [ ] Stripe live mode: confirmed before first real student
 
 ---
@@ -355,4 +370,4 @@ Run these manually before promoting to production:
 ---
 
 *Reference this document at the start of every routing, onboarding, or UI build session.*
-*Last updated: May 2026*
+*Last updated: May 2026 — v1.1: Free lesson gate replaced with 7-day Stripe trial throughout*

@@ -79,20 +79,14 @@ export async function POST(request: Request) {
       )
     }
 
-    // ── Load profile ─────────────────────────────────────────────────────────
+    // ── Load profile ──────────────────────────────────────────────────────────
     const { data: profile } = await supabase
       .from('profiles')
-      .select('subscription_status, student_name, exam_level, subject, ib_economics_level, ib_business_level')
+      .select('subscription_status, student_name, exam_level, subject')
       .eq('id', user.id)
       .single();
 
     if (!profile) return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-
-    const profileSubjectEarlyP = profile.subject ?? 'LC_BUSINESS';
-    const isIBEarlyP = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(profileSubjectEarlyP);
-    if (profile?.subscription_status !== 'active' && !isIBEarlyP) {
-      return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-    }
 
     // ── Load session ──────────────────────────────────────────────────────────
     const { data: session } = await supabase
@@ -104,13 +98,9 @@ export async function POST(request: Request) {
 
     if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
-    // ── IB free-lesson gate ───────────────────────────────────────────────────
-    if (profile?.subscription_status !== 'active' && isIBEarlyP) {
-      const sessionLessonCodeP = (session as { lesson_code?: string })?.lesson_code ?? '';
-      const isFreeLessonOkP = ['IB_ECON_001', 'IB_BM_001'].includes(sessionLessonCodeP);
-      if (!isFreeLessonOkP) {
-        return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-      }
+    // ── Subscription gate ─────────────────────────────────────────────────────
+    if (profile?.subscription_status !== 'active') {
+      return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
     }
 
     // ── Build injected system prompt ──────────────────────────────────────────
@@ -155,23 +145,15 @@ export async function POST(request: Request) {
 
       const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
-      const proxyProfileSubject = profile.subject ?? 'LC_BUSINESS';
-      const proxyLessonCode = session.lesson_code ?? currentLessonCode;
-      const proxyEffectiveSubject = proxyProfileSubject === 'IB_BUNDLE'
-        ? (proxyLessonCode.startsWith('IB_BM_') ? 'IB_BUSINESS' : 'IB_ECONOMICS')
-        : proxyProfileSubject;
+      const subject = profile.subject ?? 'LC_BUSINESS';
 
-      const proxyIbExamLevel = proxyEffectiveSubject === 'IB_BUSINESS'
-        ? (profile.ib_business_level ?? profile.exam_level)
-        : (profile.ib_economics_level ?? profile.exam_level);
-
-      if (proxyEffectiveSubject === 'IB_ECONOMICS') {
+      if (subject === 'IB_ECONOMICS') {
         const lessonOrder = parseInt(
           progress?.current_lesson_code?.replace('IB_ECON_', '') ?? '1'
         );
         injectedSystemPrompt = await buildIBEconomicsPrompt({
           STUDENT_NAME: profile.student_name,
-          EXAM_LEVEL: proxyIbExamLevel,
+          EXAM_LEVEL: profile.exam_level,
           CURRENT_UNIT_CODE: progress?.current_unit_code ?? 'UNIT_1',
           CURRENT_UNIT_NAME: progress?.current_unit_name ?? 'Introduction to Economics',
           CURRENT_LESSON_CODE: currentLessonCode,
@@ -187,17 +169,20 @@ export async function POST(request: Request) {
           SESSION_TYPE: session.session_type,
           WEAK_AREAS_LIST: formatWeakAreasList(weakAreas ?? []),
           LAST_SESSION_SUMMARY: progress?.last_session_summary ?? '',
-          COURSE_POSITION: progress?.course_position ?? deriveCoursePosition(lessonOrder, proxyIbExamLevel),
+          COURSE_POSITION: deriveCoursePosition(
+            lessonOrder,
+            profile.exam_level
+          ),
         });
-      } else if (proxyEffectiveSubject === 'IB_BUSINESS') {
+      } else if (subject === 'IB_BUSINESS') {
         const lessonOrder = parseInt(
           progress?.current_lesson_code?.replace('IB_BM_', '') ?? '1'
         );
         injectedSystemPrompt = await buildIBBusinessPrompt({
           STUDENT_NAME: profile.student_name,
-          EXAM_LEVEL: proxyIbExamLevel,
+          EXAM_LEVEL: profile.exam_level,
           CURRENT_UNIT_CODE: progress?.current_unit_code ?? 'UNIT_1',
-          CURRENT_UNIT_NAME: progress?.current_unit_name ?? 'Introduction to Business Management',
+          CURRENT_UNIT_NAME: progress?.current_unit_name ?? 'Business Organisation and Environment',
           CURRENT_LESSON_CODE: currentLessonCode,
           CURRENT_LESSON_NAME: progress?.current_lesson_name ?? 'What is a Business?',
           NEXT_LESSON_CODE: nextLessonCode,
@@ -211,7 +196,7 @@ export async function POST(request: Request) {
           SESSION_TYPE: session.session_type,
           WEAK_AREAS_LIST: formatWeakAreasList(weakAreas ?? []),
           LAST_SESSION_SUMMARY: progress?.last_session_summary ?? '',
-          COURSE_POSITION: progress?.course_position ?? deriveCoursePosition(lessonOrder, proxyIbExamLevel),
+          COURSE_POSITION: deriveCoursePosition(lessonOrder, profile.exam_level),
         });
       } else {
         injectedSystemPrompt = await buildInjectedSystemPrompt({

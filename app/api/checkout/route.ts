@@ -8,7 +8,7 @@ const PRICE_IDS: Record<string, string> = {
 };
 
 export async function POST(request: Request) {
-  const { billing } = await request.json();
+  const { billing, subject, exam_level } = await request.json();
 
   if (!billing || !PRICE_IDS[billing]) {
     return NextResponse.json({ error: 'Invalid billing period' }, { status: 400 });
@@ -33,30 +33,27 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ie';
+  const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ie';
+  const isIB = origin.includes('gradd.ai');
+  const sharedMeta = {
+    supabase_user_id: user.id,
+    ...(subject && { subject }),
+    ...(exam_level && { exam_level }),
+  };
 
-try {
+  try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
       customer: profile.stripe_customer_id ?? undefined,
       customer_email: profile.stripe_customer_id ? undefined : profile.email,
-      line_items: [
-        {
-          price: PRICE_IDS[billing],
-          quantity: 1,
-        },
-      ],
-      subscription_data: {
-        metadata: {
-          supabase_user_id: user.id,
-        },
-      },
-      metadata: {
-        supabase_user_id: user.id,
-      },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe?success=true`,
-      cancel_url: `${appUrl}/subscribe`,
+      line_items: [{ price: PRICE_IDS[billing], quantity: 1 }],
+      subscription_data: { metadata: sharedMeta },
+      metadata: sharedMeta,
+      success_url: isIB
+        ? `${origin}/onboarding?session_id={CHECKOUT_SESSION_ID}`
+        : `${origin}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${origin}/subscribe`,
       allow_promotion_codes: true,
     });
 

@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
+  const isIBDomain = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -46,7 +47,9 @@ export default function LoginPage() {
 
         <h1 className="auth-heading">Welcome back</h1>
         <p className="auth-subheading">
-          Your AI-powered Leaving Cert Business tutor — guided lessons, exam technique, and progress tracking.
+          {isIBDomain
+            ? 'Your AI-powered IB tutor — structured lessons, exam technique, and progress tracking.'
+            : 'Your AI-powered Leaving Cert Business tutor — guided lessons, exam technique, and progress tracking.'}
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -87,12 +90,14 @@ export default function LoginPage() {
             disabled={loading}
             style={{ marginTop: 8 }}
           >
-            {loading ? (<><span className="spinner" />Signing in…</>) : 'Sign in to continue with Aoife'}
+            {loading ? (<><span className="spinner" />Signing in…</>) : isIBDomain ? 'Sign in to continue' : 'Sign in to continue with Aoife'}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 16 }}>
-          Built for Irish Leaving Cert Business students.
+          {isIBDomain
+            ? 'Supporting IB Economics and Business Management students worldwide.'
+            : 'Built for Irish Leaving Cert Business students.'}
         </p>
 
         <p className="auth-footer" style={{ marginTop: 12 }}>
