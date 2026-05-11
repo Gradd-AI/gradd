@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       { data: lessonCompletions },
       { data: unitCompletions },
     ] = await Promise.all([
-      supabase.from('student_progress').select('*').eq('student_id', user.id).single(),
+      supabase.from('student_progress').select('*').eq('student_id', user.id).eq('subject', profile.subject ?? 'LC_BUSINESS').single(),
       supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
       supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
@@ -363,6 +363,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
             .from('student_progress')
             .select('*')
             .eq('student_id', user.id)
+            .eq('subject', profile.subject ?? 'LC_BUSINESS')
             .single();
 
           if (progress) {
@@ -550,7 +551,8 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
               await serviceSupabase
                 .from('student_progress')
                 .update(progressUpdates)
-                .eq('student_id', user.id);
+                .eq('student_id', user.id)
+                .eq('subject', profile.subject ?? 'LC_BUSINESS');
             }
           }
         }

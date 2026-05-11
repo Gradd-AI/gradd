@@ -37,11 +37,21 @@ export async function POST(request: Request) {
       .eq('id', sessionId);
   }
 
+  // Derive subject so the query targets the correct progress row for IB students
+  // who have multiple student_progress rows (bundle, or leftover LC row from onboarding).
+  const { data: profileRow } = await supabase
+    .from('profiles')
+    .select('subject')
+    .eq('id', user.id)
+    .single();
+  const subject = profileRow?.subject ?? 'LC_BUSINESS';
+
   // Load current progress
   const { data: progress } = await supabase
     .from('student_progress')
     .select('total_session_count, last_session_summary, current_lesson_name, current_unit_name')
     .eq('student_id', user.id)
+    .eq('subject', subject)
     .single();
 
   if (progress) {
@@ -70,7 +80,8 @@ export async function POST(request: Request) {
     await supabase
       .from('student_progress')
       .update(progressUpdates)
-      .eq('student_id', user.id);
+      .eq('student_id', user.id)
+      .eq('subject', subject);
   }
 
   return NextResponse.json({ success: true });
