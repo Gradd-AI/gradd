@@ -44,9 +44,10 @@ const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
 
 export async function POST(request: Request) {
   try {
-    const { sessionId, studentMessage } = await request.json();
+    const { sessionId, studentMessage, content, diagramImage } = await request.json();
+    const isDiagramEval = content === '__DIAGRAM_EVALUATION__' && !!diagramImage;
 
-  if (!sessionId || !studentMessage) {
+  if (!sessionId || (!studentMessage && !isDiagramEval)) {
     return NextResponse.json({ error: 'sessionId and studentMessage required' }, { status: 400 });
   }
 
@@ -224,6 +225,78 @@ export async function POST(request: Request) {
         ABQ_DRILL_DUE:                progress?.abq_drill_due ? 'TRUE' : 'FALSE',
       });
     }
+  }
+
+  // ── Diagram evaluation (vision) ───────────────────────────────────────────
+  if (isDiagramEval) {
+    const { data: evalProgress } = await serviceSupabase
+      .from('student_progress')
+      .select('current_lesson_name')
+      .eq('student_id', user.id)
+      .eq('subject', effectiveSubject)
+      .single();
+
+    const evalPrompt = [
+      'The student has uploaded a photograph of a hand-drawn diagram for evaluation.',
+      `Current lesson: ${evalProgress?.current_lesson_name ?? 'current lesson'}`,
+      `Subject: ${effectiveSubject}`,
+      '',
+      'Evaluate the student\'s diagram against IB marking criteria:',
+      '1. Are the axes correctly labelled?',
+      '2. Are curves/lines the correct shape?',
+      '3. Are labels, arrows, and key points present?',
+      '4. Is the diagram complete for what was taught?',
+      '5. What specific improvements are needed?',
+      '',
+      'Give specific, actionable feedback referencing exact IB marking criteria.',
+      'Be encouraging but precise about errors.',
+    ].join('\n');
+
+    const evalStream = anthropic.messages.stream({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1000,
+      system: [{ type: 'text' as const, text: injectedSystemPrompt, cache_control: { type: 'ephemeral' as const } }],
+      messages: [{
+        role: 'user',
+        content: [
+          {
+            type: 'image',
+            source: {
+              type: 'base64',
+              media_type: diagramImage.mimeType as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+              data: diagramImage.base64,
+            },
+          },
+          { type: 'text', text: evalPrompt },
+        ],
+      }],
+    });
+
+    const enc = new TextEncoder();
+    const evalReadable = new ReadableStream({
+      async start(controller) {
+        try {
+          for await (const chunk of evalStream) {
+            if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+              controller.enqueue(enc.encode(chunk.delta.text));
+            }
+          }
+        } catch (err) {
+          console.error('Diagram eval error:', err);
+          controller.error(err);
+          return;
+        }
+        controller.close();
+      },
+    });
+
+    return new Response(evalReadable, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
+        'Cache-Control': 'no-cache',
+      },
+    });
   }
 
   // ── Build message history ─────────────────────────────────────────────────

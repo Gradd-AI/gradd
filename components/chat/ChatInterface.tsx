@@ -2,6 +2,8 @@
 
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import { getDiagramPath } from '@/lib/diagram-map';
+import { DiagramRenderer } from '@/components/diagrams';
+import { parseDiagramSignal, parseDynamicDiagramSignal } from '@/components/diagrams/diagram-integration';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 
@@ -111,6 +113,60 @@ export default function ChatInterface({
     sendMessage('__SESSION_START__', true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId]);
+
+  async function handleDiagramUpload(base64: string, mimeType: string) {
+    if (isSubmittingRef.current || !sessionId || loading || streaming) return;
+    isSubmittingRef.current = true;
+
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: '📷 Diagram uploaded for evaluation' },
+      { role: 'assistant', content: '' },
+    ]);
+    setStreaming(true);
+    setLoading(true);
+    setError('');
+
+    abortRef.current = new AbortController();
+
+    try {
+      const res = await fetch('/api/session/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, content: '__DIAGRAM_EVALUATION__', diagramImage: { base64, mimeType } }),
+        signal: abortRef.current.signal,
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? 'Failed to evaluate diagram');
+      }
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        fullText += decoder.decode(value, { stream: true });
+        setMessages(prev => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: 'assistant', content: fullText };
+          return updated;
+        });
+      }
+    } catch (err: unknown) {
+      if ((err as Error).name !== 'AbortError') {
+        setError('Something went wrong evaluating the diagram. Please try again.');
+        setMessages(prev => prev.slice(0, -2));
+      }
+    } finally {
+      isSubmittingRef.current = false;
+      setStreaming(false);
+      setLoading(false);
+    }
+  }
 
   async function sendMessage(text: string, isInitial = false) {
     // WS0A: Check synchronous ref FIRST — catches rapid double-submits before
@@ -378,7 +434,10 @@ export default function ChatInterface({
             <LessonCompletePanel onContinue={continueToNextLesson} onEnd={endSession} ending={ending} />
           ) : (
             <>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                {isIB && (
+                  <DiagramUploadButton onUpload={handleDiagramUpload} disabled={loading || streaming || initialising} />
+                )}
                 <textarea
                   ref={textareaRef}
                   value={input}
@@ -491,8 +550,8 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
     <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
       <AvatarTutor initial={tutorInitial} />
       <div style={{ maxWidth: '80%' }}>
-        <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', fontSize: 15, color: 'var(--chat-text)', lineHeight: 1.65, whiteSpace: 'pre-wrap' }}>
-          <MessageRenderer content={displayContent} />
+        <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', fontSize: 15, color: 'var(--chat-text)', lineHeight: 1.65 }}>
+          <MessageContent content={displayContent} />
         </div>
       </div>
     </div>
@@ -504,5 +563,111 @@ function AvatarTutor({ initial }: { initial: string }) {
     <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)', flexShrink: 0, marginTop: 2 }}>
       {initial}
     </div>
+  );
+}
+
+function MessageContent({ content }: { content: string }) {
+  const { cleanText, diagramCode } = parseDiagramSignal(content);
+  const { cleanText: finalText, dynamicPrompt } = parseDynamicDiagramSignal(cleanText);
+  return (
+    <>
+      {finalText && <MessageRenderer content={finalText} />}
+      {diagramCode && <DiagramRenderer code={diagramCode} />}
+      {dynamicPrompt && <DynamicDiagramRenderer prompt={dynamicPrompt} />}
+    </>
+  );
+}
+
+function DynamicDiagramRenderer({ prompt }: { prompt: string }) {
+  const [svg, setSvg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function generate() {
+      try {
+        const res = await fetch('/api/diagram/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt }),
+        });
+        const data = await res.json();
+        if (!cancelled) setSvg(data.svg ?? null);
+      } catch {
+        if (!cancelled) setError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    generate();
+    return () => { cancelled = true; };
+  }, [prompt]);
+
+  if (loading) return (
+    <div style={{ padding: '12px 0', color: 'var(--chat-muted)', fontSize: 12 }}>Generating diagram…</div>
+  );
+  if (error || !svg) return null;
+  return (
+    <div
+      style={{ margin: '12px 0', padding: 16, background: 'var(--chat-surface)', borderRadius: 8, border: '1px solid var(--chat-border)', maxWidth: 560 }}
+      dangerouslySetInnerHTML={{ __html: svg }}
+    />
+  );
+}
+
+function DiagramUploadButton({ onUpload, disabled }: { onUpload: (base64: string, mimeType: string) => void; disabled?: boolean }) {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  function handleFile(file: File) {
+    if (!file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      const [header, base64] = result.split(',');
+      const mimeType = header.match(/data:([^;]+)/)?.[1] ?? 'image/jpeg';
+      onUpload(base64, mimeType);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  return (
+    <>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleFile(file);
+          e.target.value = '';
+        }}
+      />
+      <button
+        type="button"
+        onClick={() => inputRef.current?.click()}
+        disabled={disabled}
+        title="Upload your diagram for feedback"
+        style={{
+          background: 'transparent',
+          border: '1px solid var(--chat-border)',
+          borderRadius: 10,
+          width: 48,
+          height: 48,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          color: 'var(--chat-muted)',
+          fontSize: 20,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          opacity: disabled ? 0.4 : 1,
+          transition: 'all 0.15s',
+        }}
+      >
+        📷
+      </button>
+    </>
   );
 }
