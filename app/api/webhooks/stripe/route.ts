@@ -2,6 +2,8 @@ import { createServiceClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
 import { Resend } from 'resend';
 import { buildWelcomeEmail } from '@/lib/email/welcome-template';
+import { buildIBWelcomeEmail } from '@/lib/email/ib-welcome-template';
+import type { IBSubject, IBLevel } from '@/lib/email/ib-welcome-template';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
@@ -95,24 +97,49 @@ async function handleCheckoutComplete(
   // Fetch profile to get names for the email
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, full_name, student_name')
+    .select('email, full_name, student_name, subject, exam_level, ib_economics_level, ib_business_level')
     .eq('id', userId)
     .single();
 
   if (profile?.email) {
     try {
-      const { subject, html } = buildWelcomeEmail({
-        studentName: profile.student_name || 'your student',
-        parentEmail: profile.email,
-        fullName: profile.full_name || 'there',
-      });
+      const profileSubject: string = profile.subject ?? 'LC_BUSINESS';
+      const isIB = profileSubject.startsWith('IB_');
 
-      await resend.emails.send({
-        from: 'Gradd <hello@gradd.ie>',
-        to: profile.email,
-        subject,
-        html,
-      });
+      if (isIB) {
+        const ibSubject = profileSubject as IBSubject;
+        const rawLevel = ibSubject === 'IB_BUSINESS'
+          ? (profile.ib_business_level ?? profile.exam_level ?? 'SL')
+          : (profile.ib_economics_level ?? profile.exam_level ?? 'SL');
+        const ibLevel = (['SL', 'HL'].includes(rawLevel) ? rawLevel : 'SL') as IBLevel;
+
+        const { subject, html } = buildIBWelcomeEmail({
+          studentName: profile.student_name || 'your student',
+          fullName: profile.full_name || 'there',
+          subject: ibSubject,
+          examLevel: ibLevel,
+        });
+
+        await resend.emails.send({
+          from: 'Gradd <hello@gradd.ai>',
+          to: profile.email,
+          subject,
+          html,
+        });
+      } else {
+        const { subject, html } = buildWelcomeEmail({
+          studentName: profile.student_name || 'your student',
+          parentEmail: profile.email,
+          fullName: profile.full_name || 'there',
+        });
+
+        await resend.emails.send({
+          from: 'Gradd <hello@gradd.ie>',
+          to: profile.email,
+          subject,
+          html,
+        });
+      }
     } catch (err) {
       // Log but don't fail the webhook — subscription is already activated
       console.error('[webhook] Failed to send welcome email:', err);
