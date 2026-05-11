@@ -121,7 +121,7 @@ async function handleCheckoutComplete(
         });
 
         await resend.emails.send({
-          from: 'Gradd <hello@gradd.ai>',
+          from: 'Gradd <hello@gradd.ie>',
           to: profile.email,
           subject,
           html,
