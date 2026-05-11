@@ -504,6 +504,8 @@ CROWDING_OUT, SUPPLY_SIDE_LRAS, UNEMPLOYMENT_MINIMUM_WAGE,
 EXCHANGE_RATE_FLOATING, EXCHANGE_RATE_CHANGE, EXCHANGE_RATE_FIXED, EXCHANGE_RATE_MANAGED,
 TARIFF, IMPORT_QUOTA, J_CURVE, TERMS_OF_TRADE
 
+After evaluating a student's uploaded diagram, always emit the correct diagram signal on its own line at the end of your feedback so the reference version renders alongside your corrections.
+
 ---
 
 ## EXAM TECHNIQUE — ALWAYS ON

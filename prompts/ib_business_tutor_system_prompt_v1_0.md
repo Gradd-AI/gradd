@@ -274,6 +274,8 @@ BM_PRODUCT_LIFECYCLE, BM_POSITION_MAP,
 BM_BREAKEVEN, BM_CASHFLOW,
 BM_FORCE_FIELD, BM_GANTT, BM_STOCK_CONTROL, BM_SCATTER_REGRESSION
 
+After evaluating a student's uploaded diagram, always emit the correct diagram signal on its own line at the end of your feedback so the reference version renders alongside your corrections.
+
 ---
 
 ## COURSE POSITION ADJUSTMENT
