@@ -89,7 +89,16 @@ export default async function HomePage() {
   } = await supabase.auth.getUser();
 
   if (user) {
-    redirect('/dashboard');
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_status')
+      .eq('id', user.id)
+      .single();
+
+    const status = profile?.subscription_status;
+    if (status === 'active' || status === 'trialing') {
+      redirect('/dashboard');
+    }
   }
 
   return isIB ? <IBLandingPage /> : <LandingPage />;
