@@ -100,6 +100,12 @@ export async function POST(request: Request) {
 
   if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 });
 
+  // Derive the real subject from the session's lesson_code so bundle subscribers
+  // (profile.subject = 'IB_BUNDLE') resolve to the correct student_progress row.
+  const effectiveSubject = session.lesson_code?.startsWith('IB_ECON_') ? 'IB_ECONOMICS'
+    : session.lesson_code?.startsWith('IB_BM_') ? 'IB_BUSINESS'
+    : 'LC_BUSINESS';
+
   // ── Build injected system prompt ──────────────────────────────────────────
   let injectedSystemPrompt: string = '';
 
@@ -113,7 +119,7 @@ export async function POST(request: Request) {
       { data: lessonCompletions },
       { data: unitCompletions },
     ] = await Promise.all([
-      supabase.from('student_progress').select('*').eq('student_id', user.id).eq('subject', profile.subject ?? 'LC_BUSINESS').single(),
+      supabase.from('student_progress').select('*').eq('student_id', user.id).eq('subject', effectiveSubject).single(),
       supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
       supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
@@ -142,7 +148,7 @@ export async function POST(request: Request) {
 
     const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
-    const subject = profile.subject ?? 'LC_BUSINESS';
+    const subject = effectiveSubject;
 
     if (subject === 'IB_ECONOMICS') {
       const lessonOrder = parseInt(
@@ -363,7 +369,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
             .from('student_progress')
             .select('*')
             .eq('student_id', user.id)
-            .eq('subject', profile.subject ?? 'LC_BUSINESS')
+            .eq('subject', effectiveSubject)
             .single();
 
           if (progress) {
@@ -552,7 +558,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
                 .from('student_progress')
                 .update(progressUpdates)
                 .eq('student_id', user.id)
-                .eq('subject', profile.subject ?? 'LC_BUSINESS');
+                .eq('subject', effectiveSubject);
             }
           }
         }

@@ -3,6 +3,7 @@
 // Passes data to DashboardClient for the parent/student toggle.
 
 import { redirect } from 'next/navigation';
+import { cookies } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
 
@@ -37,6 +38,7 @@ const IB_BM_UNITS = [
 
 export default async function DashboardPage() {
   const supabase = await createServerClient();
+  const cookieStore = await cookies();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/auth/login');
@@ -70,51 +72,68 @@ export default async function DashboardPage() {
   // Subscription gate — unchanged from original LC Business logic.
   if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
 
-  // Derive subject-dependent display values. Defaults keep LC Business working
-  // exactly as before if subject column is missing or null.
   const subject = profile.subject ?? 'LC_BUSINESS';
+  const isBundle = subject === 'IB_BUNDLE';
   const isIBStudent = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'].includes(subject);
 
+  // For bundle students, resolve the active subject from the cookie.
+  // All data queries below use activeSubject so the dashboard reflects the selected tab.
+  const activeSubject = isBundle
+    ? (cookieStore.get('gradd-active-subject')?.value ?? 'IB_ECONOMICS')
+    : subject;
+
+  // Lesson code prefix used to scope sessions/weak_areas/completions for bundle students.
+  const lessonPrefix = activeSubject === 'IB_ECONOMICS' ? 'IB_ECON_'
+    : activeSubject === 'IB_BUSINESS' ? 'IB_BM_'
+    : null;
+
   const displayExamLevel = isIBStudent
-    ? (subject === 'IB_BUSINESS'
+    ? (activeSubject === 'IB_BUSINESS'
         ? (profile.ib_business_level ?? profile.exam_level)
         : (profile.ib_economics_level ?? profile.exam_level))
     : (profile.exam_level === 'higher' ? 'Higher Level' : 'Ordinary Level');
 
-  const totalLessons = subject === 'IB_ECONOMICS' || subject === 'IB_BUSINESS' ? 150 : 279;
+  const totalLessons = activeSubject === 'IB_ECONOMICS' || activeSubject === 'IB_BUSINESS' ? 150 : 279;
 
-  const units = subject === 'IB_ECONOMICS' ? IB_ECON_UNITS
-    : subject === 'IB_BUSINESS' ? IB_BM_UNITS
+  const units = activeSubject === 'IB_ECONOMICS' ? IB_ECON_UNITS
+    : activeSubject === 'IB_BUSINESS' ? IB_BM_UNITS
     : LC_UNITS;
 
-  // All remaining queries are identical to the original.
+  // student_progress: always filter by activeSubject so bundle students get the right row.
+  let sessionsQuery = supabase
+    .from('sessions')
+    .select('id, session_number, session_type, lesson_code, concepts_covered, weak_flags_count, started_at, ended_at, apply_scores')
+    .eq('student_id', user.id)
+    .not('ended_at', 'is', null)
+    .order('started_at', { ascending: false })
+    .limit(5);
+  if (lessonPrefix) sessionsQuery = sessionsQuery.like('lesson_code', `${lessonPrefix}%`);
+
+  let weakAreasQuery = supabase
+    .from('weak_areas')
+    .select('id, concept_slug, error_description, lesson_code, occurrence_count')
+    .eq('student_id', user.id)
+    .is('resolved_at', null)
+    .order('occurrence_count', { ascending: false })
+    .limit(5);
+  if (lessonPrefix) weakAreasQuery = weakAreasQuery.like('lesson_code', `${lessonPrefix}%`);
+
+  let completionsQuery = supabase
+    .from('lesson_completions')
+    .select('*', { count: 'exact', head: true })
+    .eq('student_id', user.id);
+  if (lessonPrefix) completionsQuery = completionsQuery.like('lesson_code', `${lessonPrefix}%`);
+
   const [progressRes, sessionsRes, weakAreasRes, completionsRes] = await Promise.all([
     supabase
       .from('student_progress')
       .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary')
       .eq('student_id', user.id)
+      .eq('subject', activeSubject)
       .single(),
-
-    supabase
-      .from('sessions')
-      .select('id, session_number, session_type, lesson_code, concepts_covered, weak_flags_count, started_at, ended_at, apply_scores')
-      .eq('student_id', user.id)
-      .not('ended_at', 'is', null)
-      .order('started_at', { ascending: false })
-      .limit(5),
-
-    supabase
-      .from('weak_areas')
-      .select('id, concept_slug, error_description, lesson_code, occurrence_count')
-      .eq('student_id', user.id)
-      .is('resolved_at', null)
-      .order('occurrence_count', { ascending: false })
-      .limit(5),
-
-    supabase
-      .from('lesson_completions')
-      .select('*', { count: 'exact', head: true })
-      .eq('student_id', user.id),
+    sessionsQuery,
+    weakAreasQuery,
+    completionsQuery,
   ]);
 
   const progress = progressRes.data;
@@ -139,6 +158,8 @@ export default async function DashboardPage() {
     <DashboardClient
       studentName={profile.student_name}
       subject={subject}
+      activeSubject={activeSubject}
+      isBundle={isBundle}
       examLevel={displayExamLevel ?? ''}
       sessionNumber={progress?.session_number ?? 0}
       currentLessonCode={progress?.current_lesson_code ?? '1.1.1'}

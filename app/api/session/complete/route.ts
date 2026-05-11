@@ -37,14 +37,11 @@ export async function POST(request: Request) {
       .eq('id', sessionId);
   }
 
-  // Derive subject so the query targets the correct progress row for IB students
-  // who have multiple student_progress rows (bundle, or leftover LC row from onboarding).
-  const { data: profileRow } = await supabase
-    .from('profiles')
-    .select('subject')
-    .eq('id', user.id)
-    .single();
-  const subject = profileRow?.subject ?? 'LC_BUSINESS';
+  // Derive subject from the session's lesson_code — works for all subjects including
+  // IB_BUNDLE where profile.subject does not match any student_progress row directly.
+  const subject = session.lesson_code?.startsWith('IB_ECON_') ? 'IB_ECONOMICS'
+    : session.lesson_code?.startsWith('IB_BM_') ? 'IB_BUSINESS'
+    : 'LC_BUSINESS';
 
   // Load current progress
   const { data: progress } = await supabase

@@ -18,6 +18,8 @@ interface ChatInterfaceProps {
   lessonCode?: string;
   subject?: string;
   tutorName: string;
+  activeSubject?: string;
+  examLabel?: string;
 }
 
 export default function ChatInterface({
@@ -28,6 +30,8 @@ export default function ChatInterface({
   lessonCode,
   subject = 'LC_BUSINESS',
   tutorName,
+  activeSubject,
+  examLabel,
 }: ChatInterfaceProps) {
   const isIB = subject.startsWith('IB_');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -83,7 +87,11 @@ export default function ChatInterface({
   useEffect(() => {
     async function startSession() {
       try {
-        const res = await fetch('/api/session/start', { method: 'POST' });
+        const res = await fetch('/api/session/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(activeSubject ? { activeSubject } : {}),
+        });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);
         setSessionId(data.sessionId);
@@ -272,7 +280,7 @@ export default function ChatInterface({
           <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
           <div>
             <div style={{ fontSize: 14, fontWeight: 600, color: "var(--chat-text)" }}>{lessonName}</div>
-            <div style={{ fontSize: 12, color: "var(--chat-muted)" }}>{unitName} · Session {sessionNumber}</div>
+            <div style={{ fontSize: 12, color: "var(--chat-muted)" }}>{examLabel ?? unitName} · Session {sessionNumber}</div>
           </div>
         </div>
 

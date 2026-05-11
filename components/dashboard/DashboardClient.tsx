@@ -23,6 +23,8 @@ interface LastSession {
 interface Props {
   studentName: string; examLevel: string; sessionNumber: number;
   subject?: string;
+  activeSubject?: string;
+  isBundle?: boolean;
   currentLessonCode: string; currentLessonName: string;
   currentUnitName: string; currentUnitCode: string; sessionType: string;
   curriculumPercent: number; totalCompleted: number; totalLessons: number;
@@ -42,7 +44,6 @@ function getSubjectLabel(subject?: string): string {
     LC_BUSINESS:  'LC Business',
     IB_ECONOMICS: 'IB Economics',
     IB_BUSINESS:  'IB Business Management',
-    IB_BUNDLE:    'IB Bundle',
   };
   return (subject && map[subject]) ? map[subject] : 'LC Business';
 }
@@ -193,6 +194,38 @@ function Toggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) =>
           boxShadow: mode === m ? 'var(--shadow-sm)' : 'none',
         }}>
           {m === 'parent' ? 'Parent view' : 'My view'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ─── Subject switcher (IB Bundle only) ───────────────────────────────────────
+
+function SubjectSwitcher({ active }: { active: string }) {
+  const router = useRouter();
+  const tabs = [
+    { value: 'IB_ECONOMICS', label: 'IB Economics' },
+    { value: 'IB_BUSINESS',  label: 'IB Business Management' },
+  ];
+  return (
+    <div style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, gap: 2, marginBottom: 28 }}>
+      {tabs.map(tab => (
+        <button
+          key={tab.value}
+          onClick={() => {
+            document.cookie = `gradd-active-subject=${tab.value}; path=/; max-age=31536000; SameSite=Lax`;
+            router.refresh();
+          }}
+          style={{
+            padding: '7px 20px', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none',
+            cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
+            background: active === tab.value ? 'var(--surface)' : 'transparent',
+            color: active === tab.value ? 'var(--text)' : 'var(--text-muted)',
+            boxShadow: active === tab.value ? 'var(--shadow-sm)' : 'none',
+          }}
+        >
+          {tab.label}
         </button>
       ))}
     </div>
@@ -448,13 +481,18 @@ export default function DashboardClient(props: Props) {
   const [mode, setMode] = useState<ViewMode>('parent');
 
   const subject = props.subject ?? 'LC_BUSINESS';
-  const tutorName = getTutorName(subject);
-  const subjectLabel = getSubjectLabel(subject);
+  // For bundle students, display calculations use activeSubject (server-resolved via cookie).
+  // For all other students, effectiveSubject === subject.
+  const effectiveSubject = (subject === 'IB_BUNDLE')
+    ? (props.activeSubject ?? 'IB_ECONOMICS')
+    : subject;
+  const tutorName = getTutorName(effectiveSubject);
+  const subjectLabel = getSubjectLabel(effectiveSubject);
 
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);
-  const examDays = daysToExam(subject);
-  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons, subject);
+  const examDays = daysToExam(effectiveSubject);
+  const neededPerWeek = sessionsPerWeekNeeded(props.totalCompleted, props.totalLessons, effectiveSubject);
   const avgPerWeek = avgSessionsPerWeek(props.recentSessions);
   const pace = calcPace(avgPerWeek, neededPerWeek);
 
@@ -470,7 +508,7 @@ export default function DashboardClient(props: Props) {
       <main style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 32px' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div style={{ marginBottom: props.isBundle ? 0 : 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.5px', marginBottom: 6 }}>
               {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}
@@ -481,6 +519,13 @@ export default function DashboardClient(props: Props) {
           </div>
           <Toggle mode={mode} onChange={setMode} />
         </div>
+
+        {/* Subject switcher — IB Bundle subscribers only */}
+        {props.isBundle && (
+          <div style={{ marginTop: 20, marginBottom: 12 }}>
+            <SubjectSwitcher active={effectiveSubject} />
+          </div>
+        )}
 
         {/* PARENT VIEW */}
         {mode === 'parent' && (
@@ -494,7 +539,7 @@ export default function DashboardClient(props: Props) {
               totalLessons={props.totalLessons} totalSessions={props.totalSessions}
               weakAreasCount={props.weakAreasCount} streak={streak} thisWeek={thisWeek}
               examDays={examDays} neededPerWeek={neededPerWeek} avgPerWeek={avgPerWeek} pace={pace}
-              subject={subject} tutorName={tutorName}
+              subject={effectiveSubject} tutorName={tutorName}
             />
             <CurriculumProgress units={props.units} currentUnitCode={props.currentUnitCode} unitsCompleted={props.unitsCompleted} curriculumPercent={props.curriculumPercent} totalCompleted={props.totalCompleted} totalLessons={props.totalLessons} />
             <WeakAreasSection weakAreas={props.weakAreas} />

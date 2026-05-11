@@ -12,8 +12,11 @@ import { determineSessionType } from '@/lib/session-type';
 import { NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 
-export async function POST() {
+export async function POST(request: Request) {
   console.log('Session start called');
+  const body = await request.json().catch(() => ({}));
+  const { activeSubject } = body as { activeSubject?: string };
+
   const supabase = await createServerClient();
 
   // 1. Auth check
@@ -36,13 +39,21 @@ export async function POST() {
     return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
   }
 
+  // For bundle subscribers, resolve the active subject from the request body.
+  // student_progress rows carry 'IB_ECONOMICS' or 'IB_BUSINESS', never 'IB_BUNDLE'.
+  const effectiveSubject = (
+    profile.subject === 'IB_BUNDLE' &&
+    activeSubject &&
+    ['IB_ECONOMICS', 'IB_BUSINESS'].includes(activeSubject)
+  ) ? activeSubject : (profile.subject ?? 'LC_BUSINESS');
+
   // 3. Load student state — filter by subject so IB students with multiple
   //    progress rows don't cause .single() to fail with "multiple rows returned"
   const { data: progress, error: progressError } = await supabase
     .from('student_progress')
     .select('*')
     .eq('student_id', user.id)
-    .eq('subject', profile.subject ?? 'LC_BUSINESS')
+    .eq('subject', effectiveSubject)
     .single();
 
   if (!progress) {
@@ -93,7 +104,7 @@ export async function POST() {
   const newSessionNumber = (progress.session_number ?? 0) + 1;
 
  // 7 + 8. Build system prompt — branched by subject
-  const subject = profile.subject ?? 'LC_BUSINESS';
+  const subject = effectiveSubject;
   let injectedSystemPrompt: string;
 
   try {
@@ -196,7 +207,8 @@ export async function POST() {
       total_session_count: (progress.total_session_count ?? 0) + 1,
       updated_at: new Date().toISOString(),
     })
-    .eq('student_id', user.id);
+    .eq('student_id', user.id)
+    .eq('subject', effectiveSubject);
 
   // 11. Store injected system prompt server-side in session row for message route
   await supabase
