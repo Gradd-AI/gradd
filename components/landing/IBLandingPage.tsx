@@ -512,6 +512,7 @@ export default function IBLandingPage() {
         .ib-pcard {
           background: var(--white); border-radius: 20px;
           padding: 2.25rem 2rem; position: relative;
+          text-align: left;
         }
         .ib-pcard.ib-bundle { border: 2px solid var(--amber); }
         .ib-pbadge {
@@ -549,7 +550,7 @@ export default function IBLandingPage() {
           justify-content: center; flex-shrink: 0; margin-top: .15rem;
         }
         .ib-btn-sub {
-          display: block; width: 100%; text-align: center;
+          display: block; width: 100%; text-align: left;
           background: var(--amber); color: var(--ink900);
           font-family: var(--fb); font-weight: 700; font-size: .95rem;
           padding: .85rem; border-radius: 10px; text-decoration: none;
@@ -558,7 +559,7 @@ export default function IBLandingPage() {
         .ib-btn-sub:hover { background: var(--amber-lt); }
         .ib-btn-sub-green { background: var(--g700) !important; color: var(--white) !important; }
         .ib-btn-sub-green:hover { background: var(--g600) !important; }
-        .ib-pguarantee { text-align: center; font-size: .78rem; color: var(--ink300); margin-top: 1rem; }
+        .ib-pguarantee { text-align: left; font-size: .78rem; color: var(--ink300); margin-top: 1rem; }
         .ib-pcmp {
           text-align: center; margin-top: 2.5rem;
           font-size: .9rem; color: rgba(255,255,255,.38);
