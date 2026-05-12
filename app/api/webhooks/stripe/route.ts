@@ -81,6 +81,15 @@ async function handleCheckoutComplete(
   if (!userId) return;
 
   const customerId = session.customer as string;
+  const metaSubject = session.metadata?.ib_subject ?? '';
+
+  const subscriptionTier = metaSubject === 'IB_ECONOMICS'
+    ? 'ib_economics_monthly'
+    : metaSubject === 'IB_BUSINESS'
+    ? 'ib_business_monthly'
+    : metaSubject === 'IB_BUNDLE'
+    ? 'ib_bundle_monthly'
+    : 'business_monthly';
 
   await supabase
     .from('profiles')
@@ -88,29 +97,26 @@ async function handleCheckoutComplete(
       stripe_customer_id: customerId,
       stripe_subscription_id: session.subscription as string,
       subscription_status: 'active',
-      subscription_tier: 'business_monthly',
+      subscription_tier: subscriptionTier,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
 
   // ── Send welcome email via Resend ─────────────────────────────
-  // Fetch profile to get names for the email
+  // Fetch profile only for names and email
   const { data: profile } = await supabase
     .from('profiles')
-    .select('email, full_name, student_name, subject, exam_level, ib_economics_level, ib_business_level')
+    .select('email, full_name, student_name')
     .eq('id', userId)
     .single();
 
   if (profile?.email) {
     try {
-      const profileSubject: string = profile.subject ?? 'LC_BUSINESS';
-      const isIB = profileSubject.startsWith('IB_');
+      const isIB = metaSubject.startsWith('IB_');
 
       if (isIB) {
-        const ibSubject = profileSubject as IBSubject;
-        const rawLevel = ibSubject === 'IB_BUSINESS'
-          ? (profile.ib_business_level ?? profile.exam_level ?? 'SL')
-          : (profile.ib_economics_level ?? profile.exam_level ?? 'SL');
+        const ibSubject = metaSubject as IBSubject;
+        const rawLevel = session.metadata?.exam_level ?? 'SL';
         const ibLevel = (['SL', 'HL'].includes(rawLevel) ? rawLevel : 'SL') as IBLevel;
 
         const { subject, html } = buildIBWelcomeEmail({
