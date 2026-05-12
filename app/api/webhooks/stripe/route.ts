@@ -19,11 +19,15 @@ export async function POST(request: Request) {
 
   let event: Stripe.Event;
 
+  const webhookSecret = request.headers.get('host')?.includes('gradd.ai')
+    ? process.env.STRIPE_WEBHOOK_SECRET_AI!
+    : process.env.STRIPE_WEBHOOK_SECRET!;
+
   try {
     event = stripe.webhooks.constructEvent(
       body,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET!
+      webhookSecret
     );
   } catch (err) {
     console.error('Webhook signature verification failed:', err);
