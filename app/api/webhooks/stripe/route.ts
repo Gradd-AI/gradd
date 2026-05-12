@@ -82,6 +82,7 @@ async function handleCheckoutComplete(
   session: Stripe.Checkout.Session
 ) {
   const userId = session.metadata?.supabase_user_id;
+  console.log('WEBHOOK: userId from metadata', userId);
   if (!userId) return;
 
   const customerId = session.customer as string;
@@ -113,10 +114,12 @@ async function handleCheckoutComplete(
     .select('email, full_name, student_name')
     .eq('id', userId)
     .single();
+  console.log('WEBHOOK: profile fetch result', JSON.stringify(profile));
 
   if (profile?.email) {
     try {
       const isIB = metaSubject.startsWith('IB_');
+      console.log('WEBHOOK: metaSubject', metaSubject, 'isIB', isIB);
 
       if (isIB) {
         const ibSubject = metaSubject as IBSubject;
@@ -130,12 +133,14 @@ async function handleCheckoutComplete(
           examLevel: ibLevel,
         });
 
-        await resend.emails.send({
+        console.log('WEBHOOK: attempting email send to', profile.email);
+        const ibResult = await resend.emails.send({
           from: 'Gradd <hello@gradd.ie>',
           to: profile.email,
           subject,
           html,
         });
+        console.log('WEBHOOK: email send result', JSON.stringify(ibResult));
       } else {
         const { subject, html } = buildWelcomeEmail({
           studentName: profile.student_name || 'your student',
@@ -143,16 +148,17 @@ async function handleCheckoutComplete(
           fullName: profile.full_name || 'there',
         });
 
-        await resend.emails.send({
+        console.log('WEBHOOK: attempting email send to', profile.email);
+        const lcResult = await resend.emails.send({
           from: 'Gradd <hello@gradd.ie>',
           to: profile.email,
           subject,
           html,
         });
+        console.log('WEBHOOK: email send result', JSON.stringify(lcResult));
       }
     } catch (err) {
-      // Log but don't fail the webhook — subscription is already activated
-      console.error('[webhook] Failed to send welcome email:', err);
+      console.error('WEBHOOK: email send error', err);
     }
   }
 }
