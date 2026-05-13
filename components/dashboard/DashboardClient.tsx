@@ -163,7 +163,7 @@ function Nav({ studentName }: { studentName: string }) {
   return (
     <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <img src={logoSrc} alt="Gradd" height={32} style={{ display: 'block' }} />
+        <img src={logoSrc} alt="Gradd" style={{ height: 28, width: 'auto', maxWidth: 110, display: 'block' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', marginRight: 6 }}>{studentName}</span>

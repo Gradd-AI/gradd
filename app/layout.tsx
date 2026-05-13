@@ -22,7 +22,6 @@ const ICONS: Metadata['icons'] = {
   ],
   apple: [{ url: '/apple-touch-icon.png' }],
   shortcut: '/favicon.ico',
-  other: [{ rel: 'manifest', url: '/site.webmanifest' }],
 };
 
 export async function generateMetadata(): Promise<Metadata> {
