@@ -13,7 +13,10 @@
       "Bash(git checkout *)",
       "Bash(Get-Content \"C:\\\\Users\\\\grant\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-grant-Downloads-GitHub-gradd\\\\7eda3f66-1a29-448e-9278-8ec4df26817a\\\\tasks\\\\b439pgnw9.output\" -Wait -Tail 0)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\grant\\\\Downloads\\\\GitHub\\\\gradd\" -Force)",
-      "Bash(Select-Object Name, Mode)"
+      "Bash(Select-Object Name, Mode)",
+      "Bash(New-Item -ItemType File -Path \"C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\\\\public\\\\site.webmanifest\" -Force)",
+      "Bash(Out-Null)",
+      "Bash(Set-Content -Path 'C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\\\\public\\\\site.webmanifest' -Encoding utf8 -Value '{ *)"
     ]
   }
 }

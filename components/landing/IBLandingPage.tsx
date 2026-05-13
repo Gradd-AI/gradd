@@ -684,9 +684,7 @@ export default function IBLandingPage() {
         {/* ── NAVIGATION ── */}
         <nav className={`ib-nav${scrolled ? ' ib-scrolled' : ''}`}>
           <div className="ib-nav-inner">
-            <Link href="/" className="ib-logo">
-              gradd<span className="ib-logo-dot">.ai</span>
-            </Link>
+            <Link href="/"><img src="/gradd-ai-logo.png" height="32" alt="Gradd" style={{ display: 'block' }} /></Link>
             <ul className="ib-nav-links">
               <li><a href="#subjects">Subjects</a></li>
               <li><a href="#how-it-works">How it works</a></li>
@@ -1196,9 +1194,7 @@ export default function IBLandingPage() {
         {/* ── FOOTER ── */}
         <footer className="ib-footer">
           <div className="ib-footer-inn">
-            <Link href="/" className="ib-flogo">
-              gradd<span className="ib-flogo-dot">.ai</span>
-            </Link>
+            <Link href="/"><img src="/gradd-ai-logo.png" height="24" alt="Gradd" style={{ display: 'block', filter: 'brightness(0) invert(1)' }} /></Link>
             <ul className="ib-flinks">
               <li><Link href="/privacy">Privacy</Link></li>
               <li><Link href="/terms">Terms</Link></li>

@@ -159,7 +159,7 @@ function Nav({ studentName }: { studentName: string }) {
   return (
     <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
-        <img src="/gradd-logo.svg" alt="Gradd" height={32} style={{ display: 'block' }} />
+        <img src={logoSrc} alt="Gradd" height={32} style={{ display: 'block' }} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 14, color: 'var(--text-muted)', marginRight: 6 }}>{studentName}</span>
@@ -481,6 +481,9 @@ export default function DashboardClient(props: Props) {
   const [mode, setMode] = useState<ViewMode>('parent');
 
   const subject = props.subject ?? 'LC_BUSINESS';
+  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+    ? '/gradd-ai-logo.png'
+    : '/gradd-logo.svg';
   // For bundle students, display calculations use activeSubject (server-resolved via cookie).
   // For all other students, effectiveSubject === subject.
   const effectiveSubject = (subject === 'IB_BUNDLE')

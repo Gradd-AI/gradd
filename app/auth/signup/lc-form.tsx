@@ -25,6 +25,9 @@ function checkPassword(pw: string): { score: number; label: string; color: strin
 export default function LCSignupForm() {
   const router = useRouter();
   const supabase = createClient();
+  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+    ? '/gradd-ai-logo.png'
+    : '/gradd-logo.svg';
 
   const [formData, setFormData] = useState({
     fullName: '',
@@ -101,7 +104,7 @@ export default function LCSignupForm() {
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <Link href="/">
-            <img src="/gradd-logo.svg" alt="Gradd" height="34" style={{ display: 'block' }} />
+            <img src={logoSrc} alt="Gradd" height="34" style={{ display: 'block' }} />
           </Link>
         </div>
 

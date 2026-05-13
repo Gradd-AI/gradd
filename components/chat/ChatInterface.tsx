@@ -325,13 +325,7 @@ export default function ChatInterface({
       <header style={{ padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            {isIB ? (
-              <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--chat-text)', letterSpacing: '-0.3px', lineHeight: 1 }}>
-                Gradd.ai
-              </span>
-            ) : (
-              <img src="/gradd-logo.svg" alt="Gradd" height={28} style={{ display: "block" }} />
-            )}
+            <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" height={28} style={{ display: "block" }} />
           </Link>
           <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
           <div>

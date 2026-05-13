@@ -9,6 +9,7 @@ export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
   const isIBDomain = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai');
+  const logoSrc = isIBDomain ? '/gradd-ai-logo.png' : '/gradd-logo.svg';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,7 +42,7 @@ export default function LoginPage() {
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
           <Link href="/">
-            <img src="/gradd-logo.svg" alt="Gradd" height="34" style={{ display: 'block' }} />
+            <img src={logoSrc} alt="Gradd" height="34" style={{ display: 'block' }} />
           </Link>
         </div>
 

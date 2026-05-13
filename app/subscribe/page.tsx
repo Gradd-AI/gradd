@@ -25,6 +25,9 @@ const PLANS = {
 function SuccessPoller() {
   const router = useRouter();
   const supabase = createClient();
+  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+    ? '/gradd-ai-logo.png'
+    : '/gradd-logo.svg';
   const [attempt, setAttempt] = useState(0);
   const [timedOut, setTimedOut] = useState(false);
 
@@ -60,7 +63,7 @@ function SuccessPoller() {
   if (timedOut) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16, padding: 32 }}>
-        <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
+        <img src={logoSrc} alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--brand)', fontWeight: 700 }}>Payment received</h2>
         <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 380 }}>
           Your payment went through but we're still activating your account. This usually takes a few seconds — refresh the page or go to your dashboard.
@@ -78,7 +81,7 @@ function SuccessPoller() {
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16 }}>
-      <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
+      <img src={logoSrc} alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
       <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
       <p style={{ fontSize: 15, color: 'var(--text-muted)', marginTop: 8 }}>Setting up your account…</p>
     </div>
@@ -88,6 +91,9 @@ function SuccessPoller() {
 function SubscribePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+    ? '/gradd-ai-logo.png'
+    : '/gradd-logo.svg';
   const paymentSuccess = searchParams.get('success') === 'true';
 
   const [billing, setBilling] = useState<BillingPeriod>('annual');
@@ -126,7 +132,7 @@ function SubscribePageInner() {
       <div style={{ width: '100%', maxWidth: 520 }}>
         {/* Logo */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
-          <img src="/gradd-logo.svg" alt="Gradd" height={34} style={{ display: 'block' }} />
+          <img src={logoSrc} alt="Gradd" height={34} style={{ display: 'block' }} />
         </div>
 
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '48px 40px', boxShadow: 'var(--shadow-lg)' }}>
