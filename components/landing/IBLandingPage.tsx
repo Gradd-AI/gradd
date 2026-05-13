@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Script from 'next/script';
 import { useState, useEffect } from 'react';
 
 // ── Data ──────────────────────────────────────────────────────
@@ -1157,6 +1158,17 @@ export default function IBLandingPage() {
           <div className="ib-inn">
             <div className="ib-fcta-inn">
               <span className="ib-tag">Get started today</span>
+              <div
+                className="trustpilot-widget"
+                data-locale="en-US"
+                data-template-id="56278e9abfbbba0bdcd568bc"
+                data-businessunit-id="6a04306a38bea9c74de5e972"
+                data-style-height="52px"
+                data-style-width="100%"
+                data-token="b6521a98-abe3-40ee-9f94-dd5d60cd5ee3"
+              >
+                <a href="https://www.trustpilot.com/review/gradd.ai" target="_blank" rel="noopener">Trustpilot</a>
+              </div>
               <h2 className="ib-h2">Start your first IB lesson right now.</h2>
               <p className="ib-sub">
                 Full IB curriculum. Command term technique built in. Progress tracked automatically.
@@ -1197,6 +1209,11 @@ export default function IBLandingPage() {
         </footer>
 
       </div>
+
+      <Script
+        src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"
+        strategy="afterInteractive"
+      />
     </>
   );
 }
