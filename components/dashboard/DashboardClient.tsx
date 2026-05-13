@@ -1,7 +1,7 @@
 // components/dashboard/DashboardClient.tsx
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -139,9 +139,10 @@ const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border
 function Nav({ studentName }: { studentName: string }) {
   const router = useRouter();
   const supabase = createClient();
-  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
-    ? '/gradd-ai-logo.png'
-    : '/gradd-logo.svg';
+  const [logoSrc, setLogoSrc] = useState('/gradd-logo.svg');
+  useEffect(() => {
+    if (window.location.hostname.includes('gradd.ai')) setLogoSrc('/gradd-ai-logo.png');
+  }, []);
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {

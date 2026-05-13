@@ -30,8 +30,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const isIB = host.includes('gradd.ai');
   return {
     title: isIB ? 'Gradd — Your IB Tutor' : 'Gradd — Your LC Business Tutor',
-    description:
-      'Full Leaving Certificate Business curriculum delivered by AI. Study at your own pace, from scratch to exam-ready.',
+    description: isIB
+      ? 'Full IB Economics and Business Management curriculum delivered by AI. Structured lessons, exam technique, progress tracking. 24/7.'
+      : 'Full Leaving Certificate Business curriculum delivered by AI. Study at your own pace, from scratch to exam-ready.',
     metadataBase: new URL(isIB ? 'https://gradd.ai' : 'https://gradd.ie'),
     icons: ICONS,
   };
