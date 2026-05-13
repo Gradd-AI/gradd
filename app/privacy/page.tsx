@@ -3,6 +3,7 @@
 // Deploy to: /privacy
 
 import React from "react";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Privacy Policy | Gradd",
@@ -10,7 +11,9 @@ export const metadata = {
     "How Gradd collects, uses, and protects your personal data. GDPR-compliant.",
 };
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const host = (await headers()).get('host') ?? '';
+  const isIB = host.includes('gradd.ai');
   const styles: Record<string, React.CSSProperties> = {
     page: {
       background: "#FAFAF7",
@@ -234,8 +237,8 @@ export default function PrivacyPage() {
         </p>
         <p style={styles.p}>
           Contact:{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
         </p>
 
@@ -269,7 +272,7 @@ export default function PrivacyPage() {
         <h3 style={styles.h3}>Platform Usage Data</h3>
         <ul style={styles.ul}>
           <li style={styles.li}>
-            Chat session content — the questions you ask Aoife (Gradd&apos;s AI
+            Chat session content — the questions you ask {isIB ? 'Mia' : 'Aoife'} (Gradd&apos;s AI
             tutor) and the responses generated
           </li>
           <li style={styles.li}>
@@ -435,8 +438,8 @@ export default function PrivacyPage() {
         <p style={styles.p}>
           To request deletion of your account and associated personal data,
           email us at{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>{" "}
           with the subject line <strong>&quot;Data Deletion Request&quot;</strong>{" "}
           and the email address associated with your account. We will process
@@ -503,14 +506,14 @@ export default function PrivacyPage() {
         <p style={styles.p}>
           For any privacy-related enquiries or to exercise your rights, contact
           us at:{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
         </p>
 
         <div style={styles.footer}>
           <p style={styles.footerText}>
-            Gradd · gradd.ie ·{" "}
+            {isIB ? 'Gradd · gradd.ai' : 'Gradd · gradd.ie'} ·{" "}
             <a href="/terms" style={styles.link}>
               Terms of Service
             </a>{" "}

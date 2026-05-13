@@ -3,13 +3,23 @@
 // Deploy to: /terms
 
 import React from "react";
+import { headers } from "next/headers";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "Terms of Service | Gradd",
-  description: "Gradd Terms of Service — Irish law governs.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const host = (await headers()).get('host') ?? '';
+  const isIB = host.includes('gradd.ai');
+  return {
+    title: "Terms of Service | Gradd",
+    description: isIB
+      ? "Gradd Terms of Service — IB Diploma Programme."
+      : "Gradd Terms of Service — Irish law governs.",
+  };
+}
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const host = (await headers()).get('host') ?? '';
+  const isIB = host.includes('gradd.ai');
   const styles: Record<string, React.CSSProperties> = {
     page: {
       background: "#FAFAF7",
@@ -157,15 +167,15 @@ export default function TermsPage() {
         <h2 style={styles.h2}>1. Who We Are</h2>
         <p style={styles.p}>
           Gradd is an AI-powered study platform designed to help students
-          prepare for the Irish Leaving Certificate examinations. Gradd is
+          prepare for the {isIB ? 'IB Diploma Programme examinations' : 'Irish Leaving Certificate examinations'}. Gradd is
           operated as a sole trader business registered in Ireland
           (&quot;Gradd&quot;, &quot;we&quot;, &quot;us&quot;, or
           &quot;our&quot;).
         </p>
         <p style={styles.p}>
           Enquiries may be directed to:{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
         </p>
 
@@ -176,15 +186,15 @@ export default function TermsPage() {
             Gradd is a study aid. We are not a school, a registered educational
             institution, or a grinds service. We do not provide accredited
             tuition, and our platform does not replace your school, teacher, or
-            official State Examinations Commission guidance.
+            {isIB ? ' IBO guidance.' : ' official State Examinations Commission guidance.'}
           </p>
         </div>
         <p style={styles.p}>
-          The Gradd platform provides AI-generated responses to Leaving
-          Certificate study questions. These responses are intended to
-          supplement your studies, not to replace qualified teacher instruction.
-          You should verify important information with your school or official
-          SEC resources.
+          The Gradd platform provides AI-generated responses to{' '}
+          {isIB ? 'IB Diploma Programme' : 'Leaving Certificate'} study questions.
+          These responses are intended to supplement your studies, not to replace
+          qualified teacher instruction. You should verify important information
+          with your school or {isIB ? 'official IBO resources' : 'official SEC resources'}.
         </p>
 
         {/* 3 */}
@@ -193,7 +203,7 @@ export default function TermsPage() {
           We do not guarantee any particular exam outcome, grade, points score,
           or academic result from using Gradd. Study outcomes depend on many
           factors outside our control, including individual effort, aptitude,
-          and exam conditions set by the State Examinations Commission.
+          and exam conditions set by the {isIB ? 'International Baccalaureate Organisation (IBO)' : 'State Examinations Commission'}.
         </p>
         <p style={styles.p}>
           Any testimonials or examples of student progress shared by Gradd are
@@ -245,8 +255,8 @@ export default function TermsPage() {
           You are responsible for maintaining the confidentiality of your login
           credentials and for all activity that occurs under your account. Notify
           us immediately at{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>{" "}
           if you suspect unauthorised access to your account.
         </p>
@@ -282,8 +292,8 @@ export default function TermsPage() {
           this period, you acknowledge that you are waiving your right to a full
           refund for the portion of the service already used. To exercise your
           right of withdrawal, contact us at{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
           .
         </p>
@@ -381,14 +391,14 @@ export default function TermsPage() {
         <h2 style={styles.h2}>15. Contact</h2>
         <p style={styles.p}>
           For any questions about these Terms, contact us at:{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
         </p>
 
         <div style={styles.footer}>
           <p style={styles.footerText}>
-            Gradd · gradd.ie ·{" "}
+            {isIB ? 'Gradd · gradd.ai' : 'Gradd · gradd.ie'} ·{" "}
             <a href="/privacy" style={styles.link}>
               Privacy Policy
             </a>{" "}

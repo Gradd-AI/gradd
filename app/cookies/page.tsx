@@ -3,6 +3,7 @@
 // Deploy to: /cookies
 
 import React from "react";
+import { headers } from "next/headers";
 
 export const metadata = {
   title: "Cookie Policy | Gradd",
@@ -10,7 +11,9 @@ export const metadata = {
     "Gradd uses only essential cookies required for login. No advertising or tracking cookies.",
 };
 
-export default function CookiesPage() {
+export default async function CookiesPage() {
+  const host = (await headers()).get('host') ?? '';
+  const isIB = host.includes('gradd.ai');
   const styles: Record<string, React.CSSProperties> = {
     page: {
       background: "#FAFAF7",
@@ -319,7 +322,7 @@ export default function CookiesPage() {
           </li>
           <li style={styles.li}>
             <a
-              href="https://support.apple.com/en-ie/guide/safari/sfri11471/mac"
+              href={isIB ? 'https://support.apple.com/en-gb/guide/safari/sfri11471/mac' : 'https://support.apple.com/en-ie/guide/safari/sfri11471/mac'}
               style={styles.link}
               target="_blank"
               rel="noopener noreferrer"
@@ -343,15 +346,15 @@ export default function CookiesPage() {
         <h2 style={styles.h2}>Questions</h2>
         <p style={styles.p}>
           If you have any questions about our use of cookies, contact us at{" "}
-          <a href="mailto:hello@gradd.ie" style={styles.link}>
-            hello@gradd.ie
+          <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
+            {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
           .
         </p>
 
         <div style={styles.footer}>
           <p style={styles.footerText}>
-            Gradd · gradd.ie ·{" "}
+            {isIB ? 'Gradd · gradd.ai' : 'Gradd · gradd.ie'} ·{" "}
             <a href="/terms" style={styles.link}>
               Terms of Service
             </a>{" "}
