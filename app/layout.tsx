@@ -29,7 +29,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? '';
   const isIB = host.includes('gradd.ai');
   return {
-    title: 'Gradd — Your LC Business Tutor',
+    title: isIB ? 'Gradd — Your IB Tutor' : 'Gradd — Your LC Business Tutor',
     description:
       'Full Leaving Certificate Business curriculum delivered by AI. Study at your own pace, from scratch to exam-ready.',
     metadataBase: new URL(isIB ? 'https://gradd.ai' : 'https://gradd.ie'),
