@@ -1160,6 +1160,7 @@ export default function IBLandingPage() {
               <span className="ib-tag">Get started today</span>
               <div
                 className="trustpilot-widget"
+                style={{ marginBottom: '32px' }}
                 data-locale="en-US"
                 data-template-id="56278e9abfbbba0bdcd568bc"
                 data-businessunit-id="6a04306a38bea9c74de5e972"
