@@ -327,23 +327,27 @@ export default function ChatInterface({
           display: flex; flex-direction: row; align-items: center; justify-content: space-between;
         }
         .session-header-row1 { display: flex; align-items: center; gap: 12px; }
-        .session-header-row2 { display: flex; align-items: center; gap: 12px; }
-        .session-logo { height: 28px; width: auto; max-width: 110px; display: block; }
-        .session-lesson-title { font-size: 14px; font-weight: 600; color: var(--chat-text); }
+        .session-header-left  { display: flex; align-items: center; }
+        .session-header-centre { display: flex; align-items: center; }
+        .session-header-right  { display: flex; align-items: center; }
+        .session-header-row2 { font-size: 13px; font-weight: 600; color: var(--chat-text); }
         .session-subtitle { font-size: 12px; color: var(--chat-muted); }
+        .session-logo { height: 28px; width: auto; max-width: 110px; display: block; }
         .end-session-btn {
           background: transparent; border: 1px solid var(--chat-border); border-radius: 7px;
           padding: 6px 14px; font-size: 13px; color: var(--chat-muted);
           cursor: pointer; font-family: var(--font-body); transition: all 0.15s ease;
         }
         @media (max-width: 480px) {
-          .session-header { flex-direction: column; padding: 8px 12px; gap: 4px; height: auto; min-height: 48px; }
-          .session-header-row1 { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-          .session-header-row2 { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-          .session-lesson-title { font-size: 11px; color: var(--chat-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
-          .end-session-btn { font-size: 11px; padding: 5px 8px; white-space: nowrap; }
+          .session-header { display: flex; flex-direction: column; padding: 8px 12px; gap: 4px; min-height: 56px; height: auto; }
+          .session-header-row1 { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; }
+          .session-header-left  { display: flex; justify-content: flex-start; }
+          .session-header-centre { display: flex; justify-content: center; }
+          .session-header-right  { display: flex; justify-content: flex-end; }
+          .session-header-row2 { text-align: center; font-size: 11px; color: var(--chat-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; }
           .session-subtitle { display: none; }
           .session-logo { height: 20px; }
+          .end-session-btn { font-size: 11px; padding: 5px 8px; }
           .chat-messages-container { scrollbar-width: none; -ms-overflow-style: none; }
           .chat-messages-container::-webkit-scrollbar { display: none; }
         }
@@ -351,29 +355,33 @@ export default function ChatInterface({
 
       {/* Header — sticky so End session is always visible regardless of scroll position */}
       <header className="session-header" style={{ borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
-        {/* Row 1: logo (left) + end session (right) */}
+        {/* Row 1: logo (left) · Mia indicator (centre) · End session (right) */}
         <div className="session-header-row1">
-          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
-            <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" className="session-logo" />
-          </Link>
-          <button
-            className="end-session-btn"
-            onClick={endSession}
-            disabled={ending || initialising}
-          >
-            {ending ? 'Ending…' : 'End session'}
-          </button>
+          <div className="session-header-left">
+            <Link href="/dashboard" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+              <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" className="session-logo" />
+            </Link>
+          </div>
+          <div className="session-header-centre">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
+              <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
+            </div>
+          </div>
+          <div className="session-header-right">
+            <button
+              className="end-session-btn"
+              onClick={endSession}
+              disabled={ending || initialising}
+            >
+              {ending ? 'Ending…' : 'End session'}
+            </button>
+          </div>
         </div>
-        {/* Row 2: lesson title (left) + Mia dot (right) */}
+        {/* Row 2: lesson title centred */}
         <div className="session-header-row2">
-          <div>
-            <div className="session-lesson-title">{lessonName}</div>
-            <div className="session-subtitle">{examLabel ?? unitName} · Session {sessionNumber}</div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
-            <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
-          </div>
+          {lessonName}
+          <span className="session-subtitle"> · {examLabel ?? unitName} · Session {sessionNumber}</span>
         </div>
       </header>
 
