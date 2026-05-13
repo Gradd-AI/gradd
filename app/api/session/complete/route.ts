@@ -65,12 +65,13 @@ export async function POST(request: Request) {
       const exchangeCount = Math.floor(history.length / 2);
 
       if (exchangeCount > 0) {
+        const _dateStr = new Date().toLocaleDateString('en-GB', {
+              day: 'numeric', month: 'long', year: 'numeric',
+            });
         progressUpdates.last_session_summary =
-          `[CONTINUITY_NOTE] Session ${session.session_number} covered ` +
-          `${progress.current_lesson_name} (${session.lesson_code}), ` +
-          `${progress.current_unit_name}. ` +
-          `${exchangeCount} exchanges completed. Lesson not yet finished — ` +
-          `continue from where the student left off. Do not restart from the beginning.`;
+          `On ${_dateStr}, the student was working through ${progress.current_lesson_name} ` +
+          `(${session.lesson_code}), ${progress.current_unit_name} (did not complete). ` +
+          `${exchangeCount} exchanges completed. Resume from where the session ended — do not restart from the beginning.`;
       }
     }
 

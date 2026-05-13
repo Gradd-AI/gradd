@@ -14,7 +14,7 @@ import anthropic from '@/lib/anthropic';
 import { NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rateLimit'
 
-const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5';
+const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 4096;
 
 // Cap history sent to Anthropic at last 20 exchanges (40 messages).
@@ -575,8 +575,25 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
             if (signals.sessionSummary) {
               const s = signals.sessionSummary;
 
+              const _dateStr = new Date().toLocaleDateString('en-GB', {
+                day: 'numeric', month: 'long', year: 'numeric',
+              });
+              const _lessonStatus = s.lessonComplete
+                ? `completed lesson ${s.lesson}`
+                : `was working through lesson ${s.lesson} (did not complete)`;
+              const _concepts = s.conceptsCovered.filter(c => c && c !== 'NONE');
+              const _conceptsClause = _concepts.length > 0
+                ? ` covering ${_concepts.join(', ')}`
+                : '';
+              const _applyClause = (s.applyScores && s.applyScores !== 'N/A')
+                ? ` Application performance: ${s.applyScores}.`
+                : '';
+              const _weakClause = s.weakFlagsCount > 0
+                ? ` ${s.weakFlagsCount} weak area${s.weakFlagsCount === 1 ? '' : 's'} flagged this session.`
+                : '';
+              const _nextAction = s.nextAction.replace(/-/g, ' ');
               progressUpdates.last_session_summary =
-                fullResponseText.match(/\[SESSION_SUMMARY:[^\]]+\]/)?.[0] ?? '';
+                `On ${_dateStr}, the student ${_lessonStatus}${_conceptsClause}.${_applyClause}${_weakClause} Next action: ${_nextAction}.`;
 
               if (s.type === 'NEW_TOPIC') {
                 const newCount = (progress.new_topic_session_count ?? 0) + 1;
