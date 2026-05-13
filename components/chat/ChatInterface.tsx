@@ -321,16 +321,37 @@ export default function ChatInterface({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
 
+      <style>{`
+        .session-header { padding: 0 24px; height: 60px; }
+        .session-logo { height: 28px; width: auto; max-width: 110px; display: block; }
+        .session-lesson-title { font-size: 14px; font-weight: 600; color: var(--chat-text); }
+        .session-subtitle { font-size: 12px; color: var(--chat-muted); }
+        .end-session-btn {
+          background: transparent; border: 1px solid var(--chat-border); border-radius: 7px;
+          padding: 6px 14px; font-size: 13px; color: var(--chat-muted);
+          cursor: pointer; font-family: var(--font-body); transition: all 0.15s ease;
+        }
+        @media (max-width: 480px) {
+          .session-header { padding: 8px 12px; height: auto; min-height: 48px; }
+          .session-subtitle { display: none; }
+          .session-lesson-title { font-size: 12px; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .session-logo { height: 22px; }
+          .end-session-btn { font-size: 12px; padding: 6px 10px; }
+          .chat-messages-container { scrollbar-width: none; -ms-overflow-style: none; }
+          .chat-messages-container::-webkit-scrollbar { display: none; }
+        }
+      `}</style>
+
       {/* Header — sticky so End session is always visible regardless of scroll position */}
-      <header style={{ padding: '0 24px', height: 60, display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
+      <header className="session-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
         <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
           <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" style={{ height: 28, width: 'auto', maxWidth: 110, display: 'block' }} />
+            <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" className="session-logo" />
           </Link>
           <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: "var(--chat-text)" }}>{lessonName}</div>
-            <div style={{ fontSize: 12, color: "var(--chat-muted)" }}>{examLabel ?? unitName} · Session {sessionNumber}</div>
+            <div className="session-lesson-title">{lessonName}</div>
+            <div className="session-subtitle">{examLabel ?? unitName} · Session {sessionNumber}</div>
           </div>
         </div>
 
@@ -340,9 +361,9 @@ export default function ChatInterface({
             <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
           </div>
           <button
+            className="end-session-btn"
             onClick={endSession}
             disabled={ending || initialising}
-            style={{ background: 'transparent', border: '1px solid var(--chat-border)', borderRadius: 7, padding: '6px 14px', fontSize: 13, color: 'var(--chat-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s ease' }}
           >
             {ending ? 'Ending…' : 'End session'}
           </button>
@@ -350,7 +371,7 @@ export default function ChatInterface({
       </header>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 0' }}>
+      <div className="chat-messages-container" style={{ flex: 1, overflowY: 'auto', padding: '24px 0' }}>
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
 
           {/* Diagram panel — shown above first message if a diagram exists for this lesson */}
