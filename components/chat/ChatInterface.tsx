@@ -322,6 +322,8 @@ export default function ChatInterface({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
 
       <style>{`
+        .tutor-message-row { display: flex; align-items: flex-start; }
+        .tutor-message-bubble { display: flex; gap: 12px; align-items: flex-start; position: relative; max-width: 92%; }
         .session-header {
           padding: 0 24px; height: 60px;
           display: flex; flex-direction: row; align-items: center; justify-content: space-between;
@@ -348,6 +350,9 @@ export default function ChatInterface({
           .session-subtitle { display: none; }
           .session-logo { height: 20px; }
           .end-session-btn { font-size: 11px; padding: 5px 8px; }
+          .tutor-message-bubble { display: block; padding-top: 28px; max-width: 96%; }
+          .tutor-avatar { position: absolute; top: -12px; left: 12px; width: 24px; height: 24px; font-size: 11px; }
+          .tutor-message-row { gap: 0; }
           .chat-messages-container { scrollbar-width: none; -ms-overflow-style: none; }
           .chat-messages-container::-webkit-scrollbar { display: none; }
         }
@@ -577,9 +582,9 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
   }
 
   return (
-    <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
-      <AvatarTutor initial={tutorInitial} />
-      <div style={{ maxWidth: '92%' }}>
+    <div className="tutor-message-row" style={{ marginBottom: 20 }}>
+      <div className="tutor-message-bubble">
+        <AvatarTutor initial={tutorInitial} className="tutor-avatar" />
         <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', fontSize: 15, color: 'var(--chat-text)', lineHeight: 1.65 }}>
           <MessageContent content={displayContent} />
         </div>
@@ -588,9 +593,9 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
   );
 }
 
-function AvatarTutor({ initial }: { initial: string }) {
+function AvatarTutor({ initial, className }: { initial: string; className?: string }) {
   return (
-    <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)', flexShrink: 0, marginTop: 2 }}>
+    <div className={className} style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-light) 0%, var(--brand) 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', fontFamily: 'var(--font-display)', flexShrink: 0, marginTop: 2 }}>
       {initial}
     </div>
   );
