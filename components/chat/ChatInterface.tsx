@@ -322,7 +322,12 @@ export default function ChatInterface({
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
 
       <style>{`
-        .session-header { padding: 0 24px; height: 60px; }
+        .session-header {
+          padding: 0 24px; height: 60px;
+          display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+        }
+        .session-header-row1 { display: flex; align-items: center; gap: 12px; }
+        .session-header-row2 { display: flex; align-items: center; gap: 12px; }
         .session-logo { height: 28px; width: auto; max-width: 110px; display: block; }
         .session-lesson-title { font-size: 14px; font-weight: 600; color: var(--chat-text); }
         .session-subtitle { font-size: 12px; color: var(--chat-muted); }
@@ -332,34 +337,25 @@ export default function ChatInterface({
           cursor: pointer; font-family: var(--font-body); transition: all 0.15s ease;
         }
         @media (max-width: 480px) {
-          .session-header { padding: 8px 12px; height: auto; min-height: 48px; }
+          .session-header { flex-direction: column; padding: 8px 12px; gap: 4px; height: auto; min-height: 48px; }
+          .session-header-row1 { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+          .session-header-row2 { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+          .session-lesson-title { font-size: 11px; color: var(--chat-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+          .end-session-btn { font-size: 11px; padding: 5px 8px; white-space: nowrap; }
           .session-subtitle { display: none; }
-          .session-lesson-title { font-size: 12px; max-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-          .session-logo { height: 22px; }
-          .end-session-btn { font-size: 12px; padding: 6px 10px; }
+          .session-logo { height: 20px; }
           .chat-messages-container { scrollbar-width: none; -ms-overflow-style: none; }
           .chat-messages-container::-webkit-scrollbar { display: none; }
         }
       `}</style>
 
       {/* Header — sticky so End session is always visible regardless of scroll position */}
-      <header className="session-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+      <header className="session-header" style={{ borderBottom: '1px solid var(--chat-border)', flexShrink: 0, position: 'sticky', top: 0, zIndex: 50, background: 'var(--chat-bg)' }}>
+        {/* Row 1: logo (left) + end session (right) */}
+        <div className="session-header-row1">
+          <Link href="/dashboard" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
             <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" className="session-logo" />
           </Link>
-          <div style={{ width: 1, height: 24, background: "var(--chat-border)" }} />
-          <div>
-            <div className="session-lesson-title">{lessonName}</div>
-            <div className="session-subtitle">{examLabel ?? unitName} · Session {sessionNumber}</div>
-          </div>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
-            <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
-          </div>
           <button
             className="end-session-btn"
             onClick={endSession}
@@ -367,6 +363,17 @@ export default function ChatInterface({
           >
             {ending ? 'Ending…' : 'End session'}
           </button>
+        </div>
+        {/* Row 2: lesson title (left) + Mia dot (right) */}
+        <div className="session-header-row2">
+          <div>
+            <div className="session-lesson-title">{lessonName}</div>
+            <div className="session-subtitle">{examLabel ?? unitName} · Session {sessionNumber}</div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
+            <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
+            <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
+          </div>
         </div>
       </header>
 

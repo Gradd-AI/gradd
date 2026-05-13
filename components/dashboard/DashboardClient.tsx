@@ -536,6 +536,7 @@ export default function DashboardClient(props: Props) {
           .dash-signout-btn { font-size: 12px; padding: 6px 10px; }
           .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
           .dash-page-header { flex-direction: column; }
+          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
         }
       `}</style>
       <Nav studentName={props.studentName} />
@@ -596,7 +597,7 @@ export default function DashboardClient(props: Props) {
                 📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
               </div>
             )}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 8 }}>
+            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 8 }}>
               {[
                 { label: 'Progress', value: `${props.curriculumPercent}%` },
                 { label: 'Sessions', value: props.totalSessions },
