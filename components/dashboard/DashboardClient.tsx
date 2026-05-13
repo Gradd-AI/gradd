@@ -139,6 +139,9 @@ const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border
 function Nav({ studentName }: { studentName: string }) {
   const router = useRouter();
   const supabase = createClient();
+  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+    ? '/gradd-ai-logo.png'
+    : '/gradd-logo.svg';
   const [portalLoading, setPortalLoading] = useState(false);
 
   const handleManageSubscription = async () => {
@@ -481,9 +484,6 @@ export default function DashboardClient(props: Props) {
   const [mode, setMode] = useState<ViewMode>('parent');
 
   const subject = props.subject ?? 'LC_BUSINESS';
-  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
-    ? '/gradd-ai-logo.png'
-    : '/gradd-logo.svg';
   // For bundle students, display calculations use activeSubject (server-resolved via cookie).
   // For all other students, effectiveSubject === subject.
   const effectiveSubject = (subject === 'IB_BUNDLE')
