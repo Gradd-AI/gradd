@@ -161,21 +161,24 @@ function Nav({ studentName }: { studentName: string }) {
   };
 
   return (
-    <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 32px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 20px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center' }}>
         <img src={logoSrc} alt="Gradd" style={{ height: 28, width: 'auto', maxWidth: 110, display: 'block' }} />
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 14, color: 'var(--text-muted)', marginRight: 6 }}>{studentName}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span className="dash-student-name">{studentName}</span>
         <button
+          className="dash-manage-btn"
           onClick={handleManageSubscription}
           disabled={portalLoading}
-          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--text-muted)', cursor: portalLoading ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-body)', opacity: portalLoading ? 0.6 : 1 }}
+          style={{ cursor: portalLoading ? 'not-allowed' : 'pointer', opacity: portalLoading ? 0.6 : 1 }}
         >
           {portalLoading ? 'Opening…' : 'Manage subscription'}
         </button>
-        <button onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
-          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 14px', fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
+        <button
+          className="dash-signout-btn"
+          onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
+        >
           Sign out
         </button>
       </div>
@@ -382,7 +385,7 @@ function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessio
     { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : `${tutorName} is tracking`, warn: weakAreasCount > 0 },
   ];
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
+    <div className="dash-stat-grid">
       {stats.map(({ label, value, sub, warn, accent }) => (
         <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{label}</p>
@@ -508,11 +511,38 @@ export default function DashboardClient(props: Props) {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+      <style>{`
+        .dash-student-name { font-size: 14px; color: var(--text-muted); margin-right: 6px; }
+        .dash-manage-btn {
+          background: none; border: 1px solid var(--border); border-radius: 6px;
+          padding: 6px 14px; font-size: 13px; color: var(--text-muted);
+          font-family: var(--font-body);
+        }
+        .dash-signout-btn {
+          background: none; border: 1px solid var(--border); border-radius: 6px;
+          padding: 6px 14px; font-size: 13px; color: var(--text-muted);
+          cursor: pointer; font-family: var(--font-body);
+        }
+        .dash-stat-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 14px; margin-bottom: 28px;
+        }
+        .dash-page-header {
+          display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+        }
+        @media (max-width: 480px) {
+          .dash-student-name { display: none; }
+          .dash-manage-btn { display: none; }
+          .dash-signout-btn { font-size: 12px; padding: 6px 10px; }
+          .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+          .dash-page-header { flex-direction: column; }
+        }
+      `}</style>
       <Nav studentName={props.studentName} />
       <main style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 32px' }}>
 
         {/* Header */}
-        <div style={{ marginBottom: props.isBundle ? 0 : 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div className="dash-page-header" style={{ marginBottom: props.isBundle ? 0 : 32 }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.5px', marginBottom: 6 }}>
               {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}

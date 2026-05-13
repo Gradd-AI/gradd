@@ -543,7 +543,7 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
   return (
     <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
       <AvatarTutor initial={tutorInitial} />
-      <div style={{ maxWidth: '80%' }}>
+      <div style={{ maxWidth: '92%' }}>
         <div style={{ background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: '4px 16px 16px 16px', padding: '14px 18px', fontSize: 15, color: 'var(--chat-text)', lineHeight: 1.65 }}>
           <MessageContent content={displayContent} />
         </div>
