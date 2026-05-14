@@ -16,7 +16,12 @@
       "Bash(Select-Object Name, Mode)",
       "Bash(New-Item -ItemType File -Path \"C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\\\\public\\\\site.webmanifest\" -Force)",
       "Bash(Out-Null)",
-      "Bash(Set-Content -Path 'C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\\\\public\\\\site.webmanifest' -Encoding utf8 -Value '{ *)"
+      "Bash(Set-Content -Path 'C:\\\\Users\\\\GrantErasmus\\\\Downloads\\\\GitHub\\\\gradd\\\\public\\\\site.webmanifest' -Encoding utf8 -Value '{ *)",
+      "Bash(curl -I https://www.gradd.ai/favicon.ico)",
+      "Bash(curl -I https://www.gradd.ai/favicon-32x32.png)",
+      "Bash(curl -I https://www.gradd.ai/site.webmanifest)",
+      "Bash(magick --version)",
+      "Bash(convert --version)"
     ]
   }
 }
