@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
 type IBSubject = 'IB_ECONOMICS' | 'IB_BUSINESS' | 'IB_BUNDLE';
@@ -387,70 +386,51 @@ function IBOnboardingInner() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'var(--bg)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '32px 24px',
-    }}>
-      <div style={{ width: '100%', maxWidth: 520 }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 22, fontWeight: 700,
-              letterSpacing: '-0.3px',
-            }}>
-              <span style={{ color: 'var(--brand)' }}>Gradd</span>
-              <span style={{ color: 'var(--brand-accent)' }}>.ai</span>
-            </span>
-          </Link>
-        </div>
+    <div style={{ width: '100%', maxWidth: 520 }}>
+      <div style={{
+        background: 'var(--surface)', border: '1px solid var(--border)',
+        borderRadius: 'var(--radius-lg)', padding: '40px 36px',
+        boxShadow: 'var(--shadow-lg)',
+      }}>
+        {step === 1 && (
+          <StepSubject
+            value={subject}
+            onChange={setSubject}
+            onNext={() => setStep(2)}
+          />
+        )}
 
-        <div style={{
-          background: 'var(--surface)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)', padding: '40px 36px',
-          boxShadow: 'var(--shadow-lg)',
-        }}>
-          {step === 1 && (
-            <StepSubject
-              value={subject}
-              onChange={setSubject}
-              onNext={() => setStep(2)}
-            />
-          )}
+        {step === 2 && subject && (
+          <StepLevel
+            subject={subject}
+            economicsLevel={economicsLevel}
+            onEconomicsLevel={setEconomicsLevel}
+            businessLevel={businessLevel}
+            onBusinessLevel={setBusinessLevel}
+            onNext={() => setStep(3)}
+            onBack={() => setStep(1)}
+          />
+        )}
 
-          {step === 2 && subject && (
-            <StepLevel
-              subject={subject}
-              economicsLevel={economicsLevel}
-              onEconomicsLevel={setEconomicsLevel}
-              businessLevel={businessLevel}
-              onBusinessLevel={setBusinessLevel}
-              onNext={() => setStep(3)}
-              onBack={() => setStep(1)}
-            />
-          )}
+        {step === 3 && (
+          <StepPosition
+            value={coursePosition}
+            onChange={setCoursePosition}
+            onNext={() => setStep(4)}
+            onBack={() => setStep(2)}
+            compact={compact}
+          />
+        )}
 
-          {step === 3 && (
-            <StepPosition
-              value={coursePosition}
-              onChange={setCoursePosition}
-              onNext={() => setStep(4)}
-              onBack={() => setStep(2)}
-              compact={compact}
-            />
-          )}
-
-          {step === 4 && (
-            <StepIA
-              loading={loading}
-              error={error}
-              onConfirm={handleComplete}
-              onBack={() => setStep(3)}
-              compact={compact}
-            />
-          )}
-        </div>
+        {step === 4 && (
+          <StepIA
+            loading={loading}
+            error={error}
+            onConfirm={handleComplete}
+            onBack={() => setStep(3)}
+            compact={compact}
+          />
+        )}
       </div>
     </div>
   );

@@ -140,7 +140,7 @@ export default function LandingPage() {
         }
         .lp-nav-links a {
           font-size: .9rem; font-weight: 500; color: var(--ink700);
-          text-decoration: none; transition: color .2s;
+          text-decoration: none; transition: color .2s; white-space: nowrap;
         }
         .lp-nav-links a:hover { color: var(--g700); }
         .lp-nav-login { color: var(--ink500) !important; }
@@ -148,6 +148,7 @@ export default function LandingPage() {
           background: var(--g700); color: var(--white) !important;
           padding: .5rem 1.2rem; border-radius: 6px;
           font-weight: 600 !important; transition: background .2s !important;
+          white-space: nowrap;
         }
         .lp-nav-cta:hover { background: var(--g600) !important; }
 
@@ -572,15 +573,17 @@ export default function LandingPage() {
           .lp-pcard { padding: 2rem 1.5rem; }
           .lp-stats { gap: 1.5rem; }
         }
-        @media (max-width: 520px) {
-          .lp-sol-grid, .lp-steps, .lp-units, .lp-tgrid { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
           .lp-nav-links { display: none; }
           .lp-mobile-nav { display: flex; }
+        }
+        @media (min-width: 769px) {
+          .lp-mobile-nav { display: none; }
+        }
+        @media (max-width: 520px) {
+          .lp-sol-grid, .lp-steps, .lp-units, .lp-tgrid { grid-template-columns: 1fr; }
           .lp-h1 { font-size: 2rem; }
           .lp-hero { padding: 4rem 1.5rem 4rem; }
-        }
-        @media (min-width: 521px) {
-          .lp-mobile-nav { display: none; }
         }
         .lp-mobile-nav {
           align-items: center; gap: .6rem;

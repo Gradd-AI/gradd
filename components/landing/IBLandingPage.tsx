@@ -160,7 +160,7 @@ export default function IBLandingPage() {
         }
         .ib-nav-links a {
           font-size: .9rem; font-weight: 500; color: var(--ink700);
-          text-decoration: none; transition: color .2s;
+          text-decoration: none; transition: color .2s; white-space: nowrap;
         }
         .ib-nav-links a:hover { color: var(--g700); }
         .ib-nav-login { color: var(--ink500) !important; }
@@ -168,6 +168,7 @@ export default function IBLandingPage() {
           background: var(--g700); color: var(--white) !important;
           padding: .5rem 1.2rem; border-radius: 6px;
           font-weight: 600 !important; transition: background .2s !important;
+          white-space: nowrap;
         }
         .ib-nav-cta:hover { background: var(--g600) !important; }
 
@@ -656,10 +657,12 @@ export default function IBLandingPage() {
           .ib-steps::before { display: none; }
           .ib-stats { gap: 1.5rem; }
         }
-        @media (max-width: 520px) {
-          .ib-sol-grid, .ib-steps { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
           .ib-nav-links { display: none; }
           .ib-mobile-nav { display: flex !important; }
+        }
+        @media (max-width: 520px) {
+          .ib-sol-grid, .ib-steps { grid-template-columns: 1fr; }
           .ib-h1 { font-size: 2rem; }
           .ib-hero { padding: 4rem 1.5rem 4rem; }
         }

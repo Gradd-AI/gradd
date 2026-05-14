@@ -577,24 +577,7 @@ export default function IBSignupPage() {
   };
 
   return (
-    <div className="auth-page">
-      {/* Slightly wider card to breathe with subject cards */}
-      <div className="auth-card" style={{ maxWidth: 500 }}>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <span style={{
-              fontFamily: 'var(--font-display)',
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: '-0.3px',
-              display: 'block',
-            }}>
-              <span style={{ color: 'var(--brand)' }}>Gradd</span>
-              <span style={{ color: 'var(--brand-accent)' }}>.ai</span>
-            </span>
-          </Link>
-        </div>
+    <div className="auth-card" style={{ maxWidth: 500 }}>
 
         {step === 1 && (
           <StepChoose
@@ -632,7 +615,6 @@ export default function IBSignupPage() {
           />
         )}
 
-      </div>
     </div>
   );
 }

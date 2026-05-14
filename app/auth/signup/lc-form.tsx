@@ -25,10 +25,6 @@ function checkPassword(pw: string): { score: number; label: string; color: strin
 export default function LCSignupForm() {
   const router = useRouter();
   const supabase = createClient();
-  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
-    ? '/gradd-ai-logo.png'
-    : '/gradd-logo.svg';
-
   const [formData, setFormData] = useState({
     fullName: '',
     studentName: '',
@@ -99,14 +95,7 @@ export default function LCSignupForm() {
   };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 28 }}>
-          <Link href="/">
-            <img src={logoSrc} alt="Gradd" height="34" style={{ display: 'block' }} />
-          </Link>
-        </div>
+    <div className="auth-card">
 
         <h1 className="auth-heading">Create your account</h1>
         <p className="auth-subheading">
@@ -240,7 +229,6 @@ export default function LCSignupForm() {
         <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, color: 'var(--text-light)' }}>
           By creating an account you agree to our Terms &amp; Privacy Policy.
         </p>
-      </div>
     </div>
   );
 }
