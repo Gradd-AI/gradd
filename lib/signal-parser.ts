@@ -127,25 +127,40 @@ function parseUnitComplete(text: string): UnitCompleteSignal | null {
 
 function parseWeakAreaFlags(text: string): WeakAreaFlagSignal[] {
   const flags: WeakAreaFlagSignal[] = [];
-  const pattern = /\[WEAK_AREA_FLAG:\s*([^|]+)\|\s*([^|]+)\|\s*([^\]]+)\]/gi;
+  // Matches the JSON format emitted by v1.2+ prompts:
+  // [WEAK_AREA_FLAG: { "topic": "...", "lesson_code": "...", "concept": "...", "severity": "..." }]
+  const pattern = /\[WEAK_AREA_FLAG:\s*\{([\s\S]*?)\}\s*\]/gi;
   let match;
 
   while ((match = pattern.exec(text)) !== null) {
-    const lessonCode = match[1].trim();
-    const description = match[2].trim();
-    const action = match[3].trim();
+    const body = '{' + match[1] + '}';
+    let parsed: Record<string, string>;
+    try {
+      parsed = JSON.parse(body);
+    } catch (err) {
+      console.error('[signal-parser] WEAK_AREA_FLAG: malformed JSON — skipping flag:', body, err);
+      continue;
+    }
 
-    const conceptSlug = description
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .substring(0, 60);
+    const topic = (parsed.topic ?? '').trim();
+    const lessonCode = (parsed.lesson_code ?? '').trim();
+    const concept = (parsed.concept ?? '').trim();
+    const severity = (parsed.severity ?? 'moderate').trim();
+
+    if (!lessonCode || !concept) {
+      console.error('[signal-parser] WEAK_AREA_FLAG: missing lesson_code or concept — skipping:', parsed);
+      continue;
+    }
+
+    const conceptSlug = topic
+      ? topic.substring(0, 60)
+      : concept.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').substring(0, 60);
 
     flags.push({
       lessonCode,
       conceptSlug,
-      errorDescription: description,
-      recommendedAction: action,
+      errorDescription: concept,
+      recommendedAction: `[${severity}] re-teach from a different angle before advancing`,
     });
   }
 
