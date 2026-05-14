@@ -135,7 +135,7 @@ export async function GET(req: NextRequest) {
       });
 
       await resend.emails.send({
-        from: 'Mia at Gradd <mia@gradd.ai>',
+        from: 'Mia at Gradd <mia@gradd.ie>',
         to:   trial.email,
         subject: emailSubject,
         html,
