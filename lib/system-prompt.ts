@@ -140,7 +140,7 @@ export async function buildIBEconomicsPrompt(
   const promptPath = path.join(
     process.cwd(),
     'prompts',
-    'ib_economics_tutor_system_prompt_v1_3.md'
+    'ib_economics_tutor_system_prompt_v1_4.md'
   );
 
   let prompt: string;
@@ -181,7 +181,7 @@ export async function buildIBBusinessPrompt(
   const promptPath = path.join(
     process.cwd(),
     'prompts',
-    'ib_business_tutor_system_prompt_v1_3.md'
+    'ib_business_tutor_system_prompt_v1_4.md'
   );
 
   let prompt: string;

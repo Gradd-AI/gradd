@@ -108,7 +108,7 @@ function parseLessonIncomplete(text: string): LessonIncompleteSignal | null {
 
 function parseUnitComplete(text: string): UnitCompleteSignal | null {
   const match = text.match(
-    /\[UNIT_COMPLETE:\s*(\S+)\s*\|\s*checkpoint_score:(\d+\/\d+)\s*\|\s*weak_topics_flagged:([^|]+)\|\s*revision_sessions_inserted:(\d+)\]/i
+    /\[UNIT_COMPLETE:\s*(\S+)\s*\|\s*checkpoint_score:\s*(\d+\/\d+)\s*\|\s*weak_topics_flagged:\s*([^|]+?)\s*\|\s*revision_sessions_inserted:\s*(\d+)\]/i
   );
   if (!match) return null;
 
