@@ -83,9 +83,8 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
 
           <!-- Header -->
           <tr>
-            <td style="padding:0;line-height:0;font-size:0;">
-              <img src="https://gradd.ai/gradd-email-header.svg" alt="Gradd" width="600" height="72"
-                style="display:block;border:0;width:100%;max-width:600px;" />
+            <td style="padding:24px;text-align:center;">
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;color:#1b3d2f;letter-spacing:-0.3px;">Gradd</span><span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;color:#d97706;">.ai</span>
             </td>
           </tr>
 

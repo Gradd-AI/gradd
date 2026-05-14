@@ -587,11 +587,11 @@ export default function IBSignupPage() {
               fontFamily: 'var(--font-display)',
               fontSize: 22,
               fontWeight: 700,
-              color: 'var(--brand)',
               letterSpacing: '-0.3px',
               display: 'block',
             }}>
-              Gradd.ai
+              <span style={{ color: 'var(--brand)' }}>Gradd</span>
+              <span style={{ color: 'var(--brand-accent)' }}>.ai</span>
             </span>
           </Link>
         </div>
