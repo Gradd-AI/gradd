@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
   const expected = `Bearer ${process.env.CRON_SECRET}`;
   console.log('[trial-reminders] received:', JSON.stringify(authHeader));
   console.log('[trial-reminders] expected:', JSON.stringify(expected));
+  console.log('[trial-reminders] secret length:', process.env.CRON_SECRET?.length ?? 'undefined');
   console.log('[trial-reminders] match:', authHeader === expected);
   if (authHeader !== expected) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
