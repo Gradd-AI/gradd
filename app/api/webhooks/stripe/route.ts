@@ -170,6 +170,13 @@ async function handleSubscriptionChange(
   const customerId = subscription.customer as string;
   const status = mapStripeStatus(subscription.status);
 
+  const price = subscription.items.data[0]?.price;
+  const unitAmount = price?.unit_amount ?? 0;
+  const formattedAmount = unitAmount > 0
+    ? `€${(unitAmount / 100).toFixed(2).replace(/\.00$/, '')}`
+    : null;
+  const billingCadence = price?.recurring?.interval === 'year' ? 'annual' : 'monthly';
+
   const updatePayload = {
     subscription_status: status,
     stripe_customer_id: customerId,
@@ -177,6 +184,8 @@ async function handleSubscriptionChange(
     trial_ends_at: subscription.trial_end
       ? new Date(subscription.trial_end * 1000).toISOString()
       : null,
+    stripe_price_amount: formattedAmount,
+    stripe_billing_cadence: billingCadence,
     updated_at: new Date().toISOString(),
   };
 
