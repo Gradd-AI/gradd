@@ -69,8 +69,8 @@ export async function POST(request: Request) {
               day: 'numeric', month: 'long', year: 'numeric',
             });
         progressUpdates.last_session_summary =
-          `On ${_dateStr}, the student was working through ${progress.current_lesson_name} ` +
-          `(${session.lesson_code}), ${progress.current_unit_name} (did not complete). ` +
+          `On ${_dateStr}, the student was working through ${progress.current_lesson_name ?? 'the current lesson'} ` +
+          `(${session.lesson_code ?? 'unknown'}), ${progress.current_unit_name ?? 'the current unit'} (did not complete). ` +
           `${exchangeCount} exchanges completed. Resume from where the session ended — do not restart from the beginning.`;
       }
     }
