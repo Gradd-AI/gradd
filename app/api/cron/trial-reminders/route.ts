@@ -52,13 +52,15 @@ function getServiceClient() {
 }
 
 export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get('authorization');
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
-  console.log('[trial-reminders] received:', JSON.stringify(authHeader));
-  console.log('[trial-reminders] expected:', JSON.stringify(expected));
-  console.log('[trial-reminders] secret length:', process.env.CRON_SECRET?.length ?? 'undefined');
-  console.log('[trial-reminders] match:', authHeader === expected);
-  if (authHeader !== expected) {
+  const url = new URL(req.url);
+  const providedSecret = url.searchParams.get('secret');
+  const expectedSecret = process.env.CRON_SECRET;
+
+  // Vercel Cron also sends a special header on scheduled invocations — allow both
+  const isVercelCron = req.headers.get('user-agent')?.includes('vercel-cron') ?? false;
+  const cronHeader = req.headers.get('authorization') === `Bearer ${expectedSecret}`;
+
+  if (!isVercelCron && !cronHeader && providedSecret !== expectedSecret) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
