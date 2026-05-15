@@ -31,16 +31,6 @@ function getServiceClient() {
   );
 }
 
-const UNIT_SEQUENCE: Record<string, { code: string; name: string }> = {
-  UNIT_1:  { code: 'UNIT_2',    name: 'Business Management' },
-  UNIT_2:  { code: 'UNIT_3',    name: 'Business Management (cont.)' },
-  UNIT_3:  { code: 'UNIT_4A',   name: 'Finance — Accounts' },
-  UNIT_4A: { code: 'UNIT_4B',   name: 'Finance — Ratios' },
-  UNIT_4B: { code: 'UNIT_4C',   name: 'Finance — Cash Flow' },
-  UNIT_4C: { code: 'UNIT_5',    name: 'Domestic Environment' },
-  UNIT_5:  { code: 'UNIT_6',    name: 'International Environment' },
-  UNIT_6:  { code: 'EXAM_PREP', name: 'Exam Preparation' },
-};
 
 export async function POST(request: Request) {
   try {
@@ -561,13 +551,27 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
                 progressUpdates.units_completed = [...completedUnits, uc.unitCode];
               }
 
-              const nextUnit = UNIT_SEQUENCE[uc.unitCode];
-              if (nextUnit) {
-                progressUpdates.current_unit_code = nextUnit.code;
-                progressUpdates.current_unit_name = nextUnit.name;
+              // Resolve new unit metadata from the lessons table using the
+              // current_lesson_code that LESSON_COMPLETE just advanced to.
+              const newLessonCode =
+                (progressUpdates.current_lesson_code as string) ?? progress.current_lesson_code;
+              const { data: newLessonUnit } = await serviceSupabase
+                .from('lessons')
+                .select('unit_code, unit_name')
+                .eq('lesson_code', newLessonCode)
+                .single();
+
+              if (newLessonUnit) {
+                progressUpdates.current_unit_code = newLessonUnit.unit_code;
+                progressUpdates.current_unit_name = newLessonUnit.unit_name;
                 progressUpdates.lessons_completed_this_unit = [];
                 progressUpdates.pending_unit_checkpoint = false;
                 progressUpdates.checkpoint_unit_code = null;
+              } else {
+                console.error(
+                  `UNIT_COMPLETE: lessons lookup failed for lesson_code=${newLessonCode}. ` +
+                  `units_completed appended but current_unit_* fields NOT updated.`
+                );
               }
             }
 
