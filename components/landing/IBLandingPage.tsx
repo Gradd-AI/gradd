@@ -29,11 +29,12 @@ const PAIN_CARDS = [
 ];
 
 const FEATURES = [
-  { title: 'Structured, not conversational', body: 'Gradd teaches units in sequence. Supply and demand before market failure. Microeconomics before macroeconomics. The syllabus unfolds in order — not on request.' },
-  { title: 'Command term fluency from session 1', body: 'Every response models the AO1–AO3 language IB examiners reward. Students learn to define, explain, and evaluate from their very first session.' },
-  { title: 'SL and HL tracks both covered', body: 'Your exam level determines your content. SL students follow Papers 1 & 2. HL students get Paper 3 content, quantitative skills, and all HL extension topics.' },
-  { title: 'Diagrams taught and tested', body: 'Every core diagram — supply/demand, PPF, AD/AS, Laffer curve — explained with precision. Axes, curves, shifts, and exactly what each area represents on the mark scheme.' },
-  { title: 'Progress tracked automatically', body: 'Every session is logged. Weak areas are flagged and revisited. You always know exactly where you are in the curriculum and what needs work.' },
+  { title: 'Trained on the IBO specification — both subjects, both levels.', body: 'Mia teaches the IB Economics (First Assessment 2022) and IB Business Management (First Assessment 2024) specifications from the ground up. SL and HL content is split per lesson — SL students never see HL content; HL students get the extension lessons inline. 210 IB Economics lessons and 136 IB Business Management lessons covering every unit, every subtopic, every command term.' },
+  { title: 'Command term fluency from session 1.', body: "When you give a describe-depth answer to an analyse question, Mia names the mismatch explicitly — 'Your answer is describe-depth. The command term is analyse. Here's the difference.' Then she asks you to redo using analyse depth. The command term hierarchy isn't a glossary at the back of a textbook; it's the lens through which every response is shaped." },
+  { title: "She doesn't accept partial answers.", body: "If your answer covers three of four required elements, Mia opens with 'Good start — you've got three of four. The missing one is X.' She does not say 'Exactly right!' on a partial answer. Premature affirmation teaches you that an incomplete answer was good enough — and that costs marks. Every check is calibrated against what the exam actually rewards." },
+  { title: 'Force re-test after correction.', body: "When Mia corrects a wrong answer, she does not move on. She asks you to redo the original question with the corrected understanding. The exam doesn't reward stated understanding; it rewards demonstrated application. Mia trains the application." },
+  { title: 'Diagrams taught and tested.', body: "Every economics or business diagram is rendered inline at IBO standard. You always know exactly what's on the curriculum and what's not. Upload your own diagram, get marked feedback against IB criteria. No more guessing whether your supply-shift looks right." },
+  { title: 'Progress tracked automatically.', body: 'Every session is logged. Weak areas are flagged and revisited. You always know exactly where you are in the curriculum and what needs work. Open the dashboard mid-session, mid-week — your real progress, not aspirational metrics.' },
 ];
 
 const COMPARISON_ROWS: [string, string, string, string, string][] = [
@@ -42,6 +43,7 @@ const COMPARISON_ROWS: [string, string, string, string, string][] = [
   ['SL & HL both covered', '✓', '✓', 'Partial', '✓'],
   ['Available 24/7 worldwide', '✗', '✓', '✓', '✓'],
   ['Progress tracked automatically', '✗', '✗', 'Partial', '✓'],
+  ['Hand-drawn diagram feedback', 'Yes (during scheduled lesson only)', '✗', '✗', '✓ (anytime, instant)'],
   ['Monthly cost', '£720+ per 10 hrs', '£30–60 once', '€10–40', '€44.99/subject'],
 ];
 
@@ -680,6 +682,37 @@ export default function IBLandingPage() {
           padding: .45rem 1rem; border-radius: 6px; text-decoration: none;
           white-space: nowrap;
         }
+
+        /* ── DIAGRAMS ── */
+        .ib-diag { background: var(--g50); border-top: 1px solid var(--g100); border-bottom: 1px solid var(--g100); }
+        .ib-diag-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 2rem; margin-top: 3.5rem;
+        }
+        .ib-diag-card {
+          background: var(--white); border: 1px solid var(--ink100);
+          border-radius: 16px; padding: 2rem 1.75rem;
+        }
+        .ib-diag-card.ib-diag-feat {
+          border-color: var(--g400);
+          box-shadow: 0 4px 24px rgba(46,110,57,.08);
+        }
+        .ib-diag-icon { font-size: 2rem; margin-bottom: 1rem; }
+        .ib-diag-card h3 {
+          font-family: var(--fd); font-size: 1.2rem; font-weight: 700;
+          color: var(--ink900); margin-bottom: .85rem; line-height: 1.3;
+        }
+        .ib-diag-card p { font-size: .92rem; color: var(--ink500); line-height: 1.65; margin-bottom: .85rem; }
+        .ib-diag-tag {
+          display: inline-block; font-size: .78rem; font-weight: 700;
+          letter-spacing: .06em; text-transform: uppercase;
+          color: var(--g600); background: var(--g50);
+          border: 1px solid var(--g200); border-radius: 100px;
+          padding: .3rem .85rem;
+        }
+        @media (max-width: 780px) {
+          .ib-diag-grid { grid-template-columns: 1fr; }
+        }
       `}</style>
 
       <div className="ib-wrap">
@@ -897,17 +930,37 @@ export default function IBLandingPage() {
           </div>
         </section>
 
+        {/* ── DIAGRAMS ── */}
+        <section className="ib-sec ib-diag">
+          <div className="ib-inn">
+            <span className="ib-tag">Diagrams & exam-standard visuals</span>
+            <h2 className="ib-h2">Diagrams that match the exam. <em>Both ways.</em></h2>
+            <p className="ib-sub">Mia teaches with IBO-standard diagrams rendered inline. And when you draw your own, she marks them for you.</p>
+            <div className="ib-diag-grid">
+              <div className="ib-diag-card">
+                <div className="ib-diag-icon">📊</div>
+                <h3>Mia renders 61 IB-standard diagrams inline</h3>
+                <p>PPC and circular flow. Demand-supply equilibrium and shifts. PED elasticities. Externalities. AD/AS. Phillips curves. Exchange rate diagrams. Tariffs and quotas. SWOT, Ansoff, BCG, decision trees. Every diagram is hand-built to match IBO examination conventions exactly — same axis labels, same shading conventions, same equilibrium markers your examiner will look for.</p>
+                <span className="ib-diag-tag">61 diagrams · Every unit · Both subjects</span>
+              </div>
+              <div className="ib-diag-card ib-diag-feat">
+                <div className="ib-diag-icon">📸</div>
+                <h3>Upload your hand-drawn diagram. Mia marks it.</h3>
+                <p>Draw a supply-demand shift, a welfare loss triangle, a deadweight loss diagram — photograph it from your notebook, upload it. Mia evaluates against IB marking criteria: axis labels, curve positions, equilibrium points, shading. She tells you what's missing and where the marks are lost. The same feedback an examiner would give, instantly, on every diagram you draw.</p>
+                <span className="ib-diag-tag">Photo upload · Vision-evaluated · No human in the loop</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── TUTOR PREVIEW ── */}
         <section className="ib-sec ib-tutor" id="tutor">
           <div className="ib-inn">
             <div className="ib-tutor-grid">
               <div>
-                <span className="ib-tag">Meet your IB Economics tutor</span>
-                <h2 className="ib-h2">Mia knows every line of the IB Economics syllabus.</h2>
-                <p className="ib-sub">She teaches in plain English, uses global examples, and never lets you move on until a concept is properly understood. She models AO1–AO3 command term language from session 1.</p>
-                <p style={{ fontSize: '.9rem', color: 'var(--ink500)', marginTop: '1rem', lineHeight: 1.65, maxWidth: 480 }}>
-                  Gradd isn't a chatbot you ask questions to. It follows the IBO syllabus in order — teaching each topic, checking understanding, correcting errors — until you can answer exam questions the way the mark scheme requires.
-                </p>
+                <span className="ib-tag">Meet your IB tutor</span>
+                <h2 className="ib-h2">Meet Mia. Your IB tutor — Economics or Business Management.</h2>
+                <p className="ib-sub">Mia knows the IB Economics and IB Business Management specifications in full. She teaches, checks, corrects, and tracks — in sequence, from Unit 1, from your first session.</p>
                 <ul className="ib-tfeats">
                   {FEATURES.map(f => (
                     <li key={f.title} className="ib-tfeat">
