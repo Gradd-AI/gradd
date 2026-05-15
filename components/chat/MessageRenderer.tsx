@@ -71,6 +71,7 @@ function renderTable(rows: string[], key: string | number): React.ReactNode {
                 borderRight: '1px solid var(--chat-border)',
                 whiteSpace: 'nowrap',
                 letterSpacing: '-0.1px',
+                minWidth: 110,
               }}>
                 {renderInline(cell)}
               </th>
@@ -89,7 +90,9 @@ function renderTable(rows: string[], key: string | number): React.ReactNode {
                     borderRight: ci < cells.length - 1 ? '1px solid var(--chat-border)' : undefined,
                     color: 'var(--chat-text)',
                     verticalAlign: 'top',
-                    wordBreak: 'break-word',
+                    minWidth: 110,
+                    wordBreak: 'normal',
+                    overflowWrap: 'break-word',
                   }}>
                     {renderInline(cell)}
                   </td>
