@@ -1,7 +1,7 @@
 // components/chat/MessageRenderer.tsx
 // Renders Aoife's markdown output into styled HTML.
 // Handles: # ## ### headers, === headers, **bold**, *italic*,
-//          --- dividers, bullet/numbered lists, paragraphs.
+//          --- dividers, bullet/numbered lists, paragraphs, GFM tables.
 // No external dependencies — custom parser matching exactly what Aoife produces.
 
 interface Props {
@@ -31,11 +31,91 @@ function renderInline(text: string): React.ReactNode[] {
   return parts;
 }
 
+// ── Table helpers ─────────────────────────────────────────────────────────────
+
+function isTableRow(line: string): boolean {
+  return line.trim().startsWith('|');
+}
+
+function isDividerRow(line: string): boolean {
+  // Matches rows like |---|---| or |:---|:---:| with no non-separator content
+  const trimmed = line.trim().replace(/^\||\|$/g, '');
+  return trimmed.split('|').every(cell => /^[\s:\-]+$/.test(cell));
+}
+
+function parseTableRow(line: string): string[] {
+  return line.trim()
+    .replace(/^\||\|$/g, '')
+    .split('|')
+    .map(cell => cell.trim());
+}
+
+function renderTable(rows: string[], key: string | number): React.ReactNode {
+  if (rows.length < 2) return null;
+  const headerCells = parseTableRow(rows[0]);
+  const bodyRows = rows.slice(1).filter(r => !isDividerRow(r));
+  return (
+    <div key={key} style={{ overflowX: 'auto', margin: '16px 0', borderRadius: 6, border: '1px solid var(--chat-border)' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, lineHeight: 1.5 }}>
+        <thead>
+          <tr>
+            {headerCells.map((cell, ci) => (
+              <th key={ci} style={{
+                background: 'var(--brand-mid)',
+                color: 'var(--chat-text)',
+                fontFamily: 'var(--font-display)',
+                fontWeight: 700,
+                fontSize: 13,
+                padding: '9px 14px',
+                textAlign: 'left',
+                borderRight: '1px solid var(--chat-border)',
+                whiteSpace: 'nowrap',
+                letterSpacing: '-0.1px',
+              }}>
+                {renderInline(cell)}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {bodyRows.map((row, ri) => {
+            const cells = parseTableRow(row);
+            return (
+              <tr key={ri} style={{ background: ri % 2 === 0 ? 'transparent' : 'var(--chat-surface-2)' }}>
+                {cells.map((cell, ci) => (
+                  <td key={ci} style={{
+                    padding: '8px 14px',
+                    borderTop: '1px solid var(--chat-border)',
+                    borderRight: ci < cells.length - 1 ? '1px solid var(--chat-border)' : undefined,
+                    color: 'var(--chat-text)',
+                    verticalAlign: 'top',
+                    wordBreak: 'break-word',
+                  }}>
+                    {renderInline(cell)}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function MessageRenderer({ content }: Props) {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let i = 0;
   let paraBuffer: string[] = [];
+  let tableBuffer: string[] = [];
+
+  function flushTable() {
+    if (tableBuffer.length === 0) return;
+    const rendered = renderTable(tableBuffer, `tbl-${i++}`);
+    if (rendered) elements.push(rendered);
+    tableBuffer = [];
+  }
 
   function flushParagraph() {
     if (paraBuffer.length === 0) return;
@@ -58,6 +138,18 @@ export default function MessageRenderer({ content }: Props) {
 
   for (const raw of lines) {
     const line = raw.trimEnd();
+
+    // Table row — accumulate; flush any pending paragraph first
+    if (isTableRow(line)) {
+      flushParagraph();
+      tableBuffer.push(line);
+      continue;
+    }
+
+    // Non-table line — flush any pending table before continuing
+    if (tableBuffer.length > 0) {
+      flushTable();
+    }
 
     // === SECTION HEADER === — Aoife uses this for stage/part labels
     if (/^={2,}.*={2,}$/.test(line.trim())) {
@@ -214,9 +306,10 @@ export default function MessageRenderer({ content }: Props) {
       continue;
     }
 
-    // Empty line — flush paragraph buffer
+    // Empty line — flush paragraph buffer and any open table
     if (line.trim() === '') {
       flushParagraph();
+      flushTable();
       continue;
     }
 
@@ -225,6 +318,7 @@ export default function MessageRenderer({ content }: Props) {
   }
 
   flushParagraph();
+  flushTable();
 
   return <>{elements}</>;
 }
