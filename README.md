@@ -1,3 +1,13 @@
+# Gradd
+
+AI-powered exam tutoring platform for IB, LC Business, and future products.
+
+## For developers
+
+Before starting any new exam product build (ACCA, A-Level, IGCSE, additional LC subjects, etc.), read **[`docs/CURRICULUM_ARCHITECTURE.md`](docs/CURRICULUM_ARCHITECTURE.md)** first. It captures every curriculum convention, bug pattern, and verification step the platform has learned the hard way.
+
+---
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

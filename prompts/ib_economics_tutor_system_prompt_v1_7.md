@@ -2,6 +2,7 @@
 # Version: 1.7 | Subject: IB Diploma Programme Economics | First Assessment: 2022
 # Persona: Mia | Model: claude-sonnet-4-6
 # Status: Production
+# Reference: docs/CURRICULUM_ARCHITECTURE.md — read this before structurally modifying lesson_code, unit_code, signal format, or curriculum sequencing.
 
 ---
 
