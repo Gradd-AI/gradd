@@ -572,3 +572,17 @@ After the system prompt is finalised and the lessons are seeded, run the alignme
 ---
 
 *Last updated: 2026-05-15. Covers IB Business Management (IB_BM_001–136) and IB Economics (IB_ECON_001–210) builds. Update this document when new patterns are established or new bugs are resolved.*
+
+---
+
+## 12. Existing products and their conventions
+
+| Product | Unit code format | unit_name canonicalised | Linked list terminates | Toolkit pattern | Status |
+|---|---|---|---|---|---|
+| LC Business (Ireland) | Bare-prefixed (UNIT_1, UNIT_4A, UNIT_EP) | Yes (9 units, 9 names) | NULL terminator | UNIT_EP as standalone exam prep cluster (Pattern B) | LIVE production, do not migrate — legacy exception |
+| IB Business Management | Subject-prefixed (IB_BM_UNIT_1) | Yes (6 units, 6 names) | NULL terminator | UNIT_TOOLKIT end-cluster (Pattern B) + inline lessons within numbered units (Pattern A) | Pre-launch, signal-tested, all 4 signals confirmed working |
+| IB Economics | Subject-prefixed (IB_ECON_UNIT_1) | Yes (4 units, 4 names) | NULL terminator | None — inline quantitative skills in parent units | Pre-launch, 210 lessons confirmed |
+
+**Rule: ALL FUTURE products use subject-prefixed unit_code format.** LC Business is the historic exception, not the template. Do not propagate bare-prefixed format to new products (ACCA, A-Level, additional LC subjects, etc.).
+
+When the time comes to launch a sister product to LC Business (e.g. LC Economics, LC Accounting), use `LC_ECON_UNIT_1` / `LC_ACC_UNIT_1` format from day one. Leave LC Business itself unmigrated — too much production data to safely move.
