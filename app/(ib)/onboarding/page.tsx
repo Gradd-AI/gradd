@@ -79,7 +79,7 @@ function StepSubject({
   return (
     <div>
       <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
-        Step 1 of 4
+        Step 1 of 3
       </p>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.4px', marginBottom: 8 }}>
         Which subject are you studying?
@@ -170,7 +170,7 @@ function StepLevel({
   return (
     <div>
       <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
-        Step 2 of 4
+        Step 2 of 3
       </p>
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.4px', marginBottom: 8 }}>
         What level are you studying?
@@ -209,13 +209,15 @@ function StepLevel({
 // ── Step 3 — Course position ───────────────────────────────────────────────────
 
 function StepPosition({
-  value, onChange, onNext, onBack, compact,
+  value, onChange, onNext, onBack, compact, loading, error,
 }: {
   value: CoursePosition | null;
   onChange: (p: CoursePosition) => void;
   onNext: () => void;
   onBack: () => void;
   compact?: boolean;
+  loading?: boolean;
+  error?: string;
 }) {
   const positions: { id: CoursePosition; title: string; desc: string }[] = [
     { id: 'beginning',     title: 'Just starting',     desc: "I haven't studied this subject yet." },
@@ -225,9 +227,11 @@ function StepPosition({
 
   return (
     <div>
-      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
-        {compact ? 'Step 1 of 2' : 'Step 3 of 4'}
-      </p>
+      {!compact && (
+        <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
+          Step 3 of 3
+        </p>
+      )}
       <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.4px', marginBottom: 8 }}>
         Where are you in your course?
       </h1>
@@ -244,62 +248,22 @@ function StepPosition({
         ))}
       </div>
 
+      {error && <div className="alert alert-error" style={{ marginBottom: 16 }}>{error}</div>}
+
       <div style={{ display: 'flex', gap: 12 }}>
         {!compact && (
           <button className="btn btn-outline" onClick={onBack} style={{ flex: '0 0 auto' }}>
             ← Back
           </button>
         )}
-        <button className="btn btn-primary btn-full" onClick={onNext} disabled={!value}>
-          Continue →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Step 4 — IA boundary ───────────────────────────────────────────────────────
-
-function StepIA({
-  loading, error, onConfirm, onBack, compact,
-}: {
-  loading: boolean;
-  error: string;
-  onConfirm: () => void;
-  onBack: () => void;
-  compact?: boolean;
-}) {
-  return (
-    <div>
-      <p style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent)', marginBottom: 8 }}>
-        {compact ? 'Step 2 of 2' : 'Step 4 of 4'}
-      </p>
-      <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.4px', marginBottom: 24 }}>
-        One thing before you start
-      </h1>
-
-      <div style={{
-        background: 'var(--surface-2)', border: '1px solid var(--border)',
-        borderRadius: 'var(--radius)', padding: '20px 24px', marginBottom: 28,
-        fontSize: 15, color: 'var(--text)', lineHeight: 1.7,
-      }}>
-        The Internal Assessment is handled by your school teacher — Gradd covers the full written examination curriculum: Papers 1, 2, and 3.
-      </div>
-
-      {error && <div className="alert alert-error">{error}</div>}
-
-      <div style={{ display: 'flex', gap: 12 }}>
-        <button className="btn btn-outline" onClick={onBack} style={{ flex: '0 0 auto' }}>
-          ← Back
-        </button>
         <button
           className="btn btn-primary btn-full btn-lg"
-          onClick={onConfirm}
-          disabled={loading}
+          onClick={onNext}
+          disabled={!value || loading}
         >
           {loading
             ? <><span className="spinner" />Setting up your account…</>
-            : "Got it, let's start"}
+            : "Let's start →"}
         </button>
       </div>
     </div>
@@ -416,19 +380,11 @@ function IBOnboardingInner() {
           <StepPosition
             value={coursePosition}
             onChange={setCoursePosition}
-            onNext={() => setStep(4)}
+            onNext={handleComplete}
             onBack={() => setStep(2)}
             compact={compact}
-          />
-        )}
-
-        {step === 4 && (
-          <StepIA
             loading={loading}
             error={error}
-            onConfirm={handleComplete}
-            onBack={() => setStep(3)}
-            compact={compact}
           />
         )}
       </div>
