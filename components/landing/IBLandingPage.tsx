@@ -44,6 +44,9 @@ const COMPARISON_ROWS: [string, string, string, string, string][] = [
   ['Available 24/7 worldwide', '✗', '✓', '✓', '✓'],
   ['Progress tracked automatically', '✗', '✗', 'Partial', '✓'],
   ['Hand-drawn diagram feedback', 'Yes (during scheduled lesson only)', '✗', '✗', '✓ (anytime, instant)'],
+  ['Total content covered', '10 hours of conversation', 'Full text, no interaction', 'Varies — usually revision only', '346 structured lessons (IB Econ + IB BM)'],
+  ['IBO specification alignment', 'Depends on tutor', 'If current edition', 'Inconsistent', 'IB Econ (2022) + IB BM (2024) — every unit, both levels'],
+  ['Global availability', 'Major cities, scheduling required', 'Anywhere with delivery', 'Anywhere with internet', '153 countries, 24/7, no scheduling'],
   ['Monthly cost', '£720+ per 10 hrs', '£30–60 once', '€10–40', '€44.99/subject'],
 ];
 
@@ -77,12 +80,56 @@ const PRICING_FEATURES_BUNDLE = [
   'Works on any device — desktop, tablet, phone',
 ];
 
+const FAQS = [
+  {
+    q: 'How is Gradd different from ChatGPT or general AI tutors?',
+    a: "ChatGPT is a general-purpose conversation model. It can answer IB questions but it doesn't know the IBO specification, the command term hierarchy, or the assessment objectives. Gradd's tutor (Mia) is trained specifically on the IB Economics (First Assessment 2022) and IB Business Management (First Assessment 2024) specifications. She emits IBO-standard diagrams inline, marks photographed hand-drawn diagrams against IB criteria, applies the AO1/AO2/AO3 command term framework consistently, and tracks every weak area across sessions. General AI doesn't do any of that.",
+  },
+  {
+    q: 'Does Gradd cover both Standard Level (SL) and Higher Level (HL)?',
+    a: 'Yes — both subjects, both levels. SL content is delivered without HL extension lessons. HL students get the full SL syllabus plus all [HL] extension content including Paper 3 quantitative skills (PED calculations, multiplier, exchange rate math, balance of payments, comparative advantage). Mia knows which level you\'re on and adjusts accordingly.',
+  },
+  {
+    q: "Can my child use Gradd if they're already mid-way through the IB programme?",
+    a: "Yes. Onboarding asks where you're starting — first-year, mid-programme, or exam-prep. Mia opens differently for each. A mid-programme student can jump straight to the unit they're currently studying; an exam-prep student can focus on weak areas and past paper technique. You're not forced to start from Lesson 1.",
+  },
+  {
+    q: 'How is progress tracked? Can parents see what their child is learning?',
+    a: 'Every session is logged. The dashboard shows current lesson, current unit, lessons completed, weak areas flagged, and session count. Parents can log in and see exactly what their child has covered, where they\'re weak, and how they\'re progressing. No mystery, no inflated metrics — actual curriculum progression.',
+  },
+  {
+    q: 'Is Gradd aligned to the current IBO specifications?',
+    a: 'Yes. IB Economics follows the First Assessment 2022 specification. IB Business Management follows the First Assessment 2024 specification. Both are the current syllabi being examined. Every lesson maps to a specific IBO syllabus subtopic.',
+  },
+  {
+    q: 'What happens if my child gets stuck on a concept?',
+    a: "Mia detects repeated misunderstanding automatically. When a student gives wrong or partial answers on the same concept across multiple turns, the topic is flagged as a weak area. The next session opens with Mia gating further progress until the weak area is properly understood. You don't move forward on a broken foundation.",
+  },
+  {
+    q: 'How does the photo upload diagram marking work?',
+    a: "Tap the camera button in the chat, photograph your hand-drawn diagram from your notebook, upload. Mia evaluates against IB marking criteria — axis labels, curve positions, equilibrium points, shading, deadweight loss areas, welfare triangles. She tells you what's missing and where you'd lose marks in the exam. The same feedback an examiner would give, instantly, on every diagram you draw.",
+  },
+  {
+    q: "Is there a free trial? What's the refund policy?",
+    a: "Yes — 7-day free trial on every plan. Cancel within the trial and you're not charged. After the trial, we offer a 7-day money-back guarantee on first paid month. No questions asked.",
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Manage your subscription from your account dashboard. Monthly plans cancel at the end of the current billing period. Annual plans are non-refundable after the 7-day money-back window but can be cancelled to prevent renewal.',
+  },
+  {
+    q: "Is my child's data secure? Are you GDPR compliant?",
+    a: 'Yes. Gradd is GDPR-compliant. Student data is stored encrypted on Supabase (an EU-region Postgres database for European customers). We never sell data. Payment is handled by Stripe (PCI-DSS compliant). For full details, see our Privacy Policy.',
+  },
+];
+
 // ── Component ─────────────────────────────────────────────────
 
 export default function IBLandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'annual'>('monthly');
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -683,6 +730,92 @@ export default function IBLandingPage() {
           white-space: nowrap;
         }
 
+        /* ── TRUST STRIP ── */
+        .ib-trust-strip {
+          background: var(--g800);
+          border-top: 1px solid rgba(255,255,255,.06);
+          padding: 1rem 2rem;
+        }
+        .ib-trust-inner {
+          max-width: 1080px; margin: 0 auto;
+          display: flex; gap: 2.5rem; justify-content: center;
+          align-items: center; flex-wrap: wrap;
+        }
+        .ib-trust-item { text-align: center; }
+        .ib-trust-item strong {
+          font-size: .9rem; font-weight: 700; color: var(--white);
+          display: block; line-height: 1.3;
+        }
+        .ib-trust-item span {
+          font-size: .8rem; color: rgba(255,255,255,.45);
+          display: block; line-height: 1.3;
+        }
+        .ib-trust-dot { color: var(--g400); font-size: .7rem; margin-right: .3rem; }
+        @media (max-width: 520px) {
+          .ib-trust-inner { flex-direction: column; gap: .85rem; }
+        }
+
+        /* ── MIA BULLETS GRID ── */
+        .ib-tfeats {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1.25rem 2rem; margin-top: 2rem; list-style: none;
+        }
+        .ib-tfeat {
+          display: flex; gap: .75rem; align-items: flex-start;
+          background: var(--cream); border: 1px solid var(--ink100);
+          border-radius: 10px; padding: 1.25rem;
+        }
+        @media (max-width: 780px) {
+          .ib-tfeats { grid-template-columns: 1fr; }
+        }
+
+        /* ── WHO GRADD IS FOR ── */
+        .ib-for { background: var(--cream-dk); }
+        .ib-for-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1.5rem; margin-top: 3.5rem;
+        }
+        .ib-for-card {
+          background: var(--white); border: 1px solid var(--ink100);
+          border-radius: 12px; padding: 2rem 1.75rem;
+        }
+        .ib-for-card h3 {
+          font-family: var(--fd); font-size: 1.1rem; font-weight: 700;
+          color: var(--ink900); margin-bottom: .75rem; line-height: 1.3;
+        }
+        .ib-for-card p { font-size: .9rem; color: var(--ink500); line-height: 1.65; }
+        @media (max-width: 780px) {
+          .ib-for-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ── FAQ ── */
+        .ib-faq-sec { background: var(--white); }
+        .ib-faqs {
+          display: flex; flex-direction: column;
+          margin-top: 3rem; border: 1px solid var(--ink100);
+          border-radius: 12px; overflow: hidden;
+        }
+        .ib-faq-item { border-bottom: 1px solid var(--ink100); }
+        .ib-faq-item:last-child { border-bottom: none; }
+        .ib-faq-q {
+          width: 100%; text-align: left; background: none; border: none;
+          padding: 1.25rem 1.75rem; cursor: pointer;
+          display: flex; align-items: flex-start;
+          justify-content: space-between; gap: 1rem;
+          transition: background .15s;
+        }
+        .ib-faq-q:hover { background: var(--cream); }
+        .ib-faq-q h3 {
+          font-family: var(--fb); font-size: 1rem; font-weight: 600;
+          color: var(--ink900); line-height: 1.45; margin: 0;
+          text-align: left;
+        }
+        .ib-faq-q-icon { color: var(--ink300); font-size: 1.2rem; flex-shrink: 0; line-height: 1.3; }
+        .ib-faq-a {
+          padding: 0 1.75rem 1.25rem; font-size: .92rem;
+          color: var(--ink500); line-height: 1.7;
+        }
+
         /* ── DIAGRAMS ── */
         .ib-diag { background: var(--g50); border-top: 1px solid var(--g100); border-bottom: 1px solid var(--g100); }
         .ib-diag-grid {
@@ -743,13 +876,13 @@ export default function IBLandingPage() {
               Now live · IB Economics · IB Business Management
             </div>
             <h1 className="ib-h1">
-              The first AI platform delivering the{' '}
-              <em>full IB curriculum</em> from scratch
+              AI Tutor for IB Economics and IB Business Management
             </h1>
+            <p style={{ fontFamily: 'var(--fd)', fontStyle: 'italic', fontSize: '1.15rem', color: 'var(--g200)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+              The first AI platform delivering the full IB curriculum from scratch.
+            </p>
             <p className="ib-hero-sub">
-              Lanterna charges £720 for 10 hours. Gradd delivers the full IB Economics or Business Management curriculum for €44.99 per month.
-              <br />
-              Structured lessons, IB exam technique, progress tracking. 24/7.
+              346 structured lessons. IBO-standard diagrams. Photo upload for hand-drawn diagram marking. 24/7 access from any of the 153 countries where IB is delivered. From €44.99/month — less than the cost of one hour of human tutoring.
             </p>
             <div className="ib-ctas">
               <Link href="/auth/signup" className="ib-btn-a">Start 7-day free trial</Link>
@@ -776,6 +909,24 @@ export default function IBLandingPage() {
             </div>
           </div>
         </section>
+
+        {/* ── TRUST STRIP ── */}
+        <div className="ib-trust-strip">
+          <div className="ib-trust-inner">
+            <div className="ib-trust-item">
+              <strong><span className="ib-trust-dot">●</span>24/7 access</strong>
+              <span>in 153 countries</span>
+            </div>
+            <div className="ib-trust-item">
+              <strong><span className="ib-trust-dot">●</span>7-day money-back</strong>
+              <span>cancel anytime, no questions</span>
+            </div>
+            <div className="ib-trust-item">
+              <strong><span className="ib-trust-dot">●</span>IBO 2022 / 2024 specs</strong>
+              <span>every unit, both subjects</span>
+            </div>
+          </div>
+        </div>
 
         {/* ── PROBLEM ── */}
         <section className="ib-sec ib-prob" id="problem">
@@ -807,7 +958,7 @@ export default function IBLandingPage() {
         <section className="ib-sec ib-sol" id="solution">
           <div className="ib-inn">
             <span className="ib-tag">The solution</span>
-            <h2 className="ib-h2">One subscription. The whole IB course.</h2>
+            <h2 className="ib-h2">One subscription. The complete IB Economics and IB Business Management curriculum.</h2>
             <p className="ib-sub">Gradd delivers the complete IB written exam curriculum through AI tutors who know the IBO syllabus, teach command term technique, and never let you move on until you're ready.</p>
             <div className="ib-sol-grid">
               <div className="ib-sol-card">
@@ -908,23 +1059,23 @@ export default function IBLandingPage() {
         <section className="ib-sec ib-how" id="how-it-works">
           <div className="ib-inn">
             <span className="ib-tag">How it works</span>
-            <h2 className="ib-h2">Start at zero. Finish <em>exam-ready</em>.</h2>
+            <h2 className="ib-h2">Start at zero. Finish <em>exam-ready</em>. Full IB Economics and IB Business Management curriculum, online, 24/7.</h2>
             <p className="ib-sub">No prior knowledge required. Gradd takes you from the beginning of the IB syllabus through to full written exam readiness.</p>
             <div className="ib-steps">
               <div className="ib-step">
                 <div className="ib-step-dot">1</div>
-                <h3>Create your account</h3>
-                <p>Choose your subject, select SL or HL, and your tutor opens Unit 1. No placement test. No setup. You just start.</p>
+                <h3>Choose subject and level</h3>
+                <p>Pick IB Economics, IB Business Management, or both. Tell Mia where you're starting — first-year, mid-programme, or exam-prep.</p>
               </div>
               <div className="ib-step">
                 <div className="ib-step-dot">2</div>
-                <h3>Learn with your AI tutor</h3>
-                <p>Each session runs 25–35 minutes. Your tutor explains concepts, checks understanding with IB-style questions, and teaches the command term language the mark scheme requires.</p>
+                <h3>Learn with Mia</h3>
+                <p>Mia teaches every lesson in the syllabus with IBO command terms, inline IBO-standard diagrams, and check questions at AO1, AO2, AO3 depth. Upload your hand-drawn diagrams — Mia marks them against IB criteria.</p>
               </div>
               <div className="ib-step">
                 <div className="ib-step-dot">3</div>
-                <h3>Build to exam confidence</h3>
-                <p>As you progress through the units, sessions shift toward past-paper practice, diagram analysis, and AO3 evaluation. Weak areas are flagged and revisited automatically.</p>
+                <h3>Track. Drill. Walk in confident.</h3>
+                <p>Every weak area is flagged and drilled before you advance. You know exactly where you are in the curriculum and what needs work.</p>
               </div>
             </div>
           </div>
@@ -934,7 +1085,7 @@ export default function IBLandingPage() {
         <section className="ib-sec ib-diag">
           <div className="ib-inn">
             <span className="ib-tag">Diagrams & exam-standard visuals</span>
-            <h2 className="ib-h2">Diagrams that match the exam. <em>Both ways.</em></h2>
+            <h2 className="ib-h2">IBO-Standard Diagrams. Taught Inline. <em>Marked Instantly.</em></h2>
             <p className="ib-sub">Mia teaches with IBO-standard diagrams rendered inline. And when you draw your own, she marks them for you.</p>
             <div className="ib-diag-grid">
               <div className="ib-diag-card">
@@ -959,7 +1110,7 @@ export default function IBLandingPage() {
             <div className="ib-tutor-grid">
               <div>
                 <span className="ib-tag">Meet your IB tutor</span>
-                <h2 className="ib-h2">Meet Mia. Your IB tutor — Economics or Business Management.</h2>
+                <h2 className="ib-h2">Meet Mia. Your AI Tutor for IB Economics and IB Business Management.</h2>
                 <p className="ib-sub">Mia knows the IB Economics and IB Business Management specifications in full. She teaches, checks, corrects, and tracks — in sequence, from Unit 1, from your first session.</p>
                 <ul className="ib-tfeats">
                   {FEATURES.map(f => (
@@ -1029,11 +1180,38 @@ export default function IBLandingPage() {
           </div>
         </section>
 
+        {/* ── WHO GRADD IS FOR ── */}
+        <section className="ib-sec ib-for">
+          <div className="ib-inn">
+            <span className="ib-tag">Built for every IB journey</span>
+            <h2 className="ib-h2">Who Gradd is for</h2>
+            <p className="ib-sub">The IB programme is one of the most demanding qualifications in the world. Wherever you're sitting it from, however you're studying it — Gradd meets you where you are.</p>
+            <div className="ib-for-grid">
+              <div className="ib-for-card">
+                <h3>International school students</h3>
+                <p>You're in an IB World School in São Paulo, Singapore, Geneva, Dubai — anywhere across the 153 countries where IB is delivered. Your school covers the syllabus, but you need rigorous, on-demand support outside class. Gradd gives you a tutor who knows your exact specification and is available whenever you need her.</p>
+              </div>
+              <div className="ib-for-card">
+                <h3>Homeschoolers doing IB</h3>
+                <p>You're studying IB independently or as part of a homeschool programme. You need a structured curriculum that takes you from beginner to exam-ready without a school behind you. Gradd delivers the full IBO specification, lesson by lesson, with command-term-aligned exam technique built in.</p>
+              </div>
+              <div className="ib-for-card">
+                <h3>Self-study candidates</h3>
+                <p>You're sitting IB Economics or IB Business Management as a private candidate. No teacher. No classroom. You need a system that builds the entire subject from scratch, marks your diagrams, flags your weak areas, and gets you to the exam confident. Gradd is built for this.</p>
+              </div>
+              <div className="ib-for-card">
+                <h3>Mid-programme students who need to catch up</h3>
+                <p>You started IB but you've fallen behind, switched subjects, or your school's coverage hasn't been what you need. Gradd lets you start anywhere — first lesson or mid-programme. Tell Mia where you are and she calibrates the rest.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── COMPARISON ── */}
         <section className="ib-sec ib-vs" id="compare">
           <div className="ib-inn">
             <span className="ib-tag">How we compare</span>
-            <h2 className="ib-h2">Gradd vs. everything else</h2>
+            <h2 className="ib-h2">Gradd vs. Other IB Tutoring Options</h2>
             <p className="ib-sub">An honest comparison. Judge for yourself.</p>
             <div className="ib-mobile-summary">
               <div className="ib-msrow"><span className="ib-msrow-label">Full IB curriculum delivery</span><span className="ib-msrow-val">✓ Gradd</span></div>
@@ -1080,7 +1258,7 @@ export default function IBLandingPage() {
         <section className="ib-sec ib-price-sec" id="pricing">
           <div className="ib-inn" style={{ textAlign: 'center' }}>
             <span className="ib-tag">Pricing</span>
-            <h2 className="ib-h2">Simple pricing. Full curriculum.</h2>
+            <h2 className="ib-h2">Simple Pricing. Full IB Curriculum. Global Access.</h2>
             <p className="ib-sub" style={{ margin: '0 auto' }}>One subject or both. Cancel any time. Everything included from day one.</p>
             <div role="group" aria-label="Billing period" className="ib-billing-toggle">
               <button
@@ -1207,6 +1385,32 @@ export default function IBLandingPage() {
           </div>
         </section>
 
+        {/* ── FAQ ── */}
+        <section className="ib-sec ib-faq-sec">
+          <div className="ib-inn">
+            <span className="ib-tag">Questions</span>
+            <h2 className="ib-h2">Frequently asked questions</h2>
+            <p className="ib-sub">Everything parents and students ask before signing up.</p>
+            <div className="ib-faqs">
+              {FAQS.map((faq, idx) => (
+                <div key={idx} className="ib-faq-item">
+                  <button
+                    className="ib-faq-q"
+                    onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
+                    aria-expanded={openFaq === idx}
+                  >
+                    <h3>{faq.q}</h3>
+                    <span className="ib-faq-q-icon">{openFaq === idx ? '−' : '+'}</span>
+                  </button>
+                  {openFaq === idx && (
+                    <div className="ib-faq-a">{faq.a}</div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── FINAL CTA ── */}
         <section className="ib-sec ib-fcta">
           <div className="ib-inn">
@@ -1263,6 +1467,39 @@ export default function IBLandingPage() {
 
       </div>
 
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "EducationalOrganization",
+        "name": "Gradd",
+        "url": "https://gradd.ai",
+        "logo": "https://gradd.ai/gradd-ai-logo.png",
+        "description": "AI tutoring platform for IB Economics and IB Business Management, serving students in 153 countries",
+        "areaServed": { "@type": "AdministrativeArea", "name": "Worldwide" }
+      }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "Service",
+        "name": "IB Economics & IB Business Management AI Tutoring",
+        "serviceType": "Online Tutoring",
+        "provider": { "@type": "Organization", "name": "Gradd", "url": "https://gradd.ai" },
+        "offers": [
+          { "@type": "Offer", "name": "IB Economics — Monthly", "price": "44.99", "priceCurrency": "EUR", "category": "subscription", "availability": "https://schema.org/InStock" },
+          { "@type": "Offer", "name": "IB Economics — Annual", "price": "349.00", "priceCurrency": "EUR", "category": "subscription", "availability": "https://schema.org/InStock" },
+          { "@type": "Offer", "name": "IB Business Management — Monthly", "price": "44.99", "priceCurrency": "EUR", "category": "subscription", "availability": "https://schema.org/InStock" },
+          { "@type": "Offer", "name": "IB Business Management — Annual", "price": "349.00", "priceCurrency": "EUR", "category": "subscription", "availability": "https://schema.org/InStock" },
+          { "@type": "Offer", "name": "IB Economics + Business Bundle — Monthly", "price": "74.99", "priceCurrency": "EUR", "category": "subscription", "availability": "https://schema.org/InStock" },
+          { "@type": "Offer", "name": "IB Economics + Business Bundle — Annual", "price": "579.00", "priceCurrency": "EUR", "category": "subscription", "availability": "https://schema.org/InStock" }
+        ]
+      }) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": FAQS.map(f => ({
+          "@type": "Question",
+          "name": f.q,
+          "acceptedAnswer": { "@type": "Answer", "text": f.a }
+        }))
+      }) }} />
       <Script
         src="//widget.trustpilot.com/bootstrap/v5/tp.widget.bootstrap.min.js"
         strategy="afterInteractive"

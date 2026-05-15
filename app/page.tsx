@@ -41,9 +41,9 @@ const LC_METADATA: Metadata = {
 };
 
 const IB_METADATA: Metadata = {
-  title: 'Gradd — AI IB Tutor for Economics and Business Management',
+  title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
   description:
-    'The first AI platform delivering the full IB Economics and IB Business Management curriculum from scratch. Structured lessons, command term technique, SL & HL coverage. €44.99/month per subject. Available 24/7 worldwide.',
+    'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day free trial. From €44.99/month.',
   keywords: [
     'IB Economics tutor',
     'IB Business Management tutor',
@@ -53,22 +53,25 @@ const IB_METADATA: Metadata = {
     'IB tutor online',
     'AI IB tutor',
     'IB Economics curriculum',
+    'IB Business Management curriculum',
+    'online IB tutor',
+    'IB SL HL tutor',
   ],
   alternates: { canonical: 'https://gradd.ai' },
   openGraph: {
-    title: 'Gradd — AI IB Tutor for Economics and Business Management',
+    title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
     description:
-      'Full IB Economics and IB Business Management curriculum from €44.99/month. Structured AI tutor, command term technique, SL & HL — available anywhere in the world.',
+      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day free trial. From €44.99/month.',
     url: 'https://gradd.ai',
     siteName: 'Gradd',
-    locale: 'en_GB',
     type: 'website',
-    images: [{ url: 'https://gradd.ai/og-image.svg', width: 1200, height: 630, alt: 'Gradd — AI IB Tutor for Economics and Business Management' }],
+    images: [{ url: 'https://gradd.ai/og-image.svg', width: 1200, height: 630, alt: 'AI Tutor for IB Economics & IB Business Management — Gradd' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gradd — AI IB Tutor for Economics and Business Management',
-    description: 'Full IB curriculum from €44.99/month. SL & HL. Available 24/7 worldwide.',
+    title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
+    description:
+      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day free trial. From €44.99/month.',
     images: ['https://gradd.ai/og-image.svg'],
   },
   robots: { index: true, follow: true },
