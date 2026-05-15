@@ -808,7 +808,7 @@ export default function IBLandingPage() {
               <div className="ib-subj-card">
                 <div className="ib-subj-hd">
                   <h3>IB Economics</h3>
-                  <p>Tutor: Mia · SL & HL · Papers 1, 2 & 3</p>
+                  <p>Tutor: Mia · SL & HL · Papers 1, 2 & 3 (HL)</p>
                 </div>
                 <div className="ib-subj-body">
                   <div className="ib-subj-units">
