@@ -836,7 +836,7 @@ export default function IBLandingPage() {
               <div className="ib-subj-card">
                 <div className="ib-subj-hd">
                   <h3>IB Business Management</h3>
-                  <p>Tutor: Mia · SL & HL · Papers 1 & 2</p>
+                  <p>Tutor: Mia · SL & HL · Papers 1, 2 & 3 (HL)</p>
                 </div>
                 <div className="ib-subj-body">
                   <div className="ib-subj-units">
@@ -969,8 +969,8 @@ export default function IBLandingPage() {
                 <div className="ib-why-label">structured IB Business Management lessons across Units 1–5, SL and HL</div>
               </div>
               <div className="ib-why-stat">
-                <span className="ib-why-num">2022 & 2024</span>
-                <div className="ib-why-label">Current IBO specifications</div>
+                <span className="ib-why-num">153</span>
+                <div className="ib-why-label">countries where the IB is delivered</div>
               </div>
             </div>
           </div>
