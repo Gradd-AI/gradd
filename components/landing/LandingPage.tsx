@@ -24,10 +24,11 @@ const PAIN_CARDS = [
 
 const FEATURES = [
   { title: "Teaches, doesn't tell", body: 'Explanations, examples, check questions — every session uses the same four-stage loop that great teachers use.' },
-  { title: 'Built for marks, not just notes', body: 'Aoife teaches the SRP structure (State, Relevance, Point) that SEC examiners reward — and drills it from Session 1, not the week before the exam.' },
+  { title: 'Built for both, not just one', body: 'Aoife teaches the SRP structure (State, Relevance, Point) that SEC examiners reward, and adjusts depth for HL vs OL.' },
   { title: 'Real Irish examples', body: 'AIB, Ryanair, Penneys, the WRC — the same names your examiner expects to see on the day.' },
-  { title: 'Marks your written answers', body: 'Submit your answer. Aoife marks it against the SRP framework, identifies exactly where marks were lost, and shows you how to fix it.' },
+  { title: 'Marks your written answers', body: 'Submit your answer. Aoife marks it against the SEC framework, identifies exactly where marks were lost, and shows you how to fix it.' },
   { title: 'Progress tracked automatically', body: 'Every session is logged. Weak areas are flagged and revisited. You always know exactly where you stand.' },
+  { title: 'Available whenever you are', body: 'Saturday morning. Sunday night. Three weeks before the exam. Aoife shows up. No scheduling, no waiting.' },
 ];
 
 const TESTIMONIALS = [
@@ -42,6 +43,9 @@ const COMPARISON_ROWS: [string, string, string, string, string][] = [
   ['Works around your schedule', '✗', '✓', '✓', '✓'],
   ['Answers marked with feedback', '✓', '✗', 'Partial', '✓'],
   ['Progress tracked automatically', '✗', '✗', 'Partial', '✓'],
+  ['Total syllabus content covered', '1 hour per week of conversation', 'Full text, no interaction', 'Varies — usually revision only', '279 structured LC Business lessons'],
+  ['SEC marking scheme alignment', 'Depends on tutor', 'If current edition', 'Inconsistent', 'Built to current SEC marking scheme, all chapters'],
+  ['Availability', 'Scheduled weekly slot only', 'Anywhere with delivery', 'Anywhere with internet', '24/7 access, no scheduling, anywhere in Ireland'],
   ['Monthly cost', '€160–240+', '€30–50 once', '€10–40', '€24.99'],
   ['Built for homeschool students', 'Rarely', '✗', '✗', '✓'],
 ];
@@ -55,6 +59,90 @@ const PRICING_FEATURES = [
   'No textbooks, no supplementary materials required',
   'Works on any device — desktop, tablet, phone',
 ];
+
+const FAQS_LC = [
+  {
+    q: 'How is Gradd different from ChatGPT or general AI tutors?',
+    a: "ChatGPT is a general-purpose model. It can answer Leaving Cert questions but it doesn't know the current SEC syllabus, the SEC marking scheme, or the exam structure (Section A short questions, Section B ABQ, Section C long questions). Gradd's tutor (Aoife) is trained specifically on the current Leaving Cert Business syllabus and SEC marking scheme. She teaches every chapter, applies SEC marking criteria consistently, tracks every weak area, and prepares you for the actual paper structure. General AI doesn't do any of that.",
+  },
+  {
+    q: 'Does Gradd cover both Higher Level and Ordinary Level?',
+    a: 'Yes — both levels. The HL and OL syllabi share most content. Where they differ, Aoife adjusts. HL students get the additional depth and the more demanding question types; OL students focus on the core material. Tell Aoife your level at onboarding and she calibrates accordingly.',
+  },
+  {
+    q: "Can my child use Gradd if they're already in 6th year?",
+    a: "Yes — and it's often the best time to start. Onboarding asks where you're starting. A 6th year mid-programme can jump to the specific chapters they're weakest on, do targeted revision, and focus on past paper technique. You're not forced to start from Chapter 1.",
+  },
+  {
+    q: 'How is progress tracked? Can parents see what their child is learning?',
+    a: "Every session is logged. The dashboard shows current chapter, current unit, lessons completed, weak areas flagged, session count. Parents can log in and see exactly what their child has covered, where they're struggling, and how they're progressing. No mystery — actual SEC syllabus progression.",
+  },
+  {
+    q: 'Is Gradd aligned to the current SEC syllabus?',
+    a: 'Yes. The full Leaving Cert Business syllabus as currently examined by the State Examinations Commission. Every lesson maps to a specific chapter or topic. Exam technique training is aligned to the current marking scheme.',
+  },
+  {
+    q: 'What happens if my child gets stuck on a concept?',
+    a: "Aoife detects repeated misunderstanding automatically. When a student gives wrong or partial answers on the same concept across multiple turns, the topic is flagged as a weak area. Subsequent sessions gate further progress until that weak area is properly understood. You don't move forward on a broken foundation.",
+  },
+  {
+    q: 'How much does this save vs traditional grinds?',
+    a: 'Grinds in Ireland typically cost €40–60 per hour. A year of weekly grinds is €1,500–2,400. Gradd is €24.99 per month — €299.88 for a full year of 24/7 access. The savings vs grinds are €1,200–2,100. You\'re paying for a full curriculum delivery, not just question-answering time.',
+  },
+  {
+    q: "Is there a free trial? What's the refund policy?",
+    a: "Yes — 7-day free trial on every plan. Cancel within the trial and you're not charged. After the trial, we offer a 7-day money-back guarantee on the first paid month. No questions asked.",
+  },
+  {
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Manage your subscription from your account dashboard. Monthly plans cancel at the end of the current billing period.',
+  },
+  {
+    q: "Is my child's data secure? Are you GDPR compliant?",
+    a: 'Yes. Gradd is GDPR-compliant. Student data is stored encrypted on Supabase (EU-region Postgres database, hosted in Dublin). We never sell data. Payment is handled by Stripe (PCI-DSS compliant). For full details, see our Privacy Policy.',
+  },
+];
+
+const ORG_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'EducationalOrganization',
+  'name': 'Gradd',
+  'url': 'https://gradd.ie',
+  'logo': 'https://gradd.ie/gradd-logo.svg',
+  'description': 'AI tutoring platform for Leaving Cert Business, serving students across Ireland',
+  'areaServed': { '@type': 'Country', 'name': 'Ireland' },
+};
+
+const SERVICE_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  'name': 'Leaving Cert Business AI Tutoring',
+  'serviceType': 'Online Tutoring',
+  'provider': { '@type': 'Organization', 'name': 'Gradd', 'url': 'https://gradd.ie' },
+  'offers': [
+    { '@type': 'Offer', 'name': 'LC Business — Monthly', 'price': '24.99', 'priceCurrency': 'EUR', 'category': 'subscription', 'availability': 'https://schema.org/InStock' },
+    { '@type': 'Offer', 'name': 'LC Business — Annual', 'price': '199.00', 'priceCurrency': 'EUR', 'category': 'subscription', 'availability': 'https://schema.org/InStock' },
+  ],
+};
+
+const FAQ_SCHEMA = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'mainEntity': FAQS_LC.map(f => ({
+    '@type': 'Question',
+    'name': f.q,
+    'acceptedAnswer': { '@type': 'Answer', 'text': f.a },
+  })),
+};
+
+function JsonLd({ data }: { data: object }) {
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }}
+    />
+  );
+}
 
 // ── Component ─────────────────────────────────────────────────
 
@@ -565,6 +653,100 @@ export default function LandingPage() {
         .lp-flinks a { color: rgba(255,255,255,.4); text-decoration: none; transition: color .2s; }
         .lp-flinks a:hover { color: rgba(255,255,255,.75); }
 
+        /* ── TRUST STRIP ── */
+        .lp-trust-strip {
+          background: var(--cream); border-bottom: 1px solid var(--ink100);
+          padding: .85rem 2rem;
+        }
+        .lp-trust-inner {
+          max-width: 1080px; margin: 0 auto;
+          display: grid; grid-template-columns: repeat(3,1fr);
+          gap: 1rem; align-items: center;
+        }
+        .lp-trust-item {
+          display: flex; align-items: center; gap: .75rem; padding: .5rem 0;
+        }
+        .lp-trust-icon {
+          width: 36px; height: 36px; border-radius: 50%;
+          background: var(--g50); border: 1px solid var(--g100);
+          display: flex; align-items: center; justify-content: center;
+          flex-shrink: 0; color: var(--g600);
+        }
+        .lp-trust-item strong {
+          font-size: .88rem; font-weight: 700; color: var(--ink900);
+          display: block; line-height: 1.3;
+        }
+        .lp-trust-item span {
+          font-size: .78rem; color: var(--ink500); display: block; line-height: 1.3;
+        }
+
+        /* ── AOIFE BULLETS 2-COL ── */
+        .lp-tfeats {
+          list-style: none; display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 1.25rem 2rem; margin-top: 2rem;
+        }
+        .lp-tfeat {
+          display: flex; gap: .75rem; align-items: flex-start;
+          background: var(--cream); border: 1px solid var(--ink100);
+          border-radius: 10px; padding: 1rem 1.15rem;
+        }
+
+        /* ── WHO GRADD IS FOR ── */
+        .lp-for { background: var(--cream-dk); }
+        .lp-for-grid {
+          display: grid; grid-template-columns: 1fr 1fr;
+          gap: 1.5rem; margin-top: 3.5rem;
+        }
+        .lp-for-card {
+          background: var(--white); border: 1px solid var(--ink100);
+          border-left: 3px solid var(--g500); border-radius: 0 12px 12px 0;
+          padding: 1.75rem;
+          transition: transform .18s, box-shadow .18s;
+        }
+        .lp-for-card:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,.07); }
+        .lp-for-card h3 {
+          font-family: var(--fd); font-size: 1.05rem; font-weight: 700;
+          color: var(--ink900); margin-bottom: .65rem; line-height: 1.3;
+        }
+        .lp-for-card p { font-size: .88rem; color: var(--ink500); line-height: 1.65; }
+
+        /* ── FAQ ── */
+        .lp-faq-sec { background: var(--white); }
+        .lp-faqs { margin-top: 3rem; display: flex; flex-direction: column; gap: .75rem; }
+        .lp-faq-det {
+          border: 1px solid var(--ink100); border-radius: 10px;
+          overflow: hidden; transition: box-shadow .15s;
+        }
+        .lp-faq-det[open] {
+          border-color: var(--g300, #6bbf77);
+          border-left: 3px solid var(--g500);
+          box-shadow: 0 2px 12px rgba(46,110,57,.07);
+        }
+        .lp-faq-det summary { list-style: none; }
+        .lp-faq-det summary::-webkit-details-marker { display: none; }
+        .lp-faq-det summary::marker { display: none; content: ''; }
+        .lp-faq-sum {
+          padding: 1.1rem 1.5rem; cursor: pointer;
+          display: flex; align-items: flex-start; justify-content: space-between;
+          gap: 1rem; user-select: none;
+        }
+        .lp-faq-sum:hover { background: var(--cream); }
+        .lp-faq-sum h3 {
+          font-family: var(--fb); font-size: .975rem; font-weight: 600;
+          color: var(--ink900); line-height: 1.45; margin: 0;
+        }
+        .lp-faq-sum::after {
+          content: '+'; font-size: 1.35rem; font-weight: 400;
+          color: var(--ink300); flex-shrink: 0; line-height: 1;
+          margin-top: .05rem;
+        }
+        .lp-faq-det[open] .lp-faq-sum::after { content: '−'; color: var(--g500); }
+        .lp-faq-a {
+          padding: 0 1.5rem 1.25rem; font-size: .92rem;
+          color: var(--ink500); line-height: 1.72;
+        }
+
         /* ── RESPONSIVE ── */
         @media (max-width: 780px) {
           .lp-prob-grid, .lp-tutor-grid { grid-template-columns: 1fr; gap: 2rem; }
@@ -572,6 +754,9 @@ export default function LandingPage() {
           .lp-steps::before { display: none; }
           .lp-pcard { padding: 2rem 1.5rem; }
           .lp-stats { gap: 1.5rem; }
+          .lp-tfeats { grid-template-columns: 1fr; }
+          .lp-for-grid { grid-template-columns: 1fr; }
+          .lp-trust-inner { grid-template-columns: 1fr; gap: .5rem; }
         }
         @media (max-width: 768px) {
           .lp-nav-links { display: none; }
@@ -600,6 +785,10 @@ export default function LandingPage() {
           white-space: nowrap;
         }
       `}</style>
+
+      <JsonLd data={ORG_SCHEMA} />
+      <JsonLd data={SERVICE_SCHEMA} />
+      <JsonLd data={FAQ_SCHEMA} />
 
       <div className="lp-wrap">
 
@@ -632,11 +821,13 @@ export default function LandingPage() {
               Live now · LC Business
             </div>
             <h1 className="lp-h1">
-              The LC Business tutor<br />your student actually <em>needs</em>
+              AI Tutor for Leaving Cert Business — Higher and Ordinary Level
             </h1>
+            <p style={{ fontFamily: 'var(--fd)', fontStyle: 'italic', fontSize: '1.15rem', color: 'var(--g200)', marginBottom: '1.25rem', lineHeight: 1.5 }}>
+              The LC Business tutor your student actually needs.
+            </p>
             <p className="lp-hero-sub">
-              Full curriculum. From Unit 1 to exam day. No textbook, no teacher, no grinds required.
-              Gradd's AI tutor knows the SEC syllabus inside out — teaches the course in order, checks understanding, and builds the exam answers that get the marks.
+              Full SEC syllabus from Unit 1 to exam day. SEC exam technique built in. Marks your answers and past-paper questions. Available 24/7 wherever you are. From €24.99/month — a fraction of one grind.
             </p>
             <div className="lp-ctas">
               <Link href="/subscribe" className="lp-btn-a">Start learning — €24.99/month</Link>
@@ -652,16 +843,46 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── TRUST STRIP ── */}
+        <div className="lp-trust-strip">
+          <div className="lp-trust-inner">
+            <div className="lp-trust-item">
+              <div className="lp-trust-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              <div><strong>24/7 access</strong><span>anywhere in Ireland</span></div>
+            </div>
+            <div className="lp-trust-item">
+              <div className="lp-trust-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
+                </svg>
+              </div>
+              <div><strong>7-day money-back</strong><span>cancel anytime, no questions</span></div>
+            </div>
+            <div className="lp-trust-item">
+              <div className="lp-trust-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+                </svg>
+              </div>
+              <div><strong>SEC syllabus</strong><span>every chapter, both levels</span></div>
+            </div>
+          </div>
+        </div>
+
         {/* ── PROBLEM ── */}
         <section className="lp-sec lp-prob" id="problem">
           <div className="lp-inn">
             <div className="lp-prob-grid">
               <div className="lp-prob-text">
                 <span className="lp-tag">The problem</span>
-                <h2 className="lp-h2">LC Business is <em>doable</em>. The current options aren't.</h2>
+                <h2 className="lp-h2">LC Business is <em>doable</em>. The current options aren&apos;t.</h2>
                 <p>Every year, thousands of Irish students sit LC Business. Most of them are paying €40–60 an hour for grind teachers. Homeschool students are starting from scratch with a textbook that reads like a regulatory filing.</p>
                 <p>The structured knowledge is out there. The problem is accessing it — clearly, sequentially, at a pace that fits your life — without spending a fortune.</p>
-                <p>That's what Gradd fixes. Not a quiz app. Not a document library. An actual tutor, teaching the actual course, from the actual start.</p>
+                <p>That&apos;s what Gradd fixes. Not a quiz app. Not a document library. An actual tutor, teaching the actual course, from the actual start.</p>
               </div>
               <div className="lp-pain-cards">
                 {PAIN_CARDS.map(c => (
@@ -682,13 +903,13 @@ export default function LandingPage() {
         <section className="lp-sec lp-sol" id="solution">
           <div className="lp-inn">
             <span className="lp-tag">The solution</span>
-            <h2 className="lp-h2">One subscription. The whole course.</h2>
-            <p className="lp-sub">Gradd delivers the full LC Business curriculum through a conversational AI tutor who knows the SEC syllabus, marks your answers, and never lets you move on until you're ready.</p>
+            <h2 className="lp-h2">One subscription. The complete <em>Leaving Cert Business</em> syllabus.</h2>
+            <p className="lp-sub">Gradd delivers the full LC Business curriculum through a conversational AI tutor who knows the SEC syllabus, marks your answers, and never lets you move on until you&apos;re ready.</p>
             <div className="lp-sol-grid">
               <div className="lp-sol-card">
                 <div className="lp-sol-num">01</div>
                 <h3>Not a chatbot. A structured tutor.</h3>
-                <p>Gradd's AI tutor — Aoife — teaches in a specific sequence. Unit 1 first, then 2, then 3. You don't unlock Unit 4 until the checkpoints are passed. Curriculum first, chat second.</p>
+                <p>Gradd&apos;s AI tutor — Aoife — teaches in a specific sequence. Unit 1 first, then 2, then 3. You don&apos;t unlock Unit 4 until the checkpoints are passed. Curriculum first, chat second.</p>
               </div>
               <div className="lp-sol-card lp-feat">
                 <div className="lp-sol-num">02</div>
@@ -708,23 +929,23 @@ export default function LandingPage() {
         <section className="lp-sec lp-how" id="how-it-works">
           <div className="lp-inn">
             <span className="lp-tag">How it works</span>
-            <h2 className="lp-h2">Start at zero. Finish <em>exam-ready</em>.</h2>
+            <h2 className="lp-h2">Start at zero. Finish <em>exam-ready</em>. Full LC Business syllabus, online, 24/7.</h2>
             <p className="lp-sub">No prior Business knowledge needed. Gradd takes students from scratch through all six units to full exam readiness.</p>
             <div className="lp-steps">
               <div className="lp-step">
                 <div className="lp-step-dot">1</div>
-                <h3>Start where you are</h3>
-                <p>Create your account, pick your level (Higher or Ordinary), and Aoife opens Unit 1. No placement test. No setup. You just start.</p>
+                <h3>Tell Aoife where you&apos;re starting</h3>
+                <p>5th year just starting Unit 1. 6th year mid-way through. Or exam-prep mode in the final months. Aoife calibrates the rest.</p>
               </div>
               <div className="lp-step">
                 <div className="lp-step-dot">2</div>
                 <h3>Learn with Aoife</h3>
-                <p>Each session runs 25–35 minutes. Aoife explains concepts, uses real Irish examples you'll recognise, asks check questions, and only moves forward when you've got it.</p>
+                <p>Aoife teaches every chapter of the SEC syllabus with marking-scheme language baked in. Each lesson covers Section A (short questions), Section B (ABQ), and Section C (long question) approaches as appropriate.</p>
               </div>
               <div className="lp-step">
                 <div className="lp-step-dot">3</div>
-                <h3>Build exam confidence</h3>
-                <p>From mid-curriculum, Aoife drills past-paper questions, marks your answers against the SEC scheme, and targets the exact areas you're weakest on before exam day.</p>
+                <h3>Track. Drill. Walk in confident.</h3>
+                <p>Every weak area is flagged and drilled before you move forward. You always know where you are in the syllabus and what needs work before the SEC sits you in June.</p>
               </div>
             </div>
           </div>
@@ -755,9 +976,9 @@ export default function LandingPage() {
             <div className="lp-tutor-grid">
               <div>
                 <span className="lp-tag">Meet your tutor</span>
-                <h2 className="lp-h2">Aoife knows every line of the SEC syllabus.</h2>
+                <h2 className="lp-h2">Meet Aoife. Your AI Tutor for <em>Leaving Cert Business</em>.</h2>
                 <p className="lp-sub">She teaches in plain English, uses Irish companies as examples, and never lets you move on until a concept is properly understood. She marks your answers the way an SEC examiner would.</p>
-                <p style={{ fontSize: '.9rem', color: 'var(--ink500)', marginTop: '1rem', lineHeight: 1.65, maxWidth: 480 }}>Gradd isn't a chatbot you ask questions to. It follows the course in order — teaching each topic, checking understanding, correcting mistakes — until the student can answer exam questions properly.</p>
+                <p style={{ fontSize: '.9rem', color: 'var(--ink500)', marginTop: '1rem', lineHeight: 1.65, maxWidth: 480 }}>Gradd isn&apos;t a chatbot you ask questions to. It follows the course in order — teaching each topic, checking understanding, correcting mistakes — until the student can answer exam questions properly.</p>
                 <ul className="lp-tfeats">
                   {FEATURES.map(f => (
                     <li key={f.title} className="lp-tfeat">
@@ -784,19 +1005,19 @@ export default function LandingPage() {
                 </div>
                 <div className="lp-chat-body">
                   <div className="lp-msg lp-aoife">
-                    Right, Niamh — before we get into Herzberg, tell me: what's the difference between a financial and a non-financial reward? Don't look it up — just tell me what you remember.
+                    Right, Niamh — before we get into Herzberg, tell me: what&apos;s the difference between a financial and a non-financial reward? Don&apos;t look it up — just tell me what you remember.
                   </div>
                   <div className="lp-msg lp-stu">
                     Financial is like wages and bonuses. Non-financial is… stuff like promotions or flexible hours?
                   </div>
                   <div className="lp-msg lp-aoife">
-                    Exactly right — you've already given me two strong exam examples. Financial rewards are monetary: wages, salary, bonuses, profit-sharing. Non-financial are non-monetary: promotion, job enrichment, flexible working, recognition.
+                    Exactly right — you&apos;ve already given me two strong exam examples. Financial rewards are monetary: wages, salary, bonuses, profit-sharing. Non-financial are non-monetary: promotion, job enrichment, flexible working, recognition.
                     <br /><br />
-                    Now here's where Herzberg fits in. His two-factor theory splits those into hygiene factors and motivators. Which do you think financial rewards fall into?
+                    Now here&apos;s where Herzberg fits in. His two-factor theory splits those into hygiene factors and motivators. Which do you think financial rewards fall into?
                   </div>
                   <div className="lp-msg lp-stu">Motivators?</div>
                   <div className="lp-msg lp-aoife">
-                    Close — but this is the trick Herzberg plays on everyone. Financial rewards like salary are actually <strong>hygiene factors</strong>, not motivators. They prevent dissatisfaction when they're fair — but they don't actively motivate. That's the core of his theory. Let me show you how this appears on a Section 3 question…
+                    Close — but this is the trick Herzberg plays on everyone. Financial rewards like salary are actually <strong>hygiene factors</strong>, not motivators. They prevent dissatisfaction when they&apos;re fair — but they don&apos;t actively motivate. That&apos;s the core of his theory. Let me show you how this appears on a Section 3 question…
                   </div>
                 </div>
               </div>
@@ -813,7 +1034,7 @@ export default function LandingPage() {
             <div className="lp-tgrid">
               {TESTIMONIALS.map(t => (
                 <div key={t.initials} className="lp-tcard">
-                  <div className="lp-qmark">"</div>
+                  <div className="lp-qmark">&ldquo;</div>
                   <p className="lp-ttext">{t.quote}</p>
                   <div className="lp-tauth">
                     <div className="lp-tav">{t.initials}</div>
@@ -829,11 +1050,38 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* ── WHO GRADD IS FOR ── */}
+        <section className="lp-sec lp-for">
+          <div className="lp-inn">
+            <span className="lp-tag">Built for every LC journey</span>
+            <h2 className="lp-h2">Who Gradd LC Business is for</h2>
+            <p className="lp-sub">Leaving Cert Business is the highest-uptake business subject in the country. Wherever you&apos;re sitting it from, however you&apos;re studying it — Gradd meets you where you are.</p>
+            <div className="lp-for-grid">
+              <div className="lp-for-card">
+                <h3>Students whose school doesn&apos;t offer it</h3>
+                <p>Your school doesn&apos;t run LC Business, but you want to sit it. CAO points add up — every subject counts. Gradd delivers the full SEC syllabus independently, so you can sit it as an external candidate or in your own time.</p>
+              </div>
+              <div className="lp-for-card">
+                <h3>Homeschoolers doing Leaving Cert</h3>
+                <p>You&apos;re doing Leaving Cert at home, with parental supervision. You need a structured curriculum that takes you from beginner to SEC-ready without a teacher in the room. Gradd delivers the full syllabus, lesson by lesson, with exam technique built in.</p>
+              </div>
+              <div className="lp-for-card">
+                <h3>Repeats sitting LC Business again</h3>
+                <p>You sat the exam and need a stronger result. You don&apos;t need to repeat the year — you need targeted revision on the specific chapters that cost you marks. Aoife pinpoints those weaknesses, drills them, and walks you back in confident.</p>
+              </div>
+              <div className="lp-for-card">
+                <h3>Students who can&apos;t afford grinds</h3>
+                <p>Grinds in Ireland cost €40–60 per hour. A year of weekly grinds is €1,500–2,400. Gradd is €24.99 per month — a year of 24/7 tutoring for less than what a single month of grinds would cost. Same SEC syllabus. Same exam preparation. Different price point.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── COMPARISON ── */}
         <section className="lp-sec lp-vs" id="compare">
           <div className="lp-inn">
             <span className="lp-tag">How we compare</span>
-            <h2 className="lp-h2">Gradd vs. everything else</h2>
+            <h2 className="lp-h2">Gradd vs. Other LC Business Options</h2>
             <p className="lp-sub">One honest comparison. Judge for yourself.</p>
             {/* Mobile: Gradd summary — shown instead of scrollable table on small screens */}
             <div className="lp-mobile-summary">
@@ -842,6 +1090,9 @@ export default function LandingPage() {
               <div className="lp-msrow"><span className="lp-msrow-label">Works around your schedule</span><span className="lp-msrow-val">✓ Gradd</span></div>
               <div className="lp-msrow"><span className="lp-msrow-label">Answers marked with feedback</span><span className="lp-msrow-val">✓ Gradd</span></div>
               <div className="lp-msrow"><span className="lp-msrow-label">Progress tracked automatically</span><span className="lp-msrow-val">✓ Gradd</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Total syllabus content</span><span className="lp-msrow-val">279 lessons (Gradd)</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">SEC marking scheme</span><span className="lp-msrow-val">✓ All chapters (Gradd)</span></div>
+              <div className="lp-msrow"><span className="lp-msrow-label">Availability</span><span className="lp-msrow-val">24/7, no scheduling (Gradd)</span></div>
               <div className="lp-msrow"><span className="lp-msrow-label">Monthly cost</span><span className="lp-msrow-val">€24.99 vs €160–240+</span></div>
               <div className="lp-msrow"><span className="lp-msrow-label">Built for homeschool students</span><span className="lp-msrow-val">✓ Only Gradd</span></div>
             </div>
@@ -882,7 +1133,7 @@ export default function LandingPage() {
         <section className="lp-sec lp-price-sec" id="pricing">
           <div className="lp-inn" style={{ textAlign: 'center' }}>
             <span className="lp-tag">Pricing</span>
-            <h2 className="lp-h2">One plan. Everything included.</h2>
+            <h2 className="lp-h2">Simple Pricing. Full Syllabus. Cancel Anytime.</h2>
             <p className="lp-sub" style={{ margin: '0 auto' }}>No tiers, no add-ons. Choose monthly or save two months with an annual subscription.</p>
 
             {/* Two-card pricing layout */}
@@ -961,6 +1212,25 @@ export default function LandingPage() {
               Compare: one weekly grind session = <span>€200+/month</span>.
               Gradd = <span>€24.99/month</span> — or <span>€199/year</span>. Full curriculum. Any time. Any pace.
             </p>
+          </div>
+        </section>
+
+        {/* ── FAQ ── */}
+        <section className="lp-sec lp-faq-sec">
+          <div className="lp-inn">
+            <span className="lp-tag">Questions</span>
+            <h2 className="lp-h2">Frequently asked questions</h2>
+            <p className="lp-sub">Everything parents and students ask before signing up.</p>
+            <div className="lp-faqs">
+              {FAQS_LC.map((faq, idx) => (
+                <details key={idx} className="lp-faq-det">
+                  <summary className="lp-faq-sum">
+                    <h3>{faq.q}</h3>
+                  </summary>
+                  <div className="lp-faq-a">{faq.a}</div>
+                </details>
+              ))}
+            </div>
           </div>
         </section>
 

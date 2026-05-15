@@ -7,9 +7,9 @@ import IBLandingPage from '@/components/landing/IBLandingPage';
 import type { Metadata } from 'next';
 
 const LC_METADATA: Metadata = {
-  title: 'Gradd — AI Leaving Cert Business Tutor for Irish Students',
+  title: 'AI Tutor for Leaving Cert Business — From €24.99/mo | Gradd',
   description:
-    'Full Leaving Certificate Business curriculum delivered online by AI tutor Aoife. Structured lessons, SEC exam technique, progress tracking. Less than one grind session per month. Built for Irish homeschool students and external LC candidates.',
+    'Full LC Business syllabus from scratch to exam-ready. SEC-aligned curriculum, exam technique built in, progress tracked. 7-day free trial. From €24.99/month.',
   keywords: [
     'LC Business tutor',
     'Leaving Cert Business',
@@ -19,23 +19,23 @@ const LC_METADATA: Metadata = {
     'homeschool Leaving Cert',
     'SEC Business syllabus',
     'LC Business online Ireland',
+    'Leaving Cert Business Higher Level',
+    'Leaving Cert Business Ordinary Level',
+    'external LC candidate',
   ],
-  alternates: { canonical: 'https://gradd.ie' },
+  alternates: { canonical: 'https://gradd.ie/' },
   openGraph: {
-    title: 'Gradd — AI Leaving Cert Business Tutor',
+    title: 'AI Tutor for Leaving Cert Business — From €24.99/mo | Gradd',
     description:
-      'Replace your grind teacher. Full LC Business curriculum from €24.99/month. Structured lessons, SEC exam technique, progress tracking — built for Irish students.',
-    url: 'https://gradd.ie',
-    siteName: 'Gradd',
-    locale: 'en_IE',
+      'Full LC Business syllabus from scratch to exam-ready. SEC-aligned curriculum, exam technique built in, progress tracked. 7-day free trial. From €24.99/month.',
+    url: 'https://gradd.ie/',
     type: 'website',
-    images: [{ url: 'https://gradd.ie/og-image.svg', width: 1200, height: 630, alt: 'Gradd — AI Leaving Cert Business Tutor for Irish Students' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Gradd — AI Leaving Cert Business Tutor',
-    description: 'Full LC Business curriculum from €24.99/month. Built for Irish students.',
-    images: ['https://gradd.ie/og-image.svg'],
+    title: 'AI Tutor for Leaving Cert Business — From €24.99/mo | Gradd',
+    description:
+      'Full LC Business syllabus from scratch to exam-ready. SEC-aligned curriculum, exam technique built in, progress tracked. 7-day free trial. From €24.99/month.',
   },
   robots: { index: true, follow: true },
 };
