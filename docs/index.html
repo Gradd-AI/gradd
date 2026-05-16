@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="paper" data-hero="a" data-density="standard">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>gradd.ai — The AI tutor for IB Economics &amp; Business Management</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="bg-grain" aria-hidden="true"></div>
+
+  <!-- ─────────────────────────── NAV ─────────────────────────── -->
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a href="#" class="nav-logo" aria-label="Gradd.ai home">
+        <img src="assets/gradd-logo.png" alt="gradd.ai" />
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#curriculum">Curriculum</a>
+        <a href="#mia">Meet Mia</a>
+        <a href="#parents">For parents</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <div class="nav-cta">
+        <a href="#" class="btn btn-ghost btn-sm">Log in</a>
+        <a href="#pricing" class="btn btn-primary btn-sm">Start <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─────────────────────────── HERO ─────────────────────────── -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="hero-eyebrow eyebrow">
+          <span>IB Economics</span><span class="dot"></span><span>IB Business Management</span>
+        </div>
+        <h1 class="hero-h1 h-display">
+          Walk into your IB exam <span class="em underline">knowing</span> exactly what to do.
+        </h1>
+        <p class="hero-sub">
+          Gradd.ai is the AI tutor built only for IB Economics and IB Business
+          Management. Full syllabus. IBO‑standard diagrams marked instantly.
+          Available the night before the exam.
+        </p>
+        <div class="hero-cta">
+          <a href="#pricing" class="btn btn-rust">Start learning with Mia <span class="arrow">→</span></a>
+          <a href="#mia" class="btn btn-ghost">See Mia in action</a>
+        </div>
+        <div class="hero-meta">
+          <span>From €44.99 / month</span>
+          <span class="dot"></span>
+          <span>7‑day money back</span>
+          <span class="dot"></span>
+          <span>Cancel anytime</span>
+        </div>
+      </div>
+
+      <div class="hero-visual">
+        <div class="chat" aria-label="Live session with Mia, your AI tutor">
+          <div class="chat-hd">
+            <div class="chat-logo">gradd<span class="ai">.ai</span></div>
+            <div class="chat-name-pill"><span class="live"></span>Mia</div>
+            <div class="chat-course">
+              <div class="em">Economics as a Social Science</div>
+              <div>IB Economics · SL · Session 12</div>
+            </div>
+          </div>
+
+          <div class="chat-body">
+            <div class="chat-row">
+              <div class="mia-av">M</div>
+              <div class="mia-msg">
+                <p>Welcome back. Last session we started <em>Economics as a Social Science</em> — we did one exchange and didn't finish. Today we're continuing that lesson, which appears on Papers 1 and 2 for your SL exam.</p>
+                <p>Let me pick up where we left off. We were establishing what economics actually <em>is</em> — not just "the study of money", but something deeper.</p>
+                <p><strong>Economics is a social science.</strong> That means it studies human behaviour and decision‑making in society. The fundamental problem it solves: <span class="key">we have unlimited wants, but limited resources.</span></p>
+                <p>This fact — called <strong>scarcity</strong> — forces every economic decision. Everyone must choose, and every choice involves giving up something else. That trade‑off is your <strong>opportunity cost</strong>.</p>
+              </div>
+            </div>
+
+            <div class="chat-row from-user">
+              <div class="user-bubble">say all that but for me to understand — break it down</div>
+              <div class="user-av">T</div>
+            </div>
+
+            <div class="chat-row">
+              <div class="mia-av">M</div>
+              <div class="mia-msg">
+                <p>You're right — let me slow down.</p>
+                <h4>Start here: what is economics?</h4>
+                <p>Economics is the study of <em>choice under pressure</em>. You want loads of things. You can't have everything. So you have to pick.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="chat-input">
+            <button class="attach" aria-label="Upload photo or sketch">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 7h3l1.7-2.5A1 1 0 0 1 8.5 4h7a1 1 0 0 1 .8.5L18 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                <circle cx="12" cy="13" r="3.6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+              </svg>
+            </button>
+            <div class="ph">Reply to Mia…</div>
+            <div class="send">↵</div>
+          </div>
+          <div class="chat-foot">Session 12 of 150 · IB Economics SL · Mia online 24/7</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── TRUST BAR ─────────────────────────── -->
+  <section class="trust">
+    <div class="wrap trust-inner">
+      <div class="trust-label">Built around the official IBO syllabus</div>
+      <div class="trust-stats">
+        <div class="trust-stat"><span class="num">210</span><span class="lbl">lessons</span></div>
+        <div class="trust-stat"><span class="num">136</span><span class="lbl">question banks</span></div>
+        <div class="trust-stat"><span class="num">153</span><span class="lbl">worked exemplars</span></div>
+        <div class="trust-stat"><span class="num">24/7</span><span class="lbl">availability</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── PAIN ─────────────────────────── -->
+  <section class="section pain">
+    <div class="wrap pain-grid">
+      <div>
+        <div class="eyebrow">The problem<span class="dot"></span>Private tutoring</div>
+        <h2 class="h-section" style="margin-top:18px">
+          IB tutoring costs too much.<br>
+          And it <em class="italic" style="color:var(--rust)">still</em> doesn't cover the whole course.
+        </h2>
+        <p class="pain-quote">
+          "Two hours a week at €90 an hour. By April my tutor still
+          hadn't touched Paper 3 case study."
+          <br><span style="font-family:var(--mono);font-size:12px;color:var(--ink-3);letter-spacing:0.06em;text-transform:uppercase;display:block;margin-top:12px">— IB student, May 2024</span>
+        </p>
+      </div>
+      <div class="pain-cards">
+        <div class="pain-card">
+          <div class="stat">€90<span class="unit">/ hour</span></div>
+          <div>
+            <div class="label">Tutors are priced like therapists</div>
+            <div class="desc">Most families spend €3,500–€9,000 over the two years. And that's for two hours a week — not full coverage.</div>
+          </div>
+        </div>
+        <div class="pain-card">
+          <div class="stat">38%<span class="unit">of syllabus</span></div>
+          <div>
+            <div class="label">Coverage gaps everywhere</div>
+            <div class="desc">A weekly tutor gets to maybe two thirds of the course. Paper 3, HL extensions, exam technique — usually the bits that get cut.</div>
+          </div>
+        </div>
+        <div class="pain-card">
+          <div class="stat">0<span class="unit">at 11pm</span></div>
+          <div>
+            <div class="label">Never there when you need them</div>
+            <div class="desc">The exam is tomorrow. Your tutor is asleep. The doubt about monopoly diagrams isn't going to resolve itself.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <!-- ─────────────────────────── ONE SUBSCRIPTION ─────────────────────────── -->
+  <section class="section one-sub">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">The answer<span class="dot"></span>One subscription</span>
+        <h2 class="h-section">
+          One subscription. The <em class="italic">complete</em> IB Economics and IB Business Management curriculum.
+        </h2>
+        <p class="lead">
+          No more piecing together five tutors, three textbooks and a YouTube
+          playlist. Gradd is the whole course, taught and marked to IBO
+          standards, in one place.
+        </p>
+      </div>
+      <div class="one-sub-grid">
+        <div class="os-card">
+          <div class="num">01 / Lessons</div>
+          <h3>Every topic from the official 2022+ syllabus.</h3>
+          <p>Micro, macro, global, development for Econ. Business strategy, marketing, finance &amp; ops for BM. HL and SL extensions, taught with the level of depth IB actually expects.</p>
+        </div>
+        <div class="os-card">
+          <div class="num">02 / Practice</div>
+          <h3>Every paper format. Marked the way IB marks them.</h3>
+          <p>Paper 1, 2, 3 question banks. IBO command terms. Diagram marking. Generated explanations against the official mark schemes — not generic AI hand‑waving.</p>
+        </div>
+        <div class="os-card">
+          <div class="num">03 / Tutor</div>
+          <h3>Mia, the tutor on call.</h3>
+          <p>Ask anything, any time. Drawing diagrams, working past papers, deciphering a question that makes no sense — Mia is fluent in the curriculum and in you.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── SUBJECTS ─────────────────────────── -->
+  <section class="section" id="curriculum">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Coverage<span class="dot"></span>HL + SL</span>
+        <h2 class="h-section">
+          IB Economics and IB Business Management — <em class="italic" style="font-style:italic;color:var(--rust)">fully covered.</em>
+        </h2>
+        <p class="lead">
+          Both subjects taught at HL and SL, with the depth the IBO command terms actually require.
+        </p>
+      </div>
+
+      <div class="subjects-grid">
+        <article class="subj">
+          <div class="subj-hd">
+            <h3>IB Economics</h3>
+            <span class="code">HL · SL · 2022 syllabus</span>
+          </div>
+          <div class="subj-body">
+            <div class="subj-row"><div class="key">Unit 1</div><div class="val">Introduction — scarcity, choice and economic systems.</div></div>
+            <div class="subj-row"><div class="key">Unit 2</div><div class="val">Microeconomics — demand, supply, elasticities, market failure, intervention.</div></div>
+            <div class="subj-row"><div class="key">Unit 3</div><div class="val">Macroeconomics — AD/AS, unemployment, inflation, fiscal &amp; monetary policy.</div></div>
+            <div class="subj-row"><div class="key">Unit 4</div><div class="val">Global economy — trade, exchange rates, balance of payments, integration.</div></div>
+            <div class="subj-row"><div class="key">HL only</div><div class="val">Productive/allocative efficiency, monopoly diagrams, sustainable development quant.</div></div>
+            <div class="subj-row"><div class="key">Papers</div><div class="val">P1 essays · P2 data response · P3 quantitative (HL) · exam technique.</div></div>
+          </div>
+          <div class="subj-foot">
+            <div class="price">€44<span style="font-size:0.7em">.99</span> <span class="small">/ month</span></div>
+            <a class="btn btn-primary btn-sm" href="#pricing">Get started <span class="arrow">→</span></a>
+          </div>
+        </article>
+
+        <article class="subj">
+          <div class="subj-hd">
+            <h3>IB Business Management</h3>
+            <span class="code">HL · SL · 2022 syllabus</span>
+          </div>
+          <div class="subj-body">
+            <div class="subj-row"><div class="key">Unit 1</div><div class="val">Business organisation &amp; environment — stakeholders, growth, evolution.</div></div>
+            <div class="subj-row"><div class="key">Unit 2</div><div class="val">Human resource management — leadership, motivation, organisational culture.</div></div>
+            <div class="subj-row"><div class="key">Unit 3</div><div class="val">Finance &amp; accounts — sources of finance, ratios, investment appraisal.</div></div>
+            <div class="subj-row"><div class="key">Unit 4</div><div class="val">Marketing — research, the 7Ps, branding, e‑commerce, international marketing.</div></div>
+            <div class="subj-row"><div class="key">Unit 5</div><div class="val">Operations — production, quality, R&amp;D, crisis &amp; contingency planning.</div></div>
+            <div class="subj-row"><div class="key">Papers</div><div class="val">P1 case study · P2 quantitative · P3 social enterprise (HL) · exam technique.</div></div>
+          </div>
+          <div class="subj-foot">
+            <div class="price">€44<span style="font-size:0.7em">.99</span> <span class="small">/ month</span></div>
+            <a class="btn btn-primary btn-sm" href="#pricing">Get started <span class="arrow">→</span></a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── EXAM READY BAND ─────────────────────────── -->
+  <section class="section band-dark">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow" style="color:color-mix(in oklab,var(--forest-ink) 60%,transparent)">Why Gradd<span class="dot"></span>Built for outcomes</span>
+        <h2 class="h-section">
+          Start at zero. Finish <em class="italic">exam‑ready.</em>
+        </h2>
+        <p class="lead">
+          Whether you're starting Year 1 in September or cramming the week
+          before May exams, Gradd meets you where you are and pushes you to a 7.
+        </p>
+      </div>
+      <div class="pillars">
+        <div class="pillar">
+          <div class="num">01</div>
+          <h3>From day one</h3>
+          <p>Onboarding diagnoses what you already know and skips you ahead. No grinding through definitions you already have.</p>
+        </div>
+        <div class="pillar">
+          <div class="num">02</div>
+          <h3>On demand</h3>
+          <p>Lessons, practice, marking and explanation — whenever you have ten minutes between calculus and football.</p>
+        </div>
+        <div class="pillar">
+          <div class="num">03</div>
+          <h3>Until May 2026</h3>
+          <p>Built around the real exam timetable. Pacing, mock cycles and revision drills planned backwards from your paper dates.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── DIAGRAMS ─────────────────────────── -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Feature<span class="dot"></span>Diagram marking</span>
+        <h2 class="h-section">
+          IBO‑standard diagrams. Drawn inline. <em class="italic" style="color:var(--rust)">Marked instantly.</em>
+        </h2>
+        <p class="lead">
+          The thing examiners actually grade you on — and the one thing other
+          AI tutors get wrong. Mia draws to IBO conventions, then marks against the official criteria.
+        </p>
+      </div>
+      <div class="diag-demo">
+        <div class="diag-canvas">
+          <div class="diag-canvas-hd"><span>Student attempt · positive externality</span><span>2.4 — market failure</span></div>
+          <svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg" style="color: var(--ink); width:100%; height:auto">
+            <defs>
+              <pattern id="hatch2" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+                <line x1="0" y1="0" x2="0" y2="6" stroke="#B14624" stroke-width="1.2" opacity="0.35"/>
+              </pattern>
+            </defs>
+            <line x1="50" y1="20" x2="50" y2="190" stroke="currentColor" stroke-width="1.4"/>
+            <line x1="50" y1="190" x2="330" y2="190" stroke="currentColor" stroke-width="1.4"/>
+            <text x="42" y="20" font-family="Geist Mono" font-size="10" text-anchor="end">P</text>
+            <text x="332" y="200" font-family="Geist Mono" font-size="10">Q</text>
+            <!-- S -->
+            <line x1="70" y1="170" x2="320" y2="40" stroke="currentColor" stroke-width="1.8"/>
+            <text x="324" y="40" font-family="Geist Mono" font-size="10">MSC = MPC</text>
+            <!-- D = MPB -->
+            <line x1="70" y1="40" x2="320" y2="170" stroke="currentColor" stroke-width="1.8" opacity="0.85"/>
+            <text x="324" y="170" font-family="Geist Mono" font-size="10">MPB</text>
+            <!-- MSB -->
+            <line x1="120" y1="40" x2="330" y2="120" stroke="#B14624" stroke-width="1.8"/>
+            <text x="118" y="36" font-family="Geist Mono" font-size="10" fill="#B14624">MSB</text>
+            <!-- welfare gain triangle -->
+            <polygon points="195,105 240,80 240,135" fill="url(#hatch2)" stroke="#B14624" stroke-width="1" stroke-dasharray="2 3"/>
+            <text x="222" y="118" font-family="Instrument Serif" font-style="italic" font-size="12" fill="#B14624">welfare gain</text>
+            <!-- Q markers -->
+            <line x1="195" y1="190" x2="195" y2="105" stroke="currentColor" stroke-dasharray="2 3" opacity="0.6"/>
+            <line x1="240" y1="190" x2="240" y2="80" stroke="currentColor" stroke-dasharray="2 3" opacity="0.6"/>
+            <text x="195" y="204" font-family="Geist Mono" font-size="10" text-anchor="middle">Q*</text>
+            <text x="240" y="204" font-family="Geist Mono" font-size="10" text-anchor="middle">Qopt</text>
+          </svg>
+        </div>
+        <div class="diag-marking">
+          <div class="diag-canvas-hd" style="margin-bottom:6px;"><span>Mia · marking</span><span>IBO criteria</span></div>
+          <div class="criterion">
+            <div class="tick">✓</div>
+            <div class="label">Axes labelled correctly (P / Q).</div>
+            <div class="points">1 / 1</div>
+          </div>
+          <div class="criterion">
+            <div class="tick">✓</div>
+            <div class="label">MSB curve plotted right of MPB.</div>
+            <div class="points">1 / 1</div>
+          </div>
+          <div class="criterion">
+            <div class="tick">✓</div>
+            <div class="label">Welfare gain triangle shaded.</div>
+            <div class="points">1 / 1</div>
+          </div>
+          <div class="criterion miss">
+            <div class="tick">!</div>
+            <div class="label">Mark Q* and Q optimum on x‑axis.</div>
+            <div class="points">0 / 1</div>
+          </div>
+          <div class="diag-score">
+            <div>
+              <div class="kicker" style="font-family:var(--mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase">Total</div>
+              <div class="big">3<span style="font-family:var(--mono);font-style:normal;font-size:18px;color:var(--ink-3)"> / 4</span></div>
+            </div>
+            <a class="btn btn-primary btn-sm" href="#pricing">Try a diagram <span class="arrow">→</span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── MEET MIA ─────────────────────────── -->
+  <section class="section" id="mia" style="background:color-mix(in oklab,var(--paper) 92%,var(--paper-2))">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Meet Mia<span class="dot"></span>The tutor</span>
+        <h2 class="h-section">
+          A tutor who has read <em class="italic">every</em> mark scheme since 2016.
+        </h2>
+        <p class="lead">
+          Mia is not ChatGPT in a costume. Mia has been trained on the IB
+          Economics and IB Business Management subject guides, official mark
+          schemes, examiners' reports, and 50+ past papers.
+        </p>
+      </div>
+      <div class="cap-list">
+        <div class="cap">
+          <div class="icn">A</div>
+          <h4>Speaks IB command terms.</h4>
+          <p>"Evaluate" is not "describe". Mia calibrates answers to AO2/AO3 the way real examiners do.</p>
+        </div>
+        <div class="cap">
+          <div class="icn">D</div>
+          <h4>Draws to IBO convention.</h4>
+          <p>Curves correctly labelled, axes correctly oriented, shading where shading earns marks.</p>
+        </div>
+        <div class="cap">
+          <div class="icn">P</div>
+          <h4>Pulls real past paper questions.</h4>
+          <p>Practice with the actual exam idiom — including the ones written to confuse you.</p>
+        </div>
+        <div class="cap">
+          <div class="icn">F</div>
+          <h4>Gives feedback that improves marks.</h4>
+          <p>Not "good attempt!" Specific: "para 2 needs an evaluative judgement to access band 3".</p>
+        </div>
+        <div class="cap">
+          <div class="icn">I</div>
+          <h4>Drills exam technique, paper by paper.</h4>
+          <p>Paper 1 essays, Paper 2 data response, Paper 3 quant — the structure examiners reward, learned by doing it.</p>
+        </div>
+        <div class="cap">
+          <div class="icn">T</div>
+          <h4>Tracks what you actually know.</h4>
+          <p>Your weak topics surface daily until they don't. No more revising what you already mastered.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── BIG NUMBERS ─────────────────────────── -->
+  <section class="section tight">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Library<span class="dot"></span>What's inside</span>
+        <h2 class="h-sub" style="margin-top:14px">Built for the full curriculum. Not just revision.</h2>
+      </div>
+      <div class="bignums">
+        <div class="bignum">
+          <div class="figure">210<span class="accent">.</span></div>
+          <div class="desc">Lessons across IB Econ &amp; BM — every topic, HL extensions included.</div>
+        </div>
+        <div class="bignum">
+          <div class="figure">136<span class="accent">.</span></div>
+          <div class="desc">Question banks aligned to P1, P2 and P3 exam formats.</div>
+        </div>
+        <div class="bignum">
+          <div class="figure">153<span class="accent">.</span></div>
+          <div class="desc">Worked exemplars at every band — 1 through 7.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── PARENTS ─────────────────────────── -->
+  <section class="section parents" id="parents">
+    <div class="wrap parents-grid">
+      <div class="parents-copy">
+        <span class="eyebrow">For parents<span class="dot"></span>Weekly digest</span>
+        <h2 class="h-section" style="margin-top:18px;">And parents see <em class="italic">everything</em> that matters.</h2>
+        <p class="lead">A real‑time dashboard plus a weekly progress email every Sunday. No more "did you study today?" guesswork — you'll know exactly where they are, what they've struggled with, and whether they're on pace for May.</p>
+        <ul class="parents-bullets">
+          <li><span><b>Live dashboard.</b> Sessions completed, weak topics flagged, days to exam, study streak.</span></li>
+          <li><span><b>Weekly digest email.</b> Delivered every Sunday — pace check, what they covered, what's next.</span></li>
+          <li><span><b>Pacing alerts.</b> We tell you the moment they fall behind — before it becomes a problem.</span></li>
+          <li><span><b>One login, multiple students.</b> Add siblings on one account, switch with a tap.</span></li>
+        </ul>
+        <a href="screens/parent.html" class="btn btn-ghost">See the parent view <span class="arrow">→</span></a>
+      </div>
+
+      <div class="parents-visual">
+        <div class="dash-preview" aria-label="Parent dashboard preview">
+          <div class="dash-preview-hd">
+            <div class="name">Louise's progress.</div>
+            <div class="meta">Week 12 · IB Econ SL</div>
+          </div>
+          <div class="dash-stats">
+            <div class="dash-stat ok"><div class="lbl">Streak</div><div class="val">3<span class="small">d</span></div></div>
+            <div class="dash-stat"><div class="lbl">Sessions</div><div class="val">5</div></div>
+            <div class="dash-stat warn"><div class="lbl">Pace</div><div class="val">1.3<span class="small">/wk</span></div></div>
+            <div class="dash-stat"><div class="lbl">Exam</div><div class="val">361<span class="small">d</span></div></div>
+          </div>
+          <div class="dash-week" aria-label="Last 7 days">
+            <div class="dash-day">S</div>
+            <div class="dash-day">M</div>
+            <div class="dash-day">T</div>
+            <div class="dash-day active">✓</div>
+            <div class="dash-day active">✓</div>
+            <div class="dash-day active">✓</div>
+            <div class="dash-day">S</div>
+          </div>
+        </div>
+
+        <div class="email-preview" aria-label="Weekly email preview">
+          <div class="email-hd">
+            <div class="from">
+              <div class="ico">g</div>
+              <div>
+                <div class="from-name">gradd.ai</div>
+                <div class="from-addr">progress@gradd.ai</div>
+              </div>
+            </div>
+            <div class="time">Sun · 19:00</div>
+          </div>
+          <div class="email-subject">Weekly progress · <em>Louise</em> · Week 12</div>
+          <div class="email-body">
+            <p>This week Louise completed <b>3 sessions</b> across Introduction to Economics — solid streak Wed → Fri.</p>
+            <p>Pace check: averaging <b>1.3 sessions/week</b> — to stay on track for May 2027, target is 3/wk.</p>
+            <p>No weak topics flagged yet. Next up: <b>Scarcity &amp; opportunity cost</b>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── WHO IT'S FOR ─────────────────────────── -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">Who it's for</span>
+        <h2 class="h-section">Who Gradd <em class="italic">is</em> for.</h2>
+      </div>
+      <div class="who-grid">
+        <div class="who-card">
+          <span class="who-tag">Aiming for a 7</span>
+          <h3>The student who's already strong, going for the edge.</h3>
+          <p>You're at a 6 and you want the predicted that gets you into LSE. Gradd is the unfair advantage that runs on your timetable, not your tutor's.</p>
+        </div>
+        <div class="who-card">
+          <span class="who-tag">Falling behind</span>
+          <h3>The student who missed three weeks and won't say it out loud.</h3>
+          <p>Catch up without anyone knowing. Mia won't sigh. Mia won't bill your parents €90 an hour. Start at the topic you fell off and rebuild.</p>
+        </div>
+        <div class="who-card">
+          <span class="who-tag">Self‑studying</span>
+          <h3>Taking the subject without a teacher.</h3>
+          <p>Online IB students, anticipated candidates, or just a school where Business isn't offered. The whole course, structured, in your pocket.</p>
+        </div>
+        <div class="who-card">
+          <span class="who-tag">Paying parent</span>
+          <h3>The parent who's done with €9,000 tutor bills.</h3>
+          <p>Same coverage. Better depth. 1/40th the price. And it scales to your other child too.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── COMPARE ─────────────────────────── -->
+  <section class="section" id="compare" style="background:var(--sage)">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="eyebrow">How it stacks up</span>
+        <h2 class="h-section">Gradd vs <em class="italic">other</em> IB tutoring options.</h2>
+      </div>
+      <div class="cmp-wrap">
+        <div class="cmp-scroll">
+        <table class="cmp">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="gradd-col">Gradd</th>
+              <th>Private tutor</th>
+              <th>Group classes</th>
+              <th>Self‑study</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Cost</td>
+              <td class="gradd-col"><span class="y">€44.99 / month</span></td>
+              <td>€60–€120 / hour</td>
+              <td>€25–€45 / hour</td>
+              <td>Free–€120 (books)</td>
+            </tr>
+            <tr>
+              <td>Full syllabus</td>
+              <td class="gradd-col"><span class="y">✓ HL &amp; SL, both subjects</span></td>
+              <td>Depends on tutor</td>
+              <td>Cohort‑paced</td>
+              <td>You decide</td>
+            </tr>
+            <tr>
+              <td>Diagram marking</td>
+              <td class="gradd-col"><span class="y">✓ Instant, IBO criteria</span></td>
+              <td>Weekly</td>
+              <td>Rare</td>
+              <td><span class="n">—</span></td>
+            </tr>
+            <tr>
+              <td>Past paper coverage</td>
+              <td class="gradd-col"><span class="y">2016 → today</span></td>
+              <td>Whatever they bring</td>
+              <td>Hand‑picked</td>
+              <td>You source it</td>
+            </tr>
+            <tr>
+              <td>Availability</td>
+              <td class="gradd-col"><span class="y">24/7</span></td>
+              <td>1–2 hours / week</td>
+              <td>Fixed schedule</td>
+              <td>Whenever</td>
+            </tr>
+            <tr>
+              <td>Tracks your progress</td>
+              <td class="gradd-col"><span class="y">✓ Adaptive</span></td>
+              <td>In their head</td>
+              <td><span class="n">—</span></td>
+              <td><span class="n">—</span></td>
+            </tr>
+            <tr>
+              <td>Honest with you</td>
+              <td class="gradd-col"><span class="y">No bedside manner to protect</span></td>
+              <td>Sometimes</td>
+              <td>Rarely individual</td>
+              <td>Brutally</td>
+            </tr>
+          </tbody>
+        </table>
+        </div>
+      </div>
+      <p class="cmp-hint" aria-hidden="true">← swipe to compare →</p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── PRICING ─────────────────────────── -->
+  <section class="section pricing-band" id="pricing">
+    <div class="wrap">
+      <div class="section-head" style="text-align:center; margin-left:auto; margin-right:auto;">
+        <span class="eyebrow" style="display:inline-block; margin: 0 auto 18px;">Pricing</span>
+        <h2 class="h-section" style="margin-left:auto;margin-right:auto;">Simple pricing. <em class="italic">Full</em> IB curriculum. Global access.</h2>
+        <p class="lead" style="margin: 22px auto 0;">Cancel anytime. 7‑day money‑back guarantee on every plan. Every subscription includes Mia — your full‑time AI tutor.</p>
+      </div>
+
+      <div class="price-grid">
+        <article class="price">
+          <span class="price-tag">Single subject</span>
+          <h3>IB Econ <span style="color:var(--ink-3); font-size:0.62em; font-family:var(--mono); font-style:normal">or</span> IB BM</h3>
+          <div class="amount"><span class="cur">€</span>44<span style="font-size:0.55em">.99</span><span class="per">/ month</span></div>
+          <p class="blurb">Pick the subject you're taking. Full course, all features, Mia on demand.</p>
+          <ul class="price-features">
+            <li><span>Full syllabus (HL + SL)</span></li>
+            <li><span>P1 / P2 / P3 question banks</span></li>
+            <li><span>Diagram marking</span></li>
+            <li><span>Unlimited Mia conversations</span></li>
+            <li><span>Adaptive revision planner</span></li>
+          </ul>
+          <a href="#" class="btn btn-ghost">Start learning <span class="arrow">→</span></a>
+        </article>
+
+        <article class="price featured">
+          <span class="price-tag">Most popular · save 17%</span>
+          <h3>Both subjects</h3>
+          <div class="amount"><span class="cur">€</span>74<span style="font-size:0.55em">.99</span><span class="per">/ month</span></div>
+          <p class="blurb">For students taking Econ and BM. One subscription. Both courses. Mia seamlessly across.</p>
+          <ul class="price-features">
+            <li><span>Everything in single‑subject, ×2</span></li>
+            <li><span>Cross‑topic synthesis (Econ ↔ BM)</span></li>
+            <li><span>Combined revision planner</span></li>
+            <li><span>Priority Mia response</span></li>
+            <li><span>Mock exam cycles for both</span></li>
+          </ul>
+          <a href="#" class="btn btn-rust">Start learning <span class="arrow">→</span></a>
+        </article>
+
+        <article class="price">
+          <span class="price-tag">Annual · save 40%</span>
+          <h3>Both subjects, annual</h3>
+          <div class="amount"><span class="cur">€</span>44<span style="font-size:0.55em">.99</span><span class="per">/ mo, billed yearly</span></div>
+          <p class="blurb">For students committing the full IB cycle. Locks in your price through May exams.</p>
+          <ul class="price-features">
+            <li><span>Everything in Both subjects</span></li>
+            <li><span>Locked at €44.99 / mo for 12 months</span></li>
+            <li><span>Predicted‑grade tracker</span></li>
+            <li><span>University application essay help</span></li>
+            <li><span>7‑day money‑back guarantee</span></li>
+          </ul>
+          <a href="#" class="btn btn-ghost">Start learning <span class="arrow">→</span></a>
+        </article>
+      </div>
+
+      <p style="text-align:center; margin-top:32px; font-size:13px; color:var(--ink-3);">
+        Schools and tutoring centres — <a href="#" style="text-decoration:underline; text-decoration-thickness:1px; text-underline-offset:3px; color:var(--ink-2)">we have a plan for you</a>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── FAQ ─────────────────────────── -->
+  <section class="section" id="faq">
+    <div class="wrap" style="max-width:880px;">
+      <div class="section-head">
+        <span class="eyebrow">FAQ</span>
+        <h2 class="h-section">Frequently asked questions.</h2>
+      </div>
+      <div class="faq-list">
+        <div class="faq-item" data-open="1">
+          <div class="faq-q">Is Gradd actually built for the IB syllabus — or is it ChatGPT with a wrapper?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">Built specifically for IB. Mia is trained on the official IB Economics and Business Management subject guides (2022+), the marking criteria, examiners' reports, and past papers back to 2016. Generic LLMs do not pass IB. They hallucinate command terms, draw wrong diagrams, and ignore mark schemes.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Can Gradd really replace a private tutor?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">For 90% of what a private tutor does — explanation, practice, marking, accountability — yes. For pastoral and human encouragement, no. Most of our students use Gradd as their primary tutor and keep their school teacher for the human side.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">My exam is in three weeks. Is it worth starting now?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">Yes. Gradd's diagnostic skips you ahead to weak topics in your first hour. From there you're doing high‑signal practice, not re‑reading textbooks. We see real grade lifts in 14 days.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What about Maths, English, Sciences?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">Not yet — and on purpose. Generic IB tutors are bad because they cover everything shallowly. We picked two subjects, built them properly, and intend to stay that way until each is the best in the world.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">How does diagram marking actually work?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">You draw a diagram in the canvas (or upload a photo of one you drew on paper). Mia checks against the IBO mark scheme criteria for that question type: axes, curve shape, equilibrium markers, shading. You get a numeric mark and the specific feedback that gets you the missing marks next time.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">What if Gradd.ai isn't right for me?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">Every plan comes with a 7‑day money‑back guarantee. If you decide it's not for you within the first week, email us and we refund you in full — no forms, no friction.</div>
+        </div>
+        <div class="faq-item">
+          <div class="faq-q">Can my school sign up a whole cohort?
+            <span class="toggle">+</span>
+          </div>
+          <div class="faq-a">We offer school plans with teacher dashboards. Email schools@gradd.ai and we'll get you a quote.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── FINAL CTA ─────────────────────────── -->
+  <section class="final-cta">
+    <div class="wrap final-cta-inner">
+      <div class="tag-pill" style="margin-bottom:30px; color:color-mix(in oklab,var(--forest-ink) 80%,transparent); border-color:color-mix(in oklab,var(--forest-ink) 30%,transparent);">
+        <span class="dot"></span> 7‑day money‑back guarantee
+      </div>
+      <h2 class="h-display">Pass IB Econ. Pass IB Business. <em class="italic">Period.</em></h2>
+      <p class="lead">Start tonight. Be ahead of your class by next Monday.</p>
+      <div class="hero-cta">
+        <a href="#" class="btn btn-rust">Start learning with Mia <span class="arrow">→</span></a>
+        <a href="#pricing" class="btn btn-ghost">See pricing</a>
+      </div>
+      <div class="small">From €44.99 / month · cancel anytime · 7‑day money back</div>
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── FOOTER ─────────────────────────── -->
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="assets/gradd-logo.png" alt="gradd.ai" style="height:22px; width:auto;" />
+        <span style="font-size:12px; color:var(--ink-3); margin-left:14px;">© 2026 · The AI tutor for IB Econ &amp; BM</span>
+      </div>
+      <div class="footer-links">
+        <a href="#">Terms</a>
+        <a href="#">Privacy</a>
+        <a href="#">Schools</a>
+        <a href="mailto:hello@gradd.ai">Contact</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Tweaks mount -->
+  <div id="tweaks-root"></div>
+
+  <!-- Back-to-top -->
+  <button class="to-top" id="to-top" aria-label="Back to top">
+    <svg viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M8 13V3M3.5 7.5L8 3l4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
+
+  <!-- Vanilla FAQ + smooth nav -->
+  <script>
+    // FAQ accordion
+    document.querySelectorAll('.faq-item').forEach(item => {
+      const q = item.querySelector('.faq-q');
+      q.addEventListener('click', () => {
+        const open = item.getAttribute('data-open') === '1';
+        item.setAttribute('data-open', open ? '0' : '1');
+      });
+    });
+    // Smooth scroll for in-page links
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', (e) => {
+        const id = a.getAttribute('href');
+        if (id.length > 1) {
+          const el = document.querySelector(id);
+          if (el) { e.preventDefault(); window.scrollTo({ top: el.offsetTop - 60, behavior: 'smooth' }); }
+        }
+      });
+    });
+
+    // Back-to-top button
+    const toTop = document.getElementById('to-top');
+    if (toTop) {
+      const onScroll = () => {
+        if (window.scrollY > 600) toTop.classList.add('visible');
+        else toTop.classList.remove('visible');
+      };
+      window.addEventListener('scroll', onScroll, { passive: true });
+      onScroll();
+      toTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  </script>
+
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" data-presets="react">
+    // Gradd Tweaks — palette / hero / density
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "palette": "paper",
+      "hero": "a",
+      "density": "tight",
+      "showTrust": true
+    }/*EDITMODE-END*/;
+
+    function GraddTweaks() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      React.useEffect(() => {
+        const html = document.documentElement;
+        html.setAttribute('data-palette', t.palette);
+        html.setAttribute('data-hero', t.hero);
+        html.setAttribute('data-density', t.density);
+        const trust = document.querySelector('.trust');
+        if (trust) trust.style.display = t.showTrust ? '' : 'none';
+      }, [t.palette, t.hero, t.density, t.showTrust]);
+
+      React.useEffect(() => {
+        const h1 = document.querySelector('.hero-h1');
+        if (!h1) return;
+        const copy = {
+          a: 'Walk into your IB exam <span class="em underline">knowing</span> exactly what to do.',
+          b: 'Pass IB Econ. Pass IB Business. <span class="em italic">Period.</span>',
+          c: 'The whole IB course. One tutor. <span class="em underline">€44</span> a month.',
+        };
+        h1.innerHTML = copy[t.hero] || copy.a;
+      }, [t.hero]);
+
+      return (
+        <TweaksPanel title="Gradd · Tweaks">
+          <TweakSection label="Hero variant">
+            <TweakRadio label="Headline" value={t.hero}
+              options={[
+                { value: 'a', label: 'Outcome' },
+                { value: 'b', label: 'Bold' },
+                { value: 'c', label: 'Value' },
+              ]}
+              onChange={(v) => setTweak('hero', v)} />
+          </TweakSection>
+
+          <TweakSection label="Palette">
+            <TweakSelect label="Theme" value={t.palette}
+              options={[
+                { value: 'paper', label: 'Cream paper · default' },
+                { value: 'forest', label: 'Deep forest · dark' },
+                { value: 'oxblood', label: 'Oxblood · alt accent' },
+              ]}
+              onChange={(v) => setTweak('palette', v)} />
+          </TweakSection>
+
+          <TweakSection label="Density">
+            <TweakRadio label="Spacing" value={t.density}
+              options={[
+                { value: 'tight', label: 'Tight' },
+                { value: 'standard', label: 'Standard' },
+                { value: 'airy', label: 'Airy' },
+              ]}
+              onChange={(v) => setTweak('density', v)} />
+          </TweakSection>
+
+          <TweakSection label="Sections">
+            <TweakToggle label="Trust bar" value={t.showTrust}
+              onChange={(v) => setTweak('showTrust', v)} />
+          </TweakSection>
+        </TweaksPanel>
+      );
+    }
+
+    const __root = ReactDOM.createRoot(document.getElementById('tweaks-root'));
+    __root.render(<><GraddTweaks /><TweaksLauncher /></>);
+
+    function TweaksLauncher() {
+      const [shown, setShown] = React.useState(true);
+      React.useEffect(() => {
+        const onMsg = (e) => {
+          if (e?.data?.type === '__activate_edit_mode') setShown(false);
+          else if (e?.data?.type === '__deactivate_edit_mode') setShown(true);
+        };
+        window.addEventListener('message', onMsg);
+        return () => window.removeEventListener('message', onMsg);
+      }, []);
+      if (!shown) return null;
+      return (
+        <button onClick={() => window.postMessage({type:'__activate_edit_mode'},'*')}
+          style={{position:'fixed', left:'16px', bottom:'16px', zIndex:9999,
+                  appearance:'none', border:'1px solid color-mix(in oklab, var(--ink) 14%, transparent)',
+                  background:'color-mix(in oklab, var(--paper) 78%, transparent)',
+                  backdropFilter:'blur(14px) saturate(160%)',
+                  WebkitBackdropFilter:'blur(14px) saturate(160%)',
+                  color:'var(--ink)', font:'inherit', fontSize:'12px', fontWeight:500,
+                  padding:'9px 14px', borderRadius:'999px', cursor:'pointer',
+                  display:'flex', alignItems:'center', gap:'8px',
+                  boxShadow:'0 8px 24px rgba(0,0,0,0.08)'}}>
+          <span style={{width:'8px', height:'8px', borderRadius:'50%',
+                  background:'var(--rust)'}}></span>
+          Design controls
+        </button>
+      );
+    }
+  </script>
+</body>
+</html>
