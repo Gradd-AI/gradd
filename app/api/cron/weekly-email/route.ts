@@ -1,6 +1,8 @@
 // app/api/cron/weekly-email/route.ts
 // Runs every Monday at 07:00 UTC via Vercel cron.
 // Sends personalised weekly progress email to all active subscribers.
+// Branches by subject: IB subscribers get the IB template (Mia, gradd.ai);
+// LC subscribers get the LC template (Aoife, gradd.ie).
 // Early mode (<4 weeks): counts only.
 // Established mode (4+ weeks): named lessons, weak areas, trajectory coaching.
 
@@ -8,15 +10,25 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { Resend } from 'resend'
 import { generateWeeklyProgressEmail, WeeklyEmailData } from '@/lib/email/weekly-progress-template'
+import { generateIBWeeklyProgressEmail, IBWeeklyEmailData, IBWeeklySubject } from '@/lib/email/ib-weekly-progress-template'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const EXAM_DATE = new Date('2026-06-08')
+const IB_SUBJECTS: ReadonlySet<string> = new Set(['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'])
+
+const LC_EXAM_DATE = new Date('2026-06-08')
+const IB_EXAM_DATE = new Date('2027-05-12')
 const WEEKS_FOR_DETAILED_EMAIL = 4
 
 function daysToExam(): number {
   const now = new Date()
-  const diff = EXAM_DATE.getTime() - now.getTime()
+  const diff = LC_EXAM_DATE.getTime() - now.getTime()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
+function daysToExamIB(): number {
+  const now = new Date()
+  const diff = IB_EXAM_DATE.getTime() - now.getTime()
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
 }
 
@@ -62,6 +74,7 @@ export async function GET(request: Request) {
       full_name,
       student_name,
       created_at,
+      subject,
       student_progress (
         current_lesson_name,
         current_unit_name,
@@ -154,31 +167,67 @@ export async function GET(request: Request) {
         activeWeakAreas = weakRows ?? []
       }
 
-      // ── Build email data ─────────────────────────────────────────────────
-      const emailData: WeeklyEmailData = {
-        studentName: subscriber.student_name,
-        parentName: subscriber.full_name,
-        email: subscriber.email,
-        sessionsThisWeek: sessionsThisWeek ?? 0,
-        sessionsLastWeek: sessionsLastWeek ?? 0,
-        studyStreakDays,
-        totalSessionCount: progress.total_session_count,
-        currentLessonName: progress.current_lesson_name,
-        currentUnitName: progress.current_unit_name,
-        lessonsCompletedThisWeek,
-        activeWeakAreas,
-        weeksActive: weeks,
-        daysToExam: examDays,
+      // ── Branch by subject: IB → IB template, LC → LC template ──────────
+      const subscriberSubject: string = subscriber.subject ?? 'LC_BUSINESS'
+
+      if (IB_SUBJECTS.has(subscriberSubject)) {
+        // ── IB subscriber ────────────────────────────────────────────────────
+        const ibEmailData: IBWeeklyEmailData = {
+          studentName: subscriber.student_name,
+          parentName: subscriber.full_name,
+          email: subscriber.email,
+          subject: subscriberSubject as IBWeeklySubject,
+          sessionsThisWeek: sessionsThisWeek ?? 0,
+          sessionsLastWeek: sessionsLastWeek ?? 0,
+          studyStreakDays,
+          totalSessionCount: progress.total_session_count,
+          currentLessonName: progress.current_lesson_name,
+          currentUnitName: progress.current_unit_name,
+          lessonsCompletedThisWeek,
+          activeWeakAreas,
+          weeksActive: weeks,
+          daysToExam: daysToExamIB(),
+        }
+
+        const html = generateIBWeeklyProgressEmail(ibEmailData)
+
+        await resend.emails.send({
+          from: 'Mia at Gradd <mia@gradd.ie>',
+          to: subscriber.email,
+          subject: `${subscriber.student_name}'s weekly progress with Mia`,
+          html,
+        })
+      } else if (subscriberSubject === 'LC_BUSINESS') {
+        // ── LC subscriber ────────────────────────────────────────────────────
+        const emailData: WeeklyEmailData = {
+          studentName: subscriber.student_name,
+          parentName: subscriber.full_name,
+          email: subscriber.email,
+          sessionsThisWeek: sessionsThisWeek ?? 0,
+          sessionsLastWeek: sessionsLastWeek ?? 0,
+          studyStreakDays,
+          totalSessionCount: progress.total_session_count,
+          currentLessonName: progress.current_lesson_name,
+          currentUnitName: progress.current_unit_name,
+          lessonsCompletedThisWeek,
+          activeWeakAreas,
+          weeksActive: weeks,
+          daysToExam: examDays,
+        }
+
+        const html = generateWeeklyProgressEmail(emailData)
+
+        await resend.emails.send({
+          from: 'Gradd <hello@gradd.ie>',
+          to: subscriber.email,
+          subject: `${subscriber.student_name}'s weekly progress with Aoife`,
+          html,
+        })
+      } else {
+        console.warn(`[weekly-email] Unknown subject "${subscriberSubject}" for ${subscriber.email} — skipping`)
+        results.skipped++
+        continue
       }
-
-      const html = generateWeeklyProgressEmail(emailData)
-
-      await resend.emails.send({
-        from: 'Gradd <hello@gradd.ie>',
-        to: subscriber.email,
-        subject: `${subscriber.student_name}'s weekly progress with Aoife`,
-        html,
-      })
 
       results.sent++
     } catch (err) {

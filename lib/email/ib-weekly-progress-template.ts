@@ -1,13 +1,17 @@
-// lib/email/weekly-progress-template.ts
-// Weekly progress email for Gradd students.
-// Two modes:
-//   - Early (< 4 weeks active): summary counts only
-//   - Established (4+ weeks active): named lessons, named weak areas, trajectory coaching
+// lib/email/ib-weekly-progress-template.ts
+// Weekly progress email for IB subscribers (IB Economics, IB Business Management, IB Bundle).
+// Mirrors the LC weekly-progress-template structure and data shape — tutor is Mia, branding is
+// gradd.ai. Same two modes:
+//   Early (< 4 weeks active): summary counts only.
+//   Established (4+ weeks active): named lessons, named weak areas, trajectory coaching.
 
-export interface WeeklyEmailData {
+export type IBWeeklySubject = 'IB_ECONOMICS' | 'IB_BUSINESS' | 'IB_BUNDLE'
+
+export interface IBWeeklyEmailData {
   studentName: string
   parentName: string
   email: string
+  subject: IBWeeklySubject
   // Activity
   sessionsThisWeek: number
   sessionsLastWeek: number
@@ -23,6 +27,16 @@ export interface WeeklyEmailData {
   weeksActive: number
   daysToExam: number
 }
+
+// ─── Subject copy ─────────────────────────────────────────────────────────────
+
+const SUBJECT_LABEL: Record<IBWeeklySubject, string> = {
+  IB_ECONOMICS: 'IB Economics',
+  IB_BUSINESS:  'IB Business Management',
+  IB_BUNDLE:    'IB Economics & Business Management',
+}
+
+// ─── Trajectory helpers ───────────────────────────────────────────────────────
 
 type Trajectory = 'improving' | 'declining' | 'consistent' | 'new'
 
@@ -40,17 +54,19 @@ function trajectoryCoachingLine(
 ): string {
   switch (trajectory) {
     case 'improving':
-      return `${studentName} is building real momentum — more sessions this week than last. That consistency is exactly what separates strong results from average ones.`
+      return `${studentName} is building real momentum — more sessions this week than last. That consistency is exactly what separates strong IB results from average ones.`
     case 'declining':
-      return `This week was a bit quieter than last. Even one focused session with Aoife this week will keep the curve moving in the right direction.`
+      return `This week was a bit quieter than last. Even one focused session with Mia this week will keep the curve moving in the right direction.`
     case 'consistent':
-      return `Steady and consistent — ${studentName} is keeping a reliable pace. Consistency over time is what the LC rewards.`
+      return `Steady and consistent — ${studentName} is keeping a reliable pace. Consistency over time is what the IB exam rewards.`
     case 'new':
       return sessionsThisWeek > 0
-        ? `${studentName} is off to a great start. Early momentum like this sets the tone for the whole year.`
-        : `No sessions yet this week — remind ${studentName} that even a 20-minute session with Aoife keeps the knowledge fresh.`
+        ? `${studentName} is off to a great start. Early momentum like this sets the tone for the whole programme.`
+        : `No sessions yet this week — remind ${studentName} that even a 25-minute session with Mia keeps the knowledge fresh.`
   }
 }
+
+// ─── List formatters ──────────────────────────────────────────────────────────
 
 function formatLessonList(lessons: { lesson_code: string; lesson_name: string }[]): string {
   if (lessons.length === 0) return ''
@@ -62,23 +78,29 @@ function formatLessonList(lessons: { lesson_code: string; lesson_name: string }[
 function formatWeakAreaList(areas: { concept_slug: string; error_description: string }[]): string {
   if (areas.length === 0) return ''
   return areas
-    .slice(0, 3) // cap at 3 — don't overwhelm
+    .slice(0, 3)
     .map(a => `<li style="margin:0 0 6px;font-size:15px;color:#4A4A4A;">${a.error_description}</li>`)
     .join('\n')
 }
 
-export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
+// ─── Template builder ─────────────────────────────────────────────────────────
+
+export function generateIBWeeklyProgressEmail(data: IBWeeklyEmailData): string {
   const studentName = data.studentName || 'your student'
   const parentName = data.parentName || 'there'
 
   const trajectory = getTrajectory(data.sessionsThisWeek, data.sessionsLastWeek)
   const isEstablished = data.weeksActive >= 4
   const coachingLine = trajectoryCoachingLine(trajectory, studentName, data.sessionsThisWeek)
+  const subjectLabel = SUBJECT_LABEL[data.subject]
 
   const hasLessonsThisWeek = data.lessonsCompletedThisWeek.length > 0
   const hasWeakAreas = data.activeWeakAreas.length > 0
 
-  // ── Lessons completed block (established students only) ──────────────────
+  const sessionsLabel = data.sessionsThisWeek === 1 ? 'session' : 'sessions'
+  const streakLabel = data.studyStreakDays === 1 ? 'day' : 'days'
+
+  // ── Lessons completed block (established students only) ─────────────────────
   const lessonsBlock = isEstablished && hasLessonsThisWeek
     ? `
       <tr>
@@ -93,7 +115,7 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
       </tr>`
     : ''
 
-  // ── Weak areas block (established students only, max 3) ──────────────────
+  // ── Weak areas block (established students only, max 3) ─────────────────────
   const weakAreasBlock = isEstablished && hasWeakAreas
     ? `
       <tr>
@@ -105,15 +127,11 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
             ${formatWeakAreaList(data.activeWeakAreas)}
           </ul>
           <p style="margin:10px 0 0;font-size:13px;color:#ABABAB;">
-            Aoife will revisit these automatically in upcoming sessions.
+            Mia will revisit these automatically in upcoming sessions.
           </p>
         </td>
       </tr>`
     : ''
-
-  // ── Stats row ─────────────────────────────────────────────────────────────
-  const sessionsLabel = data.sessionsThisWeek === 1 ? 'session' : 'sessions'
-  const streakLabel = data.studyStreakDays === 1 ? 'day' : 'days'
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -130,11 +148,10 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
         <table width="600" cellpadding="0" cellspacing="0" border="0"
           style="max-width:600px;width:100%;background-color:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
 
-          <!-- Header -->
+          <!-- Header — text logo matching ib-welcome-template.ts -->
           <tr>
-            <td style="padding:0;line-height:0;font-size:0;">
-              <img src="https://gradd.ie/gradd-email-header.svg" alt="Gradd" width="600" height="72"
-                style="display:block;border:0;width:100%;max-width:600px;" />
+            <td style="padding:24px;text-align:center;">
+              <span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;color:#1b3d2f;letter-spacing:-0.3px;">Gradd</span><span style="font-family:Arial,Helvetica,sans-serif;font-size:26px;font-weight:700;color:#d97706;">.ai</span>
             </td>
           </tr>
 
@@ -145,7 +162,10 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
                 Weekly update — ${studentName}
               </p>
               <p style="margin:0;font-size:15px;color:#4A4A4A;line-height:1.6;">
-                Hi ${parentName}, here's how ${studentName} got on with Aoife this week.
+                Hi ${parentName}, here's how ${studentName} got on with Mia this week.
+              </p>
+              <p style="margin:8px 0 0;font-size:13px;color:#ABABAB;">
+                ${subjectLabel}
               </p>
             </td>
           </tr>
@@ -208,7 +228,7 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
                 <tr>
                   <td align="center">
-                    <a href="https://gradd.ie/dashboard"
+                    <a href="https://gradd.ai/dashboard"
                       style="display:inline-block;background-color:#1B3D2F;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;letter-spacing:0.2px;">
                       View full dashboard →
                     </a>
@@ -223,11 +243,11 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
             <td style="padding:0 40px 36px;">
               <hr style="border:none;border-top:1px solid #E8E8E0;margin:0 0 24px;" />
               <p style="margin:0;font-size:12px;color:#ABABAB;line-height:1.6;">
-                Gradd · AI-powered LC Business tutor ·
-                <a href="https://gradd.ie" style="color:#2D6A4F;text-decoration:none;">gradd.ie</a>
+                Gradd · AI tutor for IB Economics &amp; Business Management ·
+                <a href="https://gradd.ai" style="color:#2D6A4F;text-decoration:none;">gradd.ai</a>
               </p>
               <p style="margin:8px 0 0;font-size:12px;color:#CBCBCB;">
-                © 2026 Gradd. Irish-built, Irish-focused.
+                © 2026 Gradd. Built for IB students, wherever you are.
               </p>
             </td>
           </tr>
