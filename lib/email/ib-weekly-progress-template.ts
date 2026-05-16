@@ -71,7 +71,7 @@ function trajectoryCoachingLine(
 function formatLessonList(lessons: { lesson_code: string; lesson_name: string }[]): string {
   if (lessons.length === 0) return ''
   return lessons
-    .map(l => `<li style="margin:0 0 6px;font-size:15px;color:#4A4A4A;">${l.lesson_name} <span style="color:#ABABAB;font-size:13px;">(${l.lesson_code})</span></li>`)
+    .map(l => `<li style="margin:0 0 6px;font-size:15px;color:#4A4A4A;">${l.lesson_name}</li>`)
     .join('\n')
 }
 
