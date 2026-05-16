@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
+import { LESSON_COUNTS } from '@/lib/lesson-counts';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,7 +94,12 @@ export default async function DashboardPage() {
         : (profile.ib_economics_level ?? profile.exam_level))
     : (profile.exam_level === 'higher' ? 'Higher Level' : 'Ordinary Level');
 
-  const totalLessons = activeSubject === 'IB_ECONOMICS' || activeSubject === 'IB_BUSINESS' ? 150 : 279;
+  const ibLessonCountKey = `${activeSubject}_${profile.exam_level}`;
+  const ibLessonCount = LESSON_COUNTS[ibLessonCountKey];
+  if (isIBStudent && ibLessonCount === undefined) {
+    console.warn(`Dashboard: no lesson count for key "${ibLessonCountKey}" — check profiles.exam_level`);
+  }
+  const totalLessons = isIBStudent ? (ibLessonCount ?? 279) : LESSON_COUNTS.LC_BUSINESS;
 
   const units = activeSubject === 'IB_ECONOMICS' ? IB_ECON_UNITS
     : activeSubject === 'IB_BUSINESS' ? IB_BM_UNITS

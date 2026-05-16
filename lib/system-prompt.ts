@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { LESSON_COUNTS } from './lesson-counts';
 
 interface WeakArea {
   lesson_code: string;
@@ -218,10 +219,15 @@ export async function buildIBBusinessPrompt(
 
 export function deriveCoursePosition(
   lessonOrder: number,
-  examLevel: string
+  subject: string,
+  examLevel: string,
 ): string {
-  const total = examLevel === 'HL' ? 210 : 144;
-  const pct = lessonOrder / total;
+  const key = `${subject}_${examLevel}`;
+  const total = LESSON_COUNTS[key];
+  if (total === undefined) {
+    console.warn(`deriveCoursePosition: unknown key "${key}" — check subject and examLevel values`);
+  }
+  const pct = lessonOrder / (total ?? 210);
   if (pct < 0.33) return 'beginning';
   if (pct < 0.67) return 'mid-programme';
   return 'exam-prep';

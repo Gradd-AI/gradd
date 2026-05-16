@@ -128,7 +128,7 @@ export async function POST(request: Request) {
         SESSION_TYPE:                 sessionType,
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
-        COURSE_POSITION:              deriveCoursePosition(lessonOrder, profile.exam_level),
+        COURSE_POSITION:              deriveCoursePosition(lessonOrder, 'IB_ECONOMICS', profile.ib_economics_level ?? profile.exam_level),
       });
     } else if (subject === 'IB_BUSINESS') {
       const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_BM_', '') ?? '1');
@@ -150,7 +150,7 @@ export async function POST(request: Request) {
         SESSION_TYPE:                 sessionType,
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
-        COURSE_POSITION:              deriveCoursePosition(lessonOrder, profile.exam_level),
+        COURSE_POSITION:              deriveCoursePosition(lessonOrder, 'IB_BUSINESS', profile.ib_business_level ?? profile.exam_level),
       });
     } else {
       // LC Business — existing logic unchanged
