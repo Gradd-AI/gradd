@@ -47,7 +47,7 @@ const ESTABLISHED_DATA: IBWeeklyEmailData = {
 }
 
 export async function GET(req: NextRequest) {
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.VERCEL_ENV === 'production') {
     return new Response('Not found', { status: 404 })
   }
 
