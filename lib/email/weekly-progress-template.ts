@@ -68,9 +68,12 @@ function formatWeakAreaList(areas: { concept_slug: string; error_description: st
 }
 
 export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
+  const studentName = data.studentName || 'your student'
+  const parentName = data.parentName || 'there'
+
   const trajectory = getTrajectory(data.sessionsThisWeek, data.sessionsLastWeek)
   const isEstablished = data.weeksActive >= 4
-  const coachingLine = trajectoryCoachingLine(trajectory, data.studentName, data.sessionsThisWeek)
+  const coachingLine = trajectoryCoachingLine(trajectory, studentName, data.sessionsThisWeek)
 
   const hasLessonsThisWeek = data.lessonsCompletedThisWeek.length > 0
   const hasWeakAreas = data.activeWeakAreas.length > 0
@@ -117,7 +120,7 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Weekly progress — ${data.studentName}</title>
+  <title>Weekly progress — ${studentName}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#F5F5F0;font-family:Arial,Helvetica,sans-serif;">
 
@@ -139,10 +142,10 @@ export function generateWeeklyProgressEmail(data: WeeklyEmailData): string {
           <tr>
             <td style="padding:36px 40px 24px;">
               <p style="margin:0 0 8px;font-size:18px;font-weight:700;color:#1B3D2F;">
-                Weekly update — ${data.studentName}
+                Weekly update — ${studentName}
               </p>
               <p style="margin:0;font-size:15px;color:#4A4A4A;line-height:1.6;">
-                Hi ${data.parentName}, here's how ${data.studentName} got on with Aoife this week.
+                Hi ${parentName}, here's how ${studentName} got on with Aoife this week.
               </p>
             </td>
           </tr>
