@@ -11,7 +11,7 @@ import { NextRequest } from 'next/server'
 import { generateIBWeeklyProgressEmail, IBWeeklyEmailData } from '@/lib/email/ib-weekly-progress-template'
 
 const SAMPLE_BASE: Omit<IBWeeklyEmailData, 'weeksActive' | 'lessonsCompletedThisWeek' | 'activeWeakAreas'> = {
-  studentName:        'Aoife',
+  studentName:        'Saoirse',
   parentName:         'Siobhán',
   email:              'preview@example.com',
   subject:            'IB_ECONOMICS',
