@@ -43,7 +43,7 @@ const LC_METADATA: Metadata = {
 const IB_METADATA: Metadata = {
   title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
   description:
-    'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day free trial. From €44.99/month.',
+    'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day money-back guarantee. From €44.99/month.',
   keywords: [
     'IB Economics tutor',
     'IB Business Management tutor',
@@ -61,7 +61,7 @@ const IB_METADATA: Metadata = {
   openGraph: {
     title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
     description:
-      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day free trial. From €44.99/month.',
+      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day money-back guarantee. From €44.99/month.',
     url: 'https://gradd.ai',
     siteName: 'Gradd',
     type: 'website',
@@ -71,7 +71,7 @@ const IB_METADATA: Metadata = {
     card: 'summary_large_image',
     title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
     description:
-      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day free trial. From €44.99/month.',
+      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day money-back guarantee. From €44.99/month.',
     images: ['https://gradd.ai/og-image.svg'],
   },
   robots: { index: true, follow: true },

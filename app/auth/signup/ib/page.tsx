@@ -160,7 +160,7 @@ function StepChoose({
     <div>
       <h1 className="auth-heading" style={{ marginBottom: 6 }}>Create your IB account</h1>
       <p className="auth-subheading" style={{ marginBottom: 24 }}>
-        First lesson is free — no payment needed to get started.
+        Subscribe and start straight away — 7-day money-back guarantee.
       </p>
 
       <p className="form-label" style={{ marginBottom: 10 }}>Which subject are you studying?</p>
@@ -315,14 +315,14 @@ function StepAccount({
     <div>
       <h1 className="auth-heading" style={{ marginBottom: 6 }}>Create your account</h1>
       <p className="auth-subheading" style={{ marginBottom: 24 }}>
-        7-day free trial — no charge until the trial ends.
+        7-day money-back guarantee — cancel within 7 days for a full refund.
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       <form onSubmit={onSubmit}>
         <div className="form-group">
-          <p className="form-label" style={{ marginBottom: 8 }}>After your trial</p>
+          <p className="form-label" style={{ marginBottom: 8 }}>Your plan</p>
           <div style={{
             display: 'flex',
             background: 'var(--surface-2)',
@@ -368,7 +368,7 @@ function StepAccount({
             ))}
           </div>
           <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 6 }}>
-            You can change or cancel at any time during or after the trial.
+            Cancel any time. 7-day money-back guarantee.
           </p>
         </div>
         <div className="form-group">
@@ -463,7 +463,7 @@ function StepAccount({
             className="btn btn-primary btn-full btn-lg"
             disabled={loading}
           >
-            {loading ? (<><span className="spinner" />Setting up…</>) : 'Start free trial →'}
+            {loading ? (<><span className="spinner" />Setting up…</>) : 'Start learning →'}
           </button>
         </div>
       </form>

@@ -226,7 +226,7 @@ function IBSubscribeInner() {
             color: 'var(--text-muted)',
             lineHeight: 1.5,
           }}>
-            Your first lesson was free — subscribe to continue with the full curriculum.
+            Subscribe to access the full IB curriculum with Mia.
           </div>
 
           {error && <div className="alert alert-error">{error}</div>}
