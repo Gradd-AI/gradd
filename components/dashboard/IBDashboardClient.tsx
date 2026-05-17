@@ -1,8 +1,7 @@
 // components/dashboard/IBDashboardClient.tsx
-// IB-specific dashboard client — behavioural copy of DashboardClient.tsx.
-// Routing: app/dashboard/page.tsx renders this for IB students (isIBStudent === true).
-// LC students continue to use DashboardClient.tsx — do not modify that file.
-// Re-skin stages will restyle this component section by section.
+// IB dashboard client — Stage 1 re-skin: shell, nav, page head, toggle.
+// Scoped under .ib-dash — cannot affect DashboardClient.tsx (LC) or globals.css.
+// Individual cards (hero, stat grid, curriculum, etc.) restyled in later stages.
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -166,14 +165,12 @@ function Nav({ studentName }: { studentName: string }) {
   };
 
   return (
-    <nav style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '0 20px', height: 64, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <div style={{ display: 'flex', alignItems: 'center' }}>
-        <img src={logoSrc} alt="Gradd" style={{ height: 28, width: 'auto', maxWidth: 110, display: 'block' }} />
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span className="dash-student-name">{studentName}</span>
+    <header className="app-nav">
+      <img src={logoSrc} alt="Gradd" />
+      <div className="app-nav-right">
+        <span>{studentName}</span>
         <button
-          className="dash-manage-btn"
+          className="app-btn"
           onClick={handleManageSubscription}
           disabled={portalLoading}
           style={{ cursor: portalLoading ? 'not-allowed' : 'pointer', opacity: portalLoading ? 0.6 : 1 }}
@@ -181,13 +178,13 @@ function Nav({ studentName }: { studentName: string }) {
           {portalLoading ? 'Opening…' : 'Manage subscription'}
         </button>
         <button
-          className="dash-signout-btn"
+          className="app-btn-ghost"
           onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
         >
           Sign out
         </button>
       </div>
-    </nav>
+    </header>
   );
 }
 
@@ -196,15 +193,14 @@ function Nav({ studentName }: { studentName: string }) {
 type ViewMode = 'parent' | 'student';
 function Toggle({ mode, onChange }: { mode: ViewMode; onChange: (m: ViewMode) => void }) {
   return (
-    <div style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, gap: 2 }}>
+    <div className="view-toggle" role="tablist" aria-label="Dashboard view">
       {(['parent', 'student'] as ViewMode[]).map(m => (
-        <button key={m} onClick={() => onChange(m)} style={{
-          padding: '6px 16px', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none',
-          cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
-          background: mode === m ? 'var(--surface)' : 'transparent',
-          color: mode === m ? 'var(--text)' : 'var(--text-muted)',
-          boxShadow: mode === m ? 'var(--shadow-sm)' : 'none',
-        }}>
+        <button
+          key={m}
+          role="tab"
+          aria-pressed={mode === m}
+          onClick={() => onChange(m)}
+        >
           {m === 'parent' ? 'Parent view' : 'My view'}
         </button>
       ))}
@@ -221,20 +217,15 @@ function SubjectSwitcher({ active }: { active: string }) {
     { value: 'IB_BUSINESS',  label: 'IB Business Management' },
   ];
   return (
-    <div style={{ display: 'inline-flex', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: 3, gap: 2, marginBottom: 28 }}>
+    <div className="subj-tabs" role="tablist">
       {tabs.map(tab => (
         <button
           key={tab.value}
+          role="tab"
+          aria-pressed={active === tab.value}
           onClick={() => {
             document.cookie = `gradd-active-subject=${tab.value}; path=/; max-age=31536000; SameSite=Lax`;
             router.refresh();
-          }}
-          style={{
-            padding: '7px 20px', fontSize: 13, fontWeight: 600, borderRadius: 6, border: 'none',
-            cursor: 'pointer', fontFamily: 'var(--font-body)', transition: 'all 0.15s',
-            background: active === tab.value ? 'var(--surface)' : 'transparent',
-            color: active === tab.value ? 'var(--text)' : 'var(--text-muted)',
-            boxShadow: active === tab.value ? 'var(--shadow-sm)' : 'none',
           }}
         >
           {tab.label}
@@ -244,7 +235,7 @@ function SubjectSwitcher({ active }: { active: string }) {
   );
 }
 
-// ─── Hero cards ───────────────────────────────────────────────────────────────
+// ─── Hero cards (unchanged — restyled in Stage 2) ─────────────────────────────
 
 function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due }: {
   currentLessonName: string; currentUnitName: string; sessionType: string;
@@ -288,7 +279,7 @@ function ParentPositionCard({ currentLessonName, currentUnitName, sessionType, l
   );
 }
 
-// ─── Last session card ────────────────────────────────────────────────────────
+// ─── Last session card (unchanged — Stage 2) ──────────────────────────────────
 
 function LastSessionCard({ s }: { s: LastSession }) {
   return (
@@ -321,7 +312,7 @@ function LastSessionCard({ s }: { s: LastSession }) {
   );
 }
 
-// ─── 7-day activity strip ─────────────────────────────────────────────────────
+// ─── Activity strip (unchanged — Stage 2) ────────────────────────────────────
 
 function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
   const days = last7Days(sessions);
@@ -350,7 +341,7 @@ function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
   );
 }
 
-// ─── Pace banner ──────────────────────────────────────────────────────────────
+// ─── Pace banner (unchanged — Stage 2) ───────────────────────────────────────
 
 function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: number; needed: number; studentName: string }) {
   const conf = PACE_CONF[pace];
@@ -366,7 +357,7 @@ function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: numbe
   );
 }
 
-// ─── Stat grid ────────────────────────────────────────────────────────────────
+// ─── Stat grid (unchanged — Stage 2) ─────────────────────────────────────────
 
 function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace, subject, tutorName }: {
   curriculumPercent: number; totalCompleted: number; totalLessons: number; totalSessions: number;
@@ -402,7 +393,7 @@ function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessio
   );
 }
 
-// ─── Curriculum progress ──────────────────────────────────────────────────────
+// ─── Curriculum progress (unchanged — Stage 2) ───────────────────────────────
 
 function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculumPercent, totalCompleted, totalLessons }: {
   units: Unit[]; currentUnitCode: string; unitsCompleted: string[];
@@ -437,7 +428,7 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
   );
 }
 
-// ─── Weak areas ───────────────────────────────────────────────────────────────
+// ─── Weak areas (unchanged — Stage 2) ────────────────────────────────────────
 
 function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
   if (!weakAreas.length) return null;
@@ -459,7 +450,7 @@ function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
   );
 }
 
-// ─── Recent sessions ──────────────────────────────────────────────────────────
+// ─── Recent sessions (unchanged — Stage 2) ───────────────────────────────────
 
 function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
   if (!sessions.length) return null;
@@ -487,6 +478,224 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
   );
 }
 
+// ─── Scoped CSS ───────────────────────────────────────────────────────────────
+// All selectors are prefixed with .ib-dash so this cannot affect DashboardClient.tsx
+// (LC dashboard) or any other page. Pattern mirrors the IB landing page (.ib-lp).
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ── Design-system foundation ── */
+.ib-dash {
+  --paper:       oklch(96.2% 0.012 78);
+  --paper-2:     oklch(93.5% 0.015 78);
+  --paper-3:     oklch(89% 0.018 78);
+  --ink:         oklch(18% 0.012 60);
+  --ink-2:       oklch(34% 0.012 60);
+  --ink-3:       oklch(54% 0.012 60);
+  --rule:        oklch(86% 0.014 78);
+  --rule-strong: oklch(74% 0.018 78);
+  --forest:      oklch(22% 0.035 168);
+  --forest-2:    oklch(28% 0.04 168);
+  --forest-deep: oklch(16% 0.028 168);
+  --forest-ink:  oklch(94% 0.025 80);
+  --rust:        oklch(64% 0.17 47);
+  --rust-2:      oklch(58% 0.17 47);
+  --rust-ink:    oklch(98% 0.01 70);
+  --gold:        oklch(70% 0.14 75);
+  --gold-2:      oklch(64% 0.15 75);
+  --gold-ink:    oklch(20% 0.02 80);
+  --green-ok:    oklch(48% 0.13 145);
+  --serif:       "Fraunces", "Times New Roman", Georgia, serif;
+  --sans:        "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --mono:        "Geist Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  background: var(--paper);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+.ib-dash *, .ib-dash *::before, .ib-dash *::after { box-sizing: border-box; }
+.ib-dash img, .ib-dash svg { display: block; max-width: 100%; }
+.ib-dash a { color: inherit; text-decoration: none; }
+.ib-dash button { font: inherit; cursor: pointer; }
+
+/* ── Nav ── */
+.ib-dash .app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--paper);
+  border-bottom: 1px solid var(--rule);
+  padding: 0 28px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ib-dash .app-nav img { height: 22px; width: auto; }
+.ib-dash .app-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.ib-dash .app-btn {
+  padding: 7px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: var(--sans);
+  transition: background 0.15s ease;
+}
+.ib-dash .app-btn:hover { background: var(--paper-2); }
+.ib-dash .app-btn-ghost {
+  padding: 7px 14px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-family: var(--sans);
+}
+.ib-dash .app-btn-ghost:hover { color: var(--ink); }
+
+/* ── Page shell ── */
+.ib-dash .app-wrap {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 56px 28px 80px;
+}
+
+/* ── Page heading ── */
+.ib-dash .page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.ib-dash .page-head h1 {
+  font-family: var(--serif);
+  font-size: clamp(40px, 5vw, 56px);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.02;
+  margin: 0;
+  color: var(--forest);
+  max-width: 14ch;
+}
+.ib-dash .page-head h1 em { font-style: italic; }
+.ib-dash .page-head .sub {
+  margin-top: 12px;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+/* ── View toggle ── */
+.ib-dash .view-toggle {
+  display: inline-flex;
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.ib-dash .view-toggle button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  padding: 8px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: var(--sans);
+  transition: background 0.15s, color 0.15s;
+}
+.ib-dash .view-toggle button[aria-pressed="true"] {
+  background: var(--paper-2);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* ── Subject tabs (Bundle only) ── */
+.ib-dash .subj-tabs {
+  display: inline-flex;
+  padding: 4px;
+  background: color-mix(in oklab, var(--paper-2) 80%, var(--paper));
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  margin-bottom: 28px;
+}
+.ib-dash .subj-tabs button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-3);
+  padding: 8px 18px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: var(--sans);
+}
+.ib-dash .subj-tabs button[aria-pressed="true"] {
+  background: var(--paper);
+  color: var(--forest);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* ── Footer ── */
+.ib-dash .app-footer {
+  text-align: center;
+  padding: 40px 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+.ib-dash .app-footer a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  color: inherit;
+}
+
+/* ── Stat grid (layout only — card internals unchanged until Stage 2) ── */
+.ib-dash .dash-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+/* ── Mobile ── */
+@media (max-width: 760px) {
+  .ib-dash .app-nav { padding: 0 14px; height: 56px; }
+  .ib-dash .app-nav img { height: 18px; }
+  .ib-dash .app-nav-right { gap: 8px; }
+  .ib-dash .app-nav-right > span:first-child { display: none; }
+  .ib-dash .app-btn { padding: 6px 10px; font-size: 12px; }
+  .ib-dash .app-btn-ghost { padding: 6px 4px; font-size: 12px; }
+  .ib-dash .app-wrap { padding: 32px 18px 60px; }
+  .ib-dash .page-head { gap: 16px; }
+  .ib-dash .page-head h1 { font-size: clamp(36px, 9vw, 44px); max-width: none; }
+  .ib-dash .view-toggle { align-self: flex-start; }
+  .ib-dash .subj-tabs { width: 100%; overflow-x: auto; }
+  .ib-dash .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+}
+@media (max-width: 480px) {
+  .ib-dash .page-head h1 { font-size: 34px; }
+  .ib-dash .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .ib-dash .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+}
+`;
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function IBDashboardClient(props: Props) {
@@ -513,57 +722,29 @@ export default function IBDashboardClient(props: Props) {
   );
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <style>{`
-        .dash-student-name { font-size: 14px; color: var(--text-muted); margin-right: 6px; }
-        .dash-manage-btn {
-          background: none; border: 1px solid var(--border); border-radius: 6px;
-          padding: 6px 14px; font-size: 13px; color: var(--text-muted);
-          font-family: var(--font-body);
-        }
-        .dash-signout-btn {
-          background: none; border: 1px solid var(--border); border-radius: 6px;
-          padding: 6px 14px; font-size: 13px; color: var(--text-muted);
-          cursor: pointer; font-family: var(--font-body);
-        }
-        .dash-stat-grid {
-          display: grid; grid-template-columns: repeat(4, 1fr);
-          gap: 14px; margin-bottom: 28px;
-        }
-        .dash-page-header {
-          display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
-        }
-        @media (max-width: 480px) {
-          .dash-student-name { display: none; }
-          .dash-manage-btn { display: none; }
-          .dash-signout-btn { font-size: 12px; padding: 6px 10px; }
-          .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-          .dash-page-header { flex-direction: column; }
-          .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
-        }
-      `}</style>
+    <div className="ib-dash">
+      <style>{CSS}</style>
       <Nav studentName={props.studentName} />
-      <main style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 32px' }}>
+      <main className="app-wrap">
 
-        {/* Header */}
-        <div className="dash-page-header" style={{ marginBottom: props.isBundle ? 0 : 32 }}>
+        {/* Page heading */}
+        <div className="page-head" style={{ marginBottom: props.isBundle ? 12 : 40 }}>
           <div>
-            <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.5px', marginBottom: 6 }}>
-              {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}
+            <h1>
+              {mode === 'student'
+                ? <>Good to see you, <em style={{ color: 'var(--rust)' }}>{props.studentName}.</em></>
+                : <><em style={{ color: 'var(--rust)' }}>{props.studentName}&apos;s</em> progress.</>
+              }
             </h1>
-            <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
+            <div className="sub">
               {subjectLabel} · {props.examLevel} · Session {props.sessionNumber} completed
-            </p>
+            </div>
           </div>
           <Toggle mode={mode} onChange={setMode} />
         </div>
 
-        {/* Subject switcher — IB Bundle subscribers only */}
-        {props.isBundle && (
-          <div style={{ marginTop: 20, marginBottom: 12 }}>
-            <SubjectSwitcher active={effectiveSubject} />
-          </div>
-        )}
+        {/* Subject switcher — Bundle only */}
+        {props.isBundle && <SubjectSwitcher active={effectiveSubject} />}
 
         {/* PARENT VIEW */}
         {mode === 'parent' && (
@@ -616,13 +797,10 @@ export default function IBDashboardClient(props: Props) {
           </>
         )}
 
-        <div style={{ padding: '24px 0 8px', borderTop: '1px solid var(--border)', textAlign: 'center' }}>
-          <a href="/subscribe/manage" style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'underline' }}>
-            Manage subscription
-          </a>
-        </div>
-
       </main>
+      <footer className="app-footer">
+        <a href="/subscribe/manage">Manage subscription</a>
+      </footer>
     </div>
   );
 }
