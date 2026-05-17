@@ -85,7 +85,7 @@ function StepSubject({
         Which subject are you studying?
       </h1>
       <p style={{ fontSize: 15, color: 'var(--text-muted)', marginBottom: 28 }}>
-        Subscribe and start straight away — 7-day money-back guarantee.
+        Select your subject to get started.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 28 }}>
