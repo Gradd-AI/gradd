@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { resolveIsIBClient } from '@/lib/site';
 import Link from 'next/link';
 
 type BillingPeriod = 'monthly' | 'annual';
@@ -25,7 +26,7 @@ const PLANS = {
 function SuccessPoller() {
   const router = useRouter();
   const supabase = createClient();
-  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+  const logoSrc = resolveIsIBClient()
     ? '/gradd-ai-logo.png'
     : '/gradd-logo.svg';
   const [attempt, setAttempt] = useState(0);
@@ -91,7 +92,7 @@ function SuccessPoller() {
 function SubscribePageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const logoSrc = typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai')
+  const logoSrc = resolveIsIBClient()
     ? '/gradd-ai-logo.png'
     : '/gradd-logo.svg';
   const paymentSuccess = searchParams.get('success') === 'true';

@@ -4,11 +4,12 @@
 
 import React from "react";
 import { headers } from "next/headers";
+import { resolveIsIB } from "@/lib/site";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? '';
-  const isIB = host.includes('gradd.ai');
+  const isIB = await resolveIsIB(host);
   return {
     title: "Terms of Service | Gradd",
     description: isIB
@@ -19,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function TermsPage() {
   const host = (await headers()).get('host') ?? '';
-  const isIB = host.includes('gradd.ai');
+  const isIB = await resolveIsIB(host);
   const styles: Record<string, React.CSSProperties> = {
     page: {
       background: "#FAFAF7",

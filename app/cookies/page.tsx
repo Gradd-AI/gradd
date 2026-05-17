@@ -4,6 +4,7 @@
 
 import React from "react";
 import { headers } from "next/headers";
+import { resolveIsIB } from "@/lib/site";
 
 export const metadata = {
   title: "Cookie Policy | Gradd",
@@ -13,7 +14,7 @@ export const metadata = {
 
 export default async function CookiesPage() {
   const host = (await headers()).get('host') ?? '';
-  const isIB = host.includes('gradd.ai');
+  const isIB = await resolveIsIB(host);
   const styles: Record<string, React.CSSProperties> = {
     page: {
       background: "#FAFAF7",

@@ -4,6 +4,7 @@ import { headers } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import LandingPage from '@/components/landing/LandingPage';
 import IBLandingPage from '@/components/landing/IBLandingPage';
+import { resolveIsIB } from '@/lib/site';
 import type { Metadata } from 'next';
 
 const LC_METADATA: Metadata = {
@@ -79,12 +80,12 @@ const IB_METADATA: Metadata = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? '';
-  return host.includes('gradd.ai') ? IB_METADATA : LC_METADATA;
+  return (await resolveIsIB(host)) ? IB_METADATA : LC_METADATA;
 }
 
 export default async function HomePage() {
   const host = (await headers()).get('host') ?? '';
-  const isIB = host.includes('gradd.ai');
+  const isIB = await resolveIsIB(host);
 
   const supabase = await createServerClient();
   const {

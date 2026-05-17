@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { resolveIsIBClient } from '@/lib/site';
 
 interface Unit { code: string; name: string; }
 interface RecentSession {
@@ -141,7 +142,7 @@ function Nav({ studentName }: { studentName: string }) {
   const supabase = createClient();
   const [logoSrc, setLogoSrc] = useState('/gradd-logo.svg');
   useEffect(() => {
-    if (window.location.hostname.includes('gradd.ai')) setLogoSrc('/gradd-ai-logo.png');
+    if (resolveIsIBClient()) setLogoSrc('/gradd-ai-logo.png');
   }, []);
   const [portalLoading, setPortalLoading] = useState(false);
 

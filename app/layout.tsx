@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
 import { headers } from 'next/headers';
+import { resolveIsIB } from '@/lib/site';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -27,7 +28,7 @@ const ICONS: Metadata['icons'] = {
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? '';
-  const isIB = host.includes('gradd.ai');
+  const isIB = await resolveIsIB(host);
   return {
     title: isIB ? 'Gradd — Your IB Tutor' : 'Gradd — Your LC Business Tutor',
     description: isIB
