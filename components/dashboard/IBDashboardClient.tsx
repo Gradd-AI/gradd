@@ -1068,7 +1068,7 @@ export default function IBDashboardClient(props: Props) {
               }
             </h1>
             <div className="sub">
-              {subjectLabel} · {props.examLevel} · Session {props.sessionNumber} completed
+              {subjectLabel} · {props.examLevel} · Session {props.sessionNumber}
             </div>
           </div>
           <Toggle mode={mode} onChange={setMode} />
