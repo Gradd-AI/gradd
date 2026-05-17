@@ -305,28 +305,24 @@ function LastSessionCard({ s }: { s: LastSession }) {
   );
 }
 
-// ─── Activity strip (unchanged — Stage 2) ────────────────────────────────────
+// ─── Activity strip — Stage 2b ───────────────────────────────────────────────
 
 function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
   const days = last7Days(sessions);
+  const activeDays = days.filter(d => d.had).length;
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '20px 24px', marginBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Last 7 days</h3>
-        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{days.filter(d => d.had).length} of 7 days active</span>
+    <div className="week-track">
+      <div className="week-track-hd">
+        <span className="wt-title">Last 7 days</span>
+        <span className="wt-sub">
+          <strong style={{ color: 'var(--ink)', fontWeight: 500 }}>{activeDays}</strong> of 7 days active
+        </span>
       </div>
-      <div style={{ display: 'flex', gap: 8 }}>
+      <div className="days">
         {days.map(({ label, had }) => (
-          <div key={label} style={{ flex: 1, textAlign: 'center' }}>
-            <div style={{
-              height: 36, borderRadius: 6, marginBottom: 6,
-              background: had ? 'var(--brand)' : 'var(--surface-2)',
-              border: `1px solid ${had ? 'var(--brand-mid)' : 'var(--border)'}`,
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {had && <span style={{ color: 'var(--accent)', fontSize: 13, fontWeight: 700 }}>✓</span>}
-            </div>
-            <span style={{ fontSize: 10, fontWeight: 600, color: had ? 'var(--text)' : 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{label}</span>
+          <div key={label} className="day">
+            <div className={`box${had ? ' active' : ''}`}>{had ? '✓' : ''}</div>
+            <span className="wt-lbl">{label}</span>
           </div>
         ))}
       </div>
@@ -334,23 +330,34 @@ function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
   );
 }
 
-// ─── Pace banner (unchanged — Stage 2) ───────────────────────────────────────
+// ─── Pace banner — Stage 2b ───────────────────────────────────────────────────
 
 function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: number; needed: number; studentName: string }) {
-  const conf = PACE_CONF[pace];
-  let msg = '';
-  if (pace === 'no-data') msg = `${studentName} hasn't completed enough sessions to assess pace yet. Target is ${needed} sessions per week.`;
-  else if (pace === 'ahead') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is ahead of pace — exam preparation is on track.`;
-  else if (pace === 'on-track') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is on track to complete the curriculum before the exam.`;
-  else msg = `Averaging ${avg}/week but need ${needed} to stay on track. ${studentName} needs to pick up the pace — ${needed - avg} more session${(needed - avg) !== 1 ? 's' : ''}/week required.`;
+  const alertClass = pace === 'ahead' ? 'alert alert-ahead'
+    : pace === 'on-track' ? 'alert alert-on-track'
+    : pace === 'no-data' ? 'alert alert-no-data'
+    : 'alert';
+  const icon = pace === 'ahead' ? '✓' : pace === 'on-track' ? '→' : pace === 'no-data' ? '–' : '!';
+  const gap = needed - avg;
+  let msg: React.ReactNode;
+  if (pace === 'no-data') {
+    msg = <>{studentName} hasn&apos;t completed enough sessions to assess pace yet. Target is <b>{needed}</b> sessions per week.</>;
+  } else if (pace === 'ahead') {
+    msg = <>Averaging <b>{avg}/week</b> against a target of <b>{needed}</b>. {studentName} is ahead of pace — exam preparation is on track.</>;
+  } else if (pace === 'on-track') {
+    msg = <>Averaging <b>{avg}/week</b> against a target of <b>{needed}</b>. {studentName} is on track to complete the curriculum before the exam.</>;
+  } else {
+    msg = <>Averaging <b>{avg}/week</b> but need <b>{needed}</b> to stay on track. {studentName} needs to pick up the pace — <b>{gap} more session{gap !== 1 ? 's' : ''}/week</b> required.</>;
+  }
   return (
-    <div style={{ background: conf.bg, border: `1px solid ${conf.border}`, borderRadius: 'var(--radius-sm)', padding: '12px 18px', marginBottom: 20, fontSize: 14, color: conf.color, fontWeight: 500 }}>
-      {msg}
+    <div className={alertClass}>
+      <div className="icn">{icon}</div>
+      <p>{msg}</p>
     </div>
   );
 }
 
-// ─── Stat grid (unchanged — Stage 2) ─────────────────────────────────────────
+// ─── Stat grid — Stage 2b ────────────────────────────────────────────────────
 
 function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace, subject, tutorName }: {
   curriculumPercent: number; totalCompleted: number; totalLessons: number; totalSessions: number;
@@ -360,59 +367,57 @@ function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessio
   const timeHrs = Math.round((totalSessions * 45) / 60 * 10) / 10;
   const paceConf = PACE_CONF[pace];
   const isIB = subject && IB_SUBJECTS.includes(subject);
-  const examLabel = isIB
-    ? `${getSubjectLabel(subject)} · May 2027`
-    : 'LC Business · 08/06/2026';
-  const stats = [
-    { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
-    { label: 'Sessions completed', value: totalSessions, sub: `≈ ${timeHrs} hrs invested` },
-    { label: 'This week', value: thisWeek, sub: `target: ${neededPerWeek}/wk` },
-    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam(subject))} weeks to exam`, warn: neededPerWeek > 10 },
-    { label: '4-wk avg / week', value: avgPerWeek, sub: paceConf.label.toLowerCase(), accent: pace === 'ahead' || pace === 'on-track', warn: pace === 'behind' },
-    { label: 'Days to exam', value: examDays, sub: examLabel },
-    { label: 'Study streak', value: `${streak}d`, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
-    { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : `${tutorName} is tracking`, warn: weakAreasCount > 0 },
+  const examLabel = isIB ? `${getSubjectLabel(subject)} · May 2027` : 'LC Business · 08/06/2026';
+  const stats: { label: string; main: number | string; unit: string; sub: string; warn?: boolean; isStreak?: boolean }[] = [
+    { label: 'Curriculum progress', main: curriculumPercent, unit: '%', sub: `${totalCompleted} of ${totalLessons} lessons` },
+    { label: 'Sessions completed',  main: totalSessions,     unit: '',  sub: `≈ ${timeHrs} hrs invested` },
+    { label: 'This week',           main: thisWeek,          unit: '',  sub: `target: ${neededPerWeek}/wk` },
+    { label: 'Sessions/wk needed',  main: neededPerWeek,     unit: '',  sub: `${Math.round(weeksToExam(subject))} weeks to exam`, warn: neededPerWeek > 10 },
+    { label: '4-wk avg / week',     main: avgPerWeek,        unit: '',  sub: paceConf.label.toLowerCase(), warn: pace === 'behind' },
+    { label: 'Days to exam',        main: examDays,          unit: 'd', sub: examLabel },
+    { label: 'Study streak',        main: streak,            unit: 'd', sub: streak === 1 ? 'day in a row' : 'days in a row', isStreak: true },
+    { label: 'Weak areas',          main: weakAreasCount,    unit: '',  sub: weakAreasCount === 0 ? 'none flagged' : `${tutorName} is tracking`, warn: weakAreasCount > 0 },
   ];
   return (
-    <div className="dash-stat-grid">
-      {stats.map(({ label, value, sub, warn, accent }) => (
-        <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '18px 20px' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{label}</p>
-          <p style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: warn ? '#a07000' : accent ? 'var(--success)' : 'var(--brand)', lineHeight: 1, marginBottom: 4 }}>{value}</p>
-          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{sub}</p>
+    <div className="stats stats-8">
+      {stats.map(({ label, main, unit, sub, warn, isStreak }) => (
+        <div key={label} className="stat-card">
+          <div className="lbl">{label}</div>
+          <div className={`val${isStreak ? ' streak' : ''}`}>
+            {main}{unit && <span className="small">{unit}</span>}
+          </div>
+          <div className={`hint${warn ? ' warn' : ''}`}>{sub}</div>
         </div>
       ))}
     </div>
   );
 }
 
-// ─── Curriculum progress (unchanged — Stage 2) ───────────────────────────────
+// ─── Curriculum progress — Stage 2b ──────────────────────────────────────────
 
 function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculumPercent, totalCompleted, totalLessons }: {
   units: Unit[]; currentUnitCode: string; unitsCompleted: string[];
   curriculumPercent: number; totalCompleted: number; totalLessons: number;
 }) {
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Curriculum progress</h3>
-        <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{totalCompleted} / {totalLessons} lessons</span>
+    <div className="curr">
+      <div className="curr-hd">
+        <h3>Curriculum progress</h3>
+        <span className="of">{totalCompleted} / {totalLessons} lessons</span>
       </div>
-      <div style={{ height: 8, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ height: '100%', width: `${curriculumPercent}%`, background: 'var(--brand)', borderRadius: 4, transition: 'width 0.5s ease' }} />
+      <div className="curr-bar">
+        <div className="fill" style={{ width: `${curriculumPercent}%` }} />
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="curr-list">
         {units.map(unit => {
           const isCompleted = unitsCompleted.includes(unit.code);
           const isCurrent = unit.code === currentUnitCode && !isCompleted;
           return (
-            <div key={unit.code} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 12px', borderRadius: 8, background: isCurrent ? 'var(--brand)' : 'transparent' }}>
-              <div style={{ width: 20, height: 20, borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isCompleted ? 'var(--success)' : isCurrent ? 'var(--accent)' : 'var(--border)' }}>
-                {isCompleted && <span style={{ color: '#fff', fontSize: 11, fontWeight: 700 }}>✓</span>}
-              </div>
-              <span style={{ fontSize: 14, color: isCurrent ? '#fff' : isCompleted ? 'var(--text)' : 'var(--text-light)', fontWeight: isCurrent || isCompleted ? 600 : 400 }}>{unit.name}</span>
-              {isCurrent && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Current</span>}
-              {isCompleted && <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--success)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Done</span>}
+            <div key={unit.code} className={`curr-row${isCompleted ? ' done' : isCurrent ? ' current' : ''}`}>
+              <span className="dot" />
+              <span>{unit.name}</span>
+              {isCurrent && <span className="count">Current</span>}
+              {isCompleted && <span className="count">Done</span>}
             </div>
           );
         })}
@@ -421,52 +426,48 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
   );
 }
 
-// ─── Weak areas (unchanged — Stage 2) ────────────────────────────────────────
+// ─── Weak areas — Stage 2b ───────────────────────────────────────────────────
 
 function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
   if (!weakAreas.length) return null;
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Weak areas to watch</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {weakAreas.map(w => (
-          <div key={w.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 12, background: '#fffbf0', border: '1px solid #e8d89a', borderRadius: 8, padding: '12px 16px' }}>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#f5e49a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700, color: '#7a5c00', flexShrink: 0, marginTop: 1 }}>!</div>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', lineHeight: 1.4 }}>{w.error_description}</p>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Lesson {w.lesson_code}{w.occurrence_count > 1 ? ` · flagged ${w.occurrence_count}×` : ''}</p>
+    <div className="weak-card">
+      <h3>Weak areas to watch</h3>
+      {weakAreas.map(w => (
+        <div key={w.id} className="weak-row">
+          <div className="weak-icn">!</div>
+          <div>
+            <div className="weak-desc">{w.error_description}</div>
+            <div className="weak-meta">
+              Lesson {w.lesson_code}{w.occurrence_count > 1 ? ` · flagged ${w.occurrence_count}×` : ''}
             </div>
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-// ─── Recent sessions (unchanged — Stage 2) ───────────────────────────────────
+// ─── Recent sessions — Stage 2b ──────────────────────────────────────────────
 
 function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
   if (!sessions.length) return null;
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '28px 32px', marginBottom: 24 }}>
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Recent sessions</h3>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {sessions.map(s => (
-          <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--border-light)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-light)', minWidth: 28 }}>#{s.session_number}</span>
-              <div>
-                <span style={{ fontSize: 14, color: 'var(--text)' }}>{s.lesson_code ?? '—'}</span>
-                <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-muted)' }}>{sessionLabel(s.session_type)}</span>
-              </div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              {s.weak_flags_count > 0 && <span style={{ fontSize: 12, color: '#7a5c00', fontWeight: 600 }}>⚠ {s.weak_flags_count}</span>}
-              <span style={{ fontSize: 12, color: 'var(--text-light)' }}>{formatDateShort(s.started_at)}</span>
-            </div>
+    <div className="sess-list">
+      <h3>Recent sessions</h3>
+      {sessions.map(s => (
+        <div key={s.id} className="sess-row">
+          <span className="num">#{s.session_number}</span>
+          <div>
+            <span className="topic">{s.lesson_code ?? '—'}</span>
+            <span className="tag">{sessionLabel(s.session_type)}</span>
           </div>
-        ))}
-      </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            {s.weak_flags_count > 0 && <span className="warn-flag">⚠ {s.weak_flags_count}</span>}
+            <span className="date">{formatDateShort(s.started_at)}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -659,14 +660,6 @@ const CSS = `
   color: inherit;
 }
 
-/* ── Stat grid (layout only — card internals unchanged until Stage 2) ── */
-.ib-dash .dash-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 28px;
-}
-
 /* ── Stage 2a: Session / hero cards ── */
 
 .ib-dash .next-session {
@@ -818,6 +811,175 @@ const CSS = `
   gap: 6px;
 }
 
+/* ── Stage 2b: Data cards ── */
+
+.ib-dash .alert {
+  display: flex; align-items: flex-start; gap: 14px;
+  background: color-mix(in oklab, var(--gold) 18%, var(--paper));
+  border: 1px solid color-mix(in oklab, var(--gold) 45%, var(--rule));
+  border-radius: 12px; padding: 16px 20px; margin-bottom: 22px;
+}
+.ib-dash .alert.alert-ahead {
+  background: color-mix(in oklab, var(--green-ok) 10%, var(--paper));
+  border-color: color-mix(in oklab, var(--green-ok) 28%, var(--rule));
+}
+.ib-dash .alert.alert-on-track {
+  background: color-mix(in oklab, var(--forest) 6%, var(--paper));
+  border-color: color-mix(in oklab, var(--forest) 18%, var(--rule));
+}
+.ib-dash .alert.alert-no-data { background: var(--paper-2); border-color: var(--rule); }
+.ib-dash .alert .icn {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--gold); color: var(--gold-ink);
+  display: grid; place-items: center;
+  font-size: 11px; font-weight: 600; flex-shrink: 0; margin-top: 2px;
+}
+.ib-dash .alert.alert-ahead .icn { background: var(--green-ok); color: var(--paper); }
+.ib-dash .alert.alert-on-track .icn { background: var(--forest); color: var(--forest-ink); }
+.ib-dash .alert.alert-no-data .icn { background: var(--ink-3); color: var(--paper); }
+.ib-dash .alert p { margin: 0; font-size: 13.5px; color: var(--ink); line-height: 1.5; }
+.ib-dash .alert b { font-weight: 500; }
+
+.ib-dash .week-track {
+  border: 1px solid var(--rule); border-radius: 14px;
+  padding: 22px 24px; background: var(--paper); margin-bottom: 16px;
+}
+.ib-dash .week-track-hd {
+  display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px;
+}
+.ib-dash .week-track-hd .wt-title { font-size: 14px; font-weight: 500; color: var(--ink); }
+.ib-dash .week-track-hd .wt-sub { font-size: 12px; color: var(--ink-3); }
+.ib-dash .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; }
+.ib-dash .day { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.ib-dash .day .box {
+  width: 100%; height: 44px; border-radius: 8px;
+  background: var(--paper-2); border: 1px solid var(--rule);
+  display: grid; place-items: center; color: var(--ink-3); font-size: 14px;
+}
+.ib-dash .day .box.active { background: var(--forest); border-color: var(--forest); color: var(--gold); }
+.ib-dash .day .wt-lbl {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
+}
+
+.ib-dash .stats { display: grid; gap: 12px; margin-bottom: 28px; }
+.ib-dash .stats-4 { grid-template-columns: repeat(4, 1fr); }
+.ib-dash .stats-8 { grid-template-columns: repeat(4, 1fr); }
+.ib-dash .stat-card {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 14px; padding: 20px;
+}
+.ib-dash .stat-card .lbl {
+  font-family: var(--mono); font-size: 10.5px;
+  letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
+}
+.ib-dash .stat-card .val {
+  font-family: var(--serif); font-size: 38px; font-weight: 400;
+  letter-spacing: -0.02em; line-height: 1; color: var(--ink);
+}
+.ib-dash .stat-card .val.streak { color: var(--green-ok); font-style: italic; }
+.ib-dash .stat-card .val .small {
+  font-size: 0.55em; color: var(--ink-3);
+  font-family: var(--mono); letter-spacing: 0; margin-left: 2px; font-style: normal;
+}
+.ib-dash .stat-card .hint { margin-top: 8px; font-size: 11.5px; color: var(--ink-3); }
+.ib-dash .stat-card .hint.warn { color: var(--rust); }
+
+.ib-dash .curr {
+  border: 1px solid var(--rule); border-radius: 14px;
+  padding: 22px 24px; background: var(--paper); margin-bottom: 16px;
+}
+.ib-dash .curr-hd { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; }
+.ib-dash .curr-hd h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 400;
+  letter-spacing: -0.012em; margin: 0; color: var(--ink);
+}
+.ib-dash .curr-hd .of { font-size: 12px; color: var(--ink-3); }
+.ib-dash .curr-bar {
+  height: 4px; background: var(--paper-3); border-radius: 999px; overflow: hidden; margin-bottom: 18px;
+}
+.ib-dash .curr-bar .fill { height: 100%; background: var(--rust); border-radius: inherit; transition: width 0.5s ease; }
+.ib-dash .curr-list { display: flex; flex-direction: column; }
+.ib-dash .curr-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0; border-bottom: 1px dashed var(--rule); font-size: 14px; color: var(--ink-2);
+}
+.ib-dash .curr-row:last-child { border-bottom: 0; }
+.ib-dash .curr-row .dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  background: var(--paper-3); border: 1px solid var(--rule-strong);
+}
+.ib-dash .curr-row.done .dot { background: var(--green-ok); border-color: var(--green-ok); }
+.ib-dash .curr-row.current { color: var(--ink); font-weight: 500; }
+.ib-dash .curr-row.current .dot { background: var(--rust); border-color: var(--rust); }
+.ib-dash .curr-row .count { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+
+.ib-dash .weak-card {
+  border: 1px solid var(--rule); border-radius: 14px;
+  padding: 22px 24px; background: var(--paper); margin-bottom: 16px;
+}
+.ib-dash .weak-card h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 400;
+  letter-spacing: -0.012em; margin: 0 0 14px; color: var(--ink);
+}
+.ib-dash .weak-row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0; border-bottom: 1px dashed var(--rule);
+}
+.ib-dash .weak-row:last-child { border-bottom: 0; }
+.ib-dash .weak-icn {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; margin-top: 2px;
+  background: color-mix(in oklab, var(--gold) 25%, var(--paper));
+  border: 1px solid color-mix(in oklab, var(--gold) 40%, var(--rule));
+  display: grid; place-items: center; font-size: 11px; font-weight: 600;
+  color: color-mix(in oklab, var(--gold-2) 80%, var(--ink));
+}
+.ib-dash .weak-desc { font-size: 13.5px; color: var(--ink); line-height: 1.45; }
+.ib-dash .weak-meta { margin-top: 3px; font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+
+.ib-dash .sess-list {
+  border: 1px solid var(--rule); border-radius: 14px;
+  padding: 22px 24px; background: var(--paper); margin-bottom: 16px;
+}
+.ib-dash .sess-list h3 {
+  font-family: var(--serif); font-size: 22px; font-weight: 400;
+  letter-spacing: -0.012em; margin: 0 0 12px; color: var(--ink);
+}
+.ib-dash .sess-row {
+  display: grid; grid-template-columns: 40px 1fr auto; gap: 14px;
+  align-items: center; padding: 13px 0; border-bottom: 1px dashed var(--rule); font-size: 13.5px;
+}
+.ib-dash .sess-row:last-child { border-bottom: 0; }
+.ib-dash .sess-row .num { font-family: var(--mono); font-size: 12px; color: var(--ink-3); }
+.ib-dash .sess-row .topic { font-family: var(--mono); font-size: 12.5px; color: var(--ink); }
+.ib-dash .sess-row .tag {
+  display: inline-block; padding: 2px 8px;
+  background: color-mix(in oklab, var(--rust) 14%, transparent);
+  color: var(--rust); font-family: var(--mono); font-size: 10.5px;
+  letter-spacing: 0.04em; border-radius: 999px; margin-left: 8px;
+}
+.ib-dash .sess-row .warn-flag { font-family: var(--mono); font-size: 11px; color: var(--rust); }
+.ib-dash .sess-row .date { font-size: 12px; color: var(--ink-3); }
+
+.ib-dash .ib-empty {
+  border: 1px dashed var(--rule-strong); border-radius: 14px; padding: 22px 24px;
+  text-align: center; font-size: 13px; color: var(--ink-3);
+  margin-bottom: 28px; background: var(--paper-2);
+}
+
+.ib-dash .ib-inline-banner {
+  border-radius: 10px; padding: 12px 16px; font-size: 13px; margin-bottom: 16px; line-height: 1.5;
+}
+.ib-dash .ib-inline-banner.recall {
+  background: color-mix(in oklab, var(--forest) 8%, var(--paper));
+  border: 1px solid color-mix(in oklab, var(--forest) 20%, var(--rule));
+  color: var(--forest);
+}
+.ib-dash .ib-inline-banner.abq {
+  background: color-mix(in oklab, var(--rust) 8%, var(--paper));
+  border: 1px solid color-mix(in oklab, var(--rust) 20%, var(--rule));
+  color: var(--rust-2);
+}
+
 /* ── Mobile ── */
 @media (max-width: 760px) {
   .ib-dash .app-nav { padding: 0 14px; height: 56px; }
@@ -831,7 +993,6 @@ const CSS = `
   .ib-dash .page-head h1 { font-size: clamp(36px, 9vw, 44px); max-width: none; }
   .ib-dash .view-toggle { align-self: flex-start; }
   .ib-dash .subj-tabs { width: 100%; overflow-x: auto; }
-  .ib-dash .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
   .ib-dash .next-session { flex-direction: column; align-items: stretch; padding: 24px; gap: 16px; }
   .ib-dash .next-session h2 { font-size: 28px; }
   .ib-dash .next-session .start-btn { width: 100%; justify-content: center; }
@@ -839,11 +1000,27 @@ const CSS = `
   .ib-dash .last-session-hd { padding: 12px 18px; gap: 8px; flex-wrap: wrap; }
   .ib-dash .last-session-body { padding: 20px; }
   .ib-dash .last-session-body h3 { font-size: 20px; }
+  .ib-dash .stats-4 { grid-template-columns: repeat(2, 1fr); }
+  .ib-dash .stats-8 { grid-template-columns: repeat(2, 1fr); }
+  .ib-dash .stat-card { padding: 16px; }
+  .ib-dash .stat-card .val { font-size: 32px; }
+  .ib-dash .days { gap: 6px; }
+  .ib-dash .day .box { height: 38px; }
+  .ib-dash .day .wt-lbl { font-size: 9px; }
+  .ib-dash .week-track { padding: 18px; }
+  .ib-dash .curr { padding: 18px; }
+  .ib-dash .curr-hd h3 { font-size: 20px; }
+  .ib-dash .sess-list { padding: 18px; }
+  .ib-dash .sess-list h3 { font-size: 20px; }
+  .ib-dash .sess-row { grid-template-columns: 32px 1fr auto; gap: 10px; }
+  .ib-dash .alert { padding: 14px 16px; gap: 10px; }
+  .ib-dash .alert p { font-size: 13px; }
 }
 @media (max-width: 480px) {
   .ib-dash .page-head h1 { font-size: 34px; }
-  .ib-dash .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .ib-dash .stats-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+  .ib-dash .stats-4 { grid-template-columns: repeat(2, 1fr); }
+  .ib-dash .stats-8 { grid-template-columns: repeat(2, 1fr); }
+  .ib-dash .stat-card .val { font-size: 28px; }
 }
 `;
 
@@ -867,7 +1044,7 @@ export default function IBDashboardClient(props: Props) {
   const pace = calcPace(avgPerWeek, neededPerWeek);
 
   const emptyState = (
-    <div style={{ background: 'var(--surface-2)', border: '1.5px dashed var(--border)', borderRadius: 'var(--radius)', padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
+    <div className="ib-empty">
       Your first session summary will appear here after completing a session with {tutorName}.
     </div>
   );
@@ -923,25 +1100,27 @@ export default function IBDashboardClient(props: Props) {
             <StudentHeroCard currentLessonName={props.currentLessonName} currentUnitName={props.currentUnitName} sessionType={props.sessionType} spaced_rep_due={props.spaced_rep_due} abq_drill_due={props.abq_drill_due} />
             {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
             {props.spaced_rep_due && (
-              <div style={{ background: '#f0f7ff', border: '1px solid #c3daf5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#1a4a7a', marginBottom: 16 }}>
+              <div className="ib-inline-banner recall">
                 🔁 {tutorName} will start today with a quick recall block — locking in recent material before moving forward.
               </div>
             )}
             {props.abq_drill_due && (
-              <div style={{ background: '#f5f0ff', border: '1px solid #d5c3f5', borderRadius: 8, padding: '12px 16px', fontSize: 13, color: '#3a1a7a', marginBottom: 16 }}>
+              <div className="ib-inline-banner abq">
                 📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
               </div>
             )}
-            <div className="stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginTop: 8 }}>
-              {[
-                { label: 'Progress', value: `${props.curriculumPercent}%` },
-                { label: 'Sessions', value: props.totalSessions },
-                { label: 'Streak', value: `${streak}d` },
-                { label: 'To exam', value: `${examDays}d` },
-              ].map(({ label, value }) => (
-                <div key={label} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-light)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{label}</p>
-                  <p style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--brand)', lineHeight: 1 }}>{value}</p>
+            <div className="stats stats-4" style={{ marginTop: 8 }}>
+              {([
+                { label: 'Progress', main: props.curriculumPercent, unit: '%' },
+                { label: 'Sessions', main: props.totalSessions,     unit: '' },
+                { label: 'Streak',   main: streak,                  unit: 'd', isStreak: true },
+                { label: 'To exam',  main: examDays,                unit: 'd' },
+              ] as { label: string; main: number; unit: string; isStreak?: boolean }[]).map(({ label, main, unit, isStreak }) => (
+                <div key={label} className="stat-card">
+                  <div className="lbl">{label}</div>
+                  <div className={`val${isStreak ? ' streak' : ''}`}>
+                    {main}{unit && <span className="small">{unit}</span>}
+                  </div>
                 </div>
               ))}
             </div>
