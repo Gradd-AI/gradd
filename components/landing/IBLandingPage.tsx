@@ -33,11 +33,11 @@ const FAQS = [
   },
   {
     q: 'Can Gradd really replace a private tutor?',
-    a: 'For the core of what a tutor does — explanation, practice, marking, accountability — yes. For pastoral support and human encouragement, no. Gradd is built to be the primary tutor; keep your school teacher for the human side.',
+    a: 'For the core of what a tutor does — explanation, exam-style questioning within lessons, marking, accountability — yes. For pastoral support and human encouragement, no. Gradd is built to be the primary tutor; keep your school teacher for the human side.',
   },
   {
     q: 'My exam is in three weeks. Is it worth starting now?',
-    a: 'Yes. The first session diagnoses your weak topics and puts you straight into high-signal practice — no re-reading textbooks.',
+    a: 'Yes. From your very first session, Mia gets you working on the topics you\'re weakest on straight away — no re-reading textbooks, no warm-up busywork.',
   },
   {
     q: 'What about Maths, English, Sciences?',
@@ -45,7 +45,7 @@ const FAQS = [
   },
   {
     q: 'How does diagram marking actually work?',
-    a: 'You draw a diagram in the canvas (or upload a photo of one you drew on paper). Mia checks against the IBO mark scheme criteria for that question type: axes, curve shape, equilibrium markers, shading. You get a numeric mark and the specific feedback that gets you the missing marks next time.',
+    a: 'You upload a photo of a diagram you\'ve drawn on paper. Mia checks it against the IBO mark scheme criteria for that question type: axes, curve shape, equilibrium markers, shading. You get a numeric mark and the specific feedback that gets you the missing marks next time.',
   },
   {
     q: 'What if Gradd.ai isn\'t right for me?',
@@ -53,7 +53,7 @@ const FAQS = [
   },
   {
     q: 'Can my school sign up a whole cohort?',
-    a: 'We offer school plans with teacher dashboards. Email schools@gradd.ai and we\'ll get you a quote.',
+    a: 'School plans are in development. Email schools@gradd.ai to register interest and we\'ll be in touch as soon as they\'re available.',
   },
 ];
 
@@ -209,7 +209,7 @@ export default function IBLandingPage() {
               <div className="eyebrow">The problem<span className="dot" />Private tutoring</div>
               <h2 className="h-section" style={{marginTop:18}}>
                 IB tutoring costs too much.<br/>
-                And it <em className="italic" style={{color:'var(--rust)'}}>still</em> doesn&apos;t cover the whole course.
+                And it <em className="italic" style={{color:'var(--rust)'}}>still</em>{' '}doesn&apos;t cover the whole course.
               </h2>
               {/* Deck: pull-quote attribution ("— IB student, May 2024") CUT — fabricated */}
             </div>
@@ -257,19 +257,18 @@ export default function IBLandingPage() {
             <div className="one-sub-grid">
               <div className="os-card">
                 <div className="num">01 / Lessons</div>
-                <h3>Every topic from the official 2022+ syllabus.</h3>
+                <h3>Every topic from the official IB syllabus — Economics 2022, Business Management 2024.</h3>
                 <p>Micro, macro, global, development for Econ. Strategy, marketing, finance &amp; ops for BM. HL and SL extensions, at the depth IB actually expects.</p>
               </div>
               <div className="os-card">
-                <div className="num">02 / Practice</div>
+                <div className="num">02 / Marking</div>
                 <h3>Every paper format. Marked the way IB marks.</h3>
-                {/* Deck: "against the official mark schemes" → "against the official IBO markbands and assessment criteria" */}
-                <p>Paper 1, 2, 3 exam-style practice, IBO command terms, diagram marking — graded against the official IBO markbands and assessment criteria, not generic AI hand-waving.</p>
+                <p>Mia works through Paper 1, 2 and 3-style questions with you in session — IBO command terms, diagram marking — graded against the official IBO markbands and assessment criteria, not generic AI hand-waving.</p>
               </div>
               <div className="os-card">
                 <div className="num">03 / Tutor</div>
                 <h3>Mia, the tutor on call.</h3>
-                <p>Ask anything, any time — drawing diagrams, working questions, deciphering a prompt that makes no sense.</p>
+                <p>Ask anything, any time — drawing diagrams, working questions, making sense of an exam question worded to trip you up.</p>
               </div>
             </div>
           </div>
@@ -344,18 +343,17 @@ export default function IBLandingPage() {
               <div className="pillar">
                 <div className="num">01</div>
                 <h3>From day one.</h3>
-                <p>Onboarding diagnoses what you already know and skips you ahead. No grinding through definitions you already have.</p>
+                <p>Mia teaches from scratch and adapts as you go — every session builds on where you actually are, not where a curriculum assumes you should be.</p>
               </div>
               <div className="pillar">
                 <div className="num">02</div>
                 <h3>On demand.</h3>
-                <p>Lessons, practice, marking and explanation — whenever you have ten minutes between calculus and football.</p>
+                <p>Lessons, exam-style questions, marking and explanation — whenever you have ten minutes between calculus and football.</p>
               </div>
-              {/* Deck FIX: "Until May 2026" → "Built around your exam". Remove "mock cycles" from body. */}
               <div className="pillar">
                 <div className="num">03</div>
                 <h3>Built around your exam.</h3>
-                <p>Pacing and revision planned backwards from your paper dates, so revision lands when it counts.</p>
+                <p>Everything Mia does is pointed at the papers you&apos;re sitting — structured teaching, exam-style questions, and your weak areas, all working toward the same result.</p>
               </div>
             </div>
           </div>
@@ -370,7 +368,7 @@ export default function IBLandingPage() {
                 IBO-standard diagrams. Drawn inline. <em className="italic" style={{color:'var(--rust)'}}>Marked instantly.</em>
               </h2>
               <p className="lead">
-                The thing examiners actually grade you on — and the one thing other AI tutors get wrong. Mia draws to IBO conventions, then marks against the official criteria.
+                The thing examiners actually grade you on — and the one thing other AI tutors get wrong. Mia draws to IBO conventions, then marks against the official criteria. You can also upload a photo of a diagram you&apos;ve drawn on paper and get it marked the same way.
               </p>
             </div>
             <div className="diag-demo">
@@ -434,33 +432,26 @@ export default function IBLandingPage() {
             </div>
             <div className="cap-list">
               <div className="cap">
-                <div className="icn">A</div>
                 <h4>Speaks IB command terms.</h4>
                 <p>&ldquo;Evaluate&rdquo; is not &ldquo;describe&rdquo;. Mia calibrates answers to AO2/AO3 the way real examiners do.</p>
               </div>
               <div className="cap">
-                <div className="icn">D</div>
                 <h4>Draws to IBO convention.</h4>
                 <p>Curves correctly labelled, axes correctly oriented, shading where shading earns marks.</p>
               </div>
-              {/* Deck FIX: "Pulls real past paper questions" → "Practises in real exam style" */}
               <div className="cap">
-                <div className="icn">P</div>
-                <h4>Practises in real exam style.</h4>
-                <p>Mia generates exam-style questions in the real exam idiom — including the ones written to confuse you.</p>
+                <h4>Generates exam-style questions in session.</h4>
+                <p>Mia asks questions in the real exam idiom — including the ones written to confuse you — as part of normal teaching.</p>
               </div>
               <div className="cap">
-                <div className="icn">F</div>
                 <h4>Gives feedback that improves marks.</h4>
                 <p>Not &ldquo;good attempt!&rdquo; Specific: &ldquo;para 2 needs an evaluative judgement to access band 3&rdquo;.</p>
               </div>
               <div className="cap">
-                <div className="icn">I</div>
                 <h4>Drills exam technique, paper by paper.</h4>
                 <p>Paper 1 essays, Paper 2 data response, Paper 3 quant — the structure examiners reward, learned by doing it.</p>
               </div>
               <div className="cap">
-                <div className="icn">T</div>
                 <h4>Tracks what you actually know.</h4>
                 <p>Your weak topics surface daily until they don&apos;t. No more revising what you already mastered.</p>
               </div>
@@ -489,10 +480,10 @@ export default function IBLandingPage() {
             </div>
 
             <div className="parents-visual">
-              <div className="dash-preview" aria-label="Parent dashboard preview">
+              <div className="dash-preview" aria-label="Student dashboard — parent view">
                 <div className="dash-preview-hd">
                   <div className="name">Louise&apos;s progress.</div>
-                  <div className="meta">Week 12 · IB Econ SL</div>
+                  <div className="meta">Week 12 · IB Econ SL · <span style={{fontStyle:'italic'}}>parent view</span></div>
                 </div>
                 <div className="dash-stats">
                   <div className="dash-stat ok"><div className="lbl">Streak</div><div className="val">3<span className="small">d</span></div></div>
@@ -624,13 +615,6 @@ export default function IBLandingPage() {
                       <td><span className="n">—</span></td>
                       <td><span className="n">—</span></td>
                     </tr>
-                    <tr>
-                      <td>Honest with you</td>
-                      <td className="gradd-col"><span className="y">No bedside manner to protect</span></td>
-                      <td>Sometimes</td>
-                      <td>Rarely individual</td>
-                      <td>Brutally</td>
-                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -666,7 +650,7 @@ export default function IBLandingPage() {
               {/* Card 1: Single subject */}
               <article className="price">
                 <span className="price-tag">Single subject</span>
-                <h3>IB Econ <span style={{color:'var(--ink-3)',fontSize:'0.62em',fontFamily:'var(--mono)',fontStyle:'normal'}}>or</span> IB BM</h3>
+                <h3>IB Economics <span style={{color:'var(--ink-3)',fontSize:'0.62em',fontFamily:'var(--mono)',fontStyle:'normal'}}>or</span> IB Business Management</h3>
                 <div className="amount">
                   <span className="cur">€</span>
                   {single.amount}
@@ -677,7 +661,7 @@ export default function IBLandingPage() {
                 <p className="blurb">IB Economics or IB Business Management. Full course, all features, Mia on demand.</p>
                 <ul className="price-features">
                   <li><span>Full IB syllabus — HL &amp; SL</span></li>
-                  <li><span>Paper 1, 2 &amp; 3 (HL) exam-style practice</span></li>
+                  <li><span>Paper 1, 2 &amp; 3 (HL) exam-style questions worked through in lessons</span></li>
                   <li><span>IBO-standard diagrams — taught inline, your hand-drawn diagrams marked</span></li>
                   <li><span>Unlimited sessions with Mia</span></li>
                   <li><span>Automatic progress tracking + weak-area drilling</span></li>
