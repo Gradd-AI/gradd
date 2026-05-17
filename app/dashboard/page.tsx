@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
+import IBDashboardClient from '@/components/dashboard/IBDashboardClient';
 import { LESSON_COUNTS } from '@/lib/lesson-counts';
 
 export const dynamic = 'force-dynamic';
@@ -160,8 +161,10 @@ export default async function DashboardPage() {
     lastSessionLessonName = lessonRow?.lesson_name ?? null;
   }
 
+  const ClientComponent = isIBStudent ? IBDashboardClient : DashboardClient;
+
   return (
-    <DashboardClient
+    <ClientComponent
       studentName={profile.student_name}
       subject={subject}
       activeSubject={activeSubject}
@@ -202,3 +205,4 @@ export default async function DashboardPage() {
     />
   );
 }
+
