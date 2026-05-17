@@ -648,10 +648,13 @@ const CSS = `
 
 /* ── Footer ── */
 .ib-dash .app-footer {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 28px 28px 48px;
   text-align: center;
-  padding: 40px 0;
   font-size: 12px;
   color: var(--ink-3);
+  border-top: 1px solid var(--rule);
 }
 .ib-dash .app-footer a {
   text-decoration: underline;
