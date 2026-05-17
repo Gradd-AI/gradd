@@ -88,7 +88,6 @@ export async function POST(request: Request) {
       customer_email: profile.stripe_customer_id ? undefined : profile.email,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        trial_period_days: 7,
         metadata: sharedMeta,
       },
       metadata: sharedMeta,
