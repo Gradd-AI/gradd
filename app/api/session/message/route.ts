@@ -163,7 +163,7 @@ export async function POST(request: Request) {
         SESSION_TYPE:                 session.session_type,
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
-        COURSE_POSITION:              deriveCoursePosition(lessonOrder, 'IB_ECONOMICS', profile.ib_economics_level ?? profile.exam_level),
+        COURSE_POSITION:              progress?.course_position ?? deriveCoursePosition(lessonOrder, 'IB_ECONOMICS', profile.ib_economics_level ?? profile.exam_level),
       });
     } else if (subject === 'IB_BUSINESS') {
       const lessonOrder = parseInt(
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
         SESSION_TYPE:                 session.session_type,
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
-        COURSE_POSITION:              deriveCoursePosition(lessonOrder, 'IB_BUSINESS', profile.ib_business_level ?? profile.exam_level),
+        COURSE_POSITION:              progress?.course_position ?? deriveCoursePosition(lessonOrder, 'IB_BUSINESS', profile.ib_business_level ?? profile.exam_level),
       });
     } else {
       injectedSystemPrompt = await buildInjectedSystemPrompt({
