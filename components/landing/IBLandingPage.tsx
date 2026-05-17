@@ -1086,7 +1086,7 @@ const CSS = `
 .ib-lp .one-sub {
   background: var(--sage); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
 }
-.ib-lp .one-sub .h-section em { font-style: italic; color: var(--forest); }
+.ib-lp .one-sub .h-section em { font-style: italic; color: var(--rust); }
 .ib-lp .one-sub-grid {
   display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-top: 40px;
 }
