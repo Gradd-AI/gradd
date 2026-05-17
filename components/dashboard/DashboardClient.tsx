@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { resolveIsIBClient } from '@/lib/site';
+import { resolveIsIBClient } from '@/lib/site-client';
 
 interface Unit { code: string; name: string; }
 interface RecentSession {

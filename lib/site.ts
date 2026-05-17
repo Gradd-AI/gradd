@@ -1,18 +1,17 @@
-// lib/site.ts
+// lib/site.ts — SERVER-SIDE ONLY
 // Resolves the IB/LC product context for the current request.
 //
-// PRODUCTION (VERCEL_ENV === 'production'): purely host-based. Cookie check
-// is skipped entirely — the override cannot be triggered.
+// Do NOT import this file from Client Components — it uses next/headers.
+// Client Components should import from lib/site-client.ts instead.
 //
-// PREVIEW / DEVELOPMENT: a __site cookie (set by middleware from ?site=ib/lc)
-// overrides the host check, so IB pages can be previewed on *.vercel.app URLs.
-// The cookie is scoped to the current origin and cannot bleed to gradd.ai/gradd.ie.
+// PRODUCTION (VERCEL_ENV === 'production'): purely host-based.
+// PREVIEW / DEVELOPMENT: __site cookie (set by proxy.ts from ?site=ib/lc)
+// overrides the host check so IB pages can be reviewed on *.vercel.app URLs.
 
 import { cookies } from 'next/headers';
 
 const COOKIE_NAME = '__site';
 
-// Server-side — call from Server Components and Route Handlers.
 export async function resolveIsIB(host: string): Promise<boolean> {
   if (process.env.VERCEL_ENV === 'production') {
     return host.includes('gradd.ai');
@@ -22,16 +21,4 @@ export async function resolveIsIB(host: string): Promise<boolean> {
   if (override === 'ib') return true;
   if (override === 'lc') return false;
   return host.includes('gradd.ai');
-}
-
-// Client-side — call from Client Components.
-// __site is NOT httpOnly so browser JS can read it.
-// Falls back to hostname when no cookie is set (correct behaviour in production
-// where the middleware never writes the cookie).
-export function resolveIsIBClient(): boolean {
-  if (typeof document === 'undefined') return false;
-  const match = document.cookie.match(/(?:^|;\s*)__site=([^;]*)/);
-  if (match?.[1] === 'ib') return true;
-  if (match?.[1] === 'lc') return false;
-  return typeof window !== 'undefined' && window.location.hostname.includes('gradd.ai');
 }

@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { resolveIsIBClient } from '@/lib/site';
+import { resolveIsIBClient } from '@/lib/site-client';
 import Link from 'next/link';
 
 type BillingPeriod = 'monthly' | 'annual';

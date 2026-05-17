@@ -2,7 +2,32 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+const SITE_COOKIE = '__site';
+
 export async function proxy(request: NextRequest) {
+  // ── Preview-only IB/LC override ─────────────────────────────────────────────
+  // Hard gate: production is purely host-based — skip entirely.
+  // In preview/development, ?site=ib or ?site=lc sets a __site cookie (24 h)
+  // so IB pages can be reviewed on *.vercel.app URLs.
+  if (process.env.VERCEL_ENV !== 'production') {
+    const site = request.nextUrl.searchParams.get('site');
+    if (site === 'ib' || site === 'lc') {
+      const url = request.nextUrl.clone();
+      url.searchParams.delete('site');
+      const response = NextResponse.redirect(url);
+      response.cookies.set(SITE_COOKIE, site, {
+        path: '/',
+        maxAge: 60 * 60 * 24, // 24 hours
+        sameSite: 'lax',
+        // Not httpOnly — client components read it via document.cookie.
+        // No domain attribute — scoped to the current origin only,
+        // so *.vercel.app cookies never reach gradd.ai or gradd.ie.
+      });
+      return response;
+    }
+  }
+
+  // ── Auth guards ─────────────────────────────────────────────────────────────
   let response = NextResponse.next({
     request: {
       headers: request.headers,
