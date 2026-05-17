@@ -82,15 +82,9 @@ export async function generateMetadata(): Promise<Metadata> {
   return host.includes('gradd.ai') ? IB_METADATA : LC_METADATA;
 }
 
-export default async function HomePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
+export default async function HomePage() {
   const host = (await headers()).get('host') ?? '';
-  const params = await searchParams;
-  // TEMP PREVIEW BYPASS — REMOVE BEFORE MERGE
-  const isIB = host.includes('gradd.ai') || params['ib'] === '1';
+  const isIB = host.includes('gradd.ai');
 
   const supabase = await createServerClient();
   const {
