@@ -93,7 +93,7 @@ export default function IBLandingPage() {
         <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
           <div className="wrap nav-inner">
             <a href="#" className="nav-logo" aria-label="Gradd.ai home">
-              <span className="nav-wordmark">gradd<span className="nav-ai">.ai</span></span>
+              <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
             </a>
             <nav className="nav-links" aria-label="Primary">
               {['curriculum','mia','parents','pricing','faq'].map(id => (
@@ -141,7 +141,7 @@ export default function IBLandingPage() {
             <div className="hero-visual">
               <div className="chat" aria-label="Live session with Mia, your AI tutor">
                 <div className="chat-hd">
-                  <div className="chat-logo">gradd<span className="ai">.ai</span></div>
+                  <div className="chat-logo"><img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:16,width:'auto',display:'block'}} /></div>
                   <div className="chat-name-pill"><span className="live" />Mia</div>
                   <div className="chat-course">
                     <div className="em">Economics as a Social Science</div>
@@ -739,7 +739,7 @@ export default function IBLandingPage() {
         <footer className="footer">
           <div className="wrap footer-inner">
             <div style={{display:'flex',alignItems:'center',gap:10}}>
-              <span className="footer-logo">gradd<span className="footer-ai">.ai</span></span>
+              <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:16,width:'auto',display:'block'}} />
               <span style={{fontSize:12,color:'var(--ink-3)',marginLeft:14}}>© 2026 · The AI tutor for IB Econ &amp; BM</span>
             </div>
             <div className="footer-links">
