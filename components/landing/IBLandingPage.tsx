@@ -835,6 +835,8 @@ const CSS = `
   border-radius: 50%; vertical-align: middle; margin: 0 8px 2px;
 }
 .ib-lp .italic { font-style: italic; }
+.ib-lp .h-section .italic,
+.ib-lp .h-display .italic { color: var(--rust); }
 .ib-lp .h-display {
   font-family: var(--serif); font-size: clamp(48px, 7.4vw, 104px);
   line-height: 0.96; letter-spacing: -0.025em; text-wrap: balance;
