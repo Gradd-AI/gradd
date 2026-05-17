@@ -235,24 +235,21 @@ function SubjectSwitcher({ active }: { active: string }) {
   );
 }
 
-// ─── Hero cards (unchanged — restyled in Stage 2) ─────────────────────────────
+// ─── Hero cards — Stage 2a ────────────────────────────────────────────────────
 
 function StudentHeroCard({ currentLessonName, currentUnitName, sessionType, spaced_rep_due, abq_drill_due }: {
   currentLessonName: string; currentUnitName: string; sessionType: string;
   spaced_rep_due: boolean; abq_drill_due: boolean;
 }) {
+  const label = spaced_rep_due ? '🔁 Recall + New Topic' : abq_drill_due ? '📄 ABQ Drill due' : 'Next session';
   return (
-    <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '32px 40px', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 20 }}>
+    <div className="next-session">
       <div>
-        <p style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>
-          {spaced_rep_due ? '🔁 Recall + New Topic' : abq_drill_due ? '📄 ABQ Drill due' : 'Next session'}
-        </p>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 4, letterSpacing: '-0.3px' }}>{currentLessonName}</h2>
-        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{currentUnitName} · {sessionType}</p>
+        <div className="ns-label">{label}</div>
+        <h2>{currentLessonName}</h2>
+        <div className="ns-meta">{currentUnitName} · {sessionType}</div>
       </div>
-      <Link href="/session" style={{ background: 'var(--accent)', color: '#fff', padding: '14px 32px', borderRadius: 10, fontWeight: 700, fontSize: 15, textDecoration: 'none', whiteSpace: 'nowrap', flexShrink: 0 }}>
-        Start session →
-      </Link>
+      <Link href="/session" className="start-btn">Start session →</Link>
     </div>
   );
 }
@@ -261,51 +258,47 @@ function ParentPositionCard({ currentLessonName, currentUnitName, sessionType, l
   currentLessonName: string; currentUnitName: string; sessionType: string; lastSession: LastSession | null;
 }) {
   return (
-    <div style={{ background: 'var(--brand)', borderRadius: 'var(--radius-lg)', padding: '28px 36px', marginBottom: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
-        <div>
-          <p style={{ color: 'var(--accent)', fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 6 }}>Currently studying</p>
-          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4, letterSpacing: '-0.3px' }}>{currentLessonName}</h2>
-          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{currentUnitName} · {sessionType}</p>
-        </div>
-        {lastSession && (
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Last active</p>
-            <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: 600 }}>{formatDateShort(lastSession.started_at)}</p>
-          </div>
-        )}
+    <div className="next-session">
+      <div>
+        <div className="ns-label">Currently studying</div>
+        <h2>{currentLessonName}</h2>
+        <div className="ns-meta">{currentUnitName} · {sessionType}</div>
       </div>
+      {lastSession && (
+        <div className="right-meta">
+          Last active
+          <span className="em">{formatDateShort(lastSession.started_at)}</span>
+        </div>
+      )}
     </div>
   );
 }
 
-// ─── Last session card (unchanged — Stage 2) ──────────────────────────────────
+// ─── Last session card — Stage 2a ────────────────────────────────────────────
 
 function LastSessionCard({ s }: { s: LastSession }) {
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', overflow: 'hidden', marginBottom: 24 }}>
-      <div style={{ background: 'var(--brand-light)', padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'rgba(255,255,255,0.65)' }}>Last session</span>
-          <span style={{ color: 'rgba(255,255,255,0.3)' }}>·</span>
-          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)' }}>{formatDate(s.started_at)}</span>
-        </div>
-        <span style={{ fontSize: 11, fontWeight: 600, background: 'rgba(200,151,46,0.25)', color: 'var(--accent)', padding: '2px 10px', borderRadius: 99 }}>{sessionLabel(s.session_type)}</span>
+    <div className="last-session">
+      <div className="last-session-hd">
+        <span className="ls-label">Last session · {formatDate(s.started_at)}</span>
+        <span className="ls-pill">{sessionLabel(s.session_type)}</span>
       </div>
-      <div style={{ padding: '16px 20px' }}>
-        <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-display)', marginBottom: 2 }}>{s.lesson_name ?? s.lesson_code ?? '—'}</p>
-        {s.apply_scores && <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Apply score: <strong style={{ color: 'var(--brand)' }}>{s.apply_scores}</strong></p>}
+      <div className="last-session-body">
+        <h3>{s.lesson_name ?? s.lesson_code ?? '—'}</h3>
+        {s.apply_scores && (
+          <p className="ls-apply">Apply score: <strong>{s.apply_scores}</strong></p>
+        )}
         {s.concepts_covered.length > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8, marginBottom: 12 }}>
+          <div className="ls-chips">
             {s.concepts_covered.map(c => (
-              <span key={c} style={{ fontSize: 12, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 10px', color: 'var(--text-muted)' }}>{c}</span>
+              <span key={c} className="ls-chip">{c}</span>
             ))}
           </div>
         )}
         <div style={{ marginTop: 8 }}>
           {s.weak_flags_count > 0
-            ? <span style={{ fontSize: 13, fontWeight: 600, color: '#7a5c00' }}>⚠ {s.weak_flags_count} concept{s.weak_flags_count !== 1 ? 's' : ''} to revisit</span>
-            : <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--success)' }}>✓ All clear — no weak flags</span>}
+            ? <div className="ls-warn">⚠ {s.weak_flags_count} concept{s.weak_flags_count !== 1 ? 's' : ''} to revisit</div>
+            : <div className="ls-ok">✓ All clear — no weak flags</div>}
         </div>
       </div>
     </div>
@@ -674,6 +667,157 @@ const CSS = `
   margin-bottom: 28px;
 }
 
+/* ── Stage 2a: Session / hero cards ── */
+
+.ib-dash .next-session {
+  background: var(--forest-deep);
+  color: var(--forest-ink);
+  border: 1px solid var(--forest);
+  border-radius: 16px;
+  padding: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+.ib-dash .next-session .ns-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+.ib-dash .next-session h2 {
+  font-family: var(--serif);
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  line-height: 1.1;
+  color: var(--forest-ink);
+  margin: 0 0 6px;
+}
+.ib-dash .next-session .ns-meta {
+  font-size: 13px;
+  color: color-mix(in oklab, var(--forest-ink) 65%, transparent);
+}
+.ib-dash .next-session .start-btn {
+  flex-shrink: 0;
+  background: var(--gold);
+  color: var(--gold-ink);
+  font-weight: 500;
+  font-size: 15px;
+  padding: 14px 24px;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  text-decoration: none;
+  font-family: var(--sans);
+  transition: background 0.15s;
+}
+.ib-dash .next-session .start-btn:hover { background: var(--gold-2); }
+.ib-dash .next-session .right-meta {
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 12px;
+  color: color-mix(in oklab, var(--forest-ink) 55%, transparent);
+}
+.ib-dash .next-session .right-meta .em {
+  display: block;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-style: italic;
+  color: var(--forest-ink);
+  margin-top: 2px;
+}
+
+.ib-dash .last-session {
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--paper);
+  margin-bottom: 28px;
+}
+.ib-dash .last-session-hd {
+  background: var(--forest);
+  color: var(--forest-ink);
+  padding: 14px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.ib-dash .last-session-hd .ls-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--forest-ink);
+}
+.ib-dash .last-session-hd .ls-pill {
+  background: var(--rust);
+  color: var(--rust-ink);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: var(--mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.ib-dash .last-session-body {
+  padding: 22px 24px;
+}
+.ib-dash .last-session-body h3 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.012em;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+.ib-dash .last-session-body .ls-apply {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-bottom: 10px;
+}
+.ib-dash .last-session-body .ls-apply strong {
+  color: var(--forest);
+  font-weight: 500;
+}
+.ib-dash .last-session-body .ls-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+.ib-dash .last-session-body .ls-chip {
+  font-size: 11.5px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--ink-3);
+}
+.ib-dash .last-session-body .ls-ok {
+  font-size: 13px;
+  color: var(--green-ok);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ib-dash .last-session-body .ls-warn {
+  font-size: 13px;
+  color: var(--rust);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 /* ── Mobile ── */
 @media (max-width: 760px) {
   .ib-dash .app-nav { padding: 0 14px; height: 56px; }
@@ -688,6 +832,13 @@ const CSS = `
   .ib-dash .view-toggle { align-self: flex-start; }
   .ib-dash .subj-tabs { width: 100%; overflow-x: auto; }
   .ib-dash .dash-stat-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .ib-dash .next-session { flex-direction: column; align-items: stretch; padding: 24px; gap: 16px; }
+  .ib-dash .next-session h2 { font-size: 28px; }
+  .ib-dash .next-session .start-btn { width: 100%; justify-content: center; }
+  .ib-dash .next-session .right-meta { text-align: left; }
+  .ib-dash .last-session-hd { padding: 12px 18px; gap: 8px; flex-wrap: wrap; }
+  .ib-dash .last-session-body { padding: 20px; }
+  .ib-dash .last-session-body h3 { font-size: 20px; }
 }
 @media (max-width: 480px) {
   .ib-dash .page-head h1 { font-size: 34px; }
