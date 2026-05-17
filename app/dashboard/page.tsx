@@ -131,7 +131,16 @@ export default async function DashboardPage() {
     .eq('student_id', user.id);
   if (lessonPrefix) completionsQuery = completionsQuery.like('lesson_code', `${lessonPrefix}%`);
 
-  const [progressRes, sessionsRes, weakAreasRes, completionsRes] = await Promise.all([
+  // Count-only query for total sessions — no .limit so the number isn't capped at 5.
+  // Subject-filtered the same way as sessionsQuery so bundle students see per-subject counts.
+  let sessionCountQuery = supabase
+    .from('sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('student_id', user.id)
+    .not('ended_at', 'is', null);
+  if (lessonPrefix) sessionCountQuery = sessionCountQuery.like('lesson_code', `${lessonPrefix}%`);
+
+  const [progressRes, sessionsRes, weakAreasRes, completionsRes, sessionCountRes] = await Promise.all([
     supabase
       .from('student_progress')
       .select('current_unit_code, current_unit_name, current_lesson_code, current_lesson_name, session_number, spaced_rep_due, abq_drill_due, units_completed, last_session_summary')
@@ -141,12 +150,14 @@ export default async function DashboardPage() {
     sessionsQuery,
     weakAreasQuery,
     completionsQuery,
+    sessionCountQuery,
   ]);
 
   const progress = progressRes.data;
   const sessions = sessionsRes.data ?? [];
   const weakAreas = weakAreasRes.data ?? [];
   const totalCompleted = completionsRes.count ?? 0;
+  const totalSessions = sessionCountRes.count ?? sessions.length;
   const curriculumPercent = Math.min(100, Math.round((totalCompleted / totalLessons) * 100));
   const unitsCompleted: string[] = (progress?.units_completed as string[]) ?? [];
   const lastSession = sessions[0] ?? null;
@@ -179,7 +190,7 @@ export default async function DashboardPage() {
       curriculumPercent={curriculumPercent}
       totalCompleted={totalCompleted}
       totalLessons={totalLessons}
-      totalSessions={sessions.length}
+      totalSessions={totalSessions}
       weakAreasCount={weakAreas.length}
       unitsCompleted={unitsCompleted}
       units={units}
