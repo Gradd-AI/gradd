@@ -319,9 +319,12 @@ export default function ChatInterface({
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
+    <div className={isIB ? 'ib-session' : ''} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
 
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+        /* ── LC session (unchanged) ── */
         .tutor-message-row { display: flex; align-items: flex-start; }
         .tutor-message-bubble { display: flex; gap: 12px; align-items: flex-start; position: relative; max-width: 92%; }
         .session-header {
@@ -340,6 +343,7 @@ export default function ChatInterface({
           padding: 6px 14px; font-size: 13px; color: var(--chat-muted);
           cursor: pointer; font-family: var(--font-body); transition: all 0.15s ease;
         }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-5px); opacity: 1; } }
         @media (max-width: 480px) {
           .session-header { display: flex; flex-direction: column; padding: 8px 12px; gap: 4px; min-height: 56px; height: auto; }
           .session-header-row1 { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; width: 100%; }
@@ -356,6 +360,174 @@ export default function ChatInterface({
           .chat-messages-container { scrollbar-width: none; -ms-overflow-style: none; }
           .chat-messages-container::-webkit-scrollbar { display: none; }
         }
+
+        /* ─── IB Session re-skin ─────────────────────────────────────────────
+           All selectors scoped under .ib-session — zero bleed to LC session. */
+
+        .ib-session {
+          --paper:         oklch(96.2% 0.012 78);
+          --paper-2:       oklch(93.5% 0.015 78);
+          --paper-3:       oklch(89% 0.018 78);
+          --ink:           oklch(18% 0.012 60);
+          --ink-2:         oklch(34% 0.012 60);
+          --ink-3:         oklch(54% 0.012 60);
+          --rule:          oklch(86% 0.014 78);
+          --rule-strong:   oklch(74% 0.018 78);
+          --forest:        oklch(22% 0.035 168);
+          --forest-2:      oklch(28% 0.04 168);
+          --forest-deep:   oklch(16% 0.028 168);
+          --forest-ink:    oklch(94% 0.025 80);
+          --forest-ink-2:  oklch(78% 0.025 75);
+          --rust:          oklch(64% 0.17 47);
+          --rust-2:        oklch(58% 0.17 47);
+          --rust-ink:      oklch(98% 0.01 70);
+          --gold:          oklch(70% 0.14 75);
+          --serif:         "Fraunces","Times New Roman",Georgia,serif;
+          --sans:          "Geist",ui-sans-serif,system-ui,-apple-system,sans-serif;
+          --mono:          "Geist Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
+          /* Remap legacy chat vars — inline styles in MessageRenderer resolve through these */
+          --chat-bg:        var(--paper);
+          --chat-surface:   var(--paper-2);
+          --chat-surface-2: var(--paper-3);
+          --chat-border:    var(--rule);
+          --chat-text:      var(--ink);
+          --chat-muted:     var(--ink-3);
+          --chat-accent:    var(--rust);
+          --font-body:      var(--sans);
+          --font-display:   var(--serif);
+          /* MessageRenderer typography overrides */
+          --chat-strong:      var(--forest);
+          --chat-em:          var(--rust);
+          --chat-thead-bg:    var(--paper-3);
+          --chat-thead-color: var(--ink-2);
+          background: var(--paper);
+          color: var(--ink);
+          font-family: var(--sans);
+        }
+
+        /* ── Dark sticky header ── */
+        .ib-session .session-header {
+          background:    var(--forest-deep) !important;
+          border-bottom: 1px solid color-mix(in oklab,var(--forest-ink) 10%,transparent) !important;
+          color: var(--forest-ink);
+          height: 64px;
+        }
+        .ib-session .session-logo {
+          height: 22px;
+          filter: brightness(0) saturate(100%) invert(96%) sepia(20%) saturate(420%) hue-rotate(355deg) brightness(98%) contrast(91%);
+          opacity: 0.9;
+        }
+        .ib-session .ib-live-pill {
+          display: inline-flex; align-items: center; gap: 7px;
+          padding: 6px 12px;
+          border: 1px solid color-mix(in oklab,var(--forest-ink) 18%,transparent);
+          border-radius: 999px;
+          color: var(--forest-ink);
+          font-family: var(--sans); font-size: 12px;
+        }
+        .ib-session .ib-live-dot {
+          width: 6px; height: 6px; border-radius: 50%;
+          background: var(--rust);
+          box-shadow: 0 0 0 3px color-mix(in oklab,var(--rust) 25%,transparent);
+        }
+        .ib-session .end-session-btn {
+          padding: 7px 14px !important;
+          border: 1px solid color-mix(in oklab,var(--forest-ink) 22%,transparent) !important;
+          border-radius: 999px !important;
+          color: var(--forest-ink) !important;
+          font-size: 12px;
+        }
+        .ib-session .end-session-btn:hover { background: color-mix(in oklab,var(--forest-ink) 6%,transparent); }
+        .ib-session .session-header-row2 {
+          font-family: var(--mono) !important;
+          font-size: 11px !important; font-weight: 400 !important;
+          letter-spacing: 0.04em;
+          color: color-mix(in oklab,var(--forest-ink) 60%,transparent) !important;
+        }
+        .ib-session .session-subtitle { color: inherit; }
+
+        /* ── Message stream ── */
+        .ib-session .chat-messages-container { background: var(--paper); padding-top: 40px !important; }
+        .ib-session .chat-messages-container > div { max-width: 720px !important; padding: 0 28px !important; }
+
+        /* ── Tutor row (editorial — no bubble background) ── */
+        .ib-session .ib-chat-row-tutor {
+          display: flex; gap: 16px; margin-bottom: 36px; align-items: flex-start;
+        }
+
+        /* ── User row ── */
+        .ib-session .ib-chat-row-user {
+          display: flex; justify-content: flex-end; gap: 10px;
+          margin-bottom: 36px; align-items: flex-end;
+        }
+
+        /* ── Avatars ── */
+        .ib-session .ib-avatar-tutor {
+          width: 30px; height: 30px; flex: 0 0 30px;
+          border-radius: 50%;
+          background: var(--forest); color: var(--gold);
+          display: grid; place-items: center;
+          font-family: var(--mono); font-size: 12px; font-weight: 500;
+          border: 1px solid color-mix(in oklab,var(--ink) 8%,transparent);
+          margin-top: 2px; flex-shrink: 0;
+        }
+        .ib-session .ib-avatar-user {
+          width: 30px; height: 30px; flex: 0 0 30px;
+          border-radius: 50%;
+          background: var(--rust); color: var(--rust-ink);
+          border: 1px solid color-mix(in oklab,var(--rust) 60%,var(--ink));
+          display: grid; place-items: center;
+          font-family: var(--mono); font-size: 12px; font-weight: 500;
+          flex-shrink: 0;
+        }
+
+        /* ── User bubble ── */
+        .ib-session .ib-user-bubble {
+          background: var(--forest); color: var(--forest-ink);
+          border: 1px solid var(--forest);
+          padding: 12px 18px; border-radius: 18px;
+          font-family: var(--sans); font-size: 14.5px; line-height: 1.5;
+          max-width: 75%;
+        }
+
+        /* ── Tutor content — editorial, no bubble ── */
+        .ib-session .ib-mia-content {
+          max-width: 100%; font-family: var(--sans);
+          font-size: 16px; line-height: 1.72;
+          color: var(--ink); letter-spacing: -0.003em;
+        }
+
+        /* ── Loading dots ── */
+        .ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+        .ib-session .ib-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
+
+        /* ── Mobile ── */
+        @media (max-width: 720px) {
+          .ib-session .session-header { padding: 0 16px !important; height: 56px !important; }
+          .ib-session .session-logo { height: 18px; }
+        }
+        @media (max-width: 640px) {
+          .ib-session .ib-chat-row-tutor,
+          .ib-session .ib-chat-row-user  { margin-bottom: 28px; }
+          .ib-session .ib-mia-content    { font-size: 15px; }
+          .ib-session .ib-user-bubble    { max-width: 88%; }
+          .ib-session .ib-avatar-user    { display: none; }
+          .ib-session .chat-messages-container > div { padding: 0 18px !important; }
+        }
+        @media (max-width: 480px) {
+          .ib-session .session-header {
+            flex-direction: column !important; height: auto !important;
+            padding: 10px 16px !important; gap: 8px !important; align-items: stretch !important;
+          }
+          .ib-session .session-header-row1 { grid-template-columns: auto 1fr auto !important; }
+          .ib-session .session-header-row2 {
+            text-align: center !important; padding-top: 8px;
+            border-top: 1px solid color-mix(in oklab,var(--forest-ink) 10%,transparent);
+            white-space: normal !important; overflow: visible !important; text-overflow: unset !important;
+          }
+          .ib-session .end-session-btn { padding: 6px 11px !important; font-size: 11px; }
+          .ib-session .ib-live-pill    { padding: 5px 10px; font-size: 11px; }
+        }
       `}</style>
 
       {/* Header — sticky so End session is always visible regardless of scroll position */}
@@ -368,10 +540,17 @@ export default function ChatInterface({
             </Link>
           </div>
           <div className="session-header-centre">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
-              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
-              <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
-            </div>
+            {isIB ? (
+              <div className="ib-live-pill">
+                <div className="ib-live-dot" />
+                <span>{tutorName}</span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 20, padding: '5px 12px' }}>
+                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
+                <span style={{ fontSize: 13, color: 'var(--chat-text)', fontWeight: 500 }}>{tutorName}</span>
+              </div>
+            )}
           </div>
           <div className="session-header-right">
             <button
@@ -448,7 +627,7 @@ export default function ChatInterface({
             const isLastMsg = i === messages.length - 1;
             return (
               <div key={i} ref={isLastMsg ? lastMessageRef : undefined}>
-                <MessageBubble message={msg} studentName={studentName} tutorInitial={tutorName[0]} />
+                <MessageBubble message={msg} studentName={studentName} tutorInitial={tutorName[0]} isIB={isIB} />
               </div>
             );
           })}
@@ -540,7 +719,7 @@ function LessonCompletePanel({ onContinue, onEnd, ending }: { onContinue: () => 
 
 // --- MessageBubble ---
 
-function MessageBubble({ message, studentName, tutorInitial }: { message: Message; studentName: string; tutorInitial: string }) {
+function MessageBubble({ message, studentName, tutorInitial, isIB }: { message: Message; studentName: string; tutorInitial: string; isIB?: boolean }) {
   const isUser = message.role === 'user';
 
   const displayContent = message.content
@@ -553,6 +732,18 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
     .trim();
 
   if (!displayContent && message.role === 'assistant') {
+    if (isIB) {
+      return (
+        <div className="ib-chat-row-tutor">
+          <div className="ib-avatar-tutor">{tutorInitial}</div>
+          <div className="ib-loading-dots">
+            {[0, 1, 2].map(i => (
+              <span key={i} className="ib-dot" style={{ animation: `bounce 1.1s ease-in-out ${i * 0.18}s infinite` }} />
+            ))}
+          </div>
+        </div>
+      );
+    }
     return (
       <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'flex-start' }}>
         <AvatarTutor initial={tutorInitial} />
@@ -561,7 +752,6 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
             <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--chat-muted)', display: 'inline-block', animation: `bounce 1.1s ease-in-out ${i * 0.18}s infinite` }} />
           ))}
         </div>
-        <style>{`@keyframes bounce { 0%, 60%, 100% { transform: translateY(0); opacity: 0.5; } 30% { transform: translateY(-5px); opacity: 1; } }`}</style>
       </div>
     );
   }
@@ -569,6 +759,14 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
   if (!displayContent) return null;
 
   if (isUser) {
+    if (isIB) {
+      return (
+        <div className="ib-chat-row-user">
+          <div className="ib-user-bubble">{displayContent}</div>
+          <div className="ib-avatar-user">{studentName[0]?.toUpperCase()}</div>
+        </div>
+      );
+    }
     return (
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16, gap: 10, alignItems: 'flex-end' }}>
         <div style={{ maxWidth: '72%', background: 'var(--brand-mid)', borderRadius: '16px 4px 16px 16px', padding: '12px 16px', fontSize: 15, color: '#fff', lineHeight: 1.55 }}>
@@ -576,6 +774,17 @@ function MessageBubble({ message, studentName, tutorInitial }: { message: Messag
         </div>
         <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}>
           {studentName[0]?.toUpperCase()}
+        </div>
+      </div>
+    );
+  }
+
+  if (isIB) {
+    return (
+      <div className="ib-chat-row-tutor">
+        <div className="ib-avatar-tutor">{tutorInitial}</div>
+        <div className="ib-mia-content">
+          <MessageContent content={displayContent} />
         </div>
       </div>
     );

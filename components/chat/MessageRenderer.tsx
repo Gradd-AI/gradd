@@ -21,9 +21,9 @@ function renderInline(text: string): React.ReactNode[] {
       parts.push(text.slice(last, match.index));
     }
     if (match[2]) {
-      parts.push(<strong key={i++} style={{ fontWeight: 700, color: 'var(--chat-text)' }}>{match[2]}</strong>);
+      parts.push(<strong key={i++} style={{ fontWeight: 700, color: 'var(--chat-strong, var(--chat-text))' }}>{match[2]}</strong>);
     } else if (match[3]) {
-      parts.push(<em key={i++} style={{ fontStyle: 'italic' }}>{match[3]}</em>);
+      parts.push(<em key={i++} style={{ fontStyle: 'italic', color: 'var(--chat-em, inherit)' }}>{match[3]}</em>);
     }
     last = match.index + match[0].length;
   }
@@ -61,8 +61,8 @@ function renderTable(rows: string[], key: string | number): React.ReactNode {
           <tr>
             {headerCells.map((cell, ci) => (
               <th key={ci} style={{
-                background: 'var(--brand-mid)',
-                color: 'var(--chat-text)',
+                background: 'var(--chat-thead-bg, var(--brand-mid))',
+                color: 'var(--chat-thead-color, var(--chat-text))',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
                 fontSize: 13,
