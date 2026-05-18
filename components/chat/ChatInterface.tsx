@@ -552,8 +552,10 @@ export default function ChatInterface({
           font-size: 10.5px; letter-spacing: 0.04em;
           color: var(--ink-3); margin-top: 8px;
         }
-        /* Pad messages above the fixed input bar */
-        .ib-session .chat-messages-container { padding-bottom: 130px; }
+        /* Pad messages above the fixed input bar.
+           !important required: the element has inline style="padding:24px 0"
+           which sets padding-bottom:0 and wins over a plain class rule. */
+        .ib-session .chat-messages-container { padding-bottom: 160px !important; }
 
         /* ── Mobile ── */
         @media (max-width: 720px) {
