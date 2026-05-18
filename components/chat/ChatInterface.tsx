@@ -501,6 +501,60 @@ export default function ChatInterface({
         .ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
         .ib-session .ib-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
 
+        /* ── Input bar (fixed, gradient fade) ── */
+        .ib-session .ib-input-bar {
+          position: fixed;
+          bottom: 0; left: 0; right: 0;
+          background: linear-gradient(to top, var(--paper) 65%, transparent);
+          padding: 24px 28px 28px;
+          z-index: 40;
+        }
+        .ib-session .ib-input-inner {
+          max-width: 720px; margin: 0 auto;
+          display: flex; align-items: center; gap: 10px;
+          padding: 10px 12px 10px 18px;
+          border: 1px solid var(--rule-strong);
+          border-radius: 16px;
+          background: var(--paper);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        }
+        .ib-session .ib-attach-btn {
+          width: 36px; height: 36px; flex-shrink: 0; padding: 0;
+          border-radius: 10px; background: transparent;
+          border: 1px solid var(--rule-strong);
+          color: var(--ink-2); display: grid; place-items: center;
+          cursor: pointer; transition: background 0.15s, color 0.15s;
+        }
+        .ib-session .ib-attach-btn svg { width: 18px; height: 18px; display: block; }
+        .ib-session .ib-attach-btn:hover:not(:disabled) { background: var(--paper-2); color: var(--ink); }
+        .ib-session .ib-attach-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .ib-session .ib-textarea {
+          flex: 1; min-width: 0;
+          background: transparent; border: 0; outline: none;
+          color: var(--ink); font-family: var(--sans);
+          font-size: 14px; padding: 4px 0; resize: none;
+          line-height: 1.5; min-height: 24px; max-height: 160px;
+          overflow-y: auto; align-self: center;
+        }
+        .ib-session .ib-textarea::placeholder { color: var(--ink-3); }
+        .ib-session .ib-textarea:disabled { opacity: 0.6; }
+        .ib-session .ib-send-btn {
+          width: 36px; height: 36px; flex-shrink: 0; padding: 0;
+          border-radius: 10px; border: 0;
+          background: var(--rust); color: var(--rust-ink);
+          display: grid; place-items: center;
+          cursor: pointer; transition: background 0.15s;
+        }
+        .ib-session .ib-send-btn:hover:not(:disabled) { background: var(--rust-2); }
+        .ib-session .ib-send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+        .ib-session .ib-input-hint {
+          text-align: center; font-family: var(--mono);
+          font-size: 10.5px; letter-spacing: 0.04em;
+          color: var(--ink-3); margin-top: 8px;
+        }
+        /* Pad messages above the fixed input bar */
+        .ib-session .chat-messages-container { padding-bottom: 130px; }
+
         /* ── Mobile ── */
         @media (max-width: 720px) {
           .ib-session .session-header { padding: 0 16px !important; height: 56px !important; }
@@ -513,6 +567,10 @@ export default function ChatInterface({
           .ib-session .ib-user-bubble    { max-width: 88%; }
           .ib-session .ib-avatar-user    { display: none; }
           .ib-session .chat-messages-container > div { padding: 0 18px !important; }
+          .ib-session .ib-input-bar  { padding: 16px 12px 20px; }
+          .ib-session .ib-input-inner { padding: 7px 7px 7px 12px; gap: 8px; }
+          .ib-session .ib-attach-btn,
+          .ib-session .ib-send-btn   { width: 34px; height: 34px; }
         }
         @media (max-width: 480px) {
           .ib-session .session-header {
@@ -641,16 +699,22 @@ export default function ChatInterface({
       </div>
 
       {/* Input area */}
-      <div style={{ borderTop: '1px solid var(--chat-border)', padding: '16px 24px', flexShrink: 0, background: 'var(--chat-bg)' }}>
-        <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <div
+        className={isIB ? 'ib-input-bar' : ''}
+        style={isIB ? undefined : { borderTop: '1px solid var(--chat-border)', padding: '16px 24px', flexShrink: 0, background: 'var(--chat-bg)' }}
+      >
+        <div style={isIB ? undefined : { maxWidth: 760, margin: '0 auto' }}>
 
           {lessonComplete && !streaming ? (
             <LessonCompletePanel onContinue={continueToNextLesson} onEnd={endSession} ending={ending} />
           ) : (
             <>
-              <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+              <div
+                className={isIB ? 'ib-input-inner' : ''}
+                style={isIB ? undefined : { display: 'flex', gap: 10, alignItems: 'flex-end' }}
+              >
                 {isIB && (
-                  <DiagramUploadButton onUpload={handleDiagramUpload} disabled={loading || streaming || initialising} />
+                  <DiagramUploadButton onUpload={handleDiagramUpload} disabled={loading || streaming || initialising} isIB />
                 )}
                 <textarea
                   ref={textareaRef}
@@ -661,13 +725,15 @@ export default function ChatInterface({
                   // WS0A: disabled covers the visual state; isSubmittingRef covers the race condition
                   disabled={loading || streaming || initialising || ended}
                   rows={1}
-                  style={{ flex: 1, resize: 'none', background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 12, padding: '12px 16px', fontSize: 15, color: 'var(--chat-text)', fontFamily: 'var(--font-body)', outline: 'none', lineHeight: 1.5, minHeight: 48, maxHeight: 160, overflowY: 'auto' }}
+                  className={isIB ? 'ib-textarea' : ''}
+                  style={isIB ? undefined : { flex: 1, resize: 'none', background: 'var(--chat-surface)', border: '1px solid var(--chat-border)', borderRadius: 12, padding: '12px 16px', fontSize: 15, color: 'var(--chat-text)', fontFamily: 'var(--font-body)', outline: 'none', lineHeight: 1.5, minHeight: 48, maxHeight: 160, overflowY: 'auto' }}
                 />
                 <button
                   onClick={() => sendMessage(input)}
                   // WS0A: button disabled during loading OR streaming — no gap
                   disabled={loading || streaming || !input.trim() || initialising}
-                  style={{ width: 48, height: 48, borderRadius: 12, border: 'none', background: streaming ? 'var(--chat-border)' : 'var(--accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s ease' }}
+                  className={isIB ? 'ib-send-btn' : ''}
+                  style={isIB ? undefined : { width: 48, height: 48, borderRadius: 12, border: 'none', background: streaming ? 'var(--chat-border)' : 'var(--accent)', color: '#fff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, transition: 'background 0.15s ease' }}
                 >
                   {streaming ? (
                     <span className="spinner" style={{ borderColor: '#fff', borderTopColor: 'transparent', width: 18, height: 18 }} />
@@ -678,7 +744,10 @@ export default function ChatInterface({
                   )}
                 </button>
               </div>
-              <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--chat-muted)', marginTop: 8, opacity: 0.7 }}>
+              <p
+                className={isIB ? 'ib-input-hint' : ''}
+                style={isIB ? undefined : { textAlign: 'center', fontSize: 11, color: 'var(--chat-muted)', marginTop: 8, opacity: 0.7 }}
+              >
                 Enter to send · Shift+Enter for new line
               </p>
             </>
@@ -860,7 +929,7 @@ function DynamicDiagramRenderer({ prompt }: { prompt: string }) {
   );
 }
 
-function DiagramUploadButton({ onUpload, disabled }: { onUpload: (base64: string, mimeType: string) => void; disabled?: boolean }) {
+function DiagramUploadButton({ onUpload, disabled, isIB }: { onUpload: (base64: string, mimeType: string) => void; disabled?: boolean; isIB?: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   function handleFile(file: File) {
@@ -893,7 +962,8 @@ function DiagramUploadButton({ onUpload, disabled }: { onUpload: (base64: string
         onClick={() => inputRef.current?.click()}
         disabled={disabled}
         title="Upload your diagram for feedback"
-        style={{
+        className={isIB ? 'ib-attach-btn' : ''}
+        style={isIB ? undefined : {
           background: 'transparent',
           border: '1px solid var(--chat-border)',
           borderRadius: 10,
@@ -910,7 +980,12 @@ function DiagramUploadButton({ onUpload, disabled }: { onUpload: (base64: string
           transition: 'all 0.15s',
         }}
       >
-        📷
+        {isIB ? (
+          <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+            <path d="M3 7h3l1.7-2.5A1 1 0 0 1 8.5 4h7a1 1 0 0 1 .8.5L18 7h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" />
+            <circle cx="12" cy="13" r="3.6" />
+          </svg>
+        ) : '📷'}
       </button>
     </>
   );
