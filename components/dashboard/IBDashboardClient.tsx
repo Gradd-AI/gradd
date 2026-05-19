@@ -476,7 +476,7 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
 // All selectors are prefixed with .ib-dash so this cannot affect DashboardClient.tsx
 // (LC dashboard) or any other page. Pattern mirrors the IB landing page (.ib-lp).
 
-const CSS = `
+export const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
 
 /* ── Design-system foundation ── */

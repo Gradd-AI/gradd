@@ -6,8 +6,6 @@
 // Copy: docs/Gradd_IB_Landing_Copy_Deck.md — DECK WINS over prototype on every
 //       conflict. All copy-deck instructions applied (KEEP / FIX / CUT / REBUILD).
 //
-// NOTE: /demo CTA is wired to '/demo' — that route does not exist yet and will
-// return a 404 until a demo page is built. Flagged here for awareness.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from 'react';
@@ -103,7 +101,6 @@ export default function IBLandingPage() {
               ))}
             </nav>
             <div className="nav-cta">
-              {/* NOTE: /demo does not exist yet */}
               <Link href="/demo" className="btn btn-see-it btn-sm">See it in action</Link>
               <Link href="/auth/login" className="btn btn-ghost btn-sm">Log in</Link>
               <Link href="/auth/signup" className="btn btn-primary btn-sm">Start <span className="arrow">→</span></Link>
@@ -126,7 +123,6 @@ export default function IBLandingPage() {
               </p>
               <div className="hero-cta">
                 <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
-                {/* NOTE: /demo does not exist yet */}
                 <Link href="/demo" className="btn btn-ghost">See it in action</Link>
               </div>
               <div className="hero-meta">
@@ -475,7 +471,6 @@ export default function IBLandingPage() {
                 <li><span><b>Weekly progress email, every Monday.</b> What they covered, a pace check, and what&apos;s next.</span></li>
                 <li><span><b>Pace, in plain sight.</b> The dashboard and the weekly email both flag it the moment they fall behind.</span></li>
               </ul>
-              {/* NOTE: /demo does not exist yet */}
               <Link href="/demo" className="btn btn-ghost">See the parent view <span className="arrow">→</span></Link>
             </div>
 
