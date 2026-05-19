@@ -248,6 +248,14 @@ const CSS = `
   font-family: var(--sans); font-size: 12.5px; color: var(--forest);
 }
 .ib-session .demo-session-notice a { font-weight: 600; color: var(--forest); text-decoration: underline; text-underline-offset: 3px; }
+.ib-session .demo-header-cta {
+  padding: 7px 14px; border-radius: 999px;
+  background: var(--rust); color: var(--rust-ink);
+  font-size: 12px; font-family: var(--sans); font-weight: 500;
+  text-decoration: none; display: inline-block;
+  transition: background 0.15s;
+}
+.ib-session .demo-header-cta:hover { background: var(--rust-2); }
 
 /* Signup CTA */
 .ib-session .demo-signup-cta {
@@ -396,8 +404,9 @@ export default function DemoSession() {
     return () => timers.forEach(clearTimeout);
   }, [visibleCount]);
 
-  // Scroll to bottom as messages appear
+  // Scroll to bottom only after the first message appears — not on mount
   useEffect(() => {
+    if (visibleCount === 0 && !showTyping && !showSignup) return;
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [visibleCount, showTyping, showSignup]);
 
@@ -426,11 +435,8 @@ export default function DemoSession() {
             </div>
           </div>
           <div className="session-header-right">
-            <Link
-              href="/auth/signup/ib"
-              style={{ padding: '7px 14px', background: 'var(--rust)', color: 'var(--rust-ink)', borderRadius: '999px', fontSize: 12, fontFamily: 'var(--sans)', textDecoration: 'none', fontWeight: 500 }}
-            >
-              Sign up free
+            <Link href="/auth/signup/ib" className="demo-header-cta">
+              Sign up free →
             </Link>
           </div>
         </div>

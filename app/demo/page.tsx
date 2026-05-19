@@ -86,8 +86,8 @@ const DEMO_CSS = `
 }
 .demo-nav-cta {
   padding: 7px 16px;
-  background: oklch(22% 0.035 168);
-  color: oklch(94% 0.025 80);
+  background: oklch(64% 0.17 47);
+  color: oklch(98% 0.01 70);
   border-radius: 999px;
   font-size: 13px;
   font-weight: 500;
@@ -95,7 +95,7 @@ const DEMO_CSS = `
   font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
   transition: background 0.15s;
 }
-.demo-nav-cta:hover { background: oklch(28% 0.04 168); }
+.demo-nav-cta:hover { background: oklch(58% 0.17 47); }
 .demo-nav-login {
   font-size: 13px;
   color: oklch(54% 0.012 60);
@@ -105,12 +105,14 @@ const DEMO_CSS = `
 }
 .demo-nav-login:hover { color: oklch(18% 0.012 60); }
 
-@keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in oklab, oklch(70% 0.14 75) 45%, transparent); }
-  60%       { box-shadow: 0 0 0 10px color-mix(in oklab, oklch(70% 0.14 75) 0%, transparent); }
+@keyframes demo-pulse {
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(200, 162, 58, 0.55); }
+  50%  { transform: scale(1.04); box-shadow: 0 0 0 14px rgba(200, 162, 58, 0); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(200, 162, 58, 0); }
 }
 .ib-dash .start-btn-pulse {
-  animation: pulse-gold 2.2s ease-in-out infinite;
+  animation: demo-pulse 2s ease-in-out infinite;
+  will-change: transform;
 }
 `;
 
@@ -122,7 +124,7 @@ function DemoNav() {
       <img src="/gradd-ai-logo.png" alt="Gradd" />
       <div className="app-nav-right">
         <a href="/auth/login" className="demo-nav-login">Already a student? Log in</a>
-        <a href="/auth/signup/ib" className="demo-nav-cta">Start free →</a>
+        <a href="/auth/signup/ib" className="demo-nav-cta">Sign up free →</a>
       </div>
     </header>
   );
