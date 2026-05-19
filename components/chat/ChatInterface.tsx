@@ -400,29 +400,36 @@ export default function ChatInterface({
           --chat-em:          var(--rust);
           --chat-thead-bg:    var(--paper-3);
           --chat-thead-color: var(--ink-2);
+          /* Fraunces italic treatment for em, h2, and paragraph line-height */
+          --chat-em-font:     var(--serif);
+          --chat-em-size:     1.12em;
+          --chat-p-lh:        1.72;
+          --chat-h2-style:    italic;
+          --chat-h2-size:     24px;
+          --chat-h2-color:    var(--forest);
           background: var(--paper);
           color: var(--ink);
           font-family: var(--sans);
         }
 
-        /* ── Dark sticky header ── */
+        /* ── Light sticky header (paper/cream, dark ink — matches prototype) ── */
         .ib-session .session-header {
-          background:    var(--forest-deep) !important;
-          border-bottom: 1px solid color-mix(in oklab,var(--forest-ink) 10%,transparent) !important;
-          color: var(--forest-ink);
+          background:    var(--paper) !important;
+          border-bottom: 1px solid var(--rule) !important;
+          color: var(--ink);
           height: 64px;
         }
         .ib-session .session-logo {
           height: 22px;
-          filter: brightness(0) saturate(100%) invert(96%) sepia(20%) saturate(420%) hue-rotate(355deg) brightness(98%) contrast(91%);
-          opacity: 0.9;
+          filter: none;
+          opacity: 1;
         }
         .ib-session .ib-live-pill {
           display: inline-flex; align-items: center; gap: 7px;
           padding: 6px 12px;
-          border: 1px solid color-mix(in oklab,var(--forest-ink) 18%,transparent);
+          border: 1px solid var(--rule-strong);
           border-radius: 999px;
-          color: var(--forest-ink);
+          color: var(--ink);
           font-family: var(--sans); font-size: 12px;
         }
         .ib-session .ib-live-dot {
@@ -432,17 +439,17 @@ export default function ChatInterface({
         }
         .ib-session .end-session-btn {
           padding: 7px 14px !important;
-          border: 1px solid color-mix(in oklab,var(--forest-ink) 22%,transparent) !important;
+          border: 1px solid var(--rule-strong) !important;
           border-radius: 999px !important;
-          color: var(--forest-ink) !important;
+          color: var(--ink-3) !important;
           font-size: 12px;
         }
-        .ib-session .end-session-btn:hover { background: color-mix(in oklab,var(--forest-ink) 6%,transparent); }
+        .ib-session .end-session-btn:hover { background: var(--paper-2); }
         .ib-session .session-header-row2 {
           font-family: var(--mono) !important;
           font-size: 11px !important; font-weight: 400 !important;
           letter-spacing: 0.04em;
-          color: color-mix(in oklab,var(--forest-ink) 60%,transparent) !important;
+          color: var(--ink-3) !important;
         }
         .ib-session .session-subtitle { color: inherit; }
 
@@ -496,6 +503,9 @@ export default function ChatInterface({
           font-size: 16px; line-height: 1.72;
           color: var(--ink); letter-spacing: -0.003em;
         }
+        /* MessageRenderer uses inline fontWeight — override with !important for IB spec */
+        .ib-session .ib-mia-content strong { font-weight: 600 !important; }
+        .ib-session .ib-mia-content h2     { font-weight: 400 !important; }
 
         /* ── Loading dots ── */
         .ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
@@ -582,7 +592,7 @@ export default function ChatInterface({
           .ib-session .session-header-row1 { grid-template-columns: auto 1fr auto !important; }
           .ib-session .session-header-row2 {
             text-align: center !important; padding-top: 8px;
-            border-top: 1px solid color-mix(in oklab,var(--forest-ink) 10%,transparent);
+            border-top: 1px solid var(--rule);
             white-space: normal !important; overflow: visible !important; text-overflow: unset !important;
           }
           .ib-session .end-session-btn { padding: 6px 11px !important; font-size: 11px; }

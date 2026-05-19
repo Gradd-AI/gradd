@@ -23,7 +23,7 @@ function renderInline(text: string): React.ReactNode[] {
     if (match[2]) {
       parts.push(<strong key={i++} style={{ fontWeight: 700, color: 'var(--chat-strong, var(--chat-text))' }}>{match[2]}</strong>);
     } else if (match[3]) {
-      parts.push(<em key={i++} style={{ fontStyle: 'italic', color: 'var(--chat-em, inherit)' }}>{match[3]}</em>);
+      parts.push(<em key={i++} style={{ fontStyle: 'italic', fontFamily: 'var(--chat-em-font, inherit)', fontSize: 'var(--chat-em-size, inherit)', color: 'var(--chat-em, inherit)' }}>{match[3]}</em>);
     }
     last = match.index + match[0].length;
   }
@@ -127,7 +127,7 @@ export default function MessageRenderer({ content }: Props) {
       elements.push(
         <p key={`p-${i++}`} style={{
           margin: '0 0 12px 0',
-          lineHeight: 1.65,
+          lineHeight: 'var(--chat-p-lh, 1.65)',
           color: 'var(--chat-text)',
           wordBreak: 'break-word',
           overflowWrap: 'anywhere',
@@ -217,9 +217,10 @@ export default function MessageRenderer({ content }: Props) {
       elements.push(
         <h2 key={`h2-${i++}`} style={{
           fontFamily: 'var(--font-display)',
-          fontSize: 17,
+          fontSize: 'var(--chat-h2-size, 17px)',
           fontWeight: 700,
-          color: 'var(--chat-text)',
+          fontStyle: 'var(--chat-h2-style, normal)',
+          color: 'var(--chat-h2-color, var(--chat-text))',
           marginBottom: 12,
           marginTop: 16,
           letterSpacing: '-0.2px',
