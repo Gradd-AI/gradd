@@ -465,7 +465,7 @@ export default function ChatInterface({
         /* ── User row ── */
         .ib-session .ib-chat-row-user {
           display: flex; justify-content: flex-end; gap: 10px;
-          margin-bottom: 36px; align-items: flex-end;
+          margin-bottom: 36px; align-items: flex-start;
         }
 
         /* ── Avatars ── */
