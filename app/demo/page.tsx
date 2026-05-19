@@ -106,13 +106,32 @@ const DEMO_CSS = `
 .demo-nav-login:hover { color: oklch(18% 0.012 60); }
 
 @keyframes demo-pulse {
-  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(200, 162, 58, 0.55); }
-  50%  { transform: scale(1.04); box-shadow: 0 0 0 14px rgba(200, 162, 58, 0); }
+  0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(200, 162, 58, 0.5); }
+  50%  { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(200, 162, 58, 0); }
   100% { transform: scale(1);    box-shadow: 0 0 0 0   rgba(200, 162, 58, 0); }
 }
 .ib-dash .start-btn-pulse {
   animation: demo-pulse 2s ease-in-out infinite;
   will-change: transform;
+}
+@keyframes bounce-hint {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-4px); }
+}
+.ib-dash .demo-cta-hint {
+  font-family: "Geist Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
+  font-size: 11px;
+  color: oklch(64% 0.17 47);
+  letter-spacing: 0.04em;
+  text-align: center;
+  animation: bounce-hint 1.2s ease-in-out infinite;
+}
+.ib-dash .demo-cta-wrap {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 `;
 
@@ -294,9 +313,12 @@ export default function DemoDashboard() {
                 <h2>{CURRENT_LESSON}</h2>
                 <div className="ns-meta">{CURRENT_UNIT} · New Topic</div>
               </div>
-              <a href="/demo/session" className="start-btn start-btn-pulse">
-                Start session →
-              </a>
+              <div className="demo-cta-wrap">
+                <div className="demo-cta-hint">👆 See a real lesson</div>
+                <a href="/demo/session" className="start-btn start-btn-pulse">
+                  Start session →
+                </a>
+              </div>
             </div>
 
             <LastSessionCard />
@@ -338,9 +360,11 @@ export default function DemoDashboard() {
                 <h2>{CURRENT_LESSON}</h2>
                 <div className="ns-meta">{CURRENT_UNIT} · New Topic</div>
               </div>
-              <div className="right-meta">
-                Last active
-                <span className="em">{fmtShort(LAST_SESSION.started_at)}</span>
+              <div className="demo-cta-wrap">
+                <div className="demo-cta-hint">👆 See a real lesson</div>
+                <a href="/demo/session" className="start-btn start-btn-pulse">
+                  Start session →
+                </a>
               </div>
             </div>
 
