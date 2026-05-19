@@ -354,6 +354,38 @@ const CSS = `
   color: color-mix(in oklab, var(--forest-ink) 50%, transparent);
 }
 
+/* Mid-page aside */
+.ib-session .demo-aside {
+  margin: 0 0 32px;
+  padding: 16px 20px;
+  border-left: 3px solid var(--forest);
+  background: color-mix(in oklab, var(--forest) 5%, var(--paper));
+  border-radius: 0 10px 10px 0;
+}
+.ib-session .demo-aside p {
+  font-family: var(--sans); font-size: 14px; line-height: 1.6; color: var(--ink-2);
+}
+.ib-session .demo-aside a {
+  color: var(--forest); font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+}
+
+/* Exam technique callout */
+.ib-session .demo-technique {
+  margin: 0 0 36px;
+  padding: 20px 24px;
+  border-left: 3px solid var(--gold);
+  background: color-mix(in oklab, var(--gold) 9%, var(--paper));
+  border-radius: 0 12px 12px 0;
+}
+.ib-session .demo-technique-label {
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
+  letter-spacing: 0.1em; color: var(--rust); margin-bottom: 10px;
+}
+.ib-session .demo-technique p {
+  font-family: var(--sans); font-size: 14.5px; line-height: 1.65; color: var(--ink);
+}
+
 @media (max-width: 720px) {
   .ib-session .session-header { padding: 0 16px !important; height: 56px !important; }
   .ib-session .session-logo { height: 18px; }
@@ -406,7 +438,8 @@ function SignupCTA() {
     <div className="demo-signup-cta">
       <h2>This is what every lesson looks like.</h2>
       <p>
-        Full IB Economics and IB Business Management curriculum.
+        Full IB Economics and IB Business Management curriculum — built around
+        definitions, diagrams, chains of reasoning, evaluation, and exam-style answers.
         From zero to exam-ready.
       </p>
       <div className="demo-cta-row">
@@ -420,6 +453,36 @@ function SignupCTA() {
       <div className="demo-trust">
         €44.99/month · 7-day money-back guarantee · Cancel anytime
       </div>
+    </div>
+  );
+}
+
+// ─── Mid-page aside (item 3) ─────────────────────────────────────────────────
+
+function MidPageAside() {
+  return (
+    <div className="demo-aside">
+      <p>
+        Mia teaches every IB Economics and Business Management topic this way —
+        from first principles to exam technique.{' '}
+        <Link href="/auth/signup/ib">Start learning →</Link>
+      </p>
+    </div>
+  );
+}
+
+// ─── Exam technique callout (item 2) ─────────────────────────────────────────
+
+function TechCallout() {
+  return (
+    <div className="demo-technique">
+      <div className="demo-technique-label">IB EXAM TECHNIQUE</div>
+      <p>
+        In a Paper 1 answer, always name the determinant, state the direction of shift,
+        describe the diagram impact (D₁ → D₂), and state the effect on equilibrium price
+        and quantity. That chain of reasoning — determinant → shift → diagram → market
+        outcome — is what separates a grade 4 from a grade 7.
+      </p>
     </div>
   );
 }
@@ -446,7 +509,7 @@ export default function DemoSession() {
 
     const next = SCRIPT[visibleCount];
     if (!next) {
-      const t = setTimeout(() => setShowSignup(true), 800);
+      const t = setTimeout(() => setShowSignup(true), 1500);
       return () => clearTimeout(t);
     }
 
@@ -550,6 +613,9 @@ export default function DemoSession() {
             </div>
           )}
 
+          {/* Mid-page aside — appears after Mia accepts the income answer (msg 4) */}
+          {visibleCount >= 5 && <MidPageAside />}
+
           {/* Submit prompt — fades in after Mia finishes, prospect controls pace */}
           {pendingStudent && (
             <div className="demo-submit-wrap">
@@ -561,6 +627,9 @@ export default function DemoSession() {
               </button>
             </div>
           )}
+
+          {/* Exam technique callout — appears after all messages, before CTA */}
+          {visibleCount >= SCRIPT.length && <TechCallout />}
 
           {showSignup && <SignupCTA />}
 
