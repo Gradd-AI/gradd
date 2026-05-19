@@ -277,6 +277,39 @@ export default function ChatInterface({
   };
 
   if (ended) {
+    if (isIB) {
+      return (
+        <div style={{
+          minHeight: '100vh',
+          background: 'oklch(96.2% 0.012 78)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexDirection: 'column', gap: 20, padding: 32,
+        }}>
+          <div style={{
+            width: 64, height: 64,
+            background: 'oklch(22% 0.035 168)',
+            borderRadius: '50%',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}>
+            <svg width="28" height="22" viewBox="0 0 28 22" fill="none">
+              <path d="M2 11L10 19L26 3" stroke="oklch(70% 0.14 75)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <h2 style={{ fontFamily: '"Fraunces","Times New Roman",Georgia,serif', fontSize: 26, fontWeight: 400, fontStyle: 'italic', color: 'oklch(22% 0.035 168)', textAlign: 'center', letterSpacing: '-0.02em', margin: 0 }}>
+            Session saved
+          </h2>
+          <p style={{ color: 'oklch(54% 0.012 60)', textAlign: 'center', maxWidth: 340, fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif', fontSize: 15, lineHeight: 1.6, margin: 0 }}>
+            Your progress has been recorded. Well done, {studentName}.
+          </p>
+          <Link href="/dashboard" style={{ background: 'oklch(64% 0.17 47)', color: 'oklch(98% 0.01 70)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, textDecoration: 'none', marginTop: 8, fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
+            Back to dashboard
+          </Link>
+          <Link href="/session" style={{ background: 'oklch(22% 0.035 168)', color: 'oklch(94% 0.025 80)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, textDecoration: 'none', fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
+            Start next lesson →
+          </Link>
+        </div>
+      );
+    }
     return (
       <div
         style={{
@@ -507,6 +540,49 @@ export default function ChatInterface({
         .ib-session .ib-mia-content strong { font-weight: 600 !important; }
         .ib-session .ib-mia-content h2     { font-weight: 400 !important; }
 
+        /* ── LessonCompletePanel (IB) ── */
+        .ib-session .ib-lesson-complete {
+          max-width: 720px; margin: 0 auto;
+          border: 1px solid var(--rule);
+          background: var(--paper-2);
+          border-radius: 14px;
+          padding: 18px 22px;
+          display: flex; flex-direction: column; gap: 14px;
+        }
+        .ib-session .ib-lcp-row { display: flex; align-items: center; gap: 14px; }
+        .ib-session .ib-lcp-icon {
+          width: 34px; height: 34px; flex-shrink: 0;
+          border-radius: 50%; background: var(--forest); color: var(--gold);
+          display: grid; place-items: center;
+        }
+        .ib-session .ib-lcp-heading {
+          font-family: var(--serif); font-style: italic;
+          font-size: 16px; font-weight: 400;
+          color: var(--forest); letter-spacing: -0.01em;
+        }
+        .ib-session .ib-lcp-sub {
+          font-family: var(--sans); font-size: 12px;
+          color: var(--ink-3); margin-top: 2px;
+        }
+        .ib-session .ib-lcp-actions { display: flex; gap: 10px; }
+        .ib-session .ib-lcp-btn-continue {
+          flex: 1; padding: 11px 16px;
+          border-radius: 999px; border: none;
+          background: var(--rust); color: var(--rust-ink);
+          font-family: var(--sans); font-size: 14px; font-weight: 500;
+          cursor: pointer; transition: background 0.15s;
+        }
+        .ib-session .ib-lcp-btn-continue:hover { background: var(--rust-2); }
+        .ib-session .ib-lcp-btn-end {
+          flex: 1; padding: 11px 16px;
+          border-radius: 999px; border: 1px solid var(--rule-strong);
+          background: transparent; color: var(--ink-2);
+          font-family: var(--sans); font-size: 14px; font-weight: 400;
+          cursor: pointer; transition: background 0.15s;
+        }
+        .ib-session .ib-lcp-btn-end:hover:not(:disabled) { background: var(--paper-3); }
+        .ib-session .ib-lcp-btn-end:disabled { opacity: 0.55; cursor: not-allowed; }
+
         /* ── Loading dots ── */
         .ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
         .ib-session .ib-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
@@ -648,7 +724,7 @@ export default function ChatInterface({
             <div
               style={{
                 marginBottom: 24,
-                borderRadius: 10,
+                borderRadius: isIB ? 12 : 10,
                 border: '1px solid var(--chat-border)',
                 background: 'var(--chat-surface)',
                 overflow: 'hidden',
@@ -663,7 +739,7 @@ export default function ChatInterface({
                   borderBottom: '1px solid var(--chat-border)',
                 }}
               >
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--chat-muted)', letterSpacing: '0.5px' }}>
+                <span style={{ fontSize: isIB ? 11 : 12, fontWeight: 600, color: 'var(--chat-muted)', letterSpacing: isIB ? '0.08em' : '0.5px', fontFamily: isIB ? 'var(--mono)' : undefined }}>
                   REFERENCE DIAGRAM — {lessonName.toUpperCase()}
                 </span>
                 <button
@@ -718,7 +794,7 @@ export default function ChatInterface({
         <div style={isIB ? undefined : { maxWidth: 760, margin: '0 auto' }}>
 
           {lessonComplete && !streaming ? (
-            <LessonCompletePanel onContinue={continueToNextLesson} onEnd={endSession} ending={ending} />
+            <LessonCompletePanel onContinue={continueToNextLesson} onEnd={endSession} ending={ending} isIB={isIB} />
           ) : (
             <>
               <div
@@ -772,7 +848,30 @@ export default function ChatInterface({
 
 // --- Lesson complete panel ---
 
-function LessonCompletePanel({ onContinue, onEnd, ending }: { onContinue: () => void; onEnd: () => void; ending: boolean }) {
+function LessonCompletePanel({ onContinue, onEnd, ending, isIB }: { onContinue: () => void; onEnd: () => void; ending: boolean; isIB?: boolean }) {
+  if (isIB) {
+    return (
+      <div className="ib-lesson-complete">
+        <div className="ib-lcp-row">
+          <div className="ib-lcp-icon">
+            <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+              <path d="M1 5.5L5 9.5L13 1.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div>
+            <div className="ib-lcp-heading">Lesson complete</div>
+            <div className="ib-lcp-sub">Your progress has been saved automatically.</div>
+          </div>
+        </div>
+        <div className="ib-lcp-actions">
+          <button onClick={onContinue} className="ib-lcp-btn-continue">Continue to next lesson →</button>
+          <button onClick={onEnd} disabled={ending} className="ib-lcp-btn-end">
+            {ending ? 'Saving…' : 'End session & save progress'}
+          </button>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ borderRadius: 12, border: '1px solid var(--chat-border)', background: 'var(--chat-surface)', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
