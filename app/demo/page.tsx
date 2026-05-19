@@ -314,7 +314,7 @@ export default function DemoDashboard() {
                 <div className="ns-meta">{CURRENT_UNIT} · New Topic</div>
               </div>
               <div className="demo-cta-wrap">
-                <div className="demo-cta-hint">👆 See a real lesson</div>
+                <div className="demo-cta-hint">See a real lesson</div>
                 <a href="/demo/session" className="start-btn start-btn-pulse">
                   Start session →
                 </a>
@@ -361,7 +361,7 @@ export default function DemoDashboard() {
                 <div className="ns-meta">{CURRENT_UNIT} · New Topic</div>
               </div>
               <div className="demo-cta-wrap">
-                <div className="demo-cta-hint">👆 See a real lesson</div>
+                <div className="demo-cta-hint">See a real lesson</div>
                 <a href="/demo/session" className="start-btn start-btn-pulse">
                   Start session →
                 </a>
