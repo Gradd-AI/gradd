@@ -304,9 +304,9 @@ export default function ChatInterface({
           <Link href="/dashboard" style={{ background: 'oklch(64% 0.17 47)', color: 'oklch(98% 0.01 70)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, textDecoration: 'none', marginTop: 8, fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
             Back to dashboard
           </Link>
-          <Link href="/session" style={{ background: 'oklch(22% 0.035 168)', color: 'oklch(94% 0.025 80)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, textDecoration: 'none', fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
-            Start next lesson →
-          </Link>
+          <button onClick={() => { window.location.href = '/session'; }} style={{ background: 'oklch(22% 0.035 168)', color: 'oklch(94% 0.025 80)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, border: 'none', cursor: 'pointer', fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
+            Continue learning →
+          </button>
         </div>
       );
     }
