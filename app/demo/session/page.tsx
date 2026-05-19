@@ -240,6 +240,30 @@ const CSS = `
 .ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
 .ib-session .ib-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
 
+/* Submit prompt */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.ib-session .demo-submit-wrap {
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+  margin-bottom: 36px;
+  animation: fade-in-up 0.3s ease both;
+}
+.ib-session .demo-submit-preview {
+  background: var(--paper-2); border: 1px solid var(--rule);
+  border-radius: 12px; padding: 10px 16px;
+  font-family: var(--sans); font-size: 14px; font-style: italic;
+  color: var(--ink-3); max-width: 75%; text-align: right; line-height: 1.5;
+}
+.ib-session .demo-submit-btn {
+  padding: 11px 22px; border-radius: 10px; border: none;
+  background: var(--rust); color: var(--rust-ink);
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s;
+}
+.ib-session .demo-submit-btn:hover { background: var(--rust-2); }
+
 /* Demo notice bar */
 .ib-session .demo-session-notice {
   background: color-mix(in oklab, var(--forest) 6%, var(--paper));
@@ -376,39 +400,52 @@ function SignupCTA() {
 export default function DemoSession() {
   const [visibleCount, setVisibleCount] = useState(0);
   const [showTyping, setShowTyping] = useState(false);
+  const [submitReady, setSubmitReady] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  // Reveal messages sequentially
+  // Drive the session: Mia messages auto-reveal; student messages wait for click
   useEffect(() => {
-    if (visibleCount >= SCRIPT.length) {
-      const t = setTimeout(() => setShowSignup(true), 1000);
+    if (showSignup) return;
+
+    const next = SCRIPT[visibleCount];
+    if (!next) {
+      const t = setTimeout(() => setShowSignup(true), 800);
       return () => clearTimeout(t);
     }
-    const next = SCRIPT[visibleCount];
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    if (next.role === 'tutor') {
-      const t1 = setTimeout(() => {
-        setShowTyping(true);
-        const t2 = setTimeout(() => {
-          setShowTyping(false);
-          setVisibleCount(v => v + 1);
-        }, 1400);
-        timers.push(t2);
-      }, 300);
-      timers.push(t1);
-    } else {
-      const t = setTimeout(() => setVisibleCount(v => v + 1), 600);
-      timers.push(t);
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [visibleCount]);
 
-  // Scroll to bottom only after the first message appears — not on mount
+    if (next.role === 'student') {
+      // Show the submit prompt after a short pause (300ms fade-in via CSS)
+      const t = setTimeout(() => setSubmitReady(true), 300);
+      return () => clearTimeout(t);
+    }
+
+    // Mia: 300ms pre-delay → typing dots (1400ms) → reveal
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const t1 = setTimeout(() => {
+      setShowTyping(true);
+      const t2 = setTimeout(() => {
+        setShowTyping(false);
+        setVisibleCount(v => v + 1);
+      }, 1400);
+      timers.push(t2);
+    }, 300);
+    timers.push(t1);
+    return () => timers.forEach(clearTimeout);
+  }, [visibleCount, showSignup]);
+
+  function handleSubmit() {
+    setSubmitReady(false);
+    setVisibleCount(v => v + 1); // reveals student message, triggers next Mia auto-reveal
+  }
+
+  // Scroll to bottom as content appears (skip on bare mount)
   useEffect(() => {
-    if (visibleCount === 0 && !showTyping && !showSignup) return;
+    if (visibleCount === 0 && !showTyping && !submitReady && !showSignup) return;
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [visibleCount, showTyping, showSignup]);
+  }, [visibleCount, showTyping, submitReady, showSignup]);
+
+  const pendingStudent = submitReady ? SCRIPT[visibleCount] : null;
 
   return (
     <div
@@ -474,6 +511,18 @@ export default function DemoSession() {
                   />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Submit prompt — fades in after Mia finishes, prospect controls pace */}
+          {pendingStudent && (
+            <div className="demo-submit-wrap">
+              <div className="demo-submit-preview">
+                Alex: {pendingStudent.content}
+              </div>
+              <button onClick={handleSubmit} className="demo-submit-btn">
+                Submit answer →
+              </button>
             </div>
           )}
 
