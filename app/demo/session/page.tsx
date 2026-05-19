@@ -30,6 +30,20 @@ What do you think? Take a guess at one factor that could move the whole curve.`,
   },
   {
     role: 'student',
+    content: `The curve shifts because the price of the good changes?`,
+  },
+  {
+    role: 'tutor',
+    content: `Not quite — that's an important distinction.
+
+If the price of the good itself changes, that causes a *movement along* the demand curve, not a shift of it. The curve's position doesn't change — you're just sliding to a different point on the same line.
+
+A **shift** means the entire curve moves — at every price, consumers now want more or less. That can only happen when something *other* than the good's own price changes.
+
+So: what apart from price could change how much of a good people want to buy? Think about what affects your own buying decisions.`,
+  },
+  {
+    role: 'student',
     content: `Income? If people earn more they can afford more of most things.`,
   },
   {
@@ -240,6 +254,21 @@ const CSS = `
 .ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
 .ib-session .ib-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
 
+/* Back to top */
+.ib-session .demo-top-btn {
+  position: fixed; bottom: 28px; right: 24px;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: var(--forest); color: var(--paper);
+  border: none; cursor: pointer;
+  display: grid; place-items: center;
+  font-size: 18px; line-height: 1;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 60;
+}
+.ib-session .demo-top-btn.visible { opacity: 1; pointer-events: auto; }
+
 /* Submit prompt */
 @keyframes fade-in-up {
   from { opacity: 0; transform: translateY(8px); }
@@ -402,7 +431,14 @@ export default function DemoSession() {
   const [showTyping, setShowTyping] = useState(false);
   const [submitReady, setSubmitReady] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [showTop, setShowTop] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 300);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   // Drive the session: Mia messages auto-reveal; student messages wait for click
   useEffect(() => {
@@ -531,6 +567,15 @@ export default function DemoSession() {
           <div ref={bottomRef} style={{ height: 1 }} />
         </div>
       </div>
+
+      {/* Back to top */}
+      <button
+        className={`demo-top-btn${showTop ? ' visible' : ''}`}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Back to top"
+      >
+        ↑
+      </button>
     </div>
   );
 }
