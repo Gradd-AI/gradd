@@ -58,7 +58,6 @@ export default function LoginForm({ isIBDomain }: { isIBDomain: boolean }) {
             onChange={e => setEmail(e.target.value)}
             required
             autoComplete="email"
-            autoFocus
           />
         </div>
 

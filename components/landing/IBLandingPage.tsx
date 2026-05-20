@@ -6,8 +6,6 @@
 // Copy: docs/Gradd_IB_Landing_Copy_Deck.md — DECK WINS over prototype on every
 //       conflict. All copy-deck instructions applied (KEEP / FIX / CUT / REBUILD).
 //
-// NOTE: /demo CTA is wired to '/demo' — that route does not exist yet and will
-// return a 404 until a demo page is built. Flagged here for awareness.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect, useRef } from 'react';
@@ -103,7 +101,6 @@ export default function IBLandingPage() {
               ))}
             </nav>
             <div className="nav-cta">
-              {/* NOTE: /demo does not exist yet */}
               <Link href="/demo" className="btn btn-see-it btn-sm">See it in action</Link>
               <Link href="/auth/login" className="btn btn-ghost btn-sm">Log in</Link>
               <Link href="/auth/signup" className="btn btn-primary btn-sm">Start <span className="arrow">→</span></Link>
@@ -126,7 +123,6 @@ export default function IBLandingPage() {
               </p>
               <div className="hero-cta">
                 <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
-                {/* NOTE: /demo does not exist yet */}
                 <Link href="/demo" className="btn btn-ghost">See it in action</Link>
               </div>
               <div className="hero-meta">
@@ -475,7 +471,6 @@ export default function IBLandingPage() {
                 <li><span><b>Weekly progress email, every Monday.</b> What they covered, a pace check, and what&apos;s next.</span></li>
                 <li><span><b>Pace, in plain sight.</b> The dashboard and the weekly email both flag it the moment they fall behind.</span></li>
               </ul>
-              {/* NOTE: /demo does not exist yet */}
               <Link href="/demo" className="btn btn-ghost">See the parent view <span className="arrow">→</span></Link>
             </div>
 
@@ -869,7 +864,7 @@ const CSS = `
 .ib-lp .btn:hover { transform: translateY(-1px); }
 .ib-lp .btn .arrow { transition: transform 0.18s ease; }
 .ib-lp .btn:hover .arrow { transform: translateX(3px); }
-.ib-lp .btn-sm { padding: 9px 14px; font-size: 13px; }
+.ib-lp .btn-sm { padding: 9px 14px; font-size: 13px; min-height: 44px; }
 .ib-lp .btn-primary { background: var(--ink); color: var(--paper); }
 .ib-lp .btn-primary:hover { background: var(--rust); color: var(--rust-ink); border-color: var(--rust); }
 .ib-lp .btn-rust { background: var(--rust); color: var(--rust-ink); }
@@ -1050,7 +1045,7 @@ const CSS = `
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ink-3);
 }
-.ib-lp .trust-stats { display: flex; align-items: baseline; gap: clamp(20px,4vw,56px); }
+.ib-lp .trust-stats { display: flex; align-items: baseline; gap: clamp(20px,4vw,56px); flex-wrap: wrap; justify-content: center; }
 .ib-lp .trust-stat { display: flex; align-items: baseline; gap: 8px; }
 .ib-lp .trust-stat .num {
   font-family: var(--serif); font-size: 28px; letter-spacing: -0.02em;
@@ -1220,6 +1215,8 @@ const CSS = `
   gap: clamp(40px,6vw,80px); align-items: center;
 }
 @media (max-width: 940px) { .ib-lp .parents-grid { grid-template-columns: 1fr; } }
+.ib-lp .parents-copy > .eyebrow { display: block; margin-bottom: 18px; }
+.ib-lp .parents-copy .lead { margin-top: 22px; }
 .ib-lp .parents-copy .h-section em { font-style: italic; color: var(--rust); }
 .ib-lp .parents-bullets {
   list-style: none; padding: 0; margin: 28px 0;
@@ -1372,7 +1369,7 @@ const CSS = `
   font-family: var(--sans); font-weight: 500; cursor: pointer;
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
   background: transparent; color: var(--ink-2); border: none;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; min-height: 44px;
 }
 .ib-lp .toggle-btn.active {
   background: var(--paper); color: var(--ink);
@@ -1505,5 +1502,17 @@ const CSS = `
 .ib-lp .to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .ib-lp .to-top:hover { background: var(--rust); border-color: var(--rust); color: var(--rust-ink); }
 .ib-lp .to-top svg { width: 16px; height: 16px; }
-@media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 40px; height: 40px; } }
+@media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 44px; height: 44px; } }
+@media (max-width: 480px) {
+  .ib-lp .hero-meta .dot { display: none; }
+  .ib-lp .chat { max-height: 360px; overflow: hidden; position: relative; }
+  .ib-lp .chat::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
+    background: linear-gradient(to bottom, transparent, var(--paper));
+    border-radius: 0 0 22px 22px; pointer-events: none; z-index: 1;
+  }
+  .ib-lp .subj-hd { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ib-lp .subj-foot { flex-direction: column; align-items: stretch; }
+  .ib-lp .final-cta .hero-cta { max-width: 340px; margin-left: auto; margin-right: auto; }
+}
 `;

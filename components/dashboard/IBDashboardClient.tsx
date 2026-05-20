@@ -476,7 +476,7 @@ function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
 // All selectors are prefixed with .ib-dash so this cannot affect DashboardClient.tsx
 // (LC dashboard) or any other page. Pattern mirrors the IB landing page (.ib-lp).
 
-const CSS = `
+export const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
 
 /* ── Design-system foundation ── */
@@ -989,8 +989,8 @@ const CSS = `
   .ib-dash .app-nav img { height: 18px; }
   .ib-dash .app-nav-right { gap: 8px; }
   .ib-dash .app-nav-right > span:first-child { display: none; }
-  .ib-dash .app-btn { padding: 6px 10px; font-size: 12px; }
-  .ib-dash .app-btn-ghost { padding: 6px 4px; font-size: 12px; }
+  .ib-dash .app-btn { padding: 6px 10px; font-size: 12px; min-height: 44px; }
+  .ib-dash .app-btn-ghost { padding: 6px 4px; font-size: 12px; min-height: 44px; }
   .ib-dash .app-wrap { padding: 32px 18px 60px; }
   .ib-dash .page-head { gap: 16px; }
   .ib-dash .page-head h1 { font-size: clamp(36px, 9vw, 44px); max-width: none; }
@@ -1009,7 +1009,7 @@ const CSS = `
   .ib-dash .stat-card .val { font-size: 32px; }
   .ib-dash .days { gap: 6px; }
   .ib-dash .day .box { height: 38px; }
-  .ib-dash .day .wt-lbl { font-size: 9px; }
+  .ib-dash .day .wt-lbl { font-size: 11px; }
   .ib-dash .week-track { padding: 18px; }
   .ib-dash .curr { padding: 18px; }
   .ib-dash .curr-hd h3 { font-size: 20px; }
@@ -1018,6 +1018,9 @@ const CSS = `
   .ib-dash .sess-row { grid-template-columns: 32px 1fr auto; gap: 10px; }
   .ib-dash .alert { padding: 14px 16px; gap: 10px; }
   .ib-dash .alert p { font-size: 13px; }
+  .ib-dash .view-toggle button { min-height: 44px; }
+  .ib-dash .subj-tabs button { min-height: 44px; }
+  .ib-dash .app-footer a { padding: 12px 0; display: block; text-align: center; }
 }
 @media (max-width: 480px) {
   .ib-dash .page-head h1 { font-size: 34px; }

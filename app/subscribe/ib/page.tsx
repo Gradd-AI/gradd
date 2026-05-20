@@ -235,6 +235,7 @@ function IBSubscribeInner() {
             className="btn btn-primary btn-full btn-lg"
             onClick={handleSubscribe}
             disabled={loading}
+            style={{ whiteSpace: 'normal' }}
           >
             {loading
               ? <><span className="spinner" />Redirecting to checkout…</>
