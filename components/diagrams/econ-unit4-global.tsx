@@ -19,7 +19,7 @@ function Axes({ width = 420, height = 340, xlabel = 'Quantity', ylabel = 'Exchan
       <line x1="60" y1={height} x2={width} y2={height} stroke={STROKE} strokeWidth="2" />
       <polygon points={`60,12 55,24 65,24`} fill={STROKE} />
       <polygon points={`${width + 8},${height} ${width - 4},${height - 5} ${width - 4},${height + 5}`} fill={STROKE} />
-      <text x={width / 2 + 30} y={height + 26} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
+      <text x={width / 2 + 30} y={height + 36} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
       <text x="22" y={height / 2} fontSize="13" fill={STROKE} textAnchor="middle" transform={`rotate(-90,22,${height / 2})`}>{ylabel}</text>
     </>
   );
@@ -43,7 +43,7 @@ export function EXCHANGE_RATE_FLOATING() {
       <line x1="240" y1="200" x2="240" y2="370" stroke={AMBER} strokeWidth="1.2" strokeDasharray="4,3" />
       <text x="52" y="204" fontSize="13" fill={AMBER} textAnchor="end">ER*</text>
       <text x="240" y="388" fontSize="13" fill={AMBER} textAnchor="middle">Q*</text>
-      <text x="240" y="418" fontSize="11" fill={MUTED} textAnchor="middle">Exchange rate determined by demand and supply for the currency in forex markets</text>
+      <text x="240" y="422" fontSize="11" fill={MUTED} textAnchor="middle">Exchange rate determined by demand and supply for the currency in forex markets</text>
     </svg>
   );
 }
@@ -51,7 +51,7 @@ export function EXCHANGE_RATE_FLOATING() {
 // ─── EXCHANGE_RATE_CHANGE ─────────────────────────────────────────────────────
 export function EXCHANGE_RATE_CHANGE() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 444" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Currency Appreciation (Demand Increase)</text>
       <Axes width={460} height={370} xlabel="Quantity of €" ylabel="Exchange Rate ($/€)" />
       {/* Supply */}
@@ -71,8 +71,8 @@ export function EXCHANGE_RATE_CHANGE() {
       <circle cx="306" cy="154" r="5" fill={BRAND} />
       <line x1="60" y1="154" x2="306" y2="154" stroke={BRAND} strokeWidth="1" strokeDasharray="4,3" />
       <text x="52" y="158" fontSize="11" fill={BRAND} textAnchor="end">ER₂</text>
-      <text x="250" y="405" fontSize="11" fill={MUTED} textAnchor="middle">Higher demand for € → appreciation (ER rises). Reverse for depreciation.</text>
-      <text x="250" y="418" fontSize="11" fill={MUTED} textAnchor="middle">Causes: higher interest rates, stronger exports, foreign investment inflows</text>
+      <text x="250" y="422" fontSize="11" fill={MUTED} textAnchor="middle">Higher demand for € → appreciation (ER rises). Reverse for depreciation.</text>
+      <text x="250" y="436" fontSize="11" fill={MUTED} textAnchor="middle">Causes: higher interest rates, stronger exports, foreign investment inflows</text>
     </svg>
   );
 }
@@ -80,7 +80,7 @@ export function EXCHANGE_RATE_CHANGE() {
 // ─── EXCHANGE_RATE_FIXED ──────────────────────────────────────────────────────
 export function EXCHANGE_RATE_FIXED() {
   return (
-    <svg viewBox="0 0 500 450" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 454" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Maintaining a Fixed Exchange Rate</text>
       <Axes width={460} height={380} xlabel="Quantity of Currency" ylabel="Exchange Rate" />
       {/* Supply */}
@@ -101,8 +101,8 @@ export function EXCHANGE_RATE_FIXED() {
       <line x1="350" y1="220" x2="350" y2="380" stroke={BLUE} strokeWidth="1.5" strokeDasharray="4,3" />
       <text x="190" y="398" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
       <text x="350" y="398" fontSize="11" fill={BLUE} textAnchor="middle">Qd</text>
-      <text x="270" y="415" fontSize="11" fill={AMBER} textAnchor="middle">← Excess demand (CB must supply currency) →</text>
-      <text x="250" y="438" fontSize="11" fill={MUTED} textAnchor="middle">Central bank intervenes — sells own currency to maintain fixed ER</text>
+      <text x="270" y="428" fontSize="11" fill={AMBER} textAnchor="middle">← Excess demand (CB must supply currency) →</text>
+      <text x="250" y="446" fontSize="11" fill={MUTED} textAnchor="middle">Central bank intervenes — sells own currency to maintain fixed ER</text>
     </svg>
   );
 }
@@ -131,7 +131,7 @@ export function EXCHANGE_RATE_MANAGED() {
       {/* Shaded band */}
       <rect x="60" y="140" width="400" height="120" fill={AMBER} opacity="0.08" />
       <text x="260" y="210" fontSize="11" fill={AMBER} textAnchor="middle">Managed band — CB intervenes at boundaries</text>
-      <text x="250" y="405" fontSize="11" fill={MUTED} textAnchor="middle">Currency allowed to fluctuate within a band. CB intervenes at limits.</text>
+      <text x="250" y="420" fontSize="11" fill={MUTED} textAnchor="middle">Currency allowed to fluctuate within a band. CB intervenes at limits.</text>
     </svg>
   );
 }
@@ -145,7 +145,7 @@ export function TARIFF() {
       <line x1="60" y1="390" x2="480" y2="390" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="488,390 476,385 476,395" fill={STROKE} />
-      <text x="270" y="418" fontSize="12" fill={STROKE} textAnchor="middle">Quantity</text>
+      <text x="270" y="426" fontSize="12" fill={STROKE} textAnchor="middle">Quantity</text>
       <text x="22" y="210" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,210)">Price</text>
       {/* Domestic supply */}
       <line x1="80" y1="370" x2="380" y2="70" stroke={RED} strokeWidth="2.5" />
@@ -237,7 +237,7 @@ export function J_CURVE() {
       {/* Long-run improvement */}
       <text x="390" y="155" fontSize="10" fill={BRAND} textAnchor="middle">Long-run</text>
       <text x="390" y="167" fontSize="10" fill={BRAND} textAnchor="middle">improvement</text>
-      <text x="240" y="420" fontSize="11" fill={MUTED} textAnchor="middle">After depreciation: CA worsens before improving as demand adjusts (Marshall-Lerner condition)</text>
+      <text x="240" y="424" fontSize="11" fill={MUTED} textAnchor="middle">After depreciation: CA worsens before improving as demand adjusts (Marshall-Lerner condition)</text>
     </svg>
   );
 }
@@ -249,8 +249,9 @@ export function TERMS_OF_TRADE() {
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Terms of Trade (HL)</text>
       {/* Formula box */}
       <rect x="60" y="40" width="380" height="70" rx="8" fill="none" stroke={BRAND} strokeWidth="1.5" />
-      <text x="250" y="68" fontSize="14" fill={STROKE} textAnchor="middle" fontWeight="bold">ToT = (Index of Export Prices / Index of Import Prices) × 100</text>
-      <text x="250" y="98" fontSize="13" fill={MUTED} textAnchor="middle">A rise in ToT = improvement (exports buy more imports)</text>
+      <text x="250" y="63" fontSize="12" fill={STROKE} textAnchor="middle" fontWeight="bold">ToT = Index of Export Prices</text>
+      <text x="250" y="79" fontSize="12" fill={STROKE} textAnchor="middle" fontWeight="bold">÷ Index of Import Prices × 100</text>
+      <text x="250" y="100" fontSize="12" fill={MUTED} textAnchor="middle">A rise in ToT = improvement (exports buy more imports)</text>
       {/* Timeline showing ToT movement */}
       <line x1="60" y1="200" x2="440" y2="200" stroke={STROKE} strokeWidth="2" />
       <polygon points="448,200 436,195 436,205" fill={STROKE} />
@@ -263,7 +264,7 @@ export function TERMS_OF_TRADE() {
       <path d="M 80,200 Q 180,180 260,160 Q 320,145 380,170 Q 420,185 440,180" fill="none" stroke={BRAND} strokeWidth="2.5" />
       {/* Improvement / deterioration labels */}
       <text x="270" y="148" fontSize="11" fill={BRAND}>Improvement ↑</text>
-      <text x="390" y="178" fontSize="11" fill={RED}>Deterioration ↓</text>
+      <text x="390" y="190" fontSize="11" fill={RED}>Deterioration ↓</text>
       <text x="250" y="345" fontSize="11" fill={MUTED} textAnchor="middle">ToT {'>'} 100: favourable | ToT {'<'} 100: unfavourable</text>
       <text x="250" y="360" fontSize="11" fill={MUTED} textAnchor="middle">Primary commodity exporters face long-term ToT deterioration (Prebisch-Singer)</text>
     </svg>

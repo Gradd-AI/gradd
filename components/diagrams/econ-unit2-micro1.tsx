@@ -18,7 +18,7 @@ function Axes({ width = 420, height = 340, xlabel = 'Quantity', ylabel = 'Price'
       <line x1="60" y1={height} x2={width} y2={height} stroke={STROKE} strokeWidth="2" />
       <polygon points={`60,12 55,24 65,24`} fill={STROKE} />
       <polygon points={`${width + 8},${height} ${width - 4},${height - 5} ${width - 4},${height + 5}`} fill={STROKE} />
-      <text x={width / 2 + 30} y={height + 28} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
+      <text x={width / 2 + 30} y={height + 38} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
       <text x="22" y={height / 2} fontSize="13" fill={STROKE} textAnchor="middle" transform={`rotate(-90,22,${height / 2})`}>{ylabel}</text>
     </>
   );
@@ -27,12 +27,12 @@ function Axes({ width = 420, height = 340, xlabel = 'Quantity', ylabel = 'Price'
 // ─── DEMAND_CURVE ─────────────────────────────────────────────────────────────
 export function DEMAND_CURVE() {
   return (
-    <svg viewBox="0 0 460 390" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
+    <svg viewBox="0 0 460 412" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
       <text x="230" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Demand Curve</text>
       <Axes width={420} height={350} />
       <line x1="80" y1="60" x2="400" y2="330" stroke={BLUE} strokeWidth="2.5" />
       <text x="390" y="315" fontSize="14" fill={BLUE} fontWeight="bold">D</text>
-      <text x="230" y="380" fontSize="12" fill={MUTED} textAnchor="middle">As price falls, quantity demanded rises (inverse relationship)</text>
+      <text x="230" y="404" fontSize="12" fill={MUTED} textAnchor="middle">As price falls, quantity demanded rises (inverse relationship)</text>
     </svg>
   );
 }
@@ -40,7 +40,7 @@ export function DEMAND_CURVE() {
 // ─── DEMAND_SHIFT ─────────────────────────────────────────────────────────────
 export function DEMAND_SHIFT() {
   return (
-    <svg viewBox="0 0 500 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 422" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Shifts of the Demand Curve</text>
       <Axes width={460} height={360} />
       {/* Original D */}
@@ -61,7 +61,7 @@ export function DEMAND_SHIFT() {
         <marker id="arD" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={BRAND} /></marker>
         <marker id="arR" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={RED} /></marker>
       </defs>
-      <text x="250" y="395" fontSize="12" fill={MUTED} textAnchor="middle">Causes: income, tastes, substitutes, complements, expectations, number of consumers</text>
+      <text x="250" y="414" fontSize="12" fill={MUTED} textAnchor="middle">Causes: income, tastes, substitutes, complements, expectations, number of consumers</text>
     </svg>
   );
 }
@@ -69,12 +69,12 @@ export function DEMAND_SHIFT() {
 // ─── SUPPLY_CURVE ─────────────────────────────────────────────────────────────
 export function SUPPLY_CURVE() {
   return (
-    <svg viewBox="0 0 460 390" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
+    <svg viewBox="0 0 460 412" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
       <text x="230" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Supply Curve</text>
       <Axes width={420} height={350} />
       <line x1="80" y1="330" x2="400" y2="60" stroke={RED} strokeWidth="2.5" />
       <text x="390" y="74" fontSize="14" fill={RED} fontWeight="bold">S</text>
-      <text x="230" y="380" fontSize="12" fill={MUTED} textAnchor="middle">As price rises, quantity supplied rises (positive relationship)</text>
+      <text x="230" y="404" fontSize="12" fill={MUTED} textAnchor="middle">As price rises, quantity supplied rises (positive relationship)</text>
     </svg>
   );
 }
@@ -82,7 +82,7 @@ export function SUPPLY_CURVE() {
 // ─── SUPPLY_SHIFT ─────────────────────────────────────────────────────────────
 export function SUPPLY_SHIFT() {
   return (
-    <svg viewBox="0 0 500 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 422" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Shifts of the Supply Curve</text>
       <Axes width={460} height={360} />
       {/* Original S */}
@@ -103,7 +103,7 @@ export function SUPPLY_SHIFT() {
         <marker id="arS" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={BRAND} /></marker>
         <marker id="arA" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={AMBER} /></marker>
       </defs>
-      <text x="250" y="395" fontSize="12" fill={MUTED} textAnchor="middle">Causes: factor costs, technology, taxes/subsidies, number of firms, expectations</text>
+      <text x="250" y="414" fontSize="12" fill={MUTED} textAnchor="middle">Causes: factor costs, technology, taxes/subsidies, number of firms, expectations</text>
     </svg>
   );
 }
@@ -111,7 +111,7 @@ export function SUPPLY_SHIFT() {
 // ─── MARKET_EQUILIBRIUM ───────────────────────────────────────────────────────
 export function MARKET_EQUILIBRIUM() {
   return (
-    <svg viewBox="0 0 480 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
+    <svg viewBox="0 0 480 424" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
       <text x="240" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Market Equilibrium</text>
       <Axes width={440} height={360} />
       {/* Demand */}
@@ -122,14 +122,14 @@ export function MARKET_EQUILIBRIUM() {
       <text x="410" y="74" fontSize="14" fill={RED} fontWeight="bold">S</text>
       {/* Equilibrium point */}
       <circle cx="250" cy="200" r="6" fill={AMBER} />
-      <text x="262" y="194" fontSize="13" fill={AMBER} fontWeight="bold">E (P*, Q*)</text>
+      <text x="262" y="220" fontSize="13" fill={AMBER} fontWeight="bold">E (P*, Q*)</text>
       {/* Dashed lines to axes */}
       <line x1="60" y1="200" x2="250" y2="200" stroke={AMBER} strokeWidth="1" strokeDasharray="5,3" />
       <line x1="250" y1="200" x2="250" y2="360" stroke={AMBER} strokeWidth="1" strokeDasharray="5,3" />
       {/* Axis labels */}
       <text x="52" y="204" fontSize="13" fill={AMBER} textAnchor="end">P*</text>
       <text x="250" y="378" fontSize="13" fill={AMBER} textAnchor="middle">Q*</text>
-      <text x="240" y="400" fontSize="12" fill={MUTED} textAnchor="middle">At P*: Qd = Qs — market clears, no surplus or shortage</text>
+      <text x="240" y="416" fontSize="12" fill={MUTED} textAnchor="middle">At P*: Qd = Qs — market clears, no surplus or shortage</text>
     </svg>
   );
 }
@@ -137,7 +137,7 @@ export function MARKET_EQUILIBRIUM() {
 // ─── EQUILIBRIUM_CHANGE ───────────────────────────────────────────────────────
 export function EQUILIBRIUM_CHANGE() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 442" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Change in Equilibrium (Demand Increase Shown)</text>
       <Axes width={460} height={370} />
       {/* Original D */}
@@ -151,7 +151,7 @@ export function EQUILIBRIUM_CHANGE() {
       <text x="410" y="72" fontSize="14" fill={RED} fontWeight="bold">S</text>
       {/* Old equilibrium */}
       <circle cx="230" cy="200" r="5" fill={MUTED} />
-      <text x="215" y="192" fontSize="13" fill={MUTED} fontStyle="italic">E₁</text>
+      <text x="200" y="190" fontSize="13" fill={MUTED} fontStyle="italic">E₁</text>
       <line x1="60" y1="200" x2="230" y2="200" stroke={MUTED} strokeWidth="1" strokeDasharray="4,3" opacity="0.5" />
       <line x1="230" y1="200" x2="230" y2="370" stroke={MUTED} strokeWidth="1" strokeDasharray="4,3" opacity="0.5" />
       {/* New equilibrium */}
@@ -163,7 +163,7 @@ export function EQUILIBRIUM_CHANGE() {
       <text x="52" y="204" fontSize="12" fill={MUTED} textAnchor="end">P₁</text>
       <text x="230" y="388" fontSize="12" fill={MUTED} textAnchor="middle">Q₁</text>
       <text x="310" y="388" fontSize="12" fill={AMBER} textAnchor="middle">Q₂</text>
-      <text x="250" y="418" fontSize="12" fill={MUTED} textAnchor="middle">Increase in demand → higher price, higher quantity</text>
+      <text x="250" y="434" fontSize="12" fill={MUTED} textAnchor="middle">Increase in demand → higher price, higher quantity</text>
     </svg>
   );
 }
@@ -171,7 +171,7 @@ export function EQUILIBRIUM_CHANGE() {
 // ─── CONSUMER_PRODUCER_SURPLUS ────────────────────────────────────────────────
 export function CONSUMER_PRODUCER_SURPLUS() {
   return (
-    <svg viewBox="0 0 480 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
+    <svg viewBox="0 0 480 442" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
       <text x="240" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Consumer and Producer Surplus</text>
       <Axes width={440} height={370} />
       {/* Demand */}
@@ -193,9 +193,9 @@ export function CONSUMER_PRODUCER_SURPLUS() {
       <text x="130" y="184" fontSize="12" fill={BLUE} textAnchor="middle">Surplus</text>
       {/* Producer surplus — triangle below P*, above S */}
       <polygon points="60,200 80,340 250,200" fill={RED} opacity="0.25" />
-      <text x="130" y="295" fontSize="12" fill={RED} textAnchor="middle">Producer</text>
-      <text x="130" y="309" fontSize="12" fill={RED} textAnchor="middle">Surplus</text>
-      <text x="240" y="418" fontSize="12" fill={MUTED} textAnchor="middle">Social/Community surplus maximised at competitive equilibrium</text>
+      <text x="130" y="260" fontSize="12" fill={RED} textAnchor="middle">Producer</text>
+      <text x="130" y="275" fontSize="12" fill={RED} textAnchor="middle">Surplus</text>
+      <text x="240" y="434" fontSize="12" fill={MUTED} textAnchor="middle">Social/Community surplus maximised at competitive equilibrium</text>
     </svg>
   );
 }
@@ -203,7 +203,7 @@ export function CONSUMER_PRODUCER_SURPLUS() {
 // ─── ALLOCATIVE_EFFICIENCY ────────────────────────────────────────────────────
 export function ALLOCATIVE_EFFICIENCY() {
   return (
-    <svg viewBox="0 0 480 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
+    <svg viewBox="0 0 480 424" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
       <text x="240" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Allocative Efficiency (MB = MC)</text>
       <Axes width={440} height={360} xlabel="Quantity" ylabel="Price / Cost" />
       {/* MB = Demand curve */}
@@ -219,7 +219,7 @@ export function ALLOCATIVE_EFFICIENCY() {
       <line x1="250" y1="195" x2="250" y2="360" stroke={AMBER} strokeWidth="1.2" strokeDasharray="5,3" />
       <text x="52" y="199" fontSize="13" fill={AMBER} textAnchor="end">P*</text>
       <text x="250" y="378" fontSize="13" fill={AMBER} textAnchor="middle">Q*</text>
-      <text x="240" y="400" fontSize="12" fill={MUTED} textAnchor="middle">At Q*: resources allocated to their highest valued use — social surplus maximised</text>
+      <text x="240" y="416" fontSize="12" fill={MUTED} textAnchor="middle">At Q*: resources allocated to their highest valued use — social surplus maximised</text>
     </svg>
   );
 }

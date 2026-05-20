@@ -19,7 +19,7 @@ function Axes({ width = 420, height = 340, xlabel = 'Quantity', ylabel = 'Price'
       <line x1="60" y1={height} x2={width} y2={height} stroke={STROKE} strokeWidth="2" />
       <polygon points={`60,12 55,24 65,24`} fill={STROKE} />
       <polygon points={`${width + 8},${height} ${width - 4},${height - 5} ${width - 4},${height + 5}`} fill={STROKE} />
-      <text x={width / 2 + 30} y={height + 26} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
+      <text x={width / 2 + 30} y={height + 36} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
       <text x="22" y={height / 2} fontSize="13" fill={STROKE} textAnchor="middle" transform={`rotate(-90,22,${height / 2})`}>{ylabel}</text>
     </>
   );
@@ -28,23 +28,23 @@ function Axes({ width = 420, height = 340, xlabel = 'Quantity', ylabel = 'Price'
 // ─── PED_ELASTIC_INELASTIC ────────────────────────────────────────────────────
 export function PED_ELASTIC_INELASTIC() {
   return (
-    <svg viewBox="0 0 540 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 540, fontFamily: FONT }}>
+    <svg viewBox="0 0 540 424" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 540, fontFamily: FONT }}>
       <text x="270" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Price Elasticity of Demand — Elastic vs Inelastic</text>
       {/* Elastic — left panel */}
       <g transform="translate(0,0)">
         <Axes width={220} height={350} xlabel="Q" ylabel="P" />
         <line x1="80" y1="60" x2="210" y2="340" stroke={BLUE} strokeWidth="2.5" />
         <text x="200" y="328" fontSize="12" fill={BLUE}>D (elastic)</text>
-        <text x="140" y="380" fontSize="11" fill={BLUE} textAnchor="middle">Relatively flat</text>
-        <text x="140" y="395" fontSize="11" fill={MUTED} textAnchor="middle">PED {'>'} 1</text>
+        <text x="140" y="400" fontSize="11" fill={BLUE} textAnchor="middle">Relatively flat</text>
+        <text x="140" y="414" fontSize="11" fill={MUTED} textAnchor="middle">PED {'>'} 1</text>
       </g>
       {/* Inelastic — right panel */}
       <g transform="translate(260,0)">
         <Axes width={220} height={350} xlabel="Q" ylabel="P" />
         <line x1="80" y1="60" x2="160" y2="340" stroke={RED} strokeWidth="2.5" />
         <text x="150" y="328" fontSize="12" fill={RED}>D (inelastic)</text>
-        <text x="140" y="380" fontSize="11" fill={RED} textAnchor="middle">Relatively steep</text>
-        <text x="140" y="395" fontSize="11" fill={MUTED} textAnchor="middle">PED {'<'} 1</text>
+        <text x="140" y="400" fontSize="11" fill={RED} textAnchor="middle">Relatively steep</text>
+        <text x="140" y="414" fontSize="11" fill={MUTED} textAnchor="middle">PED {'<'} 1</text>
       </g>
     </svg>
   );
@@ -53,7 +53,7 @@ export function PED_ELASTIC_INELASTIC() {
 // ─── PED_PERFECTLY_ELASTIC ────────────────────────────────────────────────────
 export function PED_PERFECTLY_ELASTIC() {
   return (
-    <svg viewBox="0 0 460 390" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
+    <svg viewBox="0 0 460 408" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
       <text x="230" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Perfectly Elastic Demand (PED = ∞)</text>
       <Axes width={420} height={350} />
       {/* Horizontal demand line */}
@@ -61,7 +61,7 @@ export function PED_PERFECTLY_ELASTIC() {
       <text x="415" y="184" fontSize="13" fill={BLUE} fontWeight="bold">D</text>
       <line x1="60" y1="180" x2="80" y2="180" stroke={BLUE} strokeWidth="1" strokeDasharray="4,3" />
       <text x="52" y="184" fontSize="12" fill={AMBER} textAnchor="end">P*</text>
-      <text x="230" y="380" fontSize="11" fill={MUTED} textAnchor="middle">Any price above P*: Qd falls to zero. Consumers accept any quantity at P*.</text>
+      <text x="230" y="400" fontSize="11" fill={MUTED} textAnchor="middle">Any price above P*: Qd falls to zero. Consumers accept any quantity at P*.</text>
     </svg>
   );
 }
@@ -69,14 +69,14 @@ export function PED_PERFECTLY_ELASTIC() {
 // ─── PED_PERFECTLY_INELASTIC ──────────────────────────────────────────────────
 export function PED_PERFECTLY_INELASTIC() {
   return (
-    <svg viewBox="0 0 460 390" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
+    <svg viewBox="0 0 460 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
       <text x="230" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Perfectly Inelastic Demand (PED = 0)</text>
       <Axes width={420} height={350} />
       {/* Vertical demand line */}
       <line x1="230" y1="30" x2="230" y2="350" stroke={BLUE} strokeWidth="2.5" />
       <text x="238" y="50" fontSize="13" fill={BLUE} fontWeight="bold">D</text>
       <text x="230" y="370" fontSize="12" fill={AMBER} textAnchor="middle">Q*</text>
-      <text x="230" y="390" fontSize="11" fill={MUTED} textAnchor="middle">Quantity demanded does not change regardless of price. (e.g. life-saving medicine)</text>
+      <text x="230" y="402" fontSize="11" fill={MUTED} textAnchor="middle">Quantity demanded does not change regardless of price. (e.g. life-saving medicine)</text>
     </svg>
   );
 }
@@ -84,7 +84,7 @@ export function PED_PERFECTLY_INELASTIC() {
 // ─── PRICE_CEILING ────────────────────────────────────────────────────────────
 export function PRICE_CEILING() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 446" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Price Ceiling (Maximum Price)</text>
       <Axes width={460} height={370} />
       <line x1="80" y1="60" x2="420" y2="340" stroke={BLUE} strokeWidth="2.5" />
@@ -101,12 +101,12 @@ export function PRICE_CEILING() {
       {/* Shortage — Qd > Qs at Pc */}
       <line x1="150" y1="270" x2="150" y2="370" stroke={BLUE} strokeWidth="1.5" strokeDasharray="4,3" />
       <line x1="330" y1="270" x2="330" y2="370" stroke={RED} strokeWidth="1.5" strokeDasharray="4,3" />
-      <text x="152" y="385" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
-      <text x="332" y="385" fontSize="11" fill={BLUE} textAnchor="middle">Qd</text>
+      <text x="152" y="383" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
+      <text x="332" y="383" fontSize="11" fill={BLUE} textAnchor="middle">Qd</text>
       {/* Shortage brace */}
-      <line x1="150" y1="388" x2="330" y2="388" stroke={AMBER} strokeWidth="1.5" />
-      <text x="240" y="405" fontSize="12" fill={AMBER} textAnchor="middle">← Shortage →</text>
-      <text x="250" y="422" fontSize="11" fill={MUTED} textAnchor="middle">Pc must be set below Pe to be effective</text>
+      <line x1="150" y1="386" x2="330" y2="386" stroke={AMBER} strokeWidth="1.5" />
+      <text x="240" y="420" fontSize="12" fill={AMBER} textAnchor="middle">← Shortage →</text>
+      <text x="250" y="437" fontSize="11" fill={MUTED} textAnchor="middle">Pc must be set below Pe to be effective</text>
     </svg>
   );
 }
@@ -114,7 +114,7 @@ export function PRICE_CEILING() {
 // ─── PRICE_FLOOR ──────────────────────────────────────────────────────────────
 export function PRICE_FLOOR() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 446" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Price Floor (Minimum Price)</text>
       <Axes width={460} height={370} />
       <line x1="80" y1="60" x2="420" y2="340" stroke={BLUE} strokeWidth="2.5" />
@@ -131,11 +131,11 @@ export function PRICE_FLOOR() {
       {/* Surplus — Qs > Qd at Pf */}
       <line x1="160" y1="130" x2="160" y2="370" stroke={BLUE} strokeWidth="1.5" strokeDasharray="4,3" />
       <line x1="340" y1="130" x2="340" y2="370" stroke={RED} strokeWidth="1.5" strokeDasharray="4,3" />
-      <text x="162" y="385" fontSize="11" fill={BLUE} textAnchor="middle">Qd</text>
-      <text x="342" y="385" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
-      <line x1="160" y1="388" x2="340" y2="388" stroke={AMBER} strokeWidth="1.5" />
-      <text x="250" y="405" fontSize="12" fill={AMBER} textAnchor="middle">← Surplus →</text>
-      <text x="250" y="422" fontSize="11" fill={MUTED} textAnchor="middle">Pf must be set above Pe to be effective (e.g. minimum wage)</text>
+      <text x="162" y="383" fontSize="11" fill={BLUE} textAnchor="middle">Qd</text>
+      <text x="342" y="383" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
+      <line x1="160" y1="386" x2="340" y2="386" stroke={AMBER} strokeWidth="1.5" />
+      <text x="250" y="420" fontSize="12" fill={AMBER} textAnchor="middle">← Surplus →</text>
+      <text x="250" y="437" fontSize="11" fill={MUTED} textAnchor="middle">Pf must be set above Pe to be effective (e.g. minimum wage)</text>
     </svg>
   );
 }
@@ -165,10 +165,10 @@ export function NEG_EXT_PRODUCTION() {
       <line x1="194" y1="222" x2="194" y2="370" stroke={PURPLE} strokeWidth="1" strokeDasharray="4,3" />
       {/* Welfare loss triangle */}
       <polygon points="194,222 248,194 248,222" fill={AMBER} opacity="0.4" />
-      <text x="230" y="215" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
+      <text x="230" y="207" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
       <text x="215" y="390" fontSize="11" fill={PURPLE} textAnchor="middle">Q*</text>
       <text x="255" y="390" fontSize="11" fill={RED} textAnchor="middle">Qm</text>
-      <text x="250" y="430" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'>'} Q* — overproduction creates welfare loss. MSC {'>'} MSB.</text>
+      <text x="250" y="434" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'>'} Q* — overproduction creates welfare loss. MSC {'>'} MSB.</text>
     </svg>
   );
 }
@@ -198,8 +198,8 @@ export function NEG_EXT_CONSUMPTION() {
       <text x="186" y="388" fontSize="11" fill={PURPLE}>Q*</text>
       {/* Welfare loss */}
       <polygon points="196,228 250,195 250,228" fill={AMBER} opacity="0.4" />
-      <text x="232" y="222" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
-      <text x="250" y="430" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'>'} Q* — over-consumption. MSB {'<'} MSC at Qm. (e.g. demerit goods, alcohol)</text>
+      <text x="232" y="212" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
+      <text x="250" y="434" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'>'} Q* — over-consumption. MSB {'<'} MSC at Qm. (e.g. demerit goods, alcohol)</text>
     </svg>
   );
 }
@@ -228,7 +228,7 @@ export function POS_EXT_PRODUCTION() {
       <text x="295" y="388" fontSize="11" fill={BRAND} textAnchor="middle">Q*</text>
       {/* Welfare loss */}
       <polygon points="240,200 295,172 240,172" fill={AMBER} opacity="0.4" />
-      <text x="250" y="430" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'<'} Q* — underproduction. Welfare loss from unrealised gains.</text>
+      <text x="250" y="434" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'<'} Q* — underproduction. Welfare loss from unrealised gains.</text>
     </svg>
   );
 }
@@ -256,7 +256,7 @@ export function POS_EXT_CONSUMPTION() {
       <line x1="310" y1="160" x2="310" y2="370" stroke={BRAND} strokeWidth="1" strokeDasharray="4,3" />
       <text x="310" y="388" fontSize="11" fill={BRAND} textAnchor="middle">Q*</text>
       <polygon points="250,195 310,160 310,195" fill={AMBER} opacity="0.4" />
-      <text x="250" y="430" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'<'} Q* — under-consumption. Welfare loss. (e.g. merit goods, education, vaccines)</text>
+      <text x="250" y="434" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'<'} Q* — under-consumption. Welfare loss. (e.g. merit goods, education, vaccines)</text>
     </svg>
   );
 }
@@ -271,7 +271,7 @@ export function LORENZ_CURVE() {
       <line x1="60" y1="370" x2="420" y2="370" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="428,370 416,365 416,375" fill={STROKE} />
-      <text x="240" y="400" fontSize="12" fill={STROKE} textAnchor="middle">Cumulative % of Population</text>
+      <text x="240" y="408" fontSize="12" fill={STROKE} textAnchor="middle">Cumulative % of Population</text>
       <text x="16" y="200" fontSize="12" fill={STROKE} textAnchor="middle" transform="rotate(-90,16,200)">Cumulative % of Income</text>
       {/* Line of perfect equality */}
       <line x1="60" y1="370" x2="420" y2="30" stroke={MUTED} strokeWidth="1.5" strokeDasharray="6,4" />
