@@ -1045,7 +1045,7 @@ const CSS = `
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ink-3);
 }
-.ib-lp .trust-stats { display: flex; align-items: baseline; gap: clamp(20px,4vw,56px); }
+.ib-lp .trust-stats { display: flex; align-items: baseline; gap: clamp(20px,4vw,56px); flex-wrap: wrap; justify-content: center; }
 .ib-lp .trust-stat { display: flex; align-items: baseline; gap: 8px; }
 .ib-lp .trust-stat .num {
   font-family: var(--serif); font-size: 28px; letter-spacing: -0.02em;
