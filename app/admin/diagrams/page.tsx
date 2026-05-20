@@ -1,6 +1,6 @@
 'use client';
 
-import { getDiagram, DIAGRAM_CODES } from '@/components/diagrams';
+import { DiagramRenderer, DIAGRAM_CODES } from '@/components/diagrams';
 
 // ─── Diagram groups ───────────────────────────────────────────────────────────
 
@@ -164,7 +164,6 @@ body {
 .audit-cell {
   border: 1px solid oklch(86% 0.014 78);
   border-radius: 12px;
-  background: #fff;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -209,7 +208,7 @@ export default function DiagramAudit() {
   const total = DIAGRAM_CODES.length;
 
   return (
-    <>
+    <div className="ib-session">
       <style>{CSS}</style>
 
       <header className="audit-header">
@@ -231,13 +230,11 @@ export default function DiagramAudit() {
                 <div className="audit-group-heading">{label}</div>
                 <div className="audit-grid">
                   {codes.map(code => {
-                    const Component = getDiagram(code);
-                    if (!Component) return null;
                     return (
                       <div key={code} className="audit-cell">
                         <div className="audit-cell-code">{code}</div>
                         <div className="audit-cell-diagram">
-                          <Component />
+                          <DiagramRenderer code={code} />
                         </div>
                         <div className="audit-cell-label">{toLabel(code)}</div>
                       </div>
@@ -249,6 +246,6 @@ export default function DiagramAudit() {
           </div>
         ))}
       </div>
-    </>
+    </div>
   );
 }
