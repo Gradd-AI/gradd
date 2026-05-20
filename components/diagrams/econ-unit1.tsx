@@ -4,8 +4,8 @@
 
 import React from 'react';
 
-const STROKE = 'var(--chat-text, #e8e0d0)';
-const MUTED = 'var(--chat-muted, #9a9080)';
+const STROKE = 'var(--chat-text, #2c2825)';
+const MUTED = 'var(--chat-muted, #5c5650)';
 const BRAND = 'var(--brand, #2d5a3d)';
 const AMBER = '#c9903a';
 const RED = '#c0392b';
@@ -34,15 +34,15 @@ export function PPC_BASIC({ highlight = [] }: { highlight?: string[] }) {
       <text x="350" y="238" fontSize="13" fill={AMBER} fontStyle="italic">B</text>
       {/* Inside point */}
       <circle cx="220" cy="260" r="5" fill={MUTED} />
-      <text x="230" y="256" fontSize="11" fill={MUTED}>Inefficient</text>
+      <text x="230" y="256" fontSize="12" fill={MUTED}>Inefficient</text>
       {/* Outside point */}
       <circle cx="380" cy="140" r="5" fill={RED} />
-      <text x="390" y="136" fontSize="11" fill={RED}>Unattainable</text>
+      <text x="375" y="136" fontSize="12" fill={RED}>Unattainable</text>
       {/* Axis labels */}
       <text x="240" y="400" fontSize="13" fill={STROKE} textAnchor="middle">Good A (e.g. Coffee)</text>
-      <text x="18" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,18,200)">Good B (e.g. Cocoa)</text>
+      <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Good B (e.g. Cocoa)</text>
       {/* Title */}
-      <text x="250" y="15" fontSize="12" fill={MUTED} textAnchor="middle">Production Possibility Curve (PPC)</text>
+      <text x="250" y="15" fontSize="13" fill={MUTED} textAnchor="middle">Production Possibility Curve (PPC)</text>
     </svg>
   );
 }
@@ -72,8 +72,8 @@ export function PPC_GROWTH({ highlight = [] }: { highlight?: string[] }) {
       </defs>
       {/* Labels */}
       <text x="240" y="400" fontSize="13" fill={STROKE} textAnchor="middle">Good A</text>
-      <text x="18" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,18,200)">Good B</text>
-      <text x="260" y="15" fontSize="12" fill={MUTED} textAnchor="middle">PPC — Outward Shift (Economic Growth)</text>
+      <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Good B</text>
+      <text x="260" y="15" fontSize="13" fill={MUTED} textAnchor="middle">PPC — Outward Shift (Economic Growth)</text>
       <text x="260" y="380" fontSize="11" fill={AMBER} textAnchor="middle">Outward shift = more of both goods now possible</text>
     </svg>
   );
@@ -115,8 +115,8 @@ export function PPC_MOVEMENT({ highlight = [] }: { highlight?: string[] }) {
       <text x="52" y="210" fontSize="11" fill={AMBER} textAnchor="end">30</text>
       {/* Labels */}
       <text x="240" y="400" fontSize="13" fill={STROKE} textAnchor="middle">Coffee (tonnes)</text>
-      <text x="18" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,18,200)">Cocoa (tonnes)</text>
-      <text x="250" y="15" fontSize="12" fill={MUTED} textAnchor="middle">Movement Along the PPC (Reallocation)</text>
+      <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Cocoa (tonnes)</text>
+      <text x="250" y="15" fontSize="13" fill={MUTED} textAnchor="middle">Movement Along the PPC (Reallocation)</text>
     </svg>
   );
 }
@@ -127,7 +127,7 @@ export function CIRCULAR_FLOW({ highlight = [] }: { highlight?: string[] }) {
     <svg viewBox="0 0 560 480" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 560, fontFamily: FONT }}>
       <rect width="560" height="480" fill={BG} />
       {/* Title */}
-      <text x="280" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Circular Flow of Income</text>
+      <text x="280" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Circular Flow of Income</text>
       {/* Households box */}
       <rect x="30" y="190" width="120" height="60" rx="6" fill="none" stroke={BRAND} strokeWidth="2" />
       <text x="90" y="222" fontSize="13" fill={STROKE} textAnchor="middle" fontWeight="bold">Households</text>
