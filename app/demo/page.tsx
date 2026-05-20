@@ -92,6 +92,7 @@ const DEMO_CSS = `
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;
+  white-space: nowrap;
   font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
   transition: background 0.15s;
 }
@@ -106,6 +107,9 @@ const DEMO_CSS = `
 .demo-nav-login:hover { color: oklch(18% 0.012 60); }
 @media (max-width: 760px) {
   .demo-nav-cta, .demo-nav-login { min-height: 44px; display: inline-flex; align-items: center; }
+}
+@media (max-width: 480px) {
+  .demo-nav-login { display: none; }
 }
 
 @keyframes demo-pulse {
