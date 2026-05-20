@@ -3,8 +3,8 @@
 
 import React from 'react';
 
-const STROKE = 'var(--chat-text, #e8e0d0)';
-const MUTED = 'var(--chat-muted, #9a9080)';
+const STROKE = 'var(--chat-text, #2c2825)';
+const MUTED = 'var(--chat-muted, #5c5650)';
 const BRAND = 'var(--brand, #2d5a3d)';
 const AMBER = '#c9903a';
 const RED = '#c0392b';
@@ -139,7 +139,7 @@ export function BM_BCG() {
 export function BM_DECISION_TREE() {
   return (
     <svg viewBox="0 0 540 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 540, fontFamily: FONT }}>
-      <text x="270" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Decision Tree — Expected Monetary Value (EMV)</text>
+      <text x="270" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Decision Tree — Expected Monetary Value (EMV)</text>
       {/* Decision node */}
       <rect x="30" y="180" width="50" height="50" rx="4" fill={BLUE} opacity="0.3" stroke={BLUE} strokeWidth="2" />
       <text x="55" y="210" fontSize="12" fill={STROKE} textAnchor="middle" fontWeight="bold">D</text>
@@ -191,7 +191,7 @@ export function BM_DECISION_TREE() {
 export function BM_ORG_HIERARCHICAL() {
   return (
     <svg viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Hierarchical Organisational Structure</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Hierarchical Organisational Structure</text>
       {/* Level 1 — CEO */}
       <rect x="190" y="35" width="140" height="44" rx="4" fill={BRAND} opacity="0.25" stroke={BRAND} strokeWidth="1.5" />
       <text x="260" y="60" fontSize="12" fill={STROKE} textAnchor="middle" fontWeight="bold">CEO / Director</text>
@@ -232,7 +232,7 @@ export function BM_ORG_HIERARCHICAL() {
 export function BM_ORG_FLAT() {
   return (
     <svg viewBox="0 0 520 300" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Flat Organisational Structure</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Flat Organisational Structure</text>
       {/* CEO */}
       <rect x="190" y="40" width="140" height="44" rx="4" fill={BRAND} opacity="0.25" stroke={BRAND} strokeWidth="1.5" />
       <text x="260" y="65" fontSize="12" fill={STROKE} textAnchor="middle" fontWeight="bold">CEO / Director</text>
@@ -258,20 +258,20 @@ export function BM_ORG_FLAT() {
 export function BM_PRODUCT_LIFECYCLE() {
   return (
     <svg viewBox="0 0 520 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Product Life Cycle (PLC)</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Product Life Cycle (PLC)</text>
       {/* Axes */}
       <line x1="60" y1="20" x2="60" y2="350" stroke={STROKE} strokeWidth="2" />
       <line x1="60" y1="350" x2="500" y2="350" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="508,350 496,345 496,355" fill={STROKE} />
       <text x="280" y="378" fontSize="12" fill={STROKE} textAnchor="middle">Time</text>
-      <text x="16" y="190" fontSize="12" fill={STROKE} textAnchor="middle" transform="rotate(-90,16,190)">Sales / Profit</text>
+      <text x="22" y="190" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,190)">Sales / Profit</text>
       {/* Zero profit line */}
       <line x1="60" y1="280" x2="500" y2="280" stroke={MUTED} strokeWidth="1" strokeDasharray="4,3" opacity="0.6" />
       <text x="52" y="284" fontSize="10" fill={MUTED} textAnchor="end">0</text>
       {/* Sales curve */}
       <path d="M 80,340 Q 140,330 180,260 Q 230,170 280,120 Q 340,90 380,100 Q 430,115 480,200" fill="none" stroke={BRAND} strokeWidth="2.5" />
-      <text x="490" y="190" fontSize="12" fill={BRAND} fontWeight="bold">Sales</text>
+      <text x="490" y="190" fontSize="14" fill={BRAND} fontWeight="bold">Sales</text>
       {/* Profit curve — lower, S-shaped offset */}
       <path d="M 80,350 Q 120,350 160,320 Q 200,280 240,230 Q 290,190 340,185 Q 390,185 430,220 Q 460,250 490,310" fill="none" stroke={AMBER} strokeWidth="2" strokeDasharray="6,3" />
       <text x="492" y="305" fontSize="11" fill={AMBER}>Profit</text>
@@ -299,7 +299,7 @@ export function BM_PRODUCT_LIFECYCLE() {
 export function BM_POSITION_MAP() {
   return (
     <svg viewBox="0 0 460 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
-      <text x="230" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Positioning Map (Perceptual Map)</text>
+      <text x="230" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Positioning Map (Perceptual Map)</text>
       {/* Axes */}
       <line x1="230" y1="30" x2="230" y2="390" stroke={STROKE} strokeWidth="2" />
       <line x1="30" y1="210" x2="430" y2="210" stroke={STROKE} strokeWidth="2" />
@@ -336,22 +336,22 @@ export function BM_POSITION_MAP() {
 export function BM_BREAKEVEN() {
   return (
     <svg viewBox="0 0 520 450" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Break-Even Chart</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Break-Even Chart</text>
       <line x1="60" y1="20" x2="60" y2="370" stroke={STROKE} strokeWidth="2" />
       <line x1="60" y1="370" x2="480" y2="370" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="488,370 476,365 476,375" fill={STROKE} />
       <text x="270" y="398" fontSize="12" fill={STROKE} textAnchor="middle">Output / Units Sold</text>
-      <text x="16" y="200" fontSize="12" fill={STROKE} textAnchor="middle" transform="rotate(-90,16,200)">Revenue / Costs (€)</text>
+      <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Revenue / Costs (€)</text>
       {/* Fixed costs — horizontal */}
       <line x1="60" y1="260" x2="480" y2="260" stroke={BLUE} strokeWidth="2" />
-      <text x="484" y="264" fontSize="11" fill={BLUE} fontWeight="bold">FC</text>
+      <text x="484" y="264" fontSize="14" fill={BLUE} fontWeight="bold">FC</text>
       {/* Total costs — from FC intercept, rising */}
       <line x1="60" y1="260" x2="440" y2="60" stroke={RED} strokeWidth="2.5" />
-      <text x="445" y="72" fontSize="11" fill={RED} fontWeight="bold">TC</text>
+      <text x="445" y="72" fontSize="14" fill={RED} fontWeight="bold">TC</text>
       {/* Total revenue — from origin */}
       <line x1="60" y1="370" x2="450" y2="50" stroke={BRAND} strokeWidth="2.5" />
-      <text x="455" y="62" fontSize="11" fill={BRAND} fontWeight="bold">TR</text>
+      <text x="455" y="62" fontSize="14" fill={BRAND} fontWeight="bold">TR</text>
       {/* Break-even point */}
       <circle cx="252" cy="183" r="6" fill={AMBER} />
       <line x1="252" y1="183" x2="252" y2="370" stroke={AMBER} strokeWidth="1.5" strokeDasharray="5,3" />
@@ -377,7 +377,7 @@ export function BM_BREAKEVEN() {
 export function BM_CASHFLOW() {
   return (
     <svg viewBox="0 0 520 380" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Cash Flow Forecast Structure</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Cash Flow Forecast Structure</text>
       {/* Table */}
       {[
         { row: 'Month', vals: ['Jan', 'Feb', 'Mar', 'Apr'] },
@@ -426,7 +426,7 @@ export function BM_CASHFLOW() {
 export function BM_FORCE_FIELD() {
   return (
     <svg viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Force Field Analysis (Lewin) — HL</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Force Field Analysis (Lewin) — HL</text>
       {/* Central line */}
       <line x1="260" y1="40" x2="260" y2="370" stroke={STROKE} strokeWidth="2.5" />
       <text x="260" y="390" fontSize="11" fill={STROKE} textAnchor="middle">PROPOSED CHANGE</text>
@@ -482,7 +482,7 @@ export function BM_GANTT() {
   const top = 55;
   return (
     <svg viewBox="0 0 540 310" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 540, fontFamily: FONT }}>
-      <text x="270" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Gantt Chart (HL)</text>
+      <text x="270" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Gantt Chart (HL)</text>
       {/* Month headers */}
       {months.map((m, i) => (
         <g key={i}>
@@ -523,13 +523,13 @@ export function BM_GANTT() {
 export function BM_STOCK_CONTROL() {
   return (
     <svg viewBox="0 0 520 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
-      <text x="260" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Stock Control Chart (HL)</text>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Stock Control Chart (HL)</text>
       <line x1="60" y1="20" x2="60" y2="370" stroke={STROKE} strokeWidth="2" />
       <line x1="60" y1="370" x2="480" y2="370" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="488,370 476,365 476,375" fill={STROKE} />
       <text x="270" y="398" fontSize="12" fill={STROKE} textAnchor="middle">Time</text>
-      <text x="16" y="200" fontSize="12" fill={STROKE} textAnchor="middle" transform="rotate(-90,16,200)">Stock Level (units)</text>
+      <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Stock Level (units)</text>
       {/* Max stock */}
       <line x1="60" y1="60" x2="480" y2="60" stroke={MUTED} strokeWidth="1.5" strokeDasharray="6,4" />
       <text x="484" y="64" fontSize="10" fill={MUTED}>Max</text>
@@ -565,20 +565,20 @@ export function BM_SCATTER_REGRESSION() {
   const scaleY = (y: number) => oy + H - (y - 180) * 0.7;
   return (
     <svg viewBox="0 0 500 440" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
-      <text x="250" y="18" fontSize="12" fill={MUTED} textAnchor="middle">Simple Linear Regression — Scatter Diagram (HL)</text>
+      <text x="250" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Simple Linear Regression — Scatter Diagram (HL)</text>
       <line x1={ox} y1={oy} x2={ox} y2={oy + H} stroke={STROKE} strokeWidth="2" />
       <line x1={ox} y1={oy + H} x2={ox + W} y2={oy + H} stroke={STROKE} strokeWidth="2" />
       <polygon points={`${ox},${oy - 8} ${ox - 5},${oy + 4} ${ox + 5},${oy + 4}`} fill={STROKE} />
       <polygon points={`${ox + W + 8},${oy + H} ${ox + W - 4},${oy + H - 5} ${ox + W - 4},${oy + H + 5}`} fill={STROKE} />
       <text x={ox + W / 2} y={oy + H + 26} fontSize="12" fill={STROKE} textAnchor="middle">Time / Independent Variable (x)</text>
-      <text x="18" y={oy + H / 2} fontSize="12" fill={STROKE} textAnchor="middle" transform={`rotate(-90,18,${oy + H / 2})`}>Sales / Dependent Variable (y)</text>
+      <text x="22" y={oy + H / 2} fontSize="13" fill={STROKE} textAnchor="middle" transform={`rotate(-90,22,${oy + H / 2})`}>Sales / Dependent Variable (y)</text>
       {/* Data points */}
       {points.map(([x, y], i) => (
         <circle key={i} cx={scaleX(x)} cy={scaleY(y)} r="5" fill={BLUE} opacity="0.7" />
       ))}
       {/* Line of best fit */}
       <line x1={scaleX(90)} y1={scaleY(200)} x2={scaleX(350)} y2={scaleY(460)} stroke={RED} strokeWidth="2.5" />
-      <text x={scaleX(355)} y={scaleY(460)} fontSize="12" fill={RED} fontWeight="bold">LOBF</text>
+      <text x={scaleX(355)} y={scaleY(460)} fontSize="14" fill={RED} fontWeight="bold">LOBF</text>
       {/* Extrapolation */}
       <line x1={scaleX(340)} y1={scaleY(450)} x2={scaleX(400)} y2={scaleY(510)} stroke={AMBER} strokeWidth="2" strokeDasharray="6,4" />
       <text x={scaleX(390)} y={scaleY(502)} fontSize="10" fill={AMBER}>Extrapolation</text>
