@@ -1505,7 +1505,12 @@ const CSS = `
 @media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 44px; height: 44px; } }
 @media (max-width: 480px) {
   .ib-lp .hero-meta .dot { display: none; }
-  .ib-lp .chat { max-height: 360px; overflow: hidden; }
+  .ib-lp .chat { max-height: 360px; overflow: hidden; position: relative; }
+  .ib-lp .chat::after {
+    content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
+    background: linear-gradient(to bottom, transparent, var(--paper));
+    border-radius: 0 0 22px 22px; pointer-events: none; z-index: 1;
+  }
   .ib-lp .subj-hd { flex-direction: column; align-items: flex-start; gap: 8px; }
   .ib-lp .subj-foot { flex-direction: column; align-items: stretch; }
   .ib-lp .final-cta .hero-cta { max-width: 340px; margin-left: auto; margin-right: auto; }

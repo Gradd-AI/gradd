@@ -105,15 +105,6 @@ const DEMO_CSS = `
   padding: 7px 4px;
 }
 .demo-nav-login:hover { color: oklch(18% 0.012 60); }
-.demo-nav-back {
-  font-family: "Geist Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: oklch(54% 0.012 60);
-  text-decoration: none;
-  white-space: nowrap;
-}
-.demo-nav-back:hover { color: oklch(18% 0.012 60); }
 @media (max-width: 760px) {
   .demo-nav-cta, .demo-nav-login { min-height: 44px; display: inline-flex; align-items: center; }
 }
@@ -156,10 +147,9 @@ const DEMO_CSS = `
 function DemoNav() {
   return (
     <header className="app-nav">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <a href="/" className="demo-nav-back">← gradd.ai</a>
+      <Link href="/">
         <img src="/gradd-ai-logo.png" alt="Gradd" />
-      </div>
+      </Link>
       <div className="app-nav-right">
         <a href="/auth/login" className="demo-nav-login">Already a student? Log in</a>
         <a href="/auth/signup/ib" className="demo-nav-cta">Sign up free →</a>
