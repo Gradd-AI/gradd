@@ -101,7 +101,7 @@ export default function IBLandingPage() {
               ))}
             </nav>
             <div className="nav-cta">
-              <Link href="/demo" className="btn btn-see-it btn-sm">See it in action</Link>
+              <Link href="/demo" className="btn btn-see-it btn-sm">Try the live demo — no account needed</Link>
               <Link href="/auth/login" className="btn btn-ghost btn-sm">Log in</Link>
               <Link href="/auth/signup" className="btn btn-primary btn-sm">Start <span className="arrow">→</span></Link>
             </div>
@@ -121,14 +121,18 @@ export default function IBLandingPage() {
               <p className="hero-sub">
                 Gradd.ai is the AI tutor built only for IB Economics and IB Business Management. Full syllabus. IBO-standard diagrams marked instantly. Available the night before the exam.
               </p>
+              <p className="hero-thesis">
+                Gradd doesn&apos;t just explain IB Economics and Business Management.
+                {' '}It trains students to write the answers IB examiners reward.
+              </p>
               <div className="hero-cta">
                 <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
-                <Link href="/demo" className="btn btn-ghost">See it in action</Link>
+                <Link href="/demo" className="btn btn-ghost">Try the live demo — no account needed</Link>
               </div>
               <div className="hero-meta">
                 <span>From €44.99 / month</span>
                 <span className="dot" />
-                <span>7-day money back</span>
+                <span>7-day money-back guarantee</span>
                 <span className="dot" />
                 <span>Cancel anytime</span>
               </div>
@@ -194,6 +198,20 @@ export default function IBLandingPage() {
               <div className="trust-stat"><span className="num">2</span><span className="lbl">subjects, HL &amp; SL</span></div>
               <div className="trust-stat"><span className="num">61</span><span className="lbl">IBO-standard diagrams</span></div>
               <div className="trust-stat"><span className="num">24/7</span><span className="lbl">availability</span></div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── DEMO SIGNPOST ── */}
+        <section className="demo-signpost-band">
+          <div className="wrap">
+            <div className="demo-signpost">
+              <div className="demo-signpost-copy">
+                <h3 className="demo-signpost-h">Try a real IB lesson before signing up.</h3>
+                <p className="demo-signpost-body">Mia walks you through a live lesson one question at a time — correcting mistakes, drawing diagrams, and showing the answer structure IB examiners reward.</p>
+                <p className="demo-signpost-sub">No account needed.</p>
+              </div>
+              <Link href="/demo" className="btn btn-rust demo-signpost-cta">Try the live demo <span className="arrow">→</span></Link>
             </div>
           </div>
         </section>
@@ -726,7 +744,7 @@ export default function IBLandingPage() {
               <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
               <button className="btn btn-ghost" onClick={() => scrollTo('pricing')}>See pricing</button>
             </div>
-            <div className="small">From €44.99 / month · cancel anytime · 7-day money back</div>
+            <div className="small">From €44.99 / month · cancel anytime · 7-day money-back guarantee</div>
           </div>
         </section>
 
@@ -1514,5 +1532,68 @@ const CSS = `
   .ib-lp .subj-hd { flex-direction: column; align-items: flex-start; gap: 8px; }
   .ib-lp .subj-foot { flex-direction: column; align-items: stretch; }
   .ib-lp .final-cta .hero-cta { max-width: 340px; margin-left: auto; margin-right: auto; }
+}
+
+/* ── Hero thesis line ── */
+.ib-lp .hero-thesis {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: clamp(18px, 1.6vw, 22px);
+  color: var(--forest);
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+  margin-top: 24px;
+  max-width: 42ch;
+}
+
+/* ── Demo signpost band ── */
+.ib-lp .demo-signpost-band {
+  padding: clamp(24px, 3vw, 40px) 0;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper-2);
+}
+.ib-lp .demo-signpost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  border: 1.5px solid var(--forest);
+  border-radius: var(--radius);
+  padding: 28px 32px;
+  background: var(--paper);
+}
+.ib-lp .demo-signpost-copy { flex: 1; min-width: 0; }
+.ib-lp .demo-signpost-h {
+  font-family: var(--serif);
+  font-size: clamp(20px, 2vw, 24px);
+  font-weight: 400;
+  letter-spacing: -0.015em;
+  color: var(--forest);
+  margin-bottom: 10px;
+}
+.ib-lp .demo-signpost-body {
+  font-size: 14.5px;
+  color: var(--ink-2);
+  line-height: 1.55;
+  max-width: 56ch;
+}
+.ib-lp .demo-signpost-sub {
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.ib-lp .demo-signpost-cta { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .ib-lp .demo-signpost {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 22px 24px;
+    gap: 20px;
+  }
+  .ib-lp .demo-signpost-cta { text-align: center; justify-content: center; }
 }
 `;
