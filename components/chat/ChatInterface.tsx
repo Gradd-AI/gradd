@@ -658,7 +658,7 @@ export default function ChatInterface({
           .ib-session .ib-input-bar  { padding: 16px 12px 20px; }
           .ib-session .ib-input-inner { padding: 7px 7px 7px 12px; gap: 8px; }
           .ib-session .ib-attach-btn,
-          .ib-session .ib-send-btn   { width: 34px; height: 34px; }
+          .ib-session .ib-send-btn   { width: 44px; height: 44px; }
         }
         @media (max-width: 480px) {
           .ib-session .session-header {
@@ -671,8 +671,11 @@ export default function ChatInterface({
             border-top: 1px solid var(--rule);
             white-space: normal !important; overflow: visible !important; text-overflow: unset !important;
           }
-          .ib-session .end-session-btn { padding: 6px 11px !important; font-size: 11px; }
+          .ib-session .end-session-btn { padding: 6px 11px !important; font-size: 11px; min-height: 44px; }
           .ib-session .ib-live-pill    { padding: 5px 10px; font-size: 11px; }
+          .ib-session .ib-lcp-actions  { flex-direction: column; }
+          .ib-session .ib-lcp-btn-continue,
+          .ib-session .ib-lcp-btn-end  { min-height: 44px; }
         }
       `}</style>
 
@@ -739,12 +742,12 @@ export default function ChatInterface({
                   borderBottom: '1px solid var(--chat-border)',
                 }}
               >
-                <span style={{ fontSize: isIB ? 11 : 12, fontWeight: 600, color: 'var(--chat-muted)', letterSpacing: isIB ? '0.08em' : '0.5px', fontFamily: isIB ? 'var(--mono)' : undefined }}>
+                <span style={{ fontSize: isIB ? 11 : 12, fontWeight: 600, color: 'var(--chat-muted)', letterSpacing: isIB ? '0.08em' : '0.5px', fontFamily: isIB ? 'var(--mono)' : undefined, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 'calc(100% - 60px)' }}>
                   REFERENCE DIAGRAM — {lessonName.toUpperCase()}
                 </span>
                 <button
                   onClick={() => setDiagramDismissed(true)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--chat-muted)', fontSize: 16, lineHeight: 1, padding: '0 2px' }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--chat-muted)', fontSize: 16, lineHeight: 1, padding: '12px', minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                   aria-label="Dismiss diagram"
                 >
                   ×

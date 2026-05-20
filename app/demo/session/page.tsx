@@ -402,6 +402,28 @@ const CSS = `
   .ib-session .demo-cta-primary,
   .ib-session .demo-cta-ghost  { text-align: center; }
 }
+@media (max-width: 480px) {
+  .ib-session .session-header {
+    flex-direction: column !important; height: auto !important;
+    padding: 10px 16px !important; gap: 8px !important; align-items: stretch !important;
+  }
+  .ib-session .session-header-row1 {
+    display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+  }
+  .ib-session .session-header-left  { justify-content: flex-start; }
+  .ib-session .session-header-centre { justify-content: center; }
+  .ib-session .session-header-right  { justify-content: flex-end; }
+  .ib-session .session-header-row2 {
+    text-align: center; padding-top: 8px;
+    border-top: 1px solid var(--rule);
+  }
+  .ib-session .demo-header-cta {
+    min-height: 44px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .ib-session .demo-submit-btn { min-height: 44px; }
+  .ib-session .demo-top-btn    { width: 44px !important; height: 44px !important; }
+  .ib-session .demo-trust      { white-space: normal; text-align: center; }
+}
 `;
 
 // ─── Message bubble ────────────────────────────────────────────────────────────
