@@ -1215,6 +1215,8 @@ const CSS = `
   gap: clamp(40px,6vw,80px); align-items: center;
 }
 @media (max-width: 940px) { .ib-lp .parents-grid { grid-template-columns: 1fr; } }
+.ib-lp .parents-copy > .eyebrow { display: block; margin-bottom: 18px; }
+.ib-lp .parents-copy .lead { margin-top: 22px; }
 .ib-lp .parents-copy .h-section em { font-style: italic; color: var(--rust); }
 .ib-lp .parents-bullets {
   list-style: none; padding: 0; margin: 28px 0;
@@ -1503,6 +1505,9 @@ const CSS = `
 @media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 44px; height: 44px; } }
 @media (max-width: 480px) {
   .ib-lp .hero-meta .dot { display: none; }
-  .ib-lp .chat { max-height: 420px; overflow: hidden; }
+  .ib-lp .chat { max-height: 360px; overflow: hidden; }
+  .ib-lp .subj-hd { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ib-lp .subj-foot { flex-direction: column; align-items: stretch; }
+  .ib-lp .final-cta .hero-cta { max-width: 340px; margin-left: auto; margin-right: auto; }
 }
 `;
