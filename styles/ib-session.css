@@ -1,0 +1,287 @@
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
+
+/* ─── IB Session skin ────────────────────────────────────────────────────────
+   All selectors prefixed .ib-session — zero bleed to LC session or other pages.
+   Imported globally in app/layout.tsx; activated by className="ib-session" on
+   the ChatInterface wrapper div and the demo/session page wrapper. */
+
+.ib-session {
+  --paper:         oklch(96.2% 0.012 78);
+  --paper-2:       oklch(93.5% 0.015 78);
+  --paper-3:       oklch(89% 0.018 78);
+  --ink:           oklch(18% 0.012 60);
+  --ink-2:         oklch(34% 0.012 60);
+  --ink-3:         oklch(54% 0.012 60);
+  --rule:          oklch(86% 0.014 78);
+  --rule-strong:   oklch(74% 0.018 78);
+  --forest:        oklch(22% 0.035 168);
+  --forest-2:      oklch(28% 0.04 168);
+  --forest-deep:   oklch(16% 0.028 168);
+  --forest-ink:    oklch(94% 0.025 80);
+  --forest-ink-2:  oklch(78% 0.025 75);
+  --rust:          oklch(64% 0.17 47);
+  --rust-2:        oklch(58% 0.17 47);
+  --rust-ink:      oklch(98% 0.01 70);
+  --gold:          oklch(70% 0.14 75);
+  --serif:         "Fraunces","Times New Roman",Georgia,serif;
+  --sans:          "Geist",ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --mono:          "Geist Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
+  /* Remap legacy chat vars — inline styles in MessageRenderer resolve through these */
+  --chat-bg:        var(--paper);
+  --chat-surface:   var(--paper-2);
+  --chat-surface-2: var(--paper-3);
+  --chat-border:    var(--rule);
+  --chat-text:      var(--ink);
+  --chat-muted:     var(--ink-3);
+  --chat-accent:    var(--rust);
+  --font-body:      var(--sans);
+  --font-display:   var(--serif);
+  /* MessageRenderer typography overrides */
+  --chat-strong:      var(--forest);
+  --chat-em:          var(--rust);
+  --chat-thead-bg:    var(--paper-3);
+  --chat-thead-color: var(--ink-2);
+  /* Fraunces italic treatment for em, h2, and paragraph line-height */
+  --chat-em-font:     var(--serif);
+  --chat-em-size:     1.12em;
+  --chat-p-lh:        1.72;
+  --chat-h2-style:    italic;
+  --chat-h2-size:     24px;
+  --chat-h2-color:    var(--forest);
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+/* ── Light sticky header (paper/cream, dark ink — matches prototype) ── */
+.ib-session .session-header {
+  background:    var(--paper) !important;
+  border-bottom: 1px solid var(--rule) !important;
+  color: var(--ink);
+  height: 64px;
+}
+.ib-session .session-logo {
+  height: 22px;
+  filter: none;
+  opacity: 1;
+}
+.ib-session .ib-live-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 6px 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 999px;
+  color: var(--ink);
+  font-family: var(--sans); font-size: 12px;
+}
+.ib-session .ib-live-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--rust);
+  box-shadow: 0 0 0 3px color-mix(in oklab,var(--rust) 25%,transparent);
+}
+.ib-session .end-session-btn {
+  padding: 7px 14px !important;
+  border: 1px solid var(--rule-strong) !important;
+  border-radius: 999px !important;
+  color: var(--ink-3) !important;
+  font-size: 12px;
+}
+.ib-session .end-session-btn:hover { background: var(--paper-2); }
+.ib-session .session-header-row2 {
+  font-family: var(--mono) !important;
+  font-size: 11px !important; font-weight: 400 !important;
+  letter-spacing: 0.04em;
+  color: var(--ink-3) !important;
+}
+.ib-session .session-subtitle { color: inherit; }
+
+/* ── Message stream ── */
+.ib-session .chat-messages-container { background: var(--paper); padding-top: 40px !important; }
+.ib-session .chat-messages-container > div { max-width: 720px !important; padding: 0 28px !important; }
+
+/* ── Tutor row (editorial — no bubble background) ── */
+.ib-session .ib-chat-row-tutor {
+  display: flex; gap: 16px; margin-bottom: 36px; align-items: flex-start;
+}
+
+/* ── User row ── */
+.ib-session .ib-chat-row-user {
+  display: flex; justify-content: flex-end; gap: 10px;
+  margin-bottom: 36px; align-items: flex-start;
+}
+
+/* ── Avatars ── */
+.ib-session .ib-avatar-tutor {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  border-radius: 50%;
+  background: var(--forest); color: var(--gold);
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  border: 1px solid color-mix(in oklab,var(--ink) 8%,transparent);
+  margin-top: 2px; flex-shrink: 0;
+}
+.ib-session .ib-avatar-user {
+  width: 30px; height: 30px; flex: 0 0 30px;
+  border-radius: 50%;
+  background: var(--rust); color: var(--rust-ink);
+  border: 1px solid color-mix(in oklab,var(--rust) 60%,var(--ink));
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 12px; font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* ── User bubble ── */
+.ib-session .ib-user-bubble {
+  background: var(--forest); color: var(--forest-ink);
+  border: 1px solid var(--forest);
+  padding: 12px 18px; border-radius: 18px;
+  font-family: var(--sans); font-size: 14.5px; line-height: 1.5;
+  max-width: 75%;
+}
+
+/* ── Tutor content — editorial, no bubble ── */
+.ib-session .ib-mia-content {
+  max-width: 100%; font-family: var(--sans);
+  font-size: 16px; line-height: 1.72;
+  color: var(--ink); letter-spacing: -0.003em;
+}
+/* MessageRenderer uses inline fontWeight — override with !important for IB spec */
+.ib-session .ib-mia-content strong { font-weight: 600 !important; }
+.ib-session .ib-mia-content h2     { font-weight: 400 !important; }
+
+/* ── LessonCompletePanel (IB) ── */
+.ib-session .ib-lesson-complete {
+  max-width: 720px; margin: 0 auto;
+  border: 1px solid var(--rule);
+  background: var(--paper-2);
+  border-radius: 14px;
+  padding: 18px 22px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.ib-session .ib-lcp-row { display: flex; align-items: center; gap: 14px; }
+.ib-session .ib-lcp-icon {
+  width: 34px; height: 34px; flex-shrink: 0;
+  border-radius: 50%; background: var(--forest); color: var(--gold);
+  display: grid; place-items: center;
+}
+.ib-session .ib-lcp-heading {
+  font-family: var(--serif); font-style: italic;
+  font-size: 16px; font-weight: 400;
+  color: var(--forest); letter-spacing: -0.01em;
+}
+.ib-session .ib-lcp-sub {
+  font-family: var(--sans); font-size: 12px;
+  color: var(--ink-3); margin-top: 2px;
+}
+.ib-session .ib-lcp-actions { display: flex; gap: 10px; }
+.ib-session .ib-lcp-btn-continue {
+  flex: 1; padding: 11px 16px;
+  border-radius: 999px; border: none;
+  background: var(--rust); color: var(--rust-ink);
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  cursor: pointer; transition: background 0.15s;
+}
+.ib-session .ib-lcp-btn-continue:hover { background: var(--rust-2); }
+.ib-session .ib-lcp-btn-end {
+  flex: 1; padding: 11px 16px;
+  border-radius: 999px; border: 1px solid var(--rule-strong);
+  background: transparent; color: var(--ink-2);
+  font-family: var(--sans); font-size: 14px; font-weight: 400;
+  cursor: pointer; transition: background 0.15s;
+}
+.ib-session .ib-lcp-btn-end:hover:not(:disabled) { background: var(--paper-3); }
+.ib-session .ib-lcp-btn-end:disabled { opacity: 0.55; cursor: not-allowed; }
+
+/* ── Loading dots ── */
+.ib-session .ib-loading-dots { display: flex; gap: 5px; align-items: center; padding: 4px 0; }
+.ib-session .ib-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); display: inline-block; }
+
+/* ── Input bar (fixed, gradient fade) ── */
+.ib-session .ib-input-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, var(--paper) 65%, transparent);
+  padding: 24px 28px 28px;
+  z-index: 40;
+}
+.ib-session .ib-input-inner {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px 10px 18px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 16px;
+  background: var(--paper);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+}
+.ib-session .ib-attach-btn {
+  width: 36px; height: 36px; flex-shrink: 0; padding: 0;
+  border-radius: 10px; background: transparent;
+  border: 1px solid var(--rule-strong);
+  color: var(--ink-2); display: grid; place-items: center;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+}
+.ib-session .ib-attach-btn svg { width: 18px; height: 18px; display: block; }
+.ib-session .ib-attach-btn:hover:not(:disabled) { background: var(--paper-2); color: var(--ink); }
+.ib-session .ib-attach-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.ib-session .ib-textarea {
+  flex: 1; min-width: 0;
+  background: transparent; border: 0; outline: none;
+  color: var(--ink); font-family: var(--sans);
+  font-size: 14px; padding: 4px 0; resize: none;
+  line-height: 1.5; min-height: 24px; max-height: 160px;
+  overflow-y: auto; align-self: center;
+}
+.ib-session .ib-textarea::placeholder { color: var(--ink-3); }
+.ib-session .ib-textarea:disabled { opacity: 0.6; }
+.ib-session .ib-send-btn {
+  width: 36px; height: 36px; flex-shrink: 0; padding: 0;
+  border-radius: 10px; border: 0;
+  background: var(--rust); color: var(--rust-ink);
+  display: grid; place-items: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.ib-session .ib-send-btn:hover:not(:disabled) { background: var(--rust-2); }
+.ib-session .ib-send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ib-session .ib-input-hint {
+  text-align: center; font-family: var(--mono);
+  font-size: 10.5px; letter-spacing: 0.04em;
+  color: var(--ink-3); margin-top: 8px;
+}
+/* Pad messages above the fixed input bar.
+   !important required: the element has inline style="padding:24px 0"
+   which sets padding-bottom:0 and wins over a plain class rule. */
+.ib-session .chat-messages-container { padding-bottom: 160px !important; }
+
+/* ── Mobile ── */
+@media (max-width: 720px) {
+  .ib-session .session-header { padding: 0 16px !important; height: 56px !important; }
+  .ib-session .session-logo { height: 18px; }
+}
+@media (max-width: 640px) {
+  .ib-session .ib-chat-row-tutor,
+  .ib-session .ib-chat-row-user  { margin-bottom: 28px; }
+  .ib-session .ib-mia-content    { font-size: 15px; }
+  .ib-session .ib-user-bubble    { max-width: 88%; }
+  .ib-session .ib-avatar-user    { display: none; }
+  .ib-session .chat-messages-container > div { padding: 0 18px !important; }
+  .ib-session .ib-input-bar  { padding: 16px 12px 20px; }
+  .ib-session .ib-input-inner { padding: 7px 7px 7px 12px; gap: 8px; }
+  .ib-session .ib-attach-btn,
+  .ib-session .ib-send-btn   { width: 44px; height: 44px; }
+}
+@media (max-width: 480px) {
+  .ib-session .session-header {
+    flex-direction: column !important; height: auto !important;
+    padding: 10px 16px !important; gap: 8px !important; align-items: stretch !important;
+  }
+  .ib-session .session-header-row1 { grid-template-columns: auto 1fr auto !important; }
+  .ib-session .session-header-row2 {
+    text-align: center !important; padding-top: 8px;
+    border-top: 1px solid var(--rule);
+    white-space: normal !important; overflow: visible !important; text-overflow: unset !important;
+  }
+  .ib-session .end-session-btn { padding: 6px 11px !important; font-size: 11px; min-height: 44px; }
+  .ib-session .ib-live-pill    { padding: 5px 10px; font-size: 11px; }
+  .ib-session .ib-lcp-actions  { flex-direction: column; }
+  .ib-session .ib-lcp-btn-continue,
+  .ib-session .ib-lcp-btn-end  { min-height: 44px; }
+}
