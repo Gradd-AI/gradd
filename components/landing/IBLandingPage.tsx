@@ -864,7 +864,7 @@ const CSS = `
 .ib-lp .btn:hover { transform: translateY(-1px); }
 .ib-lp .btn .arrow { transition: transform 0.18s ease; }
 .ib-lp .btn:hover .arrow { transform: translateX(3px); }
-.ib-lp .btn-sm { padding: 9px 14px; font-size: 13px; }
+.ib-lp .btn-sm { padding: 9px 14px; font-size: 13px; min-height: 44px; }
 .ib-lp .btn-primary { background: var(--ink); color: var(--paper); }
 .ib-lp .btn-primary:hover { background: var(--rust); color: var(--rust-ink); border-color: var(--rust); }
 .ib-lp .btn-rust { background: var(--rust); color: var(--rust-ink); }
@@ -1367,7 +1367,7 @@ const CSS = `
   font-family: var(--sans); font-weight: 500; cursor: pointer;
   transition: background 0.18s, color 0.18s, box-shadow 0.18s;
   background: transparent; color: var(--ink-2); border: none;
-  display: flex; align-items: center; gap: 8px;
+  display: flex; align-items: center; gap: 8px; min-height: 44px;
 }
 .ib-lp .toggle-btn.active {
   background: var(--paper); color: var(--ink);
@@ -1500,5 +1500,9 @@ const CSS = `
 .ib-lp .to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .ib-lp .to-top:hover { background: var(--rust); border-color: var(--rust); color: var(--rust-ink); }
 .ib-lp .to-top svg { width: 16px; height: 16px; }
-@media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 40px; height: 40px; } }
+@media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 44px; height: 44px; } }
+@media (max-width: 480px) {
+  .ib-lp .hero-meta .dot { display: none; }
+  .ib-lp .chat { max-height: 420px; overflow: hidden; }
+}
 `;

@@ -104,6 +104,9 @@ const DEMO_CSS = `
   padding: 7px 4px;
 }
 .demo-nav-login:hover { color: oklch(18% 0.012 60); }
+@media (max-width: 760px) {
+  .demo-nav-cta, .demo-nav-login { min-height: 44px; display: inline-flex; align-items: center; }
+}
 
 @keyframes demo-pulse {
   0%   { transform: scale(1);    box-shadow: 0 0 0 0   rgba(200, 162, 58, 0.5); }
