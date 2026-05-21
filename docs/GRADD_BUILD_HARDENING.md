@@ -46,6 +46,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 16. **Match model capability to prompt size and conversation length.** A large system prompt across many turns needs Sonnet-class capability minimum — validate over a full-length session, not a 3-message smoke test. Enable Anthropic prompt caching from day one: split the system prompt into static (cacheable) and dynamic (live) blocks for roughly a 90% cost reduction on system-prompt tokens.
 
+17. **QA / preview surfaces must render in production scope.** Any internal QA, preview or audit page that displays a production component must mirror production's wrapper, CSS scope, fonts and render path exactly. A QA page using different scope produces false positives (sees bugs that don't exist) and false negatives (misses real bugs). Validate by side-by-side with a live session before trusting any new QA surface.
+
+18. **Prompt-cached architectures: changes only affect new sessions.** When the system prompt is substituted with student-specific values at session start and stored (`sessions.raw_final_response`), pre-existing open sessions retain the OLD prompt forever. Test protocol after any prompt change: close all open sessions in DB → hard refresh browser → start new session → verify `session_number` incremented BEFORE judging behaviour.
+
+19. **Template variables in prompts must be labels, not verb objects.** Write `{{VAR}} = the value` and then act on the label, not `depends on {{VAR}}:` which substitutes mid-sentence and breaks grammar — turning a directive into a statement and orphaning any branches below it. Mentally substitute each possible value and read the resulting sentence before shipping.
+
+20. **Visual and coordinate fixes are not batchable.** Work one element at a time with screenshot verification between edits. Never apply batch coordinate offsets to shared helpers — side-effects propagate to every consumer. If a "systematic" fix feels tempting, that's the signal to slow down, not speed up.
+
+21. **Tooling-cap discipline: set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000` every session.** Default 32k cap will kill multi-file edits mid-task — no commit, no push, work appears lost (actually safe, but the symptom is alarming). Combine with explicit response-constraint directives in batched instructions: "terse responses", "no full file pastes", "commit message under 200 chars".
+
 ---
 
 ## ISSUE CATALOGUE
@@ -182,6 +192,78 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** `student_progress.current_unit_name` is a denormalised copy that only refreshes on the next `LESSON_COMPLETE`/`UNIT_COMPLETE` — either update both in the migration or accept it self-heals on next session. Don't assume "stale value" means "orphan row" — verify with a `LEFT JOIN` before concluding.
 **CATEGORY:** Database/Migration
 **SEVERITY:** Low
+
+
+---
+
+**ISSUE:** [IB] `course_position` bug misdiagnosed from code-path reasoning instead of data
+**SYMPTOM:** Claude Code initially claimed root cause was "course_position null at runtime, derive fallback fires" — ~10 minutes spent verifying the wrong hypothesis. The value was correctly stored as `'exam-prep'`; the real bug was elsewhere.
+**ROOT CAUSE:** Diagnosis reasoned plausibly from the code path without verifying actual data state in Supabase.
+**FIX:** Direct SQL query confirmed value; Claude Code re-diagnosed and found the real bug (SESSION OPENING had no `course_position` branch).
+**PREVENTION:** Before accepting "the value at runtime is X" from code-path reasoning, verify with a direct SQL query against the actual stored value. Code-path inference is a hypothesis, not authority.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Tutoring sessions left open indefinitely (`ended_at IS NULL`)
+**SYMPTOM:** Multiple sessions accumulating per user with no end time; three sessions for one student closed simultaneously by manual UPDATE, with three different `session_number` values.
+**ROOT CAUSE:** Backend session lifecycle does not auto-close on natural exit paths (tab close, navigation away). Sessions only close via explicit UI actions.
+**FIX:** Manual SQL UPDATE used for test setup; underlying behaviour logged for backlog cleanup.
+**PREVENTION:** Backend session lifecycle should auto-close on inactivity timeout OR when a new session is created for the same `(student_id, subject)` pair. Never permit indefinitely-open sessions for a single user.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] `auth.sessions` and `public.sessions` confused diagnostic queries
+**SYMPTOM:** `information_schema.columns` returned a mixed list of app columns (`lesson_code`, `started_at`) and Supabase auth internals (`aal`, `not_after`, `refresh_token_hmac_key`).
+**ROOT CAUSE:** Both schemas have a `sessions` table; the metadata query didn't filter by schema.
+**FIX:** Qualified all subsequent references as `public.sessions`.
+**PREVENTION:** When querying schema metadata, always `WHERE table_schema = 'public'`. When writing UPDATE/INSERT/SELECT against `sessions`, always use the `public.` prefix.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Wrong column name assumed in UPDATE (`completed_at`)
+**SYMPTOM:** `ERROR: 42703: column "completed_at" does not exist`.
+**ROOT CAUSE:** Assumed column name without verifying schema. Actual column is `ended_at`.
+**FIX:** Listed columns via `information_schema.columns`, found `ended_at`, retried.
+**PREVENTION:** Before writing UPDATE/DELETE/INSERT against an unfamiliar table, run `SELECT column_name FROM information_schema.columns WHERE table_name = 'X' AND table_schema = 'public'`. Don't guess.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Ambiguous `subject` column in JOIN
+**SYMPTOM:** `ERROR: 42702: column reference "subject" is ambiguous`.
+**ROOT CAUSE:** Column exists on both `profiles` (= product purchased, e.g. `IB_BUNDLE`) and `student_progress` (= specific subject being studied, e.g. `IB_ECONOMICS`). Bundle students legitimately have different values in the two columns.
+**FIX:** Qualified every column reference with a table alias (`p.subject`, `sp.subject`).
+**PREVENTION:** In any JOIN, qualify every column reference with a table alias, not just the ambiguous ones. Build the habit so unqualified column names never appear in multi-table queries.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Column queried on wrong table (`exam_level` on `student_progress`)
+**SYMPTOM:** `ERROR: 42703: column sp.exam_level does not exist`.
+**ROOT CAUSE:** Cross-table column confusion. `exam_level` is a profile property (set once at onboarding), not progress-table data.
+**FIX:** Joined to `profiles` for `exam_level`.
+**PREVENTION:** Document schema data ownership explicitly. Static student attributes (subject purchased, level, plan) → `profiles`. Dynamic per-subject progress (lesson, position, weak areas, session_number) → `student_progress`. Per-session state → `sessions`.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Postgres regex repetition count too high
+**SYMPTOM:** `ERROR: 2201B: invalid regular expression: invalid repetition count(s)` on `substring(... from 'pattern.{0,2500}')`.
+**ROOT CAUSE:** Postgres POSIX regex enforces lower repetition limits than other flavours; `{0,2500}` exceeded that limit.
+**FIX:** Switched to position-based extraction: `substring(text, position('marker' in text), 2500)`.
+**PREVENTION:** For "extract N characters from this position" use `substring(text, position, length)`, not regex. Regex is for pattern matching, not for character slicing.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
 
 
 ### SIGNALS
@@ -448,6 +530,48 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** Treat prompt-file header metadata as documentation that must match the real API call. Audit headers against the model strings in `route.ts`.
 **CATEGORY:** Prompts
 **SEVERITY:** Low
+
+
+---
+
+**ISSUE:** [IB] `SESSION OPENING` section had no `course_position` branching — exam-prep students opened in beginning mode
+**SYMPTOM:** Exam-prep students received foundational teach-from-zero opening (Mia defined "what is a business" from scratch) instead of paper/marks/command-term framing + pivot to an exam-style question. The `course_position` value was correctly stored and substituted; behaviour didn't change.
+**ROOT CAUSE:** Two competing instruction sets governed the opening turn. The `LESSON STRUCTURE` section had a `course_position` modifier, but `SESSION OPENING` (later in the prompt, more specific to the first response) said "Begin teaching directly" universally. The `liveContextAnchor` in `app/api/session/message/route.ts` also reinforced "Begin teaching now" with no exam-prep qualifier. Three instructions, one branched on `course_position`; the unbranched two won.
+**FIX:** Added explicit three-way `course_position` branch to `SESSION OPENING` step 4 AND mirrored the branch in `liveContextAnchor`. Commits `8af3b5d` (IB Business) and `8f5271b` (IB Economics); merged as `61825c9` and `cb93b9b`.
+**PREVENTION:** When a runtime variable should drive behaviour, ALL instruction surfaces (system prompt sections + live context anchor + per-turn injections) must explicitly branch on the same variable. Silent disagreement between surfaces means the unbranched surface wins. Treat prompt + parser + handler + anchor as one atomic change.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Template variable substituted mid-sentence produced broken grammar; the branches under it became orphans
+**SYMPTOM:** IB Economics exam-prep test: Mia opened with "Did you finish the definition or did we move into scarcity?" — asked the student to confirm coverage despite an explicit "never ask" instruction. The three exam-prep / mid-programme / beginning branches were defined but ignored.
+**ROOT CAUSE:** Prompt wrote "Behaviour for step 4 depends on `{{COURSE_POSITION}}`:" — after substitution this read "Behaviour for step 4 depends on exam-prep:", which the model parsed as a statement of fact, not a directive. The three branches below became orphaned with no instruction telling Mia to pick one.
+**FIX:** Rewrote to "Behaviour for step 4 depends on the student's course position. `{{COURSE_POSITION}}` = the student's position. Pick the matching block below:" — variable becomes a label, not a verb object. Commit `8f5271b`.
+**PREVENTION:** When designing prompts with template variables, mentally substitute each possible value and read the resulting sentence. Variables should appear as labels (`{{VAR}} = the value`), not as objects of action verbs. Test with at least one substitution before shipping.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Stored prompt cached at session start (`sessions.raw_final_response`) — prompt changes invisible until a fresh session is created
+**SYMPTOM:** First post-fix test of `course_position` change failed: Mia behaviour didn't change despite confirmed deploy. Appeared the fix was wrong; ~15 minutes of further misdiagnosis before the cache architecture was identified.
+**ROOT CAUSE:** The system prompt is substituted with student-specific values at session START and stored in `sessions.raw_final_response`. Pre-existing open sessions retain the OLD prompt — only freshly-created sessions execute the new code path. The first test resumed an in-progress session and pulled the cached pre-fix prompt.
+**FIX:** Closed all open sessions via SQL (`UPDATE public.sessions SET ended_at = now() WHERE student_id = X AND ended_at IS NULL`), then started a genuinely new session. New `session_number` = old + 1; new prompt loaded; behaviour changed.
+**PREVENTION:** Document this architecture explicitly. Prompt and session-start logic changes only affect NEW sessions. Test protocol after any prompt change: (1) close all open sessions for the test user in Supabase, (2) hard-refresh browser, (3) start new session from dashboard, (4) verify `session_number` incremented BEFORE judging behaviour. Replicate this protocol on any new product that caches prompts at session start.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Prompt prohibition not strong enough — model rationalised around it
+**SYMPTOM:** Despite "Never ask the student where they left off", Mia opened with "what's the last thing you remember covering?" — treating coverage-confirmation as different from where-you-left-off.
+**ROOT CAUSE:** Single-phrase prohibition didn't enumerate the variants the model could rationalise (asking what was covered, what they remember, to confirm previous session content). The model found a semantic neighbour the prohibition didn't cover.
+**FIX:** Expanded to enumerate variants: "do NOT ask the student where they left off, what they covered, what they remember, or to confirm any part of the previous session. The summary is the truth."
+**PREVENTION:** For any "never do X" instruction in a prompt, enumerate the rationalised neighbours: never-ask-X, never-confirm-X, never-rephrased-X. If a semantic neighbour exists, the prohibition will leak. Test with hostile edge cases before shipping.
+**CATEGORY:** Prompts
+**SEVERITY:** Medium
+
 
 
 ### AUTH
@@ -888,6 +1012,68 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **SEVERITY:** Low
 
 
+---
+
+**ISSUE:** [IB] Working-context summary from prior session was stale; operated on wrong mental model of branch state
+**SYMPTOM:** Operated for ~1 hour assuming `fix/diagram-fixes` branch was unmerged when it had been merged in a previous session. Misdiagnosed branch state throughout the diagnostic phase.
+**ROOT CAUSE:** False alarm — working-context blocks don't refresh between sessions. State changes made in one session that don't update the context are invisible to the next.
+**FIX:** Verified actual state with `git log --all --oneline -10`; discovered branches had been merged.
+**PREVENTION:** At every session start, run `git status` + `git log --all --oneline -10` + `git branch -a` BEFORE acting on any branch references in the working context. Treat the context as a hint to confirm, not as authoritative state.
+**CATEGORY:** Deployment
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Master Backlog file existed only in Claude project files, never in git
+**SYMPTOM:** User noticed the backlog was missing from local repo after operations on main.
+**ROOT CAUSE:** File was added to Claude project files but never committed to git. Project files and the repo are separate stores.
+**FIX:** Restored from Claude project files copy, committed and pushed to main. Commit `4954d86`.
+**PREVENTION:** Any document that is the "single source of truth" must live in version control, not in Claude project files. Project files are a working copy at best — never the only copy. Audit project files vs repo monthly to catch drift early.
+**CATEGORY:** Deployment
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Two pieces of related work built on separate branches couldn't be verified together
+**SYMPTOM:** Preview URL for `fix/diagram-fixes` returned 404 on `/admin/diagrams` because that page lived on `fix/diagram-audit`.
+**ROOT CAUSE:** Two feature branches created for interdependent work — diagram fixes on one, audit page (needed to verify fixes) on the other. Neither preview alone was sufficient to verify the work.
+**FIX:** Merged `fix/diagram-fixes` into `fix/diagram-audit`, used the combined branch for testing.
+**PREVENTION:** When two pieces of work depend on each other for verification, build them on the same branch from the start, or plan an explicit integration branch with a documented purpose. Don't create the integration as an afterthought.
+**CATEGORY:** Deployment
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] VS Code edited file on wrong branch (docs change made on a code branch)
+**SYMPTOM:** `git status` showed `Gradd_Master_Backlog_v3_3.md` modified on `fix/course-position-opening` (a code branch) when it should have been on `main`.
+**ROOT CAUSE:** User opened the file from VS Code's file tree without thinking about branch state. VS Code's editor doesn't surface the current branch alongside the file tree.
+**FIX:** `git stash push <file>`, `git checkout main`, `git stash pop`, commit on the correct branch.
+**PREVENTION:** Before editing any file, verify branch with `git status`. For mixed code + docs work, use separate branches with deliberate switching. Treat VS Code's git integration as a viewer; commit from PowerShell to keep operations explicit.
+**CATEGORY:** Deployment
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Backlog entry contained literal placeholder text in committed draft
+**SYMPTOM:** Drafted backlog entry contained `<round-2-pt-1-hash>` literal text instead of the actual commit hash.
+**ROOT CAUSE:** Placeholder wasn't replaced when the real hash became available.
+**FIX:** Replaced with actual commit `a8d87ff` before committing.
+**PREVENTION:** Before committing any document with potential placeholders, grep for `<`, `TODO`, `PLACEHOLDER`, `XXX`. Better — use unmistakable placeholder syntax like `__HASH_GOES_HERE__` so grep catches them reliably.
+**CATEGORY:** Deployment
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Stale branches lingering in repo after merge
+**SYMPTOM:** `git branch -a` showed clutter from `feat/ib-demo`, `fix/mobile-responsive`, `redesign/ib-session`, `sprint-5`, plus remote `sprint-9-landing-rewrite`.
+**ROOT CAUSE:** Branches weren't deleted after merge; some abandoned mid-work.
+**FIX:** Logged for a cleanup task; not addressed in-session.
+**PREVENTION:** Immediately after merging a feature branch: `git branch -d <name>` locally AND `git push origin --delete <name>` remotely. Audit branches monthly with `git branch -a` to catch lingering ones.
+**CATEGORY:** Deployment
+**SEVERITY:** Low
+
+
+
 ### UI / RENDERING
 
 ---
@@ -1161,6 +1347,58 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **SEVERITY:** Low
 
 
+---
+
+**ISSUE:** [IB] Internal QA page (`/admin/diagrams`) rendered diagrams in different CSS scope than production
+**SYMPTOM:** `/admin/diagrams` showed labels washed-out/faded; the same diagrams in live sessions rendered with correct dark ink. ~30 minutes wasted prescribing coordinate fixes against a misdiagnosed bug.
+**ROOT CAUSE:** Audit page wrapped diagrams in a plain `<div>` with no `.ib-session` CSS scope. CSS variables `--chat-text` and `--chat-muted` resolved to wrong values because the page had different ambient definitions. Live sessions resolved them correctly via the `.ib-session` block in `ChatInterface.tsx`. Also: audit page rendered raw `<Component />` rather than the production `<DiagramRenderer />` wrapper.
+**FIX:** Rebuilt audit page to wrap diagrams in `<div className="ib-session">` AND render through real `<DiagramRenderer />` component. Commit `9479305`.
+**PREVENTION:** Any internal QA / preview / audit page that displays a production component must mirror production's wrapper, scope and import path exactly. If a QA page uses different CSS scope, fonts or render wrapper than production, it produces false positives (sees bugs that don't exist) and false negatives (misses real bugs). Validate by side-by-side comparison with a live session before trusting any new QA surface.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] `.ib-session` CSS duplicated as inline `<style>` blocks in two files
+**SYMPTOM:** Identical CSS block existed as inline `<style>` strings in both `ChatInterface.tsx` (lines 357–680) and `app/demo/session/page.tsx` (lines 135–257). No way to apply `.ib-session` scope on a third surface (the audit page) without a third copy.
+**ROOT CAUSE:** Initial build copied the CSS block between files rather than extracting to a shared stylesheet. Two sources of truth → silent drift hazard.
+**FIX:** Extracted to `styles/ib-session.css`, imported globally in `app/layout.tsx`, kept `className="ib-session"` wrapper on rendering divs. Commit `0a44e4c`.
+**PREVENTION:** Any CSS block needed on more than one surface must live in a shared stylesheet from the start. Inline `<style>` blocks are only acceptable when rules are genuinely surface-specific (e.g. demo-page typing animation). Any CSS block over ~50 lines OR appearing in two files is a red flag — extract immediately.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Batch coordinate fixes via shared SVG helper created new collisions in untouched diagrams
+**SYMPTOM:** Round 1 fixed 30 diagram label collisions via a systematic axis-offset bump (`+26 → +36`) on the shared `Axes` helper component. Round 2 audit revealed 11 NEW or surviving collisions, several created by Round 1 pushing text into other elements.
+**ROOT CAUSE:** Helper-level coordinate changes have systemic side-effects. Moving one element by N pixels affects every diagram using the helper. No visual verification between edits.
+**FIX:** Round 2 used per-diagram individual coordinate adjustments with explicit instruction not to touch shared helpers. Final 11 collisions deferred to backlog with explicit "screenshot → fix → screenshot loop, one at a time, do NOT batch" approach noted.
+**PREVENTION:** Visual / coordinate fixes are not batchable. Work one element at a time with visual verification between edits. Never apply batch coordinate offsets to shared helpers — side-effects propagate to every consumer. If a "systematic" fix is tempting, that's the signal to slow down, not speed up.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] CSS variable fallback fix prescribed against misdiagnosed bug
+**SYMPTOM:** Replaced `var(--chat-text, #2c2825)` with hardcoded `#2c2825` to "fix" pale labels. Pale labels on audit page didn't change after the fix.
+**ROOT CAUSE:** Fix was prescribed against a misdiagnosed bug. The audit page's CSS scope (not the fallback) was producing the pale rendering. The change was harmless but addressed nothing.
+**FIX:** Left the hardcoded change in place as defensive; rebuilt the audit page properly to fix the actual bug.
+**PREVENTION:** Use browser dev tools to inspect actual computed CSS values BEFORE prescribing a fix. Identify the cascade rule painting the colour, not the rule you THINK is painting it. Don't theorise; verify.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] CSS variable fallbacks invisible on most surfaces — perceived as "fix didn't ship"
+**SYMPTOM:** 201-line colour fallback commit appeared to make no visible difference on the audit page or in live sessions.
+**ROOT CAUSE:** False alarm — fallbacks (`var(--chat-text, #2c2825)`) only render the fallback value when the variable is undefined. On every surface where the variable IS defined, the fallback is intentionally invisible. Nothing visibly changed because nothing was supposed to.
+**FIX:** Verified the fix shipped via `git diff`; confirmed it's defensive against an edge case (LC sessions / future surfaces without scope); moved on.
+**PREVENTION:** When shipping CSS variable fallback fixes, document explicitly in the commit message: "fallback fires only when [variable] is unresolved — no visual diff expected on surfaces that define the variable." Otherwise the next reviewer will assume the fix didn't work.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Low
+
+
+
 ### CONFIG
 
 ---
@@ -1304,6 +1542,38 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **SEVERITY:** Low
 
 
+---
+
+**ISSUE:** [IB] Claude Code default output token cap exceeded mid-task, killed a 36-minute session
+**SYMPTOM:** Claude Code session died after 36 minutes with "API Error: Claude's response exceeded the 32000 output token maximum". Appeared to lose work; actually nothing had been committed.
+**ROOT CAUSE:** Default `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is 32000. Large multi-file edits with verbose Claude Code commentary and long commit messages can exceed it before reaching the push step.
+**FIX:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000`. Also instructed Claude Code explicitly: "keep responses terse", "do not paste full file contents", "commit message under 200 characters".
+**PREVENTION:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000` at the start of every session before launching Claude Code. For multi-file edits, split into staged commits (no more than 4–5 files per commit). Always include response-constraint directives in batched-edit instructions.
+**CATEGORY:** Config
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] PowerShell User-scope env var didn't propagate to new session
+**SYMPTOM:** `[Environment]::SetEnvironmentVariable("X", "Y", "User")` set the variable but `$env:X` in a fresh terminal returned nothing.
+**ROOT CAUSE:** PowerShell's User-scope env vars don't always propagate to new sessions immediately, depending on shell host and how the new terminal was launched.
+**FIX:** Used session-scope `$env:X = "Y"` instead — reliable within one terminal, but doesn't persist after that terminal closes.
+**PREVENTION:** For transient development needs, use session-scope (`$env:X = "Y"`). For permanent settings, use User-scope BUT always verify with `echo $env:X` in a fresh terminal before trusting. Don't assume User-scope propagation.
+**CATEGORY:** Config
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Git CRLF / LF line ending warning on markdown edits
+**SYMPTOM:** "warning: in the working copy of '<file>', LF will be replaced by CRLF the next time Git touches it."
+**ROOT CAUSE:** Cross-platform line ending normalisation (file created with LF, edited on Windows). Git's `core.autocrlf` handles it automatically but warns.
+**FIX:** Harmless — git handles via `core.autocrlf`. Warning ignored.
+**PREVENTION:** For mixed-platform repos, add `.gitattributes` with `* text=auto eol=lf` to standardise. Or accept the warning as cosmetic.
+**CATEGORY:** Config
+**SEVERITY:** Low
+
+
+
 ### CURRICULUM
 
 ---
@@ -1329,4 +1599,4 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
-*Master document, collated 16/05/2026 from the LC Business and IB build-hardening harvests — every LC build/debug session (initial build through Sprint 8) and the IB build/launch-prep sessions (02–16 May 2026). Supersedes the standalone `BUILD_HARDENING.md` (IB) and `LC_BUILD_HARDENING.md`. Keep one copy in each Claude project. Add new entries in the standard format, tagged by product, ordered by category then severity; promote a lesson to TOP PREVENTION RULES only when it has cost real time more than once.*
+*Master document, collated 16/05/2026; updated 21/05/2026 with the IB diagram-audit / CSS refactor / course_position session-opening harvest. Sources: every LC build/debug session (initial build through Sprint 8), the IB build/launch-prep sessions (02–16 May 2026), and the IB build-hardening session of 21 May 2026 (`/admin/diagrams` rebuild, `.ib-session` extraction, `course_position` Layer 0 fix). Supersedes the standalone `BUILD_HARDENING.md` (IB) and `LC_BUILD_HARDENING.md`. Keep one copy in each Claude project. Add new entries in the standard format, tagged by product, ordered by category then severity; promote a lesson to TOP PREVENTION RULES only when it has cost real time more than once.*
