@@ -216,7 +216,12 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 > **The single biggest differentiator vs Lanterna, TutorChase, RevisionDojo.** Exam-prep students are the highest-converting, highest-urgency, highest-willingness-to-pay segment. Lanterna charges £720 for 10 hours of human tutoring partly because exam-prep parents pay anything to lift a grade with the exam 8 weeks away. If Mia delivers genuine exam-prep behaviour — past papers, mark schemes, command-term drilling, examiner-trap warnings — Gradd undercuts at 95% with unlimited usage. **Without these layers, exam-prep mode is "Mia who sounds like she knows it's exam time." With them, Gradd genuinely prepares students to score 7.**
 
 #### Layer 0 — Session opening behaves differently per course_position
-- [ ] `[v3.3]` Fix in progress — `fix/course-position-opening` branch. SESSION OPENING section + liveContextAnchor branch on course_position so exam-prep students get exam-style opening, not foundational teach-from-zero. Currently in test (IB Business). **Mirror to IB Economics prompt once IB Business verifies.**
+- [x] `[v3.3]` **DONE — verified on production 21 May 2026.** SESSION OPENING + liveContextAnchor branch on `course_position` so exam-prep students get paper/marks/command-term framing and pivot to an exam-style question instead of foundational teach-from-zero. Verified in fresh sessions for both subjects:
+  - **IB Business** (`testbusiness@gradd.ai`, `IB_BM_001`): commit `61825c9` on main, branch `fix/course-position-opening`
+  - **IB Economics** (`testbundle@gradd.ai`, `IB_ECON_001`): commit `cb93b9b` on main, branch `fix/course-position-opening-econ`
+  - Discovered during fix: stored prompt in `sessions.raw_final_response` is set at session start, so prompt changes only take effect on FRESH session creation — pre-existing sessions keep their old prompt. Test protocol must close all open sessions in Supabase before testing prompt changes.
+  - Discovered during fix: `{{COURSE_POSITION}}` substituting mid-sentence produces grammatically broken text ("Behaviour depends on exam-prep:") that orphans the branches. Wording must place the variable as a label, not as the verb's object.
+  - Existing instruction "never ask where they left off" had to be tightened — "do NOT ask the student where they left off, what they covered, what they remember, or to confirm any part of the previous session. The summary is the truth."
 
 #### Layer 1 — Past-paper question library (FOUNDATIONAL — everything else depends on this)
 - [ ] Real IBO past papers indexed by syllabus topic + paper + command term
