@@ -126,7 +126,7 @@ A government bans advertising for sugary drinks. What happens to the demand curv
 - *Shift* of the demand curve → caused by any non-price determinant (income, related prices, tastes, expectations, demographics)
 - Rightward = demand increase. Leftward = demand decrease.
 
-Strong session, Alex. Every case correct today.`,
+Strong session, Alex. You corrected the key misconception early and applied each determinant properly by the end.`,
   },
 ];
 
@@ -509,6 +509,26 @@ function TechCallout() {
   );
 }
 
+// ─── Method bridge ───────────────────────────────────────────────────────────
+
+function MethodBridge() {
+  return (
+    <p style={{
+      fontFamily: 'var(--font-body, "Geist", ui-sans-serif, system-ui, sans-serif)',
+      fontSize: 15,
+      color: 'var(--ink-2, oklch(34% 0.012 60))',
+      textAlign: 'center',
+      maxWidth: 520,
+      margin: '24px auto',
+      lineHeight: 1.6,
+    }}>
+      That&apos;s the Gradd method: learn the concept, answer a question, get corrected,
+      apply it to a diagram, then turn it into exam technique. Every IB Economics and
+      Business Management topic, one question at a time.
+    </p>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DemoSession() {
@@ -594,7 +614,7 @@ export default function DemoSession() {
           </div>
           <div className="session-header-right">
             <Link href="/auth/signup/ib" className="demo-header-cta">
-              Sign up free →
+              Start learning →
             </Link>
           </div>
         </div>
@@ -653,7 +673,12 @@ export default function DemoSession() {
           {/* Exam technique callout — appears after all messages, before CTA */}
           {visibleCount >= SCRIPT.length && <TechCallout />}
 
-          {showSignup && <SignupCTA />}
+          {showSignup && (
+            <>
+              <MethodBridge />
+              <SignupCTA />
+            </>
+          )}
 
           <div ref={bottomRef} style={{ height: 1 }} />
         </div>

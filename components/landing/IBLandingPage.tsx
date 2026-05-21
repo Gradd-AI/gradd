@@ -738,7 +738,7 @@ export default function IBLandingPage() {
             <div className="tag-pill" style={{marginBottom:30,color:'color-mix(in oklab,var(--forest-ink) 80%,transparent)',borderColor:'color-mix(in oklab,var(--forest-ink) 30%,transparent)'}}>
               <span className="dot" /> 7-day money-back guarantee
             </div>
-            <h2 className="h-display">Pass IB Econ. Pass IB Business. <em className="italic">Period.</em></h2>
+            <h2 className="h-display">Turn understanding into <em className="italic">exam marks.</em></h2>
             <p className="lead">Start tonight. Be ahead of your class by next Monday.</p>
             <div className="hero-cta">
               <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
@@ -761,6 +761,11 @@ export default function IBLandingPage() {
               <Link href="/cookies">Cookies</Link>
               <a href="mailto:hello@gradd.ai">Contact</a>
             </div>
+          </div>
+          <div className="wrap" style={{textAlign:'center',marginTop:20,paddingBottom:8}}>
+            <p style={{fontFamily:'var(--sans)',fontSize:11,color:'var(--ink-3)',lineHeight:1.5}}>
+              Gradd.ai is an independent learning platform and is not affiliated with or endorsed by the International Baccalaureate Organization (IBO).
+            </p>
           </div>
         </footer>
 

@@ -152,7 +152,7 @@ function DemoNav() {
       </Link>
       <div className="app-nav-right">
         <a href="/auth/login" className="demo-nav-login">Already a student? Log in</a>
-        <a href="/auth/signup/ib" className="demo-nav-cta">Sign up free →</a>
+        <a href="/auth/signup/ib" className="demo-nav-cta">Start learning →</a>
       </div>
     </header>
   );
