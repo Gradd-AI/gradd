@@ -320,6 +320,21 @@ const lastAoifeTail = lastAoifeMessage.length > 0
 const spacedRepDue = injectedSystemPrompt.includes('SPACED_REP_DUE: TRUE') ||
   injectedSystemPrompt.includes('Spaced repetition due: TRUE');
 
+// IB Business: derive opening instruction from course_position extracted from the
+// substituted prompt (progress is block-scoped in the else branch above).
+let bmOpeningText: string | null = null;
+if (effectiveSubject === 'IB_BUSINESS') {
+  const posMatch = injectedSystemPrompt.match(/Course position:\s*([^\n]+)/);
+  const pos = posMatch?.[1]?.trim() ?? 'beginning';
+  if (pos === 'exam-prep') {
+    bmOpeningText = 'This is the opening exchange. Do not teach foundations. Pivot to an exam-style question on this lesson, command-term explicit, with paper alignment stated.';
+  } else if (pos === 'mid-programme') {
+    bmOpeningText = 'This is the opening exchange. Skip the introduction — open with a checkpoint question on the lesson\'s core idea.';
+  } else {
+    bmOpeningText = 'This is the opening exchange. Begin teaching the lesson from first principles.';
+  }
+}
+
 const liveContextAnchor = `
 
 ---
@@ -340,7 +355,7 @@ The student is responding to the above. Continue from exactly this point. Do not
 MANDATORY FIRST ACTION — DO THIS BEFORE ANY NEW CONTENT:
 Run the 5-question rapid recall block as specified in your instructions. Open with: "Before we start today, five quick ones from what we covered recently." Complete all 5 questions, mark them, then transition to the lesson.
 Do NOT skip this. Do NOT start new content first. The recall block runs before anything else.`
-    : `This is the opening exchange. Begin teaching now.`}
+    : bmOpeningText ?? `This is the opening exchange. Begin teaching now.`}
 
 ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Do NOT restart the session under any circumstances.
