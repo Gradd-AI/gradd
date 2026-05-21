@@ -34,7 +34,7 @@ export function PED_ELASTIC_INELASTIC() {
       <g transform="translate(0,0)">
         <Axes width={220} height={350} xlabel="Q" ylabel="P" />
         <line x1="80" y1="60" x2="210" y2="340" stroke={BLUE} strokeWidth="2.5" />
-        <text x="200" y="328" fontSize="12" fill={BLUE}>D (elastic)</text>
+        <text x="186" y="348" fontSize="12" fill={BLUE}>D (elastic)</text>
         <text x="140" y="400" fontSize="11" fill={BLUE} textAnchor="middle">Relatively flat</text>
         <text x="140" y="414" fontSize="11" fill={MUTED} textAnchor="middle">PED {'>'} 1</text>
       </g>
@@ -42,7 +42,7 @@ export function PED_ELASTIC_INELASTIC() {
       <g transform="translate(260,0)">
         <Axes width={220} height={350} xlabel="Q" ylabel="P" />
         <line x1="80" y1="60" x2="160" y2="340" stroke={RED} strokeWidth="2.5" />
-        <text x="150" y="328" fontSize="12" fill={RED}>D (inelastic)</text>
+        <text x="162" y="334" fontSize="12" fill={RED}>D (inelastic)</text>
         <text x="140" y="400" fontSize="11" fill={RED} textAnchor="middle">Relatively steep</text>
         <text x="140" y="414" fontSize="11" fill={MUTED} textAnchor="middle">PED {'<'} 1</text>
       </g>
@@ -165,7 +165,7 @@ export function NEG_EXT_PRODUCTION() {
       <line x1="194" y1="222" x2="194" y2="370" stroke={PURPLE} strokeWidth="1" strokeDasharray="4,3" />
       {/* Welfare loss triangle */}
       <polygon points="194,222 248,194 248,222" fill={AMBER} opacity="0.4" />
-      <text x="230" y="207" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
+      <text x="254" y="222" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
       <text x="215" y="390" fontSize="11" fill={PURPLE} textAnchor="middle">Q*</text>
       <text x="255" y="390" fontSize="11" fill={RED} textAnchor="middle">Qm</text>
       <text x="250" y="434" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'>'} Q* — overproduction creates welfare loss. MSC {'>'} MSB.</text>
@@ -187,7 +187,7 @@ export function NEG_EXT_CONSUMPTION() {
       <text x="425" y="308" fontSize="14" fill={BLUE} fontWeight="bold">MPB (D)</text>
       {/* MSB — below MPB */}
       <line x1="80" y1="120" x2="380" y2="330" stroke={PURPLE} strokeWidth="2.5" />
-      <text x="385" y="318" fontSize="14" fill={PURPLE} fontWeight="bold">MSB</text>
+      <text x="383" y="342" fontSize="14" fill={PURPLE} fontWeight="bold">MSB</text>
       {/* Market Q */}
       <circle cx="250" cy="195" r="5" fill={BLUE} />
       <line x1="250" y1="195" x2="250" y2="370" stroke={BLUE} strokeWidth="1" strokeDasharray="4,3" />
@@ -198,7 +198,7 @@ export function NEG_EXT_CONSUMPTION() {
       <text x="186" y="388" fontSize="11" fill={PURPLE}>Q*</text>
       {/* Welfare loss */}
       <polygon points="196,228 250,195 250,228" fill={AMBER} opacity="0.4" />
-      <text x="232" y="212" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
+      <text x="254" y="230" fontSize="11" fill={AMBER} textAnchor="middle">WL</text>
       <text x="250" y="434" fontSize="11" fill={MUTED} textAnchor="middle">Qm {'>'} Q* — over-consumption. MSB {'<'} MSC at Qm. (e.g. demerit goods, alcohol)</text>
     </svg>
   );

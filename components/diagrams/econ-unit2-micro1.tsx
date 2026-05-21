@@ -122,7 +122,7 @@ export function MARKET_EQUILIBRIUM() {
       <text x="410" y="74" fontSize="14" fill={RED} fontWeight="bold">S</text>
       {/* Equilibrium point */}
       <circle cx="250" cy="200" r="6" fill={AMBER} />
-      <text x="262" y="220" fontSize="13" fill={AMBER} fontWeight="bold">E (P*, Q*)</text>
+      <text x="262" y="186" fontSize="13" fill={AMBER} fontWeight="bold">E (P*, Q*)</text>
       {/* Dashed lines to axes */}
       <line x1="60" y1="200" x2="250" y2="200" stroke={AMBER} strokeWidth="1" strokeDasharray="5,3" />
       <line x1="250" y1="200" x2="250" y2="360" stroke={AMBER} strokeWidth="1" strokeDasharray="5,3" />
@@ -151,12 +151,12 @@ export function EQUILIBRIUM_CHANGE() {
       <text x="410" y="72" fontSize="14" fill={RED} fontWeight="bold">S</text>
       {/* Old equilibrium */}
       <circle cx="230" cy="200" r="5" fill={MUTED} />
-      <text x="200" y="190" fontSize="13" fill={MUTED} fontStyle="italic">E₁</text>
+      <text x="208" y="218" fontSize="13" fill={MUTED} fontStyle="italic">E₁</text>
       <line x1="60" y1="200" x2="230" y2="200" stroke={MUTED} strokeWidth="1" strokeDasharray="4,3" opacity="0.5" />
       <line x1="230" y1="200" x2="230" y2="370" stroke={MUTED} strokeWidth="1" strokeDasharray="4,3" opacity="0.5" />
       {/* New equilibrium */}
       <circle cx="310" cy="150" r="6" fill={AMBER} />
-      <text x="322" y="144" fontSize="12" fill={AMBER} fontWeight="bold">E₂</text>
+      <text x="322" y="164" fontSize="12" fill={AMBER} fontWeight="bold">E₂</text>
       <line x1="60" y1="150" x2="310" y2="150" stroke={AMBER} strokeWidth="1" strokeDasharray="4,3" />
       <line x1="310" y1="150" x2="310" y2="370" stroke={AMBER} strokeWidth="1" strokeDasharray="4,3" />
       <text x="52" y="154" fontSize="12" fill={AMBER} textAnchor="end">P₂</text>

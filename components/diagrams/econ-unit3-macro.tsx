@@ -150,8 +150,8 @@ export function AS_KEYNESIAN() {
       <text x="150" y="260" fontSize="11" fill={MUTED} textAnchor="middle">Recessionary</text>
       <text x="150" y="272" fontSize="11" fill={MUTED} textAnchor="middle">zone</text>
       <text x="290" y="245" fontSize="11" fill={MUTED} textAnchor="middle">Intermediate</text>
-      <text x="390" y="150" fontSize="11" fill={MUTED} textAnchor="middle">Full</text>
-      <text x="390" y="162" fontSize="11" fill={MUTED} textAnchor="middle">employment</text>
+      <text x="390" y="130" fontSize="11" fill={MUTED} textAnchor="middle">Full</text>
+      <text x="390" y="142" fontSize="11" fill={MUTED} textAnchor="middle">employment</text>
       {/* Deflationary gap annotation */}
       <path d="M 80,240 Q 250,190 380,240" fill="none" stroke={BLUE} strokeWidth="2" strokeDasharray="5,3" opacity="0.5" />
       <text x="230" y="230" fontSize="11" fill={BLUE} textAnchor="middle">AD (below full employment)</text>
@@ -219,8 +219,8 @@ export function MACRO_EQUILIBRIUM_LR() {
       {/* Deflationary gap AD3 */}
       <path d="M 60,100 Q 190,180 340,350" fill="none" stroke={PURPLE} strokeWidth="2" strokeDasharray="5,3" />
       <text x="344" y="338" fontSize="12" fill={PURPLE}>AD₃</text>
-      <text x="145" y="190" fontSize="10" fill={PURPLE} textAnchor="middle">← Deflationary gap</text>
-      <text x="360" y="160" fontSize="10" fill={AMBER} textAnchor="middle">Inflationary gap →</text>
+      <text x="145" y="210" fontSize="10" fill={PURPLE} textAnchor="middle">← Deflationary gap</text>
+      <text x="360" y="175" fontSize="10" fill={AMBER} textAnchor="middle">Inflationary gap →</text>
       <text x="250" y="435" fontSize="11" fill={MUTED} textAnchor="middle">Long-run equilibrium where AD = SRAS = LRAS at Yfe</text>
     </svg>
   );
@@ -394,7 +394,7 @@ export function SUPPLY_SIDE_LRAS() {
       <text x="360" y="388" fontSize="11" fill={BRAND} textAnchor="middle">Yfe₂</text>
       <path d="M 265,200 L 330,200" stroke={AMBER} strokeWidth="2" markerEnd="url(#amSS)" />
       <defs><marker id="amSS" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={AMBER} /></marker></defs>
-      <text x="298" y="190" fontSize="11" fill={AMBER} textAnchor="middle">Supply-side</text>
+      <text x="298" y="212" fontSize="11" fill={AMBER} textAnchor="middle">Supply-side</text>
       <text x="250" y="428" fontSize="11" fill={MUTED} textAnchor="middle">Education, privatisation, deregulation → expand productive capacity</text>
     </svg>
   );
@@ -431,7 +431,7 @@ export function UNEMPLOYMENT_MINIMUM_WAGE() {
       <line x1="300" y1="140" x2="300" y2="370" stroke={RED} strokeWidth="1.5" strokeDasharray="4,3" />
       <text x="300" y="388" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
       <line x1="180" y1="358" x2="300" y2="358" stroke={AMBER} strokeWidth="1.5" />
-      <text x="240" y="422" fontSize="13" fill={AMBER} textAnchor="middle">← Unemployment (Qs – Qd) →</text>
+      <text x="240" y="422" fontSize="11" fill={AMBER} textAnchor="middle">← Unemployment (Qs – Qd) →</text>
     </svg>
   );
 }

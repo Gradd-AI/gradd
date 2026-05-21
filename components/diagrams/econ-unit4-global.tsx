@@ -91,7 +91,7 @@ export function EXCHANGE_RATE_FIXED() {
       <text x="455" y="318" fontSize="14" fill={BLUE} fontWeight="bold">D</text>
       {/* Free market rate */}
       <circle cx="310" cy="158" r="5" fill={MUTED} />
-      <text x="318" y="152" fontSize="11" fill={MUTED}>Free market rate</text>
+      <text x="318" y="140" fontSize="11" fill={MUTED}>Market rate</text>
       <line x1="60" y1="158" x2="310" y2="158" stroke={MUTED} strokeWidth="1" strokeDasharray="4,3" />
       {/* Fixed rate — below free market */}
       <line x1="60" y1="220" x2="460" y2="220" stroke={AMBER} strokeWidth="2" strokeDasharray="8,4" />
@@ -124,13 +124,13 @@ export function EXCHANGE_RATE_MANAGED() {
       <text x="52" y="204" fontSize="11" fill={MUTED} textAnchor="end">ER*</text>
       {/* Upper band */}
       <line x1="60" y1="140" x2="460" y2="140" stroke={BRAND} strokeWidth="1.5" strokeDasharray="6,4" />
-      <text x="452" y="144" fontSize="11" fill={BRAND}>Upper band</text>
+      <text x="65" y="135" fontSize="11" fill={BRAND}>Upper band</text>
       {/* Lower band */}
       <line x1="60" y1="260" x2="460" y2="260" stroke={PURPLE} strokeWidth="1.5" strokeDasharray="6,4" />
-      <text x="452" y="264" fontSize="11" fill={PURPLE}>Lower band</text>
+      <text x="65" y="255" fontSize="11" fill={PURPLE}>Lower band</text>
       {/* Shaded band */}
       <rect x="60" y="140" width="400" height="120" fill={AMBER} opacity="0.08" />
-      <text x="260" y="210" fontSize="11" fill={AMBER} textAnchor="middle">Managed band — CB intervenes at boundaries</text>
+      <text x="260" y="215" fontSize="11" fill={AMBER} textAnchor="middle">Managed band — CB intervenes at boundaries</text>
       <text x="250" y="420" fontSize="11" fill={MUTED} textAnchor="middle">Currency allowed to fluctuate within a band. CB intervenes at limits.</text>
     </svg>
   );
@@ -235,8 +235,8 @@ export function J_CURVE() {
       <text x="220" y="360" fontSize="10" fill={RED} textAnchor="middle">Short-run</text>
       <text x="220" y="372" fontSize="10" fill={RED} textAnchor="middle">deterioration</text>
       {/* Long-run improvement */}
-      <text x="390" y="155" fontSize="10" fill={BRAND} textAnchor="middle">Long-run</text>
-      <text x="390" y="167" fontSize="10" fill={BRAND} textAnchor="middle">improvement</text>
+      <text x="390" y="126" fontSize="10" fill={BRAND} textAnchor="middle">Long-run</text>
+      <text x="390" y="138" fontSize="10" fill={BRAND} textAnchor="middle">improvement</text>
       <text x="240" y="424" fontSize="11" fill={MUTED} textAnchor="middle">After depreciation: CA worsens before improving as demand adjusts (Marshall-Lerner condition)</text>
     </svg>
   );
