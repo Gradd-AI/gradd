@@ -211,6 +211,59 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 
 ---
 
+### PRIORITY 3.5 — EXAM-PREP MODE (THE MOAT — pre-launch HIGH) `[v3.3+]`
+
+> **The single biggest differentiator vs Lanterna, TutorChase, RevisionDojo.** Exam-prep students are the highest-converting, highest-urgency, highest-willingness-to-pay segment. Lanterna charges £720 for 10 hours of human tutoring partly because exam-prep parents pay anything to lift a grade with the exam 8 weeks away. If Mia delivers genuine exam-prep behaviour — past papers, mark schemes, command-term drilling, examiner-trap warnings — Gradd undercuts at 95% with unlimited usage. **Without these layers, exam-prep mode is "Mia who sounds like she knows it's exam time." With them, Gradd genuinely prepares students to score 7.**
+
+#### Layer 0 — Session opening behaves differently per course_position
+- [ ] `[v3.3]` Fix in progress — `fix/course-position-opening` branch. SESSION OPENING section + liveContextAnchor branch on course_position so exam-prep students get exam-style opening, not foundational teach-from-zero. Currently in test (IB Business). **Mirror to IB Economics prompt once IB Business verifies.**
+
+#### Layer 1 — Past-paper question library (FOUNDATIONAL — everything else depends on this)
+- [ ] Real IBO past papers indexed by syllabus topic + paper + command term
+- [ ] Source: IBO past papers (May 2018+ for first-assessment-2022 Economics syllabus; equivalent for IB Business Management)
+- [ ] Supabase schema: `past_questions` table — `id, subject, paper (P1/P2/P3), session (May2024 etc), question_number, marks, command_term, topic_code, question_text, mark_scheme_id`
+- [ ] Coverage target pre-launch: 3 most recent May sessions per subject per level → ~150 questions per subject minimum
+- [ ] Mia pulls relevant past questions when drilling exam-prep students, matched by `topic_code + command_term`
+- [ ] Legal: past papers behind IBO copyright — need licensed access OR public domain coverage; resolve before scraping
+
+#### Layer 2 — IBO mark scheme integration
+- [ ] Depends on Layer 1
+- [ ] Mark scheme text indexed alongside past questions (`mark_schemes` table referenced by `question_id`, or inline JSON on `past_questions`)
+- [ ] Mia marks student answer against the IBO mark scheme — mark-by-mark, naming what was hit and what was missed
+- [ ] Output format: `awarded / available`, list of mark-scheme points the student hit, list missed, specific quoted phrase from mark scheme of what they would have needed to write to score the missed marks
+- [ ] **This is the layer that justifies €44.99 and the planned €59.99 raise.** No competitor does this for IB at scale.
+
+#### Layer 3 — Command-term fluency *(promoted from PRIORITY 3 item 13)*
+- [ ] Can ship in parallel with Layer 1
+- [ ] All IB command terms produce structurally different responses: `define / state / outline / describe / distinguish / explain / examine / discuss / evaluate / to what extent / using examples`
+- [ ] Each command term documented with: marks-band guidance (2-mark vs 4-mark vs 10-mark expectations), required structure, expected depth, banned shapes (e.g. don't write a 10-mark essay for a "define" question)
+- [ ] Mia warns when the student's answer structure doesn't match the command term ("you're evaluating, but the question asked you to define — for 2 marks you need one sentence per characteristic, no evaluation")
+- [ ] Embed in tutor system prompt, not just in pulled context — must be reflexive behaviour for every answer Mia gives back
+
+#### Layer 4 — Examiner traps + trigger phrases per topic
+- [ ] Depends on Layer 1 (so traps can be attached to topic_code)
+- [ ] Per syllabus topic: list of common student mistakes flagged in IBO Subject Reports
+- [ ] Mia surfaces these proactively: "watch out — most students confuse [X] with [Y] here. IBO Subject Report for May 2023 flagged it specifically as 'candidates frequently...'"
+- [ ] Source: IBO Subject Reports (publicly published per session)
+- [ ] Schema: `examiner_traps` table — `topic_code, trap_description, common_wrong_phrase, correct_framing, source_subject_report_reference`
+
+#### Sequencing + pre-launch minimum
+- **Layer 0** ships this week (course_position session-opening fix in test now)
+- **Layer 1** must come before Layers 2/4 (they reference `past_questions`)
+- **Layer 3** is independent — can ship in parallel with Layer 1
+- **Layer 2** depends on Layer 1
+- **Layer 4** lowest priority of the four; ships after Layer 1
+
+**For September 2026 full launch viability: Layers 0, 1, 3 are non-negotiable.** Layer 2 is the killer differentiator that justifies the price. Layer 4 is the strongest demo / sample-session material for marketing.
+
+#### Backlog consolidation (now superseded — single source of truth lives here)
+- PRIORITY 3 item 13 (IB command terms embedded) → see **Layer 3** above
+- Phase 2.2 (Mark scheme language / Common examiner trap flags / Essay structure frameworks per command term) → consolidated into **Layers 2/3/4** above
+- Phase 2.3 (Past-paper question library — real IBO past papers indexed by topic) → see **Layer 1** above; **promoted from Phase 2 to pre-launch**
+- Phase 2.3 (Mock exam mode) → remains Phase 2; depends on Layer 1 completion
+
+---
+
 ### PRIORITY 4 — SESSION TRANSCRIPT STORAGE (Launch critical)
 
 23. [ ] `session_messages` table in Supabase — id, session_id, role, content, timestamp
