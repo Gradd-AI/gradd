@@ -37,7 +37,7 @@ export function PPC_BASIC({ highlight = [] }: { highlight?: string[] }) {
       <text x="230" y="256" fontSize="12" fill={MUTED}>Inefficient</text>
       {/* Outside point */}
       <circle cx="380" cy="140" r="5" fill={RED} />
-      <text x="375" y="136" fontSize="12" fill={RED}>Unattainable</text>
+      <text x="390" y="134" fontSize="12" fill={RED}>Unattainable</text>
       {/* Axis labels */}
       <text x="240" y="400" fontSize="13" fill={STROKE} textAnchor="middle">Good A (e.g. Coffee)</text>
       <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Good B (e.g. Cocoa)</text>
@@ -58,7 +58,7 @@ export function PPC_GROWTH({ highlight = [] }: { highlight?: string[] }) {
       <polygon points="488,360 476,355 476,365" fill={STROKE} />
       {/* Original PPC */}
       <path d="M 60,60 Q 200,90 320,220 Q 390,300 460,360" fill="none" stroke={MUTED} strokeWidth="2" strokeDasharray="6,4" />
-      <text x="340" y="190" fontSize="12" fill={MUTED} fontStyle="italic">PPC₁</text>
+      <text x="310" y="228" fontSize="12" fill={MUTED} fontStyle="italic">PPC₁</text>
       {/* New PPC — outward shift */}
       <path d="M 60,30 Q 220,60 370,200 Q 450,285 490,360" fill="none" stroke={BRAND} strokeWidth="2.5" />
       <text x="400" y="165" fontSize="12" fill={BRAND} fontStyle="italic">PPC₂</text>
@@ -92,7 +92,7 @@ export function PPC_MOVEMENT({ highlight = [] }: { highlight?: string[] }) {
       <path d="M 60,50 Q 180,80 300,200 Q 380,290 450,360" fill="none" stroke={BRAND} strokeWidth="2.5" />
       {/* Point A */}
       <circle cx="148" cy="108" r="6" fill={BLUE} />
-      <text x="158" y="104" fontSize="13" fill={BLUE} fontWeight="bold">A (100, 50)</text>
+      <text x="162" y="92" fontSize="13" fill={BLUE} fontWeight="bold">A (100, 50)</text>
       {/* Point B */}
       <circle cx="310" cy="206" r="6" fill={AMBER} />
       <text x="320" y="202" fontSize="13" fill={AMBER} fontWeight="bold">B (150, 30)</text>

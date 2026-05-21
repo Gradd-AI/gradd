@@ -286,8 +286,8 @@ export function BM_PRODUCT_LIFECYCLE() {
       <text x="450" y="38" fontSize="11" fill={STROKE} textAnchor="middle">Decline</text>
       {/* Extension strategy arrow */}
       <path d="M 430,180 Q 450,150 470,160 Q 490,170 490,190" fill="none" stroke={PURPLE} strokeWidth="1.5" strokeDasharray="4,3" markerEnd="url(#extArr)" />
-      <text x="455" y="148" fontSize="9" fill={PURPLE} textAnchor="middle">Extension</text>
-      <text x="455" y="158" fontSize="9" fill={PURPLE} textAnchor="middle">strategy</text>
+      <text x="455" y="136" fontSize="9" fill={PURPLE} textAnchor="middle">Extension</text>
+      <text x="455" y="146" fontSize="9" fill={PURPLE} textAnchor="middle">strategy</text>
       <defs><marker id="extArr" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto"><path d="M0,0 L0,6 L6,3 z" fill={PURPLE} /></marker></defs>
       <text x="260" y="400" fontSize="11" fill={MUTED} textAnchor="middle">Linked to: cash flow (Introduction = negative), BCG matrix, marketing mix decisions</text>
       <text x="260" y="415" fontSize="11" fill={MUTED} textAnchor="middle">Extension strategies: rebranding, new markets, product modification, price reduction</text>
@@ -299,14 +299,14 @@ export function BM_PRODUCT_LIFECYCLE() {
 export function BM_POSITION_MAP() {
   return (
     <svg viewBox="0 0 460 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 460, fontFamily: FONT }}>
-      <text x="230" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Positioning Map (Perceptual Map)</text>
+      <text x="230" y="12" fontSize="11" fill={MUTED} textAnchor="middle">Positioning Map (Perceptual Map)</text>
       {/* Axes */}
       <line x1="230" y1="30" x2="230" y2="390" stroke={STROKE} strokeWidth="2" />
       <line x1="30" y1="210" x2="430" y2="210" stroke={STROKE} strokeWidth="2" />
       <polygon points="230,22 225,34 235,34" fill={STROKE} />
       <polygon points="438,210 426,205 426,215" fill={STROKE} />
       {/* Axis labels */}
-      <text x="230" y="15" fontSize="11" fill={STROKE} textAnchor="middle">HIGH QUALITY</text>
+      <text x="230" y="22" fontSize="11" fill={STROKE} textAnchor="middle">HIGH QUALITY</text>
       <text x="230" y="408" fontSize="11" fill={STROKE} textAnchor="middle">LOW QUALITY</text>
       <text x="18" y="215" fontSize="11" fill={STROKE} textAnchor="middle" transform="rotate(-90,18,215)">LOW PRICE</text>
       <text x="440" y="215" fontSize="11" fill={STROKE} textAnchor="end">HIGH PRICE</text>
@@ -341,7 +341,7 @@ export function BM_BREAKEVEN() {
       <line x1="60" y1="370" x2="480" y2="370" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="488,370 476,365 476,375" fill={STROKE} />
-      <text x="270" y="398" fontSize="12" fill={STROKE} textAnchor="middle">Output / Units Sold</text>
+      <text x="270" y="414" fontSize="12" fill={STROKE} textAnchor="middle">Output / Units Sold</text>
       <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Revenue / Costs (€)</text>
       {/* Fixed costs — horizontal */}
       <line x1="60" y1="260" x2="480" y2="260" stroke={BLUE} strokeWidth="2" />
@@ -463,7 +463,8 @@ export function BM_FORCE_FIELD() {
       {/* Totals */}
       <text x="130" y="340" fontSize="12" fill={BRAND} textAnchor="middle" fontWeight="bold">Total: 14</text>
       <text x="390" y="340" fontSize="12" fill={RED} textAnchor="middle" fontWeight="bold">Total: 12</text>
-      <text x="260" y="400" fontSize="11" fill={MUTED} textAnchor="middle">Net driving force: +2 → Change likely to succeed. Scores 1–5. Higher arrow = stronger force.</text>
+      <text x="260" y="398" fontSize="11" fill={MUTED} textAnchor="middle">Net driving force: +2 → Change likely to succeed.</text>
+      <text x="260" y="413" fontSize="11" fill={MUTED} textAnchor="middle">Scores 1–5. Thicker arrow = stronger force.</text>
     </svg>
   );
 }
@@ -564,7 +565,7 @@ export function BM_SCATTER_REGRESSION() {
   const scaleX = (x: number) => ox + (x - 80) * 1.1;
   const scaleY = (y: number) => oy + H - (y - 180) * 0.7;
   return (
-    <svg viewBox="0 0 500 440" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 452" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="18" fontSize="13" fill={MUTED} textAnchor="middle">Simple Linear Regression — Scatter Diagram (HL)</text>
       <line x1={ox} y1={oy} x2={ox} y2={oy + H} stroke={STROKE} strokeWidth="2" />
       <line x1={ox} y1={oy + H} x2={ox + W} y2={oy + H} stroke={STROKE} strokeWidth="2" />
@@ -583,8 +584,9 @@ export function BM_SCATTER_REGRESSION() {
       <line x1={scaleX(340)} y1={scaleY(450)} x2={scaleX(400)} y2={scaleY(510)} stroke={AMBER} strokeWidth="2" strokeDasharray="6,4" />
       <text x={scaleX(390)} y={scaleY(502)} fontSize="10" fill={AMBER}>Extrapolation</text>
       {/* Correlation label */}
-      <text x="250" y="415" fontSize="11" fill={MUTED} textAnchor="middle">Positive correlation shown. LOBF used to forecast. Extrapolation = extending beyond data range.</text>
-      <text x="250" y="430" fontSize="11" fill={MUTED} textAnchor="middle">Limitation: assumes linear relationship; past trend may not continue.</text>
+      <text x="250" y="410" fontSize="11" fill={MUTED} textAnchor="middle">Positive correlation. LOBF forecasts future values.</text>
+      <text x="250" y="424" fontSize="11" fill={MUTED} textAnchor="middle">Extrapolation extends beyond the data range — use with caution.</text>
+      <text x="250" y="438" fontSize="11" fill={MUTED} textAnchor="middle">Limitation: assumes linear relationship; past trend may not continue.</text>
     </svg>
   );
 }

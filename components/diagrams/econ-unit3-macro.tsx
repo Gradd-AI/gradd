@@ -19,7 +19,7 @@ function Axes({ width = 420, height = 340, xlabel = 'Real GDP', ylabel = 'Price 
       <line x1="60" y1={height} x2={width} y2={height} stroke={STROKE} strokeWidth="2" />
       <polygon points={`60,12 55,24 65,24`} fill={STROKE} />
       <polygon points={`${width + 8},${height} ${width - 4},${height - 5} ${width - 4},${height + 5}`} fill={STROKE} />
-      <text x={width / 2 + 30} y={height + 26} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
+      <text x={width / 2 + 30} y={height + 36} fontSize="13" fill={STROKE} textAnchor="middle">{xlabel}</text>
       <text x="22" y={height / 2} fontSize="13" fill={STROKE} textAnchor="middle" transform={`rotate(-90,22,${height / 2})`}>{ylabel}</text>
     </>
   );
@@ -52,7 +52,7 @@ export function BUSINESS_CYCLE() {
       {/* Labels */}
       <text x="155" y="230" fontSize="11" fill={MUTED} textAnchor="middle">Contraction</text>
       <text x="370" y="240" fontSize="11" fill={MUTED} textAnchor="middle">Expansion</text>
-      <text x="260" y="410" fontSize="11" fill={MUTED} textAnchor="middle">Short-term fluctuations around the long-run growth trend</text>
+      <text x="260" y="416" fontSize="11" fill={MUTED} textAnchor="middle">Short-term fluctuations around the long-run growth trend</text>
     </svg>
   );
 }
@@ -60,12 +60,12 @@ export function BUSINESS_CYCLE() {
 // ─── AD_CURVE ─────────────────────────────────────────────────────────────────
 export function AD_CURVE() {
   return (
-    <svg viewBox="0 0 480 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
+    <svg viewBox="0 0 480 418" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
       <text x="240" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Aggregate Demand (AD) Curve</text>
       <Axes width={440} height={360} />
       <path d="M 100,60 Q 250,130 400,340" fill="none" stroke={BLUE} strokeWidth="2.5" />
       <text x="405" y="328" fontSize="14" fill={BLUE} fontWeight="bold">AD</text>
-      <text x="240" y="395" fontSize="11" fill={MUTED} textAnchor="middle">AD = C + I + G + (X – M). Downward sloping: higher price level → lower real GDP demanded</text>
+      <text x="240" y="410" fontSize="11" fill={MUTED} textAnchor="middle">AD = C + I + G + (X – M). Downward sloping: higher price level → lower real GDP demanded</text>
     </svg>
   );
 }
@@ -73,7 +73,7 @@ export function AD_CURVE() {
 // ─── AD_SHIFT ─────────────────────────────────────────────────────────────────
 export function AD_SHIFT() {
   return (
-    <svg viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 428" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Shifts of the AD Curve</text>
       <Axes width={460} height={370} />
       <path d="M 100,60 Q 250,130 400,340" fill="none" stroke={MUTED} strokeWidth="2" strokeDasharray="6,4" />
@@ -82,7 +82,7 @@ export function AD_SHIFT() {
       <text x="455" y="308" fontSize="14" fill={BRAND} fontWeight="bold">AD₂ ↑</text>
       <path d="M 60,100 Q 170,160 310,340" fill="none" stroke={RED} strokeWidth="2" strokeDasharray="6,4" />
       <text x="315" y="328" fontSize="13" fill={RED} fontStyle="italic">AD₃ ↓</text>
-      <text x="250" y="405" fontSize="11" fill={MUTED} textAnchor="middle">Causes: C, I, G, X–M change | Policy: fiscal (G, T) or monetary (interest rates)</text>
+      <text x="250" y="420" fontSize="11" fill={MUTED} textAnchor="middle">Causes: C, I, G, X–M change | Policy: fiscal (G, T) or monetary (interest rates)</text>
     </svg>
   );
 }
@@ -90,12 +90,12 @@ export function AD_SHIFT() {
 // ─── SRAS_CURVE ───────────────────────────────────────────────────────────────
 export function SRAS_CURVE() {
   return (
-    <svg viewBox="0 0 480 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
+    <svg viewBox="0 0 480 418" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
       <text x="240" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Short-Run Aggregate Supply (SRAS)</text>
       <Axes width={440} height={360} />
       <path d="M 80,340 Q 250,260 420,60" fill="none" stroke={RED} strokeWidth="2.5" />
       <text x="425" y="74" fontSize="14" fill={RED} fontWeight="bold">SRAS</text>
-      <text x="240" y="395" fontSize="11" fill={MUTED} textAnchor="middle">Upward sloping — higher price level incentivises more production in the short run</text>
+      <text x="240" y="410" fontSize="11" fill={MUTED} textAnchor="middle">Upward sloping — higher price level incentivises more production in the short run</text>
     </svg>
   );
 }
@@ -103,7 +103,7 @@ export function SRAS_CURVE() {
 // ─── SRAS_SHIFT ───────────────────────────────────────────────────────────────
 export function SRAS_SHIFT() {
   return (
-    <svg viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 428" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Shifts of the SRAS Curve</text>
       <Axes width={460} height={370} />
       <path d="M 80,340 Q 250,255 420,60" fill="none" stroke={MUTED} strokeWidth="2" strokeDasharray="6,4" />
@@ -112,7 +112,7 @@ export function SRAS_SHIFT() {
       <text x="455" y="92" fontSize="14" fill={BRAND} fontWeight="bold">SRAS₂ →</text>
       <path d="M 60,280 Q 180,210 330,60" fill="none" stroke={RED} strokeWidth="2" strokeDasharray="6,4" />
       <text x="335" y="74" fontSize="13" fill={RED} fontStyle="italic">SRAS₃ ←</text>
-      <text x="250" y="405" fontSize="11" fill={MUTED} textAnchor="middle">Rightward: lower input costs, better tech | Leftward: higher wages, raw material costs</text>
+      <text x="250" y="420" fontSize="11" fill={MUTED} textAnchor="middle">Rightward: lower input costs, better tech | Leftward: higher wages, raw material costs</text>
     </svg>
   );
 }
@@ -150,8 +150,8 @@ export function AS_KEYNESIAN() {
       <text x="150" y="260" fontSize="11" fill={MUTED} textAnchor="middle">Recessionary</text>
       <text x="150" y="272" fontSize="11" fill={MUTED} textAnchor="middle">zone</text>
       <text x="290" y="245" fontSize="11" fill={MUTED} textAnchor="middle">Intermediate</text>
-      <text x="390" y="150" fontSize="11" fill={MUTED} textAnchor="middle">Full</text>
-      <text x="390" y="162" fontSize="11" fill={MUTED} textAnchor="middle">employment</text>
+      <text x="390" y="130" fontSize="11" fill={MUTED} textAnchor="middle">Full</text>
+      <text x="390" y="142" fontSize="11" fill={MUTED} textAnchor="middle">employment</text>
       {/* Deflationary gap annotation */}
       <path d="M 80,240 Q 250,190 380,240" fill="none" stroke={BLUE} strokeWidth="2" strokeDasharray="5,3" opacity="0.5" />
       <text x="230" y="230" fontSize="11" fill={BLUE} textAnchor="middle">AD (below full employment)</text>
@@ -175,7 +175,7 @@ export function LRAS_SHIFT() {
       <path d="M 250,200 L 310,200" stroke={AMBER} strokeWidth="2" markerEnd="url(#amL)" />
       <defs><marker id="amL" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={AMBER} /></marker></defs>
       <text x="280" y="190" fontSize="11" fill={AMBER} textAnchor="middle">Growth</text>
-      <text x="250" y="408" fontSize="11" fill={MUTED} textAnchor="middle">Causes: better technology, more capital, improved institutions, skilled workforce</text>
+      <text x="250" y="422" fontSize="11" fill={MUTED} textAnchor="middle">Causes: better technology, more capital, improved institutions, skilled workforce</text>
     </svg>
   );
 }
@@ -183,7 +183,7 @@ export function LRAS_SHIFT() {
 // ─── MACRO_EQUILIBRIUM_SR ─────────────────────────────────────────────────────
 export function MACRO_EQUILIBRIUM_SR() {
   return (
-    <svg viewBox="0 0 480 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
+    <svg viewBox="0 0 480 436" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 480, fontFamily: FONT }}>
       <text x="240" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Short-run Macroeconomic Equilibrium</text>
       <Axes width={440} height={370} />
       <path d="M 80,60 Q 240,140 400,340" fill="none" stroke={BLUE} strokeWidth="2.5" />
@@ -195,7 +195,7 @@ export function MACRO_EQUILIBRIUM_SR() {
       <line x1="250" y1="200" x2="250" y2="370" stroke={AMBER} strokeWidth="1.2" strokeDasharray="4,3" />
       <text x="52" y="204" fontSize="13" fill={AMBER} textAnchor="end">PL*</text>
       <text x="250" y="388" fontSize="13" fill={AMBER} textAnchor="middle">Y*</text>
-      <text x="240" y="418" fontSize="11" fill={MUTED} textAnchor="middle">AD intersects SRAS — short-run equilibrium price level and output</text>
+      <text x="240" y="428" fontSize="11" fill={MUTED} textAnchor="middle">AD intersects SRAS — short-run equilibrium price level and output</text>
     </svg>
   );
 }
@@ -219,8 +219,8 @@ export function MACRO_EQUILIBRIUM_LR() {
       {/* Deflationary gap AD3 */}
       <path d="M 60,100 Q 190,180 340,350" fill="none" stroke={PURPLE} strokeWidth="2" strokeDasharray="5,3" />
       <text x="344" y="338" fontSize="12" fill={PURPLE}>AD₃</text>
-      <text x="145" y="190" fontSize="10" fill={PURPLE} textAnchor="middle">← Deflationary gap</text>
-      <text x="360" y="160" fontSize="10" fill={AMBER} textAnchor="middle">Inflationary gap →</text>
+      <text x="145" y="210" fontSize="10" fill={PURPLE} textAnchor="middle">← Deflationary gap</text>
+      <text x="360" y="175" fontSize="10" fill={AMBER} textAnchor="middle">Inflationary gap →</text>
       <text x="250" y="435" fontSize="11" fill={MUTED} textAnchor="middle">Long-run equilibrium where AD = SRAS = LRAS at Yfe</text>
     </svg>
   );
@@ -229,7 +229,7 @@ export function MACRO_EQUILIBRIUM_LR() {
 // ─── DEMAND_PULL_INFLATION ────────────────────────────────────────────────────
 export function DEMAND_PULL_INFLATION() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 436" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Demand-Pull Inflation</text>
       <Axes width={460} height={370} />
       <path d="M 80,350 Q 250,260 420,70" fill="none" stroke={RED} strokeWidth="2.5" />
@@ -252,7 +252,7 @@ export function DEMAND_PULL_INFLATION() {
       <text x="52" y="156" fontSize="11" fill={BRAND} textAnchor="end">PL₂</text>
       <line x1="318" y1="152" x2="318" y2="370" stroke={BRAND} strokeWidth="1" strokeDasharray="4,3" />
       <text x="318" y="388" fontSize="11" fill={BRAND} textAnchor="middle">Y₂</text>
-      <text x="250" y="418" fontSize="11" fill={MUTED} textAnchor="middle">AD rises → price level and real output both increase</text>
+      <text x="250" y="428" fontSize="11" fill={MUTED} textAnchor="middle">AD rises → price level and real output both increase</text>
     </svg>
   );
 }
@@ -260,7 +260,7 @@ export function DEMAND_PULL_INFLATION() {
 // ─── COST_PUSH_INFLATION ──────────────────────────────────────────────────────
 export function COST_PUSH_INFLATION() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 436" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Cost-Push Inflation</text>
       <Axes width={460} height={370} />
       <path d="M 80,60 Q 240,140 400,340" fill="none" stroke={BLUE} strokeWidth="2.5" />
@@ -283,7 +283,7 @@ export function COST_PUSH_INFLATION() {
       <text x="52" y="248" fontSize="11" fill={RED} textAnchor="end">PL₂</text>
       <line x1="216" y1="244" x2="216" y2="370" stroke={RED} strokeWidth="1" strokeDasharray="4,3" />
       <text x="216" y="388" fontSize="11" fill={RED} textAnchor="middle">Y₂</text>
-      <text x="250" y="418" fontSize="11" fill={MUTED} textAnchor="middle">SRAS shifts left → higher price level, lower output (stagflation)</text>
+      <text x="250" y="428" fontSize="11" fill={MUTED} textAnchor="middle">SRAS shifts left → higher price level, lower output (stagflation)</text>
     </svg>
   );
 }
@@ -323,7 +323,7 @@ export function PHILLIPS_CURVE_LR() {
       <line x1="60" y1="380" x2="460" y2="380" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="468,380 456,375 456,385" fill={STROKE} />
-      <text x="260" y="410" fontSize="12" fill={STROKE} textAnchor="middle">Unemployment Rate (%)</text>
+      <text x="260" y="418" fontSize="12" fill={STROKE} textAnchor="middle">Unemployment Rate (%)</text>
       <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Inflation Rate (%)</text>
       {/* SRPC1 */}
       <path d="M 100,60 Q 200,160 380,360" fill="none" stroke={MUTED} strokeWidth="2" strokeDasharray="5,3" />
@@ -379,7 +379,7 @@ export function CROWDING_OUT() {
 // ─── SUPPLY_SIDE_LRAS ─────────────────────────────────────────────────────────
 export function SUPPLY_SIDE_LRAS() {
   return (
-    <svg viewBox="0 0 500 430" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+    <svg viewBox="0 0 500 436" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
       <text x="250" y="16" fontSize="13" fill={MUTED} textAnchor="middle">Supply-Side Policies — Effect on LRAS</text>
       <Axes width={460} height={370} />
       <path d="M 80,60 Q 240,140 400,340" fill="none" stroke={BLUE} strokeWidth="2" strokeDasharray="5,3" opacity="0.6" />
@@ -394,8 +394,8 @@ export function SUPPLY_SIDE_LRAS() {
       <text x="360" y="388" fontSize="11" fill={BRAND} textAnchor="middle">Yfe₂</text>
       <path d="M 265,200 L 330,200" stroke={AMBER} strokeWidth="2" markerEnd="url(#amSS)" />
       <defs><marker id="amSS" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L0,6 L8,3 z" fill={AMBER} /></marker></defs>
-      <text x="298" y="190" fontSize="11" fill={AMBER} textAnchor="middle">Supply-side</text>
-      <text x="250" y="418" fontSize="11" fill={MUTED} textAnchor="middle">Education, privatisation, deregulation → expand productive capacity</text>
+      <text x="298" y="212" fontSize="11" fill={AMBER} textAnchor="middle">Supply-side</text>
+      <text x="250" y="428" fontSize="11" fill={MUTED} textAnchor="middle">Education, privatisation, deregulation → expand productive capacity</text>
     </svg>
   );
 }
@@ -409,7 +409,7 @@ export function UNEMPLOYMENT_MINIMUM_WAGE() {
       <line x1="60" y1="370" x2="440" y2="370" stroke={STROKE} strokeWidth="2" />
       <polygon points="60,12 55,24 65,24" fill={STROKE} />
       <polygon points="448,370 436,365 436,375" fill={STROKE} />
-      <text x="250" y="400" fontSize="12" fill={STROKE} textAnchor="middle">Quantity of Labour</text>
+      <text x="250" y="408" fontSize="12" fill={STROKE} textAnchor="middle">Quantity of Labour</text>
       <text x="22" y="200" fontSize="13" fill={STROKE} textAnchor="middle" transform="rotate(-90,22,200)">Wage Rate</text>
       {/* Labour demand */}
       <line x1="80" y1="60" x2="400" y2="340" stroke={BLUE} strokeWidth="2.5" />
@@ -431,7 +431,7 @@ export function UNEMPLOYMENT_MINIMUM_WAGE() {
       <line x1="300" y1="140" x2="300" y2="370" stroke={RED} strokeWidth="1.5" strokeDasharray="4,3" />
       <text x="300" y="388" fontSize="11" fill={RED} textAnchor="middle">Qs</text>
       <line x1="180" y1="358" x2="300" y2="358" stroke={AMBER} strokeWidth="1.5" />
-      <text x="240" y="415" fontSize="13" fill={AMBER} textAnchor="middle">← Unemployment (Qs – Qd) →</text>
+      <text x="240" y="422" fontSize="11" fill={AMBER} textAnchor="middle">← Unemployment (Qs – Qd) →</text>
     </svg>
   );
 }
