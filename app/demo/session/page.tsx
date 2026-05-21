@@ -627,7 +627,7 @@ export default function DemoSession() {
       {/* Demo notice */}
       <div className="demo-session-notice">
         👋 Demo session — no account needed.{' '}
-        <Link href="/auth/signup/ib">Sign up free</Link> to start your real lessons.
+        <Link href="/auth/signup/ib">Sign up</Link> to start your real lessons.
       </div>
 
       {/* Message stream */}
