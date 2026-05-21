@@ -322,6 +322,27 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 
 - [ ] **Stripe Customer Portal route.** Trial reminder email's "manage subscription" link points to `/dashboard` not the Stripe portal. Update + create portal redirect route in `app/api/billing/portal/route.ts`.
 
+- [ ] `[v3.3]` **Diagram label collisions — final polish pass.** 11 diagrams across IB Economics and IB Business Management have residual label/axis/marker collisions after two fix rounds on `fix/ib-session-css` (commits `e3cd1fd` Round 1, `a8d87ff` Round 2 Pt 1). Audit page (`/admin/diagrams`) is the QA surface — diagrams render in real `.ib-session` scope so the audit reflects production accurately. Final pass needs visual iteration (screenshot → fix → screenshot loop) rather than coordinate guessing. ~30–45min effort.
+
+  **Remaining issues (verified on `/admin/diagrams` preview, Round 2 Pt 1 deploy):**
+
+  IB Economics:
+  - `MARKET_EQUILIBRIUM` — "E (P*, Q*)" still colliding
+  - `PED_ELASTIC_INELASTIC` — "D (elastic)" still on curve
+  - `NEG_EXT_PRODUCTION` — "Qm" tick collision
+  - `NEG_EXT_CONSUMPTION` — "WL" still inside crosshatched triangle
+  - `AS_KEYNESIAN` — "Full employment" annotation + "Real GDP" axis title
+  - `EXCHANGE_RATE_FIXED` — "Quantity of Currency" axis title + "Market rate" annotation
+  - `EXCHANGE_RATE_MANAGED` — "CB intervenes at boundaries" annotation
+
+  IB Business Management (all DEFERRED from Round 2 — need restructure, not coordinate nudge):
+  - `BM_DECISION_TREE` — "Option A", "Option B" overlapping lines/nodes
+  - `BM_POSITION_MAP` — title + sub-caption + four axis labels crammed together; needs structural rebuild with title in its own padded row
+  - `BM_FORCE_FIELD` — "PROPOSED CHANGE" title + "Net driving force: +2 →" annotation collision
+  - `BM_SCATTER_REGRESSION` — three educational annotations stacked + axis title + "Extrapolation" inline label all in same band; needs footer block restructure
+
+  **Approach for next attempt:** open audit page in browser tab, screenshot one diagram at a time, identify collision visually, make minimal coordinate edit, refresh preview, verify, move on. Do NOT use helper-level offsets (Round 1 approach caused side-effects). Do NOT batch — one diagram per edit-verify cycle.
+
 ---
 
 ## `[v3.3]` `/demo` ROUTE — FULL BUILD SPEC
