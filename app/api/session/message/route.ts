@@ -320,10 +320,10 @@ const lastAoifeTail = lastAoifeMessage.length > 0
 const spacedRepDue = injectedSystemPrompt.includes('SPACED_REP_DUE: TRUE') ||
   injectedSystemPrompt.includes('Spaced repetition due: TRUE');
 
-// IB Business: derive opening instruction from course_position extracted from the
-// substituted prompt (progress is block-scoped in the else branch above).
+// IB Business + IB Economics: derive opening instruction from course_position extracted
+// from the substituted prompt (progress is block-scoped in the else branch above).
 let bmOpeningText: string | null = null;
-if (effectiveSubject === 'IB_BUSINESS') {
+if (effectiveSubject === 'IB_BUSINESS' || effectiveSubject === 'IB_ECONOMICS') {
   const posMatch = injectedSystemPrompt.match(/Course position:\s*([^\n]+)/);
   const pos = posMatch?.[1]?.trim() ?? 'beginning';
   if (pos === 'exam-prep') {
