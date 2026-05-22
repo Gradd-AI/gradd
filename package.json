@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "generate-seed": "tsx --env-file=.env.local scripts/generate-seed-questions.ts",
-    "verify-seed": "tsx --env-file=.env.local scripts/verify-seed-questions.ts"
+    "verify-seed": "tsx --env-file=.env.local scripts/verify-seed-questions.ts",
+    "dump-seed": "tsx --env-file=.env.local scripts/dump-seed.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
