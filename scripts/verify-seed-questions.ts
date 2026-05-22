@@ -156,9 +156,11 @@ OUT OF SCOPE: Internal Assessment, Theory of Knowledge, Extended Essay.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // V2 — derived line-by-line from verbatim guide evidence (pages 17–18, 57–65, 74–75)
+// Superseded by V3 — P2 sub-part mark structure reframed as standalone questions.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V2 = `
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V2 = `
 IB ECONOMICS ASSESSMENT FRAMEWORK
 Source: IB Economics Subject Guide (First Assessment 2022) — Version V2
 Evidence: verbatim from pages 17–18, 57–65, and 74–75 of the guide.
@@ -333,6 +335,38 @@ To what extent     | AO3  | Consider the merits or otherwise of an argument or c
 Not in guide glossary: annotate, represent.
 `;
 
+// ─────────────────────────────────────────────────────────────────────────────
+// V3 — programmatically derived from V2 with two targeted changes to BLOCK 1:
+//   1. P2 Part (a) reframed: (a)(i) 2m and (a)(ii) 2m are standalone sub-questions
+//   2. P2 Part (b) reframed: (b)(i) 3m and (b)(ii) 2m are standalone sub-questions
+//   3. Scoring rules updated: 2m and 3m for those sub-parts = command_term_fit: correct
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V3 = IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V2
+  .replace('Version V2', 'Version V3')
+  .replace(
+    '  Part (a)(i+ii): 4 marks total (2+2).   AO1 √  AO2 —  AO3 —  AO4 √.  Analytic markscheme.',
+    '  Part (a)(i): 2 marks.  Part (a)(ii): 2 marks.  Two separate sub-questions.\n' +
+    '    Each is a valid standalone seed-anchor question. AO1 + AO4 per sub-question.\n' +
+    '    Analytic markscheme.'
+  )
+  .replace(
+    '  Part (b):       5 marks (3+2 or 2+3).  AO1 √  AO2 √  AO3 —  AO4 √.  Analytic markscheme.',
+    '  Part (b)(i): 3 marks.  Part (b)(ii): 2 marks.  Two separate sub-questions.\n' +
+    '    Each is a valid standalone seed-anchor question. AO1 + AO2 + AO4 per sub-question.\n' +
+    '    Analytic markscheme.'
+  )
+  .replace(
+    '  For Part (a)(i+ii): only AO1 or AO4 terms valid (AO2 also absent from Part (a) table).\n' +
+    '  For Parts (b)–(f): AO1, AO2, or AO4 terms valid.',
+    '  For Part (a)(i) at 2m and Part (a)(ii) at 2m: command_term_fit = correct.\n' +
+    '    (2 marks is the exact sub-part allocation; do NOT flag as wrong_marks.)\n' +
+    '  For Part (b)(i) at 3m and Part (b)(ii) at 2m: command_term_fit = correct.\n' +
+    '    (3m and 2m are the exact sub-part allocations; do NOT flag as wrong_marks.)\n' +
+    '  For Parts (c)–(f) at 4m: AO1, AO2, or AO4 terms valid.\n' +
+    '  Do NOT flag wrong_marks for 2m or 3m questions targeting these specific sub-parts.'
+  );
+
 export const IB_BUSINESS_ASSESSMENT_FRAMEWORK_V1 = `
 IB BUSINESS MANAGEMENT ASSESSMENT FRAMEWORK
 Source: IB Business Management Subject Guide (First Assessment 2024)
@@ -467,12 +501,12 @@ OUT OF SCOPE: Internal Assessment (Business Research Project), TOK. P3 integrate
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ASSESSMENT_FRAMEWORKS: Record<string, string> = {
-  IB_ECONOMICS: IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V2,
+  IB_ECONOMICS: IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V3,
   IB_BUSINESS:  IB_BUSINESS_ASSESSMENT_FRAMEWORK_V1,
 };
 
 const FRAMEWORK_VERSIONS: Record<string, string> = {
-  IB_ECONOMICS: 'V2',
+  IB_ECONOMICS: 'V3',
   IB_BUSINESS:  'V1',
 };
 
@@ -513,10 +547,11 @@ Score each candidate question on five criteria using the assessment framework in
 Score against the framework as written. Do not infer rules not stated in the framework. \
 If the framework is silent on a point (e.g. which specific command term appears in a given paper part), \
 treat that point as unverifiable and do NOT flag it as an error. \
-Decision rule (enforce strictly): \
-pass = every criterion is 'correct', 'accurate', or 'in_syllabus'; \
-fail = any criterion is 'out_of_syllabus', 'inappropriate', or 'major_error'; \
-borderline = anything else. \
+DECISION RULE (deterministic — no exceptions): \
+If syllabus_match='in_syllabus' AND command_term_fit='correct' AND ao_alignment='correct' \
+AND paper_fit='correct' AND factual_accuracy='accurate', then overall MUST be 'pass'. \
+If any criterion is 'out_of_syllabus', 'inappropriate', or 'major_error', overall MUST be 'fail'. \
+Anything else is 'borderline'. \
 Keep reasoning to 1–3 sentences.`,
 
   IB_BUSINESS: `You are a rigorous IB Business Management senior examiner and syllabus validator. \
