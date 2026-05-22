@@ -71,37 +71,52 @@ type LessonRow = {
 export const IB_ECONOMICS_CONFIG: SubjectConfig = {
   subject: 'IB_ECONOMICS',
   lessonPattern: 'IB_ECON_%',
-  totalCount: 50,
+  totalCount: 60,
   examinerPersona:
-    'You are an IB Economics senior examiner with 15 years of experience setting Paper 1, ' +
-    'Paper 2, and Paper 3 examinations. You write wholly original questions — never from any ' +
-    'IBO past paper. You follow IBO paper formats precisely: ' +
-    'P1 is essay-only — Part (a) is a 10-mark "discuss" question; Part (b) is a 15-mark ' +
-    '"evaluate" question requiring a two-sided argument with a justified conclusion. ' +
-    'P2 is the structured data-response paper — questions carry 2, 4, or 8 marks with a ' +
-    'short economic stimulus; "define" is 2 marks AO1, "explain"/"distinguish"/"calculate" ' +
-    'are 4 marks AO2, "examine"/"using a diagram explain" are 8 marks AO3. ' +
-    'P3 (HL only) is the policy paper — "examine" at 8 marks and "discuss" at 10 marks ' +
-    'reference a case study; "calculate" at 4 marks requires working shown. ' +
-    'Questions are calibrated to the stated marks value and assessment objective.',
+    'You are an IB Economics senior examiner. You write wholly original questions — never from any ' +
+    'IBO past paper. You follow the 2022 IB Economics Subject Guide paper formats precisely: ' +
+    'P1 Part (a) is 10 marks, AO1/AO2/AO4 only — use AO1 or AO2 command terms (explain, distinguish, ' +
+    'describe, analyse); AO3 terms cannot appear in Part (a). ' +
+    'P1 Part (b) is 15 marks AO3 markbands — evaluate ("make an appraisal by weighing up the ' +
+    'strengths and limitations") or another AO3 term. ' +
+    'P2 is the data-response paper with seven sub-parts per question: ' +
+    '(a)(i+ii) 2m AO1/AO4 (define/calculate); (b) 3-5m AO1/AO2/AO4 (explain/calculate); ' +
+    '(c-f) 4m AO1/AO2/AO4 (explain/distinguish/analyse/calculate); ' +
+    '(g) 15m AO3 markbands (any AO3 term: evaluate/discuss/examine). ' +
+    'P3 Part (a) is 20m total, AO1/AO2/AO4, quantitative analytic markscheme (calculate/show/derive). ' +
+    'P3 Part (b) is ALWAYS 10m recommend — verbatim from the guide markband heading: ' +
+    '"Recommend — present an advisable course of action with appropriate supporting evidence/reason." ' +
+    'calculate is AO4 (not AO2) per the guide glossary.',
   specs: [
-    // ── P1 essay — SL, both parts (10 total) ─────────────────────────────────
-    // Part (a): discuss 10m AO3 — two-sided argument, no conclusion required
-    { command_term: 'discuss',         count: 5, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'essay'         },
-    // Part (b): evaluate 15m AO3 — two-sided argument + justified conclusion
-    { command_term: 'evaluate',        count: 5, marks: 15, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'essay'         },
-    // ── P2 structured data-response — SL (25 total) ───────────────────────────
-    { command_term: 'define',          count: 4, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'structured'    },
-    { command_term: 'explain',         count: 8, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'structured'    },
-    { command_term: 'distinguish',     count: 4, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'structured'    },
-    { command_term: 'calculate',       count: 4, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'calculate'     },
-    { command_term: 'examine',         count: 3, marks: 8,  ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'data_response' },
-    { command_term: 'using_a_diagram', count: 2, marks: 8,  ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'data_response' },
-    // ── P3 HL policy — HL (15 total) ─────────────────────────────────────────
-    { command_term: 'examine',         count: 6, marks: 8,  ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'policy'        },
-    { command_term: 'discuss',         count: 5, marks: 10, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'policy'        },
-    { command_term: 'calculate',       count: 4, marks: 4,  ao_level: 'AO2', paper: 'P3', level: 'HL', question_type: 'calculate'     },
-    // ── Totals: P1=10, P2=25, P3=15 | SL=35, HL=15 | grand=50 ───────────────
+    // ── P1 extended response — SL (10 total) ─────────────────────────────────
+    // Part (a): 10m — AO1/AO2/AO4; AO3 terms invalid
+    { command_term: 'explain',    count: 5, marks: 10, ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_part_a'  },
+    // Part (b): 15m — AO3 markbands
+    { command_term: 'evaluate',   count: 5, marks: 15, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_part_b'  },
+
+    // ── P2 data-response per-sub-part — SL (35 total) ────────────────────────
+    // Parts (a)(i+ii): 2m — AO1+AO4 (no AO2, no AO3)
+    { command_term: 'define',     count: 3, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_part_a'   },
+    { command_term: 'calculate',  count: 2, marks: 2,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_a'   },
+    // Part (b): 3m — AO1+AO2+AO4
+    { command_term: 'explain',    count: 2, marks: 3,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_b'   },
+    { command_term: 'calculate',  count: 2, marks: 3,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_b'   },
+    // Parts (c)(d)(e)(f): 4m — AO1+AO2+AO4
+    { command_term: 'explain',    count: 5, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
+    { command_term: 'distinguish',count: 4, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
+    { command_term: 'analyse',    count: 3, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
+    { command_term: 'calculate',  count: 4, marks: 4,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
+    // Part (g): 15m — AO3 markbands (any AO3 term valid per guide)
+    { command_term: 'evaluate',   count: 4, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
+    { command_term: 'discuss',    count: 3, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
+    { command_term: 'examine',    count: 3, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
+
+    // ── P3 policy paper — HL (15 total) ──────────────────────────────────────
+    // Part (a) sub-parts: 4m each — AO1+AO2+AO4 quantitative analytic markscheme
+    { command_term: 'calculate',  count: 10, marks: 4, ao_level: 'AO4', paper: 'P3', level: 'HL', question_type: 'P3_part_a'   },
+    // Part (b): 10m — AO3 markbands — command term is ALWAYS recommend per guide
+    { command_term: 'recommend',  count: 5,  marks: 10, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_part_b'  },
+    // ── Totals: P1=10, P2=35, P3=15 | SL=45, HL=15 | grand=60 ───────────────
   ],
 };
 
@@ -111,22 +126,41 @@ export const IB_BUSINESS_CONFIG: SubjectConfig = {
   totalCount: 50,
   examinerPersona:
     'You are an IB Business Management senior examiner. You write wholly original questions — ' +
-    'never from any IBO past paper. You follow IBO BM command-term conventions precisely: ' +
-    '"State" requires a brief factual answer; "To what extent" requires a nuanced evaluation ' +
-    'with a clear line of argument and a justified conclusion.',
+    'never from any IBO past paper. You follow IBO BM paper formats precisely: ' +
+    'P1 uses the pre-released case study — Section A has 2/4/6-mark structured questions, ' +
+    'Section B has a 10-mark extended response; both sections are identical for SL and HL. ' +
+    'P2 uses an unseen stimulus — Section A has structured questions (quantitative focus, ' +
+    'AO1/AO2/AO4), Section B has 10-mark structured sub-questions and a 10-mark extended response; ' +
+    'HL Section A is worth 30 marks (vs 20 for SL). ' +
+    'P3 (HL only) has three fixed questions: Q1 is 2 marks AO1 (define/state), ' +
+    'Q2 is 6 marks AO1/AO2 (explain/analyse), Q3 is 17 marks AO1-AO4 (criteria-based ' +
+    'evaluation using resource materials — Criteria A: resource use 4m, B: tools 4m, ' +
+    'C: evaluation 6m, D: plan of action 3m). ' +
+    'Command terms: define/outline/state → AO1; analyse/explain/calculate → AO2/AO4; ' +
+    'discuss/evaluate/to_what_extent/examine → AO3.',
   specs: [
-    // ── P1 structured — SL (25 total) ────────────────────────────────────────
-    { command_term: 'state',          count: 4, marks: 2,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'structured'    },
-    { command_term: 'outline',        count: 6, marks: 4,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'structured'    },
-    { command_term: 'describe',       count: 4, marks: 4,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'structured'    },
-    { command_term: 'examine',        count: 5, marks: 6,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'essay'         },
-    { command_term: 'analyse',        count: 6, marks: 6,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'essay'         },
-    // ── P2 structured/case — SL+HL (25 total) ────────────────────────────────
-    { command_term: 'discuss',        count: 6, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'data_response' },
-    { command_term: 'evaluate',       count: 6, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'data_response' },
-    { command_term: 'to_what_extent', count: 7, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'data_response' },
-    { command_term: 'evaluate',       count: 6, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'data_response' },
-    // ── Totals: P1=25, P2=25 | SL=37, HL=13 | grand=50 ──────────────────────
+    // ── P1 pre-released case study — SL+HL identical (10 total) ──────────────
+    // Section A: structured 2/4/6m
+    { command_term: 'define',          count: 2, marks: 2,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'structured'    },
+    { command_term: 'outline',         count: 3, marks: 4,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'structured'    },
+    { command_term: 'analyse',         count: 2, marks: 6,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'structured'    },
+    // Section B: 10m extended response
+    { command_term: 'discuss',         count: 3, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'essay'         },
+    // ── P2 unseen stimulus — SL (15) + HL (10) = 25 total ────────────────────
+    // Section A: structured, quantitative focus, AO1/AO2/AO4
+    { command_term: 'state',           count: 2, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'structured'    },
+    { command_term: 'describe',        count: 3, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'structured'    },
+    { command_term: 'explain',         count: 4, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'structured'    },
+    { command_term: 'calculate',       count: 3, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'calculate'     },
+    // Section B: 10m structured sub + 10m extended; HL gets additional Section A marks
+    { command_term: 'evaluate',        count: 3, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'data_response' },
+    { command_term: 'evaluate',        count: 5, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'data_response' },
+    { command_term: 'to_what_extent',  count: 5, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'data_response' },
+    // ── P3 HL only — Q1 2m / Q2 6m / Q3 17m criteria-based (15 total) ────────
+    { command_term: 'state',           count: 5, marks: 2,  ao_level: 'AO1', paper: 'P3', level: 'HL', question_type: 'structured'    },
+    { command_term: 'analyse',         count: 5, marks: 6,  ao_level: 'AO2', paper: 'P3', level: 'HL', question_type: 'structured'    },
+    { command_term: 'to_what_extent',  count: 5, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'policy'        },
+    // ── Totals: P1=10, P2=25, P3=15 | SL=27, HL=23 | grand=50 ───────────────
   ],
 };
 
@@ -289,9 +323,26 @@ const SUBMIT_QUESTION_TOOL: Anthropic.Tool = {
 function buildUserPrompt(spec: QuestionSpec): string {
   const term = spec.command_term.replace(/_/g, ' ');
   const capitalised = term.charAt(0).toUpperCase() + term.slice(1);
-  const contextInstruction = (spec.paper === 'P2' || spec.paper === 'P3')
-    ? `- Include context_text: a 2–3 sentence original hypothetical scenario with realistic quantitative data (e.g. inflation rate, GDP figure, exchange-rate shift, unemployment level) relevant to ${spec.lesson_name}.`
-    : `- Leave context_text empty — Paper 1 requires no stimulus material.`;
+  let contextInstruction: string;
+  if (spec.paper === 'P1') {
+    contextInstruction = `- Leave context_text empty — Paper 1 is unseen; no stimulus material.`;
+  } else if (spec.question_type === 'P2_part_a' || spec.question_type === 'P2_part_b') {
+    contextInstruction = spec.command_term === 'calculate'
+      ? `- Include context_text: 1–2 sentences with the specific numeric values needed for the calculation (prices, quantities, income figures, etc.).`
+      : `- Leave context_text empty — P2 Part (a)/(b) structured questions stand alone as seed anchors.`;
+  } else if (spec.question_type === 'P2_part_c_f') {
+    contextInstruction = spec.command_term === 'calculate'
+      ? `- Include context_text: 1–2 sentences with the quantitative data required (all figures needed to solve).`
+      : `- Include context_text: 1–2 sentences of economic scenario providing context for ${spec.lesson_name}.`;
+  } else if (spec.question_type === 'P2_part_g') {
+    contextInstruction = `- Include context_text: a 3–4 sentence case study with quantitative economic data (GDP, inflation rate, unemployment %, exchange rate, etc.) realistic for ${spec.lesson_name}. This is the P2 data stimulus.`;
+  } else if (spec.question_type === 'P3_part_a') {
+    contextInstruction = `- Include context_text: provide ALL numeric data needed for the calculation — specific figures (e.g. national income, price levels, quantities, percentage changes). No working should be impossible without the data.`;
+  } else if (spec.question_type === 'P3_part_b') {
+    contextInstruction = `- Include context_text: a 2–3 sentence policy case study naming a country, the specific economic problem, and 1–2 relevant data points for the recommendation.`;
+  } else {
+    contextInstruction = `- Include context_text: brief relevant context for this question if applicable.`;
+  }
 
   return `Write one original ${spec.subject.replace('_', ' ')} examination question.
 
