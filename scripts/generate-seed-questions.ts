@@ -71,7 +71,7 @@ type LessonRow = {
 export const IB_ECONOMICS_CONFIG: SubjectConfig = {
   subject: 'IB_ECONOMICS',
   lessonPattern: 'IB_ECON_%',
-  totalCount: 60,
+  totalCount: 100,
   examinerPersona:
     'You are an IB Economics senior examiner. You write wholly original questions — never from any ' +
     'IBO past paper. You follow the 2022 IB Economics Subject Guide paper formats precisely: ' +
@@ -88,35 +88,35 @@ export const IB_ECONOMICS_CONFIG: SubjectConfig = {
     '"Recommend — present an advisable course of action with appropriate supporting evidence/reason." ' +
     'calculate is AO4 (not AO2) per the guide glossary.',
   specs: [
-    // ── P1 extended response — SL (10 total) ─────────────────────────────────
+    // ── P1 extended response — SL (16 total) ─────────────────────────────────
     // Part (a): 10m — AO1/AO2/AO4; AO3 terms invalid
-    { command_term: 'explain',    count: 5, marks: 10, ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_part_a'  },
+    { command_term: 'explain',    count: 8, marks: 10, ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_part_a'   },
     // Part (b): 15m — AO3 markbands
-    { command_term: 'evaluate',   count: 5, marks: 15, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_part_b'  },
+    { command_term: 'evaluate',   count: 8, marks: 15, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_part_b'   },
 
-    // ── P2 data-response per-sub-part — SL (35 total) ────────────────────────
+    // ── P2 data-response per-sub-part — SL (50 total) ────────────────────────
     // Parts (a)(i+ii): 2m — AO1+AO4 (no AO2, no AO3)
-    { command_term: 'define',     count: 3, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_part_a'   },
-    { command_term: 'calculate',  count: 2, marks: 2,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_a'   },
+    { command_term: 'define',     count: 6, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_part_a'   },
+    { command_term: 'calculate',  count: 4, marks: 2,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_a'   },
     // Part (b): 3m — AO1+AO2+AO4
-    { command_term: 'explain',    count: 2, marks: 3,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_b'   },
-    { command_term: 'calculate',  count: 2, marks: 3,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_b'   },
+    { command_term: 'explain',    count: 4, marks: 3,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_b'   },
+    { command_term: 'calculate',  count: 4, marks: 3,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_b'   },
     // Parts (c)(d)(e)(f): 4m — AO1+AO2+AO4
-    { command_term: 'explain',    count: 5, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
-    { command_term: 'distinguish',count: 4, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
-    { command_term: 'analyse',    count: 3, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
-    { command_term: 'calculate',  count: 4, marks: 4,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f'  },
+    { command_term: 'explain',    count: 8, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f' },
+    { command_term: 'distinguish',count: 6, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f' },
+    { command_term: 'analyse',    count: 4, marks: 4,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f' },
+    { command_term: 'calculate',  count: 6, marks: 4,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_part_c_f' },
     // Part (g): 15m — AO3 markbands (any AO3 term valid per guide)
-    { command_term: 'evaluate',   count: 4, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
+    { command_term: 'evaluate',   count: 3, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
     { command_term: 'discuss',    count: 3, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
-    { command_term: 'examine',    count: 3, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
+    { command_term: 'examine',    count: 2, marks: 15, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_part_g'   },
 
-    // ── P3 policy paper — HL (15 total) ──────────────────────────────────────
+    // ── P3 policy paper — HL (34 total) ──────────────────────────────────────
     // Part (a) sub-parts: 4m each — AO1+AO2+AO4 quantitative analytic markscheme
-    { command_term: 'calculate',  count: 10, marks: 4, ao_level: 'AO4', paper: 'P3', level: 'HL', question_type: 'P3_part_a'   },
+    { command_term: 'calculate',  count: 18, marks: 4,  ao_level: 'AO4', paper: 'P3', level: 'HL', question_type: 'P3_part_a'  },
     // Part (b): 10m — AO3 markbands — command term is ALWAYS recommend per guide
-    { command_term: 'recommend',  count: 5,  marks: 10, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_part_b'  },
-    // ── Totals: P1=10, P2=35, P3=15 | SL=45, HL=15 | grand=60 ───────────────
+    { command_term: 'recommend',  count: 16, marks: 10, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_part_b'  },
+    // ── Totals: P1=16, P2=50, P3=34 | SL=66, HL=34 | grand=100 ──────────────
   ],
 };
 
@@ -344,6 +344,12 @@ function buildUserPrompt(spec: QuestionSpec): string {
     contextInstruction = `- Include context_text: brief relevant context for this question if applicable.`;
   }
 
+  // P1_part_b and P2_part_g are 15m markbands — extended response, one command term covers
+  // the full essay. All other sub-parts are single-AO analytic markscheme items.
+  const isExtendedResponse = spec.question_type === 'P1_part_b' || spec.question_type === 'P2_part_g';
+  const structuralRule = isExtendedResponse ? '' :
+    `- STRUCTURAL RULE — Use exactly ONE command term: "${capitalised}". Do not combine with a second command term (e.g. "${capitalised} ... and analyse", "${capitalised} ... and evaluate"). One command term, one AO objective. Compound questions are structurally wrong for this sub-part.\n`;
+
   return `Write one original ${spec.subject.replace('_', ' ')} examination question.
 
 Specification:
@@ -359,7 +365,7 @@ Requirements:
 - Begin question_text with "${capitalised}" (the command term, capitalised)
 - Wholly original — never replicate any IBO past paper question
 - Depth and complexity calibrated to ${spec.marks} marks at ${spec.ao_level}
-${contextInstruction}`;
+${structuralRule}${contextInstruction}`;
 }
 
 async function draftQuestion(
