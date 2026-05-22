@@ -64,12 +64,9 @@ export default function SeedReviewPage() {
   // ── Load ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async (): Promise<Record<Bucket, Question[]>> => {
     setLoading(true);
-    const { data } = await sb
-      .from('questions')
-      .select('id,topic_code,paper,question_type,command_term,marks,ao_level,level,subject,question_text,context_text,verification_notes,verification_status,status,approved_by,approved_at')
-      .in('verification_status', ['pass', 'borderline', 'fail'])
-      .order('approved_at', { ascending: true, nullsFirst: true })
-      .order('topic_code');
+    // Fetch via service-role API route — browser Supabase client is blocked by RLS
+    const res = await fetch('/api/admin/questions');
+    const { data } = res.ok ? await res.json() : { data: null };
 
     const grouped: Record<Bucket, Question[]> = { pass: [], borderline: [], fail: [] };
     if (data) {
