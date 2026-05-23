@@ -3,6 +3,7 @@ import {
   buildInjectedSystemPrompt,
   buildIBEconomicsPrompt,
   buildIBBusinessPrompt,
+  fetchExamQuestionsContext,
   deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
@@ -110,6 +111,13 @@ export async function POST(request: Request) {
   try {
     if (subject === 'IB_ECONOMICS') {
       const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_ECON_', '') ?? '1');
+      const examQs = await fetchExamQuestionsContext(
+        supabase,
+        progress.current_lesson_code,
+        profile.exam_level,
+        'IB_ECONOMICS',
+        progress.current_unit_code ?? undefined,
+      );
       injectedSystemPrompt = await buildIBEconomicsPrompt({
         STUDENT_NAME:                 profile.student_name,
         EXAM_LEVEL:                   profile.exam_level, // 'SL' or 'HL'
@@ -129,6 +137,7 @@ export async function POST(request: Request) {
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
         COURSE_POSITION:              progress.course_position ?? deriveCoursePosition(lessonOrder, 'IB_ECONOMICS', profile.ib_economics_level ?? profile.exam_level),
+        EXAM_QUESTIONS_CONTEXT:       examQs.formatted,
       });
     } else if (subject === 'IB_BUSINESS') {
       const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_BM_', '') ?? '1');

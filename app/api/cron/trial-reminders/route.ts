@@ -9,8 +9,6 @@ import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { buildIBTrialReminderEmail } from '@/lib/email/ib-trial-reminder-template';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-
 const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'] as const;
 type IBSubject = typeof IB_SUBJECTS[number];
 
@@ -52,6 +50,7 @@ function getServiceClient() {
 }
 
 export async function GET(req: NextRequest) {
+  const resend = new Resend(process.env.RESEND_API_KEY!);
   const url = new URL(req.url);
   const providedSecret = url.searchParams.get('secret');
   const expectedSecret = process.env.CRON_SECRET;

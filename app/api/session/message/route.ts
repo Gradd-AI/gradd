@@ -4,6 +4,7 @@ import {
   buildInjectedSystemPrompt,
   buildIBEconomicsPrompt,
   buildIBBusinessPrompt,
+  fetchExamQuestionsContext,
   deriveCoursePosition,
   formatWeakAreasList,
   formatUnitsCompletedList,
@@ -145,6 +146,13 @@ export async function POST(request: Request) {
       const lessonOrder = parseInt(
         progress?.current_lesson_code?.replace('IB_ECON_', '') ?? '1'
       );
+      const examQs = await fetchExamQuestionsContext(
+        supabase,
+        currentLessonCode,
+        profile.exam_level,
+        'IB_ECONOMICS',
+        progress?.current_unit_code ?? undefined,
+      );
       injectedSystemPrompt = await buildIBEconomicsPrompt({
         STUDENT_NAME:                 profile.student_name,
         EXAM_LEVEL:                   profile.exam_level,
@@ -164,6 +172,7 @@ export async function POST(request: Request) {
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress?.last_session_summary ?? '',
         COURSE_POSITION:              progress?.course_position ?? deriveCoursePosition(lessonOrder, 'IB_ECONOMICS', profile.ib_economics_level ?? profile.exam_level),
+        EXAM_QUESTIONS_CONTEXT:       examQs.formatted,
       });
     } else if (subject === 'IB_BUSINESS') {
       const lessonOrder = parseInt(
@@ -327,7 +336,7 @@ if (effectiveSubject === 'IB_BUSINESS' || effectiveSubject === 'IB_ECONOMICS') {
   const posMatch = injectedSystemPrompt.match(/Course position:\s*([^\n]+)/);
   const pos = posMatch?.[1]?.trim() ?? 'beginning';
   if (pos === 'exam-prep') {
-    bmOpeningText = 'This is the opening exchange. Do not teach foundations. Pivot to an exam-style question on this lesson, command-term explicit, with paper alignment stated.';
+    bmOpeningText = 'This is the opening exchange. Do not teach foundations. Open with EXAMPLE 1 from the EXAM-PREP QUESTIONS block in your system prompt, quoted VERBATIM. Only deviate to EXAMPLE 2 or 3 if the student\'s weak areas clearly demand it, and explain the substitution in one line. Never invent your own question when seed examples are provided. Apply the EXAM-PREP DELIVERY PROTOCOL: scaffolding is strictly limited by the marks band of the seed question. Maximum one prerequisite checkpoint, then the seed question with explicit "write your full answer now" instruction. No further teaching.';
   } else if (pos === 'mid-programme') {
     bmOpeningText = 'This is the opening exchange. Skip the introduction — open with a checkpoint question on the lesson\'s core idea.';
   } else {

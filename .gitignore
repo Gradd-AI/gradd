@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# IBO subject guide PDFs — local only, do not commit (copyright)
+docs/*.pdf
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

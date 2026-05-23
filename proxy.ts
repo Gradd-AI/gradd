@@ -61,6 +61,12 @@ export async function proxy(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
+  // Admin guard — /admin/questions restricted to testbundle@gradd.ai
+  if (pathname.startsWith('/admin/questions')) {
+    if (!user) return NextResponse.redirect(new URL('/auth/login', request.url));
+    if (user.email !== 'testbundle@gradd.ai') return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
   const protectedPaths = ['/dashboard', '/session'];
   const isProtectedPath = protectedPaths.some(p => pathname.startsWith(p));
 

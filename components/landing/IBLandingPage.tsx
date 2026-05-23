@@ -62,6 +62,7 @@ export default function IBLandingPage() {
   const [showTop, setShowTop] = useState(false);
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [compareOpen, setCompareOpen] = useState(false);
   const single = SINGLE[billing];
   const bundle = BUNDLE[billing];
 
@@ -565,74 +566,152 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── COMPARE — KEEP, one FIX ── */}
+        {/* ── COMPARE ── */}
         <section className="section" id="compare" style={{background:'var(--sage)'}}>
           <div className="wrap">
             <div className="section-head">
               <span className="eyebrow">How it stacks up</span>
-              <h2 className="h-section">Gradd vs <em className="italic">other</em> IB tutoring options.</h2>
+              <h2 className="h-section">How Gradd compares to other IB tutoring options</h2>
+              <p className="lead">There&apos;s no shortage of ways to prepare for IB Economics or IB Business. Here&apos;s how Gradd actually stacks up against what most students do — at a fraction of the price, with feedback the second you finish writing.</p>
             </div>
-            <div className="cmp-wrap">
-              <div className="cmp-scroll">
-                <table className="cmp">
-                  <thead>
-                    <tr>
-                      <th></th>
-                      <th className="gradd-col">Gradd</th>
-                      <th>Private tutor</th>
-                      <th>Group classes</th>
-                      <th>Self-study</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>Cost</td>
-                      <td className="gradd-col"><span className="y">€44.99 / month</span></td>
-                      <td>€60–€120 / hour</td>
-                      <td>€25–€45 / hour</td>
-                      <td>Free–€120 (books)</td>
-                    </tr>
-                    <tr>
-                      <td>Full syllabus</td>
-                      <td className="gradd-col"><span className="y">✓ HL &amp; SL, both subjects</span></td>
-                      <td>Depends on tutor</td>
-                      <td>Cohort-paced</td>
-                      <td>You decide</td>
-                    </tr>
-                    <tr>
-                      <td>Diagram marking</td>
-                      <td className="gradd-col"><span className="y">✓ Instant, IBO criteria</span></td>
-                      <td>Weekly</td>
-                      <td>Rare</td>
-                      <td><span className="n">—</span></td>
-                    </tr>
-                    {/* Deck FIX: "Past paper coverage — 2016 → today" row replaced */}
-                    <tr>
-                      <td>IBO-standard marking</td>
-                      <td className="gradd-col"><span className="y">✓ command terms + markbands, instant</span></td>
-                      <td>Varies by tutor</td>
-                      <td>Generic</td>
-                      <td><span className="n">—</span></td>
-                    </tr>
-                    <tr>
-                      <td>Availability</td>
-                      <td className="gradd-col"><span className="y">24/7</span></td>
-                      <td>1–2 hours / week</td>
-                      <td>Fixed schedule</td>
-                      <td>Whenever</td>
-                    </tr>
-                    <tr>
-                      <td>Tracks your progress</td>
-                      <td className="gradd-col"><span className="y">✓ Adaptive</span></td>
-                      <td>In their head</td>
-                      <td><span className="n">—</span></td>
-                      <td><span className="n">—</span></td>
-                    </tr>
-                  </tbody>
-                </table>
+
+            {/* Desktop table — hidden below 768px */}
+            <div className="cmp-wrap cmp-desktop">
+              <table className="cmp">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th className="gradd-col">Gradd</th>
+                    <th>Private tutor</th>
+                    <th>Group classes</th>
+                    <th>Self-study</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Cost</td>
+                    <td className="gradd-col"><span className="y">€44.99 / month</span></td>
+                    <td>€60–€120 / hour</td>
+                    <td>€25–€45 / hour</td>
+                    <td>Free–€120 (books)</td>
+                  </tr>
+                  <tr>
+                    <td>Full syllabus, HL &amp; SL</td>
+                    <td className="gradd-col"><span className="y">✓ Both subjects, every topic</span></td>
+                    <td><span className="n">Depends on tutor</span></td>
+                    <td><span className="n">Cohort-paced</span></td>
+                    <td>You decide</td>
+                  </tr>
+                  <tr>
+                    <td>Past-paper-style questions</td>
+                    <td className="gradd-col"><span className="y">✓ Unlimited, on demand</span></td>
+                    <td><span className="n">Homework from textbooks</span></td>
+                    <td><span className="n">Generic worksheets</span></td>
+                    <td><span className="n">Limited to what you find</span></td>
+                  </tr>
+                  <tr>
+                    <td>Diagram marking</td>
+                    <td className="gradd-col"><span className="y">✓ Instant, IBO criteria</span></td>
+                    <td><span className="n">If you book a session</span></td>
+                    <td><span className="n">Rare</span></td>
+                    <td><span className="n">Not available</span></td>
+                  </tr>
+                  <tr>
+                    <td>IBO-standard marking</td>
+                    <td className="gradd-col"><span className="y">✓ Command terms + markbands, instant</span></td>
+                    <td><span className="n">Varies by tutor</span></td>
+                    <td><span className="n">Generic</span></td>
+                    <td><span className="n">Not available</span></td>
+                  </tr>
+                  <tr>
+                    <td>Marking turnaround</td>
+                    <td className="gradd-col"><span className="y">Seconds</span></td>
+                    <td><span className="n">3–7 days</span></td>
+                    <td><span className="n">1–2 weeks</span></td>
+                    <td><span className="n">You mark yourself</span></td>
+                  </tr>
+                  <tr>
+                    <td>Availability</td>
+                    <td className="gradd-col"><span className="y">24/7</span></td>
+                    <td><span className="n">1–2 hours / week</span></td>
+                    <td><span className="n">Fixed schedule</span></td>
+                    <td>Whenever</td>
+                  </tr>
+                  <tr>
+                    <td>Tracks your progress</td>
+                    <td className="gradd-col"><span className="y">✓ Adaptive to your weak areas</span></td>
+                    <td><span className="n">In the tutor&apos;s head</span></td>
+                    <td><span className="n">Not available</span></td>
+                    <td><span className="n">Not available</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile layout — shown below 768px, no horizontal scroll */}
+            <div className="cmp-mobile">
+              <div className="cmp-mobile-gradd">
+                <div className="cmp-mobile-col-header">Gradd</div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span className="y">€44.99 / month</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="y">✓ Both subjects, every topic</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="y">✓ Unlimited, on demand</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="y">✓ Instant, IBO criteria</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="y">✓ Command terms + markbands, instant</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="y">Seconds</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="y">24/7</span></div>
+                <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="y">✓ Adaptive to your weak areas</span></div>
               </div>
+              <button
+                className="cmp-toggle"
+                onClick={() => setCompareOpen(o => !o)}
+                aria-expanded={compareOpen}
+              >
+                {compareOpen ? 'Hide alternatives ↑' : 'Tap to compare with alternatives ↓'}
+              </button>
+              {compareOpen && (
+                <div className="cmp-mobile-alts">
+                  <div className="cmp-mobile-alt">
+                    <div className="cmp-mobile-col-header">Private tutor</div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span className="n">€60–€120 / hour</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="n">Depends on tutor</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Homework from textbooks</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">If you book a session</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Varies by tutor</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">3–7 days</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="n">1–2 hours / week</span></div>
+                    <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="n">In the tutor&apos;s head</span></div>
+                  </div>
+                  <div className="cmp-mobile-alt">
+                    <div className="cmp-mobile-col-header">Group classes</div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span className="n">€25–€45 / hour</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="n">Cohort-paced</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Generic worksheets</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">Rare</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Generic</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">1–2 weeks</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="n">Fixed schedule</span></div>
+                    <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="n">Not available</span></div>
+                  </div>
+                  <div className="cmp-mobile-alt">
+                    <div className="cmp-mobile-col-header">Self-study</div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span>Free–€120 (books)</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span>You decide</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Limited to what you find</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">Not available</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Not available</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">You mark yourself</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span>Whenever</span></div>
+                    <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="n">Not available</span></div>
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="cmp-hint" aria-hidden="true">← swipe to compare →</p>
+
+            <p className="cmp-closing">Most students stitch two or three of these together — a tutor for the hard bits, group classes for the social side, self-study for everything else. Gradd does the work of all three, every day, in your pocket.</p>
+            <div className="cmp-cta">
+              <Link href="/subscribe/ib" className="btn btn-rust">Choose your IB plan — 7-day money-back trial <span className="arrow">→</span></Link>
+              <a href="#methodology" className="cmp-secondary-link">See how Mia marks like an IB examiner →</a>
+            </div>
           </div>
         </section>
 
@@ -1340,12 +1419,12 @@ const CSS = `
 .ib-lp .who-card p { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
 
 /* ── Compare table ── */
+.ib-lp .cmp-desktop { display: block; }
 .ib-lp .cmp-wrap {
   background: var(--paper); border: 1px solid var(--rule);
   border-radius: var(--radius); overflow: hidden;
 }
-.ib-lp .cmp-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: thin; }
-.ib-lp .cmp { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px; }
+.ib-lp .cmp { width: 100%; border-collapse: collapse; font-size: 14px; }
 .ib-lp .cmp th, .ib-lp .cmp td {
   padding: 18px 22px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top;
 }
@@ -1357,24 +1436,72 @@ const CSS = `
 }
 .ib-lp .cmp thead th.gradd-col { color: var(--rust-ink); background: var(--forest); }
 .ib-lp .cmp tbody td.gradd-col {
-  background: color-mix(in oklab,var(--forest) 8%,var(--paper));
-  border-left: 1px solid color-mix(in oklab,var(--forest) 30%,var(--rule));
-  border-right: 1px solid color-mix(in oklab,var(--forest) 30%,var(--rule));
-  font-weight: 500;
+  background: color-mix(in oklab,var(--forest) 12%,var(--paper));
+  border-left: 2px solid color-mix(in oklab,var(--forest) 60%,var(--rule));
+  border-right: 1px solid color-mix(in oklab,var(--forest) 20%,var(--rule));
+  font-weight: 600;
 }
 .ib-lp .cmp tbody tr td:first-child {
   font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em;
   text-transform: uppercase; color: var(--ink-3); width: 22%;
 }
-.ib-lp .cmp .y { color: oklch(45% 0.13 145); font-weight: 500; }
+.ib-lp .cmp .y { color: oklch(45% 0.13 145); font-weight: 600; }
 .ib-lp .cmp .n { color: var(--ink-3); }
-.ib-lp .cmp-hint {
-  display: none; text-align: center; font-family: var(--mono); font-size: 10.5px;
-  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); margin: 12px 0 0;
+
+/* ── Compare: closing + CTA ── */
+.ib-lp .cmp-closing {
+  margin: 36px 0 28px; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 680px;
 }
-@media (max-width: 720px) { .ib-lp .cmp-hint { display: block; } }
-@media (max-width: 760px) {
-  .ib-lp .cmp th, .ib-lp .cmp td { padding: 12px 14px; font-size: 13px; }
+.ib-lp .cmp-cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.ib-lp .cmp-secondary-link {
+  font-size: 14px; color: var(--ink-2); text-decoration: none;
+  font-family: var(--mono); letter-spacing: 0.02em;
+}
+.ib-lp .cmp-secondary-link:hover { color: var(--forest); text-decoration: underline; }
+
+/* ── Compare: mobile card layout (<768px) ── */
+.ib-lp .cmp-mobile { display: none; }
+.ib-lp .cmp-mobile-gradd {
+  background: color-mix(in oklab,var(--forest) 12%,var(--paper));
+  border: 1px solid var(--rule); border-left: 3px solid var(--forest);
+  border-radius: var(--radius); overflow: hidden;
+}
+.ib-lp .cmp-mobile-col-header {
+  background: var(--forest); color: var(--rust-ink);
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; font-weight: 600; padding: 12px 18px;
+}
+.ib-lp .cmp-mobile-alt .cmp-mobile-col-header {
+  background: var(--paper-2); color: var(--ink-3);
+}
+.ib-lp .cmp-mobile-row {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 14px 18px; border-bottom: 1px solid var(--rule);
+}
+.ib-lp .cmp-mobile-last { border-bottom: 0; }
+.ib-lp .cmp-lbl {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.ib-lp .cmp-mobile-gradd .y { color: oklch(45% 0.13 145); font-weight: 600; font-size: 15px; }
+.ib-lp .cmp-mobile .n { color: var(--ink-3); font-size: 14px; }
+.ib-lp .cmp-toggle {
+  display: block; width: 100%; margin-top: 14px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius-sm);
+  padding: 14px 18px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--forest); cursor: pointer; text-align: center;
+}
+.ib-lp .cmp-toggle:hover { background: var(--sage-2); }
+.ib-lp .cmp-mobile-alts { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+.ib-lp .cmp-mobile-alt {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--radius); overflow: hidden;
+}
+
+@media (max-width: 767px) {
+  .ib-lp .cmp-desktop { display: none; }
+  .ib-lp .cmp-mobile { display: block; }
+  .ib-lp .cmp-cta { flex-direction: column; align-items: flex-start; gap: 14px; }
 }
 
 /* ── Pricing ── */

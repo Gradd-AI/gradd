@@ -7,8 +7,6 @@ import type { IBSubject, IBLevel } from '@/lib/email/ib-welcome-template';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
-
 export async function POST(request: Request) {
   const body = await request.text();
   const signature = request.headers.get('stripe-signature');
@@ -118,6 +116,7 @@ async function handleCheckoutComplete(
 
   if (profile?.email) {
     try {
+      const resend = new Resend(process.env.RESEND_API_KEY!);
       const isIB = metaSubject.startsWith('IB_');
       console.log('WEBHOOK: metaSubject', metaSubject, 'isIB', isIB);
 
