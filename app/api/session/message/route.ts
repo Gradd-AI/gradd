@@ -336,7 +336,7 @@ if (effectiveSubject === 'IB_BUSINESS' || effectiveSubject === 'IB_ECONOMICS') {
   const posMatch = injectedSystemPrompt.match(/Course position:\s*([^\n]+)/);
   const pos = posMatch?.[1]?.trim() ?? 'beginning';
   if (pos === 'exam-prep') {
-    bmOpeningText = 'This is the opening exchange. Do not teach foundations. Pivot to an exam-style question on this lesson, command-term explicit, with paper alignment stated.';
+    bmOpeningText = 'This is the opening exchange. Do not teach foundations. Open with EXAMPLE 1 from the EXAM-PREP QUESTIONS block in your system prompt, quoted VERBATIM. Only deviate to EXAMPLE 2 or 3 if the student\'s weak areas clearly demand it, and explain the substitution in one line. Never invent your own question when seed examples are provided.';
   } else if (pos === 'mid-programme') {
     bmOpeningText = 'This is the opening exchange. Skip the introduction — open with a checkpoint question on the lesson\'s core idea.';
   } else {
