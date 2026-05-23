@@ -135,7 +135,7 @@
   border: 1px solid var(--forest);
   padding: 12px 18px; border-radius: 18px;
   font-family: var(--sans); font-size: 14.5px; line-height: 1.5;
-  max-width: 75%;
+  max-width: 75%; white-space: pre-wrap;
 }
 
 /* ── Tutor content — editorial, no bubble ── */

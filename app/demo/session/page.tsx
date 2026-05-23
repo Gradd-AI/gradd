@@ -9,14 +9,15 @@ import { parseDiagramSignal } from '@/components/diagrams/diagram-integration';
 // ─── Scripted exchange ────────────────────────────────────────────────────────
 
 type Role = 'tutor' | 'student';
+type Mode = 'teaching' | 'exam-prep';
 interface ScriptMsg { role: Role; content: string; }
 
-const SCRIPT: ScriptMsg[] = [
+const TEACHING_SCRIPT: ScriptMsg[] = [
   {
     role: 'tutor',
     content: `## Demand — Shifts and Determinants
 
-Welcome back, Alex. Today we're building on the demand curve work from last session.
+Welcome back, Louise. Today we're building on the demand curve work from last session.
 
 You know the curve slopes downward — price rises, quantity demanded falls. That's a *movement along* the curve. But the whole curve can also move.
 
@@ -126,7 +127,79 @@ A government bans advertising for sugary drinks. What happens to the demand curv
 - *Shift* of the demand curve → caused by any non-price determinant (income, related prices, tastes, expectations, demographics)
 - Rightward = demand increase. Leftward = demand decrease.
 
-Strong session, Alex. You corrected the key misconception early and applied each determinant properly by the end.`,
+Strong session, Louise. You corrected the key misconception early and applied each determinant properly by the end.`,
+  },
+];
+
+// ─── Exam-prep transcript ─────────────────────────────────────────────────────
+
+const EXAM_PREP_SCRIPT: ScriptMsg[] = [
+  {
+    role: 'tutor',
+    content: `Louise, you're continuing from last session where you covered the foundations of economics as a social science. Today we're finishing the lesson and then moving into the nine key concepts in depth.
+
+**Economics as a Social Science — where we left off:**
+
+Economics is a social science because it studies human behaviour and decision-making under scarcity. It uses the scientific method — observation, hypothesis, testing against evidence — but unlike physics, you cannot run controlled experiments on entire economies. That's what makes it 'social' rather than natural science.
+
+The core mechanism: scarcity forces choice. There are only so many factors of production (land, labour, capital, enterprise), but unlimited wants. Every society must answer three questions: What to produce? How to produce it? For whom? Different economic systems answer these differently.
+
+Now — let's move straight to an exam-style question to test your understanding.
+
+This is a **Paper 1 question, 10 marks, Explain command term** (AO2 depth — you need to show mechanism and reasoning, not just list facts).
+
+**QUESTION:** Explain why economics is considered a social science and how the use of models and assumptions helps economists study real-world economic behaviour. [10 marks]
+
+Take 8–10 minutes. Write a full paragraph answer — the kind you'd produce in the exam. I'll mark it against the 10-mark band and tell you exactly what's missing or what needs deeper explanation.
+
+Go ahead.`,
+  },
+  {
+    role: 'student',
+    content: `Economics is considered a social science because it studies how people behave when they have to make decisions about money and resources. It is a science because economists try to use evidence and data to understand the economy, but it is social because it is about people, not just numbers.
+
+Models and assumptions help economists because the real world is very complicated. By making assumptions, economists can simplify what is happening and focus on the main parts of a problem. For example, the assumption of ceteris paribus means everything else is held constant so we can see what one variable does.
+
+Models also help because they let economists predict what might happen. For example, supply and demand models can predict what happens to price when something changes. Without these models it would be too difficult to understand how the economy works in real life.
+
+In conclusion, economics is a social science because it uses scientific methods to study people's economic behaviour, and models help by simplifying real-world situations so they can be studied.`,
+  },
+  {
+    role: 'tutor',
+    content: `I'm marking this now against the 10-mark band for an Explain question.
+
+**Mark: 6–7 out of 10.** Good start — you've got the structure and some correct content. But the answer is missing depth in two places that will cost you marks in the exam.
+
+**Here's what you've done well:**
+
+- You've correctly identified that economics is social science because it studies human behaviour
+- You've named ceteris paribus and explained it briefly
+- You've used a concrete example (supply and demand)
+- Your conclusion restates the question
+
+**Here's what's missing — and this is critical:**
+
+**1. You've described assumptions, but not explained why they're necessary.**
+
+You said: *"By making assumptions, economists can simplify what is happening."*
+
+That's describe-depth. An Explain answer needs to go deeper — *why* is simplification necessary? The reason is: the real world has hundreds of variables all moving at once. It's impossible to isolate cause and effect. That's why ceteris paribus exists — to hold everything constant except the one variable we're testing. Without it, we couldn't tell whether a price rise was caused by a demand shift, a supply shift, or both. The assumption *lets us establish causal relationships*.
+
+Redo that sentence with mechanism: *"Assumptions like ceteris paribus are necessary because the real world contains many variables interacting simultaneously. By holding all other variables constant, economists can isolate the effect of one variable and establish causal relationships — for example, isolating the effect of a price change on quantity demanded, independent of changes in income or tastes."*
+
+**2. You've said models "help predict" but not why prediction requires simplification.**
+
+You said: *"Models also help because they let economists predict what might happen."*
+
+Again — describe-depth. *Why* do models enable prediction? Because a model is a simplified representation of reality that captures the essential relationships. The supply and demand model ignores thousands of real-world details (weather, psychology, politics) but keeps the core mechanism: when price rises, quantity demanded falls. That core relationship is stable enough to predict. But only because the model has stripped away the noise.
+
+Redo: *"Models enable economists to make predictions because they represent only the essential relationships in the economy. The supply and demand model, for instance, ignores countless variables but isolates the relationship between price and quantity. This simplification means the model is testable — economists can check predictions against real data and refine the model if evidence contradicts it."*
+
+**Your redo assignment:**
+
+Rewrite your answer incorporating those two deeper explanations. Keep your current structure. Just replace those two sections with mechanism-focused versions that show *why* simplification and assumptions matter, not just *that* they do.
+
+Send it back. Then we'll move to the nine key concepts.`,
   },
 ];
 
@@ -318,6 +391,43 @@ const CSS = `
   .ib-session .demo-top-btn    { width: 44px !important; height: 44px !important; }
   .ib-session .demo-trust      { white-space: normal; text-align: center; }
 }
+
+/* Mode toggle */
+.ib-session .demo-mode-bar {
+  display: flex; align-items: center; justify-content: center;
+  padding: 10px 24px 11px; flex-shrink: 0;
+  border-bottom: 1px solid var(--chat-border);
+  background: var(--chat-bg);
+}
+.ib-session .demo-mode-toggle {
+  display: flex;
+  background: var(--paper-2, oklch(93% 0.01 78));
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 3px; gap: 2px;
+}
+.ib-session .demo-mode-toggle button {
+  padding: 6px 16px; border-radius: 999px; border: none;
+  background: transparent;
+  font-family: var(--sans); font-size: 13px; font-weight: 400;
+  color: var(--ink-3, oklch(54% 0.012 60));
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+}
+.ib-session .demo-mode-toggle button[aria-pressed="true"] {
+  background: var(--paper, oklch(97.8% 0.006 78));
+  color: var(--ink, oklch(18% 0.012 60));
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+.ib-session .demo-mode-toggle button:hover:not([aria-pressed="true"]) {
+  background: color-mix(in oklab, var(--paper) 60%, var(--paper-2));
+  color: var(--ink-2, oklch(34% 0.012 60));
+}
+@media (max-width: 480px) {
+  .ib-session .demo-mode-toggle button { font-size: 12px; padding: 6px 12px; }
+}
 `;
 
 // ─── Message bubble ────────────────────────────────────────────────────────────
@@ -327,7 +437,7 @@ function MsgBubble({ msg }: { msg: ScriptMsg }) {
     return (
       <div className="ib-chat-row-user">
         <div className="ib-user-bubble">{msg.content}</div>
-        <div className="ib-avatar-user">A</div>
+        <div className="ib-avatar-user">L</div>
       </div>
     );
   }
@@ -403,6 +513,23 @@ function TechCallout() {
   );
 }
 
+// ─── Exam-prep mode callout ───────────────────────────────────────────────────
+
+function ExamTechCallout() {
+  return (
+    <div className="demo-technique">
+      <div className="demo-technique-label">IB MARKING TECHNIQUE</div>
+      <p>
+        Mia marks against the 10-mark band, not against vibes. The gap between 6/10 and
+        10/10 on an Explain question is depth: Describe says what something does, Explain
+        says why and how it works. Mia quotes the student&apos;s own sentences, shows
+        mechanism-focused rewrites, and assigns a structured redo — the same loop a real
+        IB examiner-tutor would run.
+      </p>
+    </div>
+  );
+}
+
 // ─── Method bridge ───────────────────────────────────────────────────────────
 
 function MethodBridge() {
@@ -426,12 +553,24 @@ function MethodBridge() {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function DemoSession() {
+  const [mode, setMode] = useState<Mode>('teaching');
   const [visibleCount, setVisibleCount] = useState(0);
   const [showTyping, setShowTyping] = useState(false);
   const [submitReady, setSubmitReady] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  const activeScript = mode === 'teaching' ? TEACHING_SCRIPT : EXAM_PREP_SCRIPT;
+
+  function switchMode(next: Mode) {
+    if (next === mode) return;
+    setMode(next);
+    setVisibleCount(0);
+    setShowTyping(false);
+    setSubmitReady(false);
+    setShowSignup(false);
+  }
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 300);
@@ -443,7 +582,7 @@ export default function DemoSession() {
   useEffect(() => {
     if (showSignup) return;
 
-    const next = SCRIPT[visibleCount];
+    const next = activeScript[visibleCount];
     if (!next) {
       const t = setTimeout(() => setShowSignup(true), 1500);
       return () => clearTimeout(t);
@@ -467,7 +606,7 @@ export default function DemoSession() {
     }, 300);
     timers.push(t1);
     return () => timers.forEach(clearTimeout);
-  }, [visibleCount, showSignup]);
+  }, [visibleCount, showSignup, activeScript]);
 
   function handleSubmit() {
     setSubmitReady(false);
@@ -480,7 +619,7 @@ export default function DemoSession() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [visibleCount, showTyping, submitReady, showSignup]);
 
-  const pendingStudent = submitReady ? SCRIPT[visibleCount] : null;
+  const pendingStudent = submitReady ? activeScript[visibleCount] : null;
 
   return (
     <div
@@ -513,8 +652,10 @@ export default function DemoSession() {
           </div>
         </div>
         <div className="session-header-row2">
-          Demand — Shifts and Determinants
-          <span className="session-subtitle"> · IB Economics · SL · Session 7</span>
+          {mode === 'teaching' ? 'Demand — Shifts and Determinants' : 'Introduction to Economics'}
+          <span className="session-subtitle">
+            {mode === 'teaching' ? ' · IB Economics · SL · Session 7' : ' · IB Economics · SL · Session 12'}
+          </span>
         </div>
       </header>
 
@@ -524,14 +665,25 @@ export default function DemoSession() {
         <Link href="/auth/signup/ib">Sign up</Link> to start your real lessons.
       </div>
 
+      {/* Mode toggle */}
+      <div className="demo-mode-bar">
+        <div className="demo-mode-toggle" role="tablist" aria-label="Demo mode">
+          {(['teaching', 'exam-prep'] as Mode[]).map(m => (
+            <button key={m} role="tab" aria-pressed={mode === m} onClick={() => switchMode(m)}>
+              {m === 'teaching' ? 'Teaching mode' : 'Exam-prep mode'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Message stream */}
       <div
         className="chat-messages-container"
         style={{ flex: 1, overflowY: 'auto', padding: '40px 0 48px' }}
       >
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
-          {SCRIPT.slice(0, visibleCount).map((msg, i) => (
-            <MsgBubble key={i} msg={msg} />
+          {activeScript.slice(0, visibleCount).map((msg, i) => (
+            <MsgBubble key={`${mode}-${i}`} msg={msg} />
           ))}
 
           {showTyping && (
@@ -549,14 +701,14 @@ export default function DemoSession() {
             </div>
           )}
 
-          {/* Mid-page aside — appears after Mia accepts the income answer (msg 4) */}
-          {visibleCount >= 5 && <MidPageAside />}
+          {/* Mid-page aside — teaching mode only, appears after Mia accepts the income answer */}
+          {mode === 'teaching' && visibleCount >= 5 && <MidPageAside />}
 
           {/* Submit prompt — fades in after Mia finishes, prospect controls pace */}
           {pendingStudent && (
             <div className="demo-submit-wrap">
               <div className="demo-submit-preview">
-                Alex: {pendingStudent.content}
+                Louise: {pendingStudent.content}
               </div>
               <button onClick={handleSubmit} className="demo-submit-btn">
                 Submit answer →
@@ -564,8 +716,10 @@ export default function DemoSession() {
             </div>
           )}
 
-          {/* Exam technique callout — appears after all messages, before CTA */}
-          {visibleCount >= SCRIPT.length && <TechCallout />}
+          {/* Mode-specific callout — appears after all messages, before signup CTA */}
+          {visibleCount >= activeScript.length && (
+            mode === 'teaching' ? <TechCallout /> : <ExamTechCallout />
+          )}
 
           {showSignup && (
             <>
