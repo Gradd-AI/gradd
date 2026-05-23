@@ -282,7 +282,7 @@ export default function DemoDashboard() {
       {/* Demo notice */}
       <div className="demo-notice">
         👋 You&apos;re viewing a demo — no account needed.{' '}
-        <a href="/auth/signup/ib">Sign up free</a> to start your real sessions with Mia.
+        <a href="/auth/signup/ib">Start your IB plan</a> to begin real sessions with Mia — 7-day money-back guarantee on every plan.
       </div>
 
       <DemoNav />
