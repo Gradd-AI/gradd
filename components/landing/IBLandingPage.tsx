@@ -1502,6 +1502,7 @@ const CSS = `
   .ib-lp .cmp-desktop { display: none; }
   .ib-lp .cmp-mobile { display: block; }
   .ib-lp .cmp-cta { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .ib-lp .cmp-cta .btn { white-space: normal; text-align: center; }
 }
 
 /* ── Pricing ── */
