@@ -360,6 +360,13 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 
 ## CLEANUP TASKS — small, each its own branch
 
+- [ ] **Backfill `supabase/migrations/` to complete history.** `supabase/migrations/` exists and is repo-tracked, but 4 migrations are missing — they were run directly in Supabase SQL Editor without a corresponding file. Backfill as historical reference files (not re-runnable — idempotent guards needed if re-run risk is real). ~30 min, each is a one-line paste from Supabase logs or git history.
+  - `20260520000000_create_questions_table.sql` — initial `questions` table schema
+  - `20260520000100_add_verified_against_guide_version.sql` — added `verified_against_guide_version` column
+  - `20260521000000_add_admin_review_columns.sql` — `approved_by`, `approved_at`, `edited_at`, `edited_by`
+  - `20260523000100_seed_lookup_partial_index.sql` — `CREATE INDEX idx_questions_seed_lookup_tier ON questions (subject, topic_code, level) WHERE status = 'seed'`
+  Priority: post-launch repo hygiene. Not customer-facing.
+
 - [ ] `[v3.2]` **Decommission dead trial code.** Remove `trial-reminders` cron from `vercel.json`, delete `app/api/cron/trial-reminders/route.ts` and `lib/email/ib-trial-reminder-template.ts`, drop `trial_ends_at` column. Also fixes the fragile module-load Resend init that causes local build noise.
 
 - [ ] `[v3.3]` **Build the real `/demo` route.** Full spec locked — see below. Build after the app re-skin (now done). The "See it in action" CTAs point to `#pricing` until this is live.
@@ -452,6 +459,10 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 
 ## PHASE 2 — WHAT MAKES IT THE BEST
 *Target: September 2026 – March 2027*
+
+### 2.0 Seed lookup optimisation
+
+- [ ] **Cache EXAM_QUESTIONS_CONTEXT per session, not per message.** Currently the message route calls fetchExamQuestionsContext on every turn, producing redundant RPC calls. At 200+ active students this adds thousands of daily RPCs at ~50ms each. Architectural fix: fetch once at session/start, store in sessions table column (e.g. sessions.exam_questions_context TEXT), message route reads the cached value. Effort: ~1 hour. Priority: only if production logs show RPC volume becoming meaningful, otherwise leave alone — Anthropic prompt caching already mitigates the API-token cost.
 
 ### 2.1 Voice Features (Zero extra cost — browser APIs only)
 
