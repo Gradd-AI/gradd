@@ -6,7 +6,7 @@ import { CSS as DASH_CSS } from '@/components/dashboard/IBDashboardClient';
 
 // ─── Fake demo data ───────────────────────────────────────────────────────────
 
-const STUDENT = 'Alex';
+const STUDENT = 'Louise';
 const SUBJECT_LABEL = 'IB Economics';
 const EXAM_LEVEL = 'SL';
 const SESSION_NUMBER = 7;
