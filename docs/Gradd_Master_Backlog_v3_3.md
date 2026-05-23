@@ -387,6 +387,15 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 
 - [ ] **Stripe Customer Portal route.** Trial reminder email's "manage subscription" link points to `/dashboard` not the Stripe portal. Update + create portal redirect route in `app/api/billing/portal/route.ts`.
 
+- [ ] **Restore IB chat italic/orange aesthetic from pre-re-skin design.** Commit `0a44e4c` (2026-05-20) extracted `.ib-session` CSS to a shared stylesheet during the IB session re-skin, but lost the `--chat-em-font` (Georgia italic) and `--chat-em` (#c8972e orange) variables that drove the in-message italic/em treatment. Currently `MessageRenderer.tsx:26` falls back to `inherit` which produces sans-serif default-coloured italics — pared-back compared to the LC Business chat aesthetic which keeps the warm decorative feel. Fix: locate the shared `.ib-session` stylesheet (probably `styles/ib-session.css` or similar), add:
+
+    .ib-session {
+      --chat-em-font: var(--font-display, 'Georgia'), serif;
+      --chat-em: #c8972e;
+    }
+
+  Then verify ChatInterface message body and italic spans render in Georgia + warm orange. ~30 min. Priority: post-launch polish (not customer-facing critical).
+
 - [ ] `[v3.3]` **Diagram label collisions — final polish pass.** 11 diagrams across IB Economics and IB Business Management have residual label/axis/marker collisions after two fix rounds on `fix/ib-session-css` (commits `e3cd1fd` Round 1, `a8d87ff` Round 2 Pt 1). Audit page (`/admin/diagrams`) is the QA surface — diagrams render in real `.ib-session` scope so the audit reflects production accurately. Final pass needs visual iteration (screenshot → fix → screenshot loop) rather than coordinate guessing. ~30–45min effort.
 
   **Remaining issues (verified on `/admin/diagrams` preview, Round 2 Pt 1 deploy):**
