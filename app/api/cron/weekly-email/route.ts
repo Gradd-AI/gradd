@@ -12,8 +12,6 @@ import { Resend } from 'resend'
 import { generateWeeklyProgressEmail, WeeklyEmailData } from '@/lib/email/weekly-progress-template'
 import { generateIBWeeklyProgressEmail, IBWeeklyEmailData, IBWeeklySubject } from '@/lib/email/ib-weekly-progress-template'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
-
 const IB_SUBJECTS: ReadonlySet<string> = new Set(['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'])
 
 const LC_EXAM_DATE = new Date('2026-06-08')
@@ -54,6 +52,7 @@ function getServiceClient() {
 }
 
 export async function GET(request: Request) {
+  const resend = new Resend(process.env.RESEND_API_KEY)
   // Verify this is a legitimate Vercel cron call
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
