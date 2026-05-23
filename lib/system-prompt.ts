@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { LESSON_COUNTS } from './lesson-counts';
 
 interface WeakArea {
@@ -133,6 +134,7 @@ export interface IBEconomicsContextVariables {
   WEAK_AREAS_LIST: string;
   LAST_SESSION_SUMMARY: string;
   COURSE_POSITION: string;
+  EXAM_QUESTIONS_CONTEXT?: string;
 }
 
 export async function buildIBEconomicsPrompt(
@@ -167,6 +169,7 @@ export async function buildIBEconomicsPrompt(
     '{{WEAK_AREAS_LIST}}':            vars.WEAK_AREAS_LIST,
     '{{LAST_SESSION_SUMMARY}}':       vars.LAST_SESSION_SUMMARY || 'No previous session.',
     '{{COURSE_POSITION}}':            vars.COURSE_POSITION,
+    '{{EXAM_QUESTIONS_CONTEXT}}':     vars.EXAM_QUESTIONS_CONTEXT ?? '',
   };
 
   for (const [token, value] of Object.entries(replacements)) {
@@ -174,6 +177,49 @@ export async function buildIBEconomicsPrompt(
   }
 
   return prompt;
+}
+
+type ExamQuestion = {
+  id: string;
+  question_text: string;
+  context_text: string | null;
+  paper: string;
+  command_term: string;
+  marks: number;
+  ao_level: string | null;
+  level: string;
+  tier: number;
+};
+
+export async function fetchExamQuestionsContext(
+  supabase: SupabaseClient,
+  lessonCode: string,
+  examLevel: string,
+  subject: string,
+  unitCode?: string,
+): Promise<{ formatted: string }> {
+  const levels = examLevel === 'HL' ? ['SL', 'HL'] : ['SL'];
+
+  const { data, error } = await supabase.rpc('fetch_exam_questions_tiered', {
+    p_lesson_code: lessonCode,
+    p_subject:     subject,
+    p_levels:      levels,
+    p_unit_code:   unitCode ?? null,
+  });
+
+  if (error || !data || (data as ExamQuestion[]).length === 0) {
+    return { formatted: '' };
+  }
+
+  const formatted = (data as ExamQuestion[])
+    .map((q, i) => {
+      const ao  = q.ao_level ? ` (${q.ao_level})` : '';
+      const ctx = q.context_text ? `${q.context_text}\n` : '';
+      return `EXAMPLE ${i + 1} — Paper ${q.paper}, ${q.marks} marks, "${q.command_term}"${ao}\n${ctx}${q.question_text}`;
+    })
+    .join('\n---\n');
+
+  return { formatted };
 }
 
 export async function buildIBBusinessPrompt(
