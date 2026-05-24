@@ -1,6 +1,6 @@
 # Gradd — BUILD_HARDENING.md
 
-**The master build-hardening reference for every Gradd product.** One codebase, one Supabase instance and one Stripe account serve all products — LC Business on gradd.ie, IB Economics and IB Business Management on gradd.ai, ACCA and others to follow. This document consolidates every problem hit, diagnosed and fixed across all LC and IB build and debugging sessions, from the initial builds through to launch prep (02–16 May 2026).
+**The master build-hardening reference for every Gradd product.** One codebase, one Supabase instance and one Stripe account serve all products — LC Business on gradd.ie, IB Economics and IB Business Management on gradd.ai, ACCA and others to follow. This document consolidates every problem hit, diagnosed and fixed across all LC and IB build and debugging sessions, from the initial builds through to launch prep (02–24 May 2026).
 
 **How to use this document.** Read the TOP PREVENTION RULES below before starting any build session — they are the distilled standing rules and take five minutes. The ISSUE CATALOGUE underneath is a searchable archive: when something breaks, find the category and scan the entries. Because this is one shared codebase, an issue first hit on one product almost always applies to the others — treat every entry as relevant to the build in front of you unless it names a product-specific cause.
 
@@ -12,7 +12,7 @@
 
 ## TOP PREVENTION RULES
 
-The highest-value lessons from two complete product builds, distilled. Read these before any build session; treat them as standing rules for every new product from day one.
+The highest-value lessons from two complete product builds plus the Layer 1 IB Economics build, distilled. Read these before any build session; treat them as standing rules for every new product from day one.
 
 1. **Schema first, write second.** Before any INSERT, signal handler or prompt token, pull the live schema — `SELECT column_name, is_nullable, column_default FROM information_schema.columns WHERE table_name = 'X'`. Never reference columns, constraints or defaults from memory.
 
@@ -55,6 +55,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 20. **Visual and coordinate fixes are not batchable.** Work one element at a time with screenshot verification between edits. Never apply batch coordinate offsets to shared helpers — side-effects propagate to every consumer. If a "systematic" fix feels tempting, that's the signal to slow down, not speed up.
 
 21. **Tooling-cap discipline: set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000` every session.** Default 32k cap will kill multi-file edits mid-task — no commit, no push, work appears lost (actually safe, but the symptom is alarming). Combine with explicit response-constraint directives in batched instructions: "terse responses", "no full file pastes", "commit message under 200 chars".
+
+22. **Evidence-before-encoding for framework constants.** Any code constant derived from an external authoritative document (subject guide, mark scheme, IBO criteria) must quote the source verbatim with page reference before code lands. Paraphrased reading from training data drifted on the IB Economics V1 framework — P3 paper structure was wrong, `calculate` was tagged AO2 instead of AO4, P1 Part (a) was tagged Discuss×5/15m/AO3 when the guide specified Examine/Explain at 10m/AO2. Three independent failure modes proved single-source paraphrasing isn't safe. Rule: every constant block in `scripts/verify-*.ts` and equivalent files carries an evidence comment with verbatim quote + page number from the source PDF. Re-verify on every guide version bump.
+
+23. **Verifier-of-the-verifier.** Any automated quality checker must have a deterministic decision rule that resolves internal contradictions consistently — and a meta-test that catches the contradictions before they reach review. The V1 IB Economics question verifier passed questions a human reviewer rejected because its `reasoning` field could say "pass" while its `criteria` field said `wrong_marks` — the bug was the verifier disagreeing with itself, not the human. Rule: every verifier has (a) explicit decision precedence (e.g. "all criteria correct → pass; any major → fail; else borderline"), (b) a contradiction check before serialising the verdict, (c) test cases that include intentionally inconsistent inputs to confirm the precedence holds.
+
+24. **Prompt obedience must be triangulated.** Behavioural constraints in tutor prompts must appear in at least 3 prompt locations to fire reliably — SIGNALS block, DELIVERY PROTOCOL section, and live context anchor. Single-location prohibitions get rationalised around. The Layer 1 Mia obedience fix took three rounds: round 1 made her use seed questions but she added explanatory teaching first; round 2 forbade the teaching but she scaffolded indefinitely with prerequisite questions; round 3 capped scaffolding by marks band ("2-4m → no scaffold; 6-10m → one prerequisite; 12-20m → one prerequisite + one plan"). Each round exposed a new layer of disobedience that single-location constraints couldn't catch. Rule: after adding any behavioural constraint, run adversarial test sessions designed to provoke the disobedient mode before declaring done. Document the constraint in 3 prompt surfaces minimum.
+
+25. **Atomic edit discipline survives compaction.** When Claude Code's context compacts mid-session, subsequent edits may go via the `Write` tool (full file overwrite) instead of the `Edit` tool (surgical diff). Caught on `app/demo/session/page.tsx` — Claude Code attempted a full-file overwrite for what should have been 8-10 targeted edits. Rule: every existing-file edit goes through targeted str_replace/Edit operations with explicit before/after snippets, not full-file overwrites. Reject `Write` operations on existing files unless the file is being recreated from scratch. If Claude Code proposes "overwrite" after a session restart, force it to re-read the file from disk and propose surgical edits.
+
+26. **Persona consistency across product surfaces.** Renaming a fictional persona or identifier requires grepping ALL components on related surfaces in the same commit. The Alex → Louise rename hit `app/demo/session/page.tsx` cleanly but missed `app/demo/page.tsx` (the demo dashboard) — left the demo with two named personas on adjacent surfaces. Trust signal damage caught by user inspection. Rule: persona/identifier renames trigger a project-wide grep before commit. For demo surfaces specifically: dashboard + session page + signup flow + landing page parent examples + email templates must all use the same fictional persona. Define the persona in a single constant and import it where possible.
 
 ---
 
@@ -125,6 +135,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] V1 question verifier internal contradictions
+**SYMPTOM:** Verifier output had a `reasoning` field saying "this question passes" and `criteria` fields saying `wrong_marks: true`. Borderline-bucket questions in admin review showed inconsistent verdicts. Five questions the verifier passed were rejected by human review for issues the verifier had flagged in `criteria` but missed in `reasoning`.
+**ROOT CAUSE:** The verifier prompt asked the model to write reasoning before evaluating individual criteria. Model wrote optimistic reasoning, then evaluated criteria more strictly, but never reconciled. No explicit decision rule for contradictions.
+**FIX:** Added deterministic decision rule in `scripts/verify-seed-questions.ts`: `all-criteria-correct → pass; any-major-criterion-failed → fail; else → borderline`. Added contradiction check that throws if `reasoning` and `criteria` disagree. Rebuilt as V3.
+**PREVENTION:** Every automated verifier needs explicit decision precedence and a contradiction check. Test with intentionally inconsistent inputs to confirm precedence holds. Never rely on model-generated reasoning to be self-consistent with model-generated criteria evaluation — reconcile programmatically.
+**CATEGORY:** Database/Migration
+**SEVERITY:** High
+
+---
+
 **ISSUE:** [LC] Missing RLS INSERT policy on the `sessions` table
 **SYMPTOM:** During the initial build, creating a session failed — the row never appeared in `sessions`.
 **ROOT CAUSE:** RLS was enabled on `sessions` but no `INSERT` policy existed for the student, so the create was blocked. Same RLS-policy-gap class as the later UPDATE issue, found earlier.
@@ -165,37 +185,6 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
-**ISSUE:** [IB] INSERT had more target columns than values
-**SYMPTOM:** `ERROR: 42601: INSERT has more target columns than expressions`.
-**ROOT CAUSE:** `created_at` was listed in the column list but had no corresponding value (it has a default).
-**FIX:** Removed `created_at` from the column list — let the default apply.
-**PREVENTION:** Don't list columns that have defaults in test-data INSERTs. Keep INSERT column lists minimal.
-**CATEGORY:** Database/Migration
-**SEVERITY:** Low
-
----
-
-**ISSUE:** [IB] INSERT value/column order mismatch — a boolean column was assigned a timestamp
-**SYMPTOM:** `ERROR: 42804: column "ia_scope_acknowledged" is of type boolean but expression is of type timestamp with time zone`.
-**ROOT CAUSE:** `true` and `now()` were in the wrong order relative to the `ia_scope_acknowledged` / `ia_scope_acknowledged_at` columns.
-**FIX:** Pulled the schema, rewrote the INSERT with correct column/value alignment.
-**PREVENTION:** When an INSERT has adjacent columns of different types, a type error is the DB telling you the order is wrong. Verify column order against the schema rather than re-pasting.
-**CATEGORY:** Database/Migration
-**SEVERITY:** Low
-
----
-
-**ISSUE:** [IB] Suspected orphan rows after a profile deletion
-**SYMPTOM:** A stale `current_unit_name` ("Introduction to Business Management") appeared on a `student_progress` row; the first hypothesis was orphaned child rows from a deleted profile.
-**ROOT CAUSE:** False alarm — diagnostic queries showed zero orphan rows; the deleted account had cascaded cleanly. The stale value was simply an un-refreshed denormalised `current_unit_name` from before the unit-name migration (this field only refreshes on the next signal write).
-**FIX:** A single targeted `UPDATE` on the one stale row.
-**PREVENTION:** `student_progress.current_unit_name` is a denormalised copy that only refreshes on the next `LESSON_COMPLETE`/`UNIT_COMPLETE` — either update both in the migration or accept it self-heals on next session. Don't assume "stale value" means "orphan row" — verify with a `LEFT JOIN` before concluding.
-**CATEGORY:** Database/Migration
-**SEVERITY:** Low
-
-
----
-
 **ISSUE:** [IB] `course_position` bug misdiagnosed from code-path reasoning instead of data
 **SYMPTOM:** Claude Code initially claimed root cause was "course_position null at runtime, derive fallback fires" — ~10 minutes spent verifying the wrong hypothesis. The value was correctly stored as `'exam-prep'`; the real bug was elsewhere.
 **ROOT CAUSE:** Diagnosis reasoned plausibly from the code path without verifying actual data state in Supabase.
@@ -211,6 +200,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **ROOT CAUSE:** Backend session lifecycle does not auto-close on natural exit paths (tab close, navigation away). Sessions only close via explicit UI actions.
 **FIX:** Manual SQL UPDATE used for test setup; underlying behaviour logged for backlog cleanup.
 **PREVENTION:** Backend session lifecycle should auto-close on inactivity timeout OR when a new session is created for the same `(student_id, subject)` pair. Never permit indefinitely-open sessions for a single user.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] student_progress lesson/unit inconsistency possible
+**SYMPTOM:** Test data had `current_lesson_code = IB_ECON_097` (Unit 3) but `current_unit_code = IB_ECON_UNIT_4`. Session-start fell back to defaults silently rather than throwing — looked like a bug when symptom was test data.
+**ROOT CAUSE:** No constraint enforces `current_lesson_code` belongs to `current_unit_code`. Test data setup or partial migrations can produce inconsistent state.
+**FIX:** Logged for pre-launch hardening. Either trigger validating lesson∈unit, or derive `current_unit_code` from `lesson_code` at write time (preferred — eliminates the inconsistency class entirely). ~30 min.
+**PREVENTION:** When two columns are semantically linked (lesson belongs to unit), enforce the relationship at write time via trigger or derivation, not via assumption. Defensive fallbacks hide inconsistencies rather than surfacing them.
 **CATEGORY:** Database/Migration
 **SEVERITY:** Medium
 
@@ -264,6 +263,35 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Database/Migration
 **SEVERITY:** Low
 
+---
+
+**ISSUE:** [IB] INSERT had more target columns than values
+**SYMPTOM:** `ERROR: 42601: INSERT has more target columns than expressions`.
+**ROOT CAUSE:** `created_at` was listed in the column list but had no corresponding value (it has a default).
+**FIX:** Removed `created_at` from the column list — let the default apply.
+**PREVENTION:** Don't list columns that have defaults in test-data INSERTs. Keep INSERT column lists minimal.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] INSERT value/column order mismatch — a boolean column was assigned a timestamp
+**SYMPTOM:** `ERROR: 42804: column "ia_scope_acknowledged" is of type boolean but expression is of type timestamp with time zone`.
+**ROOT CAUSE:** `true` and `now()` were in the wrong order relative to the `ia_scope_acknowledged` / `ia_scope_acknowledged_at` columns.
+**FIX:** Pulled the schema, rewrote the INSERT with correct column/value alignment.
+**PREVENTION:** When an INSERT has adjacent columns of different types, a type error is the DB telling you the order is wrong. Verify column order against the schema rather than re-pasting.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Suspected orphan rows after a profile deletion
+**SYMPTOM:** A stale `current_unit_name` ("Introduction to Business Management") appeared on a `student_progress` row; the first hypothesis was orphaned child rows from a deleted profile.
+**ROOT CAUSE:** False alarm — diagnostic queries showed zero orphan rows; the deleted account had cascaded cleanly. The stale value was simply an un-refreshed denormalised `current_unit_name` from before the unit-name migration (this field only refreshes on the next signal write).
+**FIX:** A single targeted `UPDATE` on the one stale row.
+**PREVENTION:** `student_progress.current_unit_name` is a denormalised copy that only refreshes on the next `LESSON_COMPLETE`/`UNIT_COMPLETE` — either update both in the migration or accept it self-heals on next session. Don't assume "stale value" means "orphan row" — verify with a `LEFT JOIN` before concluding.
+**CATEGORY:** Database/Migration
+**SEVERITY:** Low
 
 
 ### SIGNALS
@@ -383,6 +411,26 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] V3 framework drift from paraphrased PDF reading
+**SYMPTOM:** Question generator produced structurally invalid IB Economics questions — `calculate` tagged as AO2 in 10-mark slots, Discuss×5 prescribed at 15m for P1 Part (a), P3 paper structure wrong. Three independent generation runs surfaced the drift.
+**ROOT CAUSE:** V1 of the framework constants in `scripts/verify-seed-questions.ts` was paraphrased from training-data recall of the 2022 IB Economics Subject Guide rather than verbatim-quoted from the PDF. Training data contained close-but-wrong versions of the AO×Paper matrix and command term glossary.
+**FIX:** Rebuilt as V3 with every constant carrying an evidence comment (verbatim quote + page reference from `docs/new_economics_guide_first_assessment_2022.pdf`). Only V3 exported; V1 and V2 retained as historical reference. Deterministic decision rule added.
+**PREVENTION:** Every framework constant block must quote the source document verbatim with page reference before code lands. Paraphrased reading is not safe even for documents the model "knows well." Re-verify on every guide version bump.
+**CATEGORY:** Prompts
+**SEVERITY:** Critical
+
+---
+
+**ISSUE:** [IB] Mia ignored seed questions at runtime, taught lesson content instead
+**SYMPTOM:** First Layer 1 production test: Mia received 3 seed questions via `EXAM_QUESTIONS_CONTEXT` token but opened the session by teaching the lesson content from scratch, ignoring the seed examples entirely.
+**ROOT CAUSE:** Single-location instruction in the prompt ("Use these example questions...") was overridden by stronger competing instructions elsewhere (lesson structure section, default opening behaviour). Model rationalised around the weaker instruction.
+**FIX:** Triangulated the obedience constraint across 4 prompt locations using VERBATIM language: (1) SIGNALS block, (2) DELIVERY PROTOCOL section, (3) live context anchor, (4) per-turn injection. Each location explicitly references the seed questions as authoritative.
+**PREVENTION:** Behavioural constraints in tutor prompts must appear in 3+ locations to fire reliably. Single-location prohibitions get rationalised around. Run adversarial test sessions designed to provoke the disobedient mode before declaring done.
+**CATEGORY:** Prompts
+**SEVERITY:** Critical
+
+---
+
 **ISSUE:** [IB] Calibrated-praise rule was written into the prompt but not followed by the model
 **SYMPTOM:** Mia opened with "Exactly right" / "correct" on answers that explicitly covered only 3 of 4 required elements.
 **ROOT CAUSE:** The v1.5 rule existed but sat in a low-priority pedagogy section and was phrased as a subjective judgement ("COMPLETELY correct"), leaving room to rationalise. A competing supportive-tone instruction likely outweighed it.
@@ -433,6 +481,56 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] `SESSION OPENING` section had no `course_position` branching — exam-prep students opened in beginning mode
+**SYMPTOM:** Exam-prep students received foundational teach-from-zero opening (Mia defined "what is a business" from scratch) instead of paper/marks/command-term framing + pivot to an exam-style question. The `course_position` value was correctly stored and substituted; behaviour didn't change.
+**ROOT CAUSE:** Two competing instruction sets governed the opening turn. The `LESSON STRUCTURE` section had a `course_position` modifier, but `SESSION OPENING` (later in the prompt, more specific to the first response) said "Begin teaching directly" universally. The `liveContextAnchor` in `app/api/session/message/route.ts` also reinforced "Begin teaching now" with no exam-prep qualifier. Three instructions, one branched on `course_position`; the unbranched two won.
+**FIX:** Added explicit three-way `course_position` branch to `SESSION OPENING` step 4 AND mirrored the branch in `liveContextAnchor`. Commits `8af3b5d` (IB Business) and `8f5271b` (IB Economics); merged as `61825c9` and `cb93b9b`.
+**PREVENTION:** When a runtime variable should drive behaviour, ALL instruction surfaces (system prompt sections + live context anchor + per-turn injections) must explicitly branch on the same variable. Silent disagreement between surfaces means the unbranched surface wins. Treat prompt + parser + handler + anchor as one atomic change.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Template variable substituted mid-sentence produced broken grammar; the branches under it became orphans
+**SYMPTOM:** IB Economics exam-prep test: Mia opened with "Did you finish the definition or did we move into scarcity?" — asked the student to confirm coverage despite an explicit "never ask" instruction. The three exam-prep / mid-programme / beginning branches were defined but ignored.
+**ROOT CAUSE:** Prompt wrote "Behaviour for step 4 depends on `{{COURSE_POSITION}}`:" — after substitution this read "Behaviour for step 4 depends on exam-prep:", which the model parsed as a statement of fact, not a directive. The three branches below became orphaned with no instruction telling Mia to pick one.
+**FIX:** Rewrote to "Behaviour for step 4 depends on the student's course position. `{{COURSE_POSITION}}` = the student's position. Pick the matching block below:" — variable becomes a label, not a verb object. Commit `8f5271b`.
+**PREVENTION:** When designing prompts with template variables, mentally substitute each possible value and read the resulting sentence. Variables should appear as labels (`{{VAR}} = the value`), not as objects of action verbs. Test with at least one substitution before shipping.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Stored prompt cached at session start (`sessions.raw_final_response`) — prompt changes invisible until a fresh session is created
+**SYMPTOM:** First post-fix test of `course_position` change failed: Mia behaviour didn't change despite confirmed deploy. Appeared the fix was wrong; ~15 minutes of further misdiagnosis before the cache architecture was identified.
+**ROOT CAUSE:** The system prompt is substituted with student-specific values at session START and stored in `sessions.raw_final_response`. Pre-existing open sessions retain the OLD prompt — only freshly-created sessions execute the new code path. The first test resumed an in-progress session and pulled the cached pre-fix prompt.
+**FIX:** Closed all open sessions via SQL (`UPDATE public.sessions SET ended_at = now() WHERE student_id = X AND ended_at IS NULL`), then started a genuinely new session. New `session_number` = old + 1; new prompt loaded; behaviour changed.
+**PREVENTION:** Document this architecture explicitly. Prompt and session-start logic changes only affect NEW sessions. Test protocol after any prompt change: (1) close all open sessions for the test user in Supabase, (2) hard-refresh browser, (3) start new session from dashboard, (4) verify `session_number` incremented BEFORE judging behaviour. Replicate this protocol on any new product that caches prompts at session start.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Compound command terms in single-AO sub-parts
+**SYMPTOM:** Initial seed generator produced 4-mark P1 Part (a) questions with compound command terms ("Define and explain...", "Identify and describe..."). IBO mark schemes for these slots allow only one command term per AO band.
+**ROOT CAUSE:** Generator config didn't enforce the structural rule that single-AO sub-parts get exactly one command term. The model defaulted to compound phrasing because it reads more natural in English.
+**FIX:** Added structural rule in `scripts/generate-seed-questions.ts` forbidding compound command terms in single-AO sub-parts. Verifier re-checks for this pattern.
+**PREVENTION:** When generating exam-format content from a model, encode structural rules explicitly in the generator config — don't trust the model to infer them from the syllabus.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Mia scaffolded indefinitely after seed obedience fix landed
+**SYMPTOM:** Round 2 test: Mia used the seed question correctly but asked 4-5 prerequisite questions in succession before letting the student attempt the full answer. Defeated the exam-prep mode purpose (testing answer technique under exam conditions).
+**ROOT CAUSE:** After forbidding the "teach from scratch" failure mode, the model defaulted to its next-most-helpful instinct: scaffolding via prerequisite questions. No upper bound on scaffolding length.
+**FIX:** Added EXAM-PREP DELIVERY PROTOCOL with explicit marks-band scaffolding cap: 2-4m → no scaffold, 6-10m → one prerequisite question max, 12-20m → one prerequisite + one plan-your-answer prompt. Then mandatory "write your full answer now" with word count and marking promise.
+**PREVENTION:** When constraining a model away from one failure mode, predict the next-most-likely failure mode and constrain it pre-emptively. Each behavioural fix surfaces a new layer; budget for 2-3 rounds.
+**CATEGORY:** Prompts
+**SEVERITY:** High
+
+---
+
 **ISSUE:** [IB] Tutor told students "I can't produce images" after the diagram library shipped
 **SYMPTOM:** Mia stated she couldn't produce images — factually wrong once diagrams were wired in. Students would think the diagram feature was broken.
 **ROOT CAUSE:** A stale prompt line written before the diagram capability existed; never updated when the feature shipped.
@@ -458,6 +556,26 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **ROOT CAUSE:** Prompt content and curriculum data were edited at different times and drifted independently.
 **FIX:** Reconciled the prompt examples against the `lessons` table (the source of truth).
 **PREVENTION:** Audit prompt-vs-database alignment before launch. Every lesson/unit name in the system prompt must match the `lessons` table. Prompts and curriculum drift apart whenever they're edited separately.
+**CATEGORY:** Prompts
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Mia marks-band denominator drift
+**SYMPTOM:** 10-mark P3 Part (b) Recommend question marked "10-11 out of 15" instead of "out of 10". Qualitative feedback correct (band-appropriate, quoted student text, mechanism rewrites all valid), only denominator wrong. Caught during Layer 1 validation.
+**ROOT CAUSE:** Mia inferred denominator from band thresholds rather than reading the question's marks value. Band thresholds for AO3 evaluative questions are commonly memorised as 15-band by the model.
+**FIX:** Logged for Layer 2 polish. Will surface `{{CURRENT_QUESTION_MARKS}}` token to Mia when marking is active and enforce explicit denominator anchoring in prompt. ~30 min.
+**PREVENTION:** When a model produces structured output that contains derived values (marks awarded out of total), inject the total as an explicit runtime variable rather than relying on the model to read it from question text. Tested behaviour with the value provided is much more reliable than tested behaviour with the value inferable.
+**CATEGORY:** Prompts
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Prompt prohibition not strong enough — model rationalised around it
+**SYMPTOM:** Despite "Never ask the student where they left off", Mia opened with "what's the last thing you remember covering?" — treating coverage-confirmation as different from where-you-left-off.
+**ROOT CAUSE:** Single-phrase prohibition didn't enumerate the variants the model could rationalise (asking what was covered, what they remember, to confirm previous session content). The model found a semantic neighbour the prohibition didn't cover.
+**FIX:** Expanded to enumerate variants: "do NOT ask the student where they left off, what they covered, what they remember, or to confirm any part of the previous session. The summary is the truth."
+**PREVENTION:** For any "never do X" instruction in a prompt, enumerate the rationalised neighbours: never-ask-X, never-confirm-X, never-rephrased-X. If a semantic neighbour exists, the prohibition will leak. Test with hostile edge cases before shipping.
 **CATEGORY:** Prompts
 **SEVERITY:** Medium
 
@@ -530,47 +648,6 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** Treat prompt-file header metadata as documentation that must match the real API call. Audit headers against the model strings in `route.ts`.
 **CATEGORY:** Prompts
 **SEVERITY:** Low
-
-
----
-
-**ISSUE:** [IB] `SESSION OPENING` section had no `course_position` branching — exam-prep students opened in beginning mode
-**SYMPTOM:** Exam-prep students received foundational teach-from-zero opening (Mia defined "what is a business" from scratch) instead of paper/marks/command-term framing + pivot to an exam-style question. The `course_position` value was correctly stored and substituted; behaviour didn't change.
-**ROOT CAUSE:** Two competing instruction sets governed the opening turn. The `LESSON STRUCTURE` section had a `course_position` modifier, but `SESSION OPENING` (later in the prompt, more specific to the first response) said "Begin teaching directly" universally. The `liveContextAnchor` in `app/api/session/message/route.ts` also reinforced "Begin teaching now" with no exam-prep qualifier. Three instructions, one branched on `course_position`; the unbranched two won.
-**FIX:** Added explicit three-way `course_position` branch to `SESSION OPENING` step 4 AND mirrored the branch in `liveContextAnchor`. Commits `8af3b5d` (IB Business) and `8f5271b` (IB Economics); merged as `61825c9` and `cb93b9b`.
-**PREVENTION:** When a runtime variable should drive behaviour, ALL instruction surfaces (system prompt sections + live context anchor + per-turn injections) must explicitly branch on the same variable. Silent disagreement between surfaces means the unbranched surface wins. Treat prompt + parser + handler + anchor as one atomic change.
-**CATEGORY:** Prompts
-**SEVERITY:** High
-
----
-
-**ISSUE:** [IB] Template variable substituted mid-sentence produced broken grammar; the branches under it became orphans
-**SYMPTOM:** IB Economics exam-prep test: Mia opened with "Did you finish the definition or did we move into scarcity?" — asked the student to confirm coverage despite an explicit "never ask" instruction. The three exam-prep / mid-programme / beginning branches were defined but ignored.
-**ROOT CAUSE:** Prompt wrote "Behaviour for step 4 depends on `{{COURSE_POSITION}}`:" — after substitution this read "Behaviour for step 4 depends on exam-prep:", which the model parsed as a statement of fact, not a directive. The three branches below became orphaned with no instruction telling Mia to pick one.
-**FIX:** Rewrote to "Behaviour for step 4 depends on the student's course position. `{{COURSE_POSITION}}` = the student's position. Pick the matching block below:" — variable becomes a label, not a verb object. Commit `8f5271b`.
-**PREVENTION:** When designing prompts with template variables, mentally substitute each possible value and read the resulting sentence. Variables should appear as labels (`{{VAR}} = the value`), not as objects of action verbs. Test with at least one substitution before shipping.
-**CATEGORY:** Prompts
-**SEVERITY:** High
-
----
-
-**ISSUE:** [IB] Stored prompt cached at session start (`sessions.raw_final_response`) — prompt changes invisible until a fresh session is created
-**SYMPTOM:** First post-fix test of `course_position` change failed: Mia behaviour didn't change despite confirmed deploy. Appeared the fix was wrong; ~15 minutes of further misdiagnosis before the cache architecture was identified.
-**ROOT CAUSE:** The system prompt is substituted with student-specific values at session START and stored in `sessions.raw_final_response`. Pre-existing open sessions retain the OLD prompt — only freshly-created sessions execute the new code path. The first test resumed an in-progress session and pulled the cached pre-fix prompt.
-**FIX:** Closed all open sessions via SQL (`UPDATE public.sessions SET ended_at = now() WHERE student_id = X AND ended_at IS NULL`), then started a genuinely new session. New `session_number` = old + 1; new prompt loaded; behaviour changed.
-**PREVENTION:** Document this architecture explicitly. Prompt and session-start logic changes only affect NEW sessions. Test protocol after any prompt change: (1) close all open sessions for the test user in Supabase, (2) hard-refresh browser, (3) start new session from dashboard, (4) verify `session_number` incremented BEFORE judging behaviour. Replicate this protocol on any new product that caches prompts at session start.
-**CATEGORY:** Prompts
-**SEVERITY:** High
-
----
-
-**ISSUE:** [IB] Prompt prohibition not strong enough — model rationalised around it
-**SYMPTOM:** Despite "Never ask the student where they left off", Mia opened with "what's the last thing you remember covering?" — treating coverage-confirmation as different from where-you-left-off.
-**ROOT CAUSE:** Single-phrase prohibition didn't enumerate the variants the model could rationalise (asking what was covered, what they remember, to confirm previous session content). The model found a semantic neighbour the prohibition didn't cover.
-**FIX:** Expanded to enumerate variants: "do NOT ask the student where they left off, what they covered, what they remember, or to confirm any part of the previous session. The summary is the truth."
-**PREVENTION:** For any "never do X" instruction in a prompt, enumerate the rationalised neighbours: never-ask-X, never-confirm-X, never-rephrased-X. If a semantic neighbour exists, the prohibition will leak. Test with hostile edge cases before shipping.
-**CATEGORY:** Prompts
-**SEVERITY:** Medium
 
 
 
@@ -873,6 +950,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] Claude Code regenerates files via Write tool after compaction
+**SYMPTOM:** Mid-session on `app/demo/session/page.tsx`, after Claude Code's context compacted, the next edit attempted came via the `Write` tool (full file overwrite) instead of `Edit` (surgical diff). Dialog said "overwrite page.tsx" rather than "make this edit to page.tsx."
+**ROOT CAUSE:** When Claude Code's context window compacts mid-session, granular file-level state can be lost. Without exact file content in memory, Claude Code regenerates the file from the compacted summary + plan rather than applying targeted edits.
+**FIX:** Rejected the Write operation, forced Claude Code to re-read the file from disk and propose surgical Edit operations (8-10 individual edits, each approved separately).
+**PREVENTION:** After any Claude Code session restart or compaction event, never approve a `Write` operation on an existing file without first verifying it's actually needed. Force surgical Edit operations via explicit instruction. The "overwrite" dialog is the signal to slow down, not approve.
+**CATEGORY:** Deployment
+**SEVERITY:** Medium
+
+---
+
 **ISSUE:** [LC] An erroneous route file broke the Vercel build
 **SYMPTOM:** A Vercel build failed; the cause was `app/api/auth/confirm-signup/route.ts` containing old weekly-email code that no longer belonged there.
 **ROOT CAUSE:** A leftover/misplaced file from an earlier email iteration was still in the repo and failed to compile against the current code.
@@ -1011,7 +1098,6 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Deployment
 **SEVERITY:** Low
 
-
 ---
 
 **ISSUE:** [IB] Working-context summary from prior session was stale; operated on wrong mental model of branch state
@@ -1041,6 +1127,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** When two pieces of work depend on each other for verification, build them on the same branch from the start, or plan an explicit integration branch with a documented purpose. Don't create the integration as an afterthought.
 **CATEGORY:** Deployment
 **SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Git non-fast-forward push rejection after cherry-pick
+**SYMPTOM:** Push to main rejected after cherry-picking a hotfix commit onto main from a feature branch. Histories diverged because cherry-pick created a duplicate-content commit with a different SHA.
+**ROOT CAUSE:** Cherry-picking a commit creates a new commit object even if content is identical. The feature branch still had the original commit; main had the cherry-picked version; histories no longer matched.
+**FIX:** `git pull --rebase origin main` resolved cleanly — git auto-detected duplicate patches and skipped them. Then standard push proceeded. Force-push avoided as destructive.
+**PREVENTION:** When cherry-picking commits between branches that will need to merge later, expect history divergence. Use `git pull --rebase` to resolve, not `--force`. Force-with-lease is the safe variant when force-push is genuinely needed.
+**CATEGORY:** Deployment
+**SEVERITY:** Low
 
 ---
 
@@ -1075,6 +1171,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 
 ### UI / RENDERING
+
+---
+
+**ISSUE:** [IB] Internal QA page (`/admin/diagrams`) rendered diagrams in different CSS scope than production
+**SYMPTOM:** `/admin/diagrams` showed labels washed-out/faded; the same diagrams in live sessions rendered with correct dark ink. ~30 minutes wasted prescribing coordinate fixes against a misdiagnosed bug.
+**ROOT CAUSE:** Audit page wrapped diagrams in a plain `<div>` with no `.ib-session` CSS scope. CSS variables `--chat-text` and `--chat-muted` resolved to wrong values because the page had different ambient definitions. Live sessions resolved them correctly via the `.ib-session` block in `ChatInterface.tsx`. Also: audit page rendered raw `<Component />` rather than the production `<DiagramRenderer />` wrapper.
+**FIX:** Rebuilt audit page to wrap diagrams in `<div className="ib-session">` AND render through real `<DiagramRenderer />` component. Commit `9479305`.
+**PREVENTION:** Any internal QA / preview / audit page that displays a production component must mirror production's wrapper, scope and import path exactly. If a QA page uses different CSS scope, fonts or render wrapper than production, it produces false positives (sees bugs that don't exist) and false negatives (misses real bugs). Validate by side-by-side comparison with a live session before trusting any new QA surface.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** High
 
 ---
 
@@ -1158,6 +1264,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] Mobile comparison-section CTA button truncated text on narrow widths
+**SYMPTOM:** "Choose your IB plan — 7-day money-back trial" button in the comparison section had trailing characters of "trial" cut off below 480px.
+**ROOT CAUSE:** Button had `white-space: nowrap` applied globally; mobile media query never overrode it for this specific button.
+**FIX:** Added `.cmp-cta .btn { white-space: normal; text-align: center; }` inside `@media (max-width: 767px)`. One-line CSS addition.
+**PREVENTION:** When applying `white-space: nowrap` globally to button text, scope it carefully — CTA buttons longer than ~30 characters need to wrap on mobile. Default to `white-space: normal` and add `nowrap` only for short labels.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Low
+
+---
+
 **ISSUE:** [IB] Raster logos rendered at the wrong size
 **SYMPTOM:** Logo `<img>` elements sized inconsistently across pages.
 **ROOT CAUSE:** No explicit dimensions — the container was relied on to size the image.
@@ -1213,6 +1329,26 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **ROOT CAUSE:** A partial `FormattedMessage` component did not handle the full range of Aoife's markdown output (headers, bold, rules, lists) or constrain width.
 **FIX:** Replaced it with a custom `MessageRenderer.tsx` that renders headers (`#`/`##`/`###`), bold, horizontal rules, bullet/numbered lists and Aoife's `===` section headers, with correct width constraints — no new npm dependency.
 **PREVENTION:** A message renderer must handle every markdown construct the model actually emits and constrain its own width. Test the renderer against real Aoife output, not a sample paragraph.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] `.ib-session` CSS duplicated as inline `<style>` blocks in two files
+**SYMPTOM:** Identical CSS block existed as inline `<style>` strings in both `ChatInterface.tsx` (lines 357–680) and `app/demo/session/page.tsx` (lines 135–257). No way to apply `.ib-session` scope on a third surface (the audit page) without a third copy.
+**ROOT CAUSE:** Initial build copied the CSS block between files rather than extracting to a shared stylesheet. Two sources of truth → silent drift hazard.
+**FIX:** Extracted to `styles/ib-session.css`, imported globally in `app/layout.tsx`, kept `className="ib-session"` wrapper on rendering divs. Commit `0a44e4c`.
+**PREVENTION:** Any CSS block needed on more than one surface must live in a shared stylesheet from the start. Inline `<style>` blocks are only acceptable when rules are genuinely surface-specific (e.g. demo-page typing animation). Any CSS block over ~50 lines OR appearing in two files is a red flag — extract immediately.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Batch coordinate fixes via shared SVG helper created new collisions in untouched diagrams
+**SYMPTOM:** Round 1 fixed 30 diagram label collisions via a systematic axis-offset bump (`+26 → +36`) on the shared `Axes` helper component. Round 2 audit revealed 11 NEW or surviving collisions, several created by Round 1 pushing text into other elements.
+**ROOT CAUSE:** Helper-level coordinate changes have systemic side-effects. Moving one element by N pixels affects every diagram using the helper. No visual verification between edits.
+**FIX:** Round 2 used per-diagram individual coordinate adjustments with explicit instruction not to touch shared helpers. Final 11 collisions deferred to backlog with explicit "screenshot → fix → screenshot loop, one at a time, do NOT batch" approach noted.
+**PREVENTION:** Visual / coordinate fixes are not batchable. Work one element at a time with visual verification between edits. Never apply batch coordinate offsets to shared helpers — side-effects propagate to every consumer. If a "systematic" fix is tempting, that's the signal to slow down, not speed up.
 **CATEGORY:** UI/Rendering
 **SEVERITY:** Medium
 
@@ -1308,6 +1444,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] Demo dashboard persona mismatch (Alex vs Louise)
+**SYMPTOM:** After renaming demo session student from Alex to Louise via `app/demo/session/page.tsx`, the demo dashboard at `app/demo/page.tsx` still showed "Alex's progress" and "Good to see you, Alex." Two adjacent product surfaces had different fictional personas.
+**ROOT CAUSE:** Rename only touched the session component. Demo dashboard is a separate file. Grep for "Alex" wasn't run project-wide as part of the rename commit.
+**FIX:** Updated all Alex references in `app/demo/page.tsx` to Louise (parent view title, student name, my view greeting). Avatar initial changed "A" → "L". Made part of a follow-up commit, but should have been atomic with the original rename.
+**PREVENTION:** Persona/identifier renames trigger a project-wide grep before commit. For demo surfaces specifically: dashboard + session page + signup flow + landing page parent examples + email templates must all use the same fictional persona. Consider defining persona as a single constant imported where used.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Low
+
+---
+
 **ISSUE:** [LC] The wordmark logo dot rendered inside the "d" letterform
 **SYMPTOM:** In the Gradd wordmark SVG the accent dot kept landing inside the "d" instead of beside it; took five iterations to place correctly.
 **ROOT CAUSE:** The dot was positioned using estimated font metrics rather than measured glyph coordinates, so it landed wrong each time the estimate was off.
@@ -1345,37 +1491,6 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** Document intended session boundaries so expected behaviour isn't re-investigated as a bug. "New session" is not "lost context."
 **CATEGORY:** UI/Rendering
 **SEVERITY:** Low
-
-
----
-
-**ISSUE:** [IB] Internal QA page (`/admin/diagrams`) rendered diagrams in different CSS scope than production
-**SYMPTOM:** `/admin/diagrams` showed labels washed-out/faded; the same diagrams in live sessions rendered with correct dark ink. ~30 minutes wasted prescribing coordinate fixes against a misdiagnosed bug.
-**ROOT CAUSE:** Audit page wrapped diagrams in a plain `<div>` with no `.ib-session` CSS scope. CSS variables `--chat-text` and `--chat-muted` resolved to wrong values because the page had different ambient definitions. Live sessions resolved them correctly via the `.ib-session` block in `ChatInterface.tsx`. Also: audit page rendered raw `<Component />` rather than the production `<DiagramRenderer />` wrapper.
-**FIX:** Rebuilt audit page to wrap diagrams in `<div className="ib-session">` AND render through real `<DiagramRenderer />` component. Commit `9479305`.
-**PREVENTION:** Any internal QA / preview / audit page that displays a production component must mirror production's wrapper, scope and import path exactly. If a QA page uses different CSS scope, fonts or render wrapper than production, it produces false positives (sees bugs that don't exist) and false negatives (misses real bugs). Validate by side-by-side comparison with a live session before trusting any new QA surface.
-**CATEGORY:** UI/Rendering
-**SEVERITY:** High
-
----
-
-**ISSUE:** [IB] `.ib-session` CSS duplicated as inline `<style>` blocks in two files
-**SYMPTOM:** Identical CSS block existed as inline `<style>` strings in both `ChatInterface.tsx` (lines 357–680) and `app/demo/session/page.tsx` (lines 135–257). No way to apply `.ib-session` scope on a third surface (the audit page) without a third copy.
-**ROOT CAUSE:** Initial build copied the CSS block between files rather than extracting to a shared stylesheet. Two sources of truth → silent drift hazard.
-**FIX:** Extracted to `styles/ib-session.css`, imported globally in `app/layout.tsx`, kept `className="ib-session"` wrapper on rendering divs. Commit `0a44e4c`.
-**PREVENTION:** Any CSS block needed on more than one surface must live in a shared stylesheet from the start. Inline `<style>` blocks are only acceptable when rules are genuinely surface-specific (e.g. demo-page typing animation). Any CSS block over ~50 lines OR appearing in two files is a red flag — extract immediately.
-**CATEGORY:** UI/Rendering
-**SEVERITY:** Medium
-
----
-
-**ISSUE:** [IB] Batch coordinate fixes via shared SVG helper created new collisions in untouched diagrams
-**SYMPTOM:** Round 1 fixed 30 diagram label collisions via a systematic axis-offset bump (`+26 → +36`) on the shared `Axes` helper component. Round 2 audit revealed 11 NEW or surviving collisions, several created by Round 1 pushing text into other elements.
-**ROOT CAUSE:** Helper-level coordinate changes have systemic side-effects. Moving one element by N pixels affects every diagram using the helper. No visual verification between edits.
-**FIX:** Round 2 used per-diagram individual coordinate adjustments with explicit instruction not to touch shared helpers. Final 11 collisions deferred to backlog with explicit "screenshot → fix → screenshot loop, one at a time, do NOT batch" approach noted.
-**PREVENTION:** Visual / coordinate fixes are not batchable. Work one element at a time with visual verification between edits. Never apply batch coordinate offsets to shared helpers — side-effects propagate to every consumer. If a "systematic" fix is tempting, that's the signal to slow down, not speed up.
-**CATEGORY:** UI/Rendering
-**SEVERITY:** Medium
 
 ---
 
@@ -1443,6 +1558,26 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
+**ISSUE:** [IB] Claude Code default output token cap exceeded mid-task, killed a 36-minute session
+**SYMPTOM:** Claude Code session died after 36 minutes with "API Error: Claude's response exceeded the 32000 output token maximum". Appeared to lose work; actually nothing had been committed.
+**ROOT CAUSE:** Default `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is 32000. Large multi-file edits with verbose Claude Code commentary and long commit messages can exceed it before reaching the push step.
+**FIX:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000`. Also instructed Claude Code explicitly: "keep responses terse", "do not paste full file contents", "commit message under 200 characters".
+**PREVENTION:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000` at the start of every session before launching Claude Code. For multi-file edits, split into staged commits (no more than 4–5 files per commit). Always include response-constraint directives in batched-edit instructions.
+**CATEGORY:** Config
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] RESEND_API_KEY module-load failures in 3 routes
+**SYMPTOM:** Local build clean, but Vercel runtime errors on cron and webhook routes: "RESEND_API_KEY is not defined" on `weekly-email`, `trial-reminders`, and `stripe/webhook` despite key being correctly set in Vercel env vars.
+**ROOT CAUSE:** Three routes initialised `new Resend(process.env.RESEND_API_KEY)` at module load time. In Vercel's serverless environment, module loading can occur before env vars are resolved, particularly on cold starts. Local dev resolves env vars before module load so the bug doesn't reproduce.
+**FIX:** Refactored all three routes to lazy-init Resend inside the handler function rather than at module load. Pattern: `function getResend() { return new Resend(process.env.RESEND_API_KEY); }` called from handler.
+**PREVENTION:** Never initialise SDK clients at module load when they depend on env vars. Always lazy-init inside the handler. Applies to Resend, Stripe, Anthropic, and Supabase service-role clients.
+**CATEGORY:** Config
+**SEVERITY:** High
+
+---
+
 **ISSUE:** [IB] `metadataBase` pointed at `gradd.ie` for both domains
 **SYMPTOM:** OG images and canonical URLs resolved against `gradd.ie` even on `gradd.ai`.
 **ROOT CAUSE:** `metadataBase` in `app/layout.tsx` was hardcoded to the LC domain.
@@ -1470,6 +1605,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** All migrations live in `supabase/migrations/` with the `YYYYMMDDHHMMSS_` naming convention. Check file placement when creating migrations.
 **CATEGORY:** Config
 **SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB] Orphan node.exe processes writing stale verdicts during verifier runs
+**SYMPTOM:** New verifier run produced unexpected verdicts on freshly-generated questions. Investigation found two `node.exe` processes running simultaneously — previous run hadn't terminated cleanly, was still writing to the same output file as the new run.
+**ROOT CAUSE:** Windows-specific: terminating a long-running Node script via Ctrl+C in PowerShell doesn't always kill the process. Stale process continued executing in the background, race condition on output file.
+**FIX:** `Stop-Process -Name node -Force` before any verifier run. Added to verifier script as a pre-flight check.
+**PREVENTION:** On Windows, run `Get-Process node` before any long-running Node script to confirm no orphans exist. Long-running scripts (verifier, generator, dump) should write to timestamped output files to make cross-run contamination impossible.
+**CATEGORY:** Config
+**SEVERITY:** Medium
 
 ---
 
@@ -1541,17 +1686,6 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Config
 **SEVERITY:** Low
 
-
----
-
-**ISSUE:** [IB] Claude Code default output token cap exceeded mid-task, killed a 36-minute session
-**SYMPTOM:** Claude Code session died after 36 minutes with "API Error: Claude's response exceeded the 32000 output token maximum". Appeared to lose work; actually nothing had been committed.
-**ROOT CAUSE:** Default `CLAUDE_CODE_MAX_OUTPUT_TOKENS` is 32000. Large multi-file edits with verbose Claude Code commentary and long commit messages can exceed it before reaching the push step.
-**FIX:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000`. Also instructed Claude Code explicitly: "keep responses terse", "do not paste full file contents", "commit message under 200 characters".
-**PREVENTION:** Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=200000` at the start of every session before launching Claude Code. For multi-file edits, split into staged commits (no more than 4–5 files per commit). Always include response-constraint directives in batched-edit instructions.
-**CATEGORY:** Config
-**SEVERITY:** High
-
 ---
 
 **ISSUE:** [IB] PowerShell User-scope env var didn't propagate to new session
@@ -1599,4 +1733,4 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
-*Master document, collated 16/05/2026; updated 21/05/2026 with the IB diagram-audit / CSS refactor / course_position session-opening harvest. Sources: every LC build/debug session (initial build through Sprint 8), the IB build/launch-prep sessions (02–16 May 2026), and the IB build-hardening session of 21 May 2026 (`/admin/diagrams` rebuild, `.ib-session` extraction, `course_position` Layer 0 fix). Supersedes the standalone `BUILD_HARDENING.md` (IB) and `LC_BUILD_HARDENING.md`. Keep one copy in each Claude project. Add new entries in the standard format, tagged by product, ordered by category then severity; promote a lesson to TOP PREVENTION RULES only when it has cost real time more than once.*
+*Master document, collated 16/05/2026; updated 21/05/2026 with the IB diagram-audit / CSS refactor / course_position session-opening harvest; updated 24/05/2026 with the Layer 1 IB Economics build harvest (seed library architecture, V3 framework constants, exam-prep delivery protocol, demo toggle build). Sources: every LC build/debug session (initial build through Sprint 8), the IB build/launch-prep sessions (02–16 May 2026), the IB build-hardening session of 21 May 2026, and the 24-hour Layer 1 IB Economics build session of 23 May 2026 (seed library generation + verification + Mia integration + admin review UI + demo toggle + landing page upgrades). Supersedes the standalone `BUILD_HARDENING.md` (IB) and `LC_BUILD_HARDENING.md`. Keep one copy in each Claude project. Add new entries in the standard format, tagged by product, ordered by category then severity; promote a lesson to TOP PREVENTION RULES only when it has cost real time more than once.*
