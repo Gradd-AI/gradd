@@ -497,17 +497,565 @@ OUT OF SCOPE: Internal Assessment (Business Research Project), TOK. P3 integrate
 `;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// IB BM V3 — assembled from verbatim guide evidence (Rule 22)
+// Source: Business_Management_Subject_Guide.pdf (First assessment 2024, © IBO 2022)
+// Guide version tag: IB_BM_2024  ·  Subject string: IB_BUSINESS_MANAGEMENT
+// Each sub-constant carries an // EVIDENCE comment with verbatim quote + page reference.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// EVIDENCE: p. 41 — "Paper 1 is the same for SL and HL students."
+// EVIDENCE: p. 41 — "The examination is based upon one case study, of approximately 800 to 1,000 words, that students do not see before the examination."
+// EVIDENCE: p. 42 — "Only HL students will sit this examination." (P3)
+// EVIDENCE: p. 48 — "For question 1 and question 2 an analytic markscheme will be used. For question 3 the following assessment criteria will be used."
+const PAPER_STRUCTURE_IB_BM = `
+━━━ BLOCK 1: PAPER STRUCTURE ━━━
+
+PAPER 1 — Pre-released case study. IDENTICAL for SL and HL. [p.41]
+Duration: 1h30m. Total: 30 marks. Weighting: 35% (SL), 25% (HL).
+"Paper 1 is the same for SL and HL students. Three months prior to the examination the IB will
+release a statement with two elements." [p.41]
+"The examination is based upon one case study, of approximately 800 to 1,000 words, that students
+do not see before the examination. Most questions will be qualitative, although some minor
+calculations could be part of the assessment." [p.41]
+Syllabus scope: Units 1–5 EXCLUDING HL extension material.
+HARD RULE: P1 questions must NOT target HL-only sub-topics — even for HL students.
+
+Section A — 20 marks. AOs: AO1, AO2, AO4. Structured questions, analytic markscheme.
+  AO3 is ABSENT from Section A. AO3 command terms CANNOT appear here.
+  Typical marks: 2m (AO1), 4m (AO1), 6m (AO2/AO4).
+
+Section B — 10 marks. AOs: AO1, AO2, AO3, AO4. One from two extended responses. Markbands.
+  AO3 IS present. Any AO3 command term is valid.
+  Maximum for Section B is 10m — there is no 15m or 20m extended response on P1.
+
+PAPER 2 — Unseen stimulus. DIFFERENT for SL and HL. [pp.41–42]
+SL: 1h30m, 35%, 40 marks total (Section A 20m + Section B 20m).
+HL: 1h45m, 30%, 50 marks total (Section A 30m + Section B 20m).
+"Most questions will be quantitative, though some questions may not have a quantitative
+element." [p.41]
+"For SL only, one of the stimulus options in section B of the examination may be on a
+social enterprise." [p.42]
+Syllabus scope: SL = Units 1–5 excluding HL extension; HL = Units 1–5 including HL extension.
+
+Section A — Quantitative focus, structured, analytic markscheme. AOs: AO1, AO2, AO4.
+  AO3 is ABSENT from Section A. AO3 command terms CANNOT appear here.
+  SL Section A = 20m; HL Section A = 30m.
+
+Section B — Both SL and HL = 20m. AOs: AO1, AO2, AO3, AO4.
+  Structured sub-questions + 10m extended response. 10m extended response uses markbands.
+  AO3 IS present in Section B.
+
+PAPER 3 — HL ONLY. [p.42]
+Duration: 1h15m. Weighting: 25%. Total: 25 marks.
+"Paper 3 will be about a social enterprise and requires students to identify and describe a human
+need and the potential organizational challenges facing the social entrepreneur wanting to meet
+this need. Further to this, students are required to write a decision-making document that includes
+a business recommendation. Only HL students will sit this examination." [p.42]
+Syllabus scope: Units 1–5 including HL extension.
+
+Three compulsory questions — fixed marks:
+  Q1: 2 marks. AO1 only. Analytic markscheme.
+      "AO1 questions — assesses students' ability to describe the human need in the stimulus." [p.42]
+  Q2: 6 marks. AO1 + AO2. Analytic markscheme.
+      "AO2 questions — assesses students' ability to explain the key challenges." [p.42]
+  Q3: 17 marks. AO1+AO2+AO3+AO4. ASSESSMENT CRITERIA A/B/C/D (NOT markbands).
+      "For question 3 the following assessment criteria will be used." [p.48]
+      Criteria sum: A(4) + B(4) + C(6) + D(3) = 17. ✓
+
+HARD RULES:
+  P3 Q3 = exactly 17 marks. Any other mark value → FAIL.
+  P3 = HL only. SL questions must not target P3.
+  SL weightings: 35+35+30=100% ✓. HL weightings: 25+30+25+20=100% ✓.
+`;
+
+// EVIDENCE: p. 18 — "AO1: Knowledge and understanding — Demonstrate knowledge and understanding of: business management tools and theories; course topics and concepts; business problems, issues and decisions; HL extension topics (HL only)."
+// EVIDENCE: p. 18 — "AO2: Application and analysis — Apply and analyse: business management tools and theories; course topics and concepts; business problems, issues and decisions; business decisions and issues through the selection and use of appropriate data; HL extension topics (HL only)."
+// EVIDENCE: p. 18 — "AO3: Synthesis and evaluation — Synthesize and evaluate: business management tools and theories; course topics and concepts; business problems, issues and decisions; stakeholder interests to reach informed business decisions; recommendations for competing future strategic options (HL only); HL extension topics (HL only)."
+// EVIDENCE: p. 18 — "AO4: Use and application of appropriate skills — Select and apply relevant business management tools, theories and concepts to support research into a business issue or problem. Select, interpret and analyse business materials from a range of primary and secondary sources. Create well-structured materials using business management terminology. Communicate analysis, evaluation and conclusions of research effectively."
+const ASSESSMENT_OBJECTIVES_IB_BM = `
+━━━ BLOCK 2: ASSESSMENT OBJECTIVES ━━━
+
+(Verbatim from page 18)
+
+"AO1: Knowledge and understanding — Demonstrate knowledge and understanding of:
+business management tools and theories; course topics and concepts; business problems,
+issues and decisions; HL extension topics (HL only)."
+
+"AO2: Application and analysis — Apply and analyse: business management tools and theories;
+course topics and concepts; business problems, issues and decisions; business decisions and
+issues through the selection and use of appropriate data; HL extension topics (HL only)."
+
+"AO3: Synthesis and evaluation — Synthesize and evaluate: business management tools and
+theories; course topics and concepts; business problems, issues and decisions; stakeholder
+interests to reach informed business decisions; recommendations for competing future strategic
+options (HL only); HL extension topics (HL only)."
+
+"AO4: Use and application of appropriate skills — Select and apply relevant business management
+tools, theories and concepts to support research into a business issue or problem. Select,
+interpret and analyse business materials from a range of primary and secondary sources. Create
+well-structured materials using business management terminology. Communicate analysis, evaluation
+and conclusions of research effectively."
+`;
+
+// EVIDENCE: p. 19 (AO1 depth) — "These terms require students to learn and comprehend the meaning of information."
+// EVIDENCE: p. 19 (AO2 depth) — "These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."
+// EVIDENCE: p. 20 (AO3 depth) — "These terms require students to rearrange component ideas into a new whole and make judgments based on evidence or a set of criteria."
+// EVIDENCE: p. 20 (AO4 depth) — "These terms require students to demonstrate the selection and use of subject-specific skills and techniques."
+const AO_DEPTH_DESCRIPTORS_IB_BM = `
+━━━ BLOCK 3: AO DEPTH DESCRIPTORS ━━━
+
+(Verbatim from pages 19–20)
+
+AO1 — Knowledge and understanding [p.19]:
+  "These terms require students to learn and comprehend the meaning of information."
+
+AO2 — Application and analysis [p.19]:
+  "These terms require students to use their knowledge and skills to break down ideas
+  into simpler parts and to see how the parts relate."
+
+AO3 — Synthesis and evaluation [p.20]:
+  "These terms require students to rearrange component ideas into a new whole and make
+  judgments based on evidence or a set of criteria."
+
+AO4 — Use and application of appropriate skills [p.20]:
+  "These terms require students to demonstrate the selection and use of subject-specific
+  skills and techniques."
+`;
+
+// EVIDENCE: p. 19 — AO × Paper matrix (6 columns); AO3 absent from P1 Sec A and P2 Sec A.
+const AO_PAPER_MATRIX_IB_BM = `
+━━━ BLOCK 4: AO × PAPER MATRIX ━━━
+
+(Verbatim from page 19 — 6 columns)
+
+Assessment objective | P1 Sec A | P1 Sec B | P2 Sec A | P2 Sec B | P3 (HL) | IA
+AO1 Knowledge        |    ✓     |    ✓     |    ✓     |    ✓     |    ✓    | ✓
+AO2 Application      |    ✓     |    ✓     |    ✓     |    ✓     |    ✓    | ✓
+AO3 Synthesis        |    —     |    ✓     |    —     |    ✓     |    ✓    | ✓
+AO4 Skills           |    ✓     |    ✓     |    ✓     |    ✓     |    ✓    | ✓
+
+VERIFIER HARD RULE: AO3 is ABSENT from P1 Section A and P2 Section A.
+Any question in P1 Sec A or P2 Sec A with an AO3 command term → FAIL (paper_fit='wrong_paper').
+"Section A will be assessed against AO1, AO2 and AO4 levels whereas Section B will be
+assessed against all four levels including AO3." [p.42]
+`;
+
+// EVIDENCE: p. 42 — "Examination questions may use any command term from the assessment objective level specified in the 'Syllabus content' section, or a less demanding command term from a lower level. For example, if the assessment objective level for a topic is AO2, an examination question could contain any of the command terms for AO2, such as 'explain', 'distinguish', and so on. Alternatively, the examination question could contain a command term from AO1, such as 'describe'. However, a more demanding command term, such as 'evaluate', from a higher level (AO3 in this case) cannot be used."
+const AO_PROGRESSION_RULE_IB_BM = `
+━━━ BLOCK 5: AO PROGRESSION RULE ━━━
+
+(Verbatim from page 42)
+
+"Examination questions may use any command term from the assessment objective level specified
+in the 'Syllabus content' section, or a less demanding command term from a lower level. For
+example, if the assessment objective level for a topic is AO2, an examination question could
+contain any of the command terms for AO2, such as 'explain', 'distinguish', and so on.
+Alternatively, the examination question could contain a command term from AO1, such as
+'describe'. However, a more demanding command term, such as 'evaluate', from a higher level
+(AO3 in this case) cannot be used."
+
+Encoding (p.42):
+  topic_ao_level = N → command term must be from AO ≤ N.
+  AO4 is PARALLEL (use-of-skills), not progressive — AO4 command terms are valid alongside any topic AO.
+  If topic_ao_level = AO1, using 'Evaluate' (AO3) → FAIL.
+  If topic_ao_level = AO2, using 'Discuss' (AO3) → FAIL.
+  'Calculate', 'Draw', 'Construct' (AO4) are always valid regardless of topic AO level.
+`;
+
+// EVIDENCE: p. 67 — "Students should be familiar with the following key terms and phrases used in examination questions, which are to be understood as described below. Although these terms will be used frequently in examination questions, other terms may be used to direct students to present an argument in a specific way."
+// EVIDENCE: pp. 67–68 — 31 terms: AO1×6, AO2×7, AO3×9, AO4×9 = 31 ✓
+// CRITICAL DRIFT: 'Comment' = AO2 in IB BM (NOT AO3). 'Calculate' = AO4 (NOT AO2).
+const COMMAND_TERMS_IB_BM = `
+━━━ BLOCK 6: COMMAND TERMS GLOSSARY ━━━
+
+(Verbatim from pages 67–68. 31 terms total: 6+7+9+9 = 31 ✓)
+
+"Students should be familiar with the following key terms and phrases used in examination
+questions, which are to be understood as described below." [p.67]
+
+CRITICAL DRIFT WARNINGS:
+  'Comment' is AO2 in IB Business Management — NOT AO3. Do NOT tag it AO3.
+  'Calculate' is AO4 in IB BM — NOT AO2. Do NOT tag it AO2.
+
+AO1 terms (6):
+  Define         | AO1 | Give the precise meaning of a word, phrase, concept or physical quantity.
+  Describe       | AO1 | Give a detailed account.
+  Identify       | AO1 | Provide an answer from a number of possibilities.
+  List           | AO1 | Give a sequence of brief answers with no explanation.
+  Outline        | AO1 | Give a brief account or summary.
+  State          | AO1 | Give a specific name, value or other brief answer without explanation or calculation.
+
+AO2 terms (7):
+  Analyse        | AO2 | Break down in order to bring out the essential elements or structure.
+  Apply          | AO2 | Use an idea, equation, principle, theory or law in relation to a given problem or issue.
+  Comment        | AO2 | Give a judgment based on a given statement or result of a calculation.
+  Demonstrate    | AO2 | Make clear by reasoning or evidence, illustrating with examples or practical application.
+  Distinguish    | AO2 | Make clear the differences between two or more concepts or items.
+  Explain        | AO2 | Give a detailed account including reasons or causes.
+  Suggest        | AO2 | Propose a solution, hypothesis or other possible answer.
+
+AO3 terms (9):
+  Compare              | AO3 | Give an account of the similarities between two (or more) items or situations, referring to both (all) of them throughout.
+  Compare and contrast | AO3 | Give an account of similarities and differences between two (or more) items or situations, referring to both (all) of them throughout.
+  Contrast             | AO3 | Give an account of the differences between two (or more) items or situations, referring to both (all) of them throughout.
+  Discuss              | AO3 | Offer a considered and balanced review that includes a range of arguments, factors or hypotheses. Opinions or conclusions should be presented clearly and supported by appropriate evidence.
+  Evaluate             | AO3 | Make an appraisal by weighing up the strengths and limitations.
+  Examine              | AO3 | Consider an argument or concept in a way that uncovers the assumptions and interrelationships of the issue.
+  Justify              | AO3 | Give valid reasons or evidence to support an answer or conclusion.
+  Recommend            | AO3 | Present an advisable course of action with appropriate supporting evidence/reason in relation to a given situation, problem or issue.
+  To what extent       | AO3 | Consider the merits or otherwise of an argument or concept. Opinions and conclusions should be presented clearly and supported with appropriate evidence and sound argument.
+
+AO4 terms (9):
+  Annotate    | AO4 | Add brief notes to a diagram or graph.
+  Calculate   | AO4 | Obtain a numerical answer showing the relevant stages in the working.
+  Complete    | AO4 | Add missing information/data.
+  Construct   | AO4 | Display information in a diagrammatic or logical form.
+  Determine   | AO4 | Obtain the only possible answer.
+  Draw        | AO4 | Represent by means of a labelled, accurate diagram or graph, using a pencil. A ruler (straight edge) should be used for straight lines. Diagrams should be drawn to scale. Graphs should have points correctly plotted (if appropriate) and joined in a straight line or smooth curve.
+  Label       | AO4 | Add labels to a diagram.
+  Plot        | AO4 | Mark the position of points on a diagram.
+  Prepare     | AO4 | Put given data or information from a stimulus/source into a suitable format.
+`;
+
+// EVIDENCE: p. 44 / p. 47 (band 0) — "The work does not reach a standard described by the descriptor."
+// EVIDENCE: p. 44 / pp. 47–48 (band 1–2) — "Little understanding of the demands of the question."
+// EVIDENCE: p. 44 / p. 48 (band 9–10) — "Clear focus on addressing the demands of the question. Relevant and accurate use of business management tools and theories. Relevant information from the stimulus material is integrated effectively to support the argument. Arguments are substantiated and balanced, with an explanation of the limitations of the case study or stimulus material."
+const MARKBANDS_IB_BM_P1_P2_SEC_B_10MARK = `
+━━━ BLOCK 7: MARKBANDS — P1 AND P2 SECTION B 10-MARK EXTENDED RESPONSE ━━━
+
+SCOPE: These markbands apply ONLY to the 10-mark extended response in Section B of Papers 1 and 2.
+Section A structured questions use a question-specific analytic markscheme — NOT these markbands.
+Paper 3 Q3 uses assessment criteria A/B/C/D (see Block 8) — NOT these markbands.
+SL and HL markband text is textually identical. [SL: p.44 / HL: pp.47–48]
+
+Band 0:   "The work does not reach a standard described by the descriptor." [p.44/p.47]
+
+Band 1–2: "Little understanding of the demands of the question. Little use of business management
+tools and theories; any tools and theories that are used are irrelevant or used inaccurately.
+Little or no reference to the stimulus material. No arguments are made." [p.44/pp.47–48]
+
+Band 3–4: "Some understanding of the demands of the question. Some use of business management
+tools and theories, but these are mostly lacking in accuracy and relevance. Superficial use of
+information from the stimulus material, often not going beyond the name of the person(s) or name
+of the organization. Any arguments made are mostly unsubstantiated." [p.44/p.48]
+
+Band 5–6: "The response indicates an understanding of the demands of the question, but these
+demands are only partially addressed. Some relevant and accurate use of business management tools
+and theories. Some relevant use of information from the stimulus material that goes beyond the
+name of the person(s) or name of the organization but does not effectively support the argument.
+Arguments are substantiated but are mostly one-sided." [p.44/p.48]
+
+Band 7–8: "Mostly addresses the demands of the question. Mostly relevant and accurate use of
+business management tools and theories. Information from the stimulus material is generally used
+to support the argument, although there is some lack of clarity or relevance in some places.
+Arguments are substantiated and have some balance." [p.44/p.48]
+
+Band 9–10: "Clear focus on addressing the demands of the question. Relevant and accurate use of
+business management tools and theories. Relevant information from the stimulus material is
+integrated effectively to support the argument. Arguments are substantiated and balanced, with an
+explanation of the limitations of the case study or stimulus material." [p.44/p.48]
+`;
+
+// EVIDENCE: p. 48 — "For question 1 and question 2 an analytic markscheme will be used. For question 3 the following assessment criteria will be used."
+// EVIDENCE: p. 48 — "Criterion A: Use of resource materials — To what extent does the student use the resource materials provided to effectively support the recommended plan of action?"
+// EVIDENCE: p. 49 — "Criterion B: Business management tools and theories — To what extent does the student's plan of action effectively apply appropriate business management tools and theories?"
+// EVIDENCE: p. 49 — "Criterion C: Evaluation — To what extent does the student effectively evaluate the expected impact of their plan of action on the relevant areas of the business?"
+// EVIDENCE: p. 49 — "Criterion D: Sequencing of ideas and plan of action — To what extent are the student's ideas and plan of action sequenced in a clear and coherent manner?"
+// Cross-check: A(4) + B(4) + C(6) + D(3) = 17 ✓
+const P3_HL_Q3_CRITERIA_IB_BM = `
+━━━ BLOCK 8: PAPER 3 Q3 ASSESSMENT CRITERIA ━━━
+
+SCOPE: Criteria apply ONLY to Q3 of Paper 3 (HL). Q1 and Q2 use analytic markschemes.
+"For question 1 and question 2 an analytic markscheme will be used.
+For question 3 the following assessment criteria will be used." [p.48]
+Criteria sum: A(4) + B(4) + C(6) + D(3) = 17 marks ✓
+
+Criterion A: Use of resource materials (0–4) [p.48]
+"Criterion A: Use of resource materials — To what extent does the student use the resource
+materials provided to effectively support the recommended plan of action?"
+  0 — "The response does not reach a standard described by the descriptors below."
+  1 — "The response makes limited reference to the resource materials provided or the resources
+       identified have been used ineffectively to support the recommended plan of action."
+  2 — "The response makes some reference to the resource materials provided or the resources
+       identified have been used in a superficial way to support the recommended plan of action."
+  3 — "The response makes reference to most of the resource materials provided to support the
+       recommended plan of action."
+  4 — "The response makes reference to all resource materials provided to effectively support
+       the recommended plan of action."
+
+Criterion B: Business management tools and theories (0–4) [p.49]
+"Criterion B: Business management tools and theories — To what extent does the student's plan of
+action effectively apply appropriate business management tools and theories?"
+  0 — "The work does not reach a standard described by the descriptors below."
+  1 — "The response demonstrates limited application of appropriate business management tools
+       and theories."
+  2 — "The response superficially applies appropriate business management tools and theories."
+  3 — "The response satisfactorily applies appropriate business management tools and theories."
+  4 — "The response effectively applies appropriate business management tools and theories."
+
+Criterion C: Evaluation (0–6) [p.49]
+"Criterion C: Evaluation — To what extent does the student effectively evaluate the expected
+impact of their plan of action on the relevant areas of the business?"
+  0   — "The work does not reach a standard described by the descriptors below."
+  1–2 — "The response is largely descriptive with limited analysis or evaluation of the expected
+          impact of their plan of action. There is limited reference to the relevant areas of the
+          business."
+  3–4 — "The response analyses the expected impact of their plan of action with some reference
+          to the relevant areas of the business. There is some evidence of evaluation but it is
+          not sustained."
+  5–6 — "The student effectively evaluates the expected impact of their plan of action on the
+          relevant areas of the business and considers the trade-offs between those areas."
+
+Criterion D: Sequencing of ideas and plan of action (0–3) [p.49]
+"Criterion D: Sequencing of ideas and plan of action — To what extent are the student's ideas
+and plan of action sequenced in a clear and coherent manner?"
+  0 — "The response does not reach a standard described by the descriptors below."
+  1 — "The response is limited in its sequencing of ideas and plan of action."
+  2 — "The response consists of ideas and a plan of action but these are not always sequenced
+       in a clear manner."
+  3 — "The response effectively sequences appropriate ideas and a plan of action in a clear and
+       coherent manner."
+`;
+
+// EVIDENCE: p. 43 — "While all questions requiring a calculator can be answered fully using a four-function (plus, minus, multiply, divide) calculator, graphic display calculators (GDCs) are allowed during the examination."
+const CALCULATOR_RULE_IB_BM = `
+━━━ BLOCK 9: CALCULATOR POLICY ━━━
+
+(Verbatim from page 43)
+
+"While all questions requiring a calculator can be answered fully using a four-function
+(plus, minus, multiply, divide) calculator, graphic display calculators (GDCs) are allowed
+during the examination."
+
+Generator rule: P2 quantitative content must be solvable on a four-function calculator.
+No logarithms, no statistical regressions, no algebraic solvers required.
+`;
+
+// EVIDENCE: pp. 21–22 — 5 units + Business Management Toolkit (cross-cutting, not a 6th unit)
+// EVIDENCE: pp. 21–22 — HL-only sub-topics at sub-topic level: 2.5, 2.7, 3.6, 3.9, 4.3, 4.6, 5.3, 5.6, 5.7, 5.8, 5.9
+const SYLLABUS_STRUCTURE_IB_BM = `
+━━━ BLOCK 10: SYLLABUS STRUCTURE AND HL-ONLY SUB-TOPICS ━━━
+
+(From pages 21–22. Totals: SL 150 hrs / HL 240 hrs.)
+
+5 units + Business Management Toolkit (cross-cutting analytical tools, NOT a 6th unit).
+
+Unit 1 — Introduction to business management (SL 20h, HL 20h). No HL-only sub-topics.
+Unit 2 — Human resource management (SL 20h, HL 35h).
+  HL-only: 2.5 Organizational (corporate) culture · 2.7 Industrial/employee relations
+Unit 3 — Finance and accounts (SL 30h, HL 45h).
+  HL-only: 3.6 Efficiency ratio analysis · 3.9 Budgets
+Unit 4 — Marketing (SL 30h, HL 35h).
+  HL-only: 4.3 Sales forecasting · 4.6 International marketing
+Unit 5 — Operations management (SL 15h, HL 45h).
+  HL-only: 5.3 Lean production and quality management · 5.6 Production planning
+           5.7 Crisis management and contingency planning · 5.8 Research and development
+           5.9 Management information systems
+Business Management Toolkit — cross-cutting (SL 10h, HL 35h). Appears across all units.
+
+HL-only sub-topic list (full): 2.5, 2.7, 3.6, 3.9, 4.3, 4.6, 5.3, 5.6, 5.7, 5.8, 5.9
+
+CRITICAL: HL extension is sub-topic-level in IB BM (NOT unit-level as in IB Econ).
+SL students can study Units 1–5 but are EXCLUDED from the 11 HL-only sub-topics listed above.
+P1 also excludes all HL extension material regardless of student level.
+
+OUT OF SCOPE: Internal Assessment (Business Research Project), TOK, Extended Essay.
+P3 integrates all units including HL extension — HL students only.
+`;
+
+export const IB_BM_V3 = `IB BUSINESS MANAGEMENT ASSESSMENT FRAMEWORK
+Source: Business_Management_Subject_Guide.pdf (First assessment 2024, © IBO 2022)
+Guide version tag: IB_BM_2024
+Evidence: verbatim from pages 18–22, 41–50, 67–68 of the guide.
+${PAPER_STRUCTURE_IB_BM}
+${ASSESSMENT_OBJECTIVES_IB_BM}
+${AO_DEPTH_DESCRIPTORS_IB_BM}
+${AO_PAPER_MATRIX_IB_BM}
+${AO_PROGRESSION_RULE_IB_BM}
+${COMMAND_TERMS_IB_BM}
+${MARKBANDS_IB_BM_P1_P2_SEC_B_10MARK}
+${P3_HL_Q3_CRITERIA_IB_BM}
+${CALCULATOR_RULE_IB_BM}
+${SYLLABUS_STRUCTURE_IB_BM}`;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IB_BM_V3 runtime lookups — deterministic rule enforcement (no Claude API)
+// ─────────────────────────────────────────────────────────────────────────────
+
+// EVIDENCE: pp. 67–68 — authoritative AO per command term (31 terms: 6+7+9+9 = 31 ✓)
+// comment=AO2 (NOT AO3). calculate=AO4 (NOT AO2). Common training-data drift targets.
+export const COMMAND_TERM_AO_IB_BM: Record<string, string> = {
+  // AO1 (6)
+  define: 'AO1', describe: 'AO1', identify: 'AO1', list: 'AO1', outline: 'AO1', state: 'AO1',
+  // AO2 (7)
+  analyse: 'AO2', apply: 'AO2', comment: 'AO2', demonstrate: 'AO2',
+  distinguish: 'AO2', explain: 'AO2', suggest: 'AO2',
+  // AO3 (9)
+  compare: 'AO3', compare_and_contrast: 'AO3', contrast: 'AO3', discuss: 'AO3',
+  evaluate: 'AO3', examine: 'AO3', justify: 'AO3', recommend: 'AO3', to_what_extent: 'AO3',
+  // AO4 (9)
+  annotate: 'AO4', calculate: 'AO4', complete: 'AO4', construct: 'AO4', determine: 'AO4',
+  draw: 'AO4', label: 'AO4', plot: 'AO4', prepare: 'AO4',
+};
+
+// EVIDENCE: pp. 21–22 — HL-only sub-topics are at sub-topic level (not unit level)
+export const HL_ONLY_SUBTOPICS_IB_BM = new Set([
+  '2.5', '2.7', '3.6', '3.9', '4.3', '4.6', '5.3', '5.6', '5.7', '5.8', '5.9',
+]);
+
+// AO rank for progression check — AO4 is parallel (99 = always valid), not progressive
+const AO_RANK_IB_BM: Record<string, number> = { AO1: 1, AO2: 2, AO3: 3, AO4: 99 };
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IB_BM_V3 deterministic validation — exported for meta-tests (Rule 23)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface BMQuestionInput {
+  command_term:    string;   // lowercase, underscores for spaces (e.g. 'to_what_extent')
+  ao_level:        string;   // 'AO1' | 'AO2' | 'AO3' | 'AO4'
+  paper:           string;   // 'P1' | 'P2' | 'P3'
+  section?:        string;   // 'SEC_A' | 'SEC_B' | 'Q1' | 'Q2' | 'Q3'
+  marks:           number;
+  level:           string;   // 'SL' | 'HL'
+  subtopic_code?:  string;   // e.g. '3.9' — checked against HL_ONLY_SUBTOPICS_IB_BM
+  topic_ao_level?: string;   // AO level of the topic from syllabus content, if known
+}
+
+export interface BMViolation {
+  rule:     string;
+  message:  string;
+  severity: 'major' | 'minor';
+}
+
+// Returns violations; empty array = valid. Does not call Claude.
+export function validateBMQuestion(q: BMQuestionInput): BMViolation[] {
+  const violations: BMViolation[] = [];
+  const term   = q.command_term.toLowerCase().replace(/ /g, '_');
+  const termAO = COMMAND_TERM_AO_IB_BM[term];
+
+  // Rule 1 — AO alignment: command term's AO must match stated ao_level [pp.67–68]
+  if (termAO && termAO !== q.ao_level) {
+    violations.push({
+      rule:     'ao_alignment',
+      message:  `"${q.command_term}" is ${termAO} per guide pp.67–68, but question is tagged ${q.ao_level}`,
+      severity: 'major',
+    });
+  }
+
+  // Rule 2 — AO progression: topic AO must be ≥ command term AO; AO4 is parallel [p.42]
+  if (q.topic_ao_level && termAO && termAO !== 'AO4') {
+    const topicRank = AO_RANK_IB_BM[q.topic_ao_level] ?? 0;
+    const termRank  = AO_RANK_IB_BM[termAO]            ?? 0;
+    if (termRank > topicRank) {
+      violations.push({
+        rule:     'ao_progression',
+        message:  `Topic is ${q.topic_ao_level} but "${q.command_term}" is ${termAO} — command term exceeds topic AO level [p.42]`,
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 3 — AO3 absent from P1 Sec A and P2 Sec A [p.19 matrix, p.42]
+  if (q.section === 'SEC_A' && (q.paper === 'P1' || q.paper === 'P2')) {
+    if (q.ao_level === 'AO3' || termAO === 'AO3') {
+      violations.push({
+        rule:     'ao3_absent_sec_a',
+        message:  `AO3 command terms are invalid in ${q.paper} Section A — see guide p.19 AO × Paper matrix`,
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 4 — P3 structural rules [p.42 / pp.47–50]
+  if (q.paper === 'P3') {
+    if (q.level === 'SL') {
+      violations.push({
+        rule:     'p3_hl_only',
+        message:  'P3 is HL only — "Only HL students will sit this examination." [p.42]',
+        severity: 'major',
+      });
+    }
+    if (q.section === 'Q1' && q.marks !== 2) {
+      violations.push({ rule: 'p3_q1_marks', message: `P3 Q1 must be 2 marks (got ${q.marks}) [p.42]`, severity: 'major' });
+    }
+    if (q.section === 'Q2' && q.marks !== 6) {
+      violations.push({ rule: 'p3_q2_marks', message: `P3 Q2 must be 6 marks (got ${q.marks}) [p.42]`, severity: 'major' });
+    }
+    if (q.section === 'Q3' && q.marks !== 17) {
+      violations.push({
+        rule:     'p3_q3_marks',
+        message:  `P3 Q3 must be 17 marks — criteria A(4)+B(4)+C(6)+D(3)=17 [pp.48–49]. Got ${q.marks}.`,
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 5 — HL-only sub-topic checks [pp.21–22]
+  if (q.subtopic_code && HL_ONLY_SUBTOPICS_IB_BM.has(q.subtopic_code)) {
+    if (q.level === 'SL') {
+      violations.push({
+        rule:     'sl_hl_only_topic',
+        message:  `Sub-topic ${q.subtopic_code} is HL-only — SL questions must not target it [pp.21–22]`,
+        severity: 'major',
+      });
+    }
+    if (q.paper === 'P1') {
+      violations.push({
+        rule:     'p1_no_hl_extension',
+        message:  `P1 excludes HL extension material — sub-topic ${q.subtopic_code} is HL-only [p.41]`,
+        severity: 'major',
+      });
+    }
+  }
+
+  return violations;
+}
+
+// Deterministic verdict — ALL correct → pass; ANY major fail → fail; else → borderline. [Rule 23]
+// Throws if reasoning string implies pass but criteria contain a major fail (contradiction guard).
+export function applyBMVerdict(result: VerificationResult): 'pass' | 'borderline' | 'fail' {
+  const isMajorFail =
+    result.syllabus_match   === 'out_of_syllabus' ||
+    result.command_term_fit === 'inappropriate'   ||
+    result.factual_accuracy === 'major_error';
+
+  const isAllCorrect =
+    result.syllabus_match   === 'in_syllabus' &&
+    result.command_term_fit === 'correct'     &&
+    result.ao_alignment     === 'correct'     &&
+    result.paper_fit        === 'correct'     &&
+    result.factual_accuracy === 'accurate';
+
+  const computed: 'pass' | 'borderline' | 'fail' =
+    isMajorFail ? 'fail' : isAllCorrect ? 'pass' : 'borderline';
+
+  // Contradiction guard: reasoning implies pass but criteria say fail [Rule 23b]
+  const reasoningImpliesPass = /\bpass(es|ed)?\b/i.test(result.reasoning);
+  if (reasoningImpliesPass && isMajorFail) {
+    throw new Error(
+      `BM verdict contradiction: reasoning implies "pass" but criteria contain a major fail. ` +
+      `syllabus=${result.syllabus_match} | term=${result.command_term_fit} | ` +
+      `ao=${result.ao_alignment} | paper=${result.paper_fit} | fact=${result.factual_accuracy}`,
+    );
+  }
+
+  return computed;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Framework registry
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ASSESSMENT_FRAMEWORKS: Record<string, string> = {
-  IB_ECONOMICS: IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V3,
-  IB_BUSINESS:  IB_BUSINESS_ASSESSMENT_FRAMEWORK_V1,
+  IB_ECONOMICS:           IB_ECONOMICS_ASSESSMENT_FRAMEWORK_V3,
+  IB_BUSINESS:            IB_BUSINESS_ASSESSMENT_FRAMEWORK_V1,
+  IB_BUSINESS_MANAGEMENT: IB_BM_V3,
 };
 
 const FRAMEWORK_VERSIONS: Record<string, string> = {
-  IB_ECONOMICS: 'V3',
-  IB_BUSINESS:  'V1',
+  IB_ECONOMICS:           'V3',
+  IB_BUSINESS:            'V1',
+  IB_BUSINESS_MANAGEMENT: 'IB_BM_2024',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -561,6 +1109,21 @@ pass = every criterion is 'correct', 'accurate', or 'in_syllabus'; \
 fail = any criterion is 'out_of_syllabus', 'inappropriate', or 'major_error'; \
 borderline = anything else. \
 Keep reasoning to 1–3 sentences.`,
+
+  IB_BUSINESS_MANAGEMENT: `You are a rigorous IB Business Management senior examiner and syllabus validator (guide: IB_BM_2024). \
+Score each candidate question on five criteria using the assessment framework in the user message. \
+CRITICAL DRIFT RULES (enforce strictly — common training-data errors): \
+(1) 'comment' is AO2 — NOT AO3. If 'comment' is tagged AO3 → ao_alignment='wrong_level'. \
+(2) 'calculate' is AO4 — NOT AO2. If 'calculate' is tagged AO2 → ao_alignment='wrong_level'. \
+(3) AO3 command terms are INVALID in P1 Section A and P2 Section A → paper_fit='wrong_paper'. \
+(4) P3 Q3 must be exactly 17 marks (criteria A+B+C+D = 4+4+6+3). Any other value → command_term_fit='wrong_marks'. \
+(5) HL-only sub-topics (2.5, 2.7, 3.6, 3.9, 4.3, 4.6, 5.3, 5.6, 5.7, 5.8, 5.9) cannot appear in SL questions. \
+(6) P1 excludes HL extension material regardless of student level. \
+DECISION RULE (deterministic — no exceptions): \
+If syllabus_match='in_syllabus' AND command_term_fit='correct' AND ao_alignment='correct' \
+AND paper_fit='correct' AND factual_accuracy='accurate', then overall MUST be 'pass'. \
+If any criterion is 'out_of_syllabus', 'inappropriate', or 'major_error', overall MUST be 'fail'. \
+Anything else is 'borderline'. Keep reasoning to 1–3 sentences.`,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -810,4 +1373,7 @@ async function main() {
   if (tallies.error) console.log(`  errors:     ${tallies.error}  (verification_status left as 'unverified')`);
 }
 
-main().catch(err => { console.error('Fatal:', err); process.exit(1); });
+const isMain = process.argv[1] &&
+  (process.argv[1].includes('verify-seed-questions.ts') ||
+   process.argv[1].includes('verify-seed-questions.js'));
+if (isMain) main().catch(err => { console.error('Fatal:', err); process.exit(1); });

@@ -164,9 +164,71 @@ export const IB_BUSINESS_CONFIG: SubjectConfig = {
   ],
 };
 
+export const IB_BUSINESS_MANAGEMENT_CONFIG: SubjectConfig = {
+  subject:      'IB_BUSINESS_MANAGEMENT',
+  lessonPattern: 'IB_BM_%',
+  totalCount:    57,
+  examinerPersona:
+    'You are an IB Business Management senior examiner (guide: IB_BM_2024). You write wholly ' +
+    'original questions — never from any IBO past paper. ' +
+    'STRUCTURAL RULES (non-negotiable): ' +
+    '(1) AO3 command terms (compare, contrast, discuss, evaluate, examine, justify, recommend, ' +
+    'to what extent) are FORBIDDEN in P1 Section A and P2 Section A — those sections use ' +
+    'AO1, AO2, AO4 only. ' +
+    '(2) Single-AO sub-parts use exactly ONE command term — never compound two terms ' +
+    '(e.g. "Analyse and evaluate" is wrong; pick one). ' +
+    '(3) P1 uses a pre-released case study; P1 excludes HL extension material. Generator may ' +
+    'reference pre-released statement framing but must not require HL-only sub-topic knowledge. ' +
+    '(4) P2 Section A has a quantitative focus — all calculate questions must be solvable on a ' +
+    'four-function (plus, minus, multiply, divide) calculator only. ' +
+    '(5) P3 (HL only) is about a social enterprise. Fixed mark structure: Q1=2m (AO1, state/define), ' +
+    'Q2=6m (AO1/AO2, explain/analyse), Q3=17m (criteria-based recommendation — NOT markbands). ' +
+    'Q3 assessment criteria: A resource use (0–4), B tools (0–4), C evaluation (0–6), ' +
+    'D sequencing (0–3) = 17 total. Q3 command term: recommend or to what extent. ' +
+    '(6) HL-only sub-topics are 2.5, 2.7, 3.6, 3.9, 4.3, 4.6, 5.3, 5.6, 5.7, 5.8, 5.9 — ' +
+    'sub-topic-level filtering, NOT unit-level. SL questions must not target these. ' +
+    'Business Management Toolkit is cross-cutting (not a 6th unit) — toolkit questions may ' +
+    'reference tools from any unit context. ' +
+    "'comment' is AO2 (not AO3). 'calculate' is AO4 (not AO2).",
+  specs: [
+    // ── P1 pre-released case study — level='SL' (P1 identical for SL+HL) ─────
+    // Section A: AO1/AO2/AO4 only (AO3 FORBIDDEN here)
+    { command_term: 'define',         count: 2, marks: 2,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
+    { command_term: 'outline',        count: 3, marks: 4,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
+    { command_term: 'analyse',        count: 3, marks: 6,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
+    // Section B: 10m extended response, AO3 (markbands)
+    { command_term: 'discuss',        count: 2, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    { command_term: 'evaluate',       count: 2, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    { command_term: 'to_what_extent', count: 2, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    { command_term: 'examine',        count: 1, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    // ── P2 SL unseen stimulus — Section A (quantitative focus, AO3 FORBIDDEN) ─
+    { command_term: 'state',          count: 3, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'describe',       count: 3, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'explain',        count: 3, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'calculate',      count: 3, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    // P2 SL Section B: 10m extended response (markbands, AO3)
+    { command_term: 'evaluate',       count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_sec_b'        },
+    { command_term: 'to_what_extent', count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_sec_b'        },
+    // ── P2 HL — larger Section A (30m vs 20m); Section B identical to SL ─────
+    { command_term: 'describe',       count: 2, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'explain',        count: 2, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'calculate',      count: 2, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'evaluate',       count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
+    { command_term: 'discuss',        count: 1, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
+    { command_term: 'to_what_extent', count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
+    // ── P3 HL only — social enterprise stimulus; fixed 2/6/17 structure ───────
+    { command_term: 'state',          count: 5, marks: 2,  ao_level: 'AO1', paper: 'P3', level: 'HL', question_type: 'P3_q1'           },
+    { command_term: 'explain',        count: 5, marks: 6,  ao_level: 'AO2', paper: 'P3', level: 'HL', question_type: 'P3_q2'           },
+    { command_term: 'recommend',      count: 4, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_q3_criteria'  },
+    { command_term: 'to_what_extent', count: 1, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_q3_criteria'  },
+    // ── Totals: P1=15, P2_SL=13, P2_HL=9, P3=15 | SL=28, HL=29 | grand=57 ───
+  ],
+};
+
 const SUBJECT_CONFIGS: Record<string, SubjectConfig> = {
-  IB_ECONOMICS: IB_ECONOMICS_CONFIG,
-  IB_BUSINESS:  IB_BUSINESS_CONFIG,
+  IB_ECONOMICS:           IB_ECONOMICS_CONFIG,
+  IB_BUSINESS:            IB_BUSINESS_CONFIG,
+  IB_BUSINESS_MANAGEMENT: IB_BUSINESS_MANAGEMENT_CONFIG,
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
