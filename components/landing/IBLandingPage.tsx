@@ -232,7 +232,7 @@ export default function IBLandingPage() {
               <div className="pain-card">
                 <div className="stat">€90<span className="unit">/ hour</span></div>
                 <div>
-                  <div className="label">Tutors are priced like therapists</div>
+                  <div className="label">That&apos;s an hour with Lanterna &mdash; Gradd is a month</div>
                   <div className="desc">Most families spend €3,500–€9,000 over the two years. And that&apos;s for two hours a week — not full coverage.</div>
                 </div>
               </div>
