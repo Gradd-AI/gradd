@@ -167,7 +167,7 @@ export const IB_BUSINESS_CONFIG: SubjectConfig = {
 export const IB_BUSINESS_MANAGEMENT_CONFIG: SubjectConfig = {
   subject:      'IB_BUSINESS_MANAGEMENT',
   lessonPattern: 'IB_BM_%',
-  totalCount:    57,
+  totalCount:    87,
   examinerPersona:
     'You are an IB Business Management senior examiner (guide: IB_BM_2024). You write wholly ' +
     'original questions — never from any IBO past paper. ' +
@@ -194,34 +194,39 @@ export const IB_BUSINESS_MANAGEMENT_CONFIG: SubjectConfig = {
     // ── P1 pre-released case study — level='SL' (P1 identical for SL+HL) ─────
     // Section A: AO1/AO2/AO4 only (AO3 FORBIDDEN here)
     { command_term: 'define',         count: 2, marks: 2,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
+    { command_term: 'state',          count: 1, marks: 2,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
     { command_term: 'outline',        count: 3, marks: 4,  ao_level: 'AO1', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
-    { command_term: 'analyse',        count: 3, marks: 6,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
+    { command_term: 'comment',        count: 2, marks: 4,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
+    { command_term: 'analyse',        count: 4, marks: 6,  ao_level: 'AO2', paper: 'P1', level: 'SL', question_type: 'P1_sec_a'        },
     // Section B: 10m extended response, AO3 (markbands)
-    { command_term: 'discuss',        count: 2, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
-    { command_term: 'evaluate',       count: 2, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
-    { command_term: 'to_what_extent', count: 2, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    { command_term: 'discuss',        count: 3, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    { command_term: 'evaluate',       count: 3, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
+    { command_term: 'to_what_extent', count: 3, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
     { command_term: 'examine',        count: 1, marks: 10, ao_level: 'AO3', paper: 'P1', level: 'SL', question_type: 'P1_sec_b'        },
     // ── P2 SL unseen stimulus — Section A (quantitative focus, AO3 FORBIDDEN) ─
-    { command_term: 'state',          count: 3, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
-    { command_term: 'describe',       count: 3, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
-    { command_term: 'explain',        count: 3, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
-    { command_term: 'calculate',      count: 3, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'state',          count: 4, marks: 2,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'describe',       count: 4, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'explain',        count: 4, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
+    { command_term: 'calculate',      count: 4, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'SL', question_type: 'P2_sec_a'        },
     // P2 SL Section B: 10m extended response (markbands, AO3)
-    { command_term: 'evaluate',       count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_sec_b'        },
-    { command_term: 'to_what_extent', count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_sec_b'        },
-    // ── P2 HL — larger Section A (30m vs 20m); Section B identical to SL ─────
-    { command_term: 'describe',       count: 2, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'evaluate',       count: 4, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_sec_b'        },
+    { command_term: 'to_what_extent', count: 4, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'SL', question_type: 'P2_sec_b'        },
+    // ── P2 HL — larger Section A (30m vs 20m); HL-only sub-topics seeded here ─
+    { command_term: 'describe',       count: 3, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'outline',        count: 1, marks: 4,  ao_level: 'AO1', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
     { command_term: 'explain',        count: 2, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
-    { command_term: 'calculate',      count: 2, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
-    { command_term: 'evaluate',       count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
-    { command_term: 'discuss',        count: 1, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
+    { command_term: 'analyse',        count: 1, marks: 6,  ao_level: 'AO2', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'calculate',      count: 3, marks: 6,  ao_level: 'AO4', paper: 'P2', level: 'HL', question_type: 'P2_sec_a'        },
+    { command_term: 'evaluate',       count: 3, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
+    { command_term: 'discuss',        count: 3, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
     { command_term: 'to_what_extent', count: 2, marks: 10, ao_level: 'AO3', paper: 'P2', level: 'HL', question_type: 'P2_sec_b'        },
     // ── P3 HL only — social enterprise stimulus; fixed 2/6/17 structure ───────
-    { command_term: 'state',          count: 5, marks: 2,  ao_level: 'AO1', paper: 'P3', level: 'HL', question_type: 'P3_q1'           },
+    { command_term: 'state',          count: 8, marks: 2,  ao_level: 'AO1', paper: 'P3', level: 'HL', question_type: 'P3_q1'           },
     { command_term: 'explain',        count: 5, marks: 6,  ao_level: 'AO2', paper: 'P3', level: 'HL', question_type: 'P3_q2'           },
-    { command_term: 'recommend',      count: 4, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_q3_criteria'  },
-    { command_term: 'to_what_extent', count: 1, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_q3_criteria'  },
-    // ── Totals: P1=15, P2_SL=13, P2_HL=9, P3=15 | SL=28, HL=29 | grand=57 ───
+    { command_term: 'analyse',        count: 2, marks: 6,  ao_level: 'AO2', paper: 'P3', level: 'HL', question_type: 'P3_q2'           },
+    { command_term: 'recommend',      count: 5, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_q3_criteria'  },
+    { command_term: 'to_what_extent', count: 3, marks: 17, ao_level: 'AO3', paper: 'P3', level: 'HL', question_type: 'P3_q3_criteria'  },
+    // ── Totals: P1=22, P2_SL=24, P2_HL=18, P3=23 | SL=46, HL=41 | grand=87 ──
   ],
 };
 
