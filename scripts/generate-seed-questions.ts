@@ -483,7 +483,6 @@ async function main() {
   const flag = (f: string) => argv.includes(f);
 
   const subjectArg = arg('--subject');
-  const countArg   = parseInt(arg('--count') ?? '50', 10);
   const dryRun     = flag('--dry-run');
 
   if (!subjectArg) {
@@ -495,6 +494,7 @@ async function main() {
     console.error(`Error: unknown subject "${subjectArg}". Available: ${Object.keys(SUBJECT_CONFIGS).join(', ')}`);
     process.exit(1);
   }
+  const countArg   = parseInt(arg('--count') ?? String(cfg.totalCount), 10);
 
   // Supabase service-role client — mirrors createServiceClient() in lib/supabase/server.ts
   const supabase = createClient(
