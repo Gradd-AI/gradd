@@ -212,6 +212,35 @@ test('k. VALID: SL P2 Sec B 10-mark "To what extent" → pass', () => {
   );
 });
 
+// l. Silent recompute: Claude submits 'fail' with only wrong_level → borderline + console.warn
+test('l. Silent recompute: Claude submits fail (wrong_level only) → borderline + console.warn', () => {
+  const warnings: string[] = [];
+  const origWarn = console.warn;
+  console.warn = (...args: unknown[]) => { warnings.push(args.map(String).join(' ')); };
+
+  let verdict: string;
+  try {
+    verdict = applyBMVerdict({
+      syllabus_match:   'in_syllabus',
+      command_term_fit: 'correct',
+      ao_alignment:     'wrong_level',  // minor — not a major-fail trigger
+      paper_fit:        'correct',
+      factual_accuracy: 'accurate',
+      overall:          'fail',         // Claude submitted fail despite no major-fail criterion
+      reasoning:        'All five criteria are actually met, so the overall verdict must be pass.',
+    });
+  } finally {
+    console.warn = origWarn;
+  }
+
+  assert.equal(verdict, 'borderline', `expected borderline after recompute; got "${verdict}"`);
+  assert.ok(warnings.length > 0, 'expected console.warn to be called');
+  assert.ok(
+    warnings.some(w => w.includes('[applyBMVerdict]') && w.includes('fail') && w.includes('borderline')),
+    `expected reclassification warning; got: ${warnings.join(' | ')}`,
+  );
+});
+
 // ── Runner ────────────────────────────────────────────────────────────────────
 
 async function run(): Promise<void> {
