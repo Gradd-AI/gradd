@@ -1029,13 +1029,21 @@ export function applyBMVerdict(result: VerificationResult): 'pass' | 'borderline
   const computed: 'pass' | 'borderline' | 'fail' =
     isMajorFail ? 'fail' : isAllCorrect ? 'pass' : 'borderline';
 
-  // Contradiction guard: reasoning implies pass but criteria say fail [Rule 23b]
+  // Guard 1: reasoning implies pass but criteria contain a major fail → throw [Rule 23b]
   const reasoningImpliesPass = /\bpass(es|ed)?\b/i.test(result.reasoning);
   if (reasoningImpliesPass && isMajorFail) {
     throw new Error(
       `BM verdict contradiction: reasoning implies "pass" but criteria contain a major fail. ` +
       `syllabus=${result.syllabus_match} | term=${result.command_term_fit} | ` +
       `ao=${result.ao_alignment} | paper=${result.paper_fit} | fact=${result.factual_accuracy}`,
+    );
+  }
+
+  // Guard 2: Claude submitted a different verdict than the deterministic recompute → audit log
+  if (result.overall !== computed) {
+    console.warn(
+      `[applyBMVerdict] ${result.overall} → ${computed} reclassification: ` +
+      `reasoning="${result.reasoning.slice(0, 120)}..."`,
     );
   }
 
@@ -1337,21 +1345,22 @@ async function main() {
     if (!vr) { await sleep(200); continue; }
 
     const { result, cacheReadTokens, cacheWriteTokens } = vr;
+    const verdict = subjectArg === 'IB_BUSINESS_MANAGEMENT' ? applyBMVerdict(result) : result.overall;
     const cacheTag = cacheReadTokens > 0
       ? `cache hit (${cacheReadTokens.toLocaleString()} read)`
       : `cache miss (${cacheWriteTokens.toLocaleString()} written)`;
 
-    console.log(`  ${VERDICT_ICON[result.overall] ?? '?'} ${label} → ${result.overall}  [${cacheTag}]`);
+    console.log(`  ${VERDICT_ICON[verdict] ?? '?'} ${label} → ${verdict}  [${cacheTag}]`);
     console.log(`    ${result.reasoning}`);
-    if (result.overall !== 'pass') {
+    if (verdict !== 'pass') {
       console.log(`    criteria: syllabus=${result.syllabus_match} | term=${result.command_term_fit} | ao=${result.ao_alignment} | paper=${result.paper_fit} | fact=${result.factual_accuracy}`);
     }
-    tallies[result.overall]++;
+    tallies[verdict]++;
 
     const { error: upErr } = await supabase
       .from('questions')
       .update({
-        verification_status:           result.overall,
+        verification_status:           verdict,
         verification_notes:            result,
         verified_at:                   new Date().toISOString(),
         verified_against_guide_version: guideVersion,
