@@ -7,11 +7,13 @@
  *
  * Usage:
  *   npm run generate-seed -- --subject IB_ECONOMICS [--count 50] [--dry-run]
+ *   npm run generate-seed -- --subject IB_BUSINESS_MANAGEMENT --regen-rejected [--dry-run]
  *
  * Args:
- *   --subject   Required. IB_ECONOMICS | IB_BUSINESS
- *   --count     How many questions to generate (default: config total = 50)
- *   --dry-run   Print spec list and exit — no Claude API or DB calls
+ *   --subject         Required. IB_ECONOMICS | IB_BUSINESS | IB_BUSINESS_MANAGEMENT
+ *   --count           How many questions to generate (default: config total)
+ *   --dry-run         Print spec list and exit — no Claude API or DB calls
+ *   --regen-rejected  Fetch status='rejected' rows for --subject; generate fresh replacements
  *
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
  * ANTHROPIC_API_KEY.
@@ -407,6 +409,10 @@ function buildUserPrompt(spec: QuestionSpec): string {
     contextInstruction = `- Include context_text: provide ALL numeric data needed for the calculation — specific figures (e.g. national income, price levels, quantities, percentage changes). No working should be impossible without the data.`;
   } else if (spec.question_type === 'P3_part_b') {
     contextInstruction = `- Include context_text: a 2–3 sentence policy case study naming a country, the specific economic problem, and 1–2 relevant data points for the recommendation.`;
+  } else if (spec.question_type === 'P3_q1') {
+    contextInstruction = `- Include context_text: a 2–3 sentence social enterprise scenario naming the organisation and the SPECIFIC HUMAN NEED it exists to address (e.g. food insecurity, lack of affordable housing, access to clean water). question_text MUST ask the student to describe or identify this human need — not the organisation's general purpose or strategy. Frame as: "State the human need that [organisation] was established to address." or equivalent phrasing that explicitly centres the human need.`;
+  } else if (spec.question_type === 'P3_q2') {
+    contextInstruction = `- Include context_text: a 2–3 sentence social enterprise scenario naming the organisation, the human need it addresses, and the SPECIFIC ORGANISATIONAL CHALLENGES it faces in meeting that need (e.g. limited funding, lack of trained staff, supply chain constraints). question_text MUST ask the student to explain these key challenges — not general strategy or purpose.`;
   } else {
     contextInstruction = `- Include context_text: brief relevant context for this question if applicable.`;
   }
@@ -482,8 +488,9 @@ async function main() {
   const arg  = (f: string) => { const i = argv.indexOf(f); return i !== -1 ? argv[i + 1] : undefined; };
   const flag = (f: string) => argv.includes(f);
 
-  const subjectArg = arg('--subject');
-  const dryRun     = flag('--dry-run');
+  const subjectArg    = arg('--subject');
+  const dryRun        = flag('--dry-run');
+  const regenRejected = flag('--regen-rejected');
 
   if (!subjectArg) {
     console.error('Error: --subject is required (e.g. --subject IB_ECONOMICS)');
@@ -515,6 +522,99 @@ async function main() {
     process.exit(1);
   }
   console.log(`Found ${lessons.length} lessons for ${subjectArg}.`);
+
+  // ── Regen-rejected mode ───────────────────────────────────────────────────
+  if (regenRejected) {
+    const { data: rejected, error: rejErr } = await supabase
+      .from('questions')
+      .select('paper, question_type, command_term, marks, ao_level, level')
+      .eq('subject', subjectArg)
+      .eq('status', 'rejected');
+
+    if (rejErr) { console.error('DB error fetching rejected rows:', rejErr.message); process.exit(1); }
+    if (!rejected?.length) { console.log('No rejected rows found for', subjectArg); return; }
+
+    console.log(`Found ${rejected.length} rejected row(s) — building regen specs (seed 2027).`);
+
+    const shuffled = deterministicShuffle(lessons as LessonRow[], 2027);
+    const regenSpecs: QuestionSpec[] = rejected.map((row, i) => {
+      const lesson = shuffled[i % shuffled.length];
+      return {
+        subject:       cfg.subject,
+        level:         row.level,
+        paper:         row.paper,
+        topic_code:    lesson.lesson_code,
+        lesson_name:   lesson.lesson_name,
+        unit_code:     lesson.unit_code,
+        command_term:  row.command_term,
+        marks:         row.marks,
+        ao_level:      row.ao_level,
+        question_type: row.question_type,
+      };
+    });
+
+    if (dryRun) {
+      regenSpecs.forEach((s, i) =>
+        console.log(`[${i + 1}/${regenSpecs.length}] ${s.topic_code} · ${s.paper} · ${s.command_term} · ${s.marks}m · ${s.level} · ${s.question_type}`)
+      );
+      return;
+    }
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const regenFailed: number[] = [];
+
+    for (let i = 0; i < regenSpecs.length; i++) {
+      const spec  = regenSpecs[i];
+      const label = `[${i + 1}/${regenSpecs.length}] ${spec.topic_code} · ${spec.paper} · ${spec.command_term} · ${spec.marks}m`;
+      let draft: { question_text: string; context_text: string | null } | null = null;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          draft = await draftQuestion(anthropic, spec, cfg.examinerPersona);
+          break;
+        } catch (err) {
+          if (attempt === 0) {
+            console.warn(`  ↻ ${label} retry (${(err as Error).message})`);
+            await sleep(2000);
+          } else {
+            console.error(`  ✗ ${label} FAILED: ${(err as Error).message}`);
+            regenFailed.push(i + 1);
+          }
+        }
+      }
+
+      if (draft) {
+        const { error: insErr } = await supabase.from('questions').insert({
+          subject:       spec.subject,
+          level:         spec.level,
+          paper:         spec.paper,
+          topic_code:    spec.topic_code,
+          question_type: spec.question_type,
+          command_term:  spec.command_term,
+          marks:         spec.marks,
+          ao_level:      spec.ao_level,
+          question_text: draft.question_text,
+          context_text:  draft.context_text,
+          status:        'candidate',
+          created_by:    'claude_draft',
+          source:        'gradd_original',
+        });
+        if (insErr) {
+          console.error(`  ✗ ${label} INSERT failed: ${insErr.message}`);
+          regenFailed.push(i + 1);
+        } else {
+          console.log(`  ✓ ${label} — drafted`);
+        }
+      }
+
+      await sleep(200);
+    }
+
+    console.log(`\n${'─'.repeat(60)}`);
+    console.log(`Regen done. ${regenSpecs.length - regenFailed.length}/${regenSpecs.length} inserted.`);
+    if (regenFailed.length) console.log(`Failed spec indices: ${regenFailed.join(', ')}`);
+    return;
+  }
 
   const specs = buildSpecList(cfg, lessons as LessonRow[], countArg);
 
