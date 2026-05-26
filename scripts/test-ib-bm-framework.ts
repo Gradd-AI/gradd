@@ -241,6 +241,104 @@ test('l. Silent recompute: Claude submits fail (wrong_level only) → borderline
   );
 });
 
+// m. P3 Q1 lacking human-need framing → p3_q1_human_need [p.47]
+test('m. P3 Q1 without human-need signal → p3_q1_human_need violation', () => {
+  const violations = validateBMQuestion({
+    command_term:  'state',
+    ao_level:      'AO1',
+    paper:         'P3',
+    section:       'Q1',
+    marks:         2,
+    level:         'HL',
+    question_text: 'State the main purpose of FoodFuture Ltd.',
+  });
+  assert.ok(
+    violations.some(v => v.rule === 'p3_q1_human_need'),
+    `expected p3_q1_human_need violation; got: ${violations.map(v => v.rule).join(', ')}`,
+  );
+});
+
+// n. "State" command + ratio calculation question → state_define_calculate_mismatch [p.67]
+test('n. "State" + ratio question → state_define_calculate_mismatch violation', () => {
+  const violations = validateBMQuestion({
+    command_term:  'state',
+    ao_level:      'AO1',
+    paper:         'P2',
+    section:       'SEC_A',
+    marks:         2,
+    level:         'SL',
+    question_text: 'State the current ratio for BrightCo using the data provided.',
+  });
+  assert.ok(
+    violations.some(v => v.rule === 'state_define_calculate_mismatch'),
+    `expected state_define_calculate_mismatch violation; got: ${violations.map(v => v.rule).join(', ')}`,
+  );
+});
+
+// o. SL question referencing NPV → sl_hl_only_method [p.30]
+test('o. SL question referencing NPV → sl_hl_only_method violation', () => {
+  const violations = validateBMQuestion({
+    command_term:  'calculate',
+    ao_level:      'AO4',
+    paper:         'P2',
+    section:       'SEC_A',
+    marks:         6,
+    level:         'SL',
+    question_text: 'Calculate the NPV of the investment using the discount rates in Table 2.',
+  });
+  assert.ok(
+    violations.some(v => v.rule === 'sl_hl_only_method'),
+    `expected sl_hl_only_method violation; got: ${violations.map(v => v.rule).join(', ')}`,
+  );
+});
+
+// p. AO3 command term on AO2-max sub-topic 1.4 (Stakeholders) → subtopic_max_ao_exceeded [pp.29–35]
+test('p. AO3 "evaluate" on AO2-max sub-topic 1.4 → subtopic_max_ao_exceeded violation', () => {
+  const violations = validateBMQuestion({
+    command_term:  'evaluate',
+    ao_level:      'AO3',
+    paper:         'P1',
+    section:       'SEC_B',
+    marks:         10,
+    level:         'SL',
+    subtopic_code: '1.4',
+  });
+  assert.ok(
+    violations.some(v => v.rule === 'subtopic_max_ao_exceeded'),
+    `expected subtopic_max_ao_exceeded violation; got: ${violations.map(v => v.rule).join(', ')}`,
+  );
+});
+
+// q. Stimulus contradiction: factual_accuracy=major_error + overall=borderline →
+//    applyBMVerdict reclassifies to fail + console.warn [Rule 5 verdict path]
+test('q. Stimulus contradiction: borderline + major_error → reclassified to fail + console.warn', () => {
+  const warnings: string[] = [];
+  const origWarn = console.warn;
+  console.warn = (...args: unknown[]) => { warnings.push(args.map(String).join(' ')); };
+
+  let verdict: string;
+  try {
+    verdict = applyBMVerdict({
+      syllabus_match:   'in_syllabus',
+      command_term_fit: 'correct',
+      ao_alignment:     'correct',
+      paper_fit:        'correct',
+      factual_accuracy: 'major_error',
+      overall:          'borderline',  // Claude under-classified
+      reasoning:        'The stimulus defines CPM as "$25 per 1,000 viewers" but also states "$1,000 reaches 1,000 viewers", producing contradictory numerical answers from the same inputs.',
+    });
+  } finally {
+    console.warn = origWarn;
+  }
+
+  assert.equal(verdict, 'fail', `expected fail after reclassification; got "${verdict}"`);
+  assert.ok(warnings.length > 0, 'expected console.warn to be called for reclassification');
+  assert.ok(
+    warnings.some(w => w.includes('[applyBMVerdict]') && w.includes('borderline') && w.includes('fail')),
+    `expected reclassification warning; got: ${warnings.join(' | ')}`,
+  );
+});
+
 // ── Runner ────────────────────────────────────────────────────────────────────
 
 async function run(): Promise<void> {

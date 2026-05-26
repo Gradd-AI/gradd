@@ -903,6 +903,22 @@ export const HL_ONLY_SUBTOPICS_IB_BM = new Set([
   '2.5', '2.7', '3.6', '3.9', '4.3', '4.6', '5.3', '5.6', '5.7', '5.8', '5.9',
 ]);
 
+// EVIDENCE: p.30 Unit 3.8 — "Investment opportunities using payback period, ARR and NPV (HL only)"
+// EVIDENCE: pp.29–35 — efficiency ratios, depreciation methods, budgets/variances HL only within sub-topics
+export const HL_ONLY_METHOD_SIGNALS_IB_BM: string[] = [
+  'npv', 'net present value',
+  'stock turnover', 'debtor days', 'creditor days', 'gearing ratio',
+  'straight-line depreciation', 'straight line depreciation', 'units of production',
+  'variance analysis', 'adverse variance', 'favourable variance',
+];
+
+// EVIDENCE: pp.29–35 syllabus content tables — max AO per sub-topic where AO4 calculate is absent
+export const MAX_AO_BY_SUBTOPIC_IB_BM: Record<string, string> = {
+  '5.4': 'AO3',   // Location: qualitative/quantitative factors — max AO3, no AO4 calculation
+  '1.4': 'AO2',   // Stakeholders: identify/analyse interests — max AO2
+  '2.6': 'AO2',   // Communication: formal/informal channels, barriers — max AO2
+};
+
 // AO rank for progression check — AO4 is parallel (99 = always valid), not progressive
 const AO_RANK_IB_BM: Record<string, number> = { AO1: 1, AO2: 2, AO3: 3, AO4: 99 };
 
@@ -919,6 +935,7 @@ export interface BMQuestionInput {
   level:           string;   // 'SL' | 'HL'
   subtopic_code?:  string;   // e.g. '3.9' — checked against HL_ONLY_SUBTOPICS_IB_BM
   topic_ao_level?: string;   // AO level of the topic from syllabus content, if known
+  question_text?:  string;   // for keyword-based rules (R1 human-need, R2 state/calc, R3 HL method)
 }
 
 export interface BMViolation {
@@ -1003,6 +1020,65 @@ export function validateBMQuestion(q: BMQuestionInput): BMViolation[] {
       violations.push({
         rule:     'p1_no_hl_extension',
         message:  `P1 excludes HL extension material — sub-topic ${q.subtopic_code} is HL-only [p.41]`,
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 6 — P3 Q1 must frame around human need [p.47]
+  // "AO1 questions — assesses students' ability to describe the human need in the stimulus material."
+  if (q.paper === 'P3' && q.section === 'Q1' && q.question_text) {
+    const HUMAN_NEED_RE = /\b(human|social|community|unmet)\s+need|\bneeds?\s+(that|of|for)\b/i;
+    if (!HUMAN_NEED_RE.test(q.question_text)) {
+      violations.push({
+        rule:     'p3_q1_human_need',
+        message:  'P3 Q1 must frame around human need [p.47] — question text lacks a human-need signal (e.g. "human need", "needs that", "needs of", "needs for")',
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 7 — State/Define command terms forbid calculation [p.67]
+  // "State — Give a specific name, value or other brief answer without explanation or calculation."
+  if (['state', 'define'].includes(term) && q.question_text) {
+    const lower = q.question_text.toLowerCase();
+    const ARITHMETIC_TRIGGERS = [
+      'the current ratio', 'the acid test', 'the gross profit margin', 'the labour turnover',
+      'the roce', 'the gearing ratio', 'the stock turnover', 'the debtor days',
+      'the creditor days', 'the break-even', 'the npv', 'the arr', 'the payback',
+      'calculate the',
+    ];
+    if (ARITHMETIC_TRIGGERS.some(t => lower.includes(t))) {
+      violations.push({
+        rule:     'state_define_calculate_mismatch',
+        message:  `"${q.command_term}" forbids calculation [p.67: "without explanation or calculation"] — question text requires a ratio/metric calculation`,
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 8 — HL-only methods forbidden in SL question text [p.30]
+  if (q.level === 'SL' && q.question_text) {
+    const lower = q.question_text.toLowerCase();
+    const hitMethod = HL_ONLY_METHOD_SIGNALS_IB_BM.find(m => lower.includes(m));
+    if (hitMethod) {
+      violations.push({
+        rule:     'sl_hl_only_method',
+        message:  `SL question references HL-only method "${hitMethod}" [p.30: NPV, efficiency ratios, depreciation methods, budgets/variances are HL only within their sub-topics]`,
+        severity: 'major',
+      });
+    }
+  }
+
+  // Rule 9 — Command term AO must not exceed sub-topic max AO [pp.29–35]
+  if (q.subtopic_code && MAX_AO_BY_SUBTOPIC_IB_BM[q.subtopic_code] && termAO && termAO !== 'AO4') {
+    const maxAO    = MAX_AO_BY_SUBTOPIC_IB_BM[q.subtopic_code];
+    const maxRank  = AO_RANK_IB_BM[maxAO]  ?? 0;
+    const termRank = AO_RANK_IB_BM[termAO] ?? 0;
+    if (termRank > maxRank) {
+      violations.push({
+        rule:     'subtopic_max_ao_exceeded',
+        message:  `Sub-topic ${q.subtopic_code} max AO is ${maxAO} [pp.29–35] — "${q.command_term}" is ${termAO} which exceeds the cap`,
         severity: 'major',
       });
     }
@@ -1127,6 +1203,11 @@ CRITICAL DRIFT RULES (enforce strictly — common training-data errors): \
 (4) P3 Q3 must be exactly 17 marks (criteria A+B+C+D = 4+4+6+3). Any other value → command_term_fit='wrong_marks'. \
 (5) HL-only sub-topics (2.5, 2.7, 3.6, 3.9, 4.3, 4.6, 5.3, 5.6, 5.7, 5.8, 5.9) cannot appear in SL questions. \
 (6) P1 excludes HL extension material regardless of student level. \
+(7) P3 Q1 human-need framing [p.47]: P3 Q1 is 2 marks AO1 and must describe a human need. If the question text lacks "human need", "social need", "community need", "needs that", "needs of", "needs for", or similar human-need language, set paper_fit='wrong_paper'. Guide: "AO1 questions — assesses students' ability to describe the human need in the stimulus material." \
+(8) State/Define + calculation mismatch [p.67]: if command_term is 'state' or 'define' and the question asks for a ratio or metric calculation (e.g. "the current ratio", "the gross profit margin", "the NPV", "the ARR", "the gearing ratio", "the payback", "calculate the X"), set command_term_fit='wrong_depth'. Guide: "State — Give a specific name, value or other brief answer without explanation or calculation." \
+(9) Sub-topic-internal HL-only methods [p.30]: if level=SL and the question text references NPV, net present value, stock turnover, debtor days, creditor days, gearing ratio, depreciation methods (straight-line, units of production), or variance analysis, set syllabus_match='out_of_syllabus'. These methods are HL only within their sub-topics even when the broader sub-topic is SL-accessible. \
+(10) AO depth cap by sub-topic [pp.29–35]: Unit 5.4 Location → max AO3 (no AO4 calculation depth); Unit 1.4 Stakeholders → max AO2; Unit 2.6 Communication → max AO2. If the command term's AO exceeds the sub-topic cap, set ao_alignment='wrong_level'. \
+(11) Stimulus internal consistency [practical quality bar]: if the stimulus contains internally inconsistent numerical definitions or contradictory information that would produce different valid answers from the same inputs (e.g. CPM stated as "$25 per 1,000 viewers" AND "$1,000 reaches 1,000 viewers" in the same stimulus), set factual_accuracy='major_error' and explain the contradiction in reasoning. \
 DECISION RULE (deterministic — no exceptions): \
 If syllabus_match='in_syllabus' AND command_term_fit='correct' AND ao_alignment='correct' \
 AND paper_fit='correct' AND factual_accuracy='accurate', then overall MUST be 'pass'. \
@@ -1321,6 +1402,17 @@ async function main() {
   const tallies = { pass: 0, borderline: 0, fail: 0, error: 0 };
   const startMs = Date.now();
 
+  // Maps question_type string (e.g. 'P3_q1', 'p2_sec_a') to BMQuestionInput.section
+  const sectionFromQuestionType = (qt: string): string | undefined => {
+    const s = qt.toLowerCase();
+    if (s.includes('q1'))                              return 'Q1';
+    if (s.includes('q2'))                              return 'Q2';
+    if (s.includes('q3'))                              return 'Q3';
+    if (s.includes('sec_a') || s.includes('section_a')) return 'SEC_A';
+    if (s.includes('sec_b') || s.includes('section_b')) return 'SEC_B';
+    return undefined;
+  };
+
   for (let i = 0; i < candidates.length; i++) {
     const c     = candidates[i];
     const label = `[${i + 1}/${candidates.length}] ${c.topic_code} · ${c.paper} · ${c.command_term.replace(/_/g, ' ')} · ${c.marks}m`;
@@ -1343,6 +1435,29 @@ async function main() {
     }
 
     if (!vr) { await sleep(200); continue; }
+
+    // Deterministic post-check for IB BM — injects keyword-rule findings into result
+    // before applyBMVerdict, ensuring rules 6–9 are active in the live path.
+    if (subjectArg === 'IB_BUSINESS_MANAGEMENT') {
+      const detViolations = validateBMQuestion({
+        command_term:   c.command_term,
+        ao_level:       c.ao_level,
+        paper:          c.paper,
+        section:        sectionFromQuestionType(c.question_type),
+        marks:          c.marks,
+        level:          c.level,
+        subtopic_code:  c.topic_code,
+        question_text:  c.question_text,
+      });
+      if (detViolations.some(v => v.rule === 'p3_q1_human_need'))
+        vr.result.paper_fit = 'wrong_paper';
+      if (detViolations.some(v => v.rule === 'state_define_calculate_mismatch'))
+        vr.result.command_term_fit = 'wrong_depth';
+      if (detViolations.some(v => v.rule === 'sl_hl_only_method'))
+        vr.result.syllabus_match = 'out_of_syllabus';
+      if (detViolations.some(v => v.rule === 'subtopic_max_ao_exceeded'))
+        vr.result.ao_alignment = 'wrong_level';
+    }
 
     const { result, cacheReadTokens, cacheWriteTokens } = vr;
     const verdict = subjectArg === 'IB_BUSINESS_MANAGEMENT' ? applyBMVerdict(result) : result.overall;
