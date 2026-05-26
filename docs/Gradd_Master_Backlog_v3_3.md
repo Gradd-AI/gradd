@@ -1,6 +1,15 @@
 # Gradd — Master Product Backlog & 5-Year Roadmap
-*Last updated: 19 May 2026 | Version 3.3*
+*Last updated: 26 May 2026 | Version 3.4*
 
+> **v3.4 changelog** — build session of 26 May 2026.
+>
+> **Layer 1 IB BM — CLOSED:**
+> - 86 seed questions generated and verified against the IB Business Management 2024 Subject Guide (87 generated; 1 net reject after regen cycle)
+> - Verifier patched with 5 new deterministic rules (p3_q1_human_need, state_define_calculate_mismatch, sl_hl_only_method, subtopic_max_ao_exceeded, stimulus consistency via system prompt); 17/17 meta-tests green
+> - Regen pipeline added (`--regen-rejected` flag): replaces rejected slots without touching the full distribution
+> - Mia integration via existing tier cascade RPC — no additional integration work required
+> - 5 new prevention rules logged in `GRADD_BUILD_HARDENING.md` (Rules 22–26)
+>
 > **v3.3 changelog** — build sessions of 17–19 May 2026. Everything shipped to production
 > unless noted. Changes tagged `[v3.3]` inline. Summary:
 >
@@ -230,6 +239,8 @@ The IB landing page (`components/landing/IBLandingPage.tsx`) was rebuilt from th
 - [ ] Coverage target pre-launch: 3 most recent May sessions per subject per level → ~150 questions per subject minimum
 - [ ] Mia pulls relevant past questions when drilling exam-prep students, matched by `topic_code + command_term`
 - [ ] Legal: past papers behind IBO copyright — need licensed access OR public domain coverage; resolve before scraping
+
+**IB Business Management — DONE (26 May 2026).** 86 seed questions generated and verified against the BM 2024 Subject Guide. Verifier covers paper structure, AO alignment, command-term mapping, HL-only topic/subtopic/method enforcement, and P3 human-need framing (17/17 meta-tests green). Repo-tracked under `scripts/`. Mia integration via existing tier cascade RPC — no additional integration work required. Regen pipeline in place (`--regen-rejected` flag) for future maintenance cycles.
 
 #### Layer 2 — IBO mark scheme integration
 - [ ] Depends on Layer 1
