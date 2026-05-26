@@ -254,6 +254,7 @@ export async function buildIBBusinessPrompt(
     '{{WEAK_AREAS_LIST}}':             vars.WEAK_AREAS_LIST,
     '{{LAST_SESSION_SUMMARY}}':        vars.LAST_SESSION_SUMMARY || 'No previous session.',
     '{{COURSE_POSITION}}':             vars.COURSE_POSITION,
+    '{{EXAM_QUESTIONS_CONTEXT}}':      vars.EXAM_QUESTIONS_CONTEXT ?? '',
   };
 
   for (const [token, value] of Object.entries(replacements)) {

@@ -141,6 +141,14 @@ export async function POST(request: Request) {
       });
     } else if (subject === 'IB_BUSINESS') {
       const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_BM_', '') ?? '1');
+      // p_subject uses the DB key 'IB_BUSINESS_MANAGEMENT'; internal route key stays 'IB_BUSINESS'
+      const examQs = await fetchExamQuestionsContext(
+        supabase,
+        progress.current_lesson_code,
+        profile.exam_level,
+        'IB_BUSINESS_MANAGEMENT',
+        progress.current_unit_code ?? undefined,
+      );
       injectedSystemPrompt = await buildIBBusinessPrompt({
         STUDENT_NAME:                 profile.student_name,
         EXAM_LEVEL:                   profile.exam_level,
@@ -160,6 +168,7 @@ export async function POST(request: Request) {
         WEAK_AREAS_LIST:              formatWeakAreasList(weakAreas ?? []),
         LAST_SESSION_SUMMARY:         progress.last_session_summary ?? '',
         COURSE_POSITION:              progress.course_position ?? deriveCoursePosition(lessonOrder, 'IB_BUSINESS', profile.ib_business_level ?? profile.exam_level),
+        EXAM_QUESTIONS_CONTEXT:       examQs.formatted,
       });
     } else {
       // LC Business — existing logic unchanged
