@@ -1125,6 +1125,25 @@ export function validateMarkSchemeData(
   return violations;
 }
 
+// ─── Hybrid decomposition heuristic ──────────────────────────────────────────
+
+// Rule 22 — EVIDENCE: MARK_SCHEME_EVIDENCE.md §2.G (same convention status as §2.F).
+// Flags hybrid schemes where method_marks contains only a single step on a ≥2-mark
+// question whose question text contains multi-step arithmetic indicators. This is a
+// REVIEW flag, not an invariant violation — some 2m questions are genuinely one-step.
+const HYBRID_MULTI_STEP_RE =
+  /[×÷]|\bper\s+(unit|tonne|kg|item|person|capita|household|worker)\b|percentage change|%\s*change/i;
+
+export function flagHybridSingleStep(
+  data: HybridData,
+  max_marks: number,
+  question_text: string,
+): boolean {
+  if (max_marks < 2) return false;
+  if (!Array.isArray(data.method_marks) || data.method_marks.length !== 1) return false;
+  return HYBRID_MULTI_STEP_RE.test(question_text);
+}
+
 // ─── Prompt formatter ─────────────────────────────────────────────────────────
 
 export function formatMarkSchemeForPrompt(scheme: {

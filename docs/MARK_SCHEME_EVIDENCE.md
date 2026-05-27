@@ -592,6 +592,58 @@ For a 2-mark "Explain one…" question, the depth prompt produces exactly two `a
 
 ---
 
+### §2.G — Hybrid Scheme Decomposition Convention
+
+#### Context
+
+IBO analytic markschemes for AO4 quantitative questions (Calculate, Determine, Derive, Solve) break marking into **method marks** for intermediate computation steps and an **answer mark** for the final correct result. This structure allows partial credit — a student who applies the correct method but makes an arithmetic error earns method marks even if the final answer is wrong.
+
+**`answer_marks.correct_answer` is the number of MARKS awarded for the correct final answer (typically 0 or 1), not the numerical value of the answer itself.** The expected numerical answer ($1,800, $800m, etc.) goes in `partial_credit_rules` where examiners need it for reference. This is the existing sum invariant: `sum(method_marks[*].marks) + answer_marks.correct_answer == max_marks`.
+
+A mark scheme that passes the sum invariant but omits intermediate computation steps is **structurally incomplete**: Mia cannot award partial credit for working she has no `method_mark` step to match against.
+
+#### Verbatim evidence anchors
+
+> Source: *Business Management Subject Guide* (first assessment 2024), p. 38 (MARK_SCHEME_EVIDENCE.md §1.3)
+
+> "Analytic markschemes are prepared for those examination questions that expect a particular kind of response and/or a given final answer from students. **They give detailed instructions to examiners on how to break down the total mark for each question for different parts of the response.**"
+
+The operative phrase is *"break down the total mark... for different parts of the response"* — the mark is not an undifferentiated whole; it is divided across the identifiable parts of the student's working.
+
+> Source: *Business Management Subject Guide* (first assessment 2024), p. 43; *Economics Guide* (first assessment 2022), p. 60 (MARK_SCHEME_EVIDENCE.md §3.E, §4.E)
+
+> "Method marks are awarded independently of the final numerical answer." [BM p. 43]
+
+The independent-award principle requires that each method step be documented separately — independent award presupposes a documented step to award against.
+
+#### Important limitation
+
+The per-step decomposition rule — *"every distinct intermediate value the student must compute to reach the final answer is its own method_mark step"* — is **not verbatim-quoted from either subject guide**. It is IBO marking convention as observable in published examination mark schemes (distributed separately to examiners), none of which are held in this repository (see §1.5).
+
+**The encoding in `generate-mark-schemes.ts` is anchored only to the two guide quotes above.** The per-step granularity represents documented IBO marking practice, not a direct transcription of a subject-guide page. Same status as the §2.F depth-marking tier labels.
+
+Any future verbatim per-examination mark scheme quote that confirms the decomposition convention should be added here and the generator comment updated.
+
+#### Decomposition rule (generator)
+
+Every distinct intermediate value the student must compute to reach the final answer is its own `method_mark` step. Trace the path from the given values to the final answer; every named intermediate quantity on that path is a step. In both patterns below, `correct_answer` is a **mark count** (0 or 1), not the numerical answer.
+
+**Fully-decomposed pattern (`correct_answer = 0`):**
+- `method_marks`: one step per named intermediate quantity, including the final computation
+- `answer_marks.correct_answer`: 0 — no separate answer mark; the final step is itself a method mark
+- Example: 2m total-external-cost question → `method_marks` = [identify MEC = $15 (1m), multiply $15 × 120 = $1,800 (1m)], `correct_answer` = 0
+
+**Stepped pattern (`correct_answer = 1`):**
+- `method_marks`: one step per named intermediate quantity, stopping before the final arithmetic
+- `answer_marks.correct_answer`: 1 — one mark reserved for the correct final answer
+- Example: 4m multiplier question → `method_marks` = [compute MPC (1m), compute k (1m), set up ΔY formula (1m)], `correct_answer` = 1
+
+#### Heuristic review flag
+
+`flagHybridSingleStep()` in `scripts/mark-scheme-framework.ts` raises a review flag when `method_marks.length === 1` AND `max_marks >= 2` AND `question_text` matches a multi-step arithmetic indicator (`×`, `÷`, `per [unit noun]`, `percentage change`). This is a **review flag, not an invariant violation** — some 2m questions are genuinely one-step.
+
+---
+
 *End of §2.*
 
 ---

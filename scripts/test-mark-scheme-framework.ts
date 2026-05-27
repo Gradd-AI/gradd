@@ -2,7 +2,7 @@
 /**
  * test-mark-scheme-framework.ts
  *
- * 21 meta-tests — pure unit, no DB, no LLM calls.
+ * 31 meta-tests — pure unit, no DB, no LLM calls.
  * Run with: npm run test:schemes
  *
  * Coverage:
@@ -12,6 +12,8 @@
  *   T14–T17  Verbatim match: BD and CM identical/drifted vs V3 constants
  *   T18      Contradiction guard: throws before any DB write (Rule 23)
  *   T19–T21  applyMarkSchemeVerdict precedence: pass / fail / borderline
+ *   T22–T28  depth-marked accepted_reasons path ("Explain one [X]..." convention)
+ *   T29–T31  hybrid decomposition heuristic: flagHybridSingleStep (§2.G)
  *
  * Rule 23: T18 proves the guard fires before writeResult.
  * T21 proves human_review_flag='flagged' yields borderline even when all 5 checks pass.
@@ -21,9 +23,11 @@ import assert from 'node:assert/strict';
 import {
   resolveSchemeType,
   formatMarkSchemeForPrompt,
+  flagHybridSingleStep,
   MARK_SCHEME_V3_IB_ECONOMICS,
   MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT,
   type AcceptedReasonEntry,
+  type HybridData,
 } from './mark-scheme-framework';
 import {
   checkMarksSumInvariant,
@@ -478,6 +482,57 @@ test('T28 2m depth scheme: exactly 2 accepted_points summing to 2m, no zero-mark
   const cc = c.scheme_data as { accepted_points: { marks: number }[] };
   assert.equal(cc.accepted_points.length, 2, 'exactly 2 depth tiers for 2m question');
   assert.ok(cc.accepted_points.every(p => p.marks > 0), 'no zero-mark tier');
+});
+
+// ─── T29–T31: hybrid decomposition heuristic ─────────────────────────────────
+
+console.log('\nT29–T31: hybrid decomposition heuristic (flagHybridSingleStep)');
+
+test('T29 1 method_mark + 2m + "per tonne" indicator → flagged for review', () => {
+  const data: HybridData = {
+    method_marks: [{ step: 'Identify MEC: $55 − $40 = $15 per tonne', marks: 1 }],
+    answer_marks: { correct_answer: 1, partial_credit_rules: 'award 1m if MEC correct but wrong total' },
+  };
+  assert.ok(
+    flagHybridSingleStep(
+      data, 2,
+      'Calculate the total external cost when MEC is $15 per tonne and output is 120 tonnes.',
+    ),
+    'should flag: single method_mark on 2m question with "per tonne" multi-step indicator',
+  );
+});
+
+test('T30 1 method_mark + 2m + no multi-step indicator → not flagged', () => {
+  const data: HybridData = {
+    method_marks: [{ step: 'Apply unemployment formula: unemployed / labour force × 100', marks: 1 }],
+    answer_marks: { correct_answer: 1, partial_credit_rules: 'award 1m if method correct but arithmetic wrong' },
+  };
+  assert.ok(
+    !flagHybridSingleStep(
+      data, 2,
+      'Calculate the unemployment rate given 6 million unemployed and a labour force of 30 million.',
+    ),
+    'should not flag: no × ÷ per-unit or percentage-change indicator in question text',
+  );
+});
+
+test('T31 2 method_marks + 2m + multi-step indicator → not flagged (decomposition complete)', () => {
+  // Full decomposition: both the MEC identification and multiplication steps are documented.
+  // flagHybridSingleStep fires only when method_marks.length === 1.
+  const data: HybridData = {
+    method_marks: [
+      { step: 'Identify MEC: $55 − $40 = $15 per tonne', marks: 1 },
+      { step: 'Total external cost: $15 × 120 tonnes = $1,800', marks: 1 },
+    ],
+    answer_marks: { correct_answer: 0, partial_credit_rules: 'award 1m if MEC correct but wrong multiplication' },
+  };
+  assert.ok(
+    !flagHybridSingleStep(
+      data, 2,
+      'Calculate the total external cost when MEC is $15 per tonne and output is 120 tonnes.',
+    ),
+    'should not flag: method_marks.length === 2, decomposition is complete',
+  );
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

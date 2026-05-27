@@ -409,6 +409,17 @@ Instructions:
   }
 
   if (spec.scheme_type === 'hybrid') {
+    // Rule 22 — EVIDENCE: BM Subject Guide (first assessment 2024), p. 38
+    // (MARK_SCHEME_EVIDENCE.md §2.G). Analytic markscheme definition: "They give
+    // detailed instructions to examiners on how to break down the total mark for
+    // each question for different parts of the response."
+    //
+    // DECOMPOSITION CONVENTION (not a verbatim subject-guide quote — same status as
+    // §2.F depth-marking tier labels): every distinct intermediate value the student
+    // must compute to reach the final answer is its own method_mark step. The sum
+    // invariant alone is necessary but not sufficient — a scheme that omits an
+    // intermediate step passes the sum check but cannot award partial credit for
+    // that step's working.
     const showThatRule = isShowThat
       ? `\nSHOW THAT RULE: answer_marks.correct_answer = 0. ` +
         `All ${spec.marks} marks MUST be in method_marks. The answer is given in the question — no mark for producing it.\n`
@@ -421,10 +432,55 @@ Instructions:
     return `${header}
 
 Instructions:
-- Break the correct solution into discrete, ordered method_marks steps.
-- Assign marks per step — steps requiring more work may earn more than 1 mark.
+- Break the correct solution into discrete, ordered method_marks steps — one step per distinct intermediate value the student must compute.
+- Trace the path from the given values to the final answer. Every named intermediate quantity on that path is its own method_mark step.
+- answer_marks.correct_answer: the NUMBER OF MARKS awarded for the correct final answer (0 or 1), not the numerical answer itself. Set to 0 when all marks sit in method_marks (fully-decomposed two-step question, or "Show that"). Set to 1 when there is a distinct final-answer mark.
 - sum(method_marks[*].marks) + answer_marks.correct_answer MUST equal ${spec.marks}.
-- partial_credit_rules: describe when partial marks apply (e.g. "correct method but arithmetic error — award method marks only").${showThatRule}${calcRule}`;
+- partial_credit_rules: describe when partial marks apply; include the expected final numerical answer here for examiner reference.
+
+DECOMPOSITION DISCIPLINE — the sum invariant alone is not sufficient. A scheme where sum(method_marks) + correct_answer == max_marks but an intermediate computation step is absent is structurally incomplete: Mia cannot award partial credit for working she has no method_mark step to match against.
+
+WORKED EXAMPLES:
+
+2-mark calculate, fully decomposed (both operations as method steps, correct_answer = 0):
+Question: "Calculate the total external cost when MEC = $15 per tonne and output = 120 tonnes."
+{
+  "method_marks": [
+    {"step": "Identify MEC per unit: $55 − $40 = $15 per tonne", "marks": 1},
+    {"step": "Total external cost: $15 × 120 tonnes = $1,800", "marks": 1}
+  ],
+  "answer_marks": {
+    "correct_answer": 0,
+    "partial_credit_rules": "All marks in method_marks for this two-step calculation. If MEC correct but multiplication wrong, award 1m. If MEC wrong, award 0m."
+  }
+}
+
+2-mark calculate, alternative pattern (1 method step + 1 answer mark, correct_answer = 1):
+Question: "Calculate the unemployment rate given 6m unemployed and a labour force of 30m."
+{
+  "method_marks": [
+    {"step": "Apply formula: unemployed / labour force × 100 = 6m / 30m × 100", "marks": 1}
+  ],
+  "answer_marks": {
+    "correct_answer": 1,
+    "partial_credit_rules": "1m for correct formula application; 1m for arithmetically correct answer (20%). If formula correct but answer wrong, award 1m only."
+  }
+}
+
+4-mark calculate (3 method steps + 1 answer mark, correct_answer = 1):
+Question: "Calculate the change in equilibrium national income given MPS = 0.25 and an increase in investment of $200m."
+{
+  "method_marks": [
+    {"step": "Calculate MPC: MPC = 1 − MPS = 1 − 0.25 = 0.75", "marks": 1},
+    {"step": "Calculate the multiplier: k = 1 / (1 − MPC) = 1 / 0.25 = 4", "marks": 1},
+    {"step": "Apply ΔY = k × ΔI = 4 × $200m", "marks": 1}
+  ],
+  "answer_marks": {
+    "correct_answer": 1,
+    "partial_credit_rules": "Error carried forward — award method marks for correct subsequent steps using student's own intermediate values. If final answer of $800m correct, award full 4m."
+  }
+}
+Note: correct_answer is the NUMBER OF MARKS for the correct final answer (0 or 1), not the numerical answer itself. The expected answer ($1,800, $800m, etc.) goes in partial_credit_rules for examiner reference.${showThatRule}${calcRule}`;
   }
 
   throw new Error(`buildUserPrompt called for non-Claude scheme_type: ${spec.scheme_type}`);
