@@ -41,6 +41,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import {
   MARK_SCHEME_V3_IB_ECONOMICS,
   MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT,
+  AO2_HUMAN_REVIEW_MARKS_RANGE,
   resolveSchemeType,
   type SchemeType,
   type MarkSchemeData,
@@ -78,7 +79,7 @@ interface MarkSchemeCandidateRow {
 }
 
 // Flat view used throughout the verifier
-interface MarkSchemeCandidate {
+export interface MarkSchemeCandidate {
   id:            string;
   question_id:   string;
   subject:       string;
@@ -100,12 +101,14 @@ interface MarkSchemeCandidate {
 //   marks_sum_invariant='na' → band_descriptor (no point sum)
 //   verbatim_match='na'      → content_checklist / hybrid (generated, not canonical)
 //   semantic_relevance='na'  → band_descriptor / criteria_marked (canonical; check 4 covers drift)
-interface MarkSchemeVerificationResult {
+// human_review_flag='flagged' → AO2 5-6m border cases; all 5 checks may pass but verdict = borderline
+export interface MarkSchemeVerificationResult {
   scheme_type_match:   'correct' | 'mismatch';
   marks_sum_invariant: 'correct' | 'violation' | 'na';
   data_shape:          'valid' | 'invalid';
   verbatim_match:      'correct' | 'drift' | 'na';
   semantic_relevance:  'relevant' | 'drifted' | 'na';
+  human_review_flag:   'flagged' | 'clear';  // 'flagged' = AO2 5-6m → borderline even if all else pass
   overall:             'pass' | 'borderline' | 'fail';
   reasoning:           string;
   drift_note?:         string;  // set when verbatim_match=drift or semantic_relevance=drifted
@@ -163,7 +166,7 @@ function checkSchemeTypeMatch(c: MarkSchemeCandidate): { pass: boolean; expected
 
 // ─── Check 2: marks_sum_invariant ─────────────────────────────────────────────
 
-function checkMarksSumInvariant(
+export function checkMarksSumInvariant(
   c: MarkSchemeCandidate,
 ): { result: 'correct' | 'violation' | 'na'; message: string } {
   if (c.scheme_type === 'band_descriptor') {
@@ -210,7 +213,7 @@ function checkMarksSumInvariant(
 
 // ─── Check 3: data_shape ──────────────────────────────────────────────────────
 
-function checkDataShape(c: MarkSchemeCandidate): { pass: boolean; message: string } {
+export function checkDataShape(c: MarkSchemeCandidate): { pass: boolean; message: string } {
   const d = c.scheme_data;
   if (!d || typeof d !== 'object' || Array.isArray(d)) {
     return { pass: false, message: 'scheme_data is null, not an object, or an array' };
@@ -306,7 +309,7 @@ function criteriaEqual(stored: Criterion[], canonical: Criterion[]): boolean {
   return true;
 }
 
-function checkVerbatimMatch(
+export function checkVerbatimMatch(
   c: MarkSchemeCandidate,
 ): { result: 'correct' | 'drift' | 'na'; drift_note?: string } {
   if (c.scheme_type === 'content_checklist' || c.scheme_type === 'hybrid') {
@@ -347,7 +350,7 @@ function checkVerbatimMatch(
 
 // ─── Rule 23: deterministic verdict ──────────────────────────────────────────
 
-function applyMarkSchemeVerdict(
+export function applyMarkSchemeVerdict(
   result: MarkSchemeVerificationResult,
 ): 'pass' | 'borderline' | 'fail' {
   const isMajorFail =
@@ -357,24 +360,28 @@ function applyMarkSchemeVerdict(
     result.verbatim_match      === 'drift'     ||
     result.semantic_relevance  === 'drifted';
 
+  // human_review_flag='flagged' prevents all-correct → borderline even when 5 checks pass.
+  // Covers AO2 5-6m border cases where scheme_type assignment needs human confirmation.
   const isAllCorrect =
     result.scheme_type_match   === 'correct'  &&
     (result.marks_sum_invariant === 'correct'  || result.marks_sum_invariant === 'na') &&
     result.data_shape           === 'valid'    &&
     (result.verbatim_match      === 'correct'  || result.verbatim_match === 'na')      &&
-    (result.semantic_relevance  === 'relevant' || result.semantic_relevance === 'na');
+    (result.semantic_relevance  === 'relevant' || result.semantic_relevance === 'na')  &&
+    result.human_review_flag   !== 'flagged';
 
   const computed: 'pass' | 'borderline' | 'fail' =
     isMajorFail ? 'fail' : isAllCorrect ? 'pass' : 'borderline';
 
   // Contradiction guard — reasoning says "pass" but criteria have a major fail [Rule 23]
+  // Fires BEFORE any DB write; caller must catch and skip the write.
   const reasoningImpliesPass = /\bpass(es|ed)?\b/i.test(result.reasoning);
   if (reasoningImpliesPass && isMajorFail) {
     throw new Error(
       `Mark scheme verdict contradiction: reasoning implies "pass" but criteria have a major fail. ` +
       `type=${result.scheme_type_match} sum=${result.marks_sum_invariant} ` +
-      `shape=${result.data_shape} verbatim=${result.verbatim_match} semantic=${result.semantic_relevance}. ` +
-      `reasoning="${result.reasoning.slice(0, 120)}"`,
+      `shape=${result.data_shape} verbatim=${result.verbatim_match} semantic=${result.semantic_relevance} ` +
+      `review=${result.human_review_flag}. reasoning="${result.reasoning.slice(0, 120)}"`,
     );
   }
 
@@ -574,6 +581,18 @@ async function verifyCandidate(
   if (reasonParts.length === 0)
     reasonParts.push(semanticReasoning || 'all checks pass');
 
+  // AO2 5-6m border cases require human review before promotion [AO2_HUMAN_REVIEW_MARKS_RANGE]
+  const human_review_flag: 'flagged' | 'clear' =
+    c.ao_level === 'AO2' &&
+    c.marks >= AO2_HUMAN_REVIEW_MARKS_RANGE[0] &&
+    c.marks <= AO2_HUMAN_REVIEW_MARKS_RANGE[1]
+      ? 'flagged'
+      : 'clear';
+
+  if (human_review_flag === 'flagged') {
+    reasonParts.push(`AO2 ${c.marks}m border case — human review required before promotion`);
+  }
+
   const driftNote = verbatimCheck.drift_note ?? semanticDriftNote;
 
   const result: MarkSchemeVerificationResult = {
@@ -582,6 +601,7 @@ async function verifyCandidate(
     data_shape:          shapeCheck.pass    ? 'valid'    : 'invalid',
     verbatim_match:      verbatimCheck.result,
     semantic_relevance:  semanticRelevance,
+    human_review_flag,
     overall:             'pass',            // overwritten by applyMarkSchemeVerdict
     reasoning:           reasonParts.join('; '),
     ...(driftNote ? { drift_note: driftNote } : {}),
@@ -808,4 +828,7 @@ async function main() {
   if (tallies.error) console.log(`  errors:     ${tallies.error}`);
 }
 
-main().catch(err => { console.error('Fatal:', err); process.exit(1); });
+const isMain = process.argv[1] &&
+  (process.argv[1].includes('verify-mark-schemes.ts') ||
+   process.argv[1].includes('verify-mark-schemes.js'));
+if (isMain) main().catch(err => { console.error('Fatal:', err); process.exit(1); });
