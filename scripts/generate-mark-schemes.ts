@@ -12,7 +12,8 @@
  * Args:
  *   --subject         Required. IB_ECONOMICS | IB_BUSINESS_MANAGEMENT
  *   --count           How many uncovered seed questions to process (default: all)
- *   --dry-run         Print spec list and exit — no Claude API or DB writes
+ *   --dry-run         Print routing spec table and exit — no Claude API or DB writes
+ *   --print-only      Draft scheme_data (via deterministic path or Claude) and print JSON; no DB insert
  *   --regen-rejected  Fetch mark_schemes where status='rejected' for --subject; rebuild
  *
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
@@ -523,6 +524,7 @@ async function main() {
 
   const subjectArg    = arg('--subject');
   const dryRun        = flag('--dry-run');
+  const printOnly     = flag('--print-only');
   const regenRejected = flag('--regen-rejected');
 
   if (!subjectArg) {
@@ -602,6 +604,43 @@ async function main() {
     });
     console.log('  human_review  :', specs.filter(s => s.requires_human_review).length);
     console.log(`  Total         : ${specs.length}`);
+    return;
+  }
+
+  // ── Print-only run (draft + print JSON, no insert) ────────────────────────
+  if (printOnly) {
+    const persona   = buildSubjectPersona(subject);
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+    for (let i = 0; i < specs.length; i++) {
+      const spec = specs[i];
+      console.log(`\n${'='.repeat(80)}`);
+      console.log(`[${i + 1}/${specs.length}] question_id : ${spec.question_id}`);
+      console.log(`question_text : ${spec.question_text}`);
+      if (spec.context_text) console.log(`context_text  : ${spec.context_text}`);
+      console.log(`paper         : ${spec.paper}  |  question_type : ${spec.question_type}`);
+      console.log(`command_term  : ${spec.command_term}  |  ao_level : ${spec.ao_level}`);
+      console.log(`scheme_type   : ${spec.scheme_type}`);
+      console.log(`max_marks     : ${spec.marks}`);
+      console.log(`needs_claude  : ${spec.needs_claude}`);
+      console.log(`human_review  : ${spec.requires_human_review}`);
+      console.log('');
+
+      let schemeData: MarkSchemeData;
+      if (!spec.needs_claude) {
+        schemeData = buildDeterministicSchemeData(spec);
+        console.log('scheme_data (deterministic):');
+      } else {
+        const result = await draftMarkScheme(anthropic, spec, persona);
+        if (result.violations.length > 0) {
+          console.log('INVARIANT VIOLATIONS:');
+          result.violations.forEach(v => console.log(`  [${v.rule}] ${v.message}`));
+        }
+        schemeData = result.data;
+        console.log(`scheme_data (Claude-drafted${result.violations.length ? ' — VIOLATIONS' : ''}):`)
+      }
+      console.log(JSON.stringify(schemeData, null, 2));
+    }
     return;
   }
 
