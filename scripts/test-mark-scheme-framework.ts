@@ -20,8 +20,10 @@
 import assert from 'node:assert/strict';
 import {
   resolveSchemeType,
+  formatMarkSchemeForPrompt,
   MARK_SCHEME_V3_IB_ECONOMICS,
   MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT,
+  type AcceptedReasonEntry,
 } from './mark-scheme-framework';
 import {
   checkMarksSumInvariant,
@@ -373,6 +375,109 @@ test('T21 all-5-checks-pass but human_review_flag=flagged → borderline', () =>
     reasoning:           'AO2 5m border case — human review required before promotion',
   });
   assert.equal(applyMarkSchemeVerdict(result), 'borderline');
+});
+
+// ─── T22–T28: depth-marked "Explain one [X]..." path ─────────────────────────
+
+// Replicate the isExplainOne regex from generate-mark-schemes.ts — pure unit test of the pattern.
+const EXPLAIN_ONE_RE = /\bexplain\s+(one|a)\s+(reason|way|cause|factor|advantage|disadvantage|benefit|drawback|impact|effect|implication|example)\b/i;
+
+console.log('\nT22–T28: depth-marked accepted_reasons path');
+
+test('T22 isExplainOne regex: positive — "Explain one reason why the CPI may overstate..."', () => {
+  assert.ok(EXPLAIN_ONE_RE.test('Explain one reason why the Consumer Price Index (CPI) may overstate the true rate of inflation experienced by households.'));
+});
+
+test('T23 isExplainOne regex: negative — "Explain why the quantity demanded falls..." (no "one [X]")', () => {
+  assert.ok(!EXPLAIN_ONE_RE.test('Explain why the quantity demanded for a good falls when its price rises.'));
+});
+
+test('T24 isExplainOne regex: negative — "Explain the concept of price elasticity..." (no "one [X]")', () => {
+  assert.ok(!EXPLAIN_ONE_RE.test('Explain the concept of price elasticity of demand.'));
+});
+
+test('T25 CC with accepted_reasons present → checkDataShape passes (field is permitted, not rejected)', () => {
+  const c = makeCandidate({
+    scheme_type: 'content_checklist',
+    max_marks: 3,
+    marks: 3,
+    scheme_data: {
+      accepted_reasons: [
+        { reason: 'substitution bias', keywords: ['fixed basket', 'substitution bias'] },
+        { reason: 'quality bias',      keywords: ['quality bias', 'quality improvement'] },
+      ] as AcceptedReasonEntry[],
+      accepted_points: [
+        { point: 'Names any one valid reason.', marks: 1, keywords: ['substitution bias', 'quality bias'] },
+        { point: 'Explains the causal mechanism.',        marks: 1, keywords: ['fixed basket', 'cost of living'] },
+        { point: 'Extends with a consequence or effect.', marks: 1, keywords: ['living standards', 'overstate'] },
+      ],
+      marking_rule: 'depth-marked on one reason: 1m naming, 2m depth.',
+    },
+  });
+  const r = checkDataShape(c);
+  assert.equal(r.pass, true);
+});
+
+test('T26 formatMarkSchemeForPrompt with accepted_reasons → includes "Valid reasons" block', () => {
+  const output = formatMarkSchemeForPrompt({
+    scheme_type: 'content_checklist',
+    max_marks: 3,
+    scheme_data: {
+      accepted_reasons: [
+        { reason: 'substitution bias', keywords: ['fixed basket', 'substitution bias'] },
+        { reason: 'quality bias',      keywords: ['quality bias', 'quality improvement'] },
+      ] as AcceptedReasonEntry[],
+      accepted_points: [
+        { point: 'Names any one valid reason.', marks: 1, keywords: ['substitution bias', 'quality bias'] },
+        { point: 'Explains the causal mechanism.',        marks: 1, keywords: ['fixed basket', 'cost of living'] },
+        { point: 'Extends with a consequence or effect.', marks: 1, keywords: ['living standards', 'overstate'] },
+      ],
+      marking_rule: 'depth-marked on one reason: 1m naming, 2m depth.',
+    },
+  });
+  assert.ok(output.includes('Valid reasons (student names any one):'), 'should include Valid reasons heading');
+  assert.ok(output.includes('substitution bias'), 'should list first accepted reason');
+  assert.ok(output.includes('Depth tiers (award marks for depth on any one accepted reason):'), 'should use Depth tiers label');
+  assert.ok(!output.includes('Accepted points:'), 'should NOT use Accepted points label when depth-marked');
+});
+
+test('T27 formatMarkSchemeForPrompt without accepted_reasons → omits "Valid reasons", uses "Accepted points:"', () => {
+  const output = formatMarkSchemeForPrompt({
+    scheme_type: 'content_checklist',
+    max_marks: 2,
+    scheme_data: {
+      accepted_points: [
+        { point: 'A carbon tax is a tax on carbon emissions.', marks: 1, keywords: ['tax', 'emissions'] },
+        { point: 'It internalises the negative externality.',  marks: 1, keywords: ['externality', 'social cost'] },
+      ],
+      marking_rule: '1 mark per distinct point, max 2',
+    },
+  });
+  assert.ok(!output.includes('Valid reasons'), 'should NOT include Valid reasons heading');
+  assert.ok(output.includes('Accepted points:'), 'should use Accepted points label');
+});
+
+test('T28 2m depth scheme: exactly 2 accepted_points summing to 2m, no zero-mark third point', () => {
+  const c = makeCandidate({
+    scheme_type: 'content_checklist',
+    max_marks: 2,
+    marks: 2,
+    scheme_data: {
+      accepted_reasons: [
+        { reason: 'negative externality', keywords: ['externality', 'social cost'] },
+      ] as AcceptedReasonEntry[],
+      accepted_points: [
+        { point: 'Names a valid reason.',           marks: 1, keywords: ['externality', 'social cost'] },
+        { point: 'Explains the causal mechanism.',  marks: 1, keywords: ['private cost', 'market failure'] },
+      ],
+      marking_rule: 'depth-marked on one reason: 1m naming, 1m depth.',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'correct');
+  const cc = c.scheme_data as { accepted_points: { marks: number }[] };
+  assert.equal(cc.accepted_points.length, 2, 'exactly 2 depth tiers for 2m question');
+  assert.ok(cc.accepted_points.every(p => p.marks > 0), 'no zero-mark tier');
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

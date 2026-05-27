@@ -354,6 +354,49 @@ Required scheme_type: ${spec.scheme_type}`;
         `Verify this is structurally a list of discrete points, not a holistic response.\n`
       : '';
 
+    // Rule 22 — EVIDENCE: Economics Guide (first assessment 2022), pp. 18-19
+    // (MARK_SCHEME_EVIDENCE.md §2.F). AO2 "Explain" definition: "These terms require
+    // students to use their knowledge and skills to break down ideas into simpler parts
+    // and to see how the parts relate." "Explain one [X]..." questions are depth-marked
+    // on one reason, not breadth across multiple reasons. Per-examination tier labels are
+    // IBO marking convention; no verbatim per-exam mark scheme is available in this repo.
+    // Anchored to AO2 definition, Econ Guide pp. 18-19. See MARK_SCHEME_EVIDENCE.md §2.F.
+    const isExplainOne = /\bexplain\s+(one|a)\s+(reason|way|cause|factor|advantage|disadvantage|benefit|drawback|impact|effect|implication|example)\b/i.test(spec.question_text);
+
+    if (isExplainOne) {
+      const depthPoints = spec.marks === 2
+        ? `    { "point": "Explains how the named reason causes [the stated effect] — the causal mechanism.", "marks": 1, "keywords": [<mechanism terms>] }`
+        : `    { "point": "Explains how the named reason causes [the stated effect] — the causal mechanism.", "marks": 1, "keywords": [<mechanism terms>] },\n    { "point": "Extends the explanation with a consequence, further implication, or real-world application of the named reason.", "marks": ${spec.marks - 2}, "keywords": [<consequence/development terms>] }`;
+
+      return `${header}
+
+DEPTH-MARKED QUESTION — "Explain one [X]..." structure detected.
+
+IBO marks this question type on the DEPTH of analysis of a SINGLE reason, not breadth across multiple reasons. The student earns all marks by developing ONE reason fully.
+
+Source: IBO AO2 definition (Economics Guide, pp. 18-19): "These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."
+
+Required scheme_data shape:
+{
+  "accepted_reasons": [
+    { "reason": "<valid reason 1>", "keywords": ["term1", "term2"] },
+    { "reason": "<valid reason 2>", "keywords": ["term1", "term2"] },
+    ... (list ALL reasons IBO would accept for the naming mark — typically 3-6)
+  ],
+  "accepted_points": [
+    { "point": "Names any one valid reason from the accepted_reasons list.", "marks": 1, "keywords": [<union of key terms from all accepted_reasons>] },
+${depthPoints}
+  ],
+  "marking_rule": "depth-marked on one reason: 1m naming, ${spec.marks - 1}m depth. Award marks for depth of analysis of any one accepted reason — do not require all reasons."
+}
+
+Rules:
+- sum(accepted_points[*].marks) MUST equal ${spec.marks}.
+- accepted_reasons lists EVERY distinct reason IBO would award the naming mark for.
+- Each accepted_reason must include minimum 2 IBO terminology keywords.
+- Do NOT produce one accepted_point per reason — that structure is wrong for this question type.${reviewFlag}`;
+    }
+
     return `${header}
 
 Instructions:

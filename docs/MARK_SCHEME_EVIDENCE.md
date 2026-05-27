@@ -515,6 +515,83 @@ Because Part (a) contains both qualitative sub-questions (AO1/AO2 Explain/Define
 
 ---
 
+---
+
+### §2.F — "Explain one [X]..." Depth-Marking Convention
+
+#### Context
+
+IB analytic markschemes for questions of the form *"Explain one reason/way/cause/factor/advantage/disadvantage why…"* at 2–4 marks follow a **depth-marking** pattern: the student scores all marks by developing **one** valid reason fully, rather than listing multiple reasons breadth-first.
+
+This is a direct implication of the AO2 command-term definition, which applies across both IB Economics and IB Business Management.
+
+#### AO2 verbatim evidence anchor
+
+> Source: *Economics Guide* (first assessment 2022), pp. 18–19 (MARK_SCHEME_EVIDENCE.md §1.2)
+
+> AO2 command terms (Explain, Analyse, Apply…): **"These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."**
+
+The operative phrase is *"break down [one] idea into simpler parts"* — depth analysis of a single idea, not enumeration of multiple ideas. This is the only verbatim subject-guide source available in this repository.
+
+> Source: *Business Management Subject Guide* (first assessment 2024), pp. 19–20 (MARK_SCHEME_EVIDENCE.md §1.2)
+
+> AO2 command terms: **"These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."**
+
+Wording is identical across both guides.
+
+#### Important limitation
+
+The per-examination tier labels (naming mark / mechanism / development) that appear in IBO analytic mark schemes are **not published in the subject guides** and are therefore **not verbatim-quoted in this file**. They are observable in IBO published examination mark schemes (distributed separately to examiners), none of which are held in this repository (see §1.5 — "Per-paper credit rules are documented in IBO published mark schemes, not the Subject Guide").
+
+**The encoding in `generate-mark-schemes.ts` is therefore anchored only to the AO2 definition above.** The tier structure (1m naming, remaining marks depth) represents IBO marking convention as observed in practice, not a direct transcription of a subject-guide page.
+
+Any future verbatim per-examination mark scheme quote that confirms the tier labels should be added here and the generator comment updated to cite the page.
+
+#### Generator detection rule
+
+The generator (`scripts/generate-mark-schemes.ts`) applies depth-marked prompt instructions when the question text matches the following regex:
+
+```
+/\bexplain\s+(one|a)\s+(reason|way|cause|factor|advantage|disadvantage|benefit|drawback|impact|effect|implication|example)\b/i
+```
+
+Positive matches (depth-marked path):
+- "Explain one reason why the CPI may overstate inflation…"
+- "Explain one way in which a negative externality arises…"
+- "Explain one advantage of a carbon tax…"
+
+Negative matches (breadth-marked path, unchanged):
+- "Explain why the quantity demanded falls…" (no "one [X]" qualifier)
+- "Explain the concept of price elasticity…" (no "one [X]" qualifier)
+- "Explain how a subsidy affects the market…" (no "one [X]" qualifier)
+
+#### scheme_data shape produced
+
+When the regex fires, the generator instructs Claude to produce a `content_checklist` with an additional optional field:
+
+```json
+{
+  "accepted_reasons": [
+    { "reason": "<valid reason 1>", "keywords": ["term1", "term2"] },
+    ...
+  ],
+  "accepted_points": [
+    { "point": "Names any one valid reason from the accepted_reasons list.", "marks": 1, "keywords": [...] },
+    { "point": "Explains how the named reason causes [the stated effect] — the causal mechanism.", "marks": 1, "keywords": [...] },
+    { "point": "Extends the explanation with a consequence, further implication, or real-world application.", "marks": "<remaining marks>", "keywords": [...] }
+  ],
+  "marking_rule": "depth-marked on one reason: 1m naming, Xm depth. Award marks for depth of analysis of any one accepted reason — do not require all reasons."
+}
+```
+
+`accepted_reasons` is an optional field on `ContentChecklistData` (declared in `mark-scheme-framework.ts`). The validator (`validateMarkSchemeData`) does not reject it — it only checks `accepted_points` for the sum invariant and keyword minimum. `formatMarkSchemeForPrompt` renders the `accepted_reasons` list under a "Valid reasons (student names any one):" heading when present.
+
+#### 2m edge case
+
+For a 2-mark "Explain one…" question, the depth prompt produces exactly two `accepted_points` (1m naming + 1m mechanism), with no third development point. The `spec.marks === 2` guard in the generator prevents a zero-mark third tier from being generated.
+
+---
+
 *End of §2.*
 
 ---

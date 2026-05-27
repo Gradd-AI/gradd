@@ -28,6 +28,11 @@ export interface AcceptedPoint {
   keywords: string[];
 }
 
+export interface AcceptedReasonEntry {
+  reason: string;
+  keywords: string[];
+}
+
 export interface MethodMark {
   step: string;
   marks: number;
@@ -49,6 +54,7 @@ export interface Criterion {
 export interface ContentChecklistData {
   accepted_points: AcceptedPoint[];
   marking_rule: string;
+  accepted_reasons?: AcceptedReasonEntry[];
 }
 
 export interface BandDescriptorData {
@@ -1133,15 +1139,27 @@ export function formatMarkSchemeForPrompt(scheme: {
   switch (scheme_type) {
     case 'content_checklist': {
       const d = scheme_data as ContentChecklistData;
+      const isDepthMarked = Array.isArray(d.accepted_reasons) && d.accepted_reasons.length > 0;
+      const pointsLabel = isDepthMarked
+        ? 'Depth tiers (award marks for depth on any one accepted reason):'
+        : 'Accepted points:';
       const lines = d.accepted_points.map(p =>
         `- ${p.point} [${p.marks}m] — keywords: ${p.keywords.join(', ')}`,
       );
+      const reasonsBlock = isDepthMarked
+        ? [
+            '',
+            'Valid reasons (student names any one):',
+            ...d.accepted_reasons!.map(r => `- ${r.reason} — keywords: ${r.keywords.join(', ')}`),
+          ]
+        : [];
       return [
         `**Mark scheme** — content_checklist, ${max_marks} marks${src}`,
         d.marking_rule,
         '',
-        'Accepted points:',
+        pointsLabel,
         ...lines,
+        ...reasonsBlock,
       ].join('\n');
     }
 
