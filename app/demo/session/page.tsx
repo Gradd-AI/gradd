@@ -587,10 +587,10 @@ export default function DemoSession() {
     const lastRef = messageRefs.current[visibleCount - 1];
     if (!lastRef) return;
     setTimeout(() => {
-      const headerHeight = window.innerWidth < 480 ? 90 : 60;
+      const headerHeight = window.innerWidth < 480 ? 120 : 60;
       const y = lastRef.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
       window.scrollTo({ top: y, behavior: 'smooth' });
-    }, 150);
+    }, 300);
   }, [visibleCount]);
 
   const pendingStudent = submitReady ? SCRIPT[visibleCount] : null;
