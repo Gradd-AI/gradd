@@ -664,9 +664,6 @@ export default function DemoSession() {
             </div>
           )}
 
-          {/* Mid-page aside — appears after Mia accepts the income answer (msg 4) */}
-          {visibleCount >= 5 && <MidPageAside />}
-
           {/* Submit prompt — fades in after Mia finishes, prospect controls pace */}
           {pendingStudent && (
             <div className="demo-submit-wrap">
@@ -679,12 +676,26 @@ export default function DemoSession() {
             </div>
           )}
 
-          {/* Exam technique callout — appears after all messages, before CTA */}
+          {/* Mid-page aside + exam technique — appear after final message */}
+          {visibleCount >= SCRIPT.length && <MidPageAside />}
           {visibleCount >= SCRIPT.length && <TechCallout />}
 
           {showSignup && (
             <>
               <MethodBridge />
+              <p style={{
+                fontFamily: 'var(--font-body, "Geist", ui-sans-serif, system-ui, sans-serif)',
+                fontSize: 15,
+                color: 'var(--ink-2, oklch(34% 0.012 60))',
+                textAlign: 'center',
+                maxWidth: 520,
+                margin: '0 auto 32px',
+                lineHeight: 1.6,
+              }}>
+                That&apos;s one short example. A full Gradd lesson continues
+                like this across every topic in the IB Economics and
+                Business Management course.
+              </p>
               <SignupCTA />
             </>
           )}
