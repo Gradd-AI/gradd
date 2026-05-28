@@ -537,7 +537,8 @@ export default function DemoSession() {
   const [submitReady, setSubmitReady] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [showTop, setShowTop] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const bottomRef   = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
     const onScroll = () => setShowTop(window.scrollY > 300);
@@ -580,11 +581,17 @@ export default function DemoSession() {
     setVisibleCount(v => v + 1); // reveals student message, triggers next Mia auto-reveal
   }
 
-  // Scroll to bottom as content appears (skip on bare mount)
+  // Scroll to top of each newly revealed message, offset for the sticky header
   useEffect(() => {
-    if (visibleCount === 0 && !showTyping && !submitReady && !showSignup) return;
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
-  }, [visibleCount, showTyping, submitReady, showSignup]);
+    if (visibleCount === 0) return;
+    const lastRef = messageRefs.current[visibleCount - 1];
+    if (!lastRef) return;
+    setTimeout(() => {
+      const headerHeight = window.innerWidth < 480 ? 90 : 60;
+      const y = lastRef.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+      window.scrollTo({ top: y, behavior: 'smooth' });
+    }, 150);
+  }, [visibleCount]);
 
   const pendingStudent = submitReady ? SCRIPT[visibleCount] : null;
 
@@ -637,7 +644,9 @@ export default function DemoSession() {
       >
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
           {SCRIPT.slice(0, visibleCount).map((msg, i) => (
-            <MsgBubble key={i} msg={msg} />
+            <div key={i} ref={(el: HTMLDivElement | null) => { messageRefs.current[i] = el; }}>
+              <MsgBubble msg={msg} />
+            </div>
           ))}
 
           {showTyping && (
