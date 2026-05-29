@@ -42,7 +42,7 @@ export default function ACCALandingPage() {
       const supabase = createClient();
       const { error } = await supabase
         .from('waitlist')
-        .insert({ email: email.trim(), source: 'acca_apm' });
+        .upsert({ email: email.trim(), source: 'acca_apm' }, { onConflict: 'email,source', ignoreDuplicates: true });
       if (error) throw error;
       setSubmitted(true);
     } catch {
