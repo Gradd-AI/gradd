@@ -90,7 +90,7 @@ export default function ACCALandingPage() {
                 <span>ACCA APM</span><span className="dot" /><span>Advanced Performance Management</span>
               </div>
               <h1 className="hero-h1 h-display">
-                Failed APM? Pass it next sitting — with an AI tutor that actually <span className="em underline">teaches</span> it.
+                Failed APM? Fix what cost you the marks — with an AI tutor that actually <span className="em underline">teaches</span> the paper.
               </h1>
               <p className="hero-sub">
                 APM has one of the lowest pass rates in ACCA. Most tools just mark your answer and leave you to it. This one teaches you the paper from where you&apos;re stuck to exam-ready — and marks every answer like the examiner, free.
@@ -159,12 +159,13 @@ export default function ACCALandingPage() {
           <div className="wrap trust-inner">
             <div className="trust-label">Built around the ACCA APM examiner approach</div>
             <div className="trust-stats">
-              <div className="trust-stat"><span className="num">~35%</span><span className="lbl">average pass rate</span></div>
+              <div className="trust-stat"><span className="num">~40%</span><span className="lbl">average pass rate</span></div>
               <div className="trust-stat"><span className="num">P5</span><span className="lbl">Strategic level</span></div>
               <div className="trust-stat"><span className="num">15+</span><span className="lbl">core APM topics</span></div>
               <div className="trust-stat"><span className="num">24/7</span><span className="lbl">availability</span></div>
             </div>
           </div>
+          <div className="wrap"><p className="trust-footnote">Based on recent ACCA published pass rates.</p></div>
         </section>
 
         {/* ── PAIN ── */}
@@ -357,7 +358,7 @@ export default function ACCALandingPage() {
             <div className="tag-pill" style={{marginBottom:30,color:'color-mix(in oklab,var(--forest-ink) 80%,transparent)',borderColor:'color-mix(in oklab,var(--forest-ink) 30%,transparent)'}}>
               <span className="dot" /> Free to reserve · No payment needed
             </div>
-            <h2 className="h-display">Pass APM <em className="italic">next sitting.</em></h2>
+            <h2 className="h-display">Preparing for the <em className="italic">next APM sitting?</em></h2>
             <p className="lead">Built for the next ACCA APM sitting. Reserve your place — it&apos;s free.</p>
             <div className="hero-cta" style={{justifyContent:'center',marginTop:36}}>
               <button className="btn btn-rust" onClick={() => scrollTo('waitlist')}>
@@ -443,7 +444,7 @@ const CSS = `
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ── Base ── */
@@ -517,10 +518,10 @@ const CSS = `
 
 /* ── Nav ── */
 .acca-lp .nav {
-  position: sticky; top: 0; z-index: 50;
+  position: sticky; top: 0; z-index: 100;
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
-  background: color-mix(in oklab, var(--paper) 78%, transparent);
+  background: var(--paper);
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s;
 }
@@ -691,6 +692,10 @@ const CSS = `
   font-style: italic; color: var(--ink);
 }
 .acca-lp .trust-stat .lbl { font-size: 12px; color: var(--ink-3); }
+.acca-lp .trust-footnote {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em;
+  color: var(--ink-3); margin-top: 8px; text-align: center;
+}
 
 /* ── Pain section ── */
 .acca-lp .pain { background: var(--paper); }
@@ -702,12 +707,13 @@ const CSS = `
 .acca-lp .pain-cards { display: grid; grid-template-columns: 1fr; gap: 14px; }
 .acca-lp .pain-card {
   border: 1px solid var(--rule); border-radius: var(--radius); padding: 22px 24px;
-  background: var(--paper); display: grid; grid-template-columns: 80px 1fr;
+  background: var(--paper); display: grid; grid-template-columns: auto 1fr;
   gap: 18px; align-items: start;
 }
 .acca-lp .pain-card .stat {
-  font-family: var(--serif); font-size: 30px; line-height: 1.1;
+  font-family: var(--serif); font-size: clamp(22px, 3.5vw, 30px); line-height: 1.1;
   color: var(--rust); letter-spacing: -0.02em;
+  overflow-wrap: break-word; word-break: break-word;
 }
 .acca-lp .pain-card .stat .unit {
   font-size: 11px; font-family: var(--mono); color: var(--ink-3);
