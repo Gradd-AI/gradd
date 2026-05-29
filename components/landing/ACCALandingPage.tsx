@@ -42,9 +42,12 @@ export default function ACCALandingPage() {
       const supabase = createClient();
       const { error } = await supabase
         .from('waitlist')
-        .upsert({ email: email.trim(), source: 'acca_apm' }, { onConflict: 'email,source', ignoreDuplicates: true });
-      if (error) throw error;
-      setSubmitted(true);
+        .insert({ email: email.trim(), source: 'acca_apm' });
+      if (!error || error.code === '23505') {
+        setSubmitted(true);
+      } else {
+        throw error;
+      }
     } catch {
       setSubmitError('Something went wrong — please try again.');
     } finally {
