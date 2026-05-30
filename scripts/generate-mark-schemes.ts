@@ -35,6 +35,7 @@ import {
   MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT,
   SCHEME_TYPE_INVARIANTS,
   AO2_HUMAN_REVIEW_MARKS_RANGE,
+  EXPLAIN_N_RE,
   validateMarkSchemeData,
   resolveSchemeType,
   type SchemeType,
@@ -397,6 +398,52 @@ Rules:
 - Do NOT produce one accepted_point per reason — that structure is wrong for this question type.${reviewFlag}`;
     }
 
+    // Pattern 5b — "Explain two/three [X]..." detection (§DEFECT-5b)
+    // EVIDENCE: IBO AO2 definition (Guide pp. 18-19). Multi-part explain-N questions require
+    // breadth across N reasons, each named AND developed. Differs from "explain one" (depth-only).
+    const explainNMatch = EXPLAIN_N_RE.exec(spec.question_text);
+    const explainN = explainNMatch
+      ? (explainNMatch[1].toLowerCase() === 'two' || explainNMatch[1] === '2' ? 2 : 3)
+      : 0;
+
+    if (explainN > 0) {
+      const nWord     = explainN === 2 ? 'two' : 'three';
+      const nounRaw   = explainNMatch![2] ?? 'reason';
+      const nounType  = nounRaw.toLowerCase();
+      const nounTitle = nounType.charAt(0).toUpperCase() + nounType.slice(1);
+      const marksPerN = Math.floor(spec.marks / explainN);
+      const depthM    = Math.max(1, marksPerN - 1);
+      const thirdPair = explainN === 3
+        ? `\n    { "point": "Names a third valid ${nounType}: <brief label for ${nounType} 3>", "marks": 1, "keywords": [<naming terms>] },\n    { "point": "Develops ${nounType} 3: <mechanism or consequence>", "marks": ${depthM}, "keywords": [<mechanism terms>] },`
+        : '';
+
+      return `${header}
+
+BREADTH-MARKED QUESTION — "Explain ${nWord} [${nounType}]..." structure detected.
+
+IBO marks this question type on BREADTH across ${explainN} distinct ${nounType}s, each named and developed. This is NOT depth-marked on one reason — both breadth (${explainN} ${nounType}s) and depth (development per ${nounType}) are required.
+
+Source: IBO AO2 definition (Guide, pp. 18-19): "These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."
+
+Required scheme_data shape (${explainN} ${nounType}s at ~${marksPerN}m each):
+{
+  "accepted_points": [
+    { "point": "Names a valid ${nounType}: <brief label for ${nounType} 1>", "marks": 1, "keywords": [<naming terms>] },
+    { "point": "Develops ${nounType} 1: <mechanism, consequence, or further implication>", "marks": ${depthM}, "keywords": [<mechanism terms>] },
+    { "point": "Names a second valid ${nounType}: <brief label for ${nounType} 2>", "marks": 1, "keywords": [<naming terms>] },
+    { "point": "Develops ${nounType} 2: <mechanism, consequence, or further implication>", "marks": ${depthM}, "keywords": [<mechanism terms>] },${thirdPair}
+  ],
+  "marking_rule": "${explainN} ${nounType}s required; ${marksPerN}m per ${nounType}: 1m naming, ${depthM}m development. Max ${spec.marks}."
+}
+
+Rules:
+- sum(accepted_points[*].marks) MUST equal ${spec.marks}.
+- MINIMUM ${explainN * 2} accepted_points — at least naming (1m) + development per ${nounType}.
+- Each accepted_point must include minimum 2 IBO terminology keywords.
+- Each ${nounType} must be a distinct concept — do not list the same ${nounType} twice.
+- Do NOT produce a flat pooled point list — the ${nWord}-${nounType} structure is mandatory.${reviewFlag}`;
+    }
+
     return `${header}
 
 Instructions:
@@ -480,6 +527,17 @@ Question: "Calculate the change in equilibrium national income given MPS = 0.25 
     "partial_credit_rules": "Error carried forward — award method marks for correct subsequent steps using student's own intermediate values. If final answer of $800m correct, award full 4m."
   }
 }
+MULTI-VALUE RULE: If the question names more than one value to calculate or determine (e.g. "Calculate the equilibrium price and the equilibrium quantity", "Determine the consumer surplus and the producer surplus"), include AT LEAST ONE distinct method_marks step for EACH named final value. A scheme that computes Q but not P when both are asked is structurally incomplete — the sum invariant does not catch a missing step for the second value.
+
+FORMULA-SELECTION GUARDRAILS:
+- MULTIPLIER (closed-economy default): The Keynesian multiplier = 1 / (1 − MPC) = 1 / MPS. The denominator uses MPC (= 1 − MPS) — NOT MPM (marginal propensity to import). MPM belongs to the open-economy multiplier only (k = 1 / (MPS + MPM + MT)). If the question gives MPS, first derive MPC = 1 − MPS. Use MPM only when the question text explicitly mentions imports or an open economy.
+- EXTERNALITY direction: State the direction of the effect BEFORE computing any welfare or quantity value. Negative externality → MPC < MSC → free market OVERPRODUCES relative to Q* → deadweight welfare loss triangle lies to the LEFT of Q*. Positive externality → MPB < MSB → free market UNDERPRODUCES → welfare forgone lies to the RIGHT of Q*. Attach the welfare triangle to the correct side of Q*.
+
+INTERPRETATION MAPPING RULE: For any question where a numeric result maps to a categorical conclusion (elasticity classification, comparative advantage, trade direction, budget surplus/deficit), the scheme MUST state the mapping rule before assigning the label. Put this in partial_credit_rules so examiners can award interpretation marks on ECF answers. Required mappings:
+  - PED: |PED| > 1 → price-elastic (demand is sensitive to price changes); |PED| < 1 → price-inelastic; |PED| = 1 → unit elastic. Do NOT invert these labels.
+  - Comparative advantage: the country with the LOWER opportunity cost per unit of a good has comparative advantage in that good.
+  - Always state: "If result [comparison] → interpretation A; if result [comparison] → interpretation B."
+
 Note: correct_answer is the NUMBER OF MARKS for the correct final answer (0 or 1), not the numerical answer itself. The expected answer ($1,800, $800m, etc.) goes in partial_credit_rules for examiner reference.${showThatRule}${calcRule}`;
   }
 

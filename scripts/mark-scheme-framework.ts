@@ -1144,6 +1144,99 @@ export function flagHybridSingleStep(
   return HYBRID_MULTI_STEP_RE.test(question_text);
 }
 
+// ─── Pattern 1: Multi-value decomposition (§DEFECT-1) ────────────────────────
+
+// Returns the number of distinct final values a question asks the student to calculate.
+// Strips conditional clauses ("given…", "assuming…", "where…") before counting "and (the)" conjunctions.
+// Excludes verbal continuations ("and interpret", "and apply", etc.) that don't introduce new quantities.
+export function detectRequestedValueCount(question_text: string): number {
+  if (!/\b(?:calculate|determine|find|derive)\b/i.test(question_text)) return 1;
+  // Strip everything from the first conditional clause onwards
+  const beforeCondition = question_text.replace(/\s*\b(?:given|assuming|where|when|if)\b.*/i, '');
+  const verbIdx = beforeCondition.search(/\b(?:calculate|determine|find|derive)\b/i);
+  if (verbIdx === -1) return 1;
+  const afterVerb = beforeCondition.slice(verbIdx);
+  // Match "and (the) <word>" but exclude verbal continuations
+  const VERBAL_RE = /^(?:interpret|show|explain|describe|comment|note|compare|apply|use|check)\b/i;
+  const andMatches = (afterVerb.match(/\band\s+(?:the\s+)?(\w+)/gi) ?? [])
+    .filter(m => {
+      const word = m.replace(/^and\s+(?:the\s+)?/i, '');
+      return !VERBAL_RE.test(word);
+    });
+  return Math.max(1, andMatches.length + 1);
+}
+
+// Returns true when a question names ≥2 final values to calculate but method_marks has
+// fewer steps than detected values, leaving at least one value with no marked step.
+export function flagMultiValueMissingStep(
+  data: HybridData,
+  question_text: string,
+): boolean {
+  const count = detectRequestedValueCount(question_text);
+  if (count <= 1) return false;
+  return Array.isArray(data.method_marks) && data.method_marks.length < count;
+}
+
+// ─── Pattern 2: Multiplier formula check (§DEFECT-2) ─────────────────────────
+
+const MULTIPLIER_QUESTION_RE = /\b(?:multiplier|change in (?:\w+\s+)?(?:national\s+)?income|ΔY)\b/i;
+// Open-economy context makes MPM valid — skip the check when explicitly mentioned
+const OPEN_ECONOMY_RE        = /open[\s-]economy|\bMPM\b|marginal propensity to import/i;
+const MPM_IN_STEP_RE         = /\bMPM\b|marginal propensity to import/i;
+
+// Returns true if a standard closed-economy multiplier question has MPM in a method step.
+// MPM belongs in the open-economy multiplier only; the closed-economy denominator uses MPC (= 1−MPS).
+export function flagWrongMultiplierFormula(
+  data: HybridData,
+  question_text: string,
+): boolean {
+  if (!MULTIPLIER_QUESTION_RE.test(question_text)) return false;
+  if (OPEN_ECONOMY_RE.test(question_text)) return false; // MPM may be valid here
+  return data.method_marks.some(m => MPM_IN_STEP_RE.test(m.step));
+}
+
+// ─── Pattern 4: Inverted elasticity label check (§DEFECT-4) ──────────────────
+
+const ELASTICITY_QUESTION_RE = /\bPED\b|price elasticity of demand/i;
+// |PED| > 1 called "inelastic" (should be "elastic") — inverted
+const INVERTED_ELASTIC_RE    = /(?:>|greater than)\s*1[^.;\n]*\binelastic\b|\binelastic\b[^.;\n]*(?:>|greater than)\s*1/i;
+// |PED| < 1 called "elastic" (should be "inelastic") — inverted
+const INVERTED_INELASTIC_RE  = /(?:<|less than)\s*1[^.;\n]*\belastic\b(?!ity)|\belastic\b(?!ity)[^.;\n]*(?:<|less than)\s*1/i;
+
+// Returns true if the scheme inverts the PED elasticity interpretation.
+export function flagInvertedElasticityLabel(
+  data: HybridData,
+  question_text: string,
+): boolean {
+  if (!ELASTICITY_QUESTION_RE.test(question_text)) return false;
+  const text = JSON.stringify(data);
+  return INVERTED_ELASTIC_RE.test(text) || INVERTED_INELASTIC_RE.test(text);
+}
+
+// ─── Pattern 5b: Explain-N (two/three) detection (§DEFECT-5b) ────────────────
+
+export const EXPLAIN_N_RE =
+  /\bexplain\s+(two|three|2|3)\s+(reason|way|cause|factor|advantage|disadvantage|benefit|drawback|impact|effect|implication|example)s?\b/i;
+
+// Returns the number of reasons/items expected (2 or 3), or 0 if not an explain-N question.
+export function detectExplainNCount(question_text: string): number {
+  const match = EXPLAIN_N_RE.exec(question_text);
+  if (!match) return 0;
+  const word = match[1].toLowerCase();
+  if (word === 'two' || word === '2') return 2;
+  if (word === 'three' || word === '3') return 3;
+  return 0;
+}
+
+// Returns true if an explain-N question has fewer accepted_points than the structural minimum
+// (at least 2 per reason: one naming mark, one development mark).
+export function flagExplainNInsufficientPoints(
+  points: AcceptedPoint[],
+  n: number,
+): boolean {
+  return n > 0 && points.length < n * 2;
+}
+
 // ─── Prompt formatter ─────────────────────────────────────────────────────────
 
 export function formatMarkSchemeForPrompt(scheme: {

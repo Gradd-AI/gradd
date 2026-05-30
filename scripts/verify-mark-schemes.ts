@@ -43,6 +43,11 @@ import {
   MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT,
   AO2_HUMAN_REVIEW_MARKS_RANGE,
   resolveSchemeType,
+  flagMultiValueMissingStep,
+  detectExplainNCount,
+  flagExplainNInsufficientPoints,
+  flagWrongMultiplierFormula,
+  flagInvertedElasticityLabel,
   type SchemeType,
   type MarkSchemeData,
   type Band,
@@ -179,9 +184,18 @@ export function checkMarksSumInvariant(
       return { result: 'violation', message: 'accepted_points is not an array — sum check skipped' };
     }
     const sum = d.accepted_points.reduce((acc, p) => acc + (Number(p.marks) || 0), 0);
-    return sum === c.max_marks
-      ? { result: 'correct',   message: `sum(accepted_points.marks)=${sum} = max_marks=${c.max_marks}` }
-      : { result: 'violation', message: `sum(accepted_points.marks)=${sum} ≠ max_marks=${c.max_marks}` };
+    if (sum !== c.max_marks) {
+      return { result: 'violation', message: `sum(accepted_points.marks)=${sum} ≠ max_marks=${c.max_marks}` };
+    }
+    // Pattern 5b — explain-N structure check (§DEFECT-5b)
+    const explainN = detectExplainNCount(c.question_text);
+    if (explainN > 0 && flagExplainNInsufficientPoints(d.accepted_points, explainN)) {
+      return {
+        result: 'violation',
+        message: `explain-${explainN}-reasons question has ${d.accepted_points.length} accepted_point(s) — minimum ${explainN * 2} required (naming + development per reason)`,
+      };
+    }
+    return { result: 'correct', message: `sum(accepted_points.marks)=${sum} = max_marks=${c.max_marks}` };
   }
 
   if (c.scheme_type === 'hybrid') {
@@ -192,9 +206,17 @@ export function checkMarksSumInvariant(
     const methodSum = d.method_marks.reduce((acc, m) => acc + (Number(m.marks) || 0), 0);
     const answerMark = Number(d.answer_marks.correct_answer) || 0;
     const total = methodSum + answerMark;
-    return total === c.max_marks
-      ? { result: 'correct',   message: `method_sum(${methodSum})+answer(${answerMark})=${total} = max_marks=${c.max_marks}` }
-      : { result: 'violation', message: `method_sum(${methodSum})+answer(${answerMark})=${total} ≠ max_marks=${c.max_marks}` };
+    if (total !== c.max_marks) {
+      return { result: 'violation', message: `method_sum(${methodSum})+answer(${answerMark})=${total} ≠ max_marks=${c.max_marks}` };
+    }
+    // Pattern 1 — multi-value decomposition check (§DEFECT-1)
+    if (flagMultiValueMissingStep(d, c.question_text)) {
+      return {
+        result: 'violation',
+        message: `hybrid sum correct but question names multiple calculated values — each named final value requires a distinct method_marks step (found ${d.method_marks.length} step(s))`,
+      };
+    }
+    return { result: 'correct', message: `method_sum(${methodSum})+answer(${answerMark})=${total} = max_marks=${c.max_marks}` };
   }
 
   if (c.scheme_type === 'criteria_marked') {
@@ -414,6 +436,8 @@ hybrid — semantic drift signals:
 - method_marks steps describe a different calculation or formula than the question requires.
 - steps are so generic ("identify the relevant values", "apply the formula") that they could fit any quantitative question.
 - answer_marks.correct_answer is 0 for a non-"show that" question (marks left unawarded).
+- WRONG FORMULA (multiplier): MPM (marginal propensity to import) appears in the multiplier denominator for a closed-economy question — correct formula is k = 1/(1−MPC), where MPC = 1−MPS. MPM is only valid when the question explicitly mentions imports or an open economy.
+- INVERTED INTERPRETATION: a numeric result is mapped to the wrong categorical conclusion — e.g. |PED| > 1 labelled "inelastic" (should be "elastic"), |PED| < 1 labelled "elastic" (should be "inelastic"), or comparative advantage assigned to the country with the higher opportunity cost. Check partial_credit_rules for interpretation rules.
 
 Semantic drift verdict: 'drifted'. Otherwise: 'relevant'.`;
   }
@@ -430,6 +454,7 @@ hybrid — semantic drift signals:
 - method_marks steps describe a different financial calculation or ratio than the question requires.
 - Steps are so generic they could apply to any financial calculation question.
 - answer_marks.correct_answer is 0 for a non-"show that" question.
+- INVERTED INTERPRETATION: a numeric result is mapped to the wrong categorical conclusion — e.g. a ratio labelled with the opposite direction, or break-even output stated as the wrong value.
 
 Semantic drift verdict: 'drifted'. Otherwise: 'relevant'.`;
 }
@@ -548,20 +573,43 @@ async function verifyCandidate(
   const shapeCheck    = checkDataShape(c);
   const verbatimCheck = checkVerbatimMatch(c);
 
-  // Check 5: LLM semantic check — CC/hybrid only, skipped on type mismatch or invalid shape
+  // Deterministic formula/interpretation heuristics — Patterns 2 and 4 (§DEFECT-2, §DEFECT-4).
+  // Fire before the LLM check; if either fires, semantic_relevance is set to 'drifted'
+  // deterministically and the LLM call is skipped for this candidate.
+  let deterministicDrift      = false;
+  let deterministicDriftNote: string | undefined;
+  let deterministicReasoning  = '';
+
+  if (c.scheme_type === 'hybrid' && typeCheck.pass && shapeCheck.pass) {
+    const d = c.scheme_data as HybridData;
+    const wrongFormula  = flagWrongMultiplierFormula(d, c.question_text);
+    const invertedLabel = flagInvertedElasticityLabel(d, c.question_text);
+    if (wrongFormula || invertedLabel) {
+      deterministicDrift = true;
+      const notes: string[] = [];
+      if (wrongFormula)  notes.push('multiplier formula error: MPM used in closed-economy context (use MPC = 1−MPS)');
+      if (invertedLabel) notes.push('inverted elasticity label: |PED| >1 labelled "inelastic" or |PED| <1 labelled "elastic"');
+      deterministicDriftNote = notes.join('; ');
+      deterministicReasoning = `Deterministic heuristic flagged: ${notes.join('; ')}`;
+    }
+  }
+
+  // Check 5: LLM semantic check — CC/hybrid only, skipped on type mismatch, invalid shape,
+  // OR when a deterministic drift heuristic has already fired.
   const needsLlm =
     (c.scheme_type === 'content_checklist' || c.scheme_type === 'hybrid') &&
-    typeCheck.pass && shapeCheck.pass;
+    typeCheck.pass && shapeCheck.pass && !deterministicDrift;
 
-  let semanticRelevance: 'relevant' | 'drifted' | 'na' = 'na';
-  let semanticDriftNote: string | undefined;
-  let semanticReasoning = '';
+  let semanticRelevance: 'relevant' | 'drifted' | 'na' =
+    deterministicDrift ? 'drifted' : 'na';
+  let semanticDriftNote: string | undefined = deterministicDriftNote;
+  let semanticReasoning = deterministicReasoning;
   let cacheReadTokens   = 0;
 
   if (needsLlm) {
     const sr = await checkSemanticRelevance(anthropic, c, semanticFramework);
     semanticRelevance  = sr.semantic_relevance;
-    semanticDriftNote  = sr.drift_note;
+    semanticDriftNote  = sr.drift_note ?? semanticDriftNote;
     semanticReasoning  = sr.reasoning;
     cacheReadTokens    = sr.cacheReadTokens;
   }

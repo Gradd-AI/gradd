@@ -24,6 +24,10 @@ import {
   resolveSchemeType,
   formatMarkSchemeForPrompt,
   flagHybridSingleStep,
+  flagMultiValueMissingStep,
+  flagWrongMultiplierFormula,
+  flagInvertedElasticityLabel,
+  detectExplainNCount,
   MARK_SCHEME_V3_IB_ECONOMICS,
   MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT,
   type AcceptedReasonEntry,
@@ -533,6 +537,186 @@ test('T31 2 method_marks + 2m + multi-step indicator → not flagged (decomposit
     ),
     'should not flag: method_marks.length === 2, decomposition is complete',
   );
+});
+
+// ─── T32–T34: Pattern 1 — multi-value decomposition (§DEFECT-1) ──────────────
+
+console.log('\nT32–T34: multi-value decomposition (flagMultiValueMissingStep + checkMarksSumInvariant)');
+
+test('T32 flagMultiValueMissingStep: 2-value question with 1 method step → true', () => {
+  const data: HybridData = {
+    method_marks: [{ step: 'Set supply = demand: 2 + Q = 20 − Q → Q = 9 units', marks: 1 }],
+    answer_marks: { correct_answer: 1, partial_credit_rules: 'Award 1m for Q; 1m for P. ECF applies.' },
+  };
+  assert.ok(
+    flagMultiValueMissingStep(data, 'Calculate the equilibrium price and the equilibrium quantity.'),
+    '1 method step for 2 requested values — should flag',
+  );
+});
+
+test('T33 flagMultiValueMissingStep: 2-value question with 2 method steps → false', () => {
+  const data: HybridData = {
+    method_marks: [
+      { step: 'Set supply = demand: 2 + Q = 20 − Q → Q = 9 units', marks: 1 },
+      { step: 'Substitute Q into supply: P = 2 + 9 = $11', marks: 1 },
+    ],
+    answer_marks: { correct_answer: 0, partial_credit_rules: 'Award 1m for Q = 9; 1m for P = $11.' },
+  };
+  assert.ok(
+    !flagMultiValueMissingStep(data, 'Calculate the equilibrium price and the equilibrium quantity.'),
+    '2 method steps for 2 requested values — should not flag',
+  );
+});
+
+test('T34 checkMarksSumInvariant: 2-value question, sum correct but 1 step → violation (§DEFECT-1)', () => {
+  // sum = 1m method + 1m answer = 2 = max_marks. Sum passes. Multi-value check catches it.
+  const c = makeCandidate({
+    scheme_type:   'hybrid',
+    max_marks:     2,
+    marks:         2,
+    question_text: 'Calculate the equilibrium price and the equilibrium quantity.',
+    scheme_data:   {
+      method_marks:  [{ step: 'Set supply = demand: 2 + Q = 20 − Q → Q = 9 units', marks: 1 }],
+      answer_marks:  { correct_answer: 1, partial_credit_rules: 'Award 1m for Q = 9; 1m for P = $11. ECF applies.' },
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'violation');
+  assert.match(r.message, /multiple calculated values|named final value/i);
+});
+
+// ─── T35–T36: Pattern 2 — wrong multiplier formula (§DEFECT-2) ───────────────
+
+console.log('\nT35–T36: multiplier formula check (flagWrongMultiplierFormula)');
+
+test('T35 flagWrongMultiplierFormula: MPM in closed-economy multiplier step → true', () => {
+  const data: HybridData = {
+    method_marks: [
+      { step: 'MPC = 1 − MPS = 1 − 0.4 = 0.6', marks: 1 },
+      { step: 'Multiplier = 1 / (1 − MPM) = 1 / (1 − 0.4) = 1.67', marks: 1 },
+      { step: 'ΔY = 1.67 × $300m = $500m', marks: 1 },
+    ],
+    answer_marks: { correct_answer: 1, partial_credit_rules: 'ECF if multiplier wrong.' },
+  };
+  assert.ok(
+    flagWrongMultiplierFormula(
+      data,
+      'Calculate the change in equilibrium national income given MPS = 0.4 and an increase in investment of $300m.',
+    ),
+    'MPM used in closed-economy multiplier question — should flag',
+  );
+});
+
+test('T36 flagWrongMultiplierFormula: MPC in multiplier step → false', () => {
+  const data: HybridData = {
+    method_marks: [
+      { step: 'MPC = 1 − MPS = 1 − 0.4 = 0.6', marks: 1 },
+      { step: 'Multiplier k = 1 / (1 − MPC) = 1 / 0.4 = 2.5', marks: 1 },
+      { step: 'ΔY = k × ΔI = 2.5 × $300m = $750m', marks: 1 },
+    ],
+    answer_marks: { correct_answer: 1, partial_credit_rules: 'ECF throughout.' },
+  };
+  assert.ok(
+    !flagWrongMultiplierFormula(
+      data,
+      'Calculate the change in equilibrium national income given MPS = 0.4 and an increase in investment of $300m.',
+    ),
+    'MPC used correctly — should not flag',
+  );
+});
+
+// ─── T37–T38: Pattern 4 — inverted elasticity label (§DEFECT-4) ──────────────
+
+console.log('\nT37–T38: inverted elasticity label (flagInvertedElasticityLabel)');
+
+test('T37 flagInvertedElasticityLabel: |PED| > 1 labelled "inelastic" → true', () => {
+  const data: HybridData = {
+    method_marks: [{ step: 'PED = (% change in Qd) / (% change in P) = −20% / 10% = −2', marks: 1 }],
+    answer_marks: {
+      correct_answer: 1,
+      partial_credit_rules: 'Since |PED| = 2 > 1, demand is inelastic. Award 1m for correct calculation; 1m for correct interpretation.',
+    },
+  };
+  assert.ok(
+    flagInvertedElasticityLabel(data, 'Calculate the PED for good X and state whether demand is elastic or inelastic.'),
+    '|PED| = 2 > 1 called "inelastic" — inverted, should flag',
+  );
+});
+
+test('T38 flagInvertedElasticityLabel: |PED| > 1 labelled "elastic" → false', () => {
+  const data: HybridData = {
+    method_marks: [{ step: 'PED = −20% / 10% = −2', marks: 1 }],
+    answer_marks: {
+      correct_answer: 1,
+      partial_credit_rules: 'Since |PED| = 2 > 1, demand is elastic. Award 1m for calculation; 1m for correct label.',
+    },
+  };
+  assert.ok(
+    !flagInvertedElasticityLabel(data, 'Calculate the PED for good X and state whether demand is elastic or inelastic.'),
+    '|PED| = 2 > 1 correctly labelled "elastic" — should not flag',
+  );
+});
+
+// ─── T39–T40: Pattern 5b — explain-N detection (§DEFECT-5b) ─────────────────
+
+console.log('\nT39–T40: explain-N detection (detectExplainNCount)');
+
+test('T39 detectExplainNCount: "Explain two reasons why..." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Explain two reasons why the CPI may overstate the true rate of inflation experienced by households.'),
+    2,
+  );
+});
+
+test('T40 detectExplainNCount: "Explain three advantages of..." → 3', () => {
+  assert.equal(
+    detectExplainNCount('Explain three advantages of a floating exchange rate system for a small open economy.'),
+    3,
+  );
+});
+
+// ─── T41–T42: Pattern 5b — explain-N via checkMarksSumInvariant (§DEFECT-5b) ─
+
+console.log('\nT41–T42: explain-N structure check (checkMarksSumInvariant)');
+
+test('T41 checkMarksSumInvariant: "explain two reasons" with 2 accepted_points (< 4 required) → violation', () => {
+  // sum = 2+2 = 4 = max_marks. Sum passes. Explain-N check catches insufficient points.
+  const c = makeCandidate({
+    scheme_type:   'content_checklist',
+    max_marks:     4,
+    marks:         4,
+    question_text: 'Explain two reasons why the CPI may overstate the true rate of inflation.',
+    scheme_data:   {
+      accepted_points: [
+        { point: 'Substitution bias: the CPI uses a fixed basket so consumers switching to cheaper goods is ignored, overstating cost of living.', marks: 2, keywords: ['fixed basket', 'substitution bias', 'CPI'] },
+        { point: 'Quality bias: price rises may partly reflect quality improvements, so the CPI overstates pure inflation.', marks: 2, keywords: ['quality bias', 'quality improvement', 'inflation'] },
+      ],
+      marking_rule: '2 marks per reason, max 4',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'violation');
+  assert.match(r.message, /explain-2-reasons|minimum 4/i);
+});
+
+test('T42 checkMarksSumInvariant: "explain two reasons" with 4 accepted_points → correct', () => {
+  const c = makeCandidate({
+    scheme_type:   'content_checklist',
+    max_marks:     4,
+    marks:         4,
+    question_text: 'Explain two reasons why the CPI may overstate the true rate of inflation.',
+    scheme_data:   {
+      accepted_points: [
+        { point: 'Names reason 1: substitution bias.',                                                                                                       marks: 1, keywords: ['substitution bias', 'fixed basket'] },
+        { point: 'Develops reason 1: the CPI fixed basket does not account for consumers switching to cheaper substitutes, so the cost of living is overstated.', marks: 1, keywords: ['fixed basket', 'cheaper substitutes', 'cost of living'] },
+        { point: 'Names reason 2: quality bias.',                                                                                                             marks: 1, keywords: ['quality bias', 'quality improvement'] },
+        { point: 'Develops reason 2: price increases partly reflect better product quality, so the CPI overstates true inflation by treating quality gains as pure price rises.', marks: 1, keywords: ['quality improvement', 'overstates', 'inflation'] },
+      ],
+      marking_rule: '2 reasons required; 2m per reason: 1m naming, 1m development. Max 4.',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'correct');
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
