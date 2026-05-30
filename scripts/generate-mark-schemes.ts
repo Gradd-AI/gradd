@@ -619,7 +619,8 @@ async function fetchRejectedSpecs(
   const { data: questions, error: qErr } = await supabase
     .from('questions')
     .select(QUESTION_SELECT)
-    .in('id', questionIds);
+    .in('id', questionIds)
+    .eq('status', 'seed');
 
   if (qErr) throw new Error(`Failed to fetch questions for rejected schemes: ${qErr.message}`);
 
