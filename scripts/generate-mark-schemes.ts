@@ -403,12 +403,12 @@ Rules:
     // breadth across N reasons, each named AND developed. Differs from "explain one" (depth-only).
     const explainNMatch = EXPLAIN_N_RE.exec(spec.question_text);
     const explainN = explainNMatch
-      ? (explainNMatch[1].toLowerCase() === 'two' || explainNMatch[1] === '2' ? 2 : 3)
+      ? (explainNMatch[2].toLowerCase() === 'two' || explainNMatch[2] === '2' ? 2 : 3)
       : 0;
 
     if (explainN > 0) {
       const nWord     = explainN === 2 ? 'two' : 'three';
-      const nounRaw   = explainNMatch![2] ?? 'reason';
+      const nounRaw   = explainNMatch![3] ?? 'reason';
       const nounType  = nounRaw.toLowerCase();
       const nounTitle = nounType.charAt(0).toUpperCase() + nounType.slice(1);
       const marksPerN = Math.floor(spec.marks / explainN);

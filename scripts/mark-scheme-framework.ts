@@ -1216,13 +1216,15 @@ export function flagInvertedElasticityLabel(
 // ─── Pattern 5b: Explain-N (two/three) detection (§DEFECT-5b) ────────────────
 
 export const EXPLAIN_N_RE =
-  /\bexplain\s+(two|three|2|3)\s+\w+/i;
+  /\b(explain|describe|analyse|analyze|examine)\s+(two|three|2|3)\s+(\w+)/i;
+// Groups: [1] verb  [2] number  [3] first noun word
+// Excluded (flat AO1 pools, no breadth+depth structure): state, identify, outline
 
-// Returns the number of reasons/items expected (2 or 3), or 0 if not an explain-N question.
+// Returns the number of items expected (2 or 3), or 0 if not a breadth-marked question.
 export function detectExplainNCount(question_text: string): number {
   const match = EXPLAIN_N_RE.exec(question_text);
   if (!match) return 0;
-  const word = match[1].toLowerCase();
+  const word = match[2].toLowerCase();   // group 2 is the number
   if (word === 'two' || word === '2') return 2;
   if (word === 'three' || word === '3') return 3;
   return 0;

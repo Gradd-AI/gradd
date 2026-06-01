@@ -815,6 +815,66 @@ test('T52 economic_correctness=incorrect + reasoning mentions "passes" → contr
   );
 });
 
+// ─── T56–T63: EXPLAIN_N_RE widened verb set — BM breadth-marked verbs ─────────
+
+console.log('\nT56–T63: EXPLAIN_N_RE widened verb set (BM coverage)');
+
+test('T56 detectExplainNCount: "Describe two differences between..." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Describe two differences between a niche market strategy and a mass market strategy.'),
+    2,
+  );
+});
+
+test('T57 detectExplainNCount: "Describe two strategies that Florenza Foods..." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Describe two strategies that Florenza Foods could use to improve its profitability ratios.'),
+    2,
+  );
+});
+
+test('T58 detectExplainNCount: "Analyse two sources of conflict..." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Analyse two sources of conflict that may arise between management and employees.'),
+    2,
+  );
+});
+
+test('T59 detectExplainNCount: "Examine two advantages of..." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Examine two advantages of franchising as a method of business growth.'),
+    2,
+  );
+});
+
+test('T60 detectExplainNCount: "State two features..." → 0 (flat AO1 pool — must NOT match)', () => {
+  assert.equal(
+    detectExplainNCount('State two features of job production.'),
+    0,
+  );
+});
+
+test('T61 detectExplainNCount: "Identify two..." → 0 (excluded verb)', () => {
+  assert.equal(
+    detectExplainNCount('Identify two sources of finance available to a sole trader.'),
+    0,
+  );
+});
+
+test('T62 detectExplainNCount: "Describe the pricing strategy..." (no number) → 0 (no-match, no enumeration)', () => {
+  assert.equal(
+    detectExplainNCount('Describe the pricing strategy used by NovaBite.'),
+    0,
+  );
+});
+
+test('T63 detectExplainNCount: "Analyse how two firms compete..." → 0 (no-match, number not enumeration)', () => {
+  assert.equal(
+    detectExplainNCount('Analyse how two firms compete in an oligopoly.'),
+    0,
+  );
+});
+
 // ─── T53–T55: buildEconomicCorrectnessFramework subject-routing ───────────────
 
 console.log('\nT53–T55: buildEconomicCorrectnessFramework subject-routing');
