@@ -1216,7 +1216,7 @@ export function flagInvertedElasticityLabel(
 // ─── Pattern 5b: Explain-N (two/three) detection (§DEFECT-5b) ────────────────
 
 export const EXPLAIN_N_RE =
-  /\bexplain\s+(two|three|2|3)\s+(reason|way|cause|factor|advantage|disadvantage|benefit|drawback|impact|effect|implication|example)s?\b/i;
+  /\bexplain\s+(two|three|2|3)\s+\w+/i;
 
 // Returns the number of reasons/items expected (2 or 3), or 0 if not an explain-N question.
 export function detectExplainNCount(question_text: string): number {

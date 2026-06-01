@@ -17,11 +17,11 @@
 ## Content-accuracy errors (not deterministically catchable by verifier)
 - **9cd45583** (production externality): scheme wrongly equates MSB > MPB with MSC < MPC — conflating production and consumption externality logic. A negative production externality raises MSC above MPC; it does not shift the benefit curves. The question/scheme applies consumption-externality reasoning to a production-externality scenario. Reject question + scheme. Not a generator-regex failure; requires domain-level economic accuracy checking that the verifier cannot currently enforce.
 
-## ENGINE GAP — pattern 5b not fully closed
+## ENGINE GAP — pattern 5b (FIXED in this commit)
 
 - **8952cbe8** ("Explain two costs of unemployment", 4m content_checklist): scheme produced a flat pool — "1 mark per distinct point, max 4" with 4 standalone points — instead of the breadth+depth structure (2 costs × [1m name + 1m develop]). A student could score 4m by naming 4 costs shallowly, defeating "explain two". Reject this scheme.
-- **This is an engine gap, not a flawed question.** The pattern-5b fix (EXPLAIN_N_RE + breadth-marked structure) either (a) didn't fire on "Explain two costs of [X]" phrasing, or (b) fired but still generated a flat structure.
-- **Next session — investigate:** test EXPLAIN_N_RE against "Explain two costs of unemployment for the government of Nordavia." Does it match? If not, the regex is too narrow (likely expects "reasons/ways" not "costs"). If it matches, the content_checklist generation path isn't applying the breadth structure. Either way the 5b fix needs extending + a new meta-test for "costs/benefits" noun variants.
+- **Root cause confirmed:** EXPLAIN_N_RE used a hardcoded noun list that did not include "cost". "Explain two costs of…" never fired the breadth+depth path.
+- **Fix:** EXPLAIN_N_RE now matches `explain (two|three|2|3) <any word>` structurally — noun list removed entirely. Robust to any IB command-term noun. T43–T48 added to meta-test suite; 48/48 pass.
 
 ## Upstream patterns to audit
 - **Mark-count mismatch** (from df6ce882): scan all IB_ECON `question_text` for "[N marks]" vs `marks` column — flag any that diverge.
@@ -33,7 +33,7 @@
 ## Top-line verdict — 31 May 2026 review
 
 Hybrid CALCULATION engine fix **holds**. Of 5 rejects:
-- 1 is an engine gap (8952cbe8 — pattern 5b, "costs/benefits" noun variants not matched)
+- 1 is an engine gap (8952cbe8 — pattern 5b, **now fixed**: EXPLAIN_N_RE is noun-agnostic, 48/48)
 - 4 are question-generation / content-accuracy failures (b1e1480a, 70199970, fc8b97af, 9cd45583) — not attributable to the engine fix
 
-**Action before launch:** a separate quality pass targeting (a) embedded-formula economic correctness, (b) behavioural narrative-maths consistency, (c) externality curve direction, and (d) EXPLAIN_N_RE regex coverage for "costs/benefits" variants.
+**Action before launch:** a separate quality pass targeting (a) embedded-formula economic correctness, (b) behavioural narrative-maths consistency, and (c) externality curve direction.

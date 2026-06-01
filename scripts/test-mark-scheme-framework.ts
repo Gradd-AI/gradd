@@ -719,6 +719,52 @@ test('T42 checkMarksSumInvariant: "explain two reasons" with 4 accepted_points �
   assert.equal(r.result, 'correct');
 });
 
+// ─── T43–T48: Pattern 5b — EXPLAIN_N_RE noun-agnostic coverage (§DEFECT-5b) ──
+
+console.log('\nT43–T48: EXPLAIN_N_RE noun-agnostic match/no-match');
+
+test('T43 detectExplainNCount: "Explain two costs of unemployment..." → 2 (was miss before fix)', () => {
+  assert.equal(
+    detectExplainNCount('Explain two costs of unemployment for the government of Nordavia.'),
+    2,
+  );
+});
+
+test('T44 detectExplainNCount: "Explain three limitations of GDP..." → 3', () => {
+  assert.equal(
+    detectExplainNCount('Explain three limitations of GDP as a welfare measure.'),
+    3,
+  );
+});
+
+test('T45 detectExplainNCount: "Explain two consequences of a current account deficit." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Explain two consequences of a current account deficit.'),
+    2,
+  );
+});
+
+test('T46 detectExplainNCount: "Explain two determinants of price elasticity of demand." → 2', () => {
+  assert.equal(
+    detectExplainNCount('Explain two determinants of price elasticity of demand.'),
+    2,
+  );
+});
+
+test('T47 detectExplainNCount: "Explain how two firms compete in an oligopoly." → 0 (no-match, number not enumeration)', () => {
+  assert.equal(
+    detectExplainNCount('Explain how two firms compete in an oligopoly.'),
+    0,
+  );
+});
+
+test('T48 detectExplainNCount: "Explain the two-sector circular flow of income." → 0 (no-match, article before number)', () => {
+  assert.equal(
+    detectExplainNCount('Explain the two-sector circular flow of income.'),
+    0,
+  );
+});
+
 // ─── Summary ──────────────────────────────────────────────────────────────────
 
 console.log(`\n${'─'.repeat(60)}`);
