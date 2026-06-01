@@ -795,11 +795,12 @@ export const MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT: MarkSchemeV3IbBusinessManage
 export const SCHEME_TYPE_INVARIANTS: SchemeTypeInvariants = {
 
   // EVIDENCE: §2.B "Sum of all accepted_points[i].marks must equal max_marks."
+  // Pool-marking exception: AO1 state/identify questions offer a pool of 1m options (award any max_marks).
   content_checklist: [
     {
-      invariant: 'sum(accepted_points[*].marks) == max_marks',
-      description: 'All accepted point marks must sum exactly to the question\'s max_marks.',
-      reject_if: 'sum(accepted_points[*].marks) !== max_marks',
+      invariant: 'standard: sum(accepted_points[*].marks) == max_marks; pool (AO1 state/identify): all marks==1 AND count>=max_marks',
+      description: 'Standard CC: all accepted_point marks sum exactly to max_marks. Pool CC (AO1 state/identify): every point is 1m and there are at least max_marks options to award from.',
+      reject_if: 'standard: sum !== max_marks; pool: any point mark != 1, or count < max_marks',
     },
   ],
 

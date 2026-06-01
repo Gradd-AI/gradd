@@ -815,6 +815,93 @@ test('T52 economic_correctness=incorrect + reasoning mentions "passes" → contr
   );
 });
 
+// ─── T67–T71: Pool-marking invariant — AO1 state/identify questions ──────────────
+
+console.log('\nT67–T71: pool-marking invariant (AO1 state/identify)');
+
+test('T67 checkMarksSumInvariant: state-two, 5 × 1m points, max_marks=2 → correct (pool)', () => {
+  const c = makeCandidate({
+    command_term: 'state', ao_level: 'AO1', max_marks: 2, marks: 2,
+    scheme_data: {
+      accepted_points: [
+        { point: 'A', marks: 1, keywords: ['k1', 'k2'] },
+        { point: 'B', marks: 1, keywords: ['k3', 'k4'] },
+        { point: 'C', marks: 1, keywords: ['k5', 'k6'] },
+        { point: 'D', marks: 1, keywords: ['k7', 'k8'] },
+        { point: 'E', marks: 1, keywords: ['k9', 'k10'] },
+      ],
+      marking_rule: '1 mark per distinct point, max 2. Award any two.',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'correct');
+  assert.match(r.message, /pool-marked/);
+});
+
+test('T68 checkMarksSumInvariant: state-two, 3 × 1m points, max_marks=2 → correct (pool, matches 17878488 pattern)', () => {
+  const c = makeCandidate({
+    command_term: 'state', ao_level: 'AO1', max_marks: 2, marks: 2,
+    scheme_data: {
+      accepted_points: [
+        { point: 'Retained profit', marks: 1, keywords: ['retained profit', 'dividends'] },
+        { point: 'Sale of assets', marks: 1, keywords: ['sale of assets', 'fixed assets'] },
+        { point: 'Reduction in working capital', marks: 1, keywords: ['working capital', 'debtor collection'] },
+      ],
+      marking_rule: '1 mark per distinct point, max 2',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'correct');
+});
+
+test('T69 checkMarksSumInvariant: state-two pool where one point is 2m → violation (not all 1m)', () => {
+  const c = makeCandidate({
+    command_term: 'state', ao_level: 'AO1', max_marks: 2, marks: 2,
+    scheme_data: {
+      accepted_points: [
+        { point: 'A', marks: 2, keywords: ['k1', 'k2'] },
+        { point: 'B', marks: 1, keywords: ['k3', 'k4'] },
+      ],
+      marking_rule: '...',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'violation');
+  assert.match(r.message, /marks ≠ 1/);
+});
+
+test('T70 checkMarksSumInvariant: state-two, only 1 point for max_marks=2 → violation (not enough options)', () => {
+  const c = makeCandidate({
+    command_term: 'state', ao_level: 'AO1', max_marks: 2, marks: 2,
+    scheme_data: {
+      accepted_points: [
+        { point: 'A', marks: 1, keywords: ['k1', 'k2'] },
+      ],
+      marking_rule: '...',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'violation');
+  assert.match(r.message, /at least 2 pool options/);
+});
+
+test('T71 checkMarksSumInvariant: explain AO2, 3 × 1m for max_marks=2 → violation (pool path must NOT fire for explain)', () => {
+  const c = makeCandidate({
+    command_term: 'explain', ao_level: 'AO2', max_marks: 2, marks: 2,
+    scheme_data: {
+      accepted_points: [
+        { point: 'A', marks: 1, keywords: ['k1', 'k2'] },
+        { point: 'B', marks: 1, keywords: ['k3', 'k4'] },
+        { point: 'C', marks: 1, keywords: ['k5', 'k6'] },
+      ],
+      marking_rule: '1 mark per distinct point, max 2',
+    },
+  });
+  const r = checkMarksSumInvariant(c);
+  assert.equal(r.result, 'violation');
+  assert.match(r.message, /3 ≠ max_marks=2/);
+});
+
 // ─── T64–T66: BM SEC_A routing fix — AO2 ≥5m must NOT route to band_descriptor ─
 
 console.log('\nT64–T66: BM SEC_A routing fix');

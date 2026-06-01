@@ -184,6 +184,29 @@ export function checkMarksSumInvariant(
     if (!Array.isArray(d?.accepted_points)) {
       return { result: 'violation', message: 'accepted_points is not an array — sum check skipped' };
     }
+    // Pool-marking path: AO1 state/identify questions offer a pool of 1m options, award any max_marks.
+    // IB practice: more valid options than marks available — strict sum would always false-flag these.
+    const term   = c.command_term.toLowerCase();
+    const isPool = (term === 'state' || term === 'identify') && c.ao_level === 'AO1';
+
+    if (isPool) {
+      const nonUnit = d.accepted_points.filter(p => p.marks !== 1);
+      if (nonUnit.length > 0) {
+        return {
+          result: 'violation',
+          message: `pool-marked question has ${nonUnit.length} accepted_point(s) with marks ≠ 1 — all pool options must be 1m`,
+        };
+      }
+      if (d.accepted_points.length < c.max_marks) {
+        return {
+          result: 'violation',
+          message: `pool-marked question has ${d.accepted_points.length} accepted_point(s) but max_marks=${c.max_marks} — need at least ${c.max_marks} pool options`,
+        };
+      }
+      return { result: 'correct', message: `pool-marked: ${d.accepted_points.length} valid 1m option(s), award any ${c.max_marks}` };
+    }
+
+    // Standard path: strict sum === max_marks
     const sum = d.accepted_points.reduce((acc, p) => acc + (Number(p.marks) || 0), 0);
     if (sum !== c.max_marks) {
       return { result: 'violation', message: `sum(accepted_points.marks)=${sum} ≠ max_marks=${c.max_marks}` };
