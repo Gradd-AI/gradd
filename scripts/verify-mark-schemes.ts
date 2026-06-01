@@ -112,9 +112,10 @@ export interface MarkSchemeVerificationResult {
   marks_sum_invariant: 'correct' | 'violation' | 'na';
   data_shape:          'valid' | 'invalid';
   verbatim_match:      'correct' | 'drift' | 'na';
-  semantic_relevance:  'relevant' | 'drifted' | 'na';
-  human_review_flag:   'flagged' | 'clear';  // 'flagged' = AO2 5-6m → borderline even if all else pass
-  overall:             'pass' | 'borderline' | 'fail';
+  semantic_relevance:   'relevant' | 'drifted' | 'na';
+  economic_correctness: 'correct' | 'incorrect' | 'uncertain' | 'na';
+  human_review_flag:    'flagged' | 'clear';  // 'flagged' = AO2 5-6m or economic 'uncertain' → borderline
+  overall:              'pass' | 'borderline' | 'fail';
   reasoning:           string;
   drift_note?:         string;  // set when verbatim_match=drift or semantic_relevance=drifted
 }
@@ -376,21 +377,23 @@ export function applyMarkSchemeVerdict(
   result: MarkSchemeVerificationResult,
 ): 'pass' | 'borderline' | 'fail' {
   const isMajorFail =
-    result.scheme_type_match   === 'mismatch'  ||
-    result.marks_sum_invariant === 'violation' ||
-    result.data_shape          === 'invalid'   ||
-    result.verbatim_match      === 'drift'     ||
-    result.semantic_relevance  === 'drifted';
+    result.scheme_type_match    === 'mismatch'   ||
+    result.marks_sum_invariant  === 'violation'  ||
+    result.data_shape           === 'invalid'    ||
+    result.verbatim_match       === 'drift'      ||
+    result.semantic_relevance   === 'drifted'    ||
+    result.economic_correctness === 'incorrect';
 
   // human_review_flag='flagged' prevents all-correct → borderline even when 5 checks pass.
   // Covers AO2 5-6m border cases where scheme_type assignment needs human confirmation.
   const isAllCorrect =
-    result.scheme_type_match   === 'correct'  &&
-    (result.marks_sum_invariant === 'correct'  || result.marks_sum_invariant === 'na') &&
-    result.data_shape           === 'valid'    &&
-    (result.verbatim_match      === 'correct'  || result.verbatim_match === 'na')      &&
-    (result.semantic_relevance  === 'relevant' || result.semantic_relevance === 'na')  &&
-    result.human_review_flag   !== 'flagged';
+    result.scheme_type_match    === 'correct'   &&
+    (result.marks_sum_invariant  === 'correct'  || result.marks_sum_invariant  === 'na') &&
+    result.data_shape            === 'valid'    &&
+    (result.verbatim_match       === 'correct'  || result.verbatim_match       === 'na') &&
+    (result.semantic_relevance   === 'relevant' || result.semantic_relevance   === 'na') &&
+    (result.economic_correctness === 'correct'  || result.economic_correctness === 'na') &&
+    result.human_review_flag    !== 'flagged';
 
   const computed: 'pass' | 'borderline' | 'fail' =
     isMajorFail ? 'fail' : isAllCorrect ? 'pass' : 'borderline';
@@ -403,7 +406,7 @@ export function applyMarkSchemeVerdict(
       `Mark scheme verdict contradiction: reasoning implies "pass" but criteria have a major fail. ` +
       `type=${result.scheme_type_match} sum=${result.marks_sum_invariant} ` +
       `shape=${result.data_shape} verbatim=${result.verbatim_match} semantic=${result.semantic_relevance} ` +
-      `review=${result.human_review_flag}. reasoning="${result.reasoning.slice(0, 120)}"`,
+      `economic=${result.economic_correctness} review=${result.human_review_flag}. reasoning="${result.reasoning.slice(0, 120)}"`,
     );
   }
 
@@ -560,12 +563,155 @@ async function checkSemanticRelevance(
   return { ...inp, cacheReadTokens: res.usage.cache_read_input_tokens ?? 0 };
 }
 
+// ─── Check 6: Economic-correctness LLM pass ───────────────────────────────────
+// Standalone — not yet wired into verifyCandidate. Call explicitly for testing.
+
+const SYSTEM_PROMPT_ECONOMIC_CORRECTNESS =
+  `You are an IB Economics examiner checking whether a mark scheme is economically accurate. ` +
+  `Your job is NOT to judge whether the scheme matches the question topic — a separate check does that. ` +
+  `Your job is to reason step by step through every formula, curve direction, causal mechanism, and ` +
+  `numerical result in the scheme, and decide whether the ECONOMICS is correct according to standard ` +
+  `IB Economics theory. ` +
+  `DECISION RULE: ` +
+  `'correct' — all economic content (formulas, directions, calculations, interpretations) is sound. ` +
+  `'incorrect' — the scheme contains at least one economic error: wrong formula, wrong curve direction, ` +
+  `wrong causal mechanism, or a narrative that contradicts the maths. Be strict — a scheme that is ` +
+  `internally consistent but uses a simplified or invented method that would mislead students is 'incorrect'. ` +
+  `'uncertain' — you cannot determine correctness without external data or diagrams not provided.`;
+
+export function buildEconomicCorrectnessFramework(): string {
+  return `HIGH-ERROR TOPICS — apply extra scrutiny to these when present:
+
+DWL (deadweight welfare loss):
+- DWL triangle height = gap between supply price and demand price AT THE TRADED QUANTITY (not the equilibrium-to-ceiling price gap).
+- In a price ceiling: traded Q is determined by the supply curve at the ceiling price. Height at that Q = demand price − supply price.
+- Using (equilibrium price − ceiling price) as the height is WRONG — it uses price coordinates of the equilibrium point, not the traded-quantity point.
+- DWL area = ½ × base × height, where base = (equilibrium Q − traded Q).
+
+Externalities — curve direction:
+- PRODUCTION externality (e.g. pollution from a factory): MSC shifts ABOVE MPC. MSB = MPB (unchanged). Do NOT shift MSB.
+- CONSUMPTION externality (e.g. education, vaccination): MSB shifts ABOVE MPB. MSC = MPC (unchanged). Do NOT shift MSC.
+- These are NOT interchangeable. A scheme that writes MSB > MPB for a production externality is WRONG.
+
+Multiplier formula:
+- CLOSED economy: k = 1 / (1 − MPC), equivalently 1 / MPS.
+- OPEN economy (with imports): k = 1 / (1 − MPC + MPM).
+- MPM (marginal propensity to import) must NOT appear in a closed-economy multiplier.
+
+Comparative advantage:
+- Country has CA in good X if its opportunity cost of X is LOWER than the other country's.
+- Mutually beneficial trade requires the agreed trade rate to lie STRICTLY BETWEEN both countries' opportunity costs.
+- A trade rate outside this band means one country gains nothing from trade — any scheme asserting trade is beneficial at such a rate is WRONG.
+
+Elasticity interpretation:
+- |PED| > 1 → price elastic. |PED| < 1 → price inelastic. |PED| = 1 → unit elastic.
+- A scheme labelling |PED| > 1 as "inelastic" or |PED| < 1 as "elastic" is WRONG.
+
+Expected-value / behavioural economics:
+- If a question describes a consumer as "irrationally" choosing option X "despite the maths", option X must have a LOWER expected value than the alternative.
+- If option X has higher EV, the consumer is making the rational choice — the behavioural narrative is self-contradicting and the scheme is WRONG.`;
+}
+
+const SUBMIT_ECONOMIC_CORRECTNESS_TOOL: Anthropic.Tool = {
+  name: 'submit_economic_correctness_verdict',
+  description: 'Submit the economic-correctness verdict for this mark scheme.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      economic_correctness: {
+        type: 'string',
+        enum: ['correct', 'incorrect', 'uncertain'],
+        description: 'Is the economics in this scheme correct?',
+      },
+      error_note: {
+        type: 'string',
+        description: 'Required if incorrect: one sentence identifying the specific economic error.',
+      },
+      reasoning: {
+        type: 'string',
+        description: 'Step-by-step reasoning (2–4 sentences) checking formulas, directions, and interpretations.',
+      },
+    },
+    required: ['economic_correctness', 'reasoning'],
+  },
+};
+
+function buildEconomicCorrectnessPrompt(c: MarkSchemeCandidate): string {
+  const contextBlock = c.context_text
+    ? `\nContext/stimulus:\n"${c.context_text}"\n`
+    : '';
+  return `Using the economic principles above, scrutinise whether every formula, curve direction, and interpretation in this mark scheme is economically correct. Reason step by step.
+
+Question metadata:
+- command_term: ${c.command_term.replace(/_/g, ' ')} (${c.ao_level})
+- marks: ${c.max_marks}
+- scheme_type: ${c.scheme_type}
+
+Question text:
+"${c.question_text}"
+${contextBlock}
+Mark scheme:
+${JSON.stringify(c.scheme_data, null, 2)}
+
+Check each formula, curve direction, and numerical result against standard IB Economics theory. Is the economics correct?`;
+}
+
+export async function checkEconomicCorrectness(
+  anthropic: Anthropic,
+  c: MarkSchemeCandidate,
+  frameworkText: string,
+): Promise<{
+  economic_correctness: 'correct' | 'incorrect' | 'uncertain';
+  error_note?:          string;
+  reasoning:            string;
+  cacheReadTokens:      number;
+}> {
+  const res = await anthropic.beta.messages.create({
+    betas:       ['prompt-caching-2024-07-31'],
+    model:       'claude-sonnet-4-6',
+    max_tokens:  1024,
+    system:      SYSTEM_PROMPT_ECONOMIC_CORRECTNESS,
+    tools:       [SUBMIT_ECONOMIC_CORRECTNESS_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_economic_correctness_verdict' },
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text: frameworkText,
+            cache_control: { type: 'ephemeral' },
+          } as { type: 'text'; text: string; cache_control: { type: 'ephemeral' } },
+          {
+            type: 'text',
+            text: buildEconomicCorrectnessPrompt(c),
+          },
+        ],
+      },
+    ],
+  });
+
+  const block = res.content.find(b => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') {
+    throw new Error('No tool_use block in economic correctness response');
+  }
+
+  const inp = block.input as {
+    economic_correctness: 'correct' | 'incorrect' | 'uncertain';
+    error_note?:          string;
+    reasoning:            string;
+  };
+
+  return { ...inp, cacheReadTokens: res.usage.cache_read_input_tokens ?? 0 };
+}
+
 // ─── Full verification pipeline ───────────────────────────────────────────────
 
 async function verifyCandidate(
   anthropic: Anthropic,
   c: MarkSchemeCandidate,
   semanticFramework: string,
+  economicFramework: string,
 ): Promise<{ result: MarkSchemeVerificationResult; cacheReadTokens: number }> {
   // Checks 1–4: deterministic
   const typeCheck     = checkSchemeTypeMatch(c);
@@ -614,6 +760,27 @@ async function verifyCandidate(
     cacheReadTokens    = sr.cacheReadTokens;
   }
 
+  // Check 6: Economic correctness — LLM, CC/hybrid only. Skipped when any prior check
+  // already fails: no point paying for an accuracy pass on an already-failing scheme.
+  const needsEconomicCheck =
+    (c.scheme_type === 'content_checklist' || c.scheme_type === 'hybrid') &&
+    typeCheck.pass && shapeCheck.pass &&
+    sumCheck.result !== 'violation' &&
+    !deterministicDrift &&
+    semanticRelevance !== 'drifted';
+
+  let economicCorrectness: 'correct' | 'incorrect' | 'uncertain' | 'na' = 'na';
+  let economicReasoning    = '';
+  let economicErrorNote: string | undefined;
+
+  if (needsEconomicCheck) {
+    const ec = await checkEconomicCorrectness(anthropic, c, economicFramework);
+    economicCorrectness = ec.economic_correctness;
+    economicReasoning   = ec.reasoning;
+    economicErrorNote   = ec.error_note;
+    cacheReadTokens    += ec.cacheReadTokens;
+  }
+
   // Assemble reasoning from deterministic failures first, then LLM
   const reasonParts: string[] = [];
   if (!typeCheck.pass)
@@ -626,14 +793,19 @@ async function verifyCandidate(
     reasonParts.push(verbatimCheck.drift_note ?? 'verbatim drift from V3 constants');
   if (semanticRelevance === 'drifted')
     reasonParts.push(semanticReasoning);
+  if (economicCorrectness === 'incorrect')
+    reasonParts.push(`economic error: ${economicErrorNote ?? economicReasoning.slice(0, 200)}`);
+  else if (economicCorrectness === 'uncertain')
+    reasonParts.push(`economic correctness uncertain — human review required: ${economicReasoning.slice(0, 200)}`);
   if (reasonParts.length === 0)
     reasonParts.push(semanticReasoning || 'all checks pass');
 
-  // AO2 5-6m border cases require human review before promotion [AO2_HUMAN_REVIEW_MARKS_RANGE]
+  // AO2 5-6m border cases and economic 'uncertain' → human review before promotion
   const human_review_flag: 'flagged' | 'clear' =
-    c.ao_level === 'AO2' &&
-    c.marks >= AO2_HUMAN_REVIEW_MARKS_RANGE[0] &&
-    c.marks <= AO2_HUMAN_REVIEW_MARKS_RANGE[1]
+    (c.ao_level === 'AO2' &&
+     c.marks >= AO2_HUMAN_REVIEW_MARKS_RANGE[0] &&
+     c.marks <= AO2_HUMAN_REVIEW_MARKS_RANGE[1]) ||
+    economicCorrectness === 'uncertain'
       ? 'flagged'
       : 'clear';
 
@@ -644,14 +816,15 @@ async function verifyCandidate(
   const driftNote = verbatimCheck.drift_note ?? semanticDriftNote;
 
   const result: MarkSchemeVerificationResult = {
-    scheme_type_match:   typeCheck.pass     ? 'correct'  : 'mismatch',
-    marks_sum_invariant: sumCheck.result,
-    data_shape:          shapeCheck.pass    ? 'valid'    : 'invalid',
-    verbatim_match:      verbatimCheck.result,
-    semantic_relevance:  semanticRelevance,
+    scheme_type_match:    typeCheck.pass  ? 'correct' : 'mismatch',
+    marks_sum_invariant:  sumCheck.result,
+    data_shape:           shapeCheck.pass ? 'valid'   : 'invalid',
+    verbatim_match:       verbatimCheck.result,
+    semantic_relevance:   semanticRelevance,
+    economic_correctness: economicCorrectness,
     human_review_flag,
-    overall:             'pass',            // overwritten by applyMarkSchemeVerdict
-    reasoning:           reasonParts.join('; '),
+    overall:              'pass',           // overwritten by applyMarkSchemeVerdict
+    reasoning:            reasonParts.join('; '),
     ...(driftNote ? { drift_note: driftNote } : {}),
   };
 
@@ -756,7 +929,8 @@ async function main() {
   }
 
   const subject          = subjectArg as 'IB_ECONOMICS' | 'IB_BUSINESS_MANAGEMENT';
-  const semanticFramework = buildSemanticFramework(subject);
+  const semanticFramework  = buildSemanticFramework(subject);
+  const economicFramework  = buildEconomicCorrectnessFramework();
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -824,7 +998,7 @@ async function main() {
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        verifyResult = await verifyCandidate(anthropic, c, semanticFramework);
+        verifyResult = await verifyCandidate(anthropic, c, semanticFramework, economicFramework);
         break;
       } catch (err) {
         if (attempt === 0) {

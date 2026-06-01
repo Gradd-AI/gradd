@@ -91,14 +91,15 @@ function makeCandidate(overrides: Partial<MarkSchemeCandidate> = {}): MarkScheme
 
 function makeResult(overrides: Partial<MarkSchemeVerificationResult> = {}): MarkSchemeVerificationResult {
   return {
-    scheme_type_match:   'correct',
-    marks_sum_invariant: 'correct',
-    data_shape:          'valid',
-    verbatim_match:      'na',
-    semantic_relevance:  'na',
-    human_review_flag:   'clear',
-    overall:             'pass',
-    reasoning:           'all checks pass',
+    scheme_type_match:    'correct',
+    marks_sum_invariant:  'correct',
+    data_shape:           'valid',
+    verbatim_match:       'na',
+    semantic_relevance:   'na',
+    economic_correctness: 'na',
+    human_review_flag:    'clear',
+    overall:              'pass',
+    reasoning:            'all checks pass',
     ...overrides,
   };
 }
@@ -762,6 +763,54 @@ test('T48 detectExplainNCount: "Explain the two-sector circular flow of income."
   assert.equal(
     detectExplainNCount('Explain the two-sector circular flow of income.'),
     0,
+  );
+});
+
+// ─── T49–T52: Check 6 — economic_correctness verdict routing ─────────────────
+
+console.log('\nT49–T52: economic_correctness verdict routing (applyMarkSchemeVerdict)');
+
+test('T49 economic_correctness=incorrect → fail (hard fail, same weight as semantic drift)', () => {
+  const result = makeResult({
+    semantic_relevance:   'relevant',
+    economic_correctness: 'incorrect',
+    reasoning:            'economic error: DWL height uses equilibrium-price gap, not traded-quantity gap',
+  });
+  assert.equal(applyMarkSchemeVerdict(result), 'fail');
+});
+
+test('T50 economic_correctness=correct, all other checks pass → pass', () => {
+  const result = makeResult({
+    semantic_relevance:   'relevant',
+    economic_correctness: 'correct',
+    reasoning:            'all checks pass; economic content is sound',
+  });
+  assert.equal(applyMarkSchemeVerdict(result), 'pass');
+});
+
+test('T51 economic_correctness=uncertain + human_review_flag=flagged → borderline (not fail)', () => {
+  const result = makeResult({
+    semantic_relevance:   'relevant',
+    economic_correctness: 'uncertain',
+    human_review_flag:    'flagged',
+    reasoning:            'economic correctness uncertain — human review required',
+  });
+  assert.equal(applyMarkSchemeVerdict(result), 'borderline');
+});
+
+test('T52 economic_correctness=incorrect + reasoning mentions "passes" → contradiction guard throws', () => {
+  const result = makeResult({
+    economic_correctness: 'incorrect',
+    overall:              'pass',
+    reasoning:            'The elasticity passes but the DWL formula is internally consistent.',
+  });
+  assert.throws(
+    () => applyMarkSchemeVerdict(result),
+    (err: Error) => {
+      assert.match(err.message, /contradiction/i);
+      assert.match(err.message, /economic=incorrect/);
+      return true;
+    },
   );
 });
 
