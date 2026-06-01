@@ -21,3 +21,15 @@
 **1f762143:** "State two internal sources of finance that RetroRide could use to fund the new inventory management software. [2]"
 - Error: Owner's personal savings are an external source of finance (a personal injection into the business from outside the firm), not an internal source, and should not be listed as an accepted answer for internal sources of finance.
 - Reasoning: The scheme lists four accepted points, but one of them — "owner's personal savings / personal funds" — is not classified as an internal source of finance under standard IB Business Management theory. Internal sources of finance are funds generated from within the business itself (e.g., retained profit, sale of assets, reduction in working capital). Owner's personal savings are a personal/external injection of capital into the business from outside the business entity, and are therefore categorised as an external source of finance in IB BM. The remaining three points (retained profit, sale of assets, and working capital reduction) are correctly identified as internal sources. However, including owner's personal savings as an accepted internal source is a conceptual classification error that would mislead students.
+
+## VERIFIER GAP — "state/identify N" pool marking (fix next session)
+
+Scheme 17878488 (regenerated f48dac30, "State two internal sources of finance") and the class of AO1 "state two/three" questions offer a POOL of 3+ valid 1m points where any 2 are awardable — correct IB practice. But `marks_sum_invariant` expects accepted_points to sum exactly to `max_marks`, so it flags a false violation (3m points vs 2m question).
+
+**Do NOT fix by trimming schemes to exactly 2 points** — that removes the marking flexibility IB intends. Fix the invariant to understand pool-marking.
+
+**Required fix (next session):** the invariant for state/identify pool questions should be "max_marks awardable from a pool of ≥ N valid points", not "points sum to max_marks". This requires either:
+- a `pool: true` flag in the scheme_data that the invariant checks before applying the sum rule, OR
+- detecting "state/identify" AO1 questions and applying a looser invariant (sum ≥ max_marks, all individual marks = 1).
+
+**Scope:** affects all BM "state two" questions (at least 3 in this batch) and equivalent Econ AO1 pool questions.
