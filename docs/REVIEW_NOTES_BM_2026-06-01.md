@@ -2,15 +2,15 @@
 
 ## Flawed-source questions (reject scheme; fix question at source)
 
-### 78d468ed / scheme 19b1a369 — command_term/marks mismatch (found Stage 2 Wave 1)
+### 78d468ed / scheme 19b1a369 — REJECTED (not fixed) — 4-field metadata corruption
 **Question text:** "Evaluate the most suitable location for SolarNest Ltd's new manufacturing facility using the information provided. [10]"
-**DB metadata:** command_term=`calculate`, marks=6, scheme_type=`hybrid`
-**Contradiction:** an Evaluate [10] is extended-response (band_descriptor, AO3), not a 6m calculate (hybrid, AO4). Generator correctly refused to fabricate method steps — scheme produced empty method_marks (schema violation flagged).
-**Action:** Reject scheme 19b1a369. Fix question 78d468ed at source: either correct command_term to `evaluate` and marks to `10` (routes to band_descriptor), OR reject the question entirely.
+**DB metadata (stored):** command_term=`calculate`, ao_level=`AO4`, marks=`6`, question_type=`P2_sec_a`
+**Contradiction:** question_text is a qualitative "Evaluate" AO3 extended response worth [10], but all four metadata fields point to a quantitative 6m calculate question in Section A. Four fields simultaneously wrong — too corrupt to safely reconstruct.
+**Action taken (01/06/2026):** question 78d468ed → `status=rejected`; scheme 19b1a369 → `status=rejected`. Neither will surface in the review queue.
 
 ## Upstream patterns to audit
 
-- **BM command_term/marks/scheme_type mismatch** (from 78d468ed): scan all 86 BM seed questions for `[N marks]` in question_text vs `marks` column, and command_term vs question_text verb — same class as Econ's flawed-source questions. There may be more mismatches beyond this one.
+- **BM metadata internal consistency audit** (from 78d468ed — 4-field corruption): a seed question had command_term, ao_level, marks, AND question_type all contradicting the question_text simultaneously. This passed through question generation/verification into seed status. The upstream question audit must check all four metadata fields for internal consistency against question_text across all 86 BM questions — this won't be the only corrupt one. Specifically: (a) command_term in DB vs verb in question_text, (b) ao_level vs command_term AO classification, (c) marks in DB vs `[N marks]` in question_text, (d) question_type (Sec A vs Sec B) vs marks and command_term. A 10m evaluate in `P2_sec_a` is structurally impossible — Sec A is short-answer, Sec B is 10m extended response.
 
 ## Stage 2 Wave 2 — content_checklist Check 6 results (2026-06-01)
 
