@@ -12,6 +12,18 @@
 
 - **BM metadata internal consistency audit** (from 78d468ed — 4-field corruption): a seed question had command_term, ao_level, marks, AND question_type all contradicting the question_text simultaneously. This passed through question generation/verification into seed status. The upstream question audit must check all four metadata fields for internal consistency against question_text across all 86 BM questions — this won't be the only corrupt one. Specifically: (a) command_term in DB vs verb in question_text, (b) ao_level vs command_term AO classification, (c) marks in DB vs `[N marks]` in question_text, (d) question_type (Sec A vs Sec B) vs marks and command_term. A 10m evaluate in `P2_sec_a` is structurally impossible — Sec A is short-answer, Sec B is 10m extended response.
 
+## BM question audit — COMPLETE (01/06/2026)
+
+Audit run against all 86 BM seed questions (85 active + 78d468ed already rejected). Script checked command_term↔ao_level, marks↔question_text, marks↔question_type, and text verb↔stored command_term.
+
+**Result: question bank is structurally sound. 78d468ed was a one-off.**
+
+- **1 rejected:** 78d468ed — genuine 4-field corruption (documented above).
+- **7 describe/AO1 — CONFIRMED CORRECT:** 25ae5c81, 4744657b, b71be2f2, e1051697, ef44aa45, efe9d5ef, f52b48ad. The audit script flagged these as `describe→AO2` vs stored `AO1`, but the IB BM guide glossary states *Describe = AO1 "Give a detailed account"* — `command_term=describe + ao_level=AO1` is correct per the guide. Not a contradiction. The audit rule was over-strict.
+- **78 clean:** no contradictions detected.
+
+**No further question fixes needed before promotion.** The verifier gap (pool-marking) is already fixed. Schemes built on these questions are safe to review and promote.
+
 ## Stage 2 Wave 2 — content_checklist Check 6 results (2026-06-01)
 
 **Summary:** 45 correct, 1 incorrect, 0 uncertain out of 46
