@@ -815,6 +815,40 @@ test('T52 economic_correctness=incorrect + reasoning mentions "passes" → contr
   );
 });
 
+// ─── T64–T66: BM SEC_A routing fix — AO2 ≥5m must NOT route to band_descriptor ─
+
+console.log('\nT64–T66: BM SEC_A routing fix');
+
+test('T64 BM P2 SEC_A AO2 6m analyse → content_checklist (was mis-routed to band_descriptor)', () => {
+  assert.equal(
+    resolveSchemeType({
+      subject: 'IB_BUSINESS_MANAGEMENT', paper: 'P2', section: 'SEC_A',
+      marks: 6, command_term: 'analyse', ao_level: 'AO2',
+    }),
+    'content_checklist',
+  );
+});
+
+test('T65 BM P1 SEC_B AO3 10m evaluate → band_descriptor (regression — must not be affected)', () => {
+  assert.equal(
+    resolveSchemeType({
+      subject: 'IB_BUSINESS_MANAGEMENT', paper: 'P1', section: 'SEC_B',
+      marks: 10, command_term: 'evaluate', ao_level: 'AO3',
+    }),
+    'band_descriptor',
+  );
+});
+
+test('T66 BM P2 SEC_A AO3 10m evaluate → band_descriptor (AO3 exits before SEC_A guard)', () => {
+  assert.equal(
+    resolveSchemeType({
+      subject: 'IB_BUSINESS_MANAGEMENT', paper: 'P2', section: 'SEC_A',
+      marks: 10, command_term: 'evaluate', ao_level: 'AO3',
+    }),
+    'band_descriptor',
+  );
+});
+
 // ─── T56–T63: EXPLAIN_N_RE widened verb set — BM breadth-marked verbs ─────────
 
 console.log('\nT56–T63: EXPLAIN_N_RE widened verb set (BM coverage)');

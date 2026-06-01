@@ -1005,7 +1005,7 @@ export function resolveSchemeType(input: SchemeTypeInput): SchemeType {
     if (input.section === 'SEC_B' && input.marks === 10) return 'band_descriptor';
     if (term === 'calculate' || term === 'determine') return 'hybrid';
     if (input.ao_level === 'AO3' || AO3_TERMS.has(term)) return 'band_descriptor';
-    if (input.ao_level === 'AO2' && input.marks >= 5) return 'band_descriptor';
+    if (input.ao_level === 'AO2' && input.marks >= 5 && input.section !== 'SEC_A') return 'band_descriptor';
     return 'content_checklist';
   }
 
