@@ -579,7 +579,38 @@ const SYSTEM_PROMPT_ECONOMIC_CORRECTNESS =
   `internally consistent but uses a simplified or invented method that would mislead students is 'incorrect'. ` +
   `'uncertain' — you cannot determine correctness without external data or diagrams not provided.`;
 
-export function buildEconomicCorrectnessFramework(): string {
+export function buildEconomicCorrectnessFramework(
+  subject: 'IB_ECONOMICS' | 'IB_BUSINESS_MANAGEMENT',
+): string {
+  if (subject === 'IB_BUSINESS_MANAGEMENT') {
+    return `HIGH-ERROR TOPICS — apply extra scrutiny to these when present:
+
+Break-even analysis:
+- Contribution per unit = selling price per unit − variable cost per unit. Do NOT confuse contribution with profit (profit subtracts fixed costs; contribution does not).
+- Break-even output = total fixed costs ÷ contribution per unit. Do NOT divide fixed costs by selling price or total cost.
+- Margin of safety = actual (or budgeted) output − break-even output. Negative margin of safety means the business operates at a loss.
+
+Investment appraisal — formula identity:
+- Payback period: time taken to recover the initial investment from net cash inflows. Result is a TIME value (months/years), not a percentage or money value.
+- ARR (Average Rate of Return) = (average annual profit ÷ initial investment) × 100. Result is a PERCENTAGE. Average annual profit = total net profit over project life ÷ number of years. Do NOT use total cash inflow instead of profit; do NOT skip the averaging step.
+- NPV (Net Present Value): apply the given discount factor to each future cash flow, sum the present values, then subtract the initial outlay. Result is a MONEY VALUE. Positive NPV → project adds value. Do NOT sum undiscounted cash flows and call it NPV.
+- These three methods are NOT interchangeable: payback → time, ARR → %, NPV → money. Mislabelling which gives which result is wrong.
+
+Financial ratio interpretation direction:
+- Gearing = non-current liabilities ÷ capital employed × 100. Higher gearing → greater financial risk. Do NOT invert: high gearing is NOT low risk.
+- Current ratio = current assets ÷ current liabilities. Higher ratio → more short-term liquidity. Ratio below 1 means liquidity risk.
+- Profit margin = profit ÷ revenue × 100. Do NOT divide revenue by profit.
+- ROCE = operating profit ÷ capital employed × 100. Do NOT use net profit or confuse capital employed with total assets.
+- Always state the direction of the relationship before assigning the interpretation (e.g. "higher X implies Y").
+
+BM tool application:
+- Ansoff Matrix quadrants are distinct and NOT interchangeable: market penetration (existing product, existing market), market development (existing product, new market), product development (new product, existing market), diversification (new product, new market). Assigning the wrong quadrant to a described strategy is wrong.
+- SWOT: strengths and weaknesses are INTERNAL; opportunities and threats are EXTERNAL. Do not place an internal factor under opportunities/threats or vice versa.
+- BCG Matrix: stars (high share, high growth), cash cows (high share, low growth), question marks (low share, high growth), dogs (low share, low growth). Do not mislabel quadrants or invert the axes.
+- Each tool's accepted_points must be applied to the question's specific business context — generic textbook definitions without application to the named business/scenario are insufficient.`;
+  }
+
+  // IB_ECONOMICS
   return `HIGH-ERROR TOPICS — apply extra scrutiny to these when present:
 
 DWL (deadweight welfare loss):
@@ -930,7 +961,7 @@ async function main() {
 
   const subject          = subjectArg as 'IB_ECONOMICS' | 'IB_BUSINESS_MANAGEMENT';
   const semanticFramework  = buildSemanticFramework(subject);
-  const economicFramework  = buildEconomicCorrectnessFramework();
+  const economicFramework  = buildEconomicCorrectnessFramework(subject);
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

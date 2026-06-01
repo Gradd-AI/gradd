@@ -38,6 +38,7 @@ import {
   checkDataShape,
   checkVerbatimMatch,
   applyMarkSchemeVerdict,
+  buildEconomicCorrectnessFramework,
   type MarkSchemeCandidate,
   type MarkSchemeVerificationResult,
 } from './verify-mark-schemes';
@@ -812,6 +813,31 @@ test('T52 economic_correctness=incorrect + reasoning mentions "passes" → contr
       return true;
     },
   );
+});
+
+// ─── T53–T55: buildEconomicCorrectnessFramework subject-routing ───────────────
+
+console.log('\nT53–T55: buildEconomicCorrectnessFramework subject-routing');
+
+test('T53 IB_ECONOMICS framework contains Economics-specific topics (DWL, MSC, multiplier)', () => {
+  const f = buildEconomicCorrectnessFramework('IB_ECONOMICS');
+  assert.ok(f.includes('DWL'),        'should include DWL');
+  assert.ok(f.includes('MSC'),        'should include MSC');
+  assert.ok(f.includes('multiplier'), 'should include multiplier');
+});
+
+test('T54 IB_BUSINESS_MANAGEMENT framework contains BM-specific topics (break-even, ARR, NPV)', () => {
+  const f = buildEconomicCorrectnessFramework('IB_BUSINESS_MANAGEMENT');
+  assert.ok(f.includes('break-even'), 'should include break-even');
+  assert.ok(f.includes('ARR'),        'should include ARR');
+  assert.ok(f.includes('NPV'),        'should include NPV');
+});
+
+test('T55 IB_BUSINESS_MANAGEMENT framework does NOT contain Economics-only terms (DWL, MSC, multiplier)', () => {
+  const f = buildEconomicCorrectnessFramework('IB_BUSINESS_MANAGEMENT');
+  assert.ok(!f.includes('DWL'),        'should NOT include DWL');
+  assert.ok(!f.includes('MSC'),        'should NOT include MSC');
+  assert.ok(!f.includes('multiplier'), 'should NOT include multiplier');
 });
 
 // ─── Summary ──────────────────────────────────────────────────────────────────

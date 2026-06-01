@@ -103,7 +103,7 @@ async function main() {
     { auth: { persistSession: false } },
   );
 
-  const framework = buildEconomicCorrectnessFramework();
+  const framework = buildEconomicCorrectnessFramework('IB_ECONOMICS');
 
   // Fetch all IB_ECON rows (all statuses) and filter by prefix in JS —
   // avoids UUID-cast issues with PostgREST ilike on uuid columns.
