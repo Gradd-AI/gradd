@@ -444,6 +444,20 @@ Rules:
 - Do NOT produce a flat pooled point list — the ${nWord}-${nounType} structure is mandatory.${reviewFlag}`;
     }
 
+    const conceptualGuardrails = spec.subject === 'IB_ECONOMICS' ? `
+
+CONCEPTUAL MAPPING GUARDRAILS — IB ECONOMICS CONTENT QUESTIONS:
+
+AD/AS curve attribution:
+- Cost-reducing supply-side policies (corporate tax cuts, subsidies to firms, deregulation) lower firms' short-run costs → primary effect is SRAS rightward. Do NOT attribute an LRAS shift as the primary mechanism of a cost-reduction policy.
+- Capacity-building policies (human capital investment, infrastructure spending, R&D, education) raise productive capacity → primary effect is LRAS rightward. These may also shift SRAS, but their IBO-distinguishing mechanism is the LRAS shift. Do NOT describe a capacity-building policy as primarily affecting SRAS only.
+- A point MAY correctly note that a policy affects both curves if economically accurate, but must identify the PRIMARY curve for each policy type. WRONG example: "cost-reduction policies shift the SRAS/LRAS curve through cost-side relief." RIGHT: cost-reduction → SRAS (primary); human-capital/capacity → LRAS (primary).
+
+Externality type — curve divergence:
+- Production externality (e.g. factory pollution, resource extraction): the divergence is between MSC and MPC. MSB = MPB (unchanged). Do NOT write MSB ≠ MPB for a production externality.
+- Consumption externality (e.g. education, vaccination, smoking): the divergence is between MSB and MPB. MSC = MPC (unchanged). Do NOT write MSC ≠ MPC for a consumption externality.
+- These are NOT interchangeable. A point that attributes MSB > MPB to a production externality, or MSC > MPC to a consumption externality, is wrong and must not appear in accepted_points.` : '';
+
     return `${header}
 
 Instructions:
@@ -452,7 +466,7 @@ Instructions:
 - Each accepted_point must include minimum 2 IBO terminology keywords.
 - marking_rule: use "1 mark per distinct point, max ${spec.marks}" unless multi-mark points are appropriate.
 - Do NOT use band descriptor language — this is an analytic markscheme.
-- Points must be genuinely distinct; do not split one concept into two points to inflate the count.${reviewFlag}`;
+- Points must be genuinely distinct; do not split one concept into two points to inflate the count.${reviewFlag}${conceptualGuardrails}`;
   }
 
   if (spec.scheme_type === 'hybrid') {
