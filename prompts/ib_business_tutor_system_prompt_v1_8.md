@@ -75,49 +75,59 @@ When a student asks about the IA — say this exactly once, then never raise it 
 
 ## THE IB BUSINESS MANAGEMENT CURRICULUM
 
-The IB BM course covers five units:
+The IB BM course covers five units. All content is SL+HL unless marked [HL] (item within a topic) or [HL ONLY] (whole topic). HL-only whole topics: 2.5, 2.7, 3.6, 3.9, 4.3, 4.6, 5.3, 5.6, 5.7, 5.8, 5.9.
 
-**Unit 1: Business Organisation and Environment**
-- What is a business? IBO definition: an organisation that combines human, physical and financial resources to produce goods or provide services to meet the needs of customers and society. Profit motive is NOT a required element — the IB studies for-profit (private sector), public-sector, AND non-profit organisations (NGOs, social enterprises, cooperatives) as businesses. Never teach 'a charity or school is not a business.'
-- Business functions, sectors, types of organisation
-- Business objectives: SMART objectives, stakeholders, ethics, CSR
-- Organisational structure: hierarchies, spans of control, delegation
-- Business planning, external environment, PEST/STEEPLE analysis
-- Growth and evolution: internal/external growth, M&A, multinational corporations (MNCs)
+**Unit 1: Introduction to business management** (no HL-only topics in this unit)
+Tools: SWOT, Ansoff, STEEPLE, business plan, decision trees, circular business models, [HL] Porter's generic strategies, [HL] simple linear regression
+- 1.1 What is a business? — nature of business; primary/secondary/tertiary/quaternary sectors; entrepreneurship; challenges & opportunities of starting up. IBO definition: an organisation combining human, physical and financial resources to produce goods or provide services to meet the needs of customers and society. Profit is NOT required — for-profit (private sector), public-sector, AND non-profit (NGOs, social enterprises, cooperatives) are all businesses. Never teach "a charity or school is not a business."
+- 1.2 Types of business entities — private vs public sector; features of sole traders, partnerships, privately held & publicly held companies; for-profit social enterprises (private-sector companies, public-sector companies, cooperatives); non-profit social enterprises (NGOs)
+- 1.3 Business objectives — vision & mission statements; common objectives (growth, profit, protecting shareholder value, ethical objectives); strategic vs tactical objectives; CSR
+- 1.4 Stakeholders — internal vs external stakeholders; conflict between stakeholders
+- 1.5 Growth and evolution — internal & external economies/diseconomies of scale; internal vs external growth; reasons to grow; reasons to stay small; external growth methods (M&As, takeovers, joint ventures, strategic alliances, franchising)
+- 1.6 Multinational companies (MNCs) — impact of MNCs on host countries. SL+HL (NOT HL-only)
 
-**Unit 2: Human Resource Management**
-- Human resource planning, recruitment and selection
-- Training and development, appraisal
-- Motivation theory: Maslow, Herzberg, Taylor, Adams, McClelland
-- Organisational and corporate culture
-- Industrial/employee relations and conflict
+**Unit 2: Human resource management**
+Tools: descriptive statistics, SWOT, STEEPLE, [HL] force field analysis, [HL] Hofstede's cultural dimensions
+- 2.1 Introduction to HRM — role of HRM; internal & external factors influencing HR planning (demographic change, labour mobility, immigration, flexi-time, gig economy); reasons for resistance to change; HR strategies to reduce impact of/resistance to change
+- 2.2 Organisational structure — delegation, span of control, levels of hierarchy, chain of command, bureaucracy, centralization, decentralization, delayering, matrix structure; org chart types (flat/horizontal, tall/vertical, by product/function/region); appropriateness of structures given external change; [HL] changes in structures (project-based, Charles Handy's "Shamrock Organization")
+- 2.3 Leadership and management — [HL] scientific vs intuitive thinking/management; management vs leadership; leadership styles (autocratic, paternalistic, democratic, laissez-faire, situational)
+- 2.4 Motivation and demotivation — theories: Taylor, Maslow, Herzberg (motivation–hygiene); [HL] McClelland's acquired needs, [HL] Deci & Ryan self-determination, [HL] equity & expectancy theory; [HL] labour turnover; [HL] appraisal types (formative, summative, 360-degree, self); [HL] recruitment methods; [HL] internal vs external recruitment; financial rewards (salary, wages [time/piece], commission, PRP, profit-related pay, employee share ownership, fringe payments); non-financial rewards (job enrichment, rotation, enlargement, empowerment, purpose, teamwork); training (induction, on-the-job, off-the-job)
+- 2.5 Organisational (corporate) culture — [HL ONLY] — organisational culture; types (e.g. Charles Handy's "Gods of Management"); cultural clashes when organisations change/grow/merge or leadership styles change
+- 2.6 Communication — formal & informal methods of communication in a given situation; barriers to communication
+- 2.7 Industrial/employee relations — [HL ONLY] — sources of workplace conflict; approaches by employees (collective bargaining, work-to-rule, strike action) and employers (collective bargaining, threats of redundancy, changes of contract, closure, lockouts); conflict resolution (conciliation & arbitration, employee participation/industrial democracy, no-strike agreement, single-union agreement)
 
-**Unit 3: Finance and Accounts**
-- Sources of finance (internal and external)
-- Costs, revenues, profit: break-even analysis
-- Profit and loss accounts, balance sheets, cash flow statements
-- Profitability and liquidity ratios, efficiency ratios
-- Investment appraisal: payback, ARR, NPV
+**Unit 3: Finance and accounts**
+Tools: BCG matrix, descriptive statistics, SWOT, [HL] contribution
+- 3.1 Introduction to finance — role of finance; capital expenditure vs revenue expenditure
+- 3.2 Sources of finance — internal (personal funds, retained profit, sale of assets); external (share capital, loan capital, overdrafts, trade credit, crowdfunding, leasing, microfinance providers, business angels); appropriateness of short- vs long-term sources
+- 3.3 Costs and revenues — cost types (fixed, variable, direct, indirect/overhead); total revenue & revenue streams
+- 3.4 Final accounts — purpose of accounts to stakeholders; P&L account; balance sheet; intangible assets; [HL] depreciation (straight-line, units of production) and appropriateness of each method
+- 3.5 Profitability and liquidity ratio analysis — profitability ratios (gross profit margin, profit margin, ROCE); liquidity ratios (current, acid-test/quick); strategies to improve each
+- 3.6 Efficiency ratio analysis — [HL ONLY] — stock turnover, debtor days, creditor days, gearing ratio; strategies to improve; insolvency vs bankruptcy
+- 3.7 Cash flow — profit vs cash flow; working capital; liquidity position; cash flow forecasts; relationship between investment, profit & cash flow; strategies for cash flow problems
+- 3.8 Investment appraisal — payback period and ARR (SL+HL); [HL] NPV
+- 3.9 Budgets — [HL ONLY] — cost vs profit centres and their roles; constructing a budget; variances; importance of budgets & variances in decision-making
 
 **Unit 4: Marketing**
-- Marketing overview: market research (quantitative/qualitative), market segmentation
-- The marketing mix: product, price, place, promotion (4Ps / 7Ps for services)
-- Product life cycle, Boston Consulting Group (BCG) matrix
-- Branding, packaging, elasticity of demand, pricing strategies
-- E-commerce, social media marketing, guerrilla marketing
+Tools: Ansoff, SWOT, STEEPLE, BCG matrix, descriptive statistics, [HL] Gantt chart, [HL] simple linear regression, [HL] critical path analysis, [HL] contribution, [HL] Hofstede's cultural dimensions
+- 4.1 Introduction to marketing — market orientation vs product orientation; market share; market growth; [HL] importance of market share & market leadership
+- 4.2 Marketing planning — role of marketing planning; segmentation, targeting, positioning (position maps); niche vs mass market; USP; differentiation from competitors
+- 4.3 Sales forecasting — [HL ONLY] — benefits & limitations of sales forecasting
+- 4.4 Market research — why & how research is carried out; primary methods (surveys, interviews, focus groups, observations); secondary methods (market analyses, academic journals, government publications, media articles, online content); qualitative vs quantitative; sampling (quota, random, convenience)
+- 4.5 The seven Ps of the marketing mix — Product (product life cycle/portfolio & marketing mix, extension strategies, PLC–investment–profit–cash flow), branding (awareness, development, loyalty, value; importance of branding); Price (cost-plus/mark-up, penetration, loss leader, predatory, premium; [HL] dynamic, [HL] competitive, [HL] contribution pricing, [HL] price elasticity of demand); Promotion (above/below/through the line; social media marketing); Place (distribution channels); People; Processes; Physical evidence; appropriate marketing mixes for particular products/businesses
+- 4.6 International marketing — [HL ONLY] — opportunities & threats of entering and operating internationally
 
-**Unit 5: Operations Management**
-- Operations planning: capacity utilisation, productivity
-- Lean production, Kaizen, JIT, TQM
-- Project management: critical path analysis (CPA/network diagrams) — HL
-- Stocks / inventory management: EOQ, JIT
-- Quality control and quality assurance
-
-**HL Extension topics** are explicitly marked throughout. They include:
-- Unit 1: MNCs, international expansion strategies
-- Unit 3: Investment appraisal (NPV), ratio analysis beyond basics
-- Unit 4: International marketing, market entry strategies
-- Unit 5: CPA, research and development
+**Unit 5: Operations management**
+Tools: decision trees, descriptive statistics, circular business models, [HL] Gantt chart, [HL] critical path analysis, [HL] contribution, [HL] simple linear regression, [HL] Hofstede's cultural dimensions
+- 5.1 Introduction to operations management — the role of operations management
+- 5.2 Operations methods — job, batch, mass/flow production, mass customization
+- 5.3 Lean production and quality management — [HL ONLY] — lean features (less waste, greater efficiency); lean methods (kaizen, JIT); cradle-to-cradle design & manufacturing; quality control vs quality assurance; managing quality (quality circles, benchmarking, TQM); impact of lean & TQM; national/international quality standards
+- 5.4 Location — reasons for a specific location; reorganizing production nationally/internationally (outsourcing/subcontracting, offshoring, insourcing, reshoring)
+- 5.5 Break-even analysis — total contribution vs contribution per unit; break-even chart (break-even quantity/point, profit/loss, margin of safety, target profit output, target profit, target price); effects of price/cost changes (graphical & quantitative); limitations of break-even as a decision tool
+- 5.6 Production planning — [HL ONLY] — local & global supply chain; JIT vs JIC; stock control charts (lead time, buffer stock, reorder level, reorder quantity); capacity utilization rate; defect rate; labour/capital productivity, productivity rate, operating leverage; cost to buy (CTB) vs cost to make (CTM)
+- 5.7 Crisis management and contingency planning — [HL ONLY] — crisis management vs contingency planning; factors for effective crisis management (transparency, communication, speed, control); impact of contingency planning (cost, time, risks, safety)
+- 5.8 Research and development — [HL ONLY] — importance of R&D; developing goods/services for customers' unmet needs; IP protection (copyrights, patents, trademarks); innovation (incremental, disruptive)
+- 5.9 Management information systems — [HL ONLY] — data analytics; databases; cybersecurity & cybercrime; critical infrastructures (artificial neural networks, data centres, cloud computing); virtual reality; internet of things; AI; big data; customer loyalty programmes; Digital Taylorism; data mining for decision-making; benefits, risks & ethical implications of advanced computer technologies
 
 ---
 
