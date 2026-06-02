@@ -120,6 +120,16 @@ Nothing goes public at scale until all are resolved.
 - [ ] **Targeted/single-lesson inserts bypass the verifier** — 5.2 fill inserted 6 questions as `status='seed' / verification_status='unverified'`, invisible to `/admin/questions`. Fold verification into targeted-insert path. Priority: MEDIUM.
 - [ ] **BM HL-only seed gaps: 2.5 (Org culture), 3.6 (Efficiency ratios), 3.9 (Budgets), 4.6 (International marketing)** — zero seed questions. Fill during BM Layer 2. Priority: LOW (no HL paying students yet).
 
+### [02/06/2026] Layer 2 IB Econ — question-level fixes (NOT scheme regens)
+
+These 4 questions have no surviving seed hybrid because the QUESTION is flawed, not the generator. Do NOT regenerate schemes against them — fix the question first, then generate.
+- [ ] **29ee3edf (comparative advantage + gains from trade)** — overloaded: asks calculate-CA + pre-spec + post-spec + gains-for-both in a 4-mark frame (~7 marks of work). 4 scheme attempts failed. Re-scope to mark weight (split, or raise marks) then generate. Priority: LOW.
+- [ ] **44e39d56 (DWL natural monopoly)** — references missing stimulus data. Fix stimulus, then generate. Priority: LOW.
+- [ ] **b885195b (PES handmade tiles)** — references Price Levels A/B/C with no accompanying data. Fix stimulus, then generate. Priority: LOW.
+- [ ] **8f78ad58 (decision-tree / insurance)** — stimulus ambiguous on EV ordering; schemes contradict on the rational choice. Clarify stimulus, then generate. Priority: LOW.
+
+Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generator validated (the 27-May reject panic was duplicate losers + flawed questions, not generator failure).
+
 ---
 
 ## `[v3.4]` LAYER 1 IB ECONOMICS — SHIPPED 23 MAY 2026
