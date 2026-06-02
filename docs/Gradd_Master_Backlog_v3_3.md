@@ -133,6 +133,12 @@ Nothing goes public at scale until all are resolved.
 - [ ] **`/session` unauth redirect wrong path** — `app/session/page.tsx` ~L19 redirects unauthenticated users to `/login` but the route is `/auth/login`. Logged-out user hits `/session` → probably 404s. Pre-existing, small. Priority: LOW.
 - [ ] **LC session loads unused fonts** — The IB re-skin added a Fraunces/Geist `@import` inside the shared `<style>` block in `ChatInterface.tsx`. LC sessions now fetch those fonts even though no LC element uses them. Zero visual impact, pointless network request. Fix: gate the `@import` to IB only (inside the `.ib-session` CSS block or conditional render). Priority: LOW — tidy-up.
 
+### [02/06/2026] Pipeline hardening — from BM content-accuracy audit + 5.2 seed fill
+
+- [ ] **Seed generator has no per-sub-topic coverage floor** — `buildSpecList()` distributes specs proportionally by unit size, so a thinly-weighted lesson can draw ZERO questions. Caught when BM 5.2 (Operations methods, SL+HL core content) ended up with zero seed questions despite being on every student's paper. Add a coverage-guarantee pass: every `topic_code` gets ≥1 question of each required format before proportional fill. **Must land before generating ACCA (or any new subject) seed pools at scale — it will repeat otherwise.** Priority: MEDIUM (pre-ACCA-build).
+- [ ] **Targeted/single-lesson inserts bypass the verifier** — the 5.2 fill inserted 6 questions directly as `status='seed' / verification_status='unverified'`, which made them invisible to `/admin/questions` (it buckets on verification_status) and would have skipped the quality gate entirely. Fold verification into the targeted-insert path so a single-lesson generation can never insert unverified rows. Priority: MEDIUM.
+- [ ] **BM HL-only seed gaps: 2.5 (Org culture), 3.6 (Efficiency ratios), 3.9 (Budgets), 4.6 (International marketing)** — zero seed questions, HL cohort only. Fill during BM Layer 2 generation. Priority: LOW (no paying BM students yet; near-zero cost until an HL cohort exists).
+
 ---
 
 ## `[v3.3]` IB APP RE-SKIN — COMPLETE (17–19 May 2026)
