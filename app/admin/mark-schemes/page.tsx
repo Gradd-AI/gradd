@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const ADMIN_EMAIL = 'testbundle@gradd.ai';
@@ -54,6 +54,11 @@ type CandidateCard = {
   scheme_data: SchemeData;
   question: QuestionInfo;
   existing_seed: ExistingSeed | null;
+};
+
+const SUBJECT_LABEL: Record<string, string> = {
+  IB_ECONOMICS:           'IB Economics',
+  IB_BUSINESS_MANAGEMENT: 'IB Business Management',
 };
 
 const TAB_LABEL: Record<SchemeTab, string> = {
@@ -251,9 +256,11 @@ function SupersedePanel({ seed, show, onToggle }: { seed: ExistingSeed; show: bo
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function MarkSchemeReviewPage() {
-  const router = useRouter();
-  const sb     = getSupabaseBrowserClient();
+function MarkSchemeReviewInner() {
+  const router      = useRouter();
+  const searchParams = useSearchParams();
+  const subject     = searchParams.get('subject') ?? 'IB_ECONOMICS';
+  const sb          = getSupabaseBrowserClient();
 
   const [authorized,   setAuthorized]  = useState<boolean | null>(null);
   const [loading,      setLoading]     = useState(true);
@@ -276,7 +283,7 @@ export default function MarkSchemeReviewPage() {
   // ── Load ──────────────────────────────────────────────────────────────────
   const load = useCallback(async (): Promise<Record<SchemeTab, CandidateCard[]>> => {
     setLoading(true);
-    const res = await fetch('/api/admin/mark-schemes');
+    const res = await fetch(`/api/admin/mark-schemes?subject=${subject}`);
     const { data } = res.ok ? await res.json() : { data: null };
     const grouped: Record<SchemeTab, CandidateCard[]> = { hybrid: [], content_checklist: [] };
     if (data) {
@@ -288,7 +295,7 @@ export default function MarkSchemeReviewPage() {
     setLoading(false);
     return grouped;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [subject]);
 
   useEffect(() => { if (authorized) load(); }, [authorized, load]);
 
@@ -370,7 +377,7 @@ export default function MarkSchemeReviewPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header style={{ background: 'var(--brand)', color: '#fff', padding: '0 32px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
         <span style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 17, letterSpacing: '-0.3px' }}>
-          Mark Scheme Review — IB Economics
+          Mark Scheme Review — {SUBJECT_LABEL[subject] ?? 'IB Economics'}
         </span>
         <button
           onClick={() => setHelpOpen(o => !o)}
@@ -578,5 +585,17 @@ export default function MarkSchemeReviewPage() {
       )}
 
     </div>
+  );
+}
+
+export default function MarkSchemeReviewPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontFamily: 'var(--font-body)' }}>
+        Loading…
+      </div>
+    }>
+      <MarkSchemeReviewInner />
+    </Suspense>
   );
 }

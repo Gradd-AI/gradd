@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 
-const ADMIN_EMAIL = 'testbundle@gradd.ai';
-const SUBJECT     = 'IB_ECONOMICS';
+const ADMIN_EMAIL    = 'testbundle@gradd.ai';
+const SUBJECT_ALLOWLIST = ['IB_ECONOMICS', 'IB_BUSINESS_MANAGEMENT'] as const;
+type Subject = typeof SUBJECT_ALLOWLIST[number];
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -12,13 +13,23 @@ export async function GET() {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
   }
 
+  const raw = request.nextUrl.searchParams.get('subject');
+  let subject: Subject;
+  if (!raw) {
+    subject = 'IB_ECONOMICS';
+  } else if (!(SUBJECT_ALLOWLIST as readonly string[]).includes(raw)) {
+    return NextResponse.json({ error: 'Invalid subject' }, { status: 400 });
+  } else {
+    subject = raw as Subject;
+  }
+
   const service = createServiceClient();
 
-  // 1. All candidate mark_schemes for IB_ECONOMICS (hybrid + content_checklist only)
+  // 1. All candidate mark_schemes for subject (hybrid + content_checklist only)
   const { data: candidates, error: cErr } = await service
     .from('mark_schemes')
     .select('id, question_id, scheme_type, max_marks, scheme_data')
-    .eq('subject', SUBJECT)
+    .eq('subject', subject)
     .eq('status', 'candidate')
     .in('scheme_type', ['hybrid', 'content_checklist'])
     .order('scheme_type')
@@ -45,7 +56,7 @@ export async function GET() {
   const { data: seeds, error: sErr } = await service
     .from('mark_schemes')
     .select('id, question_id, scheme_type, scheme_data')
-    .eq('subject', SUBJECT)
+    .eq('subject', subject)
     .eq('status', 'seed')
     .in('question_id', questionIds);
 
