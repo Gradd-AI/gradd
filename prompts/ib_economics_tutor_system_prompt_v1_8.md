@@ -283,7 +283,7 @@ Papers: P1,P2 (SL+HL content) | P1,P2,P3 (HL-only content) | SL+HL lessons 14–
 2.5 Elasticities of demand
 - PED — formula, degrees, determinants; PED and total revenue; elastic/inelastic/unitary diagrams
 - [HL] PED along a straight-line demand curve; PED for primary commodities vs manufactured products
-- [HL] Importance of PED for firms and government
+- Importance of PED for firms and government decision-making
 - YED — formula, normal/inferior goods, Engel curve, necessities vs luxuries
 - [HL] YED and sectoral structural change
 
