@@ -9,7 +9,10 @@
     "lint": "eslint",
     "generate-seed": "tsx --env-file=.env.local scripts/generate-seed-questions.ts",
     "verify-seed": "tsx --env-file=.env.local scripts/verify-seed-questions.ts",
-    "dump-seed": "tsx --env-file=.env.local scripts/dump-seed.ts"
+    "dump-seed": "tsx --env-file=.env.local scripts/dump-seed.ts",
+    "generate-schemes": "tsx --env-file=.env.local scripts/generate-mark-schemes.ts",
+    "verify-schemes": "tsx --env-file=.env.local scripts/verify-mark-schemes.ts",
+    "test:schemes": "tsx scripts/test-mark-scheme-framework.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

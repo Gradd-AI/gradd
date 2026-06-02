@@ -515,6 +515,135 @@ Because Part (a) contains both qualitative sub-questions (AO1/AO2 Explain/Define
 
 ---
 
+---
+
+### §2.F — "Explain one [X]..." Depth-Marking Convention
+
+#### Context
+
+IB analytic markschemes for questions of the form *"Explain one reason/way/cause/factor/advantage/disadvantage why…"* at 2–4 marks follow a **depth-marking** pattern: the student scores all marks by developing **one** valid reason fully, rather than listing multiple reasons breadth-first.
+
+This is a direct implication of the AO2 command-term definition, which applies across both IB Economics and IB Business Management.
+
+#### AO2 verbatim evidence anchor
+
+> Source: *Economics Guide* (first assessment 2022), pp. 18–19 (MARK_SCHEME_EVIDENCE.md §1.2)
+
+> AO2 command terms (Explain, Analyse, Apply…): **"These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."**
+
+The operative phrase is *"break down [one] idea into simpler parts"* — depth analysis of a single idea, not enumeration of multiple ideas. This is the only verbatim subject-guide source available in this repository.
+
+> Source: *Business Management Subject Guide* (first assessment 2024), pp. 19–20 (MARK_SCHEME_EVIDENCE.md §1.2)
+
+> AO2 command terms: **"These terms require students to use their knowledge and skills to break down ideas into simpler parts and to see how the parts relate."**
+
+Wording is identical across both guides.
+
+#### Important limitation
+
+The per-examination tier labels (naming mark / mechanism / development) that appear in IBO analytic mark schemes are **not published in the subject guides** and are therefore **not verbatim-quoted in this file**. They are observable in IBO published examination mark schemes (distributed separately to examiners), none of which are held in this repository (see §1.5 — "Per-paper credit rules are documented in IBO published mark schemes, not the Subject Guide").
+
+**The encoding in `generate-mark-schemes.ts` is therefore anchored only to the AO2 definition above.** The tier structure (1m naming, remaining marks depth) represents IBO marking convention as observed in practice, not a direct transcription of a subject-guide page.
+
+Any future verbatim per-examination mark scheme quote that confirms the tier labels should be added here and the generator comment updated to cite the page.
+
+#### Generator detection rule
+
+The generator (`scripts/generate-mark-schemes.ts`) applies depth-marked prompt instructions when the question text matches the following regex:
+
+```
+/\bexplain\s+(one|a)\s+(reason|way|cause|factor|advantage|disadvantage|benefit|drawback|impact|effect|implication|example)\b/i
+```
+
+Positive matches (depth-marked path):
+- "Explain one reason why the CPI may overstate inflation…"
+- "Explain one way in which a negative externality arises…"
+- "Explain one advantage of a carbon tax…"
+
+Negative matches (breadth-marked path, unchanged):
+- "Explain why the quantity demanded falls…" (no "one [X]" qualifier)
+- "Explain the concept of price elasticity…" (no "one [X]" qualifier)
+- "Explain how a subsidy affects the market…" (no "one [X]" qualifier)
+
+#### scheme_data shape produced
+
+When the regex fires, the generator instructs Claude to produce a `content_checklist` with an additional optional field:
+
+```json
+{
+  "accepted_reasons": [
+    { "reason": "<valid reason 1>", "keywords": ["term1", "term2"] },
+    ...
+  ],
+  "accepted_points": [
+    { "point": "Names any one valid reason from the accepted_reasons list.", "marks": 1, "keywords": [...] },
+    { "point": "Explains how the named reason causes [the stated effect] — the causal mechanism.", "marks": 1, "keywords": [...] },
+    { "point": "Extends the explanation with a consequence, further implication, or real-world application.", "marks": "<remaining marks>", "keywords": [...] }
+  ],
+  "marking_rule": "depth-marked on one reason: 1m naming, Xm depth. Award marks for depth of analysis of any one accepted reason — do not require all reasons."
+}
+```
+
+`accepted_reasons` is an optional field on `ContentChecklistData` (declared in `mark-scheme-framework.ts`). The validator (`validateMarkSchemeData`) does not reject it — it only checks `accepted_points` for the sum invariant and keyword minimum. `formatMarkSchemeForPrompt` renders the `accepted_reasons` list under a "Valid reasons (student names any one):" heading when present.
+
+#### 2m edge case
+
+For a 2-mark "Explain one…" question, the depth prompt produces exactly two `accepted_points` (1m naming + 1m mechanism), with no third development point. The `spec.marks === 2` guard in the generator prevents a zero-mark third tier from being generated.
+
+---
+
+### §2.G — Hybrid Scheme Decomposition Convention
+
+#### Context
+
+IBO analytic markschemes for AO4 quantitative questions (Calculate, Determine, Derive, Solve) break marking into **method marks** for intermediate computation steps and an **answer mark** for the final correct result. This structure allows partial credit — a student who applies the correct method but makes an arithmetic error earns method marks even if the final answer is wrong.
+
+**`answer_marks.correct_answer` is the number of MARKS awarded for the correct final answer (typically 0 or 1), not the numerical value of the answer itself.** The expected numerical answer ($1,800, $800m, etc.) goes in `partial_credit_rules` where examiners need it for reference. This is the existing sum invariant: `sum(method_marks[*].marks) + answer_marks.correct_answer == max_marks`.
+
+A mark scheme that passes the sum invariant but omits intermediate computation steps is **structurally incomplete**: Mia cannot award partial credit for working she has no `method_mark` step to match against.
+
+#### Verbatim evidence anchors
+
+> Source: *Business Management Subject Guide* (first assessment 2024), p. 38 (MARK_SCHEME_EVIDENCE.md §1.3)
+
+> "Analytic markschemes are prepared for those examination questions that expect a particular kind of response and/or a given final answer from students. **They give detailed instructions to examiners on how to break down the total mark for each question for different parts of the response.**"
+
+The operative phrase is *"break down the total mark... for different parts of the response"* — the mark is not an undifferentiated whole; it is divided across the identifiable parts of the student's working.
+
+> Source: *Business Management Subject Guide* (first assessment 2024), p. 43; *Economics Guide* (first assessment 2022), p. 60 (MARK_SCHEME_EVIDENCE.md §3.E, §4.E)
+
+> "Method marks are awarded independently of the final numerical answer." [BM p. 43]
+
+The independent-award principle requires that each method step be documented separately — independent award presupposes a documented step to award against.
+
+#### Important limitation
+
+The per-step decomposition rule — *"every distinct intermediate value the student must compute to reach the final answer is its own method_mark step"* — is **not verbatim-quoted from either subject guide**. It is IBO marking convention as observable in published examination mark schemes (distributed separately to examiners), none of which are held in this repository (see §1.5).
+
+**The encoding in `generate-mark-schemes.ts` is anchored only to the two guide quotes above.** The per-step granularity represents documented IBO marking practice, not a direct transcription of a subject-guide page. Same status as the §2.F depth-marking tier labels.
+
+Any future verbatim per-examination mark scheme quote that confirms the decomposition convention should be added here and the generator comment updated.
+
+#### Decomposition rule (generator)
+
+Every distinct intermediate value the student must compute to reach the final answer is its own `method_mark` step. Trace the path from the given values to the final answer; every named intermediate quantity on that path is a step. In both patterns below, `correct_answer` is a **mark count** (0 or 1), not the numerical answer.
+
+**Fully-decomposed pattern (`correct_answer = 0`):**
+- `method_marks`: one step per named intermediate quantity, including the final computation
+- `answer_marks.correct_answer`: 0 — no separate answer mark; the final step is itself a method mark
+- Example: 2m total-external-cost question → `method_marks` = [identify MEC = $15 (1m), multiply $15 × 120 = $1,800 (1m)], `correct_answer` = 0
+
+**Stepped pattern (`correct_answer = 1`):**
+- `method_marks`: one step per named intermediate quantity, stopping before the final arithmetic
+- `answer_marks.correct_answer`: 1 — one mark reserved for the correct final answer
+- Example: 4m multiplier question → `method_marks` = [compute MPC (1m), compute k (1m), set up ΔY formula (1m)], `correct_answer` = 1
+
+#### Heuristic review flag
+
+`flagHybridSingleStep()` in `scripts/mark-scheme-framework.ts` raises a review flag when `method_marks.length === 1` AND `max_marks >= 2` AND `question_text` matches a multi-step arithmetic indicator (`×`, `÷`, `per [unit noun]`, `percentage change`). This is a **review flag, not an invariant violation** — some 2m questions are genuinely one-step.
+
+---
+
 *End of §2.*
 
 ---

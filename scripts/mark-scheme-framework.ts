@@ -28,6 +28,11 @@ export interface AcceptedPoint {
   keywords: string[];
 }
 
+export interface AcceptedReasonEntry {
+  reason: string;
+  keywords: string[];
+}
+
 export interface MethodMark {
   step: string;
   marks: number;
@@ -49,6 +54,7 @@ export interface Criterion {
 export interface ContentChecklistData {
   accepted_points: AcceptedPoint[];
   marking_rule: string;
+  accepted_reasons?: AcceptedReasonEntry[];
 }
 
 export interface BandDescriptorData {
@@ -789,11 +795,12 @@ export const MARK_SCHEME_V3_IB_BUSINESS_MANAGEMENT: MarkSchemeV3IbBusinessManage
 export const SCHEME_TYPE_INVARIANTS: SchemeTypeInvariants = {
 
   // EVIDENCE: §2.B "Sum of all accepted_points[i].marks must equal max_marks."
+  // Pool-marking exception: AO1 state/identify questions offer a pool of 1m options (award any max_marks).
   content_checklist: [
     {
-      invariant: 'sum(accepted_points[*].marks) == max_marks',
-      description: 'All accepted point marks must sum exactly to the question\'s max_marks.',
-      reject_if: 'sum(accepted_points[*].marks) !== max_marks',
+      invariant: 'standard: sum(accepted_points[*].marks) == max_marks; pool (AO1 state/identify): all marks==1 AND count>=max_marks',
+      description: 'Standard CC: all accepted_point marks sum exactly to max_marks. Pool CC (AO1 state/identify): every point is 1m and there are at least max_marks options to award from.',
+      reject_if: 'standard: sum !== max_marks; pool: any point mark != 1, or count < max_marks',
     },
   ],
 
@@ -999,7 +1006,7 @@ export function resolveSchemeType(input: SchemeTypeInput): SchemeType {
     if (input.section === 'SEC_B' && input.marks === 10) return 'band_descriptor';
     if (term === 'calculate' || term === 'determine') return 'hybrid';
     if (input.ao_level === 'AO3' || AO3_TERMS.has(term)) return 'band_descriptor';
-    if (input.ao_level === 'AO2' && input.marks >= 5) return 'band_descriptor';
+    if (input.ao_level === 'AO2' && input.marks >= 5 && input.section !== 'SEC_A') return 'band_descriptor';
     return 'content_checklist';
   }
 
@@ -1119,6 +1126,120 @@ export function validateMarkSchemeData(
   return violations;
 }
 
+// ─── Hybrid decomposition heuristic ──────────────────────────────────────────
+
+// Rule 22 — EVIDENCE: MARK_SCHEME_EVIDENCE.md §2.G (same convention status as §2.F).
+// Flags hybrid schemes where method_marks contains only a single step on a ≥2-mark
+// question whose question text contains multi-step arithmetic indicators. This is a
+// REVIEW flag, not an invariant violation — some 2m questions are genuinely one-step.
+const HYBRID_MULTI_STEP_RE =
+  /[×÷]|\bper\s+(unit|tonne|kg|item|person|capita|household|worker)\b|percentage change|%\s*change/i;
+
+export function flagHybridSingleStep(
+  data: HybridData,
+  max_marks: number,
+  question_text: string,
+): boolean {
+  if (max_marks < 2) return false;
+  if (!Array.isArray(data.method_marks) || data.method_marks.length !== 1) return false;
+  return HYBRID_MULTI_STEP_RE.test(question_text);
+}
+
+// ─── Pattern 1: Multi-value decomposition (§DEFECT-1) ────────────────────────
+
+// Returns the number of distinct final values a question asks the student to calculate.
+// Strips conditional clauses ("given…", "assuming…", "where…") before counting "and (the)" conjunctions.
+// Excludes verbal continuations ("and interpret", "and apply", etc.) that don't introduce new quantities.
+export function detectRequestedValueCount(question_text: string): number {
+  if (!/\b(?:calculate|determine|find|derive)\b/i.test(question_text)) return 1;
+  // Strip everything from the first conditional clause onwards
+  const beforeCondition = question_text.replace(/\s*\b(?:given|assuming|where|when|if)\b.*/i, '');
+  const verbIdx = beforeCondition.search(/\b(?:calculate|determine|find|derive)\b/i);
+  if (verbIdx === -1) return 1;
+  const afterVerb = beforeCondition.slice(verbIdx);
+  // Match "and (the) <word>" but exclude verbal continuations
+  const VERBAL_RE = /^(?:interpret|show|explain|describe|comment|note|compare|apply|use|check)\b/i;
+  const andMatches = (afterVerb.match(/\band\s+(?:the\s+)?(\w+)/gi) ?? [])
+    .filter(m => {
+      const word = m.replace(/^and\s+(?:the\s+)?/i, '');
+      return !VERBAL_RE.test(word);
+    });
+  return Math.max(1, andMatches.length + 1);
+}
+
+// Returns true when a question names ≥2 final values to calculate but method_marks has
+// fewer steps than detected values, leaving at least one value with no marked step.
+export function flagMultiValueMissingStep(
+  data: HybridData,
+  question_text: string,
+): boolean {
+  const count = detectRequestedValueCount(question_text);
+  if (count <= 1) return false;
+  return Array.isArray(data.method_marks) && data.method_marks.length < count;
+}
+
+// ─── Pattern 2: Multiplier formula check (§DEFECT-2) ─────────────────────────
+
+const MULTIPLIER_QUESTION_RE = /\b(?:multiplier|change in (?:\w+\s+)?(?:national\s+)?income|ΔY)\b/i;
+// Open-economy context makes MPM valid — skip the check when explicitly mentioned
+const OPEN_ECONOMY_RE        = /open[\s-]economy|\bMPM\b|marginal propensity to import/i;
+const MPM_IN_STEP_RE         = /\bMPM\b|marginal propensity to import/i;
+
+// Returns true if a standard closed-economy multiplier question has MPM in a method step.
+// MPM belongs in the open-economy multiplier only; the closed-economy denominator uses MPC (= 1−MPS).
+export function flagWrongMultiplierFormula(
+  data: HybridData,
+  question_text: string,
+): boolean {
+  if (!MULTIPLIER_QUESTION_RE.test(question_text)) return false;
+  if (OPEN_ECONOMY_RE.test(question_text)) return false; // MPM may be valid here
+  return data.method_marks.some(m => MPM_IN_STEP_RE.test(m.step));
+}
+
+// ─── Pattern 4: Inverted elasticity label check (§DEFECT-4) ──────────────────
+
+const ELASTICITY_QUESTION_RE = /\bPED\b|price elasticity of demand/i;
+// |PED| > 1 called "inelastic" (should be "elastic") — inverted
+const INVERTED_ELASTIC_RE    = /(?:>|greater than)\s*1[^.;\n]*\binelastic\b|\binelastic\b[^.;\n]*(?:>|greater than)\s*1/i;
+// |PED| < 1 called "elastic" (should be "inelastic") — inverted
+const INVERTED_INELASTIC_RE  = /(?:<|less than)\s*1[^.;\n]*\belastic\b(?!ity)|\belastic\b(?!ity)[^.;\n]*(?:<|less than)\s*1/i;
+
+// Returns true if the scheme inverts the PED elasticity interpretation.
+export function flagInvertedElasticityLabel(
+  data: HybridData,
+  question_text: string,
+): boolean {
+  if (!ELASTICITY_QUESTION_RE.test(question_text)) return false;
+  const text = JSON.stringify(data);
+  return INVERTED_ELASTIC_RE.test(text) || INVERTED_INELASTIC_RE.test(text);
+}
+
+// ─── Pattern 5b: Explain-N (two/three) detection (§DEFECT-5b) ────────────────
+
+export const EXPLAIN_N_RE =
+  /\b(explain|describe|analyse|analyze|examine)\s+(two|three|2|3)\s+(\w+)/i;
+// Groups: [1] verb  [2] number  [3] first noun word
+// Excluded (flat AO1 pools, no breadth+depth structure): state, identify, outline
+
+// Returns the number of items expected (2 or 3), or 0 if not a breadth-marked question.
+export function detectExplainNCount(question_text: string): number {
+  const match = EXPLAIN_N_RE.exec(question_text);
+  if (!match) return 0;
+  const word = match[2].toLowerCase();   // group 2 is the number
+  if (word === 'two' || word === '2') return 2;
+  if (word === 'three' || word === '3') return 3;
+  return 0;
+}
+
+// Returns true if an explain-N question has fewer accepted_points than the structural minimum
+// (at least 2 per reason: one naming mark, one development mark).
+export function flagExplainNInsufficientPoints(
+  points: AcceptedPoint[],
+  n: number,
+): boolean {
+  return n > 0 && points.length < n * 2;
+}
+
 // ─── Prompt formatter ─────────────────────────────────────────────────────────
 
 export function formatMarkSchemeForPrompt(scheme: {
@@ -1133,15 +1254,27 @@ export function formatMarkSchemeForPrompt(scheme: {
   switch (scheme_type) {
     case 'content_checklist': {
       const d = scheme_data as ContentChecklistData;
+      const isDepthMarked = Array.isArray(d.accepted_reasons) && d.accepted_reasons.length > 0;
+      const pointsLabel = isDepthMarked
+        ? 'Depth tiers (award marks for depth on any one accepted reason):'
+        : 'Accepted points:';
       const lines = d.accepted_points.map(p =>
         `- ${p.point} [${p.marks}m] — keywords: ${p.keywords.join(', ')}`,
       );
+      const reasonsBlock = isDepthMarked
+        ? [
+            '',
+            'Valid reasons (student names any one):',
+            ...d.accepted_reasons!.map(r => `- ${r.reason} — keywords: ${r.keywords.join(', ')}`),
+          ]
+        : [];
       return [
         `**Mark scheme** — content_checklist, ${max_marks} marks${src}`,
         d.marking_rule,
         '',
-        'Accepted points:',
+        pointsLabel,
         ...lines,
+        ...reasonsBlock,
       ].join('\n');
     }
 
