@@ -473,6 +473,9 @@ Output at the very end of every session, after your final teaching message:
 [SESSION_SUMMARY: session:{{SESSION_NUMBER}} | type:NEW_TOPIC | lesson:{{CURRENT_LESSON_CODE}} | concepts_covered:concept1,concept2,concept3 | lesson_complete:TRUE or FALSE | weak_flags_this_session:0 | apply_scores:X/5 | session_flag:none | next_action:CONTINUE_LESSON or NEXT_LESSON]
 ```
 
+### HINT_GIVEN
+When you respond to a wrong or partial answer by giving a hint and asking the student to try again (rather than giving the full answer), end your message with the signal [HINT_GIVEN] on its own line. Emit this ONLY when you have withheld the full answer and asked them to retry.
+
 ### DIAGRAM
 When explaining a concept that has a standard diagram or model, emit [DIAGRAM: CODE] on its own line immediately after the explanation — not inside a code block, not with quotes. CODE must be one of the exact codes below. For diagrams not in this list, emit [DIAGRAM_DYNAMIC: brief description of what to draw]. Only emit one diagram signal per message.
 

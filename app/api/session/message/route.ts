@@ -334,6 +334,19 @@ const lastAoifeTail = lastAoifeMessage.length > 0
   ? lastAoifeMessage.slice(-400).replace(/\[.*?\]/g, '').trim()
   : '';
 
+// Detect attempt stage from HINT_GIVEN signal in the prior assistant turn.
+// SECOND = student has already had one hint this question; FIRST = fresh or new concept.
+const attemptStage: 'FIRST' | 'SECOND' = lastAoifeMessage.includes('[HINT_GIVEN]') ? 'SECOND' : 'FIRST';
+
+// Strip [HINT_GIVEN] from assistant turns before sending to Anthropic.
+// The raw signal stays in persisted message_history for detection on the next turn;
+// the model must not see stale server-side signals in prior assistant messages.
+const strippedHistory = trimmedHistory.map(m =>
+  m.role === 'assistant'
+    ? { ...m, content: m.content.replace(/\n?\[HINT_GIVEN\]/g, '').trim() }
+    : m
+);
+
 // Detect spaced rep due from the substituted system prompt
 const spacedRepDue = injectedSystemPrompt.includes('SPACED_REP_DUE: TRUE') ||
   injectedSystemPrompt.includes('Spaced repetition due: TRUE');
@@ -388,6 +401,10 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Never lose your place in the lesson due to a student tangent. The lesson continues regardless.
 - The full conversation history is in the messages array. Never claim you cannot see a previous message. Never ask the student to repeat something they already sent.
 - If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
+
+TURN TASK — RESCUE CONTROL: ${attemptStage === 'FIRST'
+  ? "If the student's last message is a wrong or partial ATTEMPT at the question you just asked, your ONLY task this turn is to give ONE targeted hint pointing at the single missing piece, then ask them to try again. Do NOT state the full answer. End with [HINT_GIVEN]. (If their answer is correct, or they explicitly asked to be told, ignore this and respond normally.)"
+  : "The student has already had one hint on this question and is attempting again. Now give the full teaching (max 150 words) and re-test on the original question."}
 `;
 
   // ── Anthropic streaming ───────────────────────────────────────────────────
@@ -407,7 +424,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
     model: MODEL,
     max_tokens: MAX_TOKENS,
     system: systemBlocks,
-    messages: trimmedHistory,
+    messages: strippedHistory,
   });
 
   let fullResponseText = '';

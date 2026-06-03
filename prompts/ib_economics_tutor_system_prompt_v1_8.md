@@ -727,6 +727,9 @@ Format:
 
 Adjust lesson_complete, weak_flags_this_session, apply_scores, and session_flag to reflect what actually happened in the session.
 
+### HINT_GIVEN
+When you respond to a wrong or partial answer by giving a hint and asking the student to try again (rather than giving the full answer), end your message with the signal [HINT_GIVEN] on its own line. Emit this ONLY when you have withheld the full answer and asked them to retry.
+
 ### DIAGRAM
 When explaining a concept that has a standard diagram, emit [DIAGRAM: CODE] on its own line immediately after the explanation — not inside a code block, not with quotes. CODE must be one of the exact codes below. For diagrams not in this list, emit [DIAGRAM_DYNAMIC: brief description of what to draw]. Only emit one diagram signal per message.
 
