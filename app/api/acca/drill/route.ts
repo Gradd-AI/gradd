@@ -173,8 +173,19 @@ function checkCalcAttempt(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Haiku classifier — judgement drills only.
-// Classify-only call: returns {verdict, missing}. Never generates teaching.
+// Judgement drill classifier — two-step approach
+//
+// Step 1 — deterministic PM-signal check (no model call):
+//   Does the attempt reference scenario-specific data AND PM vocabulary?
+//   No signals → 'wrong' immediately. This covers pure-description answers
+//   reliably without a model call.
+//
+// Step 2 — Sonnet decides partial vs correct only:
+//   Given the answer IS genuine (step 1 passed), Sonnet checks completeness
+//   against the required elements and populates the `missing` gap phrase.
+//   A binary task (partial vs correct) is all that's needed at this stage.
+//   Sonnet fires only on genuine judgement attempts — a small slice of traffic.
+//   Fail-safe: if Sonnet errors, genuine attempt defaults to 'partial'.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type Verdict = 'correct' | 'partial' | 'wrong';
@@ -184,54 +195,62 @@ interface ClassifyResult {
   missing: string;
 }
 
+// PM-signal regex: scenario data (number with unit, or named metric) + PM action term.
+// Both must be present for a genuine evaluation attempt.
+const PM_DATA_RE   = /\d+[%£]|[£]\d|\+\d+|\bkpi\b|\bmetric\b|\bindicator\b/i;
+const PM_ACTION_RE = /\bkpi\b|\btarget\b|\bmetric\b|\btrack\b|\bmeasure\b|\breport\b|\baccountab|\bbenchmark\b|\bindicator\b/i;
+
+function hasPMEvaluationSignal(text: string): boolean {
+  return PM_DATA_RE.test(text) && PM_ACTION_RE.test(text);
+}
+
 async function classifyJudgement(
-  attemptText:     string,
-  requiredElements: string[],
-  misconceptions:  Misconception[],
+  attemptText:          string,
+  requiredElements:     string[],
+  misconceptions:       Misconception[],
   mustIncludeLimitation: boolean,
-  minValidPoints: number,
+  minValidPoints:       number,
 ): Promise<ClassifyResult> {
-  const classifyPrompt = `\
-You are classifying a student's ACCA APM answer. Classify only — do NOT write teaching, hints, or the correct answer.
+  // Step 1 — deterministic: no PM signals → wrong, no model call
+  if (!hasPMEvaluationSignal(attemptText)) {
+    return { verdict: 'wrong', missing: '' };
+  }
 
-Required elements (what a marker rewards):
+  // Step 2 — Haiku: answer is genuine; decide partial vs correct only.
+  // The prompt is deliberately simple — Haiku only checks completeness, not quality.
+  const completenessPrompt = `\
+A student wrote a genuine ACCA APM answer. Check if they covered all required elements.
+
+Required elements (tick each covered, flag any missed):
 ${requiredElements.map((e, i) => `${i + 1}. ${e}`).join('\n')}
-
-Common error patterns (what wrong answers look like):
-${misconceptions.map(m => `- ${m.error}: ${m.pattern}`).join('\n')}
-
 Must include a limitation: ${mustIncludeLimitation ? 'YES' : 'NO'}
-Minimum valid evaluative points needed: ${minValidPoints}
 
-Student attempt (classify this):
+Student answer:
 """
-${attemptText.slice(0, 3000)}
+${attemptText.slice(0, 2500)}
 """
 
-Rules:
-- "correct"  = genuinely addresses ≥${minValidPoints} required elements with specific scenario application AND evaluation (not just description)${mustIncludeLimitation ? ' AND includes a clear limitation' : ''}
-- "partial"  = addresses 1–${minValidPoints - 1} elements, OR evaluates but misses the limitation, OR describes the framework without full PM linkage
-- "wrong"    = lists/defines the framework without evaluating PM impact, or is off-topic
+If ALL ${requiredElements.length} elements are addressed AND limitation included → "correct", missing="".
+If ANY element is missed OR limitation missing → "partial", missing = name of the most important missing element in ≤6 words (e.g. "threat quadrant not addressed", "no limitation stated").
 
-Respond with JSON only, no other text:
-{"verdict":"correct"|"partial"|"wrong","missing":"one short phrase for the most important gap, or empty string if correct"}`;
+JSON only — two fields, nothing else:
+{"verdict":"correct"|"partial","missing":"gap in ≤6 words or empty"}`;
 
   try {
     const res = await anthropic.messages.create({
-      model:      'claude-haiku-4-5-20251001',
+      model:      'claude-sonnet-4-6',
       max_tokens: 120,
-      messages:   [{ role: 'user', content: classifyPrompt }],
+      messages:   [{ role: 'user', content: completenessPrompt }],
     });
 
     const raw = res.content[0]?.type === 'text' ? res.content[0].text.trim() : '';
     const parsed = JSON.parse(raw) as { verdict?: string; missing?: string };
-    const verdict = (['correct', 'partial', 'wrong'] as Verdict[]).includes(parsed.verdict as Verdict)
-      ? (parsed.verdict as Verdict)
-      : 'wrong';
+    // Only partial or correct are valid at this point
+    const verdict: Verdict = parsed.verdict === 'correct' ? 'correct' : 'partial';
     return { verdict, missing: parsed.missing ?? '' };
   } catch {
-    // Fail safe: treat classifier errors as 'wrong' so the hint path fires
-    return { verdict: 'wrong', missing: '' };
+    // Fail safe: genuine attempt with unclear completeness → partial (not wrong)
+    return { verdict: 'partial', missing: '' };
   }
 }
 
@@ -386,11 +405,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ stage: 'reveal', full_teaching: drill.full_teaching }, { headers: rh });
     }
 
-    // First miss → hint only; full_teaching never leaves the server
-    return NextResponse.json(
-      { stage: 'hint', hint: drill.hint, ...(missing ? { missing } : {}) },
-      { headers: rh },
-    );
+    // First miss → hint only; full_teaching never leaves the server.
+    // For judgement drills: if the student made a genuine attempt (verdict='partial'),
+    // augment the hint so it doesn't wrongly say "you only listed the quadrants."
+    // If the classifier returned a specific gap phrase, name it; otherwise give a
+    // generic "on the right track" addendum. verdict='wrong' keeps the base hint
+    // unchanged — the generic redirect is correct when there's no real evaluation.
+    // Calc drills never reach this branch (they use the deterministic checker).
+    const hintText = (!drill.calculation_required && verdict === 'partial')
+      ? (missing
+          ? `${drill.hint}\n\nYou're on the right track — the main gap: ${missing}. Address that and try again.`
+          : `${drill.hint}\n\nYou're on the right track — make sure you've covered all the required areas and try again.`)
+      : drill.hint;
+
+    return NextResponse.json({ stage: 'hint', hint: hintText }, { headers: rh });
   }
 
   return NextResponse.json({ error: `Unknown action: ${String(action)}` }, { status: 400 });
