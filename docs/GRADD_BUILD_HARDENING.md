@@ -66,6 +66,8 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 26. **Before contradicting a verifier verdict that cites a specific syllabus rule, read the source PDF page and quote it.** If a verifier flags a question for a structural rule (e.g. "AO3 absent from P1 Section A", "Q3 total marks = 17"), do not dispute the verdict from training-data recall alone. Open the Subject Guide PDF, navigate to the cited page, and quote the exact sentence. If the source contradicts the encoded rule, fix the rule and re-run. If the source confirms it, accept the verdict. *This session: an unverified challenge to IB_BM_016's verdict cost one re-run cycle.*
 
+27. **[IB][ACCA] Never instruct a model to withhold an answer it can generate in the same call — the helpfulness prior overrides it.** Proven twice on Haiku: a RESCUE CONTROL prompt block and a per-turn HINT_GIVEN injection were both ignored, with the model handing over the full answer on the first attempt regardless. Enforce withholding architecturally: pre-bake the reveal content server-side and serve it only when the attempt-count threshold is met, or use a two-call pattern where the answer is never generated on call 1. Any teaching or marking feature that requires "don't show the answer yet" must enforce that constraint in the route, not the prompt. Applies to every teaching, marking, and staged-reveal feature.
+
 ---
 
 ## ISSUE CATALOGUE
@@ -274,6 +276,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Database/Migration
 **SEVERITY:** Low
 
+---
+
+**ISSUE:** [ACCA] Public no-login table with staged-reveal content must have NO anon SELECT policy
+**SYMPTOM:** Design question during the APM drill API build: could a free public drill be served directly from the DB to the browser via the anon key, then have the answer/teaching/rubric columns stripped client-side?
+**ROOT CAUSE:** Serving a row with protected fields to the client and relying on the client to omit columns is not a security boundary — the fields are in the HTTP response regardless of whether the frontend renders them. Answer, hint, full teaching and rubric would be readable in the browser's network tab.
+**FIX:** No anon SELECT policy on the `drills` table. RLS enabled + no anon policy = Postgres default-deny for anon. All drill access goes through a service-role API route (`/api/acca/drill`) that queries the full row server-side and returns only the fields appropriate for the current attempt stage.
+**PREVENTION:** For any table whose full row must never reach the browser (staged-reveal content: answer, teaching, rubric, mark scheme), do NOT give the anon role a SELECT policy. RLS-enabled + no anon policy = default-deny; the row never leaves the server. Gate access through a service-role server route that controls which fields are returned based on attempt state. Distinct from the authenticated-write RLS entries above — those cover write permissions for logged-in users; this covers read permissions for public content where field-level leakage is the threat.
+**CATEGORY:** Database/Migration
+**SEVERITY:** High
+
 
 
 ### SIGNALS
@@ -397,7 +409,7 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **SYMPTOM:** Mia opened with "Exactly right" / "correct" on answers that explicitly covered only 3 of 4 required elements.
 **ROOT CAUSE:** The v1.5 rule existed but sat in a low-priority pedagogy section and was phrased as a subjective judgement ("COMPLETELY correct"), leaving room to rationalise. A competing supportive-tone instruction likely outweighed it.
 **FIX:** Rewrote the rule as a mechanical 4-point checklist the model must run before any affirmation, moved it high in the prompt, reframed the competing supportive-tone instruction as subordinate (prompt v1.6).
-**PREVENTION:** Behavioural rules that must override the model's defaults need to be mechanical, checkable, and high in the prompt. Audit for competing instructions — a supportive-tone directive elsewhere can silently outweigh a calibrated-feedback rule.
+**PREVENTION:** Behavioural rules that must override the model's defaults need to be mechanical, checkable, and high in the prompt. Audit for competing instructions — a supportive-tone directive elsewhere can silently outweigh a calibrated-feedback rule. Key distinction learned later: a prompt rule that edits HOW something is said (e.g. change the opening praise word) is obeyed; a rule that suppresses WHAT information is given (withhold the answer) is not. Make substance-suppression structural, not instructed.
 **CATEGORY:** Prompts
 **SEVERITY:** High
 
@@ -581,6 +593,26 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** For any "never do X" instruction in a prompt, enumerate the rationalised neighbours: never-ask-X, never-confirm-X, never-rephrased-X. If a semantic neighbour exists, the prohibition will leak. Test with hostile edge cases before shipping.
 **CATEGORY:** Prompts
 **SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] "Welcome back" in the tutor opener does not indicate a resumed session
+**SYMPTOM:** Assumed the tutor's "Welcome back" greeting confirmed a fresh session was loading an updated prompt. In fact, "Welcome back" fires on new sessions too — the tutor references prior work from the injected session summary, not by detecting session type.
+**ROOT CAUSE:** Opener text is generated from session context (last session summary, lesson progression) and is not a reliable indicator of which prompt version is pinned or whether a genuinely new session started.
+**FIX:** Confirmed session vintage via `raw_final_response` in the `sessions` table — if it starts with `__SYSTEM_PROMPT__`, that is the pinned prompt for that session; a new session has an updated value.
+**PREVENTION:** Do not judge prompt vintage or session state from opener text. Confirm via DB marker: `sessions.raw_final_response` holds the prompt pinned at session creation. "Welcome back" ≠ new session; `session_number` incremented after closing prior sessions = new session.
+**CATEGORY:** Prompts
+**SEVERITY:** Low
+
+---
+
+**ISSUE:** [ACCA] Haiku 4.5 cannot reliably perform 3-way classification (wrong / partial / correct) on concise-but-genuine student answers
+**SYMPTOM:** A student answer that correctly linked scenario-specific data to PM KPI changes was consistently classified as 'wrong' regardless of prompt rewording — three separate rewrites all failed; `missing` field returned empty each time.
+**ROOT CAUSE:** Haiku 4.5 defaults strong but concise evaluation answers to 'wrong' when asked to choose between three verdict levels, apparently pattern-matching on brevity rather than content. The 3-way distinction is at the edge of Haiku's reliable capability for this task.
+**FIX:** Replaced single 3-way Haiku call with a two-step approach: (1) deterministic regex pre-filter — checks for PM-evaluation signals (scenario-specific numeric data + PM vocabulary); no signals → 'wrong' immediately, no model call; (2) Sonnet binary call (partial vs correct only) — fires only when the pre-filter confirms the answer is genuine, making the task far simpler. Fail-safe: Sonnet error → 'partial' (not 'wrong').
+**PREVENTION:** Match model to decision stakes and task difficulty. Never ask Haiku to do a 3-way wrong/partial/correct distinction on open-ended evaluation answers — it misclassifies strong-but-concise genuine attempts as wrong. Split complex classification: deterministic pre-filter for the coarse cut, model only for the binary; put Sonnet on the one judgement call where quality is the product (fires on a small traffic slice only). Do not blanket-default to Sonnet when only one stage of a pipeline actually requires it.
+**CATEGORY:** Prompts
+**SEVERITY:** High
 
 
 
@@ -1081,6 +1113,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** Immediately after merging a feature branch: `git branch -d <name>` locally AND `git push origin --delete <name>` remotely. Audit branches monthly with `git branch -a` to catch lingering ones.
 **CATEGORY:** Deployment
 **SEVERITY:** Low
+
+---
+
+**ISSUE:** [IB][ACCA] Testing a reimplementation of a route instead of the real route proves nothing about the shipped file
+**SYMPTOM:** When the Vercel preview URL was protected by deployment protection and the MCP fetch tool was GET-only, the fallback option was to write a local script that reimplemented the route's logic and test that instead — which would not have tested the actual `app/api/acca/drill/route.ts` file that ships.
+**ROOT CAUSE:** The test artefact and the tested artefact are not the same. A reimplementation may share the intent but have different code paths, missing edge cases, or a stale version of the logic. Passing a reimplementation test and passing a test of the real route are independent outcomes.
+**FIX:** Ran the real route locally via `npm run dev` + PowerShell `Invoke-RestMethod` against `http://localhost:3000/api/acca/drill`. This tests the actual Next.js route handler with the real Supabase and Anthropic connections.
+**PREVENTION:** Always test the real artefact — the actual file that ships. When a route can't be hit via preview (deployment protection, tooling limitations), run it locally (`npm run dev`) rather than reimplementing its logic in a test script. A script that reimplements the route is a test of the reimplementation, not of the route. Extends the localhost-vs-production lesson at line 966: using localhost is correct when the alternative is not testing the route at all.
+**CATEGORY:** Deployment
+**SEVERITY:** Medium
 
 
 
@@ -1584,6 +1626,20 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 
 
+### CALC / DETERMINISTIC CHECKING
+
+---
+
+**ISSUE:** [ACCA] Digit-only variance checker marks "right number, wrong direction" as correct
+**SYMPTOM:** A student who answered "£82,000 Favourable and £42,500 Adverse" (both F/A labels inverted) received verdict 'correct' from a checker that stripped £/commas and matched numeric digits only.
+**ROOT CAUSE:** Variance answers require both the correct numeric value AND the correct Favourable/Adverse label. "Right number, wrong sign" is the most common APM variance error — it is explicitly listed as a misconception in the drill data — and a digit-only match teaches nothing about the directional error.
+**FIX:** Added direction detection: for each expected variance (e.g. "£82,000 Adverse"), the correct direction label must be present in the attempt text AND the wrong direction must not appear. Window for direction detection is bounded by the position of the NEXT different variance number in the text (not a fixed character count), so that a two-variance answer like "£82,000 Adverse ... £42,500 Favourable" does not bleed the second label into the first value's check.
+**PREVENTION:** Any numeric answer-checker for labelled results (Favourable/Adverse, positive/negative, pass/fail) must verify the label as well as the value. A digit-only check marks the most common directional error as correct. Use a per-value window bounded by adjacent values — not a fixed character count — to scope direction detection for multi-value answers.
+**CATEGORY:** Calc/Deterministic Checking
+**SEVERITY:** High
+
+
+
 ### CURRICULUM
 
 ---
@@ -1605,6 +1661,30 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** Never assert a feature is or isn't built from memory — inspect the codebase. When grepping to confirm a feature, pick search terms that would actually appear in that feature's code, and check the directory tree, not just keyword greps. Treat memory notes as hints, not facts.
 **CATEGORY:** Curriculum
 **SEVERITY:** Medium
+
+
+### CLAUDE CODE WORKFLOW
+
+---
+
+**ISSUE:** [IB][ACCA] Claude Code returns summaries of file/DB content even when asked to print verbatim
+**SYMPTOM:** When asked to print generated content (drills, mark schemes, drill fields) for review, Claude Code returned formatted summary tables with "key fix" descriptions and truncated previews — not the raw content. A drill review based on a summary of Claude Code's own output cannot catch errors in the actual stored values.
+**ROOT CAUSE:** Claude Code's default behaviour is to summarise, annotate and compress output for readability. This is appropriate for code review but destructive when the task requires verbatim content for human approval — a truncated summary of a model-generated drill looks clean even if the stored row contains errors.
+**FIX:** For content-review tasks (drills, mark schemes, seed questions, prompts), pull the content independently: query the DB directly via a service-role script or SQL editor, or read the file with `cat`. Never approve generated content on Claude Code's summary of its own output.
+**PREVENTION:** Distinguish tool output from artefact output. When you need to review what was actually inserted or generated, go to the source of truth (DB row, file on disk) — not to Claude Code's description of it. Distinct from the tutor-summarising-instructions issue (PROMPTS section): that is a tutor prompt behaviour; this is the coding tool behaviour.
+**CATEGORY:** Claude Code Workflow
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] PowerShell git commit fails with bash heredoc syntax
+**SYMPTOM:** `git commit -m "$(cat <<'EOF'...EOF)"` failed on Windows PowerShell with "Missing file specification after redirection operator". The commit did not proceed.
+**ROOT CAUSE:** Bash heredoc syntax (`<<'EOF'...EOF`) is not supported in PowerShell 5.1. The `<<` is interpreted as a redirection operator, not a here-string delimiter. PowerShell's own here-string uses `@'...'@` syntax.
+**FIX:** Used a single inline `-m "message"` flag. Commit messages kept under 72 characters or split across two `-m` flags for title + body.
+**PREVENTION:** On Windows PowerShell, `git commit` messages must use `git commit -m "message"` — never bash heredoc syntax. This extends the commit-from-PowerShell note in DEPLOYMENT: not just "commit from PowerShell" but specifically "use `-m`, never heredoc."
+**CATEGORY:** Claude Code Workflow
+**SEVERITY:** Low
+
 
 
 ---
