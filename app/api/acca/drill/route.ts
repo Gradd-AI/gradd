@@ -94,6 +94,9 @@ interface SafeDrill {
 // "Right number, wrong direction" → returns false → hint fires and teaches F/A.
 // ─────────────────────────────────────────────────────────────────────────────
 
+// detectDirection: search the window for a direction signal.
+// Word/phrase patterns cover the common cases; the letter check catches
+// standalone "A" or "F" written immediately after the number.
 function detectDirection(
   window: string,
   numOffset: number,
@@ -118,6 +121,11 @@ function checkCalcAttempt(
   // Remove £ and commas, lowercase for matching
   const normLow = attemptText.replace(/[£,]/g, '').toLowerCase();
 
+  // Collect all expected digit strings — used to compute per-number boundaries.
+  const allNumStrs = Object.values(variances)
+    .map(v => v.replace(/[£,]/g, '').match(/\d+/g)?.join(''))
+    .filter((n): n is string => !!n && n.length > 0);
+
   for (const expectedValue of Object.values(variances)) {
     // Extract digit string (e.g. "£82,000 Adverse" → "82000")
     const numStr = expectedValue.replace(/[£,]/g, '').match(/\d+/g)?.join('');
@@ -132,13 +140,26 @@ function checkCalcAttempt(
     const expLow          = expectedValue.toLowerCase();
     const expectAdverse    = /adverse/.test(expLow);
     const expectFavourable = /favou?rable/.test(expLow);
-    if (!expectAdverse && !expectFavourable) continue; // No direction to enforce
+    if (!expectAdverse && !expectFavourable) continue;
 
-    // Narrow window: 20 chars before, 30 chars after
-    const wStart    = Math.max(0, numPos - 20);
-    const wEnd      = Math.min(normLow.length, numPos + numStr.length + 30);
-    const window    = normLow.slice(wStart, wEnd);
-    const numOffset = numPos - wStart;
+    // Right boundary: position where the NEXT different variance number begins.
+    // This scopes direction-detection to exactly this variance's section so that
+    // adjacent variance labels (e.g. "£42,500 Favourable" after "£82,000 Adverse")
+    // never bleed into the current number's direction window.
+    const afterNum = numPos + numStr.length;
+    let rightBoundary = normLow.length;
+    for (const otherNum of allNumStrs) {
+      if (otherNum === numStr) continue;
+      const otherRegex = new RegExp(`(?<![0-9])${otherNum}(?![0-9])`);
+      const idx = normLow.slice(afterNum).search(otherRegex);
+      if (idx !== -1) rightBoundary = Math.min(rightBoundary, afterNum + idx);
+    }
+
+    // Window runs from the number forward (not backward) to the right boundary.
+    // Direction labels in APM variance answers appear after the number; looking
+    // back risks capturing the previous variance's label.
+    const window    = normLow.slice(numPos, rightBoundary);
+    const numOffset = 0; // number is at the start of the window
 
     const hasAdverse    = detectDirection(window, numOffset, numStr.length, 'adverse');
     const hasFavourable = detectDirection(window, numOffset, numStr.length, 'favourable');
