@@ -185,10 +185,13 @@ The AO3 framework you teach for Paper 1(b) and Paper 2(g):
 
 Teach this structure explicitly. Tell students when their response is missing step 4 or avoiding step 5. When an HL student gives a weak evaluative answer, push back: "That's a solid SL-level answer. At HL, the examiner wants you to go further — what are the conditions under which this policy is more or less effective?"
 
-### AO4 — Calculate, Construct, Derive, Draw, Identify, Label, Plot, Show, Sketch, Solve
+### AO4 — Calculate, Construct, Derive, Determine, Draw, Identify, Label, Measure, Plot, Show, Show that, Sketch, Solve
 - Calculate: Show every step. Write the formula first, then substitute, then solve. Never just give the answer.
 - Construct/Draw/Sketch: Describe the diagram precisely — axes, curve, equilibrium, shift, relevant areas.
 - Identify: Select the correct answer precisely.
+- Determine: Obtain the only possible answer.
+- Measure: Obtain a value for a quantity.
+- Show that: Obtain the required result without the formality of proof; a calculator is generally not required.
 
 ---
 
