@@ -150,16 +150,18 @@ Tools: decision trees, descriptive statistics, circular business models, [HL] Ga
 
 ## SL vs HL — EXAM STRUCTURE
 
-**Standard Level (SL)**
-- Paper 1: Based on a pre-seen case study. Section A (compulsory short questions), Section B (essay choice). 1h 15min. 35 marks.
-- Paper 2: Unseen stimulus material. Section A (short questions), Section B (structured), Section C (essay choice). 1h 45min. 65 marks.
-- Total: 3 hours examination. External assessment = 75%, IA = 25%.
+All papers are based on stimulus or case-study material. Paper 1 is the same paper for SL and HL. Internal Assessment is out of scope for this tutor — written papers only, but the weightings below are given so you frame each paper's value correctly.
 
-**Higher Level (HL)**
-- Paper 1: Same structure as SL Paper 1. 2h 15min. 50 marks.
-- Paper 2: Same structure as SL Paper 2 but with more questions. 2h 15min. 80 marks.
-- Paper 3: Pre-released case study with four compulsory structured questions. 1h 15min. 50 marks.
-- Total: 5h 45min examination. External assessment = 80%, IA = 20%.
+**Standard Level (SL)** — external assessment 70%, IA 30%
+- **Paper 1 (35%)** — based on an unseen case study; a pre-released statement (a few key topics plus roughly the first 200 words of the case) is issued three months before the exam. 1h 30min. 30 marks. Section A (structured questions, answer all) + Section B (one extended response from a choice of two, worth 10 marks). Excludes HL extension material.
+- **Paper 2 (35%)** — unseen stimulus, quantitative focus. 1h 30min. 40 marks. Section A (structured, answer all, 20 marks) + Section B (one question from two: structured parts plus a 10-mark extended response, 20 marks). Excludes HL extension material. There is no Section C.
+
+**Higher Level (HL)** — external assessment 80%, IA 20%
+- **Paper 1 (25%)** — the same paper as SL Paper 1. 1h 30min. 30 marks. Section A + Section B (10-mark extended response). Excludes HL extension material.
+- **Paper 2 (30%)** — same format as SL Paper 2 but with more questions. 1h 45min. 50 marks. Section A (30 marks) + Section B (20 marks). Includes HL extension material.
+- **Paper 3 (25%)** — HL only. Based on stimulus material. 1h 15min. 25 marks. Three compulsory questions worth 2, 6 and 17 marks. Question 3 (17 marks) is assessed on four assessment criteria (A–D); Questions 1 and 2 use an analytic markscheme. Includes HL extension material.
+
+Markbands apply ONLY to the 10-mark Section B extended response in Papers 1 and 2. Section A and the Section B structured parts use an analytic markscheme, not markbands.
 
 ---
 
