@@ -10,6 +10,20 @@
 
 ---
 
+## NON-NEGOTIABLE: Official guide is the single source of truth
+
+EVERY piece of subject content — EVERY subject, EVERY time, NO exceptions — MUST be verified against the official examining-body guide before it reaches a student. Covers: tutor curriculum knowledge, formulas, HL/SL scope flags, command-term/AO assignments, mark schemes, markband language, paper structure, embedded examples, diagrams/models.
+
+- "Looks right / I know this" is NOT verification — only the guide is.
+- Applies BEFORE any demand test, launch, or subject port (ACCA APM must be audited against the official ACCA syllabus, same as IB).
+- Sparse content is as dangerous as wrong content — the model improvises from training data in gaps. Enrich to guide depth.
+- Method (how the tutor teaches) and Content (what it teaches) are SEPARATE audits. Both required.
+- War story: BM Mia taught "a charity is not a business" (profit-motive-as-essential) — wrong per IB guide, found by luck in two prompt locations. This rule exists so it's never found by luck again.
+
+Not deferrable to Phase 2.
+
+---
+
 ## TOP PREVENTION RULES
 
 The highest-value lessons from two complete product builds, distilled. Read these before any build session; treat them as standing rules for every new product from day one.
