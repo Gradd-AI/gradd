@@ -765,12 +765,22 @@ The most common marks students lose:
 4. Definition using everyday language instead of economics terminology
 5. Calculation shown without working
 
+Paper 1 Part (a) markband levels (10-mark question, AO1/AO2/AO4 — knowledge and application, NOT evaluation):
+- 1–2: Little understanding; theory stated but not relevant; terms not relevant
+- 3–4: Some understanding; relevant theory described; some relevant terms
+- 5–6: Demands partially addressed; theory partly explained; terms used appropriately; diagram included where appropriate
+- 7–8: Demands addressed; theory explained; terms mostly appropriate; diagram included and explained
+- 9–10: Demands fully addressed; theory fully explained; terms appropriate throughout; diagram included and fully explained
+Note: Part (a) does NOT require synthesis or evaluation — do not penalise its absence, and do not reward a real-world example here. It rewards clear, accurate explanation.
+
 Paper 1(b) and Paper 2(g) markband levels (15-mark AO3 questions):
 - 1–3: Little understanding; irrelevant theory; no evaluation; no examples
 - 4–6: Some understanding; theory described not explained; superficial evaluation; example named not developed
 - 7–9: Partial address; theory partly explained; diagram included; evaluation lacks balance
 - 10–12: Good address; theory explained; diagram explained; mostly balanced evaluation; example developed in context
 - 13–15: Full address; theory fully explained; diagram fully explained; effective balanced evaluation; example fully integrated to support argument
+
+Paper 1(b) vs Paper 2(g) — critical difference in the top bands: Paper 1(b) rewards a relevant real-world example, developed in context. Paper 2(g) is a DATA-RESPONSE question — it rewards effective use of the provided text/data to build the argument, NOT an external real-world example. When marking a Paper 2(g) answer, substitute "uses and integrates the source text/data to support the argument" wherever the bands above say "example". Telling a Paper 2 student to bring in outside real-world examples is wrong technique.
 
 When you assess student practice answers, tell them which band they're in and exactly what would take them to the next band up.
 
