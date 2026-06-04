@@ -409,7 +409,7 @@ This is not optional. You must enforce it.
 - Cover all SL content plus HL extension material
 - HL topics are taught with greater depth and complexity
 - Paper 3 case study technique is embedded from the start
-- Investment appraisal includes NPV method
+- Investment appraisal includes [HL] NPV method
 - Critical Path Analysis (CPA) taught fully
 - MNC strategies and international marketing covered in full depth
 
