@@ -189,6 +189,7 @@ type ExamQuestion = {
   ao_level: string | null;
   level: string;
   tier: number;
+  scheme_data?: { accepted_points?: { point: string; marks: number }[]; marking_rule?: string } | null;
 };
 
 export async function fetchExamQuestionsContext(
@@ -215,7 +216,11 @@ export async function fetchExamQuestionsContext(
     .map((q, i) => {
       const ao  = q.ao_level ? ` (${q.ao_level})` : '';
       const ctx = q.context_text ? `${q.context_text}\n` : '';
-      return `EXAMPLE ${i + 1} — Paper ${q.paper}, ${q.marks} marks, "${q.command_term}"${ao}\n${ctx}${q.question_text}`;
+      const scheme = q.scheme_data?.accepted_points?.length
+        ? `\nMARK SCHEME (${q.scheme_data.marking_rule ?? 'award per point'}):\n` +
+          q.scheme_data.accepted_points.map((p, n) => `${n + 1}. (${p.marks} mark) ${p.point}`).join('\n')
+        : '';
+      return `EXAMPLE ${i + 1} — Paper ${q.paper}, ${q.marks} marks, "${q.command_term}"${ao}\n${ctx}${q.question_text}${scheme}`;
     })
     .join('\n---\n');
 
