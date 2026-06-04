@@ -70,6 +70,8 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 28. **Enforcement instructions go in the step where the model acts, not in a reference section.** A correct rule placed in a descriptive/reference block (e.g. a markband table) can be read past by the model — especially the cheaper default model (haiku). If an instruction must change behaviour at a specific moment (marking, signal emission, scope check), put it inside the numbered step the model executes at that moment. Verified 04/06/2026: the Paper 2(g) "use the stimulus, not outside examples" rule was content-correct but sat in the Econ markband block; haiku ignored it and praised external examples when marking. Moving the identical rule into the marking step (HANDLING EXAM-STYLE PRACTICE QUESTIONS, step 4) made haiku enforce it correctly on a live production mock. Prompt-correct ≠ behaviour-correct; verify the behaviour, and place enforcement at the point of action.
 
+29. **A built layer is not a live layer until a serve-time read proves it.** Verify that production code actually fetches and uses a data layer during a real user action before treating it as part of the product. The IB `mark_schemes` table (188 rows, hybrid generator, admin review UI) was fully built but never read in any session route — `fetch_exam_questions_tiered` returns question text only, no scheme. Mia marked from prompt-baked markbands the whole time, not the structured schemes. A whole "Layer 2" was disconnected and nobody knew. Before building on or fixing any data layer, grep the live serve path for a read of it; if there is none, the layer's quality is irrelevant until it is wired. Corollary: test a layer's marginal value before building or fixing it — content_checklist schemes proved to add real marking precision; band_descriptor schemes were redundant with the prompt's own markbands.
+
 ---
 
 ## ISSUE CATALOGUE
@@ -382,6 +384,36 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Signals
 **SEVERITY:** Low
 
+
+---
+
+**ISSUE:** [IB] Layer 2 mark schemes built but never served — disconnected from the live marking path
+**SYMPTOM:** `mark_schemes` fully populated (188 rows both subjects: band_descriptor, content_checklist, criteria_marked, hybrid), admin review UI built, hybrid generator built — but no student-session code reads the table.
+**ROOT CAUSE:** The serving RPC `fetch_exam_questions_tiered` returns only question fields (question_text, context_text, paper, command_term, marks, ao_level, level) — no scheme, no join to mark_schemes. Session routes (start/message/complete) contain zero references to mark_schemes. Mia marks against the markband descriptors baked into her system prompt, not the structured schemes. Question text itself carries no inline scheme.
+**FIX:** None yet — decision taken to wire Layer 2 in (content_checklist only; see next entry). Scope pending.
+**PREVENTION:** Rule 29. Grep the live serve path for a read of any data layer before treating it as live.
+**CATEGORY:** Signals
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Layer 2 content_checklist proven to add marking value; band_descriptor proven redundant
+**SYMPTOM:** Open question whether per-question schemes improve marking over the prompt's own markbands.
+**ROOT CAUSE:** N/A — verification finding. band_descriptor `scheme_data` is the GENERIC IB markband ladder, identical across questions and already in Mia's prompt — redundant. content_checklist `scheme_data` holds question-specific accepted-points with per-point marks and keywords — knowledge the prompt cannot supply.
+**FIX:** Live A/B on a 4-mark Econ "explain" (IB_ECON_131 interest-rate question), 04/06/2026. Round 1 (prompt-only): Mia marked depth of included points, did NOT flag the two omitted scoreable channels. Round 2 (content_checklist injected): Mia mapped the answer to the checklist, scored it 2/4, named the two missed routes (saving-incentive, exchange-rate). Decision: wire in content_checklist (and hybrid once fixed); skip band_descriptor. Caveat: even with the scheme present, haiku mis-counted mark boundaries — the wire-in must present the checklist in a clear instruction-led format and likely run the mark-award step on Sonnet (see Rule 28 — enforcement at point of action).
+**PREVENTION:** Test a layer's marginal value before building or fixing it; cut redundant scheme types rather than wiring everything. The hybrid generator's quality only matters once Layer 2 is wired — it is not a live student-facing problem while schemes are unserved.
+**CATEGORY:** Signals
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [IB] Two competing lesson pointers — a fresh session opened on the wrong lesson
+**SYMPTOM:** Repointed `student_progress.current_lesson_code` to IB_ECON_131 (verified persisted in the DB); a fresh Mia session still opened on a different lesson (IB_ECON_001), ignoring the repoint.
+**ROOT CAUSE:** Both `student_progress` and `sessions` carry a `lesson_code`. It is unconfirmed which is authoritative for the session's opening lesson; the new session did not reflect the updated `student_progress` value. Contradicts the single-source-of-sequence principle (Rule 6).
+**FIX:** None — flagged for investigation. Not blocking: Mia accepts self-proposed practice questions regardless of the lesson pointer once told the student is exam-prep level.
+**PREVENTION:** Sequence state must live in ONE authoritative place. Audit which pointer the session-start path actually reads (`student_progress.current_lesson_code` vs `sessions.lesson_code`) and collapse to one. Until then, repointing progress does not reliably change what a fresh session serves.
+**CATEGORY:** Signals
+**SEVERITY:** Medium
 
 ### PROMPTS
 
@@ -1624,4 +1656,4 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 ---
 
-*Master document, collated 16/05/2026; updated 21/05/2026 with the IB diagram-audit / CSS refactor / course_position session-opening harvest; updated 26/05/2026 with IB BM Layer 1 seed-generation build (Rules 22–26: evidence-before-encoding, verifier contradiction guards, generator prompt branch discipline, atomic str_replace, PDF-before-contradicting-verdict); updated 04/06/2026 with Econ + BM content-accuracy audit (Rule 27: no cross-subject content derivation by analogy; Curriculum: guide-verified audit findings, Tier 1–3 fixes, outstanding items); P2(g) placement fix verified live on Mia (Veralonia mock) — enforcement-at-point-of-action lesson logged as Rule 28. Sources: every LC build/debug session (initial build through Sprint 8), the IB build/launch-prep sessions (02–16 May 2026), the IB build-hardening session of 21 May 2026 (`/admin/diagrams` rebuild, `.ib-session` extraction, `course_position` Layer 0 fix), and the IB BM Layer 1 build session of 26 May 2026 (87-candidate seed generation, 5-rule verifier patch, regen-rejected pipeline). Supersedes the standalone `BUILD_HARDENING.md` (IB) and `LC_BUILD_HARDENING.md`. Keep one copy in each Claude project. Add new entries in the standard format, tagged by product, ordered by category then severity; promote a lesson to TOP PREVENTION RULES only when it has cost real time more than once.*
+*Master document, collated 16/05/2026; updated 21/05/2026 with the IB diagram-audit / CSS refactor / course_position session-opening harvest; updated 26/05/2026 with IB BM Layer 1 seed-generation build (Rules 22–26: evidence-before-encoding, verifier contradiction guards, generator prompt branch discipline, atomic str_replace, PDF-before-contradicting-verdict); updated 04/06/2026 with Econ + BM content-accuracy audit (Rule 27: no cross-subject content derivation by analogy; Curriculum: guide-verified audit findings, Tier 1–3 fixes, outstanding items); P2(g) placement fix verified live on Mia (Veralonia mock) — enforcement-at-point-of-action lesson logged as Rule 28; updated 04/06/2026 (same session) with the end-to-end loop audit — Layer 2 found disconnected from live marking (Rule 29), content_checklist proven valuable vs redundant band_descriptor, and a two-pointer lesson-sequencing ambiguity flagged (Signals). Sources: every LC build/debug session (initial build through Sprint 8), the IB build/launch-prep sessions (02–16 May 2026), the IB build-hardening session of 21 May 2026 (`/admin/diagrams` rebuild, `.ib-session` extraction, `course_position` Layer 0 fix), and the IB BM Layer 1 build session of 26 May 2026 (87-candidate seed generation, 5-rule verifier patch, regen-rejected pipeline). Supersedes the standalone `BUILD_HARDENING.md` (IB) and `LC_BUILD_HARDENING.md`. Keep one copy in each Claude project. Add new entries in the standard format, tagged by product, ordered by category then severity; promote a lesson to TOP PREVENTION RULES only when it has cost real time more than once.*
