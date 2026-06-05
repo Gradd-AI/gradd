@@ -189,7 +189,13 @@ type ExamQuestion = {
   ao_level: string | null;
   level: string;
   tier: number;
-  scheme_data?: { accepted_points?: { point: string; marks: number }[]; marking_rule?: string } | null;
+  scheme_type?: string | null;
+  scheme_data?: {
+    accepted_points?: { point: string; marks: number }[];
+    marking_rule?: string;
+    method_marks?: { step: string; marks: number }[];
+    answer_marks?: { correct_answer: number; partial_credit_rules?: string };
+  } | null;
 };
 
 export async function fetchExamQuestionsContext(
@@ -216,10 +222,17 @@ export async function fetchExamQuestionsContext(
     .map((q, i) => {
       const ao  = q.ao_level ? ` (${q.ao_level})` : '';
       const ctx = q.context_text ? `${q.context_text}\n` : '';
-      const scheme = q.scheme_data?.accepted_points?.length
-        ? `\nMARK SCHEME (${q.scheme_data.marking_rule ?? 'award per point'}):\n` +
-          q.scheme_data.accepted_points.map((p, n) => `${n + 1}. (${p.marks} mark) ${p.point}`).join('\n')
-        : '';
+      let scheme = '';
+      if (q.scheme_data?.accepted_points?.length) {
+        scheme = `\nMARK SCHEME (${q.scheme_data.marking_rule ?? 'award per point'}):\n` +
+          q.scheme_data.accepted_points.map((p, n) => `${n + 1}. (${p.marks} mark) ${p.point}`).join('\n');
+      } else if (q.scheme_data?.method_marks?.length) {
+        const steps = q.scheme_data.method_marks.map((m, n) => `${n + 1}. (${m.marks} mark) ${m.step}`).join('\n');
+        const ans = q.scheme_data.answer_marks
+          ? `\nANSWER (${q.scheme_data.answer_marks.correct_answer} mark): ${q.scheme_data.answer_marks.partial_credit_rules ?? ''}`
+          : '';
+        scheme = `\nMARK SCHEME (method marks — award each step the student correctly completes):\n${steps}${ans}`;
+      }
       return `EXAMPLE ${i + 1} — Paper ${q.paper}, ${q.marks} marks, "${q.command_term}"${ao}\n${ctx}${q.question_text}${scheme}`;
     })
     .join('\n---\n');
