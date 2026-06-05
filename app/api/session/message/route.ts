@@ -404,7 +404,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
   ];
 
   const stream = anthropic.messages.stream({
-    model: MODEL,
+    model: injectedSystemPrompt.includes('MARK SCHEME') ? 'claude-sonnet-4-6' : MODEL,
     max_tokens: MAX_TOKENS,
     system: systemBlocks,
     messages: trimmedHistory,
