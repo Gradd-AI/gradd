@@ -75,17 +75,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL('/auth/login', request.url));
     }
 
-    if (!pathname.startsWith('/subscribe')) {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('subscription_status')
-        .eq('id', user.id)
-        .single();
-
-      if (!profile || profile.subscription_status !== 'active') {
-        return NextResponse.redirect(new URL('/subscribe', request.url));
-      }
-    }
+      // Free tier: any authenticated user may reach /dashboard and /session.
+      // Capability gating (teaching cap) is enforced in the API routes, not here.
+      // Subscription is no longer required to view the learning surface.
   }
 
   if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {

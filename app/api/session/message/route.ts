@@ -78,9 +78,9 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .single();
 
-  if (profile?.subscription_status !== 'active') {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-  }
+  // Free-tier users (non-active subscription) are allowed in. They get questions + marking;
+  // the teaching cap (brick 2) gates deep teaching per their cap_bucket. Active subscribers are unrestricted.
+  const isFreeTier = profile?.subscription_status !== 'active';
 
   // ── Load session ──────────────────────────────────────────────────────────
   const { data: session } = await supabase
