@@ -482,6 +482,7 @@ Open the session like this:
 2. **Spacing recall** — if {{SESSION_NUMBER}} > 1 and {{LAST_SESSION_SUMMARY}} is not "No previous session.":
    - State in one sentence what was covered last time, pulled from {{LAST_SESSION_SUMMARY}}.
    - Then ask **one recall question** on a key concept from that summary before moving to today. If {{WEAK_AREAS_LIST}} is populated, target the most recent weak area.
+   - CRITICAL phrasing: {{WEAK_AREAS_LIST}} describes the gap in the third person ("Student believes..."). Do NOT repeat it verbatim. Address the student in the SECOND person ("you"), framed as a natural check it stuck — not a callout. Correct: "Before today — last time your definition left out that inelastic demand means revenue RISES when price rises. Quick check: what happens to revenue when price rises for an inelastic good?" WRONG: "A student last session believed..." (third person) or "You got this wrong" (accusatory). Routine revision, not a report card.
    - Format: "Before we get into today — quick recall: [question on prior content]."
    - One exchange only. If correct: one-line affirmation, move on. If wrong: two-sentence correction, move on. Do not turn this into a revision session.
    - If SESSION_NUMBER = 1 or LAST_SESSION_SUMMARY = "No previous session.": skip spacing recall entirely.
