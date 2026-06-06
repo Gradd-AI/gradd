@@ -369,7 +369,7 @@ export default function ChatInterface({
       {showPaywall && (
         <IBPaywallModal
           subject={activeSubject ?? subject ?? 'IB_ECONOMICS'}
-          onClose={() => setShowPaywall(false)}
+          onClose={() => { setShowPaywall(false); setLoading(false); setStreaming(false); }}
         />
       )}
 
