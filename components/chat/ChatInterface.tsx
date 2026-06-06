@@ -6,6 +6,7 @@ import { DiagramRenderer } from '@/components/diagrams';
 import { parseDiagramSignal, parseDynamicDiagramSignal } from '@/components/diagrams/diagram-integration';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
+import IBPaywallModal from '@/components/chat/IBPaywallModal';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -47,6 +48,7 @@ export default function ChatInterface({
   const [ending, setEnding] = useState(false);
   const [lessonComplete, setLessonComplete] = useState(false);
   const [diagramDismissed, setDiagramDismissed] = useState(false);
+  const [showPaywall, setShowPaywall] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -212,6 +214,17 @@ export default function ChatInterface({
         throw new Error(data.error ?? 'Failed to get response');
       }
 
+      // Free-tier cap: backend returns JSON { paywall: true } instead of a stream when the cap is hit.
+      if (res.headers.get('content-type')?.includes('application/json')) {
+        const data = await res.json().catch(() => ({}));
+        if (data.paywall) {
+          setShowPaywall(true);
+          setLoading(false);
+          setStreaming(false);
+          return;
+        }
+      }
+
       const reader = res.body!.getReader();
       const decoder = new TextDecoder();
       let fullText = '';
@@ -353,6 +366,12 @@ export default function ChatInterface({
 
   return (
     <div className={isIB ? 'ib-session' : ''} style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden', background: 'var(--chat-bg)', color: 'var(--chat-text)', fontFamily: 'var(--font-body)' }}>
+      {showPaywall && (
+        <IBPaywallModal
+          subject={activeSubject ?? subject ?? 'IB_ECONOMICS'}
+          onClose={() => { setShowPaywall(false); setLoading(false); setStreaming(false); }}
+        />
+      )}
 
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');

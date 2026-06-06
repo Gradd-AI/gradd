@@ -20,7 +20,7 @@ const MAX_TOKENS = 4096;
 
 // Free-tier teaching cap (brick 2, bucket C scaffolding). Free users get this many
 // interactions before the paywall. Placeholder value — tuned per A/B/C bucket later.
-const MAX_FREE_UNITS = 10;
+const MAX_FREE_UNITS = 9999; // DORMANT: crude message-cap parked. Real cap fires on teaching (TEACH_BACK signal), built next. See backlog.
 
 // Cap history sent to Anthropic at last 20 exchanges (40 messages).
 // Full history is always persisted to DB — trimming is Anthropic-call-only.
