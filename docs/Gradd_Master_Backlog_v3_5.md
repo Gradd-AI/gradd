@@ -512,3 +512,11 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 *Update it when decisions change. Re-upload immediately.*
 
 *Last updated: 02 June 2026 | Version 3.5*
+
+## Perceived-completeness features (post-funnel, ranked by value-per-effort)
+Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
+1. Flashcards — easiest + on-brand (retrieval + spacing; reuses spaced_rep logic). Generate Q/A per lesson + review UI. Best effort-to-value. Students expect them.
+2. Direct photo capture — camera input mode; vision eval already built, ~90% there. Convenience over existing file upload.
+3. Phone app — biggest perceived-completeness + engagement lever. Build as PWA (installable, weeks) NOT native (months). Decide PWA vs native deliberately before committing.
+4. Voice — in backlog; STT easy but real voice-tutor (TTS, latency) is medium-hard and a questionable fit for structured 200-word teaching responses. Suits quick Q&A only.
+5. Video explanations — SKIP. Content-production operation, not a coded feature; contradicts the live-adaptive-teaching model. Competitors' static-library game, not ours.
