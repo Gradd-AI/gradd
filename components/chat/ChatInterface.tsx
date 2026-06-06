@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import { getDiagramPath } from '@/lib/diagram-map';
@@ -235,9 +235,18 @@ export default function ChatInterface({
         const chunk = decoder.decode(value, { stream: true });
         fullText += chunk;
 
+        // Hide signal tokens while streaming so they never flash on screen.
+        // Strips COMPLETE signal tokens, and also any TRAILING partial signal whose
+        // closing ] hasn't streamed in yet. Matches only known signal names -- never
+        // touches mark allocations like [4 marks] or ordinary brackets.
+        const SIGNAL_NAMES = 'WEAK_AREA_FLAG|LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|SESSION_FLAG';
+        const streamDisplay = fullText
+          .replace(new RegExp(`\\[(?:${SIGNAL_NAMES}):[^\\]]*\\]`, 'g'), '')
+          .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})(?::[^\\]]*)?$`), '')
+          .trimStart();
         setMessages(prev => {
           const updated = [...prev];
-          updated[updated.length - 1] = { role: 'assistant', content: fullText };
+          updated[updated.length - 1] = { role: 'assistant', content: streamDisplay };
           return updated;
         });
       }
