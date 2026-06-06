@@ -18,6 +18,10 @@ import { checkRateLimit } from '@/lib/rateLimit'
 const MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-haiku-4-5-20251001';
 const MAX_TOKENS = 4096;
 
+// Free-tier teaching cap (brick 2, bucket C scaffolding). Free users get this many
+// interactions before the paywall. Placeholder value — tuned per A/B/C bucket later.
+const MAX_FREE_UNITS = 10;
+
 // Cap history sent to Anthropic at last 20 exchanges (40 messages).
 // Full history is always persisted to DB — trimming is Anthropic-call-only.
 const MAX_HISTORY_MESSAGES = 40;
@@ -74,7 +78,7 @@ export async function POST(request: Request) {
   // ── Subscription check ────────────────────────────────────────────────────
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, student_name, exam_level, subject, ib_economics_level, ib_business_level')
+    .select('subscription_status, student_name, exam_level, subject, ib_economics_level, ib_business_level, cap_bucket, free_units_used')
     .eq('id', user.id)
     .single();
 
@@ -394,6 +398,18 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
 `;
 
+  // ── Free-tier teaching cap (bucket C scaffolding) ─────────────────────────
+  // If a free user has consumed their free units, return a paywall signal BEFORE
+  // streaming. Active subscribers (isFreeTier=false) always pass.
+  if (isFreeTier && (profile.free_units_used ?? 0) >= MAX_FREE_UNITS) {
+    return NextResponse.json({
+      paywall: true,
+      bucket: profile.cap_bucket ?? null,
+      free_units_used: profile.free_units_used ?? 0,
+      cap: MAX_FREE_UNITS,
+    });
+  }
+
   // ── Anthropic streaming ───────────────────────────────────────────────────
   const systemBlocks = [
     {
@@ -450,6 +466,14 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
             output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
           })
           .eq('id', sessionId);
+
+        // Free-tier: consume one unit per successful response. Subscribers untouched.
+        if (isFreeTier) {
+          await serviceSupabase
+            .from('profiles')
+            .update({ free_units_used: (profile.free_units_used ?? 0) + 1 })
+            .eq('id', user.id);
+        }
 
         // ── Signal processing ─────────────────────────────────────────────
         const signals = parseSignals(fullResponseText);
