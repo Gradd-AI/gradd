@@ -36,9 +36,12 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .single();
 
-  if (!profile || profile.subscription_status !== 'active') {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
+  // A missing profile is a genuine error and must still be blocked.
+  if (!profile) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 403 });
   }
+  // Free-tier (non-active) users may start sessions; teaching cap gates them downstream. Active = unrestricted.
+  const isFreeTier = profile.subscription_status !== 'active';
 
   // For bundle subscribers, resolve the active subject from the request body.
   // student_progress rows carry 'IB_ECONOMICS' or 'IB_BUSINESS', never 'IB_BUNDLE'.

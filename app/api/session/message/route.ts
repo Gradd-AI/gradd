@@ -78,9 +78,13 @@ export async function POST(request: Request) {
     .eq('id', user.id)
     .single();
 
-  if (profile?.subscription_status !== 'active') {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
+  // A missing profile is a genuine error (auth/data failure) and must still be blocked.
+  if (!profile) {
+    return NextResponse.json({ error: 'Profile not found' }, { status: 403 });
   }
+  // Free-tier users (profile exists, subscription not active) are allowed in. They get questions + marking;
+  // the teaching cap (brick 2) gates deep teaching per their cap_bucket. Active subscribers are unrestricted.
+  const isFreeTier = profile.subscription_status !== 'active';
 
   // ── Load session ──────────────────────────────────────────────────────────
   const { data: session } = await supabase
