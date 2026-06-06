@@ -1,4 +1,4 @@
-# Gradd — BUILD_HARDENING.md
+﻿# Gradd — BUILD_HARDENING.md
 
 **The master build-hardening reference for every Gradd product.** One codebase, one Supabase instance and one Stripe account serve all products — LC Business on gradd.ie, IB Economics and IB Business Management on gradd.ai, ACCA and others to follow. This document consolidates every problem hit, diagnosed and fixed across all LC and IB build and debugging sessions, from the initial builds through to launch prep (02–16 May 2026).
 
@@ -75,6 +75,8 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 30. **One entity, one key — verify the same identifier value is used across every table and code path before joining on it.** A join or RPC filter that keys two tables on the same parameter silently returns nothing if those tables use different values for the same entity. IB Business Management is stored as `IB_BUSINESS` in `lessons` and `student_progress`, but `IB_BUSINESS_MANAGEMENT` in `questions` and `mark_schemes`; the routes use `IB_BUSINESS` internally and translate to `IB_BUSINESS_MANAGEMENT` when calling the serving RPC. The RPC then filtered BOTH `questions` (matched) and `lessons` (no match) on `IB_BUSINESS_MANAGEMENT`, so lesson-tier ranking never fired and BM questions served only via the random tier-4 fallback. Before keying a query on a subject/entity identifier, confirm every table and code path uses the same value for it; if values differ, that is a normalisation bug to fix, not to translate around.
 
 31. **Match the model to the marking task, and force output ordering explicitly.** content_checklist (point-matching) marks reliably on Haiku; hybrid/method-mark calculation marking does NOT — Haiku tangled multi-step comparative-advantage logic ("you're wrong… actually right by accident") and skipped the numeric mark. Route scheme-bearing sessions to Sonnet (detected by `injectedSystemPrompt.includes('MARK SCHEME')` in the message route) for reliable reasoning and verbatim fidelity. Separately, models deprioritise instructions buried mid-clause: the "state the mark" rule was ignored by BOTH models until rewritten as "ALWAYS open your response with Mark: X out of N before any feedback." Force ordering with "open with…", don't just require the element somewhere.
+
+32. **A new instruction does not fire if a contradicting instruction remains in the same prompt.** When changing model behaviour via the prompt, you must REMOVE or reconcile the old rule, not just add the new one. The WEAK_AREA_FLAG signal had NEVER fired for any student because the prompt said "flag foundational misconceptions on first occurrence" (RULE A, newly added) directly above an older line saying "a single corrected answer does NOT trigger the signal" — plus a worked counter-example showing first-wrong → no-signal. The model pattern-matched the concrete old example and stayed silent. Fix required editing BOTH the contradicting line AND adding a worked example of the NEW behaviour (models follow concrete examples over abstract rules). Lesson: after adding a behavioural rule, grep the same section for instructions/examples that contradict it and reconcile them in the same edit. Also: verify a behavioural prompt fix by checking the model's ACTUAL output (did the token emit? `message_history LIKE '%SIGNAL%'`), not by assuming the instruction took.
 
 ---
 
@@ -477,6 +479,20 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** Rules 29 (verify serve-time read) and 31 (model-to-task). When a coverage gap appears, check for pass-verified-but-unpromoted schemes before assuming regeneration is needed.
 **CATEGORY:** Signals
 **SEVERITY:** High
+
+---
+
+**ISSUE:** [IB] Teaching-quality audit (TEACHING_PRINCIPLES.md) — run live, moat confirmed, four fixes shipped
+**SYMPTOM:** Pre-monetisation check: does Mia's teaching actually demonstrate the five cognitive-science principles it claims (retrieval, spacing, interleaving, fading, feedback metacognition)? Audited live via two probed sessions (deliberately struggling student) on the current prompt, 06/06/2026.
+**FINDINGS + FIXES (all merged, all verified live on both subjects):**
+1. Marking accuracy, specific feedback, worked-example fading, adaptive regression on misconception: all DEMONSTRATED. Moat is real.
+2. Retrieval gap: on close-but-incomplete CONCEPTUAL answers Mia completed the answer instead of eliciting a retry. Fixed (elicit-before-tell, hint must withhold the answer). Behaviour is correctly PHASE-DEPENDENT — `deriveCoursePosition` (lessonOrder/total) returns beginning/mid/exam-prep; retrieval applies in teaching phases, fast-validate-and-serve is correct in exam-prep. (Earlier "fix failed" was testing in exam-prep phase + a cached old prompt — both red herrings.)
+3. WEAK_AREA_FLAG had NEVER fired (0 emissions all-time) → weak_areas always empty → spacing recall had nothing to target. Root cause = contradicting prompt instructions (Rule 32). Fixed both subjects; flag now writes on first foundational misconception; verified live (row written).
+4. Spacing recall now resurfaces the flagged weak area next session (verified: opener targeted the exact misconception), phrased in SECOND person as a check, not a third-person "a student believed..." callout (separate phrasing fix, both subjects).
+**METHOD NOTE:** Live audit (play a struggling student, score against the rubric, verify via DB) beat auditing stale transcripts — the prompt had been pared back since, so old transcripts would have tested dead behaviour. Always audit current live output.
+**PORTS TO ACCA:** the rubric and all four fixes are behaviour not content — re-run the same audit when ACCA teaching exists.
+**CATEGORY:** Signals
+**SEVERITY:** High (teaching is the paid moat)
 
 ### PROMPTS
 
