@@ -24,7 +24,8 @@ export default async function SessionPage() {
     .eq('id', user.id)
     .single();
 
-  if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
+  // Free tier: logged-in users with a profile may view the session page; teaching is capped downstream.
+  if (!profile) redirect('/subscribe');
 
   const profileSubject = profile.subject ?? 'LC_BUSINESS';
   const isBundle = profileSubject === 'IB_BUNDLE';

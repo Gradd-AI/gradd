@@ -71,8 +71,9 @@ export default async function DashboardPage() {
     profile = lcProfile as ProfileRow | null;
   }
 
-  // Subscription gate — unchanged from original LC Business logic.
-  if (!profile || profile.subscription_status !== 'active') redirect('/subscribe');
+  // Free tier: a logged-in user with a profile may view the dashboard regardless of subscription.
+  // A genuinely missing profile is still an error → send to subscribe/onboarding.
+  if (!profile) redirect('/subscribe');
 
   const subject = profile.subject ?? 'LC_BUSINESS';
   const isBundle = subject === 'IB_BUNDLE';
