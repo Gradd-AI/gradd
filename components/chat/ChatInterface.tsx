@@ -239,7 +239,7 @@ export default function ChatInterface({
         // Strips COMPLETE signal tokens, and also any TRAILING partial signal whose
         // closing ] hasn't streamed in yet. Matches only known signal names -- never
         // touches mark allocations like [4 marks] or ordinary brackets.
-        const SIGNAL_NAMES = 'TEACH_BACK|WEAK_AREA_FLAG|LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|SESSION_FLAG';
+        const SIGNAL_NAMES = 'BURN_WALL|TEACH_BACK|WEAK_AREA_FLAG|LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|SESSION_FLAG';
         const streamDisplay = fullText
           .replace(new RegExp(`\\[(?:${SIGNAL_NAMES}):[^\\]]*\\]`, 'g'), '')
           .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})(?::[^\\]]*)?$`), '')

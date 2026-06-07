@@ -396,7 +396,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Never lose your place in the lesson due to a student tangent. The lesson continues regardless.
 - The full conversation history is in the messages array. Never claim you cannot see a previous message. Never ask the student to repeat something they already sent.
 - If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
-BURN_ACTIVE: true
+${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
 `;
 
   // ── Free-tier teaching cap (bucket C scaffolding) ─────────────────────────
@@ -468,16 +468,31 @@ BURN_ACTIVE: true
           })
           .eq('id', sessionId);
 
-        // Free-tier: consume one unit per successful response. Subscribers untouched.
-        if (isFreeTier) {
+        // ── Signal processing (parsed before the cap increment, which depends on it) ──
+        const signals = parseSignals(fullResponseText);
+
+        // Free-tier teach-through counter: increment ONLY when a TEACH_BACK fired
+        // (a full teach-through was delivered). This is the unit the burn counts —
+        // NOT raw messages. Subscribers untouched. Burn turns carry [BURN_WALL] and
+        // do NOT emit TEACH_BACK, so they do not increment — correct: a walled
+        // teach-through was not delivered.
+        if (isFreeTier && signals.teachBack) {
           await serviceSupabase
             .from('profiles')
             .update({ free_units_used: (profile.free_units_used ?? 0) + 1 })
             .eq('id', user.id);
         }
 
-        // ── Signal processing ─────────────────────────────────────────────
-        const signals = parseSignals(fullResponseText);
+        // ── Burn instrumentation ──────────────────────────────────────────
+        const burnFired = /\[BURN_WALL\]/.test(fullResponseText);
+        if (burnFired) {
+          console.error('[BURN] wall delivered:', {
+            student: user.id,
+            bucket: profile.cap_bucket ?? null,
+            teach_throughs_before_burn: profile.free_units_used ?? 0,
+            subject: effectiveSubject,
+          });
+        }
 
         const hasSignals =
           signals.lessonComplete ||
