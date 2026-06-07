@@ -396,6 +396,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Never lose your place in the lesson due to a student tangent. The lesson continues regardless.
 - The full conversation history is in the messages array. Never claim you cannot see a previous message. Never ask the student to repeat something they already sent.
 - If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
+BURN_ACTIVE: true
 `;
 
   // ── Free-tier teaching cap (bucket C scaffolding) ─────────────────────────
