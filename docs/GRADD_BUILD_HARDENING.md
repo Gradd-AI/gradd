@@ -494,6 +494,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Signals
 **SEVERITY:** High (teaching is the paid moat)
 
+---
+
+**ISSUE:** [IB] `raw_final_response` stores the cached system prompt, NOT the model's reply.
+**SYMPTOM:** Querying `sessions.raw_final_response` for a student turn returns the `__SYSTEM_PROMPT__`-prefixed injected prompt, not Mia's response. Any attempt to verify signal emission (TEACH_BACK, WEAK_AREA_FLAG, etc.) from this column finds the system prompt, not the assistant turn.
+**ROOT CAUSE:** `sessions.raw_final_response` is a misnamed system-prompt cache. Session-creation writes `"__SYSTEM_PROMPT__" + injectedPrompt` into it. The message route reads it back (`route.ts` ~line 112) to skip rebuilding the prompt on every turn, then writes the same value back (~line 464). It has never contained Mia's reply.
+**FIX:** Deferred — proper fix is to rename the column to `cached_system_prompt` and split reply storage out as a separate column. Requires a schema migration, verification on the hot message path, and full end-to-end test (prompt cache must survive turn 2+ of every session). Do NOT "fix" line 464 by writing `fullResponseText` into it — that silently breaks the prompt cache from turn 2 onward.
+**PREVENTION:** To verify signal emission, read the latest assistant turn from `message_history`, never from `raw_final_response`. `message_history` is the correct source: it accumulates `{ role: 'assistant', content: fullResponseText }` after every streamed response and is what `parseSignals()` operates on.
+**CATEGORY:** Signals
+**SEVERITY:** Medium
+
 ### PROMPTS
 
 ---
