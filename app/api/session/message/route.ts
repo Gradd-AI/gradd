@@ -483,7 +483,8 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
           signals.unitComplete ||
           (signals.weakAreaFlags && signals.weakAreaFlags.length > 0) ||
           signals.sessionSummary ||
-          signals.lessonIncomplete;
+          signals.lessonIncomplete ||
+          signals.teachBack;
 
         if (hasSignals) {
           const { data: progress } = await serviceSupabase
@@ -528,6 +529,15 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
                   session_number: session.session_number,
                 });
               }
+            }
+
+            // ── TEACH_BACK (Layer 2: emission only, cap wired separately) ──
+            if (signals.teachBack) {
+              console.error('[TEACH_BACK] emitted:', {
+                student: user.id,
+                lesson: signals.teachBack.lessonCode,
+                concept: signals.teachBack.concept,
+              });
             }
 
             // ── LESSON_COMPLETE ───────────────────────────────────────────

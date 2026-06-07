@@ -4,6 +4,7 @@ export interface ParsedSignals {
   lessonIncomplete: LessonIncompleteSignal | null;
   unitComplete: UnitCompleteSignal | null;
   weakAreaFlags: WeakAreaFlagSignal[];
+  teachBack: TeachBackSignal | null;
 }
 
 export interface SessionSummarySignal {
@@ -45,6 +46,11 @@ export interface WeakAreaFlagSignal {
   recommendedAction: string;
 }
 
+export interface TeachBackSignal {
+  lessonCode: string;
+  concept: string;
+}
+
 export function parseSignals(responseText: string): ParsedSignals {
   return {
     sessionSummary: parseSessionSummary(responseText),
@@ -52,6 +58,7 @@ export function parseSignals(responseText: string): ParsedSignals {
     lessonIncomplete: parseLessonIncomplete(responseText),
     unitComplete: parseUnitComplete(responseText),
     weakAreaFlags: parseWeakAreaFlags(responseText),
+    teachBack: parseTeachBack(responseText),
   };
 }
 
@@ -165,4 +172,23 @@ function parseWeakAreaFlags(text: string): WeakAreaFlagSignal[] {
   }
 
   return flags;
+}
+
+function parseTeachBack(text: string): TeachBackSignal | null {
+  const match = text.match(/\[TEACH_BACK:\s*\{([\s\S]*?)\}\s*\]/i);
+  if (!match) return null;
+  let parsed: Record<string, string>;
+  try {
+    parsed = JSON.parse('{' + match[1] + '}');
+  } catch (err) {
+    console.error('[signal-parser] TEACH_BACK: malformed JSON — skipping:', match[1], err);
+    return null;
+  }
+  const lessonCode = (parsed.lesson_code ?? '').trim();
+  const concept = (parsed.concept ?? '').trim();
+  if (!lessonCode) {
+    console.error('[signal-parser] TEACH_BACK: missing lesson_code — skipping:', parsed);
+    return null;
+  }
+  return { lessonCode, concept };
 }
