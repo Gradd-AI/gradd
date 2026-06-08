@@ -504,6 +504,16 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Signals
 **SEVERITY:** Medium
 
+---
+
+**ISSUE:** [IB] Mia does not modulate lesson depth by demonstrated mastery (BLOCKED on burn-cadence being live).
+**SYMPTOM:** Observed in the IB_BM_010 full-lesson run (08/06/2026): Mia teaches the complete content sequence at the same depth regardless of how strongly the student is performing — a student who scored band 9–10 on the evaluate question was still walked through every remaining sub-topic with a fresh probe each time, rather than having mastered content consolidated and the lesson closed faster. Defensible for a paid product (thorough), but it lengthens time-to-first-teach-through, which directly affects burn cadence.
+**ROOT CAUSE:** No prompt instruction differentiates teaching depth based on demonstrated mastery within a session. The Five-Principle Loop runs the same probe-teach-check cycle on every sub-topic regardless of prior performance signals in the same session.
+**FIX:** DO NOT fix yet: how much to compress for a strong student is a behavioural judgment (the judgment-emission risk class), and its only downstream consumer — the burn cadence — is not live (the [BURN_WALL] modal is not yet wired client-side). Tuning depth-modulation before the burn loop exists means tuning a variable whose effect can't be measured. TRIGGER TO REVISIT: once the burn is live and instrumented, check whether strong students convert despite longer sessions. If yes, this is a non-issue and can be closed. If strong students drag and don't convert, build depth-modulation then, with conversion data to calibrate it.
+**PREVENTION:** Do not tune behavioural parameters whose downstream consumer (conversion, retention, burn) is not yet instrumented. Measure first, tune second.
+**CATEGORY:** Signals
+**SEVERITY:** Low
+
 ### PROMPTS
 
 ---
