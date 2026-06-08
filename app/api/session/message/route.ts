@@ -399,9 +399,6 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
 `;
 
-  // TEMP DEBUG — remove after burn verified
-  console.error('[BURN_DEBUG]', { isFreeTier, free_units_used: profile.free_units_used ?? 0, burnActiveInjected: liveContextAnchor.includes('BURN_ACTIVE: true') });
-
   // ── Free-tier teaching cap (bucket C scaffolding) ─────────────────────────
   // If a free user has consumed their free units, return a paywall signal BEFORE
   // streaming. Active subscribers (isFreeTier=false) always pass.
