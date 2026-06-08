@@ -21,7 +21,7 @@ const PRICES: Record<string, { monthly: string; annual: string; annualSaving: st
 };
 
 export default function IBPaywallModal({ subject, reason, onClose }: IBPaywallModalProps) {
-  const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -169,12 +169,13 @@ export default function IBPaywallModal({ subject, reason, onClose }: IBPaywallMo
           <button
             onClick={onClose}
             style={{
-              width: '100%', padding: '10px', border: 'none', background: 'transparent',
-              color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
-              fontFamily: 'var(--font-body)',
+              width: '100%', padding: '11px 16px', border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-sm)', background: 'transparent',
+              color: 'var(--text-muted)', fontSize: 14, cursor: 'pointer',
+              fontFamily: 'var(--font-body)', fontWeight: 500,
             }}
           >
-            Go back to dashboard
+            Keep practising your questions free
           </button>
         )}
       </div>
