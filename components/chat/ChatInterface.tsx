@@ -48,7 +48,7 @@ export default function ChatInterface({
   const [ending, setEnding] = useState(false);
   const [lessonComplete, setLessonComplete] = useState(false);
   const [diagramDismissed, setDiagramDismissed] = useState(false);
-  const [showPaywall, setShowPaywall] = useState(false);
+  const [showPaywall, setShowPaywall] = useState<null | 'cap' | 'burn'>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -218,7 +218,7 @@ export default function ChatInterface({
       if (res.headers.get('content-type')?.includes('application/json')) {
         const data = await res.json().catch(() => ({}));
         if (data.paywall) {
-          setShowPaywall(true);
+          setShowPaywall('cap');
           setLoading(false);
           setStreaming(false);
           return;
@@ -259,7 +259,7 @@ export default function ChatInterface({
       // (visible), then [BURN_WALL] (stripped from display). Pop the paywall over
       // the hook — the unresolved teach-through is the conversion moment.
       if (fullText.includes('[BURN_WALL]')) {
-        setShowPaywall(true);
+        setShowPaywall('burn');
       }
     } catch (err: unknown) {
       if ((err as Error).name !== 'AbortError') {
@@ -385,7 +385,8 @@ export default function ChatInterface({
       {showPaywall && (
         <IBPaywallModal
           subject={activeSubject ?? subject ?? 'IB_ECONOMICS'}
-          onClose={() => { setShowPaywall(false); setLoading(false); setStreaming(false); }}
+          reason={showPaywall}
+          onClose={() => { setShowPaywall(null); setLoading(false); setStreaming(false); }}
         />
       )}
 

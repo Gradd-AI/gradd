@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 interface IBPaywallModalProps {
   subject: string;
+  reason?: 'cap' | 'burn';
   onClose?: () => void;
 }
 
@@ -19,7 +20,7 @@ const PRICES: Record<string, { monthly: string; annual: string; annualSaving: st
   IB_BUNDLE:    { monthly: '€74.99', annual: '€579', annualSaving: 'Save €321 vs monthly' },
 };
 
-export default function IBPaywallModal({ subject, onClose }: IBPaywallModalProps) {
+export default function IBPaywallModal({ subject, reason, onClose }: IBPaywallModalProps) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -79,10 +80,12 @@ export default function IBPaywallModal({ subject, onClose }: IBPaywallModalProps
             fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700,
             color: 'var(--brand)', letterSpacing: '-0.3px', marginBottom: 8,
           }}>
-            Lesson 1 complete
+            {reason === 'burn' ? 'Keep going with this' : 'Lesson 1 complete'}
           </h2>
           <p style={{ fontSize: 15, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Subscribe to continue with {label} and unlock every lesson.
+            {reason === 'burn'
+              ? `You're right at the point that turns confusion into understanding. Subscribe to finish this teaching and unlock all of ${label}.`
+              : `Subscribe to continue with ${label} and unlock every lesson.`}
           </p>
         </div>
 
