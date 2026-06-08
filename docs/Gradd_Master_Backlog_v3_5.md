@@ -304,6 +304,23 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 
 ---
 
+### PRIORITY 6.5 â€” STUDENT TOPIC/LESSON PICKER [IB] `Medium-High` `[v3.5]`
+
+- [ ] **[IB] Student-facing topic/lesson picker â€” choose where to start (not forced to lesson 1).**
+
+  Sessions currently open at `current_lesson_code` and run sequentially; a student has no way to choose their area. A student revising Break-even or stuck on Finance should not have to start at `IB_BM_001` "What is a Business?" and grind forward. Need a student-facing picker: browse the syllabus by unit/topic, select a lesson/area, and have session start there.
+
+  Applies to **both free and paid** â€” free students need it to reach the topics they'll practise; paid students need it to study their actual gaps.
+
+  Open decisions when built:
+  - Free-vs-paid access scope per topic
+  - How it interacts with `course_position`/phase derivation
+  - Whether picker sets `current_lesson_code` permanently or a transient per-session target
+
+  **Real build, own scope â€” NOT a quick fix.** Raised verbally multiple times in sessions, never logged until now (08/06/2026).
+
+---
+
 ### PRIORITY 7 â€” LANDING PAGES & COPY
 
 - [x] `[v3.2]` IB landing page â€” rebuilt
@@ -515,8 +532,8 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 
 ## Perceived-completeness features (post-funnel, ranked by value-per-effort)
 Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
-1. Flashcards — easiest + on-brand (retrieval + spacing; reuses spaced_rep logic). Generate Q/A per lesson + review UI. Best effort-to-value. Students expect them.
-2. Direct photo capture — camera input mode; vision eval already built, ~90% there. Convenience over existing file upload.
-3. Phone app — biggest perceived-completeness + engagement lever. Build as PWA (installable, weeks) NOT native (months). Decide PWA vs native deliberately before committing.
-4. Voice — in backlog; STT easy but real voice-tutor (TTS, latency) is medium-hard and a questionable fit for structured 200-word teaching responses. Suits quick Q&A only.
-5. Video explanations — SKIP. Content-production operation, not a coded feature; contradicts the live-adaptive-teaching model. Competitors' static-library game, not ours.
+1. Flashcards ï¿½ easiest + on-brand (retrieval + spacing; reuses spaced_rep logic). Generate Q/A per lesson + review UI. Best effort-to-value. Students expect them.
+2. Direct photo capture ï¿½ camera input mode; vision eval already built, ~90% there. Convenience over existing file upload.
+3. Phone app ï¿½ biggest perceived-completeness + engagement lever. Build as PWA (installable, weeks) NOT native (months). Decide PWA vs native deliberately before committing.
+4. Voice ï¿½ in backlog; STT easy but real voice-tutor (TTS, latency) is medium-hard and a questionable fit for structured 200-word teaching responses. Suits quick Q&A only.
+5. Video explanations ï¿½ SKIP. Content-production operation, not a coded feature; contradicts the live-adaptive-teaching model. Competitors' static-library game, not ours.
