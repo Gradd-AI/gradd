@@ -254,6 +254,13 @@ export default function ChatInterface({
       if (fullText.includes('[LESSON_COMPLETE:')) {
         setLessonComplete(true);
       }
+
+      // Burn: the cap walled a teach-through. Mia streamed the diagnosis hook
+      // (visible), then [BURN_WALL] (stripped from display). Pop the paywall over
+      // the hook — the unresolved teach-through is the conversion moment.
+      if (fullText.includes('[BURN_WALL]')) {
+        setShowPaywall(true);
+      }
     } catch (err: unknown) {
       if ((err as Error).name !== 'AbortError') {
         setError('Something went wrong. Please try again.');
