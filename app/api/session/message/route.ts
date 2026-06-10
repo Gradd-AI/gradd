@@ -425,7 +425,7 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
   ];
 
   const stream = anthropic.messages.stream({
-    model: injectedSystemPrompt.includes('MARK SCHEME') ? 'claude-sonnet-4-6' : MODEL,
+    model: injectedSystemPrompt.includes('MARK SCHEME (') ? 'claude-sonnet-4-6' : MODEL,
     max_tokens: MAX_TOKENS,
     system: systemBlocks,
     messages: trimmedHistory,
