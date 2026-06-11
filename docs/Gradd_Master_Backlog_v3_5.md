@@ -1,5 +1,5 @@
 # Gradd — Master Product Backlog & 5-Year Roadmap
-*Last updated: 02 June 2026 | Version 3.5*
+*Last updated: 11 June 2026 | Version 3.6*
 
 > **v3.5 changelog** — build session of 02 June 2026. IB CONTENT-ACCURACY AUDIT + TEACHING METHODOLOGY REWRITE. Changes tagged `[v3.5]` inline. Summary:
 >
@@ -19,6 +19,22 @@
 > - Seed generator has no per-sub-topic coverage floor — `buildSpecList()` can produce zero questions for a valid topic (caught on 5.2). Fix needed before ACCA build.
 >
 > **New items captured:** pipeline coverage-floor fix (pre-ACCA), verifier-bypass on targeted inserts, BM HL-only seed gaps (2.5/3.6/3.9/4.6), import guard for generate-seed-questions.ts, BM calculate top-up (P2 SL 6m, 2 questions short).
+
+> **v3.6 changelog** — build sessions 08–11 June 2026. BURN FUNNEL + TEACHING HARDENING + ECON PORT + COST FIX + COMPETITIVE STRATEGY.
+>
+> **Shipped to main:**
+> - **Burn freemium funnel (IB BM)** — free tier = unlimited questions + marking; paid = teach-through. Burn walls the second-miss diagnosis-led teach-through at the diagnosis hook + [BURN_WALL]; client modal wired. Verified end-to-end on BOTH trigger paths (second-miss AND ask-to-be-told). free_units_used counter, BURN_ACTIVE flag, A/B/C cap buckets for conversion data.
+> - **Teaching calibration fixes (IB BM, verified live):** miss-counting — one hint then teach-through, mechanical count by question, "partial progress" no longer dodges the count; self-assessment probe scoped to extended responses (6+ marks) only — never on short questions where it corrupted the miss-count; affirmation/fluency-is-not-completeness guard; conversational marks forced to "Mark: X/N" format; diagnosis-led second-miss teach-through (names faulty mental model, 200-word cap).
+> - **Burn modal UX:** burn-specific copy via reason prop; defaults to monthly; dismiss = "Keep practising your questions free" (returns to chat, free tier intact); BURN_ACTIVE no longer leaks into student-facing text; [BURN_WALL] stripped from display; wall line tells student how to continue.
+> - **ECON PORT COMPLETE** — IB Economics prompt now has full BM teaching architecture: diagnosis-led teach-through + TEACH_BACK + burn + fluency guard + miss-count + close-but-incomplete (one-hint enforcement) + self-assessment scoping. ECON's WEAK AREA DETECTION reconciled to RESCUE CONTROL timing (Rule 32 — session-pattern flag, subordinate to per-question miss-count). Econ-specific worked examples. NOT yet live-tested.
+> - **MODEL-ROUTING COST FIX (important):** discovered 100% of turns were routing to Sonnet (~5x over-cost). Root cause: routing checked for "MARK SCHEME" / sentinel text in the assembled prompt, but the few-shot teaching examples carry schemes on every turn, so the check was always true. Replaced with interim turn-length routing: substantive answers (>12 words) → Sonnet (protect marking quality); short recall/chat turns → Haiku. Verified live both subjects. TODO: replace with explicit client-side isMarkingTurn flag when question-serving flow tracks the active question.
+> - **Topic/lesson picker** logged as Priority 6.5 (students not forced to start at lesson 1; free + paid).
+> - **Competitive analysis banked** — docs/COMPETITIVE_POSITION_AIMNOVA.md. Aimnova mapped fully: their free-text marking corrects/rubric-matches but does NOT diagnose misconceptions; their chat tutor affirms fluent-wrong answers then corrects (no retrieval); their real product is a gamified retention engine + parent loop wrapping shallow teaching. Moat confirmed: Mia diagnoses the faulty mental model + re-tests; they correct + route to content.
+>
+> **Decisions this session:**
+> - **PRICING MODEL CHANGED — see PRICING section.** One price, all IB (NOT per-subject). Per-subject vs Aimnova's all-in €79/yr is the worst shelf comparison. Visible premium over Aimnova justified by the tutor, not 4x. Final number PENDING burn conversion data.
+> - **Salary-replacement target clarified:** €130k gross. Honest read: needs the full IB + ACCA + LC portfolio with ACCA as the financial engine (ACCA subs ~3-4x an IB sub), NOT IB-at-low-price alone.
+> - **Surface discipline:** build minimum browseable surface then STOP; highest-value surface = visible progress + parent-visibility hook (makes teaching legible to the payer), NOT more notes. Don't out-textbook the textbook.
 
 ---
 
@@ -62,16 +78,15 @@ If yes — build it. If no — cut it.
 
 ---
 
-## PRICING (LOCKED — DO NOT CHANGE WITHOUT EVIDENCE)
+## PRICING — MODEL CHANGED v3.6 (number pending burn data)
 
-**IB single: €44.99/mo or €369/yr (30% discount)**
-**IB bundle: €64.99/mo or €529/yr (32% discount)**
-**IGCSE single: €34.99/mo or €279/yr**
-**IGCSE bundle: €54.99/mo or €449/yr**
+**SUPERSEDED (v3.5 and earlier):** per-subject IB pricing (single €44.99/mo, bundle €64.99/mo) is NO LONGER the model. Reason: competitive analysis (Aimnova, all-IB-subjects at €79/yr) showed per-subject pricing is the worst possible shelf comparison.
 
-Anchor: "An hour with Lanterna — Gradd is a month." [v3.4]
+**CURRENT MODEL (v3.6):** ONE price, all IB subjects. A visible premium over Aimnova justified by the diagnosis tutor — NOT a 4x premium. Likely zone €15–20/mo, but the FINAL NUMBER IS PENDING burn-funnel conversion data (A/B/C cap buckets instrumented for this). Do not set a locked number until burn conversion data exists.
 
-Revenue model is subscriptions only. No per-session, no credits, no freemium dilution.
+Be honest about subject coverage in pricing copy: IB Econ + IB BM live now, more coming. Do not oversell "all IB" with two subjects built.
+
+Salary-replacement target: €130k gross — achievable on the full IB + ACCA + LC portfolio with ACCA as the financial engine, not IB alone.
 
 School licensing target: €30-50/student/year (class of 12+). Phase 3.
 
@@ -528,7 +543,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 *Measure every decision against the north star.*
 *Update it when decisions change. Re-upload immediately.*
 
-*Last updated: 02 June 2026 | Version 3.5*
+*Last updated: 11 June 2026 | Version 3.6*
 
 ## Perceived-completeness features (post-funnel, ranked by value-per-effort)
 Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
