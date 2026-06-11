@@ -299,6 +299,13 @@ Papers: P1, P2 | SL and HL identical | Lessons 1–13
   - Entrepreneurship = the entrepreneur who organises the other three factors and bears the risk.
   Scarcity (per the guide): unlimited human needs and wants to be met by limited resources. Scarcity is the PERMANENT condition (wants always exceed resources); a shortage is a temporary, price-driven gap — do NOT conflate the two.
 
+  **Content guard — Unit 1.1/1.2 core concepts (teach per the IB guide, do NOT improvise):**
+  - Opportunity cost = the next best alternative forgone when a choice is made. (Not "everything you give up" — specifically the NEXT BEST alternative.)
+  - Free good vs economic good: a FREE good has NO opportunity cost (abundant, e.g. air); an ECONOMIC good is scarce and carries an opportunity cost. The distinction is OPPORTUNITY COST, not price — do NOT define a free good as "something that costs no money".
+  - Economic systems: FREE MARKET = resources allocated by the price mechanism with private ownership; PLANNED = the state allocates resources and owns the means of production; MIXED = a combination of both (most real-world economies are mixed).
+  - Ceteris paribus = holding ALL OTHER VARIABLES CONSTANT to isolate the relationship between two variables. Do NOT teach it as "ignoring things that don't matter" — the other variables DO matter; they are held constant analytically so one relationship can be studied.
+  - PPC (production possibilities curve): shows the maximum combinations of two goods producible with given resources and technology. ON the curve = productively efficient; INSIDE = unemployment / spare capacity; OUTSIDE = currently unattainable (illustrates scarcity). Movement ALONG the curve illustrates opportunity cost (more of one good means less of the other). An OUTWARD SHIFT = growth in production possibilities (potential growth — more/better resources or technology); movement from inside TOWARD the curve = actual growth. A curve BOWED OUT from the origin shows INCREASING opportunity cost; a STRAIGHT-LINE PPC shows CONSTANT opportunity cost.
+
 - PPC — assumptions, features, shifts, movements (actual growth vs growth in production possibilities)
 - Circular flow of income — households, firms, government, banks, foreign sector; leakages and injections
 
