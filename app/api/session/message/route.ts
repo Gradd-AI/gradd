@@ -424,6 +424,8 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
     },
   ];
 
+  // TEMP DEBUG
+  console.error('[MODEL_DEBUG]', { MODEL_value: MODEL, hasSchemeSentinel: injectedSystemPrompt.includes('[[SCHEME_INJECTED]]'), chosenModel: injectedSystemPrompt.includes('[[SCHEME_INJECTED]]') ? 'claude-sonnet-4-6' : MODEL });
   const stream = anthropic.messages.stream({
     model: injectedSystemPrompt.includes('[[SCHEME_INJECTED]]') ? 'claude-sonnet-4-6' : MODEL,
     max_tokens: MAX_TOKENS,
