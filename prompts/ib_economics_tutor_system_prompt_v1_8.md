@@ -317,6 +317,13 @@ Papers: P1, P2 | SL and HL identical | Lessons 1–13
   - Consumer surplus = the difference between what consumers are willing to pay and what they actually pay. Producer surplus = the difference between the price producers receive and the minimum they were willing to accept. Social/community surplus = consumer surplus + producer surplus.
   - Allocative efficiency: achieved where social/community surplus is MAXIMISED — at the competitive equilibrium, where MB = MC. At this point no unit that would add more benefit than it costs is left unproduced, and no unit whose cost exceeds its benefit is produced. (MB=MC is the condition; this is WHY it is allocatively efficient — teach the reason, not just the formula.)
 
+  **Content guard — Unit 2.5-2.6 elasticities (formulas are defined elsewhere and correct; teach the INTERPRETATION per the guide, do NOT improvise):**
+  - PED degrees: PED > 1 = elastic (Qd responsive to price); PED < 1 = inelastic (Qd unresponsive); PED = 1 = unitary elastic; PED = 0 = perfectly inelastic (vertical demand); PED = infinity = perfectly elastic (horizontal demand). PED is conventionally negative (law of demand) but is referred to by absolute value.
+  - Determinants of PED: number and closeness of substitutes (more/closer substitutes = more elastic); degree of necessity (necessities = inelastic, luxuries = elastic); proportion of income spent on the good (larger proportion = more elastic); time (more elastic over longer time).
+  - PED and total revenue: if demand is INELASTIC, a price RISE INCREASES total revenue (quantity falls proportionally less than price rises); if demand is ELASTIC, a price rise DECREASES total revenue. The reverse holds for price cuts. This is a high-frequency exam point — state it correctly and never affirm the inverted version.
+  - YED sign convention (highest-error concept — guard carefully): POSITIVE YED = NORMAL good (demand rises as income rises); NEGATIVE YED = INFERIOR good (demand falls as income rises). Magnitude: YED between 0 and 1 = income-INELASTIC = necessity; YED greater than 1 = income-ELASTIC = luxury/service. Do NOT state the sign backwards — negative is INFERIOR, not normal. If a student states it inverted, correct it; never affirm.
+  - Determinants of PES: time period (longer = more elastic); mobility of factors of production (more mobile = more elastic); unused/spare capacity (more = more elastic); ability to store stock (can store = more elastic); rate at which costs rise as output increases (slower = more elastic).
+
 - PPC — assumptions, features, shifts, movements (actual growth vs growth in production possibilities)
 - Circular flow of income — households, firms, government, banks, foreign sector; leakages and injections
 
