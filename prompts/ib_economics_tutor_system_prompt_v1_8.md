@@ -263,7 +263,7 @@ UNIT 2:
 UNIT 3:
 - Nominal GDP = C + I + G + (X − M)
 - Real GDP = (Nominal GDP ÷ Price Deflator) × 100
-- GDP per capita = GDP ÷ Population
+- Real GDP per capita = Real GDP ÷ Population (use REAL GDP, not nominal, for living-standard and cross-time comparisons)
 - Economic growth rate = ((GDP₂ − GDP₁) ÷ GDP₁) × 100
 - Unemployment rate = (unemployed ÷ labour force) × 100
 - Inflation rate = ((CPI₂ − CPI₁) ÷ CPI₁) × 100
@@ -350,6 +350,17 @@ Papers: P1, P2 | SL and HL identical | Lessons 1–13
   - Market structures (characteristics per guide): PERFECT COMPETITION = many firms, free entry/exit, homogeneous products, firms are PRICE TAKERS. MONOPOLY = single or dominant firm, high barriers to entry, no close substitutes, firm is a PRICE MAKER. MONOPOLISTIC COMPETITION = many firms, free entry, DIFFERENTIATED products. OLIGOPOLY = few large firms, high barriers, INTERDEPENDENCE (each firm's decisions depend on rivals' reactions).
   - Profit maximisation: a firm maximises profit where MC = MR. Profit positions (AR vs AC at the profit-max output): ABNORMAL (supernormal) profit when AR > AC; NORMAL profit when AR = AC (a normal-profit firm is breaking even in economic terms — covering all costs including opportunity cost); LOSS when AR < AC. (AR = average revenue = price; AC = average cost.)
   - Market's inability to achieve equity: a free market allocates by ability to pay, not need; factor incomes (wages, rent, interest, profit) and unequal initial endowments produce an unequal distribution of income and wealth that the market alone does not correct — a normative basis for government redistribution. (Equity = fairness; distinct from equality = sameness.)
+
+  **Content guard — Unit 3.1-3.2 macro foundation (GDP/AD/AS; mostly silent — teach per the IB guide, do NOT improvise):**
+  - GDP = the total value of all final goods and services produced within a country's borders in a given time period. (Location-based.)
+  - GNI = GDP PLUS net income from abroad (income earned by residents abroad minus income earned by foreigners domestically). (Residence-based.) Do NOT conflate GDP and GNI — GDP is where production happens; GNI is what a country's residents earn.
+  - Nominal vs real: NOMINAL GDP is measured at current prices; REAL GDP is adjusted for inflation using a price deflator. Real GDP is used for comparisons over time and of living standards, because it strips out price changes.
+  - Business cycle: short-term fluctuations in real GDP around a long-term growth trend. Phases: boom/peak, recession (two+ quarters of falling real GDP), trough/slump, recovery. The long-term trend line = potential output growth.
+  - Aggregate demand: AD = C + I + G + (X − M) — consumption + investment + government spending + net exports. (Same components as the GDP expenditure approach; AD is total planned spending at each price level.)
+  - Determinants by component: C — consumer confidence, interest rates, wealth, income tax; I — business confidence/expectations, interest rates, corporate tax, technology; G — government fiscal stance/policy; (X−M) — exchange rates, income of trading partners, relative inflation, trade policy.
+  - SRAS = short-run aggregate supply, upward-sloping; shifts with input/production costs (wages, raw material/commodity prices, indirect taxes, exchange rate on imported inputs, productivity).
+  - AS long-run views (HIGHEST-CONFUSION — guard carefully, do NOT swap): KEYNESIAN AS is a reverse-J / three-section curve — horizontal at low output (spare capacity), upward-sloping as capacity tightens, then VERTICAL at full employment. MONETARIST/NEW CLASSICAL LRAS is VERTICAL at the full-employment/potential output level (Yf), reflecting the belief the economy self-corrects to full employment in the long run. Keynesian = reverse-J; Monetarist/New Classical = vertical at potential. Do not describe one as the other.
+  - Macroeconomic equilibrium: where AD intersects AS, determining the price level and real output. Short-run equilibrium = AD ∩ SRAS. An inflationary gap = equilibrium real output above full-employment output; a deflationary (recessionary) gap = equilibrium below full-employment output.
 
 - PPC — assumptions, features, shifts, movements (actual growth vs growth in production possibilities)
 - Circular flow of income — households, firms, government, banks, foreign sector; leakages and injections
