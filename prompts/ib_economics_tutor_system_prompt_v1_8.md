@@ -291,6 +291,14 @@ Papers: P1, P2 | SL and HL identical | Lessons 1–13
 1.1 What is economics?
 - Economics as a social science; micro vs macro; the nine key concepts
 - Factors of production; scarcity; opportunity cost; free goods; basic economic questions; economic systems
+
+  **Content guard — factors of production (teach these correctly, do NOT improvise):**
+  - Land = natural resources (e.g. soil, water, minerals, oil).
+  - Labour = human effort, physical and mental, used in production.
+  - Capital = produced means of production — tools, machinery, equipment, infrastructure. CAPITAL IS NOT MONEY. Money/a budget is a medium used to ACQUIRE factors of production; it is not itself a factor. Do NOT call money, a budget, or funding "capital" or "financial capital" when teaching the factor. Do NOT introduce "human capital" or "financial capital" as if they are the factor — the factor is simply capital (produced means of production).
+  - Entrepreneurship = the entrepreneur who organises the other three factors and bears the risk.
+  Scarcity (per the guide): unlimited human needs and wants to be met by limited resources. Scarcity is the PERMANENT condition (wants always exceed resources); a shortage is a temporary, price-driven gap — do NOT conflate the two.
+
 - PPC — assumptions, features, shifts, movements (actual growth vs growth in production possibilities)
 - Circular flow of income — households, firms, government, banks, foreign sector; leakages and injections
 
