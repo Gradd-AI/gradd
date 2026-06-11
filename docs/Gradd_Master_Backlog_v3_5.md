@@ -397,6 +397,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 
 ### 2.0 Seed lookup optimisation `[v3.4]`
 - [ ] Cache `EXAM_QUESTIONS_CONTEXT` per session — currently fetched every message turn.
+- [ ] `[v3.6]` **Cost model measured (11 June):** ~$0.23/full session (~10 turns). Cost is ~95% INPUT tokens (~19-20k/turn: system prompt + few-shot examples + history re-sent every turn); output tiny. Per-sub API cost ~$2-7/mo (8-30 sessions). Prompt caching (91% hit rate) already softens most input cost — cached input ~10% of fresh. Conclusion: cost does NOT break the €130k portfolio plan (the 5x Sonnet-routing bug, now fixed, was the real threat). Model routing (>12 words → Sonnet, fixed 11 June) is a SECONDARY lever; the dominant lever is prompt size + caching. Optimise prompt size/caching LATER (post-volume), not pre-launch — $0.23/session is already cheap enough. NOTE: per-token prices quoted from memory; confirm current Haiku/Sonnet pricing from Anthropic pricing page before finalising the €-per-sub model.
 
 ### 2.1 Voice Features
 - [ ] Text-to-speech on tutor responses — Web Speech API, free
@@ -413,7 +414,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 - [ ] Spaced repetition — weak areas reintroduced at increasing intervals until mastered
 - [ ] Session opening brief — covered last session, weak area, today's topic, paper alignment
 - [ ] Cross-topic synthesis (Econ ↔ BM) — link subjects for bundle students
-- [ ] `[v3.5]` **Tutor content-accuracy pass** — curriculum-knowledge sections of both IB prompts audited against guide verbatim. Method verified (5 principles); content not fully verified. Same rigour as Check 6 scheme audit, applied to what Mia TEACHES. Covers: Econ formulas (18 formulas, multiplier open/closed forms), Econ HL/SL scope flags (sub-topic level), BM command terms and markbands. Next audit leg.
+- [ ] `[v3.6]` **Tutor content-accuracy pass — RAISED PRIORITY (live slips observed 11 June).** Curriculum-knowledge sections of both IB prompts audited against guide verbatim. Method verified (5 principles); content NOT verified — and a real Econ session on 11 June surfaced live teaching slips, confirming this is a moat risk not future polish. Observed slips to fix: (1) Mia called a government budget "financial capital" then taught capital = "physical AND human capital" two turns later — using "capital" three ways (physical/human/financial) without IB-clean framing; IB is strict that capital ≠ money. (2) IB_ECON_003 "Scarcity and Choice" labelled "Unit 3: Macroeconomics" — scarcity is intro micro foundational content; curriculum unit-mapping error (DB row had IB_ECON_003 under IB_ECON_UNIT_3 "Macroeconomics"). Audit covers: Econ formulas (18, multiplier open/closed), Econ HL/SL scope flags, capital/money distinction, unit/lesson mapping, BM command terms and markbands. Rule (already locked): every claim quoted against official guide PDF with page ref, no memory-based verification. This is the single biggest quality risk surfaced to date — "we teach correctly" is the whole pitch.
 
 ### 2.3 Student Experience
 - [ ] `[v3.4]` **Past-paper question library** — real IBO past papers indexed by syllabus topic. 8-12 hours.
