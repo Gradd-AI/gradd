@@ -217,7 +217,7 @@ export async function fetchExamQuestionsContext(
       const ao  = q.ao_level ? ` (${q.ao_level})` : '';
       const ctx = q.context_text ? `${q.context_text}\n` : '';
       const scheme = q.scheme_data?.accepted_points?.length
-        ? `\nMARK SCHEME (${q.scheme_data.marking_rule ?? 'award per point'}):\n` +
+        ? `\n[[SCHEME_INJECTED]]\nMARK SCHEME (${q.scheme_data.marking_rule ?? 'award per point'}):\n` +
           q.scheme_data.accepted_points.map((p, n) => `${n + 1}. (${p.marks} mark) ${p.point}`).join('\n')
         : '';
       return `EXAMPLE ${i + 1} — Paper ${q.paper}, ${q.marks} marks, "${q.command_term}"${ao}\n${ctx}${q.question_text}${scheme}`;
