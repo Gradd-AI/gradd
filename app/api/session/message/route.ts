@@ -424,8 +424,20 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
     },
   ];
 
+  // Interim model routing (greenfield — no turn-level marking flag exists yet).
+  // Protect marking quality: lean Sonnet. Only clearly-short turns (recall, chat,
+  // brief replies, "I don't know") drop to cheaper Haiku. Any substantive written
+  // answer routes to Sonnet so scheme-marking is never under-powered.
+  // TODO: replace with an explicit isMarkingTurn flag from the client once the
+  // question-serving flow tracks the active question.
+  const studentTurnText = (studentMessage ?? '').trim();
+  const wordCount = studentTurnText ? studentTurnText.split(/\s+/).length : 0;
+  const isSessionOpen = studentTurnText.startsWith('[SESSION_OPEN]');
+  // <= 12 words = clearly short (recall/chat) -> Haiku. Session-open is teaching, not marking -> Haiku.
+  const isMarkingTurn = !isSessionOpen && wordCount > 12;
+
   const stream = anthropic.messages.stream({
-    model: injectedSystemPrompt.includes('[[SCHEME_INJECTED]]') ? 'claude-sonnet-4-6' : MODEL,
+    model: isMarkingTurn ? 'claude-sonnet-4-6' : MODEL,
     max_tokens: MAX_TOKENS,
     system: systemBlocks,
     messages: trimmedHistory,
