@@ -161,6 +161,19 @@ Tools: SWOT, Ansoff, STEEPLE, business plan, decision trees, circular business m
 - Investment appraisal methods: PAYBACK = how long to recover the initial investment from net cash inflows (shorter = better for liquidity). ARR (average rate of return) = average annual profit as a % of the initial investment. NPV (HL) = the sum of discounted future cash flows minus the initial cost (positive NPV = worthwhile). Payback measures speed; ARR measures average profitability; NPV accounts for the time value of money.
 - Insolvency vs bankruptcy: INSOLVENCY = being unable to pay debts as they fall due (a financial state). BANKRUPTCY = the legal/court process for an INDIVIDUAL who cannot pay debts; companies that fail go into LIQUIDATION, not bankruptcy. Insolvency is the condition; bankruptcy/liquidation is the legal outcome.
 
+**Unit 4 — Marketing:**
+- Market vs product orientation: MARKET ORIENTATION = design products around what customers WANT (customer-led, driven by market research — lower launch risk). PRODUCT ORIENTATION = make what the business CAN make, then sell it (production/innovation-led). Market-led starts with the customer; product-led starts with the product.
+- STP: SEGMENTATION = dividing the market into groups with shared characteristics (demographic, geographic, psychographic, behavioural). TARGETING = choosing which segment(s) to serve. POSITIONING = establishing the brand's perceived place vs competitors, plotted on a position/perceptual map (two axes).
+- Niche vs mass market: NICHE = a small, specific segment — higher margins, lower volume, specialist, less competition. MASS = the whole/broad market — lower margins, higher volume, standardised, more competition. USP (unique selling point/proposition) = the distinct feature giving customers a specific reason to choose this product over rivals.
+- Market research — PRIMARY vs SECONDARY (guard the distinction): PRIMARY = NEW first-hand data the business collects itself for this specific purpose (surveys, interviews, focus groups, observation). SECONDARY = EXISTING data originally collected by someone else for another purpose (market analyses, government publications, academic journals, media, online). Secondary means pre-existing, NOT "less important."
+- QUALITATIVE vs QUANTITATIVE (guard the distinction): QUALITATIVE = non-numerical data on opinions, attitudes, motivations — depth and "why" (focus groups, open interviews). QUANTITATIVE = numerical/statistical data that can be measured and counted (closed-question surveys, percentages). Qualitative ≠ "quality/better"; it means non-numerical.
+- Sampling: RANDOM = every member of the population has an equal chance (representative, low bias). QUOTA = pre-set numbers from defined subgroups (targeted, not truly random). CONVENIENCE = whoever is easiest to reach (cheap/fast, high bias).
+- The 7 Ps: PRODUCT, PRICE, PROMOTION, PLACE (distribution), plus the three service Ps — PEOPLE (the staff who deliver the service, their training/attitude), PROCESSES (the systems/procedures for delivering it), PHYSICAL EVIDENCE (tangible cues for an intangible service — environment, packaging, uniforms, receipts).
+- Product life cycle — four stages: INTRODUCTION (launch, low sales, high promotion spend, negative/low cash flow), GROWTH (rising sales and profit), MATURITY (peak sales, profit peaks, cash cow), DECLINE (falling sales). EXTENSION STRATEGIES prolong maturity: new advertising, price cuts, product modification, new markets/uses, rebranding.
+- Pricing methods (guard penetration vs predatory vs loss leader — most-confused): PENETRATION = enter with a LOW price to win market share fast, then raise it (legal, new-entrant tactic). PREDATORY = price BELOW COST deliberately to drive competitors OUT (illegal/anti-competitive). LOSS LEADER = sell ONE product below cost to draw customers who then buy profitable items (legal, retail footfall). COST-PLUS = add a mark-up % to unit cost. PREMIUM = high price signalling quality/exclusivity. (HL: DYNAMIC = price varies with demand in real time; COMPETITIVE = price set relative to rivals; CONTRIBUTION = price covers variable cost plus a contribution to fixed costs.)
+- Promotion — ABOVE THE LINE (ATL) = paid mass-media advertising (TV, radio, press, billboards) — broad, untargeted. BELOW THE LINE (BTL) = targeted non-mass-media methods (direct mail, social media, events, in-store, sponsorship) — more targeted, often cheaper. THROUGH THE LINE (TTL) = an integrated approach combining both.
+- International marketing (HL): OPPORTUNITIES — larger markets, diversification, economies of scale, brand extension. THREATS — cultural/language differences, legal/regulatory complexity, currency risk, political instability, strong local competitors.
+
 ---
 
 **Unit 2: Human resource management**
@@ -391,6 +404,8 @@ Always show the formula before substituting. Show every step. Always interpret t
 - Working capital = current assets − current liabilities (the absolute £ liquidity surplus; distinct from the current ratio, which is the proportion)
 - [HL] Straight-line depreciation = (cost − residual value) ÷ useful life in years (equal depreciation each year)
 - [HL] Units of production depreciation = ((cost − residual value) ÷ total estimated units over useful life) × units produced this period
+- Market share (%) = (firm's sales ÷ total market sales) × 100
+- Market growth (%) = ((new market size − original market size) ÷ original market size) × 100
 
 **Capacity utilization and productivity — [HL ONLY]**
 - Capacity utilization rate = (actual output ÷ productive capacity) × 100
