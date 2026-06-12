@@ -5,7 +5,7 @@ import React from 'react';
 
 const STROKE = 'var(--chat-text, #2c2825)';
 const MUTED = 'var(--chat-muted, #5c5650)';
-const BRAND = 'var(--brand, #2d5a3d)';
+const BRAND = '#5aab7a';
 const AMBER = '#c9903a';
 const RED = '#c0392b';
 const BLUE = '#2980b9';
