@@ -79,6 +79,14 @@
 > - THE FIX (next session, ready): port Econ's `## WEAK AREA DETECTION` section into the BM prompt, positioned after ## TEACHING METHODOLOGY and before ## SIGNAL PROTOCOL. Include the TIMING reconciliation (session-level pattern detection across DIFFERENT questions, distinct from per-question RESCUE CONTROL). Then VERIFY LIVE: BM marked miss on a foundational misconception (e.g. Herzberg pay-as-motivator) must fire weak_area_flag → check session_events for a weak_area_flag row with concept populated.
 > - Parsers confirmed fine (both teach_back + weak_area_flag parse correctly; the gap is emission, not parsing).
 > - All transcript/event storage work COMPLETE + verified (schema cdf5623, stage1 f4f4c65, stage2 21d18a6). Reads still on message_history blob (belt-and-braces).
+>
+> **v3.6 — 12 June: diagram-rendering bug FIXED (Mia-surfaced diagrams) + library-wide contrast fix.**
+> - ROOT CAUSE (diagnosed): diagrams not in the library hit [DIAGRAM_DYNAMIC] → unconstrained model-generated SVG, regenerated every render (no cache), often clipping/colliding. Fragile for recurring named concepts.
+> - FIX, layered: (1) hardened the dynamic path (commit 8120b34): DB diagram_cache (generate-once per description), bounded generation prompt, container overflow:hidden + SVG attr-stripping, empty-SVG validation — this is the LONG-TAIL FLOOR for one-off diagrams. BUT cache keys on freeform description (Mia varies wording) so it under-hits for recurring concepts, and the prompt constraints are advisory (model still clipped). (2) For CORE RECURRING concepts, built deterministic hand-built library components: BM_MOTIVATION_TAYLOR/MASLOW/HERZBERG (commit 4ff1557), wired BM prompt to ALWAYS emit their codes (commit 3af61c6). Verified live: Taylor renders the clean library component, no spinner, exam-standard.
+> - LIBRARY-WIDE CONTRAST BUG found + fixed (commit 4ff1557): BRAND green was var(--brand,#2d5a3d) → resolved to ~#0e2b1e, ~1.2:1 contrast on dark chat surface → green text/elements near-INVISIBLE across ALL 61 diagrams (latent, uncaught). Changed to #5aab7a (~5.5:1, WCAG AA). Fixed library-wide. Verified visually.
+> - LESSON: visual check (screenshot) caught the contrast failure that coordinate-math passed. See-don't-infer on rendered UI.
+> - BACKLOG (logged): SWEEP remaining recurring BM+Econ concepts still on DIAGRAM_DYNAMIC into library components (e.g. marketing mix/7Ps, Porter, others). The 3 motivation diagrams done; systematic sweep is a future task. Dynamic path stays as long-tail floor.
+> - ALSO CONFIRMED LIVE: adaptive weak-area loop closing — a weak_area_flag captured in an earlier session (Herzberg pay-as-motivator) was surfaced back to the student at the start of a later relevant lesson ("you have a previous weak area flagged..."). Detection→capture→resurface working end-to-end.
 
 ---
 
