@@ -16,7 +16,10 @@ export const runtime = 'nodejs';
 export async function POST(request: Request) {
   console.log('Session start called');
   const body = await request.json().catch(() => ({}));
-  const { activeSubject } = body as { activeSubject?: string };
+  const { activeSubject, lessonCode: requestedLessonCode } = body as {
+    activeSubject?: string;
+    lessonCode?: string;
+  };
 
   const supabase = await createServerClient();
 
@@ -69,6 +72,46 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Progress record not found' }, { status: 500 });
   }
 
+  // ── Lesson override (picker / Model B) ──────────────────────────────────────
+  // Student requests a specific lesson; we validate and use it for this session
+  // only. student_progress.current_lesson_code is never touched — the sequence
+  // pointer stays frozen. Invalid code or HL-only lesson for SL student →
+  // silently fall back to the sequential current_lesson_code.
+  let overrideLesson: {
+    lesson_code: string; lesson_name: string;
+    unit_code: string;   unit_name: string;
+  } | null = null;
+
+  if (requestedLessonCode) {
+    const { data: overrideRow } = await supabase
+      .from('lessons')
+      .select('lesson_code, lesson_name, unit_code, unit_name, level')
+      .eq('lesson_code', requestedLessonCode)
+      .eq('subject', effectiveSubject)
+      .maybeSingle();
+
+    if (overrideRow) {
+      const studentLevel = effectiveSubject === 'IB_BUSINESS'
+        ? (profile.ib_business_level ?? profile.exam_level)
+        : effectiveSubject === 'IB_ECONOMICS'
+        ? (profile.ib_economics_level ?? profile.exam_level)
+        : profile.exam_level;
+      if (!(overrideRow.level === 'HL_ONLY' && studentLevel === 'SL')) {
+        overrideLesson = {
+          lesson_code: overrideRow.lesson_code,
+          lesson_name: overrideRow.lesson_name,
+          unit_code:   overrideRow.unit_code,
+          unit_name:   overrideRow.unit_name,
+        };
+      }
+    }
+  }
+
+  const effectiveLessonCode = overrideLesson?.lesson_code ?? progress.current_lesson_code;
+  const effectiveLessonName = overrideLesson?.lesson_name ?? progress.current_lesson_name;
+  const effectiveUnitCode   = overrideLesson?.unit_code   ?? progress.current_unit_code;
+  const effectiveUnitName   = overrideLesson?.unit_name   ?? progress.current_unit_name;
+
   const [{ data: weakAreas }, { data: lessonCompletions }, { data: unitCompletions }] =
     await Promise.all([
       supabase
@@ -86,7 +129,7 @@ export async function POST(request: Request) {
   const { data: currentLessonRow } = await supabase
     .from('lessons')
     .select('next_lesson_code')
-    .eq('lesson_code', progress.current_lesson_code)
+    .eq('lesson_code', effectiveLessonCode)
     .single();
 
   const nextLessonCode = currentLessonRow?.next_lesson_code ?? '';
@@ -102,7 +145,8 @@ export async function POST(request: Request) {
   const nextLessonName = nextLessonRow?.lesson_name ?? '';
 
   // 5. Determine session type
-  const sessionType = determineSessionType(progress);
+  // Override sessions always start fresh on the chosen topic — no checkpoint/drill state.
+  const sessionType = overrideLesson ? 'NEW_TOPIC' : determineSessionType(progress);
 
   // 6. Increment session number
   const newSessionNumber = (progress.session_number ?? 0) + 1;
@@ -113,26 +157,26 @@ export async function POST(request: Request) {
 
   try {
     if (subject === 'IB_ECONOMICS') {
-      const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_ECON_', '') ?? '1');
+      const lessonOrder = parseInt(effectiveLessonCode?.replace('IB_ECON_', '') ?? '1');
       const examQs = await fetchExamQuestionsContext(
         supabase,
-        progress.current_lesson_code,
+        effectiveLessonCode,
         profile.exam_level,
         'IB_ECONOMICS',
-        progress.current_unit_code ?? undefined,
+        effectiveUnitCode ?? undefined,
       );
       injectedSystemPrompt = await buildIBEconomicsPrompt({
         STUDENT_NAME:                 profile.student_name,
-        EXAM_LEVEL:                   profile.exam_level, // 'SL' or 'HL'
-        CURRENT_UNIT_CODE:            progress.current_unit_code,
-        CURRENT_UNIT_NAME:            progress.current_unit_name,
-        CURRENT_LESSON_CODE:          progress.current_lesson_code,
-        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        EXAM_LEVEL:                   profile.exam_level,
+        CURRENT_UNIT_CODE:            effectiveUnitCode,
+        CURRENT_UNIT_NAME:            effectiveUnitName,
+        CURRENT_LESSON_CODE:          effectiveLessonCode,
+        CURRENT_LESSON_NAME:          effectiveLessonName,
         NEXT_LESSON_CODE:             nextLessonCode,
         NEXT_LESSON_NAME:             nextLessonName,
         LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
                                         lessonCompletions ?? [],
-                                        progress.current_unit_code
+                                        effectiveUnitCode
                                       ),
         UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
         SESSION_NUMBER:               newSessionNumber,
@@ -143,27 +187,27 @@ export async function POST(request: Request) {
         EXAM_QUESTIONS_CONTEXT:       examQs.formatted,
       });
     } else if (subject === 'IB_BUSINESS') {
-      const lessonOrder = parseInt(progress.current_lesson_code?.replace('IB_BM_', '') ?? '1');
+      const lessonOrder = parseInt(effectiveLessonCode?.replace('IB_BM_', '') ?? '1');
       // p_subject uses the DB key 'IB_BUSINESS_MANAGEMENT'; internal route key stays 'IB_BUSINESS'
       const examQs = await fetchExamQuestionsContext(
         supabase,
-        progress.current_lesson_code,
+        effectiveLessonCode,
         profile.exam_level,
         'IB_BUSINESS_MANAGEMENT',
-        progress.current_unit_code ?? undefined,
+        effectiveUnitCode ?? undefined,
       );
       injectedSystemPrompt = await buildIBBusinessPrompt({
         STUDENT_NAME:                 profile.student_name,
         EXAM_LEVEL:                   profile.exam_level,
-        CURRENT_UNIT_CODE:            progress.current_unit_code,
-        CURRENT_UNIT_NAME:            progress.current_unit_name,
-        CURRENT_LESSON_CODE:          progress.current_lesson_code,
-        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        CURRENT_UNIT_CODE:            effectiveUnitCode,
+        CURRENT_UNIT_NAME:            effectiveUnitName,
+        CURRENT_LESSON_CODE:          effectiveLessonCode,
+        CURRENT_LESSON_NAME:          effectiveLessonName,
         NEXT_LESSON_CODE:             nextLessonCode,
         NEXT_LESSON_NAME:             nextLessonName,
         LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
                                         lessonCompletions ?? [],
-                                        progress.current_unit_code
+                                        effectiveUnitCode
                                       ),
         UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
         SESSION_NUMBER:               newSessionNumber,
@@ -178,15 +222,15 @@ export async function POST(request: Request) {
       injectedSystemPrompt = await buildInjectedSystemPrompt({
         STUDENT_NAME:                 profile.student_name,
         EXAM_LEVEL:                   profile.exam_level,
-        CURRENT_UNIT_CODE:            progress.current_unit_code,
-        CURRENT_UNIT_NAME:            progress.current_unit_name,
-        CURRENT_LESSON_CODE:          progress.current_lesson_code,
-        CURRENT_LESSON_NAME:          progress.current_lesson_name,
+        CURRENT_UNIT_CODE:            effectiveUnitCode,
+        CURRENT_UNIT_NAME:            effectiveUnitName,
+        CURRENT_LESSON_CODE:          effectiveLessonCode,
+        CURRENT_LESSON_NAME:          effectiveLessonName,
         NEXT_LESSON_CODE:             nextLessonCode,
         NEXT_LESSON_NAME:             nextLessonName,
         LESSONS_COMPLETED_THIS_UNIT:  formatLessonsCompletedThisUnit(
                                         lessonCompletions ?? [],
-                                        progress.current_unit_code
+                                        effectiveUnitCode
                                       ),
         UNITS_COMPLETED_LIST:         formatUnitsCompletedList(unitCompletions ?? []),
         SESSION_NUMBER:               newSessionNumber,
@@ -209,11 +253,11 @@ export async function POST(request: Request) {
       student_id: user.id,
       session_number: newSessionNumber,
       session_type: sessionType,
-      lesson_code: progress.current_lesson_code,
+      lesson_code: effectiveLessonCode,
       message_history: [],
       subject:    effectiveSubject,
-      unit_code:  progress.current_unit_code,
-      unit_name:  progress.current_unit_name,
+      unit_code:  effectiveUnitCode,
+      unit_name:  effectiveUnitName,
       exam_level: profile.exam_level,
     })
     .select()

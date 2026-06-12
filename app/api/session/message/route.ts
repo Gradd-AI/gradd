@@ -567,6 +567,11 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
             .single();
 
           if (progress) {
+            // True when the student studied a picker-chosen lesson rather than their
+            // sequential current lesson. Progress pointer writes are suppressed for
+            // these sessions so the sequence position is never moved by a side trip.
+            const isOverrideSession = session.lesson_code !== progress.current_lesson_code;
+
             const progressUpdates: Record<string, unknown> = {
               updated_at: new Date().toISOString(),
             };
@@ -879,7 +884,10 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
             }
 
             // ── Write all progress updates in one shot ────────────────────
-            if (Object.keys(progressUpdates).length > 1) {
+            // Override sessions: suppress all writes so the sequence pointer stays
+            // frozen. lesson_completions, weak_areas, and session_events are still
+            // written above — only student_progress is blocked here.
+            if (!isOverrideSession && Object.keys(progressUpdates).length > 1) {
               await serviceSupabase
                 .from('student_progress')
                 .update(progressUpdates)
