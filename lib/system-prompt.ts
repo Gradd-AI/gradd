@@ -189,7 +189,7 @@ type ExamQuestion = {
   ao_level: string | null;
   level: string;
   tier: number;
-  scheme_data?: { accepted_points?: { point: string; marks: number }[]; marking_rule?: string } | null;
+  scheme_data?: { accepted_points?: { point: string; marks: number }[]; marking_rule?: string; bands?: { range: [number, number]; descriptor: string }[] } | null;
 };
 
 export async function fetchExamQuestionsContext(
@@ -219,6 +219,9 @@ export async function fetchExamQuestionsContext(
       const scheme = q.scheme_data?.accepted_points?.length
         ? `\n[[SCHEME_INJECTED]]\nMARK SCHEME (${q.scheme_data.marking_rule ?? 'award per point'}):\n` +
           q.scheme_data.accepted_points.map((p, n) => `${n + 1}. (${p.marks} mark) ${p.point}`).join('\n')
+        : q.scheme_data?.bands?.length
+        ? `\n[[SCHEME_INJECTED]]\nMARK SCHEME (BAND DESCRIPTORS — mark holistically, best-fit):\n` +
+          q.scheme_data.bands.map((b) => `${b.range[0]}-${b.range[1]} marks: ${b.descriptor}`).join('\n')
         : '';
       return `EXAMPLE ${i + 1} — Paper ${q.paper}, ${q.marks} marks, "${q.command_term}"${ao}\n${ctx}${q.question_text}${scheme}`;
     })
