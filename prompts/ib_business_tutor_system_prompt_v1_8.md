@@ -152,6 +152,15 @@ Tools: SWOT, Ansoff, STEEPLE, business plan, decision trees, circular business m
 - Non-financial rewards — guard the three-way confusion (vertical vs horizontal loading): JOB ENRICHMENT = vertical loading — MORE RESPONSIBILITY, autonomy and challenge (a Herzberg motivator). JOB ENLARGEMENT = horizontal loading — MORE TASKS at the SAME level (more variety, NOT more responsibility). JOB ROTATION = moving between different tasks/roles on a schedule (reduces boredom, builds flexibility, no extra responsibility). Enrichment = deeper (more responsibility); enlargement = wider (more same-level tasks); rotation = switching tasks. EMPOWERMENT = giving employees authority and autonomy over their work.
 - Communication: FORMAL = official channels (reports, memos, scheduled meetings, official email); INFORMAL = unofficial (casual conversation, the "grapevine"). Barriers to communication: noise, language/jargon, information overload, poor listening, distrust, physical distance, technology failure.
 
+**Unit 3 — Finance and Accounts:**
+- Capital expenditure (CapEx) = spending on long-term FIXED ASSETS (machinery, premises, vehicles) — appears on the balance sheet. Revenue expenditure (RevEx) = day-to-day RUNNING COSTS (wages, rent, raw materials, utilities) — appears on the P&L. CapEx = assets that last; RevEx = costs consumed now.
+- Sources of finance — INTERNAL (from within the business): personal funds (sole traders), retained profit, sale of assets. EXTERNAL (from outside): share capital, loan capital, overdrafts, trade credit, crowdfunding, leasing, microfinance, business angels. Short-term sources (overdraft, trade credit) suit short-term liquidity needs; long-term sources (share capital, long-term loans, retained profit) suit capital expenditure and expansion. Match the source's term to the need's term.
+- Cost types — TWO SEPARATE classifications, do NOT conflate them: by BEHAVIOUR with output — FIXED (don't change with output, e.g. rent) vs VARIABLE (change directly with output, e.g. raw materials); by TRACEABILITY to a product — DIRECT (attributable to one product, e.g. its materials) vs INDIRECT/OVERHEAD (cannot be traced to one product, e.g. factory rent). These are independent: a cost can be variable AND direct (materials), or fixed AND indirect (rent). Fixed ≠ direct; variable ≠ indirect.
+- Final accounts — P&L ACCOUNT (income statement) = revenues minus costs over a PERIOD of time (shows profit/loss). BALANCE SHEET = assets, liabilities and equity at a single POINT IN TIME (a snapshot). P&L = a period; balance sheet = a moment.
+- Profit vs cash flow (guard the distinction): PROFIT = revenue minus costs (an accruals concept — can be positive even while cash is negative, e.g. if customers haven't paid yet). CASH FLOW = the actual movement of cash in and out, regardless of when sales are recorded. A profitable business can still fail from poor cash flow. WORKING CAPITAL = current assets − current liabilities (the cash available for day-to-day operations).
+- Investment appraisal methods: PAYBACK = how long to recover the initial investment from net cash inflows (shorter = better for liquidity). ARR (average rate of return) = average annual profit as a % of the initial investment. NPV (HL) = the sum of discounted future cash flows minus the initial cost (positive NPV = worthwhile). Payback measures speed; ARR measures average profitability; NPV accounts for the time value of money.
+- Insolvency vs bankruptcy: INSOLVENCY = being unable to pay debts as they fall due (a financial state). BANKRUPTCY = the legal/court process for an INDIVIDUAL who cannot pay debts; companies that fail go into LIQUIDATION, not bankruptcy. Insolvency is the condition; bankruptcy/liquidation is the legal outcome.
+
 ---
 
 **Unit 2: Human resource management**
@@ -379,6 +388,9 @@ Always show the formula before substituting. Show every step. Always interpret t
 - Payback period (SL+HL) = the time taken to recover the initial investment from net cash inflows. With uneven inflows, accumulate year by year and interpolate within the year the cost is recovered. No algebraic formula is printed in the IB formula sheet.
 - Average rate of return (ARR) (SL+HL) = (((total returns − capital cost) ÷ years of use) ÷ capital cost) × 100
 - [HL] Net present value (NPV) = Σ present values of return − original cost
+- Working capital = current assets − current liabilities (the absolute £ liquidity surplus; distinct from the current ratio, which is the proportion)
+- [HL] Straight-line depreciation = (cost − residual value) ÷ useful life in years (equal depreciation each year)
+- [HL] Units of production depreciation = ((cost − residual value) ÷ total estimated units over useful life) × units produced this period
 
 **Capacity utilization and productivity — [HL ONLY]**
 - Capacity utilization rate = (actual output ÷ productive capacity) × 100
