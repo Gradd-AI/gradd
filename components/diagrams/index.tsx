@@ -1,5 +1,5 @@
 // ─── Gradd Diagram Library — Master Index ─────────────────────────────────────
-// Version: 1.0 | Covers: IB Economics (47) + IB Business Management (14)
+// Version: 1.1 | Covers: IB Economics (47) + IB Business Management (17)
 // Usage: import { getDiagram, DIAGRAM_CODES } from '@/components/diagrams/index'
 
 export { PPC_BASIC, PPC_GROWTH, PPC_MOVEMENT, CIRCULAR_FLOW } from './econ-unit1';
@@ -30,6 +30,7 @@ export {
   BM_ORG_HIERARCHICAL, BM_ORG_FLAT,
   BM_PRODUCT_LIFECYCLE, BM_POSITION_MAP, BM_BREAKEVEN, BM_CASHFLOW,
   BM_FORCE_FIELD, BM_GANTT, BM_STOCK_CONTROL, BM_SCATTER_REGRESSION,
+  BM_MOTIVATION_TAYLOR, BM_MOTIVATION_MASLOW, BM_MOTIVATION_HERZBERG,
 } from './bm-diagrams';
 
 import React from 'react';
@@ -115,6 +116,9 @@ const DIAGRAM_MAP: Record<string, React.FC<any>> = {
   BM_GANTT: BMDiagrams.BM_GANTT,
   BM_STOCK_CONTROL: BMDiagrams.BM_STOCK_CONTROL,
   BM_SCATTER_REGRESSION: BMDiagrams.BM_SCATTER_REGRESSION,
+  BM_MOTIVATION_TAYLOR: BMDiagrams.BM_MOTIVATION_TAYLOR,
+  BM_MOTIVATION_MASLOW: BMDiagrams.BM_MOTIVATION_MASLOW,
+  BM_MOTIVATION_HERZBERG: BMDiagrams.BM_MOTIVATION_HERZBERG,
 };
 
 /**

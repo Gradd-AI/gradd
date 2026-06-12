@@ -590,3 +590,117 @@ export function BM_SCATTER_REGRESSION() {
     </svg>
   );
 }
+
+// ─── BM_MOTIVATION_TAYLOR ─────────────────────────────────────────────────────
+export function BM_MOTIVATION_TAYLOR() {
+  const cx = 250;
+  const bx = 100, bw = 300, bh = 54;
+  const steps = [
+    { color: AMBER, bold: "'Economic man'",           sub: 'workers motivated by money alone' },
+    { color: BRAND, bold: '1. Time-and-motion study', sub: 'find the one best method' },
+    { color: BLUE,  bold: '2. Division of labour',    sub: 'small specialised tasks' },
+    { color: RED,   bold: '3. Piece-rate pay',        sub: 'paid per unit produced' },
+  ];
+  return (
+    <svg viewBox="0 0 500 420" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 500, fontFamily: FONT }}>
+      <text x={cx} y="18" fontSize="13" fill={MUTED} textAnchor="middle" fontWeight="bold">Taylor — Scientific Management</text>
+      {steps.map(({ color, bold, sub }, i) => {
+        const y = 28 + i * (bh + 18);
+        return (
+          <g key={i}>
+            <rect x={bx} y={y} width={bw} height={bh} rx="4" fill={color} opacity="0.15" stroke={color} strokeWidth="1.5" />
+            <text x={cx} y={y + 22} fontSize="12" fill={color} textAnchor="middle" fontWeight="bold">{bold}</text>
+            <text x={cx} y={y + 38} fontSize="10" fill={MUTED} textAnchor="middle">{sub}</text>
+            {i < steps.length - 1 && (
+              <g>
+                <line x1={cx} y1={y + bh} x2={cx} y2={y + bh + 12} stroke={MUTED} strokeWidth="1.5" />
+                <polygon points={`${cx - 5},${y + bh + 12} ${cx + 5},${y + bh + 12} ${cx},${y + bh + 18}`} fill={MUTED} />
+              </g>
+            )}
+          </g>
+        );
+      })}
+      {/* Arrow to result */}
+      <line x1={cx} y1={298} x2={cx} y2={310} stroke={MUTED} strokeWidth="1.5" />
+      <polygon points={`${cx - 5},310 ${cx + 5},310 ${cx},316`} fill={MUTED} />
+      {/* Result */}
+      <rect x={bx} y={316} width={bw} height={bh} rx="4" fill={BRAND} opacity="0.25" stroke={BRAND} strokeWidth="2" />
+      <text x={cx} y={338} fontSize="13" fill={BRAND} textAnchor="middle" fontWeight="bold">Result: maximum efficiency</text>
+      <text x={cx} y={354} fontSize="10" fill={MUTED} textAnchor="middle">higher output, lower unit cost</text>
+      <text x={cx} y="393" fontSize="11" fill={MUTED} textAnchor="middle">External/extrinsic motivation — money is the sole driver</text>
+      <text x={cx} y="408" fontSize="11" fill={MUTED} textAnchor="middle">Criticism: ignores social needs (Maslow L3–L5; Herzberg motivators)</text>
+    </svg>
+  );
+}
+
+// ─── BM_MOTIVATION_MASLOW ─────────────────────────────────────────────────────
+export function BM_MOTIVATION_MASLOW() {
+  // Stepped trapezoid bands, bottom to top. Each side narrows by 23px per level.
+  // y dividers: 345,288,231,174,117,60 — band height 57px each.
+  // rightX = right edge of each band at its mid-y (for connector line start).
+  const bands = [
+    { pts: '50,345 340,345 317,288 73,288',   color: BLUE,   midY: 316.5, rightX: 328.5, name: 'Physiological',     sub: '(food, shelter, pay)' },
+    { pts: '73,288 317,288 294,231 96,231',   color: BRAND,  midY: 259.5, rightX: 305.5, name: 'Safety',             sub: '(job security, safe conds.)' },
+    { pts: '96,231 294,231 271,174 119,174',  color: AMBER,  midY: 202.5, rightX: 282.5, name: 'Social',             sub: '(belonging, teamwork)' },
+    { pts: '119,174 271,174 248,117 142,117', color: PURPLE, midY: 145.5, rightX: 259.5, name: 'Esteem',             sub: '(recognition, status)' },
+    { pts: '142,117 248,117 225,60 165,60',   color: RED,    midY: 88.5,  rightX: 236.5, name: 'Self-actualisation', sub: '(growth, potential)' },
+  ];
+  return (
+    <svg viewBox="0 0 540 410" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 540, fontFamily: FONT }}>
+      <text x="270" y="18" fontSize="13" fill={MUTED} textAnchor="middle" fontWeight="bold">Maslow's Hierarchy of Needs</text>
+      <text x="16" y="210" fontSize="10" fill={MUTED} textAnchor="middle" transform="rotate(-90,16,210)">Lower needs first ↑</text>
+      {bands.map(({ pts, color, midY, rightX, name, sub }, i) => (
+        <g key={i}>
+          <polygon points={pts} fill={color} opacity="0.2" stroke={color} strokeWidth="1.5" />
+          <line x1={rightX} y1={midY} x2={354} y2={midY} stroke={MUTED} strokeWidth="1" opacity="0.5" />
+          <text x="358" y={midY - 3} fontSize="11" fill={color} fontWeight="bold">{name}</text>
+          <text x="358" y={midY + 10} fontSize="9" fill={MUTED}>{sub}</text>
+        </g>
+      ))}
+      <text x="270" y="375" fontSize="11" fill={MUTED} textAnchor="middle">Lower needs (1–2) must be satisfied before higher needs motivate</text>
+      <text x="270" y="390" fontSize="11" fill={MUTED} textAnchor="middle">Pay = level 1 (basic need) — not a motivator in itself (cf. Herzberg)</text>
+    </svg>
+  );
+}
+
+// ─── BM_MOTIVATION_HERZBERG ───────────────────────────────────────────────────
+export function BM_MOTIVATION_HERZBERG() {
+  const hygiene   = ['Pay / salary', 'Working conditions', 'Job security', 'Company policy', 'Supervision'];
+  const motivators = ['Achievement', 'Recognition', 'Responsibility', 'The work itself', 'Advancement'];
+  return (
+    <svg viewBox="0 0 520 290" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', maxWidth: 520, fontFamily: FONT }}>
+      <text x="260" y="18" fontSize="13" fill={MUTED} textAnchor="middle" fontWeight="bold">Herzberg — Two-Factor Theory</text>
+      {/* Column backgrounds */}
+      <rect x="20" y="26" width="225" height="222" rx="4" fill={RED} opacity="0.07" stroke={RED} strokeWidth="1.5" />
+      <rect x="275" y="26" width="225" height="222" rx="4" fill={BRAND} opacity="0.07" stroke={BRAND} strokeWidth="1.5" />
+      {/* Column headers */}
+      <text x="132" y="43" fontSize="12" fill={RED} textAnchor="middle" fontWeight="bold">HYGIENE FACTORS</text>
+      <text x="387" y="43" fontSize="12" fill={BRAND} textAnchor="middle" fontWeight="bold">MOTIVATORS</text>
+      {/* Subtitles */}
+      <text x="132" y="57" fontSize="9" fill={MUTED} textAnchor="middle">absence → dissatisfaction;</text>
+      <text x="132" y="69" fontSize="9" fill={MUTED} textAnchor="middle">presence → neutral (not motivating)</text>
+      <text x="387" y="57" fontSize="9" fill={MUTED} textAnchor="middle">presence →</text>
+      <text x="387" y="69" fontSize="9" fill={MUTED} textAnchor="middle">motivation & satisfaction</text>
+      {/* Dividers */}
+      <line x1="30"  y1="77" x2="235" y2="77" stroke={RED}   strokeWidth="1" opacity="0.4" />
+      <line x1="285" y1="77" x2="490" y2="77" stroke={BRAND} strokeWidth="1" opacity="0.4" />
+      {/* Hygiene items */}
+      {hygiene.map((item, i) => (
+        <g key={i}>
+          <circle cx="37" cy={92 + i * 32} r="3" fill={RED} opacity="0.7" />
+          <text x="47" y={96 + i * 32} fontSize="11" fill={STROKE}>{item}</text>
+        </g>
+      ))}
+      {/* Motivator items */}
+      {motivators.map((item, i) => (
+        <g key={i}>
+          <circle cx="292" cy={92 + i * 32} r="3" fill={BRAND} opacity="0.7" />
+          <text x="302" y={96 + i * 32} fontSize="11" fill={STROKE}>{item}</text>
+        </g>
+      ))}
+      {/* Caption */}
+      <rect x="20" y="257" width="480" height="24" rx="4" fill={RED} opacity="0.12" stroke={RED} strokeWidth="1" />
+      <text x="260" y="273" fontSize="11" fill={RED} textAnchor="middle" fontWeight="bold">Pay is a HYGIENE factor, not a motivator</text>
+    </svg>
+  );
+}
