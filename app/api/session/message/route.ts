@@ -323,6 +323,22 @@ export async function POST(request: Request) {
     { role: 'user' as const, content: studentMessage },
   ];
 
+  // ── Durable user-message write (stream-failure fix) ───────────────────────
+  // Write the user turn to session_messages BEFORE streaming starts so a
+  // mid-stream error cannot lose it. Non-blocking on failure: a logging-table
+  // error must never prevent the student's turn from proceeding.
+  try {
+    await serviceSupabase.from('session_messages').insert({
+      session_id: sessionId,
+      student_id: user.id,
+      role: 'user',
+      content: studentMessage,
+      turn_index: currentHistory.length,
+    });
+  } catch (smErr) {
+    console.error('[session_messages] user-turn insert failed (non-fatal):', smErr);
+  }
+
   // Trim to last 20 exchanges for Anthropic call. Always preserve opener (index 0).
   let trimmedHistory = updatedHistory;
   if (updatedHistory.length > MAX_HISTORY_MESSAGES + 1) {
@@ -479,6 +495,21 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
             output_tokens: (session.output_tokens ?? 0) + usage.output_tokens,
           })
           .eq('id', sessionId);
+
+        // ── Durable assistant-message write ──────────────────────────────────
+        // turn_index = updatedHistory.length: user turn was currentHistory.length,
+        // assistant is the next slot (currentHistory.length + 1).
+        try {
+          await serviceSupabase.from('session_messages').insert({
+            session_id: sessionId,
+            student_id: user.id,
+            role: 'assistant',
+            content: fullResponseText,
+            turn_index: updatedHistory.length,
+          });
+        } catch (smErr) {
+          console.error('[session_messages] assistant-turn insert failed (non-fatal):', smErr);
+        }
 
         // ── Signal processing (parsed before the cap increment, which depends on it) ──
         const signals = parseSignals(fullResponseText);

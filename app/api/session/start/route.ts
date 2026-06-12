@@ -211,6 +211,10 @@ export async function POST(request: Request) {
       session_type: sessionType,
       lesson_code: progress.current_lesson_code,
       message_history: [],
+      subject:    effectiveSubject,
+      unit_code:  progress.current_unit_code,
+      unit_name:  progress.current_unit_name,
+      exam_level: profile.exam_level,
     })
     .select()
     .single();
@@ -221,11 +225,13 @@ export async function POST(request: Request) {
   }
 
   // 10. Update progress counters
+  // total_session_count is NOT incremented here — it is incremented in
+  // /session/complete so it counts completed sessions, not started ones.
+  // Incrementing in both routes caused a double-count (fixed 12 Jun 2026).
   await supabase
     .from('student_progress')
     .update({
       session_number: newSessionNumber,
-      total_session_count: (progress.total_session_count ?? 0) + 1,
       updated_at: new Date().toISOString(),
     })
     .eq('student_id', user.id)
