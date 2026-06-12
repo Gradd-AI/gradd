@@ -66,6 +66,11 @@
 > - **SIGNAL EMISSION MAP learned:** teach_back fires per teach-through (high-frequency, captures the misconception+concept each time Mia teaches a correction — this is the main misconception-capture signal). weak_area_flag fires LESS often (NOT on a single marked miss — likely lesson-end aggregation or persistent-weakness; exact condition unconfirmed). For adaptive teaching, teach_back is the richer per-miss signal. TODO: confirm weak_area_flag's exact emission condition when convenient.
 > - **Reads still on message_history blob** (belt-and-braces). Drop message_history + cut reads over to session_messages = future migration once fully verified.
 > - **Session Review UI** (student-facing past-session transcripts) — data layer now ready; UI is a clean future build, not a one-way door.
+>
+> **v3.6 — 12 June: transcript+event storage COMPLETE & verified; signal-emission inconsistency found (needs own session).**
+> - Durable transcript+event storage built & verified live (schema cdf5623, stage1 f4f4c65 stream-fix, stage2 21d18a6 events). session_messages every turn (proven, rows 0-3 alternating, stream-fix proven by timestamp gap). session_events on signal (proven — teach_back row landed, concept='pay_as_hygiene_factor_not_motivator'). Append-only + RLS + RESTRICT FKs verified. 948 msgs backfilled.
+> - **NEW FINDING — signal emission is INCONSISTENT (own session to investigate):** tested 3 repeated marked misses of the SAME Herzberg concept (pay-as-motivator). Mia taught the correction all 3 times BUT emitted teach_back only ONCE (1 event row, not 3). weak_area_flag did NOT fire at all across 3 same-concept misses. So: (a) teach_back is emitted sparsely, not per-teach-through; (b) weak_area_flag's firing condition is NOT "repeated miss" — unknown, possibly lesson-end-only or not firing when it should. IMPACT: misconception capture for adaptive teaching may be patchy/under-captured. NEXT: focused diagnosis of each signal's emission instruction + reliability (prompt/signal-design, upstream of the now-verified write-path). The STORAGE works; the question is whether the prompt EMITS reliably enough.
+> - Reads still on message_history blob (belt-and-braces). Session Review UI = clean future build (data layer ready).
 
 ---
 
