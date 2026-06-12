@@ -762,6 +762,7 @@ function DynamicDiagramRenderer({ prompt }: { prompt: string }) {
   const [svg, setSvg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -784,15 +785,27 @@ function DynamicDiagramRenderer({ prompt }: { prompt: string }) {
     return () => { cancelled = true; };
   }, [prompt]);
 
+  // Strip fixed pixel dimensions from injected SVG so it scales with the container.
+  // Belt-and-braces: the generate prompt requests width="100%", but we enforce it here too.
+  useEffect(() => {
+    if (!containerRef.current || !svg) return;
+    const svgEl = containerRef.current.querySelector('svg');
+    if (!svgEl) return;
+    svgEl.removeAttribute('width');
+    svgEl.removeAttribute('height');
+    svgEl.style.maxWidth = '100%';
+    svgEl.style.height = 'auto';
+    svgEl.style.display = 'block';
+  }, [svg]);
+
   if (loading) return (
     <div style={{ padding: '12px 0', color: 'var(--chat-muted)', fontSize: 12 }}>Generating diagram…</div>
   );
   if (error || !svg) return null;
   return (
-    <div
-      style={{ margin: '12px 0', padding: 16, background: 'var(--chat-surface)', borderRadius: 8, border: '1px solid var(--chat-border)', maxWidth: 560 }}
-      dangerouslySetInnerHTML={{ __html: svg }}
-    />
+    <div style={{ margin: '12px 0', padding: 16, background: 'var(--chat-surface)', borderRadius: 8, border: '1px solid var(--chat-border)', maxWidth: 560, overflow: 'hidden' }}>
+      <div ref={containerRef} style={{ width: '100%' }} dangerouslySetInnerHTML={{ __html: svg }} />
+    </div>
   );
 }
 
