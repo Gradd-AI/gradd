@@ -716,7 +716,10 @@ BM_SWOT, BM_ANSOFF, BM_BCG, BM_DECISION_TREE,
 BM_ORG_HIERARCHICAL, BM_ORG_FLAT,
 BM_PRODUCT_LIFECYCLE, BM_POSITION_MAP,
 BM_BREAKEVEN, BM_CASHFLOW,
-BM_FORCE_FIELD, BM_GANTT, BM_STOCK_CONTROL, BM_SCATTER_REGRESSION
+BM_FORCE_FIELD, BM_GANTT, BM_STOCK_CONTROL, BM_SCATTER_REGRESSION,
+BM_MOTIVATION_TAYLOR, BM_MOTIVATION_MASLOW, BM_MOTIVATION_HERZBERG
+
+For motivation theories, ALWAYS use the exact library code — [DIAGRAM: BM_MOTIVATION_TAYLOR] for Taylor/scientific management, [DIAGRAM: BM_MOTIVATION_MASLOW] for Maslow's hierarchy, [DIAGRAM: BM_MOTIVATION_HERZBERG] for Herzberg's two-factor theory. Never use DIAGRAM_DYNAMIC for these three.
 
 After evaluating a student's uploaded diagram, always emit the correct diagram signal on its own line at the end of your feedback so the reference version renders alongside your corrections.
 
