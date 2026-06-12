@@ -23,6 +23,7 @@ interface ChatInterfaceProps {
   tutorName: string;
   activeSubject?: string;
   examLabel?: string;
+  pickedLessonCode?: string;
 }
 
 export default function ChatInterface({
@@ -35,6 +36,7 @@ export default function ChatInterface({
   tutorName,
   activeSubject,
   examLabel,
+  pickedLessonCode,
 }: ChatInterfaceProps) {
   const isIB = subject.startsWith('IB_');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -94,7 +96,10 @@ export default function ChatInterface({
         const res = await fetch('/api/session/start', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(activeSubject ? { activeSubject } : {}),
+          body: JSON.stringify({
+            ...(activeSubject      && { activeSubject }),
+            ...(pickedLessonCode   && { lessonCode: pickedLessonCode }),
+          }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);

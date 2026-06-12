@@ -9,9 +9,14 @@ function getTutorName(subject: string): string {
 
 export const dynamic = 'force-dynamic';
 
-export default async function SessionPage() {
+export default async function SessionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ lesson?: string }>;
+}) {
   const supabase = await createServerClient();
   const cookieStore = await cookies();
+  const { lesson: pickedLessonCode } = await searchParams;
 
   const {
     data: { user },
@@ -42,6 +47,27 @@ export default async function SessionPage() {
     .eq('subject', activeSubject)
     .single();
 
+  // When a picker-chosen lesson differs from the sequential current lesson, fetch
+  // its name so the ChatInterface header reflects what's actually being studied.
+  let lessonNameToShow  = progress?.current_lesson_name  ?? 'First Lesson';
+  let unitNameToShow    = progress?.current_unit_name    ?? 'Unit 1';
+  let lessonCodeToShow  = progress?.current_lesson_code  ?? undefined;
+
+  if (pickedLessonCode) {
+    lessonCodeToShow = pickedLessonCode;
+    if (pickedLessonCode !== progress?.current_lesson_code) {
+      const { data: pickedRow } = await supabase
+        .from('lessons')
+        .select('lesson_name, unit_name')
+        .eq('lesson_code', pickedLessonCode)
+        .single();
+      if (pickedRow) {
+        lessonNameToShow = pickedRow.lesson_name;
+        unitNameToShow   = pickedRow.unit_name;
+      }
+    }
+  }
+
   // Build the header subtitle for bundle students: "IB Economics · HL"
   const activeExamLevel = isBundle
     ? (activeSubject === 'IB_ECONOMICS'
@@ -58,14 +84,15 @@ export default async function SessionPage() {
   return (
     <ChatInterface
       studentName={profile.student_name}
-      lessonName={progress?.current_lesson_name ?? 'First Lesson'}
-      unitName={progress?.current_unit_name ?? 'Unit 1'}
+      lessonName={lessonNameToShow}
+      unitName={unitNameToShow}
       sessionNumber={(progress?.session_number ?? 0) + 1}
-      lessonCode={progress?.current_lesson_code ?? undefined}
+      lessonCode={lessonCodeToShow}
       subject={activeSubject}
       tutorName={getTutorName(activeSubject)}
       activeSubject={isBundle ? activeSubject : undefined}
       examLabel={examLabel}
+      pickedLessonCode={pickedLessonCode}
     />
   );
 }

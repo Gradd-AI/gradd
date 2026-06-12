@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { resolveIsIBClient } from '@/lib/site-client';
+import CoursePicker, { type PickerLesson } from './CoursePicker';
 
 interface Unit { code: string; name: string; }
 interface RecentSession {
@@ -35,6 +36,9 @@ interface Props {
   totalSessions: number; weakAreasCount: number; unitsCompleted: string[];
   units: Unit[]; recentSessions: RecentSession[]; weakAreas: WeakArea[];
   lastSession: LastSession | null; spaced_rep_due: boolean; abq_drill_due: boolean;
+  pickerLessons?: PickerLesson[];
+  pickerCompletedCodes?: string[];
+  pickerWeakAreaCodes?: string[];
 }
 
 const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'];
@@ -1028,12 +1032,138 @@ export const CSS = `
   .ib-dash .stats-8 { grid-template-columns: repeat(2, 1fr); }
   .ib-dash .stat-card .val { font-size: 28px; }
 }
+
+/* ── Course picker ── */
+.ib-dash .picker-browse-btn {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 14px 20px; background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 14px; cursor: pointer; font-family: var(--sans);
+  font-size: 14px; font-weight: 500; color: var(--ink-2); text-align: left;
+  margin-bottom: 8px; transition: background 0.15s, color 0.15s;
+}
+.ib-dash .picker-browse-btn:hover { background: var(--paper-2); color: var(--ink); }
+.ib-dash .picker-browse-btn.open {
+  background: var(--paper-2); border-color: var(--rule-strong); color: var(--ink);
+  border-radius: 14px 14px 0 0; margin-bottom: 0; border-bottom: 0;
+}
+.ib-dash .picker-browse-chevron {
+  font-size: 10px; color: var(--ink-3); transition: transform 0.18s; flex-shrink: 0;
+}
+.ib-dash .picker-browse-btn.open .picker-browse-chevron { transform: rotate(90deg); }
+
+.ib-dash .picker-tree {
+  border: 1px solid var(--rule-strong); border-radius: 0 0 14px 14px;
+  background: var(--paper); overflow: hidden; margin-bottom: 16px;
+}
+.ib-dash .picker-browse-btn:not(.open) + .picker-tree { display: none; }
+
+.ib-dash .picker-unit-hd {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 18px; background: var(--forest);
+  cursor: pointer; border: none; border-top: 1px solid var(--forest-deep);
+  width: 100%; text-align: left; font-family: var(--sans); transition: background 0.12s;
+}
+.ib-dash .picker-unit:first-child .picker-unit-hd { border-top: none; }
+.ib-dash .picker-unit-hd:hover { background: var(--forest-2); }
+.ib-dash .picker-chevron {
+  color: color-mix(in oklab, var(--forest-ink) 55%, transparent);
+  font-size: 10px; flex-shrink: 0; transition: transform 0.18s;
+}
+.ib-dash .picker-chevron.open { transform: rotate(90deg); }
+.ib-dash .picker-chevron.small { color: var(--ink-3); font-size: 9px; }
+.ib-dash .picker-unit-name {
+  font-family: var(--serif); font-size: 14.5px; font-weight: 400;
+  color: var(--forest-ink); flex: 1; line-height: 1.25;
+}
+.ib-dash .picker-review-dot {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--rust); flex-shrink: 0;
+}
+.ib-dash .picker-unit-meta {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+}
+.ib-dash .picker-unit-bar {
+  width: 52px; height: 3px;
+  background: color-mix(in oklab, var(--forest-ink) 18%, transparent);
+  border-radius: 999px; overflow: hidden;
+}
+.ib-dash .picker-unit-bar-fill {
+  height: 100%; background: var(--gold); border-radius: inherit; transition: width 0.3s ease;
+}
+.ib-dash .picker-unit-count {
+  font-family: var(--mono); font-size: 10px;
+  color: color-mix(in oklab, var(--forest-ink) 60%, transparent); white-space: nowrap;
+}
+
+.ib-dash .picker-topic-hd {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 18px 9px 32px;
+  background: color-mix(in oklab, var(--paper-2) 60%, var(--paper));
+  border: none; border-top: 1px solid var(--rule);
+  width: 100%; text-align: left; font-family: var(--sans); cursor: pointer;
+  transition: background 0.12s;
+}
+.ib-dash .picker-topic-hd:hover { background: var(--paper-2); }
+.ib-dash .picker-topic-code {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.05em; color: var(--ink-3);
+  background: var(--paper-3); padding: 2px 6px; border-radius: 4px; flex-shrink: 0;
+}
+.ib-dash .picker-topic-sep {
+  color: var(--rule-strong); font-size: 12px; flex-shrink: 0; user-select: none;
+}
+.ib-dash .picker-topic-name {
+  flex: 1; font-size: 13px; color: var(--ink-2); line-height: 1.3; text-align: left;
+}
+.ib-dash .picker-topic-count {
+  font-family: var(--mono); font-size: 10px; color: var(--ink-3); flex-shrink: 0;
+}
+.ib-dash .picker-topic-review-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: color-mix(in oklab, var(--gold) 70%, var(--rust)); flex-shrink: 0;
+}
+
+.ib-dash .picker-lesson {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 18px 10px 48px;
+  border-top: 1px solid var(--rule); cursor: pointer; background: var(--paper);
+  transition: background 0.1s; outline: none;
+}
+.ib-dash .picker-lesson:hover { background: color-mix(in oklab, var(--paper-2) 70%, var(--paper)); }
+.ib-dash .picker-lesson:focus-visible { outline: 2px solid var(--forest); outline-offset: -2px; }
+.ib-dash .picker-lesson.current { background: color-mix(in oklab, var(--rust) 5%, var(--paper)); }
+.ib-dash .picker-lesson.current:hover { background: color-mix(in oklab, var(--rust) 10%, var(--paper)); }
+.ib-dash .picker-marker {
+  font-size: 12px; flex-shrink: 0; width: 14px; text-align: center; line-height: 1;
+}
+.ib-dash .picker-marker.done { color: var(--green-ok); }
+.ib-dash .picker-marker.here { color: var(--rust); }
+.ib-dash .picker-marker.todo { color: var(--rule-strong); }
+.ib-dash .picker-lesson-name {
+  flex: 1; font-size: 13px; color: var(--ink-2); line-height: 1.35;
+}
+.ib-dash .picker-lesson.current .picker-lesson-name { color: var(--ink); font-weight: 500; }
+.ib-dash .picker-weak-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--gold-2); flex-shrink: 0;
+}
+.ib-dash .picker-lesson-cta {
+  font-family: var(--mono); font-size: 10px; color: var(--ink-3);
+  letter-spacing: 0.03em; flex-shrink: 0; opacity: 0; transition: opacity 0.12s;
+}
+.ib-dash .picker-lesson:hover .picker-lesson-cta { opacity: 1; }
+.ib-dash .picker-lesson.current .picker-lesson-cta { color: var(--rust); opacity: 1; }
+
+@media (max-width: 760px) {
+  .ib-dash .picker-lesson { padding-left: 38px; }
+  .ib-dash .picker-topic-hd { padding-left: 24px; }
+  .ib-dash .picker-lesson-cta { opacity: 1; }
+}
 `;
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function IBDashboardClient(props: Props) {
-  const [mode, setMode] = useState<ViewMode>('parent');
+  const [mode, setMode]           = useState<ViewMode>('parent');
+  const [showPicker, setShowPicker] = useState(false);
 
   const subject = props.subject ?? 'LC_BUSINESS';
   const effectiveSubject = (subject === 'IB_BUNDLE')
@@ -1115,7 +1245,7 @@ export default function IBDashboardClient(props: Props) {
                 📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
               </div>
             )}
-            <div className="stats stats-4" style={{ marginTop: 8 }}>
+            <div className="stats stats-4" style={{ marginTop: 8, marginBottom: 20 }}>
               {([
                 { label: 'Progress', main: props.curriculumPercent, unit: '%' },
                 { label: 'Sessions', main: props.totalSessions,     unit: '' },
@@ -1130,6 +1260,28 @@ export default function IBDashboardClient(props: Props) {
                 </div>
               ))}
             </div>
+
+            {/* Course picker */}
+            {(props.pickerLessons?.length ?? 0) > 0 && (
+              <>
+                <button
+                  className={`picker-browse-btn${showPicker ? ' open' : ''}`}
+                  onClick={() => setShowPicker(v => !v)}
+                >
+                  Browse the course
+                  <span className="picker-browse-chevron">▶</span>
+                </button>
+                {showPicker && (
+                  <CoursePicker
+                    lessons={props.pickerLessons ?? []}
+                    completedCodes={props.pickerCompletedCodes ?? []}
+                    weakAreaCodes={props.pickerWeakAreaCodes ?? []}
+                    currentLessonCode={props.currentLessonCode}
+                    examLevel={props.examLevel}
+                  />
+                )}
+              </>
+            )}
           </>
         )}
 

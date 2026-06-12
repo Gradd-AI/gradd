@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
 import IBDashboardClient from '@/components/dashboard/IBDashboardClient';
+import { type PickerLesson } from '@/components/dashboard/CoursePicker';
 import { LESSON_COUNTS } from '@/lib/lesson-counts';
 
 export const dynamic = 'force-dynamic';
@@ -173,6 +174,34 @@ export default async function DashboardPage() {
     lastSessionLessonName = lessonRow?.lesson_name ?? null;
   }
 
+  // ── Course picker data (IB only) ──────────────────────────────────────────
+  // All lessons for the active subject + per-student completion state.
+  // Run only for IB students; LC uses DashboardClient which has no picker.
+  let pickerLessons: PickerLesson[] = [];
+  let pickerCompletedCodes: string[] = [];
+  let pickerWeakAreaCodes: string[] = weakAreas.map(w => w.lesson_code);
+
+  if (isIBStudent) {
+    let pickerLessonsQuery = supabase
+      .from('lessons')
+      .select('lesson_code, lesson_name, unit_code, unit_name, topic_code, level')
+      .eq('subject', activeSubject)
+      .order('lesson_code');
+
+    let pickerCompletedQuery = supabase
+      .from('lesson_completions')
+      .select('lesson_code')
+      .eq('student_id', user.id);
+    if (lessonPrefix) pickerCompletedQuery = pickerCompletedQuery.like('lesson_code', `${lessonPrefix}%`);
+
+    const [pickerLessonsRes, pickerCompletedRes] = await Promise.all([
+      pickerLessonsQuery,
+      pickerCompletedQuery,
+    ]);
+    pickerLessons       = (pickerLessonsRes.data ?? []) as PickerLesson[];
+    pickerCompletedCodes = (pickerCompletedRes.data ?? []).map(r => r.lesson_code);
+  }
+
   const ClientComponent = isIBStudent ? IBDashboardClient : DashboardClient;
 
   return (
@@ -214,6 +243,9 @@ export default async function DashboardPage() {
       } : null}
       spaced_rep_due={progress?.spaced_rep_due ?? false}
       abq_drill_due={progress?.abq_drill_due ?? false}
+      pickerLessons={pickerLessons}
+      pickerCompletedCodes={pickerCompletedCodes}
+      pickerWeakAreaCodes={pickerWeakAreaCodes}
     />
   );
 }
