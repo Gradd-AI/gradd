@@ -535,6 +535,19 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
             teach_throughs_before_burn: profile.free_units_used ?? 0,
             subject: effectiveSubject,
           });
+          serviceSupabase.from('session_events').insert({
+            session_id: sessionId,
+            student_id: user.id,
+            subject: effectiveSubject,
+            lesson_code: session.lesson_code,
+            event_type: 'burn_wall',
+            concept: null,
+            event_data: {
+              teach_throughs_before_burn: profile.free_units_used ?? 0,
+              bucket: profile.cap_bucket ?? null,
+            },
+            turn_index: updatedHistory.length,
+          }).then(undefined, (e) => console.error('[session_events] burn_wall insert failed (non-fatal):', e));
         }
 
         const hasSignals =
@@ -588,6 +601,21 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
                   session_number: session.session_number,
                 });
               }
+              serviceSupabase.from('session_events').insert({
+                session_id: sessionId,
+                student_id: user.id,
+                subject: effectiveSubject,
+                lesson_code: session.lesson_code,
+                event_type: 'weak_area_flag',
+                concept: flag.conceptSlug,
+                event_data: {
+                  topic: flag.conceptSlug,
+                  lesson_code: flag.lessonCode,
+                  error_description: flag.errorDescription,
+                  action: flag.recommendedAction,
+                },
+                turn_index: updatedHistory.length,
+              }).then(undefined, (e) => console.error('[session_events] weak_area_flag insert failed (non-fatal):', e));
             }
 
             // ── TEACH_BACK (Layer 2: emission only, cap wired separately) ──
@@ -597,6 +625,19 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
                 lesson: signals.teachBack.lessonCode,
                 concept: signals.teachBack.concept,
               });
+              serviceSupabase.from('session_events').insert({
+                session_id: sessionId,
+                student_id: user.id,
+                subject: effectiveSubject,
+                lesson_code: session.lesson_code,
+                event_type: 'teach_back',
+                concept: signals.teachBack.concept,
+                event_data: {
+                  lesson_code: signals.teachBack.lessonCode,
+                  concept: signals.teachBack.concept,
+                },
+                turn_index: updatedHistory.length,
+              }).then(undefined, (e) => console.error('[session_events] teach_back insert failed (non-fatal):', e));
             }
 
             // ── LESSON_COMPLETE ───────────────────────────────────────────
@@ -651,11 +692,40 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
                   weak_flags_count: signals.weakAreaFlags?.length ?? 0,
                 })
                 .eq('id', sessionId);
+              serviceSupabase.from('session_events').insert({
+                session_id: sessionId,
+                student_id: user.id,
+                subject: effectiveSubject,
+                lesson_code: session.lesson_code,
+                event_type: 'lesson_complete',
+                concept: null,
+                event_data: {
+                  lesson_code: lc.lessonCode,
+                  weak_concepts: lc.weakConcepts,
+                  apply_scores: lc.applyScores,
+                  next_lesson: lc.nextLesson,
+                },
+                turn_index: updatedHistory.length,
+              }).then(undefined, (e) => console.error('[session_events] lesson_complete insert failed (non-fatal):', e));
             }
 
             // ── LESSON_INCOMPLETE ─────────────────────────────────────────
             if (signals.lessonIncomplete) {
               progressUpdates.resume_from_concept = signals.lessonIncomplete.resumeFrom;
+              serviceSupabase.from('session_events').insert({
+                session_id: sessionId,
+                student_id: user.id,
+                subject: effectiveSubject,
+                lesson_code: session.lesson_code,
+                event_type: 'lesson_incomplete',
+                concept: null,
+                event_data: {
+                  lesson_code: signals.lessonIncomplete.lessonCode,
+                  last_concept_completed: signals.lessonIncomplete.lastConceptCompleted,
+                  resume_from: signals.lessonIncomplete.resumeFrom,
+                },
+                turn_index: updatedHistory.length,
+              }).then(undefined, (e) => console.error('[session_events] lesson_incomplete insert failed (non-fatal):', e));
             }
 
             // ── UNIT_COMPLETE ─────────────────────────────────────────────
@@ -672,6 +742,21 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
                 weak_topics_flagged: uc.weakTopicsFlagged,
                 revision_sessions_inserted: uc.revisionSessionsInserted,
               });
+              serviceSupabase.from('session_events').insert({
+                session_id: sessionId,
+                student_id: user.id,
+                subject: effectiveSubject,
+                lesson_code: session.lesson_code,
+                event_type: 'unit_complete',
+                concept: null,
+                event_data: {
+                  unit_code: uc.unitCode,
+                  checkpoint_score: uc.checkpointScore,
+                  weak_topics_flagged: uc.weakTopicsFlagged,
+                  revision_sessions_inserted: uc.revisionSessionsInserted,
+                },
+                turn_index: updatedHistory.length,
+              }).then(undefined, (e) => console.error('[session_events] unit_complete insert failed (non-fatal):', e));
 
               const completedUnits = (progress.units_completed as string[]) ?? [];
               if (!completedUnits.includes(uc.unitCode)) {
@@ -771,6 +856,26 @@ ${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
                   next_action: s.nextAction,
                 })
                 .eq('id', sessionId);
+              serviceSupabase.from('session_events').insert({
+                session_id: sessionId,
+                student_id: user.id,
+                subject: effectiveSubject,
+                lesson_code: session.lesson_code,
+                event_type: 'session_summary',
+                concept: null,
+                event_data: {
+                  session: s.session,
+                  type: s.type,
+                  lesson: s.lesson,
+                  concepts_covered: s.conceptsCovered,
+                  lesson_complete: s.lessonComplete,
+                  weak_flags_count: s.weakFlagsCount,
+                  apply_scores: s.applyScores,
+                  session_flag: s.sessionFlag,
+                  next_action: s.nextAction,
+                },
+                turn_index: updatedHistory.length,
+              }).then(undefined, (e) => console.error('[session_events] session_summary insert failed (non-fatal):', e));
             }
 
             // ── Write all progress updates in one shot ────────────────────
