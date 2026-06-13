@@ -1278,7 +1278,7 @@ export const CSS = `
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function IBDashboardClient(props: Props) {
-  const [mode, setMode]           = useState<ViewMode>('parent');
+  const [mode, setMode]           = useState<ViewMode>('student');
   const [showPicker, setShowPicker] = useState(false);
 
   const subject = props.subject ?? 'LC_BUSINESS';
