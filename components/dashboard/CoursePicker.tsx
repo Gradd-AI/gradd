@@ -129,6 +129,8 @@ export default function CoursePicker({
   const weakSet     = useMemo(() => new Set(weakAreaCodes),  [weakAreaCodes]);
   const isSL        = examLevel === 'SL';
 
+  const [query, setQuery] = useState('');
+
   const visibleLessons = useMemo(
     () => (isSL ? lessons.filter(l => l.level !== 'HL_ONLY') : lessons),
     [lessons, isSL]
@@ -141,6 +143,20 @@ export default function CoursePicker({
     if (first.startsWith('IB_BM_'))   return IB_BM_TOPICS;
     return {};
   }, [lessons]);
+
+  // Search: filter visibleLessons against lesson_name, unit_name, and topic name.
+  const searchResults = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return null;
+    return visibleLessons.filter(l => {
+      const topicName = l.topic_code ? (topicNames[l.topic_code] ?? '') : '';
+      return (
+        l.lesson_name.toLowerCase().includes(q) ||
+        l.unit_name.toLowerCase().includes(q) ||
+        topicName.toLowerCase().includes(q)
+      );
+    });
+  }, [query, visibleLessons, topicNames]);
 
   // Group: unit_code → topic_key → PickerLesson[]
   // Map preserves insertion order → units/topics stay in lesson_code order.
@@ -187,88 +203,142 @@ export default function CoursePicker({
 
   return (
     <div className="picker-tree">
-      {Array.from(tree.entries()).map(([unitCode, { unit_name, topics }]) => {
-        const allInUnit     = Array.from(topics.values()).flat();
-        const doneInUnit    = allInUnit.filter(l => completedSet.has(l.lesson_code)).length;
-        const hasReview     = allInUnit.some(l => weakSet.has(l.lesson_code));
-        const pct           = allInUnit.length ? Math.round((doneInUnit / allInUnit.length) * 100) : 0;
-        const isUnitOpen    = expandedUnits.has(unitCode);
 
-        return (
-          <div key={unitCode} className="picker-unit">
-            <button
-              className="picker-unit-hd"
-              onClick={() => toggleUnit(unitCode)}
-              aria-expanded={isUnitOpen}
-            >
-              <span className={`picker-chevron${isUnitOpen ? ' open' : ''}`}>▶</span>
-              <span className="picker-unit-name">{unit_name}</span>
-              {hasReview && <span className="picker-review-dot" title="Active weak areas in this unit" />}
-              <span className="picker-unit-meta">
-                <span className="picker-unit-bar">
-                  <span className="picker-unit-bar-fill" style={{ width: `${pct}%` }} />
+      {/* ── Search input ── */}
+      <div className="picker-search">
+        <input
+          className="picker-search-input"
+          type="search"
+          placeholder="Search topics — e.g. elasticity, mergers, inflation"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          autoComplete="off"
+          spellCheck={false}
+          aria-label="Search lessons"
+        />
+      </div>
+
+      {/* ── Results or tree ── */}
+      {searchResults !== null ? (
+
+        searchResults.length === 0 ? (
+          <div className="picker-empty">No topics match — try another term</div>
+        ) : (
+          searchResults.map(lesson => {
+            const isDone    = completedSet.has(lesson.lesson_code);
+            const isCurrent = lesson.lesson_code === currentLessonCode;
+            const hasWeak   = weakSet.has(lesson.lesson_code);
+            const topicName = lesson.topic_code ? (topicNames[lesson.topic_code] ?? null) : null;
+            const ctx       = [lesson.unit_name, topicName].filter(Boolean).join(' · ');
+            return (
+              <div
+                key={lesson.lesson_code}
+                className={`picker-lesson picker-result${isCurrent ? ' current' : ''}`}
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push(`/session?lesson=${encodeURIComponent(lesson.lesson_code)}`)}
+                onKeyDown={e => e.key === 'Enter' && router.push(`/session?lesson=${encodeURIComponent(lesson.lesson_code)}`)}
+              >
+                <span className={`picker-marker${isDone ? ' done' : isCurrent ? ' here' : ' todo'}`}>
+                  {isDone ? '✓' : isCurrent ? '◉' : '○'}
                 </span>
-                <span className="picker-unit-count">{doneInUnit}/{allInUnit.length}</span>
-              </span>
-            </button>
-
-            {isUnitOpen && Array.from(topics.entries()).map(([topicKey, topicLessons]) => {
-              const tKey        = `${unitCode}:${topicKey}`;
-              const isTopicOpen = expandedTopics.has(tKey);
-              const topicDone   = topicLessons.filter(l => completedSet.has(l.lesson_code)).length;
-              const topicReview = topicLessons.some(l => weakSet.has(l.lesson_code));
-              const showTopicHd = topicKey !== '_';
-
-              return (
-                <div key={tKey} className="picker-topic">
-                  {showTopicHd ? (
-                    <button
-                      className="picker-topic-hd"
-                      onClick={() => toggleTopic(tKey)}
-                      aria-expanded={isTopicOpen}
-                    >
-                      <span className="picker-topic-code">{topicKey}</span>
-                      {topicNames[topicKey] && (
-                        <>
-                          <span className="picker-topic-sep">·</span>
-                          <span className="picker-topic-name">{topicNames[topicKey]}</span>
-                        </>
-                      )}
-                      <span className="picker-topic-count">{topicDone}/{topicLessons.length}</span>
-                      {topicReview && <span className="picker-topic-review-dot" title="Active weak areas in this topic" />}
-                      <span className={`picker-chevron small${isTopicOpen ? ' open' : ''}`}>▶</span>
-                    </button>
-                  ) : null}
-
-                  {(!showTopicHd || isTopicOpen) && topicLessons.map(lesson => {
-                    const isDone    = completedSet.has(lesson.lesson_code);
-                    const isCurrent = lesson.lesson_code === currentLessonCode;
-                    const hasWeak   = weakSet.has(lesson.lesson_code);
-
-                    return (
-                      <div
-                        key={lesson.lesson_code}
-                        className={`picker-lesson${isCurrent ? ' current' : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => router.push(`/session?lesson=${encodeURIComponent(lesson.lesson_code)}`)}
-                        onKeyDown={e => e.key === 'Enter' && router.push(`/session?lesson=${encodeURIComponent(lesson.lesson_code)}`)}
-                      >
-                        <span className={`picker-marker${isDone ? ' done' : isCurrent ? ' here' : ' todo'}`}>
-                          {isDone ? '✓' : isCurrent ? '◉' : '○'}
-                        </span>
-                        <span className="picker-lesson-name">{lesson.lesson_name}</span>
-                        {hasWeak && <span className="picker-weak-dot" title="Active weak area" />}
-                        <span className="picker-lesson-cta">{isCurrent ? 'resume →' : 'study →'}</span>
-                      </div>
-                    );
-                  })}
+                <div className="picker-result-body">
+                  <div className="picker-lesson-name">{lesson.lesson_name}</div>
+                  {ctx && <div className="picker-result-ctx">{ctx}</div>}
                 </div>
-              );
-            })}
-          </div>
-        );
-      })}
+                {hasWeak && <span className="picker-weak-dot" title="Active weak area" />}
+                <span className="picker-lesson-cta">{isCurrent ? 'resume →' : 'study →'}</span>
+              </div>
+            );
+          })
+        )
+
+      ) : (
+
+        Array.from(tree.entries()).map(([unitCode, { unit_name, topics }]) => {
+          const allInUnit     = Array.from(topics.values()).flat();
+          const doneInUnit    = allInUnit.filter(l => completedSet.has(l.lesson_code)).length;
+          const hasReview     = allInUnit.some(l => weakSet.has(l.lesson_code));
+          const pct           = allInUnit.length ? Math.round((doneInUnit / allInUnit.length) * 100) : 0;
+          const isUnitOpen    = expandedUnits.has(unitCode);
+
+          return (
+            <div key={unitCode} className="picker-unit">
+              <button
+                className="picker-unit-hd"
+                onClick={() => toggleUnit(unitCode)}
+                aria-expanded={isUnitOpen}
+              >
+                <span className={`picker-chevron${isUnitOpen ? ' open' : ''}`}>▶</span>
+                <span className="picker-unit-name">{unit_name}</span>
+                {hasReview && <span className="picker-review-dot" title="Active weak areas in this unit" />}
+                <span className="picker-unit-meta">
+                  <span className="picker-unit-bar">
+                    <span className="picker-unit-bar-fill" style={{ width: `${pct}%` }} />
+                  </span>
+                  <span className="picker-unit-count">{doneInUnit}/{allInUnit.length}</span>
+                </span>
+              </button>
+
+              {isUnitOpen && Array.from(topics.entries()).map(([topicKey, topicLessons]) => {
+                const tKey        = `${unitCode}:${topicKey}`;
+                const isTopicOpen = expandedTopics.has(tKey);
+                const topicDone   = topicLessons.filter(l => completedSet.has(l.lesson_code)).length;
+                const topicReview = topicLessons.some(l => weakSet.has(l.lesson_code));
+                const showTopicHd = topicKey !== '_';
+
+                return (
+                  <div key={tKey} className="picker-topic">
+                    {showTopicHd ? (
+                      <button
+                        className="picker-topic-hd"
+                        onClick={() => toggleTopic(tKey)}
+                        aria-expanded={isTopicOpen}
+                      >
+                        <span className="picker-topic-code">{topicKey}</span>
+                        {topicNames[topicKey] && (
+                          <>
+                            <span className="picker-topic-sep">·</span>
+                            <span className="picker-topic-name">{topicNames[topicKey]}</span>
+                          </>
+                        )}
+                        <span className="picker-topic-count">{topicDone}/{topicLessons.length}</span>
+                        {topicReview && <span className="picker-topic-review-dot" title="Active weak areas in this topic" />}
+                        <span className={`picker-chevron small${isTopicOpen ? ' open' : ''}`}>▶</span>
+                      </button>
+                    ) : null}
+
+                    {(!showTopicHd || isTopicOpen) && topicLessons.map(lesson => {
+                      const isDone    = completedSet.has(lesson.lesson_code);
+                      const isCurrent = lesson.lesson_code === currentLessonCode;
+                      const hasWeak   = weakSet.has(lesson.lesson_code);
+
+                      return (
+                        <div
+                          key={lesson.lesson_code}
+                          className={`picker-lesson${isCurrent ? ' current' : ''}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => router.push(`/session?lesson=${encodeURIComponent(lesson.lesson_code)}`)}
+                          onKeyDown={e => e.key === 'Enter' && router.push(`/session?lesson=${encodeURIComponent(lesson.lesson_code)}`)}
+                        >
+                          <span className={`picker-marker${isDone ? ' done' : isCurrent ? ' here' : ' todo'}`}>
+                            {isDone ? '✓' : isCurrent ? '◉' : '○'}
+                          </span>
+                          <span className="picker-lesson-name">{lesson.lesson_name}</span>
+                          {hasWeak && <span className="picker-weak-dot" title="Active weak area" />}
+                          <span className="picker-lesson-cta">{isCurrent ? 'resume →' : 'study →'}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })
+
+      )}
     </div>
   );
 }

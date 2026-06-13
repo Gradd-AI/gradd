@@ -1166,6 +1166,54 @@ export const CSS = `
   .ib-dash .picker-lesson-cta { opacity: 1; }
 }
 
+/* ── Picker search ── */
+.ib-dash .picker-search {
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--rule);
+  background: var(--paper);
+}
+.ib-dash .picker-search-input {
+  width: 100%;
+  padding: 9px 14px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+  background: var(--paper-2);
+  font-family: var(--sans);
+  font-size: 13.5px;
+  color: var(--ink);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ib-dash .picker-search-input:focus {
+  border-color: color-mix(in oklab, var(--forest) 38%, var(--rule));
+  background: var(--paper);
+}
+.ib-dash .picker-search-input::placeholder { color: var(--ink-3); }
+.ib-dash .picker-search-input::-webkit-search-cancel-button { cursor: pointer; }
+
+/* Search result rows — flat list, reuses .picker-lesson + adds context line */
+.ib-dash .picker-result {
+  align-items: flex-start;
+  padding-left: 18px;
+}
+.ib-dash .picker-result .picker-marker { margin-top: 1px; flex-shrink: 0; }
+.ib-dash .picker-result-body { flex: 1; min-width: 0; }
+.ib-dash .picker-result-ctx {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.04em;
+  color: var(--ink-3); margin-top: 2px;
+}
+
+/* Empty search state */
+.ib-dash .picker-empty {
+  padding: 22px 18px;
+  font-size: 13px;
+  color: var(--ink-3);
+  text-align: center;
+  border-top: 1px solid var(--rule);
+}
+
 /* ── Student view: compact page heading ── */
 .ib-dash .page-head.page-head-compact h1 {
   font-size: clamp(24px, 3vw, 32px);
