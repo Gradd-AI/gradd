@@ -373,7 +373,7 @@ function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessio
   const isIB = subject && IB_SUBJECTS.includes(subject);
   const examLabel = isIB ? `${getSubjectLabel(subject)} · May 2027` : 'LC Business · 08/06/2026';
   const stats: { label: string; main: number | string; unit: string; sub: string; warn?: boolean; isStreak?: boolean }[] = [
-    { label: 'Curriculum progress', main: curriculumPercent, unit: '%', sub: `${totalCompleted} of ${totalLessons} lessons` },
+    { label: 'Lessons completed',   main: totalCompleted,    unit: '',  sub: `of ${totalLessons} lessons` },
     { label: 'Sessions completed',  main: totalSessions,     unit: '',  sub: `≈ ${timeHrs} hrs invested` },
     { label: 'This week',           main: thisWeek,          unit: '',  sub: `target: ${neededPerWeek}/wk` },
     { label: 'Sessions/wk needed',  main: neededPerWeek,     unit: '',  sub: `${Math.round(weeksToExam(subject))} weeks to exam`, warn: neededPerWeek > 10 },
@@ -432,46 +432,54 @@ function CurriculumProgress({ units, currentUnitCode, unitsCompleted, curriculum
 
 // ─── Weak areas — Stage 2b ───────────────────────────────────────────────────
 
-function WeakAreasSection({ weakAreas }: { weakAreas: WeakArea[] }) {
+function WeakAreasSection({ weakAreas, nameMap }: { weakAreas: WeakArea[]; nameMap?: Record<string, string> }) {
   if (!weakAreas.length) return null;
   return (
     <div className="weak-card">
       <h3>Weak areas to watch</h3>
-      {weakAreas.map(w => (
-        <div key={w.id} className="weak-row">
-          <div className="weak-icn">!</div>
-          <div>
-            <div className="weak-desc">{w.error_description}</div>
-            <div className="weak-meta">
-              Lesson {w.lesson_code}{w.occurrence_count > 1 ? ` · flagged ${w.occurrence_count}×` : ''}
+      {weakAreas.map(w => {
+        const lessonName = (w.lesson_code && nameMap?.[w.lesson_code]) || null;
+        return (
+          <div key={w.id} className="weak-row">
+            <div className="weak-icn">!</div>
+            <div>
+              <div className="weak-desc">{w.error_description}</div>
+              <div className="weak-meta">
+                {lessonName ?? w.lesson_code}
+                {w.occurrence_count > 1 ? ` · flagged ${w.occurrence_count}×` : ''}
+              </div>
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
 // ─── Recent sessions — Stage 2b ──────────────────────────────────────────────
 
-function RecentSessions({ sessions }: { sessions: RecentSession[] }) {
+function RecentSessions({ sessions, nameMap }: { sessions: RecentSession[]; nameMap?: Record<string, string> }) {
   if (!sessions.length) return null;
+  const shown = sessions.slice(0, 5);
   return (
     <div className="sess-list">
       <h3>Recent sessions</h3>
-      {sessions.map(s => (
-        <div key={s.id} className="sess-row">
-          <span className="num">#{s.session_number}</span>
-          <div>
-            <span className="topic">{s.lesson_code ?? '—'}</span>
-            <span className="tag">{sessionLabel(s.session_type)}</span>
+      {shown.map(s => {
+        const name = (s.lesson_code && nameMap?.[s.lesson_code]) || s.lesson_code || '—';
+        return (
+          <div key={s.id} className="sess-row">
+            <span className="num">#{s.session_number}</span>
+            <div>
+              <span className="topic">{name}</span>
+              <span className="tag">{sessionLabel(s.session_type)}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {s.weak_flags_count > 0 && <span className="warn-flag">⚠ {s.weak_flags_count}</span>}
+              <span className="date">{formatDateShort(s.started_at)}</span>
+            </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            {s.weak_flags_count > 0 && <span className="warn-flag">⚠ {s.weak_flags_count}</span>}
-            <span className="date">{formatDateShort(s.started_at)}</span>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1157,6 +1165,66 @@ export const CSS = `
   .ib-dash .picker-topic-hd { padding-left: 24px; }
   .ib-dash .picker-lesson-cta { opacity: 1; }
 }
+
+/* ── Student view: compact page heading ── */
+.ib-dash .page-head.page-head-compact h1 {
+  font-size: clamp(24px, 3vw, 32px);
+}
+.ib-dash .page-head.page-head-compact .sub { margin-top: 6px; }
+
+/* ── Browse section (first-class secondary action) ── */
+.ib-dash .browse-section { margin-bottom: 28px; }
+.ib-dash .browse-hd {
+  width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 18px 22px;
+  background: color-mix(in oklab, var(--gold) 6%, var(--paper));
+  border: 1px solid color-mix(in oklab, var(--gold) 24%, var(--rule));
+  border-radius: 14px;
+  cursor: pointer; font-family: var(--sans); text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ib-dash .browse-hd:hover { background: color-mix(in oklab, var(--gold) 11%, var(--paper)); }
+.ib-dash .browse-hd.open {
+  border-radius: 14px 14px 0 0; border-bottom: 0;
+  background: color-mix(in oklab, var(--gold) 11%, var(--paper));
+}
+.ib-dash .browse-title {
+  font-family: var(--serif); font-size: 18px; font-weight: 400;
+  letter-spacing: -0.012em; color: var(--ink); line-height: 1.2;
+}
+.ib-dash .browse-sub { margin-top: 3px; font-size: 12px; color: var(--ink-3); }
+.ib-dash .browse-chevron {
+  font-size: 10px; color: var(--ink-3); transition: transform 0.18s; flex-shrink: 0;
+}
+.ib-dash .browse-hd.open .browse-chevron { transform: rotate(90deg); }
+.ib-dash .browse-section .picker-tree { margin-bottom: 0; border-top: 0; }
+
+/* ── Context divider ── */
+.ib-dash .context-divider {
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+  display: flex; align-items: center; gap: 12px; margin: 8px 0 16px;
+}
+.ib-dash .context-divider::before, .ib-dash .context-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--rule);
+}
+
+/* ── Last session: compact in student view ── */
+.ib-dash .ls-compact .last-session { margin-bottom: 16px; }
+.ib-dash .ls-compact .last-session-hd { padding: 10px 18px; }
+.ib-dash .ls-compact .last-session-body { padding: 16px 20px; }
+.ib-dash .ls-compact .last-session-body h3 { font-size: 18px; }
+
+/* ── Mini stat cards (student view context row) ── */
+.ib-dash .stats-mini .stat-card { padding: 14px 16px; }
+.ib-dash .stats-mini .stat-card .val { font-size: 28px; }
+.ib-dash .stats-mini .stat-card .lbl { margin-bottom: 6px; }
+
+@media (max-width: 760px) {
+  .ib-dash .browse-hd { padding: 14px 18px; }
+  .ib-dash .browse-title { font-size: 16px; }
+  .ib-dash .page-head.page-head-compact h1 { font-size: clamp(22px, 6vw, 28px); }
+}
 `;
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -1171,6 +1239,10 @@ export default function IBDashboardClient(props: Props) {
     : subject;
   const tutorName = getTutorName(effectiveSubject);
   const subjectLabel = getSubjectLabel(effectiveSubject);
+
+  const lessonNameMap: Record<string, string> = Object.fromEntries(
+    (props.pickerLessons ?? []).map(l => [l.lesson_code, l.lesson_name])
+  );
 
   const streak = calcStreak(props.recentSessions);
   const thisWeek = sessionsThisWeek(props.recentSessions);
@@ -1192,7 +1264,7 @@ export default function IBDashboardClient(props: Props) {
       <main className="app-wrap">
 
         {/* Page heading */}
-        <div className="page-head" style={{ marginBottom: props.isBundle ? 12 : 40 }}>
+        <div className={`page-head${mode === 'student' ? ' page-head-compact' : ''}`} style={{ marginBottom: props.isBundle ? 12 : (mode === 'student' ? 20 : 40) }}>
           <div>
             <h1>
               {mode === 'student'
@@ -1225,51 +1297,29 @@ export default function IBDashboardClient(props: Props) {
               subject={effectiveSubject} tutorName={tutorName}
             />
             <CurriculumProgress units={props.units} currentUnitCode={props.currentUnitCode} unitsCompleted={props.unitsCompleted} curriculumPercent={props.curriculumPercent} totalCompleted={props.totalCompleted} totalLessons={props.totalLessons} />
-            <WeakAreasSection weakAreas={props.weakAreas} />
-            <RecentSessions sessions={props.recentSessions} />
+            <WeakAreasSection weakAreas={props.weakAreas} nameMap={lessonNameMap} />
+            <RecentSessions sessions={props.recentSessions} nameMap={lessonNameMap} />
           </>
         )}
 
         {/* STUDENT VIEW */}
         {mode === 'student' && (
           <>
+            {/* 1. Continue — dominant primary action */}
             <StudentHeroCard currentLessonName={props.currentLessonName} currentUnitName={props.currentUnitName} sessionType={props.sessionType} spaced_rep_due={props.spaced_rep_due} abq_drill_due={props.abq_drill_due} />
-            {props.lastSession ? <LastSessionCard s={props.lastSession} /> : emptyState}
-            {props.spaced_rep_due && (
-              <div className="ib-inline-banner recall">
-                🔁 {tutorName} will start today with a quick recall block — locking in recent material before moving forward.
-              </div>
-            )}
-            {props.abq_drill_due && (
-              <div className="ib-inline-banner abq">
-                📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
-              </div>
-            )}
-            <div className="stats stats-4" style={{ marginTop: 8, marginBottom: 20 }}>
-              {([
-                { label: 'Progress', main: props.curriculumPercent, unit: '%' },
-                { label: 'Sessions', main: props.totalSessions,     unit: '' },
-                { label: 'Streak',   main: streak,                  unit: 'd', isStreak: true },
-                { label: 'To exam',  main: examDays,                unit: 'd' },
-              ] as { label: string; main: number; unit: string; isStreak?: boolean }[]).map(({ label, main, unit, isStreak }) => (
-                <div key={label} className="stat-card">
-                  <div className="lbl">{label}</div>
-                  <div className={`val${isStreak ? ' streak' : ''}`}>
-                    {main}{unit && <span className="small">{unit}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
 
-            {/* Course picker */}
+            {/* 2. Browse — first-class secondary section, directly below Continue */}
             {(props.pickerLessons?.length ?? 0) > 0 && (
-              <>
+              <div className="browse-section">
                 <button
-                  className={`picker-browse-btn${showPicker ? ' open' : ''}`}
+                  className={`browse-hd${showPicker ? ' open' : ''}`}
                   onClick={() => setShowPicker(v => !v)}
                 >
-                  Browse the course
-                  <span className="picker-browse-chevron">▶</span>
+                  <div>
+                    <div className="browse-title">Jump to any topic</div>
+                    <div className="browse-sub">{props.totalLessons} lessons — pick any topic to study</div>
+                  </div>
+                  <span className="browse-chevron">▶</span>
                 </button>
                 {showPicker && (
                   <CoursePicker
@@ -1280,8 +1330,44 @@ export default function IBDashboardClient(props: Props) {
                     examLevel={props.examLevel}
                   />
                 )}
-              </>
+              </div>
             )}
+
+            {/* 3. Supporting context — demoted below the two study actions */}
+            <div className="context-divider">Recent activity</div>
+
+            {props.lastSession ? (
+              <div className="ls-compact"><LastSessionCard s={props.lastSession} /></div>
+            ) : emptyState}
+
+            {props.spaced_rep_due && (
+              <div className="ib-inline-banner recall">
+                🔁 {tutorName} will start today with a quick recall block — locking in recent material before moving forward.
+              </div>
+            )}
+            {props.abq_drill_due && (
+              <div className="ib-inline-banner abq">
+                📄 ABQ drill due today — one of the highest-value things you can do for your exam grade.
+              </div>
+            )}
+
+            {/* 4. Stats — context row, not headline. Lessons count replaces demoralising 0% */}
+            <div className="stats stats-4 stats-mini" style={{ marginTop: 8 }}>
+              {([
+                { label: 'Lessons',  main: props.totalCompleted, unit: '',  sub: `of ${props.totalLessons}` },
+                { label: 'Sessions', main: props.totalSessions,  unit: '',  sub: '' },
+                { label: 'Streak',   main: streak,               unit: 'd', sub: '', isStreak: true },
+                { label: 'To exam',  main: examDays,             unit: 'd', sub: '' },
+              ] as { label: string; main: number; unit: string; sub: string; isStreak?: boolean }[]).map(({ label, main, unit, sub, isStreak }) => (
+                <div key={label} className="stat-card">
+                  <div className="lbl">{label}</div>
+                  <div className={`val${isStreak ? ' streak' : ''}`}>
+                    {main}{unit && <span className="small">{unit}</span>}
+                  </div>
+                  {sub && <div className="hint">{sub}</div>}
+                </div>
+              ))}
+            </div>
           </>
         )}
 
