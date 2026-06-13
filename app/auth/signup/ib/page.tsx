@@ -2,10 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-type IBSubject = 'IB_ECONOMICS' | 'IB_BUSINESS' | 'IB_BUNDLE';
+type IBSubject = 'IB_BUNDLE';
 type IBLevel = 'SL' | 'HL';
 
 // ── Card helpers ──────────────────────────────────────────────────────────────
@@ -114,83 +113,33 @@ function LevelPicker({
   );
 }
 
-// ── Subjects ──────────────────────────────────────────────────────────────────
-
-const SUBJECTS: { id: IBSubject; title: string; desc: string }[] = [
-  {
-    id: 'IB_ECONOMICS',
-    title: 'IB Economics',
-    desc: 'Microeconomics, macroeconomics, international economics, and development economics.',
-  },
-  {
-    id: 'IB_BUSINESS',
-    title: 'IB Business Management',
-    desc: 'Business organisation, HR, finance, marketing, and operations management.',
-  },
-  {
-    id: 'IB_BUNDLE',
-    title: 'IB Bundle',
-    desc: 'Both subjects — Economics and Business Management from one account.',
-  },
-];
-
-// ── Step 1 — Subject + level ──────────────────────────────────────────────────
+// ── Step 1 — Level selection ──────────────────────────────────────────────────
 
 function StepChoose({
-  subject, onSubject,
   econLevel, onEconLevel,
   bmLevel, onBmLevel,
   onNext,
 }: {
-  subject: IBSubject | null;
-  onSubject: (s: IBSubject) => void;
   econLevel: IBLevel | null;
   onEconLevel: (l: IBLevel) => void;
   bmLevel: IBLevel | null;
   onBmLevel: (l: IBLevel) => void;
   onNext: () => void;
 }) {
-  const canContinue =
-    subject === 'IB_ECONOMICS' ? econLevel !== null :
-    subject === 'IB_BUSINESS'  ? bmLevel !== null :
-    subject === 'IB_BUNDLE'    ? (econLevel !== null && bmLevel !== null) :
-    false;
+  const canContinue = econLevel !== null && bmLevel !== null;
 
   return (
     <div>
       <h1 className="auth-heading" style={{ marginBottom: 6 }}>Create your IB account</h1>
       <p className="auth-subheading" style={{ marginBottom: 24 }}>
-        Subscribe and start straight away — 7-day money-back guarantee.
+        Economics + Business Management, one subscription. Subscribe and start straight away — 7-day money-back guarantee.
       </p>
 
-      <p className="form-label" style={{ marginBottom: 10 }}>Which subject are you studying?</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
-        {SUBJECTS.map(s => (
-          <button key={s.id} type="button" onClick={() => onSubject(s.id)} style={selCard(subject === s.id)}>
-            <div style={selTitle(subject === s.id)}>{s.title}</div>
-            <div style={selDesc(subject === s.id)}>{s.desc}</div>
-          </button>
-        ))}
+      <p className="form-label" style={{ marginBottom: 10 }}>Set your level for each subject:</p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
+        <LevelPicker label="IB Economics level" value={econLevel} onChange={onEconLevel} />
+        <LevelPicker label="IB Business Management level" value={bmLevel} onChange={onBmLevel} />
       </div>
-
-      {subject && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 24 }}>
-          {(subject === 'IB_ECONOMICS' || subject === 'IB_BUNDLE') && (
-            <LevelPicker
-              label={subject === 'IB_BUNDLE' ? 'IB Economics level' : 'Your exam level'}
-              value={econLevel}
-              onChange={onEconLevel}
-            />
-          )}
-          {(subject === 'IB_BUSINESS' || subject === 'IB_BUNDLE') && (
-            <LevelPicker
-              label={subject === 'IB_BUNDLE' ? 'IB Business Management level' : 'Your exam level'}
-              value={bmLevel}
-              onChange={onBmLevel}
-            />
-          )}
-        </div>
-      )}
 
       <div style={{
         background: 'var(--surface-2)',
@@ -486,7 +435,7 @@ export default function IBSignupPage() {
   const supabase = createClient();
 
   const [step, setStep] = useState<1 | 2 | 3>(1);
-  const [subject, setSubject] = useState<IBSubject | null>(null);
+  const subject: IBSubject = 'IB_BUNDLE';
   const [econLevel, setEconLevel] = useState<IBLevel | null>(null);
   const [bmLevel, setBmLevel] = useState<IBLevel | null>(null);
   const [iaAcknowledged, setIaAcknowledged] = useState(false);
@@ -499,7 +448,6 @@ export default function IBSignupPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!subject) return;
     setError('');
 
     const { issues } = checkPassword(password);
@@ -551,10 +499,7 @@ export default function IBSignupPage() {
     }
 
     // Derive a single exam_level for checkout metadata
-    const examLevel =
-      subject === 'IB_ECONOMICS' ? econLevel :
-      subject === 'IB_BUSINESS'  ? bmLevel :
-      (econLevel === 'HL' || bmLevel === 'HL') ? 'HL' : 'SL';
+    const examLevel = (econLevel === 'HL' || bmLevel === 'HL') ? 'HL' : 'SL';
 
     const checkoutRes = await fetch('/api/checkout/ib', {
       method: 'POST',
@@ -562,7 +507,7 @@ export default function IBSignupPage() {
         'Content-Type': 'application/json',
         ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
       },
-      body: JSON.stringify({ billing, subject, exam_level: examLevel }),
+      body: JSON.stringify({ billing, exam_level: examLevel }),
     });
 
     const checkoutData = await checkoutRes.json();
@@ -581,8 +526,6 @@ export default function IBSignupPage() {
 
         {step === 1 && (
           <StepChoose
-            subject={subject}
-            onSubject={s => { setSubject(s); setEconLevel(null); setBmLevel(null); }}
             econLevel={econLevel}
             onEconLevel={setEconLevel}
             bmLevel={bmLevel}
@@ -598,7 +541,7 @@ export default function IBSignupPage() {
           />
         )}
 
-        {step === 3 && subject && (
+        {step === 3 && (
           <StepAccount
             studentName={studentName}
             setStudentName={setStudentName}
