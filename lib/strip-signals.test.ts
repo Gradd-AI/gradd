@@ -219,6 +219,22 @@ test('collapses 3+ blank lines to 2',
   }
 );
 
+test('SESSION_OPEN stripped entirely — pure bootstrap turn becomes empty (hidden)',
+  '[SESSION_OPEN] Begin the session now. Teach IB_BM_029 from the start.',
+  result => {
+    assert.equal(result, '', `expected empty string, got: ${JSON.stringify(result)}`);
+  }
+);
+
+test('SESSION_OPEN stripped — no "[SESSION_OPEN]" bracket or lesson code remains',
+  '[SESSION_OPEN] Begin the session now. Teach IB_ECON_2.6_L1 from the start.',
+  result => {
+    assert.doesNotMatch(result, /SESSION_OPEN/, 'SESSION_OPEN token leaked');
+    assert.doesNotMatch(result, /IB_ECON_2\.6_L1/, 'lesson code from bootstrap leaked');
+    assert.equal(result, '');
+  }
+);
+
 test('idempotent — already-clean text unaffected',
   'This is clean teaching prose with no signals at all.',
   result => {

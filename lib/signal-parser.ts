@@ -199,6 +199,9 @@ function parseTeachBack(text: string): TeachBackSignal | null {
 const PIPE_SIGNAL_RE = /\[(LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|DIAGRAM_DYNAMIC|DIAGRAM):[^\]]*\]/gi;
 // Standalone signal with no payload or colon.
 const BURN_WALL_RE = /\[BURN_WALL\]/gi;
+// SESSION_OPEN: appears in USER turns as "[SESSION_OPEN] Begin the session now. Teach CODE from the start."
+// Strip the bracket token + the rest of the line — the whole line is system bootstrap text, never real student input.
+const SESSION_OPEN_RE = /\[SESSION_OPEN\][^\n]*/gi;
 
 /**
  * Uses brace-counting to strip [NAME: { ... }] tokens where the payload is
@@ -240,6 +243,7 @@ export function stripSignals(text: string): string {
   // Pipe-delimited and simple signals
   result = result.replace(PIPE_SIGNAL_RE, '');
   result = result.replace(BURN_WALL_RE, '');
+  result = result.replace(SESSION_OPEN_RE, '');
   // Collapse 3+ blank lines → 2; trim leading/trailing whitespace
   result = result.replace(/\n{3,}/g, '\n\n').trim();
   return result;

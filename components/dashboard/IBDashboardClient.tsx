@@ -280,12 +280,15 @@ function ParentPositionCard({ currentLessonName, currentUnitName, sessionType, l
 
 // ─── Last session card — Stage 2a ────────────────────────────────────────────
 
-function LastSessionCard({ s }: { s: LastSession }) {
-  return (
-    <div className="last-session">
+function LastSessionCard({ s, href }: { s: LastSession; href?: string }) {
+  const inner = (
+    <>
       <div className="last-session-hd">
         <span className="ls-label">Last session · {formatDate(s.started_at)}</span>
-        <span className="ls-pill">{sessionLabel(s.session_type)}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span className="ls-pill">{sessionLabel(s.session_type)}</span>
+          {href && <span className="ls-arrow">→</span>}
+        </div>
       </div>
       <div className="last-session-body">
         <h3>{s.lesson_name ?? s.lesson_code ?? '—'}</h3>
@@ -305,8 +308,17 @@ function LastSessionCard({ s }: { s: LastSession }) {
             : <div className="ls-ok">✓ All clear — no weak flags</div>}
         </div>
       </div>
-    </div>
+    </>
   );
+
+  if (href) {
+    return (
+      <Link href={href} className="last-session last-session-link">
+        {inner}
+      </Link>
+    );
+  }
+  return <div className="last-session">{inner}</div>;
 }
 
 // ─── Activity strip — Stage 2b ───────────────────────────────────────────────
@@ -824,6 +836,29 @@ export const CSS = `
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* Clickable variant — wraps the card in an <a> */
+.ib-dash .last-session.last-session-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.ib-dash .last-session.last-session-link:hover {
+  border-color: var(--rule-strong);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.ib-dash .last-session.last-session-link:active {
+  background: var(--paper-2);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-color: var(--rule-strong);
+}
+.ib-dash .last-session-hd .ls-arrow {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: color-mix(in oklab, var(--forest-ink) 55%, transparent);
 }
 
 /* ── Stage 2b: Data cards ── */
@@ -1385,7 +1420,16 @@ export default function IBDashboardClient(props: Props) {
             <div className="context-divider">Recent activity</div>
 
             {props.lastSession ? (
-              <div className="ls-compact"><LastSessionCard s={props.lastSession} /></div>
+              <>
+                <div className="ls-compact">
+                  <LastSessionCard s={props.lastSession} href={`/sessions/${props.lastSession.id}`} />
+                </div>
+                <div style={{ textAlign: 'right', marginTop: -4, marginBottom: 12 }}>
+                  <Link href="/sessions" style={{ fontFamily: 'var(--mono)', fontSize: 11, letterSpacing: '0.04em', color: 'var(--ink-3)', textDecoration: 'none' }}>
+                    View all sessions →
+                  </Link>
+                </div>
+              </>
             ) : emptyState}
 
             {props.spaced_rep_due && (
