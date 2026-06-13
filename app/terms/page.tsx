@@ -219,7 +219,7 @@ export default async function TermsPage() {
             API) to generate responses. AI can make mistakes. Content generated
             by Gradd's tutor may occasionally be incomplete, outdated, or
             inaccurate. Always cross-reference AI responses with your textbook,
-            your teacher, and official SEC marking schemes.
+            your teacher, and {isIB ? 'official IBO mark schemes and subject guides' : 'official SEC marking schemes'}.
           </p>
         </div>
         <p style={styles.p}>

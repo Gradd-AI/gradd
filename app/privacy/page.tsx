@@ -250,7 +250,7 @@ export default async function PrivacyPage() {
         <ul style={styles.ul}>
           <li style={styles.li}>Email address</li>
           <li style={styles.li}>
-            Password (stored as a salted hash — we never see your plain-text
+            Password (stored as a bcrypt hash — we never see your plain-text
             password)
           </li>
           <li style={styles.li}>
@@ -278,6 +278,11 @@ export default async function PrivacyPage() {
           </li>
           <li style={styles.li}>
             Session timestamps and approximate usage frequency
+          </li>
+          <li style={styles.li}>
+            Learning-progress data: lessons completed, topics studied, and a
+            record of concepts you have found difficult (so the tutor can
+            revisit them and help you improve)
           </li>
         </ul>
 
@@ -482,7 +487,7 @@ export default async function PrivacyPage() {
             TLS encryption for all data in transit (HTTPS enforced)
           </li>
           <li style={styles.li}>
-            Passwords stored as bcrypt hashes — never in plaintext
+            Passwords stored as bcrypt hash — never in plaintext
           </li>
           <li style={styles.li}>
             Row-Level Security (RLS) policies on our Supabase database ensuring
