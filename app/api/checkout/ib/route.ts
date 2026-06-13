@@ -2,37 +2,23 @@ import { createServerClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
 import { NextResponse } from 'next/server';
 
-const IB_PRICE_IDS: Record<string, Record<string, string>> = {
-  IB_ECONOMICS: {
-    monthly: process.env.STRIPE_IB_ECON_MONTHLY!,
-    annual:  process.env.STRIPE_IB_ECON_ANNUAL!,
-  },
-  IB_BUSINESS: {
-    monthly: process.env.STRIPE_IB_BM_MONTHLY!,
-    annual:  process.env.STRIPE_IB_BM_ANNUAL!,
-  },
-  IB_BUNDLE: {
-    monthly: process.env.STRIPE_IB_BUNDLE_MONTHLY!,
-    annual:  process.env.STRIPE_IB_BUNDLE_ANNUAL!,
-  },
+// One IB product: Economics + Business Management, one price. Subject choice removed.
+const IB_PRICES: Record<string, string> = {
+  monthly: process.env.STRIPE_IB_ECON_MONTHLY!,
+  annual:  process.env.STRIPE_IB_ECON_ANNUAL!,
 };
 
 export async function POST(request: Request) {
-  const { billing, subject, exam_level } = await request.json();
+  const { billing, exam_level } = await request.json();
 
-  if (!billing || !subject) {
-    return NextResponse.json({ error: 'billing and subject required' }, { status: 400 });
+  if (!billing) {
+    return NextResponse.json({ error: 'billing required' }, { status: 400 });
   }
 
-  const priceMap = IB_PRICE_IDS[subject as string];
-  if (!priceMap) {
-    return NextResponse.json({ error: `Unknown IB subject: ${subject}` }, { status: 400 });
-  }
-
-  const priceId = priceMap[billing as string];
+  const priceId = IB_PRICES[billing as string];
   if (!priceId) {
     return NextResponse.json(
-      { error: `Missing Stripe price ID for ${subject} ${billing}. Add it to environment variables.` },
+      { error: `Missing Stripe price ID for ${billing}. Add it to environment variables.` },
       { status: 500 }
     );
   }
@@ -76,7 +62,7 @@ export async function POST(request: Request) {
   const origin = request.headers.get('origin') ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://gradd.ai';
   const sharedMeta = {
     supabase_user_id: user.id,
-    ib_subject: subject,
+    ib_subject: 'IB_BUNDLE',
     ...(exam_level && { exam_level }),
   };
 
@@ -91,7 +77,7 @@ export async function POST(request: Request) {
         metadata: sharedMeta,
       },
       metadata: sharedMeta,
-      success_url: `${origin}/onboarding?subject=${subject}&exam_level=${exam_level ?? ''}&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/onboarding?subject=IB_BUNDLE&exam_level=${exam_level ?? ''}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/subscribe/ib`,
       allow_promotion_codes: true,
     });

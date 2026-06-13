@@ -1,71 +1,28 @@
 'use client';
 
 import { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 type BillingPeriod = 'monthly' | 'annual';
-type IBSubject = 'IB_ECONOMICS' | 'IB_BUSINESS' | 'IB_BUNDLE';
 
-const SUBJECT_CONFIG: Record<IBSubject, {
-  label: string;
-  monthly: string;
-  annual: string;
-  annualSaving: string;
-  features: string[];
-}> = {
-  IB_ECONOMICS: {
-    label: 'IB Economics',
-    monthly: '€44.99',
-    annual: '€349',
-    annualSaving: 'Save €191 vs monthly',
-    features: [
-      'Full IB Economics curriculum — SL & HL',
-      'Microeconomics, macroeconomics, international & development economics',
-      'Mia — your personal AI IB tutor',
-      'Command term technique for all exam papers',
-      'Paper 1, 2 & 3 exam practice',
-      'Progress tracking & weak area alerts',
-      'Cancel any time',
-    ],
-  },
-  IB_BUSINESS: {
-    label: 'IB Business Management',
-    monthly: '€44.99',
-    annual: '€349',
-    annualSaving: 'Save €191 vs monthly',
-    features: [
-      'Full IB Business Management curriculum — SL & HL',
-      'Business organisation, HR, finance, marketing & operations',
-      'Mia — your personal AI IB tutor',
-      'Command term technique for all exam papers',
-      'Paper 1 & 2 exam practice',
-      'Progress tracking & weak area alerts',
-      'Cancel any time',
-    ],
-  },
-  IB_BUNDLE: {
-    label: 'IB Bundle — Economics & Business Management',
-    monthly: '€74.99',
-    annual: '€579',
-    annualSaving: 'Save €321 vs monthly',
-    features: [
-      'Full IB Economics + Business Management curriculum',
-      'SL & HL coverage for both subjects',
-      'Mia — your personal AI IB tutor',
-      'Command term technique for all exam papers',
-      'All exam papers covered for both subjects',
-      'Progress tracking & weak area alerts',
-      'Cancel any time',
-    ],
-  },
+const IB_CONFIG = {
+  label: 'IB Economics + Business Management',
+  monthly: '€44.99',
+  annual: '€349',
+  annualSaving: 'Save €191 vs monthly',
+  features: [
+    'Full IB Economics curriculum — SL & HL',
+    'Full IB Business Management curriculum — SL & HL',
+    'Mia — your personal AI IB tutor across both subjects',
+    'Command term technique for every exam paper',
+    'Paper 1, 2 & 3 exam practice',
+    'Progress tracking & weak area alerts',
+    'Cancel any time',
+  ],
 };
 
 function IBSubscribeInner() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const subject = (searchParams.get('subject') ?? 'IB_ECONOMICS') as IBSubject;
-  const config = SUBJECT_CONFIG[subject] ?? SUBJECT_CONFIG.IB_ECONOMICS;
+  const config = IB_CONFIG;
 
   const [billing, setBilling] = useState<BillingPeriod>('annual');
   const [loading, setLoading] = useState(false);
@@ -78,7 +35,7 @@ function IBSubscribeInner() {
     const res = await fetch('/api/checkout/ib', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ billing, subject }),
+      body: JSON.stringify({ billing }),
     });
 
     const data = await res.json();
