@@ -192,3 +192,55 @@ function parseTeachBack(text: string): TeachBackSignal | null {
   }
   return { lessonCode, concept };
 }
+
+// ── Strip signals ─────────────────────────────────────────────────────────────
+
+// Pipe-delimited / payload signals (content never contains ']').
+const PIPE_SIGNAL_RE = /\[(LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|DIAGRAM_DYNAMIC|DIAGRAM):[^\]]*\]/gi;
+// Standalone signal with no payload or colon.
+const BURN_WALL_RE = /\[BURN_WALL\]/gi;
+
+/**
+ * Uses brace-counting to strip [NAME: { ... }] tokens where the payload is
+ * a JSON object (which may contain '}' inside string values).
+ */
+function stripJsonSignal(text: string, signalName: string): string {
+  const prefix = `[${signalName}:`;
+  let result = text;
+  while (true) {
+    const start = result.toLowerCase().indexOf(prefix.toLowerCase());
+    if (start === -1) break;
+    const braceStart = result.indexOf('{', start + prefix.length);
+    if (braceStart === -1) break;
+    let depth = 0;
+    let braceEnd = -1;
+    for (let i = braceStart; i < result.length; i++) {
+      if (result[i] === '{') depth++;
+      else if (result[i] === '}') { depth--; if (depth === 0) { braceEnd = i; break; } }
+    }
+    if (braceEnd === -1) break;
+    const closeBracket = result.indexOf(']', braceEnd);
+    if (closeBracket === -1) break;
+    result = result.slice(0, start) + result.slice(closeBracket + 1);
+  }
+  return result;
+}
+
+/**
+ * Strips all machine signal tokens from a stored message string before
+ * displaying it to the student. Returns clean display text.
+ *
+ * Safe to call on already-clean text (idempotent).
+ */
+export function stripSignals(text: string): string {
+  let result = text;
+  // JSON-bearing signals — use brace counting to handle any '}' inside values
+  result = stripJsonSignal(result, 'WEAK_AREA_FLAG');
+  result = stripJsonSignal(result, 'TEACH_BACK');
+  // Pipe-delimited and simple signals
+  result = result.replace(PIPE_SIGNAL_RE, '');
+  result = result.replace(BURN_WALL_RE, '');
+  // Collapse 3+ blank lines → 2; trim leading/trailing whitespace
+  result = result.replace(/\n{3,}/g, '\n\n').trim();
+  return result;
+}
