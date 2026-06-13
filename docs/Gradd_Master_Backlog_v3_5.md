@@ -88,6 +88,28 @@
 > - BACKLOG (logged): SWEEP remaining recurring BM+Econ concepts still on DIAGRAM_DYNAMIC into library components (e.g. marketing mix/7Ps, Porter, others). The 3 motivation diagrams done; systematic sweep is a future task. Dynamic path stays as long-tail floor.
 > - ALSO CONFIRMED LIVE: adaptive weak-area loop closing — a weak_area_flag captured in an earlier session (Herzberg pay-as-motivator) was surfaced back to the student at the start of a later relevant lesson ("you have a previous weak area flagged..."). Detection→capture→resurface working end-to-end.
 
+> **v3.6 — 13 June: COURSE PICKER + MODEL B OVERRIDE + DASHBOARD RE-LAYOUT + SESSION REVIEW.**
+>
+> **Shipped to main:**
+> - **Course Picker (IB, 832fbe5)** — full course tree (unit → topic → lesson) in the student dashboard. Completion marker per lesson, weak-area indicator (gold dot), you-are-here anchor (rust), SL/HL filtering per student level, lesson name search. Wired directly to session-override (Model B) — picking any lesson starts a session on that lesson without moving the progress pointer. Calm Gradd-native styling. Lives in "Jump to any topic" section, second-action zone below Continue.
+> - **Session-override backend / Model B (75ad94b)** — `/session/start` accepts an optional `lessonCode`. Validated against subject + SL/HL. Used for that session ONLY — never written back to `current_lesson_code`. Guard in `message/route.ts`: `isOverrideSession = session.lesson_code !== current_lesson_code`; on override sessions completion and weak areas record, but the sequence pointer never advances. Student can study any lesson without losing their place. Reusable pattern for any "do this once without losing my place" need.
+> - **Dashboard student-view re-layout** — student-first hierarchy: (1) Continue → dominant hero CTA (unchanged); (2) Jump to any topic → picker collapsed below Continue, gold-accent browse header; (3) Recent activity → context zone with last-session summary card + "View all sessions →" link. Parent view unchanged (data-rich full view). Default corrected to student view on every load — was defaulting to parent view (591c183).
+> - **stripSignals() utility + 19 tests (940a5bd)** — strips all machine signal tokens before display. JSON-bearing tokens (WEAK_AREA_FLAG, TEACH_BACK) via brace-counting to handle `}` inside string values; pipe-delimited (LESSON_COMPLETE, LESSON_INCOMPLETE, UNIT_COMPLETE, SESSION_SUMMARY, DIAGRAM_DYNAMIC, DIAGRAM) via regex; BURN_WALL; SESSION_OPEN (user-turn bootstrap token + rest of line). Adversarial tests: DIAGRAM_DYNAMIC prefix-collision, brace inside JSON string value, idempotency. Lives in `lib/signal-parser.ts`. Safe to call on both assistant and user turns.
+> - **Session Review UI (b0ec045)** — students read back past-session transcripts. `/sessions` list: subject filter tabs (visible only when multiple subjects present), lesson name search, newest-first, tappable rows with hover + active affordances. `/sessions/[id]` transcript: DiagramRenderer re-renders library diagrams inline; dynamic diagrams show `[diagram]` placeholder; SESSION_OPEN bootstrap turns stripped to empty → hidden (not blank bubble). Standalone `TranscriptRenderer` client component (PDF-ready, no server dependency). Entry points from student dashboard: tappable last-session card → that session's transcript directly; "View all sessions →" link → list. Hover + active affordances on both card and list rows (paper scale: `--paper-2` on hover, `--paper-3` on active/tap-down). RLS: students read own sessions only. Parent view card non-tappable.
+>
+> **Architecture decisions locked:**
+> - **Signal stripping is non-optional for any read-back surface.** `session_messages.content` stores the raw unstripped model stream — every signal token (WEAK_AREA_FLAG, LESSON_COMPLETE, SESSION_SUMMARY, BURN_WALL, DIAGRAM:..., SESSION_OPEN) is present in stored content. ANY UI that displays stored transcript content MUST run `stripSignals()` before showing it to a student. CRITICAL: signals appear in BOTH roles — SESSION_OPEN is a USER-turn token, not an assistant-turn token. Strip both roles. Pipeline order for diagrams: parseDiagramSignal FIRST (extract code to re-render), stripSignals SECOND — reversing it strips the diagram token before you can render it.
+> - **Model B pattern for "do this once without losing my place".** Pass override at request time; validate at the boundary; use for that operation only; never write it back; guard the persistence layer on `isOverrideSession` so side-effects (completion, weak areas) record path-independently while the pointer stays frozen. Reusable wherever a user needs to act on a non-sequential entity without disturbing their persistent position.
+> - **See-don't-infer on rendered UI — non-negotiable.** Two bugs in this session (library-wide green contrast ~1.2:1 near-invisible; picker placement broken in hierarchy) passed code review and verbal "PASS" verdict — caught only by actual screenshot. UI changes are approved only after viewing a rendered screenshot. Applies especially to contrast, hierarchy/placement, anything where "the values are correct" ≠ "it looks right."
+> - **Cache keys must be stable identifiers, not freeform model output.** The diagram cache keyed on the model's freeform description → barely hit, because the model varies wording each time. For recurring named concepts, use deterministic library components with stable codes. Description-keyed cache is acceptable only for the long tail of one-off diagrams. Never cache-key on anything an LLM phrases differently each time.
+>
+> **Still-open backlog from this session:**
+> - [ ] **BM weak_area_flag defect** — flagged 12 June, fix scoped and ready (port Econ's `## WEAK AREA DETECTION` section into BM prompt; verify live with a marked Herzberg miss).
+> - [ ] **Diagram library sweep** — remaining recurring BM+Econ concepts (marketing mix/7Ps, Porter, etc.) still on DIAGRAM_DYNAMIC. Three motivation diagrams done 12 June; systematic sweep is a future session. Dynamic path stays as long-tail floor.
+> - [ ] **Band-descriptor marking injection verification** — flagged 11 June; top-mark essays (15m evaluate, P3 recommend) may not be receiving band descriptors at marking time. Verify next.
+> - [ ] **Content guards live spot-check** — guide-verified in text (12 June); not all live-tested in production. Esp. Herzberg, quality control/assurance, penetration/predatory pricing, Econ high-risk concepts.
+> - [ ] **Session transcript download** — data layer + UI now ready; a download/PDF button on `/sessions/[id]` is the next natural step. TranscriptRenderer is standalone so export is low complexity.
+
 ---
 
 ## THE NORTH STAR
@@ -349,13 +371,13 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 
 ---
 
-### PRIORITY 4 — SESSION TRANSCRIPT STORAGE (Launch critical) `[v3.4]`
+### PRIORITY 4 — SESSION TRANSCRIPT STORAGE (Launch critical) `[v3.4]` ✓ COMPLETE
 
-**MUST SHIP BEFORE FIRST PAYING CUSTOMER.**
+**MUST SHIP BEFORE FIRST PAYING CUSTOMER. — DONE v3.6 12–13 June.**
 
-- [ ] `[v3.4]` **Session capture foundation** — `session_messages` (real-time per-turn) and `lesson_knowledge_cards` (background on LESSON_COMPLETE).
-- [ ] Indexed on `(session_id, created_at)` and `(student_id, created_at DESC)`, RLS on `student_id`.
-- [ ] 5-7 hours total. **One-way door — must ship before September launch.**
+- [x] `[v3.4]` **Session capture foundation** — `session_messages` (real-time per-turn) and `session_events` (LESSON_COMPLETE, TEACH_BACK, WEAK_AREA_FLAG signals). Commits cdf5623, f4f4c65, 21d18a6.
+- [x] Indexed on `(session_id, created_at)` and `(student_id, created_at DESC)`, RLS on `student_id`.
+- [x] **Session Review UI** — `/sessions` list + `/sessions/[id]` transcript. stripSignals on both roles; library diagrams re-rendered inline; SESSION_OPEN bootstrap turns hidden. Student view only. Commit b0ec045.
 
 ---
 
@@ -371,20 +393,11 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 
 ---
 
-### PRIORITY 6.5 — STUDENT TOPIC/LESSON PICKER [IB] `Medium-High` `[v3.5]`
+### PRIORITY 6.5 — STUDENT TOPIC/LESSON PICKER [IB] `Medium-High` `[v3.5]` ✓ DONE v3.6 13 June
 
-- [ ] **[IB] Student-facing topic/lesson picker — choose where to start (not forced to lesson 1).**
+- [x] **[IB] Student-facing topic/lesson picker — choose where to start (not forced to lesson 1). DONE — commit 832fbe5.**
 
-  Sessions currently open at `current_lesson_code` and run sequentially; a student has no way to choose their area. A student revising Break-even or stuck on Finance should not have to start at `IB_BM_001` "What is a Business?" and grind forward. Need a student-facing picker: browse the syllabus by unit/topic, select a lesson/area, and have session start there.
-
-  Applies to **both free and paid** — free students need it to reach the topics they'll practise; paid students need it to study their actual gaps.
-
-  Open decisions when built:
-  - Free-vs-paid access scope per topic
-  - How it interacts with `course_position`/phase derivation
-  - Whether picker sets `current_lesson_code` permanently or a transient per-session target
-
-  **Real build, own scope — NOT a quick fix.** Raised verbally multiple times in sessions, never logged until now (08/06/2026).
+  Built as the "Jump to any topic" browse section in the student dashboard. Unit → topic → lesson tree, completion markers, weak-area dots, you-are-here anchor, SL/HL filtering, lesson search. Wired to Model B session-override (commit 75ad94b): picking a lesson starts a session there without moving `current_lesson_code`. Applies to both free and paid students. Open decisions resolved: picker uses per-session override (Model B), NOT a permanent pointer move.
 
 ---
 
