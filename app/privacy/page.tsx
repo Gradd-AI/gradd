@@ -334,9 +334,13 @@ export default async function PrivacyPage() {
             is active. Deleted within 30 days of account deletion request.
           </li>
           <li style={styles.li}>
-            <strong>Chat sessions:</strong> Retained for 12 months to support
-            session continuity and product improvement. You may request earlier
-            deletion.
+            <strong>Chat sessions and learning records:</strong> Retained for
+            the life of your account to support learning continuity and progress
+            tracking. This includes transcript content, lesson-completion
+            records, and any concepts flagged as difficult during sessions.
+            Deleted on account deletion request (subject to the billing-record
+            exception below). There is no automatic expiry — transcripts are
+            not purged on a fixed schedule.
           </li>
           <li style={styles.li}>
             <strong>Billing records:</strong> Retained for 6 years as required
