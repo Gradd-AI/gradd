@@ -7,39 +7,6 @@ import { createClient } from '@/lib/supabase/client';
 type IBSubject = 'IB_BUNDLE';
 type IBLevel = 'SL' | 'HL';
 
-// ── Card helpers ──────────────────────────────────────────────────────────────
-
-function selCard(selected: boolean): React.CSSProperties {
-  return {
-    background: selected ? 'var(--brand)' : 'var(--surface)',
-    border: `2px solid ${selected ? 'var(--brand)' : 'var(--border)'}`,
-    borderRadius: 'var(--radius)',
-    padding: '16px 20px',
-    cursor: 'pointer',
-    transition: 'all 0.15s ease',
-    textAlign: 'left',
-    width: '100%',
-  };
-}
-
-function selTitle(selected: boolean): React.CSSProperties {
-  return {
-    fontFamily: 'var(--font-display)',
-    fontSize: 15,
-    fontWeight: 700,
-    color: selected ? '#fff' : 'var(--text)',
-    marginBottom: 3,
-  };
-}
-
-function selDesc(selected: boolean): React.CSSProperties {
-  return {
-    fontSize: 13,
-    color: selected ? 'rgba(255,255,255,0.72)' : 'var(--text-muted)',
-    lineHeight: 1.4,
-  };
-}
-
 // ── Password strength ─────────────────────────────────────────────────────────
 
 function checkPassword(pw: string): { score: number; label: string; color: string; issues: string[] } {
