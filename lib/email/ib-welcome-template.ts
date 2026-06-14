@@ -1,6 +1,6 @@
 // lib/email/ib-welcome-template.ts
 // Gradd — IB Welcome Email
-// Audience: parent-facing (parent places the order; student uses the product)
+// Audience: student-facing (the student is the account holder and recipient)
 // Voice: warm, rigorous, internationally aware — matches Mia's register
 // Covers: IB Economics, IB Business Management, IB Bundle
 
@@ -55,14 +55,14 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
   subject: string;
   html: string;
 } {
-  const { studentName, fullName, subject, examLevel } = data;
+  const { studentName, subject, examLevel } = data;
 
   const subjectLabel = SUBJECT_LABEL[subject];
   const subjectShort = SUBJECT_SHORT[subject];
   const papers = PAPERS[subject][examLevel];
   const miaQuote = MIA_QUOTE[subject];
 
-  const emailSubject = `Welcome to Gradd — ${studentName} is ready to start IB ${subjectShort}`;
+  const emailSubject = `Welcome to Gradd — you're ready to start IB ${subjectShort}`;
 
   const html = `
 <!DOCTYPE html>
@@ -93,11 +93,11 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
             <td style="padding:36px 40px 0;">
 
               <p style="margin:0 0 20px;font-size:16px;color:#1C1C1C;line-height:1.6;">
-                Hi ${fullName},
+                Hi ${studentName},
               </p>
 
               <p style="margin:0 0 20px;font-size:16px;color:#1C1C1C;line-height:1.6;">
-                ${studentName}'s Gradd account is live for <strong>${subjectLabel}</strong> (${examLevel}).
+                Your Gradd account is live for <strong>${subjectLabel}</strong> (${examLevel}).
                 From this point, Mia takes care of the teaching — the full IB curriculum, structured lesson by lesson,
                 covering ${papers}, from the first concept right through to exam day.
               </p>
@@ -130,18 +130,18 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
                 )}
                 ${buildFeatureRow(
                   'Build exam technique from day one',
-                  `Mia frames every lesson around IB command terms — define, explain, examine, evaluate, discuss. ${studentName} learns to write the way examiners reward.`
+                  `Mia frames every lesson around IB command terms — define, explain, examine, evaluate, discuss. You'll learn to write the way examiners reward.`
                 )}
                 ${examLevel === 'HL' ? buildFeatureRow(
                   'HL depth throughout',
-                  `${studentName} is taking HL. Mia pushes further on every topic — the extension content, the higher-order analysis, the Paper 3 preparation that SL students don't need.`
+                  `You're taking HL. Mia pushes further on every topic — the extension content, the higher-order analysis, the Paper 3 preparation that SL students don't need.`
                 ) : buildFeatureRow(
                   'SL focused throughout',
-                  `Mia keeps every session aligned to the SL syllabus — no unnecessary depth, no wasted time on content ${studentName} won't be examined on.`
+                  `Mia keeps every session aligned to the SL syllabus — no unnecessary depth, no wasted time on content you won't be examined on.`
                 )}
                 ${buildFeatureRow(
                   'Track progress automatically',
-                  `Every session is logged. Weak areas are flagged and revisited. ${studentName} always knows exactly where they are in the curriculum.`
+                  `Every session is logged. Weak areas are flagged and revisited. You'll always know exactly where you are in the curriculum.`
                 )}
                 ${buildFeatureRow(
                   'Available 24/7, anywhere in the world',
@@ -159,7 +159,7 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
                       A note on the Internal Assessment
                     </p>
                     <p style="margin:0;font-size:14px;color:#5A3E00;line-height:1.6;">
-                      Gradd covers the full written examination curriculum — ${papers}. The Internal Assessment (IA) is managed by ${studentName}'s school and is outside Gradd's scope. Mia will make this clear from the start.
+                      Gradd covers the full written examination curriculum — ${papers}. The Internal Assessment (IA) is managed by your school and is outside Gradd's scope. Mia will make this clear from the start.
                     </p>
                   </td>
                 </tr>
@@ -187,7 +187,7 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
               <p style="margin:0 0 24px;font-size:15px;color:#4A4A4A;line-height:1.6;">
                 Log in at <strong>gradd.ai</strong>, go to the dashboard, and hit <strong>Start session</strong>.
                 Mia opens Lesson 1 automatically — no setup, no placement test.
-                ${studentName} just starts, and Mia takes it from there.
+                Just start, and Mia takes it from there.
               </p>
 
               <!-- CTA -->
