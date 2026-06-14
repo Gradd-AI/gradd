@@ -3,30 +3,21 @@
 import { useState } from 'react';
 
 interface IBPaywallModalProps {
-  subject: string;
+  subject?: string;
   reason?: 'cap' | 'burn';
   onClose?: () => void;
 }
 
-const SUBJECT_LABELS: Record<string, string> = {
-  IB_ECONOMICS: 'IB Economics',
-  IB_BUSINESS: 'IB Business Management',
-  IB_BUNDLE: 'IB Bundle (Economics + Business Management)',
-};
+const IB_LABEL = 'IB Economics + Business Management';
+const IB_PRICES = { monthly: '€44.99', annual: '€349', annualSaving: 'Save €191 vs monthly' };
 
-const PRICES: Record<string, { monthly: string; annual: string; annualSaving: string }> = {
-  IB_ECONOMICS: { monthly: '€44.99', annual: '€349', annualSaving: 'Save €191 vs monthly' },
-  IB_BUSINESS:  { monthly: '€44.99', annual: '€349', annualSaving: 'Save €191 vs monthly' },
-  IB_BUNDLE:    { monthly: '€74.99', annual: '€579', annualSaving: 'Save €321 vs monthly' },
-};
-
-export default function IBPaywallModal({ subject, reason, onClose }: IBPaywallModalProps) {
+export default function IBPaywallModal({ reason, onClose }: IBPaywallModalProps) {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const label = SUBJECT_LABELS[subject] ?? subject;
-  const prices = PRICES[subject] ?? PRICES.IB_ECONOMICS;
+  const label = IB_LABEL;
+  const prices = IB_PRICES;
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -36,7 +27,7 @@ export default function IBPaywallModal({ subject, reason, onClose }: IBPaywallMo
       const res = await fetch('/api/checkout/ib', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billing, subject }),
+        body: JSON.stringify({ billing }),
       });
 
       const data = await res.json();

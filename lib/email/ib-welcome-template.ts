@@ -44,7 +44,7 @@ const PAPERS: Record<IBSubject, Record<IBLevel, string>> = {
 };
 
 const MIA_QUOTE: Record<IBSubject, string> = {
-  IB_ECONOMICS: `"Let's get started. I know the IB Economics course inside out — every topic, every command term, every paper. We'll work through it together, from the fundamentals right through to exam day. No textbook required. Just you, me, and the syllabus."`,
+  IB_ECONOMICS: `"Let's get started. I know the IB Economics course inside out — every topic, every command term, every paper. We'll work through it together, from the fundamentals right through to exam day. Everything in one place."`,
   IB_BUSINESS: `"Let's get to work. IB Business Management rewards students who can apply theory to real business situations — and that's exactly what we'll build. Every lesson, every case study, every command term. I'll take you through it all."`,
   IB_BUNDLE: `"Two subjects, one platform. We'll work through IB Economics and IB Business Management together — structured, sequenced, and aligned to every paper you'll sit. Let's build the foundation first and get you exam-ready."`,
 };
@@ -126,7 +126,7 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
                 </tr>
                 ${buildFeatureRow(
                   'Teach the full syllabus',
-                  `Every topic in the IB ${subjectShort} course — explained, questioned, and confirmed before moving on. No textbook or teacher required.`
+                  `Every topic in the IB ${subjectShort} course — explained, questioned, and confirmed before moving on. A complete, structured course you can follow on your own.`
                 )}
                 ${buildFeatureRow(
                   'Build exam technique from day one',
@@ -145,7 +145,7 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
                 )}
                 ${buildFeatureRow(
                   'Available 24/7, anywhere in the world',
-                  `25–35 minutes per session, whenever it suits. No booking, no waiting, no time zones to manage.`
+                  `whenever it suits. No booking, no waiting, no time zones to manage.`
                 )}
                 <tr><td style="padding-bottom:8px;"></td></tr>
               </table>

@@ -86,13 +86,8 @@ async function handleCheckoutComplete(
   const customerId = session.customer as string;
   const metaSubject = session.metadata?.ib_subject ?? '';
 
-  const subscriptionTier = metaSubject === 'IB_ECONOMICS'
-    ? 'ib_economics_monthly'
-    : metaSubject === 'IB_BUSINESS'
-    ? 'ib_business_monthly'
-    : metaSubject === 'IB_BUNDLE'
-    ? 'ib_bundle_monthly'
-    : 'business_monthly';
+  // One IB product now — every IB purchase is the full Economics + BM bundle.
+  const subscriptionTier = metaSubject.startsWith('IB_') ? 'ib_bundle_monthly' : 'business_monthly';
 
   await supabase
     .from('profiles')
