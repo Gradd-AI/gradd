@@ -1,5 +1,5 @@
-# Gradd — Master Product Backlog & 5-Year Roadmap
-*Last updated: 11 June 2026 | Version 3.6*
+﻿# Gradd — Master Product Backlog & 5-Year Roadmap
+*Last updated: 14 June 2026 | Version 3.7*
 
 > **v3.5 changelog** — build session of 02 June 2026. IB CONTENT-ACCURACY AUDIT + TEACHING METHODOLOGY REWRITE. Changes tagged `[v3.5]` inline. Summary:
 >
@@ -609,7 +609,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 *Measure every decision against the north star.*
 *Update it when decisions change. Re-upload immediately.*
 
-*Last updated: 11 June 2026 | Version 3.6*
+*Last updated: 14 June 2026 | Version 3.7*
 
 ## Perceived-completeness features (post-funnel, ranked by value-per-effort)
 Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
@@ -618,3 +618,37 @@ Context: these lift conversion at the landing-page/comparison stage; they do NOT
 3. Phone app � biggest perceived-completeness + engagement lever. Build as PWA (installable, weeks) NOT native (months). Decide PWA vs native deliberately before committing.
 4. Voice � in backlog; STT easy but real voice-tutor (TTS, latency) is medium-hard and a questionable fit for structured 200-word teaching responses. Suits quick Q&A only.
 5. Video explanations � SKIP. Content-production operation, not a coded feature; contradicts the live-adaptive-teaching model. Competitors' static-library game, not ours.
+
+
+---
+
+## [v3.7] 14 JUNE 2026 — IB SINGLE-PRODUCT COLLAPSE + MONEY PATH PROVEN
+
+**MERGED TO MAIN (9335e48):** IB collapsed to ONE product "IB Platform" (Econ + BM, one price €44.99/mo · €349/yr, month+annual only). No subject choice at signup; SL/HL set per subject. `subject` pinned to `IB_BUNDLE` everywhere (not removed — downstream reads it). Single/bundle legacy killed. Files: `checkout/ib/route.ts`, `IBPaywallModal.tsx`, `subscribe/ib/page.tsx`, signup wizard, `webhooks/stripe` (tier→ib_bundle_monthly), dead helpers removed.
+
+**MONEY PATH PROVEN END-TO-END (sandbox):** signup → checkout → payment → webhook flip (active/ib_bundle_monthly/Stripe IDs) → paid access → live diagnostic teaching + PPC. Verified on preview, real launch config.
+
+**FOUR BUGS FIXED:**
+1. **Signup-breaking trigger** — `sync_student_progress_lesson_cache()` unqualified `lessons` + no `search_path`, failed inside `SECURITY DEFINER handle_new_user` cascade → "DB error saving new user" BOTH products. Fixed: `public.lessons` + `SET search_path=public`. Migration `20260613170000_fix_lesson_cache_search_path.sql` — NOW TRACKED (was dashboard-only).
+2. **Cross-world Stripe** — products in Sandbox, keys from Test mode. Resolved: sandbox keys/prices/webhook all Preview-scoped.
+3. **Stale price IDs** — repointed Preview to sandbox `price_1Thu...`
+4. **Vercel deployment protection 401** — preview auth-wall ate webhook. Disabled on preview to test. ⚠️ RE-ENABLE.
+
+**LEGAL (67c10f2, 22a8891):** SEC→IBO; weak-area data disclosed; §4 retention matches append-only architecture.
+
+**EMAIL:** second-person student voice; removed no-textbook/teacher claim (Terms §2 conflict) + session timing.
+
+**CONFIG REFERENCE:**
+- Sandbox (test): monthly `price_1ThuIp3f1ZNuqwB9m0Tm2GO2`, annual `price_1ThuK23f1ZNuqwB9mNvQTbf2`, preview `gradd-git-feat-ib-single-product-gradd-ais-projects.vercel.app`
+- Live (prod): monthly `price_1TUTXuKZbPDkBvRtbKyJoVHv`, annual `price_1TUTbkKZbPDkBvRtZ7V31AGX`, "IB Platform" products renamed in live mode
+
+**TODO NEXT (work machine):**
+1. **PRODUCTION WEBHOOK CHECK** — last pre-launch gate, sandbox proven, live not walked. Stripe live + Vercel Production: live webhook endpoint `gradd.ai/api/webhooks/stripe` (6 events); live `whsec_` → Production `STRIPE_WEBHOOK_SECRET_AI` (prod host=gradd.ai reads `_AI`); `sk_live_`/`pk_live_`; Production `STRIPE_IB_ECON_*` = live `price_1TUT...` NOT sandbox; `NEXT_PUBLIC_APP_URL=https://gradd.ai`. Verify especially: live secret in `_AI`, live price IDs.
+2. **Vercel cleanup:** re-enable preview deployment protection; remove dead Production env vars `STRIPE_IB_BM_*`, `STRIPE_IB_BUNDLE_*`.
+3. Delete branch `feat/ib-single-product` once happy.
+4. **GDPR account-deletion routine** — plain cascade blocked by append-only triggers; needs disable-trigger→delete→re-enable in order. Document as the privacy-policy-promised deletion procedure.
+
+**BACKLOG (named):**
+- **Parent-invite (Aimnova-style):** student=account holder, invites parent → weekly progress email. Parent-visibility CONVERSION HOOK. Consent-capture for minors in the invite. Deferred deliberately.
+- **Landing page:** honesty-audit vs Selling Bible DO-NOT-CLAIM, rebuild around diagnosis moat + "verified vs official guide" + real demo. Pricing now decided.
+- **Blog:** extract content guards → long-tail X-vs-Y explainers off landing.
