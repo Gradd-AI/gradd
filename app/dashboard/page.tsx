@@ -246,6 +246,7 @@ export default async function DashboardPage() {
       pickerLessons={pickerLessons}
       pickerCompletedCodes={pickerCompletedCodes}
       pickerWeakAreaCodes={pickerWeakAreaCodes}
+      subscriptionStatus={profile.subscription_status ?? ''}
     />
   );
 }

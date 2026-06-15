@@ -93,6 +93,7 @@ export default async function SessionPage({
       activeSubject={isBundle ? activeSubject : undefined}
       examLabel={examLabel}
       pickedLessonCode={pickedLessonCode}
+      subscriptionStatus={profile.subscription_status}
     />
   );
 }

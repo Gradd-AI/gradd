@@ -99,7 +99,7 @@ function StepChoose({
     <div>
       <h1 className="auth-heading" style={{ marginBottom: 6 }}>Create your IB account</h1>
       <p className="auth-subheading" style={{ marginBottom: 24 }}>
-        Economics + Business Management, one subscription. Subscribe and start straight away — 7-day money-back guarantee.
+        Economics + Business Management — start learning free, subscribe any time for unlimited teaching.
       </p>
 
       <p className="form-label" style={{ marginBottom: 10 }}>Set your level for each subject:</p>
@@ -205,7 +205,6 @@ function StepAccount({
   studentName, setStudentName,
   email, setEmail,
   password, setPassword,
-  billing, setBilling,
   onBack,
   onSubmit,
   loading,
@@ -217,8 +216,6 @@ function StepAccount({
   setEmail: (v: string) => void;
   password: string;
   setPassword: (v: string) => void;
-  billing: 'monthly' | 'annual';
-  setBilling: (v: 'monthly' | 'annual') => void;
   onBack: () => void;
   onSubmit: (e: React.FormEvent) => void;
   loading: boolean;
@@ -231,62 +228,12 @@ function StepAccount({
     <div>
       <h1 className="auth-heading" style={{ marginBottom: 6 }}>Create your account</h1>
       <p className="auth-subheading" style={{ marginBottom: 24 }}>
-        7-day money-back guarantee — cancel within 7 days for a full refund.
+        Start learning free — subscribe any time for unlimited teaching.
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       <form onSubmit={onSubmit}>
-        <div className="form-group">
-          <p className="form-label" style={{ marginBottom: 8 }}>Your plan</p>
-          <div style={{
-            display: 'flex',
-            background: 'var(--surface-2)',
-            borderRadius: 'var(--radius-sm)',
-            padding: 4,
-            gap: 4,
-          }}>
-            {(['monthly', 'annual'] as const).map(b => (
-              <button
-                key={b}
-                type="button"
-                onClick={() => setBilling(b)}
-                style={{
-                  flex: 1,
-                  padding: '10px 16px',
-                  borderRadius: 'var(--radius-sm)',
-                  border: 'none',
-                  background: billing === b ? 'var(--surface)' : 'transparent',
-                  color: billing === b ? 'var(--brand)' : 'var(--text-muted)',
-                  fontWeight: billing === b ? 700 : 500,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  boxShadow: billing === b ? 'var(--shadow-sm)' : 'none',
-                  transition: 'all 0.15s ease',
-                  fontFamily: 'var(--font-body)',
-                }}
-              >
-                {b === 'monthly' ? 'Monthly' : 'Annual'}
-                {b === 'annual' && (
-                  <span style={{
-                    marginLeft: 6,
-                    background: 'var(--accent)',
-                    color: '#fff',
-                    fontSize: 11,
-                    padding: '2px 6px',
-                    borderRadius: 4,
-                    fontWeight: 700,
-                  }}>
-                    Best value
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-light)', marginTop: 6 }}>
-            Cancel any time. 7-day money-back guarantee.
-          </p>
-        </div>
         <div className="form-group">
           <label className="form-label" htmlFor="studentName">Student's first name</label>
           <input
@@ -409,7 +356,6 @@ export default function IBSignupPage() {
   const [studentName, setStudentName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [billing, setBilling] = useState<'monthly' | 'annual'>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -425,7 +371,7 @@ export default function IBSignupPage() {
 
     setLoading(true);
 
-    const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
+    const { data: { user }, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -465,27 +411,7 @@ export default function IBSignupPage() {
       // Non-fatal
     }
 
-    // Derive a single exam_level for checkout metadata
-    const examLevel = (econLevel === 'HL' || bmLevel === 'HL') ? 'HL' : 'SL';
-
-    const checkoutRes = await fetch('/api/checkout/ib', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
-      },
-      body: JSON.stringify({ billing, exam_level: examLevel }),
-    });
-
-    const checkoutData = await checkoutRes.json();
-
-    if (!checkoutRes.ok || !checkoutData.url) {
-      setError(checkoutData.error ?? 'Failed to start checkout. Please try again.');
-      setLoading(false);
-      return;
-    }
-
-    window.location.href = checkoutData.url;
+    window.location.href = '/dashboard';
   };
 
   return (
@@ -516,8 +442,6 @@ export default function IBSignupPage() {
             setEmail={setEmail}
             password={password}
             setPassword={setPassword}
-            billing={billing}
-            setBilling={setBilling}
             onBack={() => setStep(2)}
             onSubmit={handleSubmit}
             loading={loading}
