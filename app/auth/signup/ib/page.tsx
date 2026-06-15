@@ -371,7 +371,7 @@ export default function IBSignupPage() {
 
     setLoading(true);
 
-    const { data: { user }, error: signUpError } = await supabase.auth.signUp({
+    const { data: { user, session }, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -409,6 +409,29 @@ export default function IBSignupPage() {
       });
     } catch {
       // Non-fatal
+    }
+
+    // Create student_progress rows before entering the app.
+    // Skipping this leaves the account in a broken state (session start 500s).
+    const onboardingRes = await fetch('/api/onboarding/ib', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session?.access_token && { 'Authorization': `Bearer ${session.access_token}` }),
+      },
+      body: JSON.stringify({
+        subject: 'IB_BUNDLE',
+        economicsLevel: econLevel as IBLevel,
+        businessLevel:  bmLevel  as IBLevel,
+        coursePosition: 'beginning',
+      }),
+    });
+
+    if (!onboardingRes.ok) {
+      const onboardingData = await onboardingRes.json().catch(() => ({}));
+      setError(onboardingData.error ?? 'Your account was created but setup didn\'t finish — please refresh or log in to continue.');
+      setLoading(false);
+      return;
     }
 
     window.location.href = '/dashboard';
