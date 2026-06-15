@@ -1,5 +1,5 @@
 ﻿# Gradd — Master Product Backlog & 5-Year Roadmap
-*Last updated: 14 June 2026 | Version 3.7*
+*Last updated: 15 June 2026 | Version 3.8*
 
 > **v3.5 changelog** — build session of 02 June 2026. IB CONTENT-ACCURACY AUDIT + TEACHING METHODOLOGY REWRITE. Changes tagged `[v3.5]` inline. Summary:
 >
@@ -618,7 +618,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 *Measure every decision against the north star.*
 *Update it when decisions change. Re-upload immediately.*
 
-*Last updated: 14 June 2026 | Version 3.7*
+*Last updated: 15 June 2026 | Version 3.8*
 
 ## Perceived-completeness features (post-funnel, ranked by value-per-effort)
 Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
@@ -661,3 +661,36 @@ Context: these lift conversion at the landing-page/comparison stage; they do NOT
 - **Parent-invite (Aimnova-style):** student=account holder, invites parent → weekly progress email. Parent-visibility CONVERSION HOOK. Consent-capture for minors in the invite. Deferred deliberately.
 - **Landing page:** honesty-audit vs Selling Bible DO-NOT-CLAIM, rebuild around diagnosis moat + "verified vs official guide" + real demo. Pricing now decided.
 - **Blog:** extract content guards → long-tail X-vs-Y explainers off landing.
+
+---
+
+## [v3.8] 15 JUNE 2026 — FREE-FIRST SIGNUP BUILT + CONVERT-PATH BUGS SURFACED
+
+### LANDED THIS SESSION
+- **Free-first signup** (branch feat/free-first-signup, commits 2d83f18 / 1261b06 / 750753d). Signup no longer forces Stripe: account → lands in /dashboard FREE (subscription_status defaults 'inactive', confirmed). Billing toggle removed from wizard. Diagram 403 removed (free users get diagrams). Persistent "Go unlimited" button added to dashboard nav + session header (shows when status !== 'active'). NOT YET MERGED to main.
+- **Bug fixed — student_progress on free-first signup (1261b06):** free-first bypassed /api/onboarding/ib (the only creator of progress rows) → new free users got "Failed to start session". Fixed: handleSubmit now calls /api/onboarding/ib (subject IB_BUNDLE, levels, coursePosition 'beginning') before redirect, with loud-fail error handling.
+- **Bug fixed — weak-area subject bleed (750753d):** weak_areas has NO subject column (subject implied by lesson_code prefix IB_ECON_/IB_BM_). session/start + session/message pulled weak areas unfiltered → BM weak areas injected into Econ sessions (Mia referenced charity/profit in an Econ lesson). Fixed: both queries now filter by lesson_code prefix from effectiveSubject, matching dashboard pattern. LC unfiltered (null prefix).
+- **Production Stripe price IDs added** to Production scope (STRIPE_IB_ECON_MONTHLY/ANNUAL) — live checkout was going to 500 without them. CONFIRM these hold the LIVE price IDs (price_1TUTXu.../price_1TUTbk...).
+
+### CONFIRMED NOT BUGS (do not re-chase)
+- Payment-not-activating on preview = preview can't receive Stripe webhooks (sandbox webhook points at a fixed/old URL, not the ephemeral branch URL). Convert-path CODE is fine. Test convert on PRODUCTION (real card + refund), like the original money-path test.
+- "Progress reset" after checkout = nothing wiped; account was always on lesson 1 (only 3-4 exchanges per session, never completed a lesson).
+- Session/lesson counter "mismatch" = two different counters (sessions-in-lesson vs total sessions), both correct. UX wording confusing ("Session" overloaded) — low-priority cleanup.
+
+### OPEN — MUST FIX BEFORE LAUNCH (interlinked — do together next session)
+1. **Destructive onboarding upsert** (app/api/onboarding/ib L85-120): upsert onConflict 'student_id,subject' OVERWRITES current_lesson_code/session counts/course_position with hardcoded lesson-1 values when a row exists. Would WIPE progress for any user past lesson 1. Didn't bite (test user was on lesson 1). Fix: make onboarding non-destructive — only create rows for genuinely new students, never reset existing.
+2. **Checkout success → onboarding routing** (app/api/checkout/ib L80): IB success_url sends already-onboarded users to /onboarding (which triggers #1's destructive upsert). LC product does it right: success → poller page → waits for active → /dashboard, never onboarding. Fix IB to match LC's poller pattern. (#1 and #2 are the same root: old pay-first flow assumed subscribe→onboard→start; free-first inverts it, so post-payment onboarding is now destructive.)
+3. **Verify convert path on PRODUCTION** — real card + refund: free user → Go unlimited → pay → confirm status flips active, progress/weak-areas/sessions all intact, Mia continues, no re-onboard.
+4. **"Go unlimited" forces annual, no choice** — should route to /subscribe/ib (monthly/annual choice), not hardcoded billing:'annual'. UX/conversion fix.
+
+### OPEN — NEXT BUILDS (post free-first merge)
+- **The real cap** — count TEACH_BACK, wall 2nd teach-through, replace hardcoded BURN_ACTIVE test flag (revert test commits 38213c8/9031455). Without it, free-first gives away unlimited teaching. The burn funnel's final piece.
+- **Econ weak-flag timing fix** — Econ's WEAK AREA DETECTION TIMING block omits RULE A (first-occurrence flag); BM's port added it. One-line reconciliation (NOT a full re-port — Econ has the diagnosis-led teach-through already).
+- **weak_areas subject column** — proper schema fix vs current prefix-string-matching across 3 files (fragile). Deferred.
+- **Diagram leak** — Mia emits [DIAGRAM: DIAGRAM_DYNAMIC: ...] (hallucinated 3rd format) matching no parser → leaks as text. Fix: make parseDynamicDiagramSignal also match the malformed variant. lib/diagram-integration.ts.
+- **Money-market diagram gap** — no liquidity-preference diagram in the 61-component library (HL Econ Unit 3).
+- **handle_new_user trigger** — stamps business_monthly tier + phantom LC_BUSINESS progress row on every IB signup (product-unaware, predates IB). Harmless at runtime (queries scope by subject) but wrong data. Fix: trigger discriminates on ib_subject metadata. Supabase dashboard change.
+- **Parent-invite** (Aimnova-style) — re-enables weekly email, consent capture.
+
+### STATE
+feat/free-first-signup pushed (750753d), NOT merged. Free-first ENTRY proven on preview (signup → free dashboard → session → Mia teaches → diagrams render for free user). Convert path unverified (needs production test). Items 1-4 above block merge-to-main + launch.
