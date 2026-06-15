@@ -422,6 +422,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 - [ ] `[v3.4]` **IB landing Layer 1 upgrades** — verified question library section, answer-marking example, one comparison table row.
 - [ ] `[v3.4]` **"The Gradd method" promotion** — 5-step pedagogical loop (learn → answer → corrected → diagram → exam technique) as dedicated landing section.
 - [ ] `[v3.4]` **Swap demo exam-prep transcript V1 → V2 (HDI/GDP).**
+- [ ] **Landing page free-first + positioning rewrite** — The entire landing page sells "subscribe €44.99 / 7-day money-back" — nowhere does it say a user can start FREE. Free-first's core advantage (try with zero commitment) is invisible on the page. CONVERSION LEAK at top of funnel. Needs: CTAs shift "Start learning" → "Start free" (free account primary, subscribe secondary); hero leads with free ("Start learning free — no card needed"); rework/remove "From €44.99" + "7-day money-back" framing (a free try replaces the money-back safety net); explain the free/paid value ladder honestly (free = unlimited questions+marking + a taste of teaching; paid = unlimited teaching). SEQUENCING: do this ONLY after free-first works end-to-end (convert path fixed + verified on production) — don't advertise a free tier while the free→paid path still has open bugs. PAIR with the already-deferred positioning rewrite (lead with diagnosis moat + named Gradd method + drive to demo) — same job, one rewrite.
 - [ ] ACCA landing page
 - [ ] Landing page mobile pass
 - [ ] Footer legal pages for ACCA
