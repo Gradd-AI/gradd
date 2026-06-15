@@ -344,7 +344,7 @@ export default function IBLandingPage() {
                 Start at zero. Finish <em className="italic">exam-ready.</em>
               </h2>
               <p className="lead">
-                Whether you&apos;re starting Year 1 in September or cramming the week before May exams, Gradd meets you where you are and pushes you to a 7.
+                Whether you&apos;re starting Year 1 in September or cramming the week before your exams, Gradd meets you where you are and pushes you to a 7.
               </p>
             </div>
             <div className="pillars">
@@ -476,7 +476,7 @@ export default function IBLandingPage() {
             <div className="parents-copy">
               <span className="eyebrow">For parents<span className="dot" />Dashboard</span>
               <h2 className="h-section" style={{marginTop:18}}>Parents see the progress that <em className="italic">matters.</em></h2>
-              <p className="lead">A real-time dashboard view built for parents. No more &ldquo;did you study today?&rdquo; guesswork — you&apos;ll see where they are, what they&apos;ve struggled with, and whether they&apos;re on pace for May.</p>
+              <p className="lead">A real-time dashboard view built for parents. No more &ldquo;did you study today?&rdquo; guesswork — you&apos;ll see where they are, what they&apos;ve struggled with, and whether they&apos;re on pace for their exams.</p>
               <ul className="parents-bullets">
                 <li><span><b>Parent view of the dashboard.</b> Sessions completed, weak topics flagged, days to exam, study streak.</span></li>
                 <li><span><b>Pace, in plain sight.</b> The dashboard flags it the moment they fall behind.</span></li>
