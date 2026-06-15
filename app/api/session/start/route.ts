@@ -112,14 +112,21 @@ export async function POST(request: Request) {
   const effectiveUnitCode   = overrideLesson?.unit_code   ?? progress.current_unit_code;
   const effectiveUnitName   = overrideLesson?.unit_name   ?? progress.current_unit_name;
 
+  const weakAreaPrefix = effectiveSubject === 'IB_ECONOMICS' ? 'IB_ECON_'
+    : effectiveSubject === 'IB_BUSINESS' ? 'IB_BM_'
+    : null;
+
+  let weakAreasQuery = supabase
+    .from('weak_areas')
+    .select('*')
+    .eq('student_id', user.id)
+    .is('resolved_at', null)
+    .order('created_at', { ascending: false });
+  if (weakAreaPrefix) weakAreasQuery = weakAreasQuery.like('lesson_code', `${weakAreaPrefix}%`);
+
   const [{ data: weakAreas }, { data: lessonCompletions }, { data: unitCompletions }] =
     await Promise.all([
-      supabase
-        .from('weak_areas')
-        .select('*')
-        .eq('student_id', user.id)
-        .is('resolved_at', null)
-        .order('created_at', { ascending: false }),
+      weakAreasQuery,
       supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
     ]);

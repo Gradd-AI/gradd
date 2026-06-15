@@ -113,6 +113,17 @@ export async function POST(request: Request) {
   if (storedPrompt?.startsWith('__SYSTEM_PROMPT__')) {
     injectedSystemPrompt = storedPrompt.replace('__SYSTEM_PROMPT__', '');
   } else {
+    const weakAreaPrefix = effectiveSubject === 'IB_ECONOMICS' ? 'IB_ECON_'
+      : effectiveSubject === 'IB_BUSINESS' ? 'IB_BM_'
+      : null;
+
+    let weakAreasQuery = supabase
+      .from('weak_areas')
+      .select('*')
+      .eq('student_id', user.id)
+      .is('resolved_at', null);
+    if (weakAreaPrefix) weakAreasQuery = weakAreasQuery.like('lesson_code', `${weakAreaPrefix}%`);
+
     const [
       { data: progress },
       { data: weakAreas },
@@ -120,7 +131,7 @@ export async function POST(request: Request) {
       { data: unitCompletions },
     ] = await Promise.all([
       supabase.from('student_progress').select('*').eq('student_id', user.id).eq('subject', effectiveSubject).single(),
-      supabase.from('weak_areas').select('*').eq('student_id', user.id).is('resolved_at', null),
+      weakAreasQuery,
       supabase.from('lesson_completions').select('lesson_code').eq('student_id', user.id),
       supabase.from('unit_completions').select('unit_code').eq('student_id', user.id),
     ]);
