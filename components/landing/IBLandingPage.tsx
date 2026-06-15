@@ -13,13 +13,9 @@ import Link from 'next/link';
 
 // ── Pricing data ──────────────────────────────────────────────────────────────
 
-const SINGLE = {
+const PRICING = {
   monthly: { amount: '44', cents: '.99', per: '/ month', note: null },
-  annual:  { amount: '349', cents: '', per: '/ year', note: '≈ €29 / month' },
-};
-const BUNDLE = {
-  monthly: { amount: '74', cents: '.99', per: '/ month', note: 'Save €15/mo vs separate' },
-  annual:  { amount: '579', cents: '', per: '/ year', note: '≈ €48 / month · save ~35%' },
+  annual:  { amount: '349', cents: '', per: '/ year', note: '≈ €29 / month · save ~35%' },
 };
 
 // ── FAQ data ──────────────────────────────────────────────────────────────────
@@ -63,8 +59,7 @@ export default function IBLandingPage() {
   const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [compareOpen, setCompareOpen] = useState(false);
-  const single = SINGLE[billing];
-  const bundle = BUNDLE[billing];
+  const pricing = PRICING[billing];
 
   useEffect(() => {
     const onScroll = () => {
@@ -314,8 +309,7 @@ export default function IBLandingPage() {
                   <div className="subj-row"><div className="key">Papers</div><div className="val">P1 essays · P2 data response · P3 quantitative (HL) · exam technique.</div></div>
                 </div>
                 <div className="subj-foot">
-                  <div className="price-inline">€44<span style={{fontSize:'0.7em'}}>.99</span> <span className="small">/ month</span></div>
-                  <Link className="btn btn-primary btn-sm" href="/auth/signup">Get started <span className="arrow">→</span></Link>
+                  <span className="subj-included">Included in your subscription</span>
                 </div>
               </article>
 
@@ -334,8 +328,7 @@ export default function IBLandingPage() {
                   <div className="subj-row"><div className="key">Papers</div><div className="val">P1 case study · P2 quantitative · P3 social enterprise (HL) · exam technique.</div></div>
                 </div>
                 <div className="subj-foot">
-                  <div className="price-inline">€44<span style={{fontSize:'0.7em'}}>.99</span> <span className="small">/ month</span></div>
-                  <Link className="btn btn-primary btn-sm" href="/auth/signup">Get started <span className="arrow">→</span></Link>
+                  <span className="subj-included">Included in your subscription</span>
                 </div>
               </article>
             </div>
@@ -477,18 +470,16 @@ export default function IBLandingPage() {
         {/* ── BIG NUMBERS — CUT per deck ── */}
         {/* Deck: "Delete it. It duplicated the trust bar and repeated the same fabricated trio." */}
 
-        {/* ── PARENTS — REBUILT per deck ── */}
-        {/* Deck: remove "separate parent login", "one login multiple students", "every Sunday" → "every Monday" */}
+        {/* ── PARENTS — dashboard only ── */}
         <section className="section parents" id="parents">
           <div className="wrap parents-grid">
             <div className="parents-copy">
-              <span className="eyebrow">For parents<span className="dot" />Weekly digest</span>
+              <span className="eyebrow">For parents<span className="dot" />Dashboard</span>
               <h2 className="h-section" style={{marginTop:18}}>Parents see the progress that <em className="italic">matters.</em></h2>
-              <p className="lead">A dashboard view built for parents, plus a weekly progress email. No more &ldquo;did you study today?&rdquo; guesswork — you&apos;ll see where they are, what they&apos;ve struggled with, and whether they&apos;re on pace for May.</p>
+              <p className="lead">A real-time dashboard view built for parents. No more &ldquo;did you study today?&rdquo; guesswork — you&apos;ll see where they are, what they&apos;ve struggled with, and whether they&apos;re on pace for May.</p>
               <ul className="parents-bullets">
                 <li><span><b>Parent view of the dashboard.</b> Sessions completed, weak topics flagged, days to exam, study streak.</span></li>
-                <li><span><b>Weekly progress email, every Monday.</b> What they covered, a pace check, and what&apos;s next.</span></li>
-                <li><span><b>Pace, in plain sight.</b> The dashboard and the weekly email both flag it the moment they fall behind.</span></li>
+                <li><span><b>Pace, in plain sight.</b> The dashboard flags it the moment they fall behind.</span></li>
               </ul>
               <Link href="/demo" className="btn btn-ghost">See the parent view <span className="arrow">→</span></Link>
             </div>
@@ -509,25 +500,6 @@ export default function IBLandingPage() {
                   {['S','M','T','W','T','F','S'].map((d,i) => (
                     <div key={i} className={`dash-day${[3,4,5].includes(i) ? ' active' : ''}`}>{[3,4,5].includes(i) ? '✓' : d}</div>
                   ))}
-                </div>
-              </div>
-
-              <div className="email-preview" aria-label="Weekly email preview">
-                <div className="email-hd">
-                  <div className="from">
-                    <div className="ico">g</div>
-                    <div>
-                      <div className="from-name">gradd.ai</div>
-                      <div className="from-addr">progress@gradd.ai</div>
-                    </div>
-                  </div>
-                  <div className="time">Mon · 07:00</div>
-                </div>
-                <div className="email-subject">Weekly progress · <em>Louise</em> · Week 12</div>
-                <div className="email-body">
-                  <p>This week Louise completed <b>3 sessions</b> across Introduction to Economics — solid streak Wed → Fri.</p>
-                  <p>Pace check: averaging <b>1.3 sessions/week</b> — to stay on track for May 2027, target is 3/wk.</p>
-                  <p>No weak topics flagged yet. Next up: <b>Scarcity &amp; opportunity cost</b>.</p>
                 </div>
               </div>
             </div>
@@ -715,15 +687,13 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── PRICING — REBUILT per deck: toggle + 2 plan cards ── */}
-        {/* Deck: dropped fabricated tier features (revision planner, predicted-grade tracker,
-              cross-topic synthesis, priority Mia, mock cycles, university essay help) */}
+        {/* ── PRICING — single product ── */}
         <section className="section pricing-band" id="pricing">
           <div className="wrap">
             <div className="section-head" style={{textAlign:'center',marginLeft:'auto',marginRight:'auto'}}>
               <span className="eyebrow" style={{display:'inline-block',margin:'0 auto 18px'}}>Pricing</span>
               <h2 className="h-section" style={{marginLeft:'auto',marginRight:'auto'}}>Simple pricing. <em className="italic">Full</em> IB curriculum. Global access.</h2>
-              <p className="lead" style={{margin:'22px auto 0'}}>Cancel anytime. 7-day money-back guarantee on every plan. Every subscription includes Mia — your full-time AI tutor.</p>
+              <p className="lead" style={{margin:'22px auto 0'}}>Cancel anytime. 7-day money-back guarantee. Every subscription includes both subjects and Mia — your full-time AI tutor.</p>
             </div>
 
             {/* Billing toggle */}
@@ -738,48 +708,26 @@ export default function IBLandingPage() {
               >Annual <span className="save-badge">Save ~35%</span></button>
             </div>
 
-            <div className="price-grid-2">
-              {/* Card 1: Single subject */}
-              <article className="price">
-                <span className="price-tag">Single subject</span>
-                <h3>IB Economics <span style={{color:'var(--ink-3)',fontSize:'0.62em',fontFamily:'var(--mono)',fontStyle:'normal'}}>or</span> IB Business Management</h3>
+            <div className="price-grid-1">
+              <article className="price featured">
+                <h3>IB Economics + IB Business Management</h3>
+                <p className="blurb">Everything, one subscription.</p>
                 <div className="amount">
                   <span className="cur">€</span>
-                  {single.amount}
-                  {single.cents && <span style={{fontSize:'0.55em'}}>{single.cents}</span>}
-                  <span className="per">{single.per}</span>
+                  {pricing.amount}
+                  {pricing.cents && <span style={{fontSize:'0.55em'}}>{pricing.cents}</span>}
+                  <span className="per">{pricing.per}</span>
                 </div>
-                {single.note && <p className="price-note">{single.note}</p>}
-                <p className="blurb">IB Economics or IB Business Management. Full course, all features, Mia on demand.</p>
+                {pricing.note && <p className="price-note">{pricing.note}</p>}
                 <ul className="price-features">
-                  <li><span>Full IB syllabus — HL &amp; SL</span></li>
+                  <li><span>Full IB Economics + IB Business Management syllabus — HL &amp; SL</span></li>
                   <li><span>Paper 1, 2 &amp; 3 (HL) exam-style questions worked through in lessons</span></li>
                   <li><span>IBO-standard diagrams — taught inline, your hand-drawn diagrams marked</span></li>
                   <li><span>Unlimited sessions with Mia</span></li>
-                  <li><span>Automatic progress tracking + weak-area drilling</span></li>
+                  <li><span>Progress tracked per subject — weak-area drilling built in</span></li>
                   <li><span>Works on any device</span></li>
                 </ul>
-                <Link href="/auth/signup" className="btn btn-ghost">Start learning <span className="arrow">→</span></Link>
-              </article>
-
-              {/* Card 2: Both subjects — featured */}
-              <article className="price featured">
-                <span className="price-tag">Save €15/month vs separate</span>
-                <h3>Both subjects</h3>
-                <div className="amount">
-                  <span className="cur">€</span>
-                  {bundle.amount}
-                  {bundle.cents && <span style={{fontSize:'0.55em'}}>{bundle.cents}</span>}
-                  <span className="per">{bundle.per}</span>
-                </div>
-                {bundle.note && <p className="price-note" style={{color:'color-mix(in oklab,var(--forest-ink) 70%,transparent)'}}>{bundle.note}</p>}
-                <p className="blurb">IB Economics and IB Business Management. One subscription. Both courses.</p>
-                <ul className="price-features">
-                  <li><span>Everything in single-subject — for both courses</span></li>
-                  <li><span>Progress tracked separately per subject</span></li>
-                  <li><span>One subscription, both tutors</span></li>
-                </ul>
-                <Link href="/auth/signup" className="btn btn-rust">Start learning <span className="arrow">→</span></Link>
+                <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
               </article>
             </div>
           </div>
@@ -1535,6 +1483,14 @@ const CSS = `
   display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-top: 32px;
 }
 @media (max-width: 760px) { .ib-lp .price-grid-2 { grid-template-columns: 1fr; } }
+.ib-lp .price-grid-1 {
+  display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 32px;
+  max-width: 640px; margin-left: auto; margin-right: auto;
+}
+.ib-lp .subj-included {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
+}
 .ib-lp .price {
   background: var(--paper); border: 1px solid var(--rule);
   border-radius: var(--radius); padding: 32px;
