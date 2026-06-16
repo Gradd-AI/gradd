@@ -1,29 +1,17 @@
 'use client';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// IB Landing Page — redesign/ib-landing
-// Design system: docs/styles.css (Fraunces / Geist / Geist Mono, oklch palette)
-// Copy: docs/Gradd_IB_Landing_Copy_Deck.md — DECK WINS over prototype on every
-//       conflict. All copy-deck instructions applied (KEEP / FIX / CUT / REBUILD).
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-
-// ── Pricing data ──────────────────────────────────────────────────────────────
 
 const PRICING = {
   monthly: { amount: '44', cents: '.99', per: '/ month', note: null },
   annual:  { amount: '349', cents: '', per: '/ year', note: '≈ €29 / month · save ~35%' },
 };
 
-// ── FAQ data ──────────────────────────────────────────────────────────────────
-
 const FAQS = [
   {
-    q: 'Is Gradd actually built for the IB syllabus — or is it ChatGPT with a wrapper?',
-    a: 'Built specifically for IB. Mia runs on the official IB Economics (2022) and IB Business Management (2024) subject guides and the IBO assessment framework — command terms, AO levels, markband criteria. Generic LLMs don\'t pass IB: they hallucinate command terms, draw wrong diagrams, and ignore markbands.',
+    q: 'Is Gradd actually built for the IB syllabus — or is it a generic chatbot?',
+    a: 'Not a generic chatbot — a tutor built around IB marking. Mia runs on the official IB Economics (2022) and IB Business Management (2024) subject guides and the IBO assessment framework — command terms, AO levels, markband criteria. Generic LLMs don\'t pass IB: they hallucinate command terms, draw wrong diagrams, and ignore markbands.',
   },
   {
     q: 'Can Gradd really replace a private tutor?',
@@ -43,15 +31,13 @@ const FAQS = [
   },
   {
     q: 'What if Gradd.ai isn\'t right for me?',
-    a: 'Every plan comes with a 7-day money-back guarantee. If you decide it\'s not for you within the first week, email us and we refund you in full — no forms, no friction.',
+    a: 'Paid plans come with a 7-day money-back guarantee. If you decide it\'s not for you within the first week, email us and we refund you in full — no forms, no friction.',
   },
   {
     q: 'Can my school sign up a whole cohort?',
     a: 'School plans are in development. Email schools@gradd.ai to register interest and we\'ll be in touch as soon as they\'re available.',
   },
 ];
-
-// ── Component ─────────────────────────────────────────────────────────────────
 
 export default function IBLandingPage() {
   const [scrolled, setScrolled] = useState(false);
@@ -77,7 +63,6 @@ export default function IBLandingPage() {
 
   return (
     <>
-      {/* ── Scoped design-system styles ── */}
       <style>{CSS}</style>
 
       <div className="ib-lp">
@@ -90,21 +75,21 @@ export default function IBLandingPage() {
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
             </a>
             <nav className="nav-links" aria-label="Primary">
-              {['curriculum','mia','parents','pricing','faq'].map(id => (
+              {['curriculum','parents','pricing','faq'].map(id => (
                 <button key={id} className="nav-link-btn" onClick={() => scrollTo(id)}>
-                  {id === 'mia' ? 'Meet Mia' : id === 'faq' ? 'FAQ' : id.charAt(0).toUpperCase() + id.slice(1)}
+                  {id === 'faq' ? 'FAQ' : id.charAt(0).toUpperCase() + id.slice(1)}
                 </button>
               ))}
             </nav>
             <div className="nav-cta">
               <Link href="/demo" className="btn btn-see-it btn-sm">Try the live demo — no account needed</Link>
               <Link href="/auth/login" className="btn btn-ghost btn-sm">Log in</Link>
-              <Link href="/auth/signup" className="btn btn-primary btn-sm">Start <span className="arrow">→</span></Link>
+              <Link href="/auth/signup" className="btn btn-primary btn-sm">Start free <span className="arrow">→</span></Link>
             </div>
           </div>
         </header>
 
-        {/* ── HERO ── */}
+        {/* ── 1. HERO ── */}
         <section className="hero">
           <div className="wrap hero-grid">
             <div className="hero-copy">
@@ -115,23 +100,13 @@ export default function IBLandingPage() {
                 Walk into your IB exam <span className="em underline">knowing</span> exactly what to do.
               </h1>
               <p className="hero-sub">
-                Gradd.ai is the AI tutor built only for IB Economics and IB Business Management. Full syllabus. IBO-standard diagrams marked instantly. Available the night before the exam.
-              </p>
-              <p className="hero-thesis">
-                Gradd doesn&apos;t just explain IB Economics and Business Management.
-                {' '}It trains students to write the answers IB examiners reward.
+                Most tools tell you the right answer. Mia finds the faulty thinking behind your answer, rebuilds it, and checks it stuck.
               </p>
               <div className="hero-cta">
-                <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
+                <Link href="/auth/signup" className="btn btn-rust">Start free <span className="arrow">→</span></Link>
                 <Link href="/demo" className="btn btn-ghost">Try the live demo — no account needed</Link>
               </div>
-              <div className="hero-meta">
-                <span>From €44.99 / month</span>
-                <span className="dot" />
-                <span>7-day money-back guarantee</span>
-                <span className="dot" />
-                <span>Cancel anytime</span>
-              </div>
+              <p className="hero-reassure">Start free. No card needed. Subscribe when you&apos;re ready.</p>
             </div>
 
             <div className="hero-visual">
@@ -141,7 +116,6 @@ export default function IBLandingPage() {
                   <div className="chat-name-pill"><span className="live" />Mia</div>
                   <div className="chat-course">
                     <div className="em">Economics as a Social Science</div>
-                    {/* Deck: drop "of 150" — false denominator */}
                     <div>IB Economics · SL · Session 12</div>
                   </div>
                 </div>
@@ -150,9 +124,8 @@ export default function IBLandingPage() {
                     <div className="mia-av">M</div>
                     <div className="mia-msg">
                       <p>Welcome back. Last session we started <em>Economics as a Social Science</em> — we did one exchange and didn&apos;t finish. Today we&apos;re continuing that lesson, which appears on Papers 1 and 2 for your SL exam.</p>
-                      <p>Let me pick up where we left off. We were establishing what economics actually <em>is</em> — not just &ldquo;the study of money&rdquo;, but something deeper.</p>
                       <p><strong>Economics is a social science.</strong> That means it studies human behaviour and decision-making in society. The fundamental problem it solves: <span className="key">we have unlimited wants, but limited resources.</span></p>
-                      <p>This fact — called <strong>scarcity</strong> — forces every economic decision. Everyone must choose, and every choice involves giving up something else. That trade-off is your <strong>opportunity cost</strong>.</p>
+                      <p>This fact — called <strong>scarcity</strong> — forces every economic decision. Every choice involves giving up something else. That trade-off is your <strong>opportunity cost</strong>.</p>
                     </div>
                   </div>
                   <div className="chat-row from-user">
@@ -184,8 +157,7 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── TRUST BAR — REBUILT per deck ── */}
-        {/* Old bar invented "136 question banks" and "153 worked exemplars" — replaced with real figures */}
+        {/* ── TRUST BAR ── */}
         <section className="trust">
           <div className="wrap trust-inner">
             <div className="trust-label">Built around the official IBO syllabus</div>
@@ -198,176 +170,125 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── DEMO SIGNPOST ── */}
-        <section className="demo-signpost-band">
+        {/* ── 2. DIAGNOSIS DEMO ── */}
+        <section className="section">
           <div className="wrap">
-            <div className="demo-signpost">
-              <div className="demo-signpost-copy">
-                <h3 className="demo-signpost-h">Try a real IB lesson before signing up.</h3>
-                <p className="demo-signpost-body">Mia walks you through a live lesson one question at a time — correcting mistakes, drawing diagrams, and showing the answer structure IB examiners reward.</p>
-                <p className="demo-signpost-sub">No account needed.</p>
-              </div>
-              <Link href="/demo" className="btn btn-rust demo-signpost-cta">Try the live demo <span className="arrow">→</span></Link>
-            </div>
-          </div>
-        </section>
-
-        {/* ── PAIN ── */}
-        <section className="section pain">
-          <div className="wrap pain-grid">
-            <div>
-              <div className="eyebrow">The problem<span className="dot" />Private tutoring</div>
-              <h2 className="h-section" style={{marginTop:18}}>
-                IB tutoring costs too much.<br/>
-                And it <em className="italic" style={{color:'var(--rust)'}}>still</em>{' '}doesn&apos;t cover the whole course.
+            <div className="section-head">
+              <span className="eyebrow">Diagnosis</span>
+              <h2 className="h-section">
+                You don&apos;t lose marks randomly.<br />
+                You lose them <em className="italic">in patterns.</em>
               </h2>
-              {/* Deck: pull-quote attribution ("— IB student, May 2024") CUT — fabricated */}
+              <p className="lead">
+                Mia spots the faulty thinking behind a wrong answer — then rebuilds it and retests until it changes.
+              </p>
             </div>
-            <div className="pain-cards">
-              <div className="pain-card">
-                <div className="stat">€90<span className="unit">/ hour</span></div>
-                <div>
-                  <div className="label">That&apos;s an hour with Lanterna &mdash; Gradd is a month</div>
-                  <div className="desc">Most families spend €3,500–€9,000 over the two years. And that&apos;s for two hours a week — not full coverage.</div>
+
+            <div className="diag-exchange">
+              <div className="dx-row dx-student">
+                <div className="dx-bubble-student">
+                  A private limited company is better than a sole trader because it makes more profit.
+                </div>
+                <div className="dx-av dx-av-student">S</div>
+              </div>
+
+              <div className="dx-row">
+                <div className="dx-av dx-av-mia">M</div>
+                <div className="dx-msg">
+                  <div className="dx-label">diagnosis</div>
+                  <p>Here&apos;s the faulty model: you&apos;re treating legal structure as a profit guarantee. It isn&apos;t. Legal structure changes ownership, liability, control and access to finance — not profit. Profit depends on business performance.</p>
                 </div>
               </div>
-              {/* Deck: remove "38% of syllabus" fabricated stat — use "Paper 3" label */}
-              <div className="pain-card">
-                <div className="stat">Paper 3<span className="unit">first to go</span></div>
-                <div>
-                  <div className="label">Coverage gaps everywhere</div>
-                  <div className="desc">A weekly tutor reaches maybe two-thirds of the course. Paper 3, HL extensions and exam technique are the bits that get left behind.</div>
+
+              <div className="dx-row">
+                <div className="dx-av dx-av-mia">M</div>
+                <div className="dx-msg">
+                  <div className="dx-label dx-label-rebuild">rebuild</div>
+                  <p>The IB-strong version: becoming a private limited company can help raise capital while keeping ownership relatively controlled — but it adds admin and legal obligations. So the judgement depends on whether the business needs growth capital more than simplicity.</p>
                 </div>
               </div>
-              <div className="pain-card">
-                <div className="stat">0<span className="unit">at 11pm</span></div>
-                <div>
-                  <div className="label">Never there when you need them</div>
-                  <div className="desc">The exam is tomorrow. Your tutor is asleep. The doubt about monopoly diagrams isn&apos;t going to resolve itself.</div>
+
+              <div className="dx-row">
+                <div className="dx-av dx-av-mia">M</div>
+                <div className="dx-msg">
+                  <div className="dx-label dx-label-retest">retest</div>
+                  <p>Now — give me one reason a sole trader might deliberately <em>stay</em> a sole trader.</p>
                 </div>
               </div>
             </div>
+
+            <p className="dx-caption">
+              Most tools correct the answer. Mia corrects the thinking that produced it — and brings the weak point back until it sticks.
+            </p>
           </div>
         </section>
 
         <hr className="rule" />
 
-        {/* ── ONE SUBSCRIPTION ── */}
-        <section className="section one-sub">
+        {/* ── 3. THE GRADD METHOD ── */}
+        <section className="section" id="how-it-works">
           <div className="wrap">
             <div className="section-head">
-              <span className="eyebrow">The answer<span className="dot" />One subscription</span>
-              <h2 className="h-section">
-                One subscription. The <em className="italic">complete</em> IB Economics and IB Business Management curriculum.
-              </h2>
-              <p className="lead">
-                No more piecing together five tutors, three textbooks and a YouTube playlist. Gradd is the whole course, taught and marked to IBO standards, in one place.
-              </p>
+              <span className="eyebrow">How it works</span>
+              <h2 className="h-section">The Gradd method.</h2>
             </div>
-            <div className="one-sub-grid">
-              <div className="os-card">
-                <div className="num">01 / Lessons</div>
-                <h3>Every topic from the official IB syllabus — Economics 2022, Business Management 2024.</h3>
-                <p>Micro, macro, global, development for Econ. Strategy, marketing, finance &amp; ops for BM. HL and SL extensions, at the depth IB actually expects.</p>
+            <div className="method-steps">
+              <div className="method-step">
+                <div className="method-n">01</div>
+                <div className="method-body">
+                  <h3>Learn the concept.</h3>
+                  <p>Mia teaches the topic at the level your paper requires.</p>
+                </div>
               </div>
-              <div className="os-card">
-                <div className="num">02 / Marking</div>
-                <h3>Every paper format. Marked the way IB marks.</h3>
-                <p>Mia works through Paper 1, 2 and 3-style questions with you in session — IBO command terms, diagram marking — graded against the official IBO markbands and assessment criteria, not generic AI hand-waving.</p>
+              <div className="method-step">
+                <div className="method-n">02</div>
+                <div className="method-body">
+                  <h3>Attempt an exam-style question.</h3>
+                  <p>You don&apos;t just read notes, you write.</p>
+                </div>
               </div>
-              <div className="os-card">
-                <div className="num">03 / Tutor</div>
-                <h3>Mia, the tutor on call.</h3>
-                <p>Ask anything, any time — drawing diagrams, working questions, making sense of an exam question worded to trip you up.</p>
+              <div className="method-step">
+                <div className="method-n">03</div>
+                <div className="method-body">
+                  <h3>Diagnose the misconception.</h3>
+                  <p>Mia identifies the faulty thinking behind your answer.</p>
+                </div>
               </div>
+              <div className="method-step">
+                <div className="method-n">04</div>
+                <div className="method-body">
+                  <h3>Rebuild the model.</h3>
+                  <p>She corrects the concept, shows the diagram or structure, and explains what examiners reward.</p>
+                </div>
+              </div>
+              <div className="method-step">
+                <div className="method-n">05</div>
+                <div className="method-body">
+                  <h3>Retest until it sticks.</h3>
+                  <p>The weak area comes back until you stop making the same mistake.</p>
+                </div>
+              </div>
+            </div>
+            <p className="method-closing">
+              Diagnosis alone is feedback. Diagnosis plus retesting is how you actually stop losing the marks.
+            </p>
+          </div>
+        </section>
+
+        {/* ── 4. LIVE DEMO CTA ── */}
+        <section className="demo-cta-band">
+          <div className="wrap">
+            <div className="demo-cta-inner">
+              <div className="demo-cta-copy">
+                <h2 className="demo-cta-h">Don&apos;t take our word for it.</h2>
+                <p className="demo-cta-sub">Watch Mia diagnose a wrong answer right now — one question at a time. No account needed.</p>
+              </div>
+              <Link href="/demo" className="btn btn-rust demo-cta-btn">Try the live demo <span className="arrow">→</span></Link>
             </div>
           </div>
         </section>
 
-        {/* ── SUBJECTS ── */}
-        <section className="section" id="curriculum">
-          <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">Coverage<span className="dot" />HL + SL</span>
-              <h2 className="h-section">
-                IB Economics and IB Business Management — <em className="italic" style={{color:'var(--rust)'}}>fully covered.</em>
-              </h2>
-              <p className="lead">Both subjects taught at HL and SL, with the depth the IBO command terms actually require.</p>
-            </div>
-            <div className="subjects-grid">
-              <article className="subj">
-                <div className="subj-hd">
-                  <h3>IB Economics</h3>
-                  <span className="code">HL · SL · 2022 syllabus</span>
-                </div>
-                <div className="subj-body">
-                  <div className="subj-row"><div className="key">Unit 1</div><div className="val">Introduction — scarcity, choice and economic systems.</div></div>
-                  <div className="subj-row"><div className="key">Unit 2</div><div className="val">Microeconomics — demand, supply, elasticities, market failure, intervention.</div></div>
-                  <div className="subj-row"><div className="key">Unit 3</div><div className="val">Macroeconomics — AD/AS, unemployment, inflation, fiscal &amp; monetary policy.</div></div>
-                  <div className="subj-row"><div className="key">Unit 4</div><div className="val">Global economy — trade, exchange rates, balance of payments, integration.</div></div>
-                  <div className="subj-row"><div className="key">HL only</div><div className="val">Productive/allocative efficiency, monopoly diagrams, sustainable development quant.</div></div>
-                  <div className="subj-row"><div className="key">Papers</div><div className="val">P1 essays · P2 data response · P3 quantitative (HL) · exam technique.</div></div>
-                </div>
-                <div className="subj-foot">
-                  <span className="subj-included">Included in your subscription</span>
-                </div>
-              </article>
-
-              <article className="subj">
-                <div className="subj-hd">
-                  <h3>IB Business Management</h3>
-                  {/* Deck FIX: "2022 syllabus" → "2024 syllabus" */}
-                  <span className="code">HL · SL · 2024 syllabus</span>
-                </div>
-                <div className="subj-body">
-                  <div className="subj-row"><div className="key">Unit 1</div><div className="val">Business organisation &amp; environment — stakeholders, growth, evolution.</div></div>
-                  <div className="subj-row"><div className="key">Unit 2</div><div className="val">Human resource management — leadership, motivation, organisational culture.</div></div>
-                  <div className="subj-row"><div className="key">Unit 3</div><div className="val">Finance &amp; accounts — sources of finance, ratios, investment appraisal.</div></div>
-                  <div className="subj-row"><div className="key">Unit 4</div><div className="val">Marketing — research, the 7Ps, branding, e-commerce, international marketing.</div></div>
-                  <div className="subj-row"><div className="key">Unit 5</div><div className="val">Operations — production, quality, R&amp;D, crisis &amp; contingency planning.</div></div>
-                  <div className="subj-row"><div className="key">Papers</div><div className="val">P1 case study · P2 quantitative · P3 social enterprise (HL) · exam technique.</div></div>
-                </div>
-                <div className="subj-foot">
-                  <span className="subj-included">Included in your subscription</span>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        {/* ── EXAM-READY BAND ── */}
-        <section className="section band-dark">
-          <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow" style={{color:'color-mix(in oklab,var(--forest-ink) 60%,transparent)'}}>Why Gradd<span className="dot" />Built for outcomes</span>
-              <h2 className="h-section">
-                Start at zero. Finish <em className="italic">exam-ready.</em>
-              </h2>
-              <p className="lead">
-                Whether you&apos;re starting Year 1 in September or cramming the week before your exams, Gradd meets you where you are and pushes you to a 7.
-              </p>
-            </div>
-            <div className="pillars">
-              <div className="pillar">
-                <div className="num">01</div>
-                <h3>From day one.</h3>
-                <p>Mia teaches from scratch and adapts as you go — every session builds on where you actually are, not where a curriculum assumes you should be.</p>
-              </div>
-              <div className="pillar">
-                <div className="num">02</div>
-                <h3>On demand.</h3>
-                <p>Lessons, exam-style questions, marking and explanation — whenever you have ten minutes between calculus and football.</p>
-              </div>
-              <div className="pillar">
-                <div className="num">03</div>
-                <h3>Built around your exam.</h3>
-                <p>Everything Mia does is pointed at the papers you&apos;re sitting — structured teaching, exam-style questions, and your weak areas, all working toward the same result.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── DIAGRAMS ── KEEP ENTIRELY — true and shipped */}
+        {/* ── 5. DIAGRAM MARKING PROOF (existing — kept as-is) ── */}
         <section className="section">
           <div className="wrap">
             <div className="section-head">
@@ -424,59 +345,134 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── MEET MIA — FIXED per deck ── */}
-        <section className="section" id="mia" style={{background:'color-mix(in oklab,var(--paper) 92%,var(--paper-2))'}}>
-          <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">Meet Mia<span className="dot" />The tutor</span>
-              {/* Deck FIX: headline drops "read every mark scheme since 2016" implication */}
-              <h2 className="h-section">
-                A tutor who knows the <em className="italic">mark scheme</em> — not just the subject.
+        {/* ── 6. THE PROBLEM (existing — kept as-is) ── */}
+        <section className="section pain">
+          <div className="wrap pain-grid">
+            <div>
+              <div className="eyebrow">The problem<span className="dot" />Private tutoring</div>
+              <h2 className="h-section" style={{marginTop:18}}>
+                IB tutoring costs too much.<br/>
+                And it <em className="italic" style={{color:'var(--rust)'}}>still</em>{' '}doesn&apos;t cover the whole course.
               </h2>
-              {/* Deck FIX: lead drops "examiners' reports, and 50+ past papers" */}
-              <p className="lead">
-                Mia is not ChatGPT in a costume. Mia is built on the IB Economics and IB Business Management subject guides and the official IBO assessment framework — command terms, AO levels and the markband descriptors examiners actually score against.
-              </p>
             </div>
-            <div className="cap-list">
-              <div className="cap">
-                <h4>Speaks IB command terms.</h4>
-                <p>&ldquo;Evaluate&rdquo; is not &ldquo;describe&rdquo;. Mia calibrates answers to AO2/AO3 the way real examiners do.</p>
+            <div className="pain-cards">
+              <div className="pain-card">
+                <div className="stat">€90<span className="unit">/ hour</span></div>
+                <div>
+                  <div className="label">That&apos;s an hour with Lanterna &mdash; Gradd is a month</div>
+                  <div className="desc">Most families spend €3,500–€9,000 over the two years. And that&apos;s for two hours a week — not full coverage.</div>
+                </div>
               </div>
-              <div className="cap">
-                <h4>Draws to IBO convention.</h4>
-                <p>Curves correctly labelled, axes correctly oriented, shading where shading earns marks.</p>
+              <div className="pain-card">
+                <div className="stat">Paper 3<span className="unit">first to go</span></div>
+                <div>
+                  <div className="label">Coverage gaps everywhere</div>
+                  <div className="desc">A weekly tutor reaches maybe two-thirds of the course. Paper 3, HL extensions and exam technique are the bits that get left behind.</div>
+                </div>
               </div>
-              <div className="cap">
-                <h4>Generates exam-style questions in session.</h4>
-                <p>Mia asks questions in the real exam idiom — including the ones written to confuse you — as part of normal teaching.</p>
-              </div>
-              <div className="cap">
-                <h4>Gives feedback that improves marks.</h4>
-                <p>Not &ldquo;good attempt!&rdquo; Specific: &ldquo;para 2 needs an evaluative judgement to access band 3&rdquo;.</p>
-              </div>
-              <div className="cap">
-                <h4>Drills exam technique, paper by paper.</h4>
-                <p>Paper 1 essays, Paper 2 data response, Paper 3 quant — the structure examiners reward, learned by doing it.</p>
-              </div>
-              <div className="cap">
-                <h4>Tracks what you actually know.</h4>
-                <p>Your weak topics surface daily until they don&apos;t. No more revising what you already mastered.</p>
+              <div className="pain-card">
+                <div className="stat">0<span className="unit">at 11pm</span></div>
+                <div>
+                  <div className="label">Never there when you need them</div>
+                  <div className="desc">The exam is tomorrow. Your tutor is asleep. The doubt about monopoly diagrams isn&apos;t going to resolve itself.</div>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── BIG NUMBERS — CUT per deck ── */}
-        {/* Deck: "Delete it. It duplicated the trust bar and repeated the same fabricated trio." */}
+        <hr className="rule" />
 
-        {/* ── PARENTS — dashboard only ── */}
+        {/* ── 7. WHAT'S INCLUDED ── */}
+        <section className="section one-sub">
+          <div className="wrap">
+            <div className="section-head">
+              <span className="eyebrow">The answer<span className="dot" />One subscription</span>
+              <h2 className="h-section">
+                One subscription. The <em className="italic">complete</em> IB Economics and IB Business Management curriculum.
+              </h2>
+              <p className="lead">
+                No more piecing together five tutors, three textbooks and a YouTube playlist. Gradd is the whole course, taught and marked to IBO standards, in one place.
+              </p>
+            </div>
+            <div className="one-sub-grid">
+              <div className="os-card">
+                <div className="num">01 / Lessons</div>
+                <h3>Every topic from the official IB syllabus — Economics 2022, Business Management 2024.</h3>
+                <p>Micro, macro, global, development for Econ. Strategy, marketing, finance &amp; ops for BM. HL and SL extensions, at the depth IB actually expects.</p>
+              </div>
+              <div className="os-card">
+                <div className="num">02 / Marking</div>
+                <h3>Every paper format. Marked the way IB marks.</h3>
+                <p>Mia works through Paper 1, 2 and 3-style questions with you in session — command terms, diagram marking — graded against the official IBO markbands and assessment criteria, not generic AI hand-waving.</p>
+              </div>
+              <div className="os-card">
+                <div className="num">03 / Tutor</div>
+                <h3>Mia, on call.</h3>
+                <p>Ask anything, any time — drawing diagrams, working questions, making sense of an exam question worded to trip you up.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── SUBJECTS ── */}
+        <section className="section" id="curriculum">
+          <div className="wrap">
+            <div className="section-head">
+              <span className="eyebrow">Coverage<span className="dot" />HL + SL</span>
+              <h2 className="h-section">
+                IB Economics and IB Business Management — <em className="italic" style={{color:'var(--rust)'}}>fully covered.</em>
+              </h2>
+              <p className="lead">Both subjects taught at HL and SL, with the depth the IBO command terms actually require.</p>
+            </div>
+            <div className="subjects-grid">
+              <article className="subj">
+                <div className="subj-hd">
+                  <h3>IB Economics</h3>
+                  <span className="code">HL · SL · 2022 syllabus</span>
+                </div>
+                <div className="subj-body">
+                  <div className="subj-row"><div className="key">Unit 1</div><div className="val">Introduction — scarcity, choice and economic systems.</div></div>
+                  <div className="subj-row"><div className="key">Unit 2</div><div className="val">Microeconomics — demand, supply, elasticities, market failure, intervention.</div></div>
+                  <div className="subj-row"><div className="key">Unit 3</div><div className="val">Macroeconomics — AD/AS, unemployment, inflation, fiscal &amp; monetary policy.</div></div>
+                  <div className="subj-row"><div className="key">Unit 4</div><div className="val">Global economy — trade, exchange rates, balance of payments, integration.</div></div>
+                  <div className="subj-row"><div className="key">HL only</div><div className="val">Productive/allocative efficiency, monopoly diagrams, sustainable development quant.</div></div>
+                  <div className="subj-row"><div className="key">Papers</div><div className="val">P1 essays · P2 data response · P3 quantitative (HL) · exam technique.</div></div>
+                </div>
+                <div className="subj-foot">
+                  <span className="subj-included">Included in your subscription</span>
+                </div>
+              </article>
+
+              <article className="subj">
+                <div className="subj-hd">
+                  <h3>IB Business Management</h3>
+                  <span className="code">HL · SL · 2024 syllabus</span>
+                </div>
+                <div className="subj-body">
+                  <div className="subj-row"><div className="key">Unit 1</div><div className="val">Business organisation &amp; environment — stakeholders, growth, evolution.</div></div>
+                  <div className="subj-row"><div className="key">Unit 2</div><div className="val">Human resource management — leadership, motivation, organisational culture.</div></div>
+                  <div className="subj-row"><div className="key">Unit 3</div><div className="val">Finance &amp; accounts — sources of finance, ratios, investment appraisal.</div></div>
+                  <div className="subj-row"><div className="key">Unit 4</div><div className="val">Marketing — research, the 7Ps, branding, e-commerce, international marketing.</div></div>
+                  <div className="subj-row"><div className="key">Unit 5</div><div className="val">Operations — production, quality, R&amp;D, crisis &amp; contingency planning.</div></div>
+                  <div className="subj-row"><div className="key">Papers</div><div className="val">P1 case study · P2 quantitative · P3 social enterprise (HL) · exam technique.</div></div>
+                </div>
+                <div className="subj-foot">
+                  <span className="subj-included">Included in your subscription</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 8. PARENT DASHBOARD (light reframe) ── */}
         <section className="section parents" id="parents">
           <div className="wrap parents-grid">
             <div className="parents-copy">
               <span className="eyebrow">For parents<span className="dot" />Dashboard</span>
               <h2 className="h-section" style={{marginTop:18}}>Parents see the progress that <em className="italic">matters.</em></h2>
               <p className="lead">A real-time dashboard view built for parents. No more &ldquo;did you study today?&rdquo; guesswork — you&apos;ll see where they are, what they&apos;ve struggled with, and whether they&apos;re on pace for their exams.</p>
+              <p className="lead" style={{marginTop:16}}>Parents don&apos;t just see activity. They see the topics and skills Mia keeps having to rebuild — and whether they&apos;re changing.</p>
               <ul className="parents-bullets">
                 <li><span><b>Parent view of the dashboard.</b> Sessions completed, weak topics flagged, days to exam, study streak.</span></li>
                 <li><span><b>Pace, in plain sight.</b> The dashboard flags it the moment they fall behind.</span></li>
@@ -506,7 +502,7 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── WHO IT'S FOR — KEEP ── */}
+        {/* ── WHO IT'S FOR ── */}
         <section className="section">
           <div className="wrap">
             <div className="section-head">
@@ -517,7 +513,7 @@ export default function IBLandingPage() {
               <div className="who-card">
                 <span className="who-tag">Aiming for a 7</span>
                 <h3>The student who&apos;s already strong, going for the edge.</h3>
-                <p>You&apos;re at a 6 and you want the predicted that gets you into LSE. Gradd is the unfair advantage that runs on your timetable, not your tutor&apos;s.</p>
+                <p>You&apos;re at a 6 and you want the predicted that gets you into LSE. Gradd gives you the kind of feedback most students only get from an excellent private tutor — whenever you need it.</p>
               </div>
               <div className="who-card">
                 <span className="who-tag">Falling behind</span>
@@ -538,7 +534,40 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── COMPARE ── */}
+        {/* ── 9. BEFORE / AFTER PROOF (NEW) ── */}
+        <section className="section" style={{background:'color-mix(in oklab,var(--paper) 50%,var(--sage))'}}>
+          <div className="wrap">
+            <div className="section-head">
+              <span className="eyebrow">What changes</span>
+              <h2 className="h-section">From a 4-mark answer to a 7-mark one.</h2>
+            </div>
+            <div className="ba-grid">
+              <div className="ba-card ba-before">
+                <div className="ba-tag">Before</div>
+                <p className="ba-label">Student answer</p>
+                <blockquote className="ba-quote">
+                  &ldquo;A subsidy lowers price and increases demand.&rdquo;
+                </blockquote>
+              </div>
+              <div className="ba-card ba-diag">
+                <div className="ba-tag ba-tag-diag">Mia&apos;s diagnosis</div>
+                <p className="ba-label">The misconception</p>
+                <blockquote className="ba-quote">
+                  &ldquo;You&apos;re confusing demand with quantity demanded. The demand curve doesn&apos;t shift — the subsidy shifts the supply curve right, lowering price and raising quantity.&rdquo;
+                </blockquote>
+              </div>
+              <div className="ba-card ba-after">
+                <div className="ba-tag ba-tag-after">After</div>
+                <p className="ba-label">Rebuilt answer</p>
+                <blockquote className="ba-quote">
+                  &ldquo;A subsidy reduces producers&apos; costs, shifting supply right. Price falls from P1 to P2 and quantity rises from Q1 to Q2. The size of the effect depends on PED and PES.&rdquo;
+                </blockquote>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── 10. COMPARISON TABLE (existing + 2 new rows) ── */}
         <section className="section" id="compare" style={{background:'var(--sage)'}}>
           <div className="wrap">
             <div className="section-head">
@@ -547,7 +576,6 @@ export default function IBLandingPage() {
               <p className="lead">There&apos;s no shortage of ways to prepare for IB Economics or IB Business. Here&apos;s how Gradd actually stacks up against what most students do — at a fraction of the price, with feedback the second you finish writing.</p>
             </div>
 
-            {/* Desktop table — hidden below 768px */}
             <div className="cmp-wrap cmp-desktop">
               <table className="cmp">
                 <thead>
@@ -580,6 +608,20 @@ export default function IBLandingPage() {
                     <td><span className="n">Homework from textbooks</span></td>
                     <td><span className="n">Generic worksheets</span></td>
                     <td><span className="n">Limited to what you find</span></td>
+                  </tr>
+                  <tr>
+                    <td>Diagnoses your misconceptions</td>
+                    <td className="gradd-col"><span className="y">✓</span></td>
+                    <td><span className="n">Depends on tutor</span></td>
+                    <td><span className="n">✗</span></td>
+                    <td><span className="n">✗</span></td>
+                  </tr>
+                  <tr>
+                    <td>Retests weak thinking until it sticks</td>
+                    <td className="gradd-col"><span className="y">✓</span></td>
+                    <td><span className="n">✗</span></td>
+                    <td><span className="n">✗</span></td>
+                    <td><span className="n">✗</span></td>
                   </tr>
                   <tr>
                     <td>Diagram marking</td>
@@ -620,15 +662,16 @@ export default function IBLandingPage() {
               </table>
             </div>
 
-            {/* Mobile layout — shown below 768px, no horizontal scroll */}
             <div className="cmp-mobile">
               <div className="cmp-mobile-gradd">
                 <div className="cmp-mobile-col-header">Gradd</div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span className="y">€44.99 / month</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="y">✓ Both subjects, every topic</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="y">✓ Unlimited, on demand</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="y">✓</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="y">✓</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="y">✓ Instant, IBO criteria</span></div>
-                <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="y">✓ Command terms + markbands, instant</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="y">✓ Command terms + markbands</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="y">Seconds</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="y">24/7</span></div>
                 <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="y">✓ Adaptive to your weak areas</span></div>
@@ -647,6 +690,8 @@ export default function IBLandingPage() {
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span className="n">€60–€120 / hour</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="n">Depends on tutor</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Homework from textbooks</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="n">Depends on tutor</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">If you book a session</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Varies by tutor</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">3–7 days</span></div>
@@ -658,6 +703,8 @@ export default function IBLandingPage() {
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span className="n">€25–€45 / hour</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="n">Cohort-paced</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Generic worksheets</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="n">✗</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">Rare</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Generic</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">1–2 weeks</span></div>
@@ -669,6 +716,8 @@ export default function IBLandingPage() {
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Cost</span><span>Free–€120 (books)</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span>You decide</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Limited to what you find</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="n">✗</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">Not available</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Not available</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">You mark yourself</span></div>
@@ -681,22 +730,20 @@ export default function IBLandingPage() {
 
             <p className="cmp-closing">Most students stitch two or three of these together — a tutor for the hard bits, group classes for the social side, self-study for everything else. Gradd does the work of all three, every day, in your pocket.</p>
             <div className="cmp-cta">
-              <Link href="/subscribe/ib" className="btn btn-rust">Choose your IB plan — 7-day money-back trial <span className="arrow">→</span></Link>
-              <a href="#methodology" className="cmp-secondary-link">See how Mia marks like an IB examiner →</a>
+              <Link href="/auth/signup" className="btn btn-rust">Start free <span className="arrow">→</span></Link>
             </div>
           </div>
         </section>
 
-        {/* ── PRICING — single product ── */}
+        {/* ── 11. PRICING (reframe free-first) ── */}
         <section className="section pricing-band" id="pricing">
           <div className="wrap">
             <div className="section-head" style={{textAlign:'center',marginLeft:'auto',marginRight:'auto'}}>
               <span className="eyebrow" style={{display:'inline-block',margin:'0 auto 18px'}}>Pricing</span>
-              <h2 className="h-section" style={{marginLeft:'auto',marginRight:'auto'}}>Simple pricing. <em className="italic">Full</em> IB curriculum. Global access.</h2>
-              <p className="lead" style={{margin:'22px auto 0'}}>Cancel anytime. 7-day money-back guarantee. Every subscription includes both subjects and Mia — your full-time AI tutor.</p>
+              <h2 className="h-section" style={{marginLeft:'auto',marginRight:'auto'}}>Start free. Subscribe for unlimited teaching.</h2>
+              <p className="lead" style={{margin:'22px auto 0'}}>Free, no card: unlimited questions, instant marking, and your first teaching moments with Mia — the real product, not a trial.</p>
             </div>
 
-            {/* Billing toggle */}
             <div className="billing-toggle">
               <button
                 className={`toggle-btn${billing === 'monthly' ? ' active' : ''}`}
@@ -710,8 +757,8 @@ export default function IBLandingPage() {
 
             <div className="price-grid-1">
               <article className="price featured">
-                <h3>IB Economics + IB Business Management</h3>
-                <p className="blurb">Everything, one subscription.</p>
+                <h3>Unlimited teaching</h3>
+                <p className="blurb">IB Economics + IB Business Management. Everything, one subscription.</p>
                 <div className="amount">
                   <span className="cur">€</span>
                   {pricing.amount}
@@ -720,20 +767,21 @@ export default function IBLandingPage() {
                 </div>
                 {pricing.note && <p className="price-note">{pricing.note}</p>}
                 <ul className="price-features">
+                  <li><span>Unlimited diagnosis-led teaching — every misconception rebuilt, every time</span></li>
                   <li><span>Full IB Economics + IB Business Management syllabus — HL &amp; SL</span></li>
                   <li><span>Paper 1, 2 &amp; 3 (HL) exam-style questions worked through in lessons</span></li>
-                  <li><span>IBO-standard diagrams — taught inline, your hand-drawn diagrams marked</span></li>
-                  <li><span>Unlimited sessions with Mia</span></li>
-                  <li><span>Progress tracked per subject — weak-area drilling built in</span></li>
+                  <li><span>IBO-standard diagram marking — taught inline, your hand-drawn diagrams marked</span></li>
+                  <li><span>Progress tracked per subject — weak-area retesting built in</span></li>
                   <li><span>Works on any device</span></li>
                 </ul>
-                <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
+                <Link href="/auth/signup" className="btn btn-rust">Start free <span className="arrow">→</span></Link>
               </article>
             </div>
+            <p className="pricing-reassure">Start free. No card needed for the demo. Paid plans include a 7-day money-back guarantee. Cancel anytime.</p>
           </div>
         </section>
 
-        {/* ── FAQ — KEEP most, FIX three ── */}
+        {/* ── FAQ ── */}
         <section className="section" id="faq">
           <div className="wrap" style={{maxWidth:880}}>
             <div className="section-head">
@@ -759,23 +807,20 @@ export default function IBLandingPage() {
           </div>
         </section>
 
-        {/* ── FINAL CTA — KEEP ── */}
+        {/* ── FINAL CTA ── */}
         <section className="final-cta">
           <div className="wrap final-cta-inner">
-            <div className="tag-pill" style={{marginBottom:30,color:'color-mix(in oklab,var(--forest-ink) 80%,transparent)',borderColor:'color-mix(in oklab,var(--forest-ink) 30%,transparent)'}}>
-              <span className="dot" /> 7-day money-back guarantee
-            </div>
             <h2 className="h-display">Turn understanding into <em className="italic">exam marks.</em></h2>
             <p className="lead">Start tonight. Be ahead of your class by next Monday.</p>
             <div className="hero-cta">
-              <Link href="/auth/signup" className="btn btn-rust">Start learning with Mia <span className="arrow">→</span></Link>
-              <button className="btn btn-ghost" onClick={() => scrollTo('pricing')}>See pricing</button>
+              <Link href="/auth/signup" className="btn btn-rust">Start free <span className="arrow">→</span></Link>
+              <Link href="/demo" className="btn btn-ghost">Try the live demo</Link>
             </div>
-            <div className="small">From €44.99 / month · cancel anytime · 7-day money-back guarantee</div>
+            <div className="small">No card needed to start · paid plans from €44.99 / month · 7-day money-back guarantee</div>
           </div>
         </section>
 
-        {/* ── FOOTER — wired to real pages ── */}
+        {/* ── FOOTER ── */}
         <footer className="footer">
           <div className="wrap footer-inner">
             <div style={{display:'flex',alignItems:'center',gap:10}}>
@@ -796,7 +841,6 @@ export default function IBLandingPage() {
           </div>
         </footer>
 
-        {/* Back to top */}
         <button
           className={`to-top${showTop ? ' visible' : ''}`}
           aria-label="Back to top"
@@ -813,8 +857,6 @@ export default function IBLandingPage() {
 }
 
 // ── Scoped CSS ─────────────────────────────────────────────────────────────────
-// All selectors are prefixed with .ib-lp to avoid conflicts with the LC landing.
-// Design system ported from docs/styles.css (oklch palette, Fraunces/Geist/Geist Mono).
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');
@@ -937,10 +979,6 @@ const CSS = `
 .ib-lp .nav-inner {
   display: flex; align-items: center; justify-content: space-between; height: 68px;
 }
-.ib-lp .nav-wordmark {
-  font-family: var(--serif); font-size: 20px; letter-spacing: -0.02em; color: var(--ink);
-}
-.ib-lp .nav-ai { font-style: italic; color: var(--rust); }
 .ib-lp .nav-links { display: flex; align-items: center; gap: 28px; }
 .ib-lp .nav-link-btn {
   font-size: 14px; color: var(--ink-2); background: none; border: none;
@@ -981,18 +1019,13 @@ const CSS = `
   line-height: 1.55; color: var(--ink-2); max-width: 52ch;
 }
 .ib-lp .hero-cta { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 36px; }
-.ib-lp .hero-meta {
-  display: flex; gap: 22px; align-items: center; flex-wrap: wrap;
-  margin-top: 22px; font-size: 13px; color: var(--ink-3);
-}
-.ib-lp .hero-meta .dot {
-  width: 4px; height: 4px; background: var(--ink-3);
-  border-radius: 50%; display: inline-block; vertical-align: middle;
+.ib-lp .hero-reassure {
+  margin-top: 14px; font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3);
 }
 @media (max-width: 480px) {
   .ib-lp .hero-cta { flex-direction: column; align-items: stretch; gap: 10px; }
   .ib-lp .hero-cta .btn { width: 100%; justify-content: center; }
-  .ib-lp .hero-meta { gap: 12px; font-size: 12px; }
 }
 
 /* ── Chat preview ── */
@@ -1015,7 +1048,6 @@ const CSS = `
   font-family: var(--serif); font-size: 17px; letter-spacing: -0.02em; color: var(--ink);
   display: flex; align-items: baseline;
 }
-.ib-lp .chat-logo .ai { font-style: italic; color: var(--rust); }
 .ib-lp .chat-name-pill {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 5px 12px; border: 1px solid var(--rule-strong); border-radius: 999px;
@@ -1180,28 +1212,10 @@ const CSS = `
   display: flex; align-items: center; justify-content: space-between;
   padding: 18px 26px; border-top: 1px solid var(--rule); background: var(--paper-2);
 }
-.ib-lp .price-inline { font-family: var(--serif); font-size: 28px; font-style: italic; }
-.ib-lp .price-inline .small { font-family: var(--mono); font-size: 12px; color: var(--ink-3); font-style: normal; }
-
-/* ── Exam-ready band ── */
-.ib-lp .band-dark { background: var(--forest); color: var(--forest-ink); }
-.ib-lp .band-dark .h-section { color: var(--forest-ink); }
-.ib-lp .band-dark .lead { color: color-mix(in oklab,var(--forest-ink) 78%,transparent); }
-.ib-lp .band-dark .h-section em { font-style: italic; color: var(--rust); }
-.ib-lp .pillars {
-  display: grid; grid-template-columns: repeat(3,1fr);
-  gap: 1px; background: color-mix(in oklab,var(--forest-ink) 18%,transparent);
-  border: 1px solid color-mix(in oklab,var(--forest-ink) 18%,transparent);
-  border-radius: var(--radius); overflow: hidden; margin-top: 48px;
+.ib-lp .subj-included {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--ink-3);
 }
-@media (max-width: 860px) { .ib-lp .pillars { grid-template-columns: 1fr; } }
-.ib-lp .pillar { background: var(--forest); padding: 32px 28px; }
-.ib-lp .pillar .num {
-  font-family: var(--serif); font-size: 48px; font-style: italic;
-  letter-spacing: -0.02em; line-height: 1; color: var(--rust); margin-bottom: 16px;
-}
-.ib-lp .pillar h3 { font-family: var(--serif); font-size: 24px; letter-spacing: -0.015em; margin-bottom: 8px; color: var(--forest-ink); }
-.ib-lp .pillar p { font-size: 14px; line-height: 1.55; color: color-mix(in oklab,var(--forest-ink) 72%,transparent); }
 
 /* ── Diagrams ── */
 .ib-lp .diag-demo {
@@ -1241,22 +1255,6 @@ const CSS = `
 .ib-lp .diag-score .big {
   font-family: var(--serif); font-size: 56px; font-style: italic; line-height: 1; color: var(--forest);
 }
-
-/* ── Meet Mia capabilities ── */
-.ib-lp .cap-list {
-  display: grid; grid-template-columns: repeat(2,1fr); gap: 1px;
-  background: var(--rule); border: 1px solid var(--rule);
-  border-radius: var(--radius); overflow: hidden;
-}
-@media (max-width: 640px) { .ib-lp .cap-list { grid-template-columns: 1fr; } }
-.ib-lp .cap { background: var(--paper); padding: 24px; display: flex; flex-direction: column; gap: 8px; }
-.ib-lp .cap .icn {
-  width: 32px; height: 32px; border-radius: 8px; background: var(--sage);
-  color: var(--forest); display: grid; place-items: center; margin-bottom: 6px;
-  font-family: var(--serif); font-style: italic; font-size: 17px;
-}
-.ib-lp .cap h4 { font-family: var(--serif); font-size: 20px; letter-spacing: -0.012em; line-height: 1.15; }
-.ib-lp .cap p { font-size: 13.5px; color: var(--ink-2); line-height: 1.5; }
 
 /* ── Parents ── */
 .ib-lp .parents { background: var(--sage); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
@@ -1321,34 +1319,9 @@ const CSS = `
   font-size: 11px; color: var(--ink-3);
 }
 .ib-lp .dash-day.active { background: var(--forest); border-color: var(--forest); color: var(--gold); font-weight: 500; }
-
-/* Email preview */
-.ib-lp .email-preview {
-  background: var(--paper); border: 1px solid var(--rule);
-  border-radius: 14px; padding: 18px 22px;
-  box-shadow: 0 16px 32px -22px rgba(20,24,22,0.12);
-}
-.ib-lp .email-hd {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); margin-bottom: 12px;
-}
-.ib-lp .email-hd .from { display: flex; align-items: center; gap: 10px; }
-.ib-lp .email-hd .ico {
-  width: 28px; height: 28px; border-radius: 50%; background: var(--forest);
-  color: var(--gold); display: grid; place-items: center; font-family: var(--mono); font-size: 11px;
-}
-.ib-lp .email-hd .from-name { font-size: 13px; font-weight: 500; }
-.ib-lp .email-hd .from-addr { font-size: 11px; font-family: var(--mono); color: var(--ink-3); }
-.ib-lp .email-hd .time { font-size: 11px; font-family: var(--mono); color: var(--ink-3); }
-.ib-lp .email-subject { font-family: var(--serif); font-size: 19px; letter-spacing: -0.012em; margin-bottom: 12px; }
-.ib-lp .email-subject em { font-style: italic; color: var(--rust); }
-.ib-lp .email-body { font-size: 13.5px; line-height: 1.55; color: var(--ink-2); }
-.ib-lp .email-body p { margin: 0 0 8px; }
-.ib-lp .email-body p:last-child { margin-bottom: 0; }
-.ib-lp .email-body b { color: var(--ink); font-weight: 500; }
 @media (max-width: 480px) {
   .ib-lp .dash-stats { grid-template-columns: repeat(2,1fr); }
-  .ib-lp .dash-preview, .ib-lp .email-preview { padding: 16px 18px; }
+  .ib-lp .dash-preview { padding: 16px 18px; }
 }
 
 /* ── Who it's for ── */
@@ -1401,11 +1374,6 @@ const CSS = `
   margin: 36px 0 28px; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 680px;
 }
 .ib-lp .cmp-cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
-.ib-lp .cmp-secondary-link {
-  font-size: 14px; color: var(--ink-2); text-decoration: none;
-  font-family: var(--mono); letter-spacing: 0.02em;
-}
-.ib-lp .cmp-secondary-link:hover { color: var(--forest); text-decoration: underline; }
 
 /* ── Compare: mobile card layout (<768px) ── */
 .ib-lp .cmp-mobile { display: none; }
@@ -1479,17 +1447,9 @@ const CSS = `
   text-transform: uppercase; background: color-mix(in oklab,var(--rust) 15%,transparent);
   color: var(--rust); padding: 2px 7px; border-radius: 999px;
 }
-.ib-lp .price-grid-2 {
-  display: grid; grid-template-columns: repeat(2,1fr); gap: 16px; margin-top: 32px;
-}
-@media (max-width: 760px) { .ib-lp .price-grid-2 { grid-template-columns: 1fr; } }
 .ib-lp .price-grid-1 {
   display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 32px;
   max-width: 640px; margin-left: auto; margin-right: auto;
-}
-.ib-lp .subj-included {
-  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em;
-  text-transform: uppercase; color: var(--ink-3);
 }
 .ib-lp .price {
   background: var(--paper); border: 1px solid var(--rule);
@@ -1499,13 +1459,6 @@ const CSS = `
 .ib-lp .price.featured { background: var(--forest); color: var(--forest-ink); border-color: var(--forest); }
 .ib-lp .price.featured .price-features li { border-color: color-mix(in oklab,var(--forest-ink) 20%,transparent); }
 .ib-lp .price.featured .price-features li::before { color: var(--rust); }
-.ib-lp .price-tag {
-  align-self: flex-start; font-family: var(--mono); font-size: 11px;
-  letter-spacing: 0.08em; text-transform: uppercase;
-  background: color-mix(in oklab,var(--rust) 18%,transparent);
-  color: var(--rust); padding: 4px 10px; border-radius: 999px;
-}
-.ib-lp .price.featured .price-tag { background: var(--rust); color: var(--rust-ink); }
 .ib-lp .price h3 { font-family: var(--serif); font-size: 28px; letter-spacing: -0.015em; }
 .ib-lp .amount {
   display: flex; align-items: baseline; gap: 4px; font-family: var(--serif);
@@ -1528,6 +1481,11 @@ const CSS = `
 }
 .ib-lp .price-features li::before { content: "+"; font-family: var(--mono); font-size: 14px; color: var(--rust); line-height: 1.4; }
 .ib-lp .price .btn { margin-top: auto; width: 100%; justify-content: center; }
+.ib-lp .pricing-reassure {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  color: var(--ink-3); text-align: center; margin-top: 28px;
+  max-width: 640px; margin-left: auto; margin-right: auto;
+}
 
 /* ── FAQ ── */
 .ib-lp .faq-list { display: flex; flex-direction: column; }
@@ -1579,23 +1537,14 @@ const CSS = `
 @media (max-width: 480px) {
   .ib-lp .final-cta-inner { padding: clamp(56px,12vw,96px) 0; }
   .ib-lp .final-cta .h-display { padding: 0 4px; font-size: clamp(40px,11vw,56px); }
+  .ib-lp .final-cta .hero-cta { flex-direction: column; align-items: center; max-width: 340px; margin-left: auto; margin-right: auto; }
 }
 
 /* ── Footer ── */
 .ib-lp .footer { padding: 56px 0 40px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); }
 .ib-lp .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-.ib-lp .footer-logo { font-family: var(--serif); font-size: 18px; letter-spacing: -0.02em; }
-.ib-lp .footer-ai { font-style: italic; color: var(--rust); }
 .ib-lp .footer-links { display: flex; gap: 24px; }
 .ib-lp .footer-links a:hover { color: var(--ink); }
-
-/* ── Tag pill ── */
-.ib-lp .tag-pill {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 14px;
-  border: 1px solid var(--rule-strong); border-radius: 999px; font-size: 12px;
-  font-family: var(--mono); letter-spacing: 0.04em; color: var(--ink-2);
-}
-.ib-lp .tag-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--rust); }
 
 /* ── Back to top ── */
 .ib-lp .to-top {
@@ -1609,80 +1558,172 @@ const CSS = `
 .ib-lp .to-top.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
 .ib-lp .to-top:hover { background: var(--rust); border-color: var(--rust); color: var(--rust-ink); }
 .ib-lp .to-top svg { width: 16px; height: 16px; }
-@media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; width: 44px; height: 44px; } }
+@media (max-width: 640px) { .ib-lp .to-top { right: 16px; bottom: 16px; } }
 @media (max-width: 480px) {
-  .ib-lp .hero-meta .dot { display: none; }
+  .ib-lp .subj-hd { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .ib-lp .subj-foot { flex-direction: column; align-items: stretch; }
   .ib-lp .chat { max-height: 360px; overflow: hidden; position: relative; }
   .ib-lp .chat::after {
     content: ""; position: absolute; bottom: 0; left: 0; right: 0; height: 72px;
     background: linear-gradient(to bottom, transparent, var(--paper));
     border-radius: 0 0 22px 22px; pointer-events: none; z-index: 1;
   }
-  .ib-lp .subj-hd { flex-direction: column; align-items: flex-start; gap: 8px; }
-  .ib-lp .subj-foot { flex-direction: column; align-items: stretch; }
-  .ib-lp .final-cta .hero-cta { max-width: 340px; margin-left: auto; margin-right: auto; }
 }
 
-/* ── Hero thesis line ── */
-.ib-lp .hero-thesis {
-  font-family: var(--serif);
-  font-style: italic;
-  font-size: clamp(18px, 1.6vw, 22px);
-  color: var(--forest);
-  letter-spacing: -0.01em;
-  line-height: 1.4;
-  margin-top: 24px;
-  max-width: 42ch;
-}
+/* ═══════════════════════════════════════════════════════════════════════════
+   NEW SECTIONS — added for diagnosis-first restructure
+   ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Demo signpost band ── */
-.ib-lp .demo-signpost-band {
-  padding: clamp(24px, 3vw, 40px) 0;
-  border-top: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-  background: var(--paper-2);
-}
-.ib-lp .demo-signpost {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 32px;
-  border: 1.5px solid var(--forest);
-  border-radius: var(--radius);
-  padding: 28px 32px;
+/* ── 2. Diagnosis exchange ── */
+.ib-lp .diag-exchange {
   background: var(--paper);
+  border: 1px solid var(--rule-strong);
+  border-radius: 22px;
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+  box-shadow: 0 24px 48px -24px rgba(20,24,22,0.14), 0 2px 6px rgba(20,24,22,0.06);
+  max-width: 800px;
 }
-.ib-lp .demo-signpost-copy { flex: 1; min-width: 0; }
-.ib-lp .demo-signpost-h {
-  font-family: var(--serif);
-  font-size: clamp(20px, 2vw, 24px);
-  font-weight: 400;
-  letter-spacing: -0.015em;
-  color: var(--forest);
-  margin-bottom: 10px;
+.ib-lp .dx-row { display: flex; align-items: flex-start; gap: 14px; }
+.ib-lp .dx-row.dx-student { justify-content: flex-end; }
+.ib-lp .dx-av {
+  width: 28px; height: 28px; flex: 0 0 28px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: 11px; font-weight: 500;
 }
-.ib-lp .demo-signpost-body {
-  font-size: 14.5px;
-  color: var(--ink-2);
-  line-height: 1.55;
-  max-width: 56ch;
+.ib-lp .dx-av-mia { background: var(--forest); color: var(--gold); }
+.ib-lp .dx-av-student { background: var(--rust); color: var(--rust-ink); }
+.ib-lp .dx-bubble-student {
+  background: var(--forest); color: var(--forest-ink);
+  padding: 12px 18px; border-radius: 18px 18px 4px 18px;
+  font-size: 15px; line-height: 1.5; max-width: 80%;
 }
-.ib-lp .demo-signpost-sub {
-  margin-top: 8px;
-  font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
+.ib-lp .dx-msg {
+  display: flex; flex-direction: column; gap: 8px;
+  max-width: calc(100% - 42px);
+}
+.ib-lp .dx-msg p {
+  margin: 0; font-size: 15px; line-height: 1.65; color: var(--ink);
+}
+.ib-lp .dx-msg em { font-style: italic; font-family: var(--serif); color: var(--rust); }
+.ib-lp .dx-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--ink-3);
+  background: color-mix(in oklab,var(--rust) 12%,transparent);
+  color: var(--rust); padding: 3px 10px; border-radius: 999px;
+  align-self: flex-start; margin-bottom: 2px;
 }
-.ib-lp .demo-signpost-cta { flex-shrink: 0; }
+.ib-lp .dx-label-rebuild {
+  background: color-mix(in oklab,var(--forest) 12%,transparent);
+  color: oklch(30% 0.04 168);
+}
+.ib-lp .dx-label-retest {
+  background: color-mix(in oklab,var(--gold) 22%,transparent);
+  color: oklch(46% 0.12 75);
+}
+.ib-lp .dx-caption {
+  margin-top: 32px;
+  font-family: var(--serif); font-style: italic;
+  font-size: clamp(17px,1.5vw,20px); color: var(--ink-2);
+  max-width: 68ch; line-height: 1.5;
+}
 @media (max-width: 640px) {
-  .ib-lp .demo-signpost {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 22px 24px;
-    gap: 20px;
-  }
-  .ib-lp .demo-signpost-cta { text-align: center; justify-content: center; }
+  .ib-lp .diag-exchange { padding: 22px 20px; gap: 20px; }
+  .ib-lp .dx-bubble-student { font-size: 14px; }
+  .ib-lp .dx-msg p { font-size: 14px; }
+}
+
+/* ── 3. Gradd Method steps ── */
+.ib-lp .method-steps {
+  border: 1px solid var(--rule); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 32px;
+}
+.ib-lp .method-step {
+  display: grid; grid-template-columns: 72px 1fr;
+  border-bottom: 1px solid var(--rule); background: var(--paper);
+}
+.ib-lp .method-step:last-child { border-bottom: 0; }
+.ib-lp .method-step:nth-child(even) { background: color-mix(in oklab,var(--paper) 60%,var(--paper-2)); }
+.ib-lp .method-n {
+  font-family: var(--serif); font-style: italic; font-size: 32px;
+  color: var(--rust); letter-spacing: -0.02em; line-height: 1;
+  padding: 28px 0 28px 28px; display: flex; align-items: flex-start; padding-top: 30px;
+}
+.ib-lp .method-body {
+  padding: 26px 28px; display: flex; flex-direction: column; gap: 6px;
+  border-left: 1px solid var(--rule);
+}
+.ib-lp .method-body h3 {
+  font-family: var(--serif); font-size: 22px;
+  letter-spacing: -0.012em; line-height: 1.2;
+}
+.ib-lp .method-body p {
+  font-size: 14.5px; color: var(--ink-2); line-height: 1.55; margin: 0;
+}
+.ib-lp .method-closing {
+  font-family: var(--serif); font-style: italic;
+  font-size: clamp(18px,1.6vw,22px); color: var(--forest);
+  max-width: 62ch; line-height: 1.45; letter-spacing: -0.01em;
+}
+@media (max-width: 520px) {
+  .ib-lp .method-step { grid-template-columns: 52px 1fr; }
+  .ib-lp .method-n { font-size: 22px; padding: 22px 0 22px 16px; }
+  .ib-lp .method-body { padding: 20px 16px; }
+  .ib-lp .method-body h3 { font-size: 18px; }
+}
+
+/* ── 4. Live demo CTA band ── */
+.ib-lp .demo-cta-band {
+  padding: clamp(36px,5vw,60px) 0;
+  background: var(--forest); color: var(--forest-ink);
+}
+.ib-lp .demo-cta-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 32px; flex-wrap: wrap;
+}
+.ib-lp .demo-cta-copy { flex: 1; min-width: 0; }
+.ib-lp .demo-cta-h {
+  font-family: var(--serif); font-size: clamp(26px,3vw,40px);
+  font-weight: 400; letter-spacing: -0.015em; line-height: 1.05; margin-bottom: 10px;
+}
+.ib-lp .demo-cta-sub {
+  font-size: 16px; color: color-mix(in oklab,var(--forest-ink) 80%,transparent);
+  line-height: 1.5; max-width: 52ch;
+}
+.ib-lp .demo-cta-btn { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .ib-lp .demo-cta-inner { flex-direction: column; align-items: flex-start; }
+}
+
+/* ── 9. Before / After proof ── */
+.ib-lp .ba-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 16px;
+}
+@media (max-width: 860px) { .ib-lp .ba-grid { grid-template-columns: 1fr; } }
+.ib-lp .ba-card {
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: var(--radius); padding: 28px 28px 32px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.ib-lp .ba-before { border-top: 3px solid var(--rule-strong); }
+.ib-lp .ba-diag   { border-top: 3px solid var(--rust); }
+.ib-lp .ba-after  { border-top: 3px solid oklch(48% 0.13 145); }
+.ib-lp .ba-tag {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3); padding: 3px 10px;
+  border-radius: 999px; background: var(--paper-2); align-self: flex-start;
+}
+.ib-lp .ba-tag-diag  { color: var(--rust); background: color-mix(in oklab,var(--rust) 10%,transparent); }
+.ib-lp .ba-tag-after { color: oklch(45% 0.13 145); background: color-mix(in oklab,oklch(48% 0.13 145) 10%,transparent); }
+.ib-lp .ba-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--ink-3); margin-bottom: -4px;
+}
+.ib-lp .ba-quote {
+  font-family: var(--serif); font-size: clamp(16px,1.35vw,20px);
+  font-style: italic; line-height: 1.5; color: var(--ink);
+  margin: 0; padding: 0; border: 0;
 }
 `;

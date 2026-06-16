@@ -44,7 +44,7 @@ const LC_METADATA: Metadata = {
 const IB_METADATA: Metadata = {
   title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
   description:
-    'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day money-back guarantee. From €44.99/month.',
+    'Start free — no card needed. Mia diagnoses the faulty thinking behind wrong answers, rebuilds them, and retests until they stick. IB Economics and Business Management, full curriculum, HL & SL.',
   keywords: [
     'IB Economics tutor',
     'IB Business Management tutor',
@@ -62,7 +62,7 @@ const IB_METADATA: Metadata = {
   openGraph: {
     title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
     description:
-      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day money-back guarantee. From €44.99/month.',
+      'Start free — no card needed. Mia diagnoses the faulty thinking behind wrong answers, rebuilds them, and retests until they stick. IB Economics and Business Management, full curriculum, HL & SL.',
     url: 'https://gradd.ai',
     siteName: 'Gradd',
     type: 'website',
@@ -72,7 +72,7 @@ const IB_METADATA: Metadata = {
     card: 'summary_large_image',
     title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
     description:
-      'Full IB curriculum from scratch to exam-ready. 346 lessons, IBO-standard diagrams, photo upload diagram marking. 7-day money-back guarantee. From €44.99/month.',
+      'Start free — no card needed. Mia diagnoses the faulty thinking behind wrong answers, rebuilds them, and retests until they stick. IB Economics and Business Management, full curriculum, HL & SL.',
     images: ['https://gradd.ai/og-image.svg'],
   },
   robots: { index: true, follow: true },
