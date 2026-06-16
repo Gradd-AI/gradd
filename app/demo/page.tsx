@@ -352,7 +352,7 @@ function DemoNav() {
       </Link>
       <div className="app-nav-right">
         <a href="/auth/login" className="demo-nav-login">Already a student? Log in</a>
-        <a href="/auth/signup/ib" className="demo-nav-cta">Start learning →</a>
+        <a href="/auth/signup/ib" className="demo-nav-cta">Start free →</a>
       </div>
     </header>
   );
@@ -678,7 +678,7 @@ export default function DemoDashboard() {
       {/* Demo notice */}
       <div className="demo-notice">
         👋 You&apos;re viewing a demo — no account needed.{' '}
-        <a href="/auth/signup/ib">Start your IB plan</a> to begin real sessions with Mia — 7-day money-back guarantee on every plan.
+        <a href="/auth/signup/ib">Start free</a> to begin real sessions with Mia — subscribe when you&apos;re ready.
       </div>
 
       <DemoNav />
