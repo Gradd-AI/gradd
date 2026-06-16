@@ -145,10 +145,9 @@ const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 
-function Nav({ studentName, subscriptionStatus, examLevel }: {
+function Nav({ studentName, subscriptionStatus }: {
   studentName: string;
   subscriptionStatus?: string;
-  examLevel: string;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -157,7 +156,6 @@ function Nav({ studentName, subscriptionStatus, examLevel }: {
     if (resolveIsIBClient()) setLogoSrc('/gradd-ai-logo.png');
   }, []);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const isSubscribed = subscriptionStatus === 'active';
 
   const handleManageSubscription = async () => {
@@ -172,25 +170,6 @@ function Nav({ studentName, subscriptionStatus, examLevel }: {
       }
     } catch {
       setPortalLoading(false);
-    }
-  };
-
-  const handleGoUnlimited = async () => {
-    setCheckoutLoading(true);
-    try {
-      const res = await fetch('/api/checkout/ib', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billing: 'annual', exam_level: examLevel === 'HL' ? 'HL' : 'SL' }),
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        setCheckoutLoading(false);
-      }
-    } catch {
-      setCheckoutLoading(false);
     }
   };
 
@@ -209,14 +188,9 @@ function Nav({ studentName, subscriptionStatus, examLevel }: {
             {portalLoading ? 'Opening…' : 'Manage subscription'}
           </button>
         ) : (
-          <button
-            className="app-btn app-btn-cta"
-            onClick={handleGoUnlimited}
-            disabled={checkoutLoading}
-            style={{ cursor: checkoutLoading ? 'not-allowed' : 'pointer', opacity: checkoutLoading ? 0.6 : 1 }}
-          >
-            {checkoutLoading ? 'Opening…' : 'Go unlimited →'}
-          </button>
+          <Link href="/subscribe/ib" className="app-btn app-btn-cta">
+            Go unlimited →
+          </Link>
         )}
         <button
           className="app-btn-ghost"
@@ -1387,7 +1361,7 @@ export default function IBDashboardClient(props: Props) {
   return (
     <div className="ib-dash">
       <style>{CSS}</style>
-      <Nav studentName={props.studentName} subscriptionStatus={props.subscriptionStatus} examLevel={props.examLevel} />
+      <Nav studentName={props.studentName} subscriptionStatus={props.subscriptionStatus} />
       <main className="app-wrap">
 
         {/* Page heading */}

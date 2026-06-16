@@ -42,7 +42,6 @@ export default function ChatInterface({
 }: ChatInterfaceProps) {
   const isIB = subject.startsWith('IB_');
   const isFreeTier = subscriptionStatus !== 'active';
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -289,22 +288,6 @@ export default function ChatInterface({
     await sendMessage('Continue to the next lesson.');
   }
 
-  async function handleGoUnlimited() {
-    setCheckoutLoading(true);
-    try {
-      const res = await fetch('/api/checkout/ib', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ billing: 'annual', exam_level: 'HL' }),
-      });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else setCheckoutLoading(false);
-    } catch {
-      setCheckoutLoading(false);
-    }
-  }
-
   async function endSession() {
     if (!sessionId || ending) return;
     setEnding(true);
@@ -482,8 +465,7 @@ export default function ChatInterface({
           <div className="session-header-right">
             {isIB && isFreeTier && (
               <button
-                onClick={handleGoUnlimited}
-                disabled={checkoutLoading}
+                onClick={() => { window.location.href = '/subscribe/ib'; }}
                 style={{
                   marginRight: 8,
                   padding: '6px 14px',
@@ -493,13 +475,12 @@ export default function ChatInterface({
                   borderRadius: 8,
                   fontSize: 13,
                   fontWeight: 600,
-                  cursor: checkoutLoading ? 'not-allowed' : 'pointer',
-                  opacity: checkoutLoading ? 0.6 : 1,
+                  cursor: 'pointer',
                   fontFamily: 'inherit',
                   whiteSpace: 'nowrap',
                 }}
               >
-                {checkoutLoading ? 'Opening…' : 'Go unlimited →'}
+                Go unlimited →
               </button>
             )}
             <button
