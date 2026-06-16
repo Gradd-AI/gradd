@@ -70,7 +70,7 @@ export default function IBLandingPage() {
 
         {/* ── NAV ── */}
         <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
-          <div className="nav-inner">
+          <div className="wrap nav-inner">
             <a href="#" className="nav-logo" aria-label="Gradd.ai home">
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
             </a>
@@ -882,7 +882,7 @@ const CSS = `
   --serif:    "Fraunces", "Times New Roman", Georgia, serif;
   --sans:     "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono:     "Geist Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
-  --max:      1320px;
+  --max:      1240px;
   --gut:      clamp(20px, 4vw, 56px);
   --section:  clamp(72px, 9vw, 128px);
   --radius:   14px;
@@ -978,7 +978,6 @@ const CSS = `
 .ib-lp .nav--scrolled { border-bottom-color: color-mix(in oklab, var(--rule) 60%, transparent); }
 .ib-lp .nav-inner {
   display: flex; align-items: center; justify-content: space-between; height: 68px;
-  padding: 0 28px;
 }
 .ib-lp .nav-links { display: flex; align-items: center; gap: 28px; }
 .ib-lp .nav-link-btn {
