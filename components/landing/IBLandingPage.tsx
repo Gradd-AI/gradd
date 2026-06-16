@@ -11,7 +11,7 @@ const PRICING = {
 const FAQS = [
   {
     q: 'Is Gradd actually built for the IB syllabus — or is it a generic chatbot?',
-    a: 'Not a generic chatbot — a tutor built around IB marking. Mia runs on the official IB Economics (2022) and IB Business Management (2024) subject guides and the IB assessment framework — command terms, AO levels, markband criteria. Generic LLMs don\'t pass IB: they hallucinate command terms, draw wrong diagrams, and ignore markbands.',
+    a: 'Not a generic chatbot — a tutor built around IB marking. Mia runs on the official IB Economics (2022) and IB Business Management (2024) subject guides and the IB assessment framework — command terms, AO levels, markband criteria. Generic chatbots aren\'t built for IB marking: they can miss command terms, mishandle diagrams, and ignore markbands.',
   },
   {
     q: 'Can Gradd really replace a private tutor?',
@@ -230,7 +230,7 @@ export default function IBLandingPage() {
           <div className="wrap">
             <div className="section-head">
               <span className="eyebrow">How it works</span>
-              <h2 className="h-section">The Gradd Method.</h2>
+              <h2 className="h-section">The Gradd Method</h2>
             </div>
             <div className="method-steps">
               <div className="method-step">
@@ -408,7 +408,7 @@ export default function IBLandingPage() {
               </div>
               <div className="os-card">
                 <div className="num">03 / Tutor</div>
-                <h3>Mia, on call.</h3>
+                <h3>Mia, always on call.</h3>
                 <p>Ask anything, any time — drawing diagrams, working questions, making sense of an exam question worded to trip you up.</p>
               </div>
             </div>
