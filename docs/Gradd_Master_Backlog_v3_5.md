@@ -534,6 +534,18 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 - [ ] **School licensing product (Q1-Q2 2027)** — €30-50/student/year, sold as class of 12+.
 - [ ] **Social layer inside class** — discussion threads, anonymised peer comparison, class-wide mastery view.
 - [ ] 25-40 hours total build. Target €30-100k ARR Year 1 with 3-10 schools.
+
+---
+
+## CONTENT-ACCURACY AUDIT — VERIFIED CLEAN (16/06/2026)
+Econ + BM HL/SL scoping verified against official guides, both layers (prompt [HL] labels + DB lessons.level tags):
+- Econ Units 2,3,4 — every flagged watch-list topic (2.1,2.2,2.5,2.6,2.7,2.8,2.4,2.10,2.11,2.12,3.3,3.5,3.6,4.1,4.2,4.5,4.6,4.7) correct. No mismatches.
+- BM all 37 sub-topics — coverage complete (no gaps), 11 HL-only sub-topics correctly tagged, 2.4/4.5 confirmed NOT under-tagged (HL content bundled in HL_ONLY lessons, none leaking to SL).
+- Econ formulas (multiplier/PED/YED/PES) clean (earlier session).
+The "where over/under-flagging hides" audit concern does NOT bite anywhere. Content correctness verified, not assumed.
+
+## OPEN (post-launch, bounded) — BM HL content guards
+Four HL-only BM topics have lessons but no IB-2024-specific prompt content-guard (Mia teaches from general knowledge, not guide-anchored). NOT correctness errors — depth-of-guardrail gaps. Priority order: 5.9 MIS (HL, broadest/newest — AI/IoT/cybersecurity/Digital Taylorism), 3.9 Budgets (HL, quantitative — variances), 2.5 Org culture (HL — Handy's typology), 2.7 Industrial relations (HL — conciliation/arbitration terms). HL-only, on proof-subject — do NOT pre-launch; add when polishing BM or as quality pass. Lower: 2.4 HL motivation theory guards, 4.5 HL pricing guards, 3.5/3.6 ratio-improvement strategies.
 - [ ] Teacher account, bulk student import, school billing, ACCA employer licence.
 
 ### 3.3 Sciences and Humanities (deferred — vertical focus first)
