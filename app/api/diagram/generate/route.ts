@@ -15,15 +15,6 @@ export async function POST(request: Request) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_status')
-    .eq('id', user.id)
-    .single();
-  if (profile?.subscription_status !== 'active') {
-    return NextResponse.json({ error: 'Subscription required' }, { status: 403 });
-  }
-
   const { prompt } = await request.json();
   if (!prompt) return NextResponse.json({ error: 'prompt required' }, { status: 400 });
 

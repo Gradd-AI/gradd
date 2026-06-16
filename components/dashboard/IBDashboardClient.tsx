@@ -39,6 +39,7 @@ interface Props {
   pickerLessons?: PickerLesson[];
   pickerCompletedCodes?: string[];
   pickerWeakAreaCodes?: string[];
+  subscriptionStatus?: string;
 }
 
 const IB_SUBJECTS = ['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE'];
@@ -144,7 +145,10 @@ const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 
-function Nav({ studentName }: { studentName: string }) {
+function Nav({ studentName, subscriptionStatus }: {
+  studentName: string;
+  subscriptionStatus?: string;
+}) {
   const router = useRouter();
   const supabase = createClient();
   const [logoSrc, setLogoSrc] = useState('/gradd-logo.svg');
@@ -152,6 +156,7 @@ function Nav({ studentName }: { studentName: string }) {
     if (resolveIsIBClient()) setLogoSrc('/gradd-ai-logo.png');
   }, []);
   const [portalLoading, setPortalLoading] = useState(false);
+  const isSubscribed = subscriptionStatus === 'active';
 
   const handleManageSubscription = async () => {
     setPortalLoading(true);
@@ -173,14 +178,20 @@ function Nav({ studentName }: { studentName: string }) {
       <img src={logoSrc} alt="Gradd" />
       <div className="app-nav-right">
         <span>{studentName}</span>
-        <button
-          className="app-btn"
-          onClick={handleManageSubscription}
-          disabled={portalLoading}
-          style={{ cursor: portalLoading ? 'not-allowed' : 'pointer', opacity: portalLoading ? 0.6 : 1 }}
-        >
-          {portalLoading ? 'Opening…' : 'Manage subscription'}
-        </button>
+        {isSubscribed ? (
+          <button
+            className="app-btn"
+            onClick={handleManageSubscription}
+            disabled={portalLoading}
+            style={{ cursor: portalLoading ? 'not-allowed' : 'pointer', opacity: portalLoading ? 0.6 : 1 }}
+          >
+            {portalLoading ? 'Opening…' : 'Manage subscription'}
+          </button>
+        ) : (
+          <Link href="/subscribe/ib" className="app-btn app-btn-cta">
+            Go unlimited →
+          </Link>
+        )}
         <button
           className="app-btn-ghost"
           onClick={async () => { await supabase.auth.signOut(); router.push('/auth/login'); }}
@@ -573,6 +584,13 @@ export const CSS = `
   transition: background 0.15s ease;
 }
 .ib-dash .app-btn:hover { background: var(--paper-2); }
+.ib-dash .app-btn-cta {
+  background: var(--rust);
+  color: var(--rust-ink);
+  border-color: var(--rust);
+  font-weight: 600;
+}
+.ib-dash .app-btn-cta:hover { background: var(--rust-2); border-color: var(--rust-2); }
 .ib-dash .app-btn-ghost {
   padding: 7px 14px;
   border: 0;
@@ -1343,7 +1361,7 @@ export default function IBDashboardClient(props: Props) {
   return (
     <div className="ib-dash">
       <style>{CSS}</style>
-      <Nav studentName={props.studentName} />
+      <Nav studentName={props.studentName} subscriptionStatus={props.subscriptionStatus} />
       <main className="app-wrap">
 
         {/* Page heading */}

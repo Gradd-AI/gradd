@@ -24,6 +24,7 @@ interface ChatInterfaceProps {
   activeSubject?: string;
   examLabel?: string;
   pickedLessonCode?: string;
+  subscriptionStatus?: string;
 }
 
 export default function ChatInterface({
@@ -37,8 +38,10 @@ export default function ChatInterface({
   activeSubject,
   examLabel,
   pickedLessonCode,
+  subscriptionStatus,
 }: ChatInterfaceProps) {
   const isIB = subject.startsWith('IB_');
+  const isFreeTier = subscriptionStatus !== 'active';
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -460,6 +463,26 @@ export default function ChatInterface({
             )}
           </div>
           <div className="session-header-right">
+            {isIB && isFreeTier && (
+              <button
+                onClick={() => { window.location.href = '/subscribe/ib'; }}
+                style={{
+                  marginRight: 8,
+                  padding: '6px 14px',
+                  background: 'oklch(64% 0.17 47)',
+                  color: 'oklch(98% 0.01 70)',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  fontFamily: 'inherit',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                Go unlimited →
+              </button>
+            )}
             <button
               className="end-session-btn"
               onClick={endSession}

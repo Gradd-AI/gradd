@@ -1,5 +1,5 @@
 ﻿# Gradd — Master Product Backlog & 5-Year Roadmap
-*Last updated: 14 June 2026 | Version 3.7*
+*Last updated: 15 June 2026 | Version 3.8*
 
 > **v3.5 changelog** — build session of 02 June 2026. IB CONTENT-ACCURACY AUDIT + TEACHING METHODOLOGY REWRITE. Changes tagged `[v3.5]` inline. Summary:
 >
@@ -109,6 +109,8 @@
 > - [ ] **Band-descriptor marking injection verification** — flagged 11 June; top-mark essays (15m evaluate, P3 recommend) may not be receiving band descriptors at marking time. Verify next.
 > - [ ] **Content guards live spot-check** — guide-verified in text (12 June); not all live-tested in production. Esp. Herzberg, quality control/assurance, penetration/predatory pricing, Econ high-risk concepts.
 > - [ ] **Session transcript download** — data layer + UI now ready; a download/PDF button on `/sessions/[id]` is the next natural step. TranscriptRenderer is standalone so export is low complexity.
+- [ ] **BUG: Diagram signal leak — raw `[DIAGRAM: DIAGRAM_DYNAMIC: ...]` text visible to student (15 Jun 2026). DIAGNOSIS CONFIRMED.** Prompt and parser agree — both expect `[DIAGRAM_DYNAMIC: ...]`. Mia (Haiku) hallucinated a third format `[DIAGRAM: DIAGRAM_DYNAMIC: <desc>]` that matches NEITHER parser: `parseDiagramSignal` regex `/\[DIAGRAM:\s*([A-Z_0-9]+)\s*\]/` fails on the second colon after `DIAGRAM_DYNAMIC`; `parseDynamicDiagramSignal` regex `/\[DIAGRAM_DYNAMIC:\s*([^\]]+)\]/` fails on the `[DIAGRAM: ` prefix. Token survives both → lands in `finalText` → `MessageRenderer` prints it as raw visible text. Model drift, not code inconsistency. Only affects DYNAMIC diagrams (non-library concepts, e.g. money-market equilibrium); the 61 library diagrams render fine client-side via React components with no parser involved. **FIX (defensive, preferred):** extend `parseDynamicDiagramSignal` to also match the malformed variant `[DIAGRAM: DIAGRAM_DYNAMIC: <desc>]` as a synonym — catches the drift regardless of how Mia phrases it. File: `components/diagrams/diagram-integration.ts`, `parseDynamicDiagramSignal` ~L33. Optionally reinforce the prompt too, but parser hardening is the real fix (prompt reinforcement alone is fragile on Haiku). Found: free-first preview, HL Econ money-market lesson (15 Jun 2026).
+- [ ] **GAP: No money-market / liquidity-preference diagram in library (15 Jun 2026).** The 61 diagram components are micro-heavy (PPC, demand/supply, PED, externalities, AD/AS, exchange rates, trade). HL Econ Unit 3 (Demand and Supply of Money, equilibrium interest rate determination — Md downward-sloping, Ms vertical, equilibrium i*) has no library component, so Mia falls through to DIAGRAM_DYNAMIC (triggering the leak above). Add a `money-market-equilibrium` component to `components/diagrams/`. Audit the full library against HL Unit 3 macro and Unit 4 global topics when building — other HL macro gaps are likely (e.g. Keynesian LRAS, Monetarist AS, BoP, J-curve, Laffer curve).
 
 ---
 
@@ -202,6 +204,13 @@ Nothing goes public at scale until all are resolved.
 - [ ] **LC session loads unused fonts** — Fraunces/Geist `@import` in shared block. Gate to IB only. Priority: LOW.
 - [ ] `[v3.4]` **Mia marks-band denominator drift** — 10m P3 Part (b) marked "out of 15" instead of out of 10. Fix: surface `{{CURRENT_QUESTION_MARKS}}` token. ~30 min. Priority: LOW.
 - [ ] `[v3.4]` **student_progress lesson/unit inconsistency** — No constraint enforces `current_lesson_code` belongs to `current_unit_code`. Fix: trigger or derive at write time. ~30 min. Pre-launch hardening.
+- [ ] **BUG: `handle_new_user` Supabase trigger — cross-product pollution on every IB signup (15 Jun 2026). TWO SYMPTOMS, ONE ROOT CAUSE.** The `handle_new_user` trigger (not in any checked-in migration — lives in the Supabase dashboard only) was built for gradd.ie (LC Business) and has no awareness of gradd.ai IB signups. It fires on every `auth.users` INSERT regardless of product.
+
+  **SYMPTOM 1 — Wrong subscription tier:** trigger sets `subscription_tier = 'business_monthly'` as the default for all new users. IB signups land with an LC tier. The Stripe webhook overwrites this to `ib_bundle_monthly` on payment — but FREE-tier IB signups (free-first flow) retain `business_monthly` indefinitely. No runtime breakage today (session routing reads `subscription_status`, not `subscription_tier`), but tier reporting and any future tier-gated logic will misread these users.
+
+  **SYMPTOM 2 — Phantom LC_BUSINESS student_progress row (CONFIRMED 15 Jun 2026):** `supabase_ib_migration.sql:12` set `student_progress.subject` column `DEFAULT 'LC_BUSINESS'`. The trigger's default `student_progress` INSERT inherits this default, so every IB signup gets a `subject='LC_BUSINESS'` row in addition to the correct `IB_ECONOMICS` + `IB_BUSINESS` rows created by `/api/onboarding/ib`. HARMLESS at runtime — all IB session/dashboard queries filter `.eq('subject', 'IB_ECONOMICS')` or `.eq('subject', 'IB_BUSINESS')`, so the LC row is never read. But it is cross-product pollution and will confuse any future query that selects all rows for a user.
+
+  **FIX (one trigger edit fixes BOTH symptoms):** In the Supabase dashboard, edit `handle_new_user` to gate on `NEW.raw_user_meta_data->>'ib_subject'`. IB signups pass `ib_subject: 'IB_BUNDLE'` in `supabase.auth.signUp` options metadata; LC signups don't — clean discriminator. When `ib_subject` is set: skip the `student_progress` INSERT entirely (onboarding creates the correct rows) and set `subscription_tier = NULL` or `'ib_bundle_monthly'` instead of `'business_monthly'`. When `ib_subject` is absent: existing LC behaviour unchanged. Supabase dashboard change — must be reviewed and approved before shipping.
 
 ### [02/06/2026] Pipeline hardening — from BM content-accuracy audit + 5.2 seed fill
 
@@ -413,6 +422,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 - [ ] `[v3.4]` **IB landing Layer 1 upgrades** — verified question library section, answer-marking example, one comparison table row.
 - [ ] `[v3.4]` **"The Gradd method" promotion** — 5-step pedagogical loop (learn → answer → corrected → diagram → exam technique) as dedicated landing section.
 - [ ] `[v3.4]` **Swap demo exam-prep transcript V1 → V2 (HDI/GDP).**
+- [ ] **Landing page free-first + positioning rewrite** — The entire landing page sells "subscribe €44.99 / 7-day money-back" — nowhere does it say a user can start FREE. Free-first's core advantage (try with zero commitment) is invisible on the page. CONVERSION LEAK at top of funnel. Needs: CTAs shift "Start learning" → "Start free" (free account primary, subscribe secondary); hero leads with free ("Start learning free — no card needed"); rework/remove "From €44.99" + "7-day money-back" framing (a free try replaces the money-back safety net); explain the free/paid value ladder honestly (free = unlimited questions+marking + a taste of teaching; paid = unlimited teaching). SEQUENCING: do this ONLY after free-first works end-to-end (convert path fixed + verified on production) — don't advertise a free tier while the free→paid path still has open bugs. PAIR with the already-deferred positioning rewrite (lead with diagnosis moat + named Gradd method + drive to demo) — same job, one rewrite.
 - [ ] ACCA landing page
 - [ ] Landing page mobile pass
 - [ ] Footer legal pages for ACCA
@@ -609,7 +619,7 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 *Measure every decision against the north star.*
 *Update it when decisions change. Re-upload immediately.*
 
-*Last updated: 14 June 2026 | Version 3.7*
+*Last updated: 15 June 2026 | Version 3.8*
 
 ## Perceived-completeness features (post-funnel, ranked by value-per-effort)
 Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
@@ -652,3 +662,36 @@ Context: these lift conversion at the landing-page/comparison stage; they do NOT
 - **Parent-invite (Aimnova-style):** student=account holder, invites parent → weekly progress email. Parent-visibility CONVERSION HOOK. Consent-capture for minors in the invite. Deferred deliberately.
 - **Landing page:** honesty-audit vs Selling Bible DO-NOT-CLAIM, rebuild around diagnosis moat + "verified vs official guide" + real demo. Pricing now decided.
 - **Blog:** extract content guards → long-tail X-vs-Y explainers off landing.
+
+---
+
+## [v3.8] 15 JUNE 2026 — FREE-FIRST SIGNUP BUILT + CONVERT-PATH BUGS SURFACED
+
+### LANDED THIS SESSION
+- **Free-first signup** (branch feat/free-first-signup, commits 2d83f18 / 1261b06 / 750753d). Signup no longer forces Stripe: account → lands in /dashboard FREE (subscription_status defaults 'inactive', confirmed). Billing toggle removed from wizard. Diagram 403 removed (free users get diagrams). Persistent "Go unlimited" button added to dashboard nav + session header (shows when status !== 'active'). NOT YET MERGED to main.
+- **Bug fixed — student_progress on free-first signup (1261b06):** free-first bypassed /api/onboarding/ib (the only creator of progress rows) → new free users got "Failed to start session". Fixed: handleSubmit now calls /api/onboarding/ib (subject IB_BUNDLE, levels, coursePosition 'beginning') before redirect, with loud-fail error handling.
+- **Bug fixed — weak-area subject bleed (750753d):** weak_areas has NO subject column (subject implied by lesson_code prefix IB_ECON_/IB_BM_). session/start + session/message pulled weak areas unfiltered → BM weak areas injected into Econ sessions (Mia referenced charity/profit in an Econ lesson). Fixed: both queries now filter by lesson_code prefix from effectiveSubject, matching dashboard pattern. LC unfiltered (null prefix).
+- **Production Stripe price IDs added** to Production scope (STRIPE_IB_ECON_MONTHLY/ANNUAL) — live checkout was going to 500 without them. CONFIRM these hold the LIVE price IDs (price_1TUTXu.../price_1TUTbk...).
+
+### CONFIRMED NOT BUGS (do not re-chase)
+- Payment-not-activating on preview = preview can't receive Stripe webhooks (sandbox webhook points at a fixed/old URL, not the ephemeral branch URL). Convert-path CODE is fine. Test convert on PRODUCTION (real card + refund), like the original money-path test.
+- "Progress reset" after checkout = nothing wiped; account was always on lesson 1 (only 3-4 exchanges per session, never completed a lesson).
+- Session/lesson counter "mismatch" = two different counters (sessions-in-lesson vs total sessions), both correct. UX wording confusing ("Session" overloaded) — low-priority cleanup.
+
+### OPEN — MUST FIX BEFORE LAUNCH (interlinked — do together next session)
+1. **Destructive onboarding upsert** (app/api/onboarding/ib L85-120): upsert onConflict 'student_id,subject' OVERWRITES current_lesson_code/session counts/course_position with hardcoded lesson-1 values when a row exists. Would WIPE progress for any user past lesson 1. Didn't bite (test user was on lesson 1). Fix: make onboarding non-destructive — only create rows for genuinely new students, never reset existing.
+2. **Checkout success → onboarding routing** (app/api/checkout/ib L80): IB success_url sends already-onboarded users to /onboarding (which triggers #1's destructive upsert). LC product does it right: success → poller page → waits for active → /dashboard, never onboarding. Fix IB to match LC's poller pattern. (#1 and #2 are the same root: old pay-first flow assumed subscribe→onboard→start; free-first inverts it, so post-payment onboarding is now destructive.)
+3. **Verify convert path on PRODUCTION** — real card + refund: free user → Go unlimited → pay → confirm status flips active, progress/weak-areas/sessions all intact, Mia continues, no re-onboard.
+4. **"Go unlimited" forces annual, no choice** — should route to /subscribe/ib (monthly/annual choice), not hardcoded billing:'annual'. UX/conversion fix.
+
+### OPEN — NEXT BUILDS (post free-first merge)
+- **The real cap** — count TEACH_BACK, wall 2nd teach-through, replace hardcoded BURN_ACTIVE test flag (revert test commits 38213c8/9031455). Without it, free-first gives away unlimited teaching. The burn funnel's final piece.
+- **Econ weak-flag timing fix** — Econ's WEAK AREA DETECTION TIMING block omits RULE A (first-occurrence flag); BM's port added it. One-line reconciliation (NOT a full re-port — Econ has the diagnosis-led teach-through already).
+- **weak_areas subject column** — proper schema fix vs current prefix-string-matching across 3 files (fragile). Deferred.
+- **Diagram leak** — Mia emits [DIAGRAM: DIAGRAM_DYNAMIC: ...] (hallucinated 3rd format) matching no parser → leaks as text. Fix: make parseDynamicDiagramSignal also match the malformed variant. lib/diagram-integration.ts.
+- **Money-market diagram gap** — no liquidity-preference diagram in the 61-component library (HL Econ Unit 3).
+- **handle_new_user trigger** — stamps business_monthly tier + phantom LC_BUSINESS progress row on every IB signup (product-unaware, predates IB). Harmless at runtime (queries scope by subject) but wrong data. Fix: trigger discriminates on ib_subject metadata. Supabase dashboard change.
+- **Parent-invite** (Aimnova-style) — re-enables weekly email, consent capture.
+
+### STATE
+feat/free-first-signup pushed (750753d), NOT merged. Free-first ENTRY proven on preview (signup → free dashboard → session → Mia teaches → diagrams render for free user). Convert path unverified (needs production test). Items 1-4 above block merge-to-main + launch.

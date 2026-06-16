@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 type BillingPeriod = 'monthly' | 'annual';
@@ -21,12 +23,82 @@ const IB_CONFIG = {
   ],
 };
 
+function SuccessPoller() {
+  const router = useRouter();
+  const supabase = createClient();
+  const [attempt, setAttempt] = useState(0);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (timedOut) return;
+
+    const check = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) { router.push('/auth/login'); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('subscription_status')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.subscription_status === 'active') {
+        router.push('/dashboard');
+        return;
+      }
+
+      if (attempt >= 14) {
+        setTimedOut(true);
+        return;
+      }
+
+      setTimeout(() => setAttempt(a => a + 1), 1000);
+    };
+
+    check();
+  }, [attempt, timedOut]);
+
+  if (timedOut) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16, padding: 32 }}>
+        <img src="/gradd-ai-logo.png" alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--brand)', fontWeight: 700 }}>Payment received</h2>
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 380 }}>
+          Your payment went through but we're still activating your account. This usually takes a few seconds — refresh the page or go to your dashboard.
+        </p>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="btn btn-primary"
+          style={{ marginTop: 8 }}
+        >
+          Go to dashboard
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16 }}>
+      <img src="/gradd-ai-logo.png" alt="Gradd" height={34} style={{ display: 'block', marginBottom: 8 }} />
+      <span className="spinner" style={{ width: 28, height: 28, borderWidth: 3 }} />
+      <p style={{ fontSize: 15, color: 'var(--text-muted)', marginTop: 8 }}>Setting up your account…</p>
+    </div>
+  );
+}
+
 function IBSubscribeInner() {
+  const searchParams = useSearchParams();
   const config = IB_CONFIG;
+
+  const paymentSuccess = searchParams.get('success') === 'true';
 
   const [billing, setBilling] = useState<BillingPeriod>('annual');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  if (paymentSuccess) {
+    return <SuccessPoller />;
+  }
 
   const handleSubscribe = async () => {
     setLoading(true);
