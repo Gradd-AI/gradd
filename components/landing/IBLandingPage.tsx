@@ -424,6 +424,7 @@ export default function IBLandingPage() {
                 IB Economics and IB Business Management — <em className="italic" style={{color:'var(--rust)'}}>fully covered.</em>
               </h2>
               <p className="lead">Both subjects taught at HL and SL, with the depth the IB command terms actually require.</p>
+              <p className="lead" style={{marginTop: 10, fontSize: '0.95em', color: 'var(--ink-2)'}}>Search and jump to any topic across the full course — 210 Economics and 136 Business Management lessons, in any order.</p>
             </div>
             <div className="subjects-grid">
               <article className="subj">
