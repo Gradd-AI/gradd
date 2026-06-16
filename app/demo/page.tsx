@@ -340,6 +340,71 @@ const DEMO_CSS = `
   align-items: center;
   gap: 10px;
 }
+
+/* On-track panel */
+.on-track-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  background: color-mix(in oklab, oklch(44% 0.12 160) 7%, oklch(96.2% 0.012 78));
+  border: 1px solid color-mix(in oklab, oklch(44% 0.12 160) 16%, transparent);
+  border-radius: 14px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+}
+.on-track-panel-icn {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: color-mix(in oklab, oklch(44% 0.12 160) 14%, transparent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; color: oklch(36% 0.1 160);
+}
+.on-track-panel-title {
+  font-size: 13.5px; font-weight: 600;
+  color: oklch(22% 0.035 168); margin-bottom: 3px;
+}
+.on-track-panel-sub {
+  font-size: 12.5px; line-height: 1.55;
+  color: oklch(36% 0.03 160);
+}
+
+/* Weak area next action */
+.weak-next {
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  font-size: 11.5px;
+  color: oklch(44% 0.12 160);
+  margin-top: 3px;
+  font-style: italic;
+}
+
+/* Picker start-free banner */
+.picker-start-free {
+  padding: 10px 16px 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+.picker-start-free-cta {
+  padding: 6px 14px;
+  background: oklch(64% 0.17 47);
+  color: oklch(98% 0.01 70);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  text-decoration: none;
+  font-family: "Geist", ui-sans-serif, system-ui, sans-serif;
+  transition: background 0.15s;
+}
+.picker-start-free-cta:hover { background: oklch(58% 0.17 47); }
+
+/* Picker lock */
+.picker-lock {
+  font-size: 11px;
+  opacity: 0.35;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 8px;
+  cursor: default;
+}
 `;
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -414,6 +479,7 @@ function WeakAreasSection() {
           <div>
             <div className="weak-desc">{w.error_description}</div>
             <div className="weak-meta">Lesson {w.lesson_code} · flagged {w.occurrence_count}×</div>
+            <div className="weak-next">Mia is retesting this with diagram questions this week.</div>
           </div>
         </div>
       ))}
@@ -525,6 +591,11 @@ function DemoCoursePicker() {
 
       {showPicker && (
         <div className="picker-tree">
+          {/* Start free CTA */}
+          <div className="picker-start-free">
+            <a href="/auth/signup/ib" className="picker-start-free-cta">Start free with Mia →</a>
+          </div>
+
           {/* Subject toggle */}
           <div className="subj-tabs" role="tablist" style={{ margin: '12px 16px 4px' }}>
             {([
@@ -581,9 +652,7 @@ function DemoCoursePicker() {
                     <div className="picker-result-ctx">{lesson.unitName} · {lesson.topicName}</div>
                   </div>
                   {lesson.weak && <span className="picker-weak-dot" />}
-                  <a href="/auth/signup/ib" className="picker-lesson-cta" style={{ opacity: 1, textDecoration: 'none' }}>
-                    sign up →
-                  </a>
+                  <span className="picker-lock">🔒</span>
                 </div>
               ))
             )
@@ -634,9 +703,7 @@ function DemoCoursePicker() {
                                 </span>
                                 <span className="picker-lesson-name">{lesson.name}</span>
                                 {lesson.weak && <span className="picker-weak-dot" title="Active weak area" />}
-                                <a href="/auth/signup/ib" className="picker-lesson-cta" style={{ opacity: 1, textDecoration: 'none', color: 'var(--ink-3)', fontSize: 11 }}>
-                                  sign up →
-                                </a>
+                                <span className="picker-lock">🔒</span>
                               </div>
                             ))
                           ) : (
@@ -645,9 +712,7 @@ function DemoCoursePicker() {
                               <span className="picker-lesson-name" style={{ color: 'var(--ink-3)', fontStyle: 'italic' }}>
                                 {topic.total} lesson{topic.total !== 1 ? 's' : ''} in this topic
                               </span>
-                              <a href="/auth/signup/ib" className="picker-lesson-cta" style={{ opacity: 1, textDecoration: 'none', color: 'var(--rust)', fontSize: 11 }}>
-                                sign up →
-                              </a>
+                              <span className="picker-lock">🔒</span>
                             </div>
                           )
                         )}
@@ -677,8 +742,8 @@ export default function DemoDashboard() {
 
       {/* Demo notice */}
       <div className="demo-notice">
-        👋 You&apos;re viewing a demo — no account needed.{' '}
-        <a href="/auth/signup/ib">Start free</a> to begin real sessions with Mia — subscribe when you&apos;re ready.
+        Demo session — no account needed.{' '}
+        <a href="/auth/signup/ib">Start free</a> to begin real sessions with Mia.
       </div>
 
       <DemoNav />
@@ -752,12 +817,13 @@ export default function DemoDashboard() {
         {/* ── PARENT VIEW ── */}
         {view === 'parent' && (
           <>
-            {/* Pace banner */}
-            <div className="alert alert-on-track">
-              <div className="icn">→</div>
-              <p>
-                Averaging <b>2.2/week</b> against a target of <b>2</b>. {STUDENT} is on track to complete the curriculum before the exam.
-              </p>
+            {/* On-track panel */}
+            <div className="on-track-panel">
+              <div className="on-track-panel-icn">✓</div>
+              <div>
+                <div className="on-track-panel-title">On track for the exam</div>
+                <div className="on-track-panel-sub">Louise is averaging 2.2 sessions/week against a target of 2 — on pace to finish IB Economics before her exams.</div>
+              </div>
             </div>
 
             {/* Position card */}

@@ -941,9 +941,9 @@ const CSS = `
 /* ── Layout ── */
 .ib-lp .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gut); }
 .ib-lp .section { padding: var(--section) 0; }
-.ib-lp .section-head { max-width: 780px; margin-bottom: 56px; }
+.ib-lp .section-head { max-width: 780px; margin: 0 auto 56px; text-align: center; }
 .ib-lp .section-head .eyebrow { display: block; margin-bottom: 18px; }
-.ib-lp .section-head .lead { margin-top: 22px; }
+.ib-lp .section-head .lead { margin-top: 22px; margin-left: auto; margin-right: auto; }
 .ib-lp .rule { border: 0; border-top: 1px solid var(--rule); margin: 0; }
 
 /* ── Buttons ── */
@@ -1372,9 +1372,9 @@ const CSS = `
 
 /* ── Compare: closing + CTA ── */
 .ib-lp .cmp-closing {
-  margin: 36px 0 28px; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 680px;
+  margin: 36px auto 28px; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 680px; text-align: center;
 }
-.ib-lp .cmp-cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.ib-lp .cmp-cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; }
 
 /* ── Compare: mobile card layout (<768px) ── */
 .ib-lp .cmp-mobile { display: none; }
@@ -1586,6 +1586,7 @@ const CSS = `
   gap: 26px;
   box-shadow: 0 24px 48px -24px rgba(20,24,22,0.14), 0 2px 6px rgba(20,24,22,0.06);
   max-width: 800px;
+  margin-left: auto; margin-right: auto;
 }
 .ib-lp .dx-row { display: flex; align-items: flex-start; gap: 14px; }
 .ib-lp .dx-row.dx-student { justify-content: flex-end; }
@@ -1629,6 +1630,7 @@ const CSS = `
   font-family: var(--serif); font-style: italic;
   font-size: clamp(17px,1.5vw,20px); color: var(--ink-2);
   max-width: 68ch; line-height: 1.5;
+  margin-left: auto; margin-right: auto; text-align: center;
 }
 @media (max-width: 640px) {
   .ib-lp .diag-exchange { padding: 22px 20px; gap: 20px; }
@@ -1667,6 +1669,7 @@ const CSS = `
   font-family: var(--serif); font-style: italic;
   font-size: clamp(18px,1.6vw,22px); color: var(--forest);
   max-width: 62ch; line-height: 1.45; letter-spacing: -0.01em;
+  margin-left: auto; margin-right: auto; text-align: center;
 }
 @media (max-width: 520px) {
   .ib-lp .method-step { grid-template-columns: 52px 1fr; }
