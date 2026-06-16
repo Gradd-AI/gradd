@@ -61,6 +61,9 @@ export default function ChatInterface({
   // WS0A: Synchronous lock — prevents double-submit during the React state update gap.
   // React setState is async; this ref is read/written synchronously so no race condition.
   const isSubmittingRef = useRef(false);
+  // Set true before navigating to /subscribe/ib so the beforeunload handler skips —
+  // exchanges are already persisted server-side, so the "Leave site?" warning is false.
+  const suppressBeforeUnloadRef = useRef(false);
 
   // Resolve diagram path from lessonCode
   const diagramPath = lessonCode ? getDiagramPath(lessonCode) : null;
@@ -85,6 +88,7 @@ export default function ChatInterface({
   useEffect(() => {
     if (!sessionId || ended) return;
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (suppressBeforeUnloadRef.current) return;
       e.preventDefault();
       e.returnValue = '';
     };
@@ -465,7 +469,7 @@ export default function ChatInterface({
           <div className="session-header-right">
             {isIB && isFreeTier && (
               <button
-                onClick={() => { window.location.href = '/subscribe/ib'; }}
+                onClick={() => { suppressBeforeUnloadRef.current = true; window.location.href = '/subscribe/ib'; }}
                 style={{
                   marginRight: 8,
                   padding: '6px 14px',
