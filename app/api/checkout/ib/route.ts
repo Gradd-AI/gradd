@@ -77,7 +77,7 @@ export async function POST(request: Request) {
         metadata: sharedMeta,
       },
       metadata: sharedMeta,
-      success_url: `${origin}/onboarding?subject=IB_BUNDLE&exam_level=${exam_level ?? ''}&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${origin}/subscribe/ib?success=true`,
       cancel_url: `${origin}/subscribe/ib`,
       allow_promotion_codes: true,
     });

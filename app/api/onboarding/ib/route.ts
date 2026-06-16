@@ -80,7 +80,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save profile' }, { status: 500 });
   }
 
-  // ── Create student_progress rows ────────────────────────────────────────────
+  // ── Create student_progress rows (insert-if-absent; never overwrite existing) ─
+
+  const subjectsNeeded: string[] = [];
+  if (subject === 'IB_ECONOMICS' || subject === 'IB_BUNDLE') subjectsNeeded.push('IB_ECONOMICS');
+  if (subject === 'IB_BUSINESS'  || subject === 'IB_BUNDLE') subjectsNeeded.push('IB_BUSINESS');
+
+  const { data: existingRows } = await supabase
+    .from('student_progress')
+    .select('subject')
+    .eq('student_id', user.id)
+    .in('subject', subjectsNeeded);
+
+  const existingSubjects = new Set((existingRows ?? []).map((r: { subject: string }) => r.subject));
 
   const baseProgress = {
     student_id: user.id,
@@ -92,7 +104,7 @@ export async function POST(request: Request) {
 
   const progressRows = [];
 
-  if (subject === 'IB_ECONOMICS' || subject === 'IB_BUNDLE') {
+  if (subjectsNeeded.includes('IB_ECONOMICS') && !existingSubjects.has('IB_ECONOMICS')) {
     progressRows.push({
       ...baseProgress,
       subject: 'IB_ECONOMICS',
@@ -103,7 +115,7 @@ export async function POST(request: Request) {
     });
   }
 
-  if (subject === 'IB_BUSINESS' || subject === 'IB_BUNDLE') {
+  if (subjectsNeeded.includes('IB_BUSINESS') && !existingSubjects.has('IB_BUSINESS')) {
     progressRows.push({
       ...baseProgress,
       subject: 'IB_BUSINESS',
@@ -114,10 +126,10 @@ export async function POST(request: Request) {
     });
   }
 
-  for (const row of progressRows) {
+  if (progressRows.length > 0) {
     const { error: progressError } = await supabase
       .from('student_progress')
-      .upsert(row, { onConflict: 'student_id,subject' });
+      .insert(progressRows);
 
     if (progressError) {
       console.error('IB ONBOARDING PROGRESS ERROR:', JSON.stringify({
@@ -125,7 +137,7 @@ export async function POST(request: Request) {
         code: progressError.code,
         details: progressError.details,
         hint: progressError.hint,
-        row,
+        rows: progressRows,
       }));
       return NextResponse.json({ error: 'Failed to save progress' }, { status: 500 });
     }
