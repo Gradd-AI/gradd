@@ -11,7 +11,7 @@ const PRICING = {
 const FAQS = [
   {
     q: 'Is Gradd actually built for the IB syllabus — or is it a generic chatbot?',
-    a: 'Not a generic chatbot — a tutor built around IB marking. Mia runs on the official IB Economics (2022) and IB Business Management (2024) subject guides and the IBO assessment framework — command terms, AO levels, markband criteria. Generic LLMs don\'t pass IB: they hallucinate command terms, draw wrong diagrams, and ignore markbands.',
+    a: 'Not a generic chatbot — a tutor built around IB marking. Mia runs on the official IB Economics (2022) and IB Business Management (2024) subject guides and the IB assessment framework — command terms, AO levels, markband criteria. Generic LLMs don\'t pass IB: they hallucinate command terms, draw wrong diagrams, and ignore markbands.',
   },
   {
     q: 'Can Gradd really replace a private tutor?',
@@ -27,7 +27,7 @@ const FAQS = [
   },
   {
     q: 'How does diagram marking actually work?',
-    a: 'You upload a photo of a diagram you\'ve drawn on paper. Mia checks it against the IBO mark scheme criteria for that question type: axes, curve shape, equilibrium markers, shading. You get a numeric mark and the specific feedback that gets you the missing marks next time.',
+    a: 'You upload a photo of a diagram you\'ve drawn on paper. Mia checks it against the IB mark scheme criteria for that question type: axes, curve shape, equilibrium markers, shading. You get a numeric mark and the specific feedback that gets you the missing marks next time.',
   },
   {
     q: 'What if Gradd.ai isn\'t right for me?',
@@ -70,7 +70,7 @@ export default function IBLandingPage() {
 
         {/* ── NAV ── */}
         <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
-          <div className="wrap nav-inner">
+          <div className="nav-inner">
             <a href="#" className="nav-logo" aria-label="Gradd.ai home">
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
             </a>
@@ -100,7 +100,7 @@ export default function IBLandingPage() {
                 Walk into your IB exam <span className="em underline">knowing</span> exactly what to do.
               </h1>
               <p className="hero-sub">
-                Most tools tell you the right answer. Mia finds the faulty thinking behind your answer, rebuilds it, and checks it stuck.
+                Most tools tell you the right answer. Mia finds the faulty thinking behind your answer, rebuilds it, and checks that it sticks.
               </p>
               <div className="hero-cta">
                 <Link href="/auth/signup" className="btn btn-rust">Start free <span className="arrow">→</span></Link>
@@ -160,11 +160,11 @@ export default function IBLandingPage() {
         {/* ── TRUST BAR ── */}
         <section className="trust">
           <div className="wrap trust-inner">
-            <div className="trust-label">Built around the official IBO syllabus</div>
+            <div className="trust-label">Built around the official IB syllabus</div>
             <div className="trust-stats">
               <div className="trust-stat"><span className="num">346</span><span className="lbl">structured lessons</span></div>
               <div className="trust-stat"><span className="num">2</span><span className="lbl">subjects, HL &amp; SL</span></div>
-              <div className="trust-stat"><span className="num">61</span><span className="lbl">IBO-standard diagrams</span></div>
+              <div className="trust-stat"><span className="num">61</span><span className="lbl">IB-standard diagrams</span></div>
               <div className="trust-stat"><span className="num">24/7</span><span className="lbl">availability</span></div>
             </div>
           </div>
@@ -180,7 +180,7 @@ export default function IBLandingPage() {
                 You lose them <em className="italic">in patterns.</em>
               </h2>
               <p className="lead">
-                Mia spots the faulty thinking behind a wrong answer — then rebuilds it and retests until it changes.
+                Mia spots the faulty thinking behind a wrong answer, rebuilds the model, then retests it until the mistake stops repeating.
               </p>
             </div>
 
@@ -230,7 +230,7 @@ export default function IBLandingPage() {
           <div className="wrap">
             <div className="section-head">
               <span className="eyebrow">How it works</span>
-              <h2 className="h-section">The Gradd method.</h2>
+              <h2 className="h-section">The Gradd Method.</h2>
             </div>
             <div className="method-steps">
               <div className="method-step">
@@ -281,7 +281,7 @@ export default function IBLandingPage() {
             <div className="demo-cta-inner">
               <div className="demo-cta-copy">
                 <h2 className="demo-cta-h">Don&apos;t take our word for it.</h2>
-                <p className="demo-cta-sub">Watch Mia diagnose a wrong answer right now — one question at a time. No account needed.</p>
+                <p className="demo-cta-sub">Try a real IB lesson. Watch Mia diagnose a wrong answer, rebuild it, and test the next step — no account needed.</p>
               </div>
               <Link href="/demo" className="btn btn-rust demo-cta-btn">Try the live demo <span className="arrow">→</span></Link>
             </div>
@@ -294,10 +294,10 @@ export default function IBLandingPage() {
             <div className="section-head">
               <span className="eyebrow">Feature<span className="dot" />Diagram marking</span>
               <h2 className="h-section">
-                IBO-standard diagrams. Drawn inline. <em className="italic" style={{color:'var(--rust)'}}>Marked instantly.</em>
+                IB-standard diagrams. Drawn inline. <em className="italic" style={{color:'var(--rust)'}}>Marked instantly.</em>
               </h2>
               <p className="lead">
-                The thing examiners actually grade you on — and the one thing other AI tutors get wrong. Mia draws to IBO conventions, then marks against the official criteria. You can also upload a photo of a diagram you&apos;ve drawn on paper and get it marked the same way.
+                The thing examiners actually grade you on — and the thing generic AI tutors often get wrong. Mia draws to IB conventions, then marks against the official criteria. You can also upload a photo of a diagram you&apos;ve drawn on paper and get it marked the same way.
               </p>
             </div>
             <div className="diag-demo">
@@ -328,7 +328,7 @@ export default function IBLandingPage() {
                 </svg>
               </div>
               <div className="diag-marking">
-                <div className="diag-canvas-hd" style={{marginBottom:6}}><span>Mia · marking</span><span>IBO criteria</span></div>
+                <div className="diag-canvas-hd" style={{marginBottom:6}}><span>Mia · marking</span><span>IB criteria</span></div>
                 <div className="criterion"><div className="tick">✓</div><div className="label">Axes labelled correctly (P / Q).</div><div className="points">1 / 1</div></div>
                 <div className="criterion"><div className="tick">✓</div><div className="label">MSB curve plotted right of MPB.</div><div className="points">1 / 1</div></div>
                 <div className="criterion"><div className="tick">✓</div><div className="label">Welfare gain triangle shaded.</div><div className="points">1 / 1</div></div>
@@ -392,7 +392,7 @@ export default function IBLandingPage() {
                 One subscription. The <em className="italic">complete</em> IB Economics and IB Business Management curriculum.
               </h2>
               <p className="lead">
-                No more piecing together five tutors, three textbooks and a YouTube playlist. Gradd is the whole course, taught and marked to IBO standards, in one place.
+                No more piecing together five tutors, three textbooks and a YouTube playlist. Gradd is the full Economics and Business Management course, taught and marked to IB standards, in one place.
               </p>
             </div>
             <div className="one-sub-grid">
@@ -404,7 +404,7 @@ export default function IBLandingPage() {
               <div className="os-card">
                 <div className="num">02 / Marking</div>
                 <h3>Every paper format. Marked the way IB marks.</h3>
-                <p>Mia works through Paper 1, 2 and 3-style questions with you in session — command terms, diagram marking — graded against the official IBO markbands and assessment criteria, not generic AI hand-waving.</p>
+                <p>Mia works through Paper 1, 2 and 3-style questions with you in session — command terms, diagram marking — graded against the official IB markbands and assessment criteria, not generic AI hand-waving.</p>
               </div>
               <div className="os-card">
                 <div className="num">03 / Tutor</div>
@@ -423,7 +423,7 @@ export default function IBLandingPage() {
               <h2 className="h-section">
                 IB Economics and IB Business Management — <em className="italic" style={{color:'var(--rust)'}}>fully covered.</em>
               </h2>
-              <p className="lead">Both subjects taught at HL and SL, with the depth the IBO command terms actually require.</p>
+              <p className="lead">Both subjects taught at HL and SL, with the depth the IB command terms actually require.</p>
             </div>
             <div className="subjects-grid">
               <article className="subj">
@@ -523,7 +523,7 @@ export default function IBLandingPage() {
               <div className="who-card">
                 <span className="who-tag">Self-studying</span>
                 <h3>Taking the subject without a teacher.</h3>
-                <p>Online IB students, anticipated candidates, or just a school where Business isn&apos;t offered. The whole course, structured, in your pocket.</p>
+                <p>Online IB students, anticipated candidates, or just a school where Business isn&apos;t offered. The full Economics and Business Management course, structured, in your pocket.</p>
               </div>
               <div className="who-card">
                 <span className="who-tag">Paying parent</span>
@@ -539,7 +539,7 @@ export default function IBLandingPage() {
           <div className="wrap">
             <div className="section-head">
               <span className="eyebrow">What changes</span>
-              <h2 className="h-section">From a 4-mark answer to a 7-mark one.</h2>
+              <h2 className="h-section">From misconception to exam-ready answer.</h2>
             </div>
             <div className="ba-grid">
               <div className="ba-card ba-before">
@@ -619,19 +619,19 @@ export default function IBLandingPage() {
                   <tr>
                     <td>Retests weak thinking until it sticks</td>
                     <td className="gradd-col"><span className="y">✓</span></td>
-                    <td><span className="n">✗</span></td>
+                    <td><span className="n">Limited by session time</span></td>
                     <td><span className="n">✗</span></td>
                     <td><span className="n">✗</span></td>
                   </tr>
                   <tr>
                     <td>Diagram marking</td>
-                    <td className="gradd-col"><span className="y">✓ Instant, IBO criteria</span></td>
+                    <td className="gradd-col"><span className="y">✓ Instant, IB criteria</span></td>
                     <td><span className="n">If you book a session</span></td>
                     <td><span className="n">Rare</span></td>
                     <td><span className="n">Not available</span></td>
                   </tr>
                   <tr>
-                    <td>IBO-standard marking</td>
+                    <td>IB-standard marking</td>
                     <td className="gradd-col"><span className="y">✓ Command terms + markbands, instant</span></td>
                     <td><span className="n">Varies by tutor</span></td>
                     <td><span className="n">Generic</span></td>
@@ -670,8 +670,8 @@ export default function IBLandingPage() {
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="y">✓ Unlimited, on demand</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="y">✓</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="y">✓</span></div>
-                <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="y">✓ Instant, IBO criteria</span></div>
-                <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="y">✓ Command terms + markbands</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="y">✓ Instant, IB criteria</span></div>
+                <div className="cmp-mobile-row"><span className="cmp-lbl">IB-standard marking</span><span className="y">✓ Command terms + markbands</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="y">Seconds</span></div>
                 <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="y">24/7</span></div>
                 <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="y">✓ Adaptive to your weak areas</span></div>
@@ -691,9 +691,9 @@ export default function IBLandingPage() {
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Full syllabus, HL &amp; SL</span><span className="n">Depends on tutor</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Past-paper-style questions</span><span className="n">Homework from textbooks</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="n">Depends on tutor</span></div>
-                    <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">✗</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">Limited by session time</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">If you book a session</span></div>
-                    <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Varies by tutor</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">IB-standard marking</span><span className="n">Varies by tutor</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">3–7 days</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="n">1–2 hours / week</span></div>
                     <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="n">In the tutor&apos;s head</span></div>
@@ -706,7 +706,7 @@ export default function IBLandingPage() {
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">Rare</span></div>
-                    <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Generic</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">IB-standard marking</span><span className="n">Generic</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">1–2 weeks</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span className="n">Fixed schedule</span></div>
                     <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="n">Not available</span></div>
@@ -719,7 +719,7 @@ export default function IBLandingPage() {
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagnoses your misconceptions</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Retests weak thinking until it sticks</span><span className="n">✗</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Diagram marking</span><span className="n">Not available</span></div>
-                    <div className="cmp-mobile-row"><span className="cmp-lbl">IBO-standard marking</span><span className="n">Not available</span></div>
+                    <div className="cmp-mobile-row"><span className="cmp-lbl">IB-standard marking</span><span className="n">Not available</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Marking turnaround</span><span className="n">You mark yourself</span></div>
                     <div className="cmp-mobile-row"><span className="cmp-lbl">Availability</span><span>Whenever</span></div>
                     <div className="cmp-mobile-row cmp-mobile-last"><span className="cmp-lbl">Tracks your progress</span><span className="n">Not available</span></div>
@@ -770,7 +770,7 @@ export default function IBLandingPage() {
                   <li><span>Unlimited diagnosis-led teaching — every misconception rebuilt, every time</span></li>
                   <li><span>Full IB Economics + IB Business Management syllabus — HL &amp; SL</span></li>
                   <li><span>Paper 1, 2 &amp; 3 (HL) exam-style questions worked through in lessons</span></li>
-                  <li><span>IBO-standard diagram marking — taught inline, your hand-drawn diagrams marked</span></li>
+                  <li><span>IB-standard diagram marking — taught inline, your hand-drawn diagrams marked</span></li>
                   <li><span>Progress tracked per subject — weak-area retesting built in</span></li>
                   <li><span>Works on any device</span></li>
                 </ul>
@@ -811,7 +811,7 @@ export default function IBLandingPage() {
         <section className="final-cta">
           <div className="wrap final-cta-inner">
             <h2 className="h-display">Turn understanding into <em className="italic">exam marks.</em></h2>
-            <p className="lead">Start tonight. Be ahead of your class by next Monday.</p>
+            <p className="lead">Start tonight. Stop repeating the same mistakes by next week.</p>
             <div className="hero-cta">
               <Link href="/auth/signup" className="btn btn-rust">Start free <span className="arrow">→</span></Link>
               <Link href="/demo" className="btn btn-ghost">Try the live demo</Link>
@@ -882,7 +882,7 @@ const CSS = `
   --serif:    "Fraunces", "Times New Roman", Georgia, serif;
   --sans:     "Geist", ui-sans-serif, system-ui, -apple-system, sans-serif;
   --mono:     "Geist Mono", ui-monospace, "JetBrains Mono", Menlo, monospace;
-  --max:      1240px;
+  --max:      1320px;
   --gut:      clamp(20px, 4vw, 56px);
   --section:  clamp(72px, 9vw, 128px);
   --radius:   14px;
@@ -978,6 +978,7 @@ const CSS = `
 .ib-lp .nav--scrolled { border-bottom-color: color-mix(in oklab, var(--rule) 60%, transparent); }
 .ib-lp .nav-inner {
   display: flex; align-items: center; justify-content: space-between; height: 68px;
+  padding: 0 28px;
 }
 .ib-lp .nav-links { display: flex; align-items: center; gap: 28px; }
 .ib-lp .nav-link-btn {
