@@ -1374,7 +1374,7 @@ const CSS = `
 .ib-lp .cmp-closing {
   margin: 36px auto 28px; font-size: 16px; line-height: 1.65; color: var(--ink-2); max-width: 680px; text-align: center;
 }
-.ib-lp .cmp-cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+.ib-lp .cmp-cta { display: flex; align-items: center; gap: 24px; flex-wrap: wrap; justify-content: center; }
 
 /* ── Compare: mobile card layout (<768px) ── */
 .ib-lp .cmp-mobile { display: none; }
