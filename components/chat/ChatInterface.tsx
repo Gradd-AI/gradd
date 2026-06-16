@@ -248,13 +248,17 @@ export default function ChatInterface({
         fullText += chunk;
 
         // Hide signal tokens while streaming so they never flash on screen.
-        // Strips COMPLETE signal tokens, and also any TRAILING partial signal whose
-        // closing ] hasn't streamed in yet. Matches only known signal names -- never
-        // touches mark allocations like [4 marks] or ordinary brackets.
+        // Never touches [4 marks], [6], [2] — no SIGNAL_NAME prefix, no { } payload.
+        // Pass 1: JSON-payload signals — [\s\S]*? matches payload including internal ] chars
+        //         (e.g. [WEAK_AREA_FLAG: { "concept": "conflates [X] and [Y]" }])
+        // Pass 2: bare/pipe-separated signals — [^\]]* safe as those payloads never contain ]
+        //         (e.g. [BURN_WALL], [LESSON_COMPLETE: IB_BM_001 | ...])
+        // Pass 3: trailing partial whose closing ] hasn't streamed in yet
         const SIGNAL_NAMES = 'BURN_WALL|TEACH_BACK|WEAK_AREA_FLAG|LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|SESSION_FLAG';
         const streamDisplay = fullText
+          .replace(new RegExp(`\\[(?:${SIGNAL_NAMES}):\\s*\\{[\\s\\S]*?\\}\\s*\\]`, 'g'), '')
           .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})(?::[^\\]]*)?\\]`, 'g'), '')
-          .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})(?::[^\\]]*)?$`), '')
+          .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})[\\s\\S]*$`), '')
           .trimStart();
         setMessages(prev => {
           const updated = [...prev];
@@ -690,13 +694,12 @@ function LessonCompletePanel({ onContinue, onEnd, ending, isIB }: { onContinue: 
 function MessageBubble({ message, studentName, tutorInitial, isIB }: { message: Message; studentName: string; tutorInitial: string; isIB?: boolean }) {
   const isUser = message.role === 'user';
 
+  const BUBBLE_SIGNAL_NAMES = 'BURN_WALL|TEACH_BACK|WEAK_AREA_FLAG|SESSION_SUMMARY|LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_FLAG';
   const displayContent = message.content
-    .replace(/\[SESSION_SUMMARY:[^\]]+\]/g, '')
-    .replace(/\[LESSON_COMPLETE:[^\]]+\]/g, '')
-    .replace(/\[LESSON_INCOMPLETE:[^\]]+\]/g, '')
-    .replace(/\[UNIT_COMPLETE:[^\]]+\]/g, '')
-    .replace(/\[WEAK_AREA_FLAG:[^\]]+\]/g, '')
-    .replace(/\[SESSION_FLAG:[^\]]+\]/g, '')
+    // JSON-payload signals: non-greedy {…} match handles ] inside JSON values
+    .replace(new RegExp(`\\[(?:${BUBBLE_SIGNAL_NAMES}):\\s*\\{[\\s\\S]*?\\}\\s*\\]`, 'g'), '')
+    // Bare or pipe-separated signals
+    .replace(new RegExp(`\\[(?:${BUBBLE_SIGNAL_NAMES})(?::[^\\]]*)?\\]`, 'g'), '')
     .trim();
 
   if (!displayContent && message.role === 'assistant') {
