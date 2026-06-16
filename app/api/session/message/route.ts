@@ -21,6 +21,7 @@ const MAX_TOKENS = 4096;
 // Free-tier teaching cap (brick 2, bucket C scaffolding). Free users get this many
 // interactions before the paywall. Placeholder value — tuned per A/B/C bucket later.
 const MAX_FREE_UNITS = 9999; // DORMANT: crude message-cap parked. Real cap fires on teaching (TEACH_BACK signal), built next. See backlog.
+const FREE_TEACH_THROUGHS = 3; // free teach-throughs before burn arms. Tune post-launch via A/B buckets.
 
 // Cap history sent to Anthropic at last 20 exchanges (40 messages).
 // Full history is always persisted to DB — trimming is Anthropic-call-only.
@@ -423,7 +424,7 @@ ABSOLUTE RULES — VIOLATIONS ARE CRITICAL ERRORS:
 - Never lose your place in the lesson due to a student tangent. The lesson continues regardless.
 - The full conversation history is in the messages array. Never claim you cannot see a previous message. Never ask the student to repeat something they already sent.
 - If two consecutive identical user messages appear, treat as one — UI glitch. Acknowledge naturally and continue.
-${isFreeTier && (profile.free_units_used ?? 0) >= 1 ? 'BURN_ACTIVE: true' : ''}
+${isFreeTier && (profile.free_units_used ?? 0) >= FREE_TEACH_THROUGHS ? 'BURN_ACTIVE: true' : ''}
 `;
 
   // ── Free-tier teaching cap (bucket C scaffolding) ─────────────────────────
