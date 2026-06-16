@@ -56,6 +56,206 @@ const UNITS = [
   { code: 'UNIT_4', name: 'The Global Economy' },
 ];
 
+// ─── Demo course picker — static IB Econ + BM data ───────────────────────────
+type DemoLesson   = { code: string; name: string; status: 'done' | 'current' | 'todo'; weak?: true };
+type DemoTopic    = { code: string; name: string; done: number; total: number; lessons: DemoLesson[] };
+type DemoUnit     = { code: string; name: string; done: number; total: number; topics: DemoTopic[] };
+type PickerSubject = 'IB_ECONOMICS' | 'IB_BUSINESS';
+
+// Econ: 8 + 120 + 52 + 30 = 210 lessons (HL + SL combined)
+const PICKER_DATA_ECON: DemoUnit[] = [
+  {
+    code: 'UNIT_1', name: 'Introduction to Economics', done: 8, total: 8,
+    topics: [
+      { code: '1.1', name: 'Scope of economics', done: 3, total: 3, lessons: [
+        { code: 'p_1_1_1', name: 'What is economics?', status: 'done' },
+        { code: 'p_1_1_2', name: 'Scarcity, choice and opportunity cost', status: 'done' },
+        { code: 'p_1_1_3', name: 'Free goods and economic goods', status: 'done' },
+      ]},
+      { code: '1.2', name: 'How economists approach the world', done: 2, total: 2, lessons: [
+        { code: 'p_1_2_1', name: 'Positive and normative economics', status: 'done' },
+        { code: 'p_1_2_2', name: 'Economic models and assumptions', status: 'done' },
+      ]},
+      { code: '1.3', name: 'The economic problem', done: 3, total: 3, lessons: [
+        { code: 'p_1_3_1', name: 'Factors of production', status: 'done' },
+        { code: 'p_1_3_2', name: 'Production possibility curves', status: 'done' },
+        { code: 'p_1_3_3', name: 'PPC and opportunity cost', status: 'done' },
+      ]},
+    ],
+  },
+  {
+    code: 'UNIT_2', name: 'Microeconomics', done: 41, total: 120,
+    topics: [
+      { code: '2.1', name: 'Demand', done: 5, total: 5, lessons: [
+        { code: 'p_2_1_1', name: 'The law of demand', status: 'done' },
+        { code: 'p_2_1_2', name: 'The demand curve', status: 'done' },
+        { code: 'p_2_1_3', name: 'Shifts in demand', status: 'done' },
+        { code: 'p_2_1_4', name: 'Non-price determinants of demand', status: 'done' },
+        { code: 'p_2_1_5', name: 'Consumer surplus', status: 'done' },
+      ]},
+      { code: '2.2', name: 'Supply', done: 4, total: 4, lessons: [
+        { code: 'p_2_2_1', name: 'The law of supply', status: 'done' },
+        { code: 'p_2_2_2', name: 'The supply curve', status: 'done' },
+        { code: 'p_2_2_3', name: 'Shifts in supply', status: 'done' },
+        { code: 'p_2_2_4', name: 'Producer surplus', status: 'done' },
+      ]},
+      { code: '2.3', name: 'Competitive market equilibrium', done: 2, total: 6, lessons: [
+        { code: 'p_2_3_1', name: 'Market equilibrium — price and quantity', status: 'done' },
+        { code: 'p_2_3_2', name: 'Changes in equilibrium', status: 'done' },
+        { code: 'p_2_3_3', name: 'Demand — shifts and determinants', status: 'current' },
+        { code: 'p_2_3_4', name: 'Surplus and shortage', status: 'todo' },
+        { code: 'p_2_3_5', name: 'Price signals and resource allocation', status: 'todo' },
+        { code: 'p_2_3_6', name: 'Effects of simultaneous shifts', status: 'todo' },
+      ]},
+      { code: '2.4', name: 'Critique of the maximizing assumption', done: 0, total: 4, lessons: [] },
+      { code: '2.5', name: 'Theory of the firm and market structures', done: 0, total: 40, lessons: [] },
+      { code: '2.6', name: 'Price elasticity of demand', done: 0, total: 12, lessons: [
+        { code: 'p_2_6_1', name: 'PED — concept and formula', status: 'todo', weak: true },
+        { code: 'p_2_6_2', name: 'PED diagrams and interpreting values', status: 'todo' },
+      ]},
+      { code: '2.7', name: 'Income elasticity of demand', done: 0, total: 4, lessons: [] },
+      { code: '2.8', name: 'Cross-price elasticity of demand', done: 0, total: 3, lessons: [] },
+      { code: '2.9', name: 'Price elasticity of supply', done: 0, total: 5, lessons: [] },
+      { code: '2.10', name: 'Role of government in markets', done: 0, total: 12, lessons: [] },
+      { code: '2.11', name: 'Market failure — externalities', done: 0, total: 10, lessons: [] },
+      { code: '2.12', name: 'Market failure — public goods', done: 0, total: 9, lessons: [] },
+      { code: '2.13', name: 'Market failure — asymmetric information', done: 0, total: 3, lessons: [] },
+      { code: '2.14', name: 'Market failure — common pool resources', done: 0, total: 3, lessons: [] },
+    ],
+  },
+  {
+    code: 'UNIT_3', name: 'Macroeconomics', done: 0, total: 52,
+    topics: [
+      { code: '3.1', name: 'Measuring economic activity', done: 0, total: 5, lessons: [] },
+      { code: '3.2', name: 'Aggregate demand and aggregate supply', done: 0, total: 10, lessons: [] },
+      { code: '3.3', name: 'Economic growth', done: 0, total: 6, lessons: [] },
+      { code: '3.4', name: 'Low unemployment', done: 0, total: 4, lessons: [] },
+      { code: '3.5', name: 'Low and stable inflation', done: 0, total: 4, lessons: [] },
+      { code: '3.6', name: 'Sustainable current account', done: 0, total: 2, lessons: [] },
+      { code: '3.7', name: 'Fiscal policy', done: 0, total: 7, lessons: [] },
+      { code: '3.8', name: 'Monetary policy', done: 0, total: 7, lessons: [] },
+      { code: '3.9', name: 'Supply-side policies', done: 0, total: 7, lessons: [] },
+    ],
+  },
+  {
+    code: 'UNIT_4', name: 'The Global Economy', done: 0, total: 30,
+    topics: [
+      { code: '4.1', name: 'Benefits of international trade', done: 0, total: 4, lessons: [] },
+      { code: '4.2', name: 'Types of trade protection', done: 0, total: 4, lessons: [] },
+      { code: '4.3', name: 'Arguments for and against protection', done: 0, total: 3, lessons: [] },
+      { code: '4.4', name: 'Economic integration', done: 0, total: 2, lessons: [] },
+      { code: '4.5', name: 'Exchange rates', done: 0, total: 7, lessons: [] },
+      { code: '4.6', name: 'Balance of payments', done: 0, total: 5, lessons: [] },
+      { code: '4.7', name: 'Sustainable development', done: 0, total: 2, lessons: [] },
+      { code: '4.8', name: 'Measuring development', done: 0, total: 2, lessons: [] },
+      { code: '4.9', name: 'Barriers to development', done: 0, total: 1, lessons: [] },
+    ],
+  },
+];
+
+// BM: 22 + 26 + 36 + 28 + 24 = 136 lessons
+const PICKER_DATA_BM: DemoUnit[] = [
+  {
+    code: 'UNIT_1', name: 'Business Organisation and Environment', done: 0, total: 22,
+    topics: [
+      { code: '1.1', name: 'Introduction to business management', done: 0, total: 4, lessons: [
+        { code: 'bm_1_1_1', name: 'What is business management?', status: 'todo' },
+        { code: 'bm_1_1_2', name: 'Business sectors and types of activity', status: 'todo' },
+        { code: 'bm_1_1_3', name: 'Business purpose and vision', status: 'todo' },
+        { code: 'bm_1_1_4', name: 'Entrepreneurship and intrapreneurship', status: 'todo' },
+      ]},
+      { code: '1.2', name: 'Types of organizations', done: 0, total: 4, lessons: [
+        { code: 'bm_1_2_1', name: 'Sole traders and partnerships', status: 'todo' },
+        { code: 'bm_1_2_2', name: 'Private and public limited companies', status: 'todo' },
+        { code: 'bm_1_2_3', name: 'Not-for-profit organizations', status: 'todo' },
+        { code: 'bm_1_2_4', name: 'The role of shareholders', status: 'todo' },
+      ]},
+      { code: '1.3', name: 'Organizational objectives', done: 0, total: 4, lessons: [
+        { code: 'bm_1_3_1', name: 'Vision, mission and aims', status: 'todo' },
+        { code: 'bm_1_3_2', name: 'SMART objectives', status: 'todo' },
+        { code: 'bm_1_3_3', name: 'Business ethics', status: 'todo' },
+        { code: 'bm_1_3_4', name: 'Corporate social responsibility', status: 'todo' },
+      ]},
+      { code: '1.4', name: 'Stakeholders', done: 0, total: 3, lessons: [
+        { code: 'bm_1_4_1', name: 'Internal stakeholders', status: 'todo' },
+        { code: 'bm_1_4_2', name: 'External stakeholders', status: 'todo' },
+        { code: 'bm_1_4_3', name: 'Stakeholder conflict and management', status: 'todo' },
+      ]},
+      { code: '1.5', name: 'External environment', done: 0, total: 4, lessons: [] },
+      { code: '1.6', name: 'Growth and evolution', done: 0, total: 3, lessons: [] },
+    ],
+  },
+  {
+    code: 'UNIT_2', name: 'Human Resource Management', done: 0, total: 26,
+    topics: [
+      { code: '2.1', name: 'Introduction to HRM', done: 0, total: 4, lessons: [
+        { code: 'bm_2_1_1', name: 'Human resource planning', status: 'todo' },
+        { code: 'bm_2_1_2', name: 'Recruitment and selection', status: 'todo' },
+        { code: 'bm_2_1_3', name: 'Training and development', status: 'todo' },
+        { code: 'bm_2_1_4', name: 'Appraisal and dismissal', status: 'todo' },
+      ]},
+      { code: '2.2', name: 'Organizational structure', done: 0, total: 5, lessons: [
+        { code: 'bm_2_2_1', name: 'Hierarchies and span of control', status: 'todo' },
+        { code: 'bm_2_2_2', name: 'Centralisation and decentralisation', status: 'todo' },
+        { code: 'bm_2_2_3', name: 'Delegation and accountability', status: 'todo' },
+        { code: 'bm_2_2_4', name: 'Flat vs tall structures', status: 'todo' },
+        { code: 'bm_2_2_5', name: 'Matrix and project-based structures', status: 'todo' },
+      ]},
+      { code: '2.3', name: 'Leadership and management', done: 0, total: 4, lessons: [] },
+      { code: '2.4', name: 'Motivation', done: 0, total: 5, lessons: [] },
+      { code: '2.5', name: 'Organizational culture', done: 0, total: 3, lessons: [] },
+      { code: '2.6', name: 'Communication', done: 0, total: 3, lessons: [] },
+      { code: '2.7', name: 'Industrial and employee relations', done: 0, total: 2, lessons: [] },
+    ],
+  },
+  {
+    code: 'UNIT_3', name: 'Finance and Accounts', done: 0, total: 36,
+    topics: [
+      { code: '3.1', name: 'Introduction to finance', done: 0, total: 3, lessons: [] },
+      { code: '3.2', name: 'Sources of finance', done: 0, total: 4, lessons: [] },
+      { code: '3.3', name: 'Costs and revenues', done: 0, total: 5, lessons: [] },
+      { code: '3.4', name: 'Final accounts', done: 0, total: 5, lessons: [] },
+      { code: '3.5', name: 'Profitability and liquidity ratios', done: 0, total: 5, lessons: [] },
+      { code: '3.6', name: 'Efficiency ratios', done: 0, total: 4, lessons: [] },
+      { code: '3.7', name: 'Cash flow', done: 0, total: 4, lessons: [] },
+      { code: '3.8', name: 'Investment appraisal', done: 0, total: 4, lessons: [] },
+      { code: '3.9', name: 'Budgets', done: 0, total: 2, lessons: [] },
+    ],
+  },
+  {
+    code: 'UNIT_4', name: 'Marketing', done: 0, total: 28,
+    topics: [
+      { code: '4.1', name: 'Introduction to marketing', done: 0, total: 5, lessons: [] },
+      { code: '4.2', name: 'Marketing planning', done: 0, total: 5, lessons: [] },
+      { code: '4.3', name: 'Sales forecasting', done: 0, total: 4, lessons: [] },
+      { code: '4.4', name: 'Market research', done: 0, total: 5, lessons: [] },
+      { code: '4.5', name: 'The marketing mix', done: 0, total: 5, lessons: [] },
+      { code: '4.6', name: 'International marketing', done: 0, total: 2, lessons: [] },
+      { code: '4.7', name: 'E-commerce', done: 0, total: 2, lessons: [] },
+    ],
+  },
+  {
+    code: 'UNIT_5', name: 'Operations Management', done: 0, total: 24,
+    topics: [
+      { code: '5.1', name: 'Introduction to operations management', done: 0, total: 4, lessons: [] },
+      { code: '5.2', name: 'Operations methods', done: 0, total: 4, lessons: [] },
+      { code: '5.3', name: 'Lean production and quality management', done: 0, total: 5, lessons: [] },
+      { code: '5.4', name: 'Location', done: 0, total: 2, lessons: [] },
+      { code: '5.5', name: 'Production planning', done: 0, total: 4, lessons: [] },
+      { code: '5.6', name: 'Crisis management', done: 0, total: 2, lessons: [] },
+      { code: '5.7', name: 'Research and development', done: 0, total: 2, lessons: [] },
+      { code: '5.8', name: 'Management information systems', done: 0, total: 1, lessons: [] },
+    ],
+  },
+];
+
+const ALL_PICKER_LESSONS_ECON = PICKER_DATA_ECON.flatMap(u =>
+  u.topics.flatMap(t => t.lessons.map(l => ({ ...l, unitName: u.name, topicCode: t.code, topicName: t.name })))
+);
+const ALL_PICKER_LESSONS_BM = PICKER_DATA_BM.flatMap(u =>
+  u.topics.flatMap(t => t.lessons.map(l => ({ ...l, unitName: u.name, topicCode: t.code, topicName: t.name })))
+);
+
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -152,7 +352,7 @@ function DemoNav() {
       </Link>
       <div className="app-nav-right">
         <a href="/auth/login" className="demo-nav-login">Already a student? Log in</a>
-        <a href="/auth/signup/ib" className="demo-nav-cta">Start learning →</a>
+        <a href="/auth/signup/ib" className="demo-nav-cta">Start free →</a>
       </div>
     </header>
   );
@@ -268,6 +468,202 @@ function RecentSessions() {
   );
 }
 
+// ─── Demo course picker (inert — no router.push) ─────────────────────────────
+
+const ECON_UNITS_DEFAULT  = () => new Set(['UNIT_1', 'UNIT_2']);
+const ECON_TOPICS_DEFAULT = () => new Set(['UNIT_1:1.1', 'UNIT_1:1.2', 'UNIT_1:1.3', 'UNIT_2:2.1', 'UNIT_2:2.2', 'UNIT_2:2.3']);
+const BM_UNITS_DEFAULT    = () => new Set(['UNIT_1', 'UNIT_2']);
+const BM_TOPICS_DEFAULT   = () => new Set(['UNIT_1:1.1', 'UNIT_1:1.2', 'UNIT_1:1.3', 'UNIT_2:2.1', 'UNIT_2:2.2']);
+
+function DemoCoursePicker() {
+  const [showPicker,     setShowPicker]     = useState(false);
+  const [activeSubject,  setActiveSubject]  = useState<PickerSubject>('IB_ECONOMICS');
+  const [expandedUnits,  setExpandedUnits]  = useState<Set<string>>(ECON_UNITS_DEFAULT);
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(ECON_TOPICS_DEFAULT);
+  const [query,          setQuery]          = useState('');
+
+  const pickerData  = activeSubject === 'IB_ECONOMICS' ? PICKER_DATA_ECON       : PICKER_DATA_BM;
+  const allLessons  = activeSubject === 'IB_ECONOMICS' ? ALL_PICKER_LESSONS_ECON : ALL_PICKER_LESSONS_BM;
+
+  function switchSubject(s: PickerSubject) {
+    setActiveSubject(s);
+    setExpandedUnits(s  === 'IB_ECONOMICS' ? ECON_UNITS_DEFAULT()  : BM_UNITS_DEFAULT());
+    setExpandedTopics(s === 'IB_ECONOMICS' ? ECON_TOPICS_DEFAULT() : BM_TOPICS_DEFAULT());
+    setQuery('');
+  }
+
+  const searchResults = query.trim()
+    ? allLessons.filter(l => {
+        const q = query.trim().toLowerCase();
+        return (
+          l.name.toLowerCase().includes(q) ||
+          l.unitName.toLowerCase().includes(q) ||
+          l.topicName.toLowerCase().includes(q)
+        );
+      })
+    : null;
+
+  function toggleUnit(code: string) {
+    setExpandedUnits(prev => { const n = new Set(prev); n.has(code) ? n.delete(code) : n.add(code); return n; });
+  }
+  function toggleTopic(key: string) {
+    setExpandedTopics(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n; });
+  }
+
+  return (
+    <div className="browse-section">
+      <button
+        className={`browse-hd${showPicker ? ' open' : ''}`}
+        onClick={() => setShowPicker(v => !v)}
+      >
+        <div>
+          <div className="browse-title">Jump to any topic</div>
+          <div className="browse-sub">346 lessons across both subjects — pick any topic</div>
+        </div>
+        <span className="browse-chevron">▶</span>
+      </button>
+
+      {showPicker && (
+        <div className="picker-tree">
+          {/* Subject toggle */}
+          <div className="subj-tabs" role="tablist" style={{ margin: '12px 16px 4px' }}>
+            {([
+              { value: 'IB_ECONOMICS' as PickerSubject, label: 'IB Economics' },
+              { value: 'IB_BUSINESS'  as PickerSubject, label: 'IB Business Management' },
+            ]).map(tab => (
+              <button
+                key={tab.value}
+                role="tab"
+                aria-pressed={activeSubject === tab.value}
+                onClick={() => switchSubject(tab.value)}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search */}
+          <div className="picker-search">
+            <input
+              className="picker-search-input"
+              type="search"
+              placeholder={activeSubject === 'IB_ECONOMICS'
+                ? 'Search — e.g. elasticity, market failure, inflation'
+                : 'Search — e.g. motivation, cash flow, marketing mix'}
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              autoComplete="off"
+              spellCheck={false}
+              aria-label="Search lessons"
+            />
+          </div>
+
+          {searchResults !== null ? (
+            searchResults.length === 0 ? (
+              <div className="picker-empty">
+                No topics match —{' '}
+                <a href="/auth/signup/ib" style={{ color: 'var(--rust)' }}>
+                  sign up to explore all 346 lessons →
+                </a>
+              </div>
+            ) : (
+              searchResults.map(lesson => (
+                <div
+                  key={lesson.code}
+                  className={`picker-lesson picker-result${lesson.status === 'current' ? ' current' : ''}`}
+                  style={{ cursor: 'default' }}
+                >
+                  <span className={`picker-marker${lesson.status === 'done' ? ' done' : lesson.status === 'current' ? ' here' : ' todo'}`}>
+                    {lesson.status === 'done' ? '✓' : lesson.status === 'current' ? '◉' : '○'}
+                  </span>
+                  <div className="picker-result-body">
+                    <div className="picker-lesson-name">{lesson.name}</div>
+                    <div className="picker-result-ctx">{lesson.unitName} · {lesson.topicName}</div>
+                  </div>
+                  {lesson.weak && <span className="picker-weak-dot" />}
+                  <a href="/auth/signup/ib" className="picker-lesson-cta" style={{ opacity: 1, textDecoration: 'none' }}>
+                    sign up →
+                  </a>
+                </div>
+              ))
+            )
+          ) : (
+            pickerData.map(unit => {
+              const pct = unit.total ? Math.round((unit.done / unit.total) * 100) : 0;
+              const isOpen = expandedUnits.has(unit.code);
+              const hasReview = unit.topics.some(t => t.lessons.some(l => l.weak));
+              return (
+                <div key={unit.code} className="picker-unit">
+                  <button className="picker-unit-hd" onClick={() => toggleUnit(unit.code)} aria-expanded={isOpen}>
+                    <span className={`picker-chevron${isOpen ? ' open' : ''}`}>▶</span>
+                    <span className="picker-unit-name">{unit.name}</span>
+                    {hasReview && <span className="picker-review-dot" title="Active weak areas in this unit" />}
+                    <span className="picker-unit-meta">
+                      <span className="picker-unit-bar">
+                        <span className="picker-unit-bar-fill" style={{ width: `${pct}%` }} />
+                      </span>
+                      <span className="picker-unit-count">{unit.done}/{unit.total}</span>
+                    </span>
+                  </button>
+
+                  {isOpen && unit.topics.map(topic => {
+                    const tKey = `${unit.code}:${topic.code}`;
+                    const isTopicOpen = expandedTopics.has(tKey);
+                    const topicReview = topic.lessons.some(l => l.weak);
+                    return (
+                      <div key={tKey} className="picker-topic">
+                        <button className="picker-topic-hd" onClick={() => toggleTopic(tKey)} aria-expanded={isTopicOpen}>
+                          <span className="picker-topic-code">{topic.code}</span>
+                          <span className="picker-topic-sep">·</span>
+                          <span className="picker-topic-name">{topic.name}</span>
+                          <span className="picker-topic-count">{topic.done}/{topic.total}</span>
+                          {topicReview && <span className="picker-topic-review-dot" title="Active weak area" />}
+                          <span className={`picker-chevron small${isTopicOpen ? ' open' : ''}`}>▶</span>
+                        </button>
+
+                        {isTopicOpen && (
+                          topic.lessons.length > 0 ? (
+                            topic.lessons.map(lesson => (
+                              <div
+                                key={lesson.code}
+                                className={`picker-lesson${lesson.status === 'current' ? ' current' : ''}`}
+                                style={{ cursor: 'default' }}
+                              >
+                                <span className={`picker-marker${lesson.status === 'done' ? ' done' : lesson.status === 'current' ? ' here' : ' todo'}`}>
+                                  {lesson.status === 'done' ? '✓' : lesson.status === 'current' ? '◉' : '○'}
+                                </span>
+                                <span className="picker-lesson-name">{lesson.name}</span>
+                                {lesson.weak && <span className="picker-weak-dot" title="Active weak area" />}
+                                <a href="/auth/signup/ib" className="picker-lesson-cta" style={{ opacity: 1, textDecoration: 'none', color: 'var(--ink-3)', fontSize: 11 }}>
+                                  sign up →
+                                </a>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="picker-lesson" style={{ cursor: 'default' }}>
+                              <span className="picker-marker todo">○</span>
+                              <span className="picker-lesson-name" style={{ color: 'var(--ink-3)', fontStyle: 'italic' }}>
+                                {topic.total} lesson{topic.total !== 1 ? 's' : ''} in this topic
+                              </span>
+                              <a href="/auth/signup/ib" className="picker-lesson-cta" style={{ opacity: 1, textDecoration: 'none', color: 'var(--rust)', fontSize: 11 }}>
+                                sign up →
+                              </a>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 type View = 'student' | 'parent';
@@ -282,7 +678,7 @@ export default function DemoDashboard() {
       {/* Demo notice */}
       <div className="demo-notice">
         👋 You&apos;re viewing a demo — no account needed.{' '}
-        <a href="/auth/signup/ib">Start your IB plan</a> to begin real sessions with Mia — 7-day money-back guarantee on every plan.
+        <a href="/auth/signup/ib">Start free</a> to begin real sessions with Mia — subscribe when you&apos;re ready.
       </div>
 
       <DemoNav />
@@ -329,6 +725,8 @@ export default function DemoDashboard() {
                 </a>
               </div>
             </div>
+
+            <DemoCoursePicker />
 
             <LastSessionCard />
 
