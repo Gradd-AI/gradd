@@ -707,3 +707,12 @@ Context: these lift conversion at the landing-page/comparison stage; they do NOT
 
 ### STATE
 feat/free-first-signup pushed (750753d), NOT merged. Free-first ENTRY proven on preview (signup → free dashboard → session → Mia teaches → diagrams render for free user). Convert path unverified (needs production test). Items 1-4 above block merge-to-main + launch.
+
+---
+
+## DEMO POLISH — POST-LAUNCH NICE-TO-HAVE (source: demo review 16/06/2026)
+
+Both items are deferred — demo already converts. Build only if conversion data shows drop-off within the demo session.
+
+1. **Lesson-step progress indicator** (Learn → Try → Diagnose → Rebuild → Retest) — tie the visible demo lesson to the named Gradd Method. Surface as a small progress strip or step labels on the session page so prospects see the method, not just a chat.
+2. **More interactive rhythm** — break long Mia blocks into shorter exchanges. "Your turn" cards between teaching beats, feedback chips on student answers, more frequent prompts before Mia continues. Reduces the "wall of text" perception and shows the method in motion rather than narrating it.

@@ -392,6 +392,23 @@ const CSS = `
   .ib-session .demo-trust      { white-space: normal; text-align: center; }
 }
 
+/* Misconception badge */
+.ib-session .demo-misconception-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 0 8px 52px;
+  padding: 3px 10px;
+  background: color-mix(in oklab, oklch(64% 0.17 47) 10%, var(--paper, oklch(97.8% 0.006 78)));
+  border: 1px solid color-mix(in oklab, oklch(64% 0.17 47) 22%, transparent);
+  border-radius: 999px;
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.07em;
+  color: oklch(64% 0.17 47);
+}
+
 /* Mode toggle */
 .ib-session .demo-mode-bar {
   display: flex; align-items: center; justify-content: center;
@@ -470,7 +487,7 @@ function SignupCTA() {
       </p>
       <div className="demo-cta-row">
         <Link href="/auth/signup/ib" className="demo-cta-primary">
-          Start learning with Mia →
+          Start free with Mia →
         </Link>
         <Link href="/#pricing" className="demo-cta-ghost">
           See pricing
@@ -491,7 +508,7 @@ function MidPageAside() {
       <p>
         Mia teaches every IB Economics and Business Management topic this way —
         from first principles to exam technique.{' '}
-        <Link href="/auth/signup/ib">Start learning →</Link>
+        <Link href="/auth/signup/ib">Start free →</Link>
       </p>
     </div>
   );
@@ -654,7 +671,7 @@ export default function DemoSession() {
           </div>
           <div className="session-header-right">
             <Link href="/auth/signup/ib" className="demo-header-cta">
-              Start learning →
+              Start free →
             </Link>
           </div>
         </div>
@@ -691,6 +708,9 @@ export default function DemoSession() {
         <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
           {activeScript.slice(0, visibleCount).map((msg, i) => (
             <div key={`${mode}-${i}`} ref={(el: HTMLDivElement | null) => { messageRefs.current[i] = el; }}>
+              {mode === 'teaching' && i === 2 && (
+                <div className="demo-misconception-badge">⚑ Misconception detected</div>
+              )}
               <MsgBubble msg={msg} />
             </div>
           ))}
