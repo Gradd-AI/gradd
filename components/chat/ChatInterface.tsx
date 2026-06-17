@@ -4,6 +4,7 @@ import MessageRenderer from '@/components/chat/MessageRenderer';
 import { getDiagramPath } from '@/lib/diagram-map';
 import { DiagramRenderer } from '@/components/diagrams';
 import { parseDiagramSignal, parseDynamicDiagramSignal } from '@/components/diagrams/diagram-integration';
+import { stripSignals } from '@/lib/signal-parser';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import IBPaywallModal from '@/components/chat/IBPaywallModal';
@@ -783,7 +784,8 @@ function AvatarTutor({ initial, className }: { initial: string; className?: stri
 
 function MessageContent({ content }: { content: string }) {
   const { cleanText, diagramCode } = parseDiagramSignal(content);
-  const { cleanText: finalText, dynamicPrompt } = parseDynamicDiagramSignal(cleanText);
+  const { cleanText: afterDynamic, dynamicPrompt } = parseDynamicDiagramSignal(cleanText);
+  const finalText = stripSignals(afterDynamic);
   return (
     <>
       {finalText && <MessageRenderer content={finalText} />}

@@ -26,12 +26,16 @@ export function parseDiagramSignal(text: string): {
 
 /**
  * Parses [DIAGRAM_DYNAMIC: <description>] for fallback dynamic diagrams.
+ * Also tolerates the malformed hybrid [DIAGRAM: DIAGRAM_DYNAMIC: <description>]
+ * that the model occasionally emits — canonical form takes priority.
  */
 export function parseDynamicDiagramSignal(text: string): {
   cleanText: string;
   dynamicPrompt: string | null;
 } {
-  const match = text.match(/\[DIAGRAM_DYNAMIC:\s*([^\]]+)\]/);
+  const match =
+    text.match(/\[DIAGRAM_DYNAMIC:\s*([^\]]+)\]/) ??
+    text.match(/\[DIAGRAM:\s*DIAGRAM_DYNAMIC:\s*([^\]]+)\]/);
   if (!match) return { cleanText: text, dynamicPrompt: null };
   return {
     cleanText: text.replace(match[0], '').trim(),
