@@ -78,6 +78,12 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 32. **A new instruction does not fire if a contradicting instruction remains in the same prompt.** When changing model behaviour via the prompt, you must REMOVE or reconcile the old rule, not just add the new one. The WEAK_AREA_FLAG signal had NEVER fired for any student because the prompt said "flag foundational misconceptions on first occurrence" (RULE A, newly added) directly above an older line saying "a single corrected answer does NOT trigger the signal" — plus a worked counter-example showing first-wrong → no-signal. The model pattern-matched the concrete old example and stayed silent. Fix required editing BOTH the contradicting line AND adding a worked example of the NEW behaviour (models follow concrete examples over abstract rules). Lesson: after adding a behavioural rule, grep the same section for instructions/examples that contradict it and reconcile them in the same edit. Also: verify a behavioural prompt fix by checking the model's ACTUAL output (did the token emit? `message_history LIKE '%SIGNAL%'`), not by assuming the instruction took.
 
+33. **Blog content runs two independent gates — voice and content — and they never merge.** Every blog article passes a voice review (reads like a sharp teacher, not a syllabus narrator — see BLOG_VOICE.md) AND a separate adversarial content check against the official examining-body guide. They catch different failure classes: in the demand-curve build the voice pass approved an article the content check then caught a real economics error in (income→demand stated without the "normal good" assumption). Collapsing the two into one review loses the catch. Voice gate converges to near-zero as BLOG_VOICE.md hardens (voice mistakes are a finite repeating set); the content gate is permanent and per-article (every article makes new factual claims). Run them one article at a time — batching the content check is how an error slips.
+
+34. **The adversarial content checker runs hot — apply WRONG and genuine IMPRECISE, routinely ignore "unsupported" on teaching language.** The checker compares every claim to the subject guide, which is a CONTENT spec, not a marking or product spec. It will therefore always flag "loses marks", "the examiner wants", and tutor-bridge sentences as UNSUPPORTED — that is the checker applying the wrong test, not a real defect. Take WRONG (real contradiction) and genuine IMPRECISE (loose economics that loses marks — e.g. "PED < 1" should be "PED < 1 in absolute value"; surplus areas need "up to the equilibrium quantity"). Reject the checker's demands to (a) restate the guide verbatim, (b) add ceteris-paribus/hedging that violates BLOG_VOICE.md, (c) strip teaching frames. The judgment of which flags to apply stays human — a literal-minded checker, applied wholesale, sands every article back to a dry syllabus restatement. The one real catch class it surfaces reliably: overclaiming marking as mechanical ("earns nothing", "two lost marks" implying fixed penalty) — soften those.
+
+35. **Blog economics is sourced from the verified prompt guard, never from memory — and the prompt's own confusion-flags are the article backlog.** Same discipline as rules 22 and 27: a blog article's economic claims come from the relevant content guard in the live tutor system prompt (e.g. the supply-determinants list pulled verbatim from the Econ prompt's Unit 2.1-2.3 guard), not from model recall. Writing from memory shifts all error-catching onto the content gate; sourcing from the guard makes the article safe by construction. Corollary — the prompt's own "HIGHEST-CONFUSION / guard carefully / highest-error" labels ARE the keyword-research-free article priority list: those topics are simultaneously the highest-confusion concepts and the highest-volume "X vs Y" student searches. The blog H1/title, however, is keyword-locked from search-autocomplete data (see BLOG_VOICE.md non-negotiable) — voice reviews may improve any line EXCEPT the title; it must keep the exact validated search phrase. Two separate reviewers tried to "improve" the H1 out of its search cluster in one session.
+
 ---
 
 ## ISSUE CATALOGUE
@@ -1844,3 +1850,29 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **PREVENTION:** `upsert` with `onConflict` is a full-row overwrite, not a conditional insert. When a setup route creates starter data (lesson 1, counters at 0), using `upsert` means any re-trigger — intentional or not — resets the student. **Prefer explicit INSERT-if-absent for idempotent setup data:** check existence first, insert only if missing, never upsert with hardcoded defaults. Separately: **when a setup step moves in a flow, audit every downstream step that assumed the old ordering.** The pay-first flow assumed onboard-after-subscribe; free-first inverted it, making a previously-safe redirect suddenly destructive. Any time a flow's step ordering changes, trace every step and verify the new ordering doesn't create a destructive re-run.
 **CATEGORY:** Database/Migration
 **SEVERITY:** Critical — silent progress wipe for any user past lesson 1; did not bite only because test user was on lesson 1
+
+### BLOG / SEO
+
+---
+
+**ISSUE:** [IB] Blog header rendered dark-on-dark — logo illegible
+**Severity:** Medium
+**Cause:** The blog header was built dark-green (--brand) with a dark logo wordmark, because no shared header component existed to reuse (landing nav is a 'use client' component with inline scroll state, not extractable). The dark "gradd" wordmark disappeared against the dark bar.
+**Fix:** Match the blog header to the landing page header (beige --bg, dark wordmark, rust ".ai"), rather than patching the logo colour. One visual language across the site; contrast bug removed by removing the mismatch.
+**Prevention:** When a section's header can't reuse the site's existing nav component, match its background and logo treatment to the existing header exactly — don't introduce a second colour scheme.
+
+---
+
+**ISSUE:** [IB] Blog unreachable on mobile — no nav menu
+**Severity:** High
+**Cause:** Mobile landing nav shows only logo + Log in + Start free; all secondary links (including Blog) are desktop-only with no hamburger/drawer. A blog whose audience is overwhelmingly on phones was unreachable on mobile except via the footer.
+**Fix:** Added "Blog" to the landing footer as the interim mobile entry point (footer renders at all breakpoints — .footer-links has no display:none). Full mobile nav drawer deferred to backlog.
+**Prevention:** On a mobile-majority product, any new top-level destination needs a confirmed mobile path, not just a desktop nav link. Check the mobile breakpoint explicitly — a desktop-only nav link is invisible to most of the audience.
+
+---
+
+**ISSUE:** [IB+LC] Combined sitemap listed both domains' URLs — invalid cross-domain entries
+**Severity:** High
+**Cause:** Single codebase serves gradd.ai (IB) and gradd.ie (LC); one app/sitemap.ts emitted both domains' URLs into every sitemap. A sitemap served from one domain may only list that domain's URLs — Google flags/ignores cross-domain entries, so gradd.ai/sitemap.xml listing gradd.ie URLs would not be trusted for either.
+**Fix:** Made sitemap() async and read the request host via `await headers()` from next/headers (same pattern as app/layout.tsx); the Request-time API makes the route dynamic (uncached) so each domain returns only its own branch. gradd.ai/sitemap.xml → 7 IB URLs; gradd.ie/sitemap.xml → LC URLs; zero contamination.
+**Prevention:** On a multi-domain single codebase, every host-specific artifact (sitemap, robots, canonical, OG, branding) must be host-scoped at runtime, not built as one combined output. See prevention rule 10. Each domain gets its own Search Console property and its own clean sitemap.
