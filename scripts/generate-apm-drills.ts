@@ -474,38 +474,58 @@ async function main() {
 
   const specs = buildSpecList(loFilter, countArg);
 
-  // ── Dry run ───────────────────────────────────────────────────────────────
+  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+
+  // ── Dry run — makes API calls, skips DB insert ────────────────────────────
   if (dryRun) {
-    const LINE = '─'.repeat(110);
-    console.log(`\n${LINE}`);
-    console.log(`DRY RUN — ${specs.length} spec(s) for ACCA APM  (no API or DB calls)`);
-    console.log(`${LINE}`);
-    console.log(
-      col('#',      4)  + col('lo_code',  8)  + col('sub_area', 8) +
-      col('topic', 30)  + col('verb',    22)  + col('L',        4) +
-      col('calc',   6)  + col('mks',      5)  + 'skill_tag',
-    );
-    console.log(LINE);
-    specs.forEach((s, i) => {
-      console.log(
-        col(i + 1,                          4) + col(s.lo_code,            8) + col(s.sub_area, 8) +
-        col(s.topic,                       30) + col(s.command_verb,      22) + col(s.intellectual_level, 4) +
-        col(String(s.calculation_required), 6) + col(s.marks_guide,        5) +
-        (s.professional_skill_tag ?? ''),
-      );
-    });
-    console.log(LINE);
-    console.log('\nSummary:');
-    console.log('  section           :', tally(specs, 'section'));
-    console.log('  intellectual_level:', tally(specs, 'intellectual_level'));
-    console.log('  command_verb      :', tally(specs, 'command_verb'));
-    console.log('  calculation       :', tally(specs, 'calculation_required'));
-    console.log(`\n  Total: ${specs.length}`);
+    for (let i = 0; i < specs.length; i++) {
+      const spec  = specs[i];
+      const label = `[${i + 1}/${specs.length}] ${spec.lo_code} · ${spec.command_verb} · L${spec.intellectual_level} · ${spec.marks_guide}m`;
+
+      console.log(`\n${'═'.repeat(80)}`);
+      console.log(`DRILL ${i + 1}/${specs.length}: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}`);
+      console.log(`verb: ${spec.command_verb}  |  level: L${spec.intellectual_level}  |  calc: ${spec.calculation_required}  |  marks: ${spec.marks_guide}  |  skill: ${spec.professional_skill_tag ?? 'none'}`);
+      console.log('─'.repeat(80));
+
+      let pass1: { question: string; context_text: string; model_answer: string } | null = null;
+      let pass2: { hint: string; full_reveal: string } | null = null;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try { pass1 = await draftDrill(anthropic, spec); break; }
+        catch (err) {
+          if (attempt === 0) { console.warn(`  ↻ ${label} [P1] retry (${(err as Error).message})`); await sleep(2000); }
+          else { console.error(`  ✗ ${label} [P1] FAILED: ${(err as Error).message}`); }
+        }
+      }
+
+      if (!pass1) { await sleep(200); continue; }
+
+      console.log(`\nCONTEXT_TEXT:\n${pass1.context_text}`);
+      console.log(`\nQUESTION:\n${pass1.question}`);
+      console.log(`\nMODEL_ANSWER:\n${pass1.model_answer}`);
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try { pass2 = await draftReveal(anthropic, spec, pass1.question, pass1.model_answer); break; }
+        catch (err) {
+          if (attempt === 0) { console.warn(`  ↻ ${label} [P2] retry (${(err as Error).message})`); await sleep(2000); }
+          else { console.error(`  ✗ ${label} [P2] FAILED: ${(err as Error).message}`); }
+        }
+      }
+
+      if (pass2) {
+        console.log(`\nHINT:\n${pass2.hint}`);
+        console.log(`\nFULL_REVEAL:\n${pass2.full_reveal}`);
+      }
+
+      await sleep(200);
+    }
+
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`Dry run complete — ${specs.length} drill(s) generated, 0 inserted.`);
     return;
   }
 
   // ── Live run ──────────────────────────────────────────────────────────────
-  const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
   const failed: number[] = [];
 
   for (let i = 0; i < specs.length; i++) {
