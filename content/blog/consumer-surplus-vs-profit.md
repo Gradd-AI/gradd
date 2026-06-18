@@ -24,13 +24,13 @@ Here's the fix, and it's one sentence: surplus measures the gap between what peo
 
 Consumer surplus is the difference between what consumers were willing to pay and what they actually paid. If you'd have paid €10 and the price is €6, your consumer surplus is €4 — a benefit, not money in your pocket.
 
-Producer surplus is the difference between the price producers receive and the minimum they were willing to accept. It measures benefit to sellers — not profit, which subtracts total costs. A firm can have producer surplus and still make a loss once fixed costs are counted.
+Producer surplus is the difference between the price producers receive and the minimum they were willing to accept. It measures benefit to sellers — not profit, which is total revenue minus total costs (TR − TC). A firm can have producer surplus and still make a loss once fixed costs are counted.
 
 Together they make social (community) surplus — the total welfare the market generates.
 
 ## Which area is which
 
-On a standard diagram, consumer surplus is the area above the price and below the demand curve. Producer surplus is the area below the price and above the supply curve. They meet at the equilibrium price. Swap them and your welfare analysis describes the wrong group's benefit.
+On a standard diagram, consumer surplus is the area below the demand curve and above the price, up to the equilibrium quantity. Producer surplus is the area above the supply curve and below the price, up to the equilibrium quantity. They meet at the equilibrium price. Swap them and your welfare analysis describes the wrong group's benefit.
 
 ## Where it costs you
 
