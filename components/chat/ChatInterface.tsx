@@ -255,11 +255,13 @@ export default function ChatInterface({
         // Pass 2: bare/pipe-separated signals — [^\]]* safe as those payloads never contain ]
         //         (e.g. [BURN_WALL], [LESSON_COMPLETE: IB_BM_001 | ...])
         // Pass 3: trailing partial whose closing ] hasn't streamed in yet
+        // Pass 4: any unclosed opener not caught above (partial name, [DIAGRAM, [DIAGRAM_DYNAMIC)
         const SIGNAL_NAMES = 'BURN_WALL|TEACH_BACK|WEAK_AREA_FLAG|LESSON_COMPLETE|LESSON_INCOMPLETE|UNIT_COMPLETE|SESSION_SUMMARY|SESSION_FLAG';
         const streamDisplay = fullText
           .replace(new RegExp(`\\[(?:${SIGNAL_NAMES}):\\s*\\{[\\s\\S]*?\\}\\s*\\]`, 'g'), '')
           .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})(?::[^\\]]*)?\\]`, 'g'), '')
           .replace(new RegExp(`\\[(?:${SIGNAL_NAMES})[\\s\\S]*$`), '')
+          .replace(/\[[A-Z_]{3,}[^\]]*$/, '')
           .trimStart();
         setMessages(prev => {
           const updated = [...prev];
