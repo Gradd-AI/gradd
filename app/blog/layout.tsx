@@ -18,16 +18,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
           align-items: center;
           justify-content: space-between;
         }
-        .blog-header-wordmark {
-          font-family: var(--font-display, 'Playfair Display', Georgia, serif);
-          font-style: italic;
-          font-weight: 400;
-          font-size: 22px;
-          color: #f7f3ec;
-          letter-spacing: -0.03em;
-          text-decoration: none;
-        }
-        .blog-header-cta {
+.blog-header-cta {
           display: inline-block;
           padding: 8px 18px;
           background: oklch(64% 0.17 47);
@@ -99,7 +90,10 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
       `}</style>
       <div className="blog-shell">
         <header className="blog-header">
-          <Link href="/" className="blog-header-wordmark">Gradd</Link>
+          <Link href="/" aria-label="Gradd home">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/gradd-ai-logo.png" alt="Gradd" style={{ height: 22, width: 'auto', display: 'block' }} />
+          </Link>
           <Link href="/auth/signup/ib" className="blog-header-cta">Start free →</Link>
         </header>
         {children}
