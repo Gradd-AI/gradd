@@ -80,6 +80,7 @@ export default function IBLandingPage() {
                   {id === 'faq' ? 'FAQ' : id.charAt(0).toUpperCase() + id.slice(1)}
                 </button>
               ))}
+              <Link href="/blog" className="nav-link-btn" style={{ textDecoration: 'none' }}>Blog</Link>
             </nav>
             <div className="nav-cta">
               <Link href="/demo" className="btn btn-see-it btn-sm">Try the live demo — no account needed</Link>

@@ -1,0 +1,153 @@
+import { notFound } from 'next/navigation';
+import type { Metadata } from 'next';
+import { getPostBySlug, getPostMeta, dateToISO } from '@/lib/blog';
+import BlogCTA from '@/components/blog/BlogCTA';
+import Link from 'next/link';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  if (!post) return {};
+  const url = `https://gradd.ai/blog/${slug}`;
+  return {
+    title: post.title,
+    description: post.description,
+    keywords: post.keywords,
+    alternates: { canonical: url },
+    openGraph: {
+      title: post.title,
+      description: post.description,
+      type: 'article',
+      url,
+      siteName: 'Gradd',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.description,
+    },
+  };
+}
+
+export default async function BlogPostPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>
+}) {
+  const { slug } = await params;
+  const post = getPostBySlug(slug);
+  if (!post) notFound();
+
+  const canonicalUrl = `https://gradd.ai/blog/${slug}`;
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.description,
+    datePublished: dateToISO(post.date),
+    author: { '@type': 'Organization', name: 'Gradd' },
+    publisher: { '@type': 'Organization', name: 'Gradd' },
+    mainEntityOfPage: canonicalUrl,
+  };
+
+  const relatedPosts = (post.related ?? [])
+    .map(s => getPostMeta(s))
+    .filter(Boolean);
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <main>
+        <article className="blog-prose">
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <span style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--accent, #c8972e)',
+                background: 'rgba(200,151,46,0.12)',
+                padding: '3px 8px',
+                borderRadius: 4,
+              }}>
+                IB {post.subject}
+              </span>
+              <time style={{ fontSize: 13, color: 'var(--text)', opacity: 0.45 }}>
+                {post.date}
+              </time>
+            </div>
+            <h1 style={{
+              fontFamily: "var(--font-display, 'Playfair Display', Georgia, serif)",
+              fontStyle: 'italic',
+              fontWeight: 400,
+              fontSize: 36,
+              color: 'var(--brand, #0e2b1e)',
+              margin: '0 0 12px',
+              letterSpacing: '-0.03em',
+              lineHeight: 1.2,
+            }}>
+              {post.title}
+            </h1>
+            <p style={{
+              fontSize: 18,
+              color: 'var(--text)',
+              opacity: 0.65,
+              margin: 0,
+              lineHeight: 1.5,
+            }}>
+              {post.description}
+            </p>
+          </div>
+
+          <hr style={{ border: 'none', borderTop: '1px solid var(--border, #ddd5c5)', margin: '0 0 32px' }} />
+
+          <div dangerouslySetInnerHTML={{ __html: post.html }} />
+
+          {relatedPosts.length > 0 && (
+            <div style={{ margin: '40px 0 32px', paddingTop: 28, borderTop: '1px solid var(--border, #ddd5c5)' }}>
+              <p style={{
+                fontSize: 11,
+                fontWeight: 600,
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                color: 'var(--accent, #c8972e)',
+                margin: '0 0 12px',
+              }}>
+                Related
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {relatedPosts.map(rp => rp && (
+                  <li key={rp.slug}>
+                    <Link
+                      href={`/blog/${rp.slug}`}
+                      style={{
+                        fontSize: 16,
+                        color: 'var(--brand, #0e2b1e)',
+                        fontFamily: "var(--font-display, 'Playfair Display', Georgia, serif)",
+                        fontStyle: 'italic',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 3,
+                      }}
+                    >
+                      {rp.title}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <BlogCTA />
+        </article>
+      </main>
+    </>
+  );
+}
