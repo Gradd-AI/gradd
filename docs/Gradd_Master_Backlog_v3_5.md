@@ -1,5 +1,5 @@
 ﻿# Gradd — Master Product Backlog & 5-Year Roadmap
-*Last updated: 15 June 2026 | Version 3.8*
+*Last updated: 18 June 2026 | Version 3.9*
 
 > **v3.5 changelog** — build session of 02 June 2026. IB CONTENT-ACCURACY AUDIT + TEACHING METHODOLOGY REWRITE. Changes tagged `[v3.5]` inline. Summary:
 >
@@ -109,6 +109,8 @@
 > - [ ] **Band-descriptor marking injection verification** — flagged 11 June; top-mark essays (15m evaluate, P3 recommend) may not be receiving band descriptors at marking time. Verify next.
 > - [ ] **Content guards live spot-check** — guide-verified in text (12 June); not all live-tested in production. Esp. Herzberg, quality control/assurance, penetration/predatory pricing, Econ high-risk concepts.
 > - [ ] **Session transcript download** — data layer + UI now ready; a download/PDF button on `/sessions/[id]` is the next natural step. TranscriptRenderer is standalone so export is low complexity.
+>
+> **v3.9 changelog** — build session 18 June 2026. BLOG SHIPPED: five IB Econ demand/supply articles live on gradd.ai/blog, SEO infrastructure (per-article metadata, JSON-LD, sitemap, robots), BLOG_VOICE.md house voice created, sitemap domain-scoped (gradd.ai/.ie no longer cross-contaminate), blog wired into landing nav + footer, hardening rules 33–35 + BLOG/SEO issue category added.
 - [ ] **BUG: Diagram signal leak — raw `[DIAGRAM: DIAGRAM_DYNAMIC: ...]` text visible to student (15 Jun 2026). DIAGNOSIS CONFIRMED.** Prompt and parser agree — both expect `[DIAGRAM_DYNAMIC: ...]`. Mia (Haiku) hallucinated a third format `[DIAGRAM: DIAGRAM_DYNAMIC: <desc>]` that matches NEITHER parser: `parseDiagramSignal` regex `/\[DIAGRAM:\s*([A-Z_0-9]+)\s*\]/` fails on the second colon after `DIAGRAM_DYNAMIC`; `parseDynamicDiagramSignal` regex `/\[DIAGRAM_DYNAMIC:\s*([^\]]+)\]/` fails on the `[DIAGRAM: ` prefix. Token survives both → lands in `finalText` → `MessageRenderer` prints it as raw visible text. Model drift, not code inconsistency. Only affects DYNAMIC diagrams (non-library concepts, e.g. money-market equilibrium); the 61 library diagrams render fine client-side via React components with no parser involved. **FIX (defensive, preferred):** extend `parseDynamicDiagramSignal` to also match the malformed variant `[DIAGRAM: DIAGRAM_DYNAMIC: <desc>]` as a synonym — catches the drift regardless of how Mia phrases it. File: `components/diagrams/diagram-integration.ts`, `parseDynamicDiagramSignal` ~L33. Optionally reinforce the prompt too, but parser hardening is the real fix (prompt reinforcement alone is fragile on Haiku). Found: free-first preview, HL Econ money-market lesson (15 Jun 2026).
 - [ ] **GAP: No money-market / liquidity-preference diagram in library (15 Jun 2026).** The 61 diagram components are micro-heavy (PPC, demand/supply, PED, externalities, AD/AS, exchange rates, trade). HL Econ Unit 3 (Demand and Supply of Money, equilibrium interest rate determination — Md downward-sloping, Ms vertical, equilibrium i*) has no library component, so Mia falls through to DIAGRAM_DYNAMIC (triggering the leak above). Add a `money-market-equilibrium` component to `components/diagrams/`. Audit the full library against HL Unit 3 macro and Unit 4 global topics when building — other HL macro gaps are likely (e.g. Keynesian LRAS, Monetarist AS, BoP, J-curve, Laffer curve).
 
@@ -426,6 +428,9 @@ Layer 2 IB Econ otherwise COMPLETE: 93 seed hybrid schemes live, hybrid generato
 - [ ] ACCA landing page
 - [ ] Landing page mobile pass
 - [ ] Footer legal pages for ACCA
+- [ ] **Blog mobile nav drawer** — secondary links (incl. Blog) are desktop-only; Blog reachable on mobile via footer only until built.
+- [ ] **Blog subject/topic nav** — add at ~8-10 articles across 2+ subjects; frontmatter `subject` already supports it.
+- [ ] **Blog column width revisit** — possible 10-15% widen after several articles are live and viewed full-screen.
 
 ---
 
@@ -631,7 +636,7 @@ Four HL-only BM topics have lessons but no IB-2024-specific prompt content-guard
 *Measure every decision against the north star.*
 *Update it when decisions change. Re-upload immediately.*
 
-*Last updated: 15 June 2026 | Version 3.8*
+*Last updated: 18 June 2026 | Version 3.9*
 
 ## Perceived-completeness features (post-funnel, ranked by value-per-effort)
 Context: these lift conversion at the landing-page/comparison stage; they do NOT improve teaching quality. Build ONLY after the funnel proves people pay. Cheapest-first:
@@ -716,3 +721,37 @@ Both items are deferred — demo already converts. Build only if conversion data
 
 1. **Lesson-step progress indicator** (Learn → Try → Diagnose → Rebuild → Retest) — tie the visible demo lesson to the named Gradd Method. Surface as a small progress strip or step labels on the session page so prospects see the method, not just a chat.
 2. **More interactive rhythm** — break long Mia blocks into shorter exchanges. "Your turn" cards between teaching beats, feedback chips on student answers, more frequent prompts before Mia continues. Reduces the "wall of text" perception and shows the method in motion rather than narrating it.
+
+---
+
+## [v3.9] 18 JUNE 2026 — BLOG SHIPPED: IB ECON DEMAND/SUPPLY CLUSTER LIVE
+
+The slow free SEO compounding channel now exists. Five IB Economics articles live on gradd.ai/blog, sitemap submitted to Google Search Console.
+
+### LANDED THIS SESSION
+- Blog infrastructure: file-based markdown (content/blog/*.md), /blog index + /blog/[slug], gray-matter parsing, per-article generateMetadata (canonical, OG, Twitter), Article JSON-LD, related-post links, app/sitemap.ts + app/robots.ts.
+- BLOG_VOICE.md created at repo root — the house teaching voice, with [PORTABLE] (Gradd method, reusable for ACCA/LC) vs [IB] (audience-specific, rewrite per product) tags. Forks to a new product's voice by copying [PORTABLE] rules and rewriting [IB] ones.
+- Five articles, all through BOTH gates (voice + adversarial content-check vs the IB Econ guide), forming one demand/supply topical cluster: movement-along-vs-shift-in-demand, change-in-demand-vs-change-in-quantity-demanded, elastic-vs-inelastic-demand, movement-along-vs-shift-supply-curve, consumer-surplus-vs-profit. Internally linked.
+- Blog wired into landing nav + footer; blog header matched to landing (beige). Sitemap made domain-scoped (gradd.ai/.ie no longer cross-contaminate). Submitted to Search Console.
+- Hardening rules 33-35 + a BLOG/SEO issue category added to GRADD_BUILD_HARDENING.md.
+
+### THE REPEATABLE PROCESS (how every future article ships)
+1. Pick the topic from the tutor prompt's own "HIGHEST-CONFUSION / guard carefully" flags — these are simultaneously the highest-confusion concepts AND the highest-volume "X vs Y" student searches. The prompt is the keyword research.
+2. Validate the search phrasing via scripts/keyword-check.ps1 (Google autocomplete) — the H1/title is keyword-locked to the dominant cluster phrase, NOT chosen for elegance.
+3. Draft against BLOG_VOICE.md; source ALL economics from the relevant prompt content guard, never from memory.
+4. Voice gate (converges to near-zero as BLOG_VOICE.md hardens) → content gate (adversarial check vs the official guide, mandatory per article, runs hot — apply WRONG + real IMPRECISE, ignore "unsupported" on teaching language).
+5. Ship in topical-cluster bursts of 3-5 related articles, interlinked, then ~2-week settle before the next cluster. (SEO evidence: cluster bursts beat both daily-drip and batch-dump for a new domain.)
+
+### OPEN — NEXT CONTENT CLUSTERS (priority order, all from prompt's flagged confusions)
+- Cluster 2 (Econ, the prompt's HIGHEST-CONFUSION pairs): YED sign convention (positive=normal/negative=inferior — "highest-error concept"); deflation vs disinflation; Keynesian vs Monetarist AS; comparative vs absolute advantage; Gini direction; capital vs financial account; growth vs development.
+- Cluster 3 (IB BM): extract from the BM prompt's guards once Econ clusters have momentum.
+- ACCA articles: deferred — no live ACCA product to send them to yet.
+
+### OPEN — BLOG UI (deferred, none launch-blocking)
+- Mobile nav drawer: landing mobile nav is logo + Log in + Start free only; secondary links (incl. Blog) are desktop-only with no hamburger/drawer. Blog currently reachable on mobile via FOOTER only. Build a hamburger/drawer for secondary links. Trigger: when mobile blog traffic justifies it.
+- Subject/topic blog nav: flat list is fine now. Add subject filtering + topic clustering at ~8-10 articles across 2+ subjects (Econ + BM). Frontmatter already carries `subject`; keep tagging rigorously so the future nav is a filter over clean data.
+- Blog column width: external review suggested widening 10-15%. Deferred — don't tune layout off one screenshot; revisit after 3-4 articles viewed full-screen.
+- Shared header refactor: landing nav is a 'use client' component with inline scroll state, not currently extractable. Blog uses a matched-but-separate header. Refactor to a true shared component only when the duplication cost justifies the risk to the landing scroll behaviour.
+
+### STATE
+On main, synced. Five articles live + indexed-pending on gradd.ai. BLOG_VOICE.md is the standing voice spec. Next session: cluster 2, lean path (no re-litigating voice or infra).
