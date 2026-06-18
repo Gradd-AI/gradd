@@ -2,7 +2,7 @@
 title: "Elastic vs inelastic demand: what does 'elastic' actually mean?"
 slug: elastic-vs-inelastic-demand
 subject: Econ
-description: "You think elastic means demand changes a lot. It's a ratio, not a size — and getting it wrong flips the one revenue rule examiners test most."
+description: "You think elastic means demand changes a lot. It's a ratio, not a size — and getting it wrong flips a high-frequency revenue rule examiners test directly."
 date: 18/06/2026
 published: true
 keywords:
@@ -26,21 +26,29 @@ Here's the fix, and it's one sentence: elastic means quantity demanded changes p
 
 Price elasticity of demand compares two percentage changes: the percentage change in quantity demanded divided by the percentage change in price.
 
-If quantity changes by a bigger percentage than price, demand is elastic — PED greater than 1 in absolute value. If it changes by a smaller percentage than price, demand is inelastic — PED less than 1.
+If quantity changes by a bigger percentage than price, demand is elastic — |PED| > 1. If it changes by a smaller percentage than price, demand is inelastic — |PED| < 1. If the two percentage changes are equal, demand is unit elastic — |PED| = 1.
 
 So a good can have a large fall in quantity and still be inelastic, if the price rose by an even larger percentage. And a tiny fall can be elastic, if the price barely moved. The raw size tells you nothing. Only the ratio does.
 
 ## The sentence the examiner wants
 
-Demand is elastic when the percentage change in quantity demanded is greater than the percentage change in price.
+Demand is elastic when the percentage change in quantity demanded is greater than the percentage change in price — |PED| > 1.
 
 That earns the mark. "Demand fell a lot" doesn't — it describes a quantity, and elasticity is a relationship between two percentage changes.
 
 ## Where it costs you — the revenue trap
 
-This is the single most-tested consequence, and getting elasticity backwards flips it entirely.
+This is a high-frequency exam point, and getting elasticity backwards flips it entirely.
 
-If demand is inelastic, a price rise increases total revenue — quantity falls proportionally less than price rises. If demand is elastic, a price rise decreases total revenue — quantity falls proportionally more than price rises, so the revenue lost on units more than cancels the gain from the higher price.
+If demand is inelastic, a price rise increases total revenue — quantity falls proportionally less than price rises. If demand is elastic, a price rise decreases total revenue — quantity falls proportionally more than price rises, so the revenue lost on units more than cancels the gain from the higher price. When |PED| = 1, the two percentage changes are equal, so a price change in either direction leaves total revenue unchanged.
+
+The full picture, for both price directions:
+
+| Demand | Price rise | Price cut |
+|---|---|---|
+| Elastic (\|PED\| > 1) | Total revenue falls | Total revenue rises |
+| Inelastic (\|PED\| < 1) | Total revenue rises | Total revenue falls |
+| Unit elastic (\|PED\| = 1) | Total revenue unchanged | Total revenue unchanged |
 
 Define elasticity by size instead of ratio and you'll classify the good wrong, then predict revenue moving the wrong way, then build an evaluation on a backwards premise. One wrong definition at the root, and every answer downstream points the wrong direction.
 
