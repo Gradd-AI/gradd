@@ -223,7 +223,18 @@ function buildUserPrompt(spec: ApmDrillSpec): string {
   const calcInstruction = spec.calculation_required
     ? `- CALCULATION DRILL: context_text MUST include ALL numeric data required (specific figures: ` +
       `budgets, actuals, ratios, variances, cost figures). The candidate must be able to complete ` +
-      `the computation from context_text alone — no figures should require invention.`
+      `the computation from context_text alone — no figures should require invention. ` +
+      `CALCULATION PRECISION RULES — NON-NEGOTIABLE: ` +
+      `(a) NEVER round an intermediate value and then use the rounded figure as input to a further ` +
+      `calculation step. Compute variances and totals from the raw source figures in context_text ` +
+      `(e.g. actual total cost minus flexed standard cost, not actual-total-cost divided by hours ` +
+      `then rounded then multiplied). Rounded figures are for PRESENTATION of a final answer only — ` +
+      `never as an arithmetic operand in a subsequent step. ` +
+      `(b) RECONCILIATION REQUIRED: where the calculation decomposes into sub-parts (e.g. planning ` +
+      `variance + operational variances, or lifecycle cost phases, or ABC cost pools), model_answer ` +
+      `MUST include a final reconciliation line showing the sub-parts sum to the independently-computed ` +
+      `total variance or grand total. If they do not reconcile exactly, the calculation contains an ` +
+      `error — identify and correct it before producing output.`
     : `- context_text: 2–4 sentences naming the organisation and describing the performance management ` +
       `challenge. Include relevant contextual data (industry, strategic context, key metrics) to ` +
       `ground the question in a realistic APM scenario.`;
