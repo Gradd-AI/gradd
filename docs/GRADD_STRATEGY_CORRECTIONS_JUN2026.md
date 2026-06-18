@@ -27,7 +27,7 @@ Grant does NOT need personal subject expertise to build a product. Content accur
 ## APM SEQUENCE (corrected)
 
 1. Finish IB (proof of pipeline).
-2. BUILD APM on conviction — Grant QA's via AI cross-check + finance background (convenience). Drill funnel partly built (73 LOs, drills table, generator, 6 seed drills, public drill API route).
+2. BUILD APM on conviction — Grant QA's via AI cross-check + finance background (convenience). APM build state (audited 18/06): ONLY scripts/apm-framework.ts exists (73 LOs A–D, typed, source-cited to ACCA 2026–27 guide, clean DrillSpec interface). The generator, drills table migration, /app/api/acca/drill route, and ACCA tutor prompt are ALL UNBUILT (not scaffolded). The '6 seed drills live in DB' claim was false — no generator, no table, so none exist. Honest scope: one strong asset + four full builds, ~3–4 weeks on the IB rails. (Note: validator.ts has a live tsc error referencing the never-created acca/drill route.js — clears when the route is built.)
 3. Launch drill + paid tutoring TOGETHER (chicken-and-egg).
 4. Advertise once converting.
 5. Repeat pattern for next product.
