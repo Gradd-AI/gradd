@@ -27,12 +27,16 @@ Wrong idea → correction → one sharp example → the rule → exam consequenc
 4. **No lazy hedging:** avoid "generally," "often," "tends to" — unless the guide, mark scheme, or the real-world model genuinely requires the caveat. Accuracy wins over punchiness.
 5. **No syllabus-narrator register:** "The IB curriculum distinguishes between…" Write what a teacher says, not what a spec says.
 6. **Don't bury the rule.** If the reader can't find the one-sentence fix on a skim, rewrite.
+7. [PORTABLE] **No loose universals in a rule.** "Everything else shifts it" reads broad and imprecise — name the actual category ("a non-price determinant shifts it"). Precision is part of the voice, not a trade-off against it.
+8. [PORTABLE] **No SEO-mechanical meta.** The description must read like a human sentence, not a keyword string with a colon ("The distinction: X vs Y, and the marks it costs"). Keywords go in naturally or not at all.
 
 ## The product bridge (every article)
 Don't say "Mia teaches this." Say Mia spots the faulty model under the answer, names it, and makes you redraw it — before you've practised the wrong thing twenty times. The diagnosis is the moat; show it.
 
 ## The non-negotiable
 Voice edits never override content accuracy. Every economics/BM claim still passes the adversarial guide-check before publish. Sounding human is not a licence to drift from the official guide.
+
+[PORTABLE] **The H1/title is keyword-locked.** It is set from validated search-cluster data (autocomplete), NOT from voice review. Voice reviews may improve any line EXCEPT the title — never reword the H1 for elegance, it must keep the exact search phrase. (This has been mistakenly "improved" twice; do not repeat.)
 
 ## The filter for killing AI copy
 If it reads like a curriculum narrator, rewrite it. If it reads like a sharp teacher correcting a real mistake, keep it.

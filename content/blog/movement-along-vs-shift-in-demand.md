@@ -2,7 +2,7 @@
 title: "Movement along vs shift in demand curve: what's the difference?"
 slug: movement-along-vs-shift-in-demand
 subject: Econ
-description: "You write that a price change shifted demand. It didn't — it moved you along the curve. The distinction: movement along vs shift, and the marks it costs."
+description: "You wrote that a price change shifted demand. It didn't. It moved you along the curve — and that distinction costs marks."
 date: 18/06/2026
 published: true
 keywords:
@@ -18,7 +18,7 @@ keywords:
 
 You write: "the price of oil rose, so the demand curve shifted left." That sentence loses marks. Not because you don't understand demand — because the diagram underneath it is built on the wrong idea, and the examiner can see that in one line.
 
-Here's the fix, and it's one sentence: a change in the good's own price moves you along the curve. Everything else shifts it.
+Here's the fix, and it's one sentence: a change in the good's own price moves you along the curve. A change in a non-price determinant shifts it.
 
 ## The rule
 
@@ -28,9 +28,7 @@ If the good's own price changes, quantity demanded changes — you move to anoth
 
 If income, tastes, expectations, the price of related goods, or the number of consumers changes, demand itself changes. The whole curve shifts.
 
-That's the distinction.
-
-The things that can shift demand are income, tastes, expectations, the price of related goods, and the number of consumers. The good's own price is not on that list.
+That's the distinction — and the good's own price is not on that list.
 
 ## A worked example
 
