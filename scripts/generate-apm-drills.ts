@@ -12,11 +12,13 @@
  *
  * Usage:
  *   npm run generate-apm-drills -- [--count N] [--lo <lo_code>] [--dry-run]
+ *   npm run generate-apm-drills -- --los A3b,A5e,B1c [--dry-run]
  *   npm run generate-apm-drills -- --regen-rejected [--dry-run]
  *
  * Args:
  *   --count           How many drills to generate (default: 73 for all LOs, 1 if --lo)
  *   --lo              Limit to a single LO code e.g. A1a. Cycles if --count > 1.
+ *   --los             Comma-separated list of LO codes — generates exactly one drill per code, in order.
  *   --dry-run         Print spec list to console — no API or DB calls
  *   --regen-rejected  Fetch status='rejected' rows from acca_drills; regenerate
  *                     and reinsert as 'candidate', same as the IB flow
@@ -180,6 +182,31 @@ function deriveMarksGuide(intellectualLevel: 2 | 3, calculationRequired: boolean
 function deriveSkillTag(section: string, indexWithinSection: number): ProfessionalSkillTag {
   const pool = SKILLS_BY_SECTION[section] ?? SKILLS_BY_SECTION['A'];
   return pool[indexWithinSection % pool.length];
+}
+
+function buildSpecsForList(loCodes: LoCode[]): ApmDrillSpec[] {
+  const sectionIdx: Record<string, number> = {};
+  return loCodes.map(lo_code => {
+    const lo = SYLLABUS_MAP[lo_code];
+    const si = sectionIdx[lo.section] ?? 0;
+    sectionIdx[lo.section] = si + 1;
+    const calculation_required = CALCULATION_LOS.has(lo_code);
+    const baseIdx              = SYLLABUS_KEYS.indexOf(lo_code);
+    return {
+      lo_code,
+      section:               lo.section,
+      sub_area:              lo.sub_area,
+      topic:                 lo.topic,
+      descriptor:            lo.descriptor,
+      command_verb:          extractPrimaryVerb(lo.descriptor),
+      intellectual_level:    lo.intellectual_level,
+      calculation_required,
+      professional_skill_tag: deriveSkillTag(lo.section, si),
+      marks_guide:           deriveMarksGuide(lo.intellectual_level, calculation_required),
+      region_hint:           SCENARIO_REGIONS[baseIdx % SCENARIO_REGIONS.length],
+      sector_hint:           SCENARIO_SECTORS[(baseIdx * 7) % SCENARIO_SECTORS.length],
+    };
+  });
 }
 
 function buildSpecList(loFilter: string | undefined, count: number): ApmDrillSpec[] {
@@ -413,12 +440,26 @@ async function main() {
   const flag = (f: string) => argv.includes(f);
 
   const loFilter      = arg('--lo');
+  const losArg        = arg('--los');
   const dryRun        = flag('--dry-run');
   const regenRejected = flag('--regen-rejected');
 
   if (loFilter && !(loFilter in SYLLABUS_MAP)) {
     console.error(`Error: unknown LO code "${loFilter}". Valid codes: ${Object.keys(SYLLABUS_MAP).join(', ')}`);
     process.exit(1);
+  }
+
+  const losFilter: LoCode[] | undefined = losArg
+    ? losArg.split(',').map(s => s.trim() as LoCode)
+    : undefined;
+
+  if (losFilter) {
+    for (const code of losFilter) {
+      if (!(code in SYLLABUS_MAP)) {
+        console.error(`Error: unknown LO code "${code}" in --los. Valid codes: ${Object.keys(SYLLABUS_MAP).join(', ')}`);
+        process.exit(1);
+      }
+    }
   }
 
   const defaultCount = loFilter ? 1 : 73;
@@ -521,7 +562,9 @@ async function main() {
     return;
   }
 
-  const specs = buildSpecList(loFilter, countArg);
+  const specs = losFilter
+    ? buildSpecsForList(losFilter)
+    : buildSpecList(loFilter, countArg);
 
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
