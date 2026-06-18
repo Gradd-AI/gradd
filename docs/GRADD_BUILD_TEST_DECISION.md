@@ -1,3 +1,5 @@
+> ⚠️ SUPERSEDED 16/06/2026 on Phase 2 + sequencing. Build on conviction — NO pre-build demand test (the "Phase 2 / <5 stop / 30+ build" gate is DEAD: r/ACCA bans self-promotion, Grant won't grind forums or pay to advertise a signup form to test demand). See GRADD_STRATEGY_CORRECTIONS_JUN2026.md, which wins on any conflict. The €500K maths, the asset list, and the teaching-moat thesis below remain valid; the demand-gate and "prove demand before building APM" do NOT.
+
 # Gradd — Build & Test Decision Doc
 **Date:** 29/05/2026
 **Purpose:** Settle the direction. What we have, what we need, and the exact build/test sequence — framed against a €500K/year target and the pricing × volume maths that gets us there.
