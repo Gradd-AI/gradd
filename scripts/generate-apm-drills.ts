@@ -36,6 +36,27 @@ import {
 } from './apm-framework';
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Scenario diversity pools — region and sector hints cycled by LO position
+// Each lo_code maps to a stable region+sector via its natural index in
+// SYLLABUS_MAP, so spot checks (--lo X) and full runs (--count 73) are consistent.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SYLLABUS_KEYS = Object.keys(SYLLABUS_MAP) as LoCode[];
+
+const SCENARIO_REGIONS = [
+  'Vietnam', 'Brazil', 'Germany', 'Kenya', 'Singapore',
+  'Mexico', 'South Korea', 'Nigeria', 'Australia', 'Canada',
+  'India', 'South Africa', 'Japan', 'Colombia', 'Poland',
+  'Indonesia', 'Turkey', 'Saudi Arabia', 'Argentina', 'Thailand',
+];
+
+const SCENARIO_SECTORS = [
+  'manufacturing', 'retail', 'telecoms', 'logistics', 'financial services',
+  'energy', 'agriculture', 'technology', 'construction', 'hospitality',
+  'mining', 'pharmaceuticals',
+];
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -50,6 +71,8 @@ interface ApmDrillSpec {
   calculation_required:   boolean;
   professional_skill_tag?: ProfessionalSkillTag;
   marks_guide:            number;
+  region_hint:            string;
+  sector_hint:            string;
 }
 
 type RejectedDrillRow = {
@@ -83,7 +106,15 @@ const APM_EXAMINER_PERSONA =
   '(5) Calculation drills: context_text MUST include ALL numeric data needed (specific figures: ' +
   'budgets, actuals, ratios, variances, cost allocations). No figure should require invention. ' +
   '(6) question begins with the command verb, capitalised. ' +
-  'model_answer: a Band 1 / top-mark response (100–300 words) demonstrating full APM technical marks.';
+  'model_answer: a Band 1 / top-mark response (100–300 words) demonstrating full APM technical marks. ' +
+  'DIVERSITY — MANDATORY: ' +
+  '(A) Geography: scenarios MUST be international — NEVER set in the UK, Ireland, or any single default country. ' +
+  'Rotate across global regions (Latin America, East/Southeast Asia, Continental Europe, Sub-Saharan Africa, ' +
+  'South Asia, Middle East, Oceania, etc.). APM is sat by candidates in 100+ countries globally. ' +
+  '(B) Sector: scenarios MUST vary across manufacturing, retail, telecoms, logistics, financial services, ' +
+  'energy, agriculture, technology, construction, hospitality — NEVER default to healthcare or UK public services. ' +
+  'Each prompt supplies a suggested country and sector; use both unless the LO technique genuinely would not ' +
+  'arise in that context, in which case substitute an equally diverse non-UK, non-healthcare alternative.';
 
 const APM_TEACHING_PERSONA =
   "You are Mia, Gradd's AI tutor for ACCA APM. Your job is to generate the teaching reveal " +
@@ -163,6 +194,7 @@ function buildSpecList(loFilter: string | undefined, count: number): ApmDrillSpe
     const si = sectionIdx[lo.section] ?? 0;
     sectionIdx[lo.section] = si + 1;
     const calculation_required = CALCULATION_LOS.has(lo_code);
+    const baseIdx              = SYLLABUS_KEYS.indexOf(lo_code);
     return {
       lo_code,
       section:               lo.section,
@@ -174,6 +206,8 @@ function buildSpecList(loFilter: string | undefined, count: number): ApmDrillSpe
       calculation_required,
       professional_skill_tag: deriveSkillTag(lo.section, si),
       marks_guide:           deriveMarksGuide(lo.intellectual_level, calculation_required),
+      region_hint:           SCENARIO_REGIONS[baseIdx % SCENARIO_REGIONS.length],
+      sector_hint:           SCENARIO_SECTORS[(baseIdx * 7) % SCENARIO_SECTORS.length],
     };
   });
 }
@@ -225,6 +259,7 @@ Requirements:
 - Professional advisory register: candidate responds as advisor to management
 ${levelInstruction}
 ${calcInstruction}${skillLine ? `\n${skillLine}` : ''}
+- DIVERSITY (MANDATORY): Set the scenario in ${spec.region_hint}. Sector: ${spec.sector_hint}. Use both unless the LO technique genuinely would not arise in that context — if so, substitute any non-UK, non-healthcare country and sector.
 - model_answer: ${spec.marks_guide}-mark Band 1 response (100–300 words) demonstrating full APM technical marks`;
 }
 
@@ -400,7 +435,8 @@ async function main() {
     console.log(`Found ${rejected.length} rejected row(s) — rebuilding specs.`);
 
     const regenSpecs: ApmDrillSpec[] = (rejected as RejectedDrillRow[]).map(row => {
-      const lo = SYLLABUS_MAP[row.lo_code as LoCode];
+      const lo      = SYLLABUS_MAP[row.lo_code as LoCode];
+      const baseIdx = SYLLABUS_KEYS.indexOf(row.lo_code as LoCode);
       return {
         lo_code:                row.lo_code as LoCode,
         section:                lo.section,
@@ -412,6 +448,8 @@ async function main() {
         calculation_required:   row.calculation_required,
         professional_skill_tag: (row.professional_skill_tag as ProfessionalSkillTag | null) ?? undefined,
         marks_guide:            row.marks_guide,
+        region_hint:            SCENARIO_REGIONS[baseIdx % SCENARIO_REGIONS.length],
+        sector_hint:            SCENARIO_SECTORS[(baseIdx * 7) % SCENARIO_SECTORS.length],
       };
     });
 
@@ -484,7 +522,7 @@ async function main() {
 
       console.log(`\n${'═'.repeat(80)}`);
       console.log(`DRILL ${i + 1}/${specs.length}: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}`);
-      console.log(`verb: ${spec.command_verb}  |  level: L${spec.intellectual_level}  |  calc: ${spec.calculation_required}  |  marks: ${spec.marks_guide}  |  skill: ${spec.professional_skill_tag ?? 'none'}`);
+      console.log(`verb: ${spec.command_verb}  |  level: L${spec.intellectual_level}  |  calc: ${spec.calculation_required}  |  marks: ${spec.marks_guide}  |  skill: ${spec.professional_skill_tag ?? 'none'}  |  geo: ${spec.region_hint} / ${spec.sector_hint}`);
       console.log('─'.repeat(80));
 
       let pass1: { question: string; context_text: string; model_answer: string } | null = null;
