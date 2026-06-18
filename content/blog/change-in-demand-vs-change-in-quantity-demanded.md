@@ -37,7 +37,7 @@ Write that sentence and you've shown the examiner you hold the distinction. Most
 
 ## Where it costs you
 
-It costs marks twice. In the written answer, "demand fell" after a price rise is a wrong statement and earns nothing for the analysis. In the diagram, if you believe demand fell you'll shift the whole curve left — when the correct answer is a movement along it. One wrong word, two lost marks, and they compound through every follow-on point that builds on it.
+It costs marks twice. In the written answer, "demand fell" after a price rise is a wrong statement, so the analysis is weakened from the first step. In the diagram, if you believe demand fell you'll shift the whole curve left — when the correct answer is a movement along it. One wrong word, multiple places to lose credit — and the error compounds through every follow-on point that builds on it.
 
 ## Mia catches this in real time
 
