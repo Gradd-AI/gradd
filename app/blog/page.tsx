@@ -19,13 +19,7 @@ export default function BlogIndexPage() {
   const posts = getAllPosts();
 
   return (
-    <div className="blog-shell">
-      <header className="blog-header">
-        <Link href="/" className="blog-header-wordmark">Gradd</Link>
-        <p className="blog-header-tagline">IB exam clarity — one misconception at a time</p>
-      </header>
-
-      <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
+    <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
         {posts.length === 0 && (
           <p style={{ color: 'var(--text)', opacity: 0.6 }}>No posts yet.</p>
         )}
@@ -79,7 +73,6 @@ export default function BlogIndexPage() {
             </li>
           ))}
         </ul>
-      </main>
-    </div>
+    </main>
   );
 }

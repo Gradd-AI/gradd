@@ -59,16 +59,11 @@ export default async function BlogPostPage({
     .filter(Boolean);
 
   return (
-    <div className="blog-shell">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <header className="blog-header">
-        <Link href="/blog" className="blog-header-wordmark">Gradd Blog</Link>
-        <p className="blog-header-tagline">IB exam clarity — one misconception at a time</p>
-      </header>
-
       <main>
         <article className="blog-prose">
           <div style={{ marginBottom: 28 }}>
@@ -153,6 +148,6 @@ export default async function BlogPostPage({
           <BlogCTA />
         </article>
       </main>
-    </div>
+    </>
   );
 }

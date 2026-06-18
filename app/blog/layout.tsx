@@ -1,3 +1,5 @@
+import Link from 'next/link';
+
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -10,24 +12,33 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         }
         .blog-header {
           background: var(--brand, #0e2b1e);
-          padding: 40px 24px 36px;
-          text-align: center;
+          padding: 0 28px;
+          height: 58px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
         }
         .blog-header-wordmark {
           font-family: var(--font-display, 'Playfair Display', Georgia, serif);
           font-style: italic;
           font-weight: 400;
-          font-size: 28px;
+          font-size: 22px;
           color: #f7f3ec;
           letter-spacing: -0.03em;
           text-decoration: none;
-          display: inline-block;
-          margin-bottom: 6px;
         }
-        .blog-header-tagline {
+        .blog-header-cta {
+          display: inline-block;
+          padding: 8px 18px;
+          background: oklch(64% 0.17 47);
+          color: #fff;
+          border-radius: 7px;
+          font-family: var(--font-body, system-ui, sans-serif);
+          font-weight: 600;
           font-size: 14px;
-          color: oklch(72% 0.02 80);
-          margin: 0;
+          text-decoration: none;
+          letter-spacing: -0.01em;
+          white-space: nowrap;
         }
         .blog-prose {
           max-width: 680px;
@@ -86,7 +97,13 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
           margin: 2em 0;
         }
       `}</style>
-      {children}
+      <div className="blog-shell">
+        <header className="blog-header">
+          <Link href="/" className="blog-header-wordmark">Gradd</Link>
+          <Link href="/auth/signup/ib" className="blog-header-cta">Start free →</Link>
+        </header>
+        {children}
+      </div>
     </>
   );
 }
