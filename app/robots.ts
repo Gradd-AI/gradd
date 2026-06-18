@@ -10,6 +10,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/dashboard', '/session', '/api/', '/manage'],
       },
     ],
-    sitemap: 'https://gradd.ie/sitemap.xml',
+    sitemap: ['https://gradd.ie/sitemap.xml', 'https://gradd.ai/sitemap.xml'],
   };
 }

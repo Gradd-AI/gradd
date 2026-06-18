@@ -1,9 +1,18 @@
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { getAllPosts } from '@/lib/blog';
 
-export const metadata = {
-  title: 'Gradd Blog — IB Exam Clarity',
+export const metadata: Metadata = {
+  title: 'Gradd Blog — IB exam clarity',
   description: 'Common IB Economics and Business Management misconceptions, explained.',
+  alternates: { canonical: 'https://gradd.ai/blog' },
+  openGraph: {
+    title: 'Gradd Blog — IB exam clarity',
+    description: 'Common IB Economics and Business Management misconceptions, explained.',
+    url: 'https://gradd.ai/blog',
+    siteName: 'Gradd',
+    type: 'website',
+  },
 };
 
 export default function BlogIndexPage() {

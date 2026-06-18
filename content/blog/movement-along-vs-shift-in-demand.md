@@ -2,9 +2,18 @@
 title: "Does a price change shift the demand curve?"
 slug: movement-along-vs-shift-in-demand
 subject: Econ
-description: "One of the most penalised errors in IB Economics — and one sentence fixes it."
+description: "Movement along vs shift in the demand curve: price changes move along the curve; non-price factors shift it. The IB Economics rule that costs marks."
 date: 18/06/2026
 published: true
+keywords:
+  - movement along vs shift in demand curve
+  - movement vs shift in demand curve
+  - shift vs movement along demand curve
+  - change in demand vs change in quantity demanded
+  - does a price change shift the demand curve
+  - difference between movement along and shift in demand curve
+  - what causes a shift vs movement in the demand curve
+  - movement along demand curve IB economics
 ---
 
 ## The confusion
