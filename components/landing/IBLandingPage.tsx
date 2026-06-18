@@ -830,6 +830,7 @@ export default function IBLandingPage() {
               <span style={{fontSize:12,color:'var(--ink-3)',marginLeft:14}}>© 2026 · The AI tutor for IB Econ &amp; BM</span>
             </div>
             <div className="footer-links">
+              <Link href="/blog">Blog</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/cookies">Cookies</Link>
