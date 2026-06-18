@@ -2,7 +2,7 @@
 title: "Movement along vs shift in demand curve: what's the difference?"
 slug: movement-along-vs-shift-in-demand
 subject: Econ
-description: "Movement along vs shift in the demand curve: price changes move along the curve; non-price factors shift it. The IB Economics rule that costs marks."
+description: "You write that a price change shifted demand. It didn't — it moved you along the curve. The distinction: movement along vs shift, and the marks it costs."
 date: 18/06/2026
 published: true
 keywords:
@@ -24,19 +24,21 @@ Here's the fix, and it's one sentence: a change in the good's own price moves yo
 
 Own-price change = movement along. Non-price determinant = shift.
 
-> A change in the good's own price causes a **movement along** the curve — a change in quantity demanded. A change in any non-price determinant **shifts the whole curve** — a change in demand itself. Do not say a price change "shifts" the curve. Price change = movement along.
+If the good's own price changes, quantity demanded changes — you move to another point on the same curve. A change in price causes a change in quantity demanded, not a change in demand. That's the sentence to write in the exam.
 
-The non-price determinants that shift the demand curve are: income; tastes and preferences; future price expectations; price of related goods (substitutes and complements); number of consumers.
+If income, tastes, expectations, the price of related goods, or the number of consumers changes, demand itself changes. The whole curve shifts.
 
-None of those is the good's own price.
+That's the distinction.
+
+The things that can shift demand are income, tastes, expectations, the price of related goods, and the number of consumers. The good's own price is not on that list.
 
 ## A worked example
 
-**Scenario A — the good's own price rises.** The price of coffee rises from €2.50 to €3.50. Consumers buy less coffee at the higher price. This is a *movement along* the existing demand curve — the curve has not moved.
+**Scenario A — the good's own price rises.** The price of coffee rises from €2.50 to €3.50. Consumers buy less coffee at the higher price. This is a movement up along the existing demand curve — the curve has not shifted.
 
-**Scenario B — consumer incomes fall.** Incomes fall. At every price level, consumers now demand less coffee than before. The *whole demand curve shifts left* — because income is a non-price determinant.
+**Scenario B — consumer incomes fall.** Assume coffee is a normal good. Incomes fall. At every price level, consumers now demand less coffee than before. The whole demand curve shifts left — because income is a non-price determinant.
 
-The diagram for Scenario A shows a point sliding up the same curve. The diagram for Scenario B shows an entirely new, lower curve. These are different diagrams. Draw the wrong one in Paper 1 or Paper 2 and the examiner marks it wrong.
+Scenario A shows a point moving along the same curve. Scenario B shows a new demand curve to the left. Draw the wrong one in Paper 1 or Paper 2 and the examiner marks it wrong.
 
 ## Mia catches this in real time
 

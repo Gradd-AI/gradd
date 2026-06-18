@@ -23,10 +23,18 @@ export default function BlogCTA() {
       <p style={{
         fontSize: 15,
         color: 'oklch(75% 0.02 80)',
+        margin: '0 0 6px',
+        lineHeight: 1.55,
+      }}>
+        Mia spots the misconception, fixes the thinking, and makes you redraw it correctly.
+      </p>
+      <p style={{
+        fontSize: 14,
+        color: 'oklch(65% 0.02 80)',
         margin: '0 0 24px',
         lineHeight: 1.55,
       }}>
-        Mia spots the misconception, fixes the thinking, and makes you redraw it correctly — across the full IB Economics and Business Management curriculum. Free to start, no card needed.
+        Across the full IB Economics and Business Management curriculum. Free to start. No card needed.
       </p>
       <Link
         href="/auth/signup/ib"
