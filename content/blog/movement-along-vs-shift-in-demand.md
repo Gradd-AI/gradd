@@ -15,7 +15,7 @@ That is the wrong model. A price change does not shift the demand curve. Saying 
 
 ## The rule
 
-The IB Economics curriculum draws a hard line between two distinct outcomes:
+Own-price change = movement along. Non-price determinant = shift.
 
 > A change in the good's own price causes a **movement along** the curve — a change in quantity demanded. A change in any non-price determinant **shifts the whole curve** — a change in demand itself. Do not say a price change "shifts" the curve. Price change = movement along.
 
@@ -33,4 +33,6 @@ The diagram for Scenario A shows a point sliding up the same curve. The diagram 
 
 ## Mia catches this in real time
 
-When you give Mia an answer that says a price change "shifted" the curve, she names the exact faulty mental model and makes you redraw it — before the error has a chance to solidify into an exam-day habit.
+Students don't lose marks from not knowing the topic. They lose marks because they've practised the wrong sentence twenty times.
+
+When you give Mia an answer that says a price change "shifted" the curve, she names the faulty model and makes you redraw it — before it becomes automatic.

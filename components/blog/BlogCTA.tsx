@@ -18,7 +18,7 @@ export default function BlogCTA() {
         margin: '0 0 8px',
         letterSpacing: '-0.02em',
       }}>
-        Mia teaches this in every session.
+        Stop practising the wrong answer.
       </p>
       <p style={{
         fontSize: 15,
@@ -26,7 +26,7 @@ export default function BlogCTA() {
         margin: '0 0 24px',
         lineHeight: 1.55,
       }}>
-        Full IB Economics and Business Management curriculum. Free to start — no card needed.
+        Mia spots the misconception, fixes the thinking, and makes you redraw it correctly — across the full IB Economics and Business Management curriculum. Free to start, no card needed.
       </p>
       <Link
         href="/auth/signup/ib"
@@ -43,7 +43,7 @@ export default function BlogCTA() {
           letterSpacing: '-0.01em',
         }}
       >
-        Start free →
+        Try Mia free →
       </Link>
     </div>
   );
