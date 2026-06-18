@@ -29,6 +29,7 @@ Wrong idea → correction → one sharp example → the rule → exam consequenc
 6. **Don't bury the rule.** If the reader can't find the one-sentence fix on a skim, rewrite.
 7. [PORTABLE] **No loose universals in a rule.** "Everything else shifts it" reads broad and imprecise — name the actual category ("a non-price determinant shifts it"). Precision is part of the voice, not a trade-off against it.
 8. [PORTABLE] **No SEO-mechanical meta.** The description must read like a human sentence, not a keyword string with a colon ("The distinction: X vs Y, and the marks it costs"). Keywords go in naturally or not at all.
+9. [PORTABLE] **No loose economic verbs.** Use the precise term the diagram/mark scheme uses: a non-price determinant SHIFTS the curve (not "moves" it); a price change CHANGES quantity demanded. "Non-price determinant," not "non-price factor." Conversational verbs cost accuracy marks the article is meant to protect.
 
 ## The product bridge (every article)
 Don't say "Mia teaches this." Say Mia spots the faulty model under the answer, names it, and makes you redraw it — before you've practised the wrong thing twenty times. The diagnosis is the moat; show it.
