@@ -1,5 +1,5 @@
 ---
-title: "Does a price change shift the demand curve?"
+title: "Movement along vs shift in demand curve: what's the difference?"
 slug: movement-along-vs-shift-in-demand
 subject: Econ
 description: "Movement along vs shift in the demand curve: price changes move along the curve; non-price factors shift it. The IB Economics rule that costs marks."
@@ -16,11 +16,9 @@ keywords:
   - movement along demand curve IB economics
 ---
 
-## The confusion
+You write: "the price of oil rose, so the demand curve shifted left." That sentence loses marks. Not because you don't understand demand — because the diagram underneath it is built on the wrong idea, and the examiner can see that in one line.
 
-Students write: "the price of oil rose, so the demand curve shifted left."
-
-That is the wrong model. A price change does not shift the demand curve. Saying it does is one of the most common and most penalised errors in IB Economics, costing marks in Paper 1 and Paper 2 every year.
+Here's the fix, and it's one sentence: a change in the good's own price moves you along the curve. Everything else shifts it.
 
 ## The rule
 
@@ -38,10 +36,10 @@ None of those is the good's own price.
 
 **Scenario B — consumer incomes fall.** Incomes fall. At every price level, consumers now demand less coffee than before. The *whole demand curve shifts left* — because income is a non-price determinant.
 
-The diagram for Scenario A shows a point sliding up the same curve. The diagram for Scenario B shows an entirely new, lower curve. These are different diagrams. Confusing them means drawing the wrong diagram in the exam.
+The diagram for Scenario A shows a point sliding up the same curve. The diagram for Scenario B shows an entirely new, lower curve. These are different diagrams. Draw the wrong one in Paper 1 or Paper 2 and the examiner marks it wrong.
 
 ## Mia catches this in real time
 
 Students don't lose marks from not knowing the topic. They lose marks because they've practised the wrong sentence twenty times.
 
-When you give Mia an answer that says a price change "shifted" the curve, she names the faulty model and makes you redraw it — before it becomes automatic.
+When you give Mia an answer that says a price change "shifted" the curve, she spots the faulty model and makes you redraw it — before the wrong version becomes automatic.
