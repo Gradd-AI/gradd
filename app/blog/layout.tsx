@@ -11,7 +11,8 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
           font-family: var(--font-body, 'Plus Jakarta Sans', system-ui, sans-serif);
         }
         .blog-header {
-          background: var(--brand, #0e2b1e);
+          background: var(--bg, #f7f3ec);
+          border-bottom: 1px solid var(--border, #ddd5c5);
           padding: 0 28px;
           height: 58px;
           display: flex;
