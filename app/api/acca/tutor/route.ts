@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
-import Anthropic, { type Message } from '@anthropic-ai/sdk';
+import Anthropic from '@anthropic-ai/sdk';
 import { createServiceClient } from '@/lib/supabase/server';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -80,10 +80,13 @@ const ELI_SYSTEM =
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
+interface TextBlock { type: 'text'; text: string }
+interface AnthropicMessage { content: Array<{ type: string } | TextBlock> }
+
 function extractText(res: unknown): string {
-  const msg = res as Message;
-  const block = msg.content.find(b => b.type === 'text');
-  if (!block || block.type !== 'text') throw new Error('No text block in Anthropic response');
+  const msg = res as AnthropicMessage;
+  const block = msg.content.find((b): b is TextBlock => b.type === 'text');
+  if (!block) throw new Error('No text block in Anthropic response');
   return block.text;
 }
 
