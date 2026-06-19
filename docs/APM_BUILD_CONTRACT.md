@@ -103,6 +103,13 @@ Errors concentrate in CONCEPTUAL-EXPLANATION and JUDGEMENT-CLASSIFICATION drills
 ### Scaling decision
 The adversarial content audit is a MANDATORY per-drill gate that cannot be skipped on calc drills (D2e proved arithmetic QA insufficient). Scaling = tighten generator against catalogue → generate in volume → adversarial-check EVERY drill → human reviews only flagged (WRONG/ARITHMETIC) drills + finance QA on flagged calc drills. Scale away the manual reading, not the gate.
 
+### Code-computes-stats fix PROVEN (19/06/2026) — pattern 3 summary-stat variant structurally dead
+Built and verified. SUMMARY_STAT_LOS routes regression/summary-stat LOs through: generator produces raw (x,y) data only (scenario has NO Σ columns, no b/a/forecast); computeRegression() computes all stats in TS at full precision and asserts the line passes through the means (throws on failure); buildRegressionModelAnswer() templates code-computed values into the worked answer. Model contributes narrative only, never arithmetic. Fresh D2e dry-run verified: raw points → Σxy 10,195.3, Σx² 194.99, b 47.2434, a 29.71, forecast 369.86 — all independently hand-recomputed and matching, scenario gives raw data only. The contradiction is now impossible by construction (code computes once, feeds both stats block and answer). Add future regression LOs to SUMMARY_STAT_LOS to route them the same way.
+
+SCALING NOW FULLY CLEARED for all drill types:
+- Non-calc/conceptual/classification & simple calc: prompt tightening + mandatory content audit.
+- Summary-stat/regression: code-computes-stats path + content audit.
+
 ## DISCIPLINE
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
