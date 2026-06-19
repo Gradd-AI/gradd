@@ -43,6 +43,8 @@ KEY INVARIANT: the model answer from call 1 must never reach call 3, AND call 2'
 
 This replaces the parked "two-call pattern" reference elsewhere — it is three calls, and the diagnosis-label discipline is the crux.
 
+This pattern is recorded as a Gradd-wide primitive in `docs/TEACHING_ARCHITECTURE.md` — authoritative for APM, Mia (IB Econ/BM), and Aoife (LC).
+
 ## DISCIPLINE
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
