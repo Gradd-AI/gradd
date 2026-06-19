@@ -32,6 +32,17 @@ Pre-session notes claimed a partly-built drill funnel (table, generator, 6 seed 
 4. Convert the wall: free drill + paid tutor live together; wall → subscription, not email.
 5. Launch complete. THEN advertise once converting.
 
+## CONVERSATIONAL TUTOR ARCHITECTURE — proven by spike 19/06/2026
+The paid APM tutor uses a THREE-CALL structure that withholds the answer STRUCTURALLY (not by instruction). The model answer exists in exactly one call's output and never enters any context the student's teaching is generated from. This solves the withhold problem (you cannot instruct a model to suppress an answer in its own context — proven twice empirically; structural absence is the only reliable fix).
+
+- CALL 1 — GENERATE: produce the full model answer. Stored server-side. NEVER passed to call 2's output path or call 3. Model: claude-haiku-4-5 (straightforward generation).
+- CALL 2 — DIAGNOSE: input = question + student attempt + model answer. Output = a SHORT GAP LABEL naming the student's error pattern in their own error terms, max ~15 words, FORBIDDEN from stating the correct answer. e.g. "applied normal-good income logic to an inferior good" — NOT "demand falls when income rises". Model: claude-sonnet-4-6 — REQUIRED here; Haiku leaked the answer into the label, Sonnet produced clean gap-labels first try. The diagnosis is the precision step and needs the stronger model.
+- CALL 3 — TEACH: input = question + attempt + the call-2 gap label ONLY (NOT the model answer). Produces hint (first miss) / diagnosis-led teach-through (second miss). Cannot leak the answer — it was never in context. Model: claude-haiku-4-5 (teaches well from a label).
+
+KEY INVARIANT: the model answer from call 1 must never reach call 3, AND call 2's output (the label) must never contain the answer. Both boundaries are required — a leaky diagnosis reintroduces the leak through call 2. Verified: clean on both a clean-inversion case and a subtle partial-right case.
+
+This replaces the parked "two-call pattern" reference elsewhere — it is three calls, and the diagnosis-label discipline is the crux.
+
 ## DISCIPLINE
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
