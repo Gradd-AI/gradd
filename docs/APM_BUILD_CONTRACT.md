@@ -61,6 +61,8 @@ Pattern 3 CONFIRMED SYSTEMATIC (A3b + A3e, 19/06/2026): "right numbers, wrong me
 
 Pattern 4 — SCENARIO SELF-CONTRADICTION (found A5e, 19/06/2026): the generated SCENARIO stated a figure (conventional margin 35.0%) that contradicts its own data and the model answer (revenue/cost give 70.3%). Distinct from wrong-mechanism — here the scenario's stated facts don't reconcile with its numbers. Generator rule: the scenario must not state a derived result the student should calculate, and any figure it does state must reconcile with the underlying data. Best practice: scenarios give raw data only; the answer derives results.
 
+Pattern 4 sibling — ANSWER MISREADS SCENARIO WORDING (found B1b, 19/06/2026): the model answer misread "fixed overheads INCLUDE a R30,000 lease renegotiated upward" as "lease rose BY R30,000", restated the budget wrongly and invented a R12,000 F controllable variance that doesn't exist. Related to A5e (scenario self-contradiction): both are the generator mishandling the scenario↔answer figure relationship. Generator rule: the answer must read scenario figures literally and not invent variances/results the data doesn't support.
+
 EDITING DISCIPLINE (learned A5c, 19/06/2026): multi-line REPLACE on stored drill fields is fragile — A5c took 5 failed REPLACE rounds (invisible byte/whitespace mismatches between displayed and stored text). RULE: for any drill content fix touching more than one line or a table, OVERWRITE THE WHOLE FIELD (UPDATE ... SET field = full corrected value), never surgical REPLACE. Single-line, single-occurrence swaps only for REPLACE. This matters for the 72-run review: budget for full-field regeneration of flagged drills, not patching.
 
 ### Session-state rule: generate-once-per-drill
