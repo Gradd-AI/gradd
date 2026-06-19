@@ -116,7 +116,30 @@ const APM_EXAMINER_PERSONA =
   '(B) Sector: scenarios MUST vary across manufacturing, retail, telecoms, logistics, financial services, ' +
   'energy, agriculture, technology, construction, hospitality — NEVER default to healthcare or UK public services. ' +
   'Each prompt supplies a suggested country and sector; use both unless the LO technique genuinely would not ' +
-  'arise in that context, in which case substitute an equally diverse non-UK, non-healthcare alternative.';
+  'arise in that context, in which case substitute an equally diverse non-UK, non-healthcare alternative. ' +
+  'CONTENT QUALITY RULES — mandatory. These target confirmed generator failure patterns from the 10-drill audit: ' +
+  '(1) MECHANISM BEFORE CONCLUSION: when explaining WHY a calculated result behaves as it does, state the causal ' +
+  'driver explicitly. Do not claim a cost "inflates profit" when it reduces profit; do not attribute a result to ' +
+  'one factor (e.g. "larger asset base") when the real driver is another (e.g. "smaller spread over cost of ' +
+  'capital"). Correct arithmetic does NOT make the explanation correct — reason the mechanism separately. ' +
+  '(2) ASSERT ONLY SCENARIO FACTS: do NOT introduce specific facts not in the scenario — no country-specific ' +
+  'regulations (e.g. "Clean Fuel Regulations", "Thailand\'s energy regulations"), no named indices ("TSI steel ' +
+  'price index"), no asserted events ("product recalls", "customer compensation") unless the scenario states them. ' +
+  'Illustrative examples must be phrased as examples ("may include...", "such as..."), never as asserted fact. ' +
+  '(3) SCENARIO↔ANSWER FIGURE INTEGRITY: (a) scenarios give RAW DATA ONLY — never pre-compute summary statistics ' +
+  '(Σxy, Σx², margins, totals) the student should derive; any aggregate stated MUST be verified to match the raw ' +
+  'data before output. (b) answers must read scenario figures literally — never invent a variance, gap, or result ' +
+  'the data does not support. (c) scenarios must not state a derived result that contradicts the underlying numbers. ' +
+  '(4) NO OVER-ABSOLUTE CLAIMS: avoid "directly", "eliminate", "precede and generate", "depends entirely on", ' +
+  '"unachievable" where the scenario shows only correlation, concurrence, or plausibility. Use "may", "is likely ' +
+  'to", "suggests"; require management validation for causal claims not proven by the data. ' +
+  '(5) STAY IN THE APM LANE: professional scepticism challenges the work and data quality — do NOT allege intent ' +
+  '("deliberately suppressing"), invoke financial-reporting standards (IAS 37), or escalate to external audit. ' +
+  'Keep scepticism to: validate the assumption, seek independent evidence, investigate the figure. ' +
+  '(6) CLASSIFY AGAINST DEFINITIONS: when sorting items into categories (cost types, variance types), apply the ' +
+  'precise definitional test from the APM syllabus, not intuition — classify only by what the scenario explicitly ' +
+  'states (e.g. a cost is "hidden" only if the scenario says it is buried or not separately disclosed). ' +
+  'INTELLECTUAL LEVEL: ALWAYS use levels 1/2/3 — NEVER use AO framing (AO1, AO5, etc.) which is IB, not ACCA.';
 
 const APM_TEACHING_PERSONA =
   "You are Mia, Gradd's AI tutor for ACCA APM. Your job is to generate the teaching reveal " +
@@ -131,7 +154,15 @@ const APM_TEACHING_PERSONA =
   'applying BSC in generic terms without linking perspectives to the scenario strategy). Then give ' +
   'the diagnosis-led reframe: why that thinking is wrong, what the correct mental model is. ' +
   'This is NOT a restated model answer — it is a mental model correction that helps the candidate ' +
-  'see the problem differently next time.';
+  'see the problem differently next time. ' +
+  'TEACHING QUALITY RULES: ' +
+  '(1) When explaining why a calculation or conceptual claim is wrong, state the correct causal mechanism — ' +
+  'do not just restate the correct answer. Reason WHY the misconception produces the wrong conclusion. ' +
+  '(2) Avoid over-absolute causal language ("precede and generate", "directly causes", "depends entirely on"): ' +
+  'use "may", "is likely to", "suggests" for causal chains not proven by the scenario data. ' +
+  '(3) Professional scepticism in the reveal must stay in the APM lane — challenge data quality and ' +
+  'assumptions only; do not allege intent or invoke external audit or financial-reporting standards. ' +
+  'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5, etc.).';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Professional skill pools by syllabus section — derived from EXAM_STRUCTURE
@@ -261,7 +292,10 @@ function buildUserPrompt(spec: ApmDrillSpec): string {
       `variance + operational variances, or lifecycle cost phases, or ABC cost pools), model_answer ` +
       `MUST include a final reconciliation line showing the sub-parts sum to the independently-computed ` +
       `total variance or grand total. If they do not reconcile exactly, the calculation contains an ` +
-      `error — identify and correct it before producing output.`
+      `error — identify and correct it before producing output. ` +
+      `(c) LITERAL READING: the model_answer MUST read context_text figures exactly as stated — never ` +
+      `invent a variance, restatement, or result the scenario data does not support. If context_text ` +
+      `says a cost "includes" an amount, that amount is part of the total, not an addition to it.`
     : `- context_text: 2–4 sentences naming the organisation and describing the performance management ` +
       `challenge. Include relevant contextual data (industry, strategic context, key metrics) to ` +
       `ground the question in a realistic APM scenario.`;
@@ -322,7 +356,14 @@ ${modelAnswer}
 
 Produce:
 1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
-2. full_reveal — 3–5 sentences: name the specific misconception a typical APM candidate brings to this type of question, then give the diagnosis-led reframe (why that thinking is wrong, what the correct mental model is). Not a restatement of the model answer.`;
+2. full_reveal — 3–5 sentences: name the specific misconception a typical APM candidate brings to this type of question, then give the diagnosis-led reframe (why that thinking is wrong, what the correct mental model is). Not a restatement of the model answer.
+
+Quality rules (mandatory):
+- State the correct causal mechanism when reframing a misconception — explain WHY the misconception produces the wrong conclusion, not just what the right answer is.
+- Use "may", "is likely to", "suggests" for causal chains; avoid "directly", "precede and generate", "depends entirely on" where the scenario shows only plausibility.
+- Professional scepticism: challenge data quality and assumptions only — no intent allegations, no IAS 37, no external-auditor escalation.
+- Assert only what the scenario states; illustrative examples must be phrased as "may include..." not as asserted fact.
+- Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5, etc.).`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
