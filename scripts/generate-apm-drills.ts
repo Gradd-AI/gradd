@@ -88,6 +88,120 @@ type RejectedDrillRow = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Summary-stat LOs — route through code-computes-stats path.
+// Only LOs requiring Σ aggregation across a dataset use this path.
+// Extend the Set to add future regression / time-series LOs.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SUMMARY_STAT_LOS = new Set<LoCode>([
+  'D2e', // regression analysis — Σx, Σy, Σx², Σxy, b, a, forecast computed in TS
+]);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regression helper — deterministic stats; model never touches this arithmetic
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DataPoint { x: number; y: number }
+
+interface RegressionResult {
+  n:     number;
+  sumX:  number;
+  sumY:  number;
+  sumX2: number;
+  sumXY: number;
+  meanX: number;
+  meanY: number;
+  b:     number; // slope
+  a:     number; // intercept
+}
+
+function computeRegression(points: DataPoint[]): RegressionResult {
+  if (points.length < 3) {
+    throw new Error(`Regression requires ≥3 data points, got ${points.length}`);
+  }
+  const n = points.length;
+  let sumX = 0, sumY = 0, sumX2 = 0, sumXY = 0;
+  for (const { x, y } of points) {
+    sumX  += x;
+    sumY  += y;
+    sumX2 += x * x;
+    sumXY += x * y;
+  }
+  const meanX = sumX / n;
+  const meanY = sumY / n;
+  const b = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const a = meanY - b * meanX;
+  // Invariant: line must pass through (meanX, meanY). This is algebraically exact;
+  // any failure here indicates floating-point catastrophic cancellation with extreme data.
+  if (Math.abs(a + b * meanX - meanY) > 1e-4) {
+    throw new Error(
+      `Regression reconciliation failed: a+b·x̄=${(a + b * meanX).toFixed(8)}, meanY=${meanY.toFixed(8)}`,
+    );
+  }
+  return { n, sumX, sumY, sumX2, sumXY, meanX, meanY, b, a };
+}
+
+function buildRegressionModelAnswer(
+  points: DataPoint[],
+  stats: RegressionResult,
+  xLabel: string,
+  yLabel: string,
+  forecastX: number,
+  interpretationProse: string,
+): string {
+  const { n, sumX, sumY, sumX2, sumXY, meanX, meanY, b, a } = stats;
+  const fc          = a + b * forecastX;
+  const numerator   = n * sumXY - sumX * sumY;
+  const denominator = n * sumX2 - sumX * sumX;
+
+  // n2s: integer → no decimals; decimal → dp (default 2)
+  const n2s = (v: number, dp = 2): string =>
+    Number.isInteger(v) ? v.toString() : v.toFixed(dp);
+
+  const rows = points
+    .map((p, i) =>
+      `| ${i + 1} | ${n2s(p.x)} | ${n2s(p.y)} | ${n2s(p.x * p.x)} | ${n2s(p.x * p.y)} |`,
+    )
+    .join('\n');
+
+  return [
+    '**Regression Analysis**',
+    '',
+    '**Step 1 — Data table**',
+    '',
+    `| Period | ${xLabel} | ${yLabel} | x² | xy |`,
+    '|--------|-----------|-----------|-----|------|',
+    rows,
+    `| **Σ** | **${n2s(sumX)}** | **${n2s(sumY)}** | **${n2s(sumX2)}** | **${n2s(sumXY)}** |`,
+    '',
+    `n = ${n};  x̄ = ${n2s(meanX, 4)};  ȳ = ${n2s(meanY, 4)}`,
+    '',
+    '**Step 2 — Slope (b)**',
+    '',
+    'b = (nΣxy − ΣxΣy) ÷ (nΣx² − (Σx)²)',
+    `  = (${n} × ${n2s(sumXY)} − ${n2s(sumX)} × ${n2s(sumY)}) ÷ (${n} × ${n2s(sumX2)} − ${n2s(sumX)}²)`,
+    `  = ${n2s(numerator)} ÷ ${n2s(denominator)}`,
+    `  = **${n2s(b, 4)}**`,
+    '',
+    '**Step 3 — Intercept (a)**',
+    '',
+    `a = ȳ − b·x̄  =  ${n2s(meanY, 4)} − ${n2s(b, 4)} × ${n2s(meanX, 4)}  =  **${n2s(a, 2)}**`,
+    '',
+    `Regression equation:  y = ${n2s(a, 2)} + ${n2s(b, 4)}·x`,
+    '',
+    '**Step 4 — Forecast**',
+    '',
+    `At ${xLabel} = ${n2s(forecastX)}:  y = ${n2s(a, 2)} + ${n2s(b, 4)} × ${n2s(forecastX)} = **${n2s(fc, 2)}**`,
+    '',
+    `*Reconciliation: a + b·x̄ = ${n2s(a, 2)} + ${n2s(b, 4)} × ${n2s(meanX, 4)} = ${n2s(a + b * meanX, 4)} ≈ ȳ ✓*`,
+    '',
+    '**Step 5 — Analysis and interpretation**',
+    '',
+    interpretationProse,
+  ].join('\n');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Personas
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -413,6 +527,148 @@ const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Regression scenario tool — model produces scenario + raw data; code does math
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SUBMIT_REGRESSION_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_regression_scenario',
+  description: 'Submit a regression drill scenario — raw data table only; code computes all statistics',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question: {
+        type: 'string',
+        description: 'Drill question starting with the command verb. Asks candidate to perform regression analysis and produce a forecast at a specific stated x value.',
+      },
+      context_text: {
+        type: 'string',
+        description: 'Scenario narrative + a data table showing ONLY period label, x value, y value. NO pre-computed Σ, x², xy, b, a, or forecast. Data table has exactly three columns: period, x, y.',
+      },
+      x_label: {
+        type: 'string',
+        description: 'Column header for the independent variable, e.g. "Machine hours (000s)" or "Ad spend ($000)". Short — fits in a table column.',
+      },
+      y_label: {
+        type: 'string',
+        description: 'Column header for the dependent variable, e.g. "Overhead cost ($000)" or "Revenue ($m)". Short — fits in a table column.',
+      },
+      raw_data: {
+        type: 'array',
+        description: 'The raw (x, y) pairs in order — must exactly match the data table in context_text. Code uses these for ALL arithmetic. Provide exactly 6 points.',
+        items: {
+          type: 'object' as const,
+          properties: {
+            x: { type: 'number' as const, description: 'Independent variable value' },
+            y: { type: 'number' as const, description: 'Dependent variable value' },
+          },
+          required: ['x', 'y'],
+        },
+        minItems: 5,
+      },
+      forecast_x: {
+        type: 'number',
+        description: 'The specific x value stated in the question for which the candidate must forecast y. Must appear verbatim in the question text.',
+      },
+      interpretation_prose: {
+        type: 'string',
+        description: '3–5 sentences of qualitative analysis ONLY — direction and strength of relationship, business interpretation of the trend, at least one model limitation (correlation vs causation, extrapolation risk, omitted variables, autocorrelation), and one professional scepticism point about data quality or model appropriateness. Do NOT state any specific computed values (Σ, b, a, r², forecast result) — those are inserted by code.',
+      },
+    },
+    required: ['question', 'context_text', 'x_label', 'y_label', 'raw_data', 'forecast_x', 'interpretation_prose'],
+  },
+};
+
+type RegressionScenario = {
+  question:             string;
+  context_text:         string;
+  x_label:              string;
+  y_label:              string;
+  raw_data:             DataPoint[];
+  forecast_x:           number;
+  interpretation_prose: string;
+};
+
+function buildRegressionUserPrompt(spec: ApmDrillSpec): string {
+  return `Write one original ACCA APM regression analysis drill.
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA 2026–27 study guide): "${spec.descriptor}"
+- Command verb: analyse
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+- Calculation required: true (regression analysis)
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}
+- Choose a business context where a linear relationship between two variables is plausible (e.g. overhead cost vs machine hours, sales revenue vs advertising spend, delivery cost vs orders handled)
+- question: begins with "Analyse" — ask the candidate to analyse the data using regression to establish the relationship between the two variables and produce a forecast at a specific stated x value
+- context_text: 2–3 sentences of scenario narrative + a clean data table with THREE COLUMNS ONLY: Period (or Month/Quarter label), x variable, y variable. Exactly 6 rows. Use scaled units ($000, 000 hours, etc.) so values are in the range 1–9,999 — this keeps x² and xy manageable for candidates.
+- raw_data: exactly the same 6 (x, y) numeric pairs as the table, as a structured array
+- forecast_x: a specific x value the question states for forecasting — plausible given the data range (within or slightly beyond observed range)
+- interpretation_prose: 3–5 sentences of qualitative analysis covering: direction and strength of the relationship, business interpretation of the trend, at least one model limitation (correlation vs causation, extrapolation risk, omitted variables), and one professional scepticism point about the data quality or model appropriateness. Do NOT state any specific computed values.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}`;
+}
+
+async function draftRegressionScenario(
+  anthropic: Anthropic,
+  spec: ApmDrillSpec,
+): Promise<RegressionScenario> {
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1400,
+    system:
+      APM_EXAMINER_PERSONA +
+      '\n\nCODE-COMPUTES-STATS PROTOCOL — MANDATORY for this drill:\n' +
+      'All arithmetic is computed by code from your raw_data array. Your role: supply the scenario narrative, ' +
+      'the raw data table (x and y columns only — NO Σ row, NO x² column, NO xy column), and qualitative ' +
+      'interpretation prose. DO NOT compute or include in any field: Σx, Σy, Σx², Σxy, slope (b), intercept (a), ' +
+      'r², residuals, or any forecast result. These are computed deterministically in TypeScript. ' +
+      'Use scaled units ($000, 000 hours, etc.) so data values stay in the range 1–9,999.',
+    tools: [SUBMIT_REGRESSION_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_regression_scenario' },
+    messages: [{ role: 'user', content: buildRegressionUserPrompt(spec) }],
+  });
+
+  const block = res.content.find(b => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') {
+    throw new Error('No tool_use block in regression scenario response');
+  }
+  const inp = block.input as RegressionScenario;
+
+  if (!Array.isArray(inp.raw_data) || inp.raw_data.length < 3) {
+    throw new Error(`Invalid raw_data: expected ≥3 points, got ${JSON.stringify(inp.raw_data)}`);
+  }
+  for (const pt of inp.raw_data) {
+    if (typeof pt.x !== 'number' || typeof pt.y !== 'number') {
+      throw new Error(`Invalid data point in raw_data: ${JSON.stringify(pt)}`);
+    }
+  }
+
+  return {
+    question:             inp.question,
+    context_text:         inp.context_text,
+    x_label:              inp.x_label,
+    y_label:              inp.y_label,
+    raw_data:             inp.raw_data as DataPoint[],
+    forecast_x:           inp.forecast_x,
+    interpretation_prose: inp.interpretation_prose,
+  };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unified drill output type
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface DrillOutput {
+  question:     string;
+  context_text: string;
+  model_answer: string;
+  _raw_data?:   DataPoint[];      // regression drills only — for dry-run inspection
+  _stats?:      RegressionResult; // regression drills only
+}
+
 async function draftDrill(
   anthropic: Anthropic,
   spec: ApmDrillSpec,
@@ -451,6 +707,30 @@ async function draftReveal(
   if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in Pass 2 response');
   const inp = block.input as { hint: string; full_reveal: string };
   return { hint: inp.hint, full_reveal: inp.full_reveal };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Routing — summary-stat LOs get code-computes path; all others use draftDrill
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function generateDrill(anthropic: Anthropic, spec: ApmDrillSpec): Promise<DrillOutput> {
+  if (SUMMARY_STAT_LOS.has(spec.lo_code)) {
+    const scenario = await draftRegressionScenario(anthropic, spec);
+    const stats    = computeRegression(scenario.raw_data); // throws loud if data bad
+    const model_answer = buildRegressionModelAnswer(
+      scenario.raw_data, stats,
+      scenario.x_label, scenario.y_label,
+      scenario.forecast_x, scenario.interpretation_prose,
+    );
+    return {
+      question:     scenario.question,
+      context_text: scenario.context_text,
+      model_answer,
+      _raw_data:    scenario.raw_data,
+      _stats:       stats,
+    };
+  }
+  return draftDrill(anthropic, spec);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -560,11 +840,11 @@ async function main() {
       const spec  = regenSpecs[i];
       const label = `[${i + 1}/${regenSpecs.length}] ${spec.lo_code} · ${spec.command_verb} · ${spec.marks_guide}m`;
 
-      let pass1: { question: string; context_text: string; model_answer: string } | null = null;
+      let pass1: DrillOutput | null = null;
       let pass2: { hint: string; full_reveal: string } | null = null;
 
       for (let attempt = 0; attempt < 2; attempt++) {
-        try { pass1 = await draftDrill(anthropic, spec); break; }
+        try { pass1 = await generateDrill(anthropic, spec); break; }
         catch (err) {
           if (attempt === 0) { console.warn(`  ↻ ${label} [P1] retry (${(err as Error).message})`); await sleep(2000); }
           else { console.error(`  ✗ ${label} [P1] FAILED: ${(err as Error).message}`); regenFailed.push(i + 1); }
@@ -620,11 +900,11 @@ async function main() {
       console.log(`verb: ${spec.command_verb}  |  level: L${spec.intellectual_level}  |  calc: ${spec.calculation_required}  |  marks: ${spec.marks_guide}  |  skill: ${spec.professional_skill_tag ?? 'none'}  |  geo: ${spec.region_hint} / ${spec.sector_hint}`);
       console.log('─'.repeat(80));
 
-      let pass1: { question: string; context_text: string; model_answer: string } | null = null;
+      let pass1: DrillOutput | null = null;
       let pass2: { hint: string; full_reveal: string } | null = null;
 
       for (let attempt = 0; attempt < 2; attempt++) {
-        try { pass1 = await draftDrill(anthropic, spec); break; }
+        try { pass1 = await generateDrill(anthropic, spec); break; }
         catch (err) {
           if (attempt === 0) { console.warn(`  ↻ ${label} [P1] retry (${(err as Error).message})`); await sleep(2000); }
           else { console.error(`  ✗ ${label} [P1] FAILED: ${(err as Error).message}`); }
@@ -636,6 +916,13 @@ async function main() {
       console.log(`\nCONTEXT_TEXT:\n${pass1.context_text}`);
       console.log(`\nQUESTION:\n${pass1.question}`);
       console.log(`\nMODEL_ANSWER:\n${pass1.model_answer}`);
+      if (pass1._raw_data && pass1._stats) {
+        const s = pass1._stats;
+        console.log('\nCODE-COMPUTED STATS (regression — verify these match context_text table):');
+        console.log(`  n=${s.n}  Σx=${s.sumX}  Σy=${s.sumY}  Σx²=${s.sumX2}  Σxy=${s.sumXY}`);
+        console.log(`  b=${s.b.toFixed(6)}  a=${s.a.toFixed(6)}  x̄=${s.meanX.toFixed(6)}  ȳ=${s.meanY.toFixed(6)}`);
+        console.log(`  raw_data: ${JSON.stringify(pass1._raw_data)}`);
+      }
 
       for (let attempt = 0; attempt < 2; attempt++) {
         try { pass2 = await draftReveal(anthropic, spec, pass1.question, pass1.model_answer); break; }
@@ -671,7 +958,7 @@ async function main() {
     // Pass 1 — drill generation
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        pass1 = await draftDrill(anthropic, spec);
+        pass1 = await generateDrill(anthropic, spec);
         break;
       } catch (err) {
         if (attempt === 0) {
