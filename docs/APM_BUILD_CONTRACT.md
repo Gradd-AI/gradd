@@ -45,6 +45,10 @@ This replaces the parked "two-call pattern" reference elsewhere — it is three 
 
 This is the Gradd-wide STRUCTURAL WITHHOLDING primitive — see docs/TEACHING_ARCHITECTURE.md for the product-agnostic statement. APM is the first product built natively on it.
 
+### Eli content audit — SEPARATE from architecture/register (confirmed 19/06/2026)
+The three-call architecture and Eli's register are proven. This says NOTHING about content correctness. Eli's APM substance — terminology, intellectual levels, technique facts — goes through adversarial study-guide cross-check before launch, same two-gate discipline as IB (method/architecture audited separately from content).
+First confirmed leak: Eli labelled an "apply and evaluate" verb as "AO5" in one call and "Level 3" in another. APM uses intellectual levels (1/2/3), NOT IB's AO framework — "AO5" is IB assessment-framing bleeding into APM. Watch for this class of error (IB conventions leaking into ACCA) throughout the content audit.
+
 ## DISCIPLINE
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
