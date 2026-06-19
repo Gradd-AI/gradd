@@ -75,6 +75,18 @@ Tightened generator re-tested on the 6 worst-offender LOs. Patterns 1, 2, 4, 5 d
 LESSON: you cannot reliably INSTRUCT the generator to not produce summary stats — same as the withhold problem (instruction insufficient; architecture required). FIX: for any calc drill involving summary statistics (regression especially), COMPUTE the stats and derived results in CODE (deterministic TS function reading the raw data points), NOT in the model. The generator produces the scenario (raw data) + teaching only; code produces Σx/Σy/Σx²/Σxy/b/a/forecast. Arithmetic the model both generates and must keep self-consistent is unreliable; take it out of the model's hands.
 This must be built before any regression/summary-stat drills are scaled. The other 5 patterns appear adequately controlled by the prompt rules (confirm A5c/B1b/A4a results).
 
+### Proof batch COMPLETE (19/06/2026) — tightening verdict
+6 worst-offender LOs regenerated with the tightened generator and re-audited. Result:
+- Pattern 1 (wrong mechanism despite right arithmetic) — ELIMINATED (A3b, A3e both clean of their original inversions).
+- Pattern 5 (scepticism overreach into IAS/audit) — ELIMINATED (A5c clean).
+- Pattern 3 budget-misread variant ("includes" misread) — ELIMINATED (B1b read it literally; the calc-branch rule held).
+- Patterns 2 (invented colour) + 4 (over-absolute causality) — REDUCED to minor IMPRECISE drift, no longer WRONG (A4a, B1b residuals). Content audit mops these up.
+- Pattern 3 summary-stat variant — RECURRED (D2e supplied wrong Σxy/Σx² again). Prompt rule insufficient; needs architectural fix.
+
+SCALING VERDICT:
+- Non-calc and non-summary-stat drills: SCALE on prompt tightening + mandatory content audit (audit catches residual IMPRECISE drift).
+- Summary-stat calc drills (regression etc.): BLOCKED until the code-computes-stats fix is built. Generator emits raw (x,y) data only; a deterministic TS function computes Σx/Σy/Σx²/Σxy/b/a/forecast and writes them into the answer. Then the worst pattern is structurally impossible.
+
 ## 10-DRILL CONTENT AUDIT — COMPLETE (19/06/2026)
 All 10 published drills audited against the ACCA APM study guide (adversarial checker, clean window) and corrected. All now clean across three gates: arithmetic QA, study-guide content audit, and (free drill B1c) live teaching test. The audit's purpose was to prove the pipeline and build the failure catalogue — both done. The catalogue stopped producing new patterns by the final drills (B1c, D1a, A4a clean-to-minor), indicating completeness.
 
