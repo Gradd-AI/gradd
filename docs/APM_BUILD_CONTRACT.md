@@ -49,6 +49,9 @@ This is the Gradd-wide STRUCTURAL WITHHOLDING primitive — see docs/TEACHING_AR
 The three-call architecture and Eli's register are proven. This says NOTHING about content correctness. Eli's APM substance — terminology, intellectual levels, technique facts — goes through adversarial study-guide cross-check before launch, same two-gate discipline as IB (method/architecture audited separately from content).
 First confirmed leak: Eli labelled an "apply and evaluate" verb as "AO5" in one call and "Level 3" in another. APM uses intellectual levels (1/2/3), NOT IB's AO framework — "AO5" is IB assessment-framing bleeding into APM. Watch for this class of error (IB conventions leaking into ACCA) throughout the content audit.
 
+### Session-state rule: generate-once-per-drill
+Call 1 (model answer) and the diagnosis inputs must be generated ONCE when a drill opens and cached for that drill's lifetime in the session — reused across every attempt/turn on that drill. Do NOT re-run call 1 per turn: it drifts the model answer (observed in spike — gap label varied across runs because call 1 regenerated), wastes tokens, adds latency. Session state per drill holds: cached model answer, miss-count, student attempts.
+
 ## DISCIPLINE
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
