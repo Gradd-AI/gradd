@@ -70,6 +70,22 @@ EDITING DISCIPLINE (learned A5c, 19/06/2026): multi-line REPLACE on stored drill
 ### Session-state rule: generate-once-per-drill
 Call 1 (model answer) and the diagnosis inputs must be generated ONCE when a drill opens and cached for that drill's lifetime in the session — reused across every attempt/turn on that drill. Do NOT re-run call 1 per turn: it drifts the model answer (observed in spike — gap label varied across runs because call 1 regenerated), wastes tokens, adds latency. Session state per drill holds: cached model answer, miss-count, student attempts.
 
+## 10-DRILL CONTENT AUDIT — COMPLETE (19/06/2026)
+All 10 published drills audited against the ACCA APM study guide (adversarial checker, clean window) and corrected. All now clean across three gates: arithmetic QA, study-guide content audit, and (free drill B1c) live teaching test. The audit's purpose was to prove the pipeline and build the failure catalogue — both done. The catalogue stopped producing new patterns by the final drills (B1c, D1a, A4a clean-to-minor), indicating completeness.
+
+### Generator failure catalogue (the audit's key output — tighten generator against these before any scale run)
+1. WRONG MECHANISM DESPITE CORRECT ARITHMETIC (A3b, A3e) — numbers reconcile, the causal explanation is inverted. Most dangerous: passes arithmetic QA; only the content audit catches it.
+2. INVENTED SCENARIO COLOUR (B3d, A3b, A5c, A5e, D1a — most common, 5 instances) — asserting detail not in the scenario (country-specific regs, recalls, named indices).
+3. SCENARIO/ANSWER FIGURE CONTRADICTION (A5e, B1b, D2e) — scenario states a derived result contradicting its own data (A5e), answer misreads scenario wording (B1b), or supplied summary stat contradicts raw data (D2e, worst — answer reconciles against a wrong input, survives arithmetic QA AND reconciliation; only source-verification catches it).
+4. OVER-ABSOLUTE CAUSAL/DIRECTIONAL CLAIMS (B1c, D1a, A4a) — "directly", "precede and generate", "eliminate" stated as proven when scenario shows only concurrence/plausibility.
+5. SCEPTICISM OVERREACH INTO AUDIT/LEGAL TERRITORY (A5c) — IAS 37, "deliberately suppressing", external-auditor escalation beyond the APM lane.
+
+### Error-rate finding
+Errors concentrate in CONCEPTUAL-EXPLANATION and JUDGEMENT-CLASSIFICATION drills (A3b, A3e, A5c), NOT in mechanical-calc or well-defined-technique drills (B1c, D1a came back clean-to-minor). Generator hardening should focus on causal explanation and classification judgement.
+
+### Scaling decision
+The adversarial content audit is a MANDATORY per-drill gate that cannot be skipped on calc drills (D2e proved arithmetic QA insufficient). Scaling = tighten generator against catalogue → generate in volume → adversarial-check EVERY drill → human reviews only flagged (WRONG/ARITHMETIC) drills + finance QA on flagged calc drills. Scale away the manual reading, not the gate.
+
 ## DISCIPLINE
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
