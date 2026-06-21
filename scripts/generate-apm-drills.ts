@@ -719,13 +719,26 @@ interface DrillOutput {
   _stats?:      RegressionResult; // regression drills only
 }
 
+// Throws if a required tool-output field is empty/undefined. A truncated
+// tool_use (e.g. response cut off mid-stream at max_tokens) yields a partially
+// parsed input where late fields are undefined — without this guard a null-answer
+// drill would be silently inserted at scale. Throwing lets the retry loop regen.
+function assertNonEmpty(obj: Record<string, unknown>, fields: string[], pass: string): void {
+  for (const f of fields) {
+    const v = obj[f];
+    if (typeof v !== 'string' || v.trim() === '') {
+      throw new Error(`${pass}: field "${f}" came back empty/undefined (likely truncated mid-tool-use) — regenerating`);
+    }
+  }
+}
+
 async function draftDrill(
   anthropic: Anthropic,
   spec: ApmDrillSpec,
 ): Promise<{ question: string; context_text: string; model_answer: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 1200,
+    max_tokens: 2000,
     system: APM_EXAMINER_PERSONA,
     tools: [SUBMIT_DRILL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_drill' },
@@ -735,6 +748,7 @@ async function draftDrill(
   const block = res.content.find(b => b.type === 'tool_use');
   if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in Pass 1 response');
   const inp = block.input as { question: string; context_text: string; model_answer: string };
+  assertNonEmpty(inp, ['question', 'context_text', 'model_answer'], 'Pass 1');
   return { question: inp.question, context_text: inp.context_text, model_answer: inp.model_answer };
 }
 
@@ -756,6 +770,7 @@ async function draftReveal(
   const block = res.content.find(b => b.type === 'tool_use');
   if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in Pass 2 response');
   const inp = block.input as { hint: string; full_reveal: string };
+  assertNonEmpty(inp, ['hint', 'full_reveal'], 'Pass 2');
   return { hint: inp.hint, full_reveal: inp.full_reveal };
 }
 
