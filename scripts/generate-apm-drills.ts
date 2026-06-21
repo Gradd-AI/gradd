@@ -303,6 +303,13 @@ const APM_EXAMINER_PERSONA =
   'rate has shifted") — that is invented colour. Do NOT claim a metric "mechanically inflates" from one effect ' +
   'alone; where an adjustment or expensing affects BOTH numerator and denominator, state that the net direction ' +
   'depends on which effect dominates. ' +
+  '(9) ASSERTION DISCIPLINE: model_answer may state as FACT only what the scenario provides. Any risk, threshold, ' +
+  'cause, or detail NOT evidenced by the scenario\'s own data — covenant breach or covenant thresholds, ' +
+  'construction/commissioning delays, the depreciation treatment behind a margin, input-cost changes, ' +
+  'inventory/regulatory cycle times, stockpiling, "unable to service debt" — must be phrased as a CONDITIONAL ' +
+  'VALIDATION POINT, never asserted: "the board should confirm whether...", "depending on the loan terms...", ' +
+  '"if X, then...". Scepticism CHALLENGES the data and flags what to verify; it does NOT invent the answer to the ' +
+  'challenge. Never assert a specific external fact, threshold, or cause the scenario does not give. ' +
   'INTELLECTUAL LEVEL: ALWAYS use levels 1/2/3 — NEVER use AO framing (AO1, AO5, etc.) which is IB, not ACCA.' +
   '\n\n' + APPLICATION_EVALUATION_BAR_PASS1;
 
@@ -334,6 +341,11 @@ const APM_TEACHING_PERSONA =
   'historical inputs) — never assert country-specific macro facts not in the scenario, and never say a metric ' +
   '"mechanically inflates" from one effect when an adjustment hits both numerator and denominator (state that the ' +
   'net direction depends on which effect dominates). ' +
+  '(6) ASSERTION DISCIPLINE: full_reveal may state as FACT only what the scenario provides. Risks or causes the ' +
+  'scenario does not evidence (covenant breach/thresholds, construction/commissioning delays, depreciation ' +
+  'treatment, input-cost changes, stockpiling, "unable to service debt") must be phrased conditionally — "if X, ' +
+  'then...", "the board should confirm whether..." — not asserted. Teach scepticism as challenging the data and ' +
+  'naming what to verify, NOT as inventing the answer to the challenge. ' +
   'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5, etc.).' +
   '\n\n' + APPLICATION_EVALUATION_BAR_PASS2;
 
@@ -498,7 +510,8 @@ Specification:
 - Calculation required: ${spec.calculation_required}${spec.professional_skill_tag ? `\n- Professional skill: ${spec.professional_skill_tag}` : ''}
 
 Requirements:
-- Begin question with "${capitalised}" (the command verb, capitalised)
+- Begin question with "${capitalised}" (the lead command verb, capitalised)
+- command_verb (metadata): report the verb(s) the question ACTUALLY demands. If the question requires advising/recommending/evaluating beyond the lead verb, return the full form (e.g. "explain and advise", "calculate and evaluate") — not just "${verb}".
 - Wholly original — never replicate any ACCA past paper question
 - Scenario-based: name an organisation, set a realistic performance management context
 - Professional advisory register: candidate responds as advisor to management
@@ -570,8 +583,12 @@ const SUBMIT_DRILL_TOOL: Anthropic.Tool = {
         type: 'string',
         description: 'Mark-scheme level answer (100–300 words) demonstrating Band 1 / full APM technical marks. Must show the explicit L2→L3 structure: (a) APPLY the technique to the scenario\'s specific figures/facts; (b) EVALUATE — a supported judgement/recommendation for THIS organisation; (c) SCEPTICISM — challenge one scenario assumption or data point. Never stop at description/calculation.',
       },
+      command_verb: {
+        type: 'string',
+        description: 'The command verb(s) the question ACTUALLY demands, lowercase — must match the question text. If the question requires advising/recommending/evaluating in addition to a lead verb, give the full form (e.g. "explain and advise", "calculate and evaluate", "assess and recommend"), not just the bare lead verb. Single verb (e.g. "evaluate", "assess") only if that is all the question demands.',
+      },
     },
-    required: ['question', 'context_text', 'model_answer'],
+    required: ['question', 'context_text', 'model_answer', 'command_verb'],
   },
 };
 
@@ -729,11 +746,12 @@ async function draftRegressionScenario(
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface DrillOutput {
-  question:     string;
-  context_text: string;
-  model_answer: string;
-  _raw_data?:   DataPoint[];      // regression drills only — for dry-run inspection
-  _stats?:      RegressionResult; // regression drills only
+  question:      string;
+  context_text:  string;
+  model_answer:  string;
+  command_verb?: string;          // model-reported verb(s) the question demands; falls back to spec.command_verb on insert
+  _raw_data?:    DataPoint[];      // regression drills only — for dry-run inspection
+  _stats?:       RegressionResult; // regression drills only
 }
 
 // Throws if a required tool-output field is empty/undefined. A truncated
@@ -752,7 +770,7 @@ function assertNonEmpty(obj: Record<string, unknown>, fields: string[], pass: st
 async function draftDrill(
   anthropic: Anthropic,
   spec: ApmDrillSpec,
-): Promise<{ question: string; context_text: string; model_answer: string }> {
+): Promise<{ question: string; context_text: string; model_answer: string; command_verb: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2000,
@@ -764,9 +782,14 @@ async function draftDrill(
 
   const block = res.content.find(b => b.type === 'tool_use');
   if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in Pass 1 response');
-  const inp = block.input as { question: string; context_text: string; model_answer: string };
-  assertNonEmpty(inp, ['question', 'context_text', 'model_answer'], 'Pass 1');
-  return { question: inp.question, context_text: inp.context_text, model_answer: inp.model_answer };
+  const inp = block.input as { question: string; context_text: string; model_answer: string; command_verb: string };
+  assertNonEmpty(inp, ['question', 'context_text', 'model_answer', 'command_verb'], 'Pass 1');
+  return {
+    question:     inp.question,
+    context_text: inp.context_text,
+    model_answer: inp.model_answer,
+    command_verb: inp.command_verb.trim().toLowerCase(),
+  };
 }
 
 async function draftReveal(
@@ -945,7 +968,7 @@ async function main() {
 
       const { error: insErr } = await supabase.from('acca_drills').insert({
         exam_board: 'ACCA', paper_code: 'APM',
-        lo_code: spec.lo_code, topic: spec.topic, command_verb: spec.command_verb,
+        lo_code: spec.lo_code, topic: spec.topic, command_verb: pass1.command_verb ?? spec.command_verb,
         intellectual_level: spec.intellectual_level,
         professional_skill_tag: spec.professional_skill_tag ?? null,
         calculation_required: spec.calculation_required, marks_guide: spec.marks_guide,
@@ -995,6 +1018,7 @@ async function main() {
 
       if (!pass1) { await sleep(200); continue; }
 
+      console.log(`\nCOMMAND_VERB (model-reported): ${pass1.command_verb ?? `(none — fallback to spec: ${spec.command_verb})`}`);
       console.log(`\nCONTEXT_TEXT:\n${pass1.context_text}`);
       console.log(`\nQUESTION:\n${pass1.question}`);
       console.log(`\nMODEL_ANSWER:\n${pass1.model_answer}`);
@@ -1034,7 +1058,7 @@ async function main() {
     const spec  = specs[i];
     const label = `[${i + 1}/${specs.length}] ${spec.lo_code} · ${spec.command_verb} · L${spec.intellectual_level} · ${spec.marks_guide}m`;
 
-    let pass1: { question: string; context_text: string; model_answer: string } | null = null;
+    let pass1: DrillOutput | null = null;
     let pass2: { hint: string; full_reveal: string } | null = null;
 
     // Pass 1 — drill generation
@@ -1076,7 +1100,7 @@ async function main() {
       paper_code:             'APM',
       lo_code:                spec.lo_code,
       topic:                  spec.topic,
-      command_verb:           spec.command_verb,
+      command_verb:           pass1.command_verb ?? spec.command_verb,
       intellectual_level:     spec.intellectual_level,
       professional_skill_tag: spec.professional_skill_tag ?? null,
       calculation_required:   spec.calculation_required,
