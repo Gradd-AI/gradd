@@ -121,3 +121,22 @@ The REAL product — drill funnel (/acca/drill), Eli tutor (/acca/tutor), tighte
 This is fine and intentional for now: branch stays unmerged until the product is LAUNCH-COMPLETE (full drill bank + paid tutor + billing). The waitlist page is a harmless holding page (near-zero traffic, no marketing points there yet).
 AT LAUNCH: merging feature/apm-drills replaces the waitlist page. The old /acca landing must be rewritten then — Eli not Mia, real subscription not waitlist, "where you lose marks" not "Failed APM", no false free-marking claim (per APM_MARKETING_POSITIONING.md). The current page is a COPY SOURCE (good application/evaluation framing, audience segments), NOT shippable.
 Do NOT merge feature/apm-drills to main until launch-complete.
+
+### Tier-1 scale run — IN PROGRESS, resume point (state at 03da81c)
+SCALING METHOD PROVEN, three generator-pattern fixes banked. The apply/evaluate bar holds structurally on all drills; the content audit (external checker, clean window, against the APM guide) remains the MANDATORY gate and is catching real WRONG/ARITHMETIC that the bar doesn't.
+
+GENERATOR PATTERNS FOUND & FIXED (fix the source, never hand-patch the batch):
+- Rules 7/8 (tip e690354): ROIC-vs-ROCE labelling (NOPAT/post-tax return = ROIC never ROCE); WACC scepticism discipline (challenge generically, no invented country-macro colour, no one-directional "mechanically inflates").
+- Rule 9 + metadata verb (tip 03da81c): ASSERTION DISCIPLINE — unevidenced risks (covenant breach, construction delays, depreciation treatment, cycle times, stockpiling) must be CONDITIONAL validation points, never asserted. command_verb metadata now reflects the question's real demand ("explain and advise"), not the bare LO verb.
+
+DRILL STATE (acca_drills, 10 candidate + 10 approved = 20):
+- 3 A3b candidates (ids 365cb7f8, 3b4a8c98, 9d165a51): HAND-AUDITED CLEAN across all 5 fields. KEEP. (Fixed: a fabricated ROIC figure, a wrongly-capitalised restructuring provision, ROCE→ROIC, WACC overreach.)
+- 7 regenerated candidates (A3e×2, A3c×2, A3d×2, A3f×1): generated at e690354 (BEFORE rule 9). Two A3c AUDITED — both carry pattern-2 over-assertion + "explain"-only metadata verb. NOT yet fixed.
+
+RESUME POINT (work machine, next session):
+1. The 7 regenerated drills predate rule 9, so they carry the assertion-discipline defect. DECISION PENDING: regenerate all 7 at tip 03da81c (rules 9 + metadata now baked in) rather than hand-patch — same delete-keep-3-A3b / survivor-check-before-delete procedure as before (scope: status='candidate', lo_code IN A3e,A3c,A3d,A3f; the 3 audited A3b ids must survive).
+2. Then audit the freshly regenerated 7 via external checker. If ROIC/WACC/assertion patterns are all absent, the audit should finally be confirm-and-approve (light). If a NEW pattern appears, fix generator + regenerate again — finite pattern set, this is how it ends.
+3. Approve clean ones (status='approved'); bring only WRONG/ARITHMETIC back for SQL fix.
+4. When all 10 Tier-1 candidates are audited-clean: that's the first publishable Tier-1 set. Then next Tier-1 batch (A3b-style EVA/ROIC drills — the real test of rule 7), then Tiers 2/3, then Stripe billing (test on production — webhooks can't reach preview), convert wall to subscription, merge feature/apm-drills to main = launch.
+
+KEY DISCIPLINE CONFIRMED THIS SESSION: a model_answer content fix REQUIRES fixing hint + full_reveal too (they're generated against the same flawed answer, carry the same error). Fix all 5 fields. SQL scoped by exact id (multiple candidates share lo_code). Full-field OVERWRITE, never surgical REPLACE on multi-line fields.
