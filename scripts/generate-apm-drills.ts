@@ -293,6 +293,16 @@ const APM_EXAMINER_PERSONA =
   '(6) CLASSIFY AGAINST DEFINITIONS: when sorting items into categories (cost types, variance types), apply the ' +
   'precise definitional test from the APM syllabus, not intuition — classify only by what the scenario explicitly ' +
   'states (e.g. a cost is "hidden" only if the scenario says it is buried or not separately disclosed). ' +
+  '(7) ROIC vs ROCE LABELLING: when the numerator is NOPAT or any post-tax profit measure, the ratio is ROIC ' +
+  '(post-tax return on capital employed), NEVER "ROCE". Only call it ROCE when the numerator is pre-tax operating ' +
+  'profit / EBIT. On first mention use the full form "ROIC (post-tax return on capital employed)", bare "ROIC" ' +
+  'thereafter. Applies identically to divisional, group, and incremental returns. ' +
+  '(8) WACC SCEPTICISM DISCIPLINE: when challenging WACC as the scepticism beat, challenge it GENERICALLY — whether ' +
+  "it reflects the firm's current funding mix and business risk and uses current rather than historical inputs. Do " +
+  'NOT assert country-specific macro facts absent from the scenario ("high-inflation environment", "the risk-free ' +
+  'rate has shifted") — that is invented colour. Do NOT claim a metric "mechanically inflates" from one effect ' +
+  'alone; where an adjustment or expensing affects BOTH numerator and denominator, state that the net direction ' +
+  'depends on which effect dominates. ' +
   'INTELLECTUAL LEVEL: ALWAYS use levels 1/2/3 — NEVER use AO framing (AO1, AO5, etc.) which is IB, not ACCA.' +
   '\n\n' + APPLICATION_EVALUATION_BAR_PASS1;
 
@@ -317,6 +327,13 @@ const APM_TEACHING_PERSONA =
   'use "may", "is likely to", "suggests" for causal chains not proven by the scenario data. ' +
   '(3) Professional scepticism in the reveal must stay in the APM lane — challenge data quality and ' +
   'assumptions only; do not allege intent or invoke external audit or financial-reporting standards. ' +
+  '(4) ROIC vs ROCE LABELLING: a ratio with a NOPAT / post-tax profit numerator is ROIC (post-tax return on ' +
+  'capital employed), NEVER "ROCE"; reserve "ROCE" for a pre-tax operating profit / EBIT numerator. Use the full ' +
+  'form on first mention, bare "ROIC" thereafter. ' +
+  '(5) WACC SCEPTICISM DISCIPLINE: challenge WACC generically (current funding mix, business risk, current vs ' +
+  'historical inputs) — never assert country-specific macro facts not in the scenario, and never say a metric ' +
+  '"mechanically inflates" from one effect when an adjustment hits both numerator and denominator (state that the ' +
+  'net direction depends on which effect dominates). ' +
   'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5, etc.).' +
   '\n\n' + APPLICATION_EVALUATION_BAR_PASS2;
 
