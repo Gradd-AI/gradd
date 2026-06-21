@@ -202,6 +202,46 @@ function buildRegressionModelAnswer(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// THE APPLICATION / EVALUATION BAR
+// Grounded in every ACCA APM examiner report, 2022–June 2025: candidates fail on
+// apply-and-evaluate, NOT on knowledge. They describe or calculate the model and
+// stop; the marks live in applying it to THIS scenario and forming a judgement.
+// Every drill must be a rep at that exact jump — it is the product's moat.
+// These two constants are woven into both personas and both per-drill prompts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const APPLICATION_EVALUATION_BAR_PASS1 =
+  'THE APPLICATION / EVALUATION BAR — NON-NEGOTIABLE. Grounded in every ACCA APM examiner report ' +
+  '2022–June 2025: candidates fail on apply-and-evaluate, NOT on knowledge. They describe or ' +
+  'calculate the model and stop; the marks live in applying it to THIS scenario and forming a ' +
+  'judgement. Every drill must train that exact jump. ' +
+  '(1) SCENARIO must contain specific, usable detail — named figures, named context, a decision at ' +
+  'stake — that the model_answer is FORCED to reference. Application must be possible and a generic ' +
+  'answer must be visibly inadequate. A scenario a generic textbook answer could fit is a FAILED ' +
+  'scenario: add specifics until the question is answerable only with its own facts. ' +
+  '(2) QUESTION verb must demand L3 wherever the LO supports it ("apply and evaluate", "advise", ' +
+  '"recommend") — it must require a judgement or decision, NEVER merely a calculation or description. ' +
+  '(3) MODEL_ANSWER must show the explicit L2→L3 structure (proportionate to the marks): ' +
+  '(a) APPLY — deploy the technique on the scenario\'s specific figures/facts; (b) EVALUATE — form a ' +
+  'supported judgement / recommendation about what it means for THIS organisation; (c) SCEPTICISM — ' +
+  'challenge one scenario assumption or data point. An answer that stops at (a) — describing or ' +
+  'computing the model without judging its fit to the scenario — is the exact failure this product ' +
+  'exists to fix. NEVER generate one.';
+
+const APPLICATION_EVALUATION_BAR_PASS2 =
+  'THE APPLICATION / EVALUATION BAR — NON-NEGOTIABLE. The universal documented APM failure (every ' +
+  'examiner report 2022–June 2025) is the L2-STOP: the candidate describes or calculates the model ' +
+  'and stops, never applying and judging it against the scenario. Your reveal must teach the jump ' +
+  'out of that stop. ' +
+  '(4) full_reveal MUST name the L2-STOP as the misconception, anchored to apply/evaluate: ' +
+  '"the typical candidate describes/calculates X and stops — the verb demanded you evaluate whether ' +
+  'X fits THIS scenario / make the call." Teach the move from knowing the model to applying-and-' +
+  'judging it, because that is the failure that recurs every diet. ' +
+  '(5) hint, on a first miss, must point at the MISSING application or evaluation specifically — not ' +
+  'give the answer: say "you\'ve applied, not evaluated" or "you\'ve described, not applied to the ' +
+  'scenario", named to this drill\'s technique and scenario.';
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Personas
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -253,7 +293,8 @@ const APM_EXAMINER_PERSONA =
   '(6) CLASSIFY AGAINST DEFINITIONS: when sorting items into categories (cost types, variance types), apply the ' +
   'precise definitional test from the APM syllabus, not intuition — classify only by what the scenario explicitly ' +
   'states (e.g. a cost is "hidden" only if the scenario says it is buried or not separately disclosed). ' +
-  'INTELLECTUAL LEVEL: ALWAYS use levels 1/2/3 — NEVER use AO framing (AO1, AO5, etc.) which is IB, not ACCA.';
+  'INTELLECTUAL LEVEL: ALWAYS use levels 1/2/3 — NEVER use AO framing (AO1, AO5, etc.) which is IB, not ACCA.' +
+  '\n\n' + APPLICATION_EVALUATION_BAR_PASS1;
 
 const APM_TEACHING_PERSONA =
   "You are Mia, Gradd's AI tutor for ACCA APM. Your job is to generate the teaching reveal " +
@@ -276,7 +317,8 @@ const APM_TEACHING_PERSONA =
   'use "may", "is likely to", "suggests" for causal chains not proven by the scenario data. ' +
   '(3) Professional scepticism in the reveal must stay in the APM lane — challenge data quality and ' +
   'assumptions only; do not allege intent or invoke external audit or financial-reporting standards. ' +
-  'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5, etc.).';
+  'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5, etc.).' +
+  '\n\n' + APPLICATION_EVALUATION_BAR_PASS2;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Professional skill pools by syllabus section — derived from EXAM_STRUCTURE
@@ -446,7 +488,11 @@ Requirements:
 ${levelInstruction}
 ${calcInstruction}${skillLine ? `\n${skillLine}` : ''}
 - DIVERSITY (MANDATORY): Set the scenario in ${spec.region_hint}. Sector: ${spec.sector_hint}. Use both unless the LO technique genuinely would not arise in that context — if so, substitute any non-UK, non-healthcare country and sector.
-- model_answer: ${spec.marks_guide}-mark Band 1 response (100–300 words) demonstrating full APM technical marks`;
+- model_answer: ${spec.marks_guide}-mark Band 1 response (100–300 words) demonstrating full APM technical marks
+- APPLICATION / EVALUATION BAR (the one skill APM examiner reports say fails candidates every diet — every drill must train it):
+  • SCENARIO must carry specific, usable detail — named figures, named context, a decision at stake — that the model_answer is forced to reference. A generic textbook answer must NOT fit; if it would, the scenario has failed — add specifics until the question is answerable only with its own facts.
+  • QUESTION must require a judgement or decision applied to the scenario${spec.intellectual_level === 3 ? ` — use an L3 verb ("apply and evaluate", "advise", "recommend"), never a bare "describe"/"calculate"` : `, not a bare definition or computation`}.
+  • MODEL_ANSWER must show the L2→L3 structure explicitly (proportionate to the marks): (a) APPLY the technique to the scenario's specific figures/facts; (b) EVALUATE — a supported judgement/recommendation about what it means for THIS organisation; (c) SCEPTICISM — challenge one scenario assumption or data point. An answer that stops at (a) is the documented failure — do not produce one.`;
 }
 
 function buildRevealPrompt(
@@ -472,6 +518,10 @@ Produce:
 1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
 2. full_reveal — 3–5 sentences: name the specific misconception a typical APM candidate brings to this type of question, then give the diagnosis-led reframe (why that thinking is wrong, what the correct mental model is). Not a restatement of the model answer.
 
+APPLICATION / EVALUATION BAR (the universal documented APM failure — anchor the reveal to it):
+- full_reveal MUST name the L2-STOP as the misconception, anchored to apply/evaluate: "the typical candidate describes/calculates X and stops — the verb demanded you evaluate whether X fits THIS scenario / make the call." Teach the jump from knowing the model to applying-and-judging it for this organisation.
+- hint, on a first miss, must point at the missing application or evaluation specifically — e.g. "you've applied, not evaluated" or "you've described, not applied to the scenario" — named to this drill's technique and scenario. Do not give the answer.
+
 Quality rules (mandatory):
 - State the correct causal mechanism when reframing a misconception — explain WHY the misconception produces the wrong conclusion, not just what the right answer is.
 - Use "may", "is likely to", "suggests" for causal chains; avoid "directly", "precede and generate", "depends entirely on" where the scenario shows only plausibility.
@@ -493,15 +543,15 @@ const SUBMIT_DRILL_TOOL: Anthropic.Tool = {
     properties: {
       question: {
         type: 'string',
-        description: 'Drill question text starting with the command verb (capitalised). Scenario-based, professional advisory register.',
+        description: 'Drill question text starting with the command verb (capitalised). Scenario-based, professional advisory register. Must demand a judgement or decision applied to the scenario — never a bare calculation or description — using an L3 verb (apply and evaluate / advise / recommend) wherever the LO supports it.',
       },
       context_text: {
         type: 'string',
-        description: 'Organisational scenario providing context. For calculation drills, must include ALL numeric data needed. 2–4 sentences.',
+        description: 'Organisational scenario providing context. For calculation drills, must include ALL numeric data needed. 2–4 sentences. Must carry specific, usable detail (named figures, named context, a decision at stake) the model_answer is forced to reference — a generic textbook answer must NOT fit it.',
       },
       model_answer: {
         type: 'string',
-        description: 'Mark-scheme level answer (100–300 words) demonstrating Band 1 / full APM technical marks.',
+        description: 'Mark-scheme level answer (100–300 words) demonstrating Band 1 / full APM technical marks. Must show the explicit L2→L3 structure: (a) APPLY the technique to the scenario\'s specific figures/facts; (b) EVALUATE — a supported judgement/recommendation for THIS organisation; (c) SCEPTICISM — challenge one scenario assumption or data point. Never stop at description/calculation.',
       },
     },
     required: ['question', 'context_text', 'model_answer'],
@@ -516,11 +566,11 @@ const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
     properties: {
       hint: {
         type: 'string',
-        description: 'One sentence: targeted nudge for a wrong first attempt — points at the gap without giving the answer.',
+        description: 'One sentence: targeted nudge for a wrong first attempt — points at the gap without giving the answer. On a first miss, point at the MISSING application or evaluation specifically (e.g. "you\'ve applied, not evaluated" or "you\'ve described, not applied to the scenario"), named to this drill.',
       },
       full_reveal: {
         type: 'string',
-        description: '3–5 sentences: names the specific misconception, then gives the diagnosis-led reframe. Not a restated model answer.',
+        description: '3–5 sentences: names the specific misconception, then gives the diagnosis-led reframe. Not a restated model answer. Must name the L2-STOP (the candidate describes/calculates X and stops) anchored to apply/evaluate, then teach the jump to applying-and-judging the model for THIS scenario.',
       },
     },
     required: ['hint', 'full_reveal'],
