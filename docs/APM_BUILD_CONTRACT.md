@@ -114,3 +114,10 @@ SCALING NOW FULLY CLEARED for all drill types:
 - Content sourced from the ACCA APM study guide via adversarial AI-checks-AI + Grant's finance QA. Never from model memory.
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
 - Schema changes via Supabase SQL Editor only, never script-driven.
+
+### Production state vs branch (19/06/2026) — KNOWN, do not "fix" prematurely
+PRODUCTION (main) serves ONLY the old waitlist page at gradd.ai/acca (commit f2b4fca, "ACCA APM demand-test landing, email capture only" — Mia persona, "Reserve your place", writes to waitlist table). It predates this session and contradicts the locked launch strategy.
+The REAL product — drill funnel (/acca/drill), Eli tutor (/acca/tutor), tightened generator, audited drills — is ALL on feature/apm-drills, NEVER merged to main. Production /acca/drill and /acca/tutor are 404 until merge.
+This is fine and intentional for now: branch stays unmerged until the product is LAUNCH-COMPLETE (full drill bank + paid tutor + billing). The waitlist page is a harmless holding page (near-zero traffic, no marketing points there yet).
+AT LAUNCH: merging feature/apm-drills replaces the waitlist page. The old /acca landing must be rewritten then — Eli not Mia, real subscription not waitlist, "where you lose marks" not "Failed APM", no false free-marking claim (per APM_MARKETING_POSITIONING.md). The current page is a COPY SOURCE (good application/evaluation framing, audience segments), NOT shippable.
+Do NOT merge feature/apm-drills to main until launch-complete.
