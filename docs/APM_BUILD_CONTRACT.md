@@ -140,3 +140,12 @@ RESUME POINT (work machine, next session):
 4. When all 10 Tier-1 candidates are audited-clean: that's the first publishable Tier-1 set. Then next Tier-1 batch (A3b-style EVA/ROIC drills — the real test of rule 7), then Tiers 2/3, then Stripe billing (test on production — webhooks can't reach preview), convert wall to subscription, merge feature/apm-drills to main = launch.
 
 KEY DISCIPLINE CONFIRMED THIS SESSION: a model_answer content fix REQUIRES fixing hint + full_reveal too (they're generated against the same flawed answer, carry the same error). Fix all 5 fields. SQL scoped by exact id (multiple candidates share lo_code). Full-field OVERWRITE, never surgical REPLACE on multi-line fields.
+
+### A3 deepened + key process finding (state at 03fb315)
+A3 (financial performance) now DEEP: 8 EVA/ROIC drills across 8 sectors/regions, all through the external checker. 25 approved / 0 candidate total. Rule 7 (ROIC labelling) PROVEN at scale — zero ROCE-mislabel across 5 fresh EVA drills.
+
+CRITICAL PROCESS FINDING: Claude Code's self-assessment has a ~75% miss rate. Of 4 self-graded "clean/IMPRECISE" A3b drills, 3 had real WRONG/ARITHMETIC errors (Korea: inverted ROCE logic ×, 28k R&D capital-vs-NOPAT, R&D disqualification test; Germany: R&D averaging + unused depreciation data; Brazil: asymmetric EVA capitalisation; India: both-directions caveat misapplied to WACC). The EXTERNAL checker is MANDATORY on every drill, no exceptions — self-assessment is NOT the gate. Errors hide under correct arithmetic (mechanism reversed, numbers right).
+
+Rule 8 generator note (next prompt pass): (a) no invented WACC ranges; (b) both-directions caveat scoped to dual-effect adjustments only, NOT WACC.
+
+NEXT SESSION — the launch path decision: pivot from DEPTH to BREADTH. A3 is deep but most LOs have voids (churn risk — a paid product with empty topics isn't credible). Plan: ONE audited drill per examined-core LO (Tier 1 + Tier 2, ~25-35 more drills) to kill the voids = launchable bank. THEN billing (Stripe, test on production), convert wall to subscription, merge to main = launch. Deepen high-frequency LOs post-launch, usage-driven. Do NOT build acca.gradd.ai subdomain until conversion proven on the /acca path (mechanics banked: CNAME + Vercel domain + hostname-routing branch, ~an afternoon when the time comes).
