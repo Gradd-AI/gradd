@@ -11,17 +11,18 @@
  *           produces hint and full_reveal.
  *
  * Usage:
- *   npm run generate-apm-drills -- [--count N] [--lo <lo_code>] [--dry-run]
+ *   npm run generate-apm-drills -- --lo <lo_code> [--count N] [--dry-run]
  *   npm run generate-apm-drills -- --los A3b,A5e,B1c [--dry-run]
+ *   npm run generate-apm-drills -- --all [--count N] [--dry-run]
  *   npm run generate-apm-drills -- --regen-rejected [--dry-run]
  *
  * Args:
- *   --count           How many drills to generate (default: 73 for all LOs, 1 if --lo)
- *   --lo              Limit to a single LO code e.g. A1a. Cycles if --count > 1.
+ *   --lo              Limit to a single LO code e.g. A1a. Cycles if --count > 1 (default count: 1).
  *   --los             Comma-separated list of LO codes — generates exactly one drill per code, in order.
- *   --dry-run         Print spec list to console — no API or DB calls
- *   --regen-rejected  Fetch status='rejected' rows from acca_drills; regenerate
- *                     and reinsert as 'candidate', same as the IB flow
+ *   --all             Run the full syllabus (73 drills). Must be stated explicitly — bare invocation is refused.
+ *   --count N         Override drill count. With --lo: how many times to cycle that LO. With --all: subset of full run.
+ *   --dry-run         Call the API but skip DB insert — prints full drill output to console.
+ *   --regen-rejected  Fetch status='rejected' rows from acca_drills; regenerate and reinsert as 'candidate'.
  *
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
  * ANTHROPIC_API_KEY.
@@ -869,6 +870,37 @@ async function main() {
   const losArg        = arg('--los');
   const dryRun        = flag('--dry-run');
   const regenRejected = flag('--regen-rejected');
+  const runAll        = flag('--all');
+
+  // ── Safety guard ────────────────────────────────────────────────────────────
+  const USAGE =
+    'Usage:\n' +
+    '  --lo <code>        single LO, optional --count N (default 1)\n' +
+    '  --los <a>,<b>,...  explicit list, one drill per code\n' +
+    '  --all              full 73-drill syllabus run (must be explicit)\n' +
+    '  --regen-rejected   regenerate all rejected rows\n' +
+    '  --count N          override count (valid with --lo or --all)\n' +
+    '  --dry-run          API calls only, no DB insert';
+
+  // Reject unrecognised flags — value tokens after --lo / --los / --count don't
+  // start with '--' so they are correctly excluded by the startsWith check.
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--count', '--dry-run', '--regen-rejected', '--all']);
+  const unknownFlags = argv.filter(a => a.startsWith('--') && !KNOWN_FLAGS.has(a));
+  if (unknownFlags.length) {
+    console.error(`Error: unrecognised flag(s): ${unknownFlags.join(', ')}\n`);
+    console.error(USAGE);
+    process.exit(1);
+  }
+
+  // Require an explicit scope — bare invocation (zero args or --dry-run only)
+  // previously silently defaulted to a 73-drill run.
+  const hasExplicitScope = loFilter || losArg || regenRejected || runAll || arg('--count');
+  if (!hasExplicitScope) {
+    console.error('Error: no scope specified. Bare invocation is refused to prevent accidental full-syllabus runs.\n');
+    console.error(USAGE);
+    process.exit(1);
+  }
+  // ────────────────────────────────────────────────────────────────────────────
 
   if (loFilter && !(loFilter in SYLLABUS_MAP)) {
     console.error(`Error: unknown LO code "${loFilter}". Valid codes: ${Object.keys(SYLLABUS_MAP).join(', ')}`);
@@ -888,7 +920,7 @@ async function main() {
     }
   }
 
-  const defaultCount = loFilter ? 1 : 73;
+  const defaultCount = loFilter ? 1 : 73; // 73 only reachable via --all or --count; guard prevents bare invocation
   const countArg = parseInt(arg('--count') ?? String(defaultCount), 10);
 
   // Supabase service-role client — mirrors createServiceClient() in lib/supabase/server.ts
