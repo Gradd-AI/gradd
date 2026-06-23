@@ -32,6 +32,19 @@ export default function TutorChat({ drill }: { drill: Drill }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
+  // Pre-fill textarea from drill handoff written by DrillFunnel on CTA click
+  useEffect(() => {
+    const raw = sessionStorage.getItem('apm_drill_handoff');
+    if (!raw) return;
+    sessionStorage.removeItem('apm_drill_handoff');
+    try {
+      const { attempt } = JSON.parse(raw) as { attempt?: string };
+      if (attempt) setInput(attempt);
+    } catch {
+      // malformed entry — ignore
+    }
+  }, []);
+
   const missCount = sessionState?.miss_count ?? 0;
 
   const sendMessage = async () => {

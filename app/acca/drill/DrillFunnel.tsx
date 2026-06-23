@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 interface Drill {
@@ -36,6 +37,15 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted]   = useState(false);
   const [leadError, setLeadError]   = useState<string | null>(null);
+
+  const router = useRouter();
+
+  // PAYWALL AT LAUNCH: replace goToTutor with subscription checkout gate.
+  // The {false && (...)} wall block below preserves the email-capture code for repurposing.
+  const goToTutor = () => {
+    sessionStorage.setItem('apm_drill_handoff', JSON.stringify({ attempt: attempt2 }));
+    router.push(`/acca/tutor?lo=${encodeURIComponent(drill.lo_code)}`);
+  };
 
   const submitAttempt1 = () => {
     if (!attempt1.trim()) return;
@@ -253,7 +263,10 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
                   <p className="df-reveal-text">{drill.full_reveal}</p>
                 </div>
 
-                {/* Email wall */}
+                {/* PAYWALL AT LAUNCH: remove `false &&` and restore this email wall,
+                    or replace the form with a subscription checkout call.
+                    submitLead + all email state vars are preserved and still typed. */}
+                {false && (
                 <div className="df-wall">
                   <div className="df-wall-inner">
                     <div className="df-wall-copy">
@@ -302,6 +315,40 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
                           <p className="df-wall-small">Free. No payment. We&apos;ll email you when it&apos;s ready.</p>
                         </form>
                       )}
+                    </div>
+                  </div>
+                </div>
+                )}
+
+                {/* TUTOR CTA — temporary testing handoff; replaced by subscription gate at launch */}
+                <div className="df-wall">
+                  <div className="df-wall-inner">
+                    <div className="df-wall-copy">
+                      <div className="df-wall-eyebrow">That&apos;s one of 73</div>
+                      <h2 className="df-wall-h2">
+                        Every APM learning objective. One drill each. The same examiner insight.
+                      </h2>
+                      <ul className="df-wall-bullets">
+                        <li>73 wholly original APM drills — one per ACCA 2026–27 LO</li>
+                        <li>Attempt → hint → re-attempt → examiner reveal for every drill</li>
+                        <li>Live coaching from Eli on exactly where your answer stalled</li>
+                        <li>The apply/evaluate jump that wins APM marks</li>
+                      </ul>
+                    </div>
+                    <div className="df-wall-form-wrap">
+                      <div className="df-wall-form">
+                        <p className="df-wall-form-label">Work through this with Eli</p>
+                        <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5, margin: '0 0 18px' }}>
+                          You&apos;ve seen how an examiner reads it. Now get coached through your own answer — Eli diagnoses exactly where you stalled and teaches from there.
+                        </p>
+                        <button
+                          className="df-btn df-btn--rust"
+                          style={{ width: '100%', justifyContent: 'center', borderRadius: 10 }}
+                          onClick={goToTutor}
+                        >
+                          Work through this with Eli <span className="df-arrow">→</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -2,16 +2,20 @@ import type { Metadata } from 'next';
 import { createServiceClient } from '@/lib/supabase/server';
 import TutorChat from './TutorChat';
 
-// Hardcoded test drill — swap lo_code to change the drill without touching funnel logic
-const TEST_DRILL_LO = 'B3d';
-
 export const metadata: Metadata = {
   title: 'APM Tutor — Eli | Gradd',
   description:
     'Conversational APM tutor. Attempt a question, get targeted feedback from Eli — an experienced APM marker who diagnoses exactly where you stalled.',
 };
 
-export default async function APMTutorPage() {
+export default async function APMTutorPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const { lo } = await searchParams;
+  const loCode = typeof lo === 'string' ? lo : 'B3d'; // dev fallback; at launch require ?lo= or redirect
+
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -19,7 +23,7 @@ export default async function APMTutorPage() {
     .select('id, lo_code, topic, question, context_text')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', 'APM')
-    .eq('lo_code', TEST_DRILL_LO)
+    .eq('lo_code', loCode)
     .eq('status', 'approved')
     .eq('published', true)
     .single();
