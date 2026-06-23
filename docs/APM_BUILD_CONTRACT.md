@@ -172,3 +172,35 @@ Batch 4 (final 5 long-tail voids) done: A2e, A5a, A5b, B2e, B4a — all external
 BREADTH PASS COMPLETE: every examined-core LO (Tier 1 + Tier 2) now has at least one externally-checked drill. No voids remain in the examined syllabus. This is the launchable bank — a credible diagnostic surface across the whole examined APM syllabus, paired with Ezra for teaching.
 Batch 4 catches (all by external checker, self-scan missed): A2e arithmetic (34% vs 52.4%/34.4% gap) + "no additional capital" WRONG; A5a PUE-interpretation WRONG (23% PUE drop ≠ 23% efficiency gain) + shadow-carbon-price logic; B2e judgement (replace not modify, given tripled mis-selling). Frameworks all stated correctly (3Ps, SHIP, IR-vs-3Ps distinction).
 NEXT = LAUNCH PATH: billing (Stripe, same account as IB, test on PRODUCTION — webhooks can't reach preview), convert the wall from email-capture to subscription, then merge feature/apm-drills to main = launch. Post-launch: deepen high-frequency LOs by usage data; add full-question/timed exam-condition practice (the banked exam-readiness gap).
+
+### SESSION HANDOFF — 23/06/2026 (work machine → home machine)
+
+STRATEGY (locked this session, banked at 420dfdd / a6f0684):
+- Competitor map final: ACCAly (cheap/thin/flaky AI, answer-dumps), Learnsignal (REAL anchor — Gold-approved, 100k students, human tutors, £549 APM course / €49.99-199.99 mo all-papers — but it's a COURSE: recorded video + self-marked questions + async human marking, NOT live coaching), question banks (commodity). Confirmed seam: every competitor is STATIC or DISCONNECTED. Nobody coaches live, in-the-moment, on the student's own answer. That's our moat, proven in head-to-head.
+- Positioning: NOT a "better ACCA platform" (lose to Learnsignal on breadth). We are the live coach on YOUR answer for the hardest paper. Borrow Learnsignal's packaging (5-min orientation, failure-mode framing), not their engine.
+- Pricing FINAL: €99 90-day APM exam-pass (HERO) + €49/mo (secondary + conversion path). Hybrid pass-led. Anchor to £270 resit + £549 course (both make €99 look cheap). NO per-week framing. NO pass-guarantee at launch (no outcome data — post-launch lever). Free tier = unlimited drills + 3 teach-throughs.
+
+BUILT + COMMITTED THIS SESSION (all on feature/apm-drills, tip after rename):
+- Issue 1 FIXED (critical): Ezra was falsely flagging CORRECT variance answers as wrong (sign-convention). Root cause: Call 1 (Haiku) generated model answer with no sign discipline, Call 2 (Sonnet) diffed against it and read equivalent-but-differently-signed answers as errors. FIX = made Call 2 equivalence-robust (check mathematical equivalence before flagging; correct-in-different-convention is NOT an error) + belt-and-braces sign convention on Call 1. Hammer-tested 6x, zero false positives. THE DIAGNOSIS IS THE MOAT — this had to be right.
+- Drill→tutor loop BUILT + VERIFIED: drill → Ezra → teach-through → "try another" → next drill (same-sub-area bias) → repeat → CAP at 3 teach-throughs → paywall inline in tutor. Counter = localStorage apm_teach_throughs_used (soft gate pre-Stripe; real gate = auth at Stripe time). Cap counts teach-throughs DELIVERED not turns (verified: hint doesn't count, only teach-through). Walked 3 full loops, cap fired correctly at 3.
+- Analytics layer BUILT + VERIFIED: acca_funnel_events table (Supabase, anon_id stitches journey across pages, user_id nullable for future auth). Event POST route fire-and-forget. anon_id generated once in lib/acca/anon-id.ts, read everywhere. Walked-loop query confirmed: one anon_id, full event trail, 3 teach_through_delivered, paywall_shown. GDPR: legitimate-interest basis, needs privacy-policy line before launch (flagged, not done).
+- RENAME DONE: Eli → Ezra everywhere (ACCAly collision killed). Biblical scholar-teacher name, fits Mia/Aoife family. Runtime-verified (ezra_response key works both sides, Ezra renders + diagnoses). Zero \bEli\b hits remain. Spike scripts _spike_eli_* now tracked (filenames left, internal artifacts).
+
+KNOWN BUGS / DEFERRED (not blocking, logged):
+- Bug 1 (drill_shown fires 2x): StrictMode dev-only, fires once in prod. INERT. No fix.
+- Bug 2 (repeat-drill): next-drill only excludes immediately-current lo, can re-serve a drill seen earlier in session. FIX PLANNED (exclude all drill_lo this anon_id has seen via acca_funnel_events query, dedupe with Set). NOT built. ~20 lines.
+- Issue 2 (parked): tutor treats funnel-arrival attempt2 as cold first attempt → gives hint before teach-through, re-runs the gauntlet. Plan exists (from_funnel flag → skip cold hint → straight to teach). PARKED — being absorbed into the one-surface port below.
+- Latency: 3-call chain is measurably slow (try_tutor → teach_through was 1-3 min in walk). Conversion risk. Needs attention.
+- Paywall hole: /acca/tutor direct-nav still ungated. Closes at Stripe/auth time.
+
+NEXT SESSION (home machine) — THE EXPERIENCE WORKSTREAM (the big one):
+Grant walked his own product and found real friction: too much clicking, drill→tutor UI lurch, no orientation, repeated hint-gauntlet every reply. ROOT CAUSE: APM is TWO UIs (multi-stage drill funnel page + separate Ezra tutor page) bolted together. SOLUTION DECIDED: port APM to ONE Mia-style conversational surface (Mia/IB already does attempt-probe-teach in one clean continuous chat — APM should match it).
+
+TARGET: one UI. Ezra opens with the drill question (scenario card rendered IN chat) → student attempts in chat → Ezra runs attempt→probe→teach (existing 3-call engine) → "try another" loads next drill as next turn in SAME conversation. No separate drill page, no lurch, no "Step 2 of 4".
+
+MUST PRESERVE (the plan must confirm): (1) attempt-first stays — drill Q is Ezra's opening msg, student attempts before taught — productive friction stays, gratuitous friction goes; (2) reuse existing tutor route/engine + sign-equivalence fix, NOT a rebuild; (3) keep cap + analytics + paywall firing in new flow; (4) reuse drill card design inside the conversation.
+DECISIONS TO MAKE IN PLAN: (A) retire standalone /acca/drill multi-stage page? (intent: yes, card moves into chat); (B) what happens to this-morning's handoff (sessionStorage apm_drill_handoff, from_funnel flag, next-drill API) — which vestigial vs reused; (C) reuse actual Mia components vs parallel build sharing pattern; (D) first-load orientation (Mia greets/recalls — APM's equivalent).
+Drill UI repurpose decision: card design folds INTO the conversation now (#1); browsable "drill library" is a post-launch PAID feature (#2); NO public no-signup free drill (Grant's call).
+Principle: changing how it FEELS, not how it TEACHES. Engine proven, analytics wired — collapse two clunky UIs into the one good UI. Get it right over fast.
+
+REMAINING TO LAUNCH (after experience workstream): Stripe objects (€99 pass + €49/mo, test on production), wire paywall buttons, auth on tutor (close paywall hole), Bug 2 fix, latency, merge feature/apm-drills → main.
