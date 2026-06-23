@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getAnonId } from '@/lib/acca/anon-id';
 import { marked } from 'marked';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 
@@ -18,12 +20,27 @@ interface Message {
   content: string;
 }
 
+const FREE_TEACH_THROUGHS = 3;
+
+function fireEvent(payload: { event_type: string; drill_lo?: string; metadata?: Record<string, unknown> }) {
+  const anonId = getAnonId();
+  void fetch('/api/acca/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anon_id: anonId, user_id: null, ...payload }),
+  });
+}
+
 export default function TutorChat({ drill }: { drill: Drill }) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [sessionState, setSessionState] = useState<ClientSessionState | null>(null);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [teachThroughDone, setTeachThroughDone] = useState(false);
+  const [capHit, setCapHit] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -73,6 +90,20 @@ export default function TutorChat({ drill }: { drill: Drill }) {
 
       setSessionState(json.session_state);
       setMessages(prev => [...prev, { role: 'eli', content: json.eli_response }]);
+
+      if (json.teach_through_delivered) {
+        const raw = localStorage.getItem('apm_teach_throughs_used');
+        const count = parseInt(raw ?? '0', 10);
+        const newCount = count + 1;
+        localStorage.setItem('apm_teach_throughs_used', String(newCount));
+        fireEvent({
+          event_type: 'teach_through_delivered',
+          drill_lo: drill.lo_code,
+          metadata: { diagnosis: json.session_state?.last_diagnosis ?? null },
+        });
+        setTeachThroughDone(true);
+        if (newCount >= FREE_TEACH_THROUGHS) setCapHit(true);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reach Eli — please try again.');
       // Roll back the student message on failure
@@ -80,6 +111,19 @@ export default function TutorChat({ drill }: { drill: Drill }) {
       setInput(trimmed);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleTryAnother = async () => {
+    fireEvent({ event_type: 'try_another_clicked', drill_lo: drill.lo_code });
+    setNavigating(true);
+    try {
+      const res = await fetch(`/api/acca/next-drill?lo=${encodeURIComponent(drill.lo_code)}`);
+      const data = await res.json() as { lo_code?: string };
+      const nextLo = data.lo_code ?? drill.lo_code;
+      router.push(`/acca/drill?lo=${encodeURIComponent(nextLo)}`);
+    } catch {
+      setNavigating(false);
     }
   };
 
@@ -206,10 +250,42 @@ export default function TutorChat({ drill }: { drill: Drill }) {
                 <div className="et-error" role="alert">{error}</div>
               )}
 
+              {teachThroughDone && !loading && (
+                <div className="et-teach-cta">
+                  {capHit ? (
+                    <>
+                      <p className="et-teach-cta-title">That&apos;s 3 free teach-throughs</p>
+                      <p className="et-teach-cta-copy">
+                        Continue coaching — €99 for 90 days, or €49/month.
+                      </p>
+                      {/* TODO: replace href with Stripe checkout route when wired */}
+                      <a
+                        href="/acca"
+                        className="et-btn et-btn--rust"
+                        style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
+                      >
+                        Get access <span className="et-arrow">→</span>
+                      </a>
+                    </>
+                  ) : (
+                    <button
+                      className="et-btn et-btn--rust"
+                      onClick={handleTryAnother}
+                      disabled={navigating}
+                    >
+                      {navigating
+                        ? 'Finding next drill…'
+                        : <>Try another drill <span className="et-arrow">→</span></>}
+                    </button>
+                  )}
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
             {/* Input */}
+            {!teachThroughDone && (
             <div className="et-input-area">
               <div className="et-input-wrap">
                 <textarea
@@ -241,6 +317,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
                 </div>
               </div>
             </div>
+            )}
 
           </main>
         </div>
@@ -715,5 +792,30 @@ const CSS = `
   .et-sidebar { padding: 20px 0 16px; }
   .et-layout { padding: 0 clamp(16px, 4vw, 24px); height: auto; gap: 0; }
   .et-messages { height: 60vh; }
+}
+
+.et-teach-cta {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.et-teach-cta-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+  margin: 0;
+}
+.et-teach-cta-copy {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-muted);
+  margin: 0;
 }
 `;

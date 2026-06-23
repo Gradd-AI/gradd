@@ -11,7 +11,14 @@ export const metadata: Metadata = {
     'Attempt a real ACCA APM practice drill — attempt, get a targeted hint, re-attempt, then see how an examiner thinks. No account needed.',
 };
 
-export default async function APMDrillPage() {
+export default async function APMDrillPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const params = await searchParams;
+  const loCode = typeof params.lo === 'string' ? params.lo : FREE_DRILL_LO;
+
   const supabase = createServiceClient();
 
   const { data, error } = await supabase
@@ -19,7 +26,7 @@ export default async function APMDrillPage() {
     .select('id, lo_code, topic, question, context_text, hint, full_reveal')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', 'APM')
-    .eq('lo_code', FREE_DRILL_LO)
+    .eq('lo_code', loCode)
     .eq('status', 'approved')
     .eq('published', true)
     .single();

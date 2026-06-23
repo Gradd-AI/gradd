@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { getAnonId } from '@/lib/acca/anon-id';
 
 interface Drill {
   id: string;
@@ -29,6 +30,17 @@ const STAGE_LABELS: Record<Stage, string> = {
   revealed:     'Complete',
 };
 
+const FREE_TEACH_THROUGHS = 3;
+
+function fireEvent(payload: { event_type: string; drill_lo?: string; metadata?: Record<string, unknown> }) {
+  const anonId = getAnonId();
+  void fetch('/api/acca/event', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ anon_id: anonId, user_id: null, ...payload }),
+  });
+}
+
 export default function DrillFunnel({ drill }: { drill: Drill }) {
   const [stage, setStage]       = useState<Stage>('attempt');
   const [attempt1, setAttempt1] = useState('');
@@ -39,10 +51,22 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
   const [leadError, setLeadError]   = useState<string | null>(null);
 
   const router = useRouter();
+  const [paywalled, setPaywalled] = useState(false);
+
+  useEffect(() => {
+    fireEvent({ event_type: 'drill_shown', drill_lo: drill.lo_code });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // PAYWALL AT LAUNCH: replace goToTutor with subscription checkout gate.
   // The {false && (...)} wall block below preserves the email-capture code for repurposing.
   const goToTutor = () => {
+    const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
+    if (count >= FREE_TEACH_THROUGHS) {
+      setPaywalled(true);
+      return;
+    }
+    fireEvent({ event_type: 'try_tutor_clicked', drill_lo: drill.lo_code });
     sessionStorage.setItem('apm_drill_handoff', JSON.stringify({ attempt: attempt2 }));
     router.push(`/acca/tutor?lo=${encodeURIComponent(drill.lo_code)}`);
   };
@@ -66,6 +90,7 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
 
   const showReveal = () => {
     setStage('revealed');
+    fireEvent({ event_type: 'reveal_shown', drill_lo: drill.lo_code });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -341,13 +366,32 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
                         <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5, margin: '0 0 18px' }}>
                           You&apos;ve seen how an examiner reads it. Now get coached through your own answer — Eli diagnoses exactly where you stalled and teaches from there.
                         </p>
-                        <button
-                          className="df-btn df-btn--rust"
-                          style={{ width: '100%', justifyContent: 'center', borderRadius: 10 }}
-                          onClick={goToTutor}
-                        >
-                          Work through this with Eli <span className="df-arrow">→</span>
-                        </button>
+                        {paywalled ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            <p style={{ fontSize: 14, color: 'var(--text)', fontWeight: 600, margin: 0 }}>
+                              You&apos;ve used your 3 free teach-throughs.
+                            </p>
+                            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                              Continue coaching: €99 for 90 days, or €49/month.
+                            </p>
+                            {/* TODO: replace href with Stripe checkout route when wired */}
+                            <a
+                              href="/acca"
+                              className="df-btn df-btn--rust"
+                              style={{ width: '100%', justifyContent: 'center', borderRadius: 10, textDecoration: 'none' }}
+                            >
+                              Get access <span className="df-arrow">→</span>
+                            </a>
+                          </div>
+                        ) : (
+                          <button
+                            className="df-btn df-btn--rust"
+                            style={{ width: '100%', justifyContent: 'center', borderRadius: 10 }}
+                            onClick={goToTutor}
+                          >
+                            Work through this with Eli <span className="df-arrow">→</span>
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>

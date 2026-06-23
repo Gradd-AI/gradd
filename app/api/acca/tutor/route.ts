@@ -296,12 +296,14 @@ export async function POST(request: Request): Promise<Response> {
   let newMissCount = missCount;
   let newLastDiagnosis = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
+  let teachThroughDelivered = false;
 
   try {
     if (isStopSignal(student_message)) {
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis = lastDiagnosis ?? 'student requested answer without re-attempting';
       eliResponse = await call3_teach(question, context, contextAttempt, diagnosis);
+      teachThroughDelivered = true;
       // miss_count, last_diagnosis, last_real_attempt unchanged on stop-signal
     } else {
       const diagnosis = await call2_diagnose(question, context, student_message, modelAnswer);
@@ -313,6 +315,7 @@ export async function POST(request: Request): Promise<Response> {
         eliResponse = await call3_hint(question, context, student_message, diagnosis);
       } else {
         eliResponse = await call3_teach(question, context, student_message, diagnosis);
+        teachThroughDelivered = true;
       }
     }
   } catch {
@@ -331,5 +334,6 @@ export async function POST(request: Request): Promise<Response> {
   return NextResponse.json({
     eli_response: eliResponse,
     session_state: updatedSessionState,
+    teach_through_delivered: teachThroughDelivered,
   });
 }
