@@ -356,15 +356,15 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
                       <ul className="df-wall-bullets">
                         <li>73 wholly original APM drills — one per ACCA 2026–27 LO</li>
                         <li>Attempt → hint → re-attempt → examiner reveal for every drill</li>
-                        <li>Live coaching from Eli on exactly where your answer stalled</li>
+                        <li>Live coaching from Ezra on exactly where your answer stalled</li>
                         <li>The apply/evaluate jump that wins APM marks</li>
                       </ul>
                     </div>
                     <div className="df-wall-form-wrap">
                       <div className="df-wall-form">
-                        <p className="df-wall-form-label">Work through this with Eli</p>
+                        <p className="df-wall-form-label">Work through this with Ezra</p>
                         <p style={{ fontSize: 14, color: 'var(--text-muted)', lineHeight: 1.5, margin: '0 0 18px' }}>
-                          You&apos;ve seen how an examiner reads it. Now get coached through your own answer — Eli diagnoses exactly where you stalled and teaches from there.
+                          You&apos;ve seen how an examiner reads it. Now get coached through your own answer — Ezra diagnoses exactly where you stalled and teaches from there.
                         </p>
                         {paywalled ? (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -389,7 +389,7 @@ export default function DrillFunnel({ drill }: { drill: Drill }) {
                             style={{ width: '100%', justifyContent: 'center', borderRadius: 10 }}
                             onClick={goToTutor}
                           >
-                            Work through this with Eli <span className="df-arrow">→</span>
+                            Work through this with Ezra <span className="df-arrow">→</span>
                           </button>
                         )}
                       </div>

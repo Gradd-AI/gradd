@@ -3,9 +3,9 @@ import { createServiceClient } from '@/lib/supabase/server';
 import TutorChat from './TutorChat';
 
 export const metadata: Metadata = {
-  title: 'APM Tutor — Eli | Gradd',
+  title: 'APM Tutor — Ezra | Gradd',
   description:
-    'Conversational APM tutor. Attempt a question, get targeted feedback from Eli — an experienced APM marker who diagnoses exactly where you stalled.',
+    'Conversational APM tutor. Attempt a question, get targeted feedback from Ezra — an experienced APM marker who diagnoses exactly where you stalled.',
 };
 
 export default async function APMTutorPage({

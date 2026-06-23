@@ -16,7 +16,7 @@ interface Drill {
 }
 
 interface Message {
-  role: 'student' | 'eli';
+  role: 'student' | 'ezra';
   content: string;
 }
 
@@ -89,7 +89,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
       if (!res.ok) throw new Error(json.error ?? 'Something went wrong');
 
       setSessionState(json.session_state);
-      setMessages(prev => [...prev, { role: 'eli', content: json.eli_response }]);
+      setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response }]);
 
       if (json.teach_through_delivered) {
         const raw = localStorage.getItem('apm_teach_throughs_used');
@@ -105,7 +105,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
         if (newCount >= FREE_TEACH_THROUGHS) setCapHit(true);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to reach Eli — please try again.');
+      setError(err instanceof Error ? err.message : 'Failed to reach Ezra — please try again.');
       // Roll back the student message on failure
       setMessages(prev => prev.slice(0, -1));
       setInput(trimmed);
@@ -182,12 +182,12 @@ export default function TutorChat({ drill }: { drill: Drill }) {
                 <p className="et-question-text">{drill.question}</p>
               </div>
 
-              <div className="et-eli-intro">
-                <div className="et-eli-avatar" aria-hidden="true">E</div>
-                <div className="et-eli-intro-text">
-                  <strong>Eli</strong> — APM tutor
-                  <span className="et-eli-intro-sub">
-                    Attempt the question. Eli diagnoses where you stalled and teaches from there.
+              <div className="et-ezra-intro">
+                <div className="et-ezra-avatar" aria-hidden="true">E</div>
+                <div className="et-ezra-intro-text">
+                  <strong>Ezra</strong> — APM tutor
+                  <span className="et-ezra-intro-sub">
+                    Attempt the question. Ezra diagnoses where you stalled and teaches from there.
                   </span>
                 </div>
               </div>
@@ -203,26 +203,26 @@ export default function TutorChat({ drill }: { drill: Drill }) {
               {messages.length === 0 && (
                 <div className="et-empty-state">
                   <p className="et-empty-copy">
-                    Write your answer to the question on the left. Treat it as an exam attempt — Eli reads what you actually wrote, not what you meant to write.
+                    Write your answer to the question on the left. Treat it as an exam attempt — Ezra reads what you actually wrote, not what you meant to write.
                   </p>
                   <p className="et-empty-hint">
-                    Tip: if you&apos;re stuck after a hint, try typing &ldquo;just tell me&rdquo; — Eli will switch to a full teach-through.
+                    Tip: if you&apos;re stuck after a hint, try typing &ldquo;just tell me&rdquo; — Ezra will switch to a full teach-through.
                   </p>
                 </div>
               )}
 
               {messages.map((msg, i) => (
                 <div key={i} className={`et-msg et-msg--${msg.role}`}>
-                  {msg.role === 'eli' && (
+                  {msg.role === 'ezra' && (
                     <div className="et-msg-avatar" aria-hidden="true">E</div>
                   )}
                   <div className="et-msg-body">
                     <div className="et-msg-sender">
-                      {msg.role === 'eli' ? 'Eli' : 'You'}
+                      {msg.role === 'ezra' ? 'Ezra' : 'You'}
                     </div>
-                    {msg.role === 'eli' ? (
+                    {msg.role === 'ezra' ? (
                       <div
-                        className="et-msg-content et-msg-content--eli"
+                        className="et-msg-content et-msg-content--ezra"
                         dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
                       />
                     ) : (
@@ -235,10 +235,10 @@ export default function TutorChat({ drill }: { drill: Drill }) {
               ))}
 
               {loading && (
-                <div className="et-msg et-msg--eli">
+                <div className="et-msg et-msg--ezra">
                   <div className="et-msg-avatar" aria-hidden="true">E</div>
                   <div className="et-msg-body">
-                    <div className="et-msg-sender">Eli</div>
+                    <div className="et-msg-sender">Ezra</div>
                     <div className="et-thinking">
                       <span /><span /><span />
                     </div>
@@ -303,7 +303,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
                   onKeyDown={handleKeyDown}
                   rows={5}
                   disabled={loading}
-                  aria-label="Your message to Eli"
+                  aria-label="Your message to Ezra"
                 />
                 <div className="et-input-footer">
                   <span className="et-input-hint">⌘↵ to send</span>
@@ -339,7 +339,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
 }
 
 // ── Scoped CSS ─────────────────────────────────────────────────────────────────
-// Prefix: .et  (eli tutor)
+// Prefix: .et  (ezra tutor)
 // Uses global vars: --bg, --surface, --surface-2, --brand, --text, --text-muted,
 //   --border, --border-light, --text-light, --font-display, --font-body
 // Adds local vars: --rust, --rust-dark, --rust-ink
@@ -497,13 +497,13 @@ const CSS = `
   letter-spacing: -0.2px;
 }
 
-.et-eli-intro {
+.et-ezra-intro {
   display: flex;
   align-items: flex-start;
   gap: 12px;
   padding: 14px 0 0;
 }
-.et-eli-avatar {
+.et-ezra-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -516,7 +516,7 @@ const CSS = `
   place-items: center;
   flex-shrink: 0;
 }
-.et-eli-intro-text {
+.et-ezra-intro-text {
   font-size: 13px;
   color: var(--text);
   font-weight: 600;
@@ -525,7 +525,7 @@ const CSS = `
   gap: 3px;
   padding-top: 2px;
 }
-.et-eli-intro-sub {
+.et-ezra-intro-sub {
   font-weight: 400;
   color: var(--text-muted);
   font-size: 12px;
@@ -623,39 +623,39 @@ const CSS = `
   color: var(--text);
   white-space: pre-wrap;
 }
-.et-msg-content--eli {
+.et-msg-content--ezra {
   background: var(--surface);
   border: 1px solid var(--border);
   padding: 16px 20px;
   color: var(--text);
 }
 
-/* Eli markdown styles */
-.et-msg-content--eli p { margin: 0 0 10px; }
-.et-msg-content--eli p:last-child { margin-bottom: 0; }
-.et-msg-content--eli strong { font-weight: 700; color: var(--brand); }
-.et-msg-content--eli em { font-style: italic; }
-.et-msg-content--eli h1, .et-msg-content--eli h2, .et-msg-content--eli h3 {
+/* Ezra markdown styles */
+.et-msg-content--ezra p { margin: 0 0 10px; }
+.et-msg-content--ezra p:last-child { margin-bottom: 0; }
+.et-msg-content--ezra strong { font-weight: 700; color: var(--brand); }
+.et-msg-content--ezra em { font-style: italic; }
+.et-msg-content--ezra h1, .et-msg-content--ezra h2, .et-msg-content--ezra h3 {
   font-family: var(--font-display);
   font-weight: 700;
   letter-spacing: -0.2px;
   margin: 14px 0 8px;
   color: var(--text);
 }
-.et-msg-content--eli h1 { font-size: 18px; }
-.et-msg-content--eli h2 { font-size: 16px; }
-.et-msg-content--eli h3 { font-size: 14px; }
-.et-msg-content--eli ul, .et-msg-content--eli ol {
+.et-msg-content--ezra h1 { font-size: 18px; }
+.et-msg-content--ezra h2 { font-size: 16px; }
+.et-msg-content--ezra h3 { font-size: 14px; }
+.et-msg-content--ezra ul, .et-msg-content--ezra ol {
   margin: 8px 0;
   padding-left: 20px;
 }
-.et-msg-content--eli li { margin-bottom: 4px; }
-.et-msg-content--eli hr {
+.et-msg-content--ezra li { margin-bottom: 4px; }
+.et-msg-content--ezra hr {
   border: none;
   border-top: 1px solid var(--border-light);
   margin: 14px 0;
 }
-.et-msg-content--eli code {
+.et-msg-content--ezra code {
   background: var(--surface-2);
   padding: 1px 5px;
   border-radius: 4px;

@@ -57,10 +57,10 @@ function isStopSignal(input: string): boolean {
   return STOP_PHRASES.some(p => lower.includes(p));
 }
 
-// ── Eli persona ───────────────────────────────────────────────────────────────
+// ── Ezra persona ──────────────────────────────────────────────────────────────
 
-const ELI_SYSTEM =
-  'You are Eli, an APM tutor with extensive ACCA APM marking experience. ' +
+const EZRA_SYSTEM =
+  'You are Ezra, an APM tutor with extensive ACCA APM marking experience. ' +
   'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +
   'fixable reasons, not through lack of knowledge. ' +
   'Diagnostic frame: APM candidates know the models. They lose marks on APPLICATION ' +
@@ -167,7 +167,7 @@ async function call3_hint(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 350,
-    system: ELI_SYSTEM,
+    system: EZRA_SYSTEM,
     messages: [
       {
         role: 'user',
@@ -195,7 +195,7 @@ async function call3_teach(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 600,
-    system: ELI_SYSTEM,
+    system: EZRA_SYSTEM,
     messages: [
       {
         role: 'user',
@@ -292,7 +292,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── Route: stop-signal / hint / teach ─────────────────────────────────────
 
-  let eliResponse: string;
+  let ezraResponse: string;
   let newMissCount = missCount;
   let newLastDiagnosis = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
@@ -302,7 +302,7 @@ export async function POST(request: Request): Promise<Response> {
     if (isStopSignal(student_message)) {
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis = lastDiagnosis ?? 'student requested answer without re-attempting';
-      eliResponse = await call3_teach(question, context, contextAttempt, diagnosis);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis);
       teachThroughDelivered = true;
       // miss_count, last_diagnosis, last_real_attempt unchanged on stop-signal
     } else {
@@ -312,9 +312,9 @@ export async function POST(request: Request): Promise<Response> {
       newLastRealAttempt = student_message;
 
       if (newMissCount === 1) {
-        eliResponse = await call3_hint(question, context, student_message, diagnosis);
+        ezraResponse = await call3_hint(question, context, student_message, diagnosis);
       } else {
-        eliResponse = await call3_teach(question, context, student_message, diagnosis);
+        ezraResponse = await call3_teach(question, context, student_message, diagnosis);
         teachThroughDelivered = true;
       }
     }
@@ -332,7 +332,7 @@ export async function POST(request: Request): Promise<Response> {
   };
 
   return NextResponse.json({
-    eli_response: eliResponse,
+    ezra_response: ezraResponse,
     session_state: updatedSessionState,
     teach_through_delivered: teachThroughDelivered,
   });
