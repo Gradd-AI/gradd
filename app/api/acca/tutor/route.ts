@@ -100,7 +100,10 @@ async function call1_generate(question: string, context: string): Promise<string
     system:
       'You are an experienced ACCA APM marker. Write a complete model answer at the level ' +
       'a top-band APM candidate would produce — applied to the specific scenario, ' +
-      'with professional judgement, not just model recitation.',
+      'with professional judgement, not just model recitation. ' +
+      'SIGN CONVENTION: Express all variances as standard − actual. ' +
+      'Label the result A (adverse) when actual exceeds standard, F (favourable) when actual is below standard. ' +
+      'State the formula direction in your workings and ensure the A/F label is consistent with the arithmetic sign.',
     messages: [
       {
         role: 'user',
@@ -126,6 +129,13 @@ async function call2_diagnose(
     system:
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
+      'EQUIVALENCE CHECK — do this before naming any error: ' +
+      'The model answer and student answer may use different but equivalent sign conventions ' +
+      '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ' +
+      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
+      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
+      'A correct answer in a different format is NOT an error and must NOT be flagged. ' +
+      "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
