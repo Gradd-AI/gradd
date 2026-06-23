@@ -1,0 +1,14 @@
+### Competitive recon COMPLETE + positioning locked — 22/06/2026
+
+THREE PRODUCT TYPES (full map):
+1. ACCAly (FLATERZ LTD): cheap/broad/thin. €13.99/mo, €89.99/yr, €27.99 3-mo pack, per-week framing. AI tutor dumps full model answer on demand, then stalls. Flaky.
+2. LEARNSIGNAL (Signal Education Ltd): PREMIUM comprehensive COURSE. ACCA Gold-approved, 100k students. APM = £549 one-off (pass guarantee "free until you pass") OR subscription €49.99-199.99/mo all-15-papers (from £24.99). 293 materials, 13 chapters, recorded video lectures from real tutors, quizzes, CBE practice, MODEL-ANSWER self-review (student self-grades — no AI marking), tutor-marked mocks (async, ~3-day turnaround), summary notes, WhatsApp groups. Textbook+video+human-async-marking. THOROUGH and CREDIBLE.
+3. US (Gradd APM): narrow, LIVE, adaptive AI coaching on the student's OWN answer, in the moment.
+
+THE STRUCTURAL DISTINCTION (the whole strategy): Learnsignal's humans are in RECORDED videos (not live) and ASYNC marking (submit→wait→feedback). Their live human help is rationed/async because humans don't scale. NO competitor coaches a student live, in-the-moment, on their specific gap, as they attempt. OUR AI does exactly that — instant, adaptive, infinitely scalable, for the cost of an API call not a human's time. That's not "less than" their human tutors; it's a different model that delivers in-the-moment coaching their economics can't give every student in real time.
+
+POSITIONING LOCKED: We are NOT competing with Learnsignal on breadth/content/human-credibility (we lose, and shouldn't try). We are the LIVE COACH that works through YOUR answer with you, NOW, on the apply/evaluate jump that wins APM marks. Learnsignal = learn the syllabus + get mocks marked eventually. Us = get coached through your own answer instantly. Could even be complementary (use both). For "knowing-frameworks → scoring-marks under exam conditions," our live loop beats their recorded-video + async-marking.
+
+BORROW FROM LEARNSIGNAL (packaging, not engine): "5 minutes to pass" orientation, failure-mode→corrective-move matching, exam-focus boxes, clean "what loses marks" framing. Good scaffolding to adapt. We already have the better engine.
+
+PRICING (sharpened by £549 anchor): Learnsignal APM = £549 one-off course. Against THAT, our €49.99/mo or ~€69-79 exam-pass is EXCEPTIONAL value, not expensive. We're the affordable, focused, always-available coach vs a £549 course. Two anchors both make our price look small: the £270 resit AND the £549 course. This RESOLVES the morning's "are we too expensive" worry — we're not; we're the value option that does the one thing neither competitor does. Hold premium-but-accessible; shape = focused APM coaching (monthly or exam-pass), anchored to resit cost + course cost, never to ACCAly's €13.99.
