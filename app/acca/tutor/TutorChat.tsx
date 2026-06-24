@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { getAnonId } from '@/lib/acca/anon-id';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
+import AreaPicker, { type PickerArea } from '@/app/acca/AreaPicker';
 
 interface Drill {
   id: string;
@@ -48,6 +49,9 @@ export default function TutorChat({ drill }: { drill: Drill }) {
   const [capHit, setCapHit]                       = useState(false);
   const [navigating, setNavigating]               = useState(false);
   const [mobileExpanded, setMobileExpanded]       = useState(false);
+  const [showPicker, setShowPicker]               = useState(false);
+  const [pickerAreas, setPickerAreas]             = useState<PickerArea[] | null>(null);
+  const [pickerLoading, setPickerLoading]         = useState(false);
   const messagesEndRef                            = useRef<HTMLDivElement>(null);
   const textareaRef                               = useRef<HTMLTextAreaElement>(null);
 
@@ -150,6 +154,46 @@ export default function TutorChat({ drill }: { drill: Drill }) {
     }
   };
 
+  // Lazy-fetch areas from API when "Change area" is first opened
+  const handleOpenPicker = async () => {
+    setShowPicker(true);
+    if (pickerAreas === null) {
+      setPickerLoading(true);
+      try {
+        const res = await fetch('/api/acca/areas');
+        setPickerAreas(await res.json());
+      } catch {
+        setPickerAreas([]);
+      } finally {
+        setPickerLoading(false);
+      }
+    }
+  };
+
+  // Swap drill in-place from a picked sub-area — same pattern as handleTryAnother
+  const handleAreaSelect = async (subArea: string) => {
+    fireEvent({ event_type: 'area_selected', drill_lo: currentDrill.lo_code, metadata: { area: subArea } });
+    setShowPicker(false);
+    setNavigating(true);
+    try {
+      const res  = await fetch(`/api/acca/next-drill?area=${encodeURIComponent(subArea)}`);
+      const next = await res.json() as Drill;
+      setCurrentDrill(next);
+      setMessages([ezraOpening(next)]);
+      setSessionState(null);
+      setTeachThroughDone(false);
+      setMobileExpanded(false);
+      setInput('');
+      const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
+      setCapHit(count >= FREE_TEACH_THROUGHS);
+      fireEvent({ event_type: 'drill_shown', drill_lo: next.lo_code });
+    } catch {
+      // silently fail — student stays on current drill
+    } finally {
+      setNavigating(false);
+    }
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault();
@@ -215,36 +259,65 @@ export default function TutorChat({ drill }: { drill: Drill }) {
         ── */}
         <div className="et-layout">
 
-          {/* LEFT: scenario + question, independent scroll */}
+          {/* LEFT: scenario + question (or area picker when toggled), independent scroll */}
           <aside className="et-sidebar">
             <div className="et-sidebar-inner">
 
-              <div className="et-meta">
-                <span className="et-lo-tag">{currentDrill.lo_code}</span>
-                <span className="et-topic">{currentDrill.topic}</span>
-              </div>
+              {showPicker ? (
+                <>
+                  <div className="et-picker-header">
+                    <span className="et-picker-header-title">Change area</span>
+                    <button
+                      className="et-picker-close"
+                      onClick={() => setShowPicker(false)}
+                      aria-label="Close area picker"
+                    >✕</button>
+                  </div>
+                  {pickerLoading ? (
+                    <p className="et-picker-loading">Loading areas…</p>
+                  ) : (
+                    <AreaPicker
+                      areas={pickerAreas ?? []}
+                      onSelect={handleAreaSelect}
+                      loading={navigating}
+                      currentSubArea={currentDrill.lo_code.slice(0, 2)}
+                    />
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="et-meta">
+                    <span className="et-lo-tag">{currentDrill.lo_code}</span>
+                    <span className="et-topic">{currentDrill.topic}</span>
+                  </div>
 
-              {currentDrill.context_text && (
-                <div className="et-panel et-panel--context">
-                  <div className="et-panel-label">Scenario</div>
-                  <p className="et-context-text">{currentDrill.context_text}</p>
-                </div>
+                  {currentDrill.context_text && (
+                    <div className="et-panel et-panel--context">
+                      <div className="et-panel-label">Scenario</div>
+                      <p className="et-context-text">{currentDrill.context_text}</p>
+                    </div>
+                  )}
+
+                  <div className="et-panel et-panel--question">
+                    <div className="et-panel-label">Question</div>
+                    <p className="et-question-text">{currentDrill.question}</p>
+                  </div>
+
+                  <div className="et-ezra-intro">
+                    <div className="et-ezra-avatar" aria-hidden="true">E</div>
+                    <div className="et-ezra-intro-text">
+                      <strong>Ezra</strong> — APM tutor
+                      <span className="et-ezra-intro-sub">
+                        Attempt the question. Ezra diagnoses where you stalled and teaches from there.
+                      </span>
+                    </div>
+                  </div>
+
+                  <button className="et-change-area" onClick={handleOpenPicker}>
+                    Change area <span className="et-arrow">→</span>
+                  </button>
+                </>
               )}
-
-              <div className="et-panel et-panel--question">
-                <div className="et-panel-label">Question</div>
-                <p className="et-question-text">{currentDrill.question}</p>
-              </div>
-
-              <div className="et-ezra-intro">
-                <div className="et-ezra-avatar" aria-hidden="true">E</div>
-                <div className="et-ezra-intro-text">
-                  <strong>Ezra</strong> — APM tutor
-                  <span className="et-ezra-intro-sub">
-                    Attempt the question. Ezra diagnoses where you stalled and teaches from there.
-                  </span>
-                </div>
-              </div>
 
             </div>
           </aside>
@@ -885,6 +958,57 @@ const CSS = `
   transition: color 0.15s;
 }
 .et-footer-links a:hover { color: var(--text); }
+
+/* ── "Change area" link + in-sidebar picker ── */
+.et-change-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.15s;
+}
+.et-change-area:hover { color: var(--text); }
+.et-change-area:hover .et-arrow { transform: translateX(3px); }
+
+.et-picker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+.et-picker-header-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+.et-picker-close {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.12s, background 0.12s;
+}
+.et-picker-close:hover { color: var(--text); background: var(--surface-2); }
+
+.et-picker-loading {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 12px 0;
+  margin: 0;
+}
 
 /* ── Mobile-only elements — hidden on desktop ── */
 .et-mobile-bar   { display: none; }

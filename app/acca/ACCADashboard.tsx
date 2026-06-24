@@ -1,0 +1,275 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import AreaPicker, { type PickerArea } from './AreaPicker';
+
+interface ACCADashboardProps {
+  areas: PickerArea[];
+}
+
+const FREE_TEACH_THROUGHS = 3;
+
+export default function ACCADashboard({ areas }: ACCADashboardProps) {
+  const router = useRouter();
+  const [mounted, setMounted]                   = useState(false);
+  const [teachThroughsUsed, setTeachThroughsUsed] = useState(0);
+  const [navigating, setNavigating]             = useState(false);
+
+  useEffect(() => {
+    const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
+    setTeachThroughsUsed(count);
+    setMounted(true);
+  }, []);
+
+  const capHit = teachThroughsUsed >= FREE_TEACH_THROUGHS;
+
+  function handleSelect(subArea: string) {
+    setNavigating(true);
+    router.push(`/acca/tutor?area=${encodeURIComponent(subArea)}`);
+  }
+
+  return (
+    <>
+      <style>{CSS}</style>
+      <div className="apm-dash">
+
+        <header className="apm-dash-header">
+          <div className="apm-dash-header-inner">
+            <Link href="/" className="apm-dash-logo" aria-label="Gradd home">
+              <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
+            </Link>
+            <div className="apm-dash-breadcrumb">
+              <span className="apm-dash-paper">ACCA APM</span>
+              <span className="apm-dash-sep">·</span>
+              <span className="apm-dash-badge">Drill</span>
+            </div>
+          </div>
+        </header>
+
+        <main className="apm-dash-main">
+
+          <div className="apm-dash-hero">
+            <h1 className="apm-dash-title">Pick your area</h1>
+            <p className="apm-dash-sub">
+              Ezra diagnoses exactly where you stalled and teaches from there — targeted coaching, not generic hints.
+            </p>
+          </div>
+
+          {/* Cap status bar.
+              Fades in after mount — localStorage is client-only so we can't know the count
+              server-side. Opacity transition avoids a hard pop for returning capped users. */}
+          <div className={`apm-dash-status${mounted ? ' apm-dash-status--on' : ''}`}>
+            {mounted && teachThroughsUsed > 0 && (
+              <div className={`apm-status-bar${capHit ? ' apm-status-bar--capped' : ''}`}>
+                <div className="apm-status-left">
+                  <div className="apm-status-pips">
+                    {Array.from({ length: FREE_TEACH_THROUGHS }, (_, i) => (
+                      <span key={i} className={`apm-status-pip${i < teachThroughsUsed ? ' used' : ''}`} />
+                    ))}
+                  </div>
+                  <span className="apm-status-text">
+                    {capHit
+                      ? 'All 3 free teach-throughs used'
+                      : `${teachThroughsUsed} of ${FREE_TEACH_THROUGHS} free teach-throughs used`}
+                  </span>
+                </div>
+                {/* TODO: replace href with Stripe payment link */}
+                {capHit && (
+                  <a href="#" className="apm-status-cta">Go unlimited →</a>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="apm-dash-picker-wrap">
+            <AreaPicker
+              areas={areas}
+              onSelect={handleSelect}
+              loading={navigating}
+            />
+          </div>
+
+        </main>
+
+        <footer className="apm-dash-footer">
+          <span>© 2026 Gradd.ai · Not affiliated with ACCA</span>
+          <div className="apm-dash-footer-links">
+            <Link href="/terms">Terms</Link>
+            <Link href="/privacy">Privacy</Link>
+          </div>
+        </footer>
+
+      </div>
+    </>
+  );
+}
+
+// ── Scoped CSS ─────────────────────────────────────────────────────────────────
+// Prefix: .apm-dash
+// Standard scrollable page layout (not fixed-height like the tutor).
+// max-width 720px keeps the picker comfortable on wide screens.
+
+const CSS = `
+.apm-dash {
+  --rust: oklch(64% 0.17 47);
+  --rust-dark: oklch(58% 0.17 47);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+.apm-dash *, .apm-dash *::before, .apm-dash *::after { box-sizing: border-box; }
+
+/* ── Header ── */
+.apm-dash-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
+}
+.apm-dash-header-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 clamp(16px, 4vw, 32px);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.apm-dash-logo { display: flex; align-items: center; text-decoration: none; }
+.apm-dash-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.apm-dash-paper { font-weight: 600; color: var(--text); font-size: 12px; }
+.apm-dash-sep { color: var(--border); }
+.apm-dash-badge {
+  background: rgba(192,94,60,0.1);
+  color: var(--rust);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Main ── */
+.apm-dash-main {
+  flex: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+  padding: clamp(36px, 6vw, 64px) clamp(16px, 4vw, 32px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Hero ── */
+.apm-dash-hero { display: flex; flex-direction: column; gap: 10px; }
+.apm-dash-title {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 38px);
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  margin: 0;
+  line-height: 1.1;
+}
+.apm-dash-sub {
+  font-size: 15px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 480px;
+}
+
+/* ── Cap status bar ──
+   Opacity transition hides the localStorage-read delay — no hard pop for returning users.
+   When count=0 and mounted, the inner conditional renders nothing; the container collapses. */
+.apm-dash-status {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.apm-dash-status.apm-dash-status--on { opacity: 1; }
+
+.apm-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.apm-status-bar.apm-status-bar--capped {
+  border-color: rgba(192,94,60,0.3);
+  background: rgba(192,94,60,0.06);
+}
+.apm-status-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.apm-status-pips { display: flex; gap: 6px; }
+.apm-status-pip {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--border);
+}
+.apm-status-pip.used { background: var(--rust); }
+.apm-status-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.apm-status-bar--capped .apm-status-text { color: var(--text); font-weight: 500; }
+.apm-status-cta {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rust);
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.apm-status-cta:hover { text-decoration: underline; }
+
+/* ── Picker card ── */
+.apm-dash-picker-wrap {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 8px 4px;
+}
+
+/* ── Footer ── */
+.apm-dash-footer {
+  border-top: 1px solid var(--border-light);
+  padding: 16px clamp(16px, 4vw, 32px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.apm-dash-footer-links { display: flex; gap: 18px; }
+.apm-dash-footer-links a { font-size: 11px; color: var(--text-muted); text-decoration: none; }
+.apm-dash-footer-links a:hover { color: var(--text); }
+`;

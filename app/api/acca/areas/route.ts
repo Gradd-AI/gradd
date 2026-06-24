@@ -1,15 +1,7 @@
-import type { Metadata } from 'next';
+import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
-import ACCADashboard from './ACCADashboard';
-import type { PickerArea } from './AreaPicker';
 
-export const metadata: Metadata = {
-  title: 'APM Drill — Gradd AI',
-  description:
-    'Pick a performance management area and get coached by Ezra — targeted APM feedback, not generic hints.',
-};
-
-export default async function ACCAPage() {
+export async function GET(): Promise<Response> {
   const supabase = createServiceClient();
 
   const { data } = await supabase
@@ -29,9 +21,9 @@ export default async function ACCAPage() {
     groups.get(subArea)!.count++;
   }
 
-  const areas: PickerArea[] = Array.from(groups.entries())
+  const areas = Array.from(groups.entries())
     .map(([subArea, { count, sampleTopic }]) => ({ subArea, sampleTopic, count }))
     .sort((a, b) => a.subArea.localeCompare(b.subArea));
 
-  return <ACCADashboard areas={areas} />;
+  return NextResponse.json(areas);
 }

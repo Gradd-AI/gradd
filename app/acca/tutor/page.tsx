@@ -13,22 +13,54 @@ export default async function APMTutorPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const { lo } = await searchParams;
-  const loCode = typeof lo === 'string' ? lo : 'B3d'; // dev fallback; at launch require ?lo= or redirect
+  const { lo, area } = await searchParams;
+  const loCode   = typeof lo   === 'string' ? lo   : null;
+  const areaCode = typeof area === 'string' ? area : null;
 
   const supabase = createServiceClient();
 
-  const { data, error } = await supabase
-    .from('acca_drills')
-    .select('id, lo_code, topic, question, context_text')
-    .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
-    .eq('lo_code', loCode)
-    .eq('status', 'approved')
-    .eq('published', true)
-    .single();
+  type Drill = { id: string; lo_code: string; topic: string; question: string; context_text: string | null };
+  let data: Drill | null = null;
 
-  if (error || !data) {
+  if (loCode) {
+    const { data: d } = await supabase
+      .from('acca_drills')
+      .select('id, lo_code, topic, question, context_text')
+      .eq('exam_board', 'ACCA')
+      .eq('paper_code', 'APM')
+      .eq('lo_code', loCode)
+      .eq('status', 'approved')
+      .eq('published', true)
+      .single();
+    data = d ?? null;
+  } else if (areaCode) {
+    const { data: drills } = await supabase
+      .from('acca_drills')
+      .select('id, lo_code, topic, question, context_text')
+      .eq('exam_board', 'ACCA')
+      .eq('paper_code', 'APM')
+      .eq('status', 'approved')
+      .eq('published', true)
+      .like('lo_code', `${areaCode}%`)
+      .limit(20);
+    if (drills && drills.length > 0) {
+      data = drills[Math.floor(Math.random() * drills.length)] as Drill;
+    }
+  } else {
+    // No params — fallback to default free drill
+    const { data: d } = await supabase
+      .from('acca_drills')
+      .select('id, lo_code, topic, question, context_text')
+      .eq('exam_board', 'ACCA')
+      .eq('paper_code', 'APM')
+      .eq('lo_code', 'B1c')
+      .eq('status', 'approved')
+      .eq('published', true)
+      .single();
+    data = d ?? null;
+  }
+
+  if (!data) {
     return (
       <div style={{
         minHeight: '100vh',
