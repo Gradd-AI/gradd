@@ -204,3 +204,43 @@ Drill UI repurpose decision: card design folds INTO the conversation now (#1); b
 Principle: changing how it FEELS, not how it TEACHES. Engine proven, analytics wired — collapse two clunky UIs into the one good UI. Get it right over fast.
 
 REMAINING TO LAUNCH (after experience workstream): Stripe objects (€99 pass + €49/mo, test on production), wire paywall buttons, auth on tutor (close paywall hole), Bug 2 fix, latency, merge feature/apm-drills → main.
+
+### SESSION HANDOFF — 24/06/2026 (end of day)
+
+STATE: Free funnel built + verified end-to-end earlier today (dashboard → pick area → one-surface tutor → coach → cap → paywall). Then switched free tier from ANONYMOUS to ACCOUNT-REQUIRED (magic-link auth) mid-session — that switch is HALF-DONE and has an unresolved auth-redirect bug. Do NOT assume the app is in a working state — the auth rework is incomplete and uncommitted.
+
+DONE + COMMITTED earlier today:
+- One-surface tutor port: drill funnel page retired (redirect shim), DrillFunnel deleted, question pinned left + conversation right, sticky panels, mobile collapsible header, MessageRenderer (tables render). Walked clean.
+- Ezra renamed from Eli (done prior session).
+- CRITICAL diagnosis fix: tutor was regenerating model answers via Haiku (no EVA guidance) and falsely flagging CORRECT answers wrong. FIXED — route.ts now uses the STORED, reviewed model_answer column; Call 1/Haiku is fallback only for null answers. 10/10 served drills verified-backed. Re-walked A3b EVA + B1b flexed-budget clean. PRINCIPLE BANKED: runtime-generated ≠ verified; tutor must diagnose against stored reviewed answers only.
+- Cap-boundary fix: input stays live through drill-3 follow-ups, wall fires on next-drill move. Committed.
+- Dashboard + AreaPicker + free funnel: built, walked end-to-end (area-pick loads right drill, change-area swaps in-place, dashboard cap status read correctly). Committed. BUT this was the ANONYMOUS/localStorage version — now being reworked for auth (below).
+
+DECISION CHANGED THIS SESSION — free tier is now ACCOUNT-REQUIRED (not anonymous):
+- Reason: anonymous localStorage cap is fake (incognito/clear-storage = infinite free coaching). A real APM resitter will sign up; anyone who won't wasn't converting. Account-required gives a REAL server-side per-user cap + identity + email capture, matches IB.
+- Auth method: MAGIC LINK (passwordless, email → click link → logged in). Fits the one-sitting professional persona. Reuses IB's @supabase/ssr.
+
+BUILT (auth rework) — REVIEWED, cap-security CONFIRMED SOUND, but NOT yet committed (blocked on the redirect bug):
+- Migration RAN in Supabase (4 cols on profiles: apm_teach_throughs_used NOT NULL default 0, apm_subscription_status default inactive, apm_pass_expires_at, apm_stripe_subscription_id). Verified clean. IB untouched (additive).
+- Per-page auth guards (NOT middleware.ts — deliberately avoided; creating middleware.ts would activate dormant proxy.ts guards for /dashboard,/session,/admin which must NOT turn on as an APM side effect. proxy.ts is the edit-file, middleware.ts is a never-touch re-export wiring file that currently DOESN'T EXIST so proxy.ts guards are dead — leave that for a separate deliberate commit).
+- Server-side cap: count authoritative in DB (apm_teach_throughs_used), increment fires server-side at teach-through delivery, counted flag sealed INSIDE AES-256-GCM (client can't forge). Confirmed un-gameable: discarding session_state resets the flag but DB count still blocks. Free follow-ups on already-counted drill allowed (benefit, not bypass).
+- /acca/auth (magic-link page, signInWithOtp with emailRedirectTo), /auth/callback route (code exchange), localStorage cap + anon-id removed, events populate user_id.
+
+OPEN BUG (blocking commit) — MAGIC-LINK REDIRECT:
+- Symptom: clicking the magic-link email lands on https://www.gradd.ie/subscribe?code=... (the LC product's page) instead of /acca. Supabase is ignoring emailRedirectTo and falling back to Site URL.
+- Code confirmed CORRECT (emailRedirectTo = http://localhost:3000/auth/callback?next=%2Facca is built right; callback reads next right).
+- Root cause = Supabase dashboard config (NOT code). Site URL is set to gradd.ie/subscribe (shared project across LC/IB/APM — do NOT change Site URL, LC+IB signup confirmation emails depend on it as they don't set emailRedirectTo).
+- App's Supabase project ref = uomxsbagekubfvkukokj (from NEXT_PUBLIC_SUPABASE_URL = https://uomxsbagekubfvkukokj.supabase.co). The allowlist MUST be edited on THIS project.
+- Tried: added /auth/callback to Redirect URLs allowlist — DID NOT FIX. Still lands on gradd.ie.
+- UNRESOLVED — next session start here, check in order:
+  1. WILDCARD allowlist: emailRedirectTo has a query string (?next=%2Facca). Supabase may need the wildcard form http://localhost:3000/** in Redirect URLs to match URLs with query params, not the exact path. TRY THIS FIRST.
+  2. WRONG PROJECT: confirm the project whose allowlist was edited == uomxsbagekubfvkukokj. If editing a different project while app points at uomxsbagekubfvkukokj, changes do nothing. CHECK THIS.
+  3. Confirm the allowlist change actually saved/propagated.
+- Do NOT change Site URL (breaks LC/IB confirmation emails). Fix via allowlist (additive, safe) or correct-project only.
+
+NOT STARTED — STRIPE (planned, after auth works):
+- €99 90-day pass (one-time, mode:payment, webhook sets apm_pass_expires_at = now + 90 days; expiry enforced SERVER-SIDE on every access check — no Stripe "ended" event for one-time) + €49/mo (recurring, mode:subscription). Price IDs not product IDs. Grant creates Stripe objects himself (test mode first).
+- Reuses IB billing (checkout/webhook/portal/profiles). Webhook needs APM branch on metadata.apm_product = pass|monthly (must NOT cross-wire IB). FAIL-CLOSED on access check (network error = no access, never free unlimited). TEST the expiry boundary (past expires_at → access denied) not just happy path. Webhooks can't reach preview — test via Stripe CLI local forward then prod test-mode.
+- Auth now simplifies Stripe: user already authed before checkout (no login-at-wall dance).
+
+REMAINING TO LAUNCH: fix magic-link redirect → commit auth rework → walk real-cap test (incognito must hit login wall not free coaching, same account keeps cap) → Stripe → Bug 2 (no-repeat drills, ~20 lines, still unbuilt) → latency → merge feature/apm-drills to main.
