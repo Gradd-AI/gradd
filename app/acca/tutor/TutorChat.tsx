@@ -1,10 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAnonId } from '@/lib/acca/anon-id';
-import { marked } from 'marked';
+import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 
 interface Drill {
@@ -31,38 +30,45 @@ function fireEvent(payload: { event_type: string; drill_lo?: string; metadata?: 
   });
 }
 
-export default function TutorChat({ drill }: { drill: Drill }) {
-  const router = useRouter();
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [sessionState, setSessionState] = useState<ClientSessionState | null>(null);
-  const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [teachThroughDone, setTeachThroughDone] = useState(false);
-  const [capHit, setCapHit] = useState(false);
-  const [navigating, setNavigating] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+function ezraOpening(drill: Drill): Message {
+  return {
+    role: 'ezra',
+    content: `Take a look at the **${drill.topic}** question — it's on the left. Write your full attempt in the box below; treat it as an exam answer. I'll read exactly what you wrote and diagnose from there.`,
+  };
+}
 
-  // Auto-scroll to bottom when messages change
+export default function TutorChat({ drill }: { drill: Drill }) {
+  const [currentDrill, setCurrentDrill]           = useState<Drill>(drill);
+  const [messages, setMessages]                   = useState<Message[]>([ezraOpening(drill)]);
+  const [sessionState, setSessionState]           = useState<ClientSessionState | null>(null);
+  const [input, setInput]                         = useState('');
+  const [loading, setLoading]                     = useState(false);
+  const [error, setError]                         = useState<string | null>(null);
+  const [teachThroughDone, setTeachThroughDone]   = useState(false);
+  const [capHit, setCapHit]                       = useState(false);
+  const [navigating, setNavigating]               = useState(false);
+  const [mobileExpanded, setMobileExpanded]       = useState(false);
+  const messagesEndRef                            = useRef<HTMLDivElement>(null);
+  const textareaRef                               = useRef<HTMLTextAreaElement>(null);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  // Pre-fill textarea from drill handoff written by DrillFunnel on CTA click
+  // Analytics: fire drill_shown on mount
   useEffect(() => {
-    const raw = sessionStorage.getItem('apm_drill_handoff');
-    if (!raw) return;
-    sessionStorage.removeItem('apm_drill_handoff');
-    try {
-      const { attempt } = JSON.parse(raw) as { attempt?: string };
-      if (attempt) setInput(attempt);
-    } catch {
-      // malformed entry — ignore
-    }
+    fireEvent({ event_type: 'drill_shown', drill_lo: drill.lo_code });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const missCount = sessionState?.miss_count ?? 0;
+  // Cap edge: gate input immediately for returning users who already hit 3 teach-throughs
+  useEffect(() => {
+    const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
+    if (count >= FREE_TEACH_THROUGHS) setCapHit(true);
+  }, []);
+
+  const missCount  = sessionState?.miss_count ?? 0;
+  const hasAttempt = messages.some(m => m.role === 'student');
 
   const sendMessage = async () => {
     const trimmed = input.trim();
@@ -79,8 +85,8 @@ export default function TutorChat({ drill }: { drill: Drill }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          drill_lo: drill.lo_code,
-          session_state: sessionState,
+          drill_lo:        currentDrill.lo_code,
+          session_state:   sessionState,
           student_message: trimmed,
         }),
       });
@@ -92,21 +98,24 @@ export default function TutorChat({ drill }: { drill: Drill }) {
       setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response }]);
 
       if (json.teach_through_delivered) {
-        const raw = localStorage.getItem('apm_teach_throughs_used');
-        const count = parseInt(raw ?? '0', 10);
-        const newCount = count + 1;
-        localStorage.setItem('apm_teach_throughs_used', String(newCount));
-        fireEvent({
-          event_type: 'teach_through_delivered',
-          drill_lo: drill.lo_code,
-          metadata: { diagnosis: json.session_state?.last_diagnosis ?? null },
-        });
+        if (!teachThroughDone) {
+          // First teach-through for this drill only — follow-up turns don't re-increment.
+          // teachThroughDone resets to false on drill swap, so this guard is naturally per-drill.
+          const raw      = localStorage.getItem('apm_teach_throughs_used');
+          const count    = parseInt(raw ?? '0', 10);
+          const newCount = count + 1;
+          localStorage.setItem('apm_teach_throughs_used', String(newCount));
+          fireEvent({
+            event_type: 'teach_through_delivered',
+            drill_lo:   currentDrill.lo_code,
+            metadata:   { diagnosis: json.session_state?.last_diagnosis ?? null },
+          });
+          if (newCount >= FREE_TEACH_THROUGHS) setCapHit(true);
+        }
         setTeachThroughDone(true);
-        if (newCount >= FREE_TEACH_THROUGHS) setCapHit(true);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reach Ezra — please try again.');
-      // Roll back the student message on failure
       setMessages(prev => prev.slice(0, -1));
       setInput(trimmed);
     } finally {
@@ -114,15 +123,29 @@ export default function TutorChat({ drill }: { drill: Drill }) {
     }
   };
 
+  // "Try another" swaps left panel in-place; no navigation
   const handleTryAnother = async () => {
-    fireEvent({ event_type: 'try_another_clicked', drill_lo: drill.lo_code });
+    fireEvent({ event_type: 'try_another_clicked', drill_lo: currentDrill.lo_code });
     setNavigating(true);
     try {
-      const res = await fetch(`/api/acca/next-drill?lo=${encodeURIComponent(drill.lo_code)}`);
-      const data = await res.json() as { lo_code?: string };
-      const nextLo = data.lo_code ?? drill.lo_code;
-      router.push(`/acca/drill?lo=${encodeURIComponent(nextLo)}`);
+      const res  = await fetch(`/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}`);
+      const next = await res.json() as Drill;
+      // Swap left panel
+      setCurrentDrill(next);
+      // Reset right panel: fresh Ezra opening for new drill
+      setMessages([ezraOpening(next)]);
+      setSessionState(null);
+      setTeachThroughDone(false);
+      setMobileExpanded(false);
+      setInput('');
+      // Re-evaluate cap (counter persists across drills)
+      const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
+      setCapHit(count >= FREE_TEACH_THROUGHS);
+      // Analytics for new drill
+      fireEvent({ event_type: 'drill_shown', drill_lo: next.lo_code });
     } catch {
+      // silently fail — student stays on current drill
+    } finally {
       setNavigating(false);
     }
   };
@@ -134,10 +157,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
     }
   };
 
-  const sendLabel =
-    messages.length === 0 ? 'Submit attempt'
-    : missCount === 1 ? 'Re-attempt'
-    : 'Send';
+  const sendLabel = !hasAttempt ? 'Submit attempt' : missCount === 1 ? 'Re-attempt' : 'Send';
 
   return (
     <>
@@ -158,28 +178,62 @@ export default function TutorChat({ drill }: { drill: Drill }) {
           </div>
         </header>
 
-        {/* ── Main layout ── */}
+        {/* Mobile drill bar — hidden on desktop, always visible on mobile.
+            Shows LO + topic + tap-to-expand toggle. Student is one tap from
+            re-reading the scenario without losing chat scroll position. */}
+        <div
+          className="et-mobile-bar"
+          onClick={() => setMobileExpanded(v => !v)}
+          role="button"
+          aria-expanded={mobileExpanded}
+          aria-label={mobileExpanded ? 'Collapse question' : 'View question and scenario'}
+        >
+          <span className="et-mobile-bar-lo">{currentDrill.lo_code}</span>
+          <span className="et-mobile-bar-sep">·</span>
+          <span className="et-mobile-bar-topic">{currentDrill.topic}</span>
+          <span className="et-mobile-bar-cta">{mobileExpanded ? 'hide ▴' : 'view question ▾'}</span>
+        </div>
+        {mobileExpanded && (
+          <div className="et-mobile-panel">
+            {currentDrill.context_text && (
+              <div className="et-panel et-panel--context">
+                <div className="et-panel-label">Scenario</div>
+                <p className="et-context-text">{currentDrill.context_text}</p>
+              </div>
+            )}
+            <div className="et-panel et-panel--question">
+              <div className="et-panel-label">Question</div>
+              <p className="et-question-text">{currentDrill.question}</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── Two-panel layout ──
+            Desktop: left panel scrolls independently (question stays visible while chat scrolls).
+            Achieved via height:100vh + overflow:hidden on .et, overflow:hidden on .et-layout,
+            and overflow-y:auto on each column — no position:sticky needed.
+        ── */}
         <div className="et-layout">
 
-          {/* ── Left panel: drill context (fixed) ── */}
+          {/* LEFT: scenario + question, independent scroll */}
           <aside className="et-sidebar">
             <div className="et-sidebar-inner">
 
               <div className="et-meta">
-                <span className="et-lo-tag">{drill.lo_code}</span>
-                <span className="et-topic">{drill.topic}</span>
+                <span className="et-lo-tag">{currentDrill.lo_code}</span>
+                <span className="et-topic">{currentDrill.topic}</span>
               </div>
 
-              {drill.context_text && (
+              {currentDrill.context_text && (
                 <div className="et-panel et-panel--context">
                   <div className="et-panel-label">Scenario</div>
-                  <p className="et-context-text">{drill.context_text}</p>
+                  <p className="et-context-text">{currentDrill.context_text}</p>
                 </div>
               )}
 
               <div className="et-panel et-panel--question">
                 <div className="et-panel-label">Question</div>
-                <p className="et-question-text">{drill.question}</p>
+                <p className="et-question-text">{currentDrill.question}</p>
               </div>
 
               <div className="et-ezra-intro">
@@ -195,21 +249,10 @@ export default function TutorChat({ drill }: { drill: Drill }) {
             </div>
           </aside>
 
-          {/* ── Right panel: chat ── */}
+          {/* RIGHT: conversation, independent scroll */}
           <main className="et-chat-panel">
 
-            {/* Messages */}
             <div className="et-messages">
-              {messages.length === 0 && (
-                <div className="et-empty-state">
-                  <p className="et-empty-copy">
-                    Write your answer to the question on the left. Treat it as an exam attempt — Ezra reads what you actually wrote, not what you meant to write.
-                  </p>
-                  <p className="et-empty-hint">
-                    Tip: if you&apos;re stuck after a hint, try typing &ldquo;just tell me&rdquo; — Ezra will switch to a full teach-through.
-                  </p>
-                </div>
-              )}
 
               {messages.map((msg, i) => (
                 <div key={i} className={`et-msg et-msg--${msg.role}`}>
@@ -221,10 +264,9 @@ export default function TutorChat({ drill }: { drill: Drill }) {
                       {msg.role === 'ezra' ? 'Ezra' : 'You'}
                     </div>
                     {msg.role === 'ezra' ? (
-                      <div
-                        className="et-msg-content et-msg-content--ezra"
-                        dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) as string }}
-                      />
+                      <div className="et-msg-content et-msg-content--ezra">
+                        <MessageRenderer content={msg.content} />
+                      </div>
                     ) : (
                       <div className="et-msg-content et-msg-content--student">
                         {msg.content}
@@ -258,7 +300,6 @@ export default function TutorChat({ drill }: { drill: Drill }) {
                       <p className="et-teach-cta-copy">
                         Continue coaching — €99 for 90 days, or €49/month.
                       </p>
-                      {/* TODO: replace href with Stripe checkout route when wired */}
                       <a
                         href="/acca"
                         className="et-btn et-btn--rust"
@@ -284,39 +325,67 @@ export default function TutorChat({ drill }: { drill: Drill }) {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
-            {!teachThroughDone && (
-            <div className="et-input-area">
-              <div className="et-input-wrap">
-                <textarea
-                  ref={textareaRef}
-                  className="et-textarea"
-                  placeholder={
-                    messages.length === 0
-                      ? 'Write your full attempt here…'
-                      : missCount === 1
-                      ? 'Re-attempt, or type "just tell me" for a full teach-through…'
-                      : 'Continue…'
-                  }
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={5}
-                  disabled={loading}
-                  aria-label="Your message to Ezra"
-                />
-                <div className="et-input-footer">
-                  <span className="et-input-hint">⌘↵ to send</span>
-                  <button
-                    className="et-btn et-btn--rust"
-                    onClick={sendMessage}
-                    disabled={!input.trim() || loading}
-                  >
-                    {loading ? 'Thinking…' : <>{sendLabel} <span className="et-arrow">→</span></>}
-                  </button>
-                </div>
+            {/* Input area: live throughout. Cap wall replaces only for returning capped users
+                who haven't yet had a teach-through this session (capHit && !teachThroughDone).
+                When capHit && teachThroughDone (just finished drill-3) the input stays live for
+                follow-ups; the ghost "Try another" button is replaced by an inline paywall nudge. */}
+            {capHit && !teachThroughDone ? (
+              <div className="et-cap-wall">
+                <p className="et-cap-title">You&apos;ve used your 3 free teach-throughs</p>
+                <p className="et-cap-copy">Continue coaching — €99 for 90 days, or €49/month.</p>
+                <a
+                  href="/acca"
+                  className="et-btn et-btn--rust"
+                  style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
+                >
+                  Get access <span className="et-arrow">→</span>
+                </a>
               </div>
-            </div>
+            ) : (
+              <div className="et-input-area">
+                <div className="et-input-wrap">
+                  <textarea
+                    ref={textareaRef}
+                    className="et-textarea"
+                    placeholder={
+                      !hasAttempt
+                        ? 'Write your full attempt here…'
+                        : missCount === 1
+                        ? 'Re-attempt, or type "just tell me" for a full teach-through…'
+                        : teachThroughDone
+                        ? 'Ask Ezra a follow-up…'
+                        : 'Continue…'
+                    }
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={5}
+                    disabled={loading}
+                    aria-label="Your message to Ezra"
+                  />
+                  <div className="et-input-footer">
+                    <span className="et-input-hint">⌘↵ to send</span>
+                    <button
+                      className="et-btn et-btn--rust"
+                      onClick={sendMessage}
+                      disabled={!input.trim() || loading}
+                    >
+                      {loading ? 'Thinking…' : <>{sendLabel} <span className="et-arrow">→</span></>}
+                    </button>
+                  </div>
+                </div>
+                {teachThroughDone && (
+                  capHit
+                    ? <p className="et-cap-nudge">Go unlimited to drill the next question — <a href="/acca">Get access →</a></p>
+                    : <button
+                        className="et-btn et-btn--ghost et-try-another"
+                        onClick={handleTryAnother}
+                        disabled={navigating}
+                      >
+                        {navigating ? 'Finding next drill…' : <>Try another drill <span className="et-arrow">→</span></>}
+                      </button>
+                )}
+              </div>
             )}
 
           </main>
@@ -340,9 +409,12 @@ export default function TutorChat({ drill }: { drill: Drill }) {
 
 // ── Scoped CSS ─────────────────────────────────────────────────────────────────
 // Prefix: .et  (ezra tutor)
-// Uses global vars: --bg, --surface, --surface-2, --brand, --text, --text-muted,
-//   --border, --border-light, --text-light, --font-display, --font-body
-// Adds local vars: --rust, --rust-dark, --rust-ink
+// Layout approach: .et is height:100vh + overflow:hidden so the PAGE never scrolls.
+//   Each panel (.et-sidebar, .et-messages) has its own overflow-y:auto scroll container.
+//   min-height:0 on flex/grid children allows them to shrink below content size (required
+//   for inner scroll to work). This keeps the left panel always visible while the right
+//   panel's conversation scrolls independently.
+// MessageRenderer vars: --chat-* mapped to existing --text/--border/--brand/--text-muted/--surface-2.
 
 const CSS = `
 .et {
@@ -351,7 +423,16 @@ const CSS = `
   --rust-ink: #fff8f4;
   --hint-bg: oklch(96% 0.018 80);
   --hint-border: oklch(84% 0.028 78);
-  min-height: 100vh;
+  /* MessageRenderer CSS variable wiring */
+  --chat-text:      var(--text);
+  --chat-border:    var(--border);
+  --chat-accent:    var(--brand);
+  --chat-muted:     var(--text-muted);
+  --chat-surface-2: var(--surface-2);
+  --chat-thead-bg:  var(--surface-2);
+  --chat-strong:    var(--brand);
+  height: 100vh;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--bg);
@@ -377,6 +458,7 @@ const CSS = `
   border-bottom: 1px solid var(--border-light);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  flex-shrink: 0;
 }
 .et-header-inner {
   display: flex;
@@ -405,12 +487,15 @@ const CSS = `
   text-transform: uppercase;
 }
 
-/* ── Two-column layout ── */
+/* ── Two-column layout ──
+   flex:1 + min-height:0 lets .et-layout fill remaining viewport height without overflow.
+   overflow:hidden contains each column's independent scroll. */
 .et-layout {
   flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: 380px 1fr;
-  height: calc(100vh - 56px - 48px); /* header + footer */
+  overflow: hidden;
   max-width: 1200px;
   margin: 0 auto;
   width: 100%;
@@ -418,21 +503,11 @@ const CSS = `
   gap: 0;
 }
 
-@media (max-width: 820px) {
-  .et-layout {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-  .et-sidebar {
-    border-right: none !important;
-    border-bottom: 1px solid var(--border-light);
-  }
-}
-
-/* ── Sidebar (drill context) ── */
+/* ── Left sidebar — independent scroll; question stays visible as chat scrolls ── */
 .et-sidebar {
   border-right: 1px solid var(--border-light);
   overflow-y: auto;
+  min-height: 0;
   padding: 28px 24px 28px 0;
 }
 .et-sidebar-inner {
@@ -532,41 +607,24 @@ const CSS = `
   line-height: 1.4;
 }
 
-/* ── Chat panel ── */
+/* ── Right chat panel ── */
 .et-chat-panel {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  min-height: 0;
   padding-left: 24px;
 }
 
-/* Messages */
+/* Messages — independent scroll container */
 .et-messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 28px 0 16px;
+  padding: 28px 24px 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.et-empty-state {
-  background: var(--surface-2);
-  border: 1px solid var(--border-light);
-  border-radius: 12px;
-  padding: 24px 28px;
-  max-width: 560px;
-}
-.et-empty-copy {
-  font-size: 14px;
-  line-height: 1.65;
-  color: var(--text);
-  margin-bottom: 10px;
-}
-.et-empty-hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  line-height: 1.5;
 }
 
 /* Message rows */
@@ -606,11 +664,8 @@ const CSS = `
   text-transform: uppercase;
   color: var(--text-muted);
 }
-.et-msg--student .et-msg-sender {
-  text-align: right;
-}
+.et-msg--student .et-msg-sender { text-align: right; }
 
-/* Message content */
 .et-msg-content {
   border-radius: 12px;
   font-size: 14px;
@@ -628,39 +683,6 @@ const CSS = `
   border: 1px solid var(--border);
   padding: 16px 20px;
   color: var(--text);
-}
-
-/* Ezra markdown styles */
-.et-msg-content--ezra p { margin: 0 0 10px; }
-.et-msg-content--ezra p:last-child { margin-bottom: 0; }
-.et-msg-content--ezra strong { font-weight: 700; color: var(--brand); }
-.et-msg-content--ezra em { font-style: italic; }
-.et-msg-content--ezra h1, .et-msg-content--ezra h2, .et-msg-content--ezra h3 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: -0.2px;
-  margin: 14px 0 8px;
-  color: var(--text);
-}
-.et-msg-content--ezra h1 { font-size: 18px; }
-.et-msg-content--ezra h2 { font-size: 16px; }
-.et-msg-content--ezra h3 { font-size: 14px; }
-.et-msg-content--ezra ul, .et-msg-content--ezra ol {
-  margin: 8px 0;
-  padding-left: 20px;
-}
-.et-msg-content--ezra li { margin-bottom: 4px; }
-.et-msg-content--ezra hr {
-  border: none;
-  border-top: 1px solid var(--border-light);
-  margin: 14px 0;
-}
-.et-msg-content--ezra code {
-  background: var(--surface-2);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 13px;
-  font-family: ui-monospace, monospace;
 }
 
 /* Thinking dots */
@@ -700,6 +722,7 @@ const CSS = `
 .et-input-area {
   border-top: 1px solid var(--border-light);
   padding: 16px 0 20px;
+  flex-shrink: 0;
 }
 .et-input-wrap {
   display: flex;
@@ -729,9 +752,30 @@ const CSS = `
   align-items: center;
   justify-content: space-between;
 }
-.et-input-hint {
-  font-size: 11px;
+.et-input-hint { font-size: 11px; color: var(--text-muted); }
+
+/* ── Cap wall — shown instead of input for returning users already at cap ── */
+.et-cap-wall {
+  border-top: 1px solid var(--border-light);
+  padding: 20px 0;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.et-cap-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.2px;
+  margin: 0;
+}
+.et-cap-copy {
+  font-size: 14px;
   color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
 }
 
 /* ── Buttons ── */
@@ -764,36 +808,36 @@ const CSS = `
   background: var(--rust-dark);
   border-color: var(--rust-dark);
 }
-
-/* ── Footer ── */
-.et-footer {
-  border-top: 1px solid var(--border-light);
-  padding: 14px 0;
-}
-.et-footer-inner {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-.et-footer-copy { font-size: 11px; color: var(--text-muted); }
-.et-footer-links { display: flex; gap: 18px; }
-.et-footer-links a {
-  font-size: 11px;
+.et-btn--ghost {
+  background: transparent;
   color: var(--text-muted);
+  border-color: var(--border);
+}
+.et-btn--ghost:not(:disabled):hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border);
+}
+.et-try-another {
+  align-self: flex-start;
+  margin-top: 6px;
+}
+
+/* Inline nudge replacing "Try another" when cap hit mid-drill-3 */
+.et-cap-nudge {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 6px 0 0;
+  line-height: 1.4;
+}
+.et-cap-nudge a {
+  color: var(--rust);
   text-decoration: none;
-  transition: color 0.15s;
+  font-weight: 600;
 }
-.et-footer-links a:hover { color: var(--text); }
+.et-cap-nudge a:hover { text-decoration: underline; }
 
-@media (max-width: 820px) {
-  .et-chat-panel { padding-left: 0; padding-top: 16px; }
-  .et-sidebar { padding: 20px 0 16px; }
-  .et-layout { padding: 0 clamp(16px, 4vw, 24px); height: auto; gap: 0; }
-  .et-messages { height: 60vh; }
-}
-
+/* ── Teach-through CTA ── */
 .et-teach-cta {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -817,5 +861,104 @@ const CSS = `
   line-height: 1.55;
   color: var(--text-muted);
   margin: 0;
+}
+
+/* ── Footer ── */
+.et-footer {
+  border-top: 1px solid var(--border-light);
+  padding: 14px 0;
+  flex-shrink: 0;
+}
+.et-footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.et-footer-copy { font-size: 11px; color: var(--text-muted); }
+.et-footer-links { display: flex; gap: 18px; }
+.et-footer-links a {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.et-footer-links a:hover { color: var(--text); }
+
+/* ── Mobile-only elements — hidden on desktop ── */
+.et-mobile-bar   { display: none; }
+.et-mobile-panel { display: none; }  /* also hides on desktop if mobileExpanded somehow true */
+
+/* ── Mobile layout ≤ 820px ──
+   .et stays height:100vh/overflow:hidden (same as desktop — matches Mia's pattern).
+   Desktop sidebar hides; mobile bar takes its place as the sticky question anchor.
+   Panels scroll independently; footer drops out to give keyboard more room. */
+@media (max-width: 820px) {
+  /* Show drill bar */
+  .et-mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px clamp(16px, 4vw, 24px);
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 44px;
+  }
+  .et-mobile-bar:active { background: var(--surface-2); }
+  .et-mobile-bar-lo {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--rust);
+    background: rgba(192,94,60,0.1);
+    border: 1px solid rgba(192,94,60,0.2);
+    padding: 2px 7px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .et-mobile-bar-sep { color: var(--border); font-size: 12px; flex-shrink: 0; }
+  .et-mobile-bar-topic {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-style: italic;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .et-mobile-bar-cta {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand);
+    flex-shrink: 0;
+    padding-left: 8px;
+  }
+  /* Expandable scenario+question panel — max-height caps it so chat isn't buried */
+  .et-mobile-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    max-height: 45vh;
+    flex-shrink: 0;
+    padding: 16px clamp(16px, 4vw, 24px);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+  /* Desktop sidebar hidden — mobile bar replaces it */
+  .et-sidebar { display: none; }
+  /* Single-column layout, no sidebar column */
+  .et-layout { grid-template-columns: 1fr; padding: 0; }
+  /* Chat panel spans full width */
+  .et-chat-panel { padding-left: 0; }
+  /* Footer hidden on mobile — saves keyboard space */
+  .et-footer { display: none; }
 }
 `;
