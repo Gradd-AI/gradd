@@ -245,7 +245,7 @@ export async function POST(request: Request): Promise<Response> {
   const supabase = createServiceClient();
   const { data: drill, error: drillErr } = await supabase
     .from('acca_drills')
-    .select('question, context_text')
+    .select('question, context_text, model_answer')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', 'APM')
     .eq('lo_code', drill_lo)
@@ -259,8 +259,13 @@ export async function POST(request: Request): Promise<Response> {
 
   const question = drill.question as string;
   const context = (drill.context_text as string | null) ?? '';
+  const storedModelAnswer = (drill.model_answer as string | null) ?? '';
 
-  // ── Establish model answer (generate once or decrypt) ──────────────────────
+  // ── Establish model answer ─────────────────────────────────────────────────
+  // Use the stored, reviewed model_answer when present — this is seed-pipeline
+  // output that has been manually verified and patched (e.g. EVA adjustments,
+  // ROIC labelling, assertion discipline). Call 1 generation is a fallback ONLY
+  // for drills that were published without a stored answer.
 
   let modelAnswer: string;
   let missCount = 0;
@@ -268,11 +273,15 @@ export async function POST(request: Request): Promise<Response> {
   let lastRealAttempt: string | null = null;
 
   if (!session_state) {
-    // First turn — generate and cache
-    try {
-      modelAnswer = await call1_generate(question, context);
-    } catch {
-      return NextResponse.json({ error: 'Failed to generate model answer' }, { status: 500 });
+    // First turn — stored answer takes priority over live generation
+    if (storedModelAnswer) {
+      modelAnswer = storedModelAnswer;
+    } else {
+      try {
+        modelAnswer = await call1_generate(question, context);
+      } catch {
+        return NextResponse.json({ error: 'Failed to generate model answer' }, { status: 500 });
+      }
     }
   } else {
     // Subsequent turn — decrypt cached model answer
