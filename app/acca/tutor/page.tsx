@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { createServiceClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import TutorChat from './TutorChat';
 
 export const metadata: Metadata = {
@@ -13,6 +14,13 @@ export default async function APMTutorPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // ── Auth guard (per-page, not middleware) ──────────────────────────────────
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    redirect('/acca/auth?next=/acca/tutor');
+  }
+
   const { lo, area } = await searchParams;
   const loCode   = typeof lo   === 'string' ? lo   : null;
   const areaCode = typeof area === 'string' ? area : null;
@@ -47,7 +55,6 @@ export default async function APMTutorPage({
       data = drills[Math.floor(Math.random() * drills.length)] as Drill;
     }
   } else {
-    // No params — fallback to default free drill
     const { data: d } = await supabase
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
@@ -82,5 +89,19 @@ export default async function APMTutorPage({
     );
   }
 
-  return <TutorChat drill={data} />;
+  // ── Read cap state from profiles ───────────────────────────────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+
+  const usedCount = (profile?.apm_teach_throughs_used as number | null) ?? 0;
+  const hasActiveAccess =
+    profile?.apm_subscription_status === 'active' ||
+    (profile?.apm_pass_expires_at &&
+      new Date(profile.apm_pass_expires_at as string) > new Date());
+  const initialCapHit = !hasActiveAccess && usedCount >= 3;
+
+  return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} />;
 }

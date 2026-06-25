@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { createServiceClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import ACCADashboard from './ACCADashboard';
 import type { PickerArea } from './AreaPicker';
 
@@ -10,8 +11,16 @@ export const metadata: Metadata = {
 };
 
 export default async function ACCAPage() {
+  // ── Auth guard (per-page, not middleware) ──────────────────────────────────
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    redirect('/acca/auth?next=/acca');
+  }
+
   const supabase = createServiceClient();
 
+  // ── Drill areas ────────────────────────────────────────────────────────────
   const { data } = await supabase
     .from('acca_drills')
     .select('lo_code, topic')
@@ -33,5 +42,24 @@ export default async function ACCAPage() {
     .map(([subArea, { count, sampleTopic }]) => ({ subArea, sampleTopic, count }))
     .sort((a, b) => a.subArea.localeCompare(b.subArea));
 
-  return <ACCADashboard areas={areas} />;
+  // ── Cap state from profile ─────────────────────────────────────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+
+  const usedCount = (profile?.apm_teach_throughs_used as number | null) ?? 0;
+  const hasActiveAccess =
+    profile?.apm_subscription_status === 'active' ||
+    (profile?.apm_pass_expires_at &&
+      new Date(profile.apm_pass_expires_at as string) > new Date());
+
+  return (
+    <ACCADashboard
+      areas={areas}
+      teachThroughsUsed={usedCount}
+      hasActiveAccess={!!hasActiveAccess}
+    />
+  );
 }

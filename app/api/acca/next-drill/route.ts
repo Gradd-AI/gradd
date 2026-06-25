@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request): Promise<Response> {
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+
   const { searchParams } = new URL(request.url);
   const lo   = searchParams.get('lo');
   const area = searchParams.get('area');

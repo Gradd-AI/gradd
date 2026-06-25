@@ -1,29 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AreaPicker, { type PickerArea } from './AreaPicker';
 
 interface ACCADashboardProps {
   areas: PickerArea[];
+  teachThroughsUsed: number;
+  hasActiveAccess: boolean;
 }
 
 const FREE_TEACH_THROUGHS = 3;
 
-export default function ACCADashboard({ areas }: ACCADashboardProps) {
+export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess }: ACCADashboardProps) {
   const router = useRouter();
-  const [mounted, setMounted]                   = useState(false);
-  const [teachThroughsUsed, setTeachThroughsUsed] = useState(0);
-  const [navigating, setNavigating]             = useState(false);
+  const [navigating, setNavigating] = useState(false);
 
-  useEffect(() => {
-    const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
-    setTeachThroughsUsed(count);
-    setMounted(true);
-  }, []);
-
-  const capHit = teachThroughsUsed >= FREE_TEACH_THROUGHS;
+  const capHit = !hasActiveAccess && teachThroughsUsed >= FREE_TEACH_THROUGHS;
 
   function handleSelect(subArea: string) {
     setNavigating(true);
@@ -57,11 +51,9 @@ export default function ACCADashboard({ areas }: ACCADashboardProps) {
             </p>
           </div>
 
-          {/* Cap status bar.
-              Fades in after mount — localStorage is client-only so we can't know the count
-              server-side. Opacity transition avoids a hard pop for returning capped users. */}
-          <div className={`apm-dash-status${mounted ? ' apm-dash-status--on' : ''}`}>
-            {mounted && teachThroughsUsed > 0 && (
+          {/* Cap status bar — count comes from server (SSR), no hydration flash. */}
+          <div className="apm-dash-status apm-dash-status--on">
+            {teachThroughsUsed > 0 && (
               <div className={`apm-status-bar${capHit ? ' apm-status-bar--capped' : ''}`}>
                 <div className="apm-status-left">
                   <div className="apm-status-pips">
@@ -197,14 +189,8 @@ const CSS = `
   max-width: 480px;
 }
 
-/* ── Cap status bar ──
-   Opacity transition hides the localStorage-read delay — no hard pop for returning users.
-   When count=0 and mounted, the inner conditional renders nothing; the container collapses. */
-.apm-dash-status {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-.apm-dash-status.apm-dash-status--on { opacity: 1; }
+/* ── Cap status bar —— count is SSR so no hydration flash; container collapses when count=0 */
+.apm-dash-status { }
 
 .apm-status-bar {
   display: flex;

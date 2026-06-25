@@ -1,18 +1,26 @@
 import { NextResponse } from 'next/server';
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
-import { createServiceClient } from '@/lib/supabase/server';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export interface ClientSessionState {
-  enc: string;                      // AES-256-GCM encrypted model answer — opaque to client
+  enc: string;  // AES-256-GCM: JSON { answer: string; counted: boolean }
   miss_count: number;
   last_diagnosis: string | null;
   last_real_attempt: string | null;
+  // NOTE: teach_through_counted is NOT in this plaintext blob — it lives inside
+  // enc so the client cannot manipulate it to skip the cap increment.
 }
 
-// ── Encryption (model answer never leaves server in plaintext) ────────────────
+// The decrypted payload — both fields are tamper-proof inside AES-256-GCM.
+interface EncPayload {
+  answer: string;
+  counted: boolean; // true once the DB increment for this drill has been applied
+}
+
+// ── Encryption ────────────────────────────────────────────────────────────────
 
 function getKey(): Buffer {
   const secret = process.env.TUTOR_SESSION_SECRET;
@@ -20,24 +28,32 @@ function getKey(): Buffer {
   return createHash('sha256').update(secret).digest();
 }
 
-function encryptModelAnswer(plaintext: string): string {
-  const key = getKey();
-  const iv = randomBytes(12);
+function sealPayload(answer: string, counted: boolean): string {
+  const key  = getKey();
+  const iv   = randomBytes(12);
+  const body = JSON.stringify({ answer, counted } satisfies EncPayload);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
-  const encrypted = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return Buffer.concat([iv, tag, encrypted]).toString('base64');
+  const enc  = Buffer.concat([cipher.update(body, 'utf8'), cipher.final()]);
+  const tag  = cipher.getAuthTag();
+  return Buffer.concat([iv, tag, enc]).toString('base64');
 }
 
-function decryptModelAnswer(ciphertext: string): string {
+function openPayload(ciphertext: string): EncPayload {
   const key = getKey();
   const buf = Buffer.from(ciphertext, 'base64');
-  const iv = buf.subarray(0, 12);
+  const iv  = buf.subarray(0, 12);
   const tag = buf.subarray(12, 28);
-  const data = buf.subarray(28);
+  const dat = buf.subarray(28);
   const decipher = createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(tag);
-  return decipher.update(data).toString('utf8') + decipher.final('utf8');
+  const plain = decipher.update(dat).toString('utf8') + decipher.final('utf8');
+  try {
+    return JSON.parse(plain) as EncPayload;
+  } catch {
+    // Backward compat: sessions sealed before this deploy encrypted a raw string.
+    // Treat them as uncounted so follow-up turns work; cap state is re-read from DB.
+    return { answer: plain, counted: false };
+  }
 }
 
 // ── Stop-signal detection ─────────────────────────────────────────────────────
@@ -90,7 +106,7 @@ function extractText(res: unknown): string {
   return block.text;
 }
 
-// ── CALL 1: Generate model answer ─────────────────────────────────────────────
+// ── CALL 1: Generate model answer (fallback only) ─────────────────────────────
 
 async function call1_generate(question: string, context: string): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
@@ -216,11 +232,18 @@ async function call3_teach(
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(request: Request): Promise<Response> {
-  // Verify secret is configured
   if (!process.env.TUTOR_SESSION_SECRET) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
+  // ── 1. Auth ────────────────────────────────────────────────────────────────
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
+  }
+
+  // ── 2. Parse body ──────────────────────────────────────────────────────────
   let body: unknown;
   try {
     body = await request.json();
@@ -241,8 +264,9 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'student_message required' }, { status: 400 });
   }
 
-  // Fetch drill (service-role — RLS on)
   const supabase = createServiceClient();
+
+  // ── 3. Fetch drill ─────────────────────────────────────────────────────────
   const { data: drill, error: drillErr } = await supabase
     .from('acca_drills')
     .select('question, context_text, model_answer')
@@ -257,23 +281,33 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Drill not found' }, { status: 404 });
   }
 
-  const question = drill.question as string;
-  const context = (drill.context_text as string | null) ?? '';
+  const question          = drill.question as string;
+  const context           = (drill.context_text as string | null) ?? '';
   const storedModelAnswer = (drill.model_answer as string | null) ?? '';
 
-  // ── Establish model answer ─────────────────────────────────────────────────
-  // Use the stored, reviewed model_answer when present — this is seed-pipeline
-  // output that has been manually verified and patched (e.g. EVA adjustments,
-  // ROIC labelling, assertion discipline). Call 1 generation is a fallback ONLY
-  // for drills that were published without a stored answer.
+  // ── 4. Read profile (cap counter + subscription state) ────────────────────
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
 
+  const usedCount = (profile?.apm_teach_throughs_used as number | null) ?? 0;
+  const hasActiveAccess =
+    profile?.apm_subscription_status === 'active' ||
+    (profile?.apm_pass_expires_at &&
+      new Date(profile.apm_pass_expires_at as string) > new Date());
+
+  // ── 5. Establish model answer + session continuity ─────────────────────────
   let modelAnswer: string;
-  let missCount = 0;
-  let lastDiagnosis: string | null = null;
-  let lastRealAttempt: string | null = null;
+  let teachThroughCounted = false;
+  let missCount           = 0;
+  let lastDiagnosis:    string | null = null;
+  let lastRealAttempt:  string | null = null;
 
   if (!session_state) {
-    // First turn — stored answer takes priority over live generation
+    // Turn 1 — use the stored, reviewed model answer; fall back to Call 1.
+    // teach_through_counted starts false: this drill hasn't been charged yet.
     if (storedModelAnswer) {
       modelAnswer = storedModelAnswer;
     } else {
@@ -284,39 +318,57 @@ export async function POST(request: Request): Promise<Response> {
       }
     }
   } else {
-    // Subsequent turn — decrypt cached model answer
     const s = session_state as ClientSessionState;
     if (typeof s.enc !== 'string') {
       return NextResponse.json({ error: 'Invalid session state' }, { status: 400 });
     }
     try {
-      modelAnswer = decryptModelAnswer(s.enc);
+      const payload     = openPayload(s.enc);
+      modelAnswer       = payload.answer;
+      teachThroughCounted = payload.counted;
     } catch {
       return NextResponse.json({ error: 'Session state corrupted' }, { status: 400 });
     }
-    missCount = typeof s.miss_count === 'number' ? s.miss_count : 0;
-    lastDiagnosis = typeof s.last_diagnosis === 'string' ? s.last_diagnosis : null;
-    lastRealAttempt = typeof s.last_real_attempt === 'string' ? s.last_real_attempt : null;
+    missCount        = typeof s.miss_count === 'number' ? s.miss_count : 0;
+    lastDiagnosis    = typeof s.last_diagnosis    === 'string' ? s.last_diagnosis    : null;
+    lastRealAttempt  = typeof s.last_real_attempt === 'string' ? s.last_real_attempt : null;
   }
 
-  // ── Route: stop-signal / hint / teach ─────────────────────────────────────
+  // ── 6. Cap gate ────────────────────────────────────────────────────────────
+  // Allow the request when ANY of these is true:
+  //   a) user has an active subscription or unexpired pass
+  //   b) teach-through count is below the free limit
+  //   c) this is a FOLLOW-UP TURN on the drill that already consumed a cap slot
+  //      (teachThroughCounted=true inside the sealed enc — tamper-proof)
+  //
+  // Case (c) is the option-b boundary: a student who just received their 3rd
+  // teach-through can keep asking Ezra follow-up questions on that same drill.
+  // The cap wall fires only when they load a NEW drill (session_state = null,
+  // teachThroughCounted = false → gate fails → 403).
 
-  let ezraResponse: string;
-  let newMissCount = missCount;
-  let newLastDiagnosis = lastDiagnosis;
+  const isFreeFollowUp = teachThroughCounted; // sealed inside AES-256-GCM, not forgeable
+  const allowed = hasActiveAccess || usedCount < 3 || isFreeFollowUp;
+
+  if (!allowed) {
+    return NextResponse.json({ error: 'cap_hit' }, { status: 403 });
+  }
+
+  // ── 7. Teaching engine ─────────────────────────────────────────────────────
+  let ezraResponse:        string;
+  let newMissCount       = missCount;
+  let newLastDiagnosis   = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
   let teachThroughDelivered = false;
 
   try {
     if (isStopSignal(student_message)) {
       const contextAttempt = lastRealAttempt ?? student_message;
-      const diagnosis = lastDiagnosis ?? 'student requested answer without re-attempting';
+      const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
       ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis);
       teachThroughDelivered = true;
-      // miss_count, last_diagnosis, last_real_attempt unchanged on stop-signal
     } else {
-      const diagnosis = await call2_diagnose(question, context, student_message, modelAnswer);
-      newMissCount = missCount + 1;
+      const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer);
+      newMissCount     = missCount + 1;
       newLastDiagnosis = diagnosis;
       newLastRealAttempt = student_message;
 
@@ -331,18 +383,41 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Teaching engine error' }, { status: 500 });
   }
 
-  // ── Build updated session state (model answer encrypted; never sent plaintext) ─
+  // ── 8. Server-side cap increment ──────────────────────────────────────────
+  // Increment when ALL of:
+  //   • a teach-through was just delivered on this request
+  //   • this drill hasn't already been incremented (teachThroughCounted = false)
+  //   • the user is not on an active plan (paying users don't consume free slots)
+  //
+  // teachThroughCounted lives inside the encrypted enc blob — the client cannot
+  // set it to true to skip this block, because they cannot re-seal the blob
+  // without the server's AES-256-GCM key.
 
+  let newTeachThroughCounted = teachThroughCounted;
+  let capNowHit = false;
+
+  if (teachThroughDelivered && !teachThroughCounted && !hasActiveAccess) {
+    const newCount = usedCount + 1;
+    await supabase
+      .from('profiles')
+      .update({ apm_teach_throughs_used: newCount })
+      .eq('id', user.id);
+    newTeachThroughCounted = true;
+    capNowHit = newCount >= 3;
+  }
+
+  // ── 9. Seal updated session state ─────────────────────────────────────────
   const updatedSessionState: ClientSessionState = {
-    enc: encryptModelAnswer(modelAnswer),
-    miss_count: newMissCount,
-    last_diagnosis: newLastDiagnosis,
+    enc:               sealPayload(modelAnswer, newTeachThroughCounted),
+    miss_count:        newMissCount,
+    last_diagnosis:    newLastDiagnosis,
     last_real_attempt: newLastRealAttempt,
   };
 
   return NextResponse.json({
-    ezra_response: ezraResponse,
-    session_state: updatedSessionState,
+    ezra_response:          ezraResponse,
+    session_state:          updatedSessionState,
     teach_through_delivered: teachThroughDelivered,
+    cap_now_hit:            capNowHit,
   });
 }

@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { getAnonId } from '@/lib/acca/anon-id';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import AreaPicker, { type PickerArea } from '@/app/acca/AreaPicker';
@@ -20,14 +19,11 @@ interface Message {
   content: string;
 }
 
-const FREE_TEACH_THROUGHS = 3;
-
-function fireEvent(payload: { event_type: string; drill_lo?: string; metadata?: Record<string, unknown> }) {
-  const anonId = getAnonId();
+function fireEvent(userId: string, payload: { event_type: string; drill_lo?: string; metadata?: Record<string, unknown> }) {
   void fetch('/api/acca/event', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ anon_id: anonId, user_id: null, ...payload }),
+    body: JSON.stringify({ user_id: userId, ...payload }),
   });
 }
 
@@ -38,7 +34,7 @@ function ezraOpening(drill: Drill): Message {
   };
 }
 
-export default function TutorChat({ drill }: { drill: Drill }) {
+export default function TutorChat({ drill, initialCapHit, userId }: { drill: Drill; initialCapHit: boolean; userId: string }) {
   const [currentDrill, setCurrentDrill]           = useState<Drill>(drill);
   const [messages, setMessages]                   = useState<Message[]>([ezraOpening(drill)]);
   const [sessionState, setSessionState]           = useState<ClientSessionState | null>(null);
@@ -46,7 +42,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
   const [loading, setLoading]                     = useState(false);
   const [error, setError]                         = useState<string | null>(null);
   const [teachThroughDone, setTeachThroughDone]   = useState(false);
-  const [capHit, setCapHit]                       = useState(false);
+  const [capHit, setCapHit]                       = useState(initialCapHit);
   const [navigating, setNavigating]               = useState(false);
   const [mobileExpanded, setMobileExpanded]       = useState(false);
   const [showPicker, setShowPicker]               = useState(false);
@@ -61,14 +57,8 @@ export default function TutorChat({ drill }: { drill: Drill }) {
 
   // Analytics: fire drill_shown on mount
   useEffect(() => {
-    fireEvent({ event_type: 'drill_shown', drill_lo: drill.lo_code });
+    fireEvent(userId, { event_type: 'drill_shown', drill_lo: drill.lo_code });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Cap edge: gate input immediately for returning users who already hit 3 teach-throughs
-  useEffect(() => {
-    const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
-    if (count >= FREE_TEACH_THROUGHS) setCapHit(true);
   }, []);
 
   const missCount  = sessionState?.miss_count ?? 0;
@@ -96,27 +86,31 @@ export default function TutorChat({ drill }: { drill: Drill }) {
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? 'Something went wrong');
+      if (!res.ok) {
+        if (json.error === 'cap_hit') {
+          setCapHit(true);
+          setMessages(prev => prev.slice(0, -1));
+          setInput(trimmed);
+          return;
+        }
+        throw new Error(json.error ?? 'Something went wrong');
+      }
 
       setSessionState(json.session_state);
       setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response }]);
 
       if (json.teach_through_delivered) {
         if (!teachThroughDone) {
-          // First teach-through for this drill only — follow-up turns don't re-increment.
-          // teachThroughDone resets to false on drill swap, so this guard is naturally per-drill.
-          const raw      = localStorage.getItem('apm_teach_throughs_used');
-          const count    = parseInt(raw ?? '0', 10);
-          const newCount = count + 1;
-          localStorage.setItem('apm_teach_throughs_used', String(newCount));
-          fireEvent({
+          fireEvent(userId, {
             event_type: 'teach_through_delivered',
             drill_lo:   currentDrill.lo_code,
             metadata:   { diagnosis: json.session_state?.last_diagnosis ?? null },
           });
-          if (newCount >= FREE_TEACH_THROUGHS) setCapHit(true);
         }
         setTeachThroughDone(true);
+      }
+      if (json.cap_now_hit) {
+        setCapHit(true);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reach Ezra — please try again.');
@@ -129,24 +123,18 @@ export default function TutorChat({ drill }: { drill: Drill }) {
 
   // "Try another" swaps left panel in-place; no navigation
   const handleTryAnother = async () => {
-    fireEvent({ event_type: 'try_another_clicked', drill_lo: currentDrill.lo_code });
+    fireEvent(userId, { event_type: 'try_another_clicked', drill_lo: currentDrill.lo_code });
     setNavigating(true);
     try {
       const res  = await fetch(`/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}`);
       const next = await res.json() as Drill;
-      // Swap left panel
       setCurrentDrill(next);
-      // Reset right panel: fresh Ezra opening for new drill
       setMessages([ezraOpening(next)]);
       setSessionState(null);
       setTeachThroughDone(false);
       setMobileExpanded(false);
       setInput('');
-      // Re-evaluate cap (counter persists across drills)
-      const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
-      setCapHit(count >= FREE_TEACH_THROUGHS);
-      // Analytics for new drill
-      fireEvent({ event_type: 'drill_shown', drill_lo: next.lo_code });
+      fireEvent(userId, { event_type: 'drill_shown', drill_lo: next.lo_code });
     } catch {
       // silently fail — student stays on current drill
     } finally {
@@ -172,7 +160,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
 
   // Swap drill in-place from a picked sub-area — same pattern as handleTryAnother
   const handleAreaSelect = async (subArea: string) => {
-    fireEvent({ event_type: 'area_selected', drill_lo: currentDrill.lo_code, metadata: { area: subArea } });
+    fireEvent(userId, { event_type: 'area_selected', drill_lo: currentDrill.lo_code, metadata: { area: subArea } });
     setShowPicker(false);
     setNavigating(true);
     try {
@@ -184,9 +172,7 @@ export default function TutorChat({ drill }: { drill: Drill }) {
       setTeachThroughDone(false);
       setMobileExpanded(false);
       setInput('');
-      const count = parseInt(localStorage.getItem('apm_teach_throughs_used') ?? '0', 10);
-      setCapHit(count >= FREE_TEACH_THROUGHS);
-      fireEvent({ event_type: 'drill_shown', drill_lo: next.lo_code });
+      fireEvent(userId, { event_type: 'drill_shown', drill_lo: next.lo_code });
     } catch {
       // silently fail — student stays on current drill
     } finally {
