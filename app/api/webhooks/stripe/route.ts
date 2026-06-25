@@ -191,11 +191,16 @@ async function handleAPMCheckoutComplete(
   if (product === 'pass') {
     // One-time €99 pass: grant 90 days from now. There is no Stripe 'ended' event
     // for a one-time payment — the access gate lapses this on date server-side.
+    //
+    // We DELIBERATELY do NOT set apm_subscription_status here. The access gate is
+    // `status==='active' OR pass>now`; if a pass set status='active' it would grant
+    // forever and the pass would never end (the date branch becomes moot). A pass
+    // is date-driven only. Leaving status untouched also avoids clobbering a real
+    // active monthly subscription if the same user ever held both.
     const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
     await supabase
       .from('profiles')
       .update({
-        apm_subscription_status: 'active',
         apm_pass_expires_at: expiresAt,
         updated_at: new Date().toISOString(),
       })
