@@ -67,9 +67,8 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                       : `${teachThroughsUsed} of ${FREE_TEACH_THROUGHS} free teach-throughs used`}
                   </span>
                 </div>
-                {/* TODO: replace href with Stripe payment link */}
                 {capHit && (
-                  <a href="#" className="apm-status-cta">Go unlimited →</a>
+                  <a href="/acca/subscribe" className="apm-status-cta">Go unlimited →</a>
                 )}
               </div>
             )}

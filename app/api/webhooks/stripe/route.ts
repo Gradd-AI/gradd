@@ -37,6 +37,14 @@ export async function POST(request: Request) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const checkoutSession = event.data.object as Stripe.Checkout.Session;
+      // APM purchases carry metadata.apm_product and are handled in COMPLETE
+      // isolation — they must never fall through to the IB subscription handler.
+      // (APM monthly is also mode:'subscription', so the mode check alone is
+      // insufficient to keep them apart — the metadata branch is what separates them.)
+      if (checkoutSession.metadata?.apm_product) {
+        await handleAPMCheckoutComplete(supabase, checkoutSession);
+        break;
+      }
       if (checkoutSession.mode === 'subscription') {
         await handleCheckoutComplete(supabase, checkoutSession);
       }
@@ -46,12 +54,22 @@ export async function POST(request: Request) {
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription;
+      // APM subscriptions carry apm_product in subscription metadata — route them
+      // to the APM handler so they never write IB columns.
+      if (subscription.metadata?.apm_product) {
+        await handleAPMSubscriptionChange(supabase, subscription);
+        break;
+      }
       await handleSubscriptionChange(supabase, subscription);
       break;
     }
 
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription;
+      if (subscription.metadata?.apm_product) {
+        await handleAPMSubscriptionCancelled(supabase, subscription);
+        break;
+      }
       await handleSubscriptionCancelled(supabase, subscription);
       break;
     }
@@ -155,6 +173,80 @@ async function handleCheckoutComplete(
       console.error('WEBHOOK: email send error', err);
     }
   }
+}
+
+// ── APM handlers ──────────────────────────────────────────────────────────────
+// All APM writes target apm_* columns ONLY and match purely by supabase_user_id
+// from metadata — never by stripe_customer_id. This guarantees an APM payment can
+// never trip an IB handler and an IB payment can never trip an APM handler.
+
+async function handleAPMCheckoutComplete(
+  supabase: ReturnType<typeof createServiceClient>,
+  session: Stripe.Checkout.Session
+) {
+  const userId = session.metadata?.supabase_user_id;
+  const product = session.metadata?.apm_product; // 'monthly' | 'pass'
+  if (!userId || !product) return;
+
+  if (product === 'pass') {
+    // One-time €99 pass: grant 90 days from now. There is no Stripe 'ended' event
+    // for a one-time payment — the access gate lapses this on date server-side.
+    const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase
+      .from('profiles')
+      .update({
+        apm_subscription_status: 'active',
+        apm_pass_expires_at: expiresAt,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+  } else if (product === 'monthly') {
+    // Recurring €49/mo: mark active and store the subscription id for later
+    // cancellation reconciliation (customer.subscription.deleted).
+    await supabase
+      .from('profiles')
+      .update({
+        apm_subscription_status: 'active',
+        apm_stripe_subscription_id: session.subscription as string,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+  }
+}
+
+async function handleAPMSubscriptionChange(
+  supabase: ReturnType<typeof createServiceClient>,
+  subscription: Stripe.Subscription
+) {
+  const userId = subscription.metadata?.supabase_user_id;
+  if (!userId) return;
+
+  // Keep apm_subscription_status in sync with Stripe (e.g. past_due → not active).
+  // Access is granted only on 'active', so any non-active status closes the gate.
+  await supabase
+    .from('profiles')
+    .update({
+      apm_subscription_status: mapStripeStatus(subscription.status),
+      apm_stripe_subscription_id: subscription.id,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
+}
+
+async function handleAPMSubscriptionCancelled(
+  supabase: ReturnType<typeof createServiceClient>,
+  subscription: Stripe.Subscription
+) {
+  const userId = subscription.metadata?.supabase_user_id;
+  if (!userId) return;
+
+  await supabase
+    .from('profiles')
+    .update({
+      apm_subscription_status: 'inactive',
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId);
 }
 
 async function handleSubscriptionChange(

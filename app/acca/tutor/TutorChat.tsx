@@ -360,7 +360,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
                         Continue coaching — €99 for 90 days, or €49/month.
                       </p>
                       <a
-                        href="/acca"
+                        href="/acca/subscribe"
                         className="et-btn et-btn--rust"
                         style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
                       >
@@ -393,7 +393,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
                 <p className="et-cap-title">You&apos;ve used your 3 free teach-throughs</p>
                 <p className="et-cap-copy">Continue coaching — €99 for 90 days, or €49/month.</p>
                 <a
-                  href="/acca"
+                  href="/acca/subscribe"
                   className="et-btn et-btn--rust"
                   style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
                 >
@@ -435,7 +435,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
                 </div>
                 {teachThroughDone && (
                   capHit
-                    ? <p className="et-cap-nudge">Go unlimited to drill the next question — <a href="/acca">Get access →</a></p>
+                    ? <p className="et-cap-nudge">Go unlimited to drill the next question — <a href="/acca/subscribe">Get access →</a></p>
                     : <button
                         className="et-btn et-btn--ghost et-try-another"
                         onClick={handleTryAnother}
