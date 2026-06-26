@@ -290,3 +290,46 @@ KEY PRINCIPLES REINFORCED THIS SESSION:
 - Shared infra (Supabase project, profiles, acca_funnel_events, Site URL) across LC/IB/APM — never fix APM by breaking LC/IB; prefer additive (allowlist, ADD COLUMN) over shared-value changes (Site URL).
 - Flag load-bearing decisions as ONE line at top — Grant skims first-para + last-line; the anonymous-cap decision got under-flagged earlier and had to be reversed (process lesson, owned).
 - APM's content model is finite-verified BY DESIGN — content volume is a deliberate ongoing build task, not something that generates itself. The thinness is the honest cost of the moat.
+
+---
+
+### SESSION HANDOFF — 26/06/2026 (content breadth + route keystone)
+
+MACHINE NOTE: this session on WORK machine (C:\Users\GrantErasmus\...). Continuing at HOME (C:\Users\grant\...) — git pull feature/apm-drills first, tip should be b350525. The drill PUBLISH state is DB-only (Supabase, not git) — it carries across machines automatically (same Supabase env). The route-fix CODE is in git (b350525).
+
+STATE: Branch feature/apm-drills, tip b350525, pushed, preview deployed + READY. The id-addressing route fix is BUILT + SHIPPED to preview but NOT yet verified on preview — that verification is the FIRST action next session, and it GATES publishing the 12 depth drills.
+
+DONE THIS SESSION:
+
+1. CONTENT BREADTH PUBLISH — servable coverage 10 → 37 LOs (14% → 51% of 73). All DB state (acca_drills.published flips + 2 model_answer text fixes), nothing in git.
+   - The 39 "approved-unpublished" drills were content-verified by the 23/06 breadth audit (50 drills vs official APM guide) — NOT just a generator flag. "approved" = record of that adversarial audit.
+   - Published 27 sole-drill-per-LO breadth drills in 2 waves: wave 1 = 22 with _patch_ provenance (confirmed in the 23/06 audit); wave 2 = 5 that fell through the audit (22-June 19:26-28 tail batch). The 5 (A2e, A5a, A5b, B2e, B4a) were INDEPENDENTLY re-verified against the guide — all "approve after correction" (A2e %, A5a PUE wording, A5b IR/3Ps, B2e replace-not-modify, B4a causality) — corrections applied (incl. A5a run-on repair, A5b structure→structures), then published.
+   - KEY LESSON REINFORCED: "approved" flag ≠ proof of clean. 5/5 un-patched drills had real errors on independent check. The independent guide-verification (adversarial, no shared context — the method that caught 5/5) is the REAL gate, not the flag. Marmara was "approved" + still wrong too. Provenance (_patch_ touch) is a useful proxy but not proof.
+   - All 37 served LOs are .single()-safe (exactly 1 published row each). Section C now served (C1a — was ZERO). Tutor confirmed serving across all 37.
+
+2. ROUTE KEYSTONE — id-addressing (BUILT, shipped to preview, NOT verified):
+   - PROBLEM it solves: next-drill picks a drill by LO+random, tutor RE-fetched by lo_code+.single() — so with >1 drill/LO, tutor could serve a DIFFERENT drill than shown (Marmara-class mismatch) AND .single() crashes (PGRST116) on 2+ rows. Found THREE .single()-on-lo_code crash points, not one (POST route + tutor/page lo-mode + default-B1c).
+   - FIX (commit b350525): TutorChat sends drill_id: currentDrill.id; tutor/route.ts fetches .eq('id', drillId) — .single() KEPT but now PK-keyed so only ever 0/1 rows (crash gone); tutor/page lo-mode + default-B1c moved off .single() to random-pick via a new module-level pickRandom<T> helper (also fixed a latent next-build-breaker the lint caught in pre-existing area-mode line 6b584a8). next-drill UNCHANGED. Seal/cap logic UNTOUCHED (turn-1 resolves answer once from id-fetched row, seals into enc; follow-ups read answer from enc, re-fetch question/context by stable drill_id).
+   - DUAL-ACCEPT ROLLOUT: route prefers drill_id, falls back to lo_code+.single() when no id (protects in-flight sessions). SEQUENCING IS LOAD-BEARING: ship client+route FIRST → verify 37 serve → THEN publish depth. Publishing depth before client ships = crash via fallback path.
+   - Verified: local next build exit 0, Vercel preview built clean ~45s, tsc+eslint clean.
+
+PREVIEW URL (verify here next session): https://gradd-git-feature-apm-drills-gradd-ais-projects.vercel.app (stable branch alias, currently b350525). Auth-gated (magic-link → /acca/auth first). Same Supabase env, so the 37 published drills are visible.
+
+NEXT SESSION — FIRST ACTION (gates everything): VERIFY the route fix on preview BEFORE publishing depth:
+- THE CRITICAL CHECK: /acca/tutor?area=A3 (random-picks from 5: A3b-A3f). Reload a few times — question on left changes, and Ezra's diagnosis must ALWAYS track the drill currently shown. This is the show-X-serve-X mismatch-kill proven LIVE on a random path (trivially true on single-drill LOs; A3 is the real test, and A3 is exactly where depth lands next).
+- Also confirm serve-clean: ?lo=C1a (Section C), ?lo=D2a/B2a/A1f, and /acca/tutor (no params → default-B1c random-pick).
+- IF the A3 random path shows-X-serves-X across reloads + others load clean → route fix HOLDS → publish the 12 held depth drills (A3b ×8, A3c ×1, A3d ×1, A3e ×2 — A3b goes 1→9), then build Bug 2.
+
+THEN (after depth publishes):
+- BUG 2 (no-repeat) — now buildable on the id-addressable next-drill: change .neq('lo_code', lo) → exclude by current drill id (allows same-LO-different-drill, blocks identical repeat). Small.
+- CONTENT VOLUME DECISION (the big strategic next step, discussed not decided): after wave 2 you're at 37 LOs/one-each. A genuinely STRONG launch bank ≈ ~100 verified drills, WEIGHTED to how APM is examined — NOT flat across 73 LOs. Structure: Section A = one 50-mark compulsory (heavy A/B); Section B = two 25-mark, one GUARANTEED from C + one from D. So: A/B depth to 2-3 drills on high-frequency LOs (EVA, RI/ROI, variances, transfer pricing, KPIs, BSC, divisional, reward/behaviour); C/D priority 3-4 drills (guaranteed exam areas, currently thinnest). Gap ≈ 50-60 net new (the 12 depth drills cover part). SOURCES: (1) ACCA past papers — Q + official examiner answer = INHERENTLY verified, ideal for C/D, CHECK LICENSING; (2) generate-then-verify pipeline (the one that caught 5/5 today) for the rest. Grant's stance: prefers doing the work for something genuinely strong over a thin product a resitter finds shaky. NOT YET DECIDED — this is the next strategy conversation after the route fix + depth land.
+
+REMAINING TO LAUNCH (current priority order):
+1. Verify route fix on preview (next action) → publish 12 depth drills.
+2. Bug 2 (no-repeat) — small, on id-addressable next-drill.
+3. CONTENT VOLUME — build to ~100 weighted verified drills (past papers + generate-then-verify). The big one for "strong not thin."
+4. LIVE Stripe keys + prod webhook (STRIPE_WEBHOOK_SECRET_AI on gradd.ai) — deliberate go-live flip, code unchanged.
+5. Latency (3-call chain slow, measure first), merge to main = launch.
+6. (post-launch) middleware.ts activation (own commit; proxy.ts guards dormant); IB hybrid generator fix; Mia/Aoife three-call rebuild; school licensing Q1-Q2 2027.
+
+PRINCIPLES REINFORCED: independent adversarial guide-verification is the real content gate, not the approved flag (5/5 find-rate proved it); the route mismatch (show-X-serve-Y) is Marmara-class and the id-addressing fix kills it — but must be proven on a LIVE random path, not just the diff; sequencing (ship client→verify→publish depth) is load-bearing — depth before client = crash; build to where the EXAM marks are, not flat across LOs.
