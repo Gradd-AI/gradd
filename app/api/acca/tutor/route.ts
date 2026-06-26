@@ -251,14 +251,18 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { drill_lo, session_state, student_message } = body as {
+  const { drill_id, drill_lo, session_state, student_message } = body as {
+    drill_id?: unknown;
     drill_lo?: unknown;
     session_state?: unknown;
     student_message?: unknown;
   };
 
-  if (typeof drill_lo !== 'string' || !drill_lo) {
-    return NextResponse.json({ error: 'drill_lo required' }, { status: 400 });
+  const drillId = typeof drill_id === 'string' && drill_id ? drill_id : null;
+  const drillLo = typeof drill_lo === 'string' && drill_lo ? drill_lo : null;
+
+  if (!drillId && !drillLo) {
+    return NextResponse.json({ error: 'drill_id or drill_lo required' }, { status: 400 });
   }
   if (typeof student_message !== 'string' || !student_message.trim()) {
     return NextResponse.json({ error: 'student_message required' }, { status: 400 });
@@ -267,15 +271,24 @@ export async function POST(request: Request): Promise<Response> {
   const supabase = createServiceClient();
 
   // ── 3. Fetch drill ─────────────────────────────────────────────────────────
-  const { data: drill, error: drillErr } = await supabase
+  // Prefer id-addressed fetch: serve the EXACT drill the student is viewing (the id
+  // page.tsx / next-drill chose), eliminating any show-X-but-serve-Y mismatch on the
+  // random-pick paths. id is the primary key, so .single() is unique-safe — it can only
+  // return 0 (→ 404) or 1 row, never the >1 that broke the old lo_code+.single() fetch.
+  // Fall back to lo_code only for in-flight pre-deploy clients that haven't sent a
+  // drill_id yet; that fallback stays safe while each LO has ≤1 published drill (true
+  // until the depth drills publish — which must wait until this code is live).
+  const drillBase = () => supabase
     .from('acca_drills')
     .select('question, context_text, model_answer')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', 'APM')
-    .eq('lo_code', drill_lo)
     .eq('status', 'approved')
-    .eq('published', true)
-    .single();
+    .eq('published', true);
+
+  const { data: drill, error: drillErr } = await (
+    drillId ? drillBase().eq('id', drillId) : drillBase().eq('lo_code', drillLo!)
+  ).single();
 
   if (drillErr || !drill) {
     return NextResponse.json({ error: 'Drill not found' }, { status: 404 });

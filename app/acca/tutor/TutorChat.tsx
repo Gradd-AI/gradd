@@ -79,7 +79,8 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          drill_lo:        currentDrill.lo_code,
+          drill_id:        currentDrill.id,      // primary key of the exact drill on screen
+          drill_lo:        currentDrill.lo_code,  // retained: legacy fallback during rollout
           session_state:   sessionState,
           student_message: trimmed,
         }),

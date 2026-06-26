@@ -9,6 +9,13 @@ export const metadata: Metadata = {
     'Conversational APM tutor. Attempt a question, get targeted feedback from Ezra — an experienced APM marker who diagnoses exactly where you stalled.',
 };
 
+// Request-time random pick, intentionally non-deterministic (drill variety across loads).
+// Module-level (outside the component) so it sits beyond React's render-purity scope — a
+// Server Component renders once per request, so there is no re-render instability to guard.
+function pickRandom<T>(rows: T[]): T {
+  return rows[Math.floor(Math.random() * rows.length)];
+}
+
 export default async function APMTutorPage({
   searchParams,
 }: {
@@ -31,7 +38,9 @@ export default async function APMTutorPage({
   let data: Drill | null = null;
 
   if (loCode) {
-    const { data: d } = await supabase
+    // Random-pick among the LO's published drills (was .single()): depth-safe, and
+    // returns the chosen row's id so the tutor route serves that exact drill.
+    const { data: drills } = await supabase
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
       .eq('exam_board', 'ACCA')
@@ -39,8 +48,10 @@ export default async function APMTutorPage({
       .eq('lo_code', loCode)
       .eq('status', 'approved')
       .eq('published', true)
-      .single();
-    data = d ?? null;
+      .limit(20);
+    if (drills && drills.length > 0) {
+      data = pickRandom(drills) as Drill;
+    }
   } else if (areaCode) {
     const { data: drills } = await supabase
       .from('acca_drills')
@@ -52,10 +63,11 @@ export default async function APMTutorPage({
       .like('lo_code', `${areaCode}%`)
       .limit(20);
     if (drills && drills.length > 0) {
-      data = drills[Math.floor(Math.random() * drills.length)] as Drill;
+      data = pickRandom(drills) as Drill;
     }
   } else {
-    const { data: d } = await supabase
+    // Default entry: random-pick among B1c's published drills (was .single()) — depth-safe.
+    const { data: drills } = await supabase
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
       .eq('exam_board', 'ACCA')
@@ -63,8 +75,10 @@ export default async function APMTutorPage({
       .eq('lo_code', 'B1c')
       .eq('status', 'approved')
       .eq('published', true)
-      .single();
-    data = d ?? null;
+      .limit(20);
+    if (drills && drills.length > 0) {
+      data = pickRandom(drills) as Drill;
+    }
   }
 
   if (!data) {
