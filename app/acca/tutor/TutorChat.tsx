@@ -68,6 +68,10 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
     const trimmed = input.trim();
     if (!trimmed || loading) return;
 
+    // Last Ezra turn (before this send) — lets the server intent classifier disambiguate
+    // context-dependent replies (e.g. "yes" / "go on" after an offer to walk through).
+    const lastEzra = [...messages].reverse().find(m => m.role === 'ezra')?.content ?? null;
+
     const studentMessage: Message = { role: 'student', content: trimmed };
     setMessages(prev => [...prev, studentMessage]);
     setInput('');
@@ -83,6 +87,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
           drill_lo:        currentDrill.lo_code,  // retained: legacy fallback during rollout
           session_state:   sessionState,
           student_message: trimmed,
+          last_ezra_message: lastEzra,  // intent-layer context (server ignores when flag off)
         }),
       });
 
@@ -99,6 +104,14 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
 
       setSessionState(json.session_state);
       setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response }]);
+
+      if (json.intent) {
+        fireEvent(userId, {
+          event_type: 'tutor_intent',
+          drill_lo:   currentDrill.lo_code,
+          metadata:   { intent: json.intent },
+        });
+      }
 
       if (json.teach_through_delivered) {
         if (!teachThroughDone) {

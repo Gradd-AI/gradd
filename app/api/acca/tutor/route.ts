@@ -99,6 +99,29 @@ function isStopSignal(input: string): boolean {
   return STOP_PHRASES.some(p => lower.includes(p));
 }
 
+// ── Stop-signal split (intent layer) ──────────────────────────────────────────
+// With the intent layer ON, only EXPLICIT teach-requests fast-path to the
+// teach-through; give-up / "I'm stuck" phrasing falls through to the classifier,
+// which routes it to `confusion` → a warm reassure-and-offer (free) rather than an
+// immediate, cap-charging teach-through. With the flag OFF, the legacy isStopSignal
+// (full list) is used instead, so flag-off is an exact behavioural rollback.
+const TEACH_REQUEST_PHRASES = [
+  'just tell me',
+  'show me how',
+  'walk me through',
+  'talk me through',
+  'teach me',
+  'how would a full-marks',
+  'how would a full marks',
+  'what would a full-marks',
+  'what would a full marks',
+];
+
+function isTeachRequest(input: string): boolean {
+  const lower = input.toLowerCase().trim();
+  return TEACH_REQUEST_PHRASES.some(p => lower.includes(p));
+}
+
 // ── Correct-answer detection ───────────────────────────────────────────────────
 
 // call2_diagnose emits the fixed sentinel "answer correct — convention differs
@@ -325,6 +348,101 @@ async function call3_confirm(
   return extractText(res);
 }
 
+// ── Intent layer (redesign item 2) ────────────────────────────────────────────
+// Behind APM_INTENT_LAYER=1 (preview). Classifies each non-teach-request message and
+// routes ONLY attempts through the withholding pipeline; question/confusion/aside get
+// a warm, non-marking reply (no miss++, no cap, no teach-through).
+const INTENT_LAYER_ENABLED = process.env.APM_INTENT_LAYER === '1';
+
+type Intent = 'attempt' | 'question' | 'confusion' | 'aside';
+
+const CLASSIFY_SYSTEM =
+  'You are an intent classifier for an ACCA APM tutoring chat. The student is looking at an ' +
+  "exam-style question and talking to Ezra, a tutor. Classify the student's latest message into " +
+  'EXACTLY ONE label:\n' +
+  '- attempt = genuinely trying to answer the drill — any substantive engagement, even partial, ' +
+  'terse, or wrong (a calculation, a claim, an analysis, a definition applied to the scenario). ' +
+  'If the message contains real content addressing the question, choose attempt EVEN IF it also ' +
+  'asks something.\n' +
+  '- question = ASKING a content or process question rather than answering (what a term means, ' +
+  'whether to do something, how to approach it), with no substantive answer of their own.\n' +
+  '- confusion = expresses being stuck, lost, overwhelmed, or frustrated, or is deflecting, ' +
+  'WITHOUT offering an answer.\n' +
+  '- aside = social, meta, or off-topic remarks (thanks, acknowledgements, chit-chat, questions ' +
+  'about the tutor itself).\n' +
+  'If the previous Ezra message offered to teach / walk through and the student affirms (e.g. ' +
+  '"yes", "go on"), treat that as confusion (they want help, not an answer of their own).\n' +
+  'When torn between attempt and anything else AND the message has real content addressing the ' +
+  'question, choose attempt.\n' +
+  'Output ONLY the single label word: attempt, question, confusion, or aside.';
+
+function parseIntent(text: string): Intent {
+  const t = text.toLowerCase();
+  for (const l of ['attempt', 'question', 'confusion', 'aside'] as const) if (t.includes(l)) return l;
+  return 'attempt'; // default: fail toward the moat (marking) — never worse than today
+}
+
+async function call0_classify(message: string, question: string, lastEzra: string): Promise<Intent> {
+  const prevLine = lastEzra ? `Ezra's previous message: ${lastEzra}\n\n` : '';
+  try {
+    const res = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 10,
+      system: CLASSIFY_SYSTEM,
+      messages: [
+        { role: 'user', content: `${prevLine}Drill question: ${question}\n\nStudent message: ${message}\n\nLabel:` },
+      ],
+    });
+    return parseIntent(extractText(res));
+  } catch {
+    return 'attempt'; // classifier failure → treat as an attempt (safe default, never bypasses the moat)
+  }
+}
+
+// Warm, non-marking responses for non-attempt intents. question/confusion/aside never
+// mark, never charge a cap slot. The question path still withholds THIS drill's answer.
+const WARM_INSTRUCTIONS: Record<Exclude<Intent, 'attempt'>, string> = {
+  question:
+    'The student asked a question rather than attempting. Answer it directly and helpfully — teach ' +
+    "the concept or clarify the process, using an example NOT drawn from this drill's specific " +
+    'figures. Then bridge back with a short prompt inviting them to apply it to this question ' +
+    "themselves. Do NOT give this drill's answer or its numbers. 2–4 sentences, warm and peer-to-peer.",
+  confusion:
+    'The student is stuck or overwhelmed, not attempting. Acknowledge it without condescension, ' +
+    'normalise it in a line, then give ONE small concrete next step (e.g. name the command verb and ' +
+    'write a single sentence doing it). Then offer the alternative explicitly: tell them they can say ' +
+    '"walk me through" and you will take them through the approach. Do NOT mark them and do NOT give ' +
+    'the answer. 2–4 sentences, warm.',
+  aside:
+    'The student made a social or off-topic remark, not attempting. Reply briefly and human, in ' +
+    'character, then gently re-anchor to the drill (invite them to take a swing when ready). ' +
+    '1–2 sentences. No marking, no praise-padding.',
+};
+
+async function call_warm(
+  intent: Exclude<Intent, 'attempt'>,
+  message: string,
+  question: string,
+  context: string,
+): Promise<string> {
+  const contextLine = context ? `Context: ${context}\n\n` : '';
+  const res = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 250,
+    system: EZRA_SYSTEM,
+    messages: [
+      {
+        role: 'user',
+        content:
+          `${contextLine}Drill question: ${question}\n\n` +
+          `Student message: ${message}\n\n` +
+          WARM_INSTRUCTIONS[intent],
+      },
+    ],
+  });
+  return extractText(res);
+}
+
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(request: Request): Promise<Response> {
@@ -347,15 +465,17 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { drill_id, drill_lo, session_state, student_message } = body as {
+  const { drill_id, drill_lo, session_state, student_message, last_ezra_message } = body as {
     drill_id?: unknown;
     drill_lo?: unknown;
     session_state?: unknown;
     student_message?: unknown;
+    last_ezra_message?: unknown;
   };
 
   const drillId = typeof drill_id === 'string' && drill_id ? drill_id : null;
   const drillLo = typeof drill_lo === 'string' && drill_lo ? drill_lo : null;
+  const lastEzraMessage = typeof last_ezra_message === 'string' ? last_ezra_message : '';
 
   if (!drillId && !drillLo) {
     return NextResponse.json({ error: 'drill_id or drill_lo required' }, { status: 400 });
@@ -514,34 +634,55 @@ export async function POST(request: Request): Promise<Response> {
   let newLastDiagnosis   = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
   let teachThroughDelivered = false;
+  let intent: string     = 'attempt';
+
+  // ── Stop-signal split + intent routing ──
+  // Flag ON: only explicit teach-requests fast-path to the teach-through; everything
+  // else is classified, and only `attempt` enters the withholding pipeline. Flag OFF:
+  // legacy isStopSignal (full list) → teach, everything else → diagnose (exact rollback).
+  const fastTeach = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
 
   try {
-    if (isStopSignal(student_message)) {
+    if (fastTeach) {
+      intent = 'teach_request';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
       ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel);
       teachThroughDelivered = true;
     } else {
-      const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
+      // Classify only when the layer is on; otherwise force 'attempt' (= legacy behaviour:
+      // every non-stop-signal message goes through the withholding pipeline).
+      const classified: Intent = INTENT_LAYER_ENABLED
+        ? await call0_classify(student_message, question, lastEzraMessage)
+        : 'attempt';
+      intent = classified;
 
-      if (isCorrectVerdict(diagnosis)) {
-        // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
-        // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
-        ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
-        newLastRealAttempt = student_message;
-        // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
-        // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
-        // stop-signal teach-through still has a meaningful diagnosis to anchor on.
+      if (classified !== 'attempt') {
+        // Warm, non-marking path: no miss++, no cap, no teach-through; progress untouched.
+        ezraResponse = await call_warm(classified, student_message, question, context);
       } else {
-        newMissCount     = missCount + 1;
-        newLastDiagnosis = diagnosis;
-        newLastRealAttempt = student_message;
+        // ── THE MOAT — existing withholding pipeline, unchanged ──
+        const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
 
-        if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
+        if (isCorrectVerdict(diagnosis)) {
+          // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
+          // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
+          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
+          newLastRealAttempt = student_message;
+          // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
+          // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
+          // teach-through still has a meaningful diagnosis to anchor on.
         } else {
-          ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel);
-          teachThroughDelivered = true;
+          newMissCount     = missCount + 1;
+          newLastDiagnosis = diagnosis;
+          newLastRealAttempt = student_message;
+
+          if (newMissCount === 1) {
+            ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
+          } else {
+            ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel);
+            teachThroughDelivered = true;
+          }
         }
       }
     }
@@ -609,5 +750,6 @@ export async function POST(request: Request): Promise<Response> {
     session_state:          updatedSessionState,
     teach_through_delivered: teachThroughDelivered,
     cap_now_hit:            capNowHit,
+    intent,
   });
 }
