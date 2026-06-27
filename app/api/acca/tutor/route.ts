@@ -177,8 +177,12 @@ async function call2_diagnose(
   context: string,
   attempt: string,
   modelAnswer: string,
+  markScheme: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const msLine = markScheme
+    ? `Authored mark scheme (use to identify WHICH criterion/level the student missed; do NOT quote it or state the answer):\n${markScheme}\n\n`
+    : '';
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 40,
@@ -203,6 +207,7 @@ async function call2_diagnose(
         content:
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
+          msLine +
           `Model answer (reference only — do NOT restate or correct in output):\n${modelAnswer}\n\n` +
           'Output the gap label only. Name the error pattern. Do not state what is correct.',
       },
@@ -218,8 +223,12 @@ async function call3_hint(
   context: string,
   attempt: string,
   diagnosis: string,
+  verbLevel: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const vlLine = verbLevel
+    ? `Authored command verb + intellectual level (name these — do not infer):\n${verbLevel}\n\n`
+    : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 350,
@@ -231,8 +240,10 @@ async function call3_hint(
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
+          vlLine +
           'First miss. Give a pointed hint — 2–3 sentences — naming the gap without stating the ' +
-          'answer. Name the command verb and the ACCA intellectual level it demands.',
+          'answer. Name the command verb and ACCA intellectual level from the authored values ' +
+          'above (do not infer them when given).',
       },
     ],
   });
@@ -246,8 +257,12 @@ async function call3_teach(
   context: string,
   attempt: string,
   diagnosis: string,
+  verbLevel: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const vlLine = verbLevel
+    ? `Authored command verb + intellectual level (diagnose against these — do not infer):\n${verbLevel}\n\n`
+    : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 600,
@@ -259,10 +274,11 @@ async function call3_teach(
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
+          vlLine +
           "Second miss or stop-signal — student hasn't resolved the gap. " +
           'Give a fuller teach-through — 4–6 sentences — diagnosing the failure precisely ' +
-          'against the command verb and ACCA intellectual level demanded, explaining why ' +
-          'the answer stalls and redirecting. Do not complete the answer.',
+          'against the authored command verb and ACCA intellectual level above (do not infer ' +
+          'them when given), explaining why the answer stalls and redirecting. Do not complete the answer.',
       },
     ],
   });
@@ -278,8 +294,12 @@ async function call3_confirm(
   question: string,
   context: string,
   attempt: string,
+  verbLevel: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const vlLine = verbLevel
+    ? `Authored command verb + intellectual level (name what the answer hit — do not infer):\n${verbLevel}\n\n`
+    : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 300,
@@ -290,14 +310,15 @@ async function call3_confirm(
         content:
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
+          vlLine +
           'The answer is CORRECT — it may use a different but equivalent convention ' +
           '(sign convention, A/F labelling, layout) than a model answer would. ' +
-          'Confirm it in 2–4 sentences, peer-to-peer: name the command verb and the ' +
-          'ACCA intellectual level (1, 2, or 3) the answer hit, and state briefly WHY ' +
-          'it holds / what puts it in the top band. If the convention differs from the ' +
-          'usual model, say it is equally valid. Do NOT re-derive or restate the full ' +
-          'answer, do NOT mark it as if it failed, and no generic praise — be specific ' +
-          'about what they did right.',
+          'Confirm it in 2–4 sentences, peer-to-peer: name the command verb and ACCA ' +
+          'intellectual level the answer hit (from the authored values above — do not infer ' +
+          'when given), and state briefly WHY it holds / what puts it in the top band. If the ' +
+          'convention differs from the usual model, say it is equally valid. Do NOT re-derive ' +
+          'or restate the full answer, do NOT mark it as if it failed, and no generic praise — ' +
+          'be specific about what they did right.',
       },
     ],
   });
@@ -355,7 +376,7 @@ export async function POST(request: Request): Promise<Response> {
   // until the depth drills publish — which must wait until this code is live).
   const drillBase = () => supabase
     .from('acca_drills')
-    .select('question, context_text, model_answer')
+    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', 'APM')
     .eq('status', 'approved')
@@ -372,6 +393,26 @@ export async function POST(request: Request): Promise<Response> {
   const question          = drill.question as string;
   const context           = (drill.context_text as string | null) ?? '';
   const storedModelAnswer = (drill.model_answer as string | null) ?? '';
+
+  // Authored mark-scheme metadata (redesign item 1 / Principle 5): feed Ezra the
+  // criterion to name instead of inferring verb/level from the question text.
+  //  • verbLevel (command verb + intellectual level) is safe for the student-facing
+  //    call3_* prompts — it carries no answer-revealing figures.
+  //  • markScheme appends marks_guide and goes EXCLUSIVELY to call2_diagnose, which is
+  //    internal (12–15 word gap label, never outputs the answer). A calculation drill's
+  //    marks_guide can contain answer-revealing figures, so it is STRUCTURALLY withheld
+  //    from the student-facing prompts rather than guarded by a "don't leak" instruction.
+  // Each line is omitted when its column is null → pre-metadata drills degrade to today's
+  // inference behaviour rather than injecting an empty block.
+  const verbLevel = [
+    drill.command_verb       ? `Command verb (authored): ${drill.command_verb as string}` : '',
+    drill.intellectual_level ? `ACCA intellectual level demanded (authored): ${drill.intellectual_level}` : '',
+  ].filter(Boolean).join('\n');
+
+  const markScheme = [
+    verbLevel,
+    drill.marks_guide ? `Marks guidance (authored — criteria that earn marks):\n${drill.marks_guide as string}` : '',
+  ].filter(Boolean).join('\n');
 
   // ── 4. Read profile (cap counter + subscription state) ────────────────────
   const { data: profile } = await supabase
@@ -478,15 +519,15 @@ export async function POST(request: Request): Promise<Response> {
     if (isStopSignal(student_message)) {
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel);
       teachThroughDelivered = true;
     } else {
-      const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer);
+      const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
 
       if (isCorrectVerdict(diagnosis)) {
         // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
         // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
-        ezraResponse       = await call3_confirm(question, context, student_message);
+        ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
         newLastRealAttempt = student_message;
         // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
         // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
@@ -497,9 +538,9 @@ export async function POST(request: Request): Promise<Response> {
         newLastRealAttempt = student_message;
 
         if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, student_message, diagnosis);
+          ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
         } else {
-          ezraResponse = await call3_teach(question, context, student_message, diagnosis);
+          ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel);
           teachThroughDelivered = true;
         }
       }
