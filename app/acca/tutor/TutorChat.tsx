@@ -42,6 +42,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
   const [loading, setLoading]                     = useState(false);
   const [error, setError]                         = useState<string | null>(null);
   const [teachThroughDone, setTeachThroughDone]   = useState(false);
+  const [resolvedDone, setResolvedDone]           = useState(false);
   const [capHit, setCapHit]                       = useState(initialCapHit);
   const [navigating, setNavigating]               = useState(false);
   const [mobileExpanded, setMobileExpanded]       = useState(false);
@@ -123,6 +124,12 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
         }
         setTeachThroughDone(true);
       }
+
+      if (json.intent === 'reveal' && !resolvedDone) {
+        fireEvent(userId, { event_type: 'drill_resolved', drill_lo: currentDrill.lo_code });
+        setResolvedDone(true);
+      }
+
       if (json.cap_now_hit) {
         setCapHit(true);
       }
@@ -146,6 +153,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
       setMessages([ezraOpening(next)]);
       setSessionState(null);
       setTeachThroughDone(false);
+      setResolvedDone(false);
       setMobileExpanded(false);
       setInput('');
       fireEvent(userId, { event_type: 'drill_shown', drill_lo: next.lo_code });
@@ -184,6 +192,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
       setMessages([ezraOpening(next)]);
       setSessionState(null);
       setTeachThroughDone(false);
+      setResolvedDone(false);
       setMobileExpanded(false);
       setInput('');
       fireEvent(userId, { event_type: 'drill_shown', drill_lo: next.lo_code });

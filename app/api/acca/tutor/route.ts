@@ -122,6 +122,42 @@ function isTeachRequest(input: string): boolean {
   return TEACH_REQUEST_PHRASES.some(p => lower.includes(p));
 }
 
+// ── Earned reveal (redesign item 3) ───────────────────────────────────────────
+// Behind APM_EARNED_REVEAL. The reveal is the ONE place the stored model_answer is shown
+// to the student — gated by an explicit REVEAL_PHRASES match AND genuine struggle
+// (miss_count >= 2, persisted). REVEAL_PHRASES MUST stay disjoint from TEACH_REQUEST_PHRASES
+// (unit-tested: 0 exact / 0 substring overlap, no message matches both) — otherwise
+// "show me how" could dump the answer. All reveal phrases are imperative-anchored so they
+// cannot appear inside a teach-style message ("walk me through the model answer" → teach).
+const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
+
+const REVEAL_PHRASES = [
+  'show me the full answer',
+  'show me the answer',
+  'show me the model answer',
+  'show me the worked answer',
+  'show me the full build',
+  'show the full answer',
+  'show the answer',
+  'show the model answer',
+  'just show me the answer',
+  'reveal the answer',
+  'reveal the full answer',
+  'reveal the model answer',
+];
+
+function isRevealRequest(input: string): boolean {
+  const lower = input.toLowerCase().trim();
+  return REVEAL_PHRASES.some(p => lower.includes(p));
+}
+
+// Static earn-it refusal for a reveal request below the struggle threshold. Deterministic
+// on purpose — zero-cost, zero-latency, cannot drift or leak; its only job is "not yet,
+// try first". model_answer is never in scope on this path.
+const EARN_REDIRECT =
+  "Give it a genuine go first — even a rough one. Take a real swing at it and I'll show you " +
+  'exactly how a full-marks answer is built, step by step.';
+
 // ── Correct-answer detection ───────────────────────────────────────────────────
 
 // call2_diagnose emits the fixed sentinel "answer correct — convention differs
@@ -283,10 +319,16 @@ async function call3_teach(
   attempt: string,
   diagnosis: string,
   verbLevel: string,
+  offerReveal: boolean,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
     ? `Authored command verb + intellectual level (diagnose against these — do not infer):\n${verbLevel}\n\n`
+    : '';
+  // Earned-reveal nudge — only when struggle-gated (offerReveal). Tells the student the
+  // phrase that unlocks the reveal; the teach itself still withholds the answer.
+  const offerLine = offerReveal
+    ? ' As the alternative next move, tell them they can say "show me the full answer" to see exactly how a full-marks answer is built.'
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -305,7 +347,8 @@ async function call3_teach(
           '— not a list of four) and the single next move that unblocks it. Conversational prose, 3 ' +
           'sentences, 4 at the most — no numbered points or structured breakdown, a sharp tutor ' +
           'talking not a marked script. Use the authored command verb and ACCA intellectual level ' +
-          'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.',
+          'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.' +
+          offerLine,
       },
     ],
   });
@@ -447,6 +490,49 @@ async function call_warm(
   return extractText(res);
 }
 
+// ── CALL 4: Earned reveal (redesign item 3) ───────────────────────────────────
+// ⚠️ THIS IS THE ONLY PLACE THE STORED model_answer IS SHOWN TO THE STUDENT. ⚠️
+// Withholding is intentionally lifted here and ONLY here. It is reached solely from the
+// earned-reveal branch in §7, gated by ALL of: APM_EARNED_REVEAL flag + explicit
+// REVEAL_PHRASES + miss_count >= 2 (persisted, reload-proof). Do NOT call it from any other
+// branch, and do NOT pass model_answer to any call3_*. It uses its OWN system prompt — NOT
+// EZRA_SYSTEM, whose "never complete the student's answer" guardrail is exactly what the
+// student has earned past here.
+const REVEAL_SYSTEM =
+  'You are Ezra, an APM tutor. The student has genuinely attempted this drill and worked ' +
+  'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
+  'top-band answer is built: first credit, specifically, what they already had right, then ' +
+  'walk the moves they were missing, INCLUDING the figures and the conclusion (withholding is ' +
+  'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
+  'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
+
+async function call4_reveal(
+  question: string,
+  context: string,
+  attempt: string,
+  diagnosis: string,
+  modelAnswer: string,
+): Promise<string> {
+  const contextLine = context ? `Context: ${context}\n\n` : '';
+  const res = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 700,
+    system: REVEAL_SYSTEM,
+    messages: [
+      {
+        role: 'user',
+        content:
+          `${contextLine}Question: ${question}\n\n` +
+          `Their last attempt: ${attempt}\n\n` +
+          `The gap they kept missing: ${diagnosis}\n\n` +
+          `Verified model answer (you MAY reveal this — it is the earned reveal):\n${modelAnswer}\n\n` +
+          'Build the worked walkthrough now, crediting what they had, then point them to a fresh application.',
+      },
+    ],
+  });
+  return extractText(res);
+}
+
 // ── POST handler ──────────────────────────────────────────────────────────────
 
 export async function POST(request: Request): Promise<Response> {
@@ -557,6 +643,7 @@ export async function POST(request: Request): Promise<Response> {
   let missCount           = 0;
   let lastDiagnosis:    string | null = null;
   let lastRealAttempt:  string | null = null;
+  let resolved            = false;
 
   if (!session_state) {
     // Turn 1 — use the stored, reviewed model answer; fall back to Call 1.
@@ -595,7 +682,7 @@ export async function POST(request: Request): Promise<Response> {
     try {
       const { data: progress } = await supabase
         .from('acca_tutor_progress')
-        .select('miss_count, last_diagnosis, last_real_attempt, counted')
+        .select('miss_count, last_diagnosis, last_real_attempt, counted, resolved')
         .eq('user_id', user.id)
         .eq('drill_id', drillId)
         .maybeSingle();
@@ -607,6 +694,7 @@ export async function POST(request: Request): Promise<Response> {
         // where enc (and its counted) is gone — still sees this drill as already
         // charged, preventing a double-increment of apm_teach_throughs_used.
         teachThroughCounted = teachThroughCounted || progress.counted === true;
+        resolved = progress.resolved === true;
       }
     } catch {
       // never 500 on a progress read — fall through to the declared defaults (miss_count = 0)
@@ -638,20 +726,37 @@ export async function POST(request: Request): Promise<Response> {
   let newLastDiagnosis   = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
   let teachThroughDelivered = false;
+  let newResolved        = resolved;
   let intent: string     = 'attempt';
 
   // ── Stop-signal split + intent routing ──
   // Flag ON: only explicit teach-requests fast-path to the teach-through; everything
   // else is classified, and only `attempt` enters the withholding pipeline. Flag OFF:
   // legacy isStopSignal (full list) → teach, everything else → diagnose (exact rollback).
-  const fastTeach = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
+  // Earned reveal (item 3) is checked FIRST and is doubly gated: an explicit REVEAL_PHRASES
+  // match AND genuine struggle (missCount >= 2, from the persisted §5b counter — reload-proof).
+  // A sub-threshold reveal request hits the static EARN_REDIRECT, never call4_reveal.
+  const wantsReveal = REVEAL_ENABLED && isRevealRequest(student_message);
+  const fastTeach   = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
 
   try {
-    if (fastTeach) {
+    if (wantsReveal && missCount >= 2) {
+      // EARNED — the sole gated moat-lift; model_answer reaches the student ONLY here.
+      // Free follow-up: the miss-2 teach-through already charged the cap (counted=true), so
+      // no new charge. Marks the drill resolved. No miss++, no teachThroughDelivered.
+      intent = 'reveal';
+      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer);
+      newResolved = true;
+    } else if (wantsReveal) {
+      // Reveal requested but NOT earned (missCount < 2): static refusal gate. model_answer is
+      // deliberately NOT referenced on this path — earned-not-dumped is structural, not prompt.
+      intent = 'reveal_redirect';
+      ezraResponse = EARN_REDIRECT;
+    } else if (fastTeach) {
       intent = 'teach_request';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2);
       teachThroughDelivered = true;
     } else {
       // Classify only when the layer is on; otherwise force 'attempt' (= legacy behaviour:
@@ -684,7 +789,7 @@ export async function POST(request: Request): Promise<Response> {
           if (newMissCount === 1) {
             ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel);
+            ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
             teachThroughDelivered = true;
           }
         }
@@ -742,6 +847,7 @@ export async function POST(request: Request): Promise<Response> {
           last_diagnosis:    newLastDiagnosis,
           last_real_attempt: newLastRealAttempt,
           counted:           newTeachThroughCounted, // Fix 4: durable cap-charged flag
+          resolved:          newResolved,            // item 3: durable earned-reveal flag
           updated_at:        new Date().toISOString(),
         }, { onConflict: 'user_id,drill_id' });
     } catch {
