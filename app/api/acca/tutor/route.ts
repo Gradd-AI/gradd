@@ -58,7 +58,17 @@ function openPayload(ciphertext: string): EncPayload {
 
 // ── Stop-signal detection ─────────────────────────────────────────────────────
 
+// Two intents trigger the teach-through, not one:
+//  • capitulation ("I give up") — the original list
+//  • ask-to-be-taught ("show me how a full-marks answer would…") — added because a
+//    direct request for teaching is the CLEAREST teach signal, yet was previously
+//    re-scored as a fresh attempt and answered with another hint.
+// Phrases are kept MULTI-WORD and intent-specific on purpose: isStopSignal does a
+// substring match over the whole student message, and the stop-signal path consumes
+// a cap slot, so a phrase that could appear inside a genuine APM answer (bare
+// 'stuck', 'show me', 'explain how') would wrongly burn a teach-through credit.
 const STOP_PHRASES = [
+  // capitulation
   'just tell me',
   "i don't know",
   "i give up",
@@ -66,6 +76,22 @@ const STOP_PHRASES = [
   "don't know",
   'give up',
   'skip it',
+  // ask-to-be-taught
+  "i'm stuck",
+  'im stuck',
+  "i'm lost",
+  'im lost',
+  'show me how',
+  'walk me through',
+  'talk me through',
+  'teach me',
+  'how would a full-marks',
+  'how would a full marks',
+  'what would a full-marks',
+  'what would a full marks',
+  "i don't understand",
+  'where do i start',
+  'how do i approach',
 ];
 
 function isStopSignal(input: string): boolean {
