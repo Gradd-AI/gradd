@@ -264,11 +264,11 @@ async function call3_hint(
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
-          'First miss. Open by naming — specifically — the one thing they got right or the ' +
-          'instinct that is sound, then point at the single gap as a nudge, not a verdict. ' +
-          '2–3 sentences, warm and peer-to-peer, like a tutor on their side. Name the command ' +
-          'verb and ACCA intellectual level from the authored values above (do not infer them ' +
-          "when given). Don't state the answer, and no empty praise — what you credit must be real and specific.",
+          'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
+          'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
+          'move. Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
+          'structured breakdown. Work in the command verb and ACCA intellectual level from the ' +
+          "authored values above (do not infer them when given). Don't state the answer.",
       },
     ],
   });
@@ -290,7 +290,7 @@ async function call3_teach(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 600,
+    max_tokens: 400, // physical cap on lecture sprawl (was 600); wording caps are only nudges
     system: EZRA_SYSTEM,
     messages: [
       {
@@ -300,12 +300,12 @@ async function call3_teach(
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
-          "Second miss or stop-signal — they haven't cracked it yet, so go a bit deeper, but " +
-          'stay a tutor in their corner, not an examiner marking a script. Start by acknowledging, ' +
-          'specifically, where their thinking is genuinely working, then take them through WHY it ' +
-          'stalls — diagnosing accurately against the authored command verb and ACCA intellectual ' +
-          'level above (do not infer them when given) — and point them at the next move. 3–5 ' +
-          'sentences, warm and concrete, no lecture. Do not complete the answer or give the figures.',
+          "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with " +
+          'the specific thing that IS working, then name the ONE gap that matters most (one, sharply ' +
+          '— not a list of four) and the single next move that unblocks it. Conversational prose, 3 ' +
+          'sentences, 4 at the most — no numbered points or structured breakdown, a sharp tutor ' +
+          'talking not a marked script. Use the authored command verb and ACCA intellectual level ' +
+          'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.',
       },
     ],
   });
