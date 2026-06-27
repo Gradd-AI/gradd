@@ -105,6 +105,34 @@ Ordered by leverage × ease, for the warmth/intent redesign:
 4. **Interleave `next-drill` (P3)** — flip the default from same-sub-area-blocking to mixed; keep blocking as an opt-in for deliberate weak-area drilling.
 5. **Weakness ledger + spaced re-exposure (P2)** — the biggest architecture lift (Ezra becomes session-aware); aggregate `acca_tutor_progress` diagnoses per (user, LO) and bias selection toward spaced re-exposure of weak LOs.
 
+## ITEM 3 SPEC — retrieval closure & earned reveal (build behind `APM_EARNED_REVEAL`)
+
+**Problem.** Ezra withholds correctly during attempts, but the loop never RESOLVES — a student can grind a drill and leave without a consolidated correct model. Retrieval practice (P1) without closure (P4/P5) is incomplete: effortful recall, nothing correct to anchor to. The fix is a reveal that completes the moat, not one that short-circuits it.
+
+**Two halves:**
+- *Closure (cheap, mostly shipped):* every hint/teach already ends with one concrete next move (the tone passes). That IS the per-turn retrieval closure. Keep it.
+- *Earned reveal (this spec):* after genuine struggle, the student can get a worked model to consolidate against.
+
+**Earn gate — STRUCTURAL, not just phrase. Two conditions, both required:**
+1. `miss_count >= 2`, read in §5b from `acca_tutor_progress` (the persisted DB counter). A teach-through has therefore already been delivered through GENUINE scored attempts (miss_count only increments on the diagnose branch — teach-requests/stop-signals/warm paths do not bump it). Reload-proof: `session_state` wipes on reload but the DB row does not, so a reload cannot reset the counter to dodge the struggle requirement.
+2. An explicit reveal request (`REVEAL_PHRASES`), nudged by an offer that only appears post-struggle. Never auto.
+A reveal phrase BELOW threshold → "earn it first" redirect (one more genuine go), NEVER the reveal.
+
+**Phrase lists — must be DISJOINT (unit-tested: 0 exact, 0 substring overlap either direction; no probe matches both):**
+- `TEACH_REQUEST_PHRASES` (withholding teach, any time): just tell me · show me how · walk me through · talk me through · teach me · how would a full-marks · how would a full marks · what would a full-marks · what would a full marks
+- `REVEAL_PHRASES` (earned reveal only; all imperative-anchored so they can't appear inside a teach message): show me the full answer · show me the answer · show me the model answer · show me the worked answer · show me the full build · show the full answer · show the answer · show the model answer · just show me the answer · reveal the answer · reveal the full answer · reveal the model answer
+Engine order: `isRevealRequest` (gated on miss_count>=2) checked BEFORE teach-request/classify; a both-match contrived message resolves safely (earned→reveal, unearned→falls through to teach).
+
+**What's revealed.** NOT a raw `model_answer` dump. A new `call4_reveal` produces a structured worked walkthrough from (stored verified `model_answer` + last attempt + diagnosis): credits what they already had, fills the specific gap, shows how a top-band answer is BUILT. This is the ONE place `model_answer` reaches the student — withholding intentionally lifted, so `call4_reveal` uses its OWN reveal-permitted system prompt (NOT EZRA_SYSTEM, whose "never complete the answer" guardrail is what we are earning past). Generous max_tokens (~700). Loud code comment marking it the sole gated moat-lift. (Future: faded analogous-instance model for pure-calc LOs.)
+
+**Cap.** The reveal rides as a FREE follow-up: by miss_count>=2 the drill's teach-through already charged `apm_teach_throughs_used` once (`counted=true`), so the reveal adds no charge — it is the culmination of teaching already unlocked. The per-drill free cap (3) still bounds total reveals; a paywall follows. Residual exploit (junk attempts to unlock) is bounded ≤3, self-defeating; optional substance-check on attempts later.
+
+**Close forward.** `call4_reveal` ends pointing to a FRESH application ("now run the <gap> move on a new <LO> drill"), not a re-attempt of the now-seen drill — P1 on a new instance, seeding the next retrieval; wires to next-drill / the weakness ledger.
+
+**State.** Add `resolved boolean not null default false` to `acca_tutor_progress` (additive migration, mirrors the Fix-4 `counted` add). Set on reveal. Uses: free re-read without re-charge, resolution-rate analytics (`drill_resolved` telemetry), spaced re-test scheduling (P2), next-drill deprioritisation.
+
+**Flag.** `APM_EARNED_REVEAL` — own flag, separate from `APM_INTENT_LAYER`, for independent rollout.
+
 ## What this unlocks
 The same claim the Mia doc targets, now true for APM: *"Gradd's APM tutor is built on the cognitive-science methods proven to move grades — retrieval practice, spacing, interleaving, and specific mark-scheme-linked feedback."* Today that claim is ~half-true for Ezra (retrieval ✅, specific feedback ~✅, spacing ❌, interleaving ❌). Items 1–5 above make it fully true — and, not coincidentally, also make Ezra feel like a teacher rather than a marker.
 
