@@ -417,9 +417,31 @@ export async function POST(request: Request): Promise<Response> {
     } catch {
       return NextResponse.json({ error: 'Session state corrupted' }, { status: 400 });
     }
-    missCount        = typeof s.miss_count === 'number' ? s.miss_count : 0;
-    lastDiagnosis    = typeof s.last_diagnosis    === 'string' ? s.last_diagnosis    : null;
-    lastRealAttempt  = typeof s.last_real_attempt === 'string' ? s.last_real_attempt : null;
+  }
+
+  // ── 5b. Durable teach-loop progress (replaces session_state.miss_count) ──────
+  // Authoritative source for miss_count/last_diagnosis/last_real_attempt, keyed
+  // (user_id, drill_id) so it survives the reloads that wipe the client session_state.
+  // Defensive by construction — three ways it degrades to miss_count = 0, never a 500:
+  //   • no drill_id (legacy client) → skip the read entirely (today's behaviour)
+  //   • no row yet (turn 1)         → maybeSingle() returns null
+  //   • any DB/read error           → progress stays null (try/catch backstops a throw)
+  if (drillId) {
+    try {
+      const { data: progress } = await supabase
+        .from('acca_tutor_progress')
+        .select('miss_count, last_diagnosis, last_real_attempt')
+        .eq('user_id', user.id)
+        .eq('drill_id', drillId)
+        .maybeSingle();
+      if (progress) {
+        missCount       = typeof progress.miss_count === 'number' ? progress.miss_count : 0;
+        lastDiagnosis   = (progress.last_diagnosis    as string | null) ?? null;
+        lastRealAttempt = (progress.last_real_attempt as string | null) ?? null;
+      }
+    } catch {
+      // never 500 on a progress read — fall through to the declared defaults (miss_count = 0)
+    }
   }
 
   // ── 6. Cap gate ────────────────────────────────────────────────────────────
@@ -512,6 +534,29 @@ export async function POST(request: Request): Promise<Response> {
     last_diagnosis:    newLastDiagnosis,
     last_real_attempt: newLastRealAttempt,
   };
+
+  // ── 10. Persist durable teach-loop progress (upsert by user_id + drill_id) ───
+  // Authoritative write for the counter that §5b reads next turn. Mirrors the seal:
+  // §9 seals enc (model answer + counted cap flag) into session_state; this writes the
+  // teach-loop fields to the DB. No field crosses between the two stores. Best-effort —
+  // the response is already built, so a write failure never 500s, and a legacy client
+  // with no drill_id skips persistence (its progress simply stays at 0).
+  if (drillId) {
+    try {
+      await supabase
+        .from('acca_tutor_progress')
+        .upsert({
+          user_id:           user.id,
+          drill_id:          drillId,
+          miss_count:        newMissCount,
+          last_diagnosis:    newLastDiagnosis,
+          last_real_attempt: newLastRealAttempt,
+          updated_at:        new Date().toISOString(),
+        }, { onConflict: 'user_id,drill_id' });
+    } catch {
+      // non-fatal: teach-loop persistence is best-effort, never blocks the response
+    }
+  }
 
   return NextResponse.json({
     ezra_response:          ezraResponse,
