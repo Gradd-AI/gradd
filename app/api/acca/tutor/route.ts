@@ -294,6 +294,15 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'student_message required' }, { status: 400 });
   }
 
+  // ── TEMP DIAGNOSTIC — remove after stop-signal investigation ────────────────
+  // Logs the EXACT bytes that arrived (stringified + codepoints reveal smart
+  // quotes / hidden chars) and the isStopSignal verdict, before any branch runs.
+  console.log('[tutor-stopsignal-debug]', JSON.stringify({
+    stringified:  JSON.stringify(student_message),
+    codepoints:   Array.from(student_message).map(c => c.codePointAt(0)),
+    isStopSignal: isStopSignal(student_message),
+  }));
+
   const supabase = createServiceClient();
 
   // ── 3. Fetch drill ─────────────────────────────────────────────────────────
