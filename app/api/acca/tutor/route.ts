@@ -99,6 +99,20 @@ function isStopSignal(input: string): boolean {
   return STOP_PHRASES.some(p => lower.includes(p));
 }
 
+// ── Correct-answer detection ───────────────────────────────────────────────────
+
+// call2_diagnose emits the fixed sentinel "answer correct — convention differs
+// from model only" when the student's answer is right (possibly in a different but
+// equivalent convention). The word-boundary guard is deliberate: bare 'answer
+// correct' also matches 'answer correctly', which could appear in a WRONG-answer gap
+// label ("computes the answer correctly but omits evaluation") — telling a wrong
+// answer it's right is the dangerous failure, so we anchor on the sentinel phrase
+// only, never bare /correct/. A miss here is safe: it falls through to the normal
+// hint/teach path (today's behaviour).
+function isCorrectVerdict(diagnosis: string): boolean {
+  return /\banswer correct\b/i.test(diagnosis.trim());
+}
+
 // ── Ezra persona ──────────────────────────────────────────────────────────────
 
 const EZRA_SYSTEM =
@@ -249,6 +263,41 @@ async function call3_teach(
           'Give a fuller teach-through — 4–6 sentences — diagnosing the failure precisely ' +
           'against the command verb and ACCA intellectual level demanded, explaining why ' +
           'the answer stalls and redirecting. Do not complete the answer.',
+      },
+    ],
+  });
+  return extractText(res);
+}
+
+// ── CALL 3: Confirm (correct answer) ──────────────────────────────────────────
+// Fired only when call2_diagnose returns the correct-sentinel. Acknowledges a right
+// answer instead of mis-delivering a gap-hint. NOT a teach-through: the caller leaves
+// teachThroughDelivered = false, so getting it right never consumes a cap slot.
+
+async function call3_confirm(
+  question: string,
+  context: string,
+  attempt: string,
+): Promise<string> {
+  const contextLine = context ? `Context: ${context}\n\n` : '';
+  const res = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 300,
+    system: EZRA_SYSTEM,
+    messages: [
+      {
+        role: 'user',
+        content:
+          `${contextLine}Question: ${question}\n\n` +
+          `Student answer: ${attempt}\n\n` +
+          'The answer is CORRECT — it may use a different but equivalent convention ' +
+          '(sign convention, A/F labelling, layout) than a model answer would. ' +
+          'Confirm it in 2–4 sentences, peer-to-peer: name the command verb and the ' +
+          'ACCA intellectual level (1, 2, or 3) the answer hit, and state briefly WHY ' +
+          'it holds / what puts it in the top band. If the convention differs from the ' +
+          'usual model, say it is equally valid. Do NOT re-derive or restate the full ' +
+          'answer, do NOT mark it as if it failed, and no generic praise — be specific ' +
+          'about what they did right.',
       },
     ],
   });
@@ -407,15 +456,26 @@ export async function POST(request: Request): Promise<Response> {
       teachThroughDelivered = true;
     } else {
       const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer);
-      newMissCount     = missCount + 1;
-      newLastDiagnosis = diagnosis;
-      newLastRealAttempt = student_message;
 
-      if (newMissCount === 1) {
-        ezraResponse = await call3_hint(question, context, student_message, diagnosis);
+      if (isCorrectVerdict(diagnosis)) {
+        // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
+        // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
+        ezraResponse       = await call3_confirm(question, context, student_message);
+        newLastRealAttempt = student_message;
+        // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
+        // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
+        // stop-signal teach-through still has a meaningful diagnosis to anchor on.
       } else {
-        ezraResponse = await call3_teach(question, context, student_message, diagnosis);
-        teachThroughDelivered = true;
+        newMissCount     = missCount + 1;
+        newLastDiagnosis = diagnosis;
+        newLastRealAttempt = student_message;
+
+        if (newMissCount === 1) {
+          ezraResponse = await call3_hint(question, context, student_message, diagnosis);
+        } else {
+          ezraResponse = await call3_teach(question, context, student_message, diagnosis);
+          teachThroughDelivered = true;
+        }
       }
     }
   } catch {
