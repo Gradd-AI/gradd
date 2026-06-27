@@ -430,7 +430,7 @@ export async function POST(request: Request): Promise<Response> {
     try {
       const { data: progress } = await supabase
         .from('acca_tutor_progress')
-        .select('miss_count, last_diagnosis, last_real_attempt')
+        .select('miss_count, last_diagnosis, last_real_attempt, counted')
         .eq('user_id', user.id)
         .eq('drill_id', drillId)
         .maybeSingle();
@@ -438,6 +438,10 @@ export async function POST(request: Request): Promise<Response> {
         missCount       = typeof progress.miss_count === 'number' ? progress.miss_count : 0;
         lastDiagnosis   = (progress.last_diagnosis    as string | null) ?? null;
         lastRealAttempt = (progress.last_real_attempt as string | null) ?? null;
+        // Durable cap-charged flag (Fix 4): OR the server-side value in so a reload —
+        // where enc (and its counted) is gone — still sees this drill as already
+        // charged, preventing a double-increment of apm_teach_throughs_used.
+        teachThroughCounted = teachThroughCounted || progress.counted === true;
       }
     } catch {
       // never 500 on a progress read — fall through to the declared defaults (miss_count = 0)
@@ -551,6 +555,7 @@ export async function POST(request: Request): Promise<Response> {
           miss_count:        newMissCount,
           last_diagnosis:    newLastDiagnosis,
           last_real_attempt: newLastRealAttempt,
+          counted:           newTeachThroughCounted, // Fix 4: durable cap-charged flag
           updated_at:        new Date().toISOString(),
         }, { onConflict: 'user_id,drill_id' });
     } catch {
