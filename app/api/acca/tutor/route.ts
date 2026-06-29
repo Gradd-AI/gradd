@@ -131,6 +131,11 @@ function isTeachRequest(input: string): boolean {
 // cannot appear inside a teach-style message ("walk me through the model answer" → teach).
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
 
+// Correct-verdict completeness gate: when call2 says "correct", verify every required
+// component (read from the model answer) was actually attempted before confirming. Runs
+// ONLY on the correct branch; flag off = today's behaviour verbatim.
+const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
+
 const REVEAL_PHRASES = [
   'show me the full answer',
   'show me the answer',
@@ -393,6 +398,65 @@ async function call3_confirm(
     ],
   });
   return extractText(res);
+}
+
+// ── CALL 2b: Completeness gate (behind APM_COMPLETENESS_GATE) ──────────────────
+// Runs ONLY after call2_diagnose returns the correct-sentinel. call2 verifies the NUMBERS
+// (and protects convention/format differences); this verifies COMPLETENESS — that every
+// required component the model answer demonstrates (calculation, evaluation, sceptical
+// challenge, limitations commentary — wording varies) was actually ATTEMPTED. LLM judgment,
+// NOT a parse: model-answer bold/headers are overloaded (mark both headers and result values)
+// and header wording varies. Narrow: "absent" = NO attempt, never "shallower than the model".
+// Bias hard toward complete — only a clear missing-component label overrides the correct verdict.
+// Returns the missing-component gap label, or null when complete (→ stays Correct).
+async function completenessCheck(
+  question: string,
+  context: string,
+  modelAnswer: string,
+  attempt: string,
+  verbLevel: string,
+): Promise<string | null> {
+  const contextLine = context ? `Context: ${context}\n\n` : '';
+  const vlLine = verbLevel ? `Command verb + intellectual level: ${verbLevel}\n\n` : '';
+  try {
+    const res = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 40,
+      system:
+        'You check whether a student answer is COMPLETE against the components a model answer ' +
+        'demonstrates. The numerical correctness has ALREADY been verified — do NOT re-check any ' +
+        'numbers, and do NOT flag convention/format/layout differences (sign convention, A/F ' +
+        'labelling, table layout are all fine). Read the model answer and identify its distinct ' +
+        'REQUIRED components (e.g. the calculation, the evaluation/recommendation, the sceptical ' +
+        'challenge, the limitations/bias commentary — wording varies, do not rely on headings). ' +
+        'For each, decide whether the student made ANY genuine attempt at it. Output rules: ' +
+        '(1) If the student attempted EVERY required component, output exactly: complete ' +
+        '(2) If a required component is ENTIRELY ABSENT (no attempt at all), output a short gap ' +
+        'label (8-12 words) naming the MISSING component, using the student answer as referent — ' +
+        'do NOT state the answer or the missing content itself. ' +
+        'CRITICAL: "absent" means NO attempt, NOT "shallower or less developed than the model". A ' +
+        'brief or partial attempt at a component counts as PRESENT. When uncertain whether a ' +
+        'component was attempted, output: complete (never invent incompleteness). ' +
+        'Output ONLY the single word "complete" OR the gap label.',
+      messages: [
+        {
+          role: 'user',
+          content:
+            `${contextLine}Question: ${question}\n\n` +
+            vlLine +
+            `Model answer (defines the required components — reference only, do NOT restate):\n${modelAnswer}\n\n` +
+            `Student answer:\n${attempt}\n\n` +
+            'Output "complete" or the missing-component gap label only.',
+        },
+      ],
+    });
+    const out = extractText(res).trim();
+    // Bias toward complete: empty, or any output containing "complete", → not a gap.
+    if (!out || /\bcomplete\b/i.test(out)) return null;
+    return out;
+  } catch {
+    return null; // non-fatal — a check failure preserves today's correct behaviour
+  }
 }
 
 // ── Intent layer (redesign item 2) ────────────────────────────────────────────
@@ -790,7 +854,17 @@ export async function POST(request: Request): Promise<Response> {
         // ── THE MOAT — existing withholding pipeline, unchanged ──
         const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
 
-        if (isCorrectVerdict(diagnosis)) {
+        // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
+        // verifies every required component was attempted. Runs ONLY when call2 says correct, so
+        // the wrong/convention paths stay byte-identical. A clearly-absent component demotes the
+        // correct verdict to a miss whose gap NAMES the missing component (case 2).
+        let completenessGap: string | null = null;
+        if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
+          completenessGap = await completenessCheck(question, context, modelAnswer, student_message, verbLevel);
+        }
+        const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
+
+        if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
           ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
@@ -800,15 +874,17 @@ export async function POST(request: Request): Promise<Response> {
           // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
           // teach-through still has a meaningful diagnosis to anchor on.
         } else {
+          // completenessGap (when set) names the absent component; else call2's gap (genuine wrong).
+          const gap        = completenessGap ?? diagnosis;
           newMissCount     = missCount + 1;
-          newLastDiagnosis = diagnosis;
+          newLastDiagnosis = gap;
           newLastRealAttempt = student_message;
 
           if (newMissCount === 1) {
-            ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel);
             messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
+            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }

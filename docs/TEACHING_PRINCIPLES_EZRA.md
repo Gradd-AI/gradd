@@ -171,6 +171,41 @@ score(c) =  w_demand   * (c.level != currentLevel || c.verb != currentVerb ? 1 :
 
 **Flag.** `APM_INTERLEAVE` — own flag, separate from `APM_INTENT_LAYER` / `APM_EARNED_REVEAL`. Flag OFF = today's same-sub-area-preferred, exclude-LO behaviour verbatim (exact rollback). Ships dormant.
 
+## CORRECT-VERDICT COMPLETENESS GATE SPEC — (build behind `APM_COMPLETENESS_GATE`)
+
+**Problem (defect).** `call2_diagnose`'s correct-sentinel ("answer correct — convention differs from model only") is gated on NUMERIC equivalence only — it exists (commit `e18a0c5`) to stop FALSE-WRONG verdicts on convention differences (sign convention, A/F labelling, layout). It has no completeness check. On a multi-component drill (e.g. A3b "calculate and evaluate", which demands a sceptical challenge), a calc-correct-but-incomplete answer satisfies the numeric test → sentinel → `isCorrectVerdict` → **Correct** badge + `call3_confirm`. `call3_confirm` (a separate Haiku call that sees the question+verb) then reads the level-2 stop and writes "you're missing the sceptical challenge" — so the student gets a **Correct frame over an incomplete body**, and is falsely told they're done. (`isCorrectVerdict`'s regex is tight and correct; the fault is upstream — the verdict's notion of "correct" = numerically equivalent, not mark-scheme-complete.)
+
+**Target behaviour, three cases:**
+1. Correct AND complete (every required component attempted) → Correct (`call3_confirm`) — unchanged.
+2. Correct calculation BUT a required component entirely absent (e.g. the sceptical challenge) → NOT correct; diagnose the MISSING component as the gap → hint/teach, `miss_count++`. The student is told what's missing, not falsely told they're done.
+3. Genuinely wrong (bad number/operation) → diagnose as today — unchanged.
+
+**Where the completeness signal lives (audited 29/06/2026, 6 drills incl. controls).** NOT `marks_guide` — it is a scalar (the mark total: A3b=15, A3f=6), no component breakdown, no rubric/checklist column exists. The reliable source is the **`model_answer`**, which is consistently sectioned across the sample into a calc block plus a labelled judgment component (Evaluation / Scepticism / Interpretation and scepticism / Limitations and bias) — present even in the single-verb controls (B1c "calculate", D2e "analyse"). `command_verb` arity is NOT a reliable scope signal (B1c is single-verb but multi-component), so it is **dropped** — the model_answer self-scopes (a calc-only model answer → check finds only calc → behaves like today).
+
+**Design — two-stage, gate runs ONLY on the correct branch; `call2_diagnose` is left UNTOUCHED.**
+```
+diagnosis = call2_diagnose(...)                              // UNCHANGED — numeric/convention verdict
+completenessGap = null
+if (FLAG && isCorrectVerdict(diagnosis))
+    completenessGap = completenessCheck(question, context, modelAnswer, attempt, verbLevel)
+treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap
+if (treatCorrect)  → call3_confirm (messageKind 'correct')              // case 1, unchanged
+else               → gap = completenessGap ?? diagnosis; miss++; hint/teach(gap)   // case 2 (fix) / case 3 (unchanged)
+```
+Because `call2_diagnose` is untouched and the gate runs only when the verdict is already "correct", the wrong-answer and convention-difference paths are byte-identical — the gate can NEVER turn a numeric-wrong or a complete-but-different-format answer into "wrong". It can only convert a correct-but-incomplete verdict into a gap. The sole residual risk is *false-incomplete*, mitigated below.
+
+**`completenessCheck` — LLM judgment (Haiku), NOT a parse.** Bold/headers in the model answer are overloaded (they mark both section headers AND emphasised result values) and header wording varies (`Scepticism` / `SCEPTICISM` / `Interpretation and scepticism` / `Limitations and bias`), so a regex/keyword match is unreliable. The check *reasons over* the model answer: identify its distinct required components, decide whether the student made ANY genuine attempt at each, output `complete` or a short gap label naming the absent component (no answer content stated). It is explicitly told the numbers are already verified — do NOT re-check arithmetic or flag convention/format/layout.
+
+**Narrow "incomplete" definition (false-wrong protection).** "Absent" = NO attempt at a required component, NOT "shallower/less developed than the model". A brief or partial attempt counts as PRESENT (depth/quality is the hint's job, not the gate's). On any uncertainty → output `complete`. The parser biases the same way: only a clear gap label with no "complete" verdict triggers the override; empty/errored/ambiguous output → treated as complete (today's behaviour). A `completenessCheck` failure is non-fatal → null → Correct.
+
+**Cost.** One extra Haiku call, incurred ONLY on the correct branch (the rare, worth-it moment) — not on every attempt. `call2_diagnose` (Sonnet) is unchanged.
+
+**State / cap.** None. No schema change, no new columns. `miss_count` increments on a case-2 override exactly as a normal miss (so the teach-through / earned-reveal flow engages correctly). No `marks_guide` dependency.
+
+**Flag.** `APM_COMPLETENESS_GATE` — own flag, separate from the others. Flag OFF = today's behaviour verbatim (the gate block is skipped; `treatCorrect === isCorrectVerdict(diagnosis)`). Ships dormant.
+
+**Verify before enable (3 cases + audit):** (a) A3b calc-correct / scepticism-absent → gap naming the missing challenge, `miss_count++`; (b) a convention-different but COMPLETE calc (e.g. B1c with flipped sign) → still **Correct** (proves no false-wrong); (c) a genuinely-wrong number → gap, unchanged. Plus spot-check `model_answer` structure on a few more evaluation drills (audit sample was 6/49).
+
 ## What this unlocks
 The same claim the Mia doc targets, now true for APM: *"Gradd's APM tutor is built on the cognitive-science methods proven to move grades — retrieval practice, spacing, interleaving, and specific mark-scheme-linked feedback."* Today that claim is ~half-true for Ezra (retrieval ✅, specific feedback ~✅, spacing ❌, interleaving ❌). Items 1–5 above make it fully true — and, not coincidentally, also make Ezra feel like a teacher rather than a marker.
 
