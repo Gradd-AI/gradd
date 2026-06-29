@@ -29,8 +29,17 @@ export default async function APMTutorPage({
   }
 
   const { lo, area } = await searchParams;
-  const loCode   = typeof lo   === 'string' ? lo   : null;
-  const areaCode = typeof area === 'string' ? area : null;
+  // LO/area codes are stored leading-uppercase, rest-lowercase, alphanumeric only
+  // (e.g. 'A3b', 'B1'). PostgREST .eq/.like are case-sensitive AND .like treats _ / %
+  // as wildcards, so canonicalize the URL param: strip non-alphanumerics (closes the
+  // ?area=B_ wildcard exposure) then fix casing. Otherwise ?lo=A3F dead-ends a real
+  // published drill. Empty after stripping → null → default B1c drill.
+  const canon = (s: string) => {
+    const a = s.replace(/[^a-z0-9]/gi, '');
+    return a ? a[0].toUpperCase() + a.slice(1).toLowerCase() : '';
+  };
+  const loCode   = typeof lo   === 'string' ? canon(lo)   || null : null;
+  const areaCode = typeof area === 'string' ? canon(area) || null : null;
 
   const supabase = createServiceClient();
 
