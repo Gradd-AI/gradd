@@ -844,6 +844,17 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Auth
 **SEVERITY:** High
 
+---
+
+**ISSUE:** [ACCA] No sign-out option in the APM tutor
+**STATUS:** OPEN — pre-launch / go-live gate (not yet built). Small, self-contained; can ship anytime before launch.
+**SYMPTOM:** There is no way to sign out of the APM tutor. A session, once authenticated, stays authenticated in the browser with no user-facing exit.
+**ROOT CAUSE:** The sign-out affordance was never built — the tutor UI has no control wired to Supabase `signOut()`. This is an **auth-layer / UX gap**, NOT a data-integrity issue: all teaching state (`miss_count`, `counted`, `resolved`, and the cap counter) is persisted per-turn server-side in `acca_tutor_progress` / `profiles`, so closing the tab loses nothing — the gap is purely the inability to *end* a session deliberately.
+**FIX (planned — small):** Add a sign-out button that calls Supabase `signOut()` and redirects to `/acca/auth`.
+**PREVENTION:** Needed for the ordinary reasons, not edge cases: (1) **privacy on shared/work/library devices** — without it, the next person to open the browser lands inside the previous user's account; (2) **account switching**; (3) **basic user expectation** — an authenticated app is expected to have a visible way out. Treat a sign-out control as part of the definition-of-done for any authenticated surface, not a later add-on.
+**CATEGORY:** Auth
+**SEVERITY:** Medium
+
 
 ### STRIPE / BILLING
 
