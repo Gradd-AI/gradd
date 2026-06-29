@@ -70,6 +70,23 @@ export async function GET(request: Request): Promise<Response> {
     return NextResponse.json(pick);
   }
 
-  // No other drills available — restart with same drill
-  return NextResponse.json({ lo_code: lo, topic: '' });
+  // No other drills available — re-serve a drill from the current LO. MUST return a full
+  // row (with id): an id-less object blanks currentDrill on the client and makes the next
+  // tutor POST send drill_id:null, silently killing §5b/§10 persistence + the earn gate.
+  const { data: sameLo } = await supabase
+    .from('acca_drills')
+    .select('id, lo_code, topic, question, context_text')
+    .eq('exam_board', 'ACCA')
+    .eq('paper_code', 'APM')
+    .eq('status', 'approved')
+    .eq('published', true)
+    .eq('lo_code', lo)
+    .limit(20);
+
+  if (sameLo && sameLo.length > 0) {
+    return NextResponse.json(sameLo[Math.floor(Math.random() * sameLo.length)]);
+  }
+
+  // Truly nothing to serve — 404 so the client keeps the current drill (never blanks it).
+  return NextResponse.json({ error: 'No drills available' }, { status: 404 });
 }

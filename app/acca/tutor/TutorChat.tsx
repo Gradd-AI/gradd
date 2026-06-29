@@ -148,7 +148,9 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
     setNavigating(true);
     try {
       const res  = await fetch(`/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}`);
+      if (!res.ok) return;            // 404/error → keep current drill (finally resets navigating)
       const next = await res.json() as Drill;
+      if (!next?.id) return;          // never blank currentDrill with an id-less object
       setCurrentDrill(next);
       setMessages([ezraOpening(next)]);
       setSessionState(null);
@@ -187,7 +189,9 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
     setNavigating(true);
     try {
       const res  = await fetch(`/api/acca/next-drill?area=${encodeURIComponent(subArea)}`);
+      if (!res.ok) return;            // 404/error → keep current drill (finally resets navigating)
       const next = await res.json() as Drill;
+      if (!next?.id) return;          // never blank currentDrill with an id-less object
       setCurrentDrill(next);
       setMessages([ezraOpening(next)]);
       setSessionState(null);
