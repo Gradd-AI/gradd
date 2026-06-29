@@ -12,7 +12,16 @@ interface Drill {
   topic: string;
   question: string;
   context_text: string | null;
+  section_changed?: boolean;   // item 4: next-drill crossed into a new section (interleave tier 4)
 }
+
+// Section titles (apm-framework.ts) — for the cross-section transition note (item 4)
+const SECTION_NAME: Record<string, string> = {
+  A: 'Strategic management and value creation',
+  B: 'Performance optimisation',
+  C: 'Performance reporting',
+  D: 'Data science and technology',
+};
 
 interface Message {
   role: 'student' | 'ezra';
@@ -152,14 +161,23 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
   // "Try another" swaps left panel in-place; no navigation
   const handleTryAnother = async () => {
     fireEvent(userId, { event_type: 'try_another_clicked', drill_lo: currentDrill.lo_code });
+    const fromSection = currentDrill.lo_code[0];   // captured before the swap, for the transition note
     setNavigating(true);
     try {
-      const res  = await fetch(`/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}`);
+      const res  = await fetch(
+        `/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}&drill_id=${encodeURIComponent(currentDrill.id)}`,
+      );
       if (!res.ok) return;            // 404/error → keep current drill (finally resets navigating)
       const next = await res.json() as Drill;
       if (!next?.id) return;          // never blank currentDrill with an id-less object
       setCurrentDrill(next);
-      setMessages([ezraOpening(next)]);
+      // Item 4: when interleaving crosses a section, the student MUST see the move — never a silent jump.
+      const toSection = next.lo_code[0];
+      setMessages(
+        next.section_changed
+          ? [{ role: 'ezra', content: `You've worked through Section ${fromSection} (${SECTION_NAME[fromSection] ?? ''}) — moving to Section ${toSection} (${SECTION_NAME[toSection] ?? ''}).` }, ezraOpening(next)]
+          : [ezraOpening(next)],
+      );
       setSessionState(null);
       setTeachThroughDone(false);
       setResolvedDone(false);
