@@ -736,6 +736,10 @@ export async function POST(request: Request): Promise<Response> {
   let teachThroughDelivered = false;
   let newResolved        = resolved;
   let intent: string     = 'attempt';
+  // Single discriminant for the client badge: tells hint / teaching / correct apart
+  // (which intent + teach_through_delivered alone cannot). Set in every branch below.
+  // Purely additive — read only by the client for labelling; no engine/cap logic reads it.
+  let messageKind: string = 'hint';
 
   // ── Stop-signal split + intent routing ──
   // Flag ON: only explicit teach-requests fast-path to the teach-through; everything
@@ -753,15 +757,18 @@ export async function POST(request: Request): Promise<Response> {
       // Free follow-up: the miss-2 teach-through already charged the cap (counted=true), so
       // no new charge. Marks the drill resolved. No miss++, no teachThroughDelivered.
       intent = 'reveal';
+      messageKind = 'reveal';
       ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer);
       newResolved = true;
     } else if (wantsReveal) {
       // Reveal requested but NOT earned (missCount < 2): static refusal gate. model_answer is
       // deliberately NOT referenced on this path — earned-not-dumped is structural, not prompt.
       intent = 'reveal_redirect';
+      messageKind = 'reveal_locked';
       ezraResponse = EARN_REDIRECT;
     } else if (fastTeach) {
       intent = 'teach_request';
+      messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
       ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2);
@@ -777,6 +784,8 @@ export async function POST(request: Request): Promise<Response> {
       if (classified !== 'attempt') {
         // Warm, non-marking path: no miss++, no cap, no teach-through; progress untouched.
         ezraResponse = await call_warm(classified, student_message, question, context);
+        messageKind = classified === 'question' ? 'answer'
+                    : classified === 'confusion' ? 'coaching' : 'chat';
       } else {
         // ── THE MOAT — existing withholding pipeline, unchanged ──
         const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
@@ -785,6 +794,7 @@ export async function POST(request: Request): Promise<Response> {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
           ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
+          messageKind        = 'correct';
           newLastRealAttempt = student_message;
           // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
           // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
@@ -796,9 +806,11 @@ export async function POST(request: Request): Promise<Response> {
 
           if (newMissCount === 1) {
             ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
+            messageKind = 'hint';
           } else {
             ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
             teachThroughDelivered = true;
+            messageKind = 'teaching';
           }
         }
       }
@@ -869,5 +881,6 @@ export async function POST(request: Request): Promise<Response> {
     teach_through_delivered: teachThroughDelivered,
     cap_now_hit:            capNowHit,
     intent,
+    message_kind:           messageKind,
   });
 }

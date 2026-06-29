@@ -17,7 +17,14 @@ interface Drill {
 interface Message {
   role: 'student' | 'ezra';
   content: string;
+  kind?: string;            // server message_kind → badge (Ezra messages only)
 }
+
+// kinds with no entry (reveal_locked, chat) render no badge — deliberately quiet
+const KIND_LABEL: Record<string, string> = {
+  teaching: 'Teaching', hint: 'Hint', correct: 'Correct',
+  reveal: 'Model answer', answer: 'Answer', coaching: 'Coaching',
+};
 
 function fireEvent(userId: string, payload: { event_type: string; drill_lo?: string; metadata?: Record<string, unknown> }) {
   void fetch('/api/acca/event', {
@@ -104,7 +111,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
       }
 
       setSessionState(json.session_state);
-      setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response }]);
+      setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response, kind: json.message_kind }]);
 
       if (json.intent) {
         fireEvent(userId, {
@@ -348,6 +355,9 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
                   <div className="et-msg-body">
                     <div className="et-msg-sender">
                       {msg.role === 'ezra' ? 'Ezra' : 'You'}
+                      {msg.role === 'ezra' && msg.kind && KIND_LABEL[msg.kind] && (
+                        <span className={`et-msg-badge et-msg-badge--${msg.kind}`}>{KIND_LABEL[msg.kind]}</span>
+                      )}
                     </div>
                     {msg.role === 'ezra' ? (
                       <div className="et-msg-content et-msg-content--ezra">
@@ -751,6 +761,33 @@ const CSS = `
   color: var(--text-muted);
 }
 .et-msg--student .et-msg-sender { text-align: right; }
+
+/* Message-type badge: small pill next to "Ezra". Quiet by default; heavier accent for
+   the teach-through / model-answer (the moments a student should clearly register). */
+.et-msg-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  vertical-align: 1px;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border, rgba(0,0,0,0.08));
+}
+.et-msg-badge--teaching,
+.et-msg-badge--reveal {
+  background: var(--brand);
+  color: #fff;
+  border-color: transparent;
+}
+.et-msg-badge--correct {
+  background: rgba(34, 160, 90, 0.12);
+  color: #1c8b4e;
+  border-color: rgba(34, 160, 90, 0.25);
+}
 
 .et-msg-content {
   border-radius: 12px;
