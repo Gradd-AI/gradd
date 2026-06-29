@@ -408,19 +408,27 @@ const CLASSIFY_SYSTEM =
   "exam-style question and talking to Ezra, a tutor. Classify the student's latest message into " +
   'EXACTLY ONE label:\n' +
   '- attempt = genuinely trying to answer the drill — any substantive engagement, even partial, ' +
-  'terse, or wrong (a calculation, a claim, an analysis, a definition applied to the scenario). ' +
-  'If the message contains real content addressing the question, choose attempt EVEN IF it also ' +
-  'asks something.\n' +
+  'terse, hedged, or wrong (a calculation, a claim, an analysis, a definition applied to the ' +
+  "scenario). A substantive claim about the drill's concepts or figures is an attempt REGARDLESS " +
+  'OF (a) hedging or evaluative/emotional wording (e.g. "maybe ROI is just unfair", "this measure ' +
+  'is useless") and (b) interrogative or tag-question syntax (e.g. "isn\'t it just the overhead ' +
+  'allocation?", "so it\'s residual income, right?"). If the message proposes or asserts content ' +
+  'addressing the question, choose attempt EVEN IF it is phrased as a question or also asks ' +
+  'something.\n' +
   '- question = ASKING a content or process question rather than answering (what a term means, ' +
-  'whether to do something, how to approach it), with no substantive answer of their own.\n' +
-  '- confusion = expresses being stuck, lost, overwhelmed, or frustrated, or is deflecting, ' +
-  'WITHOUT offering an answer.\n' +
+  'whether to do something, how to approach it) AND proposing NO substantive answer of their own. ' +
+  'A message phrased as a question that nonetheless proposes a substantive answer (e.g. "isn\'t it ' +
+  'X?") is an attempt, not a question.\n' +
+  '- confusion = expresses being stuck, lost, overwhelmed, or frustrated ABOUT THEIR OWN ' +
+  'PROGRESS/ABILITY, or is deflecting, WITHOUT offering any answer or claim. An evaluative ' +
+  'judgment about the subject matter (calling a measure "unfair", "wrong", or "flawed") is a ' +
+  'CLAIM, not confusion — classify it as attempt.\n' +
   '- aside = social, meta, or off-topic remarks (thanks, acknowledgements, chit-chat, questions ' +
   'about the tutor itself).\n' +
   'If the previous Ezra message offered to teach / walk through and the student affirms (e.g. ' +
   '"yes", "go on"), treat that as confusion (they want help, not an answer of their own).\n' +
-  'When torn between attempt and anything else AND the message has real content addressing the ' +
-  'question, choose attempt.\n' +
+  'When torn between attempt and anything else AND the message contains any substantive claim or ' +
+  'content addressing the question, choose attempt.\n' +
   'Output ONLY the single label word: attempt, question, confusion, or aside.';
 
 function parseIntent(text: string): Intent {
