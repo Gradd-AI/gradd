@@ -115,6 +115,15 @@ SCALING NOW FULLY CLEARED for all drill types:
 - Calc drills: no rounded intermediates as inputs; reconciliation required (generator rule, added this session after a real defect).
 - Schema changes via Supabase SQL Editor only, never script-driven.
 
+### STANDING TEST PROTOCOL — verify the ENVIRONMENT before concluding the CODE (mandatory, added 30/06/2026)
+ROOT PATTERN: every false trail this project hit traced to the test environment not matching intent — wrong user_id, stale deploy, stale counter, wrong drill, flag-not-live — NEVER the code being wrong. The flag-not-live trap alone recurred 6× in the 29–30/06 completeness-gate session. Before drawing ANY conclusion from a behaviour test, confirm ALL of:
+1. **Incognito window** — no cached session/JS, no stale auth.
+2. **Flag is LIVE** — env var set in Vercel Preview scope AND a deploy built AFTER it was set. Set-but-not-redeployed = flag OFF (Vercel binds the env-var set to each deployment at build time; a dashboard-only redeploy or a build predating the var won't carry it). Quick proof: one throwaway/known-behaviour input that ONLY behaves a certain way flag-on.
+3. **Deploy commit matches intent** — confirm the build being tested is the commit you mean to test, not a stale/earlier build (branch alias points at the newest READY deploy; verify the SHA).
+4. **Single-drill LO** (e.g. B1c) so the scenario is STABLE. Multi-drill LOs (A3b ×9, A3e ×3) random-serve per request → answer won't match the loaded scenario → drill-mismatch contaminates the read. `select lo_code, count(*) ... where status='approved' and published group by lo_code having count(*)=1` to confirm single.
+5. **Reset the drill's `acca_tutor_progress` row between cases** — stale `miss_count` skips branches (hint vs teach vs reveal) and muddies the read.
+6. **Confirm the CURRENT test account id** — temp emails get burned, so the id changes; check before assuming.
+
 ### Production state vs branch (19/06/2026) — KNOWN, do not "fix" prematurely
 PRODUCTION (main) serves ONLY the old waitlist page at gradd.ai/acca (commit f2b4fca, "ACCA APM demand-test landing, email capture only" — Mia persona, "Reserve your place", writes to waitlist table). It predates this session and contradicts the locked launch strategy.
 The REAL product — drill funnel (/acca/drill), Ezra tutor (/acca/tutor), tightened generator, audited drills — is ALL on feature/apm-drills, NEVER merged to main. Production /acca/drill and /acca/tutor are 404 until merge.
