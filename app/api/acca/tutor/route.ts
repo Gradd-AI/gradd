@@ -377,7 +377,7 @@ async function call3_confirm(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 300,
+    max_tokens: 500,
     system: EZRA_SYSTEM,
     messages: [
       {
@@ -392,8 +392,9 @@ async function call3_confirm(
           'thing they did well (the real move, not empty praise). Name the command verb and ACCA ' +
           'intellectual level the answer hit (from the authored values above — do not infer when ' +
           'given) and say briefly why it holds / what puts it in the top band. If their convention ' +
-          "differs from the usual model, say it's equally valid. Do NOT re-derive or restate the " +
-          "full answer, and don't mark it as if it fell short.",
+          "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
+          'quote back their figures or workings — they already wrote them; refer to what they did ' +
+          "in words, not numbers. Don't mark it as if it fell short.",
       },
     ],
   });
