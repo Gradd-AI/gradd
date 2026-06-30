@@ -451,10 +451,17 @@ async function completenessCheck(
       ],
     });
     const out = extractText(res).trim();
+    // TEMP DIAGNOSTIC — remove after gate root-cause. Logs the RAW Haiku text and the value
+    // this fn will return, BEFORE the null-coalesce, so three causes of completenessGap=null
+    // are distinguishable: raw="complete" (prompt too lax) | raw=a gap label but willReturn=null
+    // (the /\bcomplete\b/ guard swallowed a label containing "complete" → wiring bug) | catch fired.
+    const willReturn = (!out || /\bcomplete\b/i.test(out)) ? null : out;
+    console.error('[GATE-CC] ' + JSON.stringify({ raw: out, willReturn }));
     // Bias toward complete: empty, or any output containing "complete", → not a gap.
     if (!out || /\bcomplete\b/i.test(out)) return null;
     return out;
-  } catch {
+  } catch (err) {
+    console.error('[GATE-CC] threw: ' + (err instanceof Error ? (err.stack ?? err.message) : String(err)));
     return null; // non-fatal — a check failure preserves today's correct behaviour
   }
 }
