@@ -459,16 +459,10 @@ async function completenessCheck(
       ],
     });
     const out = extractText(res).trim();
-    // TEMP DIAGNOSTIC — remove after gate re-verification. Raw Haiku text + the value this fn
-    // returns, before the null-coalesce: raw="complete" (prompt still too lax) | raw=gap label
-    // but willReturn=null (guard swallowed it) | no line at all + a throw → [GATE-CC] threw.
-    const willReturn = (!out || /\bcomplete\b/i.test(out)) ? null : out;
-    console.error('[GATE-CC] ' + JSON.stringify({ raw: out, willReturn }));
     // Bias toward complete: empty, or any output containing "complete", → not a gap.
     if (!out || /\bcomplete\b/i.test(out)) return null;
     return out;
-  } catch (err) {
-    console.error('[GATE-CC] threw: ' + (err instanceof Error ? (err.stack ?? err.message) : String(err)));
+  } catch {
     return null; // non-fatal — a check failure preserves today's correct behaviour
   }
 }
@@ -877,17 +871,6 @@ export async function POST(request: Request): Promise<Response> {
           completenessGap = await completenessCheck(question, context, modelAnswer, student_message, verbLevel);
         }
         const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
-
-        // TEMP DIAGNOSTIC — remove after gate re-verification. gateEnabled answers "is the flag
-        // bound to THIS deploy"; isCorrect answers "did call2 hit the sentinel"; pair with the
-        // [GATE-CC] raw line inside completenessCheck to read what Haiku actually returned.
-        console.error('[GATE-DIAG] ' + JSON.stringify({
-          gateEnabled: COMPLETENESS_GATE_ENABLED,
-          isCorrect: isCorrectVerdict(diagnosis),
-          rawDiagnosis: diagnosis,
-          completenessGap,
-          treatCorrect,
-        }));
 
         if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
