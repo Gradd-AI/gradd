@@ -864,17 +864,6 @@ export async function POST(request: Request): Promise<Response> {
         }
         const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
 
-        // TEMP DIAGNOSTIC — remove after completeness-gate verification.
-        // Distinguishes "gate never ran" (gateEnabled:false) from "gate ran but passed"
-        // (gateEnabled:true, isCorrect:true, completenessGap:null).
-        console.error('[GATE-DIAG] ' + JSON.stringify({
-          gateEnabled: COMPLETENESS_GATE_ENABLED,
-          isCorrect: isCorrectVerdict(diagnosis),
-          rawDiagnosis: diagnosis,
-          completenessGap,
-          treatCorrect,
-        }));
-
         if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
