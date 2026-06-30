@@ -1,6 +1,8 @@
 # APM BUILD CONTRACT
 Status: LOCKED 19/06/2026. This doc is authoritative for the APM build. Where notes or older docs conflict, THIS wins.
 
+> **CURRENT FOCUS (30/06/2026): the engine is essentially complete and verified — the launch gate is now CONTENT.** All five redesign mechanics are built and the completeness gate is verified working (details below). The binding constraint to launch is the drill bank: ~40 net-new verified drills weighted to exam structure (B/C/D are thin). **Next session = content, not more engine.** Item 5 (weakness ledger) is the only remaining redesign item and is LOWER priority than content.
+
 ## LAUNCH PHILOSOPHY — complete at launch, NOT a waitlist
 APM launches as an irreducibly complete product: the free drill AND the paid product (full 73-drill set + paid conversational APM tutor + working subscription billing) all live at the same time. When it goes live it is a finished thing a stranger can pay for — not a holding page collecting emails.
 
@@ -118,8 +120,8 @@ SCALING NOW FULLY CLEARED for all drill types:
 ### STANDING TEST PROTOCOL — verify the ENVIRONMENT before concluding the CODE (mandatory, added 30/06/2026)
 ROOT PATTERN: every false trail this project hit traced to the test environment not matching intent — wrong user_id, stale deploy, stale counter, wrong drill, flag-not-live — NEVER the code being wrong. The flag-not-live trap alone recurred 6× in the 29–30/06 completeness-gate session. Before drawing ANY conclusion from a behaviour test, confirm ALL of:
 1. **Incognito window** — no cached session/JS, no stale auth.
-2. **Flag is LIVE** — env var set in Vercel Preview scope AND a deploy built AFTER it was set. Set-but-not-redeployed = flag OFF (Vercel binds the env-var set to each deployment at build time; a dashboard-only redeploy or a build predating the var won't carry it). Quick proof: one throwaway/known-behaviour input that ONLY behaves a certain way flag-on.
-3. **Deploy commit matches intent** — confirm the build being tested is the commit you mean to test, not a stale/earlier build (branch alias points at the newest READY deploy; verify the SHA).
+2. **Flag is LIVE** — env var set in Vercel Preview scope AND a deploy built AFTER it was set. Set-but-not-redeployed = flag OFF (Vercel binds the env-var set to each deployment at build time; a dashboard-only redeploy or a build predating the var won't carry it). Quick proof: one throwaway/known-behaviour input that ONLY behaves a certain way flag-on. STRONGEST proof = a temp log INSIDE the flag-gated function (e.g. `[GATE-CC]`): if it appears in runtime logs, the flag is bound, because the line only executes when the flag is on. The MCP cannot read env-var bindings per deploy — instrumentation is the only authoritative check.
+3. **Deploy commit matches intent** — confirm the build being tested is the commit you mean to test, not a stale/earlier build. Test on the branch ALIAS (`gradd-git-feature-apm-drills-…`), NOT the per-deployment direct URL — the direct URL **subscribe-gates even signed-in users** (unusable for tutor testing). Confirm the alias resolves to your intended SHA before each run (`get_deployment` on the alias hostname → check `meta.githubCommitSha`); a revert or doc-only deploy landing in between can repoint the alias.
 4. **Single-drill LO** (e.g. B1c) so the scenario is STABLE. Multi-drill LOs (A3b ×9, A3e ×3) random-serve per request → answer won't match the loaded scenario → drill-mismatch contaminates the read. `select lo_code, count(*) ... where status='approved' and published group by lo_code having count(*)=1` to confirm single.
 5. **Reset the drill's `acca_tutor_progress` row between cases** — stale `miss_count` skips branches (hint vs teach vs reveal) and muddies the read.
 6. **Confirm the CURRENT test account id** — temp emails get burned, so the id changes; check before assuming.
@@ -382,6 +384,18 @@ All on `feature/apm-drills`, **NOT merged to main**. Test account: `7126c67d` (t
 **PRE-LAUNCH GATES LOGGED** (see GRADD_BUILD_HARDENING.md Auth + here): sign-out control; disposable-email free-tier abuse; live Stripe keys + prod webhook; **CONTENT VOLUME (~40 net-new verified drills weighted to exam structure — still the top standing priority)**; content audit before merge to main.
 
 **FLAGS (5, all dormant unless set in env):** `APM_INTENT_LAYER`, `APM_EARNED_REVEAL`, `APM_INTERLEAVE`, `APM_COMPLETENESS_GATE`; item-1 mark-scheme wire-in is LIVE (unflagged).
+
+### SESSION HANDOFF 30/06/2026 — completeness gate verified + confirm-truncation fix; ENGINE DONE, CONTENT NEXT
+All on `feature/apm-drills`, NOT merged to main. Branch clean at `8875db1`.
+
+**STRATEGIC (the headline):** the redesign engine is now essentially COMPLETE and VERIFIED. The real launch gate is **CONTENT** — ~40 net-new verified drills weighted to exam structure (B/C/D thin). **NEXT SESSION = CONTENT, not more engine.** Item 5 (weakness ledger) is the only remaining redesign item and is LOWER priority than content. (Mirrored in CURRENT FOCUS at the top of this doc.)
+
+**SHIPPED + VERIFIED THIS SESSION:**
+- **Completeness gate — root-caused & fixed structurally.** Defect: `max_tokens:40` holistic Haiku snap-judgement returned bare "complete" for a two-component omission; TWO prompt rewrites couldn't move it because the 40-token cap physically forbade the per-component scan they instructed (proven via raw `[GATE-CC]` log reading "complete" before AND after the rewrite). Fix (`8772289`): per-component enumeration — Haiku emits PRESENT/ABSENT per required component (cap 40→256), CODE decides the verdict (not the model), malformed/empty/throw → complete (false-wrong-safe). VERIFIED all 3 cases via raw `[GATE-CC]`: (a) B1c omit → `ABSENT` scepticism+recommendation → gap/Hint; (b) B1c complete-different-convention → all PRESENT → Correct; (c) A5c complete different-drill → all PRESENT → Correct. Diagnostics reverted (`a5cfcc6`). Full detail in the gate section directly below. **STILL DORMANT — enabling `APM_COMPLETENESS_GATE` in prod is a separate decision.**
+- **call3_confirm truncation fixed** (`8875db1`) — calc-heavy correct answers cut off mid-sentence; `max_tokens 300→500` + concrete nudge "refer to what they did in words, not numbers" (the old "don't re-derive" was being ignored). Independent of the verdict (confirm runs only after `treatCorrect`).
+- **STANDING TEST PROTOCOL locked + extended** (see DISCIPLINE) — test on the branch ALIAS not the direct deploy URL (direct subscribe-gates signed-in users); confirm the alias SHA before each run; a `[GATE-CC]`-style in-function log self-proves flag binding (the MCP can't read per-deploy env bindings).
+
+**OPEN (non-blocking):** (1) gap label `absent.slice(0,2)` cosmetics — names the first-listed absences, not necessarily the most teachable; (2) A5c scepticism-OMITTED probe untested — the verb-mandated-vs-model-demonstrated scoping question (A5c's verb didn't demand scepticism yet it's enumerated as required; fine when the student includes it); (3) enable the gate flag in prod.
 
 ### COMPLETENESS GATE — ROOT-CAUSED, FIXED STRUCTURALLY, VERIFIED WORKING (30/06/2026)
 `APM_COMPLETENESS_GATE` now passes the 3-case protocol on B1c/A5c (preview `8772289`). Settled this session:
