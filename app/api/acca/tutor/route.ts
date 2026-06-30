@@ -407,8 +407,11 @@ async function call3_confirm(
 // challenge, limitations commentary — wording varies) was actually ATTEMPTED. LLM judgment,
 // NOT a parse: model-answer bold/headers are overloaded (mark both headers and result values)
 // and header wording varies. Narrow: "absent" = NO attempt, never "shallower than the model".
-// Bias toward complete on DEPTH (a thin/brief attempt is PRESENT) — but a required component the
-// answer never touches is a clear ABSENCE, not a close call, and DOES override the correct verdict.
+// Per-component completeness audit. The model does NOT make a holistic complete/incomplete call
+// (Haiku snap-judged long calc answers "complete" regardless of wording — verified 30/06 f165bcd).
+// Instead it LISTS the model answer's required components and marks each PRESENT/ABSENT; CODE decides:
+// any ABSENT → gap label naming it, all PRESENT (or unparseable) → complete. Self-scoping from
+// model_answer, never marks_guide. Numbers/convention already handled by call2 — never re-judged here.
 // Returns the missing-component gap label, or null when complete (→ stays Correct).
 async function completenessCheck(
   question: string,
@@ -422,30 +425,22 @@ async function completenessCheck(
   try {
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 40,
+      max_tokens: 256,
       system:
-        'You check whether a student answer is COMPLETE against the components a model answer ' +
-        'demonstrates. The numerical correctness has ALREADY been verified — do NOT re-check any ' +
-        'numbers, and do NOT flag convention/format/layout differences (sign convention, A/F ' +
-        'labelling, table layout are all fine). Read the model answer and identify its distinct ' +
-        'REQUIRED components (e.g. the calculation, the evaluation/recommendation, the sceptical ' +
-        'challenge, the limitations/bias commentary — wording varies, do not rely on headings). ' +
-        'Go through those required components ONE BY ONE. For each, look for the span of the ' +
-        'student answer that addresses it — any genuine attempt counts, however brief, oblique, ' +
-        'or thinly developed. Output rules: ' +
-        '(1) If EVERY required component has at least some attempt, output exactly: complete ' +
-        '(2) If a required component is ENTIRELY ABSENT — nothing in the student answer addresses ' +
-        'it at all — output a short gap label (8-12 words) naming the MISSING component, using the ' +
-        'student answer as referent — do NOT state the answer or the missing content itself. ' +
-        'CALIBRATION — these two are different and you treat them OPPOSITELY: ' +
-        '(a) DEPTH: a component the student DID attempt but only briefly or shallowly is PRESENT — ' +
-        "never flag it; developing it further is the hint's job, not yours. " +
-        '(b) ABSENCE: a component nothing in the answer touches is a clear gap — flag it. ' +
-        '"I can find nothing addressing this component" is NOT uncertainty; it is a definite ' +
-        'absence. Reserve "complete" for genuine doubt about whether a present-but-faint attempt ' +
-        'counts — NOT for a component that is simply not there. Do not invent incompleteness, but ' +
-        'do not wave through a total omission either. ' +
-        'Output ONLY the single word "complete" OR the gap label.',
+        'You audit whether a student answer attempted every REQUIRED component of a model answer. ' +
+        'Numerical correctness is ALREADY verified — do NOT re-check numbers, and do NOT treat ' +
+        'convention/format/layout differences as missing (sign convention, A/F labelling, table ' +
+        'layout are all fine). ' +
+        'STEP 1: read the model answer and identify its distinct REQUIRED components — what the ' +
+        'question/command verb actually demands (e.g. the calculation, the evaluation/recommendation, ' +
+        'the sceptical challenge, the limitations/bias commentary — wording varies, do not rely on ' +
+        'headings; ignore incidental flourishes the verb does not require). ' +
+        'STEP 2: for EACH required component, judge whether the student answer makes ANY genuine ' +
+        'attempt at it — however brief, oblique or thinly developed still counts as an attempt. ' +
+        'Depth is NOT your concern; only attempted-at-all vs not-there-at-all. ' +
+        'OUTPUT: one line per required component and NOTHING else — no preamble, no summary — in ' +
+        'exactly this form:  PRESENT — <2-4 word component name>  OR  ABSENT — <2-4 word name>. ' +
+        'When unsure whether a faint attempt counts, mark it PRESENT (never invent an absence).',
       messages: [
         {
           role: 'user',
@@ -454,15 +449,26 @@ async function completenessCheck(
             vlLine +
             `Model answer (defines the required components — reference only, do NOT restate):\n${modelAnswer}\n\n` +
             `Student answer:\n${attempt}\n\n` +
-            'Output "complete" or the missing-component gap label only.',
+            'List each required component on its own line as "PRESENT — name" or "ABSENT — name". Nothing else.',
         },
       ],
     });
     const out = extractText(res).trim();
-    // Bias toward complete: empty, or any output containing "complete", → not a gap.
-    if (!out || /\bcomplete\b/i.test(out)) return null;
-    return out;
-  } catch {
+    // TEMP DIAGNOSTIC — remove after gate re-verification. Raw per-component lines Haiku emitted.
+    console.error('[GATE-CC] ' + JSON.stringify({ raw: out }));
+    // CODE decides — never the model. Collect components the model marked ABSENT. Any absent → gap.
+    // No ABSENT line (all present, OR empty/garbage/truncated/fenced) → null = complete. A malformed
+    // read can ONLY fall through to "stays Correct" — never false-incomplete (the safe direction).
+    const absent = out
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => /^absent\b/i.test(l))
+      .map(l => l.replace(/^absent\b[\s—:–-]*/i, '').trim())
+      .filter(name => name && !/^(none|n\/?a|nothing)$/i.test(name));
+    if (absent.length === 0) return null;
+    return `no genuine attempt at ${absent.slice(0, 2).join(' or ')}`;
+  } catch (err) {
+    console.error('[GATE-CC] threw: ' + (err instanceof Error ? (err.stack ?? err.message) : String(err)));
     return null; // non-fatal — a check failure preserves today's correct behaviour
   }
 }
