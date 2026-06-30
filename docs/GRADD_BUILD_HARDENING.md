@@ -828,6 +828,33 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **CATEGORY:** Auth
 **SEVERITY:** Low
 
+---
+
+**ISSUE:** [ACCA] Free-tier abuse via disposable emails — the free cap is per-account and accounts are free + infinite
+**STATUS:** OPEN — pre-launch / go-live gate (not yet built). Tackle as its own focused auth session near launch, alongside swapping in live Stripe keys + the prod webhook endpoint.
+**SYMPTOM:** (anticipated) The APM free allowance (3 teach-throughs) is enforced per-account in `profiles.apm_teach_throughs_used`. Since signup is free and unlimited, anyone can register a fresh disposable address (luxudata, disiok, mailinator, etc.), spend the 3 teach-throughs, abandon the account, and repeat indefinitely — getting the paid product for free at the cost of a new throwaway inbox each time.
+**ROOT CAUSE:** The cap is keyed to an identity (account) that is itself free and infinitely re-creatable. Any per-account limit is only as strong as the cost of a new account; with disposable email that cost is ~zero. This lives in the **auth/signup** layer, NOT the teaching engine — the tutor cap logic is working as designed; the weakness is upstream identity.
+**FIX (planned — raise friction, cannot be fully eliminated; tiered by cost/return):**
+  1. **Block known disposable-email domains at signup** — cheapest, stops ~90% of casual gaming. A maintained denylist (or a service) rejected at the signup handler before account creation.
+  2. **Gate the free allocation behind magic-link verification** — the auth already supports magic links; require a verified inbox before the free teach-throughs are granted, so each free run costs a real, deliverable mailbox.
+  3. **Device/IP throttle** — heavier (fingerprinting / rate state, false-positive risk on shared IPs). HOLD unless (1)+(2) prove insufficient in practice.
+  4. **Funnel lever** — tune how much the free tier gives away (allowance size / what's gated). Product decision, not anti-abuse mechanics, but it bounds the prize and so the incentive to game.
+**NOTE:** Connects to the persistent-test-account fix ([see project memory] — current test account 7126c67d; burners 4fc9ce10/5b219d6d retired). Once we stop using disposable inboxes for our own testing, a disposable-domain signup becomes an unambiguous bad-faith signal — which is exactly what makes fix (1) a clean, low-false-positive gate rather than a heuristic.
+**PREVENTION:** Any free quota must be keyed to an identity whose creation has non-trivial cost, or it is not a quota — it is a speed bump. Decide the identity-cost mechanism (verified email at minimum) in the same design pass as the free allowance itself, before launch.
+**CATEGORY:** Auth
+**SEVERITY:** High
+
+---
+
+**ISSUE:** [ACCA] No sign-out option in the APM tutor
+**STATUS:** OPEN — pre-launch / go-live gate (not yet built). Small, self-contained; can ship anytime before launch.
+**SYMPTOM:** There is no way to sign out of the APM tutor. A session, once authenticated, stays authenticated in the browser with no user-facing exit.
+**ROOT CAUSE:** The sign-out affordance was never built — the tutor UI has no control wired to Supabase `signOut()`. This is an **auth-layer / UX gap**, NOT a data-integrity issue: all teaching state (`miss_count`, `counted`, `resolved`, and the cap counter) is persisted per-turn server-side in `acca_tutor_progress` / `profiles`, so closing the tab loses nothing — the gap is purely the inability to *end* a session deliberately.
+**FIX (planned — small):** Add a sign-out button that calls Supabase `signOut()` and redirects to `/acca/auth`.
+**PREVENTION:** Needed for the ordinary reasons, not edge cases: (1) **privacy on shared/work/library devices** — without it, the next person to open the browser lands inside the previous user's account; (2) **account switching**; (3) **basic user expectation** — an authenticated app is expected to have a visible way out. Treat a sign-out control as part of the definition-of-done for any authenticated surface, not a later add-on.
+**CATEGORY:** Auth
+**SEVERITY:** Medium
+
 
 ### STRIPE / BILLING
 

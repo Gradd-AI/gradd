@@ -131,6 +131,11 @@ function isTeachRequest(input: string): boolean {
 // cannot appear inside a teach-style message ("walk me through the model answer" → teach).
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
 
+// Correct-verdict completeness gate: when call2 says "correct", verify every required
+// component (read from the model answer) was actually attempted before confirming. Runs
+// ONLY on the correct branch; flag off = today's behaviour verbatim.
+const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
+
 const REVEAL_PHRASES = [
   'show me the full answer',
   'show me the answer',
@@ -372,7 +377,7 @@ async function call3_confirm(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 300,
+    max_tokens: 500,
     system: EZRA_SYSTEM,
     messages: [
       {
@@ -387,12 +392,83 @@ async function call3_confirm(
           'thing they did well (the real move, not empty praise). Name the command verb and ACCA ' +
           'intellectual level the answer hit (from the authored values above — do not infer when ' +
           'given) and say briefly why it holds / what puts it in the top band. If their convention ' +
-          "differs from the usual model, say it's equally valid. Do NOT re-derive or restate the " +
-          "full answer, and don't mark it as if it fell short.",
+          "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
+          'quote back their figures or workings — they already wrote them; refer to what they did ' +
+          "in words, not numbers. Don't mark it as if it fell short.",
       },
     ],
   });
   return extractText(res);
+}
+
+// ── CALL 2b: Completeness gate (behind APM_COMPLETENESS_GATE) ──────────────────
+// Runs ONLY after call2_diagnose returns the correct-sentinel. call2 verifies the NUMBERS
+// (and protects convention/format differences); this verifies COMPLETENESS — that every
+// required component the model answer demonstrates (calculation, evaluation, sceptical
+// challenge, limitations commentary — wording varies) was actually ATTEMPTED. LLM judgment,
+// NOT a parse: model-answer bold/headers are overloaded (mark both headers and result values)
+// and header wording varies. Narrow: "absent" = NO attempt, never "shallower than the model".
+// Per-component completeness audit. The model does NOT make a holistic complete/incomplete call
+// (Haiku snap-judged long calc answers "complete" regardless of wording — verified 30/06 f165bcd).
+// Instead it LISTS the model answer's required components and marks each PRESENT/ABSENT; CODE decides:
+// any ABSENT → gap label naming it, all PRESENT (or unparseable) → complete. Self-scoping from
+// model_answer, never marks_guide. Numbers/convention already handled by call2 — never re-judged here.
+// Returns the missing-component gap label, or null when complete (→ stays Correct).
+async function completenessCheck(
+  question: string,
+  context: string,
+  modelAnswer: string,
+  attempt: string,
+  verbLevel: string,
+): Promise<string | null> {
+  const contextLine = context ? `Context: ${context}\n\n` : '';
+  const vlLine = verbLevel ? `Command verb + intellectual level: ${verbLevel}\n\n` : '';
+  try {
+    const res = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 256,
+      system:
+        'You audit whether a student answer attempted every REQUIRED component of a model answer. ' +
+        'Numerical correctness is ALREADY verified — do NOT re-check numbers, and do NOT treat ' +
+        'convention/format/layout differences as missing (sign convention, A/F labelling, table ' +
+        'layout are all fine). ' +
+        'STEP 1: read the model answer and identify its distinct REQUIRED components — what the ' +
+        'question/command verb actually demands (e.g. the calculation, the evaluation/recommendation, ' +
+        'the sceptical challenge, the limitations/bias commentary — wording varies, do not rely on ' +
+        'headings; ignore incidental flourishes the verb does not require). ' +
+        'STEP 2: for EACH required component, judge whether the student answer makes ANY genuine ' +
+        'attempt at it — however brief, oblique or thinly developed still counts as an attempt. ' +
+        'Depth is NOT your concern; only attempted-at-all vs not-there-at-all. ' +
+        'OUTPUT: one line per required component and NOTHING else — no preamble, no summary — in ' +
+        'exactly this form:  PRESENT — <2-4 word component name>  OR  ABSENT — <2-4 word name>. ' +
+        'When unsure whether a faint attempt counts, mark it PRESENT (never invent an absence).',
+      messages: [
+        {
+          role: 'user',
+          content:
+            `${contextLine}Question: ${question}\n\n` +
+            vlLine +
+            `Model answer (defines the required components — reference only, do NOT restate):\n${modelAnswer}\n\n` +
+            `Student answer:\n${attempt}\n\n` +
+            'List each required component on its own line as "PRESENT — name" or "ABSENT — name". Nothing else.',
+        },
+      ],
+    });
+    const out = extractText(res).trim();
+    // CODE decides — never the model. Collect components the model marked ABSENT. Any absent → gap.
+    // No ABSENT line (all present, OR empty/garbage/truncated/fenced) → null = complete. A malformed
+    // read can ONLY fall through to "stays Correct" — never false-incomplete (the safe direction).
+    const absent = out
+      .split('\n')
+      .map(l => l.trim())
+      .filter(l => /^absent\b/i.test(l))
+      .map(l => l.replace(/^absent\b[\s—:–-]*/i, '').trim())
+      .filter(name => name && !/^(none|n\/?a|nothing)$/i.test(name));
+    if (absent.length === 0) return null;
+    return `no genuine attempt at ${absent.slice(0, 2).join(' or ')}`;
+  } catch {
+    return null; // non-fatal — a check failure preserves today's correct behaviour
+  }
 }
 
 // ── Intent layer (redesign item 2) ────────────────────────────────────────────
@@ -408,19 +484,27 @@ const CLASSIFY_SYSTEM =
   "exam-style question and talking to Ezra, a tutor. Classify the student's latest message into " +
   'EXACTLY ONE label:\n' +
   '- attempt = genuinely trying to answer the drill — any substantive engagement, even partial, ' +
-  'terse, or wrong (a calculation, a claim, an analysis, a definition applied to the scenario). ' +
-  'If the message contains real content addressing the question, choose attempt EVEN IF it also ' +
-  'asks something.\n' +
+  'terse, hedged, or wrong (a calculation, a claim, an analysis, a definition applied to the ' +
+  "scenario). A substantive claim about the drill's concepts or figures is an attempt REGARDLESS " +
+  'OF (a) hedging or evaluative/emotional wording (e.g. "maybe ROI is just unfair", "this measure ' +
+  'is useless") and (b) interrogative or tag-question syntax (e.g. "isn\'t it just the overhead ' +
+  'allocation?", "so it\'s residual income, right?"). If the message proposes or asserts content ' +
+  'addressing the question, choose attempt EVEN IF it is phrased as a question or also asks ' +
+  'something.\n' +
   '- question = ASKING a content or process question rather than answering (what a term means, ' +
-  'whether to do something, how to approach it), with no substantive answer of their own.\n' +
-  '- confusion = expresses being stuck, lost, overwhelmed, or frustrated, or is deflecting, ' +
-  'WITHOUT offering an answer.\n' +
+  'whether to do something, how to approach it) AND proposing NO substantive answer of their own. ' +
+  'A message phrased as a question that nonetheless proposes a substantive answer (e.g. "isn\'t it ' +
+  'X?") is an attempt, not a question.\n' +
+  '- confusion = expresses being stuck, lost, overwhelmed, or frustrated ABOUT THEIR OWN ' +
+  'PROGRESS/ABILITY, or is deflecting, WITHOUT offering any answer or claim. An evaluative ' +
+  'judgment about the subject matter (calling a measure "unfair", "wrong", or "flawed") is a ' +
+  'CLAIM, not confusion — classify it as attempt.\n' +
   '- aside = social, meta, or off-topic remarks (thanks, acknowledgements, chit-chat, questions ' +
   'about the tutor itself).\n' +
   'If the previous Ezra message offered to teach / walk through and the student affirms (e.g. ' +
   '"yes", "go on"), treat that as confusion (they want help, not an answer of their own).\n' +
-  'When torn between attempt and anything else AND the message has real content addressing the ' +
-  'question, choose attempt.\n' +
+  'When torn between attempt and anything else AND the message contains any substantive claim or ' +
+  'content addressing the question, choose attempt.\n' +
   'Output ONLY the single label word: attempt, question, confusion, or aside.';
 
 function parseIntent(text: string): Intent {
@@ -728,6 +812,10 @@ export async function POST(request: Request): Promise<Response> {
   let teachThroughDelivered = false;
   let newResolved        = resolved;
   let intent: string     = 'attempt';
+  // Single discriminant for the client badge: tells hint / teaching / correct apart
+  // (which intent + teach_through_delivered alone cannot). Set in every branch below.
+  // Purely additive — read only by the client for labelling; no engine/cap logic reads it.
+  let messageKind: string = 'hint';
 
   // ── Stop-signal split + intent routing ──
   // Flag ON: only explicit teach-requests fast-path to the teach-through; everything
@@ -745,15 +833,18 @@ export async function POST(request: Request): Promise<Response> {
       // Free follow-up: the miss-2 teach-through already charged the cap (counted=true), so
       // no new charge. Marks the drill resolved. No miss++, no teachThroughDelivered.
       intent = 'reveal';
+      messageKind = 'reveal';
       ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer);
       newResolved = true;
     } else if (wantsReveal) {
       // Reveal requested but NOT earned (missCount < 2): static refusal gate. model_answer is
       // deliberately NOT referenced on this path — earned-not-dumped is structural, not prompt.
       intent = 'reveal_redirect';
+      messageKind = 'reveal_locked';
       ezraResponse = EARN_REDIRECT;
     } else if (fastTeach) {
       intent = 'teach_request';
+      messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
       ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2);
@@ -769,28 +860,45 @@ export async function POST(request: Request): Promise<Response> {
       if (classified !== 'attempt') {
         // Warm, non-marking path: no miss++, no cap, no teach-through; progress untouched.
         ezraResponse = await call_warm(classified, student_message, question, context);
+        messageKind = classified === 'question' ? 'answer'
+                    : classified === 'confusion' ? 'coaching' : 'chat';
       } else {
         // ── THE MOAT — existing withholding pipeline, unchanged ──
         const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
 
-        if (isCorrectVerdict(diagnosis)) {
+        // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
+        // verifies every required component was attempted. Runs ONLY when call2 says correct, so
+        // the wrong/convention paths stay byte-identical. A clearly-absent component demotes the
+        // correct verdict to a miss whose gap NAMES the missing component (case 2).
+        let completenessGap: string | null = null;
+        if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
+          completenessGap = await completenessCheck(question, context, modelAnswer, student_message, verbLevel);
+        }
+        const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
+
+        if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
           ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
+          messageKind        = 'correct';
           newLastRealAttempt = student_message;
           // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
           // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
           // teach-through still has a meaningful diagnosis to anchor on.
         } else {
+          // completenessGap (when set) names the absent component; else call2's gap (genuine wrong).
+          const gap        = completenessGap ?? diagnosis;
           newMissCount     = missCount + 1;
-          newLastDiagnosis = diagnosis;
+          newLastDiagnosis = gap;
           newLastRealAttempt = student_message;
 
           if (newMissCount === 1) {
-            ezraResponse = await call3_hint(question, context, student_message, diagnosis, verbLevel);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel);
+            messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, diagnosis, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
+            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
             teachThroughDelivered = true;
+            messageKind = 'teaching';
           }
         }
       }
@@ -861,5 +969,6 @@ export async function POST(request: Request): Promise<Response> {
     teach_through_delivered: teachThroughDelivered,
     cap_now_hit:            capNowHit,
     intent,
+    message_kind:           messageKind,
   });
 }

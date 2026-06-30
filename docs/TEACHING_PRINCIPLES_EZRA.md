@@ -133,6 +133,79 @@ Engine order: `isRevealRequest` (gated on miss_count>=2) checked BEFORE teach-re
 
 **Flag.** `APM_EARNED_REVEAL` — own flag, separate from `APM_INTENT_LAYER`, for independent rollout.
 
+## ITEM 4 SPEC — interleave `next-drill` (build behind `APM_INTERLEAVE`)
+
+**Problem.** `next-drill/route.ts` is anti-aligned to P3 (interleaving). It *prefers the same sub-area* and *excludes the current LO* (`.neq('lo_code', lo)`), which (a) is blocking — the documented opposite of interleaving — and (b) silently teleports to an unrelated section when the same-area pool is empty (C1a→A2d observed live), and (c) blocks same-LO depth siblings where they exist. P3 wants demand-type MIXING, but coherent — not random teleporting.
+
+**Content reality (drives the whole design; verified 29/06/2026).** 49 published drills across 37/73 LOs, lopsided: A=18 LOs/30 drills (A3 alone 17), B=14/14, C=1/1, D=4/4. Only 4 LOs have >1 drill — all A3 (A3b×9, A3c×2, A3d×2, A3e×3). So same-LO siblings exist *essentially only in A3*, C *cannot* interleave (1 drill), D is shallow. The picker must be content-aware and degrade gracefully; interleaving quality scales with the content backlog (the standing top priority), so this ships the MECHANISM whose payoff grows as depth drills publish.
+
+**Scope to mix within — SECTION-anchored weighted blend.** The section (A/B/C/D) is the coherence boundary: it stops cross-section teleporting while still mixing sub-areas / LOs / demand-types *within* a coherent theme. Whole-paper-random is chaos; same-sub-area is the current anti-pattern. Interleaving comes from weighting toward a **different sub-area AND different demand type** (intellectual_level / command verb) than the just-finished drill.
+
+**Two modes — interleave default, block opt-in (maps to existing UI):**
+- *interleave* (default) = "Try another" / auto-next → the section-anchored mixed pick below.
+- *block* (opt-in) = the "Change area" picker → serve within the chosen sub-area. Picking a sub-area IS the deliberate weak-area-drilling signal; blocking keeps its place for initial acquisition, it is just no longer the default.
+
+**Selection — restructure from ordered queries to `build pool → score → pick`** (the seam item 5 plugs into). Inputs: `currentDrillId`, `currentLo` (→ `section`, `subArea`, `level`/`verb`), `mode`.
+
+Candidate pool (interleave mode) — **exclude by `drill_id`, NEVER by `lo_code`** — degradation ladder, first non-empty tier wins:
+1. same section, `sub_area != currentSubArea`, `id != currentDrillId` — ideal interleave (mix sub-area + demand).
+2. same section, `id != currentDrillId` — any other in-section LO/drill.
+3. same LO, `id != currentDrillId` — depth fallback (non-empty only in A3).
+4. any section, `id != currentDrillId` — LAST resort, and the response **signals a section change** (client surfaces "moving to Section B"), never a silent jump.
+
+Scorer (deliberate, not pure random; random only breaks ties within the top band):
+```
+score(c) =  w_demand   * (c.level != currentLevel || c.verb != currentVerb ? 1 : 0)   // interleave demand
+          + w_fresh    * (c.lo not seen recently ? 1 : 0)                              // avoid immediate repeats
+          - w_resolved * (c.resolved === true ? 1 : 0)                                 // item-3 hook (v1, ON)
+          + w_weak     * weaknessLedger[c.lo]                                          // item-5 hook (=0 in v1)
+```
+
+**(a) Mechanical prerequisite — `next-drill` must now receive `drill_id` from the client.** Today it gets only `lo` (and `area`); the client holds `currentDrill.id` and sends it to the tutor route but NOT to next-drill. Item 4 requires excluding the current *drill* (not LO), so the `lo=` call must also pass `drill_id`. Additive: absent `drill_id` (legacy/in-flight clients) falls back to excluding by `lo_code` as today — degrades to the old behaviour, never 500s.
+
+**(b) Resolved-flag deprioritisation is IN v1.** The scorer's `w_resolved` term is active from the first ship: a `resolved=true` LO (item 3's earned-reveal flag, read from `acca_tutor_progress`) is pushed down the ranking so a just-mastered drill is not re-served ahead of un-mastered work. This is an independent win that also previews item 5's interval logic.
+
+**(c) Scorer signature is item-5-ready.** The `w_weak * weaknessLedger[lo]` term is present in the scorer from v1 but **weighted 0** (no ledger yet). Item 5 supplies the per-(user, LO) weakness ledger and flips `w_weak` on — adding one input, no signature change. Item 4 ships independent of the ledger; it hands off to item 5 through this term.
+
+**Out of scope (boundary).** P3's verb-discrimination *elicitation* ("ask the student to name the command verb") is a prompt / intent-layer change hosted by item 2 — NOT the picker. Item 4 is selection only.
+
+**Flag.** `APM_INTERLEAVE` — own flag, separate from `APM_INTENT_LAYER` / `APM_EARNED_REVEAL`. Flag OFF = today's same-sub-area-preferred, exclude-LO behaviour verbatim (exact rollback). Ships dormant.
+
+## CORRECT-VERDICT COMPLETENESS GATE SPEC — (build behind `APM_COMPLETENESS_GATE`)
+
+**Problem (defect).** `call2_diagnose`'s correct-sentinel ("answer correct — convention differs from model only") is gated on NUMERIC equivalence only — it exists (commit `e18a0c5`) to stop FALSE-WRONG verdicts on convention differences (sign convention, A/F labelling, layout). It has no completeness check. On a multi-component drill (e.g. A3b "calculate and evaluate", which demands a sceptical challenge), a calc-correct-but-incomplete answer satisfies the numeric test → sentinel → `isCorrectVerdict` → **Correct** badge + `call3_confirm`. `call3_confirm` (a separate Haiku call that sees the question+verb) then reads the level-2 stop and writes "you're missing the sceptical challenge" — so the student gets a **Correct frame over an incomplete body**, and is falsely told they're done. (`isCorrectVerdict`'s regex is tight and correct; the fault is upstream — the verdict's notion of "correct" = numerically equivalent, not mark-scheme-complete.)
+
+**Target behaviour, three cases:**
+1. Correct AND complete (every required component attempted) → Correct (`call3_confirm`) — unchanged.
+2. Correct calculation BUT a required component entirely absent (e.g. the sceptical challenge) → NOT correct; diagnose the MISSING component as the gap → hint/teach, `miss_count++`. The student is told what's missing, not falsely told they're done.
+3. Genuinely wrong (bad number/operation) → diagnose as today — unchanged.
+
+**Where the completeness signal lives (audited 29/06/2026, 6 drills incl. controls).** NOT `marks_guide` — it is a scalar (the mark total: A3b=15, A3f=6), no component breakdown, no rubric/checklist column exists. The reliable source is the **`model_answer`**, which is consistently sectioned across the sample into a calc block plus a labelled judgment component (Evaluation / Scepticism / Interpretation and scepticism / Limitations and bias) — present even in the single-verb controls (B1c "calculate", D2e "analyse"). `command_verb` arity is NOT a reliable scope signal (B1c is single-verb but multi-component), so it is **dropped** — the model_answer self-scopes (a calc-only model answer → check finds only calc → behaves like today).
+
+**Design — two-stage, gate runs ONLY on the correct branch; `call2_diagnose` is left UNTOUCHED.**
+```
+diagnosis = call2_diagnose(...)                              // UNCHANGED — numeric/convention verdict
+completenessGap = null
+if (FLAG && isCorrectVerdict(diagnosis))
+    completenessGap = completenessCheck(question, context, modelAnswer, attempt, verbLevel)
+treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap
+if (treatCorrect)  → call3_confirm (messageKind 'correct')              // case 1, unchanged
+else               → gap = completenessGap ?? diagnosis; miss++; hint/teach(gap)   // case 2 (fix) / case 3 (unchanged)
+```
+Because `call2_diagnose` is untouched and the gate runs only when the verdict is already "correct", the wrong-answer and convention-difference paths are byte-identical — the gate can NEVER turn a numeric-wrong or a complete-but-different-format answer into "wrong". It can only convert a correct-but-incomplete verdict into a gap. The sole residual risk is *false-incomplete*, mitigated below.
+
+**`completenessCheck` — LLM judgment (Haiku), NOT a parse.** Bold/headers in the model answer are overloaded (they mark both section headers AND emphasised result values) and header wording varies (`Scepticism` / `SCEPTICISM` / `Interpretation and scepticism` / `Limitations and bias`), so a regex/keyword match is unreliable. The check *reasons over* the model answer: identify its distinct required components, decide whether the student made ANY genuine attempt at each, output `complete` or a short gap label naming the absent component (no answer content stated). It is explicitly told the numbers are already verified — do NOT re-check arithmetic or flag convention/format/layout.
+
+**Narrow "incomplete" definition (false-wrong protection).** "Absent" = NO attempt at a required component, NOT "shallower/less developed than the model". A brief or partial attempt counts as PRESENT (depth/quality is the hint's job, not the gate's). On any uncertainty → output `complete`. The parser biases the same way: only a clear gap label with no "complete" verdict triggers the override; empty/errored/ambiguous output → treated as complete (today's behaviour). A `completenessCheck` failure is non-fatal → null → Correct.
+
+**Cost.** One extra Haiku call, incurred ONLY on the correct branch (the rare, worth-it moment) — not on every attempt. `call2_diagnose` (Sonnet) is unchanged.
+
+**State / cap.** None. No schema change, no new columns. `miss_count` increments on a case-2 override exactly as a normal miss (so the teach-through / earned-reveal flow engages correctly). No `marks_guide` dependency.
+
+**Flag.** `APM_COMPLETENESS_GATE` — own flag, separate from the others. Flag OFF = today's behaviour verbatim (the gate block is skipped; `treatCorrect === isCorrectVerdict(diagnosis)`). Ships dormant.
+
+**Verify before enable (3 cases + audit):** (a) A3b calc-correct / scepticism-absent → gap naming the missing challenge, `miss_count++`; (b) a convention-different but COMPLETE calc (e.g. B1c with flipped sign) → still **Correct** (proves no false-wrong); (c) a genuinely-wrong number → gap, unchanged. Plus spot-check `model_answer` structure on a few more evaluation drills (audit sample was 6/49).
+
 ## What this unlocks
 The same claim the Mia doc targets, now true for APM: *"Gradd's APM tutor is built on the cognitive-science methods proven to move grades — retrieval practice, spacing, interleaving, and specific mark-scheme-linked feedback."* Today that claim is ~half-true for Ezra (retrieval ✅, specific feedback ~✅, spacing ❌, interleaving ❌). Items 1–5 above make it fully true — and, not coincidentally, also make Ezra feel like a teacher rather than a marker.
 
