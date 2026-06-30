@@ -419,3 +419,16 @@ All on `feature/apm-drills`, NOT merged to main. Branch clean at `8875db1`.
 
 ### TOP ITEM FOR NEXT SESSION — tune the attempt↔confusion classifier boundary
 Hedged/opinion claims ABOUT THE DRILL ("maybe X is just Y", "I guess it's because…", "probably the issue is…") must classify as **attempt**, not confusion. They are the real-message failure mode the synthetic eval (100% on the boundary) could NOT surface — self-authored synthetic messages were too committed. ACTIONS: (a) tighten CLASSIFY_SYSTEM so a substantive claim about the drill = attempt even when hedged; (b) RE-RUN the classifier eval on REAL hedged/opinion attempts (pull from `tutor_intent` telemetry once there is real traffic, or hand-author a hedged-attempt set); (c) consider a fallback so a non-attempt turn carrying drill-relevant content still counts toward the struggle gate. This gates item 3's earn-half — until fixed, the earned reveal is effectively unreachable for tentative students. Also still open: item 4 (interleave next-drill), item 5 (weakness ledger), and the next-drill:74 / lo_code case-sensitivity hardening.
+
+## Session bank — 30/06/2026
+
+NEXT SESSION TOP ITEM: write the ~40-drill content batch. Allocation decided, verified against apm_s26_j27 detailed study guide + exam blueprint:
+- Section C (C1): 12 drills. Close zero LOs C1b, C1c, C1d, C1e. Double up C1c + C1e. Rationale: C guarantees one 25-mark Section B question off a 5-LO pool = highest marginal value per LO in the paper; currently only 1 drill (C1a).
+- Section D (D1+D2): 18 drills. Close zero LOs D1b/c/d/e, D2b/d/f/g/h/i. Weight D1d (security controls) and analytics LOs. D guarantees the other 25-mark Section B question.
+- Section B (B2/B3/B4): 10 drills. Close zero LOs B2b/c/d/f, B3e, B4d/e/g/h/i. Lower priority — underpins but gets no own question.
+- Section A: NOT in this batch. 12 zero LOs remain (A1a-e, A1i, A1j, A2b, A3a, A4c, A4d, A5d) — all foundation for the compulsory 50-mark case. Must close in a follow-on pass before any "complete curriculum" claim.
+Verb/intellectual_level per drill taken from guide depth tags ([2] vs [3]), never inferred.
+
+OPEN BLOCKER (resolve before declaring launch-ready): is the Ezra paid tutor single-drill-bound or case-capable (multi-LO scenario in one session)? If drill-review only, ~89 atomic drills = competent-but-not-exam-ready, which is refund-risk. Diagnostic paste-block was queued, not yet run.
+
+STATE: branch feature/apm-drills, HEAD a4e72fd pushed clean. Teaching engine complete + verified, do not re-litigate. Test account ID changes per session — reconfirm at session start.
