@@ -454,8 +454,6 @@ async function completenessCheck(
       ],
     });
     const out = extractText(res).trim();
-    // TEMP DIAGNOSTIC — remove after gate re-verification. Raw per-component lines Haiku emitted.
-    console.error('[GATE-CC] ' + JSON.stringify({ raw: out }));
     // CODE decides — never the model. Collect components the model marked ABSENT. Any absent → gap.
     // No ABSENT line (all present, OR empty/garbage/truncated/fenced) → null = complete. A malformed
     // read can ONLY fall through to "stays Correct" — never false-incomplete (the safe direction).
@@ -467,8 +465,7 @@ async function completenessCheck(
       .filter(name => name && !/^(none|n\/?a|nothing)$/i.test(name));
     if (absent.length === 0) return null;
     return `no genuine attempt at ${absent.slice(0, 2).join(' or ')}`;
-  } catch (err) {
-    console.error('[GATE-CC] threw: ' + (err instanceof Error ? (err.stack ?? err.message) : String(err)));
+  } catch {
     return null; // non-fatal — a check failure preserves today's correct behaviour
   }
 }
