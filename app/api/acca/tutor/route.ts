@@ -407,7 +407,8 @@ async function call3_confirm(
 // challenge, limitations commentary — wording varies) was actually ATTEMPTED. LLM judgment,
 // NOT a parse: model-answer bold/headers are overloaded (mark both headers and result values)
 // and header wording varies. Narrow: "absent" = NO attempt, never "shallower than the model".
-// Bias hard toward complete — only a clear missing-component label overrides the correct verdict.
+// Bias toward complete on DEPTH (a thin/brief attempt is PRESENT) — but a required component the
+// answer never touches is a clear ABSENCE, not a close call, and DOES override the correct verdict.
 // Returns the missing-component gap label, or null when complete (→ stays Correct).
 async function completenessCheck(
   question: string,
@@ -429,14 +430,21 @@ async function completenessCheck(
         'labelling, table layout are all fine). Read the model answer and identify its distinct ' +
         'REQUIRED components (e.g. the calculation, the evaluation/recommendation, the sceptical ' +
         'challenge, the limitations/bias commentary — wording varies, do not rely on headings). ' +
-        'For each, decide whether the student made ANY genuine attempt at it. Output rules: ' +
-        '(1) If the student attempted EVERY required component, output exactly: complete ' +
-        '(2) If a required component is ENTIRELY ABSENT (no attempt at all), output a short gap ' +
-        'label (8-12 words) naming the MISSING component, using the student answer as referent — ' +
-        'do NOT state the answer or the missing content itself. ' +
-        'CRITICAL: "absent" means NO attempt, NOT "shallower or less developed than the model". A ' +
-        'brief or partial attempt at a component counts as PRESENT. When uncertain whether a ' +
-        'component was attempted, output: complete (never invent incompleteness). ' +
+        'Go through those required components ONE BY ONE. For each, look for the span of the ' +
+        'student answer that addresses it — any genuine attempt counts, however brief, oblique, ' +
+        'or thinly developed. Output rules: ' +
+        '(1) If EVERY required component has at least some attempt, output exactly: complete ' +
+        '(2) If a required component is ENTIRELY ABSENT — nothing in the student answer addresses ' +
+        'it at all — output a short gap label (8-12 words) naming the MISSING component, using the ' +
+        'student answer as referent — do NOT state the answer or the missing content itself. ' +
+        'CALIBRATION — these two are different and you treat them OPPOSITELY: ' +
+        '(a) DEPTH: a component the student DID attempt but only briefly or shallowly is PRESENT — ' +
+        "never flag it; developing it further is the hint's job, not yours. " +
+        '(b) ABSENCE: a component nothing in the answer touches is a clear gap — flag it. ' +
+        '"I can find nothing addressing this component" is NOT uncertainty; it is a definite ' +
+        'absence. Reserve "complete" for genuine doubt about whether a present-but-faint attempt ' +
+        'counts — NOT for a component that is simply not there. Do not invent incompleteness, but ' +
+        'do not wave through a total omission either. ' +
         'Output ONLY the single word "complete" OR the gap label.',
       messages: [
         {
