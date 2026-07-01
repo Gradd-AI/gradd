@@ -3,11 +3,11 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 
 const APM_SECTIONS: Record<string, string> = {
-  A: 'Strategic Planning and Control',
-  B: 'Performance Measurement Systems and Design',
-  C: 'Strategic Performance Measurement',
-  D: 'Performance Evaluation and Corporate Failure',
-  E: 'Current Issues in Performance Management',
+  A: 'Strategic management and value creation',
+  B: 'Performance optimisation',
+  C: 'Performance reporting',
+  D: 'Data science and technology',
+  E: 'Professional skills',
 };
 
 export interface PickerArea {
