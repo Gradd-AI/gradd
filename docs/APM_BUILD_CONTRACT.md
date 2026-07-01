@@ -432,3 +432,42 @@ Verb/intellectual_level per drill taken from guide depth tags ([2] vs [3]), neve
 OPEN BLOCKER (resolve before declaring launch-ready): is the Ezra paid tutor single-drill-bound or case-capable (multi-LO scenario in one session)? If drill-review only, ~89 atomic drills = competent-but-not-exam-ready, which is refund-risk. Diagnostic paste-block was queued, not yet run.
 
 STATE: branch feature/apm-drills, HEAD a4e72fd pushed clean. Teaching engine complete + verified, do not re-litigate. Test account ID changes per session — reconfirm at session start.
+
+## Session bank — 01/07/2026 — content batch complete + exam-ready backlog
+
+DONE THIS SESSION (banked — do not re-litigate):
+- 91 drills serving; all 73 S26–J27 LOs have >=1 drill; zero-coverage closed.
+- Section C 1->13, Section D 4->22, Section A 12 zero-LOs closed. ~42 net-new drills.
+- Teaching engine verified LIVE across every command verb/level: prepare (C1e), advise (C1c), assess (D1d), explain L2 (A1a). Withhold holds; completeness gate marks correctly and does NOT over-fire on level-2 explain.
+- Process fix: correction passes now sweep all 5 drill fields per claim (not instance-by-instance). Caught a residual the adversarial reviewer missed. Carry into all future batches.
+
+PRIORITISED BACKLOG TO REACH GENUINELY EXAM-READY (all live):
+
+P0 — real gate on "exam-ready":
+1. CASE-SCOPE CONSTRUCT. Ezra is single-drill-bound (confirmed at code level, app/api/acca/tutor/route.ts). Exam is a 50-mark case + two 25-mark C/D-on-A/B questions — integration is the whole paper, never rehearsed in-product. Needs a multi-LO scenario/session object grouping drills + session persistence across LOs. Highest-value build; pulls professional-skills and exam-craft along with it.
+
+P0 — trust bug, ship before any student sees the picker:
+2. STALE PICKER SECTION TITLES. Shows B "Performance Measurement Systems and Design", C "Strategic Performance Measurement", D "Performance Evaluation and Corporate Failure". Correct S26–J27: B "Performance optimisation", C "Performance reporting", D "Data science and technology". "Corporate Failure" is NOT in current syllabus. Sub-areas correct; top-level labels only.
+
+P1 — needed for pass-readiness, after case layer:
+3. Professional-skills marking on long-form answers (20% of marks: 10 in A, 5 per B; earned holistically across a script, not per-drill).
+4. Timed exam-craft / mock mode (3h15, planning, report/briefing-note format, mark-per-minute).
+5. Depth on thin high-frequency LOs: B2 Performance and reward = 2 drills, A4 = 4; much of A/B one-drill-per-LO. Add variation drills on high-yield thin ones.
+
+P2 — quality/coverage hardening:
+6. 11 of 12 Section A drills live-untested (only A1a run through Ezra). Passed 2-pass written QA, same pipeline — low risk, not behaviourally verified. Spot-check.
+7. Compound-verb LOs live-untested (calculate and evaluate, assess and advise etc). A3b calc-heavy (9 drills) especially — calc withholding is a different shape, not tested this session.
+
+CROSS-PRODUCT BACKLOG (from prior memory, still live):
+8. IB Econ Layer 2: hybrid generator failed ~75%. Fix at PATTERN level, regenerate all 31 hybrids, re-review. Do NOT patch one-by-one.
+9. IB BM Layer 1: content-generation dry-run + live /admin/questions review pending.
+10. IB rescue-reflex architectural fix (two-call withholding) for Mia/Aoife — was deferred pending APM proving the pattern. APM HAS NOW PROVEN IT — unblocked.
+11. Mia/Aoife teach-engine rebuild on proven APM architecture — deferred.
+12. Single persistent APM test account (still burning temp-email IDs — ID changes every session).
+
+COMMERCIAL / GTM GATES (not code, real before scaling):
+13. r/ACCA + OpenTuition landing-page demand test (Rule 3 bans forum self-promo). <5 signups = stop; 30+ = build harder. Not yet run.
+14. Free-drill + paid-tutor simultaneous launch (complete-at-launch, not waitlist).
+15. Pricing/packaging (~EUR 49–69/mo) live in Stripe for APM.
+
+NEXT ACTION: start P0 item 2 (stale picker titles — cheap, ship-blocking trust bug) then P0 item 1 (case-scope construct — the real exam-ready gate).
