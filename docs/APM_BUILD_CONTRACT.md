@@ -471,3 +471,38 @@ COMMERCIAL / GTM GATES (not code, real before scaling):
 15. Pricing/packaging (~EUR 49–69/mo) live in Stripe for APM.
 
 NEXT ACTION: start P0 item 2 (stale picker titles — cheap, ship-blocking trust bug) then P0 item 1 (case-scope construct — the real exam-ready gate).
+
+## Session bank — 01/07/2026 (pt.2) — case layer live + marking spec
+
+SHIPPED THIS SESSION (committed, SHA c4a64c3, pushed to origin/feature/apm-drills):
+- Case-scope data model live: migration 20260701120000_acca_cases.sql applied — acca_cases, acca_case_exhibits, acca_case_requirements, acca_case_progress. RLS enabled all four. acca_case_progress defines `counted` cleanly (does NOT inherit the acca_tutor_progress drift) and carries v2 hooks `passed` + `final_answer`.
+- Case orchestration built + live-tested in production (Vercel preview, APM_CASES=1 on Preview only):
+  - lib/acca/teach-engine.ts — faithful copy of the tutor withhold engine + runTeachTurn() orchestrator. Tutor route untouched (keeps its own inline copy). FOLLOW-UP (deliberate, later): refactor route.ts to import from teach-engine and delete inline copy, once cases prove out — the two copies can drift.
+  - app/api/acca/case/route.ts — case-load GET (gated approved+published; withholds model_answer/hint/full_reveal from client payload).
+  - app/api/acca/case/turn/route.ts — case-turn POST; runs the withhold engine per active requirement; per-requirement seal (distinct AES blob per requirement); shared scenario is context, never sealed; progress keyed (user_id, case_id, requirement_id).
+  - Three schema-name fixes applied before push: professional_skills_marks (not professional_marks); removed non-existent context_text from requirement selects; exhibit builder selects exhibit_order/title/body explicitly (no created_at leaking into model context). label + professional_skill_tags added to case-load payload.
+- First case authored, QA'd, live: Aldermere Fitness (Section B, C-anchored). 4 exhibits, 2 requirements (i) C1a evaluate report [13], (ii) C1e prepare commentary [7], 20 technical + 5 prof = 25. Cleared adversarial check (approve-after-minor; 5 fixes applied with full-field sweep). Flipped status=approved, published=true (safe: Production has no APM_CASES flag, so prod cannot serve it).
+
+LIVE-TEST RESULT (case engine PROVEN end-to-end, test account 7126c67d-aeae-40e5-ba40-808f37dd81b5):
+- Req (i) wrong-turn attempt (evaluated the company not the report): correctly withheld — message_kind hint, passed false, diagnosis named the exact failure mode, Ezra redirected to the report without leaking.
+- Req (i) strong answer: passed — message_kind correct, requirement_passed true, advanced to (ii).
+- Req (ii) data-dump attempt (restated not interpreted): correctly withheld — hint, diagnosis named restate-don't-interpret, no leak, is_last_requirement true.
+- Progress writes verified in DB: (i) passed=true has_final_answer=true; (ii) passed=false miss_count=1. v2 hook (final_answer on pass) confirmed populated.
+
+DECIDED THIS SESSION:
+- Syllabus fork resolved via official source: S26-J27 is the live/current APM syllabus (genuine refresh, sections A-F, C=Performance reporting, D=Data science). Applies from 1 Sept 2026 through June 2027 — the cycle Gradd sells into. Build is correctly on S26-J27. No 25/26-vs-26/27 toggle now (real LO differences, not just labels; older cohort is exam-complete) — shelved as later feature.
+- Case requirements are self-contained rows, NOT references to the 91 drills (a case needs one shared scenario; drills each embed their own company). Confirmed load-bearing decision.
+- Case content built to the examiner failure-modes spine (from 5 examiner reports): #1 answer-the-actual-question, #2 apply-don't-describe, #3 develop-your-points. Version-independent; the case layer's teaching target.
+- Marking unit = the CASE (whole question), not the requirement — the 5/10 prof marks are awarded holistically across the whole question. This collapses "v2 synthesis" and "professional-skills marking" into ONE build.
+- Build order LOCKED (Grant's call, corrected Claude's): professional-skills marking -> cases 2-5 -> case UI. Rationale: marking and cases are mechanical and change what the engine produces/serves; the UI must be built once against the finished contract, not rebuilt each time.
+
+NEXT ACTION (NOT yet sent to Claude Code — stops here):
+- Professional-skills marking, v1 = terminal whole-case marking. Spec written and approved (APM_PROF_SKILLS_MARKING_SPEC.md — to be added to docs/): fires at case-complete via new POST /api/acca/case/mark behind APM_CASES; input = concatenated final_answers + case context + examined skills (union of professional_skill_tags); marks against verbatim ACCA section-E descriptors, Sonnet, evidence-required per mark, capped at professional_skills_marks; persists to new table acca_case_marking; does NOT see sealed model answers. Non-scope v1: no per-turn coaching, no drill marking, no UI, no technical-mark change.
+- The build paste-block for marking is DRAFTED and ready but UNSENT. Resume by: build marking behind flag (migration acca_case_marking + endpoint) -> Grant reviews migration + diff -> live-test with a STRONG/WEAK answer pair (marking is the one component the model is final judge on — not structural like the withhold — so trust is earned by the adversarial strong-vs-weak test, not by construction) -> commit/push -> then trust.
+
+STILL OPEN (cross-product, from "where are we thin"):
+- Professional-skills marking = the biggest exam-readiness gap (20% of the paper currently unassessed). In progress per above.
+- Timed mock / exam-craft mode — none exists; examiner reports cite time management as a failure cause.
+- APM content depth thin in Section A (one-drill-per-LO) and Section B sub-areas; 11 of 12 Section A drills + compound-verb LOs live-untested.
+- IB a generation behind: Mia/Aoife still on the leaky instructed-withholding engine (APM proved the structural fix — now unblocked to rebuild); IB Econ Layer 2 hybrid generator broken (~75% reject, needs pattern-level regen); IB BM Layer 2 ungenerated.
+- GTM gates unchanged: r/ACCA + OpenTuition landing-page demand test; free-drill + paid-tutor simultaneous launch; Stripe pricing ~EUR 49-69/mo. Cases should be the PAID tier (currently no paywall on case path — auth + flag only; counted tracked but unconsumed).
