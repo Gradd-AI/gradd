@@ -24,6 +24,7 @@ interface CaseHeader {
   professional_skills_marks: number | null;
 }
 interface Message { role: 'student' | 'ezra'; content: string; kind?: string }
+interface ProgressRow { requirement_id: string; passed: boolean; resolved: boolean; miss_count: number }
 
 interface PerSkillMark { skill: string; mark_awarded: number; feedback: string }
 interface Marking {
@@ -54,6 +55,40 @@ function openingFor(req: Requirement): Message {
   return {
     role: 'ezra',
     content: `Now on **${label}**. Read the scenario and exhibits on the left, then write your full attempt to this requirement below — treat it as an exam answer. I'll read exactly what you wrote and diagnose from there.`,
+  };
+}
+
+// Short marker for a requirement, e.g. "(iii)" from "(iii) Data governance",
+// falling back to "Requirement N" when the label carries no leading parenthetical.
+function shortMarker(req: Requirement): string {
+  const label = (req.label ?? '').trim();
+  const m = label.match(/^\(([^)]+)\)/);
+  return m ? `(${m[1]})` : `Requirement ${req.requirement_order}`;
+}
+
+function joinMarkers(markers: string[]): string {
+  if (markers.length <= 1) return markers[0] ?? '';
+  if (markers.length === 2) return `${markers[0]} and ${markers[1]}`;
+  return `${markers.slice(0, -1).join(', ')} and ${markers[markers.length - 1]}`;
+}
+
+// Opening line when resuming a partially-complete case — acknowledges the parts
+// already done and points at the active requirement. Derived purely from progress;
+// no chat history is restored.
+function resumeOpening(passed: Requirement[], active: Requirement): Message {
+  const done = joinMarkers(passed.map(shortMarker));
+  const verb = passed.length === 1 ? 'is' : 'are';
+  return {
+    role: 'ezra',
+    content: `Resuming — ${done} ${verb} done; you're on **${shortMarker(active)}**. Read the scenario and exhibits on the left, then write your full attempt to this requirement below.`,
+  };
+}
+
+// Opening line when the whole case is already complete on load — marking renders below.
+function completedOpening(): Message {
+  return {
+    role: 'ezra',
+    content: `This case is complete — every requirement is done. Your professional-skills marking is below.`,
   };
 }
 
@@ -107,12 +142,31 @@ export default function CaseSession({ caseId }: { caseId: string }) {
         const reqs = ((json.requirements ?? []) as Requirement[])
           .slice()
           .sort((a, b) => a.requirement_order - b.requirement_order);
+
+        // Resume state from persisted progress: which requirements are already passed.
+        const progressRows = (json.progress ?? []) as ProgressRow[];
+        const passedMap: Record<string, boolean> = {};
+        for (const p of progressRows) if (p.passed) passedMap[p.requirement_id] = true;
+
         setHeader(json.case as CaseHeader);
         setExhibits((json.exhibits ?? []) as Exhibit[]);
         setRequirements(reqs);
+        setPassedByReq(passedMap);
+
         if (reqs.length > 0) {
-          setActiveReqId(reqs[0].id);
-          setMessagesByReq({ [reqs[0].id]: [openingFor(reqs[0])] });
+          const passedReqs    = reqs.filter((r) => passedMap[r.id]);
+          const firstNotPassed = reqs.find((r) => !passedMap[r.id]) ?? null;
+          // Active = first not-yet-passed requirement; if all passed, park on the
+          // last one (the completion effect auto-runs marking either way).
+          const active = firstNotPassed ?? reqs[reqs.length - 1];
+          const opening =
+            !firstNotPassed
+              ? completedOpening()                          // whole case already done
+              : passedReqs.length > 0
+              ? resumeOpening(passedReqs, firstNotPassed)   // partial resume
+              : openingFor(active);                         // fresh start
+          setActiveReqId(active.id);
+          setMessagesByReq({ [active.id]: [opening] });
         }
         setLoaded(true);
       } catch {

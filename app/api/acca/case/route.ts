@@ -64,6 +64,16 @@ export async function GET(request: Request): Promise<Response> {
     .eq('case_id', caseId)
     .order('requirement_order', { ascending: true });
 
+  // ── Progress (this user, this case) — resume support ──
+  // Only the flags the client needs to rebuild stepper state on reload: passed /
+  // resolved / miss_count. Deliberately NOT final_answer or any diagnosis text —
+  // chat history is not restored, and no sealed/authored content leaks here.
+  const { data: progress } = await supabase
+    .from('acca_case_progress')
+    .select('requirement_id, passed, resolved, miss_count')
+    .eq('user_id', user.id)
+    .eq('case_id', caseId);
+
   return NextResponse.json({
     case: {
       id:                        caseRow.id,
@@ -75,5 +85,11 @@ export async function GET(request: Request): Promise<Response> {
     },
     exhibits:     exhibits ?? [],
     requirements: requirements ?? [],
+    progress: (progress ?? []).map((p) => ({
+      requirement_id: p.requirement_id,
+      passed:         p.passed === true,
+      resolved:       p.resolved === true,
+      miss_count:     typeof p.miss_count === 'number' ? p.miss_count : 0,
+    })),
   });
 }
