@@ -542,3 +542,11 @@ STILL OPEN (cross-product):
 - GTM: r/ACCA + OpenTuition demand test; free-drill + paid-tutor simultaneous launch; Stripe ~€49-69/mo. Cases should be the PAID tier (currently no paywall — auth + flag only; counted tracked, unconsumed).
 
 STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is approved/published. Safe today (Production has no flag). If anyone flips APM_CASES on in Production before the UI + paywall exist, Aldermere goes live with no UI and no paywall. Do not enable APM_CASES in Production yet.
+
+## Session 2026-07-03 — professional-skills marking built, live-tested, PROVEN
+
+- Built + shipped: `acca_case_marking` table (migration 20260703120000, applied via SQL Editor + tracked) and `POST /api/acca/case/mark` behind APM_CASES (SHA ba71123). Marks the whole completed case against the verbatim ACCA section-E descriptors, Sonnet, evidence-required per skill.
+- RUBRIC BUG found + fixed (SHA fde5cee): professional marks are a SINGLE POOL allocated across skills, not per-skill scores; sum validated <= `professional_skills_marks`, one retry then 502; `per_skill = {skill, mark_awarded, feedback}`.
+- LIVE-TESTED both directions on Aldermere (account 7126c67d): STRONG pair → 5/5 (2 A&E, 2 scepticism, 1 communication — correctly docked for missing report format). WEAK (ii) control → 4/5 with feedback naming the gaps (no sustained scepticism in (ii), conversational register, no quantification). Marking DISCRIMINATES with evidence-cited feedback. Trusted.
+- NOTE for pre-launch: run a full-weak calibration (both requirements thin) for a wider score-spread test.
+- NEXT (locked order): cases 2-5 (one D divisional/ABM, one D complex-structure, one B/D data-science, weighted to D as the guaranteed Section B slot) → then case UI (incl. section-readiness view, evidence-based labels, no fake percentages) → paywall before Production flag.
