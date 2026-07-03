@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { hasActiveAPMAccess } from '@/lib/acca/access';
 
 // ── APM professional-skills marking (terminal whole-case mark) ─────────────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs ONE holistic marking pass
@@ -86,6 +87,19 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const supabase = createServiceClient();
+
+  // ── 2b. Subscription gate (hard) ──
+  // Exam cases require an active APM subscription / unexpired pass. 402 → the
+  // client shows the upsell inline (edge: lapse mid-session).
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+
+  if (!hasActiveAPMAccess(profile ?? {})) {
+    return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
+  }
 
   // ── 3. Gate the case (same serving gate as drills/turns) ──
   const { data: caseRow, error: caseErr } = await supabase

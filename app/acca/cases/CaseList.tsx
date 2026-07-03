@@ -21,6 +21,7 @@ interface CaseRow {
   total_marks: number | null;
   professional_skills_marks: number | null;
   response_format: string | null;
+  locked: boolean;
 }
 
 export default function CaseList() {
@@ -98,8 +99,15 @@ export default function CaseList() {
                     : section
                     ? `Section ${section}`
                     : null;
+                // Locked cases stay visible but route to /acca/subscribe with a
+                // lock indicator and an upsell CTA instead of into the case.
+                const href = c.locked ? '/acca/subscribe' : `/acca/cases/${c.id}`;
                 return (
-                  <Link key={c.id} href={`/acca/cases/${c.id}`} className="apm-cl-card">
+                  <Link
+                    key={c.id}
+                    href={href}
+                    className={`apm-cl-card${c.locked ? ' apm-cl-card--locked' : ''}`}
+                  >
                     <div className="apm-cl-card-top">
                       {sectionLabel && <span className="apm-cl-card-section">{sectionLabel}</span>}
                       {c.anchor_area && (
@@ -114,7 +122,13 @@ export default function CaseList() {
                         {c.professional_skills_marks} professional-skills marks
                       </p>
                     )}
-                    <span className="apm-cl-card-cta">Start case →</span>
+                    {c.locked ? (
+                      <span className="apm-cl-card-cta apm-cl-card-cta--locked">
+                        <span className="apm-cl-lock" aria-hidden="true">🔒</span> Subscribe to unlock
+                      </span>
+                    ) : (
+                      <span className="apm-cl-card-cta">Start case →</span>
+                    )}
                   </Link>
                 );
               })}
@@ -300,6 +314,9 @@ const CSS = `
   color: var(--brand);
   margin-top: auto;
 }
+.apm-cl-card-cta--locked { color: var(--rust); display: inline-flex; align-items: center; gap: 6px; }
+.apm-cl-lock { font-size: 12px; }
+.apm-cl-card--locked:hover { border-color: var(--rust); }
 
 .apm-cl-footer {
   border-top: 1px solid var(--border-light);

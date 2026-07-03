@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { hasActiveAPMAccess } from '@/lib/acca/access';
 
 // ── APM case-load endpoint (redesign P0 item 1 — case-scope construct) ─────────
 // Behind APM_CASES (default OFF). Flag off → 404 (endpoint is inert; the proven
@@ -29,6 +30,31 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const supabase = createServiceClient();
+
+  // ── Subscription gate (hard) ──
+  // Exam cases require an active APM subscription / unexpired pass. Checked after
+  // auth, before any case content is served. 402 → the client renders the upsell.
+  // The case title IS returned alongside the 402 so the upsell can name the case —
+  // titles are already public via the list endpoint, so this leaks nothing.
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+
+  if (!hasActiveAPMAccess(profile ?? {})) {
+    const { data: locked } = await supabase
+      .from('acca_cases')
+      .select('title')
+      .eq('id', caseId)
+      .eq('status', 'approved')
+      .eq('published', true)
+      .single();
+    return NextResponse.json(
+      { error: 'subscription_required', title: locked?.title ?? null },
+      { status: 402 },
+    );
+  }
 
   // ── Case header ──
   // Gate on status='approved' AND published=true (matches the drill serving routes).

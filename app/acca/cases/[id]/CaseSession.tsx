@@ -100,6 +100,8 @@ export default function CaseSession({ caseId }: { caseId: string }) {
   const [exhibits, setExhibits]         = useState<Exhibit[]>([]);
   const [requirements, setRequirements] = useState<Requirement[]>([]);
   const [loadError, setLoadError]       = useState(false);
+  const [accessLocked, setAccessLocked] = useState(false);
+  const [lockedTitle, setLockedTitle]   = useState<string | null>(null);
   const [loaded, setLoaded]             = useState(false);
 
   // ── Per-requirement session (all keyed by requirement id) ──
@@ -111,6 +113,9 @@ export default function CaseSession({ caseId }: { caseId: string }) {
   const [input, setInput]     = useState('');
   const [sending, setSending] = useState(false);
   const [turnError, setTurnError] = useState<string | null>(null);
+  // Set when a turn/mark comes back 402 mid-session (subscription lapsed) — shows
+  // the same upsell message inline in chat rather than a generic error.
+  const [sessionLapsed, setSessionLapsed] = useState(false);
   const [exhibitsOpen, setExhibitsOpen] = useState(true);
   const [mobileExpanded, setMobileExpanded] = useState(false);
 
@@ -131,6 +136,14 @@ export default function CaseSession({ caseId }: { caseId: string }) {
         // 404 = flag off OR case not servable → nothing useful to show.
         if (res.status === 404) {
           router.replace('/acca');
+          return;
+        }
+        // 402 = no active APM subscription → focused upsell, not an error. The
+        // route returns the (public) case title so the upsell can name the case.
+        if (res.status === 402) {
+          let title: string | null = null;
+          try { title = ((await res.json()) as { title?: string | null }).title ?? null; } catch { /* no title */ }
+          if (!cancelled) { setLockedTitle(title); setAccessLocked(true); setLoaded(true); }
           return;
         }
         if (!res.ok) {
@@ -246,6 +259,17 @@ export default function CaseSession({ caseId }: { caseId: string }) {
           last_ezra_message: lastEzra,
         }),
       });
+      // 402 = subscription lapsed mid-session → roll the optimistic bubble back and
+      // surface the upsell inline (same message as the load-time gate).
+      if (res.status === 402) {
+        setSessionLapsed(true);
+        setMessagesByReq((prev) => ({
+          ...prev,
+          [activeReqId]: (prev[activeReqId] ?? []).slice(0, -1),
+        }));
+        setInput(trimmed);
+        return;
+      }
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? 'Something went wrong');
 
@@ -280,6 +304,7 @@ export default function CaseSession({ caseId }: { caseId: string }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ case_id: caseId }),
       });
+      if (res.status === 402) { setSessionLapsed(true); return; }
       if (res.status === 409) { setMarkingIncomplete(true); return; }
       if (!res.ok) { setMarkingError(true); return; }
       setMarking((await res.json()) as Marking);
@@ -306,6 +331,21 @@ export default function CaseSession({ caseId }: { caseId: string }) {
       <div className="ec-fullmsg">
         <style>{CSS}</style>
         <p>Loading case…</p>
+      </div>
+    );
+  }
+  // Subscription gate (case load returned 402) — focused upsell, not an error.
+  if (accessLocked) {
+    return (
+      <div className="ec-fullmsg">
+        <style>{CSS}</style>
+        <div className="ec-upsell">
+          <span className="ec-upsell-lock" aria-hidden="true">🔒</span>
+          <h1 className="ec-upsell-title">{lockedTitle ?? header?.title ?? 'Exam case'}</h1>
+          <p className="ec-upsell-copy">Exam cases are part of the APM subscription.</p>
+          <Link href="/acca/subscribe" className="ec-btn ec-btn--rust">Subscribe to unlock <span className="ec-arrow">→</span></Link>
+          <Link href="/acca/cases" className="ec-upsell-back">← Back to cases</Link>
+        </div>
       </div>
     );
   }
@@ -464,6 +504,14 @@ export default function CaseSession({ caseId }: { caseId: string }) {
 
               {turnError && <div className="ec-error" role="alert">{turnError}</div>}
 
+              {/* Subscription lapsed mid-session — same upsell message, inline */}
+              {sessionLapsed && (
+                <div className="ec-lapse" role="alert">
+                  Exam cases are part of the APM subscription.{' '}
+                  <Link href="/acca/subscribe" className="ec-lapse-link">Subscribe to continue →</Link>
+                </div>
+              )}
+
               {/* Advance controls — after a pass, or manual move-on */}
               {!sending && activePassed && nextReq && (
                 <div className="ec-advance">
@@ -608,6 +656,27 @@ const CSS = `
   text-align: center;
 }
 .ec-fullmsg a { color: var(--rust); }
+
+.ec-upsell {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  max-width: 420px; text-align: center;
+}
+.ec-upsell-lock { font-size: 30px; }
+.ec-upsell-title {
+  font-family: var(--font-display); font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700; letter-spacing: -0.3px; line-height: 1.15; color: var(--text); margin: 0;
+}
+.ec-upsell-copy { font-size: 15px; line-height: 1.55; color: var(--text-muted); margin: 0; }
+.ec-upsell .ec-btn { margin-top: 4px; text-decoration: none; }
+.ec-upsell-back { font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; }
+.ec-upsell-back:hover { color: var(--text); }
+
+.ec-lapse {
+  background: rgba(192,94,60,0.08); border: 1px solid rgba(192,94,60,0.25);
+  color: var(--text); border-radius: 10px; padding: 12px 16px; font-size: 13px; line-height: 1.5;
+}
+.ec-lapse-link { color: var(--rust); font-weight: 600; text-decoration: none; white-space: nowrap; }
+.ec-lapse-link:hover { text-decoration: underline; }
 
 .ec-wrap { max-width: 1200px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 32px); }
 

@@ -7,6 +7,7 @@ import {
   runTeachTurn,
   type ClientSessionState,
 } from '@/lib/acca/teach-engine';
+import { hasActiveAPMAccess } from '@/lib/acca/access';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -63,6 +64,19 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   const supabase = createServiceClient();
+
+  // ── 2b. Subscription gate (hard) ──
+  // Exam cases require an active APM subscription / unexpired pass. 402 → the
+  // client shows the upsell inline (edge: lapse mid-session).
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+
+  if (!hasActiveAPMAccess(profile ?? {})) {
+    return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
+  }
 
   // ── 3. Fetch the case (gated) + its exhibits → the shared scenario context ──
   // Same serving gate as drills: status='approved' AND published=true. The active
