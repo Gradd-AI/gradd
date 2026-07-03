@@ -92,7 +92,20 @@ function completedOpening(): Message {
   };
 }
 
-export default function CaseSession({ caseId }: { caseId: string }) {
+// `embedded` reuses this component inside the timed-mock runner: it drops the page
+// chrome (header/footer) so the mock's countdown header sits above it, and it
+// suppresses inline professional-skills marking (the mock marks every case together
+// on the results screen). `onComplete` fires once the whole case is complete
+// (every requirement passed) so the mock can offer "Next case".
+export default function CaseSession({
+  caseId,
+  embedded = false,
+  onComplete,
+}: {
+  caseId: string;
+  embedded?: boolean;
+  onComplete?: () => void;
+}) {
   const router = useRouter();
 
   // ── Case load ──
@@ -212,9 +225,13 @@ export default function CaseSession({ caseId }: { caseId: string }) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, sending]);
 
-  // Auto-run marking once every requirement has passed.
+  // Case-complete handling. Embedded (mock) mode notifies the parent and does NOT
+  // run inline marking — the mock marks all cases together on its results screen.
+  // Standalone mode auto-runs the professional-skills marking pass inline.
   useEffect(() => {
-    if (allPassed && !marking && !markingLoading && !markingIncomplete) {
+    if (!allPassed) return;
+    if (embedded) { onComplete?.(); return; }
+    if (!marking && !markingLoading && !markingIncomplete) {
       void runMarking();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -361,21 +378,23 @@ export default function CaseSession({ caseId }: { caseId: string }) {
   return (
     <>
       <style>{CSS}</style>
-      <div className="ec">
+      <div className={`ec${embedded ? ' ec--embedded' : ''}`}>
 
-        {/* ── Header ── */}
-        <header className="ec-header">
-          <div className="ec-wrap ec-header-inner">
-            <Link href="/acca/cases" className="ec-logo" aria-label="Back to cases">
-              <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
-            </Link>
-            <div className="ec-breadcrumb">
-              <span className="ec-breadcrumb-paper">ACCA APM</span>
-              <span className="ec-breadcrumb-sep">·</span>
-              <span className="ec-breadcrumb-label">Exam case</span>
+        {/* ── Header (own chrome — suppressed when embedded in the mock runner) ── */}
+        {!embedded && (
+          <header className="ec-header">
+            <div className="ec-wrap ec-header-inner">
+              <Link href="/acca/cases" className="ec-logo" aria-label="Back to cases">
+                <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
+              </Link>
+              <div className="ec-breadcrumb">
+                <span className="ec-breadcrumb-paper">ACCA APM</span>
+                <span className="ec-breadcrumb-sep">·</span>
+                <span className="ec-breadcrumb-label">Exam case</span>
+              </div>
             </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         {/* Mobile bar — tap to reveal scenario / exhibits / stepper */}
         <div
@@ -527,8 +546,16 @@ export default function CaseSession({ caseId }: { caseId: string }) {
                 </button>
               )}
 
-              {/* Marking panel — shown once the whole case is complete */}
-              {allPassed && (
+              {/* Case-complete banner — in the mock, marking is deferred to the
+                  results screen; the runner offers "Next case" in its own chrome. */}
+              {allPassed && embedded && !nextReq && (
+                <div className="ec-advance">
+                  <p className="ec-advance-title">Case complete — move on to the next case above.</p>
+                </div>
+              )}
+
+              {/* Marking panel — shown once the whole case is complete (standalone only) */}
+              {allPassed && !embedded && (
                 <div className="ec-marking">
                   {markingLoading ? (
                     <div className="ec-marking-state">Marking your whole answer against the professional-skills descriptors…</div>
@@ -601,15 +628,17 @@ export default function CaseSession({ caseId }: { caseId: string }) {
           </main>
         </div>
 
-        <footer className="ec-footer">
-          <div className="ec-wrap ec-footer-inner">
-            <span className="ec-footer-copy">© 2026 Gradd.ai · Not affiliated with ACCA</span>
-            <div className="ec-footer-links">
-              <Link href="/terms">Terms</Link>
-              <Link href="/privacy">Privacy</Link>
+        {!embedded && (
+          <footer className="ec-footer">
+            <div className="ec-wrap ec-footer-inner">
+              <span className="ec-footer-copy">© 2026 Gradd.ai · Not affiliated with ACCA</span>
+              <div className="ec-footer-links">
+                <Link href="/terms">Terms</Link>
+                <Link href="/privacy">Privacy</Link>
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
+        )}
 
       </div>
     </>
@@ -642,6 +671,10 @@ const CSS = `
   -webkit-font-smoothing: antialiased;
 }
 .ec *, .ec *::before, .ec *::after { box-sizing: border-box; }
+
+/* Embedded in the mock runner: fill the space the runner allots (below its
+   countdown header) rather than owning the whole viewport. */
+.ec--embedded { height: 100%; min-height: 0; }
 
 .ec-fullmsg {
   min-height: 100vh;

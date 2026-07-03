@@ -35,11 +35,15 @@ export async function GET(): Promise<Response> {
 
   const locked = !hasActiveAPMAccess(profile ?? {});
 
+  // mock_only cases are reserved for the timed-mock paper and never surface in the
+  // free-standing case list. The load/turn/mark routes still serve them normally
+  // (they're approved+published) — the exclusion is list-level only.
   const { data: cases, error } = await supabase
     .from('acca_cases')
     .select('id, title, section, anchor_area, total_marks, professional_skills_marks, response_format')
     .eq('status', 'approved')
     .eq('published', true)
+    .eq('mock_only', false)
     .order('section', { ascending: false })
     .order('title', { ascending: true });
 

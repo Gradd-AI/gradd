@@ -75,17 +75,28 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
             )}
           </div>
 
-          {/* Exam-cases entry — only when APM_CASES is on (server-gated boolean). */}
+          {/* Exam-cases + timed-mock entries — only when APM_CASES is on (server-gated boolean). */}
           {casesEnabled && (
-            <Link href="/acca/cases" className="apm-dash-cases-card">
-              <div className="apm-dash-cases-text">
-                <span className="apm-dash-cases-title">Exam cases</span>
-                <span className="apm-dash-cases-sub">
-                  Full exam-style cases — shared scenario, linked requirements, professional-skills marking.
-                </span>
-              </div>
-              <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
-            </Link>
+            <div className="apm-dash-cases-row">
+              <Link href="/acca/cases" className="apm-dash-cases-card">
+                <div className="apm-dash-cases-text">
+                  <span className="apm-dash-cases-title">Exam cases</span>
+                  <span className="apm-dash-cases-sub">
+                    Full exam-style cases — shared scenario, linked requirements, professional-skills marking.
+                  </span>
+                </div>
+                <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
+              </Link>
+              <Link href="/acca/mock" className="apm-dash-cases-card">
+                <div className="apm-dash-cases-text">
+                  <span className="apm-dash-cases-title">Timed mock</span>
+                  <span className="apm-dash-cases-sub">
+                    A full paper against the clock — three cases sat back to back, marked as one.
+                  </span>
+                </div>
+                <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
+              </Link>
+            </div>
           )}
 
           <div className="apm-dash-picker-wrap">
@@ -248,7 +259,9 @@ const CSS = `
 }
 .apm-status-cta:hover { text-decoration: underline; }
 
-/* ── Exam-cases entry card ── */
+/* ── Exam-cases + timed-mock entry cards ── */
+.apm-dash-cases-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 640px) { .apm-dash-cases-row { grid-template-columns: 1fr; } }
 .apm-dash-cases-card {
   display: flex;
   align-items: center;
