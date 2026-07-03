@@ -55,11 +55,16 @@ export default async function ACCAPage() {
     (profile?.apm_pass_expires_at &&
       new Date(profile.apm_pass_expires_at as string) > new Date());
 
+  // Exam-cases entry point is gated on APM_CASES. Read server-side and pass only a
+  // boolean to the client — the env value itself never enters the client bundle.
+  const casesEnabled = process.env.APM_CASES === '1';
+
   return (
     <ACCADashboard
       areas={areas}
       teachThroughsUsed={usedCount}
       hasActiveAccess={!!hasActiveAccess}
+      casesEnabled={casesEnabled}
     />
   );
 }

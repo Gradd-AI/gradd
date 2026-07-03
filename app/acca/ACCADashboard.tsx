@@ -9,11 +9,12 @@ interface ACCADashboardProps {
   areas: PickerArea[];
   teachThroughsUsed: number;
   hasActiveAccess: boolean;
+  casesEnabled?: boolean;
 }
 
 const FREE_TEACH_THROUGHS = 3;
 
-export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess }: ACCADashboardProps) {
+export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess, casesEnabled = false }: ACCADashboardProps) {
   const router = useRouter();
   const [navigating, setNavigating] = useState(false);
 
@@ -73,6 +74,20 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
               </div>
             )}
           </div>
+
+          {/* Exam-cases entry — only when APM_CASES is on (server-gated boolean). */}
+          {casesEnabled && (
+            <Link href="/acca/cases" className="apm-dash-cases-card">
+              <div className="apm-dash-cases-text">
+                <span className="apm-dash-cases-badge">New</span>
+                <span className="apm-dash-cases-title">Exam cases</span>
+                <span className="apm-dash-cases-sub">
+                  Full exam-style cases — shared scenario, linked requirements, professional-skills marking.
+                </span>
+              </div>
+              <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
+            </Link>
+          )}
 
           <div className="apm-dash-picker-wrap">
             <AreaPicker
@@ -233,6 +248,47 @@ const CSS = `
   flex-shrink: 0;
 }
 .apm-status-cta:hover { text-decoration: underline; }
+
+/* ── Exam-cases entry card ── */
+.apm-dash-cases-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 22px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-decoration: none;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.apm-dash-cases-card:hover {
+  border-color: var(--rust);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow, 0 4px 16px rgba(14,43,30,0.12));
+}
+.apm-dash-cases-text { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+.apm-dash-cases-badge {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--rust);
+  background: rgba(192,94,60,0.1);
+  border: 1px solid rgba(192,94,60,0.2);
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 2px;
+}
+.apm-dash-cases-title {
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--text);
+}
+.apm-dash-cases-sub { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+.apm-dash-cases-cta { font-size: 20px; color: var(--brand); flex-shrink: 0; }
 
 /* ── Picker card ── */
 .apm-dash-picker-wrap {
