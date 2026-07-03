@@ -550,3 +550,10 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - LIVE-TESTED both directions on Aldermere (account 7126c67d): STRONG pair → 5/5 (2 A&E, 2 scepticism, 1 communication — correctly docked for missing report format). WEAK (ii) control → 4/5 with feedback naming the gaps (no sustained scepticism in (ii), conversational register, no quantification). Marking DISCRIMINATES with evidence-cited feedback. Trusted.
 - NOTE for pre-launch: run a full-weak calibration (both requirements thin) for a wider score-spread test.
 - NEXT (locked order): cases 2-5 (one D divisional/ABM, one D complex-structure, one B/D data-science, weighted to D as the guaranteed Section B slot) → then case UI (incl. section-readiness view, evidence-based labels, no fake percentages) → paywall before Production flag.
+
+## Session 2026-07-03 (pt.2) — case library complete (5/5)
+
+- Cases 2-5 authored, adversarially QA'd (2 passes each incl. recheck), inserted candidate/unpublished, verified: Vesla Retail (D2g/D2h+D1d churn-model scepticism), Torfin Build Supplies (D1b/c+D1e silos/ERP + lean 5Ss), Orlen Cinemas (C1c+C1d misleading charts/commentary), Keldan Foods (SECTION A 50-marker: C1a+A3b [16] / A1f+A2c [14] / B2e [10], 40+10, all four prof skills).
+- Seed files now tracked in `supabase/apm_questions/`. Case IDs: a1..c1 Aldermere (approved/published), a2..d1 Vesla, a3..d2 Torfin, a4..c2 Orlen, a5..a1 Keldan (candidate/false).
+- NOT yet done: live-test Vesla/Torfin/Orlen through Ezra; Keldan live-test in progress = first Section A engine proof (3 requirements, 10-mark marking pool). Publish gates stay false until each live-tests clean.
+- NEXT: case UI (contract finished), paywall before Production flag.
