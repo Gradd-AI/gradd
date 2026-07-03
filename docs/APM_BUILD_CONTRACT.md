@@ -566,3 +566,11 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - Case library status: Aldermere + Keldan live-tested + published; Vesla/Torfin/Orlen QA'd + inserted, candidate/false, NOT yet live-tested (low risk, same pipeline — test before publishing each).
 - Pre-launch note: Keldan needs a weak-answer marking discrimination run (Aldermere had one; Keldan's 10/10 was on model-quality answers).
 - NEXT (locked): case UI — contract finished (engine + marking + 5 cases, both section shapes proven). Then paywall before any Production flag.
+
+## Session 2026-07-03 (pt.4) — case UI built, click-through PROVEN
+
+- Case UI shipped behind APM_CASES (SHA 9b5d13d): /acca/cases list (serves approved+published only), /acca/cases/[id] session (exhibits panel, requirement stepper, per-requirement sealed chat, badge parity with drills, marking panel), server-gated hub entry (no NEXT_PUBLIC env).
+- Apostrophe defect found via UI: SQL `''` escaping inside dollar-quotes stored literal doubles. Fixed in DB via UPDATE replace() across all case tables (verified 0 residuals) AND at source in the four seed files (SHA 6e85f52, parser-based, single-quoted-column escapes preserved).
+- Resume defect fixed (SHA 298776a): case-load now returns progress[] (requirement_id/passed/resolved/miss_count only); session seeds stepper, sets first-unpassed active, auto-marks fully-complete cases.
+- Click-through verified on preview: hub card; list shows exactly Aldermere+Keldan (candidates hidden); Keldan full resume (3 ✓s + auto 10/10 marking panel); Aldermere partial resume ((i) ✓, active (ii), resume line); Network payload contains NO model_answer/hint/full_reveal.
+- Remaining before launch: live-test Vesla/Torfin/Orlen then flip their gates; Keldan weak-answer marking discrimination run; PAYWALL (cases are the paid tier — currently auth+flag only); do NOT set APM_CASES in Production until paywall exists.
