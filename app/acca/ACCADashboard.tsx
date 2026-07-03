@@ -79,7 +79,6 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
           {casesEnabled && (
             <Link href="/acca/cases" className="apm-dash-cases-card">
               <div className="apm-dash-cases-text">
-                <span className="apm-dash-cases-badge">New</span>
                 <span className="apm-dash-cases-title">Exam cases</span>
                 <span className="apm-dash-cases-sub">
                   Full exam-style cases — shared scenario, linked requirements, professional-skills marking.
