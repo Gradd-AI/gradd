@@ -2,8 +2,8 @@
 // A mock is a full timed paper: 1 Section A case + 2 Section B cases (one
 // C-anchored, one D-anchored) sat sequentially under one clock. The case_ids are
 // real acca_cases rows (approved + published); they are served by the existing
-// case load/turn/mark routes. Paper 1 deliberately reuses library cases
-// (Keldan + Aldermere + Vesla) — Paper 2's reserved (mock_only) cases come later.
+// case load/turn/mark routes. Paper 1 references RESERVED (mock_only) cases only —
+// Halworth (Section A) + Rivenor (B/C) + Bexley (B/D).
 //
 // duration_minutes is the whole-paper clock (ACCA APM is 3h15m = 195 min).
 export interface MockPaper {
@@ -15,8 +15,20 @@ export interface MockPaper {
 
 // Papers must reference mock_only (reserved) cases ONLY — library cases share
 // per-requirement progress with practice, so a practised case enters the mock
-// pre-completed. Paper 1's reserved cases are being authored.
-export const MOCK_PAPERS: MockPaper[] = [];
+// pre-completed. Paper 1 satisfies the reserved-only rule: all three are mock_only
+// reserved cases, sat in exam order (Section A first, then the two Section B).
+export const MOCK_PAPERS: MockPaper[] = [
+  {
+    id: 'paper-1',
+    title: 'Mock Paper 1',
+    duration_minutes: 195,
+    case_ids: [
+      'a6000000-0000-4000-8000-0000000000b1', // Halworth Hotels    — Section A (reserved)
+      'a7000000-0000-4000-8000-0000000000c3', // Rivenor Pharma     — Section B, C-anchored (reserved)
+      'a8000000-0000-4000-8000-0000000000d3', // Bexley Grocers     — Section B, D-anchored (reserved)
+    ],
+  },
+];
 
 export function getMockPaper(id: string): MockPaper | null {
   return MOCK_PAPERS.find((p) => p.id === id) ?? null;
