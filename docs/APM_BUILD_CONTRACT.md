@@ -557,3 +557,12 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - Seed files now tracked in `supabase/apm_questions/`. Case IDs: a1..c1 Aldermere (approved/published), a2..d1 Vesla, a3..d2 Torfin, a4..c2 Orlen, a5..a1 Keldan (candidate/false).
 - NOT yet done: live-test Vesla/Torfin/Orlen through Ezra; Keldan live-test in progress = first Section A engine proof (3 requirements, 10-mark marking pool). Publish gates stay false until each live-tests clean.
 - NEXT: case UI (contract finished), paywall before Production flag.
+
+## Session 2026-07-03 (pt.3) — Section A engine PROVEN
+
+- Keldan Foods (Section A 50-marker) live-tested end-to-end on preview (account 7126c67d): req (i) calc-omission wrong-turn correctly withheld (hint, diagnosis named missing calculations); (i)/(ii)/(iii) all passed with strong answers; case_complete true — FIRST 3-requirement orchestration run, worked unchanged.
+- Marking on 10-mark pool PROVEN: 10/10 allocated 3 comm / 3 A&E / 2 scepticism / 2 commercial acumen, evidence-cited per skill, allocation validation held. Section A + Section B marking paths both live-tested.
+- Keldan flipped approved/published (safe: Production has no APM_CASES flag).
+- Case library status: Aldermere + Keldan live-tested + published; Vesla/Torfin/Orlen QA'd + inserted, candidate/false, NOT yet live-tested (low risk, same pipeline — test before publishing each).
+- Pre-launch note: Keldan needs a weak-answer marking discrimination run (Aldermere had one; Keldan's 10/10 was on model-quality answers).
+- NEXT (locked): case UI — contract finished (engine + marking + 5 cases, both section shapes proven). Then paywall before any Production flag.
