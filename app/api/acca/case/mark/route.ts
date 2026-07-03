@@ -187,7 +187,10 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'case examines no professional skills' }, { status: 409 });
   }
 
-  // ── 9. Marking call (Sonnet) — mark whole answer against each skill's descriptor ──
+  // ── 9. Marking call (Sonnet) — mark whole answer against the descriptors ──
+  // The professional marks are a SINGLE pool for the whole case (5 Section B /
+  // 10 Section A), allocated ACROSS the examined skills — NOT an independent
+  // score per skill. The prompt states the pool cap explicitly; §10b enforces it.
   const rubric = examinedSkills
     .map((s) => {
       const descriptor = SKILL_DESCRIPTORS[s] ?? '(no authored descriptor on file for this skill)';
@@ -197,71 +200,106 @@ export async function POST(request: Request): Promise<Response> {
 
   const contextLine = context ? `Case scenario and exhibits:\n${context}\n\n` : '';
 
-  let rawMarking: string;
-  try {
-    const res = await anthropic.messages.create({
-      model: MARKING_MODEL,
-      max_tokens: 1500,
-      system:
-        'You are an experienced ACCA APM marker awarding the professional-skills marks for a ' +
-        'whole exam question. You mark HOW the candidate wrote — their reasoning, judgement and ' +
-        'communication across the whole answer — against the official ACCA section-E descriptor ' +
-        'for each examined skill. Each descriptor IS the standard; mark against it, not against a ' +
-        'model answer. ' +
-        `Total professional marks available for this case: ${professionalSkillsMarks}, spread ` +
-        'across the examined skills. ' +
-        'DISCIPLINE: for every skill you must cite specific evidence from the candidate\'s answer ' +
-        'that earned or lost the mark — quote or name the exact passage. No mark without a named ' +
-        'reason. Award integer marks only. ' +
-        'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
-        '[{ "skill": "...", "mark_awarded": N, "feedback": "..." }] — one object per examined skill.',
-      messages: [
-        {
-          role: 'user',
-          content:
-            contextLine +
-            `Examined professional skills and their ACCA section-E descriptors (the standard):\n${rubric}\n\n` +
-            `Candidate's whole answer (all requirements, in order):\n${wholeAnswer}\n\n` +
-            'Mark the whole answer against each examined skill\'s descriptor. Return ONLY the JSON array.',
-        },
-      ],
-    });
-    rawMarking = extractText(res);
-  } catch {
-    return NextResponse.json({ error: 'marking call failed' }, { status: 502 });
+  const systemPrompt =
+    'You are an experienced ACCA APM marker awarding the professional-skills marks for a ' +
+    'whole exam question. You mark HOW the candidate wrote — their reasoning, judgement and ' +
+    'communication across the whole answer — against the official ACCA section-E descriptor ' +
+    'for each examined skill. Each descriptor IS the standard; mark against it, not against a ' +
+    'model answer. ' +
+    `This case carries ${professionalSkillsMarks} professional marks IN TOTAL, allocated across ` +
+    'the examined skills. The sum of mark_awarded across all skills MUST NOT exceed ' +
+    `${professionalSkillsMarks}. Allocate marks where the answer best demonstrates each skill; ` +
+    'an even split is not required. ' +
+    'DISCIPLINE: for every skill you must cite specific evidence from the candidate\'s answer ' +
+    'that earned or lost the mark — quote or name the exact passage. No mark without a named ' +
+    'reason. Award integer marks only. ' +
+    'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
+    '[{ "skill": "...", "mark_awarded": N, "feedback": "..." }] — one object per examined skill.';
+
+  const baseUserContent =
+    contextLine +
+    `Examined professional skills and their ACCA section-E descriptors (the standard):\n${rubric}\n\n` +
+    `Candidate's whole answer (all requirements, in order):\n${wholeAnswer}\n\n` +
+    'Mark the whole answer against each examined skill\'s descriptor. Return ONLY the JSON array.';
+
+  // One marking round-trip: call + defensive parse (strip code fences). Throws
+  // Error('call') on API/extract failure and Error('parse') on parse/shape failure
+  // so the caller can preserve the distinct 502 messages.
+  async function markOnce(correctionNote: string): Promise<SkillMark[]> {
+    let rawMarking: string;
+    try {
+      const res = await anthropic.messages.create({
+        model: MARKING_MODEL,
+        max_tokens: 1500,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: baseUserContent + correctionNote }],
+      });
+      rawMarking = extractText(res);
+    } catch {
+      throw new Error('call');
+    }
+    try {
+      let cleaned = rawMarking.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
+      }
+      const arr = JSON.parse(cleaned);
+      if (!Array.isArray(arr)) throw new Error('not an array');
+      const out: SkillMark[] = arr.map((o) => {
+        const skill = typeof o?.skill === 'string' ? o.skill : '';
+        const mark = Number(o?.mark_awarded);
+        const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
+        if (!skill || !Number.isFinite(mark)) throw new Error('malformed entry');
+        return { skill, mark_awarded: Math.round(mark), feedback };
+      });
+      if (out.length === 0) throw new Error('empty');
+      return out;
+    } catch {
+      throw new Error('parse');
+    }
   }
 
-  // ── 10. Parse defensively (strip code fences, try/catch) ──
+  const errFor = (e: unknown) =>
+    (e as Error)?.message === 'parse' ? 'marking parse failed' : 'marking call failed';
+  const sumMarks = (ms: SkillMark[]) => ms.reduce((acc, m) => acc + m.mark_awarded, 0);
+
+  // ── 10. First marking pass ──
   let parsed: SkillMark[];
   try {
-    let cleaned = rawMarking.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
-    }
-    const arr = JSON.parse(cleaned);
-    if (!Array.isArray(arr)) throw new Error('not an array');
-    parsed = arr.map((o) => {
-      const skill = typeof o?.skill === 'string' ? o.skill : '';
-      const mark = Number(o?.mark_awarded);
-      const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
-      if (!skill || !Number.isFinite(mark)) throw new Error('malformed entry');
-      return { skill, mark_awarded: Math.round(mark), feedback };
-    });
-    if (parsed.length === 0) throw new Error('empty');
-  } catch {
-    return NextResponse.json({ error: 'marking parse failed' }, { status: 502 });
+    parsed = await markOnce('');
+  } catch (e) {
+    return NextResponse.json({ error: errFor(e) }, { status: 502 });
   }
 
-  // ── 11. Build per-skill output (attach marks_available per skill) + overall ──
+  // ── 10b. Pool validation — the allocation must not exceed the case total ──
+  // If it does, retry ONCE with a correction note. If it STILL exceeds, silently
+  // scaling/capping would misreport the model's allocation → hard fail 502.
+  if (sumMarks(parsed) > professionalSkillsMarks) {
+    const correction =
+      `\n\nCORRECTION: your previous allocation summed to more than ${professionalSkillsMarks} ` +
+      `marks. The ${professionalSkillsMarks} professional marks are a SINGLE pool for the whole ` +
+      'case; the sum of mark_awarded across ALL skills must not exceed it. Re-allocate within the ' +
+      'pool and return ONLY the JSON array.';
+    try {
+      parsed = await markOnce(correction);
+    } catch (e) {
+      return NextResponse.json({ error: errFor(e) }, { status: 502 });
+    }
+    if (sumMarks(parsed) > professionalSkillsMarks) {
+      return NextResponse.json({ error: 'marking allocation invalid' }, { status: 502 });
+    }
+  }
+
+  // ── 11. Build per-skill output {skill, mark_awarded, feedback} + overall ──
+  // marks_available is a single case-level pool (top-level below), NOT per skill.
   const perSkill = parsed.map((m) => ({
     skill: m.skill,
     mark_awarded: m.mark_awarded,
-    marks_available: professionalSkillsMarks,
     feedback: m.feedback,
   }));
 
-  const rawSum = perSkill.reduce((acc, m) => acc + m.mark_awarded, 0);
-  const overall = Math.min(rawSum, professionalSkillsMarks);
+  // Allocation is already validated ≤ pool; min() is a belt-and-braces floor only.
+  const overall = Math.min(sumMarks(parsed), professionalSkillsMarks);
 
   // ── 12. Persist (best-effort upsert — never 500 on the write) ──
   try {
