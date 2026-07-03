@@ -582,3 +582,9 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - LIBRARY STATUS: all 5 cases approved/published and live-tested. Engine, marking, and UI proven across both section shapes and all examiner failure modes.
 - Calibration note (pre-launch): all full-pool marks were on model-quality answers — expected. Keldan still needs a weak-answer discrimination run; consider one per case.
 - NEXT: PAYWALL on the case path — the last gate. APM_CASES must NOT go to Production until it exists.
+
+## Session 2026-07-03 (pt.6) — PAYWALL LIVE, launch blocker cleared
+
+- Case path behind APM entitlement (SHA e61c0a5): shared helper lib/acca/access.ts (hasActiveAPMAccess — active subscription OR unexpired 90-day pass); hard 402 on case load/turn/mark, fail-closed on missing profile; list visible with per-case locked flag; UI: locked cards → /acca/subscribe, full-page upsell with real title on load-402, inline lapse message mid-session. Stripe untouched — existing €49/mo + €99/90d SKUs, checkout, webhooks reused.
+- Verified both sides on preview: no entitlement → all 5 locked, upsell renders; pass granted (test account, 90d) → all unlocked, Keldan resumes + marks.
+- APM_CASES may now go to Production when we choose to launch — paywall gate exists. Remaining pre-launch: timed mock mode (decision pending), Keldan weak-answer calibration, apm_* + counted drift migrations, funnel verification, then merge to main as the launch act.
