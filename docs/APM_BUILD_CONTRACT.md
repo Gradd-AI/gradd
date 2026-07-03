@@ -588,3 +588,10 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - Case path behind APM entitlement (SHA e61c0a5): shared helper lib/acca/access.ts (hasActiveAPMAccess — active subscription OR unexpired 90-day pass); hard 402 on case load/turn/mark, fail-closed on missing profile; list visible with per-case locked flag; UI: locked cards → /acca/subscribe, full-page upsell with real title on load-402, inline lapse message mid-session. Stripe untouched — existing €49/mo + €99/90d SKUs, checkout, webhooks reused.
 - Verified both sides on preview: no entitlement → all 5 locked, upsell renders; pass granted (test account, 90d) → all unlocked, Keldan resumes + marks.
 - APM_CASES may now go to Production when we choose to launch — paywall gate exists. Remaining pre-launch: timed mock mode (decision pending), Keldan weak-answer calibration, apm_* + counted drift migrations, funnel verification, then merge to main as the launch act.
+
+## Session 2026-07-03 (pt.7) — reserved mock cases
+
+- Mock papers must be reserved-only (library cases share per-requirement progress → practised cases enter mocks pre-completed). MOCK_PAPERS emptied (SHA 2cdafea) pending 3 reserved cases.
+- Reserved case 1 authored + QA'd (2 passes) + inserted: Halworth Hotels (Section A 50-marker, mock_only=true, candidate/false): A1g benchmarking+calcs [16] / B4b Building Block [14] / B1a budgeting [10]. Case ID a6000000-...b1.
+- Authoring lesson: '' escaping bug recurred + over-corrected (global replace broke a single-quoted title escape) — rule: dollar-quoted bodies use plain apostrophes; single-quoted columns (title/label) use '' escapes; never global-replace across both.
+- NEXT: reserved C-anchored + D-anchored Section B cases, then wire Paper 1 case_ids into lib/acca/mocks.ts, flip Halworth gates, live-test the full timed mock.
