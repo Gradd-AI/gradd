@@ -574,3 +574,11 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - Resume defect fixed (SHA 298776a): case-load now returns progress[] (requirement_id/passed/resolved/miss_count only); session seeds stepper, sets first-unpassed active, auto-marks fully-complete cases.
 - Click-through verified on preview: hub card; list shows exactly Aldermere+Keldan (candidates hidden); Keldan full resume (3 ✓s + auto 10/10 marking panel); Aldermere partial resume ((i) ✓, active (ii), resume line); Network payload contains NO model_answer/hint/full_reveal.
 - Remaining before launch: live-test Vesla/Torfin/Orlen then flip their gates; Keldan weak-answer marking discrimination run; PAYWALL (cases are the paid tier — currently auth+flag only); do NOT set APM_CASES in Production until paywall exists.
+
+## Session 2026-07-03 (pt.5) — full case library live-tested (5/5)
+
+- Vesla, Torfin, Orlen live-tested end-to-end on preview (account 7126c67d) and flipped approved/published. Per case: one wrong-turn withheld + diagnosed correctly, all requirements passed, marking allocated validly. Withhold catches: Vesla (i) accepted-analyst's-claims, (ii) generic security theory list; Torfin (i) ERP textbook recital, (ii) 5Ss theory without application; Orlen (i) numerically-correct company analysis withheld for not evaluating the charts (sharpest catch — right numbers, wrong question), (ii) paraphrase-not-challenge.
+- Marking: Vesla 5/5 (A&E 2, scepticism 2, CA 1); Torfin 5/5 (A&E 2, scepticism 2, CA 1); Orlen 5/5 (A&E 3, scepticism 2 — two-skill union, uneven allocation working).
+- LIBRARY STATUS: all 5 cases approved/published and live-tested. Engine, marking, and UI proven across both section shapes and all examiner failure modes.
+- Calibration note (pre-launch): all full-pool marks were on model-quality answers — expected. Keldan still needs a weak-answer discrimination run; consider one per case.
+- NEXT: PAYWALL on the case path — the last gate. APM_CASES must NOT go to Production until it exists.
