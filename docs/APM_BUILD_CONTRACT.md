@@ -594,4 +594,5 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - Mock papers must be reserved-only (library cases share per-requirement progress → practised cases enter mocks pre-completed). MOCK_PAPERS emptied (SHA 2cdafea) pending 3 reserved cases.
 - Reserved case 1 authored + QA'd (2 passes) + inserted: Halworth Hotels (Section A 50-marker, mock_only=true, candidate/false): A1g benchmarking+calcs [16] / B4b Building Block [14] / B1a budgeting [10]. Case ID a6000000-...b1.
 - Authoring lesson: '' escaping bug recurred + over-corrected (global replace broke a single-quoted title escape) — rule: dollar-quoted bodies use plain apostrophes; single-quoted columns (title/label) use '' escapes; never global-replace across both.
+- Reserved case 2 authored + QA'd (2 passes) + inserted: Rivenor Pharma Distribution (Section B C-anchored, mock_only=true, candidate/false): C1a report eval [13] / C1b visualisation suitability [7]. Case ID a7000000-...c3.
 - NEXT: reserved C-anchored + D-anchored Section B cases, then wire Paper 1 case_ids into lib/acca/mocks.ts, flip Halworth gates, live-test the full timed mock.
