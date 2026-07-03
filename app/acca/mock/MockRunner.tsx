@@ -28,9 +28,44 @@ interface CaseResult {
   profAvailable: number;
   complete: boolean;
   loadFailed?: boolean;
+  marking?: boolean;            // true while the mark call (incl. 409 retries) is in flight
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
+
+const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+// Mark one case, tolerating the progress-write race: the final requirement's
+// progress write can lag its turn response, so the mark POST can 409 ("case not
+// complete") moments before it would succeed. Retry a 409 once after 1.5s, then —
+// since this is only ever called when the case load already showed every
+// requirement passed — once more after 3s before accepting the not-marked state.
+// Non-409 failures are terminal (no retry). Returns the awarded marks, or null.
+async function markCaseWithRetry(caseId: string): Promise<number | null> {
+  const attempt = async (): Promise<{ ok: boolean; status: number; awarded: number | null }> => {
+    const res = await fetch('/api/acca/case/mark', {
+      method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ case_id: caseId }),
+    });
+    if (res.ok) {
+      const m = await res.json();
+      return { ok: true, status: 200, awarded: typeof m.professional_marks_awarded === 'number' ? m.professional_marks_awarded : 0 };
+    }
+    return { ok: false, status: res.status, awarded: null };
+  };
+
+  let r = await attempt();
+  if (r.ok) return r.awarded;
+  if (r.status !== 409) return null;      // non-409 is terminal
+
+  await delay(1500);
+  r = await attempt();
+  if (r.ok) return r.awarded;
+  if (r.status !== 409) return null;
+
+  await delay(3000);
+  r = await attempt();
+  return r.ok ? r.awarded : null;
+}
 
 // H:MM:SS when ≥ 1h, else M:SS. Never negative.
 function fmtClock(ms: number): string {
@@ -151,12 +186,31 @@ export default function MockRunner() {
       method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ mock_id: paper.id }),
     }).catch(() => {});
 
-    (async () => {
-      const results = await Promise.all(paper.case_ids.map(async (cid): Promise<CaseResult> => {
+    let cancelled = false;
+    const patch = (cid: string, p: Partial<CaseResult>) => {
+      if (cancelled) return;
+      setResultsData((prev) => (prev ?? []).map((r) => (r.caseId === cid ? { ...r, ...p } : r)));
+    };
+
+    // Run the aggregation in a nested async fn so its setState calls are not
+    // synchronous within the effect body.
+    void (async () => {
+      // Seed one placeholder per case (marking) so the grid renders each case's
+      // "Marking…" state immediately and never flashes "not marked" mid-race.
+      if (cancelled) return;
+      setResultsData(paper.case_ids.map((cid): CaseResult => ({
+        caseId: cid, title: null, passed: 0, total: 0, profAwarded: null, profAvailable: 0, complete: false, marking: true,
+      })));
+      setResultsLoading(false);
+
+      // Each case resolves independently so a slow 409-retry on one never blocks the
+      // others; the case stays "marking" until its retries are exhausted.
+      paper.case_ids.forEach(async (cid) => {
         try {
           const loadRes = await fetch(`/api/acca/case?case_id=${encodeURIComponent(cid)}`);
           if (!loadRes.ok) {
-            return { caseId: cid, title: null, passed: 0, total: 0, profAwarded: null, profAvailable: 0, complete: false, loadFailed: true };
+            patch(cid, { marking: false, loadFailed: true });
+            return;
           }
           const load = await loadRes.json();
           const requirements = (load.requirements ?? []) as unknown[];
@@ -165,25 +219,24 @@ export default function MockRunner() {
           const passed = progress.filter((p) => p.passed === true).length;
           const profAvailable = typeof load.case?.professional_skills_marks === 'number' ? load.case.professional_skills_marks : 0;
           const complete = total > 0 && passed === total;
+          const title = (load.case?.title ?? null) as string | null;
 
-          let profAwarded: number | null = null;
-          if (complete) {
-            const markRes = await fetch('/api/acca/case/mark', {
-              method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ case_id: cid }),
-            });
-            if (markRes.ok) {
-              const m = await markRes.json();
-              profAwarded = typeof m.professional_marks_awarded === 'number' ? m.professional_marks_awarded : 0;
-            }
+          // Surface load-derived fields now; keep marking:true until the mark resolves.
+          patch(cid, { title, passed, total, profAvailable, complete });
+
+          if (!complete) {
+            patch(cid, { profAwarded: null, marking: false });
+            return;
           }
-          return { caseId: cid, title: load.case?.title ?? null, passed, total, profAwarded, profAvailable, complete };
+          const profAwarded = await markCaseWithRetry(cid);
+          patch(cid, { profAwarded, marking: false });
         } catch {
-          return { caseId: cid, title: null, passed: 0, total: 0, profAwarded: null, profAvailable: 0, complete: false, loadFailed: true };
+          patch(cid, { marking: false, loadFailed: true });
         }
-      }));
-      setResultsData(results);
-      setResultsLoading(false);
+      });
     })();
+
+    return () => { cancelled = true; };
   }, [phase, paper]);
 
   async function startPaper(paperId: string) {
@@ -365,6 +418,7 @@ export default function MockRunner() {
   if (phase === 'results') {
     // Derive from the last ticked time (state), not Date.now() — pure during render.
     const timedOut = attempt ? new Date(attempt.ends_at).getTime() <= nowTs : false;
+    const anyMarking = (resultsData ?? []).some((r) => r.marking);
     const totalPassed = (resultsData ?? []).reduce((a, r) => a + r.passed, 0);
     const totalReqs = (resultsData ?? []).reduce((a, r) => a + r.total, 0);
     const profAwarded = (resultsData ?? []).reduce((a, r) => a + (r.profAwarded ?? 0), 0);
@@ -378,7 +432,7 @@ export default function MockRunner() {
           <span />
         </header>
         <main className="mck-main">
-          {resultsLoading ? (
+          {resultsLoading || !resultsData ? (
             <div className="mck-state">Marking your paper…</div>
           ) : (
             <div className="mck-results">
@@ -386,32 +440,44 @@ export default function MockRunner() {
                 <div className="mck-timeout" role="status">Time&apos;s up — here is your paper marked as it stood.</div>
               )}
 
-              <div className="mck-scoreline">
-                <div className="mck-score-block">
-                  <span className="mck-score-num">{totalPassed}<span className="mck-score-of">/{totalReqs}</span></span>
-                  <span className="mck-score-label">technical requirements passed</span>
-                </div>
-                <div className="mck-score-block">
-                  <span className="mck-score-num">{profAwarded}<span className="mck-score-of">/{profAvailable}</span></span>
-                  <span className="mck-score-label">professional-skills marks</span>
-                </div>
-              </div>
+              {/* Totals wait until every case has finished marking (incl. 409 retries)
+                  so they never show a mid-race undercount. */}
+              {anyMarking ? (
+                <div className="mck-state">Marking your paper…</div>
+              ) : (
+                <>
+                  <div className="mck-scoreline">
+                    <div className="mck-score-block">
+                      <span className="mck-score-num">{totalPassed}<span className="mck-score-of">/{totalReqs}</span></span>
+                      <span className="mck-score-label">technical requirements passed</span>
+                    </div>
+                    <div className="mck-score-block">
+                      <span className="mck-score-num">{profAwarded}<span className="mck-score-of">/{profAvailable}</span></span>
+                      <span className="mck-score-label">professional-skills marks</span>
+                    </div>
+                  </div>
 
-              <p className="mck-plain">
-                Across the paper you passed <strong>{totalPassed} of {totalReqs}</strong> technical requirements
-                and earned <strong>{profAwarded} of {profAvailable}</strong> professional-skills marks.
-              </p>
+                  <p className="mck-plain">
+                    Across the paper you passed <strong>{totalPassed} of {totalReqs}</strong> technical requirements
+                    and earned <strong>{profAwarded} of {profAvailable}</strong> professional-skills marks.
+                  </p>
+                </>
+              )}
 
               <div className="mck-case-results">
                 {(resultsData ?? []).map((r, i) => (
                   <div key={r.caseId} className="mck-case-result">
                     <div className="mck-case-result-top">
                       <span className="mck-case-result-title">{r.title ?? `Case ${i + 1}`}</span>
-                      {r.complete
+                      {r.marking
+                        ? null
+                        : r.complete
                         ? <span className="mck-tag mck-tag--done">Complete</span>
                         : <span className="mck-tag">Incomplete</span>}
                     </div>
-                    {r.loadFailed ? (
+                    {r.marking ? (
+                      <span className="mck-case-result-line mck-case-result-line--muted">Marking…</span>
+                    ) : r.loadFailed ? (
                       <span className="mck-case-result-line mck-case-result-line--muted">Couldn&apos;t load this case&apos;s result.</span>
                     ) : (
                       <div className="mck-case-result-lines">
@@ -427,12 +493,15 @@ export default function MockRunner() {
                 ))}
               </div>
 
-              <div className="mck-results-actions">
-                <Link href="/acca" className="mck-btn mck-btn--ghost">← Back to APM</Link>
-                <Link href="/acca/mock" className="mck-btn mck-btn--rust" onClick={() => { resultsFetchedRef.current = false; }}>
-                  Another mock →
-                </Link>
-              </div>
+              {/* Navigation appears once marking is settled so nobody leaves mid-mark. */}
+              {!anyMarking && (
+                <div className="mck-results-actions">
+                  <Link href="/acca" className="mck-btn mck-btn--ghost">← Back to APM</Link>
+                  <Link href="/acca/mock" className="mck-btn mck-btn--rust" onClick={() => { resultsFetchedRef.current = false; }}>
+                    Another mock →
+                  </Link>
+                </div>
+              )}
             </div>
           )}
         </main>
