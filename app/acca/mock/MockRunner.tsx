@@ -262,7 +262,7 @@ export default function MockRunner() {
           </div>
           <div className="mck-paper-list">
             {papers.length === 0 ? (
-              <div className="mck-state">No mock papers are available yet.</div>
+              <div className="mck-state">Mock papers are being prepared — check back soon.</div>
             ) : papers.map((p) => (
               <button key={p.id} className="mck-paper-card" onClick={() => { setConfirmPaper(p); setPhase('confirm'); }}>
                 <div className="mck-paper-text">

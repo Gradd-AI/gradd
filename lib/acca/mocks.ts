@@ -13,18 +13,10 @@ export interface MockPaper {
   case_ids: string[];      // sat in this order: Section A first, then the two Section B
 }
 
-export const MOCK_PAPERS: MockPaper[] = [
-  {
-    id: 'paper-1',
-    title: 'Mock Paper 1',
-    duration_minutes: 195,
-    case_ids: [
-      'a5000000-0000-4000-8000-0000000000a1', // Keldan   — Section A
-      'a1000000-0000-4000-8000-0000000000c1', // Aldermere — Section B, C-anchored
-      'a2000000-0000-4000-8000-0000000000d1', // Vesla    — Section B, D-anchored
-    ],
-  },
-];
+// Papers must reference mock_only (reserved) cases ONLY — library cases share
+// per-requirement progress with practice, so a practised case enters the mock
+// pre-completed. Paper 1's reserved cases are being authored.
+export const MOCK_PAPERS: MockPaper[] = [];
 
 export function getMockPaper(id: string): MockPaper | null {
   return MOCK_PAPERS.find((p) => p.id === id) ?? null;
