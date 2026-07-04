@@ -1,0 +1,33 @@
+-- =============================================================================
+-- 20260704120100_acca_tutor_progress_counted.sql
+-- acca_tutor_progress.counted cap-charged flag — brought under version control.
+-- =============================================================================
+-- WHY: The tutor route reads and writes `acca_tutor_progress.counted` (the durable
+-- "this drill's teach-through has already charged the free-tier cap" flag) but no
+-- migration ever added the column — schema drift. Both the original table migration
+-- (20260627000000_acca_tutor_progress.sql) and the cases migration
+-- (20260701120000_acca_cases.sql) explicitly note this drift; acca_case_progress
+-- defines the same-purpose `counted` column from the start (boolean not null default
+-- false) — this migration brings acca_tutor_progress into line.
+--
+-- The column already exists in the live DB (added via the Supabase SQL Editor); this
+-- is NOT run against it. `add column if not exists` makes it a safe no-op there and
+-- reconciles the schema for fresh environments.
+--
+-- COLUMN (verified against usage in app/api/acca/tutor/route.ts):
+--  * counted — boolean; written as newTeachThroughCounted, read as `counted === true`
+--    to prevent a double-increment of apm_teach_throughs_used. Starts false.
+--
+-- NOTE: `add column if not exists` will not retro-apply NOT NULL / DEFAULT to a
+-- pre-existing nullable column; on the live DB this is a no-op. Idempotent; safe to
+-- re-run.
+-- =============================================================================
+
+alter table acca_tutor_progress add column if not exists counted boolean not null default false;
+
+-- =============================================================================
+-- VERIFICATION (run after applying):
+--   select column_name from information_schema.columns
+--   where table_name = 'acca_tutor_progress' and column_name = 'counted';
+--   -- expect 1 row.
+-- =============================================================================
