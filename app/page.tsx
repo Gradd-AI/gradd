@@ -47,9 +47,9 @@ const LC_METADATA: Metadata = {
 };
 
 const APM_METADATA: Metadata = {
-  title: 'Failed APM? Pass it next sitting — AI tutor for ACCA APM | Gradd',
+  title: 'ACCA APM Tutor — Taught, Not Just Marked | Gradd',
   description:
-    'APM has one of the lowest pass rates in ACCA. Gradd teaches you the paper — diagnoses why you got it wrong and coaches you until you’d score. Start free: every drill, no card. Built on the live S26–J27 syllabus.',
+    'AI tutor for ACCA APM. Diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. 91 drills free. Full cases and a timed mock.',
   keywords: [
     'ACCA APM tutor',
     'ACCA APM',
@@ -64,18 +64,18 @@ const APM_METADATA: Metadata = {
   ],
   alternates: { canonical: 'https://gradd.ai/' },
   openGraph: {
-    title: 'Failed APM? Pass it next sitting — AI tutor for ACCA APM | Gradd',
+    title: 'ACCA APM Tutor — Taught, Not Just Marked | Gradd',
     description:
-      'Gradd teaches you the APM paper: diagnoses why you got it wrong and coaches you until you’d score. Marked against ACCA’s professional-skills descriptors. Start free — every drill, no card.',
+      'AI tutor for ACCA APM. Diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. 91 drills free. Full cases and a timed mock.',
     url: 'https://gradd.ai/',
     siteName: 'Gradd',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Failed APM? Pass it next sitting — AI tutor for ACCA APM | Gradd',
+    title: 'ACCA APM Tutor — Taught, Not Just Marked | Gradd',
     description:
-      'Gradd teaches you the APM paper: diagnoses why you got it wrong and coaches you until you’d score. Start free — every drill, no card.',
+      'AI tutor for ACCA APM. Diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. 91 drills free. Full cases and a timed mock.',
   },
   robots: { index: true, follow: true },
 };
