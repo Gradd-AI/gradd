@@ -75,6 +75,10 @@ export default function ACCALandingPage() {
               <button className="nav-link-btn" onClick={() => scrollTo('pricing')}>Pricing</button>
             </nav>
             <div className="nav-cta">
+              {/* Quiet text link — magic-link flow handles returning users and new
+                  signups at the same destination, so Sign in shares AUTH_FREE. Lives
+                  in nav-cta (always visible) so it persists in the collapsed nav. */}
+              <Link href={AUTH_FREE} className="nav-signin">Sign in</Link>
               <Link href={AUTH_FREE} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </div>
           </div>
@@ -587,11 +591,17 @@ const CSS = `
   transition: color 0.15s;
 }
 .acca-lp .nav-link-btn:hover { color: var(--ink); }
-.acca-lp .nav-cta { display: flex; align-items: center; gap: 8px; }
+.acca-lp .nav-cta { display: flex; align-items: center; gap: 14px; }
+.acca-lp .nav-signin {
+  font-size: 14px; color: var(--ink-2); text-decoration: none;
+  white-space: nowrap; transition: color 0.15s;
+}
+.acca-lp .nav-signin:hover { color: var(--ink); }
+@media (max-width: 480px) { .acca-lp .nav-signin { font-size: 13px; } }
 @media (max-width: 860px) { .acca-lp .nav-links { display: none; } }
 @media (max-width: 480px) {
   .acca-lp .nav-inner { height: 56px; }
-  .acca-lp .nav-cta { gap: 4px; }
+  .acca-lp .nav-cta { gap: 10px; }
 }
 
 /* ── Hero ── */
