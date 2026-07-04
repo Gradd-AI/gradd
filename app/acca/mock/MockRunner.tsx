@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import CaseSession from '@/app/acca/cases/[id]/CaseSession';
@@ -24,47 +24,82 @@ interface CaseResult {
   title: string | null;
   passed: number;
   total: number;
-  profAwarded: number | null;   // null = case not completed → no professional mark
+  profAwarded: number | null;   // null = not marked: case genuinely not complete, OR marking failed (see markFailed)
   profAvailable: number;
   complete: boolean;
   loadFailed?: boolean;
-  marking?: boolean;            // true while the mark call (incl. 409 retries) is in flight
+  marking?: boolean;            // true while the mark call (incl. retries) is in flight
+  markFailed?: boolean;        // completed case whose mark call failed after retries — retryable, NOT "not completed"
 }
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-// Mark one case, tolerating the progress-write race: the final requirement's
-// progress write can lag its turn response, so the mark POST can 409 ("case not
-// complete") moments before it would succeed. Retry a 409 once after 1.5s, then —
-// since this is only ever called when the case load already showed every
-// requirement passed — once more after 3s before accepting the not-marked state.
-// Non-409 failures are terminal (no retry). Returns the awarded marks, or null.
-async function markCaseWithRetry(caseId: string): Promise<number | null> {
-  const attempt = async (): Promise<{ ok: boolean; status: number; awarded: number | null }> => {
-    const res = await fetch('/api/acca/case/mark', {
-      method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ case_id: caseId }),
-    });
-    if (res.ok) {
-      const m = await res.json();
-      return { ok: true, status: 200, awarded: typeof m.professional_marks_awarded === 'number' ? m.professional_marks_awarded : 0 };
+// Outcome of marking one case. `marked` carries the award. `incomplete` means the
+// server still reports the case as not-complete (a genuine, persistent 409 — e.g.
+// the progress-write race never resolved). `failed` means an already-complete case
+// could NOT be marked because of a transient/terminal error (network, 5xx, 502, a
+// 504 gateway timeout, or the 120s abort). Only `incomplete` may ever be shown as
+// "case not completed"; `failed` is an honest, retryable error state.
+type MarkOutcome =
+  | { kind: 'marked'; awarded: number }
+  | { kind: 'incomplete' }
+  | { kind: 'failed' };
+
+// Mark one case. A single mark POST can be slow on the biggest cases: a Section A
+// case examines the most professional skills (the union across all its
+// requirements) against the largest pool, and the marker retries its OWN allocation
+// once when the sum overflows the pool → up to TWO sequential model calls. So each
+// POST gets a generous 120s ceiling (never shorter) and is only aborted past it.
+// Retry policy — the two failure classes must NOT be conflated:
+//   • 409 "case not complete": the final requirement's progress write can lag its
+//     turn response, so mark can 409 moments before it would succeed. Retry after
+//     1.5s then 3s (the progress-write-race tolerance). A 409 that persists is a
+//     genuine not-complete → `incomplete`.
+//   • transient error (network / 5xx / 502 / 504 gateway timeout / 120s abort) on an
+//     already-complete case: retry ONCE after 1.5s. If it persists → `failed`
+//     (a marking failure on a completed case — never "not completed").
+async function markCase(caseId: string): Promise<MarkOutcome> {
+  const attempt = async (): Promise<'conflict' | 'error' | { awarded: number }> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120_000);
+    try {
+      const res = await fetch('/api/acca/case/mark', {
+        method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ case_id: caseId }),
+        signal: controller.signal,
+      });
+      if (res.ok) {
+        const m = await res.json().catch(() => ({} as Record<string, unknown>));
+        return { awarded: typeof m.professional_marks_awarded === 'number' ? m.professional_marks_awarded : 0 };
+      }
+      if (res.status === 409) return 'conflict';
+      // Any other non-2xx (5xx / 502 / 504 / 402) is a transient-or-terminal FAILURE,
+      // not a not-complete signal — it is retried and never labelled "not completed".
+      return 'error';
+    } catch {
+      return 'error';   // network error, or the 120s abort fired
+    } finally {
+      clearTimeout(timer);
     }
-    return { ok: false, status: res.status, awarded: null };
   };
 
-  let r = await attempt();
-  if (r.ok) return r.awarded;
-  if (r.status !== 409) return null;      // non-409 is terminal
+  let conflictRetries = 2;   // 3 attempts total on a persistent 409 (delays 1.5s, 3s)
+  let errorRetries = 1;      // one retry on a transient error
+  const conflictDelays = [1500, 3000];
+  let ci = 0;
 
-  await delay(1500);
-  r = await attempt();
-  if (r.ok) return r.awarded;
-  if (r.status !== 409) return null;
-
-  await delay(3000);
-  r = await attempt();
-  return r.ok ? r.awarded : null;
+  for (;;) {
+    const r = await attempt();
+    if (typeof r === 'object') return { kind: 'marked', awarded: r.awarded };
+    if (r === 'conflict') {
+      if (conflictRetries-- <= 0) return { kind: 'incomplete' };
+      await delay(conflictDelays[ci++] ?? 3000);
+    } else {
+      if (errorRetries-- <= 0) return { kind: 'failed' };
+      await delay(1500);
+    }
+  }
 }
 
 // H:MM:SS when ≥ 1h, else M:SS. Never negative.
@@ -175,6 +210,55 @@ export default function MockRunner() {
     }
   }
 
+  // Patch one case's result row (functional update — safe from any callback,
+  // including a manual retry fired long after the initial aggregation settled).
+  const patchCase = useCallback((cid: string, p: Partial<CaseResult>) => {
+    setResultsData((prev) => (prev ?? []).map((r) => (r.caseId === cid ? { ...r, ...p } : r)));
+  }, []);
+
+  // Load one case's authoritative state and, if complete, mark it — mapping the
+  // outcome to an HONEST per-case state. Shared by the initial results aggregation
+  // and the per-case "Retry" button, so a user is never stuck with a completed but
+  // unmarked case. Each case runs independently; a slow retry on one never blocks
+  // the others (the case stays "Marking…" until its own retries are exhausted).
+  const aggregateCase = useCallback(async (cid: string) => {
+    patchCase(cid, { marking: true, markFailed: false, loadFailed: false });
+    try {
+      const loadRes = await fetch(`/api/acca/case?case_id=${encodeURIComponent(cid)}`);
+      if (!loadRes.ok) { patchCase(cid, { marking: false, loadFailed: true }); return; }
+      const load = await loadRes.json();
+      const requirements = (load.requirements ?? []) as unknown[];
+      const progress = (load.progress ?? []) as Array<{ passed?: boolean }>;
+      const total = requirements.length;
+      const passed = progress.filter((p) => p.passed === true).length;
+      const profAvailable = typeof load.case?.professional_skills_marks === 'number' ? load.case.professional_skills_marks : 0;
+      const complete = total > 0 && passed === total;
+      const title = (load.case?.title ?? null) as string | null;
+
+      // Surface load-derived fields now; keep marking:true until the mark resolves.
+      patchCase(cid, { title, passed, total, profAvailable, complete });
+
+      if (!complete) {
+        // Genuinely not complete — the ONLY state that reads "case not completed".
+        patchCase(cid, { profAwarded: null, marking: false, markFailed: false });
+        return;
+      }
+
+      const outcome = await markCase(cid);
+      if (outcome.kind === 'marked') {
+        patchCase(cid, { profAwarded: outcome.awarded, marking: false, markFailed: false });
+      } else if (outcome.kind === 'incomplete') {
+        // Server still 409s after retries → genuinely not complete.
+        patchCase(cid, { profAwarded: null, marking: false, markFailed: false });
+      } else {
+        // Completed case whose marking failed → honest error state + retry button.
+        patchCase(cid, { profAwarded: null, marking: false, markFailed: true });
+      }
+    } catch {
+      patchCase(cid, { marking: false, loadFailed: true });
+    }
+  }, [patchCase]);
+
   // ── Results: mark the attempt completed + aggregate every case (authoritative) ──
   useEffect(() => {
     if (phase !== 'results' || !paper) return;
@@ -186,58 +270,15 @@ export default function MockRunner() {
       method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ mock_id: paper.id }),
     }).catch(() => {});
 
-    let cancelled = false;
-    const patch = (cid: string, p: Partial<CaseResult>) => {
-      if (cancelled) return;
-      setResultsData((prev) => (prev ?? []).map((r) => (r.caseId === cid ? { ...r, ...p } : r)));
-    };
+    // Seed one placeholder per case (marking) so the grid renders each case's
+    // "Marking…" state immediately and never flashes "not marked" mid-race.
+    setResultsData(paper.case_ids.map((cid): CaseResult => ({
+      caseId: cid, title: null, passed: 0, total: 0, profAwarded: null, profAvailable: 0, complete: false, marking: true, markFailed: false,
+    })));
+    setResultsLoading(false);
 
-    // Run the aggregation in a nested async fn so its setState calls are not
-    // synchronous within the effect body.
-    void (async () => {
-      // Seed one placeholder per case (marking) so the grid renders each case's
-      // "Marking…" state immediately and never flashes "not marked" mid-race.
-      if (cancelled) return;
-      setResultsData(paper.case_ids.map((cid): CaseResult => ({
-        caseId: cid, title: null, passed: 0, total: 0, profAwarded: null, profAvailable: 0, complete: false, marking: true,
-      })));
-      setResultsLoading(false);
-
-      // Each case resolves independently so a slow 409-retry on one never blocks the
-      // others; the case stays "marking" until its retries are exhausted.
-      paper.case_ids.forEach(async (cid) => {
-        try {
-          const loadRes = await fetch(`/api/acca/case?case_id=${encodeURIComponent(cid)}`);
-          if (!loadRes.ok) {
-            patch(cid, { marking: false, loadFailed: true });
-            return;
-          }
-          const load = await loadRes.json();
-          const requirements = (load.requirements ?? []) as unknown[];
-          const progress = (load.progress ?? []) as Array<{ passed?: boolean }>;
-          const total = requirements.length;
-          const passed = progress.filter((p) => p.passed === true).length;
-          const profAvailable = typeof load.case?.professional_skills_marks === 'number' ? load.case.professional_skills_marks : 0;
-          const complete = total > 0 && passed === total;
-          const title = (load.case?.title ?? null) as string | null;
-
-          // Surface load-derived fields now; keep marking:true until the mark resolves.
-          patch(cid, { title, passed, total, profAvailable, complete });
-
-          if (!complete) {
-            patch(cid, { profAwarded: null, marking: false });
-            return;
-          }
-          const profAwarded = await markCaseWithRetry(cid);
-          patch(cid, { profAwarded, marking: false });
-        } catch {
-          patch(cid, { marking: false, loadFailed: true });
-        }
-      });
-    })();
-
-    return () => { cancelled = true; };
-  }, [phase, paper]);
+    paper.case_ids.forEach((cid) => { void aggregateCase(cid); });
+  }, [phase, paper, aggregateCase]);
 
   async function startPaper(paperId: string) {
     setStarting(true);
@@ -478,15 +519,27 @@ export default function MockRunner() {
                     {r.marking ? (
                       <span className="mck-case-result-line mck-case-result-line--muted">Marking…</span>
                     ) : r.loadFailed ? (
-                      <span className="mck-case-result-line mck-case-result-line--muted">Couldn&apos;t load this case&apos;s result.</span>
+                      <div className="mck-case-result-fail">
+                        <span className="mck-case-result-line mck-case-result-line--muted">Couldn&apos;t load this case&apos;s result.</span>
+                        <button className="mck-retry" onClick={() => aggregateCase(r.caseId)}>Retry →</button>
+                      </div>
                     ) : (
                       <div className="mck-case-result-lines">
                         <span className="mck-case-result-line">{r.passed} / {r.total} requirements passed</span>
-                        <span className="mck-case-result-line">
-                          {r.profAwarded == null
-                            ? `Professional skills: not marked (case not completed) · ${r.profAvailable} available`
-                            : `Professional skills: ${r.profAwarded} / ${r.profAvailable}`}
-                        </span>
+                        {r.markFailed ? (
+                          <div className="mck-case-result-fail">
+                            <span className="mck-case-result-line mck-case-result-line--warn">
+                              Professional skills: marking failed · {r.profAvailable} available
+                            </span>
+                            <button className="mck-retry" onClick={() => aggregateCase(r.caseId)}>Retry marking →</button>
+                          </div>
+                        ) : (
+                          <span className="mck-case-result-line">
+                            {r.profAwarded == null
+                              ? `Professional skills: not marked (case not completed) · ${r.profAvailable} available`
+                              : `Professional skills: ${r.profAwarded} / ${r.profAvailable}`}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -641,6 +694,13 @@ const CSS = `
 .mck-case-result-lines { display: flex; flex-direction: column; gap: 4px; }
 .mck-case-result-line { font-size: 13px; color: var(--text); }
 .mck-case-result-line--muted { font-size: 13px; color: var(--text-muted); }
+.mck-case-result-line--warn { font-size: 13px; color: #c0392b; }
+.mck-case-result-fail { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.mck-retry {
+  align-self: flex-start; font-family: var(--font-body); font-size: 12px; font-weight: 600;
+  color: var(--rust); background: none; border: none; padding: 0; cursor: pointer;
+}
+.mck-retry:hover { color: var(--rust-dark); text-decoration: underline; }
 .mck-tag {
   font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
   color: var(--text-muted); background: var(--surface-2); border: 1px solid var(--border-light);
