@@ -224,9 +224,20 @@ export async function POST(request: Request): Promise<Response> {
     'the examined skills. The sum of mark_awarded across all skills MUST NOT exceed ' +
     `${professionalSkillsMarks}. Allocate marks where the answer best demonstrates each skill; ` +
     'an even split is not required. ' +
+    'The total awarded should reflect the ABSOLUTE quality of the answer against the descriptors — ' +
+    `do NOT award the full ${professionalSkillsMarks} marks by default. Full marks are reserved for ` +
+    'answers a professional marker would consider exemplary on every examined skill. Deficiencies you ' +
+    'identify in feedback MUST be reflected in marks withheld: if your feedback names a material ' +
+    'weakness in a skill, that skill cannot receive its ceiling. ' +
+    'As a guide: exemplary across all skills = full pool; competent with material presentational or ' +
+    'depth weaknesses = roughly half to two-thirds of the pool; technically complete but ' +
+    'professionally poor = below half. ' +
     'DISCIPLINE: for every skill you must cite specific evidence from the candidate\'s answer ' +
     'that earned or lost the mark — quote or name the exact passage. No mark without a named ' +
     'reason. Award integer marks only. ' +
+    'Before returning, check each skill: does the mark match the feedback? Feedback that criticises ' +
+    'while the mark is at ceiling is a marking error — lower the mark or moderate the feedback to ' +
+    'whichever is true. ' +
     'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
     '[{ "skill": "...", "mark_awarded": N, "feedback": "..." }] — one object per examined skill.';
 
