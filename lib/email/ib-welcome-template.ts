@@ -218,7 +218,7 @@ export function buildIBWelcomeEmail(data: IBWelcomeEmailData): {
                 Manage your account at
                 <a href="https://gradd.ai/dashboard" style="color:#2D6A4F;text-decoration:none;">gradd.ai/dashboard</a>
                 &nbsp;·&nbsp;
-                <a href="https://gradd.ai" style="color:#2D6A4F;text-decoration:none;">gradd.ai</a>
+                <a href="https://gradd.ai/ib" style="color:#2D6A4F;text-decoration:none;">gradd.ai</a>
               </p>
               <p style="margin:12px 0 0;font-size:12px;color:#CBCBCB;">
                 © 2026 Gradd. Built for IB students, wherever you are.

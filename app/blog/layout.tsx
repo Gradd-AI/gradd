@@ -91,7 +91,7 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
       `}</style>
       <div className="blog-shell">
         <header className="blog-header">
-          <Link href="/" aria-label="Gradd home">
+          <Link href="/ib" aria-label="Gradd home">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/gradd-ai-logo.png" alt="Gradd" style={{ height: 22, width: 'auto', display: 'block' }} />
           </Link>

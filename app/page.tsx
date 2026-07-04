@@ -1,9 +1,14 @@
 // app/page.tsx
+// Host-routed flagship root:
+//   gradd.ai → APM marketing landing (public, no auth) — the flagship.
+//   gradd.ie → LC Business landing (unchanged), with its logged-in→/dashboard redirect.
+// The IB landing moved to /ib (see app/ib/page.tsx). resolveIsIB stays host-based,
+// so LC keeps its own domain root — only the gradd.ai branch changed IB → APM.
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import LandingPage from '@/components/landing/LandingPage';
-import IBLandingPage from '@/components/landing/IBLandingPage';
+import ACCALandingPage from '@/components/landing/ACCALandingPage';
 import { resolveIsIB } from '@/lib/site';
 import type { Metadata } from 'next';
 
@@ -41,52 +46,57 @@ const LC_METADATA: Metadata = {
   robots: { index: true, follow: true },
 };
 
-const IB_METADATA: Metadata = {
-  title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
+const APM_METADATA: Metadata = {
+  title: 'ACCA APM Tutor — Taught, Not Just Marked | Gradd',
   description:
-    'Start free — no card needed. Mia diagnoses the faulty thinking behind wrong answers, rebuilds them, and retests until they stick. IB Economics and Business Management, full curriculum, HL & SL.',
+    'AI tutor for ACCA APM. Diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. 91 drills free. Full cases and a timed mock.',
   keywords: [
-    'IB Economics tutor',
-    'IB Business Management tutor',
-    'IB Diploma tutor',
-    'IB Economics AI tutor',
-    'IB Business Management online',
-    'IB tutor online',
-    'AI IB tutor',
-    'IB Economics curriculum',
-    'IB Business Management curriculum',
-    'online IB tutor',
-    'IB SL HL tutor',
+    'ACCA APM tutor',
+    'ACCA APM',
+    'Advanced Performance Management',
+    'APM P5 tutor',
+    'ACCA APM pass',
+    'APM resit',
+    'ACCA APM marking',
+    'ACCA APM professional skills',
+    'APM exam practice',
+    'ACCA Strategic Professional',
   ],
-  alternates: { canonical: 'https://gradd.ai' },
+  alternates: { canonical: 'https://gradd.ai/' },
   openGraph: {
-    title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
+    title: 'ACCA APM Tutor — Taught, Not Just Marked | Gradd',
     description:
-      'Start free — no card needed. Mia diagnoses the faulty thinking behind wrong answers, rebuilds them, and retests until they stick. IB Economics and Business Management, full curriculum, HL & SL.',
-    url: 'https://gradd.ai',
+      'AI tutor for ACCA APM. Diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. 91 drills free. Full cases and a timed mock.',
+    url: 'https://gradd.ai/',
     siteName: 'Gradd',
     type: 'website',
-    images: [{ url: 'https://gradd.ai/og-image.svg', width: 1200, height: 630, alt: 'AI Tutor for IB Economics & IB Business Management — Gradd' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'AI Tutor for IB Economics & IB Business Management — From €44.99/mo | Gradd',
+    title: 'ACCA APM Tutor — Taught, Not Just Marked | Gradd',
     description:
-      'Start free — no card needed. Mia diagnoses the faulty thinking behind wrong answers, rebuilds them, and retests until they stick. IB Economics and Business Management, full curriculum, HL & SL.',
-    images: ['https://gradd.ai/og-image.svg'],
+      'AI tutor for ACCA APM. Diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. 91 drills free. Full cases and a timed mock.',
   },
   robots: { index: true, follow: true },
 };
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? '';
-  return (await resolveIsIB(host)) ? IB_METADATA : LC_METADATA;
+  return (await resolveIsIB(host)) ? APM_METADATA : LC_METADATA;
 }
 
 export default async function HomePage() {
   const host = (await headers()).get('host') ?? '';
   const isIB = await resolveIsIB(host);
 
+  // gradd.ai — flagship root is the APM marketing landing. Public, no auth guard,
+  // no redirect (a logged-in visitor still sees the marketing page; the app lives
+  // under /acca, the IB tutor under /ib and /dashboard).
+  if (isIB) {
+    return <ACCALandingPage />;
+  }
+
+  // gradd.ie — LC Business. Preserve the existing logged-in→/dashboard behaviour.
   const supabase = await createServerClient();
   const {
     data: { user },
@@ -105,5 +115,5 @@ export default async function HomePage() {
     }
   }
 
-  return isIB ? <IBLandingPage /> : <LandingPage />;
+  return <LandingPage />;
 }

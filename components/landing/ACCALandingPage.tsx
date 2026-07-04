@@ -1,23 +1,46 @@
 'use client';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACCA APM Landing Page — feat/acca-apm-landing
-// Demand-test page: email capture only, no product or payment behind it.
+// ACCA APM Landing Page — flagship root marketing page (gradd.ai).
+// Live launch page: free-tier + paid pricing, real CTAs into /acca, examiner-thinking
+// proof (judgement paper, the withhold, professional-skills marking), FAQ + FAQPage
+// JSON-LD. Exactly one <h1> (hero); every section is a labelled <section> with an <h2>.
 // Design system: copied from IBLandingPage.tsx (Fraunces/Geist/Geist Mono, oklch).
 // Scope renamed .ib-lp → .acca-lp to avoid style collisions.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { createClient } from '@/lib/supabase/client';
+
+// Real entry points into the live APM product. The auth wall carries the
+// post-login destination: free lands in the drill dashboard, paid on subscribe.
+const AUTH_FREE = '/acca/auth?next=/acca';
+const AUTH_SUBSCRIBE = '/acca/auth?next=/acca/subscribe';
+
+// Single source of truth for the FAQ — the visible list and the FAQPage JSON-LD are
+// both rendered from this, so the structured data mirrors the on-page copy exactly.
+const FAQS: { q: string; a: string }[] = [
+  { q: 'Is this based on the current APM syllabus?', a: 'Yes — S26–J27, verified against the official guide.' },
+  { q: 'How is this different from a general AI chatbot?', a: 'Structured drills and cases built from the syllabus, examiner failure modes, sealed model answers, and professional-skills marking against ACCA’s published professional-skills descriptors — not a chat window.' },
+  { q: 'Can I use it if I failed before?', a: 'Yes — built for exactly that: understanding why your answers didn’t score.' },
+  { q: 'Does it give model answers?', a: 'Yes — after you’ve attempted, been coached, and repaired your answer.' },
+  { q: 'What’s free?', a: 'All 91 drills, 3 full teach-throughs, no card.' },
+  { q: 'What do I pay for?', a: 'Unlimited teach-throughs, full exam cases, professional-skills marking, the timed mock.' },
+];
+
+const FAQ_JSONLD = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map((f) => ({
+    '@type': 'Question',
+    name: f.q,
+    acceptedAnswer: { '@type': 'Answer', text: f.a },
+  })),
+};
 
 export default function ACCALandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [showTop, setShowTop] = useState(false);
-  const [email, setEmail] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     const onScroll = () => {
@@ -31,28 +54,6 @@ export default function ACCALandingPage() {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) window.scrollTo({ top: el.offsetTop - 68, behavior: 'smooth' });
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitting(true);
-    setSubmitError(null);
-    try {
-      const supabase = createClient();
-      const { error } = await supabase
-        .from('waitlist')
-        .insert({ email: email.trim(), source: 'acca_apm' });
-      if (!error || error.code === '23505') {
-        setSubmitted(true);
-      } else {
-        throw error;
-      }
-    } catch {
-      setSubmitError('Something went wrong — please try again.');
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   return (
@@ -69,306 +70,357 @@ export default function ACCALandingPage() {
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
             </a>
             <nav className="nav-links" aria-label="Primary">
-              {[
-                { id: 'features',  label: 'Features'         },
-                { id: 'marking',   label: 'How it marks'     },
-                { id: 'waitlist',  label: 'Get early access' },
-              ].map(({ id, label }) => (
-                <button key={id} className="nav-link-btn" onClick={() => scrollTo(id)}>{label}</button>
-              ))}
+              <button className="nav-link-btn" onClick={() => scrollTo('taught')}>The approach</button>
+              <button className="nav-link-btn" onClick={() => scrollTo('features')}>What&apos;s included</button>
+              <button className="nav-link-btn" onClick={() => scrollTo('pricing')}>Pricing</button>
             </nav>
             <div className="nav-cta">
-              <button className="btn btn-rust btn-sm" onClick={() => scrollTo('waitlist')}>
-                Reserve my place <span className="arrow">→</span>
-              </button>
+              {/* Quiet text link — magic-link flow handles returning users and new
+                  signups at the same destination, so Sign in shares AUTH_FREE. Lives
+                  in nav-cta (always visible) so it persists in the collapsed nav. */}
+              <Link href={AUTH_FREE} className="nav-signin">Sign in</Link>
+              <Link href={AUTH_FREE} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </div>
           </div>
         </header>
 
         {/* ── HERO ── */}
-        <section className="hero">
+        <section className="hero" aria-label="Introduction">
           <div className="wrap hero-grid">
             <div className="hero-copy">
               <div className="hero-eyebrow eyebrow">
                 <span>ACCA APM</span><span className="dot" /><span>Advanced Performance Management</span>
               </div>
               <h1 className="hero-h1 h-display">
-                Failed APM? Fix what cost you the marks — with an AI tutor that actually <span className="em underline">teaches</span> the paper.
+                Failed APM? <span className="em underline">Fix the reason you lost marks.</span>
               </h1>
               <p className="hero-sub">
-                APM has one of the lowest pass rates in ACCA. Most tools just mark your answer and leave you to it. This one teaches you the paper from where you&apos;re stuck to exam-ready — and marks every answer like the examiner, free.
+                APM is not passed by memorising models. It is passed by applying them to the scenario, evaluating properly, showing scepticism and writing commercially. Gradd diagnoses why your answer lost marks, then Ezra coaches you until your answer is strong enough to score.
               </p>
-              <p className="hero-thesis">
-                Gradd doesn&apos;t just score APM answers. It trains you to write the evaluation and application the examiner rewards.
-              </p>
+              <p className="hero-note">Built on the live S26–J27 syllabus. Every drill free to start. No card.</p>
               <div className="hero-cta">
-                <button className="btn btn-rust" onClick={() => scrollTo('waitlist')}>Reserve your place — it&apos;s free <span className="arrow">→</span></button>
+                <Link href={AUTH_FREE} className="btn btn-rust">Start free — every drill, no card <span className="arrow">→</span></Link>
+                <button className="btn btn-ghost" onClick={() => scrollTo('pricing')}>See pricing</button>
               </div>
               <div className="hero-meta">
-                <span>Launching for the next APM sitting</span>
+                <span>Every drill free</span>
                 <span className="dot" />
-                <span>Free to reserve</span>
+                <span>No card to start</span>
                 <span className="dot" />
-                <span>No payment needed</span>
+                <span>Upgrade for cases, marking and mock</span>
               </div>
             </div>
 
             <div className="hero-visual">
-              <div className="chat" aria-label="Live session with Mia, your AI tutor">
+              <div className="chat" role="img" aria-label="Ezra withholding a model answer while coaching an APM requirement">
                 <div className="chat-hd">
                   <div className="chat-logo">
-                    <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:16,width:'auto',display:'block'}} />
+                    <img src="/gradd-ai-logo.png" alt="" style={{height:16,width:'auto',display:'block'}} />
                   </div>
-                  <div className="chat-name-pill"><span className="live" />Mia</div>
+                  <div className="chat-name-pill"><span className="live" />Ezra</div>
                   <div className="chat-course">
-                    <div className="em">Strategic Costing</div>
-                    <div>ACCA APM · Session 3</div>
+                    <div className="em">Evaluating the board report</div>
+                    <div>ACCA APM · Requirement (b)</div>
                   </div>
                 </div>
                 <div className="chat-body">
-                  <div className="chat-row">
-                    <div className="mia-av">M</div>
-                    <div className="mia-msg">
-                      <p>Last time we worked on target costing — you got the mechanics right but your answer missed the strategic rationale the examiner expects. That&apos;s what we&apos;re fixing today.</p>
-                      <p>The APM examiner doesn&apos;t want calculations alone. They want <span className="key">evaluation</span> — why does this matter to the business? What are the limitations?</p>
-                      <p><strong>Target costing</strong> works backwards from what the market will pay. The examiner wants to know: what happens when the cost gap can&apos;t be closed?</p>
-                    </div>
-                  </div>
                   <div className="chat-row from-user">
-                    <div className="user-bubble">I never know how much evaluation to write</div>
+                    <div className="user-bubble">Retention fell from 82% to 74% and revenue per member is down 4%, so the company is underperforming and the board should act on retention.</div>
                     <div className="user-av">S</div>
                   </div>
                   <div className="chat-row">
-                    <div className="mia-av">M</div>
-                    <div className="mia-msg">
-                      <p>Good — that&apos;s exactly what costs marks. Let me show you the structure the examiner rewards.</p>
-                      <h4>The APM evaluation formula</h4>
-                      <p>For each point: application to the scenario, one limitation or counter-argument, one judgement. The marks are in that third step.</p>
+                    <div className="ezra-av">E</div>
+                    <div className="ezra-msg">
+                      <span className="hint-badge">Hint</span>
+                      <p>You&apos;ve analysed the company — but the requirement asks you to evaluate the <em>report</em>. Does the board&apos;s pack let them <strong>see</strong> any of what you just worked out? That&apos;s where the marks are.</p>
+                    </div>
+                  </div>
+                  <div className="chat-row from-user">
+                    <div className="user-bubble">…so I anchor every point to the report against a criterion, not the performance itself?</div>
+                    <div className="user-av">S</div>
+                  </div>
+                  <div className="chat-row">
+                    <div className="ezra-av">E</div>
+                    <div className="ezra-msg">
+                      <p>Exactly. Fluent answers to the wrong question are the biggest mark-loser on this requirement type. Go again.</p>
                     </div>
                   </div>
                 </div>
                 <div className="chat-input">
-                  <div className="ph">Reply to Mia…</div>
+                  <div className="ph">Reply to Ezra…</div>
                   <div className="send">↵</div>
                 </div>
-                <div className="chat-foot">Session 3 · ACCA APM · Mia online 24/7</div>
+                <div className="chat-foot">The answer stays sealed · Ezra online 24/7</div>
               </div>
+              <p className="visual-caption">The answer stays sealed. Ezra teaches until your answer is strong enough to score.</p>
             </div>
           </div>
         </section>
 
-        {/* ── TRUST BAR ── */}
-        <section className="trust">
-          <div className="wrap trust-inner">
-            <div className="trust-label">Built around the ACCA APM examiner approach</div>
-            <div className="trust-stats">
-              <div className="trust-stat"><span className="num">~40%</span><span className="lbl">average pass rate</span></div>
-              <div className="trust-stat"><span className="num">P5</span><span className="lbl">Strategic level</span></div>
-              <div className="trust-stat"><span className="num">15+</span><span className="lbl">core APM topics</span></div>
-              <div className="trust-stat"><span className="num">24/7</span><span className="lbl">availability</span></div>
-            </div>
-          </div>
-          <div className="wrap"><p className="trust-footnote">Based on recent ACCA published pass rates.</p></div>
-        </section>
-
-        {/* ── PAIN ── */}
-        <section className="section pain">
-          <div className="wrap pain-grid">
-            <div>
-              <div className="eyebrow">The problem<span className="dot" />Why candidates fail APM</div>
-              <h2 className="h-section" style={{marginTop:18}}>
-                APM isn&apos;t hard because the content is complex.<br/>
-                It&apos;s hard because most candidates <em className="italic" style={{color:'var(--rust)'}}>answer the wrong way.</em>
-              </h2>
-            </div>
-            <div className="pain-cards">
-              <div className="pain-card">
-                <div className="stat">Generic<span className="unit">answers</span></div>
-                <div>
-                  <div className="label">Textbook answers don&apos;t pass APM</div>
-                  <div className="desc">The examiner wants application to the scenario — not definitions. Most marking tools can&apos;t tell the difference, and neither can revision kits.</div>
-                </div>
-              </div>
-              <div className="pain-card">
-                <div className="stat">Weak<span className="unit">evaluation</span></div>
-                <div>
-                  <div className="label">Description without judgement</div>
-                  <div className="desc">APM requires evaluation at every level. Candidates explain the model, then stop. The marks are in the &ldquo;so what?&rdquo; — and most never reach it.</div>
-                </div>
-              </div>
-              <div className="pain-card">
-                <div className="stat">Time<span className="unit">pressure</span></div>
-                <div>
-                  <div className="label">3.5 hours isn&apos;t enough without structure</div>
-                  <div className="desc">APM rewards a specific answer structure per question type. Without drilling it repeatedly, you run out of time every sitting.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <hr className="rule" />
-
-        {/* ── FEATURES ── */}
-        <section className="section one-sub" id="features">
+        {/* ── A. JUDGEMENT PAPER (before / after) ── */}
+        <section className="section judgement" aria-label="Why APM is a judgement paper">
           <div className="wrap">
             <div className="section-head">
-              <span className="eyebrow">How Gradd fixes it<span className="dot" />Three things done right</span>
-              <h2 className="h-section">
-                Not notes. Not a marking engine. An AI tutor that <em className="italic">trains</em> you for APM.
-              </h2>
+              <span className="eyebrow">The real test</span>
+              <h2 className="h-section">APM is not a knowledge test. It is a <em className="italic">judgement paper.</em></h2>
+              <p className="lead">APM is one of ACCA&apos;s toughest papers, with pass rates often around a third. The candidates who fail rarely lack knowledge — they answer without applying, evaluating or judging.</p>
+            </div>
+            <div className="ja-card">
+              <div className="ja-col ja-weak">
+                <div className="ja-tag">Weak answer</div>
+                <p>Target costing helps a business reduce costs by setting a target cost based on the market price.</p>
+              </div>
+              <div className="ja-chip" aria-hidden="true">↓</div>
+              <div className="ja-diag">
+                <div className="ja-tag ja-tag-diag">Diagnosis</div>
+                <p>Knows the model. No scenario application, no limitation, no judgement.</p>
+              </div>
+              <div className="ja-chip" aria-hidden="true">↓</div>
+              <div className="ja-col ja-coached">
+                <div className="ja-tag ja-tag-coached">Coached answer</div>
+                <p>Target costing fits here because the market price is fixed by customer expectations, so the product must be designed backwards from an acceptable margin. However, if the cost gap cannot close without cutting quality, the strategy risks the premium positioning — so the board should set a floor on specification before committing.</p>
+              </div>
+            </div>
+            <p className="ja-caption">The difference is not knowledge. It is application, limitation, judgement.</p>
+          </div>
+        </section>
+
+        {/* ── TAUGHT, NOT JUST MARKED ── */}
+        <section className="section one-sub" id="taught" aria-label="Taught, not just marked">
+          <div className="wrap">
+            <div className="section-head">
+              <span className="eyebrow">The approach<span className="dot" />Taught, not just marked</span>
+              <h2 className="h-section">Taught, not just <em className="italic">marked.</em></h2>
               <p className="lead">
-                Built on the approach that actually moves APM grades — not re-reading, not generic feedback. Teaching, marking, and drilling the way the examiner expects.
+                The paper punishes describing instead of applying. Gradd coaches the thinking the examiner actually rewards — and withholds the answer until you&apos;ve done the work.
               </p>
             </div>
             <div className="one-sub-grid">
               <div className="os-card">
-                <div className="num">01 / Taught</div>
-                <h3>Taught, not just marked — built on the methods proven to move grades, not notes to re-read.</h3>
-                <p>Mia teaches the APM way of answering — application, evaluation, judgement — through live worked examples, not flashcards.</p>
+                <div className="num">01 / Diagnosis</div>
+                <h3>Finds the gap in your thinking.</h3>
+                <p>Ezra doesn&apos;t hand you the model answer — he diagnoses exactly where your attempt stalled and teaches from there. The answer stays sealed until you&apos;ve earned it.</p>
               </div>
               <div className="os-card">
-                <div className="num">02 / Marked</div>
-                <h3>Marked like the real examiner — every answer scored against the actual criteria, instantly.</h3>
-                <p>Every answer is evaluated against the APM mark scheme: application to the scenario, quality of evaluation, and whether you reached a conclusion.</p>
+                <div className="num">02 / Marking</div>
+                <h3>Marks like the examiner.</h3>
+                <p>Every case is marked against ACCA&apos;s published professional-skills descriptors — communication, analysis &amp; evaluation, scepticism, commercial acumen. The 20% of the paper most candidates never practise.</p>
               </div>
               <div className="os-card">
-                <div className="num">03 / Targeted</div>
-                <h3>Built for resitters — targets exactly why candidates fail APM: generic answers, weak application, time pressure.</h3>
-                <p>Mia starts from where you lost marks. What the examiner wanted instead — and how to fix it before the next sitting.</p>
+                <div className="num">03 / Failure modes</div>
+                <h3>Trained on how candidates actually fail.</h3>
+                <p>Answering the wrong question, describing instead of applying, listing instead of developing — the exact failure modes the examiner&apos;s reports cite, coached out of you.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── HOW IT MARKS ── */}
-        <section className="section band-dark" id="marking">
+        {/* ── C. HOW A TEACH-THROUGH WORKS ── */}
+        <section className="section" aria-label="How a teach-through works">
           <div className="wrap">
             <div className="section-head">
-              <span className="eyebrow" style={{color:'color-mix(in oklab,var(--forest-ink) 60%,transparent)'}}>Marking<span className="dot" />Built for APM</span>
-              <h2 className="h-section">
-                Marked the way the <em className="italic">APM examiner</em> marks.
-              </h2>
-              <p className="lead">
-                APM marks reward evaluation and scenario application — not textbook recitation. Mia scores every answer the same way: does it apply the scenario? Does it evaluate? Does it reach a judgement?
-              </p>
+              <span className="eyebrow">The loop</span>
+              <h2 className="h-section">How a teach-through <em className="italic">works.</em></h2>
             </div>
-            <div className="pillars">
-              <div className="pillar">
-                <div className="num">01</div>
-                <h3>Application first.</h3>
-                <p>Every answer is checked against the scenario in the question — not just against the model. Generic answers score poorly, because that&apos;s how the real examiner marks.</p>
-              </div>
-              <div className="pillar">
-                <div className="num">02</div>
-                <h3>Evaluation always.</h3>
-                <p>Mia flags every answer that describes without evaluating. The examiner expects a &ldquo;so what&rdquo; for every point. Mia trains that instinct until it&apos;s automatic.</p>
-              </div>
-              <div className="pillar">
-                <div className="num">03</div>
-                <h3>Structure, drilled.</h3>
-                <p>Each APM question type has a structure the examiner rewards. Mia teaches it, then drills it under time pressure until you produce it without thinking.</p>
-              </div>
-            </div>
+            <ol className="tt-steps">
+              <li className="tt-step"><span className="tt-n">1</span><span className="tt-t">Attempt the drill.</span></li>
+              <li className="tt-step"><span className="tt-n">2</span><span className="tt-t">Ezra marks it against the requirement.</span></li>
+              <li className="tt-step"><span className="tt-n">3</span><span className="tt-t">He names the failure mode.</span></li>
+              <li className="tt-step"><span className="tt-n">4</span><span className="tt-t">You repair the answer.</span></li>
+              <li className="tt-step"><span className="tt-n">5</span><span className="tt-t">Only then is the model answer revealed.</span></li>
+            </ol>
           </div>
         </section>
 
-        {/* ── WHO IT'S FOR ── */}
-        <section className="section">
+        {/* ── D. THE 20% MOST NEVER PRACTISE ── */}
+        <section className="section one-sub" aria-label="Professional-skills marking">
           <div className="wrap">
             <div className="section-head">
-              <span className="eyebrow">Who it&apos;s for</span>
-              <h2 className="h-section">Who Gradd APM <em className="italic">is</em> for.</h2>
+              <span className="eyebrow">Professional skills</span>
+              <h2 className="h-section">The 20% most candidates <em className="italic">never practise.</em></h2>
+              <p className="lead">A fifth of every APM answer is the professional skills. Gradd marks them against ACCA&apos;s published professional-skills descriptors — and names the evidence.</p>
+            </div>
+            <div className="d-grid">
+              <div className="skills-grid">
+                <div className="skill-tile">
+                  <h3>Communication</h3>
+                  <p>Structure, clarity, report style.</p>
+                </div>
+                <div className="skill-tile">
+                  <h3>Analysis &amp; evaluation</h3>
+                  <p>Developed points, judgement, prioritisation.</p>
+                </div>
+                <div className="skill-tile">
+                  <h3>Scepticism</h3>
+                  <p>Challenge assumptions, limitations, reliability.</p>
+                </div>
+                <div className="skill-tile">
+                  <h3>Commercial acumen</h3>
+                  <p>Business impact, practical recommendations.</p>
+                </div>
+              </div>
+              <div className="mark-panel" role="img" aria-label="Professional-skills marking panel showing evidence-cited feedback">
+                <div className="mark-panel-hd">
+                  <span className="mark-panel-title">Professional skills</span>
+                  <span className="mark-panel-score">7<span className="mark-panel-of">/10</span></span>
+                </div>
+                <div className="mark-row">
+                  <div className="mark-row-hd"><span className="mark-skill">Scepticism</span><span className="mark-band mark-band--strong">strong</span></div>
+                  <p className="mark-evidence">&ldquo;challenged the covering note&apos;s &lsquo;record revenue&rsquo; framing against falling ROCE and EPS…&rdquo;</p>
+                </div>
+                <div className="mark-row">
+                  <div className="mark-row-hd"><span className="mark-skill">Communication</span><span className="mark-band mark-band--mid">competent</span></div>
+                  <p className="mark-evidence">&ldquo;reads as notes, not a board report — no structure, conversational register…&rdquo;</p>
+                </div>
+              </div>
+            </div>
+            <p className="ja-caption">Marked against ACCA&apos;s published professional-skills descriptors, with the evidence named.</p>
+          </div>
+        </section>
+
+        {/* ── EVERYTHING THE PAPER DEMANDS ── */}
+        <section className="section" id="features" aria-label="What is included">
+          <div className="wrap">
+            <div className="section-head">
+              <span className="eyebrow">What&apos;s included</span>
+              <h2 className="h-section">Everything the paper <em className="italic">demands.</em></h2>
             </div>
             <div className="who-grid">
               <div className="who-card">
-                <span className="who-tag">Resitting APM</span>
-                <h3>You&apos;ve sat APM before and the marks weren&apos;t there.</h3>
-                <p>Generic answers. Decent knowledge, wrong structure. Mia diagnoses exactly what cost you marks and rebuilds from there — not from the beginning, from where you lost points.</p>
+                <span className="who-tag">Drills</span>
+                <h3>91 exam-style drills.</h3>
+                <p>Every examinable learning outcome in the live S26–J27 syllabus covered.</p>
               </div>
               <div className="who-card">
-                <span className="who-tag">First attempt</span>
-                <h3>You know the models. You&apos;re not sure how to answer.</h3>
-                <p>APM is the paper where knowing the content isn&apos;t enough. You need the examiner&apos;s language, the structure they reward, the way they weight evaluation vs description.</p>
+                <span className="who-tag">Cases</span>
+                <h3>Full exam cases.</h3>
+                <p>Multi-exhibit, multi-requirement, CBE-style. Section A 50-markers and Section B 25-markers.</p>
               </div>
               <div className="who-card">
-                <span className="who-tag">Self-studying</span>
-                <h3>No class, no tutor, just you and the exam.</h3>
-                <p>Revision kits give you the knowledge. Mia gives you the training. The difference is feedback on every answer — not just a mark, but what to change.</p>
+                <span className="who-tag">Marking</span>
+                <h3>Professional-skills marking.</h3>
+                <p>On your whole answer, with evidence-cited feedback per skill.</p>
               </div>
               <div className="who-card">
-                <span className="who-tag">Time-pressured</span>
-                <h3>Working full-time while studying for Strategic level.</h3>
-                <p>Mia works when you have 30 minutes. Every session targets your worst areas and runs exam-style questions. No wasted revision time.</p>
+                <span className="who-tag">Mock</span>
+                <h3>A full timed mock.</h3>
+                <p>3h 15m, one clock, three cases, marked as one paper.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ── EMAIL CAPTURE / WAITLIST ── */}
-        <section className="section pricing-band" id="waitlist">
+        {/* ── E. COMPARISON STRIP ── */}
+        <section className="section" aria-label="How Gradd compares">
           <div className="wrap">
-            <div className="waitlist-block">
-              <div className="waitlist-copy">
-                <span className="eyebrow" style={{display:'block',marginBottom:18}}>Early access</span>
-                <h2 className="h-section">
-                  Launching for the next APM sitting — <em className="italic">reserve your place.</em>
-                </h2>
-                <p className="lead" style={{marginTop:22}}>
-                  We&apos;re building this for the next sitting. Reserve your place now — it&apos;s free, no payment needed, and you&apos;ll be first to know when it&apos;s ready.
-                </p>
+            <div className="section-head">
+              <span className="eyebrow">How it compares</span>
+              <h2 className="h-section">Taught, marked and mocked — <em className="italic">for one sitting price.</em></h2>
+            </div>
+            <div className="compare-strip">
+              <div className="compare-col">
+                <div className="compare-name">Question banks</div>
+                <p>Practice, no teaching; you mark yourself.</p>
               </div>
-              <div className="waitlist-form-wrap">
-                {submitted ? (
-                  <div className="waitlist-success">
-                    <div className="success-icon">✓</div>
-                    <h3>You&apos;re on the list.</h3>
-                    <p>We&apos;ll email you as soon as Gradd APM is ready for the next sitting.</p>
-                  </div>
-                ) : (
-                  <form className="waitlist-form" onSubmit={handleSubmit} noValidate>
-                    <div className="waitlist-input-row">
-                      <input
-                        type="email"
-                        className="waitlist-input"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={e => setEmail(e.target.value)}
-                        required
-                        aria-label="Email address"
-                        disabled={submitting}
-                      />
-                      <button
-                        type="submit"
-                        className="btn btn-rust waitlist-btn"
-                        disabled={submitting || !email.trim()}
-                      >
-                        {submitting ? 'Reserving…' : <><span>Reserve my place</span> <span className="arrow">→</span></>}
-                      </button>
-                    </div>
-                    {submitError && <p className="waitlist-error">{submitError}</p>}
-                    <p className="waitlist-small">No payment. No account needed yet. We&apos;ll email you when we&apos;re live.</p>
-                  </form>
-                )}
+              <div className="compare-col">
+                <div className="compare-name">Human tuition</div>
+                <p>One hour at a time.</p>
+              </div>
+              <div className="compare-col compare-col--gradd">
+                <div className="compare-name">Gradd</div>
+                <p>Taught, marked and mocked, €99 for the whole sitting.</p>
               </div>
             </div>
           </div>
+        </section>
+
+        {/* ── PRICING ── */}
+        <section className="section pricing-band" id="pricing" aria-label="Pricing">
+          <div className="wrap">
+            <div className="section-head" style={{marginLeft:'auto',marginRight:'auto',textAlign:'center'}}>
+              <span className="eyebrow" style={{display:'inline-block',marginBottom:18}}>Pricing</span>
+              <h2 className="h-section" style={{marginLeft:'auto',marginRight:'auto'}}>Start free. Pay only when you commit to the sitting.</h2>
+              <p className="lead" style={{margin:'22px auto 0'}}>Drills are free so you can test the method. Upgrade when you want full coaching, cases, marking and the mock.</p>
+            </div>
+            <div className="price-grid">
+              <article className="price-card">
+                <span className="price-name">Free</span>
+                <div className="price-amount"><span className="cur">€</span>0</div>
+                <p className="price-tagline">All 91 drills. 3 full teach-throughs. No card.</p>
+                <ul className="price-features">
+                  <li>Every APM drill, unlimited</li>
+                  <li>3 full teach-throughs with Ezra</li>
+                  <li>No card, no commitment</li>
+                </ul>
+                <Link href={AUTH_FREE} className="btn btn-ghost">Start free <span className="arrow">→</span></Link>
+              </article>
+
+              <article className="price-card featured">
+                <span className="price-badge">Best for one sitting</span>
+                <span className="price-name">90-day exam pass</span>
+                <div className="price-amount"><span className="cur">€</span>99<span className="per">one-time · 90 days</span></div>
+                <p className="price-tagline">Full access through your sitting — drills, cases, marking and the timed mock.</p>
+                <ul className="price-features">
+                  <li>Unlimited teach-throughs with Ezra</li>
+                  <li>Full exam cases + professional-skills marking</li>
+                  <li>The timed mock, marked as one paper</li>
+                  <li>One payment — no recurring charge</li>
+                </ul>
+                <Link href={AUTH_SUBSCRIBE} className="btn btn-rust">Get the 90-day pass <span className="arrow">→</span></Link>
+              </article>
+
+              <article className="price-card">
+                <span className="price-badge price-badge--muted">Flexible</span>
+                <span className="price-name">Monthly</span>
+                <div className="price-amount"><span className="cur">€</span>49<span className="per">/ month</span></div>
+                <p className="price-tagline">Everything in the pass, month to month.</p>
+                <ul className="price-features">
+                  <li>Unlimited teach-throughs with Ezra</li>
+                  <li>Full exam cases + professional-skills marking</li>
+                  <li>The timed mock, marked as one paper</li>
+                  <li>Cancel any time</li>
+                </ul>
+                <Link href={AUTH_SUBSCRIBE} className="btn btn-ghost">Subscribe monthly <span className="arrow">→</span></Link>
+              </article>
+            </div>
+            <p className="price-note">14-day money-back guarantee.</p>
+          </div>
+        </section>
+
+        {/* ── F. FAQ (+ FAQPage JSON-LD) ── */}
+        <section className="section" id="faq" aria-label="Frequently asked questions">
+          <div className="wrap" style={{maxWidth:820}}>
+            <div className="section-head">
+              <span className="eyebrow">FAQ</span>
+              <h2 className="h-section">Questions, <em className="italic">answered.</em></h2>
+            </div>
+            <dl className="faq-list">
+              {FAQS.map((f, i) => (
+                <div className="faq-item" key={i}>
+                  <dt className="faq-q">{f.q}</dt>
+                  <dd className="faq-a">{f.a}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
+          <script
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }}
+          />
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="final-cta">
+        <section className="final-cta" aria-label="Get started">
           <div className="wrap final-cta-inner">
             <div className="tag-pill" style={{marginBottom:30,color:'color-mix(in oklab,var(--forest-ink) 80%,transparent)',borderColor:'color-mix(in oklab,var(--forest-ink) 30%,transparent)'}}>
-              <span className="dot" /> Free to reserve · No payment needed
+              <span className="dot" /> Every drill free · No card
             </div>
             <h2 className="h-display">Preparing for the <em className="italic">next APM sitting?</em></h2>
-            <p className="lead">Built for the next ACCA APM sitting. Reserve your place — it&apos;s free.</p>
+            <p className="lead">Start with every drill free — no card. Upgrade when you commit to the sitting.</p>
             <div className="hero-cta" style={{justifyContent:'center',marginTop:36}}>
-              <button className="btn btn-rust" onClick={() => scrollTo('waitlist')}>
-                Reserve my place <span className="arrow">→</span>
-              </button>
+              <Link href={AUTH_FREE} className="btn btn-rust">Start free <span className="arrow">→</span></Link>
             </div>
-            <div className="small">Launching for the next APM sitting · free to reserve · no payment needed</div>
+            <div className="small">Every drill free · €99 for 90 days or €49/month · 14-day money-back guarantee</div>
           </div>
         </section>
 
@@ -539,11 +591,17 @@ const CSS = `
   transition: color 0.15s;
 }
 .acca-lp .nav-link-btn:hover { color: var(--ink); }
-.acca-lp .nav-cta { display: flex; align-items: center; gap: 8px; }
+.acca-lp .nav-cta { display: flex; align-items: center; gap: 14px; }
+.acca-lp .nav-signin {
+  font-size: 14px; color: var(--ink-2); text-decoration: none;
+  white-space: nowrap; transition: color 0.15s;
+}
+.acca-lp .nav-signin:hover { color: var(--ink); }
+@media (max-width: 480px) { .acca-lp .nav-signin { font-size: 13px; } }
 @media (max-width: 860px) { .acca-lp .nav-links { display: none; } }
 @media (max-width: 480px) {
   .acca-lp .nav-inner { height: 56px; }
-  .acca-lp .nav-cta { gap: 4px; }
+  .acca-lp .nav-cta { gap: 10px; }
 }
 
 /* ── Hero ── */
@@ -635,18 +693,18 @@ const CSS = `
 }
 .acca-lp .chat-row { display: flex; align-items: flex-start; gap: 12px; }
 .acca-lp .chat-row.from-user { justify-content: flex-end; }
-.acca-lp .mia-av {
+.acca-lp .ezra-av {
   width: 26px; height: 26px; flex: 0 0 26px; border-radius: 50%;
   background: var(--forest); color: var(--gold);
   display: grid; place-items: center; font-family: var(--mono);
   font-size: 11px; font-weight: 500;
 }
-.acca-lp .mia-msg { display: flex; flex-direction: column; gap: 10px; max-width: 90%; }
-.acca-lp .mia-msg p { margin: 0; }
-.acca-lp .mia-msg strong { color: var(--forest); font-weight: 600; }
-.acca-lp .mia-msg em { font-style: italic; font-family: var(--serif); font-size: 1.12em; color: var(--rust); }
-.acca-lp .mia-msg .key { color: var(--forest); font-style: italic; font-family: var(--serif); font-size: 1.12em; }
-.acca-lp .mia-msg h4 {
+.acca-lp .ezra-msg { display: flex; flex-direction: column; gap: 10px; max-width: 90%; }
+.acca-lp .ezra-msg p { margin: 0; }
+.acca-lp .ezra-msg strong { color: var(--forest); font-weight: 600; }
+.acca-lp .ezra-msg em { font-style: italic; font-family: var(--serif); font-size: 1.12em; color: var(--rust); }
+.acca-lp .ezra-msg .key { color: var(--forest); font-style: italic; font-family: var(--serif); font-size: 1.12em; }
+.acca-lp .ezra-msg h4 {
   font-family: var(--serif); font-style: italic; font-size: 19px;
   font-weight: 400; color: var(--forest); letter-spacing: -0.012em; line-height: 1.2;
 }
@@ -891,6 +949,140 @@ const CSS = `
   font-family: var(--mono); letter-spacing: 0.04em; color: var(--ink-2);
 }
 .acca-lp .tag-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--rust); }
+
+/* ── Hero note + trust strip + visual caption + hint badge ── */
+.acca-lp .hero-note { margin-top: 16px; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; font-weight: 500; }
+.acca-lp .visual-caption {
+  margin-top: 16px; text-align: center; font-family: var(--serif); font-style: italic;
+  font-size: 15px; color: var(--forest); line-height: 1.4;
+}
+.acca-lp .hint-badge {
+  display: inline-block; align-self: flex-start; font-family: var(--mono);
+  font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--rust);
+  background: color-mix(in oklab, var(--rust) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--rust) 30%, transparent);
+  padding: 2px 8px; border-radius: 999px; margin-bottom: 4px;
+}
+
+/* ── A. Judgement (before / diagnosis / after) ── */
+.acca-lp .ja-card {
+  display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch; gap: 14px; margin-top: 8px;
+}
+@media (max-width: 860px) { .acca-lp .ja-card { grid-template-columns: 1fr; } }
+.acca-lp .ja-col, .acca-lp .ja-diag {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 22px; display: flex; flex-direction: column; gap: 10px;
+}
+.acca-lp .ja-diag { background: color-mix(in oklab, var(--paper) 84%, var(--sage)); }
+.acca-lp .ja-coached { border-color: var(--rust); }
+.acca-lp .ja-tag { font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.acca-lp .ja-tag-diag { color: var(--forest); }
+.acca-lp .ja-tag-coached { color: var(--rust); }
+.acca-lp .ja-col p, .acca-lp .ja-diag p { font-size: 14px; line-height: 1.55; color: var(--ink); }
+.acca-lp .ja-weak p { color: var(--ink-2); }
+.acca-lp .ja-chip { align-self: center; justify-self: center; color: var(--rust); font-size: 18px; }
+.acca-lp .ja-caption {
+  margin-top: 22px; text-align: center; font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--forest);
+}
+
+/* ── C. Teach-through steps ── */
+.acca-lp .tt-steps { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 8px; }
+@media (max-width: 860px) { .acca-lp .tt-steps { grid-template-columns: 1fr; } }
+.acca-lp .tt-step {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 22px 18px; display: flex; flex-direction: column; gap: 12px; align-items: flex-start;
+}
+.acca-lp .tt-n { font-family: var(--serif); font-style: italic; font-size: 30px; line-height: 1; color: var(--rust); }
+.acca-lp .tt-t { font-size: 14px; line-height: 1.45; color: var(--ink); }
+
+/* ── D. Skills grid + marking panel ── */
+.acca-lp .d-grid {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 48px); align-items: start; margin-top: 8px;
+}
+@media (max-width: 940px) { .acca-lp .d-grid { grid-template-columns: 1fr; } }
+.acca-lp .skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .acca-lp .skills-grid { grid-template-columns: 1fr; } }
+.acca-lp .skill-tile { background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius); padding: 20px; }
+.acca-lp .skill-tile h3 { font-family: var(--serif); font-size: 19px; letter-spacing: -0.01em; margin-bottom: 6px; }
+.acca-lp .skill-tile p { font-size: 13px; color: var(--ink-2); line-height: 1.45; }
+.acca-lp .mark-panel {
+  background: var(--paper); border: 1px solid var(--rule-strong); border-radius: var(--radius);
+  padding: 22px 24px; box-shadow: 0 20px 40px -28px rgba(20,24,22,0.18);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.acca-lp .mark-panel-hd { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.acca-lp .mark-panel-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.acca-lp .mark-panel-score { font-family: var(--serif); font-size: 30px; color: var(--forest); line-height: 1; }
+.acca-lp .mark-panel-of { font-size: 16px; color: var(--ink-3); }
+.acca-lp .mark-row { display: flex; flex-direction: column; gap: 6px; }
+.acca-lp .mark-row-hd { display: flex; align-items: center; gap: 10px; }
+.acca-lp .mark-skill { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.acca-lp .mark-band { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
+.acca-lp .mark-band--strong { color: oklch(45% 0.12 145); background: oklch(90% 0.06 145); }
+.acca-lp .mark-band--mid { color: oklch(48% 0.11 75); background: color-mix(in oklab, var(--gold) 20%, transparent); }
+.acca-lp .mark-evidence { font-size: 13px; color: var(--ink-2); line-height: 1.5; font-style: italic; }
+
+/* ── E. Comparison strip ── */
+.acca-lp .compare-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px; }
+@media (max-width: 760px) { .acca-lp .compare-strip { grid-template-columns: 1fr; } }
+.acca-lp .compare-col {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 24px; display: flex; flex-direction: column; gap: 8px;
+}
+.acca-lp .compare-col--gradd { border-color: var(--rust); background: color-mix(in oklab, var(--paper) 88%, var(--rust)); }
+.acca-lp .compare-name { font-family: var(--serif); font-size: 20px; letter-spacing: -0.01em; color: var(--ink); }
+.acca-lp .compare-col--gradd .compare-name { color: var(--rust-2); }
+.acca-lp .compare-col p { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+
+/* ── F. FAQ ── */
+.acca-lp .faq-list { margin-top: 8px; }
+.acca-lp .faq-item { padding: 22px 0; border-top: 1px solid var(--rule); }
+.acca-lp .faq-item:last-child { border-bottom: 1px solid var(--rule); }
+.acca-lp .faq-q { font-family: var(--serif); font-size: 20px; letter-spacing: -0.01em; color: var(--ink); margin-bottom: 8px; }
+.acca-lp .faq-a { font-size: 15px; line-height: 1.6; color: var(--ink-2); margin: 0; }
+
+/* ── Muted price badge (Monthly) ── */
+.acca-lp .price-badge--muted { background: var(--paper-2); color: var(--ink-3); border: 1px solid var(--rule-strong); }
+
+/* ── Pricing cards ── */
+.acca-lp .price-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 44px; align-items: stretch;
+}
+@media (max-width: 860px) { .acca-lp .price-grid { grid-template-columns: 1fr; max-width: 460px; margin-left: auto; margin-right: auto; } }
+.acca-lp .price-card {
+  background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
+  padding: 30px 28px; display: flex; flex-direction: column; gap: 14px; position: relative;
+}
+.acca-lp .price-card.featured {
+  border-color: var(--rust); box-shadow: 0 24px 50px -30px rgba(20,24,22,0.28);
+}
+.acca-lp .price-badge {
+  position: absolute; top: -11px; left: 24px; background: var(--rust); color: var(--rust-ink);
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 4px 10px; border-radius: 999px;
+}
+.acca-lp .price-name {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3);
+}
+.acca-lp .price-amount {
+  font-family: var(--serif); font-size: 46px; letter-spacing: -0.02em; line-height: 1; color: var(--ink);
+}
+.acca-lp .price-amount .cur { font-size: 0.5em; vertical-align: super; margin-right: 2px; }
+.acca-lp .price-amount .per {
+  font-family: var(--sans); font-size: 14px; color: var(--ink-3); margin-left: 8px; letter-spacing: 0;
+}
+.acca-lp .price-tagline { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+.acca-lp .price-features { list-style: none; display: flex; flex-direction: column; gap: 8px; margin: 4px 0; }
+.acca-lp .price-features li {
+  font-size: 13.5px; color: var(--ink-2); padding-left: 22px; position: relative; line-height: 1.45;
+}
+.acca-lp .price-features li::before { content: "✓"; position: absolute; left: 0; color: var(--rust); font-weight: 600; }
+.acca-lp .price-card .btn { margin-top: auto; justify-content: center; width: 100%; }
+.acca-lp .price-note {
+  text-align: center; font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-3); margin-top: 26px;
+}
 
 /* ── Back to top ── */
 .acca-lp .to-top {

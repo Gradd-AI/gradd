@@ -244,7 +244,7 @@ export function generateIBWeeklyProgressEmail(data: IBWeeklyEmailData): string {
               <hr style="border:none;border-top:1px solid #E8E8E0;margin:0 0 24px;" />
               <p style="margin:0;font-size:12px;color:#ABABAB;line-height:1.6;">
                 Gradd · AI tutor for IB Economics &amp; Business Management ·
-                <a href="https://gradd.ai" style="color:#2D6A4F;text-decoration:none;">gradd.ai</a>
+                <a href="https://gradd.ai/ib" style="color:#2D6A4F;text-decoration:none;">gradd.ai</a>
               </p>
               <p style="margin:8px 0 0;font-size:12px;color:#CBCBCB;">
                 © 2026 Gradd. Built for IB students, wherever you are.

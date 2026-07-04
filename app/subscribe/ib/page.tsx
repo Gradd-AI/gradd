@@ -129,7 +129,7 @@ function IBSubscribeInner() {
       <div style={{ width: '100%', maxWidth: 520 }}>
 
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 40 }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
+          <Link href="/ib" style={{ textDecoration: 'none' }}>
             <span style={{
               fontFamily: 'var(--font-display)',
               fontSize: 22,
