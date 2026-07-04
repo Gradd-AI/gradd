@@ -22,24 +22,35 @@ const MONTHLY_FEATURES = [
   'Cancel any time',
 ];
 
-// Polls the fail-closed access gate after Stripe redirect; the webhook flips the
-// profile a beat after payment, so we poll until access is confirmed, then land
-// the student straight in the tutor.
+// Polls the fail-closed access gate after the Stripe redirect. The webhook flips
+// the profile a beat after payment, so we poll until access is confirmed, then land
+// the student straight in the tutor. Critically we NEVER route a just-paid user
+// forward while access is still false — that would drop them back on the paywall.
+// Instead we keep polling: 15× at 1s, then every 3s out to ~60s, after which the UI
+// switches to an honest "still activating" panel BUT the poll keeps running in the
+// background, so a late webhook still auto-routes the paid user in. The only forward
+// route is on a confirmed access===true.
+const FAST_POLLS = 15;            // 15 × 1s
+const FAST_INTERVAL_MS = 1000;
+const SLOW_INTERVAL_MS = 3000;
+const SLOW_AFTER_ATTEMPTS = 30;   // ~60s total (15×1s + 15×3s) → switch UI, keep polling
+
 function SuccessPoller() {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
-  const [timedOut, setTimedOut] = useState(false);
+  const stillActivating = attempt >= SLOW_AFTER_ATTEMPTS;
 
   useEffect(() => {
-    if (timedOut) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
-    const check = async () => {
+    (async () => {
       try {
         const res = await fetch('/api/acca/access', { cache: 'no-store' });
-        // Fail-closed on the client too: only trust a 200 with access===true.
-        // Any non-200, parse failure, or access!==true falls through to retry —
-        // never routes the user through as if access were granted.
-        if (res.ok) {
+        // Fail-closed on the client too: only a 200 with access===true routes the
+        // user through. Any non-200, parse failure, or access!==true falls through
+        // to another poll — a paid user is never pushed forward on unconfirmed access.
+        if (!cancelled && res.ok) {
           const json = await res.json();
           if (json.access === true) {
             router.push('/acca/tutor');
@@ -47,30 +58,37 @@ function SuccessPoller() {
           }
         }
       } catch {
-        // swallow — fall through to retry / timeout
+        // swallow — fall through to retry
       }
+      if (cancelled) return;
+      // Never give up: back off after the fast phase; past the ~60s budget the UI
+      // switches to the honest panel, but this timer keeps polling regardless.
+      const delay = attempt < FAST_POLLS ? FAST_INTERVAL_MS : SLOW_INTERVAL_MS;
+      timer = setTimeout(() => { if (!cancelled) setAttempt((a) => a + 1); }, delay);
+    })();
 
-      if (attempt >= 14) {
-        setTimedOut(true);
-        return;
-      }
-      setTimeout(() => setAttempt(a => a + 1), 1000);
-    };
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [attempt, router]);
 
-    check();
-  }, [attempt, timedOut, router]);
-
-  if (timedOut) {
+  if (stillActivating) {
+    // Honest holding state — still polling in the background. "Check again" forces
+    // an immediate re-poll; there is deliberately NO manual "go to the tutor" that
+    // would push on unconfirmed access. The moment access lands, the poll above
+    // auto-routes the user in.
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', flexDirection: 'column', gap: 16, padding: 32 }}>
         <img src="/gradd-ai-logo.png" alt="Gradd" height={28} style={{ display: 'block', marginBottom: 8 }} />
         <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 22, color: 'var(--brand)', fontWeight: 700 }}>Payment received</h2>
-        <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 380 }}>
-          Your payment went through but we&apos;re still activating your access. This usually takes a few seconds — refresh, or jump into the tutor.
+        <p style={{ fontSize: 15, color: 'var(--text-muted)', textAlign: 'center', maxWidth: 400 }}>
+          Your access is taking a moment to activate. This usually resolves in under a minute — we&apos;re still checking, and you&apos;ll go straight to the tutor the moment it&apos;s ready.
         </p>
-        <button onClick={() => router.push('/acca/tutor')} className="btn btn-primary" style={{ marginTop: 8 }}>
-          Go to the tutor
+        <button onClick={() => setAttempt((a) => a + 1)} className="btn btn-primary" style={{ marginTop: 8 }}>
+          Check again
         </button>
+        <span style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+          <span className="spinner" style={{ width: 14, height: 14, borderWidth: 2 }} />
+          Still checking…
+        </span>
       </div>
     );
   }
