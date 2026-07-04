@@ -616,3 +616,10 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 - VERIFIED on preview (permanent account, full mock re-run): 7/7 technical, 20/20 professional, Halworth 10/10 + Rivenor 5/5 + Bexley 5/5, no failure states. MOCK FEATURE COMPLETE AND PROVEN.
 - HOME-MACHINE LESSON: stale checkout sent Claude Code searching a repo without the case/mock stack — always git fetch+pull and confirm top SHA before any Claude Code task on a machine that's been away.
 - REMAINING PRE-LAUNCH (unchanged): Keldan weak-answer marking calibration; apm_* + counted drift migrations; funnel verification vs FUNNEL_DESIGN; Production cutover (APM_CASES in Production + merge to main as the launch act, own reviewed pass).
+
+## Session 2026-07-04 (pt.2) — marking calibration PASSED via structural two-step
+
+- Weak-answer calibration EXPOSED a real failure: deliberately thin Keldan triple scored 10/10 (then 9/10 after prompt-instructed absolute marking) with feedback naming the weaknesses — model distributes the pool, doesn't withhold. Same lesson as instructed withholding: instructions lose to priors.
+- STRUCTURAL FIX (SHA 0e3dcad): two-step marking — Sonnet judges band-only per skill (exemplary/strong/competent/weak, no numbers/pool in prompt); code converts deterministically (ceiling = pool/skills; multipliers 1.0/0.75/0.5/0.25; largest-remainder integer apportionment). Third application of the structural-over-instructed pattern (withhold, completeness gate, marking).
+- CALIBRATION VERIFIED on identical stored answers: weak triple 7/10 (communication competent — correctly docked hardest; content was genuinely strong), strong Halworth 10/10 (all exemplary). Discriminates on absolute quality; full marks reachable. MARKING TRUSTED.
+- Pre-launch item 1 (marking calibration) CLOSED. Remaining: apm_* + counted drift migrations; funnel verification vs FUNNEL_DESIGN; Production cutover (APM_CASES + merge to main, own reviewed pass).
