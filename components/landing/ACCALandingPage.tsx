@@ -21,7 +21,7 @@ const AUTH_SUBSCRIBE = '/acca/auth?next=/acca/subscribe';
 // both rendered from this, so the structured data mirrors the on-page copy exactly.
 const FAQS: { q: string; a: string }[] = [
   { q: 'Is this based on the current APM syllabus?', a: 'Yes — S26–J27, verified against the official guide.' },
-  { q: 'How is this different from a general AI chatbot?', a: 'Structured drills and cases built from the syllabus, examiner failure modes, sealed model answers, and professional-skills marking against ACCA’s descriptors — not a chat window.' },
+  { q: 'How is this different from a general AI chatbot?', a: 'Structured drills and cases built from the syllabus, examiner failure modes, sealed model answers, and professional-skills marking against ACCA’s published professional-skills descriptors — not a chat window.' },
   { q: 'Can I use it if I failed before?', a: 'Yes — built for exactly that: understanding why your answers didn’t score.' },
   { q: 'Does it give model answers?', a: 'Yes — after you’ve attempted, been coached, and repaired your answer.' },
   { q: 'What’s free?', a: 'All 91 drills, 3 full teach-throughs, no card.' },
@@ -91,7 +91,7 @@ export default function ACCALandingPage() {
                 Failed APM? <span className="em underline">Fix the reason you lost marks.</span>
               </h1>
               <p className="hero-sub">
-                APM is not passed by memorising models. It is passed by applying them to the scenario, evaluating properly, showing scepticism and writing commercially. Gradd diagnoses why your answer lost marks, then Ezra coaches you until your answer would score.
+                APM is not passed by memorising models. It is passed by applying them to the scenario, evaluating properly, showing scepticism and writing commercially. Gradd diagnoses why your answer lost marks, then Ezra coaches you until your answer is strong enough to score.
               </p>
               <p className="hero-note">Built on the live S26–J27 syllabus. Every drill free to start. No card.</p>
               <div className="hero-cta">
@@ -101,11 +101,9 @@ export default function ACCALandingPage() {
               <div className="hero-meta">
                 <span>Every drill free</span>
                 <span className="dot" />
-                <span>No card</span>
+                <span>No card to start</span>
                 <span className="dot" />
-                <span>Professional-skills marking</span>
-                <span className="dot" />
-                <span>Full timed mock</span>
+                <span>Upgrade for cases, marking and mock</span>
               </div>
             </div>
 
@@ -150,7 +148,7 @@ export default function ACCALandingPage() {
                 </div>
                 <div className="chat-foot">The answer stays sealed · Ezra online 24/7</div>
               </div>
-              <p className="visual-caption">The answer stays sealed. Ezra teaches until you&apos;d score.</p>
+              <p className="visual-caption">The answer stays sealed. Ezra teaches until your answer is strong enough to score.</p>
             </div>
           </div>
         </section>
@@ -202,7 +200,7 @@ export default function ACCALandingPage() {
               <div className="os-card">
                 <div className="num">02 / Marking</div>
                 <h3>Marks like the examiner.</h3>
-                <p>Every case is marked against ACCA&apos;s own professional-skills descriptors — communication, analysis &amp; evaluation, scepticism, commercial acumen. The 20% of the paper most candidates never practise.</p>
+                <p>Every case is marked against ACCA&apos;s published professional-skills descriptors — communication, analysis &amp; evaluation, scepticism, commercial acumen. The 20% of the paper most candidates never practise.</p>
               </div>
               <div className="os-card">
                 <div className="num">03 / Failure modes</div>
@@ -236,7 +234,7 @@ export default function ACCALandingPage() {
             <div className="section-head">
               <span className="eyebrow">Professional skills</span>
               <h2 className="h-section">The 20% most candidates <em className="italic">never practise.</em></h2>
-              <p className="lead">A fifth of every APM answer is the professional skills. Gradd marks them against ACCA&apos;s own descriptors — and names the evidence.</p>
+              <p className="lead">A fifth of every APM answer is the professional skills. Gradd marks them against ACCA&apos;s published professional-skills descriptors — and names the evidence.</p>
             </div>
             <div className="d-grid">
               <div className="skills-grid">
@@ -272,7 +270,7 @@ export default function ACCALandingPage() {
                 </div>
               </div>
             </div>
-            <p className="ja-caption">Marked against ACCA&apos;s own descriptors, with the evidence named.</p>
+            <p className="ja-caption">Marked against ACCA&apos;s published professional-skills descriptors, with the evidence named.</p>
           </div>
         </section>
 
@@ -313,7 +311,7 @@ export default function ACCALandingPage() {
           <div className="wrap">
             <div className="section-head">
               <span className="eyebrow">How it compares</span>
-              <h2 className="h-section">Taught, marked and mocked — <em className="italic">for the price of an hour.</em></h2>
+              <h2 className="h-section">Taught, marked and mocked — <em className="italic">for one sitting price.</em></h2>
             </div>
             <div className="compare-strip">
               <div className="compare-col">
@@ -322,7 +320,7 @@ export default function ACCALandingPage() {
               </div>
               <div className="compare-col">
                 <div className="compare-name">Human tuition</div>
-                <p>€50–70/hour, one hour at a time.</p>
+                <p>One hour at a time.</p>
               </div>
               <div className="compare-col compare-col--gradd">
                 <div className="compare-name">Gradd</div>
