@@ -15,7 +15,9 @@ export default async function ACCAPage() {
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) {
-    redirect('/acca/auth?next=/acca');
+    // Root (gradd.ai) is now the public APM marketing landing — send unauthenticated
+    // visitors there rather than straight to the auth wall.
+    redirect('/');
   }
 
   const supabase = createServiceClient();

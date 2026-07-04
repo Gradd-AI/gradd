@@ -412,7 +412,7 @@ const DEMO_CSS = `
 function DemoNav() {
   return (
     <header className="app-nav">
-      <Link href="/">
+      <Link href="/ib">
         <img src="/gradd-ai-logo.png" alt="Gradd" />
       </Link>
       <div className="app-nav-right">
@@ -874,7 +874,7 @@ export default function DemoDashboard() {
       </main>
 
       <footer className="app-footer">
-        <a href="/">gradd.ai</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>
+        <a href="/ib">gradd.ai</a> · <a href="/terms">Terms</a> · <a href="/privacy">Privacy</a>
       </footer>
     </div>
   );

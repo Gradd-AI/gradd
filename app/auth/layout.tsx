@@ -6,7 +6,8 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <header style={{ padding: '28px 24px 0', display: 'flex', justifyContent: 'center' }}>
-        <Link href="/">
+        {/* gradd.ai home is now the APM landing; the IB marketing page lives at /ib. */}
+        <Link href={brand.isIB ? '/ib' : '/'}>
           <img
             src={brand.logoSrc}
             alt={brand.altText}

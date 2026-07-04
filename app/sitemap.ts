@@ -13,7 +13,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (isAI) {
     const posts = getAllPosts();
     return [
-      { url: AI_BASE,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
+      { url: AI_BASE,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 }, // APM flagship landing
+      { url: `${AI_BASE}/ib`,    lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // IB landing (moved off root)
       { url: `${AI_BASE}/blog`,  lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
       ...posts.map(post => ({
         url: `${AI_BASE}/blog/${post.slug}`,

@@ -118,7 +118,7 @@ export function buildIBTrialReminderEmail(props: TrialReminderProps): { subject:
             <td style="padding:24px 36px 28px;">
               <hr style="border:none;border-top:1px solid #e5dfd3;margin:0 0 20px;" />
               <p style="margin:0 0 6px;font-size:12px;color:#8a8a8a;text-align:center;">
-                Gradd · AI tutor for IB Economics and Business Management · <a href="https://gradd.ai" style="color:#1b3d2f;text-decoration:none;">gradd.ai</a>
+                Gradd · AI tutor for IB Economics and Business Management · <a href="https://gradd.ai/ib" style="color:#1b3d2f;text-decoration:none;">gradd.ai</a>
               </p>
               <p style="margin:0;font-size:12px;color:#8a8a8a;text-align:center;">
                 Questions? Reply to this email — we read every one.
