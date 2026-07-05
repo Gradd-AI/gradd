@@ -78,6 +78,7 @@ export default function ACCALandingPage() {
               {/* Quiet text link — magic-link flow handles returning users and new
                   signups at the same destination, so Sign in shares AUTH_FREE. Lives
                   in nav-cta (always visible) so it persists in the collapsed nav. */}
+              <Link href="/blog" className="nav-signin">Blog</Link>
               <Link href={AUTH_FREE} className="nav-signin">Sign in</Link>
               <Link href={AUTH_FREE} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </div>
@@ -435,6 +436,7 @@ export default function ACCALandingPage() {
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/cookies">Cookies</Link>
+              <Link href="/blog">Blog</Link>
               <a href="mailto:hello@gradd.ai">Contact</a>
             </div>
           </div>
