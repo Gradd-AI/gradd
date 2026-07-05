@@ -12,7 +12,7 @@ const POSTS_DIR = path.join(process.cwd(), 'content', 'blog');
 export interface PostMeta {
   title: string;
   slug: string;
-  subject: string;       // 'Econ' | 'BM'
+  subject: 'Econ' | 'BM' | 'APM'; // IB Economics / IB Business Management / ACCA APM
   description: string;
   date: string;          // dd/mm/yyyy
   published: boolean;

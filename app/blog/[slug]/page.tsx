@@ -78,7 +78,7 @@ export default async function BlogPostPage({
                 padding: '3px 8px',
                 borderRadius: 4,
               }}>
-                IB {post.subject}
+                {post.subject === 'APM' ? 'ACCA APM' : `IB ${post.subject}`}
               </span>
               <time style={{ fontSize: 13, color: 'var(--text)', opacity: 0.45 }}>
                 {post.date}
@@ -145,7 +145,7 @@ export default async function BlogPostPage({
             </div>
           )}
 
-          <BlogCTA />
+          <BlogCTA subject={post.subject} />
         </article>
       </main>
     </>
