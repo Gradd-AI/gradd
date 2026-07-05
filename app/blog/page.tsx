@@ -50,6 +50,7 @@ export default function BlogIndexPage() {
                     }}>
                       {post.subject === 'APM' ? 'ACCA APM' : `IB ${post.subject}`}
                     </span>
+                    <span aria-hidden="true" style={{ fontSize: 13, color: 'var(--text)', opacity: 0.3 }}>·</span>
                     <time style={{ fontSize: 13, color: 'var(--text)', opacity: 0.45 }}>
                       {post.date}
                     </time>
