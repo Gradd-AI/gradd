@@ -80,7 +80,7 @@ export default function IBLandingPage() {
                   {id === 'faq' ? 'FAQ' : id.charAt(0).toUpperCase() + id.slice(1)}
                 </button>
               ))}
-              <Link href="/blog" className="nav-link-btn" style={{ textDecoration: 'none' }}>Blog</Link>
+              <Link href="/blog?subject=ib" className="nav-link-btn" style={{ textDecoration: 'none' }}>Blog</Link>
             </nav>
             <div className="nav-cta">
               <Link href="/demo" className="btn btn-see-it btn-sm">Try the live demo — no account needed</Link>
@@ -830,7 +830,7 @@ export default function IBLandingPage() {
               <span style={{fontSize:12,color:'var(--ink-3)',marginLeft:14}}>© 2026 · The AI tutor for IB Econ &amp; BM</span>
             </div>
             <div className="footer-links">
-              <Link href="/blog">Blog</Link>
+              <Link href="/blog?subject=ib">Blog</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/cookies">Cookies</Link>

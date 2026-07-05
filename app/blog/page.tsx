@@ -2,21 +2,65 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAllPosts } from '@/lib/blog';
 
-export const metadata: Metadata = {
-  title: 'Gradd Blog — IB exam clarity',
-  description: 'Common IB Economics and Business Management misconceptions, explained.',
-  alternates: { canonical: 'https://gradd.ai/blog' },
-  openGraph: {
-    title: 'Gradd Blog — IB exam clarity',
-    description: 'Common IB Economics and Business Management misconceptions, explained.',
-    url: 'https://gradd.ai/blog',
-    siteName: 'Gradd',
-    type: 'website',
-  },
-};
+// searchParams is a request-time Promise in this Next version (see node_modules/next
+// /dist/docs/.../page.md) — must be awaited in both the page and generateMetadata.
+type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-export default function BlogIndexPage() {
-  const posts = getAllPosts();
+// ?subject=apm|ib scopes the shared index without a new route or fork. Any other value
+// (or none) falls through to the full archive at /blog — the canonical, harmless catch-all.
+type SubjectFilter = 'apm' | 'ib' | null;
+
+function resolveSubject(raw: string | string[] | undefined): SubjectFilter {
+  const v = Array.isArray(raw) ? raw[0] : raw;
+  if (v === 'apm') return 'apm';
+  if (v === 'ib') return 'ib';
+  return null;
+}
+
+const APM_TITLE = 'ACCA APM — exam technique, marking and the syllabus, explained';
+const APM_DESC =
+  'How ACCA APM is marked, the professional-skills marks, describe vs apply, and the S26–J27 syllabus — exam technique explained for APM candidates.';
+const IB_TITLE = 'Gradd Blog — IB exam clarity';
+const IB_DESC = 'Common IB Economics and Business Management misconceptions, explained.';
+
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}): Promise<Metadata> {
+  const subject = resolveSubject((await searchParams).subject);
+  const title = subject === 'apm' ? APM_TITLE : IB_TITLE;
+  const description = subject === 'apm' ? APM_DESC : IB_DESC;
+
+  // Canonical stays the unfiltered archive: the ?subject views are convenience filters,
+  // not separate documents, so they self-canonicalize to /blog.
+  return {
+    title,
+    description,
+    alternates: { canonical: 'https://gradd.ai/blog' },
+    openGraph: {
+      title,
+      description,
+      url: 'https://gradd.ai/blog',
+      siteName: 'Gradd',
+      type: 'website',
+    },
+  };
+}
+
+export default async function BlogIndexPage({
+  searchParams,
+}: {
+  searchParams: SearchParams;
+}) {
+  const subject = resolveSubject((await searchParams).subject);
+  const all = getAllPosts();
+  const posts =
+    subject === 'apm'
+      ? all.filter(p => p.subject === 'APM')
+      : subject === 'ib'
+        ? all.filter(p => p.subject !== 'APM')
+        : all;
 
   return (
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
