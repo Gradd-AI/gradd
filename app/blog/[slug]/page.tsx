@@ -59,6 +59,10 @@ export default async function BlogPostPage({
     .map(s => getPostMeta(s))
     .filter(Boolean);
 
+  // Back-to-index carries the subject so an APM reader lands on the APM-scoped
+  // archive, not the default IB view. IB posts go to the bare /blog (unchanged).
+  const indexHref = post.subject === 'APM' ? '/blog?subject=apm' : '/blog';
+
   return (
     <>
       <script
@@ -68,6 +72,19 @@ export default async function BlogPostPage({
       <BlogHeader subject={post.subject === 'APM' ? 'apm' : 'ib'} />
       <main>
         <article className="blog-prose">
+          <Link
+            href={indexHref}
+            style={{
+              display: 'inline-block',
+              marginBottom: 24,
+              fontSize: 13,
+              color: 'var(--text)',
+              opacity: 0.55,
+              textDecoration: 'none',
+            }}
+          >
+            ← All articles
+          </Link>
           <div style={{ marginBottom: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <span style={{
