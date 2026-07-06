@@ -30,16 +30,15 @@ export default async function CookiesPage() {
       alignItems: "center",
       gap: "12px",
     },
-    logoText: {
-      fontFamily: "'Georgia', serif",
-      fontSize: "28px",
-      fontWeight: "700",
-      color: "#FFFFFF",
-      letterSpacing: "-0.5px",
-      margin: 0,
+    logoLink: {
+      display: "inline-block",
+      lineHeight: 0,
     },
-    logoAccent: {
-      color: "#7EC8A4",
+    logoImg: {
+      height: "26px",
+      width: "auto",
+      display: "block",
+      filter: "brightness(0) invert(1)",
     },
     headerTitle: {
       fontSize: "15px",
@@ -179,9 +178,10 @@ export default async function CookiesPage() {
     <div style={styles.page}>
       {/* Header */}
       <header style={styles.header}>
-        <p style={styles.logoText}>
-          Gr<span style={styles.logoAccent}>add</span>
-        </p>
+        <a href="/" aria-label="Gradd home" style={styles.logoLink}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" style={styles.logoImg} />
+        </a>
         <div style={styles.divider} />
         <p style={styles.headerTitle}>Cookie Policy</p>
         <p style={styles.lastUpdated}>Last updated: 06/07/2026</p>
