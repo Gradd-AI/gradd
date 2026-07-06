@@ -1,48 +1,200 @@
 ---
-title: "APM S26–J27: what actually changed and how the exam is structured now"
+title: "ACCA APM S26–J27: what changed and how the exam is structured now"
 slug: apm-s26-j27-syllabus-what-changed
 subject: APM
-description: "The S26–J27 APM refresh reorganised the syllabus into five areas and made data science a guaranteed Section B slot. Here's the new structure and what it means for revision priorities."
+description: "ACCA APM changed for September 2026 to June 2027. The syllabus is now organised around strategic management and value creation, performance optimisation, performance reporting, data science and technology for performance and insights, and professional skills."
 date: 05/07/2026
 published: true
 keywords:
-  - ACCA APM syllabus 2026
-  - APM S26 J27 changes
+  - ACCA APM syllabus 2026 2027
+  - ACCA APM S26 J27 changes
   - ACCA APM exam structure
-  - APM data science syllabus
-  - ACCA APM sections A B C D E
+  - ACCA APM data science and technology
+  - ACCA APM syllabus areas A B C D E
 ---
 
-For the S26–J27 sittings, ACCA refreshed the APM syllabus. The techniques you revise haven't been thrown out, but the way the paper is organised — and where the marks are guaranteed to fall — has changed. If your plan is built on the old shape, some of it is now aimed at the wrong targets.
+You can't revise APM from the old map and assume the exam will meet you there.
 
-## The syllabus, reorganised into five areas
+For the September 2026 to June 2027 sittings, ACCA has refreshed APM. The content has not been thrown away. ACCA says the overall content is largely unchanged, although some outcomes have been reworded or deleted and some new outcomes have been added.
 
-APM is now structured around five capability areas:
+But the shape has changed.
 
-- **A — Strategic management.** Setting performance management in the context of strategy and the environment the organisation operates in.
-- **B — Performance optimisation.** The techniques for measuring and improving performance.
-- **C — Performance reporting.** How performance is reported to, and used by, decision-makers.
-- **D — Data science and technology.** The role of data, systems, and analytics in performance management.
-- **E — Professional skills.** Communication, analysis and evaluation, scepticism, and commercial acumen — assessed throughout the paper, not in isolation.
+That matters.
 
-## How the exam is built now
+Because APM is not just about what you know. It is about where the exam is likely to make you use it.
 
-The format is a compulsory case plus a partly fixed choice:
+## The new APM syllabus structure
 
-- **Section A** — one **50-mark** case-study question, drawing across the syllabus.
-- **Section B** — **two 25-mark** questions, with one drawn from area **C (performance reporting)** and one from area **D (data science and technology)**.
+The S26–J27 APM syllabus is organised around five areas.
 
-The consequence worth circling: **data science now has a guaranteed slot.** It is no longer a topic you can hope to dodge — one of your two Section B questions will come from it.
+### A — Strategic management and value creation
 
-## What that means for revision priorities
+This is the strategic frame.
 
-- **Don't leave data and technology as an afterthought.** It's a scheduled question, not a maybe. Practise applying analytics and systems concepts to a scenario, not just defining them.
-- **Treat performance reporting as core.** The other Section B slot is fixed to it — reporting quality, the fit between metrics and decisions, and the limitations of the numbers.
-- **Keep professional skills in every practice answer.** Area E runs through the whole paper; a fifth of the marks depend on it regardless of which questions come up.
-- **Prioritise the 50-mark case.** It's half the paper in a single question and ranges across areas — practising full cases under time matters more than drilling isolated topics.
+It is where performance management connects to strategy, value creation, risk, stakeholders, ESG and the environment the organisation operates in.
 
-The paper still rewards the same underlying skill: applied judgement in a specific situation. The refresh just tells you, more precisely than before, where it will be tested.
+Do not revise this as a list of strategy models.
+
+Revise it as a question:
+
+> What is this organisation trying to achieve, and does the performance system help it get there?
+
+### B — Performance optimisation
+
+This is where the performance-improvement techniques sit.
+
+Targets. Costs. Budgets. Incentives. Operational choices. The tools that help a business improve how it performs.
+
+The trap is to revise the technique and forget the decision.
+
+APM will not reward you for knowing a technique in isolation. It wants you to use it to judge what the organisation should do next.
+
+### C — Performance reporting
+
+This is not just "reports".
+
+It is whether performance information is useful to the people making decisions.
+
+Can the board see the right issues?
+
+Do the measures link to strategy?
+
+Is the report balanced, relevant and clear?
+
+Does it show performance insight, or just performance data?
+
+That distinction matters because APM questions often ask you to evaluate the report, not simply evaluate the company.
+
+### D — Data science and technology for performance and insights
+
+This is the clearest signal in the refresh.
+
+Data, systems, analytics, technology and performance insight now have their own area.
+
+Do not leave this until the end.
+
+You need to be able to apply data-science and technology ideas to a scenario: what the data can show, what it cannot show, whether it is reliable, whether the system is useful, and how management should act on the insight.
+
+Definitions will not be enough.
+
+### E — Professional skills
+
+Professional skills run through the paper.
+
+Communication. Analysis and evaluation. Scepticism. Commercial acumen.
+
+They are not a separate essay bolted onto the end. They are marks for how you write the technical answer: whether it is structured, developed, challenging and commercially useful.
+
+If you do not practise those skills deliberately, you are leaving marks in the paper before you start.
+
+## How the exam is built
+
+The paper is still 100 marks.
+
+Section A is one compulsory 50-mark case-study question.
+
+Section B has two 25-mark questions.
+
+Under the S26–J27 structure, one Section B question is drawn from **Area C: Performance reporting**, and one is drawn from **Area D: Data science and technology for performance and insights**.
+
+That changes the revision risk.
+
+Performance reporting is not optional.
+
+Data science and technology is not optional.
+
+You cannot hope to dodge them in Section B.
+
+## What this means for revision
+
+### 1. Put data science and technology into weekly practice
+
+Do not treat Area D as a vocabulary list.
+
+You need to practise applying it.
+
+That means questions where you judge data quality, challenge analytics outputs, interpret dashboards, assess system usefulness, and explain what management can and cannot conclude from the data.
+
+The exam will not ask whether you can define analytics like a glossary.
+
+It will ask whether you can use analytics in a performance-management decision.
+
+### 2. Treat performance reporting as a core answer skill
+
+Area C deserves proper time.
+
+You need to practise evaluating reports, dashboards, KPIs and management information.
+
+The key question is not:
+
+> What does the number say?
+
+It is:
+
+> Does this information help the decision-maker understand performance and act on it?
+
+That is the reporting mindset.
+
+### 3. Keep the 50-mark case at the centre
+
+Section A is half the paper.
+
+It can draw across the syllabus, so drilling isolated topics is not enough.
+
+You need full-case practice: reading exhibits, finding the requirement, planning under time pressure, structuring a professional answer, and making judgement calls from messy information.
+
+That is where APM is won or lost.
+
+### 4. Practise professional skills inside every answer
+
+Area E cannot be revised the night before.
+
+You build it by writing answers that communicate clearly, evaluate rather than describe, challenge weak information, and give recommendations a manager could actually use.
+
+Every practice answer should be checked for those habits.
+
+Not just the technical content.
+
+### 5. Retire the old "topic spotting" mindset
+
+The refresh makes the paper's structure clearer, but it does not make APM predictable in the lazy sense.
+
+You still need judgement.
+
+You still need scenario application.
+
+You still need to answer the exact requirement.
+
+The structure tells you where the pressure points are.
+
+It does not remove the need to think.
+
+## The real change
+
+The refresh does not turn APM into a new subject.
+
+It makes the current direction harder to ignore.
+
+Performance reporting matters.
+
+Data and technology matter.
+
+Professional skills matter.
+
+And the 50-mark case still tests whether you can apply judgement to a specific organisation under time pressure.
+
+So revise the new structure.
+
+But practise the old skill that still decides the result:
+
+> Can you turn technical knowledge into a useful answer for this scenario?
 
 ## Where Ezra catches this
 
-Knowing the structure is one thing; writing to it under time pressure is another. Ezra drills full APM cases and the guaranteed data-science and reporting slots the way the current paper sets them — checking you'd actually score, not just that you knew the topic — the same coaching behind [Gradd's APM tutor](/).
+Knowing the new structure is one thing.
+
+Writing to it under time pressure is another.
+
+Ezra drills full APM cases, performance reporting questions and data-science scenarios the way the current paper sets them. He checks whether you would actually score, not just whether you recognised the topic.
+
+That is the difference between knowing the syllabus map and being ready for the exam.
