@@ -1,50 +1,213 @@
 ---
-title: "The APM mistake examiners call out every sitting: answering the wrong question"
+title: "ACCA APM: the mistake examiners keep calling out — answering the wrong question"
 slug: apm-evaluate-the-report-not-the-company
 subject: APM
-description: "Examiner reports name it sitting after sitting: asked to evaluate the report, candidates evaluate the company. Answer the requirement's actual verb and object — or lose marks you knew."
+description: "ACCA APM students often know the model but answer the wrong requirement. Learn the verb-and-object test that stops you evaluating the company when the question asked you to evaluate the report."
 date: 05/07/2026
 published: true
 keywords:
-  - answering the wrong question ACCA APM
-  - ACCA APM requirement verb
-  - APM evaluate the report not the company
+  - ACCA APM answering the wrong question
+  - ACCA APM requirement verb and object
+  - ACCA APM evaluate the report not the company
   - ACCA APM examiner report common mistakes
-  - how to read APM exam requirements
+  - ACCA APM how to read exam requirements
 related:
   - apm-describe-vs-apply
 ---
 
-You revised the models. You spotted the technique. You still walked out having lost marks on a requirement you understood — because you answered a question the examiner never asked.
+You revised the models.
 
-Here's the fix, and it's one habit: read the requirement as a verb acting on an object, and anchor every point to both.
+You spotted the technique.
 
-## The single most-repeated criticism in the examiner reports
+You still lost marks on a requirement you understood — because you answered a question the examiner never asked.
 
-APM has a name as one of the tougher Strategic Professional papers — pass rates often sit around a third — and this is a big part of why. Sitting after sitting, ACCA's APM examiner reports land on the same complaint, and it isn't weak knowledge. It's candidates answering the wrong requirement.
+That is one of the most dangerous mistakes in APM.
 
-- Asked to evaluate the *report*, they evaluate the *company's performance*.
-- Asked about activity-based *management*, they explain activity-based *costing*.
-- Told **not** to recommend new performance measures, they recommend new performance measures.
+Not weak knowledge.
 
-Every one of those is a technically competent answer to a question that wasn't set. The marker has a requirement-specific grid in front of them, and points that don't map to it score nothing — however true they are.
+Wrong target.
+
+Here's the fix, and it's one habit: read the requirement as a **verb acting on an object**. Then make every paragraph serve both.
+
+## The mistake examiner reports keep naming
+
+APM is one of the harder Strategic Professional papers, with pass rates consistently around 40% — among the lowest pass rates in the ACCA qualification.
+
+But the problem is not usually that candidates know nothing.
+
+It's that they use what they know on the wrong task.
+
+Asked to **evaluate the report**, they evaluate the company's performance.
+
+Asked about **activity-based management**, they explain activity-based costing.
+
+Told **not** to recommend new performance measures, they recommend new performance measures.
+
+Each answer may contain technically correct points.
+
+That doesn't save it.
+
+APM marks are tied to the requirement. If the point doesn't answer the requirement, the marker has little to reward.
 
 ## Read the verb, then read the object
 
-A requirement is a verb acting on an object. Both decide what earns marks.
+A requirement is a verb acting on an object.
 
-Take "evaluate the performance report." The object is the *report* — its choice of metrics, whether they link to the strategy, whether it would actually help a manager decide anything. It is **not** the company's ROCE trend. Two candidates can write about the same exhibit and only one is answering the question.
+Both matter.
 
-"Assess whether the transfer-pricing policy is appropriate" — the object is the *policy*, not the divisions' results. "Advise the board" — you owe a recommendation, not a description. The verb tells you how far to go; the object tells you what to point it at.
+Take this requirement:
 
-## Re-read the requirement in the middle of your answer
+> Evaluate the performance report.
 
-The wrong-question error creeps in because you drift. You start on the report, hit a number, and three sentences later you're evaluating the company. Nobody decides to answer the wrong question — they slide into it under time pressure.
+The verb is **evaluate**.
 
-So re-read the requirement halfway down the answer. For each paragraph, ask: does this serve the verb and the object? If a sentence is true but doesn't, cut it. It isn't earning anything, and it's costing you time you need for the parts that do.
+So you need judgement, not description.
+
+The object is **the performance report**.
+
+So your answer should focus on the report itself: the choice of metrics, whether the measures link to strategy, whether the report highlights the right issues, whether the information would help management make decisions.
+
+The object is not the company's performance.
+
+That distinction is brutal.
+
+Two candidates can use the same exhibit. One answers the question. The other writes a decent answer to the wrong one.
+
+## What the wrong answer looks like
+
+The requirement asks:
+
+> Evaluate the performance report.
+
+A drifting answer says:
+
+> Revenue has increased by 8%, but operating profit has fallen, suggesting cost control has weakened. Customer retention has also declined, so management should investigate service quality.
+
+That may be true.
+
+But it is mostly evaluating the company.
+
+It has not evaluated the report.
+
+It has not said whether the report is useful, whether the measures are relevant, whether anything important is missing, or whether the format supports decision-making.
+
+So it misses the target.
+
+## What the right answer looks like
+
+An answer aimed at the requirement says:
+
+> The report is weak because it shows revenue and profit but does not link either measure to the company's service-quality strategy. This matters because customer retention has fallen, but the report gives no measure of response time, complaint resolution, or repeat service failures. The board can see that performance has worsened, but not why it has worsened or what action to take.
+
+Now the same exhibit is being used properly.
+
+The paragraph evaluates the report.
+
+It comments on the object.
+
+It gives a judgement.
+
+That is the answer APM was asking for.
+
+## The verb tells you how far to go
+
+Different verbs demand different work.
+
+**Explain** means make the point clear and connect it to the scenario.
+
+**Evaluate** means judge usefulness, strength, weakness, relevance, or consequence.
+
+**Assess** means weigh up whether something is appropriate.
+
+**Advise** means take a position and tell the decision-maker what to do.
+
+**Recommend** means propose action, usually with reasons and trade-offs.
+
+The verb sets the depth.
+
+But the object sets the target.
+
+Ignore either and the answer drifts.
+
+## The object tells you what to aim at
+
+Look at the difference.
+
+> Assess whether the transfer-pricing policy is appropriate.
+
+The object is the **policy**, not the divisions' overall performance.
+
+> Evaluate the proposed reward scheme.
+
+The object is the **reward scheme**, not staff motivation in general.
+
+> Advise the board on the use of non-financial performance indicators.
+
+The object is the **use of NFPIs**, not a full balanced scorecard essay.
+
+> Discuss the problems with the current report.
+
+The object is the **report**, not the company.
+
+That's the habit.
+
+Verb first.
+
+Object second.
+
+Then write.
+
+## Re-read the requirement halfway through
+
+The wrong-question error creeps in quietly.
+
+You start on the report. You mention a number. Then three sentences later you're evaluating the company.
+
+Nobody plans to answer the wrong question.
+
+They slide into it.
+
+So stop halfway through each answer and ask:
+
+> Does this paragraph serve the verb and the object?
+
+If the requirement says **evaluate the report**, every paragraph should say something about the report.
+
+If the requirement says **assess the policy**, every paragraph should judge the policy.
+
+If a sentence is true but doesn't serve the requirement, cut it.
+
+It isn't earning enough.
+
+It is just spending time.
+
+## The exam habit
+
+Before you write, underline two things:
+
+1. the verb
+2. the object
+
+Then turn them into a control question.
+
+> Am I evaluating the report — or the company?
+> Am I assessing the policy — or explaining the technique?
+> Am I advising the board — or describing the model?
+
+That one check prevents a lot of lost marks.
+
+APM doesn't reward what you know.
+
+It rewards what you use to answer the question set.
 
 ## Where Ezra catches this
 
-Most candidates don't lose these marks from not knowing the material. They lose them because "evaluate the report" and "evaluate the company" feel like the same task once the clock is running.
+Wrong-question answers feel convincing because they contain real knowledge.
 
-When your answer drifts off the requirement, Ezra names which question you actually answered and points you back to the verb and object before it becomes a habit — the same coaching behind [Gradd's APM tutor](/).
+That's what makes them dangerous.
+
+You can write a technically sound paragraph that still misses the requirement.
+
+Ezra catches that drift. He names the question you actually answered, points you back to the verb and object, and makes you rewrite the paragraph so it maps to the requirement.
+
+That's the difference between knowing the topic and scoring the marks.
