@@ -8,13 +8,9 @@ import { resolveIsIB } from "@/lib/site";
 import type { Metadata } from "next";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const host = (await headers()).get('host') ?? '';
-  const isIB = await resolveIsIB(host);
   return {
     title: "Terms of Service | Gradd",
-    description: isIB
-      ? "Gradd Terms of Service — IB Diploma Programme."
-      : "Gradd Terms of Service — Irish law governs.",
+    description: "Gradd Terms of Service — Irish law governs.",
   };
 }
 
@@ -151,7 +147,7 @@ export default async function TermsPage() {
         </p>
         <div style={styles.divider} />
         <p style={styles.headerTitle}>Terms of Service</p>
-        <p style={styles.lastUpdated}>Last updated: 01 May 2026</p>
+        <p style={styles.lastUpdated}>Last updated: 06/07/2026</p>
       </header>
 
       {/* Body */}
@@ -160,15 +156,16 @@ export default async function TermsPage() {
 
         <p style={styles.intro}>
           Please read these terms carefully before using Gradd. By creating an
-          account or subscribing, you agree to be bound by these terms. If you
-          are under 18, a parent or guardian must also agree on your behalf.
+          account or making a purchase, you agree to be bound by these terms.
+          Where you are under 18, a parent or guardian must review and agree to
+          these terms on your behalf (contractual capacity).
         </p>
 
         {/* 1 */}
         <h2 style={styles.h2}>1. Who We Are</h2>
         <p style={styles.p}>
-          Gradd is an AI-powered study platform designed to help students
-          prepare for the {isIB ? 'IB Diploma Programme examinations' : 'Irish Leaving Certificate examinations'}. Gradd is
+          Gradd is an AI-powered study platform designed to help you prepare for
+          the exams you are studying for. Gradd is
           operated as a sole trader business registered in Ireland
           (&quot;Gradd&quot;, &quot;we&quot;, &quot;us&quot;, or
           &quot;our&quot;).
@@ -185,29 +182,29 @@ export default async function TermsPage() {
         <div style={styles.notice}>
           <p style={styles.noticeText}>
             Gradd is a study aid. We are not a school, a registered educational
-            institution, or a grinds service. We do not provide accredited
-            tuition, and our platform does not replace your school, teacher, or
-            {isIB ? ' IBO guidance.' : ' official State Examinations Commission guidance.'}
+            institution, or a tutoring service. We do not provide accredited
+            tuition, and our platform does not replace your school, teacher,
+            tutor, or the official guidance of your exam board or awarding body.
           </p>
         </div>
         <p style={styles.p}>
-          The Gradd platform provides AI-generated responses to{' '}
-          {isIB ? 'IB Diploma Programme' : 'Leaving Certificate'} study questions.
-          These responses are intended to supplement your studies, not to replace
-          qualified teacher instruction. You should verify important information
-          with your school or {isIB ? 'official IBO resources' : 'official SEC resources'}.
+          The Gradd platform provides AI-generated responses to your study
+          questions. These responses are intended to supplement your studies,
+          not to replace qualified teacher instruction. You should verify
+          important information against your own course materials and the
+          official materials published by your exam board or awarding body.
         </p>
 
         {/* 3 */}
         <h2 style={styles.h2}>3. No Guarantee of Exam Results</h2>
         <p style={styles.p}>
-          We do not guarantee any particular exam outcome, grade, points score,
-          or academic result from using Gradd. Study outcomes depend on many
+          We do not guarantee any particular exam outcome, grade, or academic
+          result from using Gradd. Study outcomes depend on many
           factors outside our control, including individual effort, aptitude,
-          and exam conditions set by the {isIB ? 'International Baccalaureate Organisation (IBO)' : 'State Examinations Commission'}.
+          and exam conditions set by the body that sets your exams.
         </p>
         <p style={styles.p}>
-          Any testimonials or examples of student progress shared by Gradd are
+          Any testimonials or examples of learner progress shared by Gradd are
           illustrative and not a representation of typical or guaranteed results.
         </p>
 
@@ -219,7 +216,8 @@ export default async function TermsPage() {
             API) to generate responses. AI can make mistakes. Content generated
             by Gradd's tutor may occasionally be incomplete, outdated, or
             inaccurate. Always cross-reference AI responses with your textbook,
-            your teacher, and {isIB ? 'official IBO mark schemes and subject guides' : 'official SEC marking schemes'}.
+            your teacher or tutor, and the official mark schemes and study
+            materials published by your exam board or awarding body.
           </p>
         </div>
         <p style={styles.p}>
@@ -230,11 +228,20 @@ export default async function TermsPage() {
         {/* 5 */}
         <h2 style={styles.h2}>5. Eligibility and Age Requirements</h2>
         <p style={styles.p}>
+          This section concerns the minimum age at which you can consent to our
+          processing of your personal data. It is separate from the
+          contractual-capacity point in the introduction above (where a user is
+          under 18, a parent or guardian must review and agree to these Terms on
+          their behalf) — the two requirements serve different purposes and both
+          apply.
+        </p>
+        <p style={styles.p}>
           To use Gradd, you must be:
         </p>
         <ul style={styles.ul}>
           <li style={styles.li}>
-            Aged 16 or over; or
+            Aged 16 or over — the digital age of consent under Irish data
+            protection law; or
           </li>
           <li style={styles.li}>
             Under 16, with a parent or legal guardian who has reviewed and
@@ -263,44 +270,69 @@ export default async function TermsPage() {
         </p>
 
         {/* 7 */}
-        <h2 style={styles.h2}>7. Subscriptions and Payment</h2>
+        <h2 style={styles.h2}>7. Paid Access — Subscriptions and Fixed-Term Passes</h2>
         <p style={styles.p}>
-          Access to Gradd's full feature set requires a paid subscription.
-          Subscriptions are billed on a recurring basis (monthly or annually, as
-          selected at checkout) through Stripe. By subscribing, you authorise us
-          to charge your payment method on a recurring basis until you cancel.
+          Access to Gradd&apos;s full feature set requires a paid purchase. We
+          offer paid access in two forms, and the option you choose is shown at
+          checkout:
         </p>
+        <ul style={styles.ul}>
+          <li style={styles.li}>
+            <strong>Recurring subscription</strong> — billed automatically at
+            regular intervals (for example, monthly) through Stripe. By
+            subscribing, you authorise us to charge your payment method on a
+            recurring basis until you cancel.
+          </li>
+          <li style={styles.li}>
+            <strong>One-off fixed-term pass</strong> — a single payment for
+            access over a fixed period (for example, a 90-day pass). A pass is
+            not a subscription: it does not renew, and no recurring charge is
+            made. Access ends automatically when the term expires.
+          </li>
+        </ul>
         <p style={styles.p}>
           All prices are displayed in Euro (€) and are inclusive of VAT where
-          applicable under Irish law. Gradd reserves the right to change
-          subscription pricing. We will give you at least 30 days&apos; notice
-          of any price increase before it applies to your subscription.
+          applicable under Irish law. Gradd reserves the right to change its
+          pricing. Any price change applies only to future purchases or
+          renewals: we will give you at least 30 days&apos; notice of any price
+          increase before it applies to a recurring subscription, and the price
+          of a fixed-term pass is fixed at the point of purchase for that term.
         </p>
 
         {/* 8 */}
         <h2 style={styles.h2}>8. Cancellation and Refunds</h2>
         <p style={styles.p}>
-          You may cancel your subscription at any time through your account
-          settings (Manage Subscription). Cancellation takes effect at the end
-          of your current billing period. You will retain access to Gradd until
-          that date.
+          <strong>Recurring subscriptions.</strong> You may cancel your
+          subscription at any time through your account settings (Manage
+          Subscription). Cancellation stops the next renewal; it takes effect at
+          the end of your current billing period, and you retain access until
+          that date. We do not provide partial refunds for the unused part of a
+          billing period once it has begun, except where required by law.
         </p>
         <p style={styles.p}>
-          Under the European Union (Consumer Information, Cancellation and Other
-          Rights) Regulations 2013, you have the right to cancel a digital
-          services contract within 14 days of purchase without giving a reason
-          (&quot;cooling-off period&quot;). If you begin using the service during
-          this period, you acknowledge that you are waiving your right to a full
-          refund for the portion of the service already used. To exercise your
-          right of withdrawal, contact us at{" "}
+          <strong>Fixed-term passes.</strong> A fixed-term pass does not renew,
+          so there is no renewal to cancel. Access remains active until the end
+          of the paid term and then ends automatically.
+        </p>
+        <p style={styles.p}>
+          <strong>14-day cooling-off period.</strong> Under the European Union
+          (Consumer Information, Cancellation and Other Rights) Regulations 2013,
+          you have the right to cancel a digital services contract within 14 days
+          of purchase without giving a reason. This right applies to both
+          subscriptions and fixed-term passes. If you ask us to begin providing
+          the service during this period, you acknowledge that you are waiving
+          your right to a full refund for the portion of the service already
+          used, and we may deduct an amount proportionate to the access provided
+          before you cancelled. To exercise your right of withdrawal, contact us
+          at{" "}
           <a href={isIB ? 'mailto:hello@gradd.ai' : 'mailto:hello@gradd.ie'} style={styles.link}>
             {isIB ? 'hello@gradd.ai' : 'hello@gradd.ie'}
           </a>
           .
         </p>
         <p style={styles.p}>
-          Outside the 14-day cooling-off period, subscription fees are
-          non-refundable except where required by Irish consumer law.
+          Outside the 14-day cooling-off period, fees are non-refundable except
+          where required by Irish consumer law.
         </p>
 
         {/* 9 */}
@@ -319,8 +351,8 @@ export default async function TermsPage() {
           </li>
           <li style={styles.li}>
             Use the platform to submit or generate plagiarised work for academic
-            submission — doing so may breach your school&apos;s academic
-            integrity policy;
+            submission — doing so may breach your school&apos;s or awarding
+            body&apos;s academic-integrity or exam regulations;
           </li>
           <li style={styles.li}>
             Use the platform in any unlawful way, or in a way that harms or
@@ -352,7 +384,7 @@ export default async function TermsPage() {
         <p style={styles.p}>
           To the fullest extent permitted by Irish law, Gradd&apos;s total
           liability to you for any claim arising from your use of the platform
-          shall not exceed the total subscription fees you have paid to us in the
+          shall not exceed the total fees you have paid to us in the
           12 months preceding the claim.
         </p>
         <p style={styles.p}>
