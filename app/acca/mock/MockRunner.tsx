@@ -45,7 +45,8 @@ const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve,
 type MarkOutcome =
   | { kind: 'marked'; awarded: number }
   | { kind: 'incomplete' }
-  | { kind: 'failed' };
+  | { kind: 'failed' }
+  | { kind: 'locked' };
 
 // Mark one case. A single mark POST can be slow on the biggest cases: a Section A
 // case examines the most professional skills (the union across all its
@@ -61,7 +62,7 @@ type MarkOutcome =
 //     already-complete case: retry ONCE after 1.5s. If it persists → `failed`
 //     (a marking failure on a completed case — never "not completed").
 async function markCase(caseId: string): Promise<MarkOutcome> {
-  const attempt = async (): Promise<'conflict' | 'error' | { awarded: number }> => {
+  const attempt = async (): Promise<'conflict' | 'error' | 'locked' | { awarded: number }> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 120_000);
     try {
@@ -74,7 +75,11 @@ async function markCase(caseId: string): Promise<MarkOutcome> {
         return { awarded: typeof m.professional_marks_awarded === 'number' ? m.professional_marks_awarded : 0 };
       }
       if (res.status === 409) return 'conflict';
-      // Any other non-2xx (5xx / 502 / 504 / 402) is a transient-or-terminal FAILURE,
+      // 402 = subscription/pass lapsed mid-session. Terminal, NOT retryable (a lapsed
+      // entitlement won't recover on retry) — surfaced as `locked` so the caller routes
+      // to the subscribe upsell instead of a dead-end Retry button.
+      if (res.status === 402) return 'locked';
+      // Any other non-2xx (5xx / 502 / 504) is a transient-or-terminal FAILURE,
       // not a not-complete signal — it is retried and never labelled "not completed".
       return 'error';
     } catch {
@@ -92,6 +97,7 @@ async function markCase(caseId: string): Promise<MarkOutcome> {
   for (;;) {
     const r = await attempt();
     if (typeof r === 'object') return { kind: 'marked', awarded: r.awarded };
+    if (r === 'locked') return { kind: 'locked' };   // terminal — no retry on a lapse
     if (r === 'conflict') {
       if (conflictRetries-- <= 0) return { kind: 'incomplete' };
       await delay(conflictDelays[ci++] ?? 3000);
@@ -225,6 +231,9 @@ export default function MockRunner() {
     patchCase(cid, { marking: true, markFailed: false, loadFailed: false });
     try {
       const loadRes = await fetch(`/api/acca/case?case_id=${encodeURIComponent(cid)}`);
+      // Subscription/pass lapsed mid-session → route to the subscribe upsell, not a
+      // dead-end Retry. Other load errors stay retryable via loadFailed.
+      if (loadRes.status === 402) { setPhase('locked'); return; }
       if (!loadRes.ok) { patchCase(cid, { marking: false, loadFailed: true }); return; }
       const load = await loadRes.json();
       const requirements = (load.requirements ?? []) as unknown[];
@@ -250,6 +259,9 @@ export default function MockRunner() {
       } else if (outcome.kind === 'incomplete') {
         // Server still 409s after retries → genuinely not complete.
         patchCase(cid, { profAwarded: null, marking: false, markFailed: false });
+      } else if (outcome.kind === 'locked') {
+        // Subscription/pass lapsed → subscribe upsell, not a dead-end Retry button.
+        setPhase('locked');
       } else {
         // Completed case whose marking failed → honest error state + retry button.
         patchCase(cid, { profAwarded: null, marking: false, markFailed: true });
