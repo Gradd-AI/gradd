@@ -1903,3 +1903,17 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **Cause:** Single codebase serves gradd.ai (IB) and gradd.ie (LC); one app/sitemap.ts emitted both domains' URLs into every sitemap. A sitemap served from one domain may only list that domain's URLs — Google flags/ignores cross-domain entries, so gradd.ai/sitemap.xml listing gradd.ie URLs would not be trusted for either.
 **Fix:** Made sitemap() async and read the request host via `await headers()` from next/headers (same pattern as app/layout.tsx); the Request-time API makes the route dynamic (uncached) so each domain returns only its own branch. gradd.ai/sitemap.xml → 7 IB URLs; gradd.ie/sitemap.xml → LC URLs; zero contamination.
 **Prevention:** On a multi-domain single codebase, every host-specific artifact (sitemap, robots, canonical, OG, branding) must be host-scoped at runtime, not built as one combined output. See prevention rule 10. Each domain gets its own Search Console property and its own clean sitemap.
+
+---
+
+## 06 July 2026 — Session-close hardening
+
+### Marketed promises supersede Terms where more generous — review copy and Terms as a pair
+Never market a stronger claim than you'll honour; landing copy and Terms must be reviewed as a **pair** whenever either changes. Caught 06/07: the APM landing promised an unconditional 14-day money-back guarantee while Terms §8 reserved a used-portion deduction right on cooling-off cancellation. The more-generous public promise governs (we can be more generous than Terms, never less), and the mismatch was only visible because both surfaces were read together. Decision recorded in `GRADD_PRODUCT_MODEL.md` — honour the unconditional refund.
+**Prevention:** Any change to refund/guarantee/trial/pricing copy on a marketing surface triggers a paired read of Terms (and vice versa). Marketing may be more generous than Terms; it must never claim more than Terms will honour.
+**CATEGORY:** Config · **SEVERITY:** High
+
+### Naming debt: `isIB` / `resolveIsIB` now means "is gradd.ai host", not "is the IB product"
+`lib/site.ts` `resolveIsIB(host)` returns true for gradd.ai — but gradd.ai's flagship is now the ACCA APM product (IB moved to `/ib`). The boolean reads as a *product* check when it is really a *host* check. Harmless today: only per-host contact email, footer domain, and asset selection depend on it, and all of those ARE host-correct. The hazard is future product-conditional logic branching on `isIB` and silently treating APM as IB.
+**Prevention:** Do NOT branch product behaviour on `isIB` — it distinguishes host, not product. Rename to `isGraddAi` / `resolveHost` when this file is next touched for another reason; do not touch as a standalone change — this entry establishes the debt on record.
+**CATEGORY:** Naming/Config · **SEVERITY:** Low (latent)
