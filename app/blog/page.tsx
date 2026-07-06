@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAllPosts } from '@/lib/blog';
+import BlogHeader from '@/components/blog/BlogHeader';
 
 // searchParams is a request-time Promise in this Next version (see node_modules/next
 // /dist/docs/.../page.md) — must be awaited in both the page and generateMetadata.
@@ -63,6 +64,8 @@ export default async function BlogIndexPage({
         : all;
 
   return (
+    <>
+    <BlogHeader subject={subject === 'apm' ? 'apm' : 'ib'} />
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
         {posts.length === 0 && (
           <p style={{ color: 'var(--text)', opacity: 0.6 }}>No posts yet.</p>
@@ -119,5 +122,6 @@ export default async function BlogIndexPage({
           ))}
         </ul>
     </main>
+    </>
   );
 }

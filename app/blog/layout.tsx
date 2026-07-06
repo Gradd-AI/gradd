@@ -1,5 +1,3 @@
-import Link from 'next/link';
-
 export default function BlogLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
@@ -90,13 +88,8 @@ export default function BlogLayout({ children }: { children: React.ReactNode }) 
         }
       `}</style>
       <div className="blog-shell">
-        <header className="blog-header">
-          <Link href="/ib" aria-label="Gradd home">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/gradd-ai-logo.png" alt="Gradd" style={{ height: 22, width: 'auto', display: 'block' }} />
-          </Link>
-          <Link href="/auth/signup/ib" className="blog-header-cta">Start free →</Link>
-        </header>
+        {/* Header is rendered per-page (BlogHeader) so it can be subject-aware —
+            the layout can't see the ?subject param or a post's frontmatter subject. */}
         {children}
       </div>
     </>

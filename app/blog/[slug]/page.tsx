@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getPostBySlug, getPostMeta, dateToISO } from '@/lib/blog';
 import BlogCTA from '@/components/blog/BlogCTA';
+import BlogHeader from '@/components/blog/BlogHeader';
 import Link from 'next/link';
 
 export async function generateMetadata({
@@ -64,6 +65,7 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+      <BlogHeader subject={post.subject === 'APM' ? 'apm' : 'ib'} />
       <main>
         <article className="blog-prose">
           <div style={{ marginBottom: 28 }}>
