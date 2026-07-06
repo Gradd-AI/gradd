@@ -56,6 +56,8 @@ The shared spine. One codebase, one Supabase, one Stripe account. **ACCA inherit
 | Deployment pipeline | Live | Live | Inherited | Vercel auto-deploy on `main`, preview deploys on branches |
 | Domain routing | Live | Live | Inherited | Runtime host detection; ACCA = gradd.ai routes |
 
+> **Refund policy — re: "Free trial vs money-back guarantee" above.** DECIDED 06/07/2026: All marketed money-back guarantees stay (APM 14-day, IB/LC 7-day) as trust signals while review count is zero. APM guarantee is honoured as unconditional full refund within 14 days (landing promise supersedes Terms §8 deduction right — we can be more generous than Terms, never less). Revisit when APM has 10+ reviews/testimonials.
+
 ---
 
 ## Layer 2 — Tutoring Engine
