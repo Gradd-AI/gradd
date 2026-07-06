@@ -216,18 +216,18 @@ export default async function PrivacyPage() {
         </p>
         <div style={styles.divider} />
         <p style={styles.headerTitle}>Privacy Policy</p>
-        <p style={styles.lastUpdated}>Last updated: 01 May 2026</p>
+        <p style={styles.lastUpdated}>Last updated: 06/07/2026</p>
       </header>
 
       <main style={styles.main}>
         <h1 style={styles.h1}>Privacy Policy</h1>
 
         <p style={styles.intro}>
-          Gradd takes your privacy seriously — especially because many of our
-          users are students, some of whom may be minors. This policy explains
-          what personal data we collect, why we collect it, who we share it
-          with, and your rights under the General Data Protection Regulation
-          (GDPR) and Irish data protection law.
+          Gradd takes your privacy seriously — especially as some of our users
+          may be under 18. This policy explains what personal data we collect,
+          why we collect it, who we share it with, and your rights under the
+          General Data Protection Regulation (GDPR) and Irish data protection
+          law.
         </p>
 
         {/* 1 */}
@@ -258,10 +258,10 @@ export default async function PrivacyPage() {
           </li>
         </ul>
 
-        <h3 style={styles.h3}>Subscription and Billing Data</h3>
+        <h3 style={styles.h3}>Billing and Payment Data</h3>
         <ul style={styles.ul}>
           <li style={styles.li}>
-            Stripe customer ID and subscription status
+            Stripe customer ID and subscription or pass status
           </li>
           <li style={styles.li}>
             Payment method type and last four digits (held by Stripe — we do not
@@ -273,8 +273,8 @@ export default async function PrivacyPage() {
         <h3 style={styles.h3}>Platform Usage Data</h3>
         <ul style={styles.ul}>
           <li style={styles.li}>
-            Chat session content — the questions you ask {isIB ? 'Mia' : 'Aoife'} (Gradd&apos;s AI
-            tutor) and the responses generated
+            Chat session content — the questions you ask the AI tutor and the
+            responses generated
           </li>
           <li style={styles.li}>
             Session timestamps and approximate usage frequency
@@ -300,10 +300,9 @@ export default async function PrivacyPage() {
 
         <div style={styles.notice}>
           <p style={styles.noticeText}>
-            Note for parents: if your child uses Gradd, the data collected is
-            limited to the above. We do not collect information about school
-            attendance, real grades, or sensitive personal data as defined under
-            GDPR Article 9.
+            Note: where a user is under 18, the data collected is limited to the
+            above. We do not collect information about attendance, official
+            grades, or sensitive personal data as defined under GDPR Article 9.
           </p>
         </div>
 
@@ -312,8 +311,8 @@ export default async function PrivacyPage() {
         <ul style={styles.ul}>
           <li style={styles.li}>
             <strong>Contract performance (Art. 6(1)(b)):</strong> Account
-            registration, subscription management, and delivering the platform
-            service.
+            registration, managing your subscription or access pass, and
+            delivering the platform service.
           </li>
           <li style={styles.li}>
             <strong>Legal obligation (Art. 6(1)(c)):</strong> Retaining billing
