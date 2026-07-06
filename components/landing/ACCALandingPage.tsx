@@ -164,7 +164,7 @@ export default function ACCALandingPage() {
             <div className="section-head">
               <span className="eyebrow">The real test</span>
               <h2 className="h-section">APM is not a knowledge test. It is a <em className="italic">judgement paper.</em></h2>
-              <p className="lead">APM is one of ACCA&apos;s toughest papers, with pass rates often around a third. The candidates who fail rarely lack knowledge — they answer without applying, evaluating or judging.</p>
+              <p className="lead">APM is one of ACCA&apos;s toughest papers, with pass rates consistently around 40% — among the lowest pass rates in the ACCA qualification. The candidates who fail rarely lack knowledge — they answer without applying, evaluating or judging.</p>
             </div>
             <div className="ja-card">
               <div className="ja-col ja-weak">
