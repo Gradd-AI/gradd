@@ -1917,3 +1917,15 @@ Never market a stronger claim than you'll honour; landing copy and Terms must be
 `lib/site.ts` `resolveIsIB(host)` returns true for gradd.ai — but gradd.ai's flagship is now the ACCA APM product (IB moved to `/ib`). The boolean reads as a *product* check when it is really a *host* check. Harmless today: only per-host contact email, footer domain, and asset selection depend on it, and all of those ARE host-correct. The hazard is future product-conditional logic branching on `isIB` and silently treating APM as IB.
 **Prevention:** Do NOT branch product behaviour on `isIB` — it distinguishes host, not product. Rename to `isGraddAi` / `resolveHost` when this file is next touched for another reason; do not touch as a standalone change — this entry establishes the debt on record.
 **CATEGORY:** Naming/Config · **SEVERITY:** Low (latent)
+
+## 07 July 2026 — Session-close hardening
+
+### View-source cannot verify client-injected scripts — use DevTools Network
+A consent-gated or otherwise JS-injected tag (Meta Pixel here) is written to the DOM at runtime by client code — it NEVER appears in the server-rendered HTML, so "View Source" (or a `curl` of the page) will always show it absent even when it is working perfectly. Verifying via page source produced a false negative on the Meta pixel and cost ~40 min of misdirected debugging.
+**Prevention:** Verify any client-injected/consent-gated script via DevTools **Network** (the loader request returns 200 — e.g. `fbevents.js` — AND the tracking endpoint is hit — e.g. `facebook.com/tr` PageView 200), never via page source. For the pixel specifically, also confirm the first-party cookie (`_fbp`) is set. Reporting dashboards (Meta Events Manager) lag and are not a code-correctness signal.
+**CATEGORY:** Diagnosis/Verification · **SEVERITY:** Medium
+
+### Model narrative surfaces need explicit domain-vocabulary bans
+A model that writes free-text for a specific exam domain will import assessment vocabulary from adjacent domains unless told not to. Ezra's resit narrative leaked school-exam "B-grade" framing into ACCA APM copy — ACCA has NO letter grades (results are a mark out of 100, pass at 50). This is the same failure class as IB assessment-language contamination: the model reaches for the most common framing in its training data, not the one this exam uses.
+**Prevention:** For any model-written surface tied to a specific exam/marking system, ban the wrong-domain vocabulary explicitly at the PROMPT level (e.g. "no letter grades; results are a mark out of 100 with a pass at 50; do not reference mark schemes as something the candidate sees"), and VERIFY on a live generation — the leak only showed in produced text, not in review of the prompt. Grep sibling prompts for the same class of leak when one is found.
+**CATEGORY:** Prompt/Content · **SEVERITY:** Medium
