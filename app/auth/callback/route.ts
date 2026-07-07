@@ -25,9 +25,21 @@ export async function GET(request: Request) {
         },
       }
     );
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+      const dest = new URL(`${origin}${next}`);
+      // Flag a brand-new account so /acca can fire Meta CompleteRegistration once.
+      // A new user's account is created moments before this first callback; a
+      // returning user's created_at is old. Only the drill dashboard hosts the
+      // tracker, so scope the flag to next === '/acca'.
+      const createdAt = data.user?.created_at;
+      if (createdAt && next === '/acca') {
+        const NEW_USER_WINDOW_MS = 5 * 60 * 1000;
+        if (Date.now() - new Date(createdAt).getTime() < NEW_USER_WINDOW_MS) {
+          dest.searchParams.set('signup', '1');
+        }
+      }
+      return NextResponse.redirect(dest.toString());
     }
   }
 

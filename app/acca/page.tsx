@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import ACCADashboard from './ACCADashboard';
+import MetaTrackSignup from '@/components/MetaTrackSignup';
 import type { PickerArea } from './AreaPicker';
 
 export const metadata: Metadata = {
@@ -62,11 +63,15 @@ export default async function ACCAPage() {
   const casesEnabled = process.env.APM_CASES === '1';
 
   return (
-    <ACCADashboard
-      areas={areas}
-      teachThroughsUsed={usedCount}
-      hasActiveAccess={!!hasActiveAccess}
-      casesEnabled={casesEnabled}
-    />
+    <>
+      {/* Fires Meta CompleteRegistration once for a new signup (consent-gated). */}
+      <MetaTrackSignup />
+      <ACCADashboard
+        areas={areas}
+        teachThroughsUsed={usedCount}
+        hasActiveAccess={!!hasActiveAccess}
+        casesEnabled={casesEnabled}
+      />
+    </>
   );
 }
