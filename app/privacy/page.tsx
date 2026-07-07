@@ -204,6 +204,19 @@ export default async function PrivacyPage() {
       basis: "SCCs",
       privacy: "https://vercel.com/legal/privacy-policy",
     },
+    // gradd.ai only — the Meta Pixel loads solely after opt-in marketing consent.
+    ...(isIB
+      ? [
+          {
+            name: "Meta Platforms Ireland Ltd",
+            purpose:
+              "Advertising measurement & retargeting — only after you opt in via our cookie banner",
+            location: "EU (Ireland) / USA",
+            basis: "Consent (GDPR Art. 6(1)(a)); SCCs",
+            privacy: "https://www.facebook.com/privacy/policy/",
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -394,15 +407,30 @@ export default async function PrivacyPage() {
 
         {/* 6 */}
         <h2 style={styles.h2}>6. Cookies</h2>
-        <p style={styles.p}>
-          Gradd uses only essential functional cookies required to keep you
-          logged in (Supabase authentication session). We do not use advertising
-          cookies, tracking cookies, or analytics cookies. See our{" "}
-          <a href="/cookies" style={styles.link}>
-            Cookie Policy
-          </a>{" "}
-          for full details.
-        </p>
+        {isIB ? (
+          <p style={styles.p}>
+            Gradd uses essential functional cookies required to keep you logged
+            in (Supabase authentication session). On gradd.ai, if you opt in via
+            our cookie banner, we also set one marketing cookie from Meta
+            (Facebook) to measure our advertising and support retargeting; it is
+            never set unless you accept, and you can decline or withdraw at any
+            time via our Cookie Policy page. We use no analytics cookies. See our{" "}
+            <a href="/cookies" style={styles.link}>
+              Cookie Policy
+            </a>{" "}
+            for full details.
+          </p>
+        ) : (
+          <p style={styles.p}>
+            Gradd uses only essential functional cookies required to keep you
+            logged in (Supabase authentication session). We do not use
+            advertising cookies, tracking cookies, or analytics cookies. See our{" "}
+            <a href="/cookies" style={styles.link}>
+              Cookie Policy
+            </a>{" "}
+            for full details.
+          </p>
+        )}
 
         {/* 7 */}
         <h2 style={styles.h2}>7. Your Rights Under GDPR</h2>
