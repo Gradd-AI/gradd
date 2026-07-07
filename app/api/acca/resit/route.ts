@@ -189,7 +189,12 @@ export async function POST(request: Request) {
     // not fail the request.
     try {
       const resend = new Resend(process.env.RESEND_API_KEY);
-      const { subject, html } = buildResitPlanEmail({ plan, score: inputs.score, sitting: inputs.sitting });
+      const { subject, html } = buildResitPlanEmail({
+        plan,
+        score: inputs.score,
+        sitting: inputs.sitting,
+        weakAreas: profile.weak_groups.map((g) => g.label),
+      });
       await resend.emails.send({
         from: 'Ezra at Gradd <hello@gradd.ie>',
         to: email.trim().toLowerCase(),

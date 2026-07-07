@@ -4,9 +4,10 @@
 // plan. Voice: direct, encouraging, no fluff — Ezra's register, not Aoife's.
 
 export interface ResitPlanEmailData {
-  plan: string;      // the model-written narrative (plain text, paragraphs split by blank lines)
-  score: number;     // last APM score, 0–49
-  sitting: string;   // e.g. "Jun 2026"
+  plan: string;         // the model-written narrative (plain text, paragraphs split by blank lines)
+  score: number;        // last APM score, 0–49
+  sitting: string;      // e.g. "Jun 2026"
+  weakAreas: string[];  // ranked weak-area topic names, worst first (from profile.weak_groups)
 }
 
 // Minimal HTML escape — the plan is model output, so never inject it raw.
@@ -15,6 +16,24 @@ function esc(s: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+}
+
+// Ranked weak areas as a simple list, worst first — mirrors the on-screen chips.
+function renderWeakAreas(areas: string[]): string {
+  if (areas.length === 0) return '';
+  const items = areas
+    .map(
+      (name) =>
+        `<li style="margin:0 0 8px;padding:0;font-size:15px;color:#1C1C1C;line-height:1.5;">${esc(name)}</li>`,
+    )
+    .join('\n');
+  return `
+              <p style="margin:0 0 10px;font-size:12px;font-weight:700;color:#6b5f4e;text-transform:uppercase;letter-spacing:0.8px;font-family:Arial,Helvetica,sans-serif;">
+                Where to start
+              </p>
+              <ol style="margin:0 0 24px;padding:0 0 0 20px;">
+                ${items}
+              </ol>`;
 }
 
 // Render the narrative into email paragraphs. Blank lines separate paragraphs;
@@ -34,7 +53,7 @@ export function buildResitPlanEmail(data: ResitPlanEmailData): {
   subject: string;
   html: string;
 } {
-  const { plan, score, sitting } = data;
+  const { plan, score, sitting, weakAreas } = data;
   const subject = `Your APM resit plan`;
 
   const html = `
@@ -67,6 +86,8 @@ export function buildResitPlanEmail(data: ResitPlanEmailData): {
               <p style="margin:0 0 24px;font-size:14px;color:#6b5f4e;line-height:1.5;">
                 Based on your ${esc(sitting)} sitting — a mark of ${score}/100.
               </p>
+
+              ${renderWeakAreas(weakAreas)}
 
               ${renderPlan(plan)}
 
