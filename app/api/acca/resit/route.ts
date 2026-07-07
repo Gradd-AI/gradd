@@ -71,7 +71,10 @@ const NARRATIVE_SYSTEM =
   'the concrete fix for each; ' +
   '(3) which topic areas to drill, by name; ' +
   '(4) a closing line framing how to use the weeks before their next sitting. ' +
-  'End by pointing them at the free drills.';
+  'End by pointing them at the free drills. ' +
+  'ACCA APM has no letter grades — never reference grades (A, B, C etc.); results are a ' +
+  'mark out of 100 with a pass at 50. Do not reference mark schemes as something the ' +
+  'candidate sees in the exam.';
 
 function profileToText(inputs: ResitInputs, profile: ResitProfile): string {
   const bandLine =
