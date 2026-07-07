@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
 import { headers } from 'next/headers';
 import { resolveIsIB } from '@/lib/site';
+import MetaPixel from '@/components/MetaPixel';
 import './globals.css';
 import '../styles/ib-session.css';
 
@@ -50,6 +51,8 @@ export default function RootLayout({
     <html lang="en" className={`${playfair.variable} ${jakarta.variable}`}>
       <body>
         {children}
+        {/* Meta Pixel — self-gates to gradd.ai + marketing consent; inert elsewhere. */}
+        <MetaPixel />
       </body>
     </html>
   );
