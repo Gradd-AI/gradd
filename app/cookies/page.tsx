@@ -5,11 +5,12 @@
 import React from "react";
 import { headers } from "next/headers";
 import { resolveIsIB } from "@/lib/site";
+import CookieChoiceButton from "@/components/CookieChoiceButton";
 
 export const metadata = {
   title: "Cookie Policy | Gradd",
   description:
-    "Gradd uses only essential cookies required for login. No advertising or tracking cookies.",
+    "The cookies Gradd uses, why they are set, and how to manage them.",
 };
 
 export default async function CookiesPage() {
@@ -144,6 +145,19 @@ export default async function CookiesPage() {
       marginLeft: "8px",
       verticalAlign: "middle" as const,
     },
+    badgeMarketing: {
+      display: "inline-block",
+      background: "#FBEEE6",
+      color: "#9A4A25",
+      border: "1px solid #E8C4AD",
+      borderRadius: "20px",
+      padding: "2px 10px",
+      fontSize: "12px",
+      fontWeight: "700",
+      letterSpacing: "0.04em",
+      marginLeft: "8px",
+      verticalAlign: "middle" as const,
+    },
     notice: {
       background: "#EDF6F1",
       border: "1px solid #B8DEC9",
@@ -190,12 +204,22 @@ export default async function CookiesPage() {
       <main style={styles.main}>
         <h1 style={styles.h1}>Cookie Policy</h1>
 
-        <p style={styles.intro}>
-          Gradd uses only the cookies that are strictly necessary to keep you
-          logged in. We have no advertising network, no analytics tracking, and
-          no third-party cookies from social media or ad platforms. This is a
-          short policy because there is very little to tell.
-        </p>
+        {isIB ? (
+          <p style={styles.intro}>
+            Gradd uses cookies that are strictly necessary to keep you logged in,
+            and — only if you opt in — one marketing cookie from Meta (Facebook)
+            to measure how our advertising performs. We use no analytics cookies.
+            The marketing cookie never loads unless you accept it in our cookie
+            banner, and you can decline or withdraw at any time.
+          </p>
+        ) : (
+          <p style={styles.intro}>
+            Gradd uses only the cookies that are strictly necessary to keep you
+            logged in. We have no advertising network, no analytics tracking, and
+            no third-party cookies from social media or ad platforms. This is a
+            short policy because there is very little to tell.
+          </p>
+        )}
 
         {/* What is a cookie */}
         <h2 style={styles.h2}>What Is a Cookie?</h2>
@@ -210,11 +234,21 @@ export default async function CookiesPage() {
         <h2 style={styles.h2}>Cookies Gradd Uses</h2>
 
         <div style={styles.notice}>
-          <p style={styles.noticeText}>
-            Gradd uses one category of cookie only: strictly necessary
-            functional cookies. These cannot be switched off without breaking
-            your ability to log in.
-          </p>
+          {isIB ? (
+            <p style={styles.noticeText}>
+              Gradd uses two categories of cookie: strictly necessary functional
+              cookies, which are always on and cannot be switched off without
+              breaking your ability to log in; and — only with your opt-in
+              consent — one marketing cookie from Meta. Decline the banner and
+              only the strictly necessary cookies are ever set.
+            </p>
+          ) : (
+            <p style={styles.noticeText}>
+              Gradd uses one category of cookie only: strictly necessary
+              functional cookies. These cannot be switched off without breaking
+              your ability to log in.
+            </p>
+          )}
         </div>
 
         {/* Cookie detail cards */}
@@ -253,6 +287,41 @@ export default async function CookiesPage() {
           </p>
         </div>
 
+        {/* Marketing cookie — gradd.ai only, consent-gated */}
+        {isIB && (
+          <>
+            <h2 style={styles.h2}>Marketing Cookie (Only If You Opt In)</h2>
+            <div style={styles.cookieCard}>
+              <p style={styles.cookieName}>
+                _fbp / fr (Meta Pixel)
+                <span style={styles.badgeMarketing}>Marketing · Consent</span>
+              </p>
+              <p style={styles.cookieMeta}>
+                Provider: Meta Platforms Ireland Ltd · Type: _fbp first-party
+                (up to 90 days); fr third-party, set on facebook.com when you are
+                signed in to Facebook · Loaded only after you accept
+              </p>
+              <p style={styles.cookieDesc}>
+                When you accept marketing cookies in our banner, we load the Meta
+                Pixel. It lets us measure whether visits and sign-ups came from
+                our Facebook and Instagram ads, and support retargeting to people
+                who have shown interest. It is set <strong>only after you click
+                Accept</strong> — if you decline, or ignore the banner, the pixel
+                is never loaded and neither cookie is set. You can withdraw
+                consent at any time using the &ldquo;Change your cookie
+                choice&rdquo; button on this page, and we re-ask for consent
+                every six months. Legal basis: your prior consent under the
+                ePrivacy Regulations and GDPR Article 6(1)(a).
+              </p>
+            </div>
+            <p style={styles.p}>
+              Changed your mind? This resets your choice and re-shows the banner.
+              If you had accepted, it also deletes the <code>_fbp</code> cookie.
+            </p>
+            <CookieChoiceButton />
+          </>
+        )}
+
         {/* What we don't use */}
         <h2 style={styles.h2}>What We Do Not Use</h2>
         <ul style={styles.ul}>
@@ -260,34 +329,68 @@ export default async function CookiesPage() {
             <strong>Analytics cookies</strong> — we do not use Google Analytics,
             Mixpanel, or any equivalent tracking service.
           </li>
-          <li style={styles.li}>
-            <strong>Advertising cookies</strong> — we do not run retargeting
-            campaigns or serve behavioural ads.
-          </li>
-          <li style={styles.li}>
-            <strong>Social media cookies</strong> — we have no embedded social
-            widgets that set third-party cookies.
-          </li>
+          {isIB ? (
+            <li style={styles.li}>
+              <strong>Other advertising cookies</strong> — beyond the single
+              consent-based Meta Pixel described above, we run no other ad
+              networks and set no other advertising or cross-site tracking
+              cookies.
+            </li>
+          ) : (
+            <>
+              <li style={styles.li}>
+                <strong>Advertising cookies</strong> — we do not run retargeting
+                campaigns or serve behavioural ads.
+              </li>
+              <li style={styles.li}>
+                <strong>Social media cookies</strong> — we have no embedded
+                social widgets that set third-party cookies.
+              </li>
+            </>
+          )}
           <li style={styles.li}>
             <strong>Performance or preference cookies</strong> — beyond your
             auth session, we do not store any personalisation data in cookies.
           </li>
         </ul>
 
-        {/* No banner required */}
-        <h2 style={styles.h2}>Why There Is No Cookie Consent Banner</h2>
-        <p style={styles.p}>
-          Under the ePrivacy Regulations (SI 336/2011, implementing the EU
-          Cookie Directive) and associated guidance from the Data Protection
-          Commission, cookies that are strictly necessary for a service
-          explicitly requested by the user are exempt from the consent
-          requirement. Because Gradd uses only such cookies, no opt-in banner is
-          legally required.
-        </p>
-        <p style={styles.p}>
-          We still publish this policy so that you know exactly what is set and
-          why.
-        </p>
+        {/* Consent basis — host-aware */}
+        {isIB ? (
+          <>
+            <h2 style={styles.h2}>Your Choice Over Marketing Cookies</h2>
+            <p style={styles.p}>
+              Under the ePrivacy Regulations (SI 336/2011, implementing the EU
+              Cookie Directive) and guidance from the Data Protection Commission,
+              cookies that are strictly necessary for a service you have
+              requested are exempt from the consent requirement — so our login
+              cookies are always on. The Meta marketing cookie is{" "}
+              <em>not</em> strictly necessary, so it requires your prior consent.
+            </p>
+            <p style={styles.p}>
+              We collect that consent through a cookie banner. Accept and Decline
+              are offered with equal prominence; declining, or simply not
+              choosing, means the Meta Pixel is never loaded. If you accept, you
+              can change your mind at any time by clearing this site&apos;s
+              cookies, and we ask again every six months.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 style={styles.h2}>Why There Is No Cookie Consent Banner</h2>
+            <p style={styles.p}>
+              Under the ePrivacy Regulations (SI 336/2011, implementing the EU
+              Cookie Directive) and associated guidance from the Data Protection
+              Commission, cookies that are strictly necessary for a service
+              explicitly requested by the user are exempt from the consent
+              requirement. Because Gradd uses only such cookies, no opt-in banner
+              is legally required.
+            </p>
+            <p style={styles.p}>
+              We still publish this policy so that you know exactly what is set
+              and why.
+            </p>
+          </>
+        )}
 
         {/* Managing cookies */}
         <h2 style={styles.h2}>Managing or Deleting Cookies</h2>

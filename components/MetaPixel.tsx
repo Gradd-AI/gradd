@@ -13,7 +13,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import ConsentBanner from './ConsentBanner';
-import { pixelHostAllowed, pixelId, readConsent, writeConsent, type Consent } from '@/lib/meta-consent';
+import { pixelHostAllowed, pixelId, readConsent, writeConsent, CONSENT_RESET_EVENT, type Consent } from '@/lib/meta-consent';
 
 // Official Meta Pixel bootstrap — defines the fbq queue shim, loads fbevents.js,
 // inits, and fires the base PageView. Runs at most once.
@@ -50,6 +50,14 @@ export default function MetaPixel() {
   useEffect(() => {
     setConsent(readConsent());
     setReady(true);
+  }, []);
+
+  // "Change your cookie choice" (cookies page) clears the stored choice and fires
+  // this — re-read consent (now null) to bring the banner back on the same page.
+  useEffect(() => {
+    const onReset = () => setConsent(readConsent());
+    window.addEventListener(CONSENT_RESET_EVENT, onReset);
+    return () => window.removeEventListener(CONSENT_RESET_EVENT, onReset);
   }, []);
 
   // Load the pixel once, only after consent is granted. Records the current path
