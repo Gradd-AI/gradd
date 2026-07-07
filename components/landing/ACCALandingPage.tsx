@@ -70,6 +70,7 @@ export default function ACCALandingPage() {
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
             </a>
             <nav className="nav-links" aria-label="Primary">
+              <Link href="/acca/resit" className="nav-link-btn">Resit diagnostic</Link>
               <button className="nav-link-btn" onClick={() => scrollTo('taught')}>The approach</button>
               <button className="nav-link-btn" onClick={() => scrollTo('features')}>What&apos;s included</button>
               <button className="nav-link-btn" onClick={() => scrollTo('pricing')}>Pricing</button>
@@ -154,6 +155,22 @@ export default function ACCALandingPage() {
                 <div className="chat-foot">The answer stays sealed · Ezra online 24/7</div>
               </div>
               <p className="visual-caption">The answer stays sealed. Ezra teaches until your answer is strong enough to score.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── FREE RESIT DIAGNOSTIC (directly after hero) ── */}
+        <section className="section resit-band" aria-label="Free resit diagnostic">
+          <div className="wrap">
+            <div className="resit-band-inner">
+              <span className="eyebrow">Free resit diagnostic</span>
+              <h2 className="h-section">Failed APM? Find out exactly why — <em className="italic">in 3 minutes.</em></h2>
+              <p className="lead">
+                Your result slip tells you the score. It doesn&apos;t tell you the habit that lost the marks. Answer three quick steps — your score, how each syllabus area went, and six honest questions about how you write — and get a personalised resit plan: the areas to drill, the habits to fix first, and where to start. No sign-up needed to see your plan.
+              </p>
+              <div className="resit-band-cta">
+                <Link href="/acca/resit" className="btn btn-rust">Get my free resit plan <span className="arrow">→</span></Link>
+              </div>
             </div>
           </div>
         </section>
@@ -964,6 +981,21 @@ const CSS = `
   background: color-mix(in oklab, var(--rust) 14%, transparent);
   border: 1px solid color-mix(in oklab, var(--rust) 30%, transparent);
   padding: 2px 8px; border-radius: 999px; margin-bottom: 4px;
+}
+
+/* ── Free resit diagnostic band (after hero) ── */
+.acca-lp .resit-band {
+  background: var(--sage);
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  padding: clamp(48px, 6vw, 80px) 0;
+}
+.acca-lp .resit-band-inner { max-width: 760px; }
+.acca-lp .resit-band-inner .eyebrow { display: block; margin-bottom: 16px; }
+.acca-lp .resit-band .h-section em { font-style: italic; color: var(--rust); }
+.acca-lp .resit-band-inner .lead { margin-top: 20px; }
+.acca-lp .resit-band-cta { margin-top: 30px; }
+@media (max-width: 480px) {
+  .acca-lp .resit-band-cta .btn { width: 100%; justify-content: center; }
 }
 
 /* ── A. Judgement (before / diagnosis / after) ── */
