@@ -137,7 +137,7 @@ export const HABIT_QUESTIONS: HabitQuestion[] = [
   },
   {
     habit: 'prof_skills',
-    prompt: 'APM gives marks for professional skills — analysis, scepticism, communication, commercial sense. When you’re writing, how aware of them are you?',
+    prompt: 'APM gives marks for professional skills — analysis, scepticism, communication, commercial acumen. When you’re writing, how aware of them are you?',
     options: [
       { value: 'a', text: 'Honestly, I’ve never really thought about those while writing.', score: 2 },
       { value: 'b', text: 'I’ve heard of them but don’t consciously aim for them in the moment.', score: 1 },
