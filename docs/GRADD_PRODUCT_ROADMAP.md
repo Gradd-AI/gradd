@@ -125,3 +125,50 @@ Nothing here is buildable now. The roadmap's near-term job is **only** to stop
 Horizon 1 decisions foreclosing Horizons 2–3 — through data capture and
 product-neutral org design. **Current live priority remains: Meta Pixel →
 Facebook campaign.**
+
+---
+
+## BUILD ADDENDUM — items pulled forward
+
+The two items below have moved from "sequenced opportunistically" into concrete
+build scope. They amend, but do not override, the guardrail above.
+
+### RESIT DIAGNOSTIC — pulled forward, in build
+
+Strength Addition #2 is now in build as a **free, no-auth tool at `/acca/resit`.**
+
+**Inputs:**
+- ACCA score + sitting + number of attempts
+- Official **section breakdown** — ACCA provides a score *and* a
+  syllabus-section breakdown to **every** candidate, pass or fail, so this input
+  is always available.
+- A **6–8 question habit diagnostic** (study/exam-technique habits).
+
+**STRUCTURAL — code does the mapping, model only narrates:**
+- **Code** maps inputs → **weak-area profile** → **drill sections**
+  (deterministic; the diagnostic logic is not model-authored).
+- **Haiku writes the narrative only** — the human-readable explanation wrapped
+  around the code-computed profile.
+
+**Funnel:**
+- The **plan is shown BEFORE email capture.** The user sees the value first.
+- **"Email me this plan" *is* the capture** — the email ask is the save action,
+  at the wow moment.
+- **CTA leads into the matched free drills** — the plan hands off directly to
+  the drill sections the code selected.
+
+### AFM — specced
+
+- **Framework extraction: cheap, do now.** Extracting the AFM syllabus/framework
+  is low-cost and can proceed.
+- **Drill-generation phase: GATED.** The expensive drill-generation work is
+  **gated on first APM paying users.** Do not fund the expensive phase before
+  APM proves paying demand.
+- **Numeric verification layer — the one new build.** Extends **APM doctrine to
+  numbers**:
+  - **Code verifies** `{value, tolerance, unit}` per calculation component.
+  - **Model bands the workings only** — method/own-figure judgement, never the
+    number.
+  - This is **NOT** the IB "model-marks-quant" approach. The number is checked
+    by code; the model never marks the quantitative value itself.
+- **Persona + SKU decisions deferred** — not blocking the build spec above.
