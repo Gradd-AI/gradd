@@ -13,9 +13,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (isAI) {
     const posts = getAllPosts();
     return [
-      { url: AI_BASE,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 }, // APM flagship landing
-      { url: `${AI_BASE}/ib`,    lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // IB landing (moved off root)
-      { url: `${AI_BASE}/blog`,  lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
+      { url: AI_BASE,                    lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 }, // APM flagship landing
+      { url: `${AI_BASE}/acca/resit`,    lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 }, // free resit diagnostic (primary CTA)
+      { url: `${AI_BASE}/ib`,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // IB landing (moved off root)
+      { url: `${AI_BASE}/blog`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
+      { url: `${AI_BASE}/acca/subscribe`,lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 }, // public subscribe/pricing page
+      { url: `${AI_BASE}/terms`,         lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+      { url: `${AI_BASE}/privacy`,       lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
+      { url: `${AI_BASE}/cookies`,       lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
       ...posts.map(post => ({
         url: `${AI_BASE}/blog/${post.slug}`,
         lastModified: new Date(dateToISO(post.date)),
@@ -25,12 +30,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
   }
 
-  // gradd.ie — LC routes only
+  // gradd.ie — LC routes only. Auth pages (/auth/login, /auth/signup) deliberately
+  // excluded — no SEO value and thin/duplicative for crawlers.
   return [
     { url: IE_BASE,                    lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 },
     { url: `${IE_BASE}/subscribe`,     lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 },
-    { url: `${IE_BASE}/auth/login`,    lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.5 },
-    { url: `${IE_BASE}/auth/signup`,   lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.5 },
     { url: `${IE_BASE}/terms`,         lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${IE_BASE}/privacy`,       lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.3 },
     { url: `${IE_BASE}/cookies`,       lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.2 },
