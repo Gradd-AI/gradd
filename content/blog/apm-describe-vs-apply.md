@@ -4,6 +4,7 @@ slug: apm-describe-vs-apply
 subject: APM
 description: "Knowing the Building Block Model, Performance Pyramid or target costing won't save you in ACCA APM. The marks come from applying the model to the scenario — not describing it."
 date: 05/07/2026
+publish_date: 05/07/2026
 published: true
 intent: technique
 keywords:

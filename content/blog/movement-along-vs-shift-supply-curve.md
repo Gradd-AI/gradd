@@ -4,6 +4,7 @@ slug: movement-along-vs-shift-supply-curve
 subject: Econ
 description: "You learned that a price change doesn't shift the demand curve. The same rule governs supply — and students forget to carry it across."
 date: 18/06/2026
+publish_date: 18/06/2026
 published: true
 intent: syllabus
 keywords:

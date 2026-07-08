@@ -4,6 +4,7 @@ slug: change-in-demand-vs-change-in-quantity-demanded
 subject: Econ
 description: "You wrote \"demand fell.\" Did you mean demand, or quantity demanded? In IB Economics they're different claims — and mixing them up costs marks."
 date: 18/06/2026
+publish_date: 18/06/2026
 published: true
 intent: syllabus
 related:

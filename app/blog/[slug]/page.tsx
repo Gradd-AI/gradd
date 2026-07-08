@@ -5,6 +5,15 @@ import BlogCTA from '@/components/blog/BlogCTA';
 import BlogHeader from '@/components/blog/BlogHeader';
 import Link from 'next/link';
 
+// Scheduled publishing: this article route is statically cached per slug (it reads
+// only `params`, so it does NOT opt into dynamic rendering the way the searchParams
+// index does). Without revalidation a future-dated post built today would stay 404
+// forever. ISR re-runs getPostBySlug on a time interval, so a post gated by a future
+// publish_date flips from 404 to live within ~1h of its date passing — no cron, no
+// extra infrastructure. (The index re-checks every request because it awaits
+// searchParams; the sitemap re-checks because it awaits headers().)
+export const revalidate = 3600; // seconds
+
 export async function generateMetadata({
   params,
 }: {

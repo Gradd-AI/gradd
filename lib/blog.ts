@@ -7,7 +7,12 @@ const POSTS_DIR = path.join(process.cwd(), 'content', 'blog');
 
 // Frontmatter schema for every .md file in content/blog/
 // Required: title, slug, subject, description, date (dd/mm/yyyy), published
-// Optional: intent   — content class, drives APM archive grouping + related preference
+// Optional: publish_date — dd/mm/yyyy gate: a post with a FUTURE publish_date is
+//                          hidden everywhere (index, article route → 404, related,
+//                          sitemap) until that day arrives. Absent ⇒ live now. This
+//                          is what lets reviewed posts be committed in batches with
+//                          staggered Monday dates and go live with zero further input.
+//           intent   — content class, drives APM archive grouping + related preference
 //           keywords — search-phrase variants rendered as <meta name="keywords">
 //           related  — slugs of related published posts (hand-curated override; the
 //                      article page auto-fills up to 3 via getRelatedPosts)
@@ -16,8 +21,9 @@ export interface PostMeta {
   slug: string;
   subject: 'Econ' | 'BM' | 'APM'; // IB Economics / IB Business Management / ACCA APM
   description: string;
-  date: string;          // dd/mm/yyyy
+  date: string;          // dd/mm/yyyy — displayed date
   published: boolean;
+  publish_date?: string; // dd/mm/yyyy — go-live gate (future ⇒ hidden)
   intent?: 'failure' | 'technique' | 'syllabus' | 'exam-structure';
   keywords?: string[];
   related?: string[];
@@ -38,6 +44,24 @@ export function dateToISO(d: string): string {
   return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 }
 
+/**
+ * A post is live iff published AND its publish_date (if set) is not in the future.
+ * Day-granularity, server-local: a post dated today goes live at 00:00; a future date
+ * is hidden until then. The single gate every read path funnels through, so scheduled
+ * posts are excluded from the index, the article route, related lists and the sitemap
+ * consistently. Callers that render (ISR) must set `revalidate` so this is re-checked
+ * as time passes — see app/blog/[slug]/page.tsx.
+ */
+function isLive(data: Partial<PostMeta>): boolean {
+  if (!data.published) return false;
+  if (data.publish_date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (parseDate(data.publish_date).getTime() > today.getTime()) return false;
+  }
+  return true;
+}
+
 export function getAllPosts(): PostMeta[] {
   if (!fs.existsSync(POSTS_DIR)) return [];
   return fs
@@ -47,7 +71,7 @@ export function getAllPosts(): PostMeta[] {
       const raw = fs.readFileSync(path.join(POSTS_DIR, file), 'utf-8');
       return matter(raw).data as PostMeta;
     })
-    .filter(p => p.published)
+    .filter(isLive)
     .sort((a, b) => parseDate(b.date).getTime() - parseDate(a.date).getTime());
 }
 
@@ -56,7 +80,7 @@ export function getPostBySlug(slug: string): Post | null {
   if (!fs.existsSync(file)) return null;
   const raw = fs.readFileSync(file, 'utf-8');
   const { data, content } = matter(raw);
-  if (!data.published) return null;
+  if (!isLive(data)) return null;
   const html = marked.parse(content) as string;
   return { ...(data as PostMeta), html };
 }
@@ -67,22 +91,23 @@ export function getPostMeta(slug: string): PostMeta | null {
   if (!fs.existsSync(file)) return null;
   const raw = fs.readFileSync(file, 'utf-8');
   const { data } = matter(raw);
-  if (!data.published) return null;
+  if (!isLive(data)) return null;
   return data as PostMeta;
 }
 
 /**
  * Up to `limit` related posts for a slug. Hand-curated `related[]` comes first (in
- * order; only valid, published, same-subject slugs), then auto-fills from other
- * same-subject posts — preferring the same intent, then most-recent — so a post is
- * never left with an empty block when its subject has enough siblings. Never returns
- * the post itself. Same-subject is enforced throughout: an APM post never surfaces IB.
+ * order; only valid, live, same-subject slugs), then auto-fills from other same-subject
+ * posts — preferring the same intent, then most-recent — so a post is never left with
+ * an empty block when its subject has enough siblings. Never returns the post itself.
+ * Same-subject is enforced throughout: an APM post never surfaces IB. Future-dated
+ * posts are excluded because getPostMeta / getAllPosts both apply the isLive gate.
  */
 export function getRelatedPosts(slug: string, limit = 3): PostMeta[] {
   const self = getPostMeta(slug);
   if (!self) return [];
 
-  const all = getAllPosts(); // published, most-recent first
+  const all = getAllPosts(); // live, most-recent first
   const bySlug = new Map(all.map(p => [p.slug, p]));
 
   const out: PostMeta[] = [];

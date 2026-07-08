@@ -4,6 +4,7 @@ slug: apm-s26-j27-syllabus-what-changed
 subject: APM
 description: "ACCA APM changed for September 2026 to June 2027. The syllabus is now organised around strategic management and value creation, performance optimisation, performance reporting, data science and technology for performance and insights, and professional skills."
 date: 05/07/2026
+publish_date: 05/07/2026
 published: true
 intent: syllabus
 related:

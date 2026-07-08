@@ -4,6 +4,7 @@ slug: consumer-surplus-vs-profit
 subject: Econ
 description: "Producer surplus isn't profit, and consumer surplus isn't savings. Mix up what the areas on the diagram mean and the welfare questions fall apart."
 date: 18/06/2026
+publish_date: 18/06/2026
 published: true
 intent: syllabus
 keywords:

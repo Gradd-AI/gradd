@@ -4,6 +4,7 @@ slug: apm-evaluate-the-report-not-the-company
 subject: APM
 description: "ACCA APM students often know the model but answer the wrong requirement. Learn the verb-and-object test that stops you evaluating the company when the question asked you to evaluate the report."
 date: 05/07/2026
+publish_date: 05/07/2026
 published: true
 intent: technique
 keywords:

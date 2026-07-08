@@ -4,6 +4,7 @@ slug: elastic-vs-inelastic-demand
 subject: Econ
 description: "You think elastic means demand changes a lot. It's a ratio, not a size — and getting it wrong flips a high-frequency revenue rule examiners test directly."
 date: 18/06/2026
+publish_date: 18/06/2026
 published: true
 intent: syllabus
 related:
