@@ -668,16 +668,20 @@ export async function POST(request: Request): Promise<Response> {
   // Fall back to lo_code only for in-flight pre-deploy clients that haven't sent a
   // drill_id yet; that fallback stays safe while each LO has ≤1 published drill (true
   // until the depth drills publish — which must wait until this code is live).
-  const drillBase = () => supabase
+  // paperCode is a REQUIRED argument: AFM LO codes collide exactly with APM's, and
+  // the only thing keeping the shared acca_drills table apart is paper_code scoping.
+  // Forcing every caller to pass it explicitly removes the copy-paste hazard of an
+  // AFM route inheriting a hardcoded 'APM'. Behaviour unchanged — APM passes 'APM'.
+  const drillBase = (paperCode: string) => supabase
     .from('acca_drills')
     .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paperCode)
     .eq('status', 'approved')
     .eq('published', true);
 
   const { data: drill, error: drillErr } = await (
-    drillId ? drillBase().eq('id', drillId) : drillBase().eq('lo_code', drillLo!)
+    drillId ? drillBase('APM').eq('id', drillId) : drillBase('APM').eq('lo_code', drillLo!)
   ).single();
 
   if (drillErr || !drill) {
