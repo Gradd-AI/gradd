@@ -1,0 +1,214 @@
+// lib/acca/numeric-verifier.ts
+// AFM numeric-verification engine (Phase 2B-1). Pure, deterministic, no model calls,
+// no DB, no side effects. Implements docs/AFM_NUMERIC_VERIFICATION_DESIGN.md §5–§8.
+//
+// DOCTRINE (§1): code decides every number. This module compares a student's figures
+// to authored expected values within an authored tolerance and returns per-component
+// verdicts. It NEVER decides whether a number is "right" by judgement — only by
+// deterministic comparison — and it makes no model calls.
+//
+// OFR / carry-through (§6, resolved): walk the depends_on DAG; recompute a dependent's
+// expected value from the STUDENT'S OWN upstream figures; a correct method on an own
+// wrong input verdicts `carried` (full credit). The source error is charged once, at
+// the erring step, never again downstream. A wrong-looking figure with NO workings
+// verdicts `no_workings` (zero) — OFR cannot be applied when the method is invisible.
+//
+// DESIGN REFINEMENT (reported, not a live conflict — no persisted schema exists yet):
+// the design sketched `recompute?: string` (a named rule reference). This engine takes
+// the concrete deterministic form `recompute?: (deps) => number` — "authored
+// deterministic code" per §6. When schemas are persisted (Phase 2B-later, jsonb), the
+// string would resolve to one of these functions via a registry.
+
+// ── Tolerance (§4): absolute + relative, authored in the schema, never inferred ──
+export type Tolerance =
+  | { kind: 'absolute'; value: number }   // |student − expected| ≤ value (in the component's unit)
+  | { kind: 'relative'; pct: number };    // |student − expected| ≤ |expected| × pct/100
+
+// ── Answer schema (§2) ──
+export interface Component {
+  component_id: string;
+  label?: string;
+  expected_value: number;                 // authored correct figure, from authored inputs
+  unit?: string;
+  tolerance: Tolerance;
+  working_steps?: string[];               // authored method (sealed; for teaching/reveal, not used in the verdict)
+  depends_on?: string[];                  // component_ids this value is computed from (carry-through DAG)
+  recompute?: (deps: Record<string, number>) => number; // deterministic recompute from own upstream figures
+  weight?: number;                        // mark weight; default 1
+}
+
+export interface AnswerSchema {
+  components: Component[];
+}
+
+// ── Student submission ──
+export interface StudentComponent {
+  component_id: string;
+  value?: number;                         // absent/undefined = not attempted
+  workings?: string;                      // shown method; empty/absent = no workings (OFR gate)
+}
+
+export interface StudentSubmission {
+  components: StudentComponent[];
+}
+
+// ── Verdicts (§5–§6) ──
+export type Verdict =
+  | 'correct'      // matches the authored expected — right on its face
+  | 'carried'      // wrong-looking, but matches the carry-through expected with workings — full credit
+  | 'incorrect'    // method diverges at this step (workings shown) — zero
+  | 'no_workings'  // wrong-looking with no workings — OFR inapplicable — zero
+  | 'absent';      // not attempted
+
+export interface ComponentVerdict {
+  component_id: string;
+  verdict: Verdict;
+  student_value: number | null;
+  expected_value: number;                 // EFFECTIVE expected actually checked against (carry-through-adjusted)
+  authored_expected: number;              // authored figure (from authored inputs)
+  carried_from?: string[];                // upstream ids whose error is being carried (for teaching)
+  awarded_weight: number;                 // weight if credited (correct|carried), else 0
+  gap?: string;                           // for incorrect|no_workings|absent: the divergence, for teaching
+}
+
+// VerificationResult is the teach-engine seam (§7): `gap_label` is the code-authored
+// gap label that feeds call3_hint / call3_teach in place of call2_diagnose for numeric
+// components; `per_component` is the block the case-marking core sums (§8).
+export interface VerificationResult {
+  per_component: ComponentVerdict[];
+  awarded: number;                        // Σ awarded_weight
+  available: number;                      // Σ weight
+  all_correct: boolean;
+  gap_label: string | null;               // first divergent step (incorrect|no_workings), or null if none
+}
+
+const EPS = 1e-9;
+
+function within(student: number, expected: number, tol: Tolerance): boolean {
+  const diff = Math.abs(student - expected);
+  if (tol.kind === 'absolute') return diff <= tol.value + EPS;
+  return diff <= Math.abs(expected) * (tol.pct / 100) + EPS;
+}
+
+function fmt(n: number): string {
+  return (Math.round(n * 10000) / 10000).toString();
+}
+
+// Deterministic topological order over depends_on (Kahn). Preserves component array
+// order among ready nodes so output is stable. Throws on cycle or unknown reference.
+function topoSort(comps: Component[]): string[] {
+  const indeg = new Map<string, number>();
+  const adj = new Map<string, string[]>();
+  for (const c of comps) { indeg.set(c.component_id, 0); adj.set(c.component_id, []); }
+  for (const c of comps) {
+    for (const d of c.depends_on ?? []) {
+      if (!adj.has(d)) throw new Error(`Component "${c.component_id}" depends on unknown component "${d}"`);
+      adj.get(d)!.push(c.component_id);
+      indeg.set(c.component_id, (indeg.get(c.component_id) ?? 0) + 1);
+    }
+  }
+  const queue = comps.filter((c) => (indeg.get(c.component_id) ?? 0) === 0).map((c) => c.component_id);
+  const order: string[] = [];
+  while (queue.length) {
+    const id = queue.shift()!;
+    order.push(id);
+    for (const nxt of adj.get(id)!) {
+      indeg.set(nxt, indeg.get(nxt)! - 1);
+      if (indeg.get(nxt) === 0) queue.push(nxt);
+    }
+  }
+  if (order.length !== comps.length) throw new Error('Cycle detected in component depends_on DAG');
+  return order;
+}
+
+/**
+ * Verify a student's numeric submission against an authored answer schema.
+ * Deterministic and side-effect-free. See docs/AFM_NUMERIC_VERIFICATION_DESIGN.md §5.
+ */
+export function verifyNumericAnswer(
+  schema: AnswerSchema,
+  submission: StudentSubmission,
+): VerificationResult {
+  const comps = schema.components;
+  const byId = new Map(comps.map((c) => [c.component_id, c]));
+  const subById = new Map(submission.components.map((s) => [s.component_id, s]));
+  const order = topoSort(comps);
+  const verdicts = new Map<string, ComponentVerdict>();
+
+  for (const id of order) {
+    const c = byId.get(id)!;
+    const sub = subById.get(id);
+    const studentVal = sub && typeof sub.value === 'number' ? sub.value : null;
+    const hasWorkings = !!(sub && typeof sub.workings === 'string' && sub.workings.trim().length > 0);
+    const weight = c.weight ?? 1;
+    const authoredExpected = c.expected_value;
+
+    // Effective expected via carry-through: recompute from the student's OWN upstream
+    // figures. Only when every dependency has a submitted figure and a recompute rule
+    // exists; otherwise fall back to the authored value (no carry-through possible).
+    let effectiveExpected = authoredExpected;
+    let carriedFrom: string[] = [];
+    const deps = c.depends_on ?? [];
+    if (deps.length > 0 && c.recompute) {
+      const depVals: Record<string, number> = {};
+      let allPresent = true;
+      for (const d of deps) {
+        const dv = subById.get(d);
+        if (dv && typeof dv.value === 'number') depVals[d] = dv.value;
+        else { allPresent = false; break; }
+      }
+      if (allPresent) {
+        effectiveExpected = c.recompute(depVals);
+        carriedFrom = deps.filter((d) => {
+          const v = verdicts.get(d)?.verdict;
+          return v === 'incorrect' || v === 'carried' || v === 'no_workings';
+        });
+      }
+    }
+
+    let verdict: Verdict;
+    let gap: string | undefined;
+
+    if (studentVal === null) {
+      verdict = 'absent';
+      gap = `${id}: not attempted`;
+    } else if (within(studentVal, authoredExpected, c.tolerance)) {
+      // Right on its face — a correct answer scores, workings or not.
+      verdict = 'correct';
+    } else if (!hasWorkings) {
+      // Wrong-looking AND no workings → OFR inapplicable → zero (§6c).
+      verdict = 'no_workings';
+      gap = `${id}: ${fmt(studentVal)}${c.unit ? ' ' + c.unit : ''} is outside tolerance and no workings were shown — carry-through cannot be credited, scores zero`;
+    } else if (within(studentVal, effectiveExpected, c.tolerance) && carriedFrom.length > 0) {
+      // Right method on own wrong upstream input → full credit (§6a). Error charged once, upstream (§6b).
+      verdict = 'carried';
+    } else {
+      // Genuine method error at this step → charged here (§6b).
+      verdict = 'incorrect';
+      gap = `${id}: expected ~${fmt(effectiveExpected)}${c.unit ? ' ' + c.unit : ''}, got ${fmt(studentVal)} — method diverges at this step`;
+    }
+
+    const credited = verdict === 'correct' || verdict === 'carried';
+    verdicts.set(id, {
+      component_id: id,
+      verdict,
+      student_value: studentVal,
+      expected_value: effectiveExpected,
+      authored_expected: authoredExpected,
+      carried_from: carriedFrom.length ? carriedFrom : undefined,
+      awarded_weight: credited ? weight : 0,
+      gap,
+    });
+  }
+
+  const per_component = comps.map((c) => verdicts.get(c.component_id)!);
+  const awarded = per_component.reduce((s, v) => s + v.awarded_weight, 0);
+  const available = comps.reduce((s, c) => s + (c.weight ?? 1), 0);
+  const all_correct = per_component.every((v) => v.verdict === 'correct');
+  const firstBad = order
+    .map((id) => verdicts.get(id)!)
+    .find((v) => v.verdict === 'incorrect' || v.verdict === 'no_workings');
+  const gap_label = firstBad?.gap ?? null;
+
+  return { per_component, awarded, available, all_correct, gap_label };
+}
