@@ -101,9 +101,10 @@ export default function ACCALandingPage() {
               </p>
               <p className="hero-note">Built on the live S26–J27 syllabus. Every drill free to start. No card.</p>
               <div className="hero-cta">
-                <Link href={AUTH_FREE} className="btn btn-rust">Start free — every drill, no card <span className="arrow">→</span></Link>
-                <button className="btn btn-ghost" onClick={() => scrollTo('pricing')}>See pricing</button>
+                <Link href="/acca/resit" className="btn btn-rust">Get my free resit diagnosis <span className="arrow">→</span></Link>
+                <Link href={AUTH_FREE} className="btn btn-ghost">Start free — every drill, no card <span className="arrow">→</span></Link>
               </div>
+              <p className="hero-microcopy">Free, 3 minutes, no sign-up.</p>
               <div className="hero-meta">
                 <span>Every drill free</span>
                 <span className="dot" />
@@ -971,6 +972,7 @@ const CSS = `
 
 /* ── Hero note + trust strip + visual caption + hint badge ── */
 .acca-lp .hero-note { margin-top: 16px; font-size: 13.5px; color: var(--ink-2); line-height: 1.5; font-weight: 500; }
+.acca-lp .hero-microcopy { margin-top: 12px; font-size: 13px; color: var(--ink-3); font-family: var(--sans); letter-spacing: -0.005em; }
 .acca-lp .visual-caption {
   margin-top: 16px; text-align: center; font-family: var(--serif); font-style: italic;
   font-size: 15px; color: var(--forest); line-height: 1.4;
