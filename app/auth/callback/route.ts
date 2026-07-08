@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
+import { notifyGrant } from '@/lib/notify';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -37,6 +38,12 @@ export async function GET(request: Request) {
         const NEW_USER_WINDOW_MS = 5 * 60 * 1000;
         if (Date.now() - new Date(createdAt).getTime() < NEW_USER_WINDOW_MS) {
           dest.searchParams.set('signup', '1');
+          // Best-effort internal alert on a brand-new APM signup. notifyGrant
+          // swallows all errors, so this can never fail the redirect below.
+          await notifyGrant(
+            '[Gradd] New APM signup',
+            `New APM signup — ${data.user?.email ?? 'unknown email'}`
+          );
         }
       }
       return NextResponse.redirect(dest.toString());
