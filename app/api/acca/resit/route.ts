@@ -11,6 +11,7 @@ import {
   type ResitProfile,
 } from '@/lib/acca/resit-engine';
 import { buildResitPlanEmail } from '@/lib/email/resit-plan-template';
+import { notifyGrant } from '@/lib/notify';
 
 // Free, no-auth diagnostic for /acca/resit. Two actions on one route:
 //   action: 'plan'    → validate, compute profile (CODE), narrate (Haiku), return.
@@ -187,6 +188,14 @@ export async function POST(request: Request) {
     if (insErr && insErr.code !== '23505') {
       return NextResponse.json({ error: 'Failed to save' }, { status: 500 });
     }
+
+    // Best-effort internal alert on a warm resit lead. notifyGrant swallows all
+    // errors, so this can never affect the response below.
+    const weak = profile.weak_groups.map((g) => g.label).join(', ') || 'none flagged';
+    await notifyGrant(
+      '[Gradd] Resit lead',
+      `Resit lead — ${email.trim().toLowerCase()} · ${inputs.score}/100 · ${inputs.sitting} · weak: ${weak}`
+    );
 
     // Email is best-effort: the lead is already captured, so a send failure must
     // not fail the request.
