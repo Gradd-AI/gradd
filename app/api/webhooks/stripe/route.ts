@@ -3,6 +3,7 @@ import stripe from '@/lib/stripe';
 import { Resend } from 'resend';
 import { buildWelcomeEmail } from '@/lib/email/welcome-template';
 import { buildIBWelcomeEmail } from '@/lib/email/ib-welcome-template';
+import { notifyGrant } from '@/lib/notify';
 import type { IBSubject, IBLevel } from '@/lib/email/ib-welcome-template';
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
@@ -217,6 +218,14 @@ async function handleAPMCheckoutComplete(
       })
       .eq('id', userId);
   }
+
+  // Best-effort internal alert. Only the one-off pass and the subscription START
+  // flow through checkout.session.completed — renewals hit invoice.* and are not
+  // reported here, which is exactly what we want. notifyGrant swallows all
+  // errors, so this can never affect the webhook 200.
+  const email = session.customer_details?.email ?? session.customer_email ?? 'unknown email';
+  const label = product === 'pass' ? 'pass €99' : 'subscription €49/mo';
+  await notifyGrant(`[Gradd] APM payment — ${label}`, `APM ${label} — ${email}`);
 }
 
 async function handleAPMSubscriptionChange(
