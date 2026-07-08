@@ -5,6 +5,7 @@ subject: APM
 description: "ACCA APM students often know the model but answer the wrong requirement. Learn the verb-and-object test that stops you evaluating the company when the question asked you to evaluate the report."
 date: 05/07/2026
 published: true
+intent: technique
 keywords:
   - ACCA APM answering the wrong question
   - ACCA APM requirement verb and object
@@ -13,6 +14,7 @@ keywords:
   - ACCA APM how to read exam requirements
 related:
   - apm-describe-vs-apply
+  - apm-scepticism-data-claims
 ---
 
 You revised the models.

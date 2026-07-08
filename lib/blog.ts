@@ -7,8 +7,10 @@ const POSTS_DIR = path.join(process.cwd(), 'content', 'blog');
 
 // Frontmatter schema for every .md file in content/blog/
 // Required: title, slug, subject, description, date (dd/mm/yyyy), published
-// Optional: keywords — search-phrase variants rendered as <meta name="keywords">
-//           related  — slugs of related published posts (rendered as a linked list above the CTA)
+// Optional: intent   — content class, drives APM archive grouping + related preference
+//           keywords — search-phrase variants rendered as <meta name="keywords">
+//           related  — slugs of related published posts (hand-curated override; the
+//                      article page auto-fills up to 3 via getRelatedPosts)
 export interface PostMeta {
   title: string;
   slug: string;
@@ -16,6 +18,7 @@ export interface PostMeta {
   description: string;
   date: string;          // dd/mm/yyyy
   published: boolean;
+  intent?: 'failure' | 'technique' | 'syllabus' | 'exam-structure';
   keywords?: string[];
   related?: string[];
 }
@@ -66,4 +69,45 @@ export function getPostMeta(slug: string): PostMeta | null {
   const { data } = matter(raw);
   if (!data.published) return null;
   return data as PostMeta;
+}
+
+/**
+ * Up to `limit` related posts for a slug. Hand-curated `related[]` comes first (in
+ * order; only valid, published, same-subject slugs), then auto-fills from other
+ * same-subject posts — preferring the same intent, then most-recent — so a post is
+ * never left with an empty block when its subject has enough siblings. Never returns
+ * the post itself. Same-subject is enforced throughout: an APM post never surfaces IB.
+ */
+export function getRelatedPosts(slug: string, limit = 3): PostMeta[] {
+  const self = getPostMeta(slug);
+  if (!self) return [];
+
+  const all = getAllPosts(); // published, most-recent first
+  const bySlug = new Map(all.map(p => [p.slug, p]));
+
+  const out: PostMeta[] = [];
+  const seen = new Set<string>([slug]);
+  const push = (p: PostMeta | undefined) => {
+    if (p && !seen.has(p.slug)) { seen.add(p.slug); out.push(p); }
+  };
+
+  // 1) hand-curated overrides, in author order — same subject only
+  for (const s of self.related ?? []) {
+    if (out.length >= limit) break;
+    const p = bySlug.get(s);
+    if (p && p.subject === self.subject) push(p);
+  }
+
+  // 2) auto-fill from same-subject pool: same intent first, then most-recent
+  if (out.length < limit) {
+    const pool = all.filter(p => p.subject === self.subject && !seen.has(p.slug));
+    const sameIntent = pool.filter(p => self.intent && p.intent === self.intent);
+    const rest = pool.filter(p => !(self.intent && p.intent === self.intent));
+    for (const p of [...sameIntent, ...rest]) {
+      if (out.length >= limit) break;
+      push(p);
+    }
+  }
+
+  return out.slice(0, limit);
 }

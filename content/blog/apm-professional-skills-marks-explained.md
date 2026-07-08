@@ -5,6 +5,7 @@ subject: APM
 description: "Professional skills are 20 marks in ACCA APM: 10 in Section A and 5 in each Section B question. Learn what communication, analysis, scepticism and commercial acumen look like inside a real answer."
 date: 05/07/2026
 published: true
+intent: exam-structure
 keywords:
   - ACCA APM professional skills
   - ACCA APM professional skills marks
@@ -13,6 +14,7 @@ keywords:
   - how to get professional skills marks ACCA APM
 related:
   - apm-scepticism-data-claims
+  - apm-describe-vs-apply
 ---
 
 Professional skills are not a bonus.

@@ -5,6 +5,10 @@ subject: Econ
 description: "You wrote that a price change shifted demand. It didn't. It moved you along the curve — and that distinction costs marks."
 date: 18/06/2026
 published: true
+intent: syllabus
+related:
+  - movement-along-vs-shift-supply-curve
+  - change-in-demand-vs-change-in-quantity-demanded
 keywords:
   - movement along vs shift in demand curve
   - movement vs shift in demand curve

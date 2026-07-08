@@ -5,6 +5,7 @@ subject: Econ
 description: "Producer surplus isn't profit, and consumer surplus isn't savings. Mix up what the areas on the diagram mean and the welfare questions fall apart."
 date: 18/06/2026
 published: true
+intent: syllabus
 keywords:
   - consumer surplus vs profit
   - is producer surplus the same as profit
@@ -12,6 +13,7 @@ keywords:
   - what is producer surplus
 related:
   - movement-along-vs-shift-in-demand
+  - elastic-vs-inelastic-demand
 ---
 
 You write: "producer surplus is the firm's profit."

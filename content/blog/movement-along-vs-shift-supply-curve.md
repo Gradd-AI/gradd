@@ -5,6 +5,7 @@ subject: Econ
 description: "You learned that a price change doesn't shift the demand curve. The same rule governs supply — and students forget to carry it across."
 date: 18/06/2026
 published: true
+intent: syllabus
 keywords:
   - movement along vs shift in supply curve
   - what shifts the supply curve
@@ -12,6 +13,7 @@ keywords:
   - movement vs shift supply
 related:
   - movement-along-vs-shift-in-demand
+  - change-in-demand-vs-change-in-quantity-demanded
 ---
 
 You write: "the price rose, so the supply curve shifted right."

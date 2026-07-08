@@ -5,6 +5,7 @@ subject: APM
 description: "Scepticism is a marked professional skill in ACCA APM. Learn the data and performance claims to challenge: vendor savings, headline accuracy, weak baselines, correlation, and recurring 'one-off' costs."
 date: 05/07/2026
 published: true
+intent: technique
 keywords:
   - ACCA APM scepticism
   - ACCA APM professional scepticism marks
@@ -13,6 +14,7 @@ keywords:
   - ACCA APM challenging assumptions and data
 related:
   - apm-professional-skills-marks-explained
+  - apm-evaluate-the-report-not-the-company
 ---
 
 Scepticism is not a feeling.

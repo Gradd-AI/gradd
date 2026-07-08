@@ -5,6 +5,10 @@ subject: Econ
 description: "You think elastic means demand changes a lot. It's a ratio, not a size — and getting it wrong flips a high-frequency revenue rule examiners test directly."
 date: 18/06/2026
 published: true
+intent: syllabus
+related:
+  - change-in-demand-vs-change-in-quantity-demanded
+  - movement-along-vs-shift-in-demand
 keywords:
   - elastic vs inelastic demand
   - what does elastic mean in economics

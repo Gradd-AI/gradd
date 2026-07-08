@@ -5,6 +5,10 @@ subject: Econ
 description: "You wrote \"demand fell.\" Did you mean demand, or quantity demanded? In IB Economics they're different claims — and mixing them up costs marks."
 date: 18/06/2026
 published: true
+intent: syllabus
+related:
+  - movement-along-vs-shift-in-demand
+  - elastic-vs-inelastic-demand
 keywords:
   - change in demand vs change in quantity demanded
   - difference between change in demand and change in quantity demanded

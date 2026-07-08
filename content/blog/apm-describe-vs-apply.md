@@ -5,6 +5,7 @@ subject: APM
 description: "Knowing the Building Block Model, Performance Pyramid or target costing won't save you in ACCA APM. The marks come from applying the model to the scenario — not describing it."
 date: 05/07/2026
 published: true
+intent: technique
 keywords:
   - ACCA APM describe vs apply
   - ACCA APM application marks
@@ -13,6 +14,7 @@ keywords:
   - ACCA APM building block model performance pyramid
 related:
   - apm-evaluate-the-report-not-the-company
+  - apm-professional-skills-marks-explained
 ---
 
 You can know every model on the APM syllabus and still write an answer that scores almost nothing.

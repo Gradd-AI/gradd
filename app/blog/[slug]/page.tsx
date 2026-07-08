@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { getPostBySlug, getPostMeta, dateToISO } from '@/lib/blog';
+import { getPostBySlug, getRelatedPosts, dateToISO } from '@/lib/blog';
 import BlogCTA from '@/components/blog/BlogCTA';
 import BlogHeader from '@/components/blog/BlogHeader';
 import Link from 'next/link';
@@ -55,9 +55,10 @@ export default async function BlogPostPage({
     mainEntityOfPage: canonicalUrl,
   };
 
-  const relatedPosts = (post.related ?? [])
-    .map(s => getPostMeta(s))
-    .filter(Boolean);
+  // 3 related posts: hand-curated `related[]` first, auto-filled same-subject
+  // (preferring same intent, then most-recent) so the block is never empty when the
+  // subject has ≥3 posts.
+  const relatedPosts = getRelatedPosts(slug, 3);
 
   // Back-to-index carries the subject so an APM reader lands on the APM-scoped
   // archive, not the default IB view. IB posts go to the bare /blog (unchanged).
@@ -138,25 +139,39 @@ export default async function BlogPostPage({
                 textTransform: 'uppercase',
                 letterSpacing: '0.08em',
                 color: 'var(--accent, #c8972e)',
-                margin: '0 0 12px',
+                margin: '0 0 14px',
               }}>
                 Related
               </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {relatedPosts.map(rp => rp && (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {relatedPosts.map(rp => (
                   <li key={rp.slug}>
                     <Link
                       href={`/blog/${rp.slug}`}
-                      style={{
-                        fontSize: 16,
-                        color: 'var(--brand, #0e2b1e)',
-                        fontFamily: "var(--font-display, 'Playfair Display', Georgia, serif)",
-                        fontStyle: 'italic',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: 3,
-                      }}
+                      style={{ textDecoration: 'none', display: 'block' }}
                     >
-                      {rp.title}
+                      <article style={{
+                        background: 'var(--surface, #fff)',
+                        border: '1px solid var(--border, #ddd5c5)',
+                        borderRadius: 10,
+                        padding: '16px 20px',
+                      }}>
+                        <h3 style={{
+                          fontFamily: "var(--font-display, 'Playfair Display', Georgia, serif)",
+                          fontStyle: 'italic',
+                          fontWeight: 400,
+                          fontSize: 18,
+                          color: 'var(--brand, #0e2b1e)',
+                          margin: '0 0 6px',
+                          letterSpacing: '-0.02em',
+                          lineHeight: 1.3,
+                        }}>
+                          {rp.title}
+                        </h3>
+                        <p style={{ fontSize: 14, color: 'var(--text)', opacity: 0.7, margin: 0, lineHeight: 1.5 }}>
+                          {rp.description}
+                        </p>
+                      </article>
                     </Link>
                   </li>
                 ))}
