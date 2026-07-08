@@ -99,7 +99,7 @@ export default function ACCALandingPage() {
               <p className="hero-sub">
                 APM is not passed by memorising models. It is passed by applying them to the scenario, evaluating properly, showing scepticism and writing commercially. Gradd diagnoses why your answer lost marks, then Ezra coaches you until your answer is strong enough to score.
               </p>
-              <p className="hero-note">Built on the live S26–J27 syllabus. Every drill free to start. No card.</p>
+              <p className="hero-note">Built on the live S26–J27 syllabus. Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.</p>
               <div className="hero-cta">
                 <Link href="/acca/resit" className="btn btn-rust">Get my free resit diagnosis <span className="arrow">→</span></Link>
                 <Link href={AUTH_FREE} className="btn btn-ghost">Start free — every drill, no card <span className="arrow">→</span></Link>
@@ -365,7 +365,7 @@ export default function ACCALandingPage() {
               <article className="price-card">
                 <span className="price-name">Free</span>
                 <div className="price-amount"><span className="cur">€</span>0</div>
-                <p className="price-tagline">All 91 drills. 3 full teach-throughs. No card.</p>
+                <p className="price-tagline">Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.</p>
                 <ul className="price-features">
                   <li>Every APM drill, unlimited</li>
                   <li>3 full teach-throughs with Ezra</li>
