@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section B case #2 — D-anchored (Data science & technology) — CANDIDATE
+-- APM Section B case #2 — D-anchored (Data science & technology) — LIVE
 -- Vesla Retail | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true — adversarial QA cleared;

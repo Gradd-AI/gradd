@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section B mock case (RESERVED) — Rivenor Pharma Distribution — CANDIDATE
+-- APM Section B mock case (RESERVED) — Rivenor Pharma Distribution — LIVE
 -- C-anchored | 25 marks (20 technical + 5 professional skills) | mock_only = TRUE
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true, mock_only=true — live inside the timed mock (QA cleared). Reconciled by migration 20260708120000.

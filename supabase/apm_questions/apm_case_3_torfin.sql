@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section B case #3 — D1-anchored (Technology & information systems) — CANDIDATE
+-- APM Section B case #3 — D1-anchored (Technology & information systems) — LIVE
 -- Torfin Build Supplies | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true — adversarial QA cleared;

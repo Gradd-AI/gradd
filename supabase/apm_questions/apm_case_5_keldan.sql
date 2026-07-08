@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section A case #5 — 50-mark case study — CANDIDATE
+-- APM Section A case #5 — 50-mark case study — LIVE
 -- Keldan Foods | 50 marks (40 technical + 10 professional skills, all four)
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true — live (adversarial QA cleared). Reconciled by migration 20260708120000.

@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section A mock case (RESERVED) — Halworth Hotels — CANDIDATE
+-- APM Section A mock case (RESERVED) — Halworth Hotels — LIVE
 -- 50 marks (40 technical + 10 professional skills, all four) | mock_only = TRUE
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true, mock_only=true — live inside the timed mock (QA cleared). Reconciled by migration 20260708120000.

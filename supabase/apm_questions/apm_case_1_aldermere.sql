@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section B case #1 — C-anchored (Performance reporting) — CANDIDATE seed
+-- APM Section B case #1 — C-anchored (Performance reporting) — LIVE
 -- Aldermere Fitness | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true — adversarial guide-check

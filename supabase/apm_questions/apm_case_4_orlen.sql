@@ -1,5 +1,5 @@
 -- =============================================================================
--- APM Section B case #4 — C-anchored (Performance reporting: misleading data) — CANDIDATE
+-- APM Section B case #4 — C-anchored (Performance reporting: misleading data) — LIVE
 -- Orlen Cinemas | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
 -- SERVING STATE: status='approved', published=true — adversarial QA cleared;
