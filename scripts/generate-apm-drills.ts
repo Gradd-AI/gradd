@@ -72,6 +72,7 @@ interface ApmDrillSpec {
   command_verb:           string;
   intellectual_level:     2 | 3;
   calculation_required:   boolean;
+  mode:                   'quantitative' | 'discursive';  // AFM three-state tag; APM never 'mixed'
   professional_skill_tag?: ProfessionalSkillTag;
   marks_guide:            number;
   region_hint:            string;
@@ -401,13 +402,21 @@ function deriveSkillTag(section: string, indexWithinSection: number): Profession
   return pool[indexWithinSection % pool.length];
 }
 
+// AFM dual-write: `mode` is the three-state calc tag; APM has no 'mixed', so it
+// derives from CALCULATION_LOS, and calculation_required is kept in lockstep as
+// (mode === 'quantitative'). Both are written on every insert so no new row is left
+// with a NULL mode (the 2B-2 migration only backfills EXISTING rows).
+const deriveMode = (lo: LoCode): 'quantitative' | 'discursive' =>
+  CALCULATION_LOS.has(lo) ? 'quantitative' : 'discursive';
+
 function buildSpecsForList(loCodes: LoCode[]): ApmDrillSpec[] {
   const sectionIdx: Record<string, number> = {};
   return loCodes.map(lo_code => {
     const lo = SYLLABUS_MAP[lo_code];
     const si = sectionIdx[lo.section] ?? 0;
     sectionIdx[lo.section] = si + 1;
-    const calculation_required = CALCULATION_LOS.has(lo_code);
+    const mode                 = deriveMode(lo_code);
+    const calculation_required = mode === 'quantitative';
     const baseIdx              = SYLLABUS_KEYS.indexOf(lo_code);
     return {
       lo_code,
@@ -418,6 +427,7 @@ function buildSpecsForList(loCodes: LoCode[]): ApmDrillSpec[] {
       command_verb:          extractPrimaryVerb(lo.descriptor),
       intellectual_level:    lo.intellectual_level,
       calculation_required,
+      mode,
       professional_skill_tag: deriveSkillTag(lo.section, si),
       marks_guide:           deriveMarksGuide(lo.intellectual_level, calculation_required),
       region_hint:           SCENARIO_REGIONS[baseIdx % SCENARIO_REGIONS.length],
@@ -437,7 +447,8 @@ function buildSpecList(loFilter: string | undefined, count: number): ApmDrillSpe
     const [lo_code, lo] = shuffled[i % shuffled.length];
     const si = sectionIdx[lo.section] ?? 0;
     sectionIdx[lo.section] = si + 1;
-    const calculation_required = CALCULATION_LOS.has(lo_code);
+    const mode                 = deriveMode(lo_code);
+    const calculation_required = mode === 'quantitative';
     const baseIdx              = SYLLABUS_KEYS.indexOf(lo_code);
     return {
       lo_code,
@@ -448,6 +459,7 @@ function buildSpecList(loFilter: string | undefined, count: number): ApmDrillSpe
       command_verb:          extractPrimaryVerb(lo.descriptor),
       intellectual_level:    lo.intellectual_level,
       calculation_required,
+      mode,
       professional_skill_tag: deriveSkillTag(lo.section, si),
       marks_guide:           deriveMarksGuide(lo.intellectual_level, calculation_required),
       region_hint:           SCENARIO_REGIONS[baseIdx % SCENARIO_REGIONS.length],
@@ -947,6 +959,7 @@ async function main() {
     const regenSpecs: ApmDrillSpec[] = (rejected as RejectedDrillRow[]).map(row => {
       const lo      = SYLLABUS_MAP[row.lo_code as LoCode];
       const baseIdx = SYLLABUS_KEYS.indexOf(row.lo_code as LoCode);
+      const mode    = deriveMode(row.lo_code as LoCode);
       return {
         lo_code:                row.lo_code as LoCode,
         section:                lo.section,
@@ -955,7 +968,8 @@ async function main() {
         descriptor:             lo.descriptor,
         command_verb:           row.command_verb,
         intellectual_level:     row.intellectual_level as 2 | 3,
-        calculation_required:   row.calculation_required,
+        calculation_required:   mode === 'quantitative',
+        mode,
         professional_skill_tag: (row.professional_skill_tag as ProfessionalSkillTag | null) ?? undefined,
         marks_guide:            row.marks_guide,
         region_hint:            SCENARIO_REGIONS[baseIdx % SCENARIO_REGIONS.length],
@@ -1003,7 +1017,7 @@ async function main() {
         lo_code: spec.lo_code, topic: spec.topic, command_verb: pass1.command_verb ?? spec.command_verb,
         intellectual_level: spec.intellectual_level,
         professional_skill_tag: spec.professional_skill_tag ?? null,
-        calculation_required: spec.calculation_required, marks_guide: spec.marks_guide,
+        calculation_required: spec.calculation_required, mode: spec.mode, marks_guide: spec.marks_guide,
         question: pass1.question, context_text: pass1.context_text,
         model_answer: pass1.model_answer, hint: pass2.hint, full_reveal: pass2.full_reveal,
         status: 'candidate', published: false,
@@ -1136,6 +1150,7 @@ async function main() {
       intellectual_level:     spec.intellectual_level,
       professional_skill_tag: spec.professional_skill_tag ?? null,
       calculation_required:   spec.calculation_required,
+      mode:                   spec.mode,
       marks_guide:            spec.marks_guide,
       question:               pass1.question,
       context_text:           pass1.context_text,
