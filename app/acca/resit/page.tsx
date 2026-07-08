@@ -12,6 +12,7 @@ import {
   type Rating,
   type ResitProfile,
 } from '@/lib/acca/resit-engine';
+import { trackMetaEvent } from '@/lib/meta-consent';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MONTHS = ['Mar', 'Jun', 'Sep', 'Dec'];
@@ -102,6 +103,9 @@ export default function ResitPage() {
         return;
       }
       setEmailState('done');
+      // Consent- + host-gated Meta 'Lead' (no-op unless gradd.ai + granted). Fired
+      // after the state flip so it never delays the capture response or plan render.
+      trackMetaEvent('Lead');
     } catch {
       setEmailState('error');
     }

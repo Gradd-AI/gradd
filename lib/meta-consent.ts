@@ -77,6 +77,22 @@ function deleteFbp(): void {
   }
 }
 
+// Fire a Meta standard event through the pixel MetaPixel already loaded. Applies the
+// SAME host + marketing-consent gate as every other pixel event, so no consent (or a
+// non-gradd.ai host, or a pixel that hasn't booted yet) ⇒ no event. Best-effort and
+// non-blocking: fbq queues the event and returns immediately, so this is safe to call
+// from a success handler without delaying the response or any render. Never throws.
+export function trackMetaEvent(event: string): void {
+  if (typeof window === 'undefined') return;
+  if (!pixelHostAllowed() || readConsent() !== 'granted') return;
+  if (typeof window.fbq !== 'function') return;
+  try {
+    window.fbq('track', event);
+  } catch {
+    /* ignore — analytics must never break the app */
+  }
+}
+
 // Reset the stored choice so the banner re-asks. If consent had been granted we
 // also delete the first-party _fbp cookie. Dispatches CONSENT_RESET_EVENT so a
 // mounted MetaPixel re-shows the banner on the same page immediately.
