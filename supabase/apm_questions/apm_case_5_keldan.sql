@@ -2,7 +2,7 @@
 -- APM Section A case #5 — 50-mark case study — CANDIDATE
 -- Keldan Foods | 50 marks (40 technical + 10 professional skills, all four)
 -- =============================================================================
--- GATE SAFETY: status='candidate', published=false.
+-- SERVING STATE: status='approved', published=true — live (adversarial QA cleared). Reconciled by migration 20260708120000.
 -- Built against S26-J27. Section A blueprint: one organisation, report-to-the-
 -- board frame, three requirement parts, topics across syllabus sections A/B/C,
 -- all four professional skills. Staged failure modes:
@@ -22,7 +22,7 @@ values
 ('a5000000-0000-4000-8000-0000000000a1',
  'A', null, 'Keldan Foods',
  $sc5$It is now 1 September 20X5. You are a performance management adviser engaged by Keldan Foods. Write a report to the board of Keldan Foods responding to its instructions for work in the areas set out in the requirements, using the information in the exhibits provided. Professional marks will be awarded for the demonstration of skill in communication, analysis and evaluation, scepticism and commercial acumen in your answer.$sc5$,
- 'report', 50, 10, 'candidate', false);
+ 'report', 50, 10, 'approved', true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values

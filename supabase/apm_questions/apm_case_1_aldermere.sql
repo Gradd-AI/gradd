@@ -2,8 +2,8 @@
 -- APM Section B case #1 — C-anchored (Performance reporting) — CANDIDATE seed
 -- Aldermere Fitness | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
--- GATE SAFETY: case inserts status='candidate', published=false — does not serve
--- until adversarial guide-check clears and both flags flip.
+-- SERVING STATE: status='approved', published=true — adversarial guide-check
+-- cleared; live and serving. Reconciled to deployed state by migration 20260708120000.
 -- Built against S26-J27 syllabus, Section C (Performance reporting).
 -- Requirements deliberately stage the two dominant examiner failure modes:
 --   (i)  evaluate the REPORT, not the company's performance (Neaty/Soulseat i)
@@ -21,7 +21,7 @@ values
 ('a1000000-0000-4000-8000-0000000000c1',
  'B', 'C1', 'Aldermere Fitness',
  $sc$It is now 1 September 20X5. You are a performance management adviser engaged by Aldermere Fitness. The board has asked you to prepare a report responding to the requirements below, using the information in the exhibits provided. Professional marks are available for the demonstration of skill in analysis and evaluation, scepticism and communication in your answer.$sc$,
- 'report', 25, 5, 'candidate', false);
+ 'report', 25, 5, 'approved', true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values

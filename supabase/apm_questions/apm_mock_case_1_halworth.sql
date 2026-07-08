@@ -2,7 +2,7 @@
 -- APM Section A mock case (RESERVED) — Halworth Hotels — CANDIDATE
 -- 50 marks (40 technical + 10 professional skills, all four) | mock_only = TRUE
 -- =============================================================================
--- GATE SAFETY: status='candidate', published=false, mock_only=true.
+-- SERVING STATE: status='approved', published=true, mock_only=true — live inside the timed mock (QA cleared). Reconciled by migration 20260708120000.
 -- Reserved for Mock Paper 1 — never appears in the free case list (list route
 -- excludes mock_only); served only inside the timed mock once approved+published.
 -- Built against S26-J27. Anchors distinct from Keldan: A1g (benchmarking, incl.
@@ -26,7 +26,7 @@ values
 ('a6000000-0000-4000-8000-0000000000b1',
  'A', null, 'Halworth Hotels',
  $sc6$It is now 1 September 20X5. You are a performance management adviser engaged by Halworth Hotels. Write a report to the board of Halworth Hotels responding to its instructions for work in the areas set out in the requirements, using the information in the exhibits provided. Professional marks will be awarded for the demonstration of skill in communication, analysis and evaluation, scepticism and commercial acumen in your answer.$sc6$,
- 'report', 50, 10, 'candidate', false, true);
+ 'report', 50, 10, 'approved', true, true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values

@@ -2,7 +2,7 @@
 -- APM Section B mock case (RESERVED) — Rivenor Pharma Distribution — CANDIDATE
 -- C-anchored | 25 marks (20 technical + 5 professional skills) | mock_only = TRUE
 -- =============================================================================
--- GATE SAFETY: status='candidate', published=false, mock_only=true.
+-- SERVING STATE: status='approved', published=true, mock_only=true — live inside the timed mock (QA cleared). Reconciled by migration 20260708120000.
 -- Reserved for Mock Paper 1 — never appears in the free case list.
 -- Built against S26-J27 Section C1: C1a (evaluate the management report in light
 -- of mission/objectives, user needs, information overload, presentation best
@@ -27,7 +27,7 @@ values
 ('a7000000-0000-4000-8000-0000000000c3',
  'B', 'C1', 'Rivenor Pharma Distribution',
  $sc7$It is now 1 September 20X5. You are a performance management adviser engaged by Rivenor Pharma Distribution. The board has asked you to respond to the requirements below, using the information in the exhibits provided. Professional marks are available for the demonstration of skill in analysis and evaluation, scepticism and commercial acumen in your answer.$sc7$,
- 'report', 25, 5, 'candidate', false, true);
+ 'report', 25, 5, 'approved', true, true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values

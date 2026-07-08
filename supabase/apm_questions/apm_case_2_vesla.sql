@@ -2,8 +2,8 @@
 -- APM Section B case #2 — D-anchored (Data science & technology) — CANDIDATE
 -- Vesla Retail | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
--- GATE SAFETY: status='candidate', published=false — does not serve until
--- adversarial QA clears and both flags flip.
+-- SERVING STATE: status='approved', published=true — adversarial QA cleared;
+-- live and serving. Reconciled to deployed state by migration 20260708120000.
 -- Built against S26-J27 syllabus, Section D. Requirements stage the dominant
 -- examiner failure modes:
 --   (i)  D2g/D2h — assess the MODEL OUTPUT, not describe what ML is; challenge
@@ -23,7 +23,7 @@ values
 ('a2000000-0000-4000-8000-0000000000d1',
  'B', 'D2', 'Vesla Retail',
  $sc2$It is now 1 September 20X5. You are a performance management adviser engaged by Vesla Retail. The board has asked you to respond to the requirements below, using the information in the exhibits provided. Professional marks are available for the demonstration of skill in analysis and evaluation, scepticism and commercial acumen in your answer.$sc2$,
- 'report', 25, 5, 'candidate', false);
+ 'report', 25, 5, 'approved', true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values

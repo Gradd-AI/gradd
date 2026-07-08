@@ -2,8 +2,8 @@
 -- APM Section B case #3 — D1-anchored (Technology & information systems) — CANDIDATE
 -- Torfin Build Supplies | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
--- GATE SAFETY: status='candidate', published=false — does not serve until
--- adversarial QA clears and both flags flip.
+-- SERVING STATE: status='approved', published=true — adversarial QA cleared;
+-- live and serving. Reconciled to deployed state by migration 20260708120000.
 -- Built against S26-J27 syllabus, Section D1. Requirements stage the examiner
 -- failure modes:
 --   (i)  D1b/D1c — assess THIS company's silo problems and evaluate ERPS/CRMS
@@ -21,7 +21,7 @@ values
 ('a3000000-0000-4000-8000-0000000000d2',
  'B', 'D1', 'Torfin Build Supplies',
  $sc3$It is now 1 September 20X5. You are a performance management adviser engaged by Torfin Build Supplies. The finance director has asked you to respond to the requirements below, using the information in the exhibits provided. Professional marks are available for the demonstration of skill in analysis and evaluation, scepticism and commercial acumen in your answer.$sc3$,
- 'report', 25, 5, 'candidate', false);
+ 'report', 25, 5, 'approved', true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values

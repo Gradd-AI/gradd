@@ -2,8 +2,8 @@
 -- APM Section B case #4 — C-anchored (Performance reporting: misleading data) — CANDIDATE
 -- Orlen Cinemas | 25 marks (20 technical + 5 professional skills)
 -- =============================================================================
--- GATE SAFETY: status='candidate', published=false — does not serve until
--- adversarial QA clears and both flags flip.
+-- SERVING STATE: status='approved', published=true — adversarial QA cleared;
+-- live and serving. Reconciled to deployed state by migration 20260708120000.
 -- Built against S26-J27 syllabus, Section C1 (C1b visualisation [2], C1c
 -- misleading numerical presentation [3], C1d misleading narrative [3]).
 -- Distinct from Aldermere (C1a/C1e). Staged failure modes:
@@ -22,7 +22,7 @@ values
 ('a4000000-0000-4000-8000-0000000000c2',
  'B', 'C1', 'Orlen Cinemas',
  $sc4$It is now 1 September 20X5. You are a performance management adviser engaged by the audit committee of Orlen Cinemas. Ahead of a board vote on executive bonuses, the committee has asked you to respond to the requirements below, using the information in the exhibits provided. Professional marks are available for the demonstration of skill in analysis and evaluation and scepticism in your answer.$sc4$,
- 'report', 25, 5, 'candidate', false);
+ 'report', 25, 5, 'approved', true);
 
 -- 2. EXHIBITS ---------------------------------------------------------------
 insert into acca_case_exhibits (case_id, exhibit_order, title, body) values
