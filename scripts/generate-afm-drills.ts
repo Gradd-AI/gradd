@@ -65,6 +65,14 @@ import {
   type FcffComputed,
   type SerializedSchema,
 } from '../lib/acca/fcff';
+import {
+  computeNpv,
+  buildNpvSchema,
+  buildNpvModelAnswer,
+  type NpvInputs,
+  type NpvComputed,
+  type NpvKind,
+} from '../lib/acca/npv';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -103,6 +111,7 @@ interface AfmDrillSpec {
   marks_guide:             number;
   region_hint:             string;
   sector_hint:             string;
+  npv_kind?:               NpvKind;   // B1a batch only — selects the NPV drill variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -114,6 +123,7 @@ interface AfmDrillSpec {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FCFF_LOS = new Set<LoCode>(['B4b', 'B4c']);
+const NPV_LOS  = new Set<LoCode>(['B1a']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -380,6 +390,42 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
+function buildNpvUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.npv_kind ?? 'standard';
+  const kindBlock =
+    kind === 'rationing'
+      ? `- DRILL TYPE: single-period CAPITAL RATIONING. The company has limited capital this period. In raw_inputs, ALSO give competitor_projects (2–3 other divisible projects, each with a GIVEN profitability index and outlay) and capital_limit. context_text must state those competitor PIs and the capital limit as scenario facts. Code computes THIS project's NPV and PI and ranks all projects by PI within the limit — do NOT rank or select in your prose.`
+      : kind === 'sensitivity'
+      ? `- DRILL TYPE: SENSITIVITY. Give sensitivity_label (the variable whose reliability is in doubt, e.g. "the annual sales volume"). The question asks for the NPV AND how sensitive the decision is to that variable. Code computes the break-even % fall — do NOT state any sensitivity figure in prose.`
+      : kind === 'section_a'
+      ? `- DRILL TYPE: SECTION-A style. Write a richer board-report scenario (a strategic acquisition/expansion the board is deciding on) and phrase the question as a report to the board. The model answer will do the NPV then an integrated recommendation with an assumption challenge — longer, advisory register, professional-skills weighted.`
+      : `- DRILL TYPE: STANDARD focused NPV appraisal (Section-B style): tight, single-technique "appraise and advise".`;
+
+  return `Write one original ACCA AFM investment-appraisal drill using net present value (NPV).
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: advise
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+${kindBlock}
+
+CODE-COMPUTES PROTOCOL — MANDATORY. Code owns EVERY figure: the tax-allowable depreciation
+(WDA) schedule, taxable profit, tax, inflated cash flows, discount factors, present values, NPV,
+the accept/reject decision, and any PI/ranking/sensitivity. Supply the scenario, the raw inputs,
+and qualitative prose only. DO NOT state any of those computed figures, any inequality between
+them, or any sensitivity/PI value.
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and a specific capital project the board must decide on.
+- question: begins with the command verb; asks the candidate to appraise the project by NPV and advise the board whether to proceed.
+- context_text: scenario narrative + a clean labelled list of the raw inputs (money in millions of the LOCAL currency, rates in %): initial capital cost, the pre-tax operating cash flows per year IN REAL TERMS (3–5 years), the inflation rate, the tax rate, the tax-payment lag (same year or one year in arrears), the capital qualifying for tax-allowable depreciation and its reducing-balance rate, the scrap/residual value, and the discount rate. Add 1–2 challengeable textures (forecast optimism; reliability of the inflation or discount-rate estimate). Do NOT pre-compute anything.
+- Provide the SAME figures in raw_inputs. Rates as DECIMAL FRACTIONS (0.25 for 25%). The discount rate must exceed inflation; choose figures that give a realistic (not trivially huge) NPV so the decision is a genuine judgement.
+- interpretation_prose: qualitative advice ONLY, per the tool rules — no computed numbers, no inequalities, no PI/sensitivity values, only context facts.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
 function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -461,6 +507,41 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+const SUBMIT_NPV_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_npv_scenario',
+  description: 'Submit an NPV investment-appraisal drill — raw inputs only; code computes the WDA schedule, tax, net cash flows, discounting, NPV, the accept/reject decision, and any ranking/sensitivity',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question:     { type: 'string', description: 'Drill question. Asks the candidate to appraise the project by NPV and advise the board whether to proceed.' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs. NO computed NPV, tax, present values, WDA amounts, PI or sensitivity — code computes all of them. Add 1–2 challengeable textures (e.g. optimism in the cash-flow forecast, the reliability of the inflation or discount-rate estimate).' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "advise", "calculate and advise").' },
+      currency:     { type: 'string', description: 'ISO 4217 currency code used in context_text, e.g. "AUD", "ZAR". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'The raw figures, matching context_text exactly. Code uses these for ALL arithmetic.',
+        properties: {
+          initial_outlay:    { type: 'number', description: 'Capital cost at time 0, $m (positive)' },
+          real_operating_cf: { type: 'array', items: { type: 'number' }, description: 'Pre-tax operating cash flows in REAL (today\'s money) terms, one per year, 3–5 entries', minItems: 3, maxItems: 5 },
+          inflation_rate:    { type: 'number', description: 'Annual inflation applied to operating cash flows, decimal e.g. 0.03' },
+          tax_rate:          { type: 'number', description: 'Corporate tax rate, decimal e.g. 0.25' },
+          tax_lag:           { type: 'number', description: 'Years tax is paid in arrears: 0 (same year) or 1' },
+          capital_for_wda:   { type: 'number', description: 'Capital qualifying for tax-allowable depreciation, $m' },
+          wda_rate:          { type: 'number', description: 'Reducing-balance tax-depreciation rate, decimal e.g. 0.25' },
+          scrap_value:       { type: 'number', description: 'Disposal/scrap proceeds at the end of the final year, $m' },
+          discount_rate:     { type: 'number', description: 'Risk-adjusted discount rate, decimal e.g. 0.10 — must exceed inflation' },
+          competitor_projects: { type: 'array', description: 'RATIONING drills only: other divisible projects the board is weighing, each with a GIVEN profitability index. Omit for non-rationing drills.', items: { type: 'object' as const, properties: { name: { type: 'string' }, pi: { type: 'number' }, outlay: { type: 'number' } }, required: ['name', 'pi', 'outlay'] } },
+          capital_limit:     { type: 'number', description: 'RATIONING drills only: the total capital available this period, $m.' },
+          sensitivity_label: { type: 'string', description: 'SENSITIVITY drills only: short label for the variable being sensitised, e.g. "the annual sales volume". Optional.' },
+        },
+        required: ['initial_outlay', 'real_operating_cf', 'inflation_rate', 'tax_rate', 'tax_lag', 'capital_for_wda', 'wda_rate', 'scrap_value', 'discount_rate'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed numbers, NO inequality between computed figures (e.g. do not say the NPV is positive/negative or rank the projects), and NO sensitivity/PI values — code owns all of those. Reference ONLY facts in context_text; any named risk may name only risks the scenario evidences. Cover: which inputs are most fragile and why (the cash-flow forecast, the inflation or discount-rate estimate, the residual/scrap assumption); and the due diligence the board should require.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
   description: 'Submit the Ezra teaching reveal for a completed AFM drill',
@@ -485,8 +566,10 @@ interface DrillOutput {
   command_verb:   string;
   answer_schema?: SerializedSchema;  // quantitative only — persisted to acca_drills.answer_schema
   _liveSchema?:   AnswerSchema;      // quantitative only — functions, for gates + OFR proof (not persisted)
-  _rawInputs?:    FcffInputs;        // quantitative only — dry-run inspection
-  _computed?:     FcffComputed;      // quantitative only — dry-run inspection
+  _rawInputs?:    FcffInputs;        // FCFF only — dry-run inspection
+  _computed?:     FcffComputed;      // FCFF only — dry-run inspection
+  _npvInputs?:    NpvInputs;         // NPV only — dry-run inspection
+  _npvComputed?:  NpvComputed;       // NPV only — dry-run inspection
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -556,6 +639,43 @@ async function draftFcffDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
   };
 }
 
+async function draftNpvDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: NpvKind = spec.npv_kind ?? 'standard';
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1800,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_NPV_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_npv_scenario' },
+    messages: [{ role: 'user', content: buildNpvUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in NPV Pass 1 response');
+  const inp = block.input as {
+    question: string; context_text: string; command_verb: string; currency?: string;
+    raw_inputs: NpvInputs; interpretation_prose: string;
+  };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (NPV)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (NPV): raw_inputs missing');
+
+  const currency = normaliseCurrency(inp.currency);
+  const computed = computeNpv(inp.raw_inputs, kind);            // throws loud on bad data → retry regenerates
+  const { schema, serialized } = buildNpvSchema(inp.raw_inputs, computed, currency);
+  const model_answer = buildNpvModelAnswer(inp.raw_inputs, computed, inp.interpretation_prose, currency, kind);
+
+  return {
+    question:      inp.question,
+    context_text:  inp.context_text,
+    command_verb:  inp.command_verb.trim().toLowerCase(),
+    model_answer,
+    answer_schema: serialized,
+    _liveSchema:   schema,
+    _npvInputs:    inp.raw_inputs,
+    _npvComputed:  computed,
+    _currency:     currency,
+  };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -576,7 +696,8 @@ async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: s
 async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
-    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (pilot wires B4b/B4c FCFF only)`);
+    if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
+    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV)`);
   }
   if (spec.mode === 'mixed') {
     throw new Error(`Mixed LO ${spec.lo_code} not in pilot scope (needs a per-drill scenario_supplies_figures decision)`);
@@ -684,21 +805,27 @@ async function main() {
   const loFilter = arg('--lo');
   const losArg   = arg('--los');
   const dryRun   = flag('--dry-run');
+  const npvBatch = flag('--npv-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  const loCodes: LoCode[] = losArg
-    ? (losArg.split(',').map((s) => s.trim()) as LoCode[])
-    : loFilter ? [loFilter as LoCode] : [];
-  if (loCodes.length === 0) { console.error(`Error: no scope specified.\n\n${USAGE}`); process.exit(1); }
-  for (const code of loCodes) {
-    if (!(code in SYLLABUS_MAP)) { console.error(`Error: unknown LO code "${code}". Valid: ${Object.keys(SYLLABUS_MAP).join(', ')}`); process.exit(1); }
+  let specs: AfmDrillSpec[];
+  if (npvBatch) {
+    const kinds: NpvKind[] = ['standard', 'rationing', 'sensitivity', 'section_a'];
+    specs = kinds.map((k) => ({ ...buildSpecsForList(['B1a'] as LoCode[])[0], npv_kind: k }));
+  } else {
+    const loCodes: LoCode[] = losArg
+      ? (losArg.split(',').map((s) => s.trim()) as LoCode[])
+      : loFilter ? [loFilter as LoCode] : [];
+    if (loCodes.length === 0) { console.error(`Error: no scope specified.\n\n${USAGE}`); process.exit(1); }
+    for (const code of loCodes) {
+      if (!(code in SYLLABUS_MAP)) { console.error(`Error: unknown LO code "${code}". Valid: ${Object.keys(SYLLABUS_MAP).join(', ')}`); process.exit(1); }
+    }
+    specs = buildSpecsForList(loCodes);
   }
-
-  const specs = buildSpecsForList(loCodes);
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
   const supabase = dryRun ? null : createClient(
@@ -715,7 +842,7 @@ async function main() {
 
     console.log(`\n${'═'.repeat(80)}`);
     console.log(`DRILL ${i + 1}/${specs.length}: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}`);
-    console.log(`verb: ${spec.command_verb} | level: L${spec.intellectual_level} | mode: ${spec.mode} | calc_required: ${spec.calculation_required} | marks: ${spec.marks_guide} | skill: ${spec.professional_skill_tag ?? 'none'} | geo: ${spec.region_hint}/${spec.sector_hint}`);
+    console.log(`verb: ${spec.command_verb} | level: L${spec.intellectual_level} | mode: ${spec.mode}${spec.npv_kind ? ` (${spec.npv_kind})` : ''} | calc_required: ${spec.calculation_required} | marks: ${spec.marks_guide} | skill: ${spec.professional_skill_tag ?? 'none'} | geo: ${spec.region_hint}/${spec.sector_hint}`);
     console.log('─'.repeat(80));
 
     // Pass 1
@@ -741,6 +868,13 @@ async function main() {
         const cur = drill._currency ?? '$';
         console.log(`\nRAW INPUTS (model-supplied, currency ${cur}): ${JSON.stringify(drill._rawInputs)}`);
         console.log(`CODE-COMPUTED: FCFF=${money(cur, drill._computed.fcff)}  firm=${money(cur, drill._computed.firm_value)}  equity=${money(cur, drill._computed.equity_value)}`);
+      }
+      if (drill._npvInputs && drill._npvComputed) {
+        const cur = drill._currency ?? '$';
+        const nc = drill._npvComputed;
+        console.log(`\nNPV KIND: ${spec.npv_kind ?? 'standard'}  (${nc.n}-year, tax_lag ${drill._npvInputs.tax_lag}, ${nc.horizon}-period)`);
+        console.log(`RAW INPUTS (model-supplied, currency ${cur}): ${JSON.stringify(drill._npvInputs)}`);
+        console.log(`CODE-COMPUTED: NPV=${money(cur, nc.npv)}  decision=${nc.accept ? 'ACCEPT' : 'REJECT'}${nc.pi !== undefined ? `  PI=${nc.pi.toFixed(3)}` : ''}${nc.sensitivity_pct !== undefined ? `  sensitivity=${nc.sensitivity_pct.toFixed(2)}%` : ''}`);
       }
       console.log(`\nANSWER_SCHEMA (serialised → answer_schema jsonb):\n${JSON.stringify(drill.answer_schema, null, 2)}`);
       const report = runQuantitativeGates(drill);
