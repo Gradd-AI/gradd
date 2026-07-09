@@ -674,7 +674,7 @@ export async function POST(request: Request): Promise<Response> {
   // AFM route inheriting a hardcoded 'APM'. Behaviour unchanged — APM passes 'APM'.
   const drillBase = (paperCode: string) => supabase
     .from('acca_drills')
-    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level')
+    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', paperCode)
     .eq('status', 'approved')
@@ -815,6 +815,11 @@ export async function POST(request: Request): Promise<Response> {
   let newLastRealAttempt = lastRealAttempt;
   let teachThroughDelivered = false;
   let newResolved        = resolved;
+  // Set ONLY on the real-attempt path (classified==='attempt' -> the withholding
+  // pipeline): 'correct' when the attempt is accepted, 'miss' otherwise. Stays null
+  // on warm/teach/reveal paths, which are not scored attempts. Read at §10 to append
+  // an acca_drill_attempts row — never used by any engine/cap logic.
+  let attemptOutcome: 'correct' | 'miss' | null = null;
   let intent: string     = 'attempt';
   // Single discriminant for the client badge: tells hint / teaching / correct apart
   // (which intent + teach_through_delivered alone cannot). Set in every branch below.
@@ -885,6 +890,7 @@ export async function POST(request: Request): Promise<Response> {
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
           ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
           messageKind        = 'correct';
+          attemptOutcome     = 'correct';
           newLastRealAttempt = student_message;
           // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
           // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
@@ -895,6 +901,7 @@ export async function POST(request: Request): Promise<Response> {
           newMissCount     = missCount + 1;
           newLastDiagnosis = gap;
           newLastRealAttempt = student_message;
+          attemptOutcome   = 'miss';
 
           if (newMissCount === 1) {
             ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel);
@@ -964,6 +971,27 @@ export async function POST(request: Request): Promise<Response> {
         }, { onConflict: 'user_id,drill_id' });
     } catch {
       // non-fatal: teach-loop persistence is best-effort, never blocks the response
+    }
+
+    // Append-only attempt log: one row per REAL scored attempt (correct|miss), with
+    // lo_code denormalised at write. Feeds the readiness M-slope and per-(user,LO)
+    // weakness. Additive and swallowed exactly like the upsert above — a write failure
+    // must never block or 500 the teach path. Skipped on warm/teach/reveal turns
+    // (attemptOutcome === null) since those are not scored attempts.
+    if (attemptOutcome) {
+      try {
+        await supabase
+          .from('acca_drill_attempts')
+          .insert({
+            user_id:    user.id,
+            drill_id:   drillId,
+            lo_code:    drill.lo_code as string,     // denormalised at write
+            outcome:    attemptOutcome,
+            miss_delta: attemptOutcome === 'miss' ? 1 : 0,
+          });
+      } catch {
+        // non-fatal: attempt logging is best-effort, never blocks the response
+      }
     }
   }
 
