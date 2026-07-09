@@ -53,7 +53,9 @@ function isRateUnit(unit: string): boolean {
   return /%/.test(unit);
 }
 function isMoneyUnit(unit: string): boolean {
-  return /\$|\bgbp\b|\busd\b|\beur\b|\bm\b|\b000\b|money|currency/i.test(unit);
+  // Symbols, common magnitude markers, or an ISO-4217-style 3-letter uppercase currency
+  // code (AUD, ZAR, USD, BRL, …) — so "AUDm"/"ZARm" classify as money, not just "$m".
+  return /\$|£|€|¥|₹|\bm\b|\b000\b|money|currency/i.test(unit) || /[A-Z]{3}/.test(unit);
 }
 
 // Probe which component_ids a recompute rule ACTUALLY reads, without parsing source.

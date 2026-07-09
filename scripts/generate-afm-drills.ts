@@ -155,6 +155,17 @@ function computeFcff(raw: FcffInputs): FcffComputed {
 const fmt1 = (n: number): string => n.toFixed(1);
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 
+// Money display honouring the drill's currency. ISO-style codes (AUD, ZAR) read "AUD 179.0m";
+// bare symbols ($) read "$179.0m". Normalised so the currency the model set in context_text
+// carries through to the worked answer instead of a hardcoded "$".
+function normaliseCurrency(raw: string | undefined): string {
+  const c = (raw ?? '$').trim();
+  return /^[A-Za-z]{2,4}$/.test(c) ? c.toUpperCase() : (c || '$');
+}
+function money(currency: string, n: number): string {
+  return /^[A-Za-z]{2,4}$/.test(currency) ? `${currency} ${fmt1(n)}m` : `${currency}${fmt1(n)}m`;
+}
+
 // Build the LIVE schema (recompute as functions — for the gates + OFR proof) and its
 // serialisable projection (recompute as rule-id strings + a per-drill params block, for
 // the answer_schema jsonb column). The string→function registry resolution at serve time
@@ -177,18 +188,19 @@ interface SerializedSchema {
   params:     Record<string, number>;
 }
 
-function buildFcffSchema(raw: FcffInputs, c: FcffComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
+function buildFcffSchema(raw: FcffInputs, c: FcffComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
   const tax  = asDecimalRate(raw.tax_rate);
   const wacc = asDecimalRate(raw.wacc);
   const g    = asDecimalRate(raw.growth_rate);
   const debt = raw.debt_value;
+  const moneyUnit = `${currency}m`; // e.g. "AUDm" / "$m" — classified as money by validate-schema
 
   const components: Component[] = [
     {
       component_id: 'fcff',
       label: 'Free cash flow to firm (FCFF)',
       expected_value: c.fcff,
-      unit: '$m',
+      unit: moneyUnit,
       tolerance: rel(0.5),
       working_steps: [
         'FCFF = PBIT × (1 − t) + depreciation − capex − ΔWC',
@@ -199,7 +211,7 @@ function buildFcffSchema(raw: FcffInputs, c: FcffComputed): { schema: AnswerSche
       component_id: 'firm_value',
       label: 'Enterprise (firm) value',
       expected_value: c.firm_value,
-      unit: '$m',
+      unit: moneyUnit,
       tolerance: rel(0.5),
       depends_on: ['fcff'],
       recompute: (d) => (d.fcff * (1 + g)) / (wacc - g),
@@ -212,7 +224,7 @@ function buildFcffSchema(raw: FcffInputs, c: FcffComputed): { schema: AnswerSche
       component_id: 'equity_value',
       label: 'Equity value',
       expected_value: c.equity_value,
-      unit: '$m',
+      unit: moneyUnit,
       tolerance: rel(0.5),
       depends_on: ['firm_value'],
       recompute: (d) => d.firm_value - debt,
@@ -251,10 +263,11 @@ function buildFcffSchema(raw: FcffInputs, c: FcffComputed): { schema: AnswerSche
   return { schema: { components }, serialized };
 }
 
-function buildFcffModelAnswer(raw: FcffInputs, c: FcffComputed, prose: string): string {
+function buildFcffModelAnswer(raw: FcffInputs, c: FcffComputed, prose: string, currency: string): string {
   const tax  = asDecimalRate(raw.tax_rate);
   const wacc = asDecimalRate(raw.wacc);
   const g    = asDecimalRate(raw.growth_rate);
+  const m = (n: number) => money(currency, n);
   return [
     '**Firm and equity valuation (free cash flow to firm)**',
     '',
@@ -262,23 +275,23 @@ function buildFcffModelAnswer(raw: FcffInputs, c: FcffComputed, prose: string): 
     '',
     'FCFF = PBIT × (1 − t) + depreciation − capex − ΔWorking capital',
     `= ${fmt1(raw.pbit)} × (1 − ${tax}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)}`,
-    `= **${fmt1(c.fcff)} $m**  *(FCFF is a firm-level flow — interest is NOT deducted; it belongs to the discount rate)*`,
+    `= **${m(c.fcff)}**  *(FCFF is a firm-level flow — interest is NOT deducted; it belongs to the discount rate)*`,
     '',
     '**Step 2 — Enterprise (firm) value**',
     '',
     'Firm value = FCFF × (1 + g) / (WACC − g)  *(the firm flow is discounted at WACC, not the cost of equity)*',
-    `= ${fmt1(c.fcff)} × (1 + ${g}) / (${wacc} − ${g}) = **${fmt1(c.firm_value)} $m**`,
+    `= ${fmt1(c.fcff)} × (1 + ${g}) / (${wacc} − ${g}) = **${m(c.firm_value)}**`,
     '',
     '**Step 3 — Equity value**',
     '',
     'Equity value = firm value − market value of debt',
-    `= ${fmt1(c.firm_value)} − ${fmt1(raw.debt_value)} = **${fmt1(c.equity_value)} $m**  *(strip the debt — the FCFF value is the whole firm)*`,
+    `= ${fmt1(c.firm_value)} − ${fmt1(raw.debt_value)} = **${m(c.equity_value)}**  *(strip the debt — the FCFF value is the whole firm)*`,
     '',
     '**Step 4 — Advice to the board**',
     '',
     prose,
     '',
-    `*Reconciliation: firm value ${fmt1(c.firm_value)} − debt ${fmt1(raw.debt_value)} = equity ${fmt1(c.equity_value)} ✓*`,
+    `*Reconciliation: firm value ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
   ].join('\n');
 }
 
@@ -516,7 +529,7 @@ value, or any discount factor. Those are inserted by code.
 Requirements:
 - Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation the board is valuing (an acquisition target, a division being valued, or the company itself).
 - question: begins with "Advise" — ask the candidate to value the firm and its equity using FCFF and ADVISE the board on the value (and whether an implied offer/price is justified).
-- context_text: 2–3 sentences of scenario narrative + a clean labelled list of the raw inputs (in $m and %): operating profit (PBIT), tax rate, depreciation/non-cash, capital expenditure (capex), the increase in working capital, the WACC, the long-term growth rate, and the market value of debt. Give figures a candidate could compute from — do NOT pre-compute FCFF or value.
+- context_text: 2–3 sentences of scenario narrative + a clean labelled list of the raw inputs (money figures in millions of the LOCAL currency, rates in %): operating profit (PBIT), tax rate, depreciation/non-cash, capital expenditure (capex), the increase in working capital, the WACC, the long-term growth rate, and the market value of debt. Use the local currency for ${spec.region_hint} (e.g. AUD, ZAR, BRL) consistently, and report its ISO code in the currency field. Give figures a candidate could compute from — do NOT pre-compute FCFF or value.
 - Provide the SAME figures as the structured raw_inputs object. Rates (tax_rate, wacc, growth_rate) as DECIMAL FRACTIONS (0.25 for 25%). WACC must exceed the growth rate by at least 1 percentage point. Choose figures so FCFF and equity value are positive and debt is below firm value.
 - interpretation_prose: 3–5 sentences of qualitative advice ONLY (state NO computed numbers). Cover: (i) the plumbing done right — FCFF is a FIRM flow discounted at WACC (not the cost of equity), and equity value strips out debt; (ii) whether the perpetuity-growth assumption is safe for THIS company and what a lower growth rate would do to the value; (iii) one scepticism point challenging an input (the growth rate, the WACC's current relevance, or the sustainability of the FCFF); (iv) a CLEAR recommendation to the board (no fence-sitting).
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
@@ -579,6 +592,7 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
       question: { type: 'string', description: 'Drill question starting with "Advise". Asks the candidate to value the firm and its equity using FCFF and advise the board.' },
       context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs. NO computed FCFF, firm value, equity value or discount factors.' },
       command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "advise", "calculate and advise").' },
+      currency: { type: 'string', description: 'The ISO 4217 currency code used for the money figures in context_text, e.g. "AUD", "ZAR", "USD". Must match the currency you wrote in the scenario. Code, not symbol.' },
       raw_inputs: {
         type: 'object' as const,
         description: 'The raw figures, matching context_text exactly. Code uses these for ALL arithmetic.',
@@ -596,7 +610,7 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
       },
       interpretation_prose: { type: 'string', description: '3–5 sentences of qualitative advice ONLY — NO computed numbers. Plumbing (FCFF→WACC, strip debt), growth-assumption safety, one scepticism point on an input, and a clear board recommendation.' },
     },
-    required: ['question', 'context_text', 'command_verb', 'raw_inputs', 'interpretation_prose'],
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
   },
 };
 
@@ -626,6 +640,7 @@ interface DrillOutput {
   _liveSchema?:   AnswerSchema;      // quantitative only — functions, for gates + OFR proof (not persisted)
   _rawInputs?:    FcffInputs;        // quantitative only — dry-run inspection
   _computed?:     FcffComputed;      // quantitative only — dry-run inspection
+  _currency?:     string;            // quantitative only — dry-run display
 }
 
 function assertNonEmpty(obj: Record<string, unknown>, fields: string[], pass: string): void {
@@ -670,15 +685,16 @@ async function draftFcffDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
   const block = res.content.find((b) => b.type === 'tool_use');
   if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in FCFF Pass 1 response');
   const inp = block.input as {
-    question: string; context_text: string; command_verb: string;
+    question: string; context_text: string; command_verb: string; currency?: string;
     raw_inputs: FcffInputs; interpretation_prose: string;
   };
   assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (FCFF)');
   if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (FCFF): raw_inputs missing');
 
+  const currency = normaliseCurrency(inp.currency);
   const computed = computeFcff(inp.raw_inputs);              // throws loud on bad data → retry loop regenerates
-  const { schema, serialized } = buildFcffSchema(inp.raw_inputs, computed);
-  const model_answer = buildFcffModelAnswer(inp.raw_inputs, computed, inp.interpretation_prose);
+  const { schema, serialized } = buildFcffSchema(inp.raw_inputs, computed, currency);
+  const model_answer = buildFcffModelAnswer(inp.raw_inputs, computed, inp.interpretation_prose, currency);
 
   return {
     question:      inp.question,
@@ -689,6 +705,7 @@ async function draftFcffDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
     _liveSchema:   schema,
     _rawInputs:    inp.raw_inputs,
     _computed:     computed,
+    _currency:     currency,
   };
 }
 
@@ -874,8 +891,9 @@ async function main() {
     let gatesOk = true;
     if (spec.mode === 'quantitative') {
       if (drill._rawInputs && drill._computed) {
-        console.log(`\nRAW INPUTS (model-supplied): ${JSON.stringify(drill._rawInputs)}`);
-        console.log(`CODE-COMPUTED: FCFF=${fmt1(drill._computed.fcff)}  firm=${fmt1(drill._computed.firm_value)}  equity=${fmt1(drill._computed.equity_value)} ($m)`);
+        const cur = drill._currency ?? '$';
+        console.log(`\nRAW INPUTS (model-supplied, currency ${cur}): ${JSON.stringify(drill._rawInputs)}`);
+        console.log(`CODE-COMPUTED: FCFF=${money(cur, drill._computed.fcff)}  firm=${money(cur, drill._computed.firm_value)}  equity=${money(cur, drill._computed.equity_value)}`);
       }
       console.log(`\nANSWER_SCHEMA (serialised → answer_schema jsonb):\n${JSON.stringify(drill.answer_schema, null, 2)}`);
       const report = runQuantitativeGates(drill);
