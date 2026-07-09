@@ -116,10 +116,11 @@ export interface SerializedSchema {
 }
 
 export function buildFcffSchema(raw: FcffInputs, c: FcffComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
-  const tax  = asDecimalRate(raw.tax_rate);
-  const wacc = asDecimalRate(raw.wacc);
-  const g    = asDecimalRate(raw.growth_rate);
-  const debt = raw.debt_value;
+  const tax   = asDecimalRate(raw.tax_rate);
+  const wacc  = asDecimalRate(raw.wacc);
+  const g     = asDecimalRate(raw.growth_rate);
+  const debt  = raw.debt_value;
+  const offer = raw.offer_price;
   const moneyUnit = `${currency}m`; // "AUDm" / "$m" — classified as money by validate-schema
 
   const components: Component[] = [
@@ -160,12 +161,31 @@ export function buildFcffSchema(raw: FcffInputs, c: FcffComputed, currency: stri
         `= ${fmt1(c.firm_value)} − ${fmt1(debt)} = ${fmt1(c.equity_value)}`,
       ],
     },
+    {
+      // The offer test IS a marked step (the question asks whether the offer is justified),
+      // so the signed difference is a gradeable component. It carries under OFR from the
+      // student's own equity value. (offer_supportable — a boolean — needs the enum verdict
+      // kind, and the break-evens are enrichment not marked steps: both banked with E2, see
+      // AFM_NUMERIC_VERIFICATION_DESIGN.md §9.)
+      component_id: 'equity_vs_offer',
+      label: 'Equity value vs vendor offer (signed)',
+      expected_value: c.equity_vs_offer,
+      unit: moneyUnit,
+      tolerance: rel(0.5),
+      depends_on: ['equity_value'],
+      recompute: (d) => d.equity_value - offer,
+      working_steps: [
+        "Equity value − vendor's equity offer (justification test)",
+        `= ${fmt1(c.equity_value)} − ${fmt1(offer)} = ${fmt1(c.equity_vs_offer)}`,
+      ],
+    },
   ];
 
   const recomputeIds: Record<string, string | undefined> = {
     fcff: undefined,
     firm_value: 'firm_value_perpetuity_growth',
     equity_value: 'equity_value_strip_debt',
+    equity_vs_offer: 'equity_minus_offer',
   };
 
   const serialized: SerializedSchema = {
