@@ -50,12 +50,21 @@ import {
 import {
   verifyNumericAnswer,
   type AnswerSchema,
-  type Component,
-  type Tolerance,
   type StudentSubmission,
   type Verdict,
 } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
+import {
+  computeFcff,
+  buildFcffSchema,
+  buildFcffModelAnswer,
+  normaliseCurrency,
+  money,
+  fmt1,
+  type FcffInputs,
+  type FcffComputed,
+  type SerializedSchema,
+} from '../lib/acca/fcff';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -97,203 +106,14 @@ interface AfmDrillSpec {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// FCFF calculator — deterministic. Code owns every figure; the model never computes.
-// (Mirror of computeRegression / buildRegressionModelAnswer in generate-apm-drills.ts.)
-// Registered by LO in QUANT_CALCULATORS; only B4b/B4c (FCFF firm value) is wired for the pilot.
+// FCFF calculator lives in lib/acca/fcff.ts (pure, no side-effects) so it can be shared
+// by this generator, the numeric verifier's callers, and content-patch scripts without
+// importing this file's main(). Code owns every figure AND every figure-vs-figure verdict
+// (offer test) and break-even sensitivity — the model never states a number/inequality.
+// Only B4b/B4c (FCFF firm value) are wired for the pilot.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FCFF_LOS = new Set<LoCode>(['B4b', 'B4c']);
-
-interface FcffInputs {
-  pbit:                  number; // operating profit before interest and tax ($m)
-  tax_rate:              number; // decimal fraction, e.g. 0.25
-  depreciation:          number; // non-cash add-back ($m)
-  capex:                 number; // capital reinvestment ($m)
-  delta_working_capital: number; // increase in working capital ($m)
-  wacc:                  number; // decimal fraction, e.g. 0.10
-  growth_rate:           number; // perpetuity growth, decimal fraction, e.g. 0.03
-  debt_value:            number; // market value of debt ($m)
-}
-
-interface FcffComputed {
-  fcff:        number;
-  firm_value:  number;
-  equity_value: number;
-}
-
-// Rates sometimes arrive as percentages (10) instead of decimals (0.10). Normalise
-// defensively: anything > 1 for a rate field is treated as a percentage.
-function asDecimalRate(v: number): number {
-  return v > 1 ? v / 100 : v;
-}
-
-function computeFcff(raw: FcffInputs): FcffComputed {
-  const tax  = asDecimalRate(raw.tax_rate);
-  const wacc = asDecimalRate(raw.wacc);
-  const g    = asDecimalRate(raw.growth_rate);
-
-  for (const [k, v] of Object.entries(raw)) {
-    if (typeof v !== 'number' || !Number.isFinite(v)) {
-      throw new Error(`FCFF input "${k}" is not a finite number: ${JSON.stringify(v)}`);
-    }
-  }
-  if (tax < 0 || tax >= 1)  throw new Error(`tax_rate out of range (0,1): ${tax}`);
-  if (wacc <= 0 || wacc >= 1) throw new Error(`wacc out of range (0,1): ${wacc}`);
-  if (g < 0)                throw new Error(`growth_rate must be ≥ 0: ${g}`);
-  if (wacc - g < 0.005)     throw new Error(`WACC (${wacc}) must exceed growth (${g}) by ≥ 0.5% for a stable perpetuity`);
-
-  const fcff = raw.pbit * (1 - tax) + raw.depreciation - raw.capex - raw.delta_working_capital;
-  if (!(fcff > 0)) throw new Error(`Computed FCFF must be positive for a coherent valuation drill: ${fcff}`);
-
-  const firm_value = (fcff * (1 + g)) / (wacc - g);
-  const equity_value = firm_value - raw.debt_value;
-  if (!(equity_value > 0)) throw new Error(`Equity value must be positive (firm ${firm_value} − debt ${raw.debt_value})`);
-
-  return { fcff, firm_value, equity_value };
-}
-
-const fmt1 = (n: number): string => n.toFixed(1);
-const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
-
-// Money display honouring the drill's currency. ISO-style codes (AUD, ZAR) read "AUD 179.0m";
-// bare symbols ($) read "$179.0m". Normalised so the currency the model set in context_text
-// carries through to the worked answer instead of a hardcoded "$".
-function normaliseCurrency(raw: string | undefined): string {
-  const c = (raw ?? '$').trim();
-  return /^[A-Za-z]{2,4}$/.test(c) ? c.toUpperCase() : (c || '$');
-}
-function money(currency: string, n: number): string {
-  return /^[A-Za-z]{2,4}$/.test(currency) ? `${currency} ${fmt1(n)}m` : `${currency}${fmt1(n)}m`;
-}
-
-// Build the LIVE schema (recompute as functions — for the gates + OFR proof) and its
-// serialisable projection (recompute as rule-id strings + a per-drill params block, for
-// the answer_schema jsonb column). The string→function registry resolution at serve time
-// is Phase 2B-later (numeric-verifier.ts header note; design §16). Nothing reads
-// answer_schema at serve time yet (mode routing dormant), so persisting the projection is
-// forward-compatible, not load-bearing.
-interface SerializedComponent {
-  component_id:   string;
-  label?:         string;
-  expected_value: number;
-  unit?:          string;
-  tolerance:      Tolerance;
-  working_steps?: string[];
-  depends_on?:    string[];
-  recompute?:     string;   // rule-id, resolved via registry at serve time
-  weight?:        number;
-}
-interface SerializedSchema {
-  components: SerializedComponent[];
-  params:     Record<string, number>;
-}
-
-function buildFcffSchema(raw: FcffInputs, c: FcffComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
-  const tax  = asDecimalRate(raw.tax_rate);
-  const wacc = asDecimalRate(raw.wacc);
-  const g    = asDecimalRate(raw.growth_rate);
-  const debt = raw.debt_value;
-  const moneyUnit = `${currency}m`; // e.g. "AUDm" / "$m" — classified as money by validate-schema
-
-  const components: Component[] = [
-    {
-      component_id: 'fcff',
-      label: 'Free cash flow to firm (FCFF)',
-      expected_value: c.fcff,
-      unit: moneyUnit,
-      tolerance: rel(0.5),
-      working_steps: [
-        'FCFF = PBIT × (1 − t) + depreciation − capex − ΔWC',
-        `= ${fmt1(raw.pbit)} × (1 − ${tax}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)} = ${fmt1(c.fcff)}`,
-      ],
-    },
-    {
-      component_id: 'firm_value',
-      label: 'Enterprise (firm) value',
-      expected_value: c.firm_value,
-      unit: moneyUnit,
-      tolerance: rel(0.5),
-      depends_on: ['fcff'],
-      recompute: (d) => (d.fcff * (1 + g)) / (wacc - g),
-      working_steps: [
-        'Firm value = FCFF × (1 + g) / (WACC − g)   [FCFF discounted at WACC, not Ke]',
-        `= ${fmt1(c.fcff)} × (1 + ${g}) / (${wacc} − ${g}) = ${fmt1(c.firm_value)}`,
-      ],
-    },
-    {
-      component_id: 'equity_value',
-      label: 'Equity value',
-      expected_value: c.equity_value,
-      unit: moneyUnit,
-      tolerance: rel(0.5),
-      depends_on: ['firm_value'],
-      recompute: (d) => d.firm_value - debt,
-      working_steps: [
-        'Equity value = firm value − market value of debt',
-        `= ${fmt1(c.firm_value)} − ${fmt1(debt)} = ${fmt1(c.equity_value)}`,
-      ],
-    },
-  ];
-
-  const recomputeIds: Record<string, string | undefined> = {
-    fcff: undefined,
-    firm_value: 'firm_value_perpetuity_growth',
-    equity_value: 'equity_value_strip_debt',
-  };
-
-  const serialized: SerializedSchema = {
-    components: components.map((comp) => {
-      const s: SerializedComponent = {
-        component_id: comp.component_id,
-        label: comp.label,
-        expected_value: comp.expected_value,
-        unit: comp.unit,
-        tolerance: comp.tolerance,
-        working_steps: comp.working_steps,
-        depends_on: comp.depends_on,
-        weight: comp.weight,
-      };
-      const rid = recomputeIds[comp.component_id];
-      if (rid) s.recompute = rid;
-      return s;
-    }),
-    params: { wacc, growth_rate: g, debt_value: debt, tax_rate: tax },
-  };
-
-  return { schema: { components }, serialized };
-}
-
-function buildFcffModelAnswer(raw: FcffInputs, c: FcffComputed, prose: string, currency: string): string {
-  const tax  = asDecimalRate(raw.tax_rate);
-  const wacc = asDecimalRate(raw.wacc);
-  const g    = asDecimalRate(raw.growth_rate);
-  const m = (n: number) => money(currency, n);
-  return [
-    '**Firm and equity valuation (free cash flow to firm)**',
-    '',
-    '**Step 1 — Free cash flow to firm (FCFF)**',
-    '',
-    'FCFF = PBIT × (1 − t) + depreciation − capex − ΔWorking capital',
-    `= ${fmt1(raw.pbit)} × (1 − ${tax}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)}`,
-    `= **${m(c.fcff)}**  *(FCFF is a firm-level flow — interest is NOT deducted; it belongs to the discount rate)*`,
-    '',
-    '**Step 2 — Enterprise (firm) value**',
-    '',
-    'Firm value = FCFF × (1 + g) / (WACC − g)  *(the firm flow is discounted at WACC, not the cost of equity)*',
-    `= ${fmt1(c.fcff)} × (1 + ${g}) / (${wacc} − ${g}) = **${m(c.firm_value)}**`,
-    '',
-    '**Step 3 — Equity value**',
-    '',
-    'Equity value = firm value − market value of debt',
-    `= ${fmt1(c.firm_value)} − ${fmt1(raw.debt_value)} = **${m(c.equity_value)}**  *(strip the debt — the FCFF value is the whole firm)*`,
-    '',
-    '**Step 4 — Advice to the board**',
-    '',
-    prose,
-    '',
-    `*Reconciliation: firm value ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
-  ].join('\n');
-}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -334,9 +154,17 @@ const AFM_CATALOGUE_RULES =
   'direction (buy/sell), contract month, whole number of contracts, correct unexpired-basis period — stated ' +
   'BEFORE the outcome figure. ' +
   '(#5 VALUATION PLUMBING) Match the flow to the rate: a firm flow (FCFF) is discounted at WACC, an equity ' +
-  'flow (FCFE / dividends) at the cost of equity; NEVER deduct interest when computing FCFF; strip debt to ' +
-  'get equity value; add growth to a perpetuity ONLY where the scenario supports it; compute any growth rate ' +
-  'from the data given. ' +
+  'flow (FCFE / dividends) at the cost of equity; interest stays OUT of FCFF (the return to debt is captured ' +
+  'in the WACC, NOT deducted from the flow); strip debt to get equity value; add growth to a perpetuity ONLY ' +
+  'where the scenario supports it; compute any growth rate from the data given. A wrong discount rate is a ' +
+  'MISMATCH, never a stated directional effect — do NOT claim it "inflates" or "deflates" the value; whether ' +
+  'it overstates or understates depends on the numbers. ' +
+  '(PATTERN — CODE OWNS NUMBERS) In evaluative/advice prose, NEVER state a computed figure, an inequality ' +
+  'between computed figures (e.g. that an offer is above/below the value), or a break-even value — these are ' +
+  'inserted deterministically by code. Prose is qualitative reasoning only. ' +
+  '(PATTERN — ONLY SCENARIO FACTS) Evaluative prose may reference ONLY facts present in the scenario/context — ' +
+  'never invent events, cost savings, or risks not stated (e.g. do not assert "near-term cost savings" the ' +
+  'scenario never gives). ' +
   '(#6 DEVELOP ASSUMPTIONS) Each assumption → why it might not hold → its effect on the figure/decision; ' +
   'never a bare list of assumption headings. ' +
   '(#9 OWN-FIGURE / DO NOT ABANDON) A wrong upstream figure still earns the downstream method and the ' +
@@ -385,21 +213,27 @@ const EZRA_TEACHING_PERSONA =
   'SCENARIO-FREE discussion (generic lists, no scenario facts), VALUATION-PLUMBING (firm flow discounted at ' +
   'the cost of equity, interest wrongly deducted from FCFF, debt not stripped, growth added to a flat ' +
   'perpetuity), UNDEVELOPED-ASSUMPTION (assumptions listed not discussed), or ABANDONED-AFTER-CALC (giving up ' +
-  'the linked marks after a wrong number). Then give the diagnosis-led reframe: why that thinking is wrong and ' +
+  'the linked marks after a wrong number). Where the LO asks to RESOLVE a conflict (e.g. between ESG criteria), ' +
+  'the reveal must teach the resolution move — how the competing criteria are weighed and reconciled — not only ' +
+  'that a verdict is needed. Then give the diagnosis-led reframe: why that thinking is wrong and ' +
   'what the correct mental model is. This is NOT a restated model answer — it is a mental-model correction. ' +
   '\n\n' + BOARDROOM_BAR_PASS2 + '\n\n' +
   'TEACHING RULES: ' +
   '(1) When explaining why a claim is wrong, state the correct causal mechanism — reason WHY the misconception ' +
   'produces the wrong conclusion, do not merely restate the right answer. ' +
-  '(2) VALUATION PLUMBING: firm flow (FCFF) → WACC; equity flow (FCFE/dividends) → cost of equity; never ' +
-  'deduct interest in FCFF; strip debt for equity value; growth on a perpetuity only where the scenario ' +
-  'supports it. ' +
+  '(2) VALUATION PLUMBING: firm flow (FCFF) → WACC; equity flow (FCFE/dividends) → cost of equity; strip debt ' +
+  'for equity value; growth on a perpetuity only where the scenario supports it. Interest stays OUT of FCFF — ' +
+  'the return to debt is captured in the WACC, NOT deducted from the flow (do NOT say interest must "stay in ' +
+  'the flow"). A wrong discount rate is a MISMATCH, not a directional effect: do NOT say it "inflates" or ' +
+  '"deflates" value — whether it overstates or understates depends on the numbers. ' +
   '(3) OWN-FIGURE: where a calculation goes wrong, teach the student to carry their own figure forward — the ' +
   'downstream method and the recommendation still score; the error is charged once, at its source. ' +
   '(4) Avoid over-absolute causal language ("directly causes", "depends entirely on"); use "may", "is likely ' +
   'to", "suggests" for chains the scenario does not prove. ' +
-  '(5) ASSERTION DISCIPLINE: state as fact only what the scenario provides; phrase un-evidenced risks/causes ' +
-  'conditionally. Scepticism challenges the data and names what to verify, it does not invent the answer. ' +
+  '(5) ASSERTION DISCIPLINE: reference as fact ONLY what the scenario provides — never invent events, savings ' +
+  'or risks; phrase un-evidenced risks/causes conditionally. Do NOT state any computed figure or any inequality ' +
+  'between computed figures (the model answer already carries them). Scepticism challenges the data and names ' +
+  'what to verify, it does not invent the answer. ' +
   'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -521,17 +355,19 @@ Specification:
 - Intellectual level: L${spec.intellectual_level}
 - Marks guide: ${spec.marks_guide} marks
 
-CODE-COMPUTES-STATS PROTOCOL — MANDATORY. All arithmetic (FCFF, firm value, equity value) is
-computed by code from your raw inputs. Your job: supply the scenario, the raw input figures, and
-the evaluative prose. DO NOT compute or state anywhere: FCFF, firm value, enterprise value, equity
-value, or any discount factor. Those are inserted by code.
+CODE-COMPUTES-STATS PROTOCOL — MANDATORY. Code owns EVERY figure and EVERY comparison. It
+computes FCFF, firm value, equity value, the offer-vs-value verdict, and the break-even
+sensitivities. Your job: supply the scenario, the raw input figures (including the offer), and
+qualitative prose. DO NOT state anywhere: FCFF, firm value, equity value, any discount factor,
+any inequality between computed figures (e.g. "the offer is below the value"), or any break-even.
+Those are ALL inserted by code.
 
 Requirements:
-- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation the board is valuing (an acquisition target, a division being valued, or the company itself).
-- question: begins with "Advise" — ask the candidate to value the firm and its equity using FCFF and ADVISE the board on the value (and whether an implied offer/price is justified).
-- context_text: 2–3 sentences of scenario narrative + a clean labelled list of the raw inputs (money figures in millions of the LOCAL currency, rates in %): operating profit (PBIT), tax rate, depreciation/non-cash, capital expenditure (capex), the increase in working capital, the WACC, the long-term growth rate, and the market value of debt. Use the local currency for ${spec.region_hint} (e.g. AUD, ZAR, BRL) consistently, and report its ISO code in the currency field. Give figures a candidate could compute from — do NOT pre-compute FCFF or value.
-- Provide the SAME figures as the structured raw_inputs object. Rates (tax_rate, wacc, growth_rate) as DECIMAL FRACTIONS (0.25 for 25%). WACC must exceed the growth rate by at least 1 percentage point. Choose figures so FCFF and equity value are positive and debt is below firm value.
-- interpretation_prose: 3–5 sentences of qualitative advice ONLY (state NO computed numbers). Cover: (i) the plumbing done right — FCFF is a FIRM flow discounted at WACC (not the cost of equity), and equity value strips out debt; (ii) whether the perpetuity-growth assumption is safe for THIS company and what a lower growth rate would do to the value; (iii) one scepticism point challenging an input (the growth rate, the WACC's current relevance, or the sustainability of the FCFF); (iv) a CLEAR recommendation to the board (no fence-sitting).
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation the board is valuing (an acquisition target, a division being valued, or the company itself), and a vendor/asking price for its equity.
+- question: begins with "Advise" — ask the candidate to value the firm and its equity using FCFF and ADVISE the board whether the stated offer price for the equity is justified.
+- context_text: 2–3 sentences of scenario narrative + a clean labelled list of the raw inputs (money figures in millions of the LOCAL currency, rates in %): PBIT, tax rate, depreciation/non-cash, capex, the increase in working capital, the WACC, the long-term growth rate, the market value of debt, and the vendor's indicative equity offer/asking price. Use the local currency for ${spec.region_hint} (e.g. AUD, ZAR, BRL) consistently, and report its ISO code in the currency field. Add 1–2 challengeable textures (capex vs sustainable reinvestment; customer/contract concentration or cyclicality) so scepticism has something to bite. Give figures a candidate could compute from — do NOT pre-compute FCFF or value.
+- Provide the SAME figures as the structured raw_inputs object (including offer_price). Rates (tax_rate, wacc, growth_rate) as DECIMAL FRACTIONS (0.25 for 25%). WACC must exceed the growth rate by at least 1 percentage point. Choose figures so FCFF and equity value are positive and debt is below firm value; set the offer realistically so "is it justified?" is a genuine judgement.
+- interpretation_prose: qualitative advice ONLY (3–5 sentences), following the tool rules — NO numbers, NO inequalities between computed figures, NO break-evens, NO directional claim about a wrong discount rate, and ONLY facts present in context_text. Interest stays OUT of FCFF (financing is captured by the WACC and the debt strip). Cover which inputs are most fragile and why, and the due diligence the board should require.
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
@@ -558,9 +394,10 @@ Anchor the reveal to the BOARDROOM BAR: the universal AFM failure is a calculati
 
 Quality rules (mandatory):
 - State the correct causal mechanism when reframing a misconception — WHY it produces the wrong conclusion, not just the right answer.
-- Valuation plumbing: firm flow → WACC; equity flow → cost of equity; never deduct interest in FCFF; strip debt for equity value.
+- Valuation plumbing: firm flow (FCFF) → WACC; equity flow (FCFE/dividends) → cost of equity; strip debt for equity value. Interest stays OUT of FCFF — the return to debt is captured in the WACC, not deducted from the flow (do NOT say interest must "stay in the flow"). A wrong discount rate is a MISMATCH, not a stated directional effect: do NOT claim it "inflates" or "deflates" value — whether it overstates or understates depends on the numbers.
 - Use "may", "is likely to", "suggests" for causal chains; avoid "directly", "depends entirely on" where the scenario shows only plausibility.
-- Assert only what the scenario states; phrase un-evidenced risks conditionally.
+- Reference ONLY facts present in the scenario/context — never invent events, savings, or risks; phrase un-evidenced risks conditionally.
+- Do not state any computed figure or any inequality between computed figures — the model answer already carries them.
 - Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).`;
 }
 
@@ -590,14 +427,14 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
     type: 'object' as const,
     properties: {
       question: { type: 'string', description: 'Drill question starting with "Advise". Asks the candidate to value the firm and its equity using FCFF and advise the board.' },
-      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs. NO computed FCFF, firm value, equity value or discount factors.' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs, INCLUDING the vendor\'s indicative equity offer/asking price. NO computed FCFF, firm value, equity value or discount factors. Add 1–2 challengeable textures (e.g. whether reported capex reflects sustainable reinvestment; customer/contract concentration or cyclicality) so the scepticism has something to bite on.' },
       command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "advise", "calculate and advise").' },
       currency: { type: 'string', description: 'The ISO 4217 currency code used for the money figures in context_text, e.g. "AUD", "ZAR", "USD". Must match the currency you wrote in the scenario. Code, not symbol.' },
       raw_inputs: {
         type: 'object' as const,
-        description: 'The raw figures, matching context_text exactly. Code uses these for ALL arithmetic.',
+        description: 'The raw figures, matching context_text exactly. Code uses these for ALL arithmetic, the offer-vs-value comparison, and the break-even sensitivities.',
         properties: {
-          pbit:                  { type: 'number', description: 'Operating profit before interest and tax, $m' },
+          pbit:                  { type: 'number', description: 'Operating profit before interest and tax, current maintainable base-year, in $m' },
           tax_rate:              { type: 'number', description: 'Corporate tax rate as a decimal fraction, e.g. 0.25' },
           depreciation:          { type: 'number', description: 'Depreciation / non-cash add-back, $m' },
           capex:                 { type: 'number', description: 'Capital expenditure (reinvestment), $m' },
@@ -605,10 +442,11 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
           wacc:                  { type: 'number', description: 'WACC as a decimal fraction, e.g. 0.10 — must exceed growth_rate by ≥ 0.01' },
           growth_rate:           { type: 'number', description: 'Long-term perpetuity growth as a decimal fraction, e.g. 0.03' },
           debt_value:            { type: 'number', description: 'Market value of debt, $m — must be below firm value' },
+          offer_price:           { type: 'number', description: 'The vendor\'s indicative EQUITY offer/asking price under test, $m. Set it realistically near a plausible equity value so "is it justified?" is a genuine judgement (roughly within ±40% of PBIT×(1−t)/(WACC−g)), not a trivial yes/no.' },
         },
-        required: ['pbit', 'tax_rate', 'depreciation', 'capex', 'delta_working_capital', 'wacc', 'growth_rate', 'debt_value'],
+        required: ['pbit', 'tax_rate', 'depreciation', 'capex', 'delta_working_capital', 'wacc', 'growth_rate', 'debt_value', 'offer_price'],
       },
-      interpretation_prose: { type: 'string', description: '3–5 sentences of qualitative advice ONLY — NO computed numbers. Plumbing (FCFF→WACC, strip debt), growth-assumption safety, one scepticism point on an input, and a clear board recommendation.' },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed numbers, NO inequality between computed figures (e.g. do not say the offer is above/below the value), and NO break-even values — code owns all of those. Do NOT claim a directional valuation effect from a wrong discount rate (a rate mismatch is the error; the direction depends on the numbers). Reference ONLY facts stated in context_text — never invent events, savings or risks. Cover: which inputs are most fragile and WHY (growth vs the sector; WACC vs a private-company premium; capex vs sustainable reinvestment); what due diligence the board should require; and that interest stays OUT of FCFF (financing is captured by the WACC and the debt strip).' },
     },
     required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
   },
