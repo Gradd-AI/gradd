@@ -14,6 +14,7 @@
     "verify-schemes": "tsx --env-file=.env.local scripts/verify-mark-schemes.ts",
     "test:schemes": "tsx scripts/test-mark-scheme-framework.ts",
     "generate-apm-drills": "tsx --env-file=.env.local scripts/generate-apm-drills.ts",
+    "generate-afm-drills": "tsx --env-file=.env.local scripts/generate-afm-drills.ts",
     "calibrate-marking": "tsx --env-file=.env.local scripts/calibrate-marking.ts",
     "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts"
   },
