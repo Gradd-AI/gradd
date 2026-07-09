@@ -18,7 +18,8 @@
     "calibrate-marking": "tsx --env-file=.env.local scripts/calibrate-marking.ts",
     "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts",
     "test:npv": "tsx scripts/test-npv.ts",
-    "test:org-readiness": "tsx scripts/test-org-readiness.ts"
+    "test:org-readiness": "tsx scripts/test-org-readiness.ts",
+    "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

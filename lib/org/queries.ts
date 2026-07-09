@@ -172,8 +172,9 @@ function groupBy<T>(rows: T[], key: (r: T) => string): Map<string, T[]> {
   return map;
 }
 
-/** Assemble the pure ReadinessInput for one user from that user's raw rows. */
-function buildInput(
+/** Assemble the pure ReadinessInput for one user from that user's raw rows.
+ *  Exported so the demo seeder can offline-verify persona bands without a DB. */
+export function buildInput(
   now: number,
   total: number,
   attempts: RawRows['attempts'],
