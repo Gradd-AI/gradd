@@ -737,3 +737,19 @@ MIGRATION DEFERRED: the schema migration (`mode` column, `answer_schema jsonb`, 
 5. **STILL OPEN:** **batch-1 external review (next action)**; Friday campaign read; redpen ad image (Canva); partner shortlist + first sends; Search Console; Reddit karma (r/ACCA gate ~5 comment-karma — build in r/Accounting first, then repost the 3 drafted comments); failure-mode naming + email-nurture specs; weekly calibration (`npm run calibrate-marking`).
 
 **HANDOVER NOTE (home machine):** after `git pull`, the batch-1 drills are the **4 newest `paper_code='AFM' status='candidate'` rows** (all `lo_code='B1a'`). To produce the adversarial-review paste: query those rows (all fields incl. `answer_schema`) or re-run `npm run generate-afm-drills -- --npv-batch --dry-run`. Adversarial prompt template = this session's method: **fresh Claude, no project context, AFM syllabus PDF attached, full hostility on drill 1 of the batch, spot-check siblings.** Underscore-prefixed `scripts/_*` (fetch/patch/approve) are gitignored/local — DB is the source of truth for drill content; the flip-to-approved script pattern is `_approve_afm_pilot.ts`.
+
+---
+
+## SURFACED — VERIFY LATER (org layer — suspicions, NOT findings)
+
+Raised during the org-layer / coordinator-dashboard demo-cut build (2026-07-09). These are *things to check*, not confirmed defects — do not act as if proven. See memory `project-org-layer-build`.
+
+1. **Pilot day-one cold-start.** A real cohort begins with an empty attempt log → empty heatmap, grey/undetermined RAG for every trainee. Likely answer: an **intake diagnostic as enrolment baseline** (reuse the resit-diagnostic pattern) so a coordinator sees signal on day one instead of a blank grid. Needs design before any real pilot; a **pitch card** before then. Not a demo blocker (demo is seeded), but the first question a real buyer asks.
+
+2. **Demo delivery logistics.** Coordinator account is **hardcoded** (role gate deferred) → the demo runs on **Grant's device**, signed in as the coordinator, with a **meeting-room dry run**. Day-before checklist item, not a build item.
+
+3. **Synthetic demo user_ids have no `auth.users` rows.** Trainees are plain uuids (deliberately — FK-free tables). VERIFY nothing in the dashboard query path breaks or leaks on users that don't exist in `auth.users`: specifically any join to `profiles` (which keys on `auth.users.id`). The current query layer (`lib/org/queries.ts`) reads only `acca_*` + org tables and derives names from membership email — no `profiles` join today — but re-check before the UI adds one.
+
+4. **Attempt-log write now fires on EVERY real attempt** (`app/api/acca/tutor/route.ts`, swallowed). VERIFY at volume: (a) no perf/cost drag on the teach path; (b) the swallow can't mask a **systematic** insert failure silently — a week of zero rows would read as "no students," not a bug. Consider a lightweight write-health check (row-count heartbeat / periodic assert) before leaning on the log for pilot metrics or W_WEAK tuning.
+
+5. **Readiness weights (0.30/0.30/0.25/0.15) are invented priors.** Fine for a demo; they are NOT validated as predictive. Must be **sanity-checked against real student outcomes** (did Ambers who ignored their weak areas actually fail?) before any firm is shown the RAG as a predictive signal. Same caveat applies to the band cut points (0.66 / 0.40) and the 21-day disengagement threshold.
