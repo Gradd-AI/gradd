@@ -165,6 +165,10 @@ const AFM_CATALOGUE_RULES =
   '(PATTERN — ONLY SCENARIO FACTS) Evaluative prose may reference ONLY facts present in the scenario/context — ' +
   'never invent events, cost savings, or risks not stated (e.g. do not assert "near-term cost savings" the ' +
   'scenario never gives). ' +
+  '(PATTERN — NAMED RISKS ONLY FROM SCENARIO) Any risk premium, discount, or named risk factor cited in ' +
+  'evaluative prose (an illiquidity premium, a key-person premium, a customer-concentration premium, a ' +
+  'country/political risk) may name ONLY risks the scenario evidences — do not introduce a named risk the ' +
+  'context does not state (e.g. do not invoke "key-person" risk where the scenario never mentions it). ' +
   '(#6 DEVELOP ASSUMPTIONS) Each assumption → why it might not hold → its effect on the figure/decision; ' +
   'never a bare list of assumption headings. ' +
   '(#9 OWN-FIGURE / DO NOT ABANDON) A wrong upstream figure still earns the downstream method and the ' +
@@ -231,7 +235,9 @@ const EZRA_TEACHING_PERSONA =
   '(4) Avoid over-absolute causal language ("directly causes", "depends entirely on"); use "may", "is likely ' +
   'to", "suggests" for chains the scenario does not prove. ' +
   '(5) ASSERTION DISCIPLINE: reference as fact ONLY what the scenario provides — never invent events, savings ' +
-  'or risks; phrase un-evidenced risks/causes conditionally. Do NOT state any computed figure or any inequality ' +
+  'or risks; phrase un-evidenced risks/causes conditionally. Any risk premium, discount, or named risk factor ' +
+  '(illiquidity, key-person, customer-concentration, country risk) may name ONLY risks the scenario evidences — ' +
+  'do not introduce one the context does not state. Do NOT state any computed figure or any inequality ' +
   'between computed figures (the model answer already carries them). Scepticism challenges the data and names ' +
   'what to verify, it does not invent the answer. ' +
   'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).';
@@ -446,7 +452,7 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
         },
         required: ['pbit', 'tax_rate', 'depreciation', 'capex', 'delta_working_capital', 'wacc', 'growth_rate', 'debt_value', 'offer_price'],
       },
-      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed numbers, NO inequality between computed figures (e.g. do not say the offer is above/below the value), and NO break-even values — code owns all of those. Do NOT claim a directional valuation effect from a wrong discount rate (a rate mismatch is the error; the direction depends on the numbers). Reference ONLY facts stated in context_text — never invent events, savings or risks. Cover: which inputs are most fragile and WHY (growth vs the sector; WACC vs a private-company premium; capex vs sustainable reinvestment); what due diligence the board should require; and that interest stays OUT of FCFF (financing is captured by the WACC and the debt strip).' },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed numbers, NO inequality between computed figures (e.g. do not say the offer is above/below the value), and NO break-even values — code owns all of those. Do NOT claim a directional valuation effect from a wrong discount rate (a rate mismatch is the error; the direction depends on the numbers). Reference ONLY facts stated in context_text — never invent events, savings or risks. Any named risk premium/discount (illiquidity, key-person, customer-concentration, country risk) may name ONLY risks the scenario evidences. Cover: which inputs are most fragile and WHY (growth vs the sector; WACC vs a private-company premium; capex vs sustainable reinvestment); what due diligence the board should require; and that interest stays OUT of FCFF (financing is captured by the WACC and the debt strip).' },
     },
     required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
   },
