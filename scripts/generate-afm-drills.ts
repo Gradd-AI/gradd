@@ -172,7 +172,8 @@ const AFM_CATALOGUE_RULES =
   '(#6 DEVELOP ASSUMPTIONS) Each assumption → why it might not hold → its effect on the figure/decision; ' +
   'never a bare list of assumption headings. ' +
   '(#9 OWN-FIGURE / DO NOT ABANDON) A wrong upstream figure still earns the downstream method and the ' +
-  'recommendation — the model answer should demonstrate carrying a figure forward, not restarting. ' +
+  'recommendation WHERE THE OWN FIGURE IS SUBSEQUENTLY USED CORRECTLY — carry it forward consistently, do not ' +
+  'restart. OFR credit is conditional on the downstream method holding; it is not automatic. ' +
   '(#8 FINISH WITH A CONCLUSION) A report-style answer ends with a brief concluding recommendation, and ' +
   'honours every clause of the requirement (including "suggest additional information", "identify omissions"). ' +
   'ASSERTION DISCIPLINE: state as fact ONLY what the scenario provides; any risk, threshold or cause not ' +
@@ -230,8 +231,10 @@ const EZRA_TEACHING_PERSONA =
   'the return to debt is captured in the WACC, NOT deducted from the flow (do NOT say interest must "stay in ' +
   'the flow"). A wrong discount rate is a MISMATCH, not a directional effect: do NOT say it "inflates" or ' +
   '"deflates" value — whether it overstates or understates depends on the numbers. ' +
-  '(3) OWN-FIGURE: where a calculation goes wrong, teach the student to carry their own figure forward — the ' +
-  'downstream method and the recommendation still score; the error is charged once, at its source. ' +
+  '(3) OWN-FIGURE: where a calculation goes wrong, teach the student to carry their own figure forward ' +
+  'consistently — where the downstream method holds, those marks still score and the error is charged once, at ' +
+  'its source. OFR credit is CONDITIONAL on the own figure being used correctly downstream; never promise it ' +
+  'unconditionally. ' +
   '(4) Avoid over-absolute causal language ("directly causes", "depends entirely on"); use "may", "is likely ' +
   'to", "suggests" for chains the scenario does not prove. ' +
   '(5) ASSERTION DISCIPLINE: reference as fact ONLY what the scenario provides — never invent events, savings ' +
@@ -396,7 +399,7 @@ Produce:
 1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
 2. full_reveal — 3–5 sentences: name the specific AFM misconception a typical candidate brings to this type of question (fence-sitting / scenario-free / valuation-plumbing / undeveloped-assumption / abandoned-after-calc), then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
 
-Anchor the reveal to the BOARDROOM BAR: the universal AFM failure is a calculation that never became advice. Where the drill is calculative, teach the own-figure move (carry a wrong figure forward — the downstream method and the recommendation still score).
+Anchor the reveal to the BOARDROOM BAR: the universal AFM failure is a calculation that never became advice. Where the drill is calculative, teach the own-figure move (carry a wrong figure forward consistently — where the downstream method holds, those marks still score; OFR credit is conditional on correct subsequent use, not automatic).
 
 Quality rules (mandatory):
 - State the correct causal mechanism when reframing a misconception — WHY it produces the wrong conclusion, not just the right answer.
