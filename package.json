@@ -16,7 +16,8 @@
     "generate-apm-drills": "tsx --env-file=.env.local scripts/generate-apm-drills.ts",
     "generate-afm-drills": "tsx --env-file=.env.local scripts/generate-afm-drills.ts",
     "calibrate-marking": "tsx --env-file=.env.local scripts/calibrate-marking.ts",
-    "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts"
+    "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts",
+    "test:npv": "tsx scripts/test-npv.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
