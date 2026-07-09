@@ -91,7 +91,7 @@ export async function listCohorts(orgId: string): Promise<Cohort[]> {
   return (data as Cohort[] | null) ?? [];
 }
 
-async function getCohort(cohortId: string): Promise<Cohort | null> {
+export async function getCohortById(cohortId: string): Promise<Cohort | null> {
   const sb = createServiceClient();
   const { data } = await sb
     .from('cohorts')
@@ -100,6 +100,7 @@ async function getCohort(cohortId: string): Promise<Cohort | null> {
     .maybeSingle();
   return (data as Cohort | null) ?? null;
 }
+const getCohort = getCohortById; // internal alias
 
 async function cohortUserIds(cohortId: string): Promise<string[]> {
   const sb = createServiceClient();
@@ -314,4 +315,93 @@ export async function getCohortHeatmap(cohortId: string): Promise<CohortHeatmap>
   });
 
   return { subAreas, rows: outRows };
+}
+
+// ── Org overview (cohort cards screen) ────────────────────────────────────────
+
+export interface CohortOverview {
+  cohort: Cohort;
+  memberCount: number;
+  rag: { green: number; amber: number; red: number };
+  lastActiveDays: number | null; // most-recent trainee (min days since active)
+}
+export interface OrgOverview {
+  org: Org;
+  cohorts: CohortOverview[];
+  utilisation: { active: number; invited: number };
+}
+
+export async function getOrgUtilisation(orgId: string): Promise<{ active: number; invited: number }> {
+  const sb = createServiceClient();
+  const [{ count: active }, { count: invited }] = await Promise.all([
+    sb.from('org_memberships').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'active'),
+    sb.from('org_memberships').select('*', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'invited'),
+  ]);
+  return { active: active ?? 0, invited: invited ?? 0 };
+}
+
+export async function getOrgOverview(slug: string, now: number): Promise<OrgOverview | null> {
+  const org = await getOrgBySlug(slug);
+  if (!org) return null;
+  const cohorts = await listCohorts(org.id);
+  const overviews: CohortOverview[] = await Promise.all(
+    cohorts.map(async (c) => {
+      const rag = await getCohortReadiness(c.id, now);
+      const tally = { green: 0, amber: 0, red: 0 };
+      let lastActiveDays: number | null = null;
+      for (const t of rag) {
+        tally[t.readiness.band]++;
+        const d = t.readiness.components.recency.daysSinceActive;
+        if (d != null && (lastActiveDays == null || d < lastActiveDays)) lastActiveDays = d;
+      }
+      return { cohort: c, memberCount: rag.length, rag: tally, lastActiveDays };
+    }),
+  );
+  const sb = createServiceClient();
+  const [{ count: active }, { count: invited }] = await Promise.all([
+    sb.from('org_memberships').select('*', { count: 'exact', head: true }).eq('org_id', org.id).eq('status', 'active'),
+    sb.from('org_memberships').select('*', { count: 'exact', head: true }).eq('org_id', org.id).eq('status', 'invited'),
+  ]);
+  return { org, cohorts: overviews, utilisation: { active: active ?? 0, invited: invited ?? 0 } };
+}
+
+// ── Trainee drill-down (explainability screen) ────────────────────────────────
+
+export interface RecentAttempt { lo_code: string; outcome: string; created_at: string }
+export interface TraineeDetail {
+  userId: string;
+  email: string | null;
+  name: string;
+  readiness: ReadinessResult;
+  coveredSubAreas: string[];
+  totalSubAreas: number;
+  stuckDrills: number;
+  daysSinceActive: number | null;
+  recentAttempts: RecentAttempt[];
+  marks: { case_id: string; awarded: number; available: number; marked_at: string }[];
+  mocks: { mock_id: string; completed: boolean; started_at: string }[];
+}
+
+export async function getTraineeDetail(orgId: string, userId: string, now: number): Promise<TraineeDetail | null> {
+  const [total, rows, emails] = await Promise.all([totalSubAreas(), rawRowsForUsers([userId]), emailsForOrg(orgId)]);
+  const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
+  const readiness = computeReadiness(input);
+
+  const covered = new Set<string>();
+  for (const a of rows.attempts) if (a.outcome === 'correct') covered.add(subAreaOf(a.lo_code));
+  const stuckDrills = rows.progress.filter((p) => !p.resolved && (p.miss_count ?? 0) >= 2).length;
+  const recentAttempts = [...rows.attempts]
+    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    .slice(0, 15)
+    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at }));
+  const email = emails.get(userId) ?? null;
+
+  return {
+    userId, email, name: displayNameFromEmail(email), readiness,
+    coveredSubAreas: [...covered].sort(), totalSubAreas: total,
+    stuckDrills, daysSinceActive: readiness.components.recency.daysSinceActive,
+    recentAttempts,
+    marks: rows.marks.map((m) => ({ case_id: m.case_id, awarded: m.professional_marks_awarded, available: m.professional_marks_available, marked_at: m.marked_at })),
+    mocks: rows.mocks.map((m) => ({ mock_id: m.mock_id, completed: m.completed, started_at: m.started_at })),
+  };
 }
