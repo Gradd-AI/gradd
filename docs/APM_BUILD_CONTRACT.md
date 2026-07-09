@@ -740,6 +740,34 @@ MIGRATION DEFERRED: the schema migration (`mode` column, `answer_schema jsonb`, 
 
 ---
 
+## Session 2026-07-09/10 — KPMG opportunity, org layer + coordinator dashboard demo cut SHIPPED
+
+**1. STRATEGIC — KPMG opportunity (warm intro).** MP of KPMG Ireland; prior buyer relationship (bought a global Tableau licence from Grant), friend-of-friend. **NOT a pivot** — Horizon 2 (employer licensing) pulled forward; B2C untouched, AFM continues. **KEY RESEARCH FINDING (verified):** KPMG Ireland graduate trainees are **ACA** (Chartered Accountants Ireland — their careers page; advertise 94% FAE pass rate; €19.8m/yr KPMG Business School), **NOT ACCA**. ACCA lives in KPMG's **network firms in exactly our ad markets** (PK/NG/KE/MY/Gulf/E-Europe). **DEAL SHAPE:** Dublin is the door + champion, **global-network ACCA licensing is the deal** — mirrors his prior global-licence buying pattern. **Pitch leads global, not local.**
+
+**2. PITCH KIT drafted (in chat).** One-pager (P&L framing — €7k–18k per fail, ROI table with blanks for their numbers, complement-not-compete positioning, coordinator dashboard as the firm's telemetry layer, demo-cohort CTA); discovery question set (5 — network ACCA trainee counts, L&D budget ownership global-vs-per-firm, incumbent provider spend, fail process/cost/accountability, named pilot). **TWO PREPARED CARDS:**
+  - (a) **ACA question** — "engine is qualification-agnostic; the content pack is what a partnership funds." Real effort sized at **4–6 months** (FAE + priority CAP2), **gated on** funded partnership (€100–250k dev + per-trainee licensing) + CAI material access + KPMG SME QA backstop. **NEVER pitch "resit problem" to Dublin** (they advertise 94%) — pitch **protect-the-number**.
+  - (b) **Security** — EU-hosted Supabase Dublin, GDPR-built, RLS, magic-link (no password DB); **pen test scheduled ahead of pilot go-live / aligned to their vendor questionnaire at contract stage — NOT commissioned now** (premature; hostile RLS review + `npm audit` + rate-limiting self-serve the 80% first).
+  - One-pager PDF exports **ONLY when the demo renders** (done — export now unblocked). Three-line sharpen agreed: dashboard paragraph upgraded to fact (RAG + heatmap + utilisation-honesty), "marker that never sleeps + telemetry the firm never had", demo-cohort CTA line.
+
+**3. ORG LAYER + DASHBOARD DEMO CUT — FULLY SHIPPED in one session.** `next build` green (10/07); all three `/org` routes server-rendered.
+  - **Phase (a) schema** (`058d0d0`): `orgs`/`org_memberships`/`cohorts`/`cohort_memberships` + `acca_drill_attempts` append log (closes the Horizon-1 W_WEAK data-capture violation; tutor route now appends every real attempt, swallowed), `is_coordinator_of` SECURITY DEFINER, RLS all 5 tables, idempotency fix (CREATE POLICY has no IF NOT EXISTS → DO-block guards). **Migration APPLIED + VERIFIED in prod** (5 tables, RLS ×5, prosecdef, 4 policies).
+  - **Phase (b)** (`01f5324` + `130cc27`): readiness RAG v1 (0.30 R / 0.30 C / 0.25 M / 0.15 P, renormalised when P absent; Green ≥0.66 / Amber / Red <0.40; hard overrides: >21d disengaged → Red, zero attempts → Red); mock-score fold (per-mock aggregation of case marking, double-count guard). **40 assertions passing** (`npm run test:org-readiness`).
+  - **DEMO SEED** (`52db85c`): Demo Advisory LLP (`is_demo=true`), 25 trainees / 2 cohorts, deterministic `de5e0000-` UUIDs, delete-then-insert idempotent, backdated 25-day attempt history. Authored personas **all verified legible in raw numbers AND on screen**: Priya never-started Red; Tom/Nikolai disengaged-override Reds; Marcus high-activity-flat Amber (R=1.00 / M=0.43 — quality-over-effort proof); Greens 0.8 on D2 while ~0 elsewhere (**Sept D2 cohort avg 0.83 — THE pitch line: "even your strong trainees are weak on the new data-science area"**); invited seats in counts not rows; mock-derived P=0.80 ×3.
+  - **MINIMAL UI** (`4f7e17a`, `f20842c`, `716e862`, `55d444c`): `/org/[slug]` cohort cards → heatmap (data-columns-only, muted RAG palette, worst-first, cohort roll-up) → drill-down (4 components + inputs, explainable to the number). Coordinator hardcoded `grant@live.ie`. **Live-verified screen 1 at www.gradd.ai/org/demo-advisory.**
+
+**4. DECISIONS ON RECORD.** Seeder **deletable-not-immutable** (immutability trigger = pilot-ready); **binary attempt outcome** (no kind column); **W_WEAK steering UNBLOCKED** by the log but deliberately sequenced **AFTER demo ships + 2wks real data**, own session, tuned on real history, test-account verified first; **UI polish = dedicated Phase c+ session** (heatmap hero, hover-to-number, sparklines from attempt log, projector density, house tokens only, NO new design system) — the heatmap is the forwarded-screenshot asset; **ACA = funded-partnership card only**.
+
+**5. SURFACED — VERIFY LATER now has 6 suspicions** (see the list below): pilot cold-start/intake diagnostic; demo delivery dry-run; synthetic-UUID joins as UI grows; attempt-log write health at volume + silent-swallow masking; readiness weights are invented priors incl. band cutpoints + 21d threshold; demo rows excludable only by UUID-prefix convention (is_demo mechanism at pilot-ready).
+
+**6. STILL OPEN.** Grant's three-screen walk (screen 1 verified; Sept heatmap + Marcus/Priya/Grace drill-downs owed); Phase c+ polish session; one-pager PDF export; coffee booking; campaign Friday country-breakdown read + ~18/07 judgement; blog self-publishing (next 13/07); partner sends; redpen ad; Search Console; Reddit karma; **AFM batch-1 adversarial review (PAUSED mid-flight pre-pivot — 4 B1a NPV candidates awaiting external review; resumes after demo polish).**
+
+### Hardening rules (10/07/2026)
+1. **Pushes to main run `next build` locally first** — main auto-deploys to production, which is spending ad money; **tsc-green ≠ build-green** (route conflicts, server/client boundaries surface at build, not typecheck). Survived on luck this session (build run + confirmed green retroactively).
+2. **Machine relay cuts both ways** — pull-first on arrival at either machine; a stale/busy Claude Code session on the other machine is **closed, never resumed**; **bank + push before every handover**.
+3. **Long pastes into chat arrive empty** (known quirk) — review artefacts always via `ClaudeSend.txt` upload; **never approve a build on a report that didn't arrive.**
+
+---
+
 ## SURFACED — VERIFY LATER (org layer — suspicions, NOT findings)
 
 Raised during the org-layer / coordinator-dashboard demo-cut build (2026-07-09). These are *things to check*, not confirmed defects — do not act as if proven. See memory `project-org-layer-build`.
