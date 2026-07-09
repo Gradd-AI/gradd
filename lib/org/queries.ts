@@ -10,9 +10,14 @@
 // (lib/org/readiness.ts), which never reads the clock itself.
 
 import { createServiceClient } from '@/lib/supabase/server';
-import { computeReadiness, DAY_MS, type ReadinessInput, type ReadinessResult } from './readiness';
+import { getMockPaper, MOCK_PAPERS } from '@/lib/acca/mocks';
+import { computeReadiness, mockScoreFromMarks, DAY_MS, type ReadinessInput, type ReadinessResult } from './readiness';
 
 const WINDOW_MS = 14 * DAY_MS; // recent = last 14d; prior = 14–28d ago
+
+// Every case_id that belongs to ANY mock paper — used to split a user's case
+// markings into mock-case scores vs standalone practice (avoids double-counting).
+const MOCK_CASE_IDS = new Set(MOCK_PAPERS.flatMap((p) => p.case_ids));
 
 /** Sub-area = first two chars of an APM lo_code (e.g. 'D2b' → 'D2'). Product-neutral. */
 export const subAreaOf = (loCode: string): string => loCode.slice(0, 2);
@@ -137,8 +142,8 @@ async function totalSubAreas(): Promise<number> {
 interface RawRows {
   attempts: { user_id: string; lo_code: string; outcome: string; created_at: string }[];
   progress: { user_id: string; resolved: boolean; miss_count: number; updated_at: string }[];
-  marks: { user_id: string; professional_marks_awarded: number; professional_marks_available: number; marked_at: string }[];
-  mocks: { user_id: string; completed: boolean; started_at: string }[];
+  marks: { user_id: string; case_id: string; professional_marks_awarded: number; professional_marks_available: number; marked_at: string }[];
+  mocks: { user_id: string; mock_id: string; completed: boolean; started_at: string }[];
 }
 
 async function rawRowsForUsers(userIds: string[]): Promise<RawRows> {
@@ -147,8 +152,8 @@ async function rawRowsForUsers(userIds: string[]): Promise<RawRows> {
   const [a, p, m, k] = await Promise.all([
     sb.from('acca_drill_attempts').select('user_id, lo_code, outcome, created_at').in('user_id', userIds),
     sb.from('acca_tutor_progress').select('user_id, resolved, miss_count, updated_at').in('user_id', userIds),
-    sb.from('acca_case_marking').select('user_id, professional_marks_awarded, professional_marks_available, marked_at').in('user_id', userIds),
-    sb.from('acca_mock_attempts').select('user_id, completed, started_at').in('user_id', userIds),
+    sb.from('acca_case_marking').select('user_id, case_id, professional_marks_awarded, professional_marks_available, marked_at').in('user_id', userIds),
+    sb.from('acca_mock_attempts').select('user_id, mock_id, completed, started_at').in('user_id', userIds),
   ]);
   return {
     attempts: (a.data as RawRows['attempts'] | null) ?? [],
@@ -204,18 +209,36 @@ function buildInput(
     else if ((pr.miss_count ?? 0) >= 2) stuckDrills++;
   }
 
+  // Partition case markings: mock-case marks feed per-mock aggregate scores;
+  // standalone (non-mock) case marks feed caseMarkRatios directly. Splitting avoids
+  // double-counting the same marking row in both P inputs.
+  const marksByCase = new Map<string, { awarded: number; available: number }>();
   const caseMarkRatios: number[] = [];
   for (const mk of marks) {
     touch(mk.marked_at);
-    if (mk.professional_marks_available > 0) {
+    marksByCase.set(mk.case_id, {
+      awarded: mk.professional_marks_awarded,
+      available: mk.professional_marks_available,
+    });
+    if (!MOCK_CASE_IDS.has(mk.case_id) && mk.professional_marks_available > 0) {
       caseMarkRatios.push(mk.professional_marks_awarded / mk.professional_marks_available);
     }
   }
 
   let mocksCompleted = 0;
+  const mockScores: number[] = [];
   for (const mo of mocks) {
     touch(mo.started_at);
-    if (mo.completed) mocksCompleted++;
+    if (!mo.completed) continue;
+    mocksCompleted++;
+    const paper = getMockPaper(mo.mock_id);
+    if (!paper) continue;
+    // Real mock score: aggregate this user's marks across the paper's cases.
+    const paperMarks = paper.case_ids
+      .map((cid) => marksByCase.get(cid))
+      .filter((v): v is { awarded: number; available: number } => v != null);
+    const score = mockScoreFromMarks(paperMarks);
+    if (score != null) mockScores.push(score);
   }
 
   const hasAnyActivity =
@@ -228,7 +251,7 @@ function buildInput(
     totalSubAreas: total,
     recentAttempts, recentMisses, priorAttempts, priorMisses,
     resolvedDrills, stuckDrills,
-    caseMarkRatios, mocksCompleted,
+    caseMarkRatios, mockScores, mocksCompleted,
     hasAnyActivity,
   };
 }

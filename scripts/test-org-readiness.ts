@@ -10,6 +10,7 @@
 
 import {
   computeReadiness,
+  mockScoreFromMarks,
   type ReadinessInput,
   DAY_MS,
   GREEN_AT,
@@ -39,6 +40,7 @@ function base(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
     resolvedDrills: 0,
     stuckDrills: 0,
     caseMarkRatios: [],
+    mockScores: [],
     mocksCompleted: 0,
     hasAnyActivity: true,
     ...overrides,
@@ -155,6 +157,40 @@ function base(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
   check('T10 thresholds ordered', GREEN_AT > AMBER_AT && AMBER_AT > 0);
   const red = computeReadiness(base({ lastActiveAt: T - 20 * DAY_MS, coveredSubAreas: 0, resolvedDrills: 0, stuckDrills: 4 }));
   check('T10 weak profile bands red', red.band === 'red', `score=${red.score}`);
+}
+
+// ── T11: mockScoreFromMarks — aggregate sum(awarded)/sum(available) ────────────
+{
+  check('T11 empty marks → null', mockScoreFromMarks([]) === null);
+  check('T11 zero available → null', mockScoreFromMarks([{ awarded: 0, available: 0 }]) === null);
+  check('T11 aggregate 12/15 = 0.8',
+    approx(mockScoreFromMarks([{ awarded: 8, available: 10 }, { awarded: 4, available: 5 }])!, 0.8));
+  check('T11 clamps >1 to 1', mockScoreFromMarks([{ awarded: 12, available: 10 }]) === 1);
+}
+
+// ── T12: P uses the REAL mock score when present (not the 0.5 floor) ──────────
+{
+  const res = computeReadiness(base({ mockScores: [0.9], mocksCompleted: 1 }));
+  check('T12 assessment = real mock score 0.9', res.components.assessment.score === 0.9,
+    `got ${res.components.assessment.score}`);
+  check('T12 mockAvg exposed', res.components.assessment.mockAvg === 0.9);
+  check('T12 assessment weight present (0.15)', res.weightsUsed.assessment === 0.15);
+}
+
+// ── T13: floor survives ONLY for "sat a mock but nothing markable" ────────────
+{
+  const res = computeReadiness(base({ mockScores: [], caseMarkRatios: [], mocksCompleted: 1 }));
+  check('T13 unmarkable completed mock → 0.5 floor', res.components.assessment.score === 0.5);
+  check('T13 no marks → mockAvg null', res.components.assessment.mockAvg === null);
+}
+
+// ── T14: mock score + standalone case marks averaged together ─────────────────
+{
+  const res = computeReadiness(base({ caseMarkRatios: [0.6], mockScores: [0.8], mocksCompleted: 1 }));
+  check('T14 P = avg(0.6, 0.8) = 0.7', approx(res.components.assessment.score!, 0.7),
+    `got ${res.components.assessment.score}`);
+  check('T14 caseAvg 0.6 + mockAvg 0.8 both exposed',
+    res.components.assessment.caseAvg === 0.6 && res.components.assessment.mockAvg === 0.8);
 }
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILURE(S)`}`);

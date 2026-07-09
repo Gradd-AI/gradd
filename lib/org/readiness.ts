@@ -46,8 +46,11 @@ export interface ReadinessInput {
   stuckDrills: number;    // miss_count >= 2 AND resolved = false
 
   // Assessment (present-only) ----------------------------------------------
-  /** professional_marks_awarded / professional_marks_available per marked case. */
+  /** STANDALONE (non-mock) case ratios: professional_marks_awarded / available. */
   caseMarkRatios: number[];
+  /** Per completed mock: aggregated professional-marks ratio across the mock's
+   *  cases (sum awarded / sum available). Real mock score — replaces the old floor. */
+  mockScores: number[];
   mocksCompleted: number;
 
   /** True if the trainee has ANY recorded activity (attempts/progress/mock/mark). */
@@ -65,7 +68,7 @@ export interface ReadinessResult {
     recency:    { score: number; daysSinceActive: number | null };
     coverage:   { score: number; covered: number; total: number };
     missRate:   { score: number; recentMissRate: number; priorMissRate: number; usedSlope: boolean };
-    assessment: { score: number | null; caseAvg: number | null; mocksCompleted: number };
+    assessment: { score: number | null; caseAvg: number | null; mockAvg: number | null; mocksCompleted: number };
   };
   weightsUsed: { recency: number; coverage: number; missRate: number; assessment: number };
 }
@@ -80,6 +83,19 @@ const BASE_WEIGHTS = { recency: 0.30, coverage: 0.30, missRate: 0.25, assessment
 
 const clamp01 = (x: number) => (x < 0 ? 0 : x > 1 ? 1 : x);
 const ratio = (num: number, den: number) => (den > 0 ? num / den : 0);
+const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+
+// ── Mock score (pure) ─────────────────────────────────────────────────────────
+// Aggregate a user's professional-marks across ONE mock's cases into a single
+// ratio: sum(awarded) / sum(available). Null when the mock has no marked cases
+// (no score exists — do not invent one). Callers pass the case_marking rows that
+// belong to the mock's case_ids (see lib/org/queries.ts + lib/acca/mocks.ts).
+// Fixes data-audit gap #3: mocks store no score, so we compute one at query time.
+export function mockScoreFromMarks(marks: { awarded: number; available: number }[]): number | null {
+  let a = 0, v = 0;
+  for (const m of marks) { a += m.awarded; v += m.available; }
+  return v > 0 ? clamp01(a / v) : null;
+}
 
 // ── Component R: recency ──────────────────────────────────────────────────────
 function recencyScore(now: number, lastActiveAt: number | null): { score: number; days: number | null } {
@@ -115,13 +131,16 @@ function missRateScore(input: ReadinessInput): { score: number; recent: number; 
 }
 
 // ── Component P: assessment (present-only → may be null) ──────────────────────
-function assessmentScore(input: ReadinessInput): { score: number | null; caseAvg: number | null } {
-  if (input.caseMarkRatios.length > 0) {
-    const caseAvg = clamp01(input.caseMarkRatios.reduce((a, b) => a + b, 0) / input.caseMarkRatios.length);
-    return { score: caseAvg, caseAvg };
-  }
-  if (input.mocksCompleted > 0) return { score: 0.5, caseAvg: null }; // "has sat a mock" floor
-  return { score: null, caseAvg: null };
+// Uses REAL scores when present: standalone case ratios + per-mock aggregated
+// scores, averaged together. The 0.5 floor now survives ONLY for the degenerate
+// "sat a mock but nothing markable yet" case — never when a real score exists.
+function assessmentScore(input: ReadinessInput): { score: number | null; caseAvg: number | null; mockAvg: number | null } {
+  const caseAvg = input.caseMarkRatios.length > 0 ? clamp01(avg(input.caseMarkRatios)) : null;
+  const mockAvg = input.mockScores.length > 0 ? clamp01(avg(input.mockScores)) : null;
+  const ratios = [...input.caseMarkRatios, ...input.mockScores];
+  if (ratios.length > 0) return { score: clamp01(avg(ratios)), caseAvg, mockAvg };
+  if (input.mocksCompleted > 0) return { score: 0.5, caseAvg: null, mockAvg: null }; // sat but unmarkable
+  return { score: null, caseAvg: null, mockAvg: null };
 }
 
 export function computeReadiness(input: ReadinessInput): ReadinessResult {
@@ -162,7 +181,7 @@ export function computeReadiness(input: ReadinessInput): ReadinessResult {
       recency:    { score: r.score, daysSinceActive: r.days == null ? null : Math.floor(r.days) },
       coverage:   { score: cScore, covered: input.coveredSubAreas, total: input.totalSubAreas },
       missRate:   { score: m.score, recentMissRate: m.recent, priorMissRate: m.prior, usedSlope: m.usedSlope },
-      assessment: { score: a.score, caseAvg: a.caseAvg, mocksCompleted: input.mocksCompleted },
+      assessment: { score: a.score, caseAvg: a.caseAvg, mockAvg: a.mockAvg, mocksCompleted: input.mocksCompleted },
     },
     weightsUsed: w,
   };
