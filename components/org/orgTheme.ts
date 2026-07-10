@@ -84,26 +84,33 @@ export const ORG_CSS = `
 .org h2 { font-family: var(--font-display); font-size: 21px; color: var(--brand); margin: 32px 0 14px; font-weight: 600; }
 .org .sub { color: var(--text-muted); font-size: 15px; margin-bottom: 22px; }
 
-/* utilisation line */
-.org-util { font-size: 13px; color: var(--text-muted); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 14px; display: inline-block; margin-bottom: 8px; }
-.org-util b { color: var(--text); font-weight: 600; }
+/* utilisation — a quiet trust signal, not an afterthought */
+.org-util { font-size: 13px; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand-light); border-radius: var(--radius-sm); padding: 10px 16px; display: inline-block; margin-bottom: 8px; letter-spacing: .01em; }
+.org-util b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
 
 /* cohort cards */
-.org-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
-.org-card { display: block; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; transition: box-shadow .15s ease, transform .15s ease; }
-.org-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
-.org-card .label { font-family: var(--font-display); font-size: 19px; color: var(--brand); font-weight: 600; }
-.org-card .meta { color: var(--text-muted); font-size: 13px; margin: 2px 0 16px; }
-.org-statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
-.org-stat { background: var(--surface-2); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
-.org-stat .n { font-family: var(--font-display); font-size: 22px; font-weight: 600; color: var(--text); line-height: 1.1; }
-.org-stat .k { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+.org-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+.org-card { display: block; text-decoration: none; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; box-shadow: var(--shadow-sm); transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
+.org-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); border-color: var(--brand-light); }
+.org-card .label { font-family: var(--font-display); font-size: 21px; color: var(--brand); font-weight: 600; letter-spacing: -.3px; }
+.org-card .meta { color: var(--text-muted); font-size: 13px; margin: 3px 0 18px; }
+.org-statgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.org-stat { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px 10px; text-align: center; }
+.org-stat .n { font-family: var(--font-display); font-size: 30px; font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.org-stat .n.green { color: #1e5a38; }
+.org-stat .n.red { color: #a4402e; }
+.org-stat .k { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 5px; }
 
-/* RAG mix bar */
-.org-ragbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; background: var(--surface-2); }
-.org-ragbar > span { display: block; }
-.org-ragrow { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
-.org-ragrow b { color: var(--text); }
+/* RAG mix bar — refined segmented bar */
+.org-ragbar { display: flex; gap: 2px; height: 12px; background: transparent; }
+.org-ragbar > span { display: block; border-radius: 3px; min-width: 2px; }
+.org-ragbar > span:first-child { border-radius: 6px 3px 3px 6px; }
+.org-ragbar > span:last-child { border-radius: 3px 6px 6px 3px; }
+.org-ragrow { display: flex; align-items: center; gap: 16px; font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+.org-ragrow .seg { display: inline-flex; align-items: center; gap: 6px; }
+.org-ragrow .seg i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+.org-ragrow b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
+.org-ragrow .active { margin-left: auto; color: var(--text-light); }
 
 /* chips — squared micro-caps, editorial not badge-library */
 .org-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; letter-spacing: .09em; text-transform: uppercase; line-height: 1; }

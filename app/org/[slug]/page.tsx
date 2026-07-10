@@ -35,6 +35,11 @@ export default async function OrgPage({ params }: { params: Promise<{ slug: stri
         {cohorts.map(({ cohort, memberCount, rag, lastActiveDays }) => {
           const total = Math.max(1, rag.green + rag.amber + rag.red);
           const pct = (n: number) => `${(n / total) * 100}%`;
+          const segs = [
+            { band: 'green' as const, n: rag.green },
+            { band: 'amber' as const, n: rag.amber },
+            { band: 'red' as const, n: rag.red },
+          ];
           return (
             <Link key={cohort.id} href={`/org/${slug}/${cohort.id}`} className="org-card">
               <div className="label">{cohort.label}</div>
@@ -42,20 +47,20 @@ export default async function OrgPage({ params }: { params: Promise<{ slug: stri
 
               <div className="org-statgrid">
                 <div className="org-stat"><div className="n">{memberCount}</div><div className="k">Trainees</div></div>
-                <div className="org-stat"><div className="n">{rag.green}</div><div className="k">Green</div></div>
-                <div className="org-stat"><div className="n">{rag.red}</div><div className="k">Red</div></div>
+                <div className="org-stat"><div className="n green">{rag.green}</div><div className="k">Green</div></div>
+                <div className="org-stat"><div className="n red">{rag.red}</div><div className="k">Red</div></div>
               </div>
 
               <div className="org-ragbar">
-                <span style={{ width: pct(rag.green), background: bandTone('green').fg }} />
-                <span style={{ width: pct(rag.amber), background: bandTone('amber').fg }} />
-                <span style={{ width: pct(rag.red), background: bandTone('red').fg }} />
+                {segs.filter((s) => s.n > 0).map((s) => (
+                  <span key={s.band} style={{ width: pct(s.n), background: bandTone(s.band).fg }} />
+                ))}
               </div>
               <div className="org-ragrow">
-                <span><b>{rag.green}</b> green</span>
-                <span><b>{rag.amber}</b> amber</span>
-                <span><b>{rag.red}</b> red</span>
-                <span style={{ marginLeft: 'auto' }}>Last active {fmtDays(lastActiveDays)}</span>
+                {segs.map((s) => (
+                  <span key={s.band} className="seg"><i style={{ background: bandTone(s.band).fg }} /><b>{s.n}</b> {s.band}</span>
+                ))}
+                <span className="active">Last active {fmtDays(lastActiveDays)}</span>
               </div>
             </Link>
           );
