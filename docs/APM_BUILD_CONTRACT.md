@@ -579,6 +579,35 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 
 - Vesla, Torfin, Orlen live-tested end-to-end on preview (account 7126c67d) and flipped approved/published. Per case: one wrong-turn withheld + diagnosed correctly, all requirements passed, marking allocated validly. Withhold catches: Vesla (i) accepted-analyst's-claims, (ii) generic security theory list; Torfin (i) ERP textbook recital, (ii) 5Ss theory without application; Orlen (i) numerically-correct company analysis withheld for not evaluating the charts (sharpest catch — right numbers, wrong question), (ii) paraphrase-not-challenge.
 - Marking: Vesla 5/5 (A&E 2, scepticism 2, CA 1); Torfin 5/5 (A&E 2, scepticism 2, CA 1); Orlen 5/5 (A&E 3, scepticism 2 — two-skill union, uneven allocation working).
+
+---
+
+## Session 2026-07-10 — campaign split, dashboard polished + closed, one-pager, first external evaluator
+
+**1. CAMPAIGN RESTRUCTURED** (decision brought forward from ~18/07 on Friday's country breakdown). Pakistan had absorbed **92% of spend** (€19.76 / €21.53) and **91% of LPVs** (563 / 620); UK €0.01, IE/UAE literally €0.00 — the high-WTP markets were **UNSERVED, not underweighted**, so the campaign structurally could not answer its own core-market question. **SPLIT executed by GEOGRAPHY**, both ads in each:
+- **Core Markets** UK/IE/UAE @ **€10/day** — fresh learning; expect **€1–3 LPVs, few of them (correct)**; metric = core-market signups; gets its own 2 weeks → judgement **~24/07**, hands-off.
+- **Value Markets** PK/NG/KE @ **€5/day** — cheap intel / lottery. Malaysia dropped (77 impressions, noise).
+- **Conversion reframe on record:** 620 views @ 1 signup = "**Pakistani FB traffic** converts ~0.2%", NOT "the landing page converts 0.2%" — the high-WTP funnel is **untested** until Core delivers.
+- **Supabase pulse at split:** 1 signup, 1 resit lead since 07/07.
+
+**2. DASHBOARD CLOSED END-TO-END.** Phase c+ polish shipped:
+- `6d65407` heatmap — continuous sage→rust ramp, styled tooltips, framework-sourced column names, distinct roll-up row.
+- `255c35a` drill-down — component-tile hierarchy, pure-SVG activity sparkline from the attempt log.
+- `b6a850a` cohort cards — display StatGrid, segmented RAG bar, utilisation trust line.
+- Fix round from Grant's review (`b2cf1af`): inline trainee names sharing row heights, fixed-width chip rail, attempts-table sub-area **CODES→NAMES** (framework-sourced), wordmark on all three headers.
+- **Brand-asset defect CAUGHT AND CORRECTED:** first wordmark pass used `/gradd-logo.svg` (the gradd.ie / LC mark); swapped to `/gradd-ai-logo.png` white-out treatment (`dad17f0`).
+- **Banked-not-built:** host-aware org-header branch if orgs ever exist on gradd.ie (memory `project_backlog_org_header_host_aware`); full-window sparkline query field at pilot-ready (current draws from the 15-most-recent attempts — fine for demo volumes, flagged honestly).
+- **Live-verified by Grant** on all three screens incl. drill-down (Liam Murphy / Diego: June-rust → July-sage turnaround legible; ASSESSMENT 0% + redistribution footnote = the explainability promise kept).
+- **Heatmap explanation script banked:** rows = trainees, worst-first; columns = attempted sub-areas only; cell = miss-rate; dot = never-attempted (coverage gap ≠ pass); roll-up row = the management view — "**individual problems show as hot rows; teaching problems show as hot columns**"; **Sept D2 0.8-including-Greens is THE pitch line.**
+
+**3. ONE-PAGER.** v1 PDF reviewed — design language right (house tokens, dark band, wordmark), **REJECTED** on format (3 pages) and register (landing-page voice: hero headline, stat-callout cards, CTA button). **Register-shift + compression block issued:** brief-not-brochure, one A4 page, no hero / no cards / no buttons, stat figures **in-sentence**, "prepared for KPMG L&D · Confidential" register throughout, house pass-rate phrase aligned. **Test on record:** "if it works as ad voiceover it's wrong; if it works read across a desk it's right." *(No repo artifact — the one-pager is an external PDF; no export SHA in the codebase this session.)*
+
+**4. FIRST EXTERNAL EVALUATOR.** `mcparland100@gmail.com` to be added as coordinator on `demo-advisory` (email-first membership row, `user_id` null until claim). *SQL is DB-side — not verifiable from the repo; confirm the row exists before the meeting.* **GUARD GENERALISED and SHIPPED this session** (`90819bd`): `requireCoordinator` was still hardcoded to `grant@live.ie` (surfaced at session close — the claim that it had shipped was false; caught and fixed). It now allows any **active coordinator-role `org_membership`** matched by `user_id` OR email, with `grant@live.ie` retained as demo fallback; per-org scoping still deferred (pages enforce org/cohort belonging). **Without this, McParland could not have loaded the dashboard even with the membership row.** Student-side access SQL prepared; runs only after he signs up at `/acca/auth`.
+
+**5. STILL OPEN.** Coffee message to KPMG contact (**NOTHING GATES IT — highest-value action on the board**); one-pager final export; demo dry-run on Grant's device the day before the meeting; AFM batch-1 adversarial review resumes as build track (4 NPV/B1a candidates waiting since the pivot); blog post 1 self-publishes Sunday 13/07; Core campaign judgement ~24/07 (hands-off); partner sends; redpen ad; Search Console; Reddit karma; W_WEAK session after 2 weeks of attempt-log data.
+
+### Hardening rule (10/07/2026) — adds item 4 to the 10/07 set
+4. **Asset references carry product identity.** `/gradd-logo.svg` (gradd.ie) vs `/gradd-ai-logo.png` (gradd.ai) got crossed on the org dashboard. **Any surface shown to buyers gets a brand-asset check in review**, and the **legal-pages `isIB` branch is the reference implementation** (`app/terms|privacy|cookies/page.tsx`).
 - LIBRARY STATUS: all 5 cases approved/published and live-tested. Engine, marking, and UI proven across both section shapes and all examiner failure modes.
 - Calibration note (pre-launch): all full-pool marks were on model-quality answers — expected. Keldan still needs a weak-answer discrimination run; consider one per case.
 - NEXT: PAYWALL on the case path — the last gate. APM_CASES must NOT go to Production until it exists.
