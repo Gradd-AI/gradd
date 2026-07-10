@@ -20,7 +20,7 @@ export default async function OrgPage({ params }: { params: Promise<{ slug: stri
     <div className="org">
       <style>{ORG_CSS}</style>
       <header className="org-header">
-        <Link className="wordmark" href={`/org/${slug}`}><img src="/gradd-logo.svg" alt="Gradd" /></Link>
+        <Link className="wordmark" href={`/org/${slug}`}><img src="/gradd-ai-logo.png" alt="Gradd" /></Link>
         <span className="org-crumb"><span>·</span> Coordinator</span>
       </header>
 

@@ -68,7 +68,7 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
     <div className="org">
       <style>{ORG_CSS}</style>
       <header className="org-header">
-        <Link className="wordmark" href={`/org/${slug}`}><img src="/gradd-logo.svg" alt="Gradd" /></Link>
+        <Link className="wordmark" href={`/org/${slug}`}><img src="/gradd-ai-logo.png" alt="Gradd" /></Link>
         <span className="org-crumb">
           <Link href={`/org/${slug}`}>{org.name}</Link><span>›</span>
           <Link href={`/org/${slug}/${cohortId}`}>{cohort.label}</Link><span>›</span> {d.name}
