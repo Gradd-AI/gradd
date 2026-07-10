@@ -15,14 +15,42 @@ export function bandTone(band: Band): { bg: string; fg: string; label: string } 
   }
 }
 
-/** Heatmap cell tint by miss-rate: sage (low) → amber → rust (high). Muted tones. */
+/** Authoritative APM sub-area → syllabus topic (source: scripts/apm-framework.ts).
+ *  Shown on column-header hover so a coordinator reading a code sees the plain name. */
+export const SUB_AREA_NAME: Record<string, string> = {
+  A1: 'Strategic management accounting',
+  A2: 'Performance hierarchy',
+  A3: 'Financial performance measurement',
+  A4: 'Non-financial performance measurement',
+  A5: 'Sustainability',
+  B1: 'Budgetary planning and control',
+  B2: 'Performance and reward',
+  B3: 'Performance improvement models and techniques',
+  B4: 'Performance optimisation in specific contexts',
+  C1: 'Management reports',
+  D1: 'Technology and information systems',
+  D2: 'Data science and analytics',
+};
+
+// Continuous RAG ramp anchors (warm, muted — not traffic-light harsh). Miss-rate
+// 0.0 = clean sage, 0.5 = amber, 1.0 = rust. Interpolated in RGB so the field reads
+// as one smooth gradient rather than five visible bands.
+const RAMP: [number, number, number][] = [
+  [196, 217, 197], // sage  (0.0)
+  [237, 221, 176], // amber (0.5)
+  [214, 160, 138], // rust  (1.0)
+];
+const mix = (a: number[], b: number[], t: number) =>
+  a.map((v, i) => Math.round(v + (b[i] - v) * t));
+
+/** Heatmap cell tint by miss-rate: continuous sage → amber → rust. */
 export function cellTone(missRate: number | null): { bg: string; fg: string } {
   if (missRate == null) return { bg: 'var(--surface-2)', fg: 'var(--text-light)' };
-  if (missRate < 0.15) return { bg: '#cdddce', fg: '#234a32' }; // strong sage
-  if (missRate < 0.35) return { bg: '#dfe8da', fg: '#3a5a40' }; // light sage
-  if (missRate < 0.55) return { bg: '#efe4c9', fg: '#6b5320' }; // light amber
-  if (missRate < 0.75) return { bg: '#e6cfa1', fg: '#6b4a17' }; // amber
-  return { bg: '#dcae9c', fg: '#7a3b28' };                       // rust
+  const t = Math.max(0, Math.min(1, missRate));
+  const [c0, c1, seg] = t < 0.5 ? [RAMP[0], RAMP[1], t / 0.5] : [RAMP[1], RAMP[2], (t - 0.5) / 0.5];
+  const [r, g, b] = mix(c0, c1, seg);
+  // One deep warm ink across the whole ramp — maximal legibility at 3 metres.
+  return { bg: `rgb(${r}, ${g}, ${b})`, fg: '#2c2114' };
 }
 
 /** "today" / "2 days ago" / "—". */
@@ -52,9 +80,9 @@ export const ORG_CSS = `
 .org-crumb a { color: #b9cabf; text-decoration: none; }
 .org-crumb a:hover { color: #fff; }
 
-.org h1 { font-family: var(--font-display); font-size: 30px; color: var(--brand); margin-bottom: 4px; font-weight: 600; }
-.org h2 { font-family: var(--font-display); font-size: 20px; color: var(--brand); margin: 28px 0 12px; font-weight: 600; }
-.org .sub { color: var(--text-muted); font-size: 14px; margin-bottom: 20px; }
+.org h1 { font-family: var(--font-display); font-size: 34px; color: var(--brand); margin: 8px 0 6px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.15; }
+.org h2 { font-family: var(--font-display); font-size: 21px; color: var(--brand); margin: 32px 0 14px; font-weight: 600; }
+.org .sub { color: var(--text-muted); font-size: 15px; margin-bottom: 22px; }
 
 /* utilisation line */
 .org-util { font-size: 13px; color: var(--text-muted); background: var(--surface-2); border-radius: var(--radius-sm); padding: 8px 14px; display: inline-block; margin-bottom: 8px; }
@@ -77,20 +105,37 @@ export const ORG_CSS = `
 .org-ragrow { display: flex; gap: 14px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
 .org-ragrow b { color: var(--text); }
 
-/* chips */
-.org-chip { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; letter-spacing: .03em; }
+/* chips — squared micro-caps, editorial not badge-library */
+.org-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; letter-spacing: .09em; text-transform: uppercase; line-height: 1; }
 
-/* heatmap */
-.org-scroll { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
-table.org-heat { border-collapse: collapse; width: 100%; font-size: 13px; }
-table.org-heat th, table.org-heat td { padding: 7px 8px; text-align: center; white-space: nowrap; }
-table.org-heat thead th { background: var(--surface-2); color: var(--text-muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; position: sticky; top: 0; }
-table.org-heat th.name, table.org-heat td.name { text-align: left; position: sticky; left: 0; background: var(--surface); z-index: 1; }
-table.org-heat tbody tr:hover td.name { background: var(--surface-2); }
-table.org-heat td.cell { font-variant-numeric: tabular-nums; font-weight: 600; }
-table.org-heat tr.rollup td { border-top: 2px solid var(--border); font-weight: 700; background: var(--surface-2); }
-.org-name-link { color: var(--brand); text-decoration: none; font-weight: 600; }
-.org-name-link:hover { text-decoration: underline; }
+/* heatmap ─ the hero. Table fits the 1040px shell (12 cols), so on the meeting-room
+   screen it doesn't scroll and hover tooltips escape freely; overflow is re-enabled
+   only on narrow viewports as a fallback. */
+.org-heat-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 4px; box-shadow: var(--shadow-sm); }
+@media (max-width: 1100px) { .org-heat-wrap { overflow-x: auto; } }
+table.org-heat { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 14px; }
+table.org-heat th, table.org-heat td { padding: 10px 8px; text-align: center; white-space: nowrap; }
+table.org-heat thead th { position: relative; color: var(--text-muted); font-weight: 700; font-size: 12px; letter-spacing: .06em; cursor: default; }
+table.org-heat th.name, table.org-heat td.name { text-align: left; }
+table.org-heat td.cell { position: relative; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; border-radius: 6px; letter-spacing: .01em; }
+table.org-heat tbody tr:hover td.name .org-name-link { color: var(--brand); }
+/* cohort roll-up — set apart and heavier so the average reads across the room */
+table.org-heat tr.rollup td { padding-top: 16px; }
+table.org-heat tr.rollup td.name { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--brand); vertical-align: middle; }
+table.org-heat tr.rollup td.cell { font-size: 17px; font-weight: 800; box-shadow: inset 0 0 0 1.5px rgba(44,33,20,.14); }
+table.org-heat tr.rollup td::before { content: ''; position: absolute; top: 6px; left: 4px; right: 4px; border-top: 2px solid var(--border); }
+.org-name-link { color: var(--text); text-decoration: none; font-weight: 500; transition: color .12s; }
+.org-name-link:hover { color: var(--brand); text-decoration: underline; }
+
+/* styled hover tooltips (cells + column headers) — no title-attribute */
+.org-tip { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%) translateY(4px); background: var(--brand); color: #fff; font-size: 12px; font-weight: 500; line-height: 1.4; letter-spacing: .01em; padding: 7px 11px; border-radius: 8px; white-space: nowrap; box-shadow: var(--shadow); opacity: 0; visibility: hidden; transition: opacity .12s ease, transform .12s ease; z-index: 30; pointer-events: none; text-transform: none; }
+.org-tip b { font-weight: 700; }
+.org-tip::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 5px solid transparent; border-top-color: var(--brand); }
+.cell:hover .org-tip, thead th:hover .org-tip { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+/* header tips point downward (nothing above the header row) */
+thead th .org-tip { bottom: auto; top: calc(100% + 8px); transform: translateX(-50%) translateY(-4px); }
+thead th .org-tip::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: var(--brand); }
+thead th:hover .org-tip { transform: translateX(-50%) translateY(0); }
 
 /* drill-down */
 .org-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }

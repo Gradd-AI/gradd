@@ -6,7 +6,7 @@ import {
   getOrgBySlug, getCohortById, getOrgUtilisation,
   getCohortReadiness, getCohortHeatmap,
 } from '@/lib/org/queries';
-import { ORG_CSS, bandTone, cellTone, type Band } from '@/components/org/orgTheme';
+import { ORG_CSS, bandTone, cellTone, SUB_AREA_NAME, type Band } from '@/components/org/orgTheme';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Cohort heatmap — Coordinator | Gradd' };
@@ -37,11 +37,13 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
     .sort((a, b) => SEVERITY[a.readiness.band] - SEVERITY[b.readiness.band] || a.readiness.score - b.readiness.score);
 
   // Cohort roll-up: per sub-area average miss-rate across trainees with data there.
-  const rollup: Record<string, number | null> = {};
+  const rollup: Record<string, { avg: number; n: number } | null> = {};
   for (const sa of heat.subAreas) {
     const rates = heat.rows.map((r) => r.cells[sa]?.missRate).filter((v): v is number => v != null);
-    rollup[sa] = rates.length ? rates.reduce((a, b) => a + b, 0) / rates.length : null;
+    rollup[sa] = rates.length ? { avg: rates.reduce((a, b) => a + b, 0) / rates.length, n: rates.length } : null;
   }
+
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
 
   return (
     <div className="org">
@@ -58,12 +60,17 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
         <span className="org-note" style={{ display: 'inline', marginLeft: 8 }}>(invited seats are not shown as heatmap rows)</span>
       </div>
 
-      <div className="org-scroll" style={{ marginTop: 12 }}>
+      <div className="org-heat-wrap" style={{ marginTop: 14 }}>
         <table className="org-heat">
           <thead>
             <tr>
               <th className="name">Trainee</th>
-              {heat.subAreas.map((sa) => <th key={sa}>{sa}</th>)}
+              {heat.subAreas.map((sa) => (
+                <th key={sa}>
+                  {sa}
+                  <span className="org-tip"><b>{sa}</b>{SUB_AREA_NAME[sa] ? ` · ${SUB_AREA_NAME[sa]}` : ''}</span>
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody>
@@ -72,15 +79,20 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
               return (
                 <tr key={r.userId}>
                   <td className="name">
-                    <span className="org-chip" style={{ background: tone.bg, color: tone.fg, marginRight: 8 }}>{tone.label}</span>
+                    <span className="org-chip" style={{ background: tone.bg, color: tone.fg, marginRight: 10 }}>{tone.label}</span>
                     <Link className="org-name-link" href={`/org/${slug}/${cohortId}/${r.userId}`}>{r.name}</Link>
                   </td>
                   {heat.subAreas.map((sa) => {
                     const cell = r.cells[sa];
                     const t = cellTone(cell ? cell.missRate : null);
                     return (
-                      <td key={sa} className="cell" style={{ background: t.bg, color: t.fg }} title={cell ? `${cell.misses}/${cell.attempts} missed` : 'no attempts'}>
+                      <td key={sa} className="cell" style={{ background: t.bg, color: t.fg }}>
                         {cell ? cell.missRate.toFixed(1) : '·'}
+                        <span className="org-tip">
+                          {cell
+                            ? <><b>{cell.misses}/{cell.attempts}</b> missed · {pct(cell.missRate)} miss-rate</>
+                            : 'no attempts yet'}
+                        </span>
                       </td>
                     );
                   })}
@@ -88,17 +100,26 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
               );
             })}
             <tr className="rollup">
-              <td className="name">Cohort avg</td>
+              <td className="name">Cohort average</td>
               {heat.subAreas.map((sa) => {
                 const v = rollup[sa];
-                const t = cellTone(v);
-                return <td key={sa} className="cell" style={{ background: t.bg, color: t.fg }}>{v == null ? '·' : v.toFixed(1)}</td>;
+                const t = cellTone(v ? v.avg : null);
+                return (
+                  <td key={sa} className="cell" style={{ background: t.bg, color: t.fg }}>
+                    {v == null ? '·' : v.avg.toFixed(1)}
+                    <span className="org-tip">
+                      {v == null
+                        ? 'no attempts yet'
+                        : <><b>{pct(v.avg)}</b> average miss-rate · {v.n} with data</>}
+                    </span>
+                  </td>
+                );
               })}
             </tr>
           </tbody>
         </table>
       </div>
-      <p className="org-note">Cell = miss-rate (0.0 clean → 1.0 all-miss). Columns show only sub-areas with attempts. Click a trainee for the full readiness breakdown.</p>
+      <p className="org-note">Each cell is the miss-rate for that sub-area (0.0 clean → 1.0 all-miss); hue runs sage → rust as it climbs. Columns show only sub-areas with recorded attempts. Hover any cell for the underlying counts; click a trainee for the full readiness breakdown.</p>
     </div>
   );
 }
