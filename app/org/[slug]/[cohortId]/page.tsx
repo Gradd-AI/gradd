@@ -49,7 +49,7 @@ export default async function CohortHeatmapPage({ params }: { params: Promise<{ 
     <div className="org">
       <style>{ORG_CSS}</style>
       <header className="org-header">
-        <a className="wordmark" href="/">Gradd</a>
+        <Link className="wordmark" href={`/org/${slug}`}><img src="/gradd-logo.svg" alt="Gradd" /></Link>
         <span className="org-crumb"><Link href={`/org/${slug}`}>{org.name}</Link><span>›</span> {cohort.label}</span>
       </header>
 

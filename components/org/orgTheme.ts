@@ -75,7 +75,8 @@ export const ORG_CSS = `
   margin: 0 -20px 28px; padding: 14px 20px;
   display: flex; align-items: center; gap: 12px;
 }
-.org-header a.wordmark { font-family: var(--font-display); font-size: 20px; color: #fff; text-decoration: none; font-weight: 600; }
+.org-header .wordmark { display: inline-flex; align-items: center; text-decoration: none; }
+.org-header .wordmark img { height: 24px; width: auto; display: block; filter: brightness(0) invert(1); }
 .org-crumb { color: #b9cabf; font-size: 13px; display: flex; gap: 8px; align-items: center; }
 .org-crumb a { color: #b9cabf; text-decoration: none; }
 .org-crumb a:hover { color: #fff; }
@@ -112,8 +113,9 @@ export const ORG_CSS = `
 .org-ragrow b { color: var(--text); font-weight: 700; font-variant-numeric: tabular-nums; }
 .org-ragrow .active { margin-left: auto; color: var(--text-light); }
 
-/* chips — squared micro-caps, editorial not badge-library */
-.org-chip { display: inline-block; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; letter-spacing: .09em; text-transform: uppercase; line-height: 1; }
+/* chips — squared micro-caps, editorial not badge-library. Fixed min-width (sized to
+   AMBER) + centred so the RAG column reads as one uniform rail regardless of label. */
+.org-chip { display: inline-block; box-sizing: border-box; min-width: 56px; text-align: center; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 5px; letter-spacing: .09em; text-transform: uppercase; line-height: 1; }
 
 /* heatmap ─ the hero. Table fits the 1040px shell (12 cols), so on the meeting-room
    screen it doesn't scroll and hover tooltips escape freely; overflow is re-enabled
@@ -121,9 +123,13 @@ export const ORG_CSS = `
 .org-heat-wrap { position: relative; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 4px; box-shadow: var(--shadow-sm); }
 @media (max-width: 1100px) { .org-heat-wrap { overflow-x: auto; } }
 table.org-heat { border-collapse: separate; border-spacing: 3px; width: 100%; font-size: 14px; }
-table.org-heat th, table.org-heat td { padding: 10px 8px; text-align: center; white-space: nowrap; }
+table.org-heat th, table.org-heat td { padding: 10px 8px; text-align: center; vertical-align: middle; white-space: nowrap; }
 table.org-heat thead th { position: relative; color: var(--text-muted); font-weight: 700; font-size: 12px; letter-spacing: .06em; cursor: default; }
-table.org-heat th.name, table.org-heat td.name { text-align: left; }
+/* name is the row's first cell — left-aligned, transparent (no strip behind the list),
+   vertically centred so each name pairs with its own row of tiles. */
+table.org-heat th.name, table.org-heat td.name { text-align: left; background: transparent; }
+table.org-heat td.name .org-chip { vertical-align: middle; }
+table.org-heat td.name .org-name-link { vertical-align: middle; }
 table.org-heat td.cell { position: relative; font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; border-radius: 6px; letter-spacing: .01em; }
 table.org-heat tbody tr:hover td.name .org-name-link { color: var(--brand); }
 /* cohort roll-up — set apart and heavier so the average reads across the room */

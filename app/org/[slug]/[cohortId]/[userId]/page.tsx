@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireCoordinator } from '@/lib/org/guard';
 import { getOrgBySlug, getCohortById, getTraineeDetail, type RecentAttempt } from '@/lib/org/queries';
-import { ORG_CSS, bandTone, fmtDays, fmtDate } from '@/components/org/orgTheme';
+import { ORG_CSS, bandTone, fmtDays, fmtDate, SUB_AREA_NAME } from '@/components/org/orgTheme';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Trainee readiness — Coordinator | Gradd' };
@@ -68,7 +68,7 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
     <div className="org">
       <style>{ORG_CSS}</style>
       <header className="org-header">
-        <a className="wordmark" href="/">Gradd</a>
+        <Link className="wordmark" href={`/org/${slug}`}><img src="/gradd-logo.svg" alt="Gradd" /></Link>
         <span className="org-crumb">
           <Link href={`/org/${slug}`}>{org.name}</Link><span>›</span>
           <Link href={`/org/${slug}/${cohortId}`}>{cohort.label}</Link><span>›</span> {d.name}
@@ -157,7 +157,7 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
                 <tr key={i}>
                   <td className="date">{fmtDate(a.created_at)}</td>
                   <td>{a.lo_code}</td>
-                  <td>{a.lo_code.slice(0, 2)}</td>
+                  <td>{SUB_AREA_NAME[a.lo_code.slice(0, 2)] ?? a.lo_code.slice(0, 2)}</td>
                   <td><span className={`org-out ${a.outcome === 'miss' ? 'miss' : 'ok'}`}>{a.outcome}</span></td>
                 </tr>
               ))}
