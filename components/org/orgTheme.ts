@@ -138,18 +138,40 @@ thead th .org-tip::after { top: auto; bottom: 100%; border-top-color: transparen
 thead th:hover .org-tip { transform: translateX(-50%) translateY(0); }
 
 /* drill-down */
-.org-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 16px; }
-.org-comp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.org-comp .c { background: var(--surface-2); border-radius: var(--radius-sm); padding: 12px; }
-.org-comp .c .k { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
-.org-comp .c .v { font-family: var(--font-display); font-size: 24px; font-weight: 600; color: var(--text); }
-.org-comp .c .d { font-size: 12px; color: var(--text-muted); }
+.org-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 24px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+
+/* verdict row — readiness score left, activity sparkline right */
+.org-verdict { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; margin-bottom: 18px; }
+.org-verdict-score { display: flex; align-items: center; gap: 12px; }
+
+/* four component tiles — the explainability centrepiece */
+.org-comp { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+@media (max-width: 640px) { .org-comp { grid-template-columns: repeat(2, 1fr); } }
+.org-comp .c { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 16px 16px 14px; }
+.org-comp .c .c-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 9px; }
+.org-comp .c .c-name { font-size: 12px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; }
+.org-comp .c .c-w { font-size: 10.5px; font-weight: 600; color: var(--text-light); background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+.org-comp .c .v { font-family: var(--font-display); font-size: 32px; font-weight: 600; color: var(--text); line-height: 1; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.org-comp .c .d { font-size: 12px; color: var(--text-muted); margin-top: 8px; line-height: 1.45; }
+
+/* activity sparkline */
+.org-spark { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+.org-spark-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-light); }
+.org-spark svg { display: block; }
+.org-spark-legend { display: flex; gap: 14px; font-size: 11px; color: var(--text-muted); }
+.org-spark-legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
+
 .org-kv { display: flex; flex-wrap: wrap; gap: 8px; }
-.org-kv .pill { background: var(--surface-2); border-radius: 999px; padding: 3px 10px; font-size: 12px; color: var(--text); }
+.org-kv .pill { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: 6px; padding: 4px 11px; font-size: 12px; font-weight: 500; color: var(--text); }
 table.org-list { border-collapse: collapse; width: 100%; font-size: 13px; }
-table.org-list th, table.org-list td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border-light); }
-table.org-list th { color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+table.org-list th, table.org-list td { padding: 9px 10px; text-align: left; border-bottom: 1px solid var(--border-light); }
+table.org-list tbody tr:last-child td { border-bottom: none; }
+table.org-list th { color: var(--text-light); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+table.org-list td.date { font-variant-numeric: tabular-nums; color: var(--text-muted); white-space: nowrap; }
 table.org-list td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.org-out { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 5px; text-transform: uppercase; letter-spacing: .05em; }
+.org-out.ok { background: #dce8dd; color: #1e5a38; }
+.org-out.miss { background: #ecd0c8; color: #a4402e; }
 .org-note { font-size: 12px; color: var(--text-light); margin-top: 6px; }
 .org-back { display: inline-block; margin-bottom: 14px; font-size: 13px; color: var(--brand); text-decoration: none; }
 .org-back:hover { text-decoration: underline; }

@@ -2,13 +2,49 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireCoordinator } from '@/lib/org/guard';
-import { getOrgBySlug, getCohortById, getTraineeDetail } from '@/lib/org/queries';
+import { getOrgBySlug, getCohortById, getTraineeDetail, type RecentAttempt } from '@/lib/org/queries';
 import { ORG_CSS, bandTone, fmtDays, fmtDate } from '@/components/org/orgTheme';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Trainee readiness — Coordinator | Gradd' };
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+const DAY_MS = 86_400_000;
+
+/** Tiny house-palette activity sparkline — daily attempt volume over the last 25 days,
+ *  solved (sage) stacked under missed (rust). No chart library; pure SVG. Drawn from the
+ *  most-recent attempts the detail query already returns (presentation only). */
+function Sparkline({ attempts, now }: { attempts: RecentAttempt[]; now: number }) {
+  const DAYS = 25, BAR = 5, GAP = 2, H = 34, TOP = 2;
+  const step = BAR + GAP;
+  const W = DAYS * step - GAP;
+  const buckets = Array.from({ length: DAYS }, () => ({ ok: 0, miss: 0 }));
+  for (const a of attempts) {
+    const di = Math.floor((now - Date.parse(a.created_at)) / DAY_MS);
+    if (di < 0 || di >= DAYS) continue;
+    if (a.outcome === 'miss') buckets[di].miss++; else buckets[di].ok++;
+  }
+  const max = Math.max(1, ...buckets.map((b) => b.ok + b.miss));
+  const unit = (H - TOP) / max;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Attempt activity over the last 25 days">
+      <line x1={0} y1={H - 0.5} x2={W} y2={H - 0.5} stroke="#ddd5c5" strokeWidth={1} />
+      {buckets.map((b, i) => {
+        const total = b.ok + b.miss;
+        if (!total) return null;
+        const x = (DAYS - 1 - i) * step; // oldest at left, today at right
+        const okH = b.ok * unit, missH = b.miss * unit;
+        return (
+          <g key={i}>
+            {b.ok > 0 && <rect x={x} y={H - okH} width={BAR} height={okH} rx={1} fill="#3d7a52" />}
+            {b.miss > 0 && <rect x={x} y={H - okH - missH} width={BAR} height={missH} rx={1} fill="#c07a4e" />}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
 
 export default async function TraineePage({ params }: { params: Promise<{ slug: string; cohortId: string; userId: string }> }) {
   const { slug, cohortId, userId } = await params;
@@ -19,7 +55,8 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
   const cohort = await getCohortById(cohortId);
   if (!cohort || cohort.org_id !== org.id) notFound();
 
-  const d = await getTraineeDetail(org.id, userId, Date.now());
+  const now = Date.now();
+  const d = await getTraineeDetail(org.id, userId, now);
   if (!d) notFound();
 
   const { readiness: r } = d;
@@ -47,30 +84,44 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
 
       {/* Readiness verdict — every number below traces to a row; no black box. */}
       <div className="org-panel">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-          <span className="org-chip" style={{ background: tone.bg, color: tone.fg, fontSize: 13, padding: '4px 12px' }}>{tone.label}</span>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, color: 'var(--text)' }}>{r.score.toFixed(2)}</span>
-          {r.override && <span className="org-note" style={{ marginTop: 0 }}>override: <b>{r.override}</b> (forces Red regardless of score)</span>}
+        <div className="org-verdict">
+          <div className="org-verdict-score">
+            <span className="org-chip" style={{ background: tone.bg, color: tone.fg, fontSize: 12, padding: '5px 12px' }}>{tone.label}</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 34, fontWeight: 600, color: 'var(--text)', letterSpacing: '-0.5px', lineHeight: 1 }}>{r.score.toFixed(2)}</span>
+            {r.override && <span className="org-note" style={{ marginTop: 0 }}>override: <b>{r.override}</b> (forces Red regardless of score)</span>}
+          </div>
+          <div className="org-spark">
+            <div className="org-spark-label">Activity · last 25 days</div>
+            {d.recentAttempts.length
+              ? <Sparkline attempts={d.recentAttempts} now={now} />
+              : <span className="org-note" style={{ marginTop: 0 }}>No attempts in the window.</span>}
+            {d.recentAttempts.length > 0 && (
+              <div className="org-spark-legend">
+                <span><i style={{ background: '#3d7a52' }} />solved</span>
+                <span><i style={{ background: '#c07a4e' }} />missed</span>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="org-comp">
           <div className="c">
-            <div className="k">Recency (w {pct(w.recency)})</div>
+            <div className="c-top"><span className="c-name">Recency</span><span className="c-w">weight {pct(w.recency)}</span></div>
             <div className="v">{k.recency.score.toFixed(2)}</div>
             <div className="d">{fmtDays(k.recency.daysSinceActive)}</div>
           </div>
           <div className="c">
-            <div className="k">Coverage (w {pct(w.coverage)})</div>
+            <div className="c-top"><span className="c-name">Coverage</span><span className="c-w">weight {pct(w.coverage)}</span></div>
             <div className="v">{k.coverage.score.toFixed(2)}</div>
             <div className="d">{k.coverage.covered}/{k.coverage.total} sub-areas</div>
           </div>
           <div className="c">
-            <div className="k">Miss-rate (w {pct(w.missRate)})</div>
+            <div className="c-top"><span className="c-name">Miss-rate</span><span className="c-w">weight {pct(w.missRate)}</span></div>
             <div className="v">{k.missRate.score.toFixed(2)}</div>
             <div className="d">{k.missRate.usedSlope ? `slope: prior ${k.missRate.priorMissRate.toFixed(2)} → recent ${k.missRate.recentMissRate.toFixed(2)}` : 'proxy: resolved/(resolved+stuck)'}</div>
           </div>
           <div className="c">
-            <div className="k">Assessment (w {pct(w.assessment)})</div>
+            <div className="c-top"><span className="c-name">Assessment</span><span className="c-w">weight {pct(w.assessment)}</span></div>
             <div className="v">{k.assessment.score == null ? '—' : k.assessment.score.toFixed(2)}</div>
             <div className="d">
               {k.assessment.score == null ? 'none yet' :
@@ -104,10 +155,10 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
             <tbody>
               {d.recentAttempts.map((a, i) => (
                 <tr key={i}>
-                  <td>{fmtDate(a.created_at)}</td>
+                  <td className="date">{fmtDate(a.created_at)}</td>
                   <td>{a.lo_code}</td>
                   <td>{a.lo_code.slice(0, 2)}</td>
-                  <td style={{ color: a.outcome === 'correct' ? 'var(--success)' : 'var(--error)', fontWeight: 600 }}>{a.outcome}</td>
+                  <td><span className={`org-out ${a.outcome === 'miss' ? 'miss' : 'ok'}`}>{a.outcome}</span></td>
                 </tr>
               ))}
             </tbody>
