@@ -424,7 +424,9 @@ export interface MyProgress {
   readiness: ReadinessResult;
   hasAnyActivity: boolean;
   lastActiveAt: number | null;
-  daysSinceActive: number | null;
+  daysSinceActive: number | null;        // cross-source (attempts + progress + marks + mocks)
+  daysSinceLastAttempt: number | null;   // attempt-log ONLY — drives the recency nudge so it
+                                         // can never contradict the (attempt-log) activity ribbon
   streakDays: number;          // consecutive active days up to today (1-day grace)
   coveredSubAreas: string[];
   uncoveredSubAreas: string[]; // drillable areas with no correct attempt yet
@@ -535,11 +537,21 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
     .slice(0, 40)
     .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at, drill_id: a.drill_id }));
 
+  // Attempt-log recency, independent of tutor_progress/marks/mocks. With zero attempts
+  // this is null → the page shows the first-drill nudge, matching the empty ribbon (a
+  // user with pre-log tutor_progress rows but no logged attempts must not read as "active").
+  const lastAttemptAt = rows.attempts.reduce<number | null>((mx, a) => {
+    const t = Date.parse(a.created_at);
+    return Number.isNaN(t) ? mx : mx == null || t > mx ? t : mx;
+  }, null);
+  const daysSinceLastAttempt = lastAttemptAt == null ? null : Math.floor((now - lastAttemptAt) / DAY_MS);
+
   return {
     readiness,
     hasAnyActivity: input.hasAnyActivity,
     lastActiveAt: input.lastActiveAt,
     daysSinceActive: readiness.components.recency.daysSinceActive,
+    daysSinceLastAttempt,
     streakDays,
     coveredSubAreas: [...covered].sort(),
     uncoveredSubAreas,

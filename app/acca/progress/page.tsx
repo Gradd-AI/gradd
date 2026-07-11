@@ -91,7 +91,7 @@ export default async function ProgressPage() {
 
       <h1>Your progress</h1>
       <div className="prog-nudge">
-        <span className="prog-nudge-text">{recencyNudge(p.daysSinceActive)}</span>
+        <span className="prog-nudge-text">{recencyNudge(p.daysSinceLastAttempt)}</span>
         {p.streakDays >= 2 && <span className="prog-streak">🔥 {p.streakDays}-day streak</span>}
       </div>
 
@@ -194,7 +194,7 @@ export default async function ProgressPage() {
         <div className="org-panel" style={{ marginTop: 28 }}>
           <h2 style={{ margin: '0 0 4px' }}>Not attempted yet</h2>
           <p className="org-note" style={{ marginTop: 0, marginBottom: 14 }}>
-            {p.uncoveredSubAreas.length} area{p.uncoveredSubAreas.length === 1 ? '' : 's'} you haven&apos;t got a correct answer in yet — a good place to start.
+            {`${p.uncoveredSubAreas.length} ${p.uncoveredSubAreas.length === 1 ? 'area' : 'areas'} you haven't got a correct answer in yet — a good place to start.`}
           </p>
           <div className="org-kv">
             {p.uncoveredSubAreas.map((sa) => (
