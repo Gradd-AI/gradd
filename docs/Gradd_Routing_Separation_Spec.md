@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED / HISTORICAL** — the domain-routing separation described here has shipped. Current product resolution is by entitlement via `lib/entitlements.ts` (never host); see [GRADD_PRODUCT_MODEL.md](GRADD_PRODUCT_MODEL.md) and `memory/project_product_scoping`. Kept for history.
+
 # Gradd — Domain Routing Separation Specification
 # Version: 1.1 | Updated: May 2026
 # Status: Active — reference this before any routing, onboarding, or UI build

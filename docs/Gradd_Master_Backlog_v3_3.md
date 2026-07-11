@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED — historical snapshot.** The current backlog is [Gradd_Master_Backlog_v3_5.md](Gradd_Master_Backlog_v3_5.md). Kept for history; do not act on this file.
+
 # Gradd — Master Product Backlog & 5-Year Roadmap
 *Last updated: 26 May 2026 | Version 3.4*
 

@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED / HISTORICAL** — describes the IB/LC "Layer" build phase, now shipped to production. Kept for history. Current architecture: [GRADD_PRODUCT_MODEL.md](GRADD_PRODUCT_MODEL.md); build rules: [GRADD_BUILD_HARDENING.md](GRADD_BUILD_HARDENING.md).
+
 # Layer 1 — Past-Paper Question System
 ## Start-Here Doc for the Next Build Session
 

@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED / HISTORICAL** — a build-session plan for the IB/LC "Layer" phase, now shipped. Kept for history. Current architecture: [GRADD_PRODUCT_MODEL.md](GRADD_PRODUCT_MODEL.md).
+
 # Next Session — BM Layer 2 Build
 
 ## Status at handoff (01/06/2026)

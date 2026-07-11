@@ -1,3 +1,5 @@
+> **⚠️ SUPERSEDED / HISTORICAL** — describes the IB/LC "Layer" build phase, now shipped to production. Kept for history. Current architecture: [GRADD_PRODUCT_MODEL.md](GRADD_PRODUCT_MODEL.md); marking: [MARK_SCHEME_EVIDENCE.md](MARK_SCHEME_EVIDENCE.md).
+
 # Layer 2 — IBO Mark Scheme Integration
 
 *Spec document. Status: approved for build. Owner: Grant. Last updated: 26/05/2026.*
