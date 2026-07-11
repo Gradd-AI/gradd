@@ -382,6 +382,53 @@ export interface TraineeDetail {
   mocks: { mock_id: string; completed: boolean; started_at: string }[];
 }
 
+// ── Student self-view (student-facing /acca/progress) ─────────────────────────
+// A session-scoped variant of getTraineeDetail: the SAME readiness machinery, but
+// scoped to the signed-in user (no org / no email join — a self-serve student may
+// have no org row at all). Reads are still SERVICE-ROLE (the four data tables have
+// RLS on with no permissive student SELECT policy), gated UPSTREAM by the page's own
+// auth guard passing ONLY auth.getUser().id as `userId` — never a client-supplied id.
+//
+// The readiness result is computed but its band/score are NEVER rendered to the
+// student: the student view is a doorway (what to do next), not a verdict.
+
+export interface MyProgress {
+  /** Computed but band/score are NOT shown to students — kept for internal derivation. */
+  readiness: ReadinessResult;
+  hasAnyActivity: boolean;
+  lastActiveAt: number | null;
+  daysSinceActive: number | null;
+  coveredSubAreas: string[];
+  totalSubAreas: number;
+  recentAttempts: RecentAttempt[];
+}
+
+export async function getMyProgress(userId: string, now: number): Promise<MyProgress> {
+  const [total, rows] = await Promise.all([totalSubAreas(), rawRowsForUsers([userId])]);
+  const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
+  const readiness = computeReadiness(input);
+
+  const covered = new Set<string>();
+  for (const a of rows.attempts) if (a.outcome === 'correct') covered.add(subAreaOf(a.lo_code));
+
+  // Enough history for the 25-day activity ribbon, the streak, and the recent-attempts
+  // list — a single student's full attempt set is small, so no server-side cap needed.
+  const recentAttempts = [...rows.attempts]
+    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    .slice(0, 40)
+    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at }));
+
+  return {
+    readiness,
+    hasAnyActivity: input.hasAnyActivity,
+    lastActiveAt: input.lastActiveAt,
+    daysSinceActive: readiness.components.recency.daysSinceActive,
+    coveredSubAreas: [...covered].sort(),
+    totalSubAreas: total,
+    recentAttempts,
+  };
+}
+
 export async function getTraineeDetail(orgId: string, userId: string, now: number): Promise<TraineeDetail | null> {
   const [total, rows, emails] = await Promise.all([totalSubAreas(), rawRowsForUsers([userId]), emailsForOrg(orgId)]);
   const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
