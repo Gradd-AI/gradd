@@ -399,12 +399,16 @@ export interface TraineeDetail {
 // The readiness result is computed but its band/score are NEVER rendered to the
 // student: the student view is a doorway (what to do next), not a verdict.
 
+/** Recent-vs-earlier direction within a sub-area (null = too little history to call). */
+export type AreaTrend = 'improving' | 'declining' | 'flat' | null;
+
 /** One weak sub-area, ranked so the student sees the biggest lever first. */
 export interface WeakArea {
   subArea: string;
   attempts: number;
   misses: number;
   missRate: number;
+  trend: AreaTrend; // recent (≤14d) miss-rate vs prior (14–28d) — the trajectory nudge
 }
 
 export interface MyProgress {
@@ -413,6 +417,7 @@ export interface MyProgress {
   hasAnyActivity: boolean;
   lastActiveAt: number | null;
   daysSinceActive: number | null;
+  streakDays: number;          // consecutive active days up to today (1-day grace)
   coveredSubAreas: string[];
   uncoveredSubAreas: string[]; // drillable areas with no correct attempt yet
   totalSubAreas: number;
@@ -421,6 +426,8 @@ export interface MyProgress {
 }
 
 const MAX_WEAK_AREAS = 6;
+const TREND_MIN_ATTEMPTS = 2;  // per window, before we'll call a direction
+const TREND_EPS = 0.15;        // miss-rate delta below this reads as flat (noise guard)
 
 export async function getMyProgress(userId: string, now: number): Promise<MyProgress> {
   const [subAreas, rows] = await Promise.all([allSubAreas(), rawRowsForUsers([userId])]);
@@ -428,24 +435,52 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
   const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
   const readiness = computeReadiness(input);
 
-  // Per-sub-area tallies drive both coverage (>= 1 correct) and the weak-area ranking.
+  const recentCut = now - WINDOW_MS;
+  const priorCut = now - 2 * WINDOW_MS;
+
+  // Per-sub-area tallies drive coverage (>= 1 correct), the weak-area ranking, and the
+  // trajectory (recent vs prior miss-rate within the same area).
   const covered = new Set<string>();
-  const tally = new Map<string, { attempts: number; misses: number }>();
+  interface SA { attempts: number; misses: number; rA: number; rM: number; pA: number; pM: number }
+  const tally = new Map<string, SA>();
+  const activeDays = new Set<number>();
   for (const a of rows.attempts) {
     const sa = subAreaOf(a.lo_code);
-    const t = (tally.get(sa) ?? tally.set(sa, { attempts: 0, misses: 0 }).get(sa)!);
+    const t = (tally.get(sa) ?? tally.set(sa, { attempts: 0, misses: 0, rA: 0, rM: 0, pA: 0, pM: 0 }).get(sa)!);
+    const ts = Date.parse(a.created_at);
+    const isMiss = a.outcome === 'miss';
     t.attempts++;
-    if (a.outcome === 'miss') t.misses++;
+    if (isMiss) t.misses++;
     if (a.outcome === 'correct') covered.add(sa);
+    if (ts >= recentCut) { t.rA++; if (isMiss) t.rM++; }
+    else if (ts >= priorCut) { t.pA++; if (isMiss) t.pM++; }
+    const di = Math.floor((now - ts) / DAY_MS);
+    if (di >= 0) activeDays.add(di);
   }
+
+  const trendOf = (t: SA): AreaTrend => {
+    if (t.rA < TREND_MIN_ATTEMPTS || t.pA < TREND_MIN_ATTEMPTS) return null;
+    const delta = t.pM / t.pA - t.rM / t.rA; // prior misses − recent misses; >0 = fewer now
+    if (delta > TREND_EPS) return 'improving';
+    if (delta < -TREND_EPS) return 'declining';
+    return 'flat';
+  };
 
   // Weak = a sub-area the student has actually missed in. Worst miss-rate first,
   // ties broken by volume (a 60% over 10 attempts outranks 60% over 2).
   const weakAreas: WeakArea[] = [...tally.entries()]
-    .map(([subArea, t]) => ({ subArea, attempts: t.attempts, misses: t.misses, missRate: t.misses / t.attempts }))
+    .map(([subArea, t]) => ({ subArea, attempts: t.attempts, misses: t.misses, missRate: t.misses / t.attempts, trend: trendOf(t) }))
     .filter((w) => w.misses > 0)
     .sort((a, b) => b.missRate - a.missRate || b.attempts - a.attempts)
     .slice(0, MAX_WEAK_AREAS);
+
+  // Streak: consecutive active days up to today, with a 1-day grace so "haven't drilled
+  // yet today" doesn't read as a broken streak. Free off the same day-bucketing.
+  let streakDays = 0;
+  if (activeDays.has(0) || activeDays.has(1)) {
+    let d = activeDays.has(0) ? 0 : 1;
+    while (activeDays.has(d)) { streakDays++; d++; }
+  }
 
   // Uncovered = drillable areas with no correct attempt yet — the "start here" list.
   const uncoveredSubAreas = subAreas.filter((sa) => !covered.has(sa));
@@ -462,6 +497,7 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
     hasAnyActivity: input.hasAnyActivity,
     lastActiveAt: input.lastActiveAt,
     daysSinceActive: readiness.components.recency.daysSinceActive,
+    streakDays,
     coveredSubAreas: [...covered].sort(),
     uncoveredSubAreas,
     totalSubAreas: total,

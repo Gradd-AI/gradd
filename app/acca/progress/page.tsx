@@ -2,11 +2,27 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
-import { getMyProgress, type RecentAttempt } from '@/lib/org/queries';
+import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
 import { ORG_CSS, SUB_AREA_NAME, fmtDays, cellTone } from '@/components/org/orgTheme';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const areaName = (sa: string) => SUB_AREA_NAME[sa] ?? sa;
+
+/** Recency nudge — trajectory framing, never a verdict. */
+function recencyNudge(daysSinceActive: number | null): string {
+  if (daysSinceActive == null) return 'Your first drill is the hardest to start and the quickest to finish.';
+  if (daysSinceActive <= 0) return "You're on a roll — you drilled today.";
+  if (daysSinceActive === 1) return 'Back at it — you last drilled yesterday.';
+  if (daysSinceActive <= 7) return `A few days off (${daysSinceActive}). A short drill picks the thread back up.`;
+  return `It's been ${daysSinceActive} days — one quick drill gets you moving again.`;
+}
+
+/** ▲ improving / ▼ needs-work. flat and unknown render nothing (no noise). */
+function TrendGlyph({ trend }: { trend: AreaTrend }) {
+  if (trend === 'improving') return <span className="prog-trend up" title="Improving lately">▲ improving</span>;
+  if (trend === 'declining') return <span className="prog-trend down" title="Slipping lately">▼ needs work</span>;
+  return null;
+}
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -74,11 +90,10 @@ export default async function ProgressPage() {
       </header>
 
       <h1>Your progress</h1>
-      <p className="sub">
-        {p.hasAnyActivity
-          ? <>You last drilled {fmtDays(p.daysSinceActive)}. Here&apos;s where to go next.</>
-          : <>You haven&apos;t started yet — pick an area below and Ezra will coach you from wherever you stall.</>}
-      </p>
+      <div className="prog-nudge">
+        <span className="prog-nudge-text">{recencyNudge(p.daysSinceActive)}</span>
+        {p.streakDays >= 2 && <span className="prog-streak">🔥 {p.streakDays}-day streak</span>}
+      </div>
 
       {/* Activity ribbon — your last 25 days */}
       <div className="org-panel">
@@ -115,7 +130,10 @@ export default async function ProgressPage() {
                   <span className="prog-card-dot" style={{ background: tone.bg }} aria-hidden="true" />
                   <span className="prog-card-body">
                     <span className="prog-card-title">{areaName(w.subArea)}</span>
-                    <span className="prog-card-meta">{w.misses} of {w.attempts} missed · {pct(w.missRate)}</span>
+                    <span className="prog-card-meta">
+                      {w.misses} of {w.attempts} missed · {pct(w.missRate)}
+                      <TrendGlyph trend={w.trend} />
+                    </span>
                   </span>
                   <span className="prog-card-cta">Drill this →</span>
                 </Link>
@@ -147,6 +165,16 @@ export default async function ProgressPage() {
 
 // ── Student-view supplement to ORG_CSS (house tokens reused; student voice) ─────
 const PROG_CSS = `
+/* recency nudge + streak — trajectory framing, not a verdict */
+.org .prog-nudge { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 26px; }
+.org .prog-nudge-text { font-size: 15px; color: var(--text-muted); }
+.org .prog-streak { font-size: 12px; font-weight: 700; color: #8a4b1c; background: #f4e7d2; border: 1px solid #e6d3ae; border-radius: 999px; padding: 3px 11px; letter-spacing: .01em; white-space: nowrap; }
+
+/* per-area trajectory glyph */
+.org .prog-trend { margin-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }
+.org .prog-trend.up { color: #1e5a38; }
+.org .prog-trend.down { color: #a4402e; }
+
 .org .prog-ribbon { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
 .org .prog-coverage-summary { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
 .org .prog-cov-n { font-family: var(--font-display); font-size: 34px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; line-height: 1; font-variant-numeric: tabular-nums; }
