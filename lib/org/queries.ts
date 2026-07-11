@@ -123,8 +123,10 @@ async function emailsForOrg(orgId: string): Promise<Map<string, string>> {
   return map;
 }
 
-/** Distinct paper sub-areas from the published drill pool — the coverage denominator. */
-async function totalSubAreas(): Promise<number> {
+/** Distinct paper sub-areas from the published drill pool, sorted. The coverage
+ *  denominator (and, for the student view, the set to diff against for "not yet
+ *  attempted" areas — so the uncovered list only ever offers drillable areas). */
+async function allSubAreas(): Promise<string[]> {
   const sb = createServiceClient();
   const { data } = await sb
     .from('acca_drills')
@@ -135,14 +137,19 @@ async function totalSubAreas(): Promise<number> {
     .eq('published', true);
   const set = new Set<string>();
   for (const r of (data as { lo_code: string }[] | null) ?? []) set.add(subAreaOf(r.lo_code));
-  return set.size;
+  return [...set].sort();
+}
+
+/** Count of distinct sub-areas — the coverage denominator. */
+async function totalSubAreas(): Promise<number> {
+  return (await allSubAreas()).length;
 }
 
 // ── Raw per-user rows, batched ────────────────────────────────────────────────
 
 interface RawRows {
-  attempts: { user_id: string; lo_code: string; outcome: string; created_at: string }[];
-  progress: { user_id: string; resolved: boolean; miss_count: number; updated_at: string }[];
+  attempts: { user_id: string; drill_id: string; lo_code: string; outcome: string; created_at: string }[];
+  progress: { user_id: string; drill_id: string; resolved: boolean; miss_count: number; updated_at: string }[];
   marks: { user_id: string; case_id: string; professional_marks_awarded: number; professional_marks_available: number; marked_at: string }[];
   mocks: { user_id: string; mock_id: string; completed: boolean; started_at: string }[];
 }
@@ -151,8 +158,8 @@ async function rawRowsForUsers(userIds: string[]): Promise<RawRows> {
   if (userIds.length === 0) return { attempts: [], progress: [], marks: [], mocks: [] };
   const sb = createServiceClient();
   const [a, p, m, k] = await Promise.all([
-    sb.from('acca_drill_attempts').select('user_id, lo_code, outcome, created_at').in('user_id', userIds),
-    sb.from('acca_tutor_progress').select('user_id, resolved, miss_count, updated_at').in('user_id', userIds),
+    sb.from('acca_drill_attempts').select('user_id, drill_id, lo_code, outcome, created_at').in('user_id', userIds),
+    sb.from('acca_tutor_progress').select('user_id, drill_id, resolved, miss_count, updated_at').in('user_id', userIds),
     sb.from('acca_case_marking').select('user_id, case_id, professional_marks_awarded, professional_marks_available, marked_at').in('user_id', userIds),
     sb.from('acca_mock_attempts').select('user_id, mock_id, completed, started_at').in('user_id', userIds),
   ]);
@@ -367,7 +374,7 @@ export async function getOrgOverview(slug: string, now: number): Promise<OrgOver
 
 // ── Trainee drill-down (explainability screen) ────────────────────────────────
 
-export interface RecentAttempt { lo_code: string; outcome: string; created_at: string }
+export interface RecentAttempt { lo_code: string; outcome: string; created_at: string; drill_id: string }
 export interface TraineeDetail {
   userId: string;
   email: string | null;
@@ -382,6 +389,167 @@ export interface TraineeDetail {
   mocks: { mock_id: string; completed: boolean; started_at: string }[];
 }
 
+// ── Student self-view (student-facing /acca/progress) ─────────────────────────
+// A session-scoped variant of getTraineeDetail: the SAME readiness machinery, but
+// scoped to the signed-in user (no org / no email join — a self-serve student may
+// have no org row at all). Reads are still SERVICE-ROLE (the four data tables have
+// RLS on with no permissive student SELECT policy), gated UPSTREAM by the page's own
+// auth guard passing ONLY auth.getUser().id as `userId` — never a client-supplied id.
+//
+// The readiness result is computed but its band/score are NEVER rendered to the
+// student: the student view is a doorway (what to do next), not a verdict.
+
+/** Recent-vs-earlier direction within a sub-area (null = too little history to call). */
+export type AreaTrend = 'improving' | 'declining' | 'flat' | null;
+
+/** One weak sub-area, ranked so the student sees the biggest lever first. */
+export interface WeakArea {
+  subArea: string;
+  attempts: number;
+  misses: number;
+  missRate: number;
+  trend: AreaTrend; // recent (≤14d) miss-rate vs prior (14–28d) — the trajectory nudge
+}
+
+/** A drill the student stalled on (miss_count ≥ 2, unresolved) — resumable by id. */
+export interface StuckDrill {
+  drillId: string;
+  loCode: string;
+  topic: string;
+  missCount: number;
+}
+
+export interface MyProgress {
+  /** Computed but band/score are NOT shown to students — kept for internal derivation. */
+  readiness: ReadinessResult;
+  hasAnyActivity: boolean;
+  lastActiveAt: number | null;
+  daysSinceActive: number | null;
+  streakDays: number;          // consecutive active days up to today (1-day grace)
+  coveredSubAreas: string[];
+  uncoveredSubAreas: string[]; // drillable areas with no correct attempt yet
+  totalSubAreas: number;
+  weakAreas: WeakArea[];       // sub-areas with a miss, worst miss-rate first
+  stuckDrills: StuckDrill[];   // resumable stalled drills, most-missed first
+  recentAttempts: RecentAttempt[];
+}
+
+/** Topic (and lo_code) for a set of drill ids — used to label stuck drills by title
+ *  rather than a bare uuid. Only published APM drills resolve; a stale id is dropped. */
+async function drillTitles(drillIds: string[]): Promise<Map<string, { topic: string; loCode: string }>> {
+  const map = new Map<string, { topic: string; loCode: string }>();
+  if (drillIds.length === 0) return map;
+  const sb = createServiceClient();
+  const { data } = await sb
+    .from('acca_drills')
+    .select('id, topic, lo_code')
+    .in('id', drillIds)
+    .eq('exam_board', 'ACCA')
+    .eq('paper_code', 'APM')
+    .eq('status', 'approved')
+    .eq('published', true);
+  for (const r of (data as { id: string; topic: string; lo_code: string }[] | null) ?? []) {
+    map.set(r.id, { topic: r.topic, loCode: r.lo_code });
+  }
+  return map;
+}
+
+const MAX_WEAK_AREAS = 6;
+const TREND_MIN_ATTEMPTS = 2;  // per window, before we'll call a direction
+const TREND_EPS = 0.15;        // miss-rate delta below this reads as flat (noise guard)
+
+export async function getMyProgress(userId: string, now: number): Promise<MyProgress> {
+  const [subAreas, rows] = await Promise.all([allSubAreas(), rawRowsForUsers([userId])]);
+  const total = subAreas.length;
+  const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
+  const readiness = computeReadiness(input);
+
+  const recentCut = now - WINDOW_MS;
+  const priorCut = now - 2 * WINDOW_MS;
+
+  // Per-sub-area tallies drive coverage (>= 1 correct), the weak-area ranking, and the
+  // trajectory (recent vs prior miss-rate within the same area).
+  const covered = new Set<string>();
+  interface SA { attempts: number; misses: number; rA: number; rM: number; pA: number; pM: number }
+  const tally = new Map<string, SA>();
+  const activeDays = new Set<number>();
+  for (const a of rows.attempts) {
+    const sa = subAreaOf(a.lo_code);
+    const t = (tally.get(sa) ?? tally.set(sa, { attempts: 0, misses: 0, rA: 0, rM: 0, pA: 0, pM: 0 }).get(sa)!);
+    const ts = Date.parse(a.created_at);
+    const isMiss = a.outcome === 'miss';
+    t.attempts++;
+    if (isMiss) t.misses++;
+    if (a.outcome === 'correct') covered.add(sa);
+    if (ts >= recentCut) { t.rA++; if (isMiss) t.rM++; }
+    else if (ts >= priorCut) { t.pA++; if (isMiss) t.pM++; }
+    const di = Math.floor((now - ts) / DAY_MS);
+    if (di >= 0) activeDays.add(di);
+  }
+
+  const trendOf = (t: SA): AreaTrend => {
+    if (t.rA < TREND_MIN_ATTEMPTS || t.pA < TREND_MIN_ATTEMPTS) return null;
+    const delta = t.pM / t.pA - t.rM / t.rA; // prior misses − recent misses; >0 = fewer now
+    if (delta > TREND_EPS) return 'improving';
+    if (delta < -TREND_EPS) return 'declining';
+    return 'flat';
+  };
+
+  // Weak = a sub-area the student has actually missed in. Worst miss-rate first,
+  // ties broken by volume (a 60% over 10 attempts outranks 60% over 2).
+  const weakAreas: WeakArea[] = [...tally.entries()]
+    .map(([subArea, t]) => ({ subArea, attempts: t.attempts, misses: t.misses, missRate: t.misses / t.attempts, trend: trendOf(t) }))
+    .filter((w) => w.misses > 0)
+    .sort((a, b) => b.missRate - a.missRate || b.attempts - a.attempts)
+    .slice(0, MAX_WEAK_AREAS);
+
+  // Streak: consecutive active days up to today, with a 1-day grace so "haven't drilled
+  // yet today" doesn't read as a broken streak. Free off the same day-bucketing.
+  let streakDays = 0;
+  if (activeDays.has(0) || activeDays.has(1)) {
+    let d = activeDays.has(0) ? 0 : 1;
+    while (activeDays.has(d)) { streakDays++; d++; }
+  }
+
+  // Uncovered = drillable areas with no correct attempt yet — the "start here" list.
+  const uncoveredSubAreas = subAreas.filter((sa) => !covered.has(sa));
+
+  // Stuck = unresolved drills the student has missed ≥2×. Resolve titles so we can show
+  // them by name and deep-link a resume (?drill_id=). Drills that no longer resolve as a
+  // published APM drill are dropped (can't offer a resume that would dead-end).
+  const stuckRows = rows.progress
+    .filter((pr) => !pr.resolved && (pr.miss_count ?? 0) >= 2)
+    .sort((a, b) => (b.miss_count ?? 0) - (a.miss_count ?? 0));
+  const titles = await drillTitles(stuckRows.map((pr) => pr.drill_id));
+  const stuckDrills: StuckDrill[] = stuckRows
+    .map((pr) => {
+      const meta = titles.get(pr.drill_id);
+      return meta ? { drillId: pr.drill_id, loCode: meta.loCode, topic: meta.topic, missCount: pr.miss_count ?? 0 } : null;
+    })
+    .filter((d): d is StuckDrill => d != null);
+
+  // Enough history for the 25-day activity ribbon, the streak, and the recent-attempts
+  // list — a single student's full attempt set is small, so no server-side cap needed.
+  const recentAttempts = [...rows.attempts]
+    .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+    .slice(0, 40)
+    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at, drill_id: a.drill_id }));
+
+  return {
+    readiness,
+    hasAnyActivity: input.hasAnyActivity,
+    lastActiveAt: input.lastActiveAt,
+    daysSinceActive: readiness.components.recency.daysSinceActive,
+    streakDays,
+    coveredSubAreas: [...covered].sort(),
+    uncoveredSubAreas,
+    totalSubAreas: total,
+    weakAreas,
+    stuckDrills,
+    recentAttempts,
+  };
+}
+
 export async function getTraineeDetail(orgId: string, userId: string, now: number): Promise<TraineeDetail | null> {
   const [total, rows, emails] = await Promise.all([totalSubAreas(), rawRowsForUsers([userId]), emailsForOrg(orgId)]);
   const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
@@ -393,7 +561,7 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
   const recentAttempts = [...rows.attempts]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 15)
-    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at }));
+    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at, drill_id: a.drill_id }));
   const email = emails.get(userId) ?? null;
 
   return {
