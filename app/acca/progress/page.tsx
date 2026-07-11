@@ -1,12 +1,25 @@
 import type { Metadata } from 'next';
+import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
+import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { ORG_CSS, SUB_AREA_NAME, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const areaName = (sa: string) => SUB_AREA_NAME[sa] ?? sa;
+
+/** Quiet house-styled lock row — one line of muted text, NOT a button. The single
+ *  upgrade button lives once at the foot of the page (see the free-tier upsell). */
+function LockLine({ children }: { children: ReactNode }) {
+  return (
+    <p className="prog-lock">
+      <span className="prog-lock-i" aria-hidden="true">🔒</span>
+      {children}
+    </p>
+  );
+}
 
 /** Recency nudge — trajectory framing, never a verdict. */
 function recencyNudge(daysSinceActive: number | null): string {
@@ -74,8 +87,20 @@ export default async function ProgressPage() {
     redirect('/acca/auth?next=/acca/progress');
   }
 
+  // ── Tier check (server-side) ────────────────────────────────────────────────
+  // The page stays reachable by every logged-in student — the TIER decides what
+  // renders. Same gate cases/mock use (hasActiveAPMAccess). Own profile row read
+  // via the session client (RLS: student reads own row).
+  const { data: profile } = await authClient
+    .from('profiles')
+    .select('apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+  const paid = hasActiveAPMAccess(profile ?? {});
+
   const now = Date.now();
   const p = await getMyProgress(user.id, now);
+  const hasAssessment = p.marks.length > 0 || p.mocks.length > 0;
 
   return (
     <div className="org">
@@ -92,7 +117,11 @@ export default async function ProgressPage() {
       <h1>Your progress</h1>
       <div className="prog-nudge">
         <span className="prog-nudge-text">{recencyNudge(p.daysSinceLastAttempt)}</span>
-        {p.streakDays >= 2 && <span className="prog-streak">🔥 {p.streakDays}-day streak</span>}
+        {/* Streak is paid (it's trajectory). Only surfaced when one actually exists, so
+            the free lock is honest — never a nag when there's nothing to withhold. */}
+        {p.streakDays >= 2 && (paid
+          ? <span className="prog-streak">🔥 {p.streakDays}-day streak</span>
+          : <span className="prog-streak prog-streak--locked">🔒 {p.streakDays}-day streak</span>)}
       </div>
 
       {/* Activity ribbon — your last 25 days */}
@@ -117,25 +146,38 @@ export default async function ProgressPage() {
         </div>
       </div>
 
-      {/* Stuck drills — pick up exactly where you stalled */}
+      {/* Stuck drills — paid: resumable cards; free: header + count + locked body */}
       {p.stuckDrills.length > 0 && (
         <>
           <h2>Pick up where you got stuck</h2>
-          <p className="sub" style={{ marginBottom: 16 }}>
-            Questions you stalled on. Resume takes you back to the same question with your progress remembered — not a fresh start.
-          </p>
-          <div className="prog-cards">
-            {p.stuckDrills.map((s) => (
-              <Link key={s.drillId} href={`/acca/tutor?drill_id=${encodeURIComponent(s.drillId)}`} className="prog-card">
-                <span className="prog-card-dot prog-card-dot--stuck" aria-hidden="true" />
-                <span className="prog-card-body">
-                  <span className="prog-card-title">{s.topic}</span>
-                  <span className="prog-card-meta">{areaName(s.loCode.slice(0, 2))} · missed {s.missCount}×</span>
-                </span>
-                <span className="prog-card-cta">Resume →</span>
-              </Link>
-            ))}
-          </div>
+          {paid ? (
+            <>
+              <p className="sub" style={{ marginBottom: 16 }}>
+                Questions you stalled on. Resume takes you back to the same question with your progress remembered — not a fresh start.
+              </p>
+              <div className="prog-cards">
+                {p.stuckDrills.map((s) => (
+                  <Link key={s.drillId} href={`/acca/tutor?drill_id=${encodeURIComponent(s.drillId)}`} className="prog-card">
+                    <span className="prog-card-dot prog-card-dot--stuck" aria-hidden="true" />
+                    <span className="prog-card-body">
+                      <span className="prog-card-title">{s.topic}</span>
+                      <span className="prog-card-meta">{areaName(s.loCode.slice(0, 2))} · missed {s.missCount}×</span>
+                    </span>
+                    <span className="prog-card-cta">Resume →</span>
+                  </Link>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="sub" style={{ marginBottom: 12 }}>
+                {`${p.stuckDrills.length} ${p.stuckDrills.length === 1 ? 'drill' : 'drills'} you're stuck on.`}
+              </p>
+              <div className="org-panel prog-lock-panel">
+                <LockLine>Upgrade to resume exactly where you left off.</LockLine>
+              </div>
+            </>
+          )}
         </>
       )}
 
@@ -154,7 +196,7 @@ export default async function ProgressPage() {
                     <span className="prog-card-title">{areaName(w.subArea)}</span>
                     <span className="prog-card-meta">
                       {w.misses} of {w.attempts} missed · {pct(w.missRate)}
-                      <TrendGlyph trend={w.trend} />
+                      {paid && <TrendGlyph trend={w.trend} />}
                     </span>
                   </span>
                   <span className="prog-card-cta">Drill this →</span>
@@ -162,6 +204,7 @@ export default async function ProgressPage() {
               );
             })}
           </div>
+          {!paid && <LockLine>Upgrade to see your trend per area — improving or slipping.</LockLine>}
         </>
       )}
 
@@ -189,6 +232,35 @@ export default async function ProgressPage() {
         </div>
       )}
 
+      {/* Mock & case marks — paid only; free sees a single locked line (only when present) */}
+      {hasAssessment && (
+        <div className="org-panel" style={{ marginTop: 28 }}>
+          <h2 style={{ margin: '0 0 10px' }}>Mock &amp; case marks</h2>
+          {paid ? (
+            <>
+              {p.mocks.length > 0 && (
+                <table className="org-list" style={{ marginBottom: p.marks.length ? 16 : 0 }}>
+                  <thead><tr><th>Mock</th><th>Started</th><th>Completed</th></tr></thead>
+                  <tbody>{p.mocks.map((m, i) => (
+                    <tr key={i}><td>{m.mock_id}</td><td className="date">{fmtDate(m.started_at)}</td><td>{m.completed ? 'yes' : 'no'}</td></tr>
+                  ))}</tbody>
+                </table>
+              )}
+              {p.marks.length > 0 && (
+                <table className="org-list">
+                  <thead><tr><th>Case (professional-skills)</th><th className="num">Awarded</th><th className="num">Available</th><th>Marked</th></tr></thead>
+                  <tbody>{p.marks.map((m, i) => (
+                    <tr key={i}><td>{m.case_id.slice(0, 8)}…</td><td className="num">{m.awarded}</td><td className="num">{m.available}</td><td className="date">{fmtDate(m.marked_at)}</td></tr>
+                  ))}</tbody>
+                </table>
+              )}
+            </>
+          ) : (
+            <LockLine>Upgrade to see your mock &amp; case professional-skills marks.</LockLine>
+          )}
+        </div>
+      )}
+
       {/* Not-yet-attempted areas — the coordinator's coverage pills, inverted into a to-do */}
       {p.uncoveredSubAreas.length > 0 && (
         <div className="org-panel" style={{ marginTop: 28 }}>
@@ -205,6 +277,17 @@ export default async function ProgressPage() {
           </div>
         </div>
       )}
+
+      {/* Single upgrade CTA for the whole page — the per-slot lock lines above are text,
+          not buttons; this is the one primary action. Free tier only. */}
+      {!paid && (
+        <div className="prog-upsell">
+          <span className="prog-upsell-text">
+            Trend per area, resume-where-you-left-off, streaks and your mock &amp; case marks are part of full progress.
+          </span>
+          <Link href="/acca/subscribe" className="prog-upsell-cta">Unlock your full progress →</Link>
+        </div>
+      )}
     </div>
   );
 }
@@ -215,6 +298,19 @@ const PROG_CSS = `
 .org .prog-nudge { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 0 0 26px; }
 .org .prog-nudge-text { font-size: 15px; color: var(--text-muted); }
 .org .prog-streak { font-size: 12px; font-weight: 700; color: #8a4b1c; background: #f4e7d2; border: 1px solid #e6d3ae; border-radius: 999px; padding: 3px 11px; letter-spacing: .01em; white-space: nowrap; }
+.org .prog-streak--locked { color: var(--text-light); background: var(--surface-2); border-color: var(--border); font-weight: 600; }
+
+/* locked slots — quiet one-line rows, never buttons */
+.org .prog-lock { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-light); margin: 10px 0 0; line-height: 1.4; }
+.org .prog-lock-i { font-size: 12px; opacity: .8; }
+.org .prog-lock-panel { padding: 16px 18px; display: flex; }
+.org .prog-lock-panel .prog-lock { margin: 0; }
+
+/* single page upgrade CTA (free tier) */
+.org .prog-upsell { display: flex; align-items: center; justify-content: space-between; gap: 18px; flex-wrap: wrap; margin-top: 32px; padding: 20px 22px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--brand-light); border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+.org .prog-upsell-text { font-size: 13px; color: var(--text-muted); line-height: 1.5; max-width: 62ch; }
+.org a.prog-upsell-cta { flex-shrink: 0; display: inline-block; background: var(--brand); color: #fff; text-decoration: none; font-size: 14px; font-weight: 700; letter-spacing: .01em; padding: 11px 20px; border-radius: var(--radius-sm); white-space: nowrap; transition: background .15s ease, transform .15s ease; }
+.org a.prog-upsell-cta:hover { transform: translateY(-1px); filter: brightness(1.06); }
 
 /* per-area trajectory glyph */
 .org .prog-trend { margin-left: 8px; font-size: 11px; font-weight: 700; letter-spacing: .02em; white-space: nowrap; }

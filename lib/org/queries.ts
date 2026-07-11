@@ -434,6 +434,8 @@ export interface MyProgress {
   weakAreas: WeakArea[];       // sub-areas with a miss, worst miss-rate first
   stuckDrills: StuckDrill[];   // resumable stalled drills, most-missed first
   recentAttempts: RecentAttempt[];
+  marks: { case_id: string; awarded: number; available: number; marked_at: string }[];
+  mocks: { mock_id: string; completed: boolean; started_at: string }[];
 }
 
 /** Topic (and lo_code) for a set of drill ids — used to label stuck drills by title
@@ -559,6 +561,8 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
     weakAreas,
     stuckDrills,
     recentAttempts,
+    marks: rows.marks.map((m) => ({ case_id: m.case_id, awarded: m.professional_marks_awarded, available: m.professional_marks_available, marked_at: m.marked_at })),
+    mocks: rows.mocks.map((m) => ({ mock_id: m.mock_id, completed: m.completed, started_at: m.started_at })),
   };
 }
 
