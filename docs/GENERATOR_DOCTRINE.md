@@ -37,7 +37,7 @@ Evaluative prose (advice, hint, reveal) may name **only risks/premia/factors the
 
 ### Code-owns-decisions inventory (P1–P5)
 The regression classes proven at the calculator/generator level (batch-1 review). Each is a permanent rule:
-- **P1 — allocation.** Capital-rationing allocation is CODE-computed under divisibility: the appraised project is INDIVISIBLE (a bespoke facility can't be part-built); competitors default divisible. The feasible optimum is a with/without enumeration over indivisibles + PI-greedy fill of the remainder. The model never authors an allocation.
+- **P1 — allocation.** Capital-rationing allocation is CODE-computed under divisibility: the appraised project is INDIVISIBLE (a bespoke facility can't be part-built); competitors default divisible. The feasible optimum is a with/without enumeration over indivisibles + PI-greedy fill of the remainder. The model never authors an allocation. The answer **always emits the with-vs-without portfolio-NPV comparison line** (best portfolio funding this project vs best portfolio skipping it) plus the teaching sentence that an indivisible project can't be PI-ranked mechanically — both code-injected, not authored.
 - **P2 — sensitivity.** Computed against an EXPLICITLY NAMED base — the post-tax present value of the operating cash flows (scrap and the depreciation tax shield excluded, as neither flexes). Never emit a margin whose base is unstated.
 - **P3 — advice frame.** The advice opener is injected from the code-computed accept/reject decision. A reject drill emits reject language — never "cautious optimism", never "even if the NPV is positive".
 - **P4 — jurisdiction** (above).

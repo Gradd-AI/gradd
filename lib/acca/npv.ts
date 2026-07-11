@@ -68,6 +68,8 @@ export interface NpvComputed {
   capital_limit?:   number;
   ration_total_npv?: number;   // total NPV of the code-computed optimal feasible allocation
   ration_takes_project?: boolean; // whether the optimal allocation funds THIS (indivisible) project
+  ration_npv_with?: number;    // best feasible portfolio NPV that FUNDS this project
+  ration_npv_without?: number;  // best feasible portfolio NPV that SKIPS this project
   sensitivity_pct?: number;
   sensitivity_label?: string;
   sensitivity_base?: number;   // the PV base the % is measured against (post-tax operating CF PV)
@@ -160,7 +162,10 @@ export function computeNpv(raw: NpvInputs, kind: NpvKind): NpvComputed {
     const divisible = projects.filter((p) => p.divisible).slice().sort((a, b) => b.pi - a.pi);
     if (indivisible.length > 16) throw new Error(`rationing: ${indivisible.length} indivisible projects is too many to enumerate`);
 
-    let best: { taken: Map<string, number>; npv: number; fundsProject: boolean } | null = null;
+    let best: { taken: Map<string, number>; npv: number } | null = null;
+    // Track the best portfolio that FUNDS this project vs the best that SKIPS it — the
+    // with-vs-without comparison is the whole point of an indivisible-project ranking.
+    let bestWith = -Infinity, bestWithout = -Infinity;
     const K = indivisible.length;
     for (let mask = 0; mask < (1 << K); mask++) {
       const taken = new Map<string, number>();
@@ -180,12 +185,15 @@ export function computeNpv(raw: NpvInputs, kind: NpvKind): NpvComputed {
         totNpv += (take / p.outlay) * p.npvFull;
         remaining -= take;
       }
-      if (!best || totNpv > best.npv + EPS) {
-        best = { taken, npv: totNpv, fundsProject: (taken.get('this project') ?? 0) > EPS };
-      }
+      const fundsThis = (taken.get('this project') ?? 0) > EPS;
+      if (fundsThis) bestWith = Math.max(bestWith, totNpv);
+      else bestWithout = Math.max(bestWithout, totNpv);
+      if (!best || totNpv > best.npv + EPS) best = { taken, npv: totNpv };
     }
     out.ration_total_npv = best!.npv;
-    out.ration_takes_project = best!.fundsProject;
+    out.ration_npv_with = Number.isFinite(bestWith) ? bestWith : undefined;
+    out.ration_npv_without = Number.isFinite(bestWithout) ? bestWithout : undefined;
+    out.ration_takes_project = bestWith + EPS >= bestWithout;
     out.ranking = projects
       .slice()
       .sort((a, b) => b.pi - a.pi)
@@ -327,9 +335,12 @@ export function buildNpvModelAnswer(raw: NpvInputs, c: NpvComputed, prose: strin
   if (kind === 'rationing' && c.ranking && c.pi !== undefined) {
     const limit = c.capital_limit ?? raw.initial_outlay;
     lines.push('**Step 5 — Single-period capital rationing (profitability index)**', '');
-    lines.push(`This project is **indivisible** (a bespoke facility cannot be part-funded); the competing projects are divisible. Its profitability index (PV of inflows ÷ outlay) is **${c.pi.toFixed(3)}**. The optimal feasible allocation within the capital limit of ${m(limit)} is found by comparing funding this project — then filling the remaining capital with the divisible projects in PI order — against not funding it, and taking whichever yields the higher total NPV:`, '');
+    lines.push(`Because this project is **indivisible**, the PI ranking cannot be applied mechanically; the board must compare the best feasible portfolio that funds this project against the best feasible portfolio that skips it. Its profitability index (PV of inflows ÷ outlay) is **${c.pi.toFixed(3)}**; the competing projects are divisible; the capital limit is ${m(limit)}. The remaining capital fills the divisible projects in PI order:`, '');
     lines.push(`| Rank (by PI) | Project | PI | Outlay | Capital allocated |`, `|------|------|------|------|------|`);
     c.ranking.forEach((row, i) => lines.push(`| ${i + 1} | ${row.name}${row.divisible ? '' : ' (indivisible)'} | ${row.pi.toFixed(3)} | ${m(row.outlay)} | ${m(row.taken)} |`));
+    if (c.ration_npv_with !== undefined && c.ration_npv_without !== undefined) {
+      lines.push('', `Portfolio comparison: the best feasible portfolio that **funds** this project has a total NPV of **${m(c.ration_npv_with)}**, versus **${m(c.ration_npv_without)}** for the best portfolio that **skips** it — so ${c.ration_takes_project ? 'funding it is optimal' : 'skipping it is optimal'}.`);
+    }
     const chosen = c.ranking.filter((r) => r.taken > EPS);
     const alloc = chosen.map((r) => `${r.name} ${m(r.taken)}${r.divisible && r.taken + EPS < r.outlay ? ' (partial)' : ''}`).join(', ');
     lines.push('', `Optimal allocation: **${alloc}** — total ${m(limit)} deployed${c.ration_takes_project ? ', funding this project in full' : '; this project is not funded, as backing the divisible projects instead yields a higher total NPV'}. *(Multi-period rationing would require linear programming and is beyond this single-period ranking.)*`, '');

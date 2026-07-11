@@ -102,13 +102,15 @@ run('(3) ncf_1 wrong, NO workings → no_workings at source', build({ ncf_1: { v
   const rc = computeNpv(rInp, 'rationing');
   const take = (n: string) => rc.ranking!.find((r) => r.name === n)!.taken;
   const near = (a: number, b: number) => Math.abs(a - b) < 1e-6;
+  const near2 = (a: number | undefined, b: number) => a !== undefined && Math.abs(a - b) < 0.01;
   const ok =
     rc.ration_takes_project === true &&
     near(take('this project'), 18) && near(take('Project NovaDerm'), 7.5) &&
     near(take('Project Helix'), 6.5) && near(take('Project ColdChain'), 0) &&
-    !rc.ranking!.find((r) => r.name === 'this project')!.divisible;
-  console.log(`\n${ok ? 'PASS' : 'FAIL'} :: (P1) rationing indivisible allocation — this 18.0 / NovaDerm 7.5 / Helix 6.5 / ColdChain 0`);
-  if (!ok) { failures++; console.log('   got:', rc.ranking!.map((r) => `${r.name}=${r.taken.toFixed(1)}`).join(', '), 'takesProject=', rc.ration_takes_project); }
+    !rc.ranking!.find((r) => r.name === 'this project')!.divisible &&
+    near2(rc.ration_npv_with, 5.406) && near2(rc.ration_npv_without, 4.53);
+  console.log(`\n${ok ? 'PASS' : 'FAIL'} :: (P1) rationing allocation + portfolio NPV — this 18/NovaDerm 7.5/Helix 6.5/ColdChain 0; with≈5.41 vs without≈4.53`);
+  if (!ok) { failures++; console.log('   got:', rc.ranking!.map((r) => `${r.name}=${r.taken.toFixed(1)}`).join(', '), 'takes=', rc.ration_takes_project, 'with=', rc.ration_npv_with?.toFixed(3), 'without=', rc.ration_npv_without?.toFixed(3)); }
 }
 
 // ── P2: sensitivity measured against the NAMED post-tax operating-CF PV base ──
