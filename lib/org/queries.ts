@@ -123,8 +123,10 @@ async function emailsForOrg(orgId: string): Promise<Map<string, string>> {
   return map;
 }
 
-/** Distinct paper sub-areas from the published drill pool — the coverage denominator. */
-async function totalSubAreas(): Promise<number> {
+/** Distinct paper sub-areas from the published drill pool, sorted. The coverage
+ *  denominator (and, for the student view, the set to diff against for "not yet
+ *  attempted" areas — so the uncovered list only ever offers drillable areas). */
+async function allSubAreas(): Promise<string[]> {
   const sb = createServiceClient();
   const { data } = await sb
     .from('acca_drills')
@@ -135,7 +137,12 @@ async function totalSubAreas(): Promise<number> {
     .eq('published', true);
   const set = new Set<string>();
   for (const r of (data as { lo_code: string }[] | null) ?? []) set.add(subAreaOf(r.lo_code));
-  return set.size;
+  return [...set].sort();
+}
+
+/** Count of distinct sub-areas — the coverage denominator. */
+async function totalSubAreas(): Promise<number> {
+  return (await allSubAreas()).length;
 }
 
 // ── Raw per-user rows, batched ────────────────────────────────────────────────
@@ -392,6 +399,14 @@ export interface TraineeDetail {
 // The readiness result is computed but its band/score are NEVER rendered to the
 // student: the student view is a doorway (what to do next), not a verdict.
 
+/** One weak sub-area, ranked so the student sees the biggest lever first. */
+export interface WeakArea {
+  subArea: string;
+  attempts: number;
+  misses: number;
+  missRate: number;
+}
+
 export interface MyProgress {
   /** Computed but band/score are NOT shown to students — kept for internal derivation. */
   readiness: ReadinessResult;
@@ -399,17 +414,41 @@ export interface MyProgress {
   lastActiveAt: number | null;
   daysSinceActive: number | null;
   coveredSubAreas: string[];
+  uncoveredSubAreas: string[]; // drillable areas with no correct attempt yet
   totalSubAreas: number;
+  weakAreas: WeakArea[];       // sub-areas with a miss, worst miss-rate first
   recentAttempts: RecentAttempt[];
 }
 
+const MAX_WEAK_AREAS = 6;
+
 export async function getMyProgress(userId: string, now: number): Promise<MyProgress> {
-  const [total, rows] = await Promise.all([totalSubAreas(), rawRowsForUsers([userId])]);
+  const [subAreas, rows] = await Promise.all([allSubAreas(), rawRowsForUsers([userId])]);
+  const total = subAreas.length;
   const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
   const readiness = computeReadiness(input);
 
+  // Per-sub-area tallies drive both coverage (>= 1 correct) and the weak-area ranking.
   const covered = new Set<string>();
-  for (const a of rows.attempts) if (a.outcome === 'correct') covered.add(subAreaOf(a.lo_code));
+  const tally = new Map<string, { attempts: number; misses: number }>();
+  for (const a of rows.attempts) {
+    const sa = subAreaOf(a.lo_code);
+    const t = (tally.get(sa) ?? tally.set(sa, { attempts: 0, misses: 0 }).get(sa)!);
+    t.attempts++;
+    if (a.outcome === 'miss') t.misses++;
+    if (a.outcome === 'correct') covered.add(sa);
+  }
+
+  // Weak = a sub-area the student has actually missed in. Worst miss-rate first,
+  // ties broken by volume (a 60% over 10 attempts outranks 60% over 2).
+  const weakAreas: WeakArea[] = [...tally.entries()]
+    .map(([subArea, t]) => ({ subArea, attempts: t.attempts, misses: t.misses, missRate: t.misses / t.attempts }))
+    .filter((w) => w.misses > 0)
+    .sort((a, b) => b.missRate - a.missRate || b.attempts - a.attempts)
+    .slice(0, MAX_WEAK_AREAS);
+
+  // Uncovered = drillable areas with no correct attempt yet — the "start here" list.
+  const uncoveredSubAreas = subAreas.filter((sa) => !covered.has(sa));
 
   // Enough history for the 25-day activity ribbon, the streak, and the recent-attempts
   // list — a single student's full attempt set is small, so no server-side cap needed.
@@ -424,7 +463,9 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
     lastActiveAt: input.lastActiveAt,
     daysSinceActive: readiness.components.recency.daysSinceActive,
     coveredSubAreas: [...covered].sort(),
+    uncoveredSubAreas,
     totalSubAreas: total,
+    weakAreas,
     recentAttempts,
   };
 }

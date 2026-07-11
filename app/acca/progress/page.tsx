@@ -3,7 +3,10 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt } from '@/lib/org/queries';
-import { ORG_CSS, SUB_AREA_NAME, fmtDays } from '@/components/org/orgTheme';
+import { ORG_CSS, SUB_AREA_NAME, fmtDays, cellTone } from '@/components/org/orgTheme';
+
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+const areaName = (sa: string) => SUB_AREA_NAME[sa] ?? sa;
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -98,6 +101,46 @@ export default async function ProgressPage() {
           </div>
         </div>
       </div>
+
+      {/* Weak areas — ranked, tappable, every card a doorway into a scoped drill */}
+      {p.weakAreas.length > 0 && (
+        <>
+          <h2>Work on these next</h2>
+          <p className="sub" style={{ marginBottom: 16 }}>Where you&apos;re missing most. Tap one and Ezra picks up a question from exactly that area.</p>
+          <div className="prog-cards">
+            {p.weakAreas.map((w) => {
+              const tone = cellTone(w.missRate);
+              return (
+                <Link key={w.subArea} href={`/acca/tutor?area=${encodeURIComponent(w.subArea)}`} className="prog-card">
+                  <span className="prog-card-dot" style={{ background: tone.bg }} aria-hidden="true" />
+                  <span className="prog-card-body">
+                    <span className="prog-card-title">{areaName(w.subArea)}</span>
+                    <span className="prog-card-meta">{w.misses} of {w.attempts} missed · {pct(w.missRate)}</span>
+                  </span>
+                  <span className="prog-card-cta">Drill this →</span>
+                </Link>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {/* Not-yet-attempted areas — the coordinator's coverage pills, inverted into a to-do */}
+      {p.uncoveredSubAreas.length > 0 && (
+        <div className="org-panel" style={{ marginTop: 28 }}>
+          <h2 style={{ margin: '0 0 4px' }}>Not attempted yet</h2>
+          <p className="org-note" style={{ marginTop: 0, marginBottom: 14 }}>
+            {p.uncoveredSubAreas.length} area{p.uncoveredSubAreas.length === 1 ? '' : 's'} you haven&apos;t got a correct answer in yet — a good place to start.
+          </p>
+          <div className="org-kv">
+            {p.uncoveredSubAreas.map((sa) => (
+              <Link key={sa} href={`/acca/tutor?area=${encodeURIComponent(sa)}`} className="pill prog-pill-link">
+                {areaName(sa)} <span className="prog-pill-cta">start here →</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -109,4 +152,19 @@ const PROG_CSS = `
 .org .prog-cov-n { font-family: var(--font-display); font-size: 34px; font-weight: 600; color: var(--text); letter-spacing: -0.5px; line-height: 1; font-variant-numeric: tabular-nums; }
 .org .prog-cov-d { color: var(--text-light); font-size: 22px; }
 .org .prog-cov-k { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .05em; }
+
+/* weak-area cards — ranked doorways */
+.org .prog-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.org .prog-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; text-decoration: none; box-shadow: var(--shadow-sm); transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
+.org .prog-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); border-color: var(--brand-light); }
+.org .prog-card-dot { flex-shrink: 0; width: 12px; height: 12px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(44,33,20,.12); }
+.org .prog-card-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
+.org .prog-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -.2px; line-height: 1.2; }
+.org .prog-card-meta { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.org .prog-card-cta { flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--brand); white-space: nowrap; }
+
+/* inverted coverage pills — tappable "start here" */
+.org a.pill.prog-pill-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text); transition: border-color .12s ease, background .12s ease; }
+.org a.pill.prog-pill-link:hover { border-color: var(--brand-light); background: var(--surface); }
+.org .prog-pill-cta { color: var(--brand); font-weight: 600; }
 `;
