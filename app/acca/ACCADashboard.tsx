@@ -35,10 +35,13 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
             <Link href="/" className="apm-dash-logo" aria-label="Gradd home">
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
-            <div className="apm-dash-breadcrumb">
-              <span className="apm-dash-paper">ACCA APM</span>
-              <span className="apm-dash-sep">·</span>
-              <span className="apm-dash-badge">Drill</span>
+            <div className="apm-dash-header-right">
+              <Link href="/acca/progress" className="apm-dash-navlink">Progress</Link>
+              <div className="apm-dash-breadcrumb">
+                <span className="apm-dash-paper">ACCA APM</span>
+                <span className="apm-dash-sep">·</span>
+                <span className="apm-dash-badge">Drill</span>
+              </div>
             </div>
           </div>
         </header>
@@ -75,9 +78,20 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
             )}
           </div>
 
-          {/* Exam-cases + timed-mock entries — only when APM_CASES is on (server-gated boolean). */}
-          {casesEnabled && (
-            <div className="apm-dash-cases-row">
+          {/* Entry cards. Progress is always available; exam-cases + timed-mock only when
+              APM_CASES is on (server-gated boolean). */}
+          <div className={`apm-dash-cases-row${casesEnabled ? '' : ' apm-dash-cases-row--solo'}`}>
+            <Link href="/acca/progress" className="apm-dash-cases-card">
+              <div className="apm-dash-cases-text">
+                <span className="apm-dash-cases-title">Your progress</span>
+                <span className="apm-dash-cases-sub">
+                  Where you stand and the next thing to work on — weak areas, stuck drills, and what you haven&apos;t tried yet.
+                </span>
+              </div>
+              <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
+            </Link>
+            {casesEnabled && (
+              <>
               <Link href="/acca/cases" className="apm-dash-cases-card">
                 <div className="apm-dash-cases-text">
                   <span className="apm-dash-cases-title">Exam cases</span>
@@ -96,8 +110,9 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                 </div>
                 <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
               </Link>
-            </div>
-          )}
+              </>
+            )}
+          </div>
 
           <div className="apm-dash-picker-wrap">
             <AreaPicker
@@ -162,6 +177,9 @@ const CSS = `
   justify-content: space-between;
 }
 .apm-dash-logo { display: flex; align-items: center; text-decoration: none; }
+.apm-dash-header-right { display: flex; align-items: center; gap: 16px; }
+.apm-dash-navlink { font-size: 13px; font-weight: 600; color: var(--brand); text-decoration: none; white-space: nowrap; }
+.apm-dash-navlink:hover { text-decoration: underline; }
 .apm-dash-breadcrumb {
   display: flex;
   align-items: center;
@@ -261,6 +279,7 @@ const CSS = `
 
 /* ── Exam-cases + timed-mock entry cards ── */
 .apm-dash-cases-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.apm-dash-cases-row--solo { grid-template-columns: 1fr; }
 @media (max-width: 640px) { .apm-dash-cases-row { grid-template-columns: 1fr; } }
 .apm-dash-cases-card {
   display: flex;
