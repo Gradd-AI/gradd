@@ -30,7 +30,7 @@ export default function LoginForm({ isIBDomain }: { isIBDomain: boolean }) {
       return;
     }
 
-    router.push('/dashboard');
+    router.push('/go');
     router.refresh();
   };
 

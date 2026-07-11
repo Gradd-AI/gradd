@@ -349,7 +349,7 @@ export default function ChatInterface({
           <p style={{ color: 'oklch(54% 0.012 60)', textAlign: 'center', maxWidth: 340, fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif', fontSize: 15, lineHeight: 1.6, margin: 0 }}>
             Your progress has been recorded. Well done, {studentName}.
           </p>
-          <Link href="/dashboard" style={{ background: 'oklch(64% 0.17 47)', color: 'oklch(98% 0.01 70)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, textDecoration: 'none', marginTop: 8, fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
+          <Link href="/go" style={{ background: 'oklch(64% 0.17 47)', color: 'oklch(98% 0.01 70)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, textDecoration: 'none', marginTop: 8, fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
             Back to dashboard
           </Link>
           <button onClick={() => { window.location.href = '/session'; }} style={{ background: 'oklch(22% 0.035 168)', color: 'oklch(94% 0.025 80)', padding: '12px 28px', borderRadius: 10, fontWeight: 500, fontSize: 15, border: 'none', cursor: 'pointer', fontFamily: '"Geist",ui-sans-serif,system-ui,sans-serif' }}>
@@ -392,7 +392,7 @@ export default function ChatInterface({
         <p style={{ color: 'var(--chat-muted)', textAlign: 'center', maxWidth: 340 }}>
           Your progress has been recorded. Well done, {studentName}.
         </p>
-        <Link href="/dashboard" style={{ background: 'var(--accent)', color: '#fff', padding: '13px 28px', borderRadius: 10, fontWeight: 700, fontSize: 15, textDecoration: 'none', marginTop: 8 }}>
+        <Link href="/go" style={{ background: 'var(--accent)', color: '#fff', padding: '13px 28px', borderRadius: 10, fontWeight: 700, fontSize: 15, textDecoration: 'none', marginTop: 8 }}>
           Back to dashboard
         </Link>
       </div>
@@ -456,7 +456,7 @@ export default function ChatInterface({
         {/* Row 1: logo (left) · Mia indicator (centre) · End session (right) */}
         <div className="session-header-row1">
           <div className="session-header-left">
-            <Link href="/dashboard" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
+            <Link href="/go" style={{ display: "flex", alignItems: "center", textDecoration: "none" }}>
               <img src={isIB ? '/gradd-ai-logo.png' : '/gradd-logo.svg'} alt="Gradd" className="session-logo" />
             </Link>
           </div>

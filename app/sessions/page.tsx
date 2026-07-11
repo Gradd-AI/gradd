@@ -65,7 +65,7 @@ export default async function SessionsPage() {
       <div className="sr-wrap">
         <div className="sr-head">
           <h1>Sessions</h1>
-          <Link href="/dashboard" className="sr-back">← Dashboard</Link>
+          <Link href="/go" className="sr-back">← Dashboard</Link>
         </div>
         <SessionListClient sessions={sessions} nameMap={nameMap} />
       </div>

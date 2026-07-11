@@ -111,7 +111,7 @@ export default async function HomePage() {
 
     const status = profile?.subscription_status;
     if (status === 'active' || status === 'trialing') {
-      redirect('/dashboard');
+      redirect('/go');
     }
   }
 

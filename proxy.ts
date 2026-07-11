@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
   // Admin guard — /admin/questions restricted to testbundle@gradd.ai
   if (pathname.startsWith('/admin/questions')) {
     if (!user) return NextResponse.redirect(new URL('/auth/login', request.url));
-    if (user.email !== 'testbundle@gradd.ai') return NextResponse.redirect(new URL('/dashboard', request.url));
+    if (user.email !== 'testbundle@gradd.ai') return NextResponse.redirect(new URL('/go', request.url));
   }
 
   const protectedPaths = ['/dashboard', '/session'];
@@ -81,7 +81,9 @@ export async function proxy(request: NextRequest) {
   }
 
   if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Resolve product home at /go — proxy does no DB reads, so it can't pick the surface
+    // itself (gradd.ai serves BOTH IB and APM; host alone can't disambiguate).
+    return NextResponse.redirect(new URL('/go', request.url));
   }
 
   return response;

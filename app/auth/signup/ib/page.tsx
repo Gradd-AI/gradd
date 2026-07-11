@@ -434,7 +434,7 @@ export default function IBSignupPage() {
       return;
     }
 
-    window.location.href = '/dashboard';
+    window.location.href = '/go';
   };
 
   return (

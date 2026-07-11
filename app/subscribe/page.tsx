@@ -46,7 +46,7 @@ function SuccessPoller() {
         .single();
 
       if (profile?.subscription_status === 'active') {
-        router.push('/dashboard');
+        router.push('/go');
         return;
       }
 
@@ -70,7 +70,7 @@ function SuccessPoller() {
           Your payment went through but we're still activating your account. This usually takes a few seconds — refresh the page or go to your dashboard.
         </p>
         <button
-          onClick={() => router.push('/dashboard')}
+          onClick={() => router.push('/go')}
           className="btn btn-primary"
           style={{ marginTop: 8 }}
         >

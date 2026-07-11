@@ -59,7 +59,9 @@ export default async function IBPage() {
 
     const status = profile?.subscription_status;
     if (status === 'active' || status === 'trialing') {
-      redirect('/dashboard');
+      // Route through the resolver home, not a hardcoded /dashboard — an APM account with
+      // a stray base subscription_status must not be bounced into the LC dashboard.
+      redirect('/go');
     }
   }
 
