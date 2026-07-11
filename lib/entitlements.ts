@@ -44,8 +44,10 @@ const IB_SUBJECTS = new Set(['IB_ECONOMICS', 'IB_BUSINESS', 'IB_BUNDLE']);
 
 // subscription_status values that evidence a REAL LC/IB billing relationship (past or
 // present). 'inactive'/null/'incomplete*' are the never-really-subscribed defaults and
-// must NOT, on their own, count as LC/IB enrolment.
-const REAL_SUBSCRIPTION = new Set(['active', 'trialing', 'past_due', 'canceled', 'unpaid']);
+// must NOT, on their own, count as LC/IB enrolment. Both spellings of cancel are included
+// because this codebase writes British 'cancelled' (observed in profiles) while Stripe
+// emits American 'canceled' — a lapsed LC student must still resolve to LC either way.
+const REAL_SUBSCRIPTION = new Set(['active', 'trialing', 'past_due', 'unpaid', 'canceled', 'cancelled']);
 
 export function resolveProducts(profile: ProfileSignals, ctx: ResolveContext): Entitlements {
   const products = new Set<Product>();
