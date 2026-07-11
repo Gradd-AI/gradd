@@ -995,6 +995,22 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
+  // ── 10b. Transcript persistence (append-only, best-effort) ──────────────────
+  // One row per message (user + assistant) → acca_drill_messages. Logs EVERY
+  // response-producing leg (attempt / hint / teach / correct / warm / reveal); the
+  // assistant row carries call_type (= messageKind), outcome, drill_id. drill_id may be
+  // null (legacy client — schema allows it), so this is NOT gated on drillId. Swallowed
+  // exactly like the attempt-log above — a write failure must never block or 500 the
+  // teach path, and a CHECK never rejects an unlisted call_type (column is unconstrained).
+  try {
+    await supabase.from('acca_drill_messages').insert([
+      { user_id: user.id, drill_id: drillId, role: 'user',      content: student_message, call_type: null,        outcome: null },
+      { user_id: user.id, drill_id: drillId, role: 'assistant', content: ezraResponse,    call_type: messageKind, outcome: attemptOutcome },
+    ]);
+  } catch {
+    // non-fatal: transcript logging is best-effort, never blocks the response
+  }
+
   return NextResponse.json({
     ezra_response:          ezraResponse,
     session_state:          updatedSessionState,
