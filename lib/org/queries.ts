@@ -148,8 +148,8 @@ async function totalSubAreas(): Promise<number> {
 // ── Raw per-user rows, batched ────────────────────────────────────────────────
 
 interface RawRows {
-  attempts: { user_id: string; lo_code: string; outcome: string; created_at: string }[];
-  progress: { user_id: string; resolved: boolean; miss_count: number; updated_at: string }[];
+  attempts: { user_id: string; drill_id: string; lo_code: string; outcome: string; created_at: string }[];
+  progress: { user_id: string; drill_id: string; resolved: boolean; miss_count: number; updated_at: string }[];
   marks: { user_id: string; case_id: string; professional_marks_awarded: number; professional_marks_available: number; marked_at: string }[];
   mocks: { user_id: string; mock_id: string; completed: boolean; started_at: string }[];
 }
@@ -158,8 +158,8 @@ async function rawRowsForUsers(userIds: string[]): Promise<RawRows> {
   if (userIds.length === 0) return { attempts: [], progress: [], marks: [], mocks: [] };
   const sb = createServiceClient();
   const [a, p, m, k] = await Promise.all([
-    sb.from('acca_drill_attempts').select('user_id, lo_code, outcome, created_at').in('user_id', userIds),
-    sb.from('acca_tutor_progress').select('user_id, resolved, miss_count, updated_at').in('user_id', userIds),
+    sb.from('acca_drill_attempts').select('user_id, drill_id, lo_code, outcome, created_at').in('user_id', userIds),
+    sb.from('acca_tutor_progress').select('user_id, drill_id, resolved, miss_count, updated_at').in('user_id', userIds),
     sb.from('acca_case_marking').select('user_id, case_id, professional_marks_awarded, professional_marks_available, marked_at').in('user_id', userIds),
     sb.from('acca_mock_attempts').select('user_id, mock_id, completed, started_at').in('user_id', userIds),
   ]);
@@ -374,7 +374,7 @@ export async function getOrgOverview(slug: string, now: number): Promise<OrgOver
 
 // ── Trainee drill-down (explainability screen) ────────────────────────────────
 
-export interface RecentAttempt { lo_code: string; outcome: string; created_at: string }
+export interface RecentAttempt { lo_code: string; outcome: string; created_at: string; drill_id: string }
 export interface TraineeDetail {
   userId: string;
   email: string | null;
@@ -411,6 +411,14 @@ export interface WeakArea {
   trend: AreaTrend; // recent (≤14d) miss-rate vs prior (14–28d) — the trajectory nudge
 }
 
+/** A drill the student stalled on (miss_count ≥ 2, unresolved) — resumable by id. */
+export interface StuckDrill {
+  drillId: string;
+  loCode: string;
+  topic: string;
+  missCount: number;
+}
+
 export interface MyProgress {
   /** Computed but band/score are NOT shown to students — kept for internal derivation. */
   readiness: ReadinessResult;
@@ -422,7 +430,28 @@ export interface MyProgress {
   uncoveredSubAreas: string[]; // drillable areas with no correct attempt yet
   totalSubAreas: number;
   weakAreas: WeakArea[];       // sub-areas with a miss, worst miss-rate first
+  stuckDrills: StuckDrill[];   // resumable stalled drills, most-missed first
   recentAttempts: RecentAttempt[];
+}
+
+/** Topic (and lo_code) for a set of drill ids — used to label stuck drills by title
+ *  rather than a bare uuid. Only published APM drills resolve; a stale id is dropped. */
+async function drillTitles(drillIds: string[]): Promise<Map<string, { topic: string; loCode: string }>> {
+  const map = new Map<string, { topic: string; loCode: string }>();
+  if (drillIds.length === 0) return map;
+  const sb = createServiceClient();
+  const { data } = await sb
+    .from('acca_drills')
+    .select('id, topic, lo_code')
+    .in('id', drillIds)
+    .eq('exam_board', 'ACCA')
+    .eq('paper_code', 'APM')
+    .eq('status', 'approved')
+    .eq('published', true);
+  for (const r of (data as { id: string; topic: string; lo_code: string }[] | null) ?? []) {
+    map.set(r.id, { topic: r.topic, loCode: r.lo_code });
+  }
+  return map;
 }
 
 const MAX_WEAK_AREAS = 6;
@@ -485,12 +514,26 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
   // Uncovered = drillable areas with no correct attempt yet — the "start here" list.
   const uncoveredSubAreas = subAreas.filter((sa) => !covered.has(sa));
 
+  // Stuck = unresolved drills the student has missed ≥2×. Resolve titles so we can show
+  // them by name and deep-link a resume (?drill_id=). Drills that no longer resolve as a
+  // published APM drill are dropped (can't offer a resume that would dead-end).
+  const stuckRows = rows.progress
+    .filter((pr) => !pr.resolved && (pr.miss_count ?? 0) >= 2)
+    .sort((a, b) => (b.miss_count ?? 0) - (a.miss_count ?? 0));
+  const titles = await drillTitles(stuckRows.map((pr) => pr.drill_id));
+  const stuckDrills: StuckDrill[] = stuckRows
+    .map((pr) => {
+      const meta = titles.get(pr.drill_id);
+      return meta ? { drillId: pr.drill_id, loCode: meta.loCode, topic: meta.topic, missCount: pr.miss_count ?? 0 } : null;
+    })
+    .filter((d): d is StuckDrill => d != null);
+
   // Enough history for the 25-day activity ribbon, the streak, and the recent-attempts
   // list — a single student's full attempt set is small, so no server-side cap needed.
   const recentAttempts = [...rows.attempts]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 40)
-    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at }));
+    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at, drill_id: a.drill_id }));
 
   return {
     readiness,
@@ -502,6 +545,7 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
     uncoveredSubAreas,
     totalSubAreas: total,
     weakAreas,
+    stuckDrills,
     recentAttempts,
   };
 }
@@ -517,7 +561,7 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
   const recentAttempts = [...rows.attempts]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 15)
-    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at }));
+    .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at, drill_id: a.drill_id }));
   const email = emails.get(userId) ?? null;
 
   return {

@@ -28,7 +28,7 @@ export default async function APMTutorPage({
     redirect('/acca/auth?next=/acca/tutor');
   }
 
-  const { lo, area } = await searchParams;
+  const { lo, area, drill_id } = await searchParams;
   // LO/area codes are stored leading-uppercase, rest-lowercase, alphanumeric only
   // (e.g. 'A3b', 'B1'). PostgREST .eq/.like are case-sensitive AND .like treats _ / %
   // as wildcards, so canonicalize the URL param: strip non-alphanumerics (closes the
@@ -40,13 +40,32 @@ export default async function APMTutorPage({
   };
   const loCode   = typeof lo   === 'string' ? canon(lo)   || null : null;
   const areaCode = typeof area === 'string' ? canon(area) || null : null;
+  // Exact-drill resume (from /acca/progress). uuid, so NOT canonicalized — a bad id
+  // just misses the .eq below and we fall through to the lo/area/default random-pick.
+  const drillId  = typeof drill_id === 'string' && drill_id ? drill_id : null;
 
   const supabase = createServiceClient();
 
   type Drill = { id: string; lo_code: string; topic: string; question: string; context_text: string | null };
   let data: Drill | null = null;
 
-  if (loCode) {
+  if (drillId) {
+    // Resume exactly this drill: the tutor POST re-reads acca_tutor_progress by
+    // (user_id, drill_id), so landing back on the same id restores miss_count/diagnosis.
+    // Still gated to a published APM drill so a stale/foreign id can't surface anything.
+    const { data: drill } = await supabase
+      .from('acca_drills')
+      .select('id, lo_code, topic, question, context_text')
+      .eq('id', drillId)
+      .eq('exam_board', 'ACCA')
+      .eq('paper_code', 'APM')
+      .eq('status', 'approved')
+      .eq('published', true)
+      .maybeSingle();
+    if (drill) data = drill as Drill;
+  }
+
+  if (!data && loCode) {
     // Random-pick among the LO's published drills (was .single()): depth-safe, and
     // returns the chosen row's id so the tutor route serves that exact drill.
     const { data: drills } = await supabase
@@ -61,7 +80,9 @@ export default async function APMTutorPage({
     if (drills && drills.length > 0) {
       data = pickRandom(drills) as Drill;
     }
-  } else if (areaCode) {
+  }
+
+  if (!data && areaCode) {
     const { data: drills } = await supabase
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
@@ -74,7 +95,9 @@ export default async function APMTutorPage({
     if (drills && drills.length > 0) {
       data = pickRandom(drills) as Drill;
     }
-  } else {
+  }
+
+  if (!data) {
     // Default entry: random-pick among B1c's published drills (was .single()) — depth-safe.
     const { data: drills } = await supabase
       .from('acca_drills')

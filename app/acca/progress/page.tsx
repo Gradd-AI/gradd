@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
-import { ORG_CSS, SUB_AREA_NAME, fmtDays, cellTone } from '@/components/org/orgTheme';
+import { ORG_CSS, SUB_AREA_NAME, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const areaName = (sa: string) => SUB_AREA_NAME[sa] ?? sa;
@@ -117,6 +117,28 @@ export default async function ProgressPage() {
         </div>
       </div>
 
+      {/* Stuck drills — pick up exactly where you stalled */}
+      {p.stuckDrills.length > 0 && (
+        <>
+          <h2>Pick up where you got stuck</h2>
+          <p className="sub" style={{ marginBottom: 16 }}>
+            Questions you stalled on. Resume takes you back to the same question with your progress remembered — not a fresh start.
+          </p>
+          <div className="prog-cards">
+            {p.stuckDrills.map((s) => (
+              <Link key={s.drillId} href={`/acca/tutor?drill_id=${encodeURIComponent(s.drillId)}`} className="prog-card">
+                <span className="prog-card-dot prog-card-dot--stuck" aria-hidden="true" />
+                <span className="prog-card-body">
+                  <span className="prog-card-title">{s.topic}</span>
+                  <span className="prog-card-meta">{areaName(s.loCode.slice(0, 2))} · missed {s.missCount}×</span>
+                </span>
+                <span className="prog-card-cta">Resume →</span>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+
       {/* Weak areas — ranked, tappable, every card a doorway into a scoped drill */}
       {p.weakAreas.length > 0 && (
         <>
@@ -141,6 +163,30 @@ export default async function ProgressPage() {
             })}
           </div>
         </>
+      )}
+
+      {/* Recent attempts — each row links back to its exact drill */}
+      {p.recentAttempts.length > 0 && (
+        <div className="org-panel" style={{ marginTop: 28 }}>
+          <h2 style={{ margin: '0 0 10px' }}>Recent attempts</h2>
+          <table className="org-list">
+            <thead><tr><th>Date</th><th>Area</th><th>Outcome</th><th></th></tr></thead>
+            <tbody>
+              {p.recentAttempts.slice(0, 12).map((a, i) => (
+                <tr key={i}>
+                  <td className="date">{fmtDate(a.created_at)}</td>
+                  <td>{areaName(a.lo_code.slice(0, 2))}</td>
+                  <td><span className={`org-out ${a.outcome === 'miss' ? 'miss' : 'ok'}`}>{a.outcome}</span></td>
+                  <td className="prog-retry-cell">
+                    <Link href={`/acca/tutor?drill_id=${encodeURIComponent(a.drill_id)}`} className="prog-retry">
+                      {a.outcome === 'miss' ? 'Try again →' : 'Revisit →'}
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Not-yet-attempted areas — the coordinator's coverage pills, inverted into a to-do */}
@@ -186,10 +232,16 @@ const PROG_CSS = `
 .org .prog-card { display: flex; align-items: center; gap: 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; text-decoration: none; box-shadow: var(--shadow-sm); transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease; }
 .org .prog-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); border-color: var(--brand-light); }
 .org .prog-card-dot { flex-shrink: 0; width: 12px; height: 12px; border-radius: 4px; box-shadow: inset 0 0 0 1px rgba(44,33,20,.12); }
+.org .prog-card-dot--stuck { background: #ecd0c8; }
 .org .prog-card-body { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0; }
 .org .prog-card-title { font-family: var(--font-display); font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -.2px; line-height: 1.2; }
 .org .prog-card-meta { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
 .org .prog-card-cta { flex-shrink: 0; font-size: 13px; font-weight: 600; color: var(--brand); white-space: nowrap; }
+
+/* recent-attempts retry link */
+.org .prog-retry-cell { text-align: right; white-space: nowrap; }
+.org a.prog-retry { color: var(--brand); text-decoration: none; font-weight: 600; font-size: 12px; }
+.org a.prog-retry:hover { text-decoration: underline; }
 
 /* inverted coverage pills — tappable "start here" */
 .org a.pill.prog-pill-link { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; color: var(--text); transition: border-color .12s ease, background .12s ease; }
