@@ -55,14 +55,17 @@ territory — follow the links for depth. Keep it under ~150 lines.
 ## Doc map — which file is canonical for what
 - **Build/incident rules (LC + IB):** `docs/GRADD_BUILD_HARDENING.md` — TOP PREVENTION
   RULES + searchable issue catalogue. Read the top rules before any build session.
-- **Session journal + standing decisions + SURFACED backlog (APM/AFM era):**
-  `docs/APM_BUILD_CONTRACT.md` — reverse-chronological session banks; the live "SURFACED"
-  open-items list and standing rulings live inside it.
-- **Drill generation doctrine:** there is **no single `GENERATOR_DOCTRINE.md`** — it is
-  spread across `docs/AFM_NUMERIC_VERIFICATION_DESIGN.md` (the numeric layer),
-  `docs/TEACHING_ARCHITECTURE.md` (structural withholding), the generator
-  (`scripts/generate-afm-drills.ts`) and its gates (`lib/acca/validate-schema.ts`,
-  `lib/acca/validate-afm-prose.ts`). (Audit-flagged gap — see below.)
+- **Drill generation doctrine + standing rulings:** `docs/GENERATOR_DOCTRINE.md` — the
+  canonical law (code-owns-decisions, the gate suite, OFR / named-risk / batch / BSOP
+  rulings, roadmap order, the 5-field-sweep rule). Deep design:
+  `docs/AFM_NUMERIC_VERIFICATION_DESIGN.md`; structural withholding:
+  `docs/TEACHING_ARCHITECTURE.md`; code: `scripts/generate-afm-drills.ts` +
+  `lib/acca/{validate-schema,validate-afm-prose}.ts`.
+- **Current open items (living list):** `docs/AFM_SURFACED.md` — the single source of
+  what's open now, rewritten each session.
+- **Session journal (append-only chronology):** `docs/APM_BUILD_CONTRACT.md` — per-session
+  banks, never edited. Open items → `AFM_SURFACED.md`; standing rulings →
+  `GENERATOR_DOCTRINE.md`.
 - **Teaching personas / quality specs:** `docs/TEACHING_PRINCIPLES.md` (Mia, IB),
   `docs/TEACHING_PRINCIPLES_EZRA.md` (Ezra, APM), `docs/TEACHING_PRINCIPLES_EZRA_AFM.md`
   (AFM failure catalogue), `docs/TEACHING_ARCHITECTURE.md` (structural, LOCKED, product-
