@@ -422,7 +422,7 @@ Requirements:
 - Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and a specific capital project the board must decide on.
 - question: begins with the command verb; asks the candidate to appraise the project by NPV and advise the board whether to proceed.
 - context_text: scenario narrative + a clean labelled list of the raw inputs (money in millions of the LOCAL currency, rates in %): initial capital cost, the pre-tax operating cash flows per year IN REAL TERMS (3–5 years), the inflation rate, the tax rate, the tax-payment lag (same year or one year in arrears), the capital qualifying for tax-allowable depreciation and its reducing-balance rate, the scrap/residual value, and the discount rate. Add 1–2 challengeable textures (forecast optimism; reliability of the inflation or discount-rate estimate). Do NOT pre-compute anything.
-- JURISDICTION RULE (P4): state a tax-allowable depreciation RATE only. NEVER name a tax/CCA class number, a statute (e.g. "Income Tax Act"), a regulator (e.g. "Health Canada", "FDA"), or a market-structure specific (e.g. "provincial formulary"). End context_text with EXACTLY this line: "For the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated."
+- JURISDICTION RULE (P4): factual regulator/institution NAMES are fine in context_text as scenario framing (e.g. "holds a Health Canada licence", "listed on the TSX", a central-bank rate texture). But state a tax-allowable depreciation RATE only — NEVER a tax/CCA class number or a statute ("Income Tax Act") anywhere. In the ADVICE (interpretation_prose), do NOT invent jurisdiction-specific claims the scenario did not state — no regulator timeline/behaviour claims, no formulary specifics — unless context_text raised them; recommend "confirm the correct tax classification" generically. End context_text with EXACTLY this line: "For the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated."
 - Provide the SAME figures in raw_inputs. Rates as DECIMAL FRACTIONS (0.25 for 25%). The discount rate must exceed inflation; choose figures that give a realistic (not trivially huge) NPV so the decision is a genuine judgement.
 - interpretation_prose: qualitative advice ONLY, per the tool rules — no computed numbers, no inequalities, no PI/sensitivity values, only context facts. Do NOT open with a verdict frame or restate accept/reject — code injects the decision-keyed opener (P3). Do NOT use "cautious optimism" or "even if the NPV is positive". Develop WHY each fragile assumption matters and what the board must verify. Obey the JURISDICTION RULE (P4): recommend "confirm the correct tax classification" generically, never a class number or named statute/regulator.
 - QUESTION-COMPLETENESS (P5): the question must demand ONLY what the model answer delivers. A standard NPV drill must NOT ask for "sensitivity analysis" (that is the sensitivity variant); only the sensitivity kind asks for it, only the rationing kind asks for a profitability-index ranking.
@@ -917,8 +917,9 @@ async function main() {
     console.log(`\nHINT:\n${reveal.hint}`);
     console.log(`\nFULL_REVEAL:\n${reveal.full_reveal}`);
 
-    // P4 re-check on the reveal fields (generated after the primary gates).
-    const revealJur = lintJurisdiction({ hint: reveal.hint, full_reveal: reveal.full_reveal });
+    // P4 re-check on the reveal fields (generated after the primary gates). Pass the
+    // scenario so the "stated in the scenario" cross-reference works.
+    const revealJur = lintJurisdiction({ hint: reveal.hint, full_reveal: reveal.full_reveal }, { context: drill.context_text });
     if (revealJur.length) {
       console.error(`  ✗ ${label} — reveal jurisdiction lint (P4) FAILED, will not insert`);
       for (const iss of revealJur) console.error(`      ✗ [${iss.field}] ${iss.message}`);
