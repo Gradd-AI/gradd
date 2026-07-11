@@ -6,7 +6,8 @@
 
 ## AFM build track (live)
 - **AFM batch-1 (NPV/B1a) — ALL FOUR `status='approved'`** (`published=false`). Round-2 fix-verification cleared; P1 portfolio-NPV line + D2 teaching sentence + D4 "overseas"→"North American" applied; all five gates green on all four. **NEXT GATE: the publish decision** (`published=true` is a separate go-live call — not automatic).
-- **IRR/MIRR (B1c) = calculator #2** — opening now per the roadmap; component DAG + fixtures + batch spec proposed (awaiting approval).
+- **IRR/MIRR (B1c) = calculator #2** — calculator + fixtures **shipped** (`6507723`); 4-kind batch (standard / MIRR reinvestment critique / non-conventional sign-change / IRR-vs-NPV conflict) approved with design rulings (`npv_lo`/`npv_hi` graded; `pv_outflows` = param). **Batch generation + two steers (sectors; author-vs-generator) = NEXT-SESSION opener.**
+- Round-2 review pack (`docs/reviews/AFM_BATCH1_NPV_ROUND2_REVIEW_PACK.md`) — delete when stale.
 - Banked idle-session: exhaustive journal-lesson-vs-rulebook reconciliation (audit item (c)).
 - Banked idle-session: exhaustive journal-lesson-vs-rulebook reconciliation (audit item (c)).
 
@@ -17,9 +18,9 @@
 - **PAYWALL on the case path** — `APM_CASES` must NOT reach Production without it (auth + flag only today; counted tracked but unconsumed).
 
 ## Data capture & persistence
-- **APM/AFM tutor transcripts are NOT persisted.** IB/LC has `session_messages` + a look-back path; APM has **nothing** (no `message_history`, no `session_messages` row — the sessions table is IB/LC-shaped). Violates the Horizon-1 capture rule; blocks the weekly transcript-review ritual, student look-back, and a future enterprise audit view. **Split:**
-  - **Persistence WRITE = NEAR-TERM** — conversations are being LOST daily under live ad traffic. Best-effort append per turn, mirroring the `acca_drill_attempts` swallow; recommended new `acca_drill_messages` table (RLS: student reads own, `user_id = auth.uid()`). Diagnosed 2026-07-11 (design ready).
-  - **Look-back UI on `/acca/progress` = normal-queue build.**
+- **APM/AFM tutor transcript persistence — WRITE LIVE** (Horizon-1 gap closed 2026-07-11). `acca_drill_messages` migration applied + 7-check verified (`6f5d143`) + §10 two-row append shipped (`e94a6ec`) — every response-producing leg logged (attempt/hint/teach/correct/warm/reveal), swallowed like the attempt-log, RLS student-reads-own.
+  - **Look-back UI on `/acca/progress` = normal-queue build (STILL OPEN).**
+  - **Production proof pending:** Grant's next erasmoose drilling session verifies the transcript + attempt-log writes together.
 
 ## Enterprise / pilot-ready
 - **Enterprise transcript visibility — TIERED design** (decided in principle 2026-07-11; built at pilot-contract stage):
