@@ -38,6 +38,7 @@
     4. Structured workings grid for AFM calc answers (doubles as verifier / OFR per-component capture).
     5. Spreadsheet response area LAST — built properly or not at all; until then, openly advise ACCA's free platform for spreadsheet-interface familiarity.
   - **Quality bar:** a janky exam shell is worse than none — each phase ships at house standard or holds.
+  - **Pricing (decided in principle 2026-07-11):** NO per-try charging — metering rehearsal attempts taxes the practise-failing behaviour we sell and poisons subscription psychology. Structure: free tier = ONE full rehearsal sitting (the conversion taste; "sit APM before you sit APM, free, marked" = ad / results-day hook); pass + subscription = unlimited rehearsals (reserved mock cases stay reserved per attempt window). Optional downsell SKU when the flagship ships: one-off "Rehearsal + coached debrief" ~€25–29, shown on €99-checkout abandonment — a fixed product for the check-before-the-real-exam buyer, never a per-attempt meter. Revisit only with real conversion data.
 
 ## Banked — product-scoping Phase 2 (from the /dashboard leak fix)
 - Per-account nullable `exam_date` + student-settable affordance (replaces the baked `LC_EXAM_DATE`/`IB_EXAM_DATE` constants).
