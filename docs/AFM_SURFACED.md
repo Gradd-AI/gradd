@@ -15,6 +15,16 @@
 - APM content thin: Section A one-drill-per-LO (11/12 live-untested); Section B sub-areas; compound-verb LOs untested.
 - **PAYWALL on the case path** — `APM_CASES` must NOT reach Production without it (auth + flag only today; counted tracked but unconsumed).
 
+## Data capture & persistence
+- **APM/AFM tutor transcripts are NOT persisted.** IB/LC has `session_messages` + a look-back path; APM has **nothing** (no `message_history`, no `session_messages` row — the sessions table is IB/LC-shaped). Violates the Horizon-1 capture rule; blocks the weekly transcript-review ritual, student look-back, and a future enterprise audit view. **Split:**
+  - **Persistence WRITE = NEAR-TERM** — conversations are being LOST daily under live ad traffic. Best-effort append per turn, mirroring the `acca_drill_attempts` swallow; recommended new `acca_drill_messages` table (RLS: student reads own, `user_id = auth.uid()`). Diagnosed 2026-07-11 (design ready).
+  - **Look-back UI on `/acca/progress` = normal-queue build.**
+
+## Banked — product-scoping Phase 2 (from the /dashboard leak fix)
+- Per-account nullable `exam_date` + student-settable affordance (replaces the baked `LC_EXAM_DATE`/`IB_EXAM_DATE` constants).
+- `subject`-default retirement with onboarding (retire the `LC_BUSINESS` masquerade at the schema).
+- Name capture for non-onboarded (magic-link / admin-seeded) accounts.
+
 ## KPMG demo (near-term)
 - **Coffee message to the KPMG contact — NOTHING GATES IT; highest-value action on the board.**
 - One-pager final export; demo dry-run on Grant's device the day before the meeting.
