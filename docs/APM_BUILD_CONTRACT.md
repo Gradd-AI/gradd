@@ -1,6 +1,8 @@
 # APM BUILD CONTRACT
 Status: LOCKED 19/06/2026. This doc is authoritative for the APM build. Where notes or older docs conflict, THIS wins.
 
+> **JOURNAL DISCIPLINE (from 2026-07-11).** The session banks below are **append-only pure chronology** — append a new bank per session; never edit an existing bank. Current open items do NOT live here any more — they live in the single living list **[AFM_SURFACED.md](AFM_SURFACED.md)** (rewritten each session). Standing rulings live in **[GENERATOR_DOCTRINE.md](GENERATOR_DOCTRINE.md)**. Do not add new "STILL OPEN" blocks to future banks; update `AFM_SURFACED.md` instead.
+
 > **CURRENT FOCUS (30/06/2026): the engine is essentially complete and verified — the launch gate is now CONTENT.** All five redesign mechanics are built and the completeness gate is verified working (details below). The binding constraint to launch is the drill bank: ~40 net-new verified drills weighted to exam structure (B/C/D are thin). **Next session = content, not more engine.** Item 5 (weakness ledger) is the only remaining redesign item and is LOWER priority than content.
 
 ## LAUNCH PHILOSOPHY — complete at launch, NOT a waitlist
