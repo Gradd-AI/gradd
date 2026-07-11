@@ -74,14 +74,23 @@ function sessionLabel(type: string): string {
   return map[type] ?? type;
 }
 
-function daysToExam(subject?: string) {
-  const date = subject && IB_SUBJECTS.includes(subject) ? IB_EXAM_DATE : LC_EXAM_DATE;
-  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000));
+function examDateFor(subject?: string) {
+  return subject && IB_SUBJECTS.includes(subject) ? IB_EXAM_DATE : LC_EXAM_DATE;
 }
-function weeksToExam(subject?: string) { return Math.max(0.5, daysToExam(subject) / 7); }
+function examHasPassed(subject?: string) { return examDateFor(subject).getTime() <= Date.now(); }
+function daysToExam(subject?: string) {
+  return Math.max(0, Math.ceil((examDateFor(subject).getTime() - Date.now()) / 86400000));
+}
+// No 0.5 floor: a passed/imminent exam must not inflate the target. The old
+// Math.max(0.5, …) turned a 279-lesson curriculum into "558 sessions/week" once the LC
+// date (08/06) went by. sessionsPerWeekNeeded now returns null past the exam instead.
+function weeksToExam(subject?: string) { return daysToExam(subject) / 7; }
 
-function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number, subject?: string): number {
-  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeksToExam(subject));
+function sessionsPerWeekNeeded(totalCompleted: number, totalLessons: number, subject?: string): number | null {
+  if (examHasPassed(subject)) return null;
+  const weeks = weeksToExam(subject);
+  if (weeks <= 0) return null;
+  return Math.ceil(Math.max(0, totalLessons - totalCompleted) / weeks);
 }
 
 function calcStreak(sessions: RecentSession[]): number {
@@ -120,8 +129,9 @@ function last7Days(sessions: RecentSession[]): { label: string; had: boolean }[]
   });
 }
 
-type Pace = 'on-track' | 'behind' | 'ahead' | 'no-data';
-function calcPace(avg: number, needed: number): Pace {
+type Pace = 'on-track' | 'behind' | 'ahead' | 'no-data' | 'exam-passed';
+function calcPace(avg: number, needed: number | null): Pace {
+  if (needed == null) return 'exam-passed';   // exam date has passed → pace is meaningless
   if (avg === 0) return 'no-data';
   const r = avg / needed;
   if (r >= 1.1) return 'ahead';
@@ -129,10 +139,11 @@ function calcPace(avg: number, needed: number): Pace {
   return 'behind';
 }
 const PACE_CONF: Record<Pace, { label: string; color: string; bg: string; border: string }> = {
-  'ahead':    { label: 'Ahead of pace',  color: '#1e7e44', bg: '#f0faf4', border: '#b7e4c7' },
-  'on-track': { label: 'On track',       color: '#1a4a7a', bg: '#f0f7ff', border: '#c3daf5' },
-  'behind':   { label: 'Falling behind', color: '#7a5c00', bg: '#fffbf0', border: '#e8d89a' },
-  'no-data':  { label: 'No data yet',    color: 'var(--text-muted)', bg: 'var(--surface-2)', border: 'var(--border)' },
+  'ahead':       { label: 'Ahead of pace',  color: '#1e7e44', bg: '#f0faf4', border: '#b7e4c7' },
+  'on-track':    { label: 'On track',       color: '#1a4a7a', bg: '#f0f7ff', border: '#c3daf5' },
+  'behind':      { label: 'Falling behind', color: '#7a5c00', bg: '#fffbf0', border: '#e8d89a' },
+  'no-data':     { label: 'No data yet',    color: 'var(--text-muted)', bg: 'var(--surface-2)', border: 'var(--border)' },
+  'exam-passed': { label: 'Exam passed',    color: 'var(--text-muted)', bg: 'var(--surface-2)', border: 'var(--border)' },
 };
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
@@ -348,13 +359,15 @@ function ActivityStrip({ sessions }: { sessions: RecentSession[] }) {
 
 // ─── Pace banner ──────────────────────────────────────────────────────────────
 
-function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: number; needed: number; studentName: string }) {
+function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: number; needed: number | null; studentName: string }) {
   const conf = PACE_CONF[pace];
+  const n = needed ?? 0;
   let msg = '';
-  if (pace === 'no-data') msg = `${studentName} hasn't completed enough sessions to assess pace yet. Target is ${needed} sessions per week.`;
-  else if (pace === 'ahead') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is ahead of pace — exam preparation is on track.`;
-  else if (pace === 'on-track') msg = `Averaging ${avg}/week against a target of ${needed}. ${studentName} is on track to complete the curriculum before the exam.`;
-  else msg = `Averaging ${avg}/week but need ${needed} to stay on track. ${studentName} needs to pick up the pace — ${needed - avg} more session${(needed - avg) !== 1 ? 's' : ''}/week required.`;
+  if (pace === 'exam-passed') msg = `This year's exam has passed — pace targets are paused. A good time to consolidate before next year's syllabus.`;
+  else if (pace === 'no-data') msg = `${studentName} hasn't completed enough sessions to assess pace yet. Target is ${n} sessions per week.`;
+  else if (pace === 'ahead') msg = `Averaging ${avg}/week against a target of ${n}. ${studentName} is ahead of pace — exam preparation is on track.`;
+  else if (pace === 'on-track') msg = `Averaging ${avg}/week against a target of ${n}. ${studentName} is on track to complete the curriculum before the exam.`;
+  else msg = `Averaging ${avg}/week but need ${n} to stay on track. ${studentName} needs to pick up the pace — ${n - avg} more session${(n - avg) !== 1 ? 's' : ''}/week required.`;
   return (
     <div style={{ background: conf.bg, border: `1px solid ${conf.border}`, borderRadius: 'var(--radius-sm)', padding: '12px 18px', marginBottom: 20, fontSize: 14, color: conf.color, fontWeight: 500 }}>
       {msg}
@@ -367,10 +380,11 @@ function PaceBanner({ pace, avg, needed, studentName }: { pace: Pace; avg: numbe
 function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessions, weakAreasCount, streak, thisWeek, examDays, neededPerWeek, avgPerWeek, pace, subject, tutorName }: {
   curriculumPercent: number; totalCompleted: number; totalLessons: number; totalSessions: number;
   weakAreasCount: number; streak: number; thisWeek: number; examDays: number;
-  neededPerWeek: number; avgPerWeek: number; pace: Pace; subject?: string; tutorName: string;
+  neededPerWeek: number | null; avgPerWeek: number; pace: Pace; subject?: string; tutorName: string;
 }) {
   const timeHrs = Math.round((totalSessions * 45) / 60 * 10) / 10;
   const paceConf = PACE_CONF[pace];
+  const passed = pace === 'exam-passed';
   const isIB = subject && IB_SUBJECTS.includes(subject);
   const examLabel = isIB
     ? `${getSubjectLabel(subject)} · May 2027`
@@ -378,10 +392,10 @@ function StatGrid({ curriculumPercent, totalCompleted, totalLessons, totalSessio
   const stats = [
     { label: 'Curriculum progress', value: `${curriculumPercent}%`, sub: `${totalCompleted} of ${totalLessons} lessons` },
     { label: 'Sessions completed', value: totalSessions, sub: `≈ ${timeHrs} hrs invested` },
-    { label: 'This week', value: thisWeek, sub: `target: ${neededPerWeek}/wk` },
-    { label: 'Sessions/wk needed', value: neededPerWeek, sub: `${Math.round(weeksToExam(subject))} weeks to exam`, warn: neededPerWeek > 10 },
+    { label: 'This week', value: thisWeek, sub: passed ? 'sessions logged' : `target: ${neededPerWeek ?? 0}/wk` },
+    { label: 'Sessions/wk needed', value: passed ? '—' : (neededPerWeek ?? 0), sub: passed ? 'exam has passed' : `${Math.round(weeksToExam(subject))} weeks to exam`, warn: !passed && (neededPerWeek ?? 0) > 10 },
     { label: '4-wk avg / week', value: avgPerWeek, sub: paceConf.label.toLowerCase(), accent: pace === 'ahead' || pace === 'on-track', warn: pace === 'behind' },
-    { label: 'Days to exam', value: examDays, sub: examLabel },
+    { label: 'Days to exam', value: passed ? 'Passed' : examDays, sub: examLabel },
     { label: 'Study streak', value: `${streak}d`, sub: streak === 1 ? 'day in a row' : 'days in a row', accent: streak >= 3 },
     { label: 'Weak areas', value: weakAreasCount, sub: weakAreasCount === 0 ? 'none flagged' : `${tutorName} is tracking`, warn: weakAreasCount > 0 },
   ];
