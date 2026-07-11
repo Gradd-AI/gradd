@@ -29,6 +29,14 @@
   - **Privacy:** employer transcript access = new third-party disclosure; the privacy-page line (flagged in the persistence diagnosis) ships WITH whichever tier is built, shown to Grant before commit.
   - **KPMG discovery question** to add to the pitch set: *"When a trainee is flagged at-risk, what evidence does your L&D team want to see — the verdict, the diagnosed gaps, or the actual practice sessions?"*
 
+## Product / roadmap
+- **CBE exam-fidelity strategy** (decided 2026-07-11): we do NOT replicate ACCA's CBE shell — ACCA's official practice platform provides pixel-perfect shell familiarity free; our differentiation is **marking + coaching inside an exam-shaped environment**, which their platform lacks. Phased:
+  1. **Pacing analytics** (cheap, next mock-adjacent build): per-requirement time capture in the mock runner + pacing feedback in mock results ("34 min on a 20-mark requirement") — maps to the time-starvation failure class; unique because we mark inside our own runner.
+  2. **Exhibits-tabbed split-pane mock layout** (medium): reading fidelity — APM/AFM scenarios are exhibit-structured; navigating exhibits under clock pressure is a trainable exam skill.
+  3. **Structured workings grid for AFM calc answers** (medium): approximates the CBE spreadsheet response AND provides the per-component figure+working capture the numeric verifier + OFR rule require — fidelity and marking architecture converge.
+  4. **Full spreadsheet emulation:** deliberately NOT built (janky fails the quality bar; ACCA's free platform owns shell fidelity — we link to it openly as advice).
+  - Student-facing copy opportunity when built: *"Practise the interface free on ACCA's platform; practise the JUDGEMENT here — then sit our mock exam-shaped and get it marked."*
+
 ## Banked — product-scoping Phase 2 (from the /dashboard leak fix)
 - Per-account nullable `exam_date` + student-settable affordance (replaces the baked `LC_EXAM_DATE`/`IB_EXAM_DATE` constants).
 - `subject`-default retirement with onboarding (retire the `LC_BUSINESS` masquerade at the schema).
