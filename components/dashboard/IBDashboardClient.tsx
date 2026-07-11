@@ -1382,9 +1382,16 @@ export default function IBDashboardClient(props: Props) {
         <div className={`page-head${mode === 'student' ? ' page-head-compact' : ''}`} style={{ marginBottom: props.isBundle ? 12 : (mode === 'student' ? 20 : 40) }}>
           <div>
             <h1>
+              {/* Name fallback: student_name is empty for accounts created without signup
+                  metadata (magic-link / admin-seeded). Root cause banked for Phase 2
+                  (name capture for non-onboarded accounts). */}
               {mode === 'student'
-                ? <>Good to see you, <em style={{ color: 'var(--rust)' }}>{props.studentName}.</em></>
-                : <><em style={{ color: 'var(--rust)' }}>{props.studentName}&apos;s</em> progress.</>
+                ? (props.studentName
+                    ? <>Good to see you, <em style={{ color: 'var(--rust)' }}>{props.studentName}.</em></>
+                    : <>Good to see you.</>)
+                : (props.studentName
+                    ? <><em style={{ color: 'var(--rust)' }}>{props.studentName}&apos;s</em> progress.</>
+                    : <>Your progress.</>)
               }
             </h1>
             <div className="sub">

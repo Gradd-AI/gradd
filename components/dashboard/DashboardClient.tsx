@@ -561,7 +561,11 @@ export default function DashboardClient(props: Props) {
         <div className="dash-page-header" style={{ marginBottom: props.isBundle ? 0 : 32 }}>
           <div>
             <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 32, fontWeight: 700, color: 'var(--brand)', letterSpacing: '-0.5px', marginBottom: 6 }}>
-              {mode === 'student' ? `Good to see you, ${props.studentName}.` : `${props.studentName}'s progress`}
+              {/* Name fallback: student_name is empty for accounts created without signup
+                  metadata (magic-link / admin-seeded). Root cause banked for Phase 2. */}
+              {mode === 'student'
+                ? (props.studentName ? `Good to see you, ${props.studentName}.` : 'Good to see you.')
+                : (props.studentName ? `${props.studentName}'s progress` : 'Your progress')}
             </h1>
             <p style={{ color: 'var(--text-muted)', fontSize: 16 }}>
               {subjectLabel} · {props.examLevel} · Session {props.sessionNumber} completed
