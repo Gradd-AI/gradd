@@ -50,3 +50,6 @@ next-env.d.ts
 
 # Underscore-prefixed one-off / scratch scripts (diagnostics, patches, harnesses) — local only
 scripts/_*
+
+# ClaudeSend.txt — transient handoff-to-Grant scratch file (overwritten each use), not VCS
+ClaudeSend.txt
