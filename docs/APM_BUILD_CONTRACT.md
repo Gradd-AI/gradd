@@ -584,6 +584,17 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 
 ---
 
+## Session 2026-07-11 — AFM batch-1 APPROVED; repo doc restructure; product-scoping + progress split
+
+**1. AFM BATCH-1 (NPV/B1a) — ALL FOUR FLIPPED TO `status='approved'`** (`published=false`; publishing is a separate go-live decision). Round-1 external review returned 10 findings, all accepted (reviewer independently caught the Drill-4 cautious-optimism self-flag — calibration confirmed). Fixed at PATTERN level first, then drills:
+- **P1** code-owned rationing allocation under indivisibility (with/without enumeration; killed the greedy that part-funded the indivisible project) + **portfolio with-vs-without NPV line** (D2: CAD 5.4m funding vs CAD 4.5m skipping). **P2** sensitivity vs a NAMED post-tax operating-CF base (D3: 13.24% on CAD 37.9m; old all-inflows base wrongly gave 10.67%). **P3** advice opener injected from the code accept/reject decision (reject drills emit reject language — self-flag now structurally impossible). **P4** jurisdiction lint, rescoped: factual regulator/institution names OK in scenario fields; tax classes/statutes banned everywhere; regulator-behaviour/formulary CLAIMS flagged in evaluative fields only when not scenario-stated. **P5** question-completeness lint. SHAs `6d12ced` `1fdf952` `82e1bb2` `8c11eb5`; fixtures pin P1/P2 (`scripts/test-npv.ts`) + prose (`scripts/test-afm-prose.ts`).
+- Drills re-gated per the 5-field-sweep rule (any edit re-runs ALL gates on ALL fields). Round-2 fix-verification pack: `docs/reviews/AFM_BATCH1_NPV_ROUND2_REVIEW_PACK.md`. D4 "overseas"→"North American peer-group beta" swept. Decisions unchanged: 0.67 ACCEPT / 2.59 ACCEPT PI 1.144 / 5.02 ACCEPT 13.24% / −3.55 REJECT.
+- **NEXT:** publish decision (separate gate); then IRR/MIRR = calculator #2 (roadmap order in GENERATOR_DOCTRINE.md).
+
+**2. REPO DOC RESTRUCTURE** (knowledge audit, approved). `docs/GENERATOR_DOCTRINE.md` = canonical generation rulings (`e57c8e9`, P1 update `8c11eb5`). `docs/AFM_SURFACED.md` = single living open-items list (`1882fba`). This journal is now **append-only pure chronology** — open items live in AFM_SURFACED, rulings in GENERATOR_DOCTRINE; do NOT add "STILL OPEN" blocks to future banks. Superseded backlogs + shipped Layer/routing docs bannered (`6461ce3`); 8 dated one-offs → `docs/archive/` (`0003182`). `CLAUDE.md` session brief created (`f4cd3c3`; doc map `1888eac`). Exhaustive journal-lesson-vs-rulebook (c) sweep banked as an idle-session item.
+
+**3. OTHER TRACKS (same day).** Product-scoping /dashboard LC-leak fixed (entitlements resolver + page guards + `/go` + pacing/name bugs — `memory/project_product_scoping`); `/acca/progress` student doorway shipped + free/paid split; APM/AFM transcript-persistence gap diagnosed (WRITE near-term, look-back UI queued — see AFM_SURFACED).
+
 ## Session 2026-07-10 — campaign split, dashboard polished + closed, one-pager, first external evaluator
 
 **1. CAMPAIGN RESTRUCTURED** (decision brought forward from ~18/07 on Friday's country breakdown). Pakistan had absorbed **92% of spend** (€19.76 / €21.53) and **91% of LPVs** (563 / 620); UK €0.01, IE/UAE literally €0.00 — the high-WTP markets were **UNSERVED, not underweighted**, so the campaign structurally could not answer its own core-market question. **SPLIT executed by GEOGRAPHY**, both ads in each:

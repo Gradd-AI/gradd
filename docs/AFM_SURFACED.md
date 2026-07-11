@@ -5,8 +5,9 @@
 *Last refreshed: 2026-07-11.*
 
 ## AFM build track (live)
-- **AFM batch-1 (NPV/B1a) — round-2 fix-verification review PENDING.** 4 drills `status='candidate'`; patterns P1–P5 fixed in code, drills re-gated (all five gates green). Reviewer pack: `docs/reviews/AFM_BATCH1_NPV_ROUND2_REVIEW_PACK.md` (Drill 2 + Drill 4 full; Drill 1 + Drill 3 changed fields). Focus: Drill 2 allocation + Drill 3 13.24% sensitivity. **No approval flip / `published=true` until round-2 clears.**
-- Next calculator after batch-1 approval: **IRR/MIRR** (roadmap order in `GENERATOR_DOCTRINE.md`).
+- **AFM batch-1 (NPV/B1a) — ALL FOUR `status='approved'`** (`published=false`). Round-2 fix-verification cleared; P1 portfolio-NPV line + D2 teaching sentence + D4 "overseas"→"North American" applied; all five gates green on all four. **NEXT GATE: the publish decision** (`published=true` is a separate go-live call — not automatic).
+- **IRR/MIRR (B1c) = calculator #2** — opening now per the roadmap; component DAG + fixtures + batch spec proposed (awaiting approval).
+- Banked idle-session: exhaustive journal-lesson-vs-rulebook reconciliation (audit item (c)).
 - Banked idle-session: exhaustive journal-lesson-vs-rulebook reconciliation (audit item (c)).
 
 ## APM content + launch
