@@ -30,12 +30,14 @@
   - **KPMG discovery question** to add to the pitch set: *"When a trainee is flagged at-risk, what evidence does your L&D team want to see — the verdict, the diagnosed gaps, or the actual practice sessions?"*
 
 ## Product / roadmap
-- **CBE exam-fidelity strategy** (decided 2026-07-11): we do NOT replicate ACCA's CBE shell — ACCA's official practice platform provides pixel-perfect shell familiarity free; our differentiation is **marking + coaching inside an exam-shaped environment**, which their platform lacks. Phased:
-  1. **Pacing analytics** (cheap, next mock-adjacent build): per-requirement time capture in the mock runner + pacing feedback in mock results ("34 min on a 20-mark requirement") — maps to the time-starvation failure class; unique because we mark inside our own runner.
-  2. **Exhibits-tabbed split-pane mock layout** (medium): reading fidelity — APM/AFM scenarios are exhibit-structured; navigating exhibits under clock pressure is a trainable exam skill.
-  3. **Structured workings grid for AFM calc answers** (medium): approximates the CBE spreadsheet response AND provides the per-component figure+working capture the numeric verifier + OFR rule require — fidelity and marking architecture converge.
-  4. **Full spreadsheet emulation:** deliberately NOT built (janky fails the quality bar; ACCA's free platform owns shell fidelity — we link to it openly as advice).
-  - Student-facing copy opportunity when built: *"Practise the interface free on ACCA's platform; practise the JUDGEMENT here — then sit our mock exam-shaped and get it marked."*
+- **EXAM REHEARSAL — flagship** (upgraded from "fidelity strategy" 2026-07-11, Grant's call). The differentiator is the COMPLETE experience nobody else offers — a full paper under true exam conditions in a faithful interface + instant descriptor-marked results + per-requirement pacing diagnosis + coached debrief. ACCA's platform = empty shell, no marking; Kaplan = human-marked, days turnaround. We already own the hard 80% (marking engine, mock runner, descriptors, Ezra debrief). Positioning: **"Sit APM before you sit APM."** Anchors the €99 pass (B2C) and pre-exam-entry readiness verdicts (enterprise).
+  - **Phased build** (~3–6 weeks of sessions; starts after AFM batch momentum, NOT now):
+    1. Timed shell + exhibits split-pane (reading fidelity, clock pressure, no pause).
+    2. Per-requirement pacing capture + pacing feedback in the marked debrief (time-starvation failure class — unique, we mark inside our own runner).
+    3. Coached debrief surface: descriptor bands rendered student-visible (**closes the existing "bands invisible in UI" surfaced item** inside this build), Ezra walks the mark loss.
+    4. Structured workings grid for AFM calc answers (doubles as verifier / OFR per-component capture).
+    5. Spreadsheet response area LAST — built properly or not at all; until then, openly advise ACCA's free platform for spreadsheet-interface familiarity.
+  - **Quality bar:** a janky exam shell is worse than none — each phase ships at house standard or holds.
 
 ## Banked — product-scoping Phase 2 (from the /dashboard leak fix)
 - Per-account nullable `exam_date` + student-settable affordance (replaces the baked `LC_EXAM_DATE`/`IB_EXAM_DATE` constants).
