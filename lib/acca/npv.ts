@@ -20,10 +20,14 @@ const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const df = (r: number, p: number): number => 1 / Math.pow(1 + r, p);
+const EPS = 1e-9;
 
 export type NpvKind = 'standard' | 'rationing' | 'sensitivity' | 'section_a';
 
-export interface CompetitorProject { name: string; pi: number; outlay: number; }
+// A competing project in a capital-rationing decision. `divisible` defaults to true; the
+// appraised project ("this project") is ALWAYS indivisible (a firm's own bespoke facility
+// can't be part-built), so the allocation is a small with/without search, not naive greedy.
+export interface CompetitorProject { name: string; pi: number; outlay: number; divisible?: boolean; }
 
 export interface NpvInputs {
   initial_outlay:    number;   // t0 capital cost (positive)
@@ -48,7 +52,7 @@ export interface NpvYear {   // 1..N — tax computation (workings, not graded)
 export interface NpvPeriod { // 1..H — net cash flow + discounting (ncf/pv graded)
   period: number; ncf: number; df: number; pv: number;
 }
-export interface RankRow { name: string; pi: number; outlay: number; taken: number; }
+export interface RankRow { name: string; pi: number; outlay: number; taken: number; divisible: boolean; }
 
 export interface NpvComputed {
   years:       NpvYear[];
@@ -62,8 +66,11 @@ export interface NpvComputed {
   pi?:              number;
   ranking?:         RankRow[];
   capital_limit?:   number;
+  ration_total_npv?: number;   // total NPV of the code-computed optimal feasible allocation
+  ration_takes_project?: boolean; // whether the optimal allocation funds THIS (indivisible) project
   sensitivity_pct?: number;
   sensitivity_label?: string;
+  sensitivity_base?: number;   // the PV base the % is measured against (post-tax operating CF PV)
 }
 
 export function computeNpv(raw: NpvInputs, kind: NpvKind): NpvComputed {
@@ -127,25 +134,79 @@ export function computeNpv(raw: NpvInputs, kind: NpvKind): NpvComputed {
   };
 
   if (kind === 'rationing') {
-    const pi = pvInflows / raw.initial_outlay;                       // PV of inflows / outlay
+    // CODE owns the allocation (doctrine: the model never authors a capital allocation).
+    // "this project" is INDIVISIBLE; competitors default divisible. The feasible optimum
+    // under a single-period limit is found by enumerating which indivisible projects to
+    // fund, then filling the remainder with divisible projects greedily by PI, and taking
+    // the subset that maximises total NPV — NOT by ranking the indivisible project as if it
+    // could be part-funded (the bug that gave "this project 15.5 of 18.0").
+    const pi = pvInflows / raw.initial_outlay;
     out.pi = pi;
     const limit = raw.capital_limit ?? raw.initial_outlay;
     out.capital_limit = limit;
-    const all = [{ name: 'this project', pi, outlay: raw.initial_outlay }, ...(raw.competitor_projects ?? [])]
+
+    interface RProj { name: string; pi: number; outlay: number; divisible: boolean; npvFull: number; }
+    // npvFull for a competitor = (PI − 1) × outlay; for this project = its exact NPV
+    // (identical, since PI = pvInflows/outlay, but avoids compounding rounding).
+    const projects: RProj[] = [
+      { name: 'this project', pi, outlay: raw.initial_outlay, divisible: false, npvFull: npv },
+      ...(raw.competitor_projects ?? []).map((p) => ({
+        name: p.name, pi: p.pi, outlay: p.outlay,
+        divisible: p.divisible !== false,
+        npvFull: (p.pi - 1) * p.outlay,
+      })),
+    ];
+    const indivisible = projects.filter((p) => !p.divisible);
+    const divisible = projects.filter((p) => p.divisible).slice().sort((a, b) => b.pi - a.pi);
+    if (indivisible.length > 16) throw new Error(`rationing: ${indivisible.length} indivisible projects is too many to enumerate`);
+
+    let best: { taken: Map<string, number>; npv: number; fundsProject: boolean } | null = null;
+    const K = indivisible.length;
+    for (let mask = 0; mask < (1 << K); mask++) {
+      const taken = new Map<string, number>();
+      let spent = 0, totNpv = 0, feasible = true;
+      for (let b = 0; b < K; b++) {
+        const p = indivisible[b];
+        if (mask & (1 << b)) {
+          if (spent + p.outlay > limit + EPS) { feasible = false; break; }
+          spent += p.outlay; totNpv += p.npvFull; taken.set(p.name, p.outlay);
+        } else taken.set(p.name, 0);
+      }
+      if (!feasible) continue;
+      let remaining = limit - spent;
+      for (const p of divisible) {
+        const take = Math.max(0, Math.min(p.outlay, remaining));
+        taken.set(p.name, take);
+        totNpv += (take / p.outlay) * p.npvFull;
+        remaining -= take;
+      }
+      if (!best || totNpv > best.npv + EPS) {
+        best = { taken, npv: totNpv, fundsProject: (taken.get('this project') ?? 0) > EPS };
+      }
+    }
+    out.ration_total_npv = best!.npv;
+    out.ration_takes_project = best!.fundsProject;
+    out.ranking = projects
       .slice()
-      .sort((a, b) => b.pi - a.pi);
-    let remaining = limit;
-    out.ranking = all.map((p) => {
-      const taken = Math.max(0, Math.min(p.outlay, remaining));
-      remaining -= taken;
-      return { name: p.name, pi: p.pi, outlay: p.outlay, taken };
-    });
+      .sort((a, b) => b.pi - a.pi)
+      .map((p) => ({ name: p.name, pi: p.pi, outlay: p.outlay, taken: best!.taken.get(p.name) ?? 0, divisible: p.divisible }));
   }
 
   if (kind === 'sensitivity') {
-    // % fall in the post-tax cash inflows (their PV) that drives NPV to zero.
-    out.sensitivity_pct = (npv / pvInflows) * 100;
-    out.sensitivity_label = raw.sensitivity_label ?? 'the post-tax cash inflows';
+    // ACCA-orthodox sensitivity of NPV to the OPERATING cash flows, measured against an
+    // EXPLICITLY NAMED base: the post-tax present value of the operating cash flows. Only
+    // the operating stream flexes — each year's inflated operating cash flow net of the tax
+    // on THAT flow (timed by the lag), discounted. Scrap and the WDA tax shield are fixed,
+    // so they are excluded from the base (using total PV of inflows understates the margin).
+    let base = 0;
+    for (let t = 1; t <= N; t++) {
+      const money = years[t - 1].money_cf;
+      base += df(r, t) * money;                    // operating inflow at period t
+      base -= df(r, t + lag) * (money * tax);      // tax on that operating flow, timed
+    }
+    out.sensitivity_base = base;
+    out.sensitivity_pct = (npv / base) * 100;
+    out.sensitivity_label = raw.sensitivity_label ?? 'the projected operating cash flows';
   }
 
   return out;
@@ -251,7 +312,7 @@ export function buildNpvModelAnswer(raw: NpvInputs, c: NpvComputed, prose: strin
   lines.push(`| 0 | ${m(-raw.initial_outlay)} | 1.000 | ${m(-raw.initial_outlay)} |`);
   for (const p of c.periods) lines.push(`| ${p.period} | ${m(p.ncf)} | ${p.df.toFixed(3)} | ${m(p.pv)} |`);
   lines.push('');
-  lines.push(`**NPV = Σ present values − initial outlay = ${m(c.npv)}**`, '');
+  lines.push(`**Present value of future cash flows ${m(c.pv_inflows)}; less initial outlay ${m(raw.initial_outlay)}; NPV ${m(c.npv)}.**`, '');
 
   // Decision (code-owned)
   lines.push('**Step 4 — Decision**', '');
@@ -262,25 +323,34 @@ export function buildNpvModelAnswer(raw: NpvInputs, c: NpvComputed, prose: strin
     '',
   );
 
-  // Rationing enrichment (code-owned)
+  // Rationing enrichment (code-owned allocation, incl. indivisibility of this project)
   if (kind === 'rationing' && c.ranking && c.pi !== undefined) {
+    const limit = c.capital_limit ?? raw.initial_outlay;
     lines.push('**Step 5 — Single-period capital rationing (profitability index)**', '');
-    lines.push(`This project's profitability index (PV of inflows ÷ outlay) is **${c.pi.toFixed(3)}**. Ranked against the divisible projects the board is weighing, within the capital limit of ${m(c.capital_limit ?? raw.initial_outlay)}:`, '');
-    lines.push(`| Rank | Project | PI | Outlay | Capital allocated |`, `|------|------|------|------|------|`);
-    c.ranking.forEach((row, i) => lines.push(`| ${i + 1} | ${row.name} | ${row.pi.toFixed(3)} | ${m(row.outlay)} | ${m(row.taken)} |`));
-    lines.push('', '*(Multi-period rationing would require linear programming and is beyond this single-period ranking — a discussion point, not a computation.)*', '');
+    lines.push(`This project is **indivisible** (a bespoke facility cannot be part-funded); the competing projects are divisible. Its profitability index (PV of inflows ÷ outlay) is **${c.pi.toFixed(3)}**. The optimal feasible allocation within the capital limit of ${m(limit)} is found by comparing funding this project — then filling the remaining capital with the divisible projects in PI order — against not funding it, and taking whichever yields the higher total NPV:`, '');
+    lines.push(`| Rank (by PI) | Project | PI | Outlay | Capital allocated |`, `|------|------|------|------|------|`);
+    c.ranking.forEach((row, i) => lines.push(`| ${i + 1} | ${row.name}${row.divisible ? '' : ' (indivisible)'} | ${row.pi.toFixed(3)} | ${m(row.outlay)} | ${m(row.taken)} |`));
+    const chosen = c.ranking.filter((r) => r.taken > EPS);
+    const alloc = chosen.map((r) => `${r.name} ${m(r.taken)}${r.divisible && r.taken + EPS < r.outlay ? ' (partial)' : ''}`).join(', ');
+    lines.push('', `Optimal allocation: **${alloc}** — total ${m(limit)} deployed${c.ration_takes_project ? ', funding this project in full' : '; this project is not funded, as backing the divisible projects instead yields a higher total NPV'}. *(Multi-period rationing would require linear programming and is beyond this single-period ranking.)*`, '');
   }
 
-  // Sensitivity enrichment (code-owned)
+  // Sensitivity enrichment (code-owned figure, base explicitly named)
   if (kind === 'sensitivity' && c.sensitivity_pct !== undefined) {
     lines.push('**Step 5 — Sensitivity of the decision**', '');
-    lines.push(`Holding all else equal, ${c.sensitivity_label} can fall by **~${c.sensitivity_pct.toFixed(2)}%** (in present-value terms) before the NPV reaches zero — below that the decision reverses. The smaller this margin, the more the recommendation depends on the reliability of that estimate.`, '');
+    lines.push(`Holding all else equal, ${c.sensitivity_label} can fall by **~${c.sensitivity_pct.toFixed(2)}%** — measured against the post-tax present value of the operating cash flows (${m(c.sensitivity_base ?? 0)}) — before the NPV reaches zero, below which the decision reverses. The smaller this margin, the more the recommendation depends on the reliability of that estimate.`, '');
   }
 
-  // Advice (model prose) + reconciliation
+  // Advice — opener keyed to the CODE-COMPUTED decision (never model-authored), then prose
   lines.push(`**Step ${kind === 'standard' || kind === 'section_a' ? '5' : '6'} — Advice to the board**`, '');
+  lines.push(
+    c.accept
+      ? `On these assumptions the NPV is positive; a positive result is a floor, not a mandate, so the recommendation to proceed is conditional on the following assumptions holding under scrutiny.`
+      : `On these assumptions the NPV is negative, so the base-case recommendation is to **reject** the project as it stands; the board should treat rejection as the default unless the assumptions below prove materially conservative.`,
+    '',
+  );
   lines.push(prose, '');
-  lines.push(`*Reconciliation: Σ present values ${m(c.pv_inflows)} − initial outlay ${m(raw.initial_outlay)} = NPV ${m(c.npv)} ✓*`);
+  lines.push(`*Reconciliation: present value of future cash flows ${m(c.pv_inflows)} − initial outlay ${m(raw.initial_outlay)} = NPV ${m(c.npv)} ✓*`);
 
   return lines.join('\n');
 }
