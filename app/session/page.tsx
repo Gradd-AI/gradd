@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveIsIB } from '@/lib/site';
+import { resolveProducts, holdsAny } from '@/lib/entitlements';
 import ChatInterface from '@/components/chat/ChatInterface';
 
 function getTutorName(subject: string): string {
@@ -25,12 +27,25 @@ export default async function SessionPage({
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
+    .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level, apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
 
   // Free tier: logged-in users with a profile may view the session page; teaching is capped downstream.
   if (!profile) redirect('/subscribe');
+
+  // ── Product guard ───────────────────────────────────────────────────────────
+  // /session is the LC/IB teaching surface. Same guard as /dashboard: an account that
+  // holds neither LC nor IB is sent to its real home rather than into an LC session.
+  const { count: footprintCount } = await supabase
+    .from('sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('student_id', user.id)
+    .not('ended_at', 'is', null);
+  const host = (await headers()).get('host') ?? '';
+  const isGraddAi = await resolveIsIB(host);
+  const ent = resolveProducts(profile, { isGraddAi, lcIbFootprint: (footprintCount ?? 0) > 0 });
+  if (!holdsAny(ent, 'LC', 'IB')) redirect(ent.home);
 
   const profileSubject = profile.subject ?? 'LC_BUSINESS';
   const isBundle = profileSubject === 'IB_BUNDLE';

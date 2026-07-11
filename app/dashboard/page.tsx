@@ -3,8 +3,10 @@
 // Passes data to DashboardClient for the parent/student toggle.
 
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+import { cookies, headers } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
+import { resolveIsIB } from '@/lib/site';
+import { resolveProducts, holdsAny } from '@/lib/entitlements';
 import DashboardClient from '@/components/dashboard/DashboardClient';
 import IBDashboardClient from '@/components/dashboard/IBDashboardClient';
 import { type PickerLesson } from '@/components/dashboard/CoursePicker';
@@ -49,7 +51,7 @@ export default async function DashboardPage() {
   // Try to read IB columns; fall back to LC-safe select if they don't exist yet.
   const { data: fullProfile, error: profileError } = await supabase
     .from('profiles')
-    .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level')
+    .select('student_name, exam_level, subscription_status, subject, ib_economics_level, ib_business_level, apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
 
@@ -60,6 +62,8 @@ export default async function DashboardPage() {
     subject?: string | null;
     ib_economics_level?: string | null;
     ib_business_level?: string | null;
+    apm_subscription_status?: string | null;
+    apm_pass_expires_at?: string | null;
   };
 
   let profile: ProfileRow | null = fullProfile as ProfileRow | null;
@@ -75,6 +79,21 @@ export default async function DashboardPage() {
   // Free tier: a logged-in user with a profile may view the dashboard regardless of subscription.
   // A genuinely missing profile is still an error → send to subscribe/onboarding.
   if (!profile) redirect('/subscribe');
+
+  // ── Product guard ───────────────────────────────────────────────────────────
+  // /dashboard renders the LC/IB learning surface. An account that does NOT hold LC or
+  // IB (e.g. an APM-only account whose subject is only the DB default) must be sent to
+  // its real home — never shown fabricated LC scaffolding. Footprint = a genuine LC/IB
+  // learning history, so a name-less-but-active LC student is never mis-redirected.
+  const { count: footprintCount } = await supabase
+    .from('sessions')
+    .select('*', { count: 'exact', head: true })
+    .eq('student_id', user.id)
+    .not('ended_at', 'is', null);
+  const host = (await headers()).get('host') ?? '';
+  const isGraddAi = await resolveIsIB(host);
+  const ent = resolveProducts(profile, { isGraddAi, lcIbFootprint: (footprintCount ?? 0) > 0 });
+  if (!holdsAny(ent, 'LC', 'IB')) redirect(ent.home);
 
   const subject = profile.subject ?? 'LC_BUSINESS';
   const isBundle = subject === 'IB_BUNDLE';
