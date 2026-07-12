@@ -45,6 +45,7 @@ export interface IrrInputs {
   finance_rate?:     number;   // MIRR outflow discount rate (default cost_of_capital)
   // ── conflict only ──
   competitor?:       IrrCompetitor;  // a mutually-exclusive rival with GIVEN irr + npv
+  project_label?:    string;         // label for THIS project in the conflict comparison (e.g. "Line A"); default "This project"
 }
 
 export interface IrrComputed {
@@ -218,25 +219,39 @@ export function buildIrrModelAnswer(raw: IrrInputs, c: IrrComputed, prose: strin
     lines.push('**Step 5 — Modified internal rate of return**', '');
     lines.push(`Terminal value of inflows, reinvested at ${pct2(c.reinvest)} = ${m(c.tv_inflows)}; PV of outflows = ${m(c.pv_outflows)}.`, '');
     lines.push(`**MIRR = (${m(c.tv_inflows)} / ${m(c.pv_outflows)})^(1/${c.horizon}) − 1 = ${c.mirr.toFixed(2)}%.**`, '');
-    lines.push(`The IRR of ${c.irr.toFixed(2)}% overstates the return because it implicitly assumes interim cash flows are reinvested at the IRR itself; MIRR reinvests them at the realistic ${pct2(c.reinvest)} rate and is the sounder ranking measure.`, '');
+    lines.push(`The IRR of ${c.irr.toFixed(2)}% overstates the return because it implicitly assumes interim cash flows are reinvested at the IRR itself; MIRR reinvests them at the stated ${pct2(c.reinvest)} reinvestment rate — a more realistic assumption than the IRR itself — and is the sounder ranking measure.`, '');
   }
 
   if (kind === 'conflict' && raw.competitor) {
+    const projLabel = raw.project_label ?? 'This project';
     lines.push('**Step 5 — Ranking against the mutually exclusive alternative**', '');
     lines.push(`| Project | IRR | NPV @ ${pct2(c.coc)} |`, `|------|------|------|`);
-    lines.push(`| This project | ${c.irr.toFixed(2)}% | ${m(c.npv_at_coc)} |`);
+    lines.push(`| ${projLabel} | ${c.irr.toFixed(2)}% | ${m(c.npv_at_coc)} |`);
     lines.push(`| ${raw.competitor.name} | ${asDec(raw.competitor.irr) >= 1 ? raw.competitor.irr.toFixed(2) : (raw.competitor.irr * 100).toFixed(2)}% | ${m(raw.competitor.npv)} |`);
     const thisWins = c.npv_at_coc >= raw.competitor.npv;
-    lines.push('', `IRR and NPV can rank mutually exclusive projects differently; where they conflict, **NPV wins** (it measures absolute value added and assumes reinvestment at the cost of capital, not the IRR). On NPV, **${thisWins ? 'this project' : raw.competitor.name}** is preferred.`, '');
+    lines.push('', `IRR and NPV can rank mutually exclusive projects differently; where they conflict, **NPV wins** (it measures absolute value added and assumes reinvestment at the cost of capital, not the IRR). On NPV, **${thisWins ? projLabel : raw.competitor.name}** is preferred.`, '');
   }
 
-  // Decision (code-owned)
-  const metric = kind === 'mirr' ? `MIRR of ${c.mirr.toFixed(2)}%` : kind === 'standard' ? `IRR of ${c.irr.toFixed(2)}%` : `NPV of ${m(c.npv_at_coc)}`;
+  // Decision (code-owned). Conflict kind states the FUNDING CHOICE — never a bare accept —
+  // because with mutually exclusive projects a positive standalone NPV does not settle it.
   const stepNo = kind === 'mirr' || kind === 'conflict' ? '6' : '5';
   lines.push(`**Step ${stepNo} — Decision**`, '');
-  lines.push(c.accept
-    ? `The ${metric} ${kind === 'standard' || kind === 'mirr' ? `exceeds the ${pct2(c.coc)} cost of capital` : 'is positive'}, so on these assumptions the project **adds shareholder value and should be accepted**.`
-    : `The ${metric} ${kind === 'standard' || kind === 'mirr' ? `is below the ${pct2(c.coc)} cost of capital` : 'is negative'}, so on these assumptions the project **destroys value and should be rejected** as it stands.`, '');
+  if (kind === 'conflict' && raw.competitor) {
+    const projLabel = raw.project_label ?? 'This project';
+    const winnerIsComp = raw.competitor.npv >= c.npv_at_coc;
+    const winnerName = winnerIsComp ? raw.competitor.name : projLabel;
+    const loserName = winnerIsComp ? projLabel : raw.competitor.name;
+    const winnerNpv = winnerIsComp ? raw.competitor.npv : c.npv_at_coc;
+    const loserNpv = winnerIsComp ? c.npv_at_coc : raw.competitor.npv;
+    lines.push(c.npv_at_coc > 0
+      ? `${projLabel}'s NPV of ${m(c.npv_at_coc)} is positive, so it would be acceptable on a standalone basis. But the two lines are mutually exclusive and ${winnerName} adds more value at the cost of capital (${m(winnerNpv)} vs ${m(loserNpv)}), so the board should fund ${winnerName}; ${loserName}, though value-adding in isolation, is displaced.`
+      : `${projLabel}'s NPV of ${m(c.npv_at_coc)} is negative, so it should be rejected outright; on value grounds the board should fund ${winnerName} (${m(winnerNpv)}).`, '');
+  } else {
+    const metric = kind === 'mirr' ? `MIRR of ${c.mirr.toFixed(2)}%` : kind === 'standard' ? `IRR of ${c.irr.toFixed(2)}%` : `NPV of ${m(c.npv_at_coc)}`;
+    lines.push(c.accept
+      ? `The ${metric} ${kind === 'standard' || kind === 'mirr' ? `exceeds the ${pct2(c.coc)} cost of capital` : 'is positive'}, so on these assumptions the project **adds shareholder value and should be accepted**.`
+      : `The ${metric} ${kind === 'standard' || kind === 'mirr' ? `is below the ${pct2(c.coc)} cost of capital` : 'is negative'}, so on these assumptions the project **destroys value and should be rejected** as it stands.`, '');
+  }
 
   // Advice — opener keyed to the code decision, then prose
   lines.push(`**Step ${Number(stepNo) + 1} — Advice to the board**`, '');

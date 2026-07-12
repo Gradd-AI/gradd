@@ -4,7 +4,7 @@
 //   self-consistency gate (both schemas) · all-correct · ncf_1 wrong→carry through
 //   npv_lo/npv_hi/irr (the classic wrong-trial-NPV OFR case) · no-workings poisons ·
 //   IRR brackets between the trial rates · MIRR < IRR (reinvest below IRR) · MIRR carry.
-import { computeIrr, buildIrrSchema, type IrrInputs } from '../lib/acca/irr';
+import { computeIrr, buildIrrSchema, buildIrrModelAnswer, type IrrInputs } from '../lib/acca/irr';
 import { verifyNumericAnswer, type AnswerSchema, type StudentSubmission, type Verdict } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
 
@@ -86,6 +86,23 @@ run(schemaM, '(4) MIRR all correct', build(schemaM, {}), allCorrectM);
 run(schemaM, '(5) ncf_1 wrong → tv_inflows/mirr carry',
   build(schemaM, { ncf_1: { value: ncf1.expected_value * 0.8, workings: true } }),
   { ...allCorrectM, ncf_1: 'incorrect', npv_lo: 'carried', npv_hi: 'carried', irr: 'carried', tv_inflows: 'carried', mirr: 'carried' });
+
+// ── CONFLICT decision template — states the funding choice, never a bare accept ──
+{
+  const cf: IrrInputs = {
+    initial_outlay: 30, real_operating_cf: [15, 16, 12, 8], inflation_rate: 0.025, tax_rate: 0.21,
+    tax_lag: 1, capital_for_wda: 28, wda_rate: 0.20, scrap_value: 4, cost_of_capital: 0.10,
+    r_lo: 0.25, r_hi: 0.30, competitor: { name: 'Line B', irr: 0.16, npv: 28 }, project_label: 'Line A',
+  };
+  const cc = computeIrr(cf, 'conflict');
+  const ma = buildIrrModelAnswer(cf, cc, 'advice placeholder', 'USD', 'conflict');
+  const ok =
+    ma.includes('should fund Line B') &&           // names the winning alternative
+    !ma.includes('should be accepted') &&          // never a bare accept
+    /\|\s*Line A\s*\|/.test(ma) && /\|\s*Line B\s*\|/.test(ma); // Line A / Line B rows
+  console.log(`${ok ? 'PASS' : 'FAIL'} :: (conflict) decision names winner (fund Line B), no bare accept, Line A/B rows`);
+  if (!ok) { failures++; console.log('   decision block:', ma.split('\n').filter((l) => /fund|accepted|Line A|Line B/.test(l)).join(' | ')); }
+}
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL IRR FIXTURES PASS' : `${failures} IRR FIXTURE(S) FAILED`);
