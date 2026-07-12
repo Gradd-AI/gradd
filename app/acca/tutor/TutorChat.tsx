@@ -50,7 +50,7 @@ function ezraOpening(drill: Drill): Message {
   };
 }
 
-export default function TutorChat({ drill, initialCapHit, userId }: { drill: Drill; initialCapHit: boolean; userId: string }) {
+export default function TutorChat({ drill, initialCapHit, userId, paper }: { drill: Drill; initialCapHit: boolean; userId: string; paper: string }) {
   const [currentDrill, setCurrentDrill]           = useState<Drill>(drill);
   const [messages, setMessages]                   = useState<Message[]>([ezraOpening(drill)]);
   const [sessionState, setSessionState]           = useState<ClientSessionState | null>(null);
@@ -165,7 +165,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
     setNavigating(true);
     try {
       const res  = await fetch(
-        `/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}&drill_id=${encodeURIComponent(currentDrill.id)}`,
+        `/api/acca/next-drill?lo=${encodeURIComponent(currentDrill.lo_code)}&drill_id=${encodeURIComponent(currentDrill.id)}&paper=${encodeURIComponent(paper)}`,
       );
       if (!res.ok) return;            // 404/error → keep current drill (finally resets navigating)
       const next = await res.json() as Drill;
@@ -197,7 +197,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
     if (pickerAreas === null) {
       setPickerLoading(true);
       try {
-        const res = await fetch('/api/acca/areas');
+        const res = await fetch(`/api/acca/areas?paper=${encodeURIComponent(paper)}`);
         setPickerAreas(await res.json());
       } catch {
         setPickerAreas([]);
@@ -213,7 +213,7 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
     setShowPicker(false);
     setNavigating(true);
     try {
-      const res  = await fetch(`/api/acca/next-drill?area=${encodeURIComponent(subArea)}`);
+      const res  = await fetch(`/api/acca/next-drill?area=${encodeURIComponent(subArea)}&paper=${encodeURIComponent(paper)}`);
       if (!res.ok) return;            // 404/error → keep current drill (finally resets navigating)
       const next = await res.json() as Drill;
       if (!next?.id) return;          // never blank currentDrill with an id-less object
@@ -249,11 +249,11 @@ export default function TutorChat({ drill, initialCapHit, userId }: { drill: Dri
         {/* ── Header ── */}
         <header className="et-header">
           <div className="et-wrap et-header-inner">
-            <Link href="/acca" className="et-logo" aria-label="Back to Gradd ACCA">
+            <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`} className="et-logo" aria-label="Back to Gradd ACCA">
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
             <div className="et-breadcrumb">
-              <span className="et-breadcrumb-paper">ACCA APM</span>
+              <span className="et-breadcrumb-paper">ACCA {paper}</span>
               <span className="et-breadcrumb-sep">·</span>
               <span className="et-breadcrumb-label">Tutor</span>
             </div>

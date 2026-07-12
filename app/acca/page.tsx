@@ -8,9 +8,9 @@ import MetaTrackSignup from '@/components/MetaTrackSignup';
 import type { PickerArea } from './AreaPicker';
 
 export const metadata: Metadata = {
-  title: 'APM Drill — Gradd AI',
+  title: 'ACCA Drill — Gradd AI',
   description:
-    'Pick a performance management area and get coached by Ezra — targeted APM feedback, not generic hints.',
+    'Pick an area and get coached by Ezra — targeted ACCA feedback, not generic hints.',
 };
 
 export default async function ACCAPage({
@@ -81,6 +81,7 @@ export default async function ACCAPage({
         teachThroughsUsed={usedCount}
         hasActiveAccess={!!hasActiveAccess}
         casesEnabled={casesEnabled}
+        paper={paper}
       />
     </>
   );

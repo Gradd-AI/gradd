@@ -52,7 +52,7 @@ export default async function APMTutorPage({
 
   const supabase = createServiceClient();
 
-  type Drill = { id: string; lo_code: string; topic: string; question: string; context_text: string | null };
+  type Drill = { id: string; lo_code: string; topic: string; question: string; context_text: string | null; paper_code: string };
   let data: Drill | null = null;
 
   if (drillId) {
@@ -61,7 +61,7 @@ export default async function APMTutorPage({
     // Still gated to a published APM drill so a stale/foreign id can't surface anything.
     const { data: drill } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text')
+      .select('id, lo_code, topic, question, context_text, paper_code')
       .eq('id', drillId)
       .eq('exam_board', 'ACCA')
       .eq('status', 'approved')
@@ -75,7 +75,7 @@ export default async function APMTutorPage({
     // returns the chosen row's id so the tutor route serves that exact drill.
     const { data: drills } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text')
+      .select('id, lo_code, topic, question, context_text, paper_code')
       .eq('exam_board', 'ACCA')
       .eq('paper_code', paper)
       .eq('lo_code', loCode)
@@ -90,7 +90,7 @@ export default async function APMTutorPage({
   if (!data && areaCode) {
     const { data: drills } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text')
+      .select('id, lo_code, topic, question, context_text, paper_code')
       .eq('exam_board', 'ACCA')
       .eq('paper_code', paper)
       .eq('status', 'approved')
@@ -106,7 +106,7 @@ export default async function APMTutorPage({
     // Default entry: random-pick among B1c's published drills (was .single()) — depth-safe.
     const { data: drills } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text')
+      .select('id, lo_code, topic, question, context_text, paper_code')
       .eq('exam_board', 'ACCA')
       .eq('paper_code', paper)
       .eq('lo_code', 'B1c')
@@ -153,5 +153,7 @@ export default async function APMTutorPage({
   const hasActiveAccess = hasActiveACCAAccess(profile ?? {}); // bundle-wide ACCA access
   const initialCapHit = !hasActiveAccess && usedCount >= 3;
 
-  return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} />;
+  // Authoritative paper = the on-screen drill's own paper_code (an id-addressed entry may
+  // carry no ?paper=). TutorChat scopes its next-drill / areas fetches to it.
+  return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} paper={data.paper_code} />;
 }

@@ -10,19 +10,23 @@ interface ACCADashboardProps {
   teachThroughsUsed: number;
   hasActiveAccess: boolean;
   casesEnabled?: boolean;
+  paper: string;
 }
 
 const FREE_TEACH_THROUGHS = 3;
 
-export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess, casesEnabled = false }: ACCADashboardProps) {
+export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess, casesEnabled = false, paper }: ACCADashboardProps) {
   const router = useRouter();
   const [navigating, setNavigating] = useState(false);
 
   const capHit = !hasActiveAccess && teachThroughsUsed >= FREE_TEACH_THROUGHS;
+  // Carry the active paper on same-surface links; APM URLs stay clean (default).
+  const paperQ = paper === 'APM' ? '' : `&paper=${encodeURIComponent(paper)}`;
+  const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
 
   function handleSelect(subArea: string) {
     setNavigating(true);
-    router.push(`/acca/tutor?area=${encodeURIComponent(subArea)}`);
+    router.push(`/acca/tutor?area=${encodeURIComponent(subArea)}${paperQ}`);
   }
 
   return (
@@ -36,9 +40,14 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
             <div className="apm-dash-header-right">
-              <Link href="/acca/progress" className="apm-dash-navlink">Progress</Link>
+              {/* Paper switcher — the AFM discovery entry (bundle: one ACCA entitlement). */}
+              <div className="apm-dash-paper-switch" role="group" aria-label="Choose ACCA paper">
+                <Link href="/acca" className={`apm-dash-paper-tab${paper === 'APM' ? ' active' : ''}`}>APM</Link>
+                <Link href="/acca?paper=AFM" className={`apm-dash-paper-tab${paper === 'AFM' ? ' active' : ''}`}>AFM</Link>
+              </div>
+              <Link href={progressHref} className="apm-dash-navlink">Progress</Link>
               <div className="apm-dash-breadcrumb">
-                <span className="apm-dash-paper">ACCA APM</span>
+                <span className="apm-dash-paper">ACCA {paper}</span>
                 <span className="apm-dash-sep">·</span>
                 <span className="apm-dash-badge">Drill</span>
               </div>
@@ -81,7 +90,7 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
           {/* Entry cards. Progress is always available; exam-cases + timed-mock only when
               APM_CASES is on (server-gated boolean). */}
           <div className={`apm-dash-cases-row${casesEnabled ? '' : ' apm-dash-cases-row--solo'}`}>
-            <Link href="/acca/progress" className="apm-dash-cases-card">
+            <Link href={progressHref} className="apm-dash-cases-card">
               <div className="apm-dash-cases-text">
                 <span className="apm-dash-cases-title">Your progress</span>
                 <span className="apm-dash-cases-sub">
@@ -115,11 +124,15 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
           </div>
 
           <div className="apm-dash-picker-wrap">
-            <AreaPicker
-              areas={areas}
-              onSelect={handleSelect}
-              loading={navigating}
-            />
+            {areas.length > 0 ? (
+              <AreaPicker
+                areas={areas}
+                onSelect={handleSelect}
+                loading={navigating}
+              />
+            ) : (
+              <p className="apm-dash-empty">No ACCA {paper} areas are published yet — check back shortly.</p>
+            )}
           </div>
 
         </main>
@@ -180,6 +193,11 @@ const CSS = `
 .apm-dash-header-right { display: flex; align-items: center; gap: 16px; }
 .apm-dash-navlink { font-size: 13px; font-weight: 600; color: var(--brand); text-decoration: none; white-space: nowrap; }
 .apm-dash-navlink:hover { text-decoration: underline; }
+.apm-dash-paper-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; background: var(--surface); }
+.apm-dash-paper-tab { font-size: 12px; font-weight: 700; color: var(--text-muted); text-decoration: none; padding: 4px 11px; line-height: 1.5; letter-spacing: .02em; transition: background 0.12s, color 0.12s; }
+.apm-dash-paper-tab + .apm-dash-paper-tab { border-left: 1px solid var(--border); }
+.apm-dash-paper-tab:hover { color: var(--text); }
+.apm-dash-paper-tab.active { background: var(--brand); color: #fff; }
 .apm-dash-breadcrumb {
   display: flex;
   align-items: center;
@@ -328,6 +346,7 @@ const CSS = `
   border-radius: 14px;
   padding: 8px 4px;
 }
+.apm-dash-empty { margin: 0; padding: 28px 24px; text-align: center; font-size: 14px; color: var(--text-muted); }
 
 /* ── Footer ── */
 .apm-dash-footer {
