@@ -2,11 +2,19 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-11.*
+*Last refreshed: 2026-07-12.*
+
+## AFM GO-LIVE — delivery layer (IN FLIGHT, 2026-07-12)
+Audit found the 8 approved AFM drills are **unreachable** if published — every student-facing ACCA route hardcodes `paper_code='APM'`. Sequenced plan APPROVED (full artefact: `ClaudeSend.txt`; decision bank: `APM_BUILD_CONTRACT.md` session 2026-07-12 pt.2). Build order **0 → G3 → G1 → G4 → G2** (G5 interleaved).
+- **Billing = BUNDLE** (ruled): one ACCA entitlement covers all papers; `apm_*` columns stay as the ACCA flag (no entitlement migration); free counter goes PER-PAPER (new `profiles.afm_teach_throughs_used` — the one migration). No AFM Stripe SKU (G6 skipped) — APM payers get AFM = zero-cost beta cohort for demand data.
+- **G3 (teaching branch) = v1-LITE** (ruled): paper-aware system prompt + pre-baked verified reveal. **HOLD: persona string + sample transcript to Grant before commit.**
+- **G5a/G5b HOLD:** access-predicate diff + `afm_teach_throughs_used` migration shown to Grant before either ships.
+- **G7 (publish flip) HOLD:** waits for Grant explicit confirm + APV-batch/`next build` green.
+- **DEFERRED post-launch — v1-FULL live numeric grader.** Wire `lib/acca/numeric-verifier.ts` live (parse student figures → per-component verdicts → diagnosis). Needs a jsonb→runtime registry (serialized `answer_schema` has string refs; runtime `AnswerSchema` needs function-valued `recompute` — `numeric-verifier.ts:16-20`), a figure-entry UI, verdict plumbing. Not needed for go-live: numbers are already frozen in the prose fields at generation. Revisit once real AFM attempts exist (ties into EXAM REHEARSAL phase 4 workings grid).
 
 ## AFM build track (live)
-- **AFM batch-1 (NPV/B1a) — ALL FOUR `status='approved'`** (`published=false`). Round-2 fix-verification cleared; P1 portfolio-NPV line + D2 teaching sentence + D4 "overseas"→"North American" applied; all five gates green on all four. **NEXT GATE: the publish decision** (`published=true` is a separate go-live call — not automatic).
-- **IRR/MIRR (B1c) batch 2 — APPROVED** (`status='approved'`, `published=false`; same state as batch 1). Two hostile rounds (blind GPT) to convergence: round-1 findings 1–5 accepted (FIX 1 conflict fund-choice decision [pattern-level] · FIX 2 · FIX 3 "stated reinvestment rate" · FIX 4 · FIX 5) / 6 rejected; round-2 cleared with one tidy (712cf3aa same-basis dedupe). All gates green, figures unchanged. **NEXT GATE: the publish decision** (separate go-live call). Next calculator after publish: APV (roadmap).
+- **AFM batch-1 (NPV/B1a) — ALL FOUR `status='approved'`** (`published=false`). Round-2 fix-verification cleared; P1 portfolio-NPV line + D2 teaching sentence + D4 "overseas"→"North American" applied; all five gates green on all four. **NEXT GATE: the publish decision** = G7 above (gated on the delivery layer landing).
+- **IRR/MIRR (B1c) batch 2 — APPROVED** (`status='approved'`, `published=false`; same state as batch 1). Two hostile rounds (blind GPT) to convergence: round-1 findings 1–5 accepted (FIX 1 conflict fund-choice decision [pattern-level] · FIX 2 · FIX 3 "stated reinvestment rate" · FIX 4 · FIX 5) / 6 rejected; round-2 cleared with one tidy (712cf3aa same-basis dedupe). All gates green, figures unchanged. **NEXT GATE: the publish decision** = G7 above. Next calculator after publish: APV (roadmap).
 - Round-2 review pack (`docs/reviews/AFM_BATCH1_NPV_ROUND2_REVIEW_PACK.md`) — delete when stale.
 - **Generator IRR path (`draftIrrDrill` + prompt + `--irr-batch`) unbuilt** — build when IRR volume justifies it (batch 2 authored by hand via the shipped calculator, Option A).
 - Banked idle-session: exhaustive journal-lesson-vs-rulebook reconciliation (audit item (c)).
