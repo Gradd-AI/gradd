@@ -32,6 +32,39 @@ export const SUB_AREA_NAME: Record<string, string> = {
   D2: 'Data science and analytics',
 };
 
+/** Authoritative AFM sub-area → syllabus topic (source: scripts/afm-framework.ts).
+ *  AFM and APM LO-code PREFIXES collide (both have A1/B1/…) but mean different topics —
+ *  so labels MUST be selected by paper (see subAreaName), never from one shared map. */
+export const AFM_SUB_AREA_NAME: Record<string, string> = {
+  A1: 'Role of the senior financial adviser',
+  A2: 'Financial strategy formulation',
+  A3: 'ESG and ethical issues',
+  A4: 'International trade and finance',
+  A5: 'Planning for multinationals',
+  A6: 'Dividend policy and transfer pricing',
+  B1: 'Discounted cash flow techniques',
+  B2: 'Option pricing in investment decisions',
+  B3: 'Financing and adjusted present values',
+  B4: 'Valuation and free cash flows',
+  B5: 'International investment and financing',
+  C1: 'Acquisitions and mergers vs other growth',
+  C2: 'Valuation for acquisitions and mergers',
+  C3: 'Regulatory framework and processes',
+  C4: 'Financing acquisitions and mergers',
+  D1: 'Financial reconstruction',
+  D2: 'Business re-organisation',
+  E1: 'The treasury function in multinationals',
+  E2: 'Hedging foreign-exchange risk',
+  E3: 'Hedging interest-rate risk',
+};
+
+/** Paper-aware sub-area label. AFM/APM prefixes collide, so the paper decides which
+ *  syllabus name a code maps to; unknown code falls back to the bare code. */
+export function subAreaName(paper: string, subArea: string): string {
+  const map = paper === 'AFM' ? AFM_SUB_AREA_NAME : SUB_AREA_NAME;
+  return map[subArea] ?? subArea;
+}
+
 // Continuous RAG ramp anchors (warm, muted — not traffic-light harsh). Miss-rate
 // 0.0 = clean sage, 0.5 = amber, 1.0 = rust. Interpolated in RGB so the field reads
 // as one smooth gradient rather than five visible bands.

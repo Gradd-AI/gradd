@@ -15,6 +15,7 @@ import {
   assembleAfmReveal,
   sanitizeAfmWrapper,
 } from '../lib/acca/tutor-personas';
+import { subAreaName } from '../components/org/orgTheme';
 
 let failures = 0;
 function ok(name: string, cond: boolean) {
@@ -95,6 +96,19 @@ ok('assembled body stays verbatim-tailed even when the wrapper had a stray stub'
   assembleAfmReveal('Prose.\n\n---\n\n**WORKED ANSWER**\n**1. Tax-', MODEL_ANSWER).endsWith(MODEL_ANSWER));
 ok('assembled body drops the stray stub (no double worked-answer heading)',
   !assembleAfmReveal('Prose.\n\n---\n\n**WORKED ANSWER**\n**1. Tax-', MODEL_ANSWER).includes('**WORKED ANSWER**'));
+
+// ── (3) G4 label collision: AFM/APM prefixes collide, labels must diverge by paper ──
+// Headline mislabel fix: pre-G4 an AFM 'B1' (DCF) rendered as APM's "Budgetary planning".
+ok('subAreaName: AFM B1 = DCF (not APM budgeting)',
+  subAreaName('AFM', 'B1') === 'Discounted cash flow techniques');
+ok('subAreaName: APM B1 = budgeting (unchanged)',
+  subAreaName('APM', 'B1') === 'Budgetary planning and control');
+ok('subAreaName: same code, different label per paper',
+  subAreaName('AFM', 'B1') !== subAreaName('APM', 'B1'));
+ok('subAreaName: AFM E2 = forex hedging (AFM-only section)',
+  subAreaName('AFM', 'E2') === 'Hedging foreign-exchange risk');
+ok('subAreaName: unknown code falls back to the bare code',
+  subAreaName('AFM', 'Z9') === 'Z9');
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILURE(S)'}`);
 process.exit(failures === 0 ? 0 : 1);

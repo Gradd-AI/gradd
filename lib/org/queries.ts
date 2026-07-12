@@ -11,6 +11,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server';
 import { getMockPaper, MOCK_PAPERS } from '@/lib/acca/mocks';
+import { type AccaPaper } from '@/lib/acca/paper';
 import { computeReadiness, mockScoreFromMarks, DAY_MS, type ReadinessInput, type ReadinessResult } from './readiness';
 
 const WINDOW_MS = 14 * DAY_MS; // recent = last 14d; prior = 14–28d ago
@@ -19,7 +20,9 @@ const WINDOW_MS = 14 * DAY_MS; // recent = last 14d; prior = 14–28d ago
 // markings into mock-case scores vs standalone practice (avoids double-counting).
 const MOCK_CASE_IDS = new Set(MOCK_PAPERS.flatMap((p) => p.case_ids));
 
-/** Sub-area = first two chars of an APM lo_code (e.g. 'D2b' → 'D2'). Product-neutral. */
+/** Sub-area = first two chars of an ACCA lo_code (e.g. 'D2b' → 'D2'). Product-neutral in
+ *  shape, but AFM and APM prefixes COLLIDE (both use A1/B1/…) — so any per-paper view must
+ *  scope its rows to one paper BEFORE bucketing, and label via subAreaName(paper, …). */
 export const subAreaOf = (loCode: string): string => loCode.slice(0, 2);
 
 /** Fictional demo emails encode the name in the local part: derive "Alex Chen". */
@@ -126,13 +129,13 @@ async function emailsForOrg(orgId: string): Promise<Map<string, string>> {
 /** Distinct paper sub-areas from the published drill pool, sorted. The coverage
  *  denominator (and, for the student view, the set to diff against for "not yet
  *  attempted" areas — so the uncovered list only ever offers drillable areas). */
-async function allSubAreas(): Promise<string[]> {
+async function allSubAreas(paper: AccaPaper = 'APM'): Promise<string[]> {
   const sb = createServiceClient();
   const { data } = await sb
     .from('acca_drills')
     .select('lo_code')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true);
   const set = new Set<string>();
@@ -141,8 +144,21 @@ async function allSubAreas(): Promise<string[]> {
 }
 
 /** Count of distinct sub-areas — the coverage denominator. */
-async function totalSubAreas(): Promise<number> {
-  return (await allSubAreas()).length;
+async function totalSubAreas(paper: AccaPaper = 'APM'): Promise<number> {
+  return (await allSubAreas(paper)).length;
+}
+
+/** Map attempted/progressed drill ids → their paper_code, so a per-paper student view can
+ *  scope drill-based rows (acca_drill_attempts / acca_tutor_progress carry no paper column).
+ *  JOIN-based (no migration): id is globally unique, so no status/published filter — an
+ *  attempt implies the drill existed; an unresolved id is simply left unclassified. */
+async function drillPapers(drillIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (drillIds.length === 0) return map;
+  const sb = createServiceClient();
+  const { data } = await sb.from('acca_drills').select('id, paper_code').in('id', drillIds);
+  for (const r of (data as { id: string; paper_code: string }[] | null) ?? []) map.set(r.id, r.paper_code);
+  return map;
 }
 
 // ── Raw per-user rows, batched ────────────────────────────────────────────────
@@ -439,7 +455,9 @@ export interface MyProgress {
 }
 
 /** Topic (and lo_code) for a set of drill ids — used to label stuck drills by title
- *  rather than a bare uuid. Only published APM drills resolve; a stale id is dropped. */
+ *  rather than a bare uuid. id-addressed (globally unique), so NOT paper-scoped — the
+ *  caller's rows are already scoped to one paper. Only currently-published drills resolve;
+ *  a stale/unpublished id is dropped (no resume that would dead-end). */
 async function drillTitles(drillIds: string[]): Promise<Map<string, { topic: string; loCode: string }>> {
   const map = new Map<string, { topic: string; loCode: string }>();
   if (drillIds.length === 0) return map;
@@ -449,7 +467,6 @@ async function drillTitles(drillIds: string[]): Promise<Map<string, { topic: str
     .select('id, topic, lo_code')
     .in('id', drillIds)
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
     .eq('status', 'approved')
     .eq('published', true);
   for (const r of (data as { id: string; topic: string; lo_code: string }[] | null) ?? []) {
@@ -462,10 +479,25 @@ const MAX_WEAK_AREAS = 6;
 const TREND_MIN_ATTEMPTS = 2;  // per window, before we'll call a direction
 const TREND_EPS = 0.15;        // miss-rate delta below this reads as flat (noise guard)
 
-export async function getMyProgress(userId: string, now: number): Promise<MyProgress> {
-  const [subAreas, rows] = await Promise.all([allSubAreas(), rawRowsForUsers([userId])]);
+export async function getMyProgress(userId: string, now: number, paper: AccaPaper = 'APM'): Promise<MyProgress> {
+  const [subAreas, rows] = await Promise.all([allSubAreas(paper), rawRowsForUsers([userId])]);
   const total = subAreas.length;
-  const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
+
+  // Scope drill-based rows to the active paper via a drill_id → paper_code join (the attempt
+  // and progress tables carry no paper column). AFM and APM LO prefixes collide, so this
+  // scoping MUST happen before any subAreaOf bucketing. marks/mocks are APM-only artefacts
+  // today (no AFM cases/mocks exist), so a non-APM view shows none rather than APM's.
+  const drillIds = [...new Set([
+    ...rows.attempts.map((a) => a.drill_id),
+    ...rows.progress.map((p) => p.drill_id),
+  ])].filter(Boolean);
+  const paperByDrill = await drillPapers(drillIds);
+  const attempts = rows.attempts.filter((a) => paperByDrill.get(a.drill_id) === paper);
+  const progress = rows.progress.filter((p) => paperByDrill.get(p.drill_id) === paper);
+  const marks = paper === 'APM' ? rows.marks : [];
+  const mocks = paper === 'APM' ? rows.mocks : [];
+
+  const input = buildInput(now, total, attempts, progress, marks, mocks);
   const readiness = computeReadiness(input);
 
   const recentCut = now - WINDOW_MS;
@@ -477,7 +509,7 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
   interface SA { attempts: number; misses: number; rA: number; rM: number; pA: number; pM: number }
   const tally = new Map<string, SA>();
   const activeDays = new Set<number>();
-  for (const a of rows.attempts) {
+  for (const a of attempts) {
     const sa = subAreaOf(a.lo_code);
     const t = (tally.get(sa) ?? tally.set(sa, { attempts: 0, misses: 0, rA: 0, rM: 0, pA: 0, pM: 0 }).get(sa)!);
     const ts = Date.parse(a.created_at);
@@ -521,7 +553,7 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
   // Stuck = unresolved drills the student has missed ≥2×. Resolve titles so we can show
   // them by name and deep-link a resume (?drill_id=). Drills that no longer resolve as a
   // published APM drill are dropped (can't offer a resume that would dead-end).
-  const stuckRows = rows.progress
+  const stuckRows = progress
     .filter((pr) => !pr.resolved && (pr.miss_count ?? 0) >= 2)
     .sort((a, b) => (b.miss_count ?? 0) - (a.miss_count ?? 0));
   const titles = await drillTitles(stuckRows.map((pr) => pr.drill_id));
@@ -534,7 +566,7 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
 
   // Enough history for the 25-day activity ribbon, the streak, and the recent-attempts
   // list — a single student's full attempt set is small, so no server-side cap needed.
-  const recentAttempts = [...rows.attempts]
+  const recentAttempts = [...attempts]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 40)
     .map((a) => ({ lo_code: a.lo_code, outcome: a.outcome, created_at: a.created_at, drill_id: a.drill_id }));
@@ -542,7 +574,7 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
   // Attempt-log recency, independent of tutor_progress/marks/mocks. With zero attempts
   // this is null → the page shows the first-drill nudge, matching the empty ribbon (a
   // user with pre-log tutor_progress rows but no logged attempts must not read as "active").
-  const lastAttemptAt = rows.attempts.reduce<number | null>((mx, a) => {
+  const lastAttemptAt = attempts.reduce<number | null>((mx, a) => {
     const t = Date.parse(a.created_at);
     return Number.isNaN(t) ? mx : mx == null || t > mx ? t : mx;
   }, null);
@@ -561,8 +593,8 @@ export async function getMyProgress(userId: string, now: number): Promise<MyProg
     weakAreas,
     stuckDrills,
     recentAttempts,
-    marks: rows.marks.map((m) => ({ case_id: m.case_id, awarded: m.professional_marks_awarded, available: m.professional_marks_available, marked_at: m.marked_at })),
-    mocks: rows.mocks.map((m) => ({ mock_id: m.mock_id, completed: m.completed, started_at: m.started_at })),
+    marks: marks.map((m) => ({ case_id: m.case_id, awarded: m.professional_marks_awarded, available: m.professional_marks_available, marked_at: m.marked_at })),
+    mocks: mocks.map((m) => ({ mock_id: m.mock_id, completed: m.completed, started_at: m.started_at })),
   };
 }
 

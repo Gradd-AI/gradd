@@ -5,10 +5,10 @@ import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { ORG_CSS, SUB_AREA_NAME, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
+import { resolvePaper } from '@/lib/acca/paper';
+import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const areaName = (sa: string) => SUB_AREA_NAME[sa] ?? sa;
 
 /** Quiet house-styled lock row — one line of muted text, NOT a button. The single
  *  upgrade button lives once at the foot of the page (see the free-tier upsell). */
@@ -39,7 +39,7 @@ function TrendGlyph({ trend }: { trend: AreaTrend }) {
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
-  title: 'Your progress — APM | Gradd',
+  title: 'Your progress — ACCA | Gradd',
   description: 'See where you stand and jump straight into the next thing to work on.',
 };
 
@@ -79,13 +79,23 @@ function Sparkline({ attempts, now }: { attempts: RecentAttempt[]; now: number }
   );
 }
 
-export default async function ProgressPage() {
+export default async function ProgressPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   // ── Auth guard (per-page, not middleware) ──────────────────────────────────
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) {
     redirect('/acca/auth?next=/acca/progress');
   }
+
+  // Which paper's progress this is. Default APM (unchanged for the existing entry);
+  // the AFM entry (G2) links here with ?paper=AFM. Labels + row-scoping key off it.
+  const { paper: paperParam } = await searchParams;
+  const paper = resolvePaper(typeof paperParam === 'string' ? paperParam : undefined);
+  const areaName = (sa: string) => subAreaName(paper, sa);
 
   // ── Tier check (server-side) ────────────────────────────────────────────────
   // The page stays reachable by every logged-in student — the TIER decides what
@@ -99,7 +109,7 @@ export default async function ProgressPage() {
   const paid = hasActiveAPMAccess(profile ?? {});
 
   const now = Date.now();
-  const p = await getMyProgress(user.id, now);
+  const p = await getMyProgress(user.id, now, paper);
   const hasAssessment = p.marks.length > 0 || p.mocks.length > 0;
 
   return (
@@ -110,7 +120,7 @@ export default async function ProgressPage() {
       <header className="org-header">
         <Link className="wordmark" href="/acca"><img src="/gradd-ai-logo.png" alt="Gradd" /></Link>
         <span className="org-crumb">
-          <Link href="/acca">ACCA APM</Link><span>›</span> Your progress
+          <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`}>ACCA {paper}</Link><span>›</span> Your progress
         </span>
       </header>
 
@@ -190,7 +200,7 @@ export default async function ProgressPage() {
             {p.weakAreas.map((w) => {
               const tone = cellTone(w.missRate);
               return (
-                <Link key={w.subArea} href={`/acca/tutor?area=${encodeURIComponent(w.subArea)}`} className="prog-card">
+                <Link key={w.subArea} href={`/acca/tutor?area=${encodeURIComponent(w.subArea)}&paper=${paper}`} className="prog-card">
                   <span className="prog-card-dot" style={{ background: tone.bg }} aria-hidden="true" />
                   <span className="prog-card-body">
                     <span className="prog-card-title">{areaName(w.subArea)}</span>
@@ -270,7 +280,7 @@ export default async function ProgressPage() {
           </p>
           <div className="org-kv">
             {p.uncoveredSubAreas.map((sa) => (
-              <Link key={sa} href={`/acca/tutor?area=${encodeURIComponent(sa)}`} className="pill prog-pill-link">
+              <Link key={sa} href={`/acca/tutor?area=${encodeURIComponent(sa)}&paper=${paper}`} className="pill prog-pill-link">
                 {areaName(sa)} <span className="prog-pill-cta">start here →</span>
               </Link>
             ))}
