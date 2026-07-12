@@ -2,6 +2,12 @@ import { NextResponse } from 'next/server';
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import {
+  systemFor,
+  REVEAL_SYSTEM,
+  REVEAL_AFM_WRAPPER_SYSTEM,
+  assembleAfmReveal,
+} from '@/lib/acca/tutor-personas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -178,23 +184,10 @@ function isCorrectVerdict(diagnosis: string): boolean {
 }
 
 // ── Ezra persona ──────────────────────────────────────────────────────────────
-
-const EZRA_SYSTEM =
-  'You are Ezra, an APM tutor who knows exactly how ACCA APM is marked. ' +
-  'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +
-  'fixable reasons, not through lack of knowledge. ' +
-  'Diagnostic frame: APM candidates know the models. They lose marks on APPLICATION ' +
-  '(failing to deploy the model on the specific scenario facts) and EVALUATION ' +
-  '(failing to give a supported professional judgement when the verb demands one), ' +
-  'and by stopping at intellectual level 2 when the verb demanded level 3. ' +
-  'Use the command verb and the ACCA intellectual level it demands (1, 2, or 3) to orient ' +
-  'the student on what the question is really asking — not to deliver a verdict on them. ' +
-  'ACCA APM uses intellectual levels 1/2/3 — never use IB AO framing ("AO1", "AO5", or similar). ' +
-  'Professional scepticism — questioning assumptions, naming commercial risks, ' +
-  'identifying constraints the model surfaces — is a substantive analytical move ' +
-  'you teach explicitly, not a soft add-on. ' +
-  'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
-  "No generic praise. Never complete the student's answer.";
+// Paper-scoped personas + the AFM earned-reveal assembly live in
+// lib/acca/tutor-personas.ts (extracted for isolated fixtures). systemFor(paper)
+// selects the APM or AFM conversational register for call3_*/call_warm; the reveal
+// helpers are used by call4_reveal below.
 
 // ── Anthropic client ──────────────────────────────────────────────────────────
 
@@ -288,6 +281,7 @@ async function call3_hint(
   attempt: string,
   diagnosis: string,
   verbLevel: string,
+  paper: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -296,7 +290,7 @@ async function call3_hint(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 350,
-    system: EZRA_SYSTEM,
+    system: systemFor(paper),
     messages: [
       {
         role: 'user',
@@ -325,6 +319,7 @@ async function call3_teach(
   diagnosis: string,
   verbLevel: string,
   offerReveal: boolean,
+  paper: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -338,7 +333,7 @@ async function call3_teach(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 400, // physical cap on lecture sprawl (was 600); wording caps are only nudges
-    system: EZRA_SYSTEM,
+    system: systemFor(paper),
     messages: [
       {
         role: 'user',
@@ -370,6 +365,7 @@ async function call3_confirm(
   context: string,
   attempt: string,
   verbLevel: string,
+  paper: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -378,7 +374,7 @@ async function call3_confirm(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
-    system: EZRA_SYSTEM,
+    system: systemFor(paper),
     messages: [
       {
         role: 'user',
@@ -555,12 +551,13 @@ async function call_warm(
   message: string,
   question: string,
   context: string,
+  paper: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 250,
-    system: EZRA_SYSTEM,
+    system: systemFor(paper),
     messages: [
       {
         role: 'user',
@@ -580,24 +577,54 @@ async function call_warm(
 // earned-reveal branch in §7, gated by ALL of: APM_EARNED_REVEAL flag + explicit
 // REVEAL_PHRASES + miss_count >= 2 (persisted, reload-proof). Do NOT call it from any other
 // branch, and do NOT pass model_answer to any call3_*. It uses its OWN system prompt — NOT
-// EZRA_SYSTEM, whose "never complete the student's answer" guardrail is exactly what the
-// student has earned past here.
-const REVEAL_SYSTEM =
-  'You are Ezra, an APM tutor. The student has genuinely attempted this drill and worked ' +
-  'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
-  'top-band answer is built: first credit, specifically, what they already had right, then ' +
-  'walk the moves they were missing, INCLUDING the figures and the conclusion (withholding is ' +
-  'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
-  'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
-
+// the conversational persona, whose "never complete the student's answer" guardrail is
+// exactly what the student has earned past here.
+//
+// TWO paper-scoped designs:
+//  • APM  → model-authored walkthrough of model_answer (REVEAL_SYSTEM), as before.
+//  • AFM  → design "B" (ruled 2026-07-12): the model writes ONLY a short framing wrapper
+//    (REVEAL_AFM_WRAPPER_SYSTEM — no figures), and assembleAfmReveal appends the
+//    code-verified model_answer VERBATIM. Figure integrity is structural (byte-equality,
+//    fixture-enforced), and the multi-table worked answer is never truncated by a token cap.
 async function call4_reveal(
   question: string,
   context: string,
   attempt: string,
   diagnosis: string,
   modelAnswer: string,
+  paper: string,
+  fullReveal: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+
+  if (paper === 'AFM') {
+    // Authored misconception reframe (AFM full_reveal — pre-baked, 3–5 sentences). Anchors the
+    // wrapper's "name the misconception" beat. Empty when the column is null → omitted.
+    const reframeLine = fullReveal
+      ? `Authored misconception reframe (name this and correct the thinking):\n${fullReveal}\n\n`
+      : '';
+    const res = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 300, // wrapper only — the worked answer is appended verbatim, not generated
+      system: REVEAL_AFM_WRAPPER_SYSTEM,
+      messages: [
+        {
+          role: 'user',
+          content:
+            `${contextLine}Question: ${question}\n\n` +
+            `Their last attempt: ${attempt}\n\n` +
+            `The gap they kept missing: ${diagnosis}\n\n` +
+            reframeLine +
+            'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
+            'misconception, and point them to a fresh application. Do NOT include any figures or the ' +
+            'worked answer; the verified worked answer is appended verbatim below your message.',
+        },
+      ],
+    });
+    return assembleAfmReveal(extractText(res), modelAnswer);
+  }
+
+  // APM — model-authored walkthrough of the stored model_answer (unchanged pre-G3 behaviour).
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 700,
@@ -674,7 +701,7 @@ export async function POST(request: Request): Promise<Response> {
   // AFM route inheriting a hardcoded 'APM'. Behaviour unchanged — APM passes 'APM'.
   const drillBase = (paperCode: string) => supabase
     .from('acca_drills')
-    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code')
+    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal')
     .eq('exam_board', 'ACCA')
     .eq('paper_code', paperCode)
     .eq('status', 'approved')
@@ -691,6 +718,14 @@ export async function POST(request: Request): Promise<Response> {
   const question          = drill.question as string;
   const context           = (drill.context_text as string | null) ?? '';
   const storedModelAnswer = (drill.model_answer as string | null) ?? '';
+  // Paper of the drill just fetched — the ONLY thing that separates AFM from APM in the
+  // shared acca_drills table (LO codes collide). Drives the paper-scoped teaching persona
+  // (systemFor / revealSystemFor). Until G1 threads a paper into the fetch, drillBase is
+  // still 'APM'-scoped so this resolves to 'APM' in production; the branch is live and
+  // testable by fetching an AFM row. Unknown/null → 'APM' (established default).
+  const paper             = (drill.paper_code as string | null) ?? 'APM';
+  // AFM full_reveal (pre-baked misconception reframe); null for APM drills → '' → omitted.
+  const fullReveal        = (drill.full_reveal as string | null) ?? '';
 
   // Authored mark-scheme metadata (redesign item 1 / Principle 5): feed Ezra the
   // criterion to name instead of inferring verb/level from the question text.
@@ -843,7 +878,7 @@ export async function POST(request: Request): Promise<Response> {
       // no new charge. Marks the drill resolved. No miss++, no teachThroughDelivered.
       intent = 'reveal';
       messageKind = 'reveal';
-      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer);
+      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal);
       newResolved = true;
     } else if (wantsReveal) {
       // Reveal requested but NOT earned (missCount < 2): static refusal gate. model_answer is
@@ -856,7 +891,7 @@ export async function POST(request: Request): Promise<Response> {
       messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, paper);
       teachThroughDelivered = true;
     } else {
       // Classify only when the layer is on; otherwise force 'attempt' (= legacy behaviour:
@@ -868,7 +903,7 @@ export async function POST(request: Request): Promise<Response> {
 
       if (classified !== 'attempt') {
         // Warm, non-marking path: no miss++, no cap, no teach-through; progress untouched.
-        ezraResponse = await call_warm(classified, student_message, question, context);
+        ezraResponse = await call_warm(classified, student_message, question, context, paper);
         messageKind = classified === 'question' ? 'answer'
                     : classified === 'confusion' ? 'coaching' : 'chat';
       } else {
@@ -888,7 +923,7 @@ export async function POST(request: Request): Promise<Response> {
         if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
-          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel);
+          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper);
           messageKind        = 'correct';
           attemptOutcome     = 'correct';
           newLastRealAttempt = student_message;
@@ -904,10 +939,10 @@ export async function POST(request: Request): Promise<Response> {
           attemptOutcome   = 'miss';
 
           if (newMissCount === 1) {
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper);
             messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
+            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, paper);
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }
