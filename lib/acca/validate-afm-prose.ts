@@ -112,9 +112,14 @@ export function lintCompleteness(question: string, modelAnswer: string): ProseIs
   const q = (question || '').toLowerCase();
   const a = (modelAnswer || '').toLowerCase();
   const demands: { re: RegExp; needs: RegExp; label: string }[] = [
-    { re: /sensitiv/,                                  needs: /sensitiv/,                            label: 'sensitivity analysis' },
-    { re: /profitability index|capital ration|\brank/, needs: /profitability index|capital ration/,  label: 'a profitability-index / capital-rationing ranking' },
-    { re: /net present value|\bnpv\b/,                  needs: /\bnpv\b|net present value/,           label: 'an NPV appraisal' },
+    { re: /sensitiv/,                                          needs: /sensitiv/,                                              label: 'sensitivity analysis' },
+    { re: /profitability index|capital ration/,               needs: /profitability index|capital ration/,                    label: 'a profitability-index / capital-rationing ranking' },
+    // generic "rank/ranking" (e.g. mutually-exclusive IRR-vs-NPV) — the answer must actually
+    // rank/prefer, not necessarily via a PI table.
+    { re: /\brank(?:ing|ed)?\b/,                               needs: /\brank(?:ing|ed)?\b|prefer|mutually exclusive|profitability index|capital ration/, label: 'a ranking of the alternatives' },
+    { re: /modified internal rate of return|\bmirr\b/,        needs: /\bmirr\b|modified internal rate of return/,             label: 'a MIRR calculation' },
+    { re: /internal rate of return|\birr\b/,                   needs: /\birr\b|internal rate of return/,                        label: 'an IRR appraisal' },
+    { re: /net present value|\bnpv\b/,                         needs: /\bnpv\b|net present value/,                             label: 'an NPV appraisal' },
   ];
   for (const d of demands) {
     if (d.re.test(q) && !d.needs.test(a)) {

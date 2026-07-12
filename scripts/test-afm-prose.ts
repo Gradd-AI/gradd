@@ -45,6 +45,12 @@ check('P5: demanded sensitivity not delivered',
   lintCompleteness('Appraise by NPV and assess sensitivity.', 'NPV appraisal only. NPV is positive.').length, 1, ['demanded-element-not-delivered']);
 check('P5: NPV demanded and delivered',
   lintCompleteness('Appraise the project by NPV.', 'NPV = 5.0m. Accept.').length, 0);
+check('P5: mutually-exclusive ranking demanded + delivered (not a PI table)',
+  lintCompleteness('Appraise Line A by NPV and IRR and rank it against Line B.', 'IRR 25%. NPV 12m. Ranking against the mutually exclusive alternative: Line B is preferred on NPV.').length, 0);
+check('P5: IRR demanded but not delivered',
+  lintCompleteness('Appraise the project by internal rate of return.', 'NPV = 5m. Accept.').length, 1, ['demanded-element-not-delivered']);
+check('P5: IRR + MIRR demanded and delivered',
+  lintCompleteness('Appraise by IRR and MIRR.', 'IRR 21%. MIRR 17%. Accept.').length, 0);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL AFM-PROSE FIXTURES PASS' : `${failures} AFM-PROSE FIXTURE(S) FAILED`);
