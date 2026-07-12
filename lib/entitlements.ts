@@ -11,7 +11,7 @@
 // Phase-1 note (banked debt): subject keeps its 'LC_BUSINESS' default (no migration this
 // pass). The discrimination therefore lives HERE, not in the schema.
 
-import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { hasActiveACCAAccess } from '@/lib/acca/access';
 
 export type Product = 'LC' | 'IB' | 'APM';
 
@@ -71,8 +71,9 @@ export function resolveProducts(profile: ProfileSignals, ctx: ResolveContext): E
     else products.add('LC');
   }
 
-  // APM — active sub or unexpired pass (same predicate cases/mock/progress use).
-  if (hasActiveAPMAccess(profile)) products.add('APM');
+  // ACCA access — active sub or unexpired pass (bundle: one entitlement, all ACCA papers).
+  // The 'APM' product is the ACCA-access grant; AFM is bundled under it (no separate SKU).
+  if (hasActiveACCAAccess(profile)) products.add('APM');
 
   // Home: LC/IB holders → the LC/IB dashboard; APM-only → the APM home; no products →
   // the host's free-funnel entry (gradd.ai = /acca, gradd.ie = /). Never /dashboard for a

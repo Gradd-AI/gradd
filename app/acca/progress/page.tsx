@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { hasActiveACCAAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
 
@@ -99,14 +99,14 @@ export default async function ProgressPage({
 
   // ── Tier check (server-side) ────────────────────────────────────────────────
   // The page stays reachable by every logged-in student — the TIER decides what
-  // renders. Same gate cases/mock use (hasActiveAPMAccess). Own profile row read
+  // renders. Same gate cases/mock use (hasActiveACCAAccess). Own profile row read
   // via the session client (RLS: student reads own row).
   const { data: profile } = await authClient
     .from('profiles')
     .select('apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
-  const paid = hasActiveAPMAccess(profile ?? {});
+  const paid = hasActiveACCAAccess(profile ?? {}); // bundle-wide ACCA access (all papers)
 
   const now = Date.now();
   const p = await getMyProgress(user.id, now, paper);

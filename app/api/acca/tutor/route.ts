@@ -9,6 +9,7 @@ import {
   assembleAfmReveal,
 } from '@/lib/acca/tutor-personas';
 import { resolvePaper } from '@/lib/acca/paper';
+import { hasActiveACCAAccess } from '@/lib/acca/access';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -724,9 +725,8 @@ export async function POST(request: Request): Promise<Response> {
   const storedModelAnswer = (drill.model_answer as string | null) ?? '';
   // Paper of the drill just fetched — the ONLY thing that separates AFM from APM in the
   // shared acca_drills table (LO codes collide). Drives the paper-scoped teaching persona
-  // (systemFor / revealSystemFor). Until G1 threads a paper into the fetch, drillBase is
-  // still 'APM'-scoped so this resolves to 'APM' in production; the branch is live and
-  // testable by fetching an AFM row. Unknown/null → 'APM' (established default).
+  // (systemFor) and the per-paper free counter (capColumn, §4). Read from the fetched row
+  // (G1's id-path fetch is paper-agnostic). Unknown/null → 'APM' (established default).
   const paper             = (drill.paper_code as string | null) ?? 'APM';
   // AFM full_reveal (pre-baked misconception reframe); null for APM drills → '' → omitted.
   const fullReveal        = (drill.full_reveal as string | null) ?? '';
@@ -752,17 +752,18 @@ export async function POST(request: Request): Promise<Response> {
   ].filter(Boolean).join('\n');
 
   // ── 4. Read profile (cap counter + subscription state) ────────────────────
+  // Per-paper free counter (G5b, bundle billing): APM and AFM meter independently —
+  // 3 free teach-throughs per paper, NOT shared. capColumn selects the paper's counter.
+  const capColumn = paper === 'AFM' ? 'afm_teach_throughs_used' : 'apm_teach_throughs_used';
   const { data: profile } = await supabase
     .from('profiles')
-    .select('apm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
+    .select('apm_teach_throughs_used, afm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
 
-  const usedCount = (profile?.apm_teach_throughs_used as number | null) ?? 0;
-  const hasActiveAccess =
-    profile?.apm_subscription_status === 'active' ||
-    (profile?.apm_pass_expires_at &&
-      new Date(profile.apm_pass_expires_at as string) > new Date());
+  const usedCount = ((profile as Record<string, unknown> | null)?.[capColumn] as number | null) ?? 0;
+  // Access is bundle-wide (all ACCA papers) — the apm_* flag is the de-facto ACCA entitlement.
+  const hasActiveAccess = hasActiveACCAAccess(profile ?? {});
 
   // ── 5. Establish model answer + session continuity ─────────────────────────
   let modelAnswer: string;
@@ -974,7 +975,7 @@ export async function POST(request: Request): Promise<Response> {
     const newCount = usedCount + 1;
     await supabase
       .from('profiles')
-      .update({ apm_teach_throughs_used: newCount })
+      .update({ [capColumn]: newCount })
       .eq('id', user.id);
     newTeachThroughCounted = true;
     capNowHit = newCount >= 3;

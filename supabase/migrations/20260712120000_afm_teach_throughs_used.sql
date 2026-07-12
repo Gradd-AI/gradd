@@ -1,0 +1,36 @@
+-- =============================================================================
+-- 20260712120000_afm_teach_throughs_used.sql
+-- Per-paper free-tier teach-through counter for AFM (bundle billing, G5b).
+-- =============================================================================
+-- WHY: Billing is BUNDLE — one ACCA entitlement covers all papers (ruled 2026-07-12),
+-- and the apm_* subscription columns stay as the de-facto ACCA access flag (NO new
+-- entitlement columns). But the FREE allowance is PER-PAPER: 3 free teach-throughs on
+-- APM AND 3 on AFM, not 3 shared. The existing profiles.apm_teach_throughs_used counts
+-- APM; this adds the AFM counterpart so the two papers meter independently.
+--
+-- COLUMN:
+--  * afm_teach_throughs_used — integer free-tier teach-through counter for AFM; read as
+--    `number ?? 0`, incremented by the tutor route when a teach-through is delivered on a
+--    paper_code='AFM' drill. Mirrors apm_teach_throughs_used exactly. Default 0.
+--
+-- ORDERING (IMPORTANT): apply THIS migration BEFORE deploying the G5b code. The tutor
+-- route/page select and update `afm_teach_throughs_used`; on a DB without the column those
+-- reads/writes error at runtime. Migration first, then merge.
+--
+-- `add column if not exists` is idempotent and safe to re-run.
+-- =============================================================================
+
+alter table profiles add column if not exists afm_teach_throughs_used integer not null default 0;
+
+-- =============================================================================
+-- VERIFICATION (run after applying):
+--   select column_name, data_type, column_default, is_nullable
+--   from information_schema.columns
+--   where table_name = 'profiles' and column_name = 'afm_teach_throughs_used';
+--   -- expect 1 row: integer, default 0, NOT NULL.
+--
+--   -- spot-check the two counters coexist:
+--   select column_name from information_schema.columns
+--   where table_name = 'profiles' and column_name like '%teach_throughs_used';
+--   -- expect 2 rows: apm_teach_throughs_used, afm_teach_throughs_used.
+-- =============================================================================

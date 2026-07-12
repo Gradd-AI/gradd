@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper } from '@/lib/acca/paper';
+import { hasActiveACCAAccess } from '@/lib/acca/access';
 import TutorChat from './TutorChat';
 
 export const metadata: Metadata = {
@@ -140,17 +141,16 @@ export default async function APMTutorPage({
   }
 
   // ── Read cap state from profiles ───────────────────────────────────────────
+  // Per-paper free counter (G5b): the AFM and APM allowances meter independently.
+  const capColumn = paper === 'AFM' ? 'afm_teach_throughs_used' : 'apm_teach_throughs_used';
   const { data: profile } = await supabase
     .from('profiles')
-    .select('apm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
+    .select('apm_teach_throughs_used, afm_teach_throughs_used, apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
 
-  const usedCount = (profile?.apm_teach_throughs_used as number | null) ?? 0;
-  const hasActiveAccess =
-    profile?.apm_subscription_status === 'active' ||
-    (profile?.apm_pass_expires_at &&
-      new Date(profile.apm_pass_expires_at as string) > new Date());
+  const usedCount = ((profile as Record<string, unknown> | null)?.[capColumn] as number | null) ?? 0;
+  const hasActiveAccess = hasActiveACCAAccess(profile ?? {}); // bundle-wide ACCA access
   const initialCapHit = !hasActiveAccess && usedCount >= 3;
 
   return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} />;
