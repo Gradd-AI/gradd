@@ -27,6 +27,13 @@ territory — follow the links for depth. Keep it under ~150 lines.
   `supabase/migrations/`, AND apply it by hand in the Supabase SQL Editor as ONE block,
   followed by verification queries that prove it landed. There is no automated migration
   runner. (Backfill debt: see `memory/project_migration_hygiene`.)
+- **Publish flips: reconcile DB against the journal FIRST.** Before any `published=true`
+  (or `status='approved'`) content flip, query the DB's actual approved-set and reconcile
+  it against the journal's reviewed-set. A mismatch (a row `approved` with no review record,
+  or a reviewed row missing) is a HARD STOP — surface it, never flip past it. Flip by
+  EXPLICIT id (never a bare `WHERE status='approved'`), demote any un-reviewed `approved`
+  rows back to `candidate` in the same transaction, and prove it with pre/post counts. A
+  status written without a review record is a pipeline leak — find and journal its source.
 - **Verify every file write by reading it back** before reporting it done; report the real
   path. (Two "the file is missing" incidents this project traced to unverified writes /
   scratchpad-vs-repo path confusion.)
