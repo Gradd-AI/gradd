@@ -9,7 +9,7 @@ Audit found the 8 approved AFM drills are **unreachable** if published — every
 - **Billing = BUNDLE** (ruled): one ACCA entitlement covers all papers; `apm_*` columns stay as the ACCA flag (no entitlement migration); free counter goes PER-PAPER (new `profiles.afm_teach_throughs_used` — the one migration). No AFM Stripe SKU (G6 skipped) — APM payers get AFM = zero-cost beta cohort for demand data.
 - **G3 (teaching branch) = v1-LITE** (ruled): paper-aware system prompt + pre-baked verified reveal. **HOLD: persona string + sample transcript to Grant before commit.**
 - **G5a/G5b HOLD:** access-predicate diff + `afm_teach_throughs_used` migration shown to Grant before either ships.
-- **G7 (publish flip) HOLD:** waits for Grant explicit confirm + APV-batch/`next build` green.
+- **G7 (publish flip) HOLD:** waits for Grant explicit confirm + APV-batch/`next build` green. **Mandatory exit criterion (Grant 2026-07-12):** immediately after the flip, capture a LITERAL authenticated HTTP AFM transcript through the live route and deliver to Grant — G1's e2e was deliberately partial (published gate relaxed), so G7 closes it and is not "done" until that real run lands.
 - **DEFERRED post-launch — v1-FULL live numeric grader.** Wire `lib/acca/numeric-verifier.ts` live (parse student figures → per-component verdicts → diagnosis). Needs a jsonb→runtime registry (serialized `answer_schema` has string refs; runtime `AnswerSchema` needs function-valued `recompute` — `numeric-verifier.ts:16-20`), a figure-entry UI, verdict plumbing. Not needed for go-live: numbers are already frozen in the prose fields at generation. Revisit once real AFM attempts exist (ties into EXAM REHEARSAL phase 4 workings grid).
 
 ## AFM build track (live)
