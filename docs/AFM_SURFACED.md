@@ -6,7 +6,7 @@
 
 ## AFM build track (live)
 - **AFM batch-1 (NPV/B1a) — ALL FOUR `status='approved'`** (`published=false`). Round-2 fix-verification cleared; P1 portfolio-NPV line + D2 teaching sentence + D4 "overseas"→"North American" applied; all five gates green on all four. **NEXT GATE: the publish decision** (`published=true` is a separate go-live call — not automatic).
-- **IRR/MIRR (B1c) batch 2 — round-1 ADJUDICATED (blind GPT), fixes applied, awaiting round-2 verification.** 4 kinds `status='candidate'`. Findings 1–5 accepted (FIX 1 conflict fund-choice decision [pattern-level] · FIX 2 no invented demand · FIX 3 "stated reinvestment rate" · FIX 4 two-risk separation · FIX 5 hint), 6 rejected; all four re-gated green, figures unchanged. **Delta pack `docs/reviews/AFM_IRR_BATCH2_REVIEW_PACK_R2.md`** (amended fields only). **No flip; nothing pushed to main until round-2 clears + build green.**
+- **IRR/MIRR (B1c) batch 2 — APPROVED** (`status='approved'`, `published=false`; same state as batch 1). Two hostile rounds (blind GPT) to convergence: round-1 findings 1–5 accepted (FIX 1 conflict fund-choice decision [pattern-level] · FIX 2 · FIX 3 "stated reinvestment rate" · FIX 4 · FIX 5) / 6 rejected; round-2 cleared with one tidy (712cf3aa same-basis dedupe). All gates green, figures unchanged. **NEXT GATE: the publish decision** (separate go-live call). Next calculator after publish: APV (roadmap).
 - Round-2 review pack (`docs/reviews/AFM_BATCH1_NPV_ROUND2_REVIEW_PACK.md`) — delete when stale.
 - **Generator IRR path (`draftIrrDrill` + prompt + `--irr-batch`) unbuilt** — build when IRR volume justifies it (batch 2 authored by hand via the shipped calculator, Option A).
 - Banked idle-session: exhaustive journal-lesson-vs-rulebook reconciliation (audit item (c)).

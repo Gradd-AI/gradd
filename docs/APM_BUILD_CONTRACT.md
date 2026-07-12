@@ -601,7 +601,7 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 | 5 | Standard hint asked about a sensitivity margin that is not a graded component | ACCEPTED | FIX 5: hint rewritten to the cash-flow + cost-of-capital reliability challenge |
 | 6 | MIRR aside insufficiently subordinated | **REJECTED** | Existing text already subordinates the MIRR aside — no change |
 
-All four re-gated green (5-field rule), **figures unchanged** (IRR 11.97 / 21.42 / 9.48 / 28.26%, MIRR 17.48%, NPV 7.9 / 30.6 / −32.7 / 11.6). Delta pack `docs/reviews/AFM_IRR_BATCH2_REVIEW_PACK_R2.md` (amended fields only). **Awaiting round-2 verification; no flip. Nothing pushed to main.**
+All four re-gated green (5-field rule), **figures unchanged** (IRR 11.97 / 21.42 / 9.48 / 28.26%, MIRR 17.48%, NPV 7.9 / 30.6 / −32.7 / 11.6). Delta pack `docs/reviews/AFM_IRR_BATCH2_REVIEW_PACK_R2.md` (amended fields only). **Round-2 verification CLEARED** (blind GPT) with one accepted tidy-up — drill `712cf3aa` Step-7 advice: the same-basis phrase was deduped to appear exactly once (verify-residual + confirm-same-basis-and-residual-value-assumptions in a single closing sentence). Re-gated green. **FLIPPED: all four batch-2 drills `status='approved'`, `published=false`** (publishing is a separate go-live decision — not in this move). **Pushed to main** — build green + adjudication complete = push gate met. Batch 2 now matches batch 1's state (approved / unpublished).
 
 > **JOURNAL CORRECTION:** the adversarial reviewer is a **blind GPT** (separate model, given the AFM syllabus PDF), NOT "fresh Claude" as an earlier line in this bank / the prior close said. Corrected here on record.
 
