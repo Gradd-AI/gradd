@@ -584,6 +584,27 @@ STANDING RISK noted: APM_CASES=1 is set on Vercel PREVIEW and Aldermere is appro
 
 ---
 
+## Session 2026-07-12 — AFM batch 2 (IRR/MIRR) generated, awaiting adversarial review
+
+**IRR/MIRR B1c batch generated** — 4 candidate drills (`status='candidate'`, `published=false`), authored + code-built via the shipped calculator (`6507723`, Option A — generator IRR path deliberately unbuilt), all five gates green. Steers ruled: sectors UK offshore wind (GBP, standard, full-hostility exemplar) / Australian lithium processing (AUD, MIRR reinvestment critique) / SA gold mine with mid-life pit-cutback outflow (ZAR, non-conventional sign change) / US two-plant mutually-exclusive (USD, IRR-vs-NPV conflict). Design rulings binding: `npv_lo`/`npv_hi` GRADED (OFR carry on the wrong-trial-NPV error), `pv_outflows` = param. Trial rates auto-bracketed at 5% (examiner-orthodox). Results: standard IRR 11.97% (marginal accept vs 10% CoC) · MIRR IRR 21.42% / MIRR 17.48% (MIRR<IRR, reinvestment critique) · non-conventional NPV −32.7 REJECT (multiple-IRR → NPV governs) · conflict Line A IRR 28.26% / NPV 11.6 vs given Line B 16% / 28 → NPV wins → Line B. Drill IDs `796651c2` (standard), `83b537bd` (mirr), `003ab45c` (non-conv), `712cf3aa` (conflict).
+
+**P5 lint refined** (`lib/acca/validate-afm-prose.ts`): split the PI/capital-rationing demand from a generic rank/ranking demand (a mutually-exclusive IRR-vs-NPV ranking is delivered without a PI table) + added IRR and MIRR delivery demands. Figure-integrity note: rate (%) components render as `toFixed(2)%` not `fmt1` (money) — the batch gate checks both. `scripts/test-afm-prose.ts` extended.
+
+**Round-1 adversarial review (blind GPT + AFM syllabus PDF) — ADJUDICATED.** Export `docs/reviews/AFM_IRR_BATCH2_REVIEW_PACK.md` (full hostility on kind-1, siblings recomputed). 6 findings: **1–5 accepted, 6 rejected.**
+
+| # | Finding (round-1) | Verdict | Resolution |
+|---|---|---|---|
+| 1 | Conflict decision gave a bare accept on Line A's positive standalone NPV, not the funding choice between the mutually-exclusive lines | ACCEPTED | FIX 1 (pattern-level, `buildIrrModelAnswer`): conflict decision states the funding choice + names the winner; `project_label` added; Step-5 rows → Line A/Line B; gate + `test-irr.ts` fixture added |
+| 2 | Conflict advice referenced a demand assumption the scenario never states | ACCEPTED | FIX 2: replaced with verify-residual + confirm-same-basis |
+| 3 | MIRR prose called the reinvestment rate "actual/realistic" when the scenario states an ASSUMED rate | ACCEPTED | FIX 3 (pattern-level MIRR builder step + advice/reveal): "stated reinvestment rate" |
+| 4 | MIRR context texture conflated cash-quantity risk with reinvestment-rate risk | ACCEPTED | FIX 4: texture (1) + reveal second-trap separate the two risks |
+| 5 | Standard hint asked about a sensitivity margin that is not a graded component | ACCEPTED | FIX 5: hint rewritten to the cash-flow + cost-of-capital reliability challenge |
+| 6 | MIRR aside insufficiently subordinated | **REJECTED** | Existing text already subordinates the MIRR aside — no change |
+
+All four re-gated green (5-field rule), **figures unchanged** (IRR 11.97 / 21.42 / 9.48 / 28.26%, MIRR 17.48%, NPV 7.9 / 30.6 / −32.7 / 11.6). Delta pack `docs/reviews/AFM_IRR_BATCH2_REVIEW_PACK_R2.md` (amended fields only). **Awaiting round-2 verification; no flip. Nothing pushed to main.**
+
+> **JOURNAL CORRECTION:** the adversarial reviewer is a **blind GPT** (separate model, given the AFM syllabus PDF), NOT "fresh Claude" as an earlier line in this bank / the prior close said. Corrected here on record.
+
 ## Session 2026-07-11 — batch 1 approved, knowledge system rebuilt, flagship specified
 
 **1. AFM BATCH 1 APPROVED** — first four production AFM drills (B1a NPV) through two hostile rounds to convergence: round-2 cleared all 10 findings, final edits (portfolio-NPV line CODE-INJECTED completing P1 — allocation answers always emit with-vs-without portfolio NPV, doctrine updated; "overseas"→"North American" sweep; indivisibility teaching sentence) at `8c11eb5`/`2e11a55`; all four `status='approved'` `published=false`, full gate table green. IRR/MIRR calculator + fixtures shipped (`6507723`); 4-kind batch (standard IRR / MIRR reinvestment critique / non-conventional sign-change → prefer NPV-MIRR / IRR-vs-NPV ranking conflict) approved with design rulings: `npv_lo`/`npv_hi` = graded components (OFR carry on the wrong-trial-NPV error), `pv_outflows` = param. Batch generation + its two pending steers (sectors; author-vs-generator) = NEXT SESSION's opener.
