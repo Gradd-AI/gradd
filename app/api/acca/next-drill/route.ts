@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { resolvePaper, type AccaPaper } from '@/lib/acca/paper';
 
 export async function GET(request: Request): Promise<Response> {
   const authClient = await createServerClient();
@@ -11,6 +12,9 @@ export async function GET(request: Request): Promise<Response> {
   const area    = searchParams.get('area');
   const drillId = searchParams.get('drill_id');   // item 4: exclude current DRILL, not LO
   const INTERLEAVE_ENABLED = process.env.APM_INTERLEAVE === '1';
+  // Paper to stay within on "try another" — AFM/APM LO codes collide, so every tier must
+  // scope by paper. Default APM (client threads ?paper= from G2 onward).
+  const paper = resolvePaper(searchParams.get('paper'));
 
   if (!lo && !area) {
     return NextResponse.json({ error: 'lo or area required' }, { status: 400 });
@@ -24,7 +28,7 @@ export async function GET(request: Request): Promise<Response> {
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
       .eq('exam_board', 'ACCA')
-      .eq('paper_code', 'APM')
+      .eq('paper_code', paper)
       .eq('status', 'approved')
       .eq('published', true)
       .like('lo_code', `${area}%`)
@@ -39,7 +43,7 @@ export async function GET(request: Request): Promise<Response> {
   // ── Interleave mode (P3 / item 4) — section-anchored mixed pick. Gated; needs drill_id.
   // Flag off OR no drill_id → falls through to the legacy same-sub-area path below (exact rollback).
   if (INTERLEAVE_ENABLED && lo && drillId) {
-    const picked = await pickInterleaved(supabase, { lo, drillId, userId: user.id });
+    const picked = await pickInterleaved(supabase, { lo, drillId, userId: user.id, paper });
     if (picked) return NextResponse.json(picked);
     // null → nothing to serve at all; fall through to the legacy/terminal handling (404 contract)
   }
@@ -52,7 +56,7 @@ export async function GET(request: Request): Promise<Response> {
     .from('acca_drills')
     .select('id, lo_code, topic, question, context_text')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .neq('lo_code', lo)
@@ -69,7 +73,7 @@ export async function GET(request: Request): Promise<Response> {
     .from('acca_drills')
     .select('id, lo_code, topic, question, context_text')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .neq('lo_code', lo)
@@ -87,7 +91,7 @@ export async function GET(request: Request): Promise<Response> {
     .from('acca_drills')
     .select('id, lo_code, topic, question, context_text')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .eq('lo_code', lo)
@@ -114,7 +118,7 @@ interface Cand {
 
 async function pickInterleaved(
   supabase: ReturnType<typeof createServiceClient>,
-  { lo, drillId, userId }: { lo: string; drillId: string; userId: string },
+  { lo, drillId, userId, paper }: { lo: string; drillId: string; userId: string; paper: AccaPaper },
 ): Promise<(Cand & { section_changed?: boolean }) | null> {
   const section = lo[0];
   const subArea = lo.slice(0, 2);
@@ -122,7 +126,7 @@ async function pickInterleaved(
 
   // One in-section fetch: current row gives demand context, the rest are candidates.
   const { data: sect } = await supabase.from('acca_drills').select(SEL)
-    .eq('exam_board', 'ACCA').eq('paper_code', 'APM')
+    .eq('exam_board', 'ACCA').eq('paper_code', paper)
     .eq('status', 'approved').eq('published', true)
     .like('lo_code', `${section}%`).limit(200);
   const pool = (sect ?? []) as Cand[];
@@ -146,7 +150,7 @@ async function pickInterleaved(
   if (!tier.length) {
     // 4: cross-section — last resort, SIGNAL it so the student is never silently teleported
     const { data: any } = await supabase.from('acca_drills').select(SEL)
-      .eq('exam_board', 'ACCA').eq('paper_code', 'APM')
+      .eq('exam_board', 'ACCA').eq('paper_code', paper)
       .eq('status', 'approved').eq('published', true).limit(400);
     tier = ((any ?? []) as Cand[]).filter(d => d.id !== drillId);
     sectionChanged = true;

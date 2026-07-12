@@ -1,18 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { resolvePaper } from '@/lib/acca/paper';
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 });
 
+  const paper = resolvePaper(new URL(request.url).searchParams.get('paper'));
   const supabase = createServiceClient();
 
   const { data } = await supabase
     .from('acca_drills')
     .select('lo_code, topic')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true);
 

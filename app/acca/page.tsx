@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { resolvePaper } from '@/lib/acca/paper';
 import ACCADashboard from './ACCADashboard';
 import MetaTrackSignup from '@/components/MetaTrackSignup';
 import type { PickerArea } from './AreaPicker';
@@ -11,7 +12,11 @@ export const metadata: Metadata = {
     'Pick a performance management area and get coached by Ezra — targeted APM feedback, not generic hints.',
 };
 
-export default async function ACCAPage() {
+export default async function ACCAPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   // ── Auth guard (per-page, not middleware) ──────────────────────────────────
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
@@ -21,6 +26,11 @@ export default async function ACCAPage() {
     redirect('/');
   }
 
+  const { paper: paperParam } = await searchParams;
+  // Which ACCA paper's areas to list. Default APM (unchanged for the existing entry);
+  // the AFM entry (G2) links here with ?paper=AFM.
+  const paper = resolvePaper(typeof paperParam === 'string' ? paperParam : undefined);
+
   const supabase = createServiceClient();
 
   // ── Drill areas ────────────────────────────────────────────────────────────
@@ -28,7 +38,7 @@ export default async function ACCAPage() {
     .from('acca_drills')
     .select('lo_code, topic')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', 'APM')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true);
 

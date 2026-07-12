@@ -8,6 +8,7 @@ import {
   REVEAL_AFM_WRAPPER_SYSTEM,
   assembleAfmReveal,
 } from '@/lib/acca/tutor-personas';
+import { resolvePaper } from '@/lib/acca/paper';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -666,12 +667,13 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { drill_id, drill_lo, session_state, student_message, last_ezra_message } = body as {
+  const { drill_id, drill_lo, session_state, student_message, last_ezra_message, paper: paperHint } = body as {
     drill_id?: unknown;
     drill_lo?: unknown;
     session_state?: unknown;
     student_message?: unknown;
     last_ezra_message?: unknown;
+    paper?: unknown;
   };
 
   const drillId = typeof drill_id === 'string' && drill_id ? drill_id : null;
@@ -695,20 +697,22 @@ export async function POST(request: Request): Promise<Response> {
   // Fall back to lo_code only for in-flight pre-deploy clients that haven't sent a
   // drill_id yet; that fallback stays safe while each LO has ≤1 published drill (true
   // until the depth drills publish — which must wait until this code is live).
-  // paperCode is a REQUIRED argument: AFM LO codes collide exactly with APM's, and
-  // the only thing keeping the shared acca_drills table apart is paper_code scoping.
-  // Forcing every caller to pass it explicitly removes the copy-paste hazard of an
-  // AFM route inheriting a hardcoded 'APM'. Behaviour unchanged — APM passes 'APM'.
-  const drillBase = (paperCode: string) => supabase
+  // id is the PRIMARY KEY (globally unique across papers), so an id-addressed fetch needs
+  // NO paper_code filter — the row's own paper_code IS the paper, and filtering by a guessed
+  // paper is exactly what made AFM ids 404 before G1. An lo-addressed fetch (legacy fallback)
+  // MUST scope by paper: AFM and APM LO codes collide, and paper_code is the only separator.
+  // paper comes from the request body (default APM via resolvePaper).
+  const drillSelect = () => supabase
     .from('acca_drills')
     .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal')
     .eq('exam_board', 'ACCA')
-    .eq('paper_code', paperCode)
     .eq('status', 'approved')
     .eq('published', true);
 
   const { data: drill, error: drillErr } = await (
-    drillId ? drillBase('APM').eq('id', drillId) : drillBase('APM').eq('lo_code', drillLo!)
+    drillId
+      ? drillSelect().eq('id', drillId)
+      : drillSelect().eq('paper_code', resolvePaper(paperHint)).eq('lo_code', drillLo!)
   ).single();
 
   if (drillErr || !drill) {

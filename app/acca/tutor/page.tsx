@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import { resolvePaper } from '@/lib/acca/paper';
 import TutorChat from './TutorChat';
 
 export const metadata: Metadata = {
@@ -28,7 +29,11 @@ export default async function APMTutorPage({
     redirect('/acca/auth?next=/acca/tutor');
   }
 
-  const { lo, area, drill_id } = await searchParams;
+  const { lo, area, drill_id, paper: paperParam } = await searchParams;
+  // Which ACCA paper to scope lo/area/default fetches to. AFM and APM LO codes collide,
+  // so a non-id fetch MUST carry the paper. Default APM (unchanged for every existing
+  // APM entry point). An id fetch is paper-agnostic (id is globally unique).
+  const paper = resolvePaper(typeof paperParam === 'string' ? paperParam : undefined);
   // LO/area codes are stored leading-uppercase, rest-lowercase, alphanumeric only
   // (e.g. 'A3b', 'B1'). PostgREST .eq/.like are case-sensitive AND .like treats _ / %
   // as wildcards, so canonicalize the URL param: strip non-alphanumerics (closes the
@@ -58,7 +63,6 @@ export default async function APMTutorPage({
       .select('id, lo_code, topic, question, context_text')
       .eq('id', drillId)
       .eq('exam_board', 'ACCA')
-      .eq('paper_code', 'APM')
       .eq('status', 'approved')
       .eq('published', true)
       .maybeSingle();
@@ -72,7 +76,7 @@ export default async function APMTutorPage({
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
       .eq('exam_board', 'ACCA')
-      .eq('paper_code', 'APM')
+      .eq('paper_code', paper)
       .eq('lo_code', loCode)
       .eq('status', 'approved')
       .eq('published', true)
@@ -87,7 +91,7 @@ export default async function APMTutorPage({
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
       .eq('exam_board', 'ACCA')
-      .eq('paper_code', 'APM')
+      .eq('paper_code', paper)
       .eq('status', 'approved')
       .eq('published', true)
       .like('lo_code', `${areaCode}%`)
@@ -103,7 +107,7 @@ export default async function APMTutorPage({
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text')
       .eq('exam_board', 'ACCA')
-      .eq('paper_code', 'APM')
+      .eq('paper_code', paper)
       .eq('lo_code', 'B1c')
       .eq('status', 'approved')
       .eq('published', true)
