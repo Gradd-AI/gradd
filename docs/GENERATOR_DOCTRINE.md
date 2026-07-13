@@ -66,6 +66,17 @@ Calculator #4 (`lib/acca/apv.ts`). APV = base-case NPV (the project as if all-eq
 - **Figure-integrity gate now checks 1/2/3 dp** (was 1 dp only): money displays at 1 dp, rates at 2 dp, **betas at 3 dp** — a value is "present" if any rounding is a substring. Backward-compatible (money still matches at 1 dp).
 - **Every scenario states its corporate tax rate explicitly** (needed to ungear); the UAE drill states CT = 9% (distinctive, verifiable).
 
+### Model-answer template hygiene (PATTERN, from CAPM round-1, 2026-07-13)
+A code-built model answer serves multiple kinds from one function — three template traps, all now fixture-guarded:
+- **Kind-conditional assumptions + heading.** The assumptions block (and heading) must name ONLY the operations the kind's chain actually performs — never a boilerplate superset. (CAPM `org_wacc` said "ungeared and regeared" though it does neither; `keu_for_apv` implied a WACC it never computes.) Fixture: each kind's assumptions names only its chain's operations.
+- **Dynamic step numbering.** Number steps from a running counter over the steps actually rendered — never hardcode per kind (a `2 → 5` jump leaked when a 4-step template was reused for a 2-step kind). Fixture: `Step N` labels are 1..K consecutive.
+- **No verb split across bold markers.** Interpolating a stem + suffix (`**${verb}**ed`) renders a broken word ("accept'ed"). Interpolate the FULL word (`accepted`/`rejected`), bold the whole thing. Fixture: no `**word**ed` artifact. *(Round-1 grep: the artifact existed only in `capm.ts` + the one wrong_hurdle drill; no APV/IRR/NPV contamination.)*
+
+### CAPM round-1 rulings (2026-07-13)
+- **Verdict:** FIX 1–5 accepted + applied (the three template fixes above + context/prose one-liners: business-risk-proxy wording, "an Abu Dhabi", sovereign-bond-yield not T-bill, un-gendered finance director). Drills re-gated (6 gates).
+- **B3d drill dual coverage (`2a145f7d` wrong_hurdle).** Tagged **B3d primary** per the Q1 design ruling — the kind exists to make B3d's *appropriateness* clause concrete; the B3e ungear/regear chain is the vehicle. `lo_code` is single-valued (no secondary tag without a migration), so the **B3e dual coverage is journalled**, as with APV/B3k.
+- **OFR wording — REJECTED softening (third review running).** "Charged once, at its source" is house wording tied to the override log; the OFR ruling stays **closed**.
+
 ### Batch discipline
 One calculator → full batch → one batched adversarial review → approval flip → next calculator. **Generation never outpaces review.** Reviews are by calculator family; the **first-of-family gets FULL hostility**, siblings get spot-checks **with full recomputation of every figure**. Drills sit `status='candidate'`, `published=false` until the approval flip.
 

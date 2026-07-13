@@ -1,14 +1,10 @@
 # AFM CAPM / cost-of-capital batch — blind adversarial review pack
 
-**Calculator #5: CAPM / cost of capital (`lib/acca/capm.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated after every fix round.**
+**Calculator #5: CAPM / cost of capital (`lib/acca/capm.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated after every fix round (through round 1).**
 
-Doctrine: deterministic code owns EVERY figure AND every figure-vs-figure verdict (which rate is higher and why; the wrong-hurdle accept/reject **flip**); the model authored PROSE only — it never states a beta, a rate, or an inequality. House conventions: **debt beta = 0** (exam-orthodox); **Modigliani–Miller with-tax** ungear/regear (β_a = β_e·Ve/(Ve+Vd(1−T))); CAPM cost of equity; **market-value-weighted** WACC with post-tax debt. This is the calculator that DERIVES the ungeared Keu the APV batch STATES (kind `keu_for_apv`) — the APV/CAPM boundary, closed. Pure rates family: **no cash-flow chain**, so P6 loss-relief is a structural no-op and there is no issue-cost analogue.
+Doctrine: code owns EVERY figure AND every figure-vs-figure verdict (which rate is higher and why; the wrong-hurdle accept/reject **flip**); the model authored PROSE only — never a beta, a rate, or an inequality. β_d=0; MM-with-tax ungear/regear; CAPM Ke; MV-weighted WACC. Derives the ungeared Keu APV states (kind `keu_for_apv`). Pure rates family — P6 loss-relief is a structural no-op. **The assumptions block and step numbering are KIND-CONDITIONAL** (round-1 FIX 1/2): each kind names only the operations its chain performs (org_wacc = no ungearing; keu_for_apv = no WACC), and step numbers are rendered dynamically. All 6 gates pass.
 
-Graded chains (OFR carries through): project_specific `asset_beta → regeared_beta → ke_project → wacc_project`; org_wacc `ke → wacc`; keu_for_apv `asset_beta → keu`; wrong_hurdle `company_ke → company_wacc` + `project_asset_beta → project_beta → project_ke → project_wacc`. Tolerances: betas abs ±0.02, rates abs ±0.1 pp.
-
-**All 6 gates pass** (schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity [checked at 1/2/3 dp for betas]; seeded-OFR carry-through; P4 jurisdiction; P5 completeness; P6 loss-relief).
-
-**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (project_specific, first-of-family — the ungear/regear/CAPM/WACC chain), spot-check siblings WITH full recomputation. Hunt for semantic errors a deterministic gate cannot catch: an ungearing/regearing misframed, a rate comparison inverted, the wrong-hurdle decision mis-stated, business-vs-financial risk confused, peer-comparability claims invented, scenario-fact drift.
+**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (project_specific, first-of-family), spot-check siblings WITH full recomputation.
 
 ---
 
@@ -25,7 +21,7 @@ SCENARIO — INDUS TOWERGRID LIMITED: ENTRY INTO PASSIVE TELECOM INFRASTRUCTURE 
 
 Indus TowerGrid Limited ("TowerGrid") is a mid-sized Indian conglomerate currently operating in the managed network-services segment — a business characterised by software-driven, service-fee revenue with relatively low asset intensity. The board is evaluating a material strategic pivot: the construction and long-term leasing of passive telecommunications infrastructure (ground-based tower sites, rooftop masts, and associated power systems) to mobile network operators under multi-year tenancy agreements. This business model — commonly called "towerco" — is operationally and economically distinct from TowerGrid's existing activity: it is highly capital-intensive, generates contractually predictable rental cash flows, and carries very different systematic risk.
 
-Because the proposed project lies entirely outside TowerGrid's existing business risk profile, the board's CFO has correctly identified that TowerGrid's own equity beta is irrelevant for appraising it. Instead, a project-specific cost of capital must be derived by reference to a listed peer operating in the target business.
+Because the proposed project lies entirely outside TowerGrid's existing business risk profile, the board's CFO has correctly identified that TowerGrid's own equity beta is not appropriate as the business-risk proxy for the project — though its capital structure and debt cost remain relevant to the WACC. Instead, a project-specific cost of capital must be derived by reference to a listed peer operating in the target business.
 
 PROXY PEER — Zenith Infratel Limited
 Zenith Infratel Limited ("Zenith") is a Nifty 500-listed Indian towerco with operations across 18 telecom circles. Its equity beta has been estimated by TowerGrid's treasury team using 24 months of weekly return data against the Nifty 500 index.
@@ -48,7 +44,8 @@ RAW INPUTS
 
 **Cost of capital — CAPM / weighted average cost of capital**
 
-**Assumptions:** the debt beta is taken as **0 (debt assumed risk-free)**, the exam-orthodox default; betas are ungeared and regeared using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)); the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 6.40% and MRP = 7.20%; the corporate tax rate is 25.17%.
+**Assumptions:** a peer's equity beta is **ungeared** to an asset beta and **regeared** to the appraising firm's capital structure using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **0 (debt assumed risk-free)**; the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 6.40% and MRP = 7.20%; the corporate tax rate is 25.17%.
+
 
 **Step 1 — Ungear the peer's equity beta (strip out the peer's financial risk)**
 
@@ -202,7 +199,8 @@ Mexican corporate tax rate: 30%
 
 **Cost of capital — CAPM / weighted average cost of capital**
 
-**Assumptions:** the debt beta is taken as **0 (debt assumed risk-free)**, the exam-orthodox default; betas are ungeared and regeared using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)); the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 9.10% and MRP = 5.50%; the corporate tax rate is 30.00%.
+**Assumptions:** the company's listed equity beta is used **directly** through CAPM — there is **no ungearing or regearing** (this is an organisation-wide WACC, not a proxy-beta exercise); the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 9.10% and MRP = 5.50%; the corporate tax rate is 30.00%.
+
 
 **Step 1 — Cost of equity (CAPM)**
 
@@ -218,11 +216,9 @@ Ke = Rf + β_e × MRP = 9.10% + 0.920 × 5.50% = **14.16%**
 
 The cost of equity (14.16%) exceeds the post-tax cost of debt (6.86%), as expected — equity holders bear the residual risk and price it higher.
 
-**Step 5 — Evaluation / advice to the board**
+**Step 3 — Evaluation / advice to the board**
 
-
-Maizal Alimentos operates across maize milling, branded flour, and savoury snacks — a deliberately diversified consumer-staples portfolio whose revenue streams carry meaningfully different demand elasticities and commodity-cost exposures, which the board should recognise when treating a single organisation-wide WACC as representative of every division's business risk. The 60-month rolling beta was estimated through an exceptional commodity-price cycle in Mexico, as the finance director himself acknowledges; a beta that embeds a structurally abnormal period of maize and energy price volatility may overstate or understate the company's true long-run systematic risk relative to a more stable estimation window, and the board should consider commissioning a cross-check against sector peer betas before anchoring capital allocation decisions on this figure alone. Regarding business risk versus financial risk: the equity beta already reflects Maizal Alimentos' current financial structure, so the derived WACC is conditioned on the company maintaining broadly its present mix of listed equity and debt; any material shift in the MXN 6,200 million debt book — for instance through the planned capital programme — would alter the financial-risk component embedded in the rate and require recalculation. On the appropriateness of this rate for project and organisational valuation, the WACC is a suitable discount rate for firm free cash flows only where a new project carries the same systematic business risk as the existing group; given that the snack segment is growing faster and may command a different risk profile from the legacy milling operations, applying a single organisation-wide rate to project-level appraisals risks misallocating capital, and segment-specific rates derived from comparator betas would produce a more defensible decision.
-
+Maizal Alimentos operates across maize milling, branded flour, and savoury snacks — a deliberately diversified consumer-staples portfolio whose revenue streams carry meaningfully different demand elasticities and commodity-cost exposures, which the board should recognise when treating a single organisation-wide WACC as representative of every division's business risk. The 60-month rolling beta was estimated through an exceptional commodity-price cycle in Mexico, as the finance director acknowledges; a beta that embeds a structurally abnormal period of maize and energy price volatility may overstate or understate the company's true long-run systematic risk relative to a more stable estimation window, and the board should consider commissioning a cross-check against sector peer betas before anchoring capital allocation decisions on this figure alone. Regarding business risk versus financial risk: the equity beta already reflects Maizal Alimentos' current financial structure, so the derived WACC is conditioned on the company maintaining broadly its present mix of listed equity and debt; any material shift in the MXN 6,200 million debt book — for instance through the planned capital programme — would alter the financial-risk component embedded in the rate and require recalculation. On the appropriateness of this rate for project and organisational valuation, the WACC is a suitable discount rate for firm free cash flows only where a new project carries the same systematic business risk as the existing group; given that the snack segment is growing faster and may command a different risk profile from the legacy milling operations, applying a single organisation-wide rate to project-level appraisals risks misallocating capital, and segment-specific rates derived from comparator betas would produce a more defensible decision.
 
 *Reconciliation: Ke 14.16%, WACC 12.32% ✓*
 
@@ -301,7 +297,7 @@ SCENARIO — DUNE HOSPITALITY GROUP PJSC / AL MAJAN RESORT PROJECT
 
 Dune Hospitality Group PJSC ("DHG") is a UAE-incorporated hotel owner and operator listed on the Abu Dhabi Securities Exchange. The board is appraising the Al Majan Resort, a proposed 350-key luxury beachfront development on the coast of Ras Al Khaimah. Total development cost is estimated at AED 1.4 billion. Because the project will be financed through a bespoke Special Purpose Vehicle (SPV) with a capital structure that differs materially from DHG's own, the CFO has directed the team to use an APV framework. An APV appraisal requires an ungeared (all-equity) cost of equity, Keu, to discount the base-case unlevered free cash flows; the tax shield of the SPV's debt is then valued separately.
 
-DHG does not have a directly observable ungeared beta. The CFO has identified Emirates Leisure Hotels PJSC ("ELH") — a Abu Dhabi–listed hotel operator with resorts concentrated in the UAE and Oman — as the most appropriate listed peer from which to extract an asset beta. The equity beta of ELH has been estimated from 24 months of monthly returns against the ADX General Index.
+DHG does not have a directly observable ungeared beta. The CFO has identified Emirates Leisure Hotels PJSC ("ELH") — an Abu Dhabi–listed hotel operator with resorts concentrated in the UAE and Oman — as the most appropriate listed peer from which to extract an asset beta. The equity beta of ELH has been estimated from 24 months of monthly returns against the ADX General Index.
 
 CHALLENGEABLE TEXTURE — PEER COMPARABILITY:
 ELH derives approximately 35% of its revenue from food-and-beverage (F&B) and ancillary retail concessions; the Al Majan Resort is projected to earn roughly 60% of revenue from room nights, with the balance from a marina and spa complex. The board should consider whether ELH's revenue mix introduces a material difference in business-risk profile relative to the Al Majan project.
@@ -310,16 +306,17 @@ RAW INPUTS:
 - Peer (ELH) equity beta:                     1.18
 - Peer (ELH) market value of equity (Ve):      AED 2,840 million
 - Peer (ELH) market value of debt (Vd):        AED 960 million
-- Risk-free rate (UAE 10-yr T-bill proxy):     4.20%
+- Risk-free rate (UAE 10-year sovereign bond yield proxy):     4.20%
 - Equity risk premium (MRP):                   6.50%
 - UAE corporate tax rate:                      9%
 (No regearing is required — Keu is the deliverable for the APV base case.)
 
 ### model_answer
 
-**Cost of capital — CAPM / weighted average cost of capital**
+**Cost of capital — CAPM / ungeared cost of equity**
 
-**Assumptions:** the debt beta is taken as **0 (debt assumed risk-free)**, the exam-orthodox default; betas are ungeared and regeared using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)); the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 4.20% and MRP = 6.50%; the corporate tax rate is 9.00%.
+**Assumptions:** a peer/sector equity beta is **ungeared** to an asset beta using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **0 (debt assumed risk-free)**; **no WACC is computed** here — the deliverable is the ungeared, all-equity cost of equity; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 4.20% and MRP = 6.50%; the corporate tax rate is 9.00%.
+
 
 **Step 1 — Ungear the peer / sector equity beta to an asset beta**
 
@@ -399,7 +396,7 @@ The classic misconception here is UNDEVELOPED-ASSUMPTION: a candidate lists the 
 
 ---
 
-## Drill 4 — wrong_hurdle (B3d)  ·  `2a145f7d-9957-46e8-893c-15204cb8d444`
+## Drill 4 — wrong_hurdle (B3d — B3e chain is the vehicle; B3e dual coverage journalled)  ·  `2a145f7d-9957-46e8-893c-15204cb8d444`
 - LO B3d · mode quantitative · command_verb "calculate and evaluate" · marks_guide 15
 
 ### question
@@ -445,7 +442,8 @@ Project:
 
 **Cost of capital — CAPM / weighted average cost of capital**
 
-**Assumptions:** the debt beta is taken as **0 (debt assumed risk-free)**, the exam-orthodox default; betas are ungeared and regeared using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)); the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 3.80% and MRP = 6.50%; the corporate tax rate is 20.00%.
+**Assumptions:** a peer's equity beta is **ungeared** to an asset beta and **regeared** to the appraising firm's capital structure using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **0 (debt assumed risk-free)**; the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 3.80% and MRP = 6.50%; the corporate tax rate is 20.00%.
+
 
 **Step 1 — The company's own WACC (the tempting but WRONG hurdle here)**
 
@@ -461,7 +459,7 @@ Project Ke = 3.80% + 1.535 × 6.50% = 13.78%; Project WACC = **12.12%**.
 
 **Step 3 — Decision (code-owned)**
 
-The project's expected return is **11.40%**. Against the correct **project-specific** hurdle of 12.12%, the decision is **REJECT**. Against the company WACC of 10.13%, you would have wrongly **accept**ed it — the wrong hurdle **flips the decision**. The project must be judged on its OWN risk, not the firm's average.
+The project's expected return is **11.40%**. Against the correct **project-specific** hurdle of 12.12%, the decision is **REJECT**. Against the company WACC of 10.13%, you would have wrongly **accepted** it — the wrong hurdle **flips the decision**. The project must be judged on its OWN risk, not the firm's average.
 
 **Step 4 — Evaluation / advice to the board**
 
