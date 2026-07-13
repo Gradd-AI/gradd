@@ -78,6 +78,19 @@ A code-built model answer serves multiple kinds from one function — three temp
 - **OFR wording — REJECTED softening (third review running).** "Charged once, at its source" is house wording tied to the override log; the OFR ruling stays **closed**.
 - **Confirm-pass (2026-07-13, batch CLEARED).** One accepted polish — the `keu_for_apv` boundary line reworded to student content ("this ungeared Keu is the discount rate applied to the all-equity base-case cash flows in an APV appraisal; the financing side-effects are valued separately"), dropping the internal consumes/derives architecture language (which stays in the doctrine note). OFR-softening (4th) + wrong_hurdle retag (2nd) re-rejected — now both in the pack's CLOSED RULINGS section.
 
+### Bond duration rulings (calculator #6, B3f + B3g rider, 2026-07-13)
+`lib/acca/duration.ts`. Pure rates/bond family (like CAPM) — **P6 loss-relief is a structural no-op, no issue-cost analogue**; all 6 gates still run. Rulings:
+- **Flat stated YTM per bond** (no yield curve — that is B3h / calc #7). Annual coupons (a `freq` param supports semi-annual for a future kind; unused). **Modified = Macaulay ÷ (1 + y/freq)**.
+- **Graded chain: price + Σt·PV → Macaulay → modified → price_sensitivity**, OFR carrying. Code owns every duration + the **exposure ranking** (higher modified duration = more exposed, `compare` kind) and the **zero-vs-coupon** comparison (`zero_coupon`: Macaulay = maturity exactly; a coupon bond's is shorter). The model never states a duration, a rate, or an inequality.
+- **Tolerances:** durations in years → abs **±0.05**; price/Σt·PV money → rel **±0.5%**; % price-sensitivity → abs **±0.1 pp**.
+- **B3g convexity** lives SUBSTANTIVELY only in the `limitations` kind (which **dual-covers B3g** — single-tag `lo_code`, journalled, no migration; CAPM/wrong_hurdle precedent). Kinds 1–3 carry a **one-line linear-approximation caveat** by design.
+- **The `zero_coupon` reference bond grades only its Macaulay** (its modified duration is not shown, so not graded — figure-integrity would otherwise fail on an undisplayed figure).
+- **CURRENCY REALISM (TRY):** a Turkish-lira bond's stated yield must be deep double-digit (18–24%+), OR the facilities are hard-currency (USD/EUR) with the scenario saying so and acknowledging the lira rate environment. Never a single-digit TRY yield. (Generalise: state a yield realistic for the currency.)
+
+### Seeded-OFR gate hardening — distinct-factor perturbation (PATTERN, from duration 2026-07-13)
+`buildOfrProof` (the generator's GATE 3) now perturbs each root by a **DISTINCT** factor (`0.85 − 0.06·index`, floored) instead of a uniform ×0.8. A dependent that is a scale-invariant **ratio** of two roots (Macaulay = Σt·PV ÷ price) recomputes to the CORRECT value under uniform scaling — the error cancels — and would wrongly verdict `correct` instead of `carried`, failing the gate. Distinct factors break the cancellation while staying well outside every tolerance; affine chains (NPV/APV/CAPM) carry exactly as before. Any future ratio-based calculator inherits the fix.
+- **P5 completeness** gained a `duration` demand: a question asking for "modified/Macaulay duration" must deliver one in the answer.
+
 ### Batch discipline
 One calculator → full batch → one batched adversarial review → approval flip → next calculator. **Generation never outpaces review.** Reviews are by calculator family; the **first-of-family gets FULL hostility**, siblings get spot-checks **with full recomputation of every figure**. Drills sit `status='candidate'`, `published=false` until the approval flip.
 
