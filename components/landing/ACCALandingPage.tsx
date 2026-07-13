@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AttributionCapture from '@/components/AttributionCapture';
 
 // Real entry points into the live APM product. The auth wall carries the
 // post-login destination: free lands in the drill dashboard, paid on subscribe.
@@ -58,6 +59,8 @@ export default function ACCALandingPage() {
 
   return (
     <>
+      {/* First-touch utm_* / fbclid → cookie → persisted to the profile at signup. */}
+      <AttributionCapture />
       <style>{CSS}</style>
 
       <div className="acca-lp">

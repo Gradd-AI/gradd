@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { notifyGrant } from '@/lib/notify';
+import { createServiceClient } from '@/lib/supabase/server';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -46,6 +47,26 @@ export async function GET(request: Request) {
       if (isNewSignup) {
         // Meta CompleteRegistration flag (fires wherever MetaTrackSignup mounts).
         dest.searchParams.set('signup', '1');
+
+        // Persist first-touch attribution (utm_*/fbclid) captured on the landing, so every
+        // signup carries its source. Best-effort: a missing cookie, an unapplied migration,
+        // or a write error must never affect the redirect below.
+        try {
+          const attrRaw = cookieStore.get('gradd_attr')?.value;
+          if (attrRaw && u?.id) {
+            const attribution = JSON.parse(decodeURIComponent(attrRaw));
+            const { error: attrErr } = await createServiceClient()
+              .from('profiles')
+              .update({ signup_attribution: attribution })
+              .eq('id', u.id);
+            if (attrErr) console.error('[attr] signup_attribution write failed —', attrErr.message);
+            else console.log('[attr] signup_attribution saved for', u.email ?? u.id);
+            cookieStore.set('gradd_attr', '', { path: '/', maxAge: 0 }); // consume first-touch
+          }
+        } catch (e) {
+          console.error('[attr] signup_attribution threw —', (e as Error).message);
+        }
+
         // Best-effort internal alert. notifyGrant never throws; it returns a skip
         // reason (also console.error'd) so Vercel function logs show exactly why an
         // alert did or did not go out — no more guessing which branch swallowed it.
