@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import Anthropic from '@anthropic-ai/sdk';
 import { Resend } from 'resend';
 import { createServiceClient } from '@/lib/supabase/server';
@@ -151,6 +152,25 @@ export async function POST(request: Request) {
     if (!plan) {
       return NextResponse.json({ error: 'Could not generate your plan. Please try again.' }, { status: 502 });
     }
+
+    // Best-effort: log this anonymous diagnosis completion so we can measure top-of-funnel
+    // volume + source on the primary ad CTA (most runs never leave an email, so resit_leads
+    // undercounts entry). Never blocks or fails the plan response.
+    try {
+      const attrRaw = (await cookies()).get('gradd_attr')?.value;
+      const attribution = attrRaw ? JSON.parse(decodeURIComponent(attrRaw)) : null;
+      await createServiceClient().from('resit_runs').insert({
+        score: inputs.score,
+        sitting: inputs.sitting,
+        attempts: inputs.attempts,
+        weak_prefixes: profile.weak_prefixes,
+        completed: true,
+        attribution,
+      });
+    } catch {
+      // swallow — logging must never affect the diagnostic.
+    }
+
     return NextResponse.json({ plan, profile });
   }
 

@@ -293,8 +293,14 @@ export default function ResitPage() {
             ))}
           </div>
 
-          {/* CTA into the free drills */}
-          <Link href="/acca/auth?next=/acca" className="resit-btn resit-btn--primary resit-btn--cta">
+          {/* CTA into the free drills — thread the diagnosed weakest area into ?next= so the
+              post-signup first-run dashboard (F3) deep-links the first drill to it. */}
+          <Link
+            href={`/acca/auth?next=${encodeURIComponent(
+              profile && profile.weak_prefixes.length > 0 ? `/acca?area=${profile.weak_prefixes[0]}` : '/acca'
+            )}`}
+            className="resit-btn resit-btn--primary resit-btn--cta"
+          >
             Start the free drills for your weak areas →
           </Link>
 
