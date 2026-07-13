@@ -2,9 +2,9 @@
 
 **Calculator #4: Adjusted Present Value (`lib/acca/apv.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`.**
 
-Doctrine: deterministic code owns every figure AND every figure-vs-figure verdict (accept/reject, financing choice); the model authored PROSE only. Base case = the all-equity project discounted at the STATED ungeared cost of equity Keu; financing side-effects (tax shield at pre-tax Kd, grossed-up issue costs, subsidised-loan saving) are added. **One tax-timing throughout:** every tax effect — the shield, and the subsidy saving's tax leg — lands at the interest year + the trading-tax lag; tables label each row with its receipt period. All 5 gates pass (schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity; seeded-OFR carry-through; P4 jurisdiction; P5 completeness).
+Doctrine: deterministic code owns every figure AND every figure-vs-figure verdict (accept/reject, financing choice); the model authored PROSE only. Base case = the all-equity project discounted at the STATED ungeared cost of equity Keu; financing side-effects added: debt tax shield at pre-tax Kd (relief at interest-year+lag), **debt issue costs = gross principal × f** (the loan amount is the gross principal), subsidised-loan saving (pre-tax in-year less its tax at year+lag), and — for the rights-issue package only — equity issue costs grossed up from NET proceeds. All 5 gates pass (schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity; seeded-OFR carry-through; P4 jurisdiction; P5 completeness).
 
-**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (first-of-family), spot-check siblings WITH full recomputation of every figure. The numbers are code-owned — hunt for semantic errors a deterministic gate cannot catch: advice/verdict inversions, an APV method misframed in prose, a financing side-effect double-counted or misattributed, the tax-shield/subsidy basis or timing mis-stated, scenario-fact drift, invented facts/risks.
+**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1, spot-check siblings WITH full recomputation. Hunt for semantic errors a deterministic gate cannot catch: advice/verdict inversions, an APV method misframed in prose, a side-effect double-counted or misattributed, the tax-shield/subsidy/issue-cost basis or timing mis-stated, scenario-fact drift, invented facts/risks.
 
 ---
 
@@ -112,7 +112,7 @@ The ungeared (all-equity) cost of equity applicable to this project is **Keu = 1
 
 **PV of the tax shield = MYR 22.3m.**
 
-*Issue costs* — the finance is raised net of transaction costs, grossed up from net proceeds, a t0 outflow of **MYR -9.5m**.
+*Issue costs* — raising the MYR 380.0m of debt incurs 2.50% of transaction costs on the gross principal, a t0 outflow of **MYR -9.5m**.
 
 **Step 5 — Adjusted present value**
 
@@ -384,16 +384,16 @@ The dominant misconception in APV drills is VALUATION-PLUMBING of the financing 
     },
     {
       "unit": "MYRm",
-      "label": "Issue costs (grossed up from net proceeds)",
+      "label": "Issue costs (on the gross debt principal)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "issue_costs",
       "working_steps": [
-        "−(net proceeds × f/(1−f)) at 2.50%"
+        "−(gross debt principal × f) at 2.50%"
       ],
-      "expected_value": -9.500000000000002
+      "expected_value": -9.5
     },
     {
       "unit": "MYRm",
@@ -436,7 +436,7 @@ Via Planalto Concessões S.A. ("Via Planalto") is a Brazilian transport-infrastr
 
 The project changes Via Planalto's financing structure substantially: a BRL 520 million development loan, tied exclusively to this project, has been offered by the Banco Nacional de Desenvolvimento Econômico e Social (BNDES) at a below-market subsidised coupon. Because the quantum of new debt is large relative to the firm's existing capital base, and because the debt level is expected to decline as the loan is repaid, the conventional WACC-based NPV — which assumes a constant debt ratio — is an unreliable appraisal tool. APV, which values the financing side-effects explicitly and separately from the project's operating cash flows, is therefore the appropriate methodology.
 
-The Corredor Norte concession runs for four years from the date of first toll collection (the appraisal horizon); the BNDES facility is drawn at project inception and fully amortised over the same four-year term. The ungeared (all-equity) cost of equity, Keu, has been assessed by the finance team at 16.0% per annum, reflecting the systematic operating risk of a regulated toll-road in the Brazilian market at the current stage of the concession cycle.
+The Corredor Norte concession runs for four years from the date of first toll collection (the appraisal horizon); the BNDES facility is drawn at project inception and outstanding in full until a single bullet repayment at the end of Year 4. The ungeared (all-equity) cost of equity, Keu, has been assessed by the finance team at 16.0% per annum, reflecting the systematic operating risk of a regulated toll-road in the Brazilian market at the current stage of the concession cycle.
 
 RAW INPUTS (all monetary figures in BRL millions)
 
@@ -542,9 +542,7 @@ The APV of BRL 182.6m is **positive**, so once the financing side-effects are ad
 
 On these assumptions the APV is positive; a positive result is a floor, not a mandate, so the recommendation is conditional on the base-case and financing assumptions below holding under scrutiny.
 
-
-The first question the board must press is whether Keu of 16.0% is a genuinely ungeared rate that reflects only the operating risk of a regulated toll-road concession in Brazil's Centro-Oeste at this point in the concession cycle. If the finance team derived this figure from the observed equity beta of a partially-geared peer group without fully stripping out financial risk, Keu will be overstated, which would systematically penalise the base-case valuation; the board should request the peer-group data and the ungearing methodology before treating 16.0% as definitive. Conversely, if the Corredor Norte concession faces heavier traffic-volume uncertainty than the peer group — for example because the BR-163 corridor still depends on agricultural commodity throughput from Mato Grosso soy producers, a concentration risk the scenario evidences — the true operating risk premium may be higher than the stated rate, which would weaken the base case further. Turning to the subsidised financing, the BNDES coupon of 6.0% is fixed for four years, but the benefit relative to the market rate of 11.5% exists only as long as the concessão de instalação remains in force and ANTT does not impose operational penalties that trigger a loan covenant; the board must confirm that the environmental licence approval timeline is consistent with the project's drawdown schedule, since any delay that causes the facility to lapse would extinguish the subsidy benefit entirely and could leave the project relying on market-rate refinancing. Finally, the bullet-repayment structure means Via Planalto will need to refinance or hold liquid reserves of BRL 520 million at the end of Year 4; the board should satisfy itself that the company's liquidity position and refinancing access at that date are sufficient, particularly given that Brazilian sovereign spreads and domestic credit conditions can shift materially over a four-year horizon.
-
+The first question the board must press is whether Keu of 16.0% is a genuinely ungeared rate that reflects only the operating risk of a regulated toll-road concession in Brazil's Centro-Oeste at this point in the concession cycle. If the finance team derived this figure from the observed equity beta of a partially-geared peer group without fully stripping out financial risk, Keu will be overstated, which would systematically penalise the base-case valuation; the board should request the peer-group data and the ungearing methodology before treating 16.0% as definitive. The subsidised financing is central to the case: the BNDES coupon of 6.0% is fixed for four years, but the scenario is explicit that the facility lapses if the concession is not granted its licença de instalação, so the subsidy benefit is contingent on that approval landing in time for the drawdown at inception; the board must confirm the licence-approval timeline against the financing schedule, since a lapse would extinguish the subsidy entirely and could force reliance on market-rate finance. The board should also weigh the traffic-volume uncertainty inherent in newly-added express-toll lanes: the operating cash flows are forecasts, and if throughput on the widened corridor builds more slowly than assumed the base case weakens regardless of the financing. Finally, the loan is repaid as a single bullet at the end of Year 4, so Via Planalto must refinance or hold liquid reserves of BRL 520 million at that date; the board should satisfy itself that its liquidity and refinancing access are adequate, particularly given that Brazilian sovereign spreads and domestic credit conditions can shift materially over a four-year horizon.
 
 *Reconciliation: base-case NPV BRL 92.4m + financing side-effects BRL 90.2m = APV BRL 182.6m ✓*
 
@@ -809,7 +807,7 @@ Apply the adjusted present value (APV) technique to appraise Hansung Heavy Indus
 HANSUNG HEAVY INDUSTRIES CO., LTD — BOARD ADVISORY MEMORANDUM
 
 Background
-Hansung Heavy Industries Co., Ltd ("Hansung" or "the Company") is a mid-tier South Korean shipbuilder headquartered in Geoje, operating under the supervision of the Korea Shipbuilders' Association. The Company currently carries a conservative balance sheet with a debt-to-total-assets ratio of 12%, well below the industry average. The board is evaluating a proposed investment in a dedicated LNG carrier conversion and retrofitting facility ("the Facility") at its Okpo yard. The Facility would allow Hansung to capture a segment of the growing dual-fuel vessel retrofit market, driven by the International Maritime Organization's (IMO) 2030 sulphur and carbon-intensity regulations.
+Hansung Heavy Industries Co., Ltd ("Hansung" or "the Company") is a mid-tier South Korean shipbuilder headquartered in Geoje, a member of the Korea Shipbuilders' Association. The Company currently carries a conservative balance sheet with a debt-to-total-assets ratio of 12%, well below the industry average. The board is evaluating a proposed investment in a dedicated LNG carrier conversion and retrofitting facility ("the Facility") at its Okpo yard. The Facility would allow Hansung to capture a segment of the growing dual-fuel vessel retrofit market, driven by the International Maritime Organization's (IMO) 2030 sulphur and carbon-intensity regulations.
 
 The project represents a material departure from Hansung's existing capital structure: to fund the Facility, the Company intends to raise a significant tranche of long-term secured debt — bringing its gearing to a level it has not sustained before. Because the financing mix will change substantially alongside the investment decision, the board's finance committee has directed that the appraisal be conducted using the Adjusted Present Value (APV) method rather than the traditional NPV/WACC approach. The ungeared (all-equity) cost of equity appropriate for a project of this risk class has been assessed by the Company's investment bank, Hana Securities, as 16.5% per annum. The project life is four years.
 
@@ -888,7 +886,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 
 **PV of the tax shield = KRW 20926.4m.**
 
-*Issue costs* — the finance is raised net of transaction costs, grossed up from net proceeds, a t0 outflow of **KRW -15233.2m**.
+*Issue costs* — raising the KRW 420000.0m of debt incurs 3.50% of transaction costs on the gross principal, a t0 outflow of **KRW -14700.0m**.
 
 **Step 5 — Adjusted present value**
 
@@ -896,12 +894,12 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 |------|------|
 | Base-case NPV (all-equity) | KRW -369386.0m |
 | PV of debt tax shield | KRW 20926.4m |
-| Issue costs | KRW -15233.2m |
-| **Adjusted present value** | **KRW -363692.8m** |
+| Issue costs | KRW -14700.0m |
+| **Adjusted present value** | **KRW -363159.7m** |
 
 **Step 6 — Decision**
 
-The APV of KRW -363692.8m is **negative**: the financing side-effects (KRW 5693.2m in total) are **not enough to rescue the negative base case** of KRW -369386.0m, so the project **destroys value and should be rejected** as it stands.
+The APV of KRW -363159.7m is **negative**: the financing side-effects (KRW 6226.4m in total) are **not enough to rescue the negative base case** of KRW -369386.0m, so the project **destroys value and should be rejected** as it stands.
 
 **Step 7 — Advice to the board**
 
@@ -909,7 +907,7 @@ On these assumptions the APV is negative, so the base-case recommendation is to 
 
 Even setting aside the arithmetic outcome, the board must scrutinise three qualitative dimensions before committing to this investment. First, the appropriateness of the 16.5% ungeared cost of equity deserves independent challenge: Hana Securities derived this rate from North-East Asian shipbuilding comparables, but the LNG conversion retrofit segment involves specialised cryogenic engineering, a narrower customer base confined largely to international shipping majors, and a regulatory-driven demand cycle tied to IMO deadlines — a risk profile that is arguably more volatile and less diversified than conventional new-build activity, suggesting the true ungeared hurdle rate could be higher than stated. Second, the debt capacity assumption embedded in the APV structure warrants stress-testing: the KRW 420,000m loan is secured against Okpo yard assets, but Korean shipbuilding asset values have historically been procyclical and subject to sharp revaluation in downturns, as the 2015–2016 industry contraction demonstrated; if a lender covenant is triggered before Year 4, the tax shield modelled over the full term will not materialise, and the financing side-effect will be overstated. Third, regarding the balance between gearing and shareholder interest, the board should note that raising secured debt of this scale will bring Hansung's gearing to a level it has not previously sustained — this concentrates financial risk on existing shareholders, reduces headroom for counter-cyclical investment if retrofit demand disappoints following the initial IMO compliance rush, and may constrain dividend policy in the medium term in a manner that the APV framework alone does not capture.
 
-*Reconciliation: base-case NPV KRW -369386.0m + financing side-effects KRW 5693.2m = APV KRW -363692.8m ✓*
+*Reconciliation: base-case NPV KRW -369386.0m + financing side-effects KRW 6226.4m = APV KRW -363159.7m ✓*
 
 ### hint
 
@@ -1123,16 +1121,16 @@ The most common misconception in APV drills is VALUATION PLUMBING crossed with F
     },
     {
       "unit": "KRWm",
-      "label": "Issue costs (grossed up from net proceeds)",
+      "label": "Issue costs (on the gross debt principal)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "issue_costs",
       "working_steps": [
-        "−(net proceeds × f/(1−f)) at 3.50%"
+        "−(gross debt principal × f) at 3.50%"
       ],
-      "expected_value": -15233.16062176166
+      "expected_value": -14700.000000000002
     },
     {
       "unit": "KRWm",
@@ -1151,7 +1149,7 @@ The most common misconception in APV drills is VALUATION PLUMBING crossed with F
       "working_steps": [
         "= base-case NPV + tax shield + issue costs"
       ],
-      "expected_value": -363692.8134599191
+      "expected_value": -363159.6528381575
     }
   ]
 }
@@ -1268,8 +1266,10 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 |------|------|------|
 | Base-case NPV | PLN 5.5m | PLN 5.5m |
 | Tax shield | PLN 2.7m | — |
-| Issue costs | PLN -2.0m | PLN -3.1m |
+| Issue costs | PLN -1.9m | PLN -3.1m |
 | **APV** | **PLN 6.3m** | **PLN 2.5m** |
+
+*Debt issue costs = 3.00% of the PLN 65.0m gross principal; the rights issue is stated net, so its 4.50% cost is grossed up.*
 
 *Reported-position overlay:* the debt package lifts gearing (D/(D+E), market values) to **43.36%** and adds PLN 4.6m of annual interest (reducing interest cover), whereas the rights issue lowers gearing to **31.86%** but dilutes existing shareholders.
 
@@ -1281,7 +1281,7 @@ Both packages fund the same base case, so the ranking turns on the financing sid
 
 On these assumptions the APV is positive; a positive result is a floor, not a mandate, so the recommendation is conditional on the base-case and financing assumptions below holding under scrutiny.
 
-The board should first scrutinise whether the finance director's peer-benchmarked Keu of 13.5% is genuinely appropriate for this project: listed European logistics peers may operate predominantly in leased, lighter-weight assets, whereas the Łódź Regional Hub is a purpose-built, temperature-controlled warehousing property — an inherently less liquid, longer-duration asset class that may warrant a higher ungeared rate; if Keu is understated, the base-case NPV is overstated and the project may appear more attractive than it truly is. Turning to the financing side-effects, the board must satisfy itself that the PLN 65m term loan under Package A will remain fully outstanding for the entire four-year term, since any early repayment or covenant-triggered accelerated repayment would reduce the interest tax shield and erode Package A's advantage; PKO Bank Polski's minimum interest-cover covenant of 2.5× on a consolidated basis is a real constraint, and if operating cash flows disappoint — a plausible risk given the finance director's own caveat that near-shoring demand may not persist — VFP could breach this threshold, triggering renegotiation costs or forced early repayment. Under Package B, shareholder dilution is the primary concern: a rights issue of PLN 65m against a current equity market value of PLN 320m represents a material enlargement of the share register, and if the rights are not fully taken up, the underwriting cost embedded in the 4.5% issue-cost rate will be incurred in full while the project's revenue assumptions remain unproven. The qualitative trade-off is therefore between the discipline and tax efficiency of geared financing under Package A — which materially increases VFP's consolidated leverage and tightens interest-cover headroom — and the balance-sheet resilience of Package B, which preserves debt capacity for future acquisitions but dilutes existing shareholders and signals to the market that VFP's free cash flow cannot fund growth organically; the board should weigh both outcomes against VFP's stated strategic ambition to expand the hub network further across Central Europe, since a heavily geared structure today may foreclose the next transaction.
+The board should first scrutinise whether the finance director's peer-benchmarked Keu of 13.5% is genuinely appropriate for this project: listed European logistics peers may operate predominantly in leased, lighter-weight assets, whereas the Łódź Regional Hub is a purpose-built, temperature-controlled warehousing property — an inherently less liquid, longer-duration asset class that may warrant a higher ungeared rate; if Keu is understated, the base-case NPV is overstated and the project may appear more attractive than it truly is. Turning to the financing side-effects, the board must satisfy itself that the PLN 65m term loan under Package A will remain fully outstanding for the entire four-year term, since any early repayment or covenant-triggered accelerated repayment would reduce the interest tax shield and erode Package A's advantage; PKO Bank Polski's minimum interest-cover covenant of 2.5× on a consolidated basis is a real constraint, and if operating cash flows disappoint — a plausible risk given the finance director's own caveat that near-shoring demand may not persist — VFP could breach this threshold, triggering renegotiation costs or forced early repayment. Under Package B, shareholder dilution is the primary concern: a rights issue of PLN 65m against a current equity market value of PLN 320m represents a material enlargement of the share register, and if the rights are not fully taken up, the underwriting cost embedded in the 4.5% issue-cost rate will be incurred in full while the project's revenue assumptions remain unproven. The qualitative trade-off is therefore between the discipline and tax efficiency of geared financing under Package A — which materially increases VFP's consolidated leverage and tightens interest-cover headroom — and the balance-sheet resilience of Package B, which preserves debt capacity for future acquisitions but dilutes existing shareholders and signals to the market that VFP's free cash flow cannot fund growth organically; the board should weigh both outcomes against any intention VFP may have to expand the hub network further across Central Europe, since a heavily geared structure today may foreclose the next transaction.
 
 *Reconciliation: base-case NPV PLN 5.5m; debt APV PLN 6.3m vs equity APV PLN 2.5m — higher is debt. ✓*
 
@@ -1497,20 +1497,20 @@ The dominant misconception in APV drills is VALUATION PLUMBING combined with FEN
     },
     {
       "unit": "PLNm",
-      "label": "Issue costs — debt package (grossed up)",
+      "label": "Issue costs — debt package (gross principal × f)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "debt_issue_costs",
       "working_steps": [
-        "−(net proceeds × f/(1−f)) at 3.00%"
+        "−(gross debt principal × f) at 3.00%"
       ],
-      "expected_value": -2.0103092783505154
+      "expected_value": -1.95
     },
     {
       "unit": "PLNm",
-      "label": "Issue costs — equity (rights) package (grossed up)",
+      "label": "Issue costs — equity (rights) package (net, grossed up)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
@@ -1538,7 +1538,7 @@ The dominant misconception in APV drills is VALUATION PLUMBING combined with FEN
       "working_steps": [
         "= base-case NPV + tax shield + debt issue costs"
       ],
-      "expected_value": 6.260982380464091
+      "expected_value": 6.321291658814606
     },
     {
       "unit": "PLNm",
