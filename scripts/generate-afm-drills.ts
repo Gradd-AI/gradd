@@ -74,6 +74,14 @@ import {
   type NpvComputed,
   type NpvKind,
 } from '../lib/acca/npv';
+import {
+  computeApv,
+  buildApvSchema,
+  buildApvModelAnswer,
+  type ApvInputs,
+  type ApvComputed,
+  type ApvKind,
+} from '../lib/acca/apv';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -113,6 +121,7 @@ interface AfmDrillSpec {
   region_hint:             string;
   sector_hint:             string;
   npv_kind?:               NpvKind;   // B1a batch only — selects the NPV drill variant
+  apv_kind?:               ApvKind;   // B3j/B3k batch only — selects the APV drill variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -125,6 +134,10 @@ interface AfmDrillSpec {
 
 const FCFF_LOS = new Set<LoCode>(['B4b', 'B4c']);
 const NPV_LOS  = new Set<LoCode>(['B1a']);
+// APV (B3j quantitative / B3k mixed). B3k is 'mixed' in SYLLABUS_MAP, so the APV route is
+// keyed off spec.apv_kind (set by --apv-batch), NOT off mode — the compare kind carries
+// figures and must not fall through the mixed-mode throw.
+const APV_LOS  = new Set<LoCode>(['B3j', 'B3k']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -429,6 +442,50 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
+function buildApvUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.apv_kind ?? 'standard';
+  const kindBlock =
+    kind === 'subsidised'
+      ? `- DRILL TYPE: APV with a SUBSIDISED loan. The project is part-funded by a below-market (development-bank / government-backed) loan. In raw_inputs give debt_amount, kd (the MARKET cost of debt), subsidised_rate (the below-market coupon actually paid, strictly < kd), and debt_term. Do NOT give issue_cost_rate. context_text must state the market rate, the subsidised rate, and that the loan is tied to this project. Code computes the tax shield on the ACTUAL interest and the after-tax interest saving vs the market rate — do NOT state either in prose. DECISION-RELEVANCE (important): the classic APV lesson is that cheap, project-tied financing turns a MARGINAL project positive, so the all-equity base case must sit NEAR BREAK-EVEN. CALIBRATE the figures concretely (tax AND discounting at Keu erode the pre-tax flows, so aim for a base case near break-even — small in magnitude relative to the outlay, either sign): the SUM of the pre-tax real operating cash flows should be roughly 1.4–1.9× the initial outlay (lean to the higher end when the tax rate is 30%+). The subsidised debt should be a MEANINGFUL share of the outlay (a third to a half) so its shield + subsidy can plausibly tip the decision. Do NOT make operating cash flows tiny relative to the outlay — a base case so deeply negative that no financing could rescue it defeats the drill. Code owns the final sign; do not state it. LOAN TERM = APPRAISAL HORIZON: the subsidised facility is drawn for and repaid over the project's appraisal horizon — in context_text state the loan's term as EQUAL to the number of operating-cash-flow years (do NOT describe, say, a "15-year loan" while the appraisal runs 5 years), and set debt_term to that same horizon. The stated term and the years you shield MUST agree.`
+      : kind === 'reject'
+      ? `- DRILL TYPE: APV where the financing side-effects do NOT rescue a weak project. Choose operating figures so the all-equity base case is clearly value-DESTROYING (a negative base-case NPV), and a modest debt tax shield is not enough to lift the APV above zero. Give debt_amount and kd (optionally issue_cost_rate). Do NOT state the base-case NPV or the APV or their signs — code owns the reject verdict. Your prose must NOT pre-empt the decision or use "cautious optimism".`
+      : kind === 'financing_compare'
+      ? `- DRILL TYPE: APV comparing TWO financing packages for the SAME project (B3k — impact on the reported financial position under alternative financing strategies). The board is choosing between a DEBT package and an EQUITY (rights issue) package. In raw_inputs give: debt_amount, kd, issue_cost_rate (debt issue cost), equity_amount (net rights proceeds), equity_issue_cost_rate, existing_debt and existing_equity (current market values). Choose figures so the base case is POSITIVE and the two packages give genuinely close APVs (a real judgement). Code computes each package's APV, picks the higher, and computes the post-project gearing under each — do NOT state any APV, gearing figure or which package wins. Your prose must weigh the impact on the reported financial position: higher gearing and lower interest cover (debt) vs shareholder dilution (rights), tied to the scenario.`
+      : `- DRILL TYPE: STANDARD APV appraisal (Section-B style): base case at Keu + debt tax shield + issue costs. Give debt_amount, kd (market cost of debt), issue_cost_rate, and issue_amount (net finance raised). Code computes the tax shield (discounted at Kd), the grossed-up issue costs, the APV, and the accept/reject decision. Choose figures so the all-equity base case is already POSITIVE (a viable project) and the financing side-effects add further value, giving a clearly POSITIVE APV — a clean ACCEPT exemplar, distinct from the separate reject variant. Code owns the sign; do not state it.`;
+
+  return `Write one original ACCA AFM investment-appraisal drill using the ADJUSTED PRESENT VALUE (APV) technique.
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+${kindBlock}
+
+APV METHOD — the base case is valued as if ALL-EQUITY financed, discounted at the ungeared
+cost of equity Keu (a STATED scenario fact), then the present value of the financing
+side-effects is added. Deriving Keu by ungearing an equity beta is OUT OF SCOPE here — state
+Keu directly; a separate cost-of-capital drill covers the ungearing.
+
+CODE-COMPUTES PROTOCOL — MANDATORY. Code owns EVERY figure: the WDA schedule, tax, inflated
+cash flows, the base-case NPV at Keu, the debt tax shield, any subsidised-loan benefit, the
+grossed-up issue costs, the APV, and the accept/reject (or financing-choice) verdict. Supply
+the scenario, the raw inputs, and qualitative prose only. DO NOT state any of those computed
+figures, any present value, any discount factor, any inequality between computed figures, or
+the APV/base-case NPV or its sign.
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and a specific capital project that MATERIALLY changes the firm's financing structure (the reason APV, not NPV/WACC, is the right tool).
+- question: begins with the command verb; asks the candidate to appraise the project using APV and advise the board${kind === 'financing_compare' ? ' which financing package to use' : ' whether to proceed'}.
+- context_text: scenario narrative + a clean labelled list of the raw inputs (money in millions of the LOCAL currency, rates in %): initial capital cost, the pre-tax operating cash flows per year IN REAL TERMS (3–5 years), the inflation rate, the tax rate, the tax-payment lag, the capital qualifying for tax-allowable depreciation and its reducing-balance rate, the scrap/residual value, the ungeared cost of equity Keu, and the financing facts for this variant. Do NOT pre-compute anything.
+- JURISDICTION RULE (P4): factual regulator/institution NAMES are fine in context_text as scenario framing, but state a tax-allowable depreciation RATE only — NEVER a tax/CCA class number or a statute anywhere. In the ADVICE, do not invent jurisdiction-specific claims the scenario did not state. End context_text with EXACTLY this line: "For the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated."
+- Provide the SAME figures in raw_inputs. Rates as DECIMAL FRACTIONS (0.25 for 25%). Keu must exceed inflation and exceed Kd. ${kind === 'subsidised' ? 'subsidised_rate must be strictly below kd.' : kind === 'reject' ? 'Pick figures giving a clearly NEGATIVE base-case NPV.' : 'Pick figures giving a realistic, non-trivial APV so the decision is a genuine judgement.'}
+- interpretation_prose: qualitative advice ONLY, per the tool rules — no computed numbers, no present values, no inequalities, only context facts. Do NOT open with a verdict frame. Develop WHY the key assumptions matter (is Keu the right ungeared rate here; will the debt capacity / subsidy hold over the term) and what the board must verify.
+- QUESTION-COMPLETENESS (P5): the question must demand ONLY what the model answer delivers — an APV appraisal${kind === 'financing_compare' ? ' comparing the two financing packages' : ''}. Do NOT ask for a sensitivity analysis or a profitability-index ranking (those are other variants).
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
 function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -545,6 +602,48 @@ const SUBMIT_NPV_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+const SUBMIT_APV_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_apv_scenario',
+  description: 'Submit an APV investment-appraisal drill — raw inputs only; code computes the base-case NPV at Keu, the debt tax shield, any subsidised-loan benefit, issue costs, the APV, and the accept/reject (or financing-choice) verdict',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question:     { type: 'string', description: 'Drill question. Asks the candidate to appraise the project using APV and advise the board (whether to proceed, or — for the compare variant — which financing package to use).' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs. NO computed base-case NPV, tax shield, subsidy benefit, issue costs, APV, present values or discount factors — code computes all of them. State the ungeared (all-equity) cost of equity Keu as a GIVEN scenario fact. Add 1–2 challengeable textures (e.g. is Keu the right ungeared rate for this project; will the debt capacity be sustained; is the subsidy conditional).' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "advise", "calculate and recommend").' },
+      currency:     { type: 'string', description: 'ISO 4217 currency code used in context_text, e.g. "MYR", "BRL", "PLN", "KRW". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'The raw figures, matching context_text exactly. Code uses these for ALL arithmetic — the base case at Keu, the financing side-effects, and the APV.',
+        properties: {
+          initial_outlay:    { type: 'number', description: 'Capital cost at time 0, $m (positive)' },
+          real_operating_cf: { type: 'array', items: { type: 'number' }, description: 'Pre-tax operating cash flows in REAL terms, one per year, 3–5 entries', minItems: 3, maxItems: 5 },
+          inflation_rate:    { type: 'number', description: 'Annual inflation on operating cash flows, decimal e.g. 0.03' },
+          tax_rate:          { type: 'number', description: 'Corporate tax rate, decimal e.g. 0.25' },
+          tax_lag:           { type: 'number', description: 'Years tax (and the interest tax shield) are paid in arrears: 0 or 1' },
+          capital_for_wda:   { type: 'number', description: 'Capital qualifying for tax-allowable depreciation, $m' },
+          wda_rate:          { type: 'number', description: 'Reducing-balance tax-depreciation rate, decimal e.g. 0.25' },
+          scrap_value:       { type: 'number', description: 'Disposal/scrap proceeds at the end of the final year, $m' },
+          keu:               { type: 'number', description: 'UNGEARED (all-equity) cost of equity — the base-case discount rate, decimal e.g. 0.12. STATED in the scenario; do NOT ask the candidate to derive it by ungearing a beta (that is a separate cost-of-capital drill).' },
+          debt_amount:       { type: 'number', description: 'Debt raised to help fund the project, $m' },
+          kd:                { type: 'number', description: 'Pre-tax MARKET cost of debt, decimal e.g. 0.06 — the tax-shield (and subsidy) discount basis. For the subsidised variant this is the market rate the subsidised loan is compared against.' },
+          debt_term:         { type: 'number', description: 'Years the debt (and its tax shield) is outstanding. Optional — defaults to the project life. If context_text states a loan term, this MUST equal it AND the number of operating-cash-flow years (text and maths must agree).' },
+          subsidised_rate:   { type: 'number', description: 'SUBSIDISED variant only: the below-market coupon actually paid on the loan, decimal (must be < kd). Omit for other variants.' },
+          issue_cost_rate:   { type: 'number', description: 'STANDARD / COMPARE (debt) variants: issue/transaction cost as a fraction of GROSS proceeds, decimal e.g. 0.03. Omit for the subsidised variant.' },
+          issue_amount:      { type: 'number', description: 'NET finance raised on which issue costs are grossed up, $m. Optional — defaults to debt_amount.' },
+          equity_issue_cost_rate: { type: 'number', description: 'COMPARE variant only: issue cost fraction on the rights issue, decimal e.g. 0.05.' },
+          equity_amount:     { type: 'number', description: 'COMPARE variant only: NET equity raised under the equity (rights) package, $m.' },
+          existing_debt:     { type: 'number', description: 'COMPARE variant only: current market value of debt, $m (for the gearing overlay).' },
+          existing_equity:   { type: 'number', description: 'COMPARE variant only: current market value of equity, $m (for the gearing overlay).' },
+        },
+        required: ['initial_outlay', 'real_operating_cf', 'inflation_rate', 'tax_rate', 'tax_lag', 'capital_for_wda', 'wda_rate', 'scrap_value', 'keu', 'debt_amount', 'kd'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed numbers, NO inequality between computed figures (e.g. do not say the APV is positive/negative or which package wins), NO present values and NO discount factors — code owns all of those. Reference ONLY facts in context_text; any named risk may name only risks the scenario evidences. Do NOT open with a verdict frame or restate accept/reject — code injects the decision-keyed opener. Cover: whether the stated Keu is the right ungeared rate for THIS project; whether the debt capacity / subsidy will be sustained over the term; and (compare variant) the qualitative trade-off between higher gearing and interest cover vs shareholder dilution.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
   description: 'Submit the Ezra teaching reveal for a completed AFM drill',
@@ -573,6 +672,8 @@ interface DrillOutput {
   _computed?:     FcffComputed;      // FCFF only — dry-run inspection
   _npvInputs?:    NpvInputs;         // NPV only — dry-run inspection
   _npvComputed?:  NpvComputed;       // NPV only — dry-run inspection
+  _apvInputs?:    ApvInputs;         // APV only — dry-run inspection
+  _apvComputed?:  ApvComputed;       // APV only — dry-run inspection
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -679,6 +780,75 @@ async function draftNpvDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   };
 }
 
+// Each APV kind has an intended pedagogical verdict; the model can't see the base case it
+// authors (and "base near zero" depends on tax/Keu/inflation it can't self-calibrate), so we
+// score each draft against its kind's target and keep the BEST of N attempts (never ship the
+// worst). penalty 0 = on-target. standard/compare want an ACCEPT (so the method — and, for
+// compare, the package CHOICE — is what's exercised); reject wants the financing to FAIL to
+// rescue a negative base; subsidised wants the shield+subsidy to be DECISION-RELEVANT (the
+// decision flips, or |base| is within reach of the financing so the subsidy plausibly tips it).
+function apvKindPenalty(kind: ApvKind, c: ApvComputed): number {
+  if (kind === 'standard')          return c.apv > 0 ? 0 : 9;
+  if (kind === 'financing_compare') return c.apv > 0 ? 0 : 9;
+  if (kind === 'reject')            return (c.apv < 0 && c.base_npv < 0) ? 0 : 9;
+  // subsidised
+  const financing = (c.tax_shield ?? 0) + (c.subsidy_benefit ?? 0);
+  if (financing <= 0) return Infinity;
+  const flips = (c.base_npv < 0) !== (c.apv < 0);
+  return flips ? 0 : Math.abs(c.base_npv) / financing;
+}
+
+async function draftApvDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: ApvKind = spec.apv_kind ?? 'standard';
+  // Best-of-N: keep the attempt closest to the kind's intended verdict; accept early once
+  // one is on-target. All kinds get retries — generation variance flips verdicts otherwise.
+  const MAX_ATTEMPTS = 4;
+  const ACCEPT_PENALTY = 1.3;   // on-target (0) or, for subsidised, |base| within ~1.3× the financing
+  let best: DrillOutput | null = null;
+  let bestPenalty = Infinity;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const res = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 3200,   // APV scenarios carry many raw inputs + long prose; 2000 truncated the compare tool-use
+      system: AFM_EXAMINER_PERSONA,
+      tools: [SUBMIT_APV_SCENARIO_TOOL],
+      tool_choice: { type: 'tool', name: 'submit_apv_scenario' },
+      messages: [{ role: 'user', content: buildApvUserPrompt(spec) }],
+    });
+    const block = res.content.find((b) => b.type === 'tool_use');
+    if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in APV Pass 1 response');
+    const inp = block.input as {
+      question: string; context_text: string; command_verb: string; currency?: string;
+      raw_inputs: ApvInputs; interpretation_prose: string;
+    };
+    assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (APV)');
+    if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (APV): raw_inputs missing');
+
+    const currency = normaliseCurrency(inp.currency);
+    const computed = computeApv(inp.raw_inputs, kind);         // throws loud on bad data → retry regenerates
+    const { schema, serialized } = buildApvSchema(inp.raw_inputs, computed, currency, kind);
+    const model_answer = buildApvModelAnswer(inp.raw_inputs, computed, inp.interpretation_prose, currency, kind);
+
+    const candidate: DrillOutput = {
+      question:      inp.question,
+      context_text:  inp.context_text,
+      command_verb:  inp.command_verb.trim().toLowerCase(),
+      model_answer,
+      answer_schema: serialized,
+      _liveSchema:   schema,
+      _apvInputs:    inp.raw_inputs,
+      _apvComputed:  computed,
+      _currency:     currency,
+    };
+    const penalty = apvKindPenalty(kind, computed);
+    if (penalty <= bestPenalty) { best = candidate; bestPenalty = penalty; }
+    if (penalty <= ACCEPT_PENALTY) return candidate;
+    if (attempt < MAX_ATTEMPTS - 1) console.warn(`  ↻ ${spec.lo_code} [APV/${kind}] off-target verdict (base ${computed.base_npv.toFixed(1)}, APV ${computed.apv.toFixed(1)}, penalty ${penalty.toFixed(2)}) — retrying (${attempt + 1}/${MAX_ATTEMPTS})`);
+  }
+  if (bestPenalty > ACCEPT_PENALTY) console.warn(`  ⚠ ${spec.lo_code} [APV/${kind}] best-of-${MAX_ATTEMPTS} penalty ${bestPenalty.toFixed(2)} (>${ACCEPT_PENALTY}) — shipping least-bad; self-flag for review`);
+  return best!;
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -697,10 +867,14 @@ async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: s
 
 // Routing — quantitative FCFF LOs get the code-computes path; everything else discursive.
 async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  // APV is keyed off apv_kind (set by --apv-batch), not mode: B3k is 'mixed' but the compare
+  // variant carries figures, so it must reach the calculator, not the mixed-mode throw.
+  if (spec.apv_kind && APV_LOS.has(spec.lo_code)) return draftApvDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
-    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV)`);
+    if (APV_LOS.has(spec.lo_code))  return draftApvDrill(anthropic, spec);
+    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV)`);
   }
   if (spec.mode === 'mixed') {
     throw new Error(`Mixed LO ${spec.lo_code} not in pilot scope (needs a per-drill scenario_supplies_figures decision)`);
@@ -825,16 +999,33 @@ async function main() {
   const losArg   = arg('--los');
   const dryRun   = flag('--dry-run');
   const npvBatch = flag('--npv-batch');
+  const apvBatch = flag('--apv-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
+
+  if (npvBatch && apvBatch) { console.error('Error: pass only one of --npv-batch / --apv-batch.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
     const kinds: NpvKind[] = ['standard', 'rationing', 'sensitivity', 'section_a'];
     specs = kinds.map((k) => ({ ...buildSpecsForList(['B1a'] as LoCode[])[0], npv_kind: k }));
+  } else if (apvBatch) {
+    // 4 kinds → 3× B3j (quantitative) + 1× B3k (mixed). Fresh sectors/currencies, no overlap
+    // with the NPV/IRR batches (pharma/wind/lithium/gold/US-industrial). Rulings 2026-07-13.
+    const plan: { kind: ApvKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'standard',          lo: 'B3j', region: 'Malaysia',    sector: 'data-centre / digital infrastructure (MYR)' },
+      { kind: 'subsidised',        lo: 'B3j', region: 'Brazil',      sector: 'toll-road / transport infrastructure (BRL)' },
+      { kind: 'reject',            lo: 'B3j', region: 'South Korea', sector: 'shipbuilding / marine engineering (KRW)' },
+      { kind: 'financing_compare', lo: 'B3k', region: 'Poland',      sector: 'logistics / warehousing property (PLN)' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      apv_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
+      calculation_required: true,   // B3k is 'mixed' but every APV drill supplies figures + a schema
+    }));
   } else {
     const loCodes: LoCode[] = losArg
       ? (losArg.split(',').map((s) => s.trim()) as LoCode[])
@@ -880,9 +1071,11 @@ async function main() {
     console.log(`\nQUESTION:\n${drill.question}`);
     console.log(`\nMODEL_ANSWER:\n${drill.model_answer}`);
 
-    // Quantitative gates
+    // Quantitative gates — run for ANY drill that produced a numeric schema, not just
+    // mode==='quantitative': the APV compare variant is a 'mixed' LO (B3k) but carries a
+    // full answer_schema and MUST pass every gate before insert.
     let gatesOk = true;
-    if (spec.mode === 'quantitative') {
+    if (drill._liveSchema) {
       if (drill._rawInputs && drill._computed) {
         const cur = drill._currency ?? '$';
         console.log(`\nRAW INPUTS (model-supplied, currency ${cur}): ${JSON.stringify(drill._rawInputs)}`);
@@ -894,6 +1087,17 @@ async function main() {
         console.log(`\nNPV KIND: ${spec.npv_kind ?? 'standard'}  (${nc.n}-year, tax_lag ${drill._npvInputs.tax_lag}, ${nc.horizon}-period)`);
         console.log(`RAW INPUTS (model-supplied, currency ${cur}): ${JSON.stringify(drill._npvInputs)}`);
         console.log(`CODE-COMPUTED: NPV=${money(cur, nc.npv)}  decision=${nc.accept ? 'ACCEPT' : 'REJECT'}${nc.pi !== undefined ? `  PI=${nc.pi.toFixed(3)}` : ''}${nc.sensitivity_pct !== undefined ? `  sensitivity=${nc.sensitivity_pct.toFixed(2)}%` : ''}`);
+      }
+      if (drill._apvInputs && drill._apvComputed) {
+        const cur = drill._currency ?? '$';
+        const ac = drill._apvComputed;
+        console.log(`\nAPV KIND: ${spec.apv_kind ?? 'standard'}  (${ac.n}-year, tax_lag ${drill._apvInputs.tax_lag}, Keu ${(ac.keu * 100).toFixed(2)}%, Kd ${((ac.kd ?? 0) * 100).toFixed(2)}%)`);
+        console.log(`RAW INPUTS (model-supplied, currency ${cur}): ${JSON.stringify(drill._apvInputs)}`);
+        if (spec.apv_kind === 'financing_compare') {
+          console.log(`CODE-COMPUTED: base=${money(cur, ac.base_npv)}  APV(debt)=${money(cur, ac.apv_debt ?? 0)}  APV(equity)=${money(cur, ac.apv_equity ?? 0)}  choice=${ac.financing_choice}  decision=${ac.accept ? 'ACCEPT' : 'REJECT'}`);
+        } else {
+          console.log(`CODE-COMPUTED: base=${money(cur, ac.base_npv)}  shield=${money(cur, ac.tax_shield ?? 0)}${ac.subsidy_benefit !== undefined ? `  subsidy=${money(cur, ac.subsidy_benefit)}` : ''}${ac.issue_costs !== undefined ? `  issueCosts=${money(cur, ac.issue_costs)}` : ''}  APV=${money(cur, ac.apv)}  decision=${ac.accept ? 'ACCEPT' : 'REJECT'}`);
+        }
       }
       console.log(`\nANSWER_SCHEMA (serialised → answer_schema jsonb):\n${JSON.stringify(drill.answer_schema, null, 2)}`);
       const report = runQuantitativeGates(drill);
