@@ -56,6 +56,16 @@ Calculator #4 (`lib/acca/apv.ts`). APV = base-case NPV (the project as if all-eq
 - **Graded chain carries OFR to the verdict:** ncf_p → pv_p (at Keu) → base_npv → each side-effect (own graded root) → apv. Because apv depends on base_npv, a wrong base-case figure carried correctly through the financing steps still flips the apv sign — the reject kind's direction is code-owned (same guard as the NPV reject drill `f2817d06`). The `financing_compare` kind (B3k, 'mixed') grades two terminals (apv_debt, apv_equity); code owns which package is preferred; gearing/interest-cover is code-owned enrichment.
 - **Gate-guard fix:** the generator's quantitative-gate block keys off `drill._liveSchema`, not `mode==='quantitative'`, so the B3k 'mixed' compare drill (which carries a full schema) passes all five gates.
 
+### CAPM / cost-of-capital rulings (calculator #5, B3d/B3e, 2026-07-13)
+`lib/acca/capm.ts`. Pure **rates family** — no cash-flow chain, so **P6 loss-relief is a structural no-op and there is no issue-cost analogue** (all 6 gates still run). Rulings:
+- **This calculator OWNS the ungearing** the APV batch deliberately does not: APV *states* Keu; CAPM *derives* it (kind `keu_for_apv` ungears a peer β → asset β → Keu). The APV/CAPM boundary is thereby closed — do not re-litigate it.
+- **Debt beta = 0 across the batch** (exam-orthodox; debt assumed risk-free). The calculator *supports* a non-zero β_d (full MM formula) — **journalled as a future kind** if a drill ever needs risky debt; no drill uses it this batch.
+- **Modigliani–Miller WITH-TAX ungearing** is house standard: β_a = β_e·Ve/(Ve+Vd(1−T)); regear by inversion β_e = β_a + (β_a−β_d)·Vd(1−T)/Ve. CAPM prices Ke; WACC uses **market-value** weights and **post-tax** debt.
+- **Graded chains carry OFR to the verdict:** project_specific `asset_beta → regeared_beta → ke_project → wacc_project`; org_wacc `ke → wacc`; keu_for_apv `asset_beta → keu`; wrong_hurdle two chains (`company_ke → company_wacc`, `project_asset_beta → project_beta → project_ke → project_wacc`) + the **code-owned accept/reject flip** (return tested against the project-specific hurdle; company WACC is the wrong hurdle). Code owns every rate-vs-rate comparison; the model never states a beta, a rate, or an inequality.
+- **Tolerances:** betas are unitless → abs **±0.02**; rates (ke/keu/wacc) stored as PERCENTAGES → abs **±0.1 pp** (±0.05 would punish legitimate 2-dp beta rounding through the chain).
+- **Figure-integrity gate now checks 1/2/3 dp** (was 1 dp only): money displays at 1 dp, rates at 2 dp, **betas at 3 dp** — a value is "present" if any rounding is a substring. Backward-compatible (money still matches at 1 dp).
+- **Every scenario states its corporate tax rate explicitly** (needed to ungear); the UAE drill states CT = 9% (distinctive, verifiable).
+
 ### Batch discipline
 One calculator → full batch → one batched adversarial review → approval flip → next calculator. **Generation never outpaces review.** Reviews are by calculator family; the **first-of-family gets FULL hostility**, siblings get spot-checks **with full recomputation of every figure**. Drills sit `status='candidate'`, `published=false` until the approval flip.
 
