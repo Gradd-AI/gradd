@@ -104,7 +104,7 @@ export default function ACCALandingPage() {
                 <Link href="/acca/resit" className="btn btn-rust">Get my free resit diagnosis <span className="arrow">→</span></Link>
                 <Link href={AUTH_FREE} className="btn btn-ghost">Start free — every drill, no card <span className="arrow">→</span></Link>
               </div>
-              <p className="hero-microcopy">Free, 3 minutes, no sign-up.</p>
+              <p className="hero-microcopy">Resit diagnosis: free, 3 minutes, no sign-up. Drills: free to start with a quick email sign-in.</p>
               <div className="hero-meta">
                 <span>Every drill free</span>
                 <span className="dot" />
