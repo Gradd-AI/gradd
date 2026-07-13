@@ -1,10 +1,16 @@
 # AFM CAPM / cost-of-capital batch — blind adversarial review pack
 
-**Calculator #5: CAPM / cost of capital (`lib/acca/capm.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated after every fix round (through round 1).**
+**Calculator #5: CAPM / cost of capital (`lib/acca/capm.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated after every fix round.**
 
-Doctrine: code owns EVERY figure AND every figure-vs-figure verdict (which rate is higher and why; the wrong-hurdle accept/reject **flip**); the model authored PROSE only — never a beta, a rate, or an inequality. β_d=0; MM-with-tax ungear/regear; CAPM Ke; MV-weighted WACC. Derives the ungeared Keu APV states (kind `keu_for_apv`). Pure rates family — P6 loss-relief is a structural no-op. **The assumptions block and step numbering are KIND-CONDITIONAL** (round-1 FIX 1/2): each kind names only the operations its chain performs (org_wacc = no ungearing; keu_for_apv = no WACC), and step numbers are rendered dynamically. All 6 gates pass.
+Doctrine: code owns EVERY figure AND every figure-vs-figure verdict; the model authored PROSE only — never a beta, a rate, or an inequality. β_d=0; MM-with-tax ungear/regear; CAPM Ke; MV-weighted WACC. Derives the ungeared Keu APV uses (kind `keu_for_apv`). Pure rates family — P6 loss-relief is a structural no-op. Assumptions block + step numbering are KIND-CONDITIONAL. All 6 gates pass.
 
 **Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (project_specific, first-of-family), spot-check siblings WITH full recomputation.
+
+
+## ⛔ CLOSED RULINGS — do NOT re-raise (spend hostility on open questions, not settled ones)
+- **OFR wording** — "the error is charged once, at its source" is deliberate HOUSE wording tied to the reviewer override log (ACCA P2 Jun 2015 examiner language). Adjudicated closed; do not propose softening it.
+- **wrong_hurdle tag** — the `wrong_hurdle` drill is `lo_code` **B3d** by design (it makes B3d's "appropriateness of the cost of capital" clause concrete; the B3e ungear/regear chain is merely the vehicle). B3e coverage is journalled as dual. Not a mistag; do not re-raise a retag.
+- **APV/CAPM boundary** — APV *states* Keu; this calculator *derives* it. By design, not a gap.
 
 ---
 
@@ -326,7 +332,7 @@ RAW INPUTS:
 
 Keu = Rf + β_a × MRP = 4.20% + 0.902 × 6.50% = **10.07%**
 
-*This ungeared, all-equity cost of equity is exactly the base-case discount rate an **APV** appraisal states — APV consumes this Keu; it does not derive it.*
+*This ungeared Keu is the discount rate applied to the all-equity base-case cash flows in an **APV** appraisal; the financing side-effects are valued separately.*
 
 **Step 3 — Evaluation / advice to the board**
 

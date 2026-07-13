@@ -277,7 +277,7 @@ export function buildCapmModelAnswer(raw: CapmInputs, c: CapmComputed, prose: st
     lines.push(`β_a = β_e × Ve/(Ve + Vd(1−T)) = ${fmtB(c.peer_equity_beta!)} × ${pv}/(${pv} + ${pd}×(1−${tax})) = **${fmtB(c.asset_beta!)}**`, '');
     lines.push(`**Step ${S()} — Ungeared cost of equity (Keu)**`, '');
     lines.push(`Keu = Rf + β_a × MRP = ${pct2(rf)} + ${fmtB(c.asset_beta!)} × ${pct2(mrp)} = **${fmtR(c.keu!)}**`, '');
-    lines.push(`*This ungeared, all-equity cost of equity is exactly the base-case discount rate an **APV** appraisal states — APV consumes this Keu; it does not derive it.*`, '');
+    lines.push(`*This ungeared Keu is the discount rate applied to the all-equity base-case cash flows in an **APV** appraisal; the financing side-effects are valued separately.*`, '');
   } else if (kind === 'org_wacc') {
     const ve = raw.company_ve!, vd = raw.company_vd!, tot = ve + vd;
     lines.push(`**Step ${S()} — Cost of equity (CAPM)**`, '');
