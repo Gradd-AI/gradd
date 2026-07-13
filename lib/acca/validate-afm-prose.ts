@@ -137,6 +137,7 @@ export function lintCompleteness(question: string, modelAnswer: string): ProseIs
     { re: /modified internal rate of return|\bmirr\b/,        needs: /\bmirr\b|modified internal rate of return/,             label: 'a MIRR calculation' },
     { re: /internal rate of return|\birr\b/,                   needs: /\birr\b|internal rate of return/,                        label: 'an IRR appraisal' },
     { re: /net present value|\bnpv\b/,                         needs: /\bnpv\b|net present value/,                             label: 'an NPV appraisal' },
+    { re: /macaulay|modified duration|\bduration\b/,           needs: /macaulay|modified/,                                     label: 'a Macaulay/modified duration calculation' },
   ];
   for (const d of demands) {
     if (d.re.test(q) && !d.needs.test(a)) {

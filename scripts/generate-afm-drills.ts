@@ -90,6 +90,14 @@ import {
   type CapmComputed,
   type CapmKind,
 } from '../lib/acca/capm';
+import {
+  computeDuration,
+  buildDurationSchema,
+  buildDurationModelAnswer,
+  type DurationInputs,
+  type DurationComputed,
+  type DurationKind,
+} from '../lib/acca/duration';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -131,6 +139,7 @@ interface AfmDrillSpec {
   npv_kind?:               NpvKind;   // B1a batch only — selects the NPV drill variant
   apv_kind?:               ApvKind;   // B3j/B3k batch only — selects the APV drill variant
   capm_kind?:              CapmKind;  // B3d/B3e batch only — selects the CAPM drill variant
+  duration_kind?:          DurationKind; // B3f batch only — selects the duration drill variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -150,6 +159,9 @@ const APV_LOS  = new Set<LoCode>(['B3j', 'B3k']);
 // CAPM / cost-of-capital (B3d organisation WACC, B3e project-specific). Pure rates family —
 // no cash-flow chain, so P6 loss-relief is a structural no-op and there is no issue-cost analogue.
 const CAPM_LOS = new Set<LoCode>(['B3d', 'B3e']);
+// Bond duration (B3f Macaulay/modified; B3g convexity rider on the limitations kind). Pure
+// rates/bond family — P6 loss-relief no-op, no issue-cost analogue.
+const DURATION_LOS = new Set<LoCode>(['B3f']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -538,6 +550,46 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
+function buildDurationUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.duration_kind ?? 'standard';
+  const kindBlock =
+    kind === 'compare'
+      ? `- DRILL TYPE: COMPARE two debt facilities (e.g. a shorter-dated vs a longer-dated bond). In raw_inputs give BOTH \`bond\` and \`bond_b\` (each with face_value, coupon_rate, maturity, ytm, label). Code computes each duration and OWNS the RANKING of interest-rate exposure (higher modified duration = more exposed). Choose maturities/coupons so the ranking is clear. Do NOT rank or state any duration in prose.`
+      : kind === 'zero_coupon'
+      ? `- DRILL TYPE: ZERO-COUPON / deep-discount. The primary \`bond\` has coupon_rate 0 (a zero). ALSO give \`coupon_ref\`: an equivalent-maturity COUPON bond (same maturity + ytm, a normal coupon). Code shows the zero's Macaulay duration EQUALS its maturity, and the coupon bond's is shorter — the intuition anchor. Do NOT state any duration in prose.`
+      : kind === 'limitations'
+      ? `- DRILL TYPE: LIMITATIONS + CONVEXITY (this kind ALSO covers B3g). Give one \`bond\` and a LARGE \`yield_shift\` (e.g. 0.03 = +300 bp). The calculation is light (one duration + the first-order price estimate); the MARKS are in the evaluation. Your interpretation_prose must develop CONVEXITY: the modified-duration estimate is linear, so for a large shift it overstates the price fall (and understates the rise) because the true price–yield curve is convex. Do NOT state the duration or the estimate in prose — code injects them; develop the WHY.`
+      : `- DRILL TYPE: STANDARD single-bond duration (first-of-family). Give one \`bond\` and a \`yield_shift\` (e.g. 0.01 = +100 bp). Code builds the PV-weighted table, Macaulay, modified = Macaulay/(1+y), and the price sensitivity. The full mechanics.`;
+
+  return `Write one original ACCA AFM bond-duration drill.
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+${kindBlock}
+
+HOUSE CONVENTIONS — MANDATORY. Each bond is priced at its stated flat yield to maturity (a
+single YTM — no yield curve). Coupons are ANNUAL. Modified duration = Macaulay ÷ (1 + y).
+
+CODE-COMPUTES PROTOCOL — MANDATORY. Code owns EVERY figure: every discounted cash flow,
+price, Σ t·PV, Macaulay and modified duration, price sensitivity, and every duration-vs-
+duration ranking/comparison. Supply the scenario, the raw inputs, and qualitative prose only.
+DO NOT state any duration, any price, any rate, any inequality between durations, or the ranking.
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and its debt instrument(s) — a bond issue, a term loan, a facility.
+- question: begins with the command verb; asks for the relevant duration(s) and an assessment of interest-rate exposure.
+- context_text: scenario narrative + a clean labelled list of the raw inputs. STATE EACH BOND'S FLAT YTM EXPLICITLY, plus face value, coupon rate and maturity. Add 1 challengeable texture (the yield is a single snapshot; a parallel shift is assumed). Do NOT pre-compute anything.
+- CURRENCY REALISM: if the currency is TRY (Turkish lira), the stated yield MUST be realistic for lira debt — deep double-digit (e.g. 18–24%) — with one line acknowledging the high-rate environment; OR denominate the facilities in a hard currency (USD/EUR) and say so in the scenario. NEVER a single-digit TRY yield.
+- Provide the SAME figures in raw_inputs. Coupons and yields as DECIMAL FRACTIONS (0.08 for 8%). yield_shift (where used) as a decimal (0.01 = 100 bp).
+- interpretation_prose: qualitative evaluation ONLY, per the tool rules — no durations, no prices, no rates, no inequalities, only context facts.${kind === 'limitations' ? ' DEVELOP the convexity limitation (why the linear estimate is unreliable for a large shift).' : ''}
+- QUESTION-COMPLETENESS (P5): the question must demand ONLY what the model answer delivers (a Macaulay/modified duration assessment). Do NOT ask for an NPV, IRR or a WACC.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
 function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -731,6 +783,45 @@ const SUBMIT_CAPM_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+const BOND_PROPS = {
+  type: 'object' as const,
+  properties: {
+    face_value:  { type: 'number', description: 'Redemption / par value (e.g. 100 per unit, or the facility principal in millions)' },
+    coupon_rate: { type: 'number', description: 'Annual coupon rate as a DECIMAL (0.06 for 6%); 0 for a zero-coupon / deep-discount instrument' },
+    maturity:    { type: 'number', description: 'Whole years to redemption' },
+    ytm:         { type: 'number', description: 'Flat yield to maturity as a DECIMAL (0.08 for 8%). State it in context_text.' },
+    label:       { type: 'string', description: 'Short label used in the worked answer, e.g. "the 8-year bond"' },
+  },
+  required: ['face_value', 'coupon_rate', 'maturity', 'ytm'],
+};
+
+const SUBMIT_DURATION_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_duration_scenario',
+  description: 'Submit a bond-duration drill — raw inputs only; code builds the PV-weighted cash-flow table, Macaulay and modified duration, the price sensitivity, and owns the exposure ranking / zero-vs-coupon comparison',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question:     { type: 'string', description: 'Drill question. Asks the candidate to compute the relevant duration(s) and assess/rank the interest-rate exposure.' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs. State each bond\'s flat YTM EXPLICITLY. NO computed price/duration/sensitivity — code computes them all. Add a challengeable texture (e.g. the yield is a single snapshot; a large parallel shift is assumed).' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "calculate and assess", "calculate and rank").' },
+      currency:     { type: 'string', description: 'ISO 4217 currency code for the money figures, e.g. "CLP", "TRY", "IDR", "EUR". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'The raw figures, matching context_text exactly. Rates/coupons as DECIMAL fractions.',
+        properties: {
+          bond:        BOND_PROPS,
+          bond_b:      { ...BOND_PROPS, description: 'COMPARE kind only: the second bond/facility to rank against the first.' },
+          coupon_ref:  { ...BOND_PROPS, description: 'ZERO_COUPON kind only: an equivalent-maturity COUPON bond, for the duration<maturity contrast.' },
+          yield_shift: { type: 'number', description: 'STANDARD / LIMITATIONS kinds: the assumed parallel yield shift as a DECIMAL (e.g. 0.01 = +100 bp; the limitations kind uses a LARGE shift like 0.03).' },
+        },
+        required: ['bond'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative evaluation ONLY (3–5 sentences). State NO duration, NO price, NO rate, NO inequality between durations — code owns all of those. Reference ONLY facts in context_text. For the limitations kind, develop the CONVEXITY point (why the linear duration estimate over/understates the true price move for a large shift). Do NOT restate the exposure ranking — code injects it.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
   description: 'Submit the Ezra teaching reveal for a completed AFM drill',
@@ -763,6 +854,8 @@ interface DrillOutput {
   _apvComputed?:  ApvComputed;       // APV only — dry-run inspection
   _capmInputs?:   CapmInputs;        // CAPM only — dry-run inspection
   _capmComputed?: CapmComputed;      // CAPM only — dry-run inspection
+  _durationInputs?:   DurationInputs;    // duration only — dry-run inspection
+  _durationComputed?: DurationComputed;  // duration only — dry-run inspection
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -981,6 +1074,36 @@ async function draftCapmDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
   return best!;
 }
 
+async function draftDurationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: DurationKind = spec.duration_kind ?? 'standard';
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2600,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_DURATION_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_duration_scenario' },
+    messages: [{ role: 'user', content: buildDurationUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in duration Pass 1 response');
+  const inp = block.input as {
+    question: string; context_text: string; command_verb: string; currency?: string;
+    raw_inputs: DurationInputs; interpretation_prose: string;
+  };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (duration)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (duration): raw_inputs missing');
+
+  const currency = normaliseCurrency(inp.currency);
+  const computed = computeDuration(inp.raw_inputs, kind);       // throws loud on bad data → retry
+  const { schema, serialized } = buildDurationSchema(inp.raw_inputs, computed, currency, kind);
+  const model_answer = buildDurationModelAnswer(inp.raw_inputs, computed, inp.interpretation_prose, currency, kind);
+
+  return {
+    question: inp.question, context_text: inp.context_text, command_verb: inp.command_verb.trim().toLowerCase(),
+    model_answer, answer_schema: serialized, _liveSchema: schema, _durationInputs: inp.raw_inputs, _durationComputed: computed, _currency: currency,
+  };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -1003,12 +1126,14 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   // variant carries figures, so it must reach the calculator, not the mixed-mode throw.
   if (spec.apv_kind && APV_LOS.has(spec.lo_code)) return draftApvDrill(anthropic, spec);
   if (spec.capm_kind && CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
+  if (spec.duration_kind && DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
     if (APV_LOS.has(spec.lo_code))  return draftApvDrill(anthropic, spec);
     if (CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
-    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM)`);
+    if (DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
+    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM, B3f duration)`);
   }
   if (spec.mode === 'mixed') {
     throw new Error(`Mixed LO ${spec.lo_code} not in pilot scope (needs a per-drill scenario_supplies_figures decision)`);
@@ -1030,12 +1155,20 @@ function buildOfrProof(schema: AnswerSchema): { submission: StudentSubmission; e
   const own = new Map<string, number>();
   const components: StudentSubmission['components'] = [];
   const expected: Record<string, Verdict> = {};
+  // Perturb each root by a DISTINCT factor (not a single ×0.8). A dependent that is a
+  // scale-invariant RATIO of two roots (e.g. Macaulay duration = Σt·PV ÷ price) would
+  // recompute to the CORRECT value if both roots were scaled by the same factor — the error
+  // cancels — and wrongly verdict 'correct' instead of 'carried'. Distinct factors break the
+  // cancellation while staying well outside every tolerance. Affine chains carry as before.
+  let rootIdx = 0;
   for (const c of schema.components) {
     const deps = c.depends_on ?? [];
     if (deps.length === 0 || !c.recompute) {
-      const perturbed = c.expected_value * 0.8; // 20% off ≫ 0.5% tolerance → incorrect
+      const factor = Math.max(0.30, 0.85 - rootIdx * 0.06); // distinct per root, ≫ tolerance
+      rootIdx++;
+      const perturbed = c.expected_value * factor;
       own.set(c.component_id, perturbed);
-      components.push({ component_id: c.component_id, value: perturbed, workings: 'seeded upstream error (×0.8 of the correct figure)' });
+      components.push({ component_id: c.component_id, value: perturbed, workings: `seeded upstream error (×${factor.toFixed(2)} of the correct figure)` });
       expected[c.component_id] = 'incorrect';
     } else {
       const depVals: Record<string, number> = {};
@@ -1147,13 +1280,14 @@ async function main() {
   const npvBatch = flag('--npv-batch');
   const apvBatch = flag('--apv-batch');
   const capmBatch = flag('--capm-batch');
+  const durationBatch = flag('--duration-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  if ([npvBatch, apvBatch, capmBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch.'); process.exit(1); }
+  if ([npvBatch, apvBatch, capmBatch, durationBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch / --duration-batch.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
@@ -1171,6 +1305,18 @@ async function main() {
     specs = plan.map((p) => ({
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       capm_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
+    }));
+  } else if (durationBatch) {
+    // 4 kinds, all B3f; kind 4 (limitations) dual-covers B3g (journalled). Fresh sectors/currencies.
+    const plan: { kind: DurationKind; region: string; sector: string }[] = [
+      { kind: 'standard',    region: 'Chile',     sector: 'utilities / power generation (CLP)' },
+      { kind: 'compare',     region: 'Turkey',    sector: 'aviation / airline (TRY — deep double-digit yield, or hard-currency facilities)' },
+      { kind: 'zero_coupon', region: 'Indonesia', sector: 'property development (IDR)' },
+      { kind: 'limitations', region: 'Germany',   sector: 'automotive manufacturing (EUR)' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList(['B3f'] as LoCode[])[0],
+      duration_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
     }));
   } else if (apvBatch) {
     // 4 kinds → 3× B3j (quantitative) + 1× B3k (mixed). Fresh sectors/currencies, no overlap
@@ -1267,6 +1413,19 @@ async function main() {
           console.log(`CODE-COMPUTED: companyWACC=${cc.company_wacc?.toFixed(2)}%  projectWACC=${cc.project_wacc?.toFixed(2)}%  return=${cc.project_return}%  correct=${cc.accept ? 'ACCEPT' : 'REJECT'}  FLIPS=${cc.flips}`);
         } else {
           console.log(`CODE-COMPUTED: assetβ=${cc.asset_beta?.toFixed(3) ?? '—'}  regearedβ=${cc.regeared_beta?.toFixed(3) ?? '—'}  Ke=${(cc.ke ?? cc.keu)?.toFixed(2) ?? '—'}%  WACC=${cc.wacc?.toFixed(2) ?? '—'}%`);
+        }
+      }
+      if (drill._durationInputs && drill._durationComputed) {
+        const dc = drill._durationComputed;
+        const cur = drill._currency ?? '$';
+        console.log(`\nDURATION KIND: ${spec.duration_kind ?? 'standard'}  (${dc.primary.maturity}yr, coupon ${(dc.primary.coupon_rate * 100).toFixed(2)}%, YTM ${(dc.primary.ytm * 100).toFixed(2)}%)`);
+        console.log(`RAW INPUTS (model-supplied, ${cur}): ${JSON.stringify(drill._durationInputs)}`);
+        if (spec.duration_kind === 'compare') {
+          console.log(`CODE-COMPUTED: ${dc.primary.label} mod=${dc.primary.modified.toFixed(3)}y  vs  ${dc.bond_b!.label} mod=${dc.bond_b!.modified.toFixed(3)}y  →  more exposed = ${dc.more_exposed}`);
+        } else if (spec.duration_kind === 'zero_coupon') {
+          console.log(`CODE-COMPUTED: zero Macaulay=${dc.primary.macaulay.toFixed(3)}y (=maturity ${dc.primary.maturity}) · coupon-ref Macaulay=${dc.coupon_ref!.macaulay.toFixed(3)}y · identity ${dc.zero_identity_ok}`);
+        } else {
+          console.log(`CODE-COMPUTED: price=${money(cur, dc.primary.price)}  Macaulay=${dc.primary.macaulay.toFixed(3)}y  modified=${dc.primary.modified.toFixed(3)}y  ΔP/P(${((dc.yield_shift ?? 0) * 10000).toFixed(0)}bp)=${dc.price_sensitivity?.toFixed(2)}%`);
         }
       }
       console.log(`\nANSWER_SCHEMA (serialised → answer_schema jsonb):\n${JSON.stringify(drill.answer_schema, null, 2)}`);
