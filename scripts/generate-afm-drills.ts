@@ -54,7 +54,7 @@ import {
   type Verdict,
 } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
-import { lintJurisdiction, lintCompleteness } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintLossRelief } from '../lib/acca/validate-afm-prose';
 import {
   computeFcff,
   buildFcffSchema,
@@ -973,6 +973,15 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
   lines.push(`GATE 5 — question-completeness (P5): ${comp.length === 0 ? 'PASS' : 'FAIL'}`);
   if (comp.length) { ok = false; for (const iss of comp) lines.push(`    ✗ ${iss.message}`); }
   else lines.push('    ✓ every element the question demands is delivered in the model answer');
+
+  // (6) P6 loss-relief — a negative-taxable year (tax credit taken) requires a stated
+  // loss-relief assumption in the context. Detected from the computed tax schedule.
+  const taxYears = drill._apvComputed?.base.years ?? drill._npvComputed?.years;
+  const hasLossYear = !!taxYears?.some((y) => y.taxable < 0);
+  const relief = lintLossRelief(hasLossYear, drill.context_text);
+  lines.push(`GATE 6 — loss-relief (P6): ${relief.length === 0 ? 'PASS' : 'FAIL'}${hasLossYear ? ' (loss year present)' : ''}`);
+  if (relief.length) { ok = false; for (const iss of relief) lines.push(`    ✗ ${iss.message}`); }
+  else lines.push(`    ✓ ${hasLossYear ? 'loss year present and a relief assumption is stated' : 'no negative-taxable year'}`);
 
   return { ok, lines };
 }

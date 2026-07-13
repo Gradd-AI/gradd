@@ -19,10 +19,27 @@
 //      in the model answer (the Drill-1 "demanded sensitivity, delivered none" defect).
 
 export interface ProseIssue {
-  gate: 'jurisdiction' | 'completeness';
+  gate: 'jurisdiction' | 'completeness' | 'loss-relief';
   field: string;
   code: string;
   message: string;
+}
+
+// P6 loss-relief — pattern rule (APV round-1 FIX 1). When the tax schedule drives taxable
+// profit negative in ANY year, the worked answer takes a NEGATIVE tax (a credit) in that
+// year; that is only valid if the firm can use the loss immediately (relief against other
+// profits). Such a drill MUST state a loss-relief assumption in its context, or the negative
+// tax is an unstated assumption. Detected from the computed tax schedule (taxable < 0) AND
+// the absence of a relief line in the context.
+const LOSS_RELIEF_RE = /tax loss|loss relief|sufficient taxable profit|taxable profits (from|elsewhere)|use any project (tax )?loss|group relief|offset the loss/i;
+
+export function lintLossRelief(hasLossYear: boolean, context: string): ProseIssue[] {
+  if (!hasLossYear) return [];
+  if (LOSS_RELIEF_RE.test(context ?? '')) return [];
+  return [{
+    gate: 'loss-relief', field: 'context_text', code: 'loss-relief-assumption-missing',
+    message: 'a year has negative taxable profit (the worked answer takes a tax credit) but the context states no loss-relief assumption — add e.g. "assume sufficient taxable profits from other operations to use any project tax loss immediately, with the tax effect received one year in arrears"',
+  }];
 }
 
 // The ONE allowed jurisdiction phrase: the standard simplification line added to every
