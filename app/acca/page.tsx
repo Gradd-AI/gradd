@@ -27,7 +27,7 @@ export default async function ACCAPage({
     redirect('/');
   }
 
-  const { paper: paperParam } = await searchParams;
+  const { paper: paperParam, area: areaParam } = await searchParams;
   // Which ACCA paper's areas to list. Default APM (unchanged for the existing entry);
   // the AFM entry (G2) links here with ?paper=AFM.
   const paper = resolvePaper(typeof paperParam === 'string' ? paperParam : undefined);
@@ -72,6 +72,20 @@ export default async function ACCAPage({
   // boolean to the client — the env value itself never enters the client bundle.
   const casesEnabled = process.env.APM_CASES === '1';
 
+  // ── First-run state (F3) ────────────────────────────────────────────────────
+  // A brand-new user (zero attempts) gets ONE unmissable "start your first drill"
+  // action, deep-linked to a sensible default: the resit-diagnosed area if they
+  // arrived with ?area=<prefix> (threaded from the resit CTA and validated against
+  // published areas), else the first published area. Returning users never see it.
+  const { count: attemptCount } = await supabase
+    .from('acca_drill_attempts')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+  const hasAttempted = (attemptCount ?? 0) > 0;
+  const requestedArea = typeof areaParam === 'string' ? areaParam.toUpperCase() : undefined;
+  const firstDrillFromResit = !!(requestedArea && areas.some((a) => a.subArea === requestedArea));
+  const firstDrillArea = firstDrillFromResit ? requestedArea! : (areas[0]?.subArea ?? null);
+
   return (
     <>
       {/* Fires Meta CompleteRegistration once for a new signup (consent-gated). */}
@@ -82,6 +96,9 @@ export default async function ACCAPage({
         hasActiveAccess={!!hasActiveAccess}
         casesEnabled={casesEnabled}
         paper={paper}
+        hasAttempted={hasAttempted}
+        firstDrillArea={firstDrillArea}
+        firstDrillFromResit={firstDrillFromResit}
       />
     </>
   );

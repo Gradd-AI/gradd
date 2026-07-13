@@ -11,17 +11,22 @@ interface ACCADashboardProps {
   hasActiveAccess: boolean;
   casesEnabled?: boolean;
   paper: string;
+  hasAttempted?: boolean;
+  firstDrillArea?: string | null;
+  firstDrillFromResit?: boolean;
 }
 
 const FREE_TEACH_THROUGHS = 3;
 
-export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess, casesEnabled = false, paper }: ACCADashboardProps) {
+export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess, casesEnabled = false, paper, hasAttempted = false, firstDrillArea = null, firstDrillFromResit = false }: ACCADashboardProps) {
   const router = useRouter();
   const [navigating, setNavigating] = useState(false);
 
   const capHit = !hasActiveAccess && teachThroughsUsed >= FREE_TEACH_THROUGHS;
   // Carry the active paper on same-surface links; APM URLs stay clean (default).
   const paperQ = paper === 'APM' ? '' : `&paper=${encodeURIComponent(paper)}`;
+  // First-run (F3): a zero-attempt user gets one unmissable primary action above the grid.
+  const showFirstRun = areas.length > 0 && !hasAttempted && !!firstDrillArea;
   const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
 
   function handleSelect(subArea: string) {
@@ -57,8 +62,25 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
 
         <main className="apm-dash-main">
 
+          {/* First-run primary action (F3) — the seam a brand-new signup bounced on. One
+              banner, one link, deep into a sensible default drill. Grid stays below. */}
+          {showFirstRun && (
+            <a className="apm-firstrun" href={`/acca/tutor?area=${encodeURIComponent(firstDrillArea!)}${paperQ}`}>
+              <div className="apm-firstrun-text">
+                <span className="apm-firstrun-eyebrow">{firstDrillFromResit ? 'From your resit diagnosis' : 'Start here'}</span>
+                <span className="apm-firstrun-title">{firstDrillFromResit ? 'Start with your weakest area' : 'Start your first drill'}</span>
+                <span className="apm-firstrun-sub">
+                  {firstDrillFromResit
+                    ? 'Ezra coaches you through the first drill in the area your diagnosis flagged — no need to choose.'
+                    : 'Jump straight in — Ezra coaches you through your first drill, step by step.'}
+                </span>
+              </div>
+              <span className="apm-firstrun-cta">Start your first drill →</span>
+            </a>
+          )}
+
           <div className="apm-dash-hero">
-            <h1 className="apm-dash-title">Pick your area</h1>
+            <h1 className="apm-dash-title">{showFirstRun ? 'Or pick your area' : 'Pick your area'}</h1>
             <p className="apm-dash-sub">
               Ezra diagnoses exactly where you stalled and teaches from there — targeted coaching, not generic hints.
             </p>
@@ -228,6 +250,25 @@ const CSS = `
   display: flex;
   flex-direction: column;
   gap: 28px;
+}
+
+/* ── First-run banner (F3) ── */
+.apm-firstrun {
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 22px 26px; border-radius: 16px; text-decoration: none;
+  background: linear-gradient(135deg, oklch(64% 0.17 47 / 0.10), oklch(64% 0.17 47 / 0.04));
+  border: 1.5px solid var(--rust);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.apm-firstrun:hover { transform: translateY(-2px); box-shadow: 0 8px 24px oklch(64% 0.17 47 / 0.20); }
+.apm-firstrun-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.apm-firstrun-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--rust); }
+.apm-firstrun-title { font-family: var(--font-display); font-size: 21px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+.apm-firstrun-sub { font-size: 13.5px; color: var(--text-muted); line-height: 1.5; }
+.apm-firstrun-cta { flex-shrink: 0; background: var(--rust); color: #fff8f4; font-weight: 600; font-size: 14px; padding: 12px 20px; border-radius: 999px; white-space: nowrap; }
+@media (max-width: 560px) {
+  .apm-firstrun { flex-direction: column; align-items: stretch; }
+  .apm-firstrun-cta { text-align: center; }
 }
 
 /* ── Hero ── */
