@@ -82,6 +82,14 @@ import {
   type ApvComputed,
   type ApvKind,
 } from '../lib/acca/apv';
+import {
+  computeCapm,
+  buildCapmSchema,
+  buildCapmModelAnswer,
+  type CapmInputs,
+  type CapmComputed,
+  type CapmKind,
+} from '../lib/acca/capm';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -122,6 +130,7 @@ interface AfmDrillSpec {
   sector_hint:             string;
   npv_kind?:               NpvKind;   // B1a batch only — selects the NPV drill variant
   apv_kind?:               ApvKind;   // B3j/B3k batch only — selects the APV drill variant
+  capm_kind?:              CapmKind;  // B3d/B3e batch only — selects the CAPM drill variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -138,6 +147,9 @@ const NPV_LOS  = new Set<LoCode>(['B1a']);
 // keyed off spec.apv_kind (set by --apv-batch), NOT off mode — the compare kind carries
 // figures and must not fall through the mixed-mode throw.
 const APV_LOS  = new Set<LoCode>(['B3j', 'B3k']);
+// CAPM / cost-of-capital (B3d organisation WACC, B3e project-specific). Pure rates family —
+// no cash-flow chain, so P6 loss-relief is a structural no-op and there is no issue-cost analogue.
+const CAPM_LOS = new Set<LoCode>(['B3d', 'B3e']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -486,6 +498,46 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
+function buildCapmUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.capm_kind ?? 'project_specific';
+  const kindBlock =
+    kind === 'org_wacc'
+      ? `- DRILL TYPE: ORGANISATION WACC (B3d). Compute the company's OWN overall WACC. In raw_inputs give company_equity_beta, company_ve, company_vd (market values), kd, rf, mrp, tax_rate. Code prices Ke via CAPM on the company's own beta and weights it with post-tax debt by MARKET VALUES. No ungearing here (the company's own beta is used directly).`
+      : kind === 'keu_for_apv'
+      ? `- DRILL TYPE: UNGEARED COST OF EQUITY / Keu (B3e). UNGEAR a peer/sector equity beta to an asset beta, then price the ungeared (all-equity) cost of equity Keu = Rf + β_asset × MRP. In raw_inputs give peer_equity_beta, peer_ve, peer_vd, rf, mrp, tax_rate (NO kd, NO regearing). Frame the ask as deriving the ungeared rate that an APV appraisal would use for its all-equity base case — this calculator DERIVES Keu; APV states it.`
+      : kind === 'wrong_hurdle'
+      ? `- DRILL TYPE: WRONG-HURDLE (B3d appropriateness). A firm is appraising a project whose BUSINESS RISK differs from its own. Give the COMPANY's data (company_equity_beta, company_ve, company_vd, kd) AND a PEER in the project's line of business (peer_equity_beta, peer_ve, peer_vd) AND the project's expected return (project_return, as a %). Code computes the company WACC and the project-specific WACC (ungear the peer, regear to the firm's gearing) and owns the accept/reject decision + whether the wrong hurdle FLIPS it. CHOOSE project_return so it sits BETWEEN the two WACCs (so the decision flips — the teaching point). Do NOT state any rate or the decision in prose.`
+      : `- DRILL TYPE: PROJECT-SPECIFIC WACC (B3e), first-of-family. UNGEAR a PEER's equity beta to an asset beta (strip the peer's financial risk), then REGEAR to the appraising firm's OWN capital structure, price the project Ke via CAPM, and compute the project-specific WACC. Give peer_equity_beta, peer_ve, peer_vd, own_ve, own_vd (the appraising firm's gearing), kd, rf, mrp, tax_rate. The project is in the peer's line of business, DIFFERENT from the appraising firm's own — that is why a project-specific rate is needed.`;
+
+  return `Write one original ACCA AFM cost-of-capital drill.
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+${kindBlock}
+
+HOUSE CONVENTIONS — MANDATORY. Debt beta = 0 (debt assumed risk-free, exam-orthodox). Betas
+are ungeared/regeared with the Modigliani–Miller WITH-TAX relationship β_a = β_e × Ve/(Ve+Vd(1−T)).
+The cost of equity is priced by CAPM. WACC uses MARKET-VALUE weights and a post-tax cost of debt.
+
+CODE-COMPUTES PROTOCOL — MANDATORY. Code owns EVERY figure: every asset/regeared beta, every
+Ke/Keu, every WACC, every rate-vs-rate comparison, and the accept/reject decision + flip. Supply
+the scenario, the raw inputs, and qualitative prose only. DO NOT state any beta, any rate, any
+inequality between rates, or the decision.
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and (where the kind needs it) a named listed PEER whose beta is observable.
+- question: begins with the command verb; asks for the relevant cost of capital and an evaluation/advice.
+- context_text: scenario narrative + a clean labelled list of the raw inputs. STATE THE CORPORATE TAX RATE EXPLICITLY (needed to ungear) — for the UAE use 9%, distinctive and correct. Give market values of equity and debt in millions of the LOCAL currency; betas as decimals; rf, mrp, kd as %. Add 1 challengeable texture (peer comparability; single-observation beta reliability). Do NOT pre-compute anything.
+- Provide the SAME figures in raw_inputs. Rates as DECIMAL FRACTIONS (0.04 for 4%); betas as decimals; project_return (wrong_hurdle) as a PERCENTAGE number.
+- interpretation_prose: qualitative evaluation ONLY, per the tool rules — no betas, no rates, no inequalities, only context facts. Cover peer comparability, business-vs-financial risk, and the appropriateness of the rate for project/organisational value.
+- QUESTION-COMPLETENESS (P5): the question must demand ONLY what the model answer delivers (a cost-of-capital derivation + evaluation). Do NOT ask for an NPV, a sensitivity, or a PI ranking.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
 function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -643,6 +695,42 @@ const SUBMIT_APV_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+const SUBMIT_CAPM_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_capm_scenario',
+  description: 'Submit a CAPM / cost-of-capital drill — raw inputs only; code ungears/regears betas (MM with-tax), prices Ke via CAPM, computes market-value-weighted WACC, and owns every rate comparison and the wrong-hurdle accept/reject flip',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question:     { type: 'string', description: 'Drill question. Asks the candidate to compute the relevant cost of capital and evaluate/advise.' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the raw inputs. State the corporate tax rate EXPLICITLY (needed to ungear). NO computed betas/Ke/WACC — code computes them all. Give market values of equity and debt for each entity in the local currency; give betas and rates as usual. Add a challengeable texture (e.g. is the peer group truly comparable; is the single-period beta stable).' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "calculate and evaluate", "calculate and advise").' },
+      currency:     { type: 'string', description: 'ISO 4217 currency code for the market-value figures in context_text, e.g. "INR", "MXN", "AED", "TWD". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'The raw figures, matching context_text exactly. Rates as DECIMAL fractions (0.04 for 4%). Betas as decimals (~1.0). Market values Ve/Vd in millions of the local currency.',
+        properties: {
+          rf:        { type: 'number', description: 'Risk-free rate, decimal e.g. 0.04' },
+          mrp:       { type: 'number', description: 'Market / equity risk premium, decimal e.g. 0.06' },
+          tax_rate:  { type: 'number', description: 'Corporate tax rate, decimal e.g. 0.25 — STATE IT in context_text too (needed to ungear)' },
+          kd:        { type: 'number', description: 'Pre-tax cost of debt, decimal — for the WACC kinds (org_wacc, project_specific, wrong_hurdle)' },
+          company_equity_beta: { type: 'number', description: 'The COMPANY\'s own equity beta (org_wacc, wrong_hurdle)' },
+          company_ve: { type: 'number', description: 'Company market value of equity (org_wacc, wrong_hurdle)' },
+          company_vd: { type: 'number', description: 'Company market value of debt (org_wacc, wrong_hurdle)' },
+          peer_equity_beta: { type: 'number', description: 'A PEER / proxy company\'s equity beta to ungear (project_specific, keu_for_apv, wrong_hurdle)' },
+          peer_ve:   { type: 'number', description: 'Peer market value of equity' },
+          peer_vd:   { type: 'number', description: 'Peer market value of debt' },
+          own_ve:    { type: 'number', description: 'The appraising firm\'s OWN market value of equity to regear into (project_specific)' },
+          own_vd:    { type: 'number', description: 'The appraising firm\'s OWN market value of debt (project_specific)' },
+          project_return: { type: 'number', description: 'wrong_hurdle only: the project\'s expected return / IRR as a PERCENTAGE (e.g. 9.5 for 9.5%), tested against both hurdles.' },
+        },
+        required: ['rf', 'mrp', 'tax_rate'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative evaluation ONLY (3–5 sentences). State NO computed beta, NO rate, NO inequality between rates — code owns all of those. Reference ONLY facts in context_text. Cover: whether the peer group is genuinely comparable (same business risk); why business risk vs financial risk matters here; and the appropriateness of the rate for establishing project/organisational value (the B3d/B3e discussion). Do NOT restate the accept/reject decision — code injects it.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
   description: 'Submit the Ezra teaching reveal for a completed AFM drill',
@@ -673,6 +761,8 @@ interface DrillOutput {
   _npvComputed?:  NpvComputed;       // NPV only — dry-run inspection
   _apvInputs?:    ApvInputs;         // APV only — dry-run inspection
   _apvComputed?:  ApvComputed;       // APV only — dry-run inspection
+  _capmInputs?:   CapmInputs;        // CAPM only — dry-run inspection
+  _capmComputed?: CapmComputed;      // CAPM only — dry-run inspection
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -848,6 +938,49 @@ async function draftApvDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   return best!;
 }
 
+async function draftCapmDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: CapmKind = spec.capm_kind ?? 'project_specific';
+  // wrong_hurdle must come back with the decision FLIPPING (the teaching point); the model
+  // can't see the two WACCs it produces, so run best-of-4 and keep a flipping draft.
+  const MAX_ATTEMPTS = kind === 'wrong_hurdle' ? 4 : 1;
+  let best: DrillOutput | null = null;
+  let bestFlips = false;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const res = await anthropic.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 2600,
+      system: AFM_EXAMINER_PERSONA,
+      tools: [SUBMIT_CAPM_SCENARIO_TOOL],
+      tool_choice: { type: 'tool', name: 'submit_capm_scenario' },
+      messages: [{ role: 'user', content: buildCapmUserPrompt(spec) }],
+    });
+    const block = res.content.find((b) => b.type === 'tool_use');
+    if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in CAPM Pass 1 response');
+    const inp = block.input as {
+      question: string; context_text: string; command_verb: string; currency?: string;
+      raw_inputs: CapmInputs; interpretation_prose: string;
+    };
+    assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (CAPM)');
+    if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (CAPM): raw_inputs missing');
+
+    const currency = normaliseCurrency(inp.currency);
+    const computed = computeCapm(inp.raw_inputs, kind);          // throws loud on bad data → retry
+    const { schema, serialized } = buildCapmSchema(inp.raw_inputs, computed, kind);
+    const model_answer = buildCapmModelAnswer(inp.raw_inputs, computed, inp.interpretation_prose, kind);
+
+    const candidate: DrillOutput = {
+      question: inp.question, context_text: inp.context_text, command_verb: inp.command_verb.trim().toLowerCase(),
+      model_answer, answer_schema: serialized, _liveSchema: schema, _capmInputs: inp.raw_inputs, _capmComputed: computed, _currency: currency,
+    };
+    if (kind !== 'wrong_hurdle') return candidate;
+    if (computed.flips) return candidate;
+    best = candidate; bestFlips = computed.flips ?? false;
+    if (attempt < MAX_ATTEMPTS - 1) console.warn(`  ↻ ${spec.lo_code} [CAPM/wrong_hurdle] decision did not flip (return ${computed.project_return}, company ${computed.company_wacc?.toFixed(2)}, project ${computed.project_wacc?.toFixed(2)}) — retrying (${attempt + 1}/${MAX_ATTEMPTS})`);
+  }
+  if (!bestFlips) console.warn(`  ⚠ ${spec.lo_code} [CAPM/wrong_hurdle] best-of-${MAX_ATTEMPTS} still not flipping — shipping least-bad; self-flag for review`);
+  return best!;
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -869,11 +1002,13 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   // APV is keyed off apv_kind (set by --apv-batch), not mode: B3k is 'mixed' but the compare
   // variant carries figures, so it must reach the calculator, not the mixed-mode throw.
   if (spec.apv_kind && APV_LOS.has(spec.lo_code)) return draftApvDrill(anthropic, spec);
+  if (spec.capm_kind && CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
     if (APV_LOS.has(spec.lo_code))  return draftApvDrill(anthropic, spec);
-    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV)`);
+    if (CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
+    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM)`);
   }
   if (spec.mode === 'mixed') {
     throw new Error(`Mixed LO ${spec.lo_code} not in pilot scope (needs a per-drill scenario_supplies_figures decision)`);
@@ -932,11 +1067,14 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     lines.push(`    ✓ ${schema.components.length} components; every dependent recomputes to its authored expected within tolerance`);
   }
 
-  // (2) answer↔schema figure integrity — each expected_value (fmt1) appears in the model answer
+  // (2) answer↔schema figure integrity — each expected_value appears in the model answer.
+  // Check at 1/2/3 dp: money displays at 1 dp, rates (%) at 2 dp, betas at 3 dp — a value is
+  // "present" if any of those roundings is a substring (CAPM betas need >1 dp).
   const normalized = drill.model_answer.replace(/,/g, '');
+  const present = (n: number) => [1, 2, 3].some((d) => normalized.includes(n.toFixed(d)));
   const missing: string[] = [];
   for (const c of schema.components) {
-    if (!normalized.includes(fmt1(c.expected_value))) missing.push(`${c.component_id}=${fmt1(c.expected_value)}`);
+    if (!present(c.expected_value)) missing.push(`${c.component_id}=${fmt1(c.expected_value)}`);
   }
   lines.push(`GATE 2 — answer↔schema figure integrity: ${missing.length === 0 ? 'PASS' : 'FAIL'}`);
   if (missing.length) { ok = false; lines.push(`    ✗ figures absent from model_answer: ${missing.join(', ')}`); }
@@ -1008,18 +1146,32 @@ async function main() {
   const dryRun   = flag('--dry-run');
   const npvBatch = flag('--npv-batch');
   const apvBatch = flag('--apv-batch');
+  const capmBatch = flag('--capm-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  if (npvBatch && apvBatch) { console.error('Error: pass only one of --npv-batch / --apv-batch.'); process.exit(1); }
+  if ([npvBatch, apvBatch, capmBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
     const kinds: NpvKind[] = ['standard', 'rationing', 'sensitivity', 'section_a'];
     specs = kinds.map((k) => ({ ...buildSpecsForList(['B1a'] as LoCode[])[0], npv_kind: k }));
+  } else if (capmBatch) {
+    // 4 kinds → 2× B3e (project_specific first-of-family, keu_for_apv boundary closure) +
+    // 2× B3d (org_wacc, wrong_hurdle). Fresh sectors/currencies. Rulings 2026-07-13.
+    const plan: { kind: CapmKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'project_specific', lo: 'B3e', region: 'India',   sector: 'telecommunications infrastructure (INR)' },
+      { kind: 'org_wacc',         lo: 'B3d', region: 'Mexico',  sector: 'food & beverage / consumer staples (MXN)' },
+      { kind: 'keu_for_apv',      lo: 'B3e', region: 'the UAE', sector: 'hospitality / hotel development (AED; CT 9%)' },
+      { kind: 'wrong_hurdle',     lo: 'B3d', region: 'Taiwan',  sector: 'semiconductors (TWD)' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      capm_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
+    }));
   } else if (apvBatch) {
     // 4 kinds → 3× B3j (quantitative) + 1× B3k (mixed). Fresh sectors/currencies, no overlap
     // with the NPV/IRR batches (pharma/wind/lithium/gold/US-industrial). Rulings 2026-07-13.
@@ -1105,6 +1257,16 @@ async function main() {
           console.log(`CODE-COMPUTED: base=${money(cur, ac.base_npv)}  APV(debt)=${money(cur, ac.apv_debt ?? 0)}  APV(equity)=${money(cur, ac.apv_equity ?? 0)}  choice=${ac.financing_choice}  decision=${ac.accept ? 'ACCEPT' : 'REJECT'}`);
         } else {
           console.log(`CODE-COMPUTED: base=${money(cur, ac.base_npv)}  shield=${money(cur, ac.tax_shield ?? 0)}${ac.subsidy_benefit !== undefined ? `  subsidy=${money(cur, ac.subsidy_benefit)}` : ''}${ac.issue_costs !== undefined ? `  issueCosts=${money(cur, ac.issue_costs)}` : ''}  APV=${money(cur, ac.apv)}  decision=${ac.accept ? 'ACCEPT' : 'REJECT'}`);
+        }
+      }
+      if (drill._capmInputs && drill._capmComputed) {
+        const cc = drill._capmComputed;
+        console.log(`\nCAPM KIND: ${spec.capm_kind ?? 'project_specific'}  (Rf ${(cc.rf * 100).toFixed(2)}%, MRP ${(cc.mrp * 100).toFixed(2)}%, tax ${(cc.tax * 100).toFixed(2)}%, β_d ${cc.debt_beta})`);
+        console.log(`RAW INPUTS (model-supplied): ${JSON.stringify(drill._capmInputs)}`);
+        if (spec.capm_kind === 'wrong_hurdle') {
+          console.log(`CODE-COMPUTED: companyWACC=${cc.company_wacc?.toFixed(2)}%  projectWACC=${cc.project_wacc?.toFixed(2)}%  return=${cc.project_return}%  correct=${cc.accept ? 'ACCEPT' : 'REJECT'}  FLIPS=${cc.flips}`);
+        } else {
+          console.log(`CODE-COMPUTED: assetβ=${cc.asset_beta?.toFixed(3) ?? '—'}  regearedβ=${cc.regeared_beta?.toFixed(3) ?? '—'}  Ke=${(cc.ke ?? cc.keu)?.toFixed(2) ?? '—'}%  WACC=${cc.wacc?.toFixed(2) ?? '—'}%`);
         }
       }
       console.log(`\nANSWER_SCHEMA (serialised → answer_schema jsonb):\n${JSON.stringify(drill.answer_schema, null, 2)}`);
