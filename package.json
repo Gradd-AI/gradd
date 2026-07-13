@@ -19,6 +19,7 @@
     "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts",
     "test:afm-tutor": "tsx scripts/test-afm-tutor.ts",
     "test:npv": "tsx scripts/test-npv.ts",
+    "test:apv": "tsx scripts/test-apv.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts"
   },
