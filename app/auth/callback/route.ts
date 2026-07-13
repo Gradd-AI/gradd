@@ -29,22 +29,33 @@ export async function GET(request: Request) {
     const { data, error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
       const dest = new URL(`${origin}${next}`);
-      // Flag a brand-new account so /acca can fire Meta CompleteRegistration once.
-      // A new user's account is created moments before this first callback; a
-      // returning user's created_at is old. Only the drill dashboard hosts the
-      // tracker, so scope the flag to next === '/acca'.
-      const createdAt = data.user?.created_at;
-      if (createdAt && next === '/acca') {
-        const NEW_USER_WINDOW_MS = 5 * 60 * 1000;
-        if (Date.now() - new Date(createdAt).getTime() < NEW_USER_WINDOW_MS) {
-          dest.searchParams.set('signup', '1');
-          // Best-effort internal alert on a brand-new APM signup. notifyGrant
-          // swallows all errors, so this can never fail the redirect below.
-          await notifyGrant(
-            '[Gradd] New APM signup',
-            `New APM signup — ${data.user?.email ?? 'unknown email'}`
-          );
-        }
+      // Detect a brand-new signup by the profile-just-created signal: a fresh
+      // account's created_at ≈ its first last_sign_in_at (both stamped this
+      // exchange), whereas a returning user's created_at is far in the past
+      // (verified: fresh signups ~0min, returning users thousands of min). This
+      // replaces the old (Date.now − created_at < 5min) window AND the
+      // next === '/acca' scoping — either could silently suppress the alert and
+      // the Meta flag (a slow magic-link click, or a non-'/acca' destination).
+      const u = data.user;
+      const createdMs = u?.created_at ? new Date(u.created_at).getTime() : null;
+      const lastSignInMs = u?.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : null;
+      const FIRST_SIGNIN_WINDOW_MS = 10 * 60 * 1000; // huge margin: fresh ≈0, returning ≫10min
+      const isNewSignup =
+        createdMs !== null && lastSignInMs !== null && lastSignInMs - createdMs < FIRST_SIGNIN_WINDOW_MS;
+
+      if (isNewSignup) {
+        // Meta CompleteRegistration flag (fires wherever MetaTrackSignup mounts).
+        dest.searchParams.set('signup', '1');
+        // Best-effort internal alert. notifyGrant never throws; it returns a skip
+        // reason (also console.error'd) so Vercel function logs show exactly why an
+        // alert did or did not go out — no more guessing which branch swallowed it.
+        const email = u?.email ?? 'unknown email';
+        const reason = await notifyGrant('[Gradd] New ACCA signup', `New signup — ${email} · next=${next}`);
+        if (reason) console.error(`[notify] signup alert NOT sent for ${email} — ${reason}`);
+        else console.log(`[notify] signup alert sent for ${email}`);
+      } else {
+        const gapS = createdMs !== null && lastSignInMs !== null ? Math.round((lastSignInMs - createdMs) / 1000) : null;
+        console.log(`[notify] returning user (created→last_sign_in ${gapS === null ? 'n/a' : gapS + 's'}) — no signup alert`);
       }
       return NextResponse.redirect(dest.toString());
     }
