@@ -191,3 +191,24 @@ The most common misconception in APV drills is VALUATION PLUMBING crossed with F
 ### full_reveal — amended (FIX 5 — typo "ungerated" → "ungeared")
 
 The dominant misconception in APV drills is VALUATION PLUMBING combined with FENCE-SITTING: candidates either misroute the discount rate for the tax shield — applying Keu where Kd belongs — or they produce two APV numbers and stop, leaving the board without a recommendation. The plumbing error matters because the tax shield is a debt-related cash flow whose risk profile tracks the certainty of the interest payment, not the business risk of the ungeared firm; using the wrong rate is a mismatch between the risk of the flow and the rate used to price it, and whether that mismatch overstates or understates the shield's present value depends on the relative size of the rates in this specific scenario. The fence-sitting error is equally costly: APV exists precisely to decompose value by financing source so that a decision between packages can be made — stopping at "Package A APV is X and Package B APV is Y" is the calculation, not the advice; the board needs to hear which package to select and why the financing side-effects drive that ranking. If your base-case NPV is wrong, carry it forward into both APV lines consistently — where your method for adding the shield and deducting issue costs is correct, those downstream marks remain available, but only if you use your own figure without switching back to the model figure mid-calculation. Finally, a positive APV is the floor of the recommendation, not the ceiling: the board also needs to hear what conditions — covenant headroom, Keu appropriateness, rights-issue take-up — could erode the advantage that the preferred package appears to offer.
+
+---
+
+## Round 2 (reviewer saw the stale pre-round-1 pack; 5 repeats confirm round 1)
+
+### FIX 6 — drill `34f9e897` context_text (amended)
+
+APV-rationale sentence corrected — removed the false "the debt level is expected to decline as the loan is repaid" (contradicts the Year-4 bullet repayment). Now reads:
+
+> Because the project-specific debt is large, temporary, and extinguished at the end of the concession horizon, the conventional WACC-based NPV — which assumes a constant debt ratio — is an unreliable appraisal tool.
+
+Re-gated: 6 gates PASS.
+
+### Rejected (journalled)
+
+- **OFR softening** — "the error is charged once, at its source" is house wording tied to the override log; ruling reaffirmed closed, no change.
+- **Drill-4 retag** — `dedca530` stays **B3k primary** per the Q3 design ruling (only B3k coverage; question leads with the B3k task). B3j is dual coverage — journalled (single-tag `lo_code`, no secondary-tag column without a migration).
+
+### Process rule (permanent)
+
+After every fix round the FULL pack (`AFM_BATCH_APV_REVIEW_PACK.md`) is regenerated in place and is always current DB state; delta packs like this one are additional, never a substitute.

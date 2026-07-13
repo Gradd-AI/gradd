@@ -59,6 +59,13 @@ Calculator #4 (`lib/acca/apv.ts`). APV = base-case NPV (the project as if all-eq
 ### Batch discipline
 One calculator → full batch → one batched adversarial review → approval flip → next calculator. **Generation never outpaces review.** Reviews are by calculator family; the **first-of-family gets FULL hostility**, siblings get spot-checks **with full recomputation of every figure**. Drills sit `status='candidate'`, `published=false` until the approval flip.
 
+### Review-pack hygiene — full pack is always current (PERMANENT, 2026-07-13)
+**After every fix round, regenerate the FULL review pack in place** — the on-disk canonical pack (e.g. `docs/reviews/AFM_BATCH_APV_REVIEW_PACK.md`) must ALWAYS reflect current DB state. Delta packs (`*_R2.md`, …) are ADDITIONAL, never a substitute. *(Origin: APV round 2 — the reviewer was handed the stale pre-round-1 pack and re-raised five already-fixed findings, wasting a review cycle.)*
+
+### APV round-2 rulings (2026-07-13)
+- **B3k drill dual coverage (dedca530).** `financing_compare` is tagged **B3k primary** per the Q3 design ruling — it is the batch's only B3k coverage and the question leads with the B3k "impact under alternative financing strategies" task. It ALSO exercises B3j APV mechanics (base + shield + issue costs). `acca_drills.lo_code` is single-valued and no secondary-tag column exists (adding one = migration), so the **dual coverage is journaled here, not schema-tagged**.
+- **OFR wording — REJECTED softening (ruling reaffirmed).** "The error is charged once, at its source" is house wording, tied to the override log; it is NOT softened. The OFR ruling above stays **closed**.
+
 ### BSOP — spreadsheet-inputs ruling
 Black-Scholes option pricing is taught **spreadsheet-inputs style** — the exam supplies the calculator (J24 Littlebredy). Marked components = the **five input identifications + interpretation**, NOT manual option maths. (Pilot #2 / E2 extension gets its own fixtures and full hostility.)
 
