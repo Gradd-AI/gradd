@@ -4,7 +4,7 @@
 // rate/beta chain; no-workings at source. Plus numeric checks (MM ungear/regear round-trip; the
 // wrong_hurdle flip is code-owned).
 
-import { computeCapm, buildCapmSchema, type CapmInputs, type CapmKind } from '../lib/acca/capm';
+import { computeCapm, buildCapmSchema, buildCapmModelAnswer, type CapmInputs, type CapmKind } from '../lib/acca/capm';
 import { verifyNumericAnswer, type AnswerSchema, type StudentSubmission, type Verdict } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
 
@@ -106,6 +106,28 @@ console.log(`\n${'═'.repeat(60)}\nNUMERIC CHECKS`);
   const c = computeCapm(INPUTS.wrong_hurdle, 'wrong_hurdle');
   const ok = near(c.company_wacc!, 7.705, 0.02) && near(c.project_wacc!, 11.165, 0.03) && c.accept === false && c.would_accept_on_company === true && c.flips === true;
   console.log(`${ok ? 'PASS' : 'FAIL'} :: wrong_hurdle — company WACC ${c.company_wacc!.toFixed(2)} < return 9.5 < project WACC ${c.project_wacc!.toFixed(2)}; correct=REJECT, company-hurdle=accept, FLIPS=${c.flips}`);
+  if (!ok) failures++;
+}
+
+// ── Template checks (round-1 FIX 1/2/5): kind-conditional assumptions, dynamic step
+// numbering, no verb-interpolation artifact ──
+console.log(`\n${'═'.repeat(60)}\nTEMPLATE (assumptions scope · step numbering · verb-split)`);
+for (const kind of Object.keys(INPUTS) as CapmKind[]) {
+  const c = computeCapm(INPUTS[kind], kind);
+  const ma = buildCapmModelAnswer(INPUTS[kind], c, 'Evaluation prose.', kind);
+  const assumptions = ma.split('**Assumptions:**')[1]?.split('\n')[0] ?? '';
+  // FIX 1 — the assumptions block names ONLY the operations this kind's chain performs.
+  let a1: boolean;
+  if (kind === 'org_wacc') a1 = /no ungearing or regearing/i.test(assumptions) && !/regeared/i.test(assumptions);
+  else if (kind === 'keu_for_apv') a1 = /no WACC is computed/i.test(assumptions) && /ungeared/i.test(assumptions) && !/regeared/i.test(assumptions);
+  else a1 = /ungeared/i.test(assumptions) && /regeared/i.test(assumptions);
+  // FIX 2 — step numbers are 1..K consecutive, no gaps.
+  const nums = [...ma.matchAll(/\*\*Step (\d+) —/g)].map((m) => Number(m[1]));
+  const a2 = nums.length > 0 && nums.every((n, i) => n === i + 1);
+  // FIX 5 — no **word**ed verb-split artifact anywhere.
+  const a5 = !/\*\*[A-Za-z]+\*\*ed\b/.test(ma);
+  const ok = a1 && a2 && a5;
+  console.log(`${ok ? 'PASS' : 'FAIL'} :: ${kind.padEnd(17)} assumptions-scope ${a1} · steps ${JSON.stringify(nums)} consecutive ${a2} · no verb-split ${a5}`);
   if (!ok) failures++;
 }
 

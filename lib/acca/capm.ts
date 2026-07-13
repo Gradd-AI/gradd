@@ -253,24 +253,36 @@ export function buildCapmModelAnswer(raw: CapmInputs, c: CapmComputed, prose: st
   const rf = c.rf, mrp = c.mrp, tax = c.tax;
   const kd = raw.kd !== undefined ? asDec(raw.kd) : 0;
 
-  lines.push('**Cost of capital — CAPM / weighted average cost of capital**', '');
-  lines.push(
-    `**Assumptions:** the debt beta is taken as **${c.debt_beta} (debt assumed risk-free)**, the exam-orthodox default; betas are ungeared and regeared using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)); the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = ${pct2(rf)} and MRP = ${pct2(mrp)}; the corporate tax rate is ${pct2(tax)}.`,
-    '',
-  );
+  // Dynamic step numbering — never hardcode; the label is the running count of steps rendered.
+  let step = 0;
+  const S = () => ++step;
+  const commonCapm = `the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = ${pct2(rf)} and MRP = ${pct2(mrp)}; the corporate tax rate is ${pct2(tax)}`;
+
+  // Heading + assumptions — KIND-CONDITIONAL: name only the operations this chain performs.
+  lines.push(kind === 'keu_for_apv'
+    ? '**Cost of capital — CAPM / ungeared cost of equity**'
+    : '**Cost of capital — CAPM / weighted average cost of capital**', '');
+  if (kind === 'org_wacc') {
+    lines.push(`**Assumptions:** the company's listed equity beta is used **directly** through CAPM — there is **no ungearing or regearing** (this is an organisation-wide WACC, not a proxy-beta exercise); the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; ${commonCapm}.`, '');
+  } else if (kind === 'keu_for_apv') {
+    lines.push(`**Assumptions:** a peer/sector equity beta is **ungeared** to an asset beta using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **${c.debt_beta} (debt assumed risk-free)**; **no WACC is computed** here — the deliverable is the ungeared, all-equity cost of equity; ${commonCapm}.`, '');
+  } else {
+    lines.push(`**Assumptions:** a peer's equity beta is **ungeared** to an asset beta and **regeared** to the appraising firm's capital structure using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **${c.debt_beta} (debt assumed risk-free)**; the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; ${commonCapm}.`, '');
+  }
+  lines.push('');
 
   if (kind === 'keu_for_apv') {
     const pv = raw.peer_ve!, pd = raw.peer_vd!;
-    lines.push('**Step 1 — Ungear the peer / sector equity beta to an asset beta**', '');
+    lines.push(`**Step ${S()} — Ungear the peer / sector equity beta to an asset beta**`, '');
     lines.push(`β_a = β_e × Ve/(Ve + Vd(1−T)) = ${fmtB(c.peer_equity_beta!)} × ${pv}/(${pv} + ${pd}×(1−${tax})) = **${fmtB(c.asset_beta!)}**`, '');
-    lines.push('**Step 2 — Ungeared cost of equity (Keu)**', '');
+    lines.push(`**Step ${S()} — Ungeared cost of equity (Keu)**`, '');
     lines.push(`Keu = Rf + β_a × MRP = ${pct2(rf)} + ${fmtB(c.asset_beta!)} × ${pct2(mrp)} = **${fmtR(c.keu!)}**`, '');
     lines.push(`*This ungeared, all-equity cost of equity is exactly the base-case discount rate an **APV** appraisal states — APV consumes this Keu; it does not derive it.*`, '');
   } else if (kind === 'org_wacc') {
     const ve = raw.company_ve!, vd = raw.company_vd!, tot = ve + vd;
-    lines.push('**Step 1 — Cost of equity (CAPM)**', '');
+    lines.push(`**Step ${S()} — Cost of equity (CAPM)**`, '');
     lines.push(`Ke = Rf + β_e × MRP = ${pct2(rf)} + ${fmtB(raw.company_equity_beta!)} × ${pct2(mrp)} = **${fmtR(c.ke!)}**`, '');
-    lines.push('**Step 2 — Weighted average cost of capital (market-value weights)**', '');
+    lines.push(`**Step ${S()} — Weighted average cost of capital (market-value weights)**`, '');
     lines.push(`| Source | Market value | Weight | Cost | Weighted |`, `|------|------|------|------|------|`);
     lines.push(`| Equity | ${ve} | ${(ve / tot).toFixed(3)} | ${fmtR(c.ke!)} | ${(c.ke! * ve / tot).toFixed(2)}% |`);
     lines.push(`| Debt (post-tax) | ${vd} | ${(vd / tot).toFixed(3)} | ${pct2(kd * (1 - tax))} | ${(kd * (1 - tax) * 100 * vd / tot).toFixed(2)}% |`);
@@ -278,38 +290,37 @@ export function buildCapmModelAnswer(raw: CapmInputs, c: CapmComputed, prose: st
     lines.push(`The cost of equity (${fmtR(c.ke!)}) exceeds the post-tax cost of debt (${pct2(kd * (1 - tax))}), as expected — equity holders bear the residual risk and price it higher.`, '');
   } else if (kind === 'project_specific') {
     const pv = raw.peer_ve!, pd = raw.peer_vd!, ov = raw.own_ve!, od = raw.own_vd!, tot = ov + od;
-    lines.push('**Step 1 — Ungear the peer\'s equity beta (strip out the peer\'s financial risk)**', '');
+    lines.push(`**Step ${S()} — Ungear the peer's equity beta (strip out the peer's financial risk)**`, '');
     lines.push(`β_a = β_e × Ve/(Ve + Vd(1−T)) = ${fmtB(c.peer_equity_beta!)} × ${pv}/(${pv} + ${pd}×(1−${tax})) = **${fmtB(c.asset_beta!)}**`, '');
-    lines.push('**Step 2 — Regear to YOUR capital structure**', '');
+    lines.push(`**Step ${S()} — Regear to YOUR capital structure**`, '');
     lines.push(`β_e' = β_a × (Ve + Vd(1−T))/Ve = ${fmtB(c.asset_beta!)} × (${ov} + ${od}×(1−${tax}))/${ov} = **${fmtB(c.regeared_beta!)}**`, '');
     lines.push(`The regeared equity beta (**${fmtB(c.regeared_beta!)}**) is **${c.beta_direction}** than the peer's equity beta (${fmtB(c.peer_equity_beta!)}) because your gearing ${c.beta_direction === 'higher' ? 'exceeds' : c.beta_direction === 'lower' ? 'is below' : 'matches'} the peer's — the asset (business) risk is the same, only the financial risk differs.`, '');
-    lines.push('**Step 3 — Project cost of equity (CAPM)**', '');
+    lines.push(`**Step ${S()} — Project cost of equity (CAPM)**`, '');
     lines.push(`Ke = Rf + β_e' × MRP = ${pct2(rf)} + ${fmtB(c.regeared_beta!)} × ${pct2(mrp)} = **${fmtR(c.ke!)}**`, '');
-    lines.push('**Step 4 — Project-specific WACC (market-value weights)**', '');
+    lines.push(`**Step ${S()} — Project-specific WACC (market-value weights)**`, '');
     lines.push(`WACC = Ke × We + Kd(1−T) × Wd = ${fmtR(c.ke!)} × ${(ov / tot).toFixed(3)} + ${pct2(kd * (1 - tax))} × ${(od / tot).toFixed(3)} = **${fmtR(c.wacc!)}**`, '');
     lines.push(`This project rate reflects the **business risk of the peer's activity**, not your firm's own line of business — using your own company WACC would misprice a project of different risk.`, '');
   } else {
     // wrong_hurdle
     const ve = raw.company_ve!, vd = raw.company_vd!, tot = ve + vd, pv = raw.peer_ve!, pd = raw.peer_vd!;
-    lines.push('**Step 1 — The company\'s own WACC (the tempting but WRONG hurdle here)**', '');
+    lines.push(`**Step ${S()} — The company's own WACC (the tempting but WRONG hurdle here)**`, '');
     lines.push(`Company Ke = Rf + β_company × MRP = ${pct2(rf)} + ${fmtB(raw.company_equity_beta!)} × ${pct2(mrp)} = ${fmtR(c.company_ke!)}.`, '');
     lines.push(`Company WACC = ${fmtR(c.company_ke!)} × ${(ve / tot).toFixed(3)} + ${pct2(kd * (1 - tax))} × ${(vd / tot).toFixed(3)} = **${fmtR(c.company_wacc!)}**.`, '');
-    lines.push('**Step 2 — The project-specific rate (ungear the peer, regear to your gearing)**', '');
+    lines.push(`**Step ${S()} — The project-specific rate (ungear the peer, regear to your gearing)**`, '');
     lines.push(`β_a = ${fmtB(raw.peer_equity_beta!)} × ${pv}/(${pv} + ${pd}×(1−${tax})) = ${fmtB(c.project_asset_beta!)}; β_e' = ${fmtB(c.project_beta!)}.`, '');
     lines.push(`Project Ke = ${pct2(rf)} + ${fmtB(c.project_beta!)} × ${pct2(mrp)} = ${fmtR(c.project_ke!)}; Project WACC = **${fmtR(c.project_wacc!)}**.`, '');
-    lines.push('**Step 3 — Decision (code-owned)**', '');
+    lines.push(`**Step ${S()} — Decision (code-owned)**`, '');
     const correct = c.accept ? 'ACCEPT' : 'REJECT';
-    const wrong = c.would_accept_on_company ? 'accept' : 'reject';
+    const wrong = c.would_accept_on_company ? 'accepted' : 'rejected'; // full past-tense — never split a verb with bold markers
     lines.push(
       c.flips
-        ? `The project's expected return is **${fmtR(c.project_return!)}**. Against the correct **project-specific** hurdle of ${fmtR(c.project_wacc!)}, the decision is **${correct}**. Against the company WACC of ${fmtR(c.company_wacc!)}, you would have wrongly **${wrong}**ed it — the wrong hurdle **flips the decision**. The project must be judged on its OWN risk, not the firm's average.`
+        ? `The project's expected return is **${fmtR(c.project_return!)}**. Against the correct **project-specific** hurdle of ${fmtR(c.project_wacc!)}, the decision is **${correct}**. Against the company WACC of ${fmtR(c.company_wacc!)}, you would have wrongly **${wrong}** it — the wrong hurdle **flips the decision**. The project must be judged on its OWN risk, not the firm's average.`
         : `The project's expected return is **${fmtR(c.project_return!)}**. It clears (or fails) both the company WACC (${fmtR(c.company_wacc!)}) and the project-specific rate (${fmtR(c.project_wacc!)}) the same way, so the decision is **${correct}** — but the board must still use the project-specific rate ${fmtR(c.project_wacc!)}, because relying on the company average is only safe by coincidence here.`,
       '',
     );
   }
 
-  const stepNo = kind === 'wrong_hurdle' ? '4' : (kind === 'keu_for_apv' ? '3' : '5');
-  lines.push(`**Step ${stepNo} — Evaluation / advice to the board**`, '');
+  lines.push(`**Step ${S()} — Evaluation / advice to the board**`, '');
   lines.push(prose, '');
 
   // Reconciliation
