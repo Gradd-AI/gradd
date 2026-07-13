@@ -26,7 +26,7 @@ const CORE = {
 const INPUTS: Record<ApvKind, ApvInputs> = {
   standard: {
     ...CORE, initial_outlay: 100, capital_for_wda: 100, scrap_value: 10,
-    debt_amount: 40, kd: 0.06, debt_term: 4, issue_cost_rate: 0.03, issue_amount: 40,
+    debt_amount: 40, kd: 0.06, debt_term: 4, issue_cost_rate: 0.03,
   },
   subsidised: {
     ...CORE, initial_outlay: 100, capital_for_wda: 100, scrap_value: 10,
@@ -150,11 +150,24 @@ console.log(`\n${'═'.repeat(64)}\nNUMERIC CHECKS`);
   if (!ok) failures++;
 }
 
-// Standard: grossed-up issue costs = 40 × 0.03/0.97 = 1.2371 (stored negative).
+// Standard: debt is GROSS-stated → issue costs = debt × f = 40 × 0.03 = 1.2 (stored negative).
 {
   const c = computeApv(INPUTS.standard, 'standard');
-  const ok = near(c.issue_costs!, -1.2371) && near(c.apv, c.base_npv + c.tax_shield! + c.issue_costs!);
-  console.log(`${ok ? 'PASS' : 'FAIL'} :: standard issue_costs≈-1.2371 (got ${c.issue_costs!.toFixed(4)}), APV = base + shield + issue (${c.apv.toFixed(3)})`);
+  const ok = near(c.issue_costs!, -1.2) && near(c.apv, c.base_npv + c.tax_shield! + c.issue_costs!);
+  console.log(`${ok ? 'PASS' : 'FAIL'} :: standard issue_costs≈-1.2 (gross×f) (got ${c.issue_costs!.toFixed(4)}), APV = base + shield + issue (${c.apv.toFixed(3)})`);
+  if (!ok) failures++;
+}
+
+// FIX-A: the two issue-cost conventions never collide. Debt is GROSS-stated (interest +
+// shield run on it) → gross × f, NOT grossed up. Rights proceeds are NET-stated → net gross-up.
+{
+  const g = computeApv(INPUTS.standard, 'standard');            // debt 40 @ 3%  → gross×f = 1.2
+  const cmp = computeApv(INPUTS.financing_compare, 'financing_compare'); // debt 60 @ 2%, equity 60 @ 5%
+  const grossDebtOk = near(g.issue_costs!, -(40 * 0.03));                // 1.2 (not 40×.03/.97)
+  const compareDebtOk = near(cmp.debt_issue_costs!, -(60 * 0.02));       // 1.2 gross
+  const equityNetOk = near(cmp.equity_issue_costs!, -(60 * 0.05 / 0.95)); // 3.1579 net gross-up
+  const ok = grossDebtOk && compareDebtOk && equityNetOk;
+  console.log(`${ok ? 'PASS' : 'FAIL'} :: FIX-A convention — debt gross×f (${(-g.issue_costs!).toFixed(3)}, ${(-cmp.debt_issue_costs!).toFixed(3)}), equity net gross-up (${(-cmp.equity_issue_costs!).toFixed(4)})`);
   if (!ok) failures++;
 }
 

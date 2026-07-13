@@ -61,8 +61,7 @@ export interface ApvInputs {
   kd?:               number;   // pre-tax MARKET cost of debt (tax-shield + subsidy discount basis)
   debt_term?:        number;   // years the debt (and its shield) is outstanding; default = project life N
   subsidised_rate?:  number;   // below-market coupon actually paid (subsidised kind); market rate = kd
-  issue_cost_rate?:  number;   // issue/transaction cost as a fraction of GROSS proceeds
-  issue_amount?:     number;   // NET finance to be raised, on which issue costs are grossed up
+  issue_cost_rate?:  number;   // debt issue/transaction cost as a fraction of the GROSS principal (debt_amount)
 
   // ── financing_compare (B3k) only — a debt package vs an equity (rights) package ──
   equity_issue_cost_rate?: number; // issue cost fraction on the rights issue (gross)
@@ -111,11 +110,21 @@ export interface ApvComputed {
   extra_interest?:  number;   // annual pre-tax interest added by the debt package
 }
 
-// Grossed-up issue cost: to net `amount` after a fee of fraction `f` on gross proceeds,
-// raise amount/(1−f); the cost is the difference = amount × f/(1−f). Returned POSITIVE.
-function grossedUpIssueCost(netAmount: number, feeRate: number): number {
+// Issue costs, two conventions — a drill states EITHER the gross principal OR the net
+// proceeds, and NEVER uses one figure as both:
+//   GROSS-stated (a loan principal — interest and the tax shield run on it): cost = gross × f.
+//     The debt tranche is always gross-stated (debt_amount is the principal borrowed).
+//   NET-stated (the proceeds the firm must net, e.g. a rights issue sized to a funding need):
+//     cost = net × f/(1−f) — gross up to net `amount` after a fee f on gross proceeds.
+// Using the loan principal as gross for interest/shield AND as net for a grossed-up issue
+// cost double-counts the fee; that inconsistency was FIX-A (2026-07-13).
+function issueCostFromGross(gross: number, feeRate: number): number {
   if (feeRate <= 0 || feeRate >= 1) throw new Error(`issue cost rate out of range (0,1): ${feeRate}`);
-  return (netAmount * feeRate) / (1 - feeRate);
+  return gross * feeRate;
+}
+function issueCostFromNet(net: number, feeRate: number): number {
+  if (feeRate <= 0 || feeRate >= 1) throw new Error(`issue cost rate out of range (0,1): ${feeRate}`);
+  return (net * feeRate) / (1 - feeRate);
 }
 
 // PV of the debt tax shield: interest = debt × coupon each year 1..term, tax relief =
@@ -163,9 +172,11 @@ export function computeApv(raw: ApvInputs, kind: ApvKind): ApvComputed {
     const debt = req(raw.debt_amount, 'debt_amount');
     const kd = asDec(req(raw.kd, 'kd'));
     const { rows: shieldRows, total: taxShield } = computeTaxShield(debt, kd, tax, kd, term, lag);
-    const debtIssue = -grossedUpIssueCost(debt, asDec(req(raw.issue_cost_rate, 'issue_cost_rate')));
+    // Debt principal is GROSS (interest + shield run on it) → issue cost = gross × f.
+    const debtIssue = -issueCostFromGross(debt, asDec(req(raw.issue_cost_rate, 'issue_cost_rate')));
+    // Rights-issue proceeds are stated NET of costs → gross up.
     const equityNet = req(raw.equity_amount, 'equity_amount');
-    const equityIssue = -grossedUpIssueCost(equityNet, asDec(req(raw.equity_issue_cost_rate, 'equity_issue_cost_rate')));
+    const equityIssue = -issueCostFromNet(equityNet, asDec(req(raw.equity_issue_cost_rate, 'equity_issue_cost_rate')));
 
     const apvDebt = base_npv + taxShield + debtIssue;
     const apvEquity = base_npv + equityIssue;
@@ -229,8 +240,8 @@ export function computeApv(raw: ApvInputs, kind: ApvKind): ApvComputed {
   }
 
   if (raw.issue_cost_rate !== undefined) {
-    const net = raw.issue_amount ?? debt;
-    out.issue_costs = -grossedUpIssueCost(net, asDec(raw.issue_cost_rate));
+    // Debt principal is GROSS (interest + shield run on it) → issue cost = gross × f.
+    out.issue_costs = -issueCostFromGross(debt, asDec(raw.issue_cost_rate));
     apv += out.issue_costs;
   }
 
@@ -293,12 +304,12 @@ export function buildApvSchema(raw: ApvInputs, c: ApvComputed, currency: string,
       working_steps: [`Σ debt × ${pct2(c.coupon!)} × ${pct2(asDec(raw.tax_rate))} tax relief, discounted at Kd ${pct2(c.kd!)}`],
     });
     components.push({
-      component_id: 'debt_issue_costs', label: 'Issue costs — debt package (grossed up)',
+      component_id: 'debt_issue_costs', label: 'Issue costs — debt package (gross principal × f)',
       expected_value: c.debt_issue_costs!, unit: moneyUnit, tolerance: rel(0.5),
-      working_steps: [`−(net proceeds × f/(1−f)) at ${pct2(asDec(raw.issue_cost_rate!))}`],
+      working_steps: [`−(gross debt principal × f) at ${pct2(asDec(raw.issue_cost_rate!))}`],
     });
     components.push({
-      component_id: 'equity_issue_costs', label: 'Issue costs — equity (rights) package (grossed up)',
+      component_id: 'equity_issue_costs', label: 'Issue costs — equity (rights) package (net, grossed up)',
       expected_value: c.equity_issue_costs!, unit: moneyUnit, tolerance: rel(0.5),
       working_steps: [`−(net proceeds × f/(1−f)) at ${pct2(asDec(raw.equity_issue_cost_rate!))}`],
     });
@@ -342,9 +353,9 @@ export function buildApvSchema(raw: ApvInputs, c: ApvComputed, currency: string,
     }
     if (c.issue_costs !== undefined) {
       components.push({
-        component_id: 'issue_costs', label: 'Issue costs (grossed up from net proceeds)',
+        component_id: 'issue_costs', label: 'Issue costs (on the gross debt principal)',
         expected_value: c.issue_costs, unit: moneyUnit, tolerance: rel(0.5),
-        working_steps: [`−(net proceeds × f/(1−f)) at ${pct2(asDec(raw.issue_cost_rate!))}`],
+        working_steps: [`−(gross debt principal × f) at ${pct2(asDec(raw.issue_cost_rate!))}`],
       });
       recomputeIds.issue_costs = undefined;
       apvDeps.push('issue_costs');
@@ -434,7 +445,7 @@ export function buildApvModelAnswer(raw: ApvInputs, c: ApvComputed, prose: strin
   }
 
   if (c.issue_costs !== undefined) {
-    lines.push(`*Issue costs* — the finance is raised net of transaction costs, grossed up from net proceeds, a t0 outflow of **${m(c.issue_costs)}**.`, '');
+    lines.push(`*Issue costs* — raising the ${m(debt)} of debt incurs ${pct2(asDec(raw.issue_cost_rate ?? 0))} of transaction costs on the gross principal, a t0 outflow of **${m(c.issue_costs)}**.`, '');
   }
 
   // Step 5 — APV bridge + decision
@@ -445,7 +456,7 @@ export function buildApvModelAnswer(raw: ApvInputs, c: ApvComputed, prose: strin
     lines.push(`| Tax shield | ${m(c.tax_shield ?? 0)} | — |`);
     lines.push(`| Issue costs | ${m(c.debt_issue_costs ?? 0)} | ${m(c.equity_issue_costs ?? 0)} |`);
     lines.push(`| **APV** | **${m(c.apv_debt ?? 0)}** | **${m(c.apv_equity ?? 0)}** |`);
-    lines.push('');
+    lines.push('', `*Debt issue costs = ${pct2(asDec(raw.issue_cost_rate ?? 0))} of the ${m(debt)} gross principal; the rights issue is stated net, so its ${pct2(asDec(raw.equity_issue_cost_rate ?? 0))} cost is grossed up.*`, '');
     if (c.gearing_debt !== undefined && c.gearing_equity !== undefined) {
       lines.push(`*Reported-position overlay:* the debt package lifts gearing (D/(D+E), market values) to **${pct2(c.gearing_debt)}** and adds ${m(c.extra_interest ?? 0)} of annual interest (reducing interest cover), whereas the rights issue lowers gearing to **${pct2(c.gearing_equity)}** but dilutes existing shareholders.`, '');
     }
