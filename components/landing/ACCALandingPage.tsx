@@ -74,6 +74,7 @@ export default function ACCALandingPage() {
             </a>
             <nav className="nav-links" aria-label="Primary">
               <Link href="/acca/resit" className="nav-link-btn">Resit diagnostic</Link>
+              <Link href="/acca/afm" className="nav-link-btn">ACCA AFM</Link>
               <button className="nav-link-btn" onClick={() => scrollTo('taught')}>The approach</button>
               <button className="nav-link-btn" onClick={() => scrollTo('features')}>What&apos;s included</button>
               <button className="nav-link-btn" onClick={() => scrollTo('pricing')}>Pricing</button>
@@ -454,6 +455,7 @@ export default function ACCALandingPage() {
               <span style={{fontSize:12,color:'var(--ink-3)',marginLeft:14}}>© 2026 · AI tutor for ACCA APM</span>
             </div>
             <div className="footer-links">
+              <Link href="/acca/afm">ACCA AFM</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/cookies">Cookies</Link>
