@@ -34,6 +34,10 @@ territory — follow the links for depth. Keep it under ~150 lines.
   EXPLICIT id (never a bare `WHERE status='approved'`), demote any un-reviewed `approved`
   rows back to `candidate` in the same transaction, and prove it with pre/post counts. A
   status written without a review record is a pipeline leak — find and journal its source.
+  **GATE-P (Grant-ruled 2026-07-14):** Claude Code MAY execute the flip directly (guarded
+  service-client update or SQL) once the standing guards all hold — reconcile passed, the
+  explicit-id guarded statement shown in the report, pre/post counts verified, journal entry
+  written. The adjudication-close block is the authorization; no separate SQL-Editor step.
 - **Verify every file write by reading it back** before reporting it done; report the real
   path. (Two "the file is missing" incidents this project traced to unverified writes /
   scratchpad-vs-repo path confusion.)

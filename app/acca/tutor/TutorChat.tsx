@@ -280,7 +280,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
             {currentDrill.context_text && (
               <div className="et-panel et-panel--context">
                 <div className="et-panel-label">Scenario</div>
-                <p className="et-context-text">{currentDrill.context_text}</p>
+                <div className="et-context-text"><MessageRenderer content={currentDrill.context_text} /></div>
               </div>
             )}
             <div className="et-panel et-panel--question">
@@ -344,7 +344,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                   <div className="et-ezra-intro">
                     <div className="et-ezra-avatar" aria-hidden="true">E</div>
                     <div className="et-ezra-intro-text">
-                      <strong>Ezra</strong> — APM tutor
+                      <strong>Ezra</strong> — {paper} tutor
                       <span className="et-ezra-intro-sub">
                         Attempt the question. Ezra diagnoses where you stalled and teaches from there.
                       </span>
@@ -676,6 +676,9 @@ const CSS = `
   line-height: 1.65;
   color: var(--text);
 }
+/* MessageRenderer emits block children (p/hr/list/table); trim the trailing margin so the
+   parsed scenario sits flush in the panel. */
+.et-context-text > :last-child { margin-bottom: 0; }
 .et-panel--question { border-color: var(--border); }
 .et-question-text {
   font-family: var(--font-display);

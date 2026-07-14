@@ -277,10 +277,11 @@ export default function MessageRenderer({ content }: Props) {
       continue;
     }
 
-    // Bullet list item
-    if (/^[-*]\s+/.test(line)) {
+    // Bullet list item — dash/asterisk (markdown) OR •/· (unicode bullets, e.g. ACCA
+    // scenario data-lists authored with • rather than -). Anchored at line start + space.
+    if (/^[-*•·]\s+/.test(line)) {
       flushParagraph();
-      const text = line.replace(/^[-*]\s+/, '');
+      const text = line.replace(/^[-*•·]\s+/, '');
       elements.push(
         <div key={`li-${i++}`} style={{ display: 'flex', gap: 10, marginBottom: 6 }}>
           <span style={{ color: 'var(--chat-accent)', flexShrink: 0, marginTop: 2, fontSize: 13 }}>›</span>
