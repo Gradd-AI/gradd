@@ -14,6 +14,7 @@ import {
   AFM_REVEAL_SEPARATOR,
   assembleAfmReveal,
   sanitizeAfmWrapper,
+  revealDecision,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -109,6 +110,24 @@ ok('subAreaName: AFM E2 = forex hedging (AFM-only section)',
   subAreaName('AFM', 'E2') === 'Hedging foreign-exchange risk');
 ok('subAreaName: unknown code falls back to the bare code',
   subAreaName('AFM', 'Z9') === 'Z9');
+
+// ── (4) Earned-reveal gate — reachable post-confirm, moat holds for the unearned case ──
+// Item-3 reveal-flow fix: resolved (confirmed-correct OR prior reveal) unlocks the reveal
+// alongside the original struggle path (missCount >= 2).
+ok('gate: post-confirm reveal reachable (resolved, missCount 0)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: true }) === 'reveal');
+ok('gate: struggle path still earns (missCount 2, not resolved)',
+  revealDecision({ wantsReveal: true, missCount: 2, resolved: false }) === 'reveal');
+ok('gate: MOAT holds — unearned + unsolved refuses (missCount 0, not resolved)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: false }) === 'earn_redirect');
+ok('gate: MOAT holds — one miss is still not enough (missCount 1, not resolved)',
+  revealDecision({ wantsReveal: true, missCount: 1, resolved: false }) === 'earn_redirect');
+ok('gate: non-reveal message is never a reveal (even when resolved)',
+  revealDecision({ wantsReveal: false, missCount: 5, resolved: true }) === 'none');
+// Reload-safety: on a fresh load the durable `resolved` (acca_tutor_progress) is re-read while
+// missCount may reset to 0 — the reveal must STILL be reachable purely on resolved.
+ok('gate: resolved persists across reload (missCount reset to 0 → still reveal)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: true }) === 'reveal');
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILURE(S)'}`);
 process.exit(failures === 0 ? 0 : 1);

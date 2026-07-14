@@ -60,6 +60,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
   const [teachThroughDone, setTeachThroughDone]   = useState(false);
   const [resolvedDone, setResolvedDone]           = useState(false);
   const [capHit, setCapHit]                       = useState(initialCapHit);
+  const [canReveal, setCanReveal]                 = useState(false);  // drill solved → model answer earned
   const [navigating, setNavigating]               = useState(false);
   const [mobileExpanded, setMobileExpanded]       = useState(false);
   const [showPicker, setShowPicker]               = useState(false);
@@ -81,8 +82,8 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
   const missCount  = sessionState?.miss_count ?? 0;
   const hasAttempt = messages.some(m => m.role === 'student');
 
-  const sendMessage = async () => {
-    const trimmed = input.trim();
+  const sendMessage = async (explicitText?: string) => {
+    const trimmed = (explicitText ?? input).trim();
     if (!trimmed || loading) return;
 
     // Last Ezra turn (before this send) — lets the server intent classifier disambiguate
@@ -121,6 +122,11 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
 
       setSessionState(json.session_state);
       setMessages(prev => [...prev, { role: 'ezra', content: json.ezra_response, kind: json.message_kind }]);
+
+      // Solved (confirmed-correct or revealed) → the model answer is earned. Surface the
+      // "View the model answer" affordance; retire it once the reveal itself is delivered.
+      if (json.resolved && json.intent !== 'reveal') setCanReveal(true);
+      if (json.intent === 'reveal') setCanReveal(false);
 
       if (json.intent) {
         fireEvent(userId, {
@@ -181,6 +187,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
       setSessionState(null);
       setTeachThroughDone(false);
       setResolvedDone(false);
+      setCanReveal(false);
       setMobileExpanded(false);
       setInput('');
       fireEvent(userId, { event_type: 'drill_shown', drill_lo: next.lo_code });
@@ -222,6 +229,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
       setSessionState(null);
       setTeachThroughDone(false);
       setResolvedDone(false);
+      setCanReveal(false);
       setMobileExpanded(false);
       setInput('');
       fireEvent(userId, { event_type: 'drill_shown', drill_lo: next.lo_code });
@@ -436,6 +444,18 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                 </div>
               )}
 
+              {canReveal && !loading && (
+                <div className="et-reveal-cta">
+                  <button
+                    className="et-btn et-btn--ghost et-reveal-btn"
+                    onClick={() => sendMessage('Show me the model answer.')}
+                    disabled={loading}
+                  >
+                    View the model answer <span className="et-arrow">→</span>
+                  </button>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -481,7 +501,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                     <span className="et-input-hint">⌘↵ to send</span>
                     <button
                       className="et-btn et-btn--rust"
-                      onClick={sendMessage}
+                      onClick={() => sendMessage()}
                       disabled={!input.trim() || loading}
                     >
                       {loading ? 'Thinking…' : <>{sendLabel} <span className="et-arrow">→</span></>}
@@ -965,6 +985,22 @@ const CSS = `
 .et-try-another {
   align-self: flex-start;
   margin-top: 6px;
+}
+
+/* Earned "View the model answer" affordance — shown once a drill is resolved (solved or
+   revealed). The reveal itself still routes through the single call4 path server-side. */
+.et-reveal-cta {
+  display: flex;
+  justify-content: flex-start;
+}
+.et-reveal-btn {
+  border-color: var(--rust);
+  color: var(--rust);
+}
+.et-reveal-btn:not(:disabled):hover {
+  background: rgba(192,94,60,0.08);
+  color: var(--rust-dark);
+  border-color: var(--rust-dark);
 }
 
 /* Inline nudge replacing "Try another" when cap hit mid-drill-3 */

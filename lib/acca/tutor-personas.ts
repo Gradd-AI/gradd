@@ -137,3 +137,16 @@ export function sanitizeAfmWrapper(raw: string): string {
 export function assembleAfmReveal(wrapper: string, modelAnswer: string): string {
   return `${sanitizeAfmWrapper(wrapper)}${AFM_REVEAL_SEPARATOR}${modelAnswer}`;
 }
+
+// ── Earned-reveal GATE (pure) ─────────────────────────────────────────────────
+// Single source of truth for who reaches the model_answer. The reveal is EARNED two ways:
+//   • struggle — missCount >= 2 (the original moat: two genuine misses), OR
+//   • solved   — resolved === true (confirmed-correct OR a prior reveal; the earn-it
+//     rationale is satisfied once the student has demonstrably produced the answer).
+// A reveal request that meets neither hits the static earn-it refusal (the moat holds for the
+// unearned+unsolved case). A non-reveal request is 'none'. `wantsReveal` already folds in the
+// APM_EARNED_REVEAL flag + REVEAL_PHRASES match at the call site.
+export function revealDecision(opts: { wantsReveal: boolean; missCount: number; resolved: boolean }): 'reveal' | 'earn_redirect' | 'none' {
+  if (!opts.wantsReveal) return 'none';
+  return (opts.missCount >= 2 || opts.resolved) ? 'reveal' : 'earn_redirect';
+}

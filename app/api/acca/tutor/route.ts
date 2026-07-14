@@ -7,6 +7,7 @@ import {
   REVEAL_SYSTEM,
   REVEAL_AFM_WRAPPER_SYSTEM,
   assembleAfmReveal,
+  revealDecision,
 } from '@/lib/acca/tutor-personas';
 import { resolvePaper } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
@@ -368,10 +369,17 @@ async function call3_confirm(
   attempt: string,
   verbLevel: string,
   paper: string,
+  offerReveal: boolean,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
     ? `Authored command verb + intellectual level (name what the answer hit — do not infer):\n${verbLevel}\n\n`
+    : '';
+  // Post-success reveal nudge — the student has earned the model answer by solving; offer the
+  // phrase that surfaces it for comparison (the reveal itself is still the ONLY place the
+  // model_answer is shown; this only advertises the now-unlocked route).
+  const offerLine = offerReveal
+    ? ' Then, as a light closing offer, tell them that since they nailed it they can say "show me the model answer" to see exactly how a full-marks version is laid out for comparison.'
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -392,7 +400,8 @@ async function call3_confirm(
           'given) and say briefly why it holds / what puts it in the top band. If their convention ' +
           "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
           'quote back their figures or workings — they already wrote them; refer to what they did ' +
-          "in words, not numbers. Don't mark it as if it fell short.",
+          "in words, not numbers. Don't mark it as if it fell short." +
+          offerLine,
       },
     ],
   });
@@ -876,18 +885,22 @@ export async function POST(request: Request): Promise<Response> {
   const wantsReveal = REVEAL_ENABLED && isRevealRequest(student_message);
   const fastTeach   = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
 
+  // Earned-reveal gate (pure, single source of truth): EARNED by struggle (missCount >= 2)
+  // OR by having solved it (resolved — confirmed-correct or a prior reveal). Otherwise the
+  // static earn-it refusal (the moat holds for the unearned+unsolved case).
+  const revealGate = revealDecision({ wantsReveal, missCount, resolved });
+
   try {
-    if (wantsReveal && missCount >= 2) {
-      // EARNED — the sole gated moat-lift; model_answer reaches the student ONLY here.
-      // Free follow-up: the miss-2 teach-through already charged the cap (counted=true), so
-      // no new charge. Marks the drill resolved. No miss++, no teachThroughDelivered.
+    if (revealGate === 'reveal') {
+      // The sole gated moat-lift; model_answer reaches the student ONLY here. Free follow-up
+      // (the earn — struggle teach-through or the confirm — already happened). Marks resolved.
       intent = 'reveal';
       messageKind = 'reveal';
       ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal);
       newResolved = true;
-    } else if (wantsReveal) {
-      // Reveal requested but NOT earned (missCount < 2): static refusal gate. model_answer is
-      // deliberately NOT referenced on this path — earned-not-dumped is structural, not prompt.
+    } else if (revealGate === 'earn_redirect') {
+      // Reveal requested but NOT earned (missCount < 2 AND not resolved): static refusal gate.
+      // model_answer is deliberately NOT referenced here — earned-not-dumped is structural.
       intent = 'reveal_redirect';
       messageKind = 'reveal_locked';
       ezraResponse = EARN_REDIRECT;
@@ -898,6 +911,19 @@ export async function POST(request: Request): Promise<Response> {
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
       ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, paper);
       teachThroughDelivered = true;
+    } else if (resolved) {
+      // Item 4: a SOLVED drill never re-scaffolds from zero. Any non-reveal message post-solve
+      // is a follow-up, handled on the warm path — no re-diagnosis, no miss, no cap. Classify
+      // only to pick the warm register; an answer-like message maps to 'question' (call_warm
+      // cannot take 'attempt').
+      const c: Intent = INTENT_LAYER_ENABLED
+        ? await call0_classify(student_message, question, lastEzraMessage)
+        : 'question';
+      const warmIntent: Exclude<Intent, 'attempt'> = c === 'attempt' ? 'question' : c;
+      intent = warmIntent;
+      ezraResponse = await call_warm(warmIntent, student_message, question, context, paper);
+      messageKind = warmIntent === 'question' ? 'answer'
+                  : warmIntent === 'confusion' ? 'coaching' : 'chat';
     } else {
       // Classify only when the layer is on; otherwise force 'attempt' (= legacy behaviour:
       // every non-stop-signal message goes through the withholding pipeline).
@@ -928,10 +954,14 @@ export async function POST(request: Request): Promise<Response> {
         if (treatCorrect) {
           // Correct answer. Acknowledge it — do NOT score a miss, do NOT deliver a
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
-          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper);
+          // Item 1: mark the drill RESOLVED (success-solved mirrors reveal-solved) so the
+          // model answer becomes reachable for comparison and the drill never re-scaffolds.
+          // Item 3a: offerReveal=REVEAL_ENABLED → the confirm nudges the now-earned phrase.
+          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, REVEAL_ENABLED);
           messageKind        = 'correct';
           attemptOutcome     = 'correct';
           newLastRealAttempt = student_message;
+          newResolved        = true;
           // newMissCount and newLastDiagnosis intentionally left unchanged: a correct
           // turn is not a miss, and we keep the last REAL gap (if any) intact so a later
           // teach-through still has a meaningful diagnosis to anchor on.
@@ -1058,5 +1088,8 @@ export async function POST(request: Request): Promise<Response> {
     cap_now_hit:            capNowHit,
     intent,
     message_kind:           messageKind,
+    // Item 3b signal: the drill is solved (confirmed-correct or revealed). The client uses
+    // this to surface the "View the model answer" affordance once — the reveal is now earned.
+    resolved:               newResolved,
   });
 }
