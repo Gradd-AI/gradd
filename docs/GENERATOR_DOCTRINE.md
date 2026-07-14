@@ -4,6 +4,8 @@
 
 Companions: `AFM_NUMERIC_VERIFICATION_DESIGN.md` (the numeric layer's full design), `TEACHING_ARCHITECTURE.md` (structural withholding), and the code — `scripts/generate-afm-drills.ts` (generator), `lib/acca/{npv,numeric-verifier,validate-schema,validate-afm-prose}.ts` (calculator + gates).
 
+Cross-reference: `PRODUCT_STRENGTH_STANDARD.md` sets the paper-agnostic strength bar every subject must meet — the pipeline mechanics here implement the strength standard.
+
 ---
 
 ## Core doctrine — code decides the number, the model never does

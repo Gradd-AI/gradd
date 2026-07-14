@@ -116,6 +116,8 @@ territory — follow the links for depth. Keep it under ~150 lines.
 - **Protocol files:** `docs/APM_BUILD_CONTRACT.md` (journal — append-only chronology) ·
   `docs/AFM_SURFACED.md` (living backlog / open items) · `docs/GENERATOR_DOCTRINE.md`
   (standing rulings) · `docs/reviews/*.md` (per-batch review packs).
+- `docs/PRODUCT_STRENGTH_STANDARD.md` — the paper-agnostic strength bar every subject must
+  meet; AFM coverage contract is the reference implementation.
 - **Batch lifecycle:** generate (`--*-batch`) → 6 gates → co-founder independent recompute →
   blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → **flip by EXPLICIT-id
   SQL** in the Supabase editor (reconcile approved-set vs journal FIRST; demote any
