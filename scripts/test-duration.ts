@@ -115,6 +115,26 @@ console.log(`\n${'═'.repeat(60)}\nNUMERIC CHECKS`);
   if (!ok) failures++;
 }
 
+// ── Unscaled-face guard (FIX B) — a bond drill may NEVER render an unscaled face with an
+// m-suffix. money() tags every figure "m" (millions), so a full-nominal face (500,000,000)
+// would render "IDR 500000000.0m" (500 million million). computeDuration must reject it.
+{
+  let threw = false;
+  try {
+    computeDuration({ bond: { face_value: 500_000_000, coupon_rate: 0, maturity: 7, ytm: 0.095, label: 'unscaled zero' }, coupon_ref: { face_value: 500_000_000, coupon_rate: 0.08, maturity: 7, ytm: 0.095, label: 'unscaled ref' } }, 'zero_coupon');
+  } catch { threw = true; }
+  console.log(`${threw ? 'PASS' : 'FAIL'} :: unscaled-face guard — face 500,000,000 rejected (m-suffix would be dimensionally false)`);
+  if (!threw) failures++;
+  // And a correctly-scaled face (500 = IDR 500,000,000 in millions) must still compute.
+  let scaledOk = false;
+  try {
+    const c = computeDuration({ bond: { face_value: 500, coupon_rate: 0, maturity: 7, ytm: 0.095, label: 'scaled zero' }, coupon_ref: { face_value: 500, coupon_rate: 0.08, maturity: 7, ytm: 0.095, label: 'scaled ref' } }, 'zero_coupon');
+    scaledOk = near(c.primary.macaulay, 7.0, 1e-6);
+  } catch { scaledOk = false; }
+  console.log(`${scaledOk ? 'PASS' : 'FAIL'} :: scaled-face passes — face 500 (IDR 500m) computes, zero Macaulay = maturity`);
+  if (!scaledOk) failures++;
+}
+
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL DURATION FIXTURES PASS' : `${failures} DURATION FIXTURE(S) FAILED`);
 process.exit(failures === 0 ? 0 : 1);

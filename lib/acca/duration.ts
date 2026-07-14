@@ -60,6 +60,14 @@ export interface BondMetrics {
   freq:         number;
 }
 
+// Every money figure in the model answer is rendered with an "m" (millions) suffix via
+// money(). So a bond's face_value must ALREADY be expressed in those millions (e.g. 500 for
+// an IDR 500,000,000 note) — an unscaled full-nominal face (500,000,000) would render as
+// "IDR 500000000.0m", which is 500 million MILLION: dimensionally false. Reject it at the
+// single compute choke point so a bond drill can NEVER render an unscaled face with an
+// m-suffix (per-unit faces up to 999,999m stay legal — ample headroom for 100/500/1000).
+const FACE_SCALE_CEILING = 1e6;
+
 function bondMetrics(b: DurationBond): BondMetrics {
   const y = asDec(b.ytm);
   const c = asDec(b.coupon_rate);
@@ -67,6 +75,7 @@ function bondMetrics(b: DurationBond): BondMetrics {
   const n = b.maturity;
   if (!(n > 0)) throw new Error(`maturity must be positive: ${n}`);
   if (y <= 0 || y >= 1) throw new Error(`ytm out of range (0,1): ${y}`);
+  if (b.face_value >= FACE_SCALE_CEILING) throw new Error(`face_value ${b.face_value} looks unscaled — the model-answer tables render money with an "m" (millions) suffix, so face must be expressed in those millions (e.g. 500 for an IDR 500,000,000 note, not 500000000). A bond drill may never render an unscaled face with an m-suffix.`);
   const perN = Math.round(n * m);
   const perRate = y / m;
   const couponPer = (b.face_value * c) / m;

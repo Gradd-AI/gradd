@@ -37,6 +37,8 @@ Raw inputs — Colbún S.A. Fixed-Rate Senior Bond:
   • Flat yield to maturity: 7.50%  (annual, single-rate snapshot)
   • Assumed yield shift:    +100 basis points (i.e. +0.01 in decimal)
 
+For this assessment, all monetary figures in the worked answer are expressed per CLP 100 million of nominal (i.e. in CLP millions) — the analysis is conducted on a CLP 100 million nominal position.
+
 ### model_answer
 
 **Bond duration — interest-rate exposure**
@@ -192,7 +194,7 @@ Türkiye Kanatları A.Ş. ("TK") is a mid-sized Turkish private airline headquar
 
 The Chief Financial Officer has flagged to the board that the US Federal Reserve's rate path remains uncertain and that a rise in USD yields would reduce the mark-to-market value of TK's fixed-rate liabilities — an important consideration under IFRS 9 fair-value hedge accounting. Before deciding whether to enter into an interest-rate swap to convert either or both facilities to floating rate, the board has requested a duration-based assessment of each facility's sensitivity to a change in USD yields.
 
-Challengeable texture — limitation to note: the analysis uses a single flat yield to maturity for each facility (a snapshot of today's USD swap curve), and any price-sensitivity estimate assumes a small parallel shift in that yield. Neither condition is guaranteed to hold in practice.
+Challengeable texture — limitation to note: the analysis uses a single flat yield to maturity for each facility (a snapshot of today's USD swap curve), and the duration-based sensitivity comparison assumes a small, parallel shift in that yield. Neither condition is guaranteed to hold in practice.
 
 Raw inputs
 
@@ -208,7 +210,7 @@ Facility B — "Long-Haul Fleet Bond"
   Maturity:      9 years
   Flat YTM:      7.00% per annum
 
-Assumed yield shift for sensitivity: +100 basis points (0.01)
+For this assessment, all monetary figures in the worked answer are expressed per USD 100 million of nominal in each facility (i.e. in USD millions) — the analysis is conducted on a USD 100 million nominal position in each facility.
 
 ### model_answer
 
@@ -251,7 +253,7 @@ Facility B — Long-Haul Fleet Bond has the **higher modified duration** (6.854 
 
 **Step 4 — Evaluation / advice to the board**
 
-Türkiye Kanatları A.Ş. has deliberately denominated both facilities in USD to sidestep the acute financing costs that accompany Turkish lira debt in the current high-rate domestic environment, anchoring debt service to the airline's hard-currency revenue stream. The longer tenor of Facility B reflects the extended economic life of the wide-body, long-haul fleet assets it finances — a structurally sound match between asset life and liability maturity, yet one that carries a material duration consequence the board must weigh before committing to any swap. The coupon on Facility B is set below that of Facility A, which compounds the duration differential: lower periodic cash flows push the centre of gravity of repayment further into the future, amplifying sensitivity to any movement in USD yields. The board should recognise that the single flat-yield assumption is a snapshot — if the USD yield curve steepens rather than shifts in parallel, the sensitivity estimate for the longer facility will differ from the linear approximation, because duration cannot capture the curvature (convexity) of the price-yield relationship; for a large upward shift, the true price decline of the longer-dated facility will be less severe than the modified-duration estimate implies, since positive convexity causes the price-yield curve to bow favourably. Before authorising an interest-rate swap on either facility, the board should confirm whether IFRS 9 hedge-effectiveness requirements can be met given TK's cross-currency exposure and the basis risk between the USD swap curve and the specific syndicated-loan pricing grid.
+Türkiye Kanatları A.Ş. has deliberately denominated both facilities in USD to sidestep the acute financing costs that accompany Turkish lira debt in the current high-rate domestic environment, anchoring debt service to the airline's hard-currency revenue stream. The longer tenor of Facility B reflects the extended economic life of the longer-lived fleet assets it finances — a structurally sound match between asset life and liability maturity, yet one that carries a material duration consequence the board must weigh before committing to any swap. The coupon on Facility B is set below that of Facility A, which compounds the duration differential: lower periodic cash flows push the centre of gravity of repayment further into the future, amplifying sensitivity to any movement in USD yields. The board should recognise that the single flat-yield assumption is a snapshot — if the USD yield curve steepens rather than shifts in parallel, the sensitivity estimate for the longer facility will differ from the linear approximation, because duration cannot capture the curvature (convexity) of the price-yield relationship; for a large upward shift, the true price decline of the longer-dated facility will be less severe than the modified-duration estimate implies, since positive convexity causes the price-yield curve to bow favourably. Before authorising an interest-rate swap on either facility, the board should confirm whether IFRS 9 hedge-effectiveness requirements can be met given TK's cross-currency exposure and the basis risk between the USD swap curve and the specific syndicated-loan pricing grid.
 
 *(Modified duration is a linear, small-yield-change approximation; for a large shift the convex price–yield curve makes the true move differ — see the limitations of duration.)*
 
@@ -411,7 +413,7 @@ The dominant failure here is ABANDONED-AFTER-CALC: candidates complete the durat
 
 ### question
 
-Assess PT Nusantara Graha Properti's interest-rate exposure arising from its two debt instruments. Your assessment should: (i) calculate the Macaulay duration and modified duration for both the zero-coupon Medium-Term Notes and the fixed-rate coupon bonds; (ii) estimate the price sensitivity of each instrument to the stated parallel yield shift; and (iii) assess which instrument exposes the company to greater interest-rate risk, explaining the structural reason for the difference and the implications for the board's debt-management strategy.
+Assess PT Nusantara Graha Properti's exposure to interest-rate risk arising from its two IDR-denominated debt instruments. Your assessment must set out: (i) the Macaulay and modified duration of the zero-coupon Medium-Term Notes, and the Macaulay duration of the equivalent fixed-rate coupon bond for structural contrast; (ii) which instrument is more exposed to a rise in yields and the structural reason for the difference; and (iii) the implications for the board's debt-management strategy.
 
 ### context_text
 
@@ -421,27 +423,27 @@ The first instrument is a series of zero-coupon Medium-Term Notes (MTNs) — a d
 
 The second instrument is a conventional fixed-rate bond carrying annual coupon payments at a rate set at issuance. It has the same maturity and the same flat yield to maturity as the MTNs, allowing a direct structural comparison between the two instruments.
 
-The Risk and Finance Committee has asked senior management to assess how sensitive each instrument's market value is to a 100-basis-point upward parallel shift in Indonesian government benchmark yields, which would feed through to the YTMs applied to NGP's own paper.
+The Risk and Finance Committee has asked senior management to assess how sensitive each instrument's market value is to movements in Indonesian government benchmark yields, which would feed through to the YTMs applied to NGP's own paper.
 
-**Challengeable texture — limitations of this analysis:** The YTM applied to each instrument is a single market snapshot taken at one point in time; Indonesian bond markets can move sharply and non-linearly, particularly around Bank Indonesia monetary policy meetings. In addition, the sensitivity estimate assumes a parallel shift across the yield curve — in practice, short- and long-dated segments of the IDR curve move by different magnitudes, and the linear duration approximation becomes increasingly unreliable for large yield movements.
+**Challengeable texture — limitations of this analysis:** The YTM applied to each instrument is a single market snapshot taken at one point in time; Indonesian bond markets can move sharply and non-linearly, particularly around Bank Indonesia monetary policy meetings. In addition, the duration-based sensitivity comparison assumes a parallel shift across the yield curve — in practice, short- and long-dated segments of the IDR curve move by different magnitudes, and the linear duration approximation becomes increasingly unreliable for large yield movements.
 
 ---
 
 **Raw inputs — PT Nusantara Graha Properti**
 
 Zero-coupon Medium-Term Notes (MTNs):
-- Face value: IDR 500,000,000 (per note)
+- Face value: IDR 500 million (per note)
 - Annual coupon rate: 0% (zero-coupon / deep-discount)
 - Years to maturity: 7
 - Flat YTM: 9.50% per annum
 
 Fixed-rate coupon bond (same maturity, same YTM):
-- Face value: IDR 500,000,000 (per bond)
+- Face value: IDR 500 million (per bond)
 - Annual coupon rate: 8.00%
 - Years to maturity: 7
 - Flat YTM: 9.50% per annum
 
-Assumed parallel yield shift: +100 basis points (i.e. +1.00 percentage point)
+For this assessment, all monetary figures in the worked answer are expressed per IDR 500 million of nominal in each instrument (i.e. in IDR millions) — the analysis is conducted on an IDR 500 million nominal position in each instrument.
 
 ### model_answer
 
@@ -459,8 +461,8 @@ Assumed parallel yield shift: +100 basis points (i.e. +1.00 percentage point)
 | 4 | IDR 0.0m | 0.696 | IDR 0.0m | IDR 0.0m |
 | 5 | IDR 0.0m | 0.635 | IDR 0.0m | IDR 0.0m |
 | 6 | IDR 0.0m | 0.580 | IDR 0.0m | IDR 0.0m |
-| 7 | IDR 500000000.0m | 0.530 | IDR 264893419.8m | IDR 1854253938.4m |
-| **Totals** | | | **IDR 264893419.8m** | **IDR 1854253938.4m** |
+| 7 | IDR 500.0m | 0.530 | IDR 264.9m | IDR 1854.3m |
+| **Totals** | | | **IDR 264.9m** | **IDR 1854.3m** |
 
 With a single cash flow at redemption, the Macaulay duration equals the maturity exactly: **7.000 years = 7-year maturity**; modified = **6.393 years**.
 
@@ -468,14 +470,14 @@ With a single cash flow at redemption, the Macaulay duration equals the maturity
 
 | Year | Cash flow | DF @ 9.50% | PV | t·PV |
 |------|------|------|------|------|
-| 1 | IDR 40000000.0m | 0.913 | IDR 36529680.4m | IDR 36529680.4m |
-| 2 | IDR 40000000.0m | 0.834 | IDR 33360438.7m | IDR 66720877.4m |
-| 3 | IDR 40000000.0m | 0.762 | IDR 30466154.1m | IDR 91398462.2m |
-| 4 | IDR 40000000.0m | 0.696 | IDR 27822971.7m | IDR 111291887.0m |
-| 5 | IDR 40000000.0m | 0.635 | IDR 25409106.6m | IDR 127045533.1m |
-| 6 | IDR 40000000.0m | 0.580 | IDR 23204663.6m | IDR 139227981.4m |
-| 7 | IDR 540000000.0m | 0.530 | IDR 286084893.4m | IDR 2002594253.5m |
-| **Totals** | | | **IDR 462877908.4m** | **IDR 2574808674.8m** |
+| 1 | IDR 40.0m | 0.913 | IDR 36.5m | IDR 36.5m |
+| 2 | IDR 40.0m | 0.834 | IDR 33.4m | IDR 66.7m |
+| 3 | IDR 40.0m | 0.762 | IDR 30.5m | IDR 91.4m |
+| 4 | IDR 40.0m | 0.696 | IDR 27.8m | IDR 111.3m |
+| 5 | IDR 40.0m | 0.635 | IDR 25.4m | IDR 127.0m |
+| 6 | IDR 40.0m | 0.580 | IDR 23.2m | IDR 139.2m |
+| 7 | IDR 540.0m | 0.530 | IDR 286.1m | IDR 2002.6m |
+| **Totals** | | | **IDR 462.9m** | **IDR 2574.8m** |
 
 Macaulay = **5.563 years**, which is **shorter than its 7-year maturity** — the intervening coupons pull the weighted-average time forward.
 
@@ -497,7 +499,7 @@ Your duration table may be mechanically correct, but ask yourself: have you expl
 
 ### full_reveal
 
-The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the Macaulay and modified duration workings competently, then stop — as though the numbers speak for themselves — without ever translating the structural finding into a board-level recommendation on debt management. This is wrong because duration is not a self-interpreting statistic; its significance lies in what it implies about the company's risk position and the actions available to manage it, and those implications are where the L3 marks live. The correct mental model is that the duration calculation is the floor, not the ceiling: once you have established which instrument carries the higher duration, you must explain the causal mechanism — that concentrating all cash flows at a single future date removes the dampening effect that periodic coupon receipts provide — and then connect that mechanism to the scenario's specific context, including the uncertainty around Bank Indonesia's policy-rate path and the construction-phase cash-flow profile of the East Java and South Kalimantan projects. If your duration figures differ from the model answer's, apply the own-figure rule: carry your modified duration forward consistently into the price-sensitivity estimate and the comparative assessment — where your method is sound, those downstream marks remain available, and the error is charged once at its source. The boardroom pressure is this: a board does not pay for a duration table — it pays for a verdict on which instrument is the primary source of mark-to-market risk and what, if anything, should be done about it.
+The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the Macaulay and modified duration workings competently, then stop — as though the numbers speak for themselves — without ever translating the structural finding into a board-level recommendation on debt management. This is wrong because duration is not a self-interpreting statistic; its significance lies in what it implies about the company's risk position and the actions available to manage it, and those implications are where the L3 marks live. The correct mental model is that the duration calculation is the floor, not the ceiling: once you have established which instrument carries the higher duration, you must explain the causal mechanism — that concentrating all cash flows at a single future date removes the dampening effect that periodic coupon receipts provide — and then connect that mechanism to the scenario's specific context, including the uncertainty around Bank Indonesia's policy-rate path and the construction-phase cash-flow profile of the East Java and South Kalimantan projects. If your duration figures differ from the model answer's, apply the own-figure rule: carry your modified duration forward consistently into the comparative assessment — where your method is sound, those downstream marks remain available, and the error is charged once at its source. The boardroom pressure is this: a board does not pay for a duration table — it pays for a verdict on which instrument is the primary source of mark-to-market risk and what, if anything, should be done about it.
 
 ### answer_schema (persisted jsonb)
 
@@ -507,7 +509,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
     "ytm": 0.095,
     "freq": 1,
     "maturity": 7,
-    "face_value": 500000000,
+    "face_value": 500,
     "coupon_rate": 0,
     "yield_shift": 0
   },
@@ -523,7 +525,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "Σ of each cash flow discounted at the YTM"
       ],
-      "expected_value": 264893419.77100623
+      "expected_value": 264.8934197710062
     },
     {
       "unit": "IDRm·yr",
@@ -536,7 +538,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "Σ (year × discounted cash flow)"
       ],
-      "expected_value": 1854253938.3970437
+      "expected_value": 1854.2539383970436
     },
     {
       "unit": "years",
@@ -554,7 +556,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "= Σ t·PV ÷ price"
       ],
-      "expected_value": 7.000000000000001
+      "expected_value": 7
     },
     {
       "unit": "years",
@@ -571,7 +573,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "= Macaulay ÷ (1 + y)"
       ],
-      "expected_value": 6.392694063926942
+      "expected_value": 6.392694063926941
     },
     {
       "unit": "IDRm",
@@ -584,7 +586,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "Σ of each cash flow discounted at the YTM"
       ],
-      "expected_value": 462877908.3848958
+      "expected_value": 462.8779083848958
     },
     {
       "unit": "IDRm·yr",
@@ -597,7 +599,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "Σ (year × discounted cash flow)"
       ],
-      "expected_value": 2574808674.822787
+      "expected_value": 2574.8086748227865
     },
     {
       "unit": "years",
@@ -615,7 +617,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "= Σ t·PV ÷ price"
       ],
-      "expected_value": 5.562608688340689
+      "expected_value": 5.5626086883406884
     }
   ]
 }
@@ -644,6 +646,8 @@ Raw inputs — Rheinwerk Automotive AG Fixed-Rate Eurobond:
   • Years to maturity:               8
   • Flat yield to maturity (YTM):    5.8% (single snapshot)
   • Assumed parallel yield shift:    +300 bp
+
+For this assessment, all monetary figures in the worked answer are expressed per EUR 1,000 million of nominal (i.e. in EUR millions, so a EUR 1 billion nominal position).
 
 ### model_answer
 
