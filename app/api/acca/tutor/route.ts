@@ -1090,6 +1090,9 @@ export async function POST(request: Request): Promise<Response> {
     message_kind:           messageKind,
     // Item 3b signal: the drill is solved (confirmed-correct or revealed). The client uses
     // this to surface the "View the model answer" affordance once — the reveal is now earned.
-    resolved:               newResolved,
+    // Gated on REVEAL_ENABLED: never advertise the button when the reveal path is dark (the
+    // flag off routes a reveal request to call_warm — a persona refusal, not the answer). This
+    // keeps the affordance coherent with what can actually serve.
+    resolved:               newResolved && REVEAL_ENABLED,
   });
 }
