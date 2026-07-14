@@ -19,10 +19,34 @@
 //      in the model answer (the Drill-1 "demanded sensitivity, delivered none" defect).
 
 export interface ProseIssue {
-  gate: 'jurisdiction' | 'completeness' | 'loss-relief';
+  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts';
   field: string;
   code: string;
   message: string;
+}
+
+// P4b frozen-market-facts (duration round-1 FIX 6) — a scenario is a dated snapshot, not a live
+// feed. Real-world market claims phrased in the present tense ("currently above 40%", "current
+// market yield") will age the moment a rate moves; freeze every market fact as a dated scenario
+// assumption ("assumed at the valuation date to be …"). Runs across ALL drill fields.
+const LIVE_MARKET_CLAIM: { re: RegExp; what: string }[] = [
+  { re: /\bcurrently\b/i,        what: '"currently"' },
+  { re: /\bcurrent market\b/i,   what: '"current market"' },
+];
+
+export function lintFrozenMarketFacts(fields: Record<string, string>): ProseIssue[] {
+  const issues: ProseIssue[] = [];
+  for (const [field, raw] of Object.entries(fields)) {
+    if (!raw) continue;
+    for (const p of LIVE_MARKET_CLAIM) {
+      const m = raw.match(p.re);
+      if (m) issues.push({
+        gate: 'frozen-facts', field, code: 'live-market-claim',
+        message: `states ${p.what} ("…${raw.slice(Math.max(0, m.index! - 20), m.index! + 30).trim()}…") — a scenario is a dated snapshot; freeze the market fact as a dated assumption (e.g. "assumed at the valuation date to be …")`,
+      });
+    }
+  }
+  return issues;
 }
 
 // P6 loss-relief — pattern rule (APV round-1 FIX 1). When the tax schedule drives taxable
@@ -158,14 +182,16 @@ export function lintAfmProse(fields: {
   hint?: string;
   full_reveal?: string;
 }): ProseIssue[] {
+  const scope = {
+    question: fields.question,
+    context_text: fields.context_text,
+    model_answer: fields.model_answer,
+    hint: fields.hint ?? '',
+    full_reveal: fields.full_reveal ?? '',
+  };
   return [
-    ...lintJurisdiction({
-      question: fields.question,
-      context_text: fields.context_text,
-      model_answer: fields.model_answer,
-      hint: fields.hint ?? '',
-      full_reveal: fields.full_reveal ?? '',
-    }),
+    ...lintJurisdiction(scope),
+    ...lintFrozenMarketFacts(scope),
     ...lintCompleteness(fields.question, fields.model_answer),
   ];
 }

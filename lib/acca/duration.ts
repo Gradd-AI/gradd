@@ -232,7 +232,7 @@ export function buildDurationModelAnswer(raw: DurationInputs, c: DurationCompute
     const winner = c.more_exposed === 'primary' ? p : c.more_exposed === 'bond_b' ? b : null;
     lines.push(
       winner
-        ? `${cap(winner.label)} has the **higher modified duration** (${fmtY(winner.modified)} vs ${fmtY((winner === p ? b : p).modified)} years), so it is the **more exposed** to a rise in yields — a 1% rate rise moves its price roughly ${fmtY(Math.abs(winner.modified))}% against you, versus ${fmtY(Math.abs((winner === p ? b : p).modified))}% for the other. Hedge or shorten that exposure first.`
+        ? `${cap(winner.label)} has the **higher modified duration** (${fmtY(winner.modified)} vs ${fmtY((winner === p ? b : p).modified)} years), so it is the **more exposed** to a rise in yields — a 1% rate rise moves its fair value by roughly ${fmtY(Math.abs(winner.modified))}%, versus ${fmtY(Math.abs((winner === p ? b : p).modified))}% for the other. Hedge or shorten that exposure first.`
         : `Both facilities carry the **same modified duration** (${fmtY(p.modified)} years), so they are equally exposed to a yield change.`,
       '',
     );

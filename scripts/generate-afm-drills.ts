@@ -54,7 +54,7 @@ import {
   type Verdict,
 } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
-import { lintJurisdiction, lintCompleteness, lintLossRelief } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts } from '../lib/acca/validate-afm-prose';
 import {
   computeFcff,
   buildFcffSchema,
@@ -1229,15 +1229,14 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
   lines.push(...verdictLines);
   if (!ofrOk || !anyCarried) ok = false;
 
-  // (4) P4 jurisdiction-specifics — no named tax classes / statutes / regulators / market
-  // structure in question, context, or model answer (hint/full_reveal are re-checked
-  // post-reveal, before insert, since they don't exist yet at gate time).
-  const jur = lintJurisdiction({
-    question: drill.question, context_text: drill.context_text, model_answer: drill.model_answer,
-  });
-  lines.push(`GATE 4 — jurisdiction-specifics (P4): ${jur.length === 0 ? 'PASS' : 'FAIL'}`);
-  if (jur.length) { ok = false; for (const iss of jur) lines.push(`    ✗ [${iss.field}] ${iss.message}`); }
-  else lines.push('    ✓ no named tax class / statute / regulator / market-structure specific');
+  // (4) P4 jurisdiction-specifics + frozen-market-facts — no named tax classes / statutes /
+  // regulators / market structure, and no live-market claims ("currently …"), in question,
+  // context, or model answer (hint/full_reveal are re-checked post-reveal, before insert).
+  const p4Fields = { question: drill.question, context_text: drill.context_text, model_answer: drill.model_answer };
+  const jur = [...lintJurisdiction(p4Fields), ...lintFrozenMarketFacts(p4Fields)];
+  lines.push(`GATE 4 — jurisdiction-specifics + frozen market facts (P4): ${jur.length === 0 ? 'PASS' : 'FAIL'}`);
+  if (jur.length) { ok = false; for (const iss of jur) lines.push(`    ✗ [${iss.field}/${iss.gate}] ${iss.message}`); }
+  else lines.push('    ✓ no named tax class / statute / regulator / market-structure specific, no live-market claim');
 
   // (5) P5 question-completeness — every element the question demands is delivered.
   const comp = lintCompleteness(drill.question, drill.model_answer);
@@ -1452,7 +1451,10 @@ async function main() {
 
     // P4 re-check on the reveal fields (generated after the primary gates). Pass the
     // scenario so the "stated in the scenario" cross-reference works.
-    const revealJur = lintJurisdiction({ hint: reveal.hint, full_reveal: reveal.full_reveal }, { context: drill.context_text });
+    const revealJur = [
+      ...lintJurisdiction({ hint: reveal.hint, full_reveal: reveal.full_reveal }, { context: drill.context_text }),
+      ...lintFrozenMarketFacts({ hint: reveal.hint, full_reveal: reveal.full_reveal }),
+    ];
     if (revealJur.length) {
       console.error(`  ✗ ${label} — reveal jurisdiction lint (P4) FAILED, will not insert`);
       for (const iss of revealJur) console.error(`      ✗ [${iss.field}] ${iss.message}`);
