@@ -280,7 +280,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
             {currentDrill.context_text && (
               <div className="et-panel et-panel--context">
                 <div className="et-panel-label">Scenario</div>
-                <div className="et-context-text"><MessageRenderer content={currentDrill.context_text} /></div>
+                <div className="et-context-text"><MessageRenderer content={currentDrill.context_text} breaks /></div>
               </div>
             )}
             <div className="et-panel et-panel--question">

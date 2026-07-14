@@ -4,8 +4,14 @@
 //          --- dividers, bullet/numbered lists, paragraphs, GFM tables.
 // No external dependencies — custom parser matching exactly what Aoife produces.
 
+import { Fragment } from 'react';
+
 interface Props {
   content: string;
+  // remark-breaks-style: preserve single newlines within a paragraph as <br>. Off by default
+  // (GFM collapses them). ON for plain-text-authored scenario context, where lines carry
+  // structure (e.g. indented RAW-INPUTS sub-values) that must not fold into one line.
+  breaks?: boolean;
 }
 
 // Inline markdown: bold, italic
@@ -106,12 +112,20 @@ function renderTable(rows: string[], key: string | number): React.ReactNode {
   );
 }
 
-export default function MessageRenderer({ content }: Props) {
+export default function MessageRenderer({ content, breaks = false }: Props) {
   const lines = content.split('\n');
   const elements: React.ReactNode[] = [];
   let i = 0;
   let paraBuffer: string[] = [];
   let tableBuffer: string[] = [];
+
+  const PARA_STYLE: React.CSSProperties = {
+    margin: '0 0 12px 0',
+    lineHeight: 'var(--chat-p-lh, 1.65)',
+    color: 'var(--chat-text)',
+    wordBreak: 'break-word',
+    overflowWrap: 'anywhere',
+  };
 
   function flushTable() {
     if (tableBuffer.length === 0) return;
@@ -122,16 +136,25 @@ export default function MessageRenderer({ content }: Props) {
 
   function flushParagraph() {
     if (paraBuffer.length === 0) return;
+    if (breaks) {
+      // Preserve each source line, joined by <br> (single newline → line break).
+      const kept = paraBuffer.map(l => l.trim()).filter(Boolean);
+      if (kept.length) {
+        elements.push(
+          <p key={`p-${i++}`} style={PARA_STYLE}>
+            {kept.map((ln, idx) => (
+              <Fragment key={idx}>{idx > 0 && <br />}{renderInline(ln)}</Fragment>
+            ))}
+          </p>
+        );
+      }
+      paraBuffer = [];
+      return;
+    }
     const text = paraBuffer.join(' ').trim();
     if (text) {
       elements.push(
-        <p key={`p-${i++}`} style={{
-          margin: '0 0 12px 0',
-          lineHeight: 'var(--chat-p-lh, 1.65)',
-          color: 'var(--chat-text)',
-          wordBreak: 'break-word',
-          overflowWrap: 'anywhere',
-        }}>
+        <p key={`p-${i++}`} style={PARA_STYLE}>
           {renderInline(text)}
         </p>
       );
