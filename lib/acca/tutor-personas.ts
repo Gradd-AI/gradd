@@ -150,3 +150,19 @@ export function revealDecision(opts: { wantsReveal: boolean; missCount: number; 
   if (!opts.wantsReveal) return 'none';
   return (opts.missCount >= 2 || opts.resolved) ? 'reveal' : 'earn_redirect';
 }
+
+// ── Truncation guard (pure) ───────────────────────────────────────────────────
+// The deterministic half of the anti-truncation fix: when a model leg hits its token cap
+// (stop_reason === 'max_tokens') the last sentence is cut mid-word. Trim back to the last
+// COMPLETE sentence so a student never sees a dangling fragment. A terminator is `.`/`!`/`?`
+// plus any trailing closers (quotes, `)`/`]`, markdown `*`) followed by whitespace or end —
+// the whitespace/end lookahead keeps decimals ("6.297 years") and most abbreviations from
+// registering as sentence ends. If no complete sentence exists (truncated inside sentence 1),
+// return the text unchanged — nothing better to serve. Idempotent on already-complete text.
+export function trimToLastSentence(text: string): string {
+  const re = /[.!?][*"'”’)\]]*(?=\s|$)/g;
+  let end = -1;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) end = m.index + m[0].length;
+  return end > 0 ? text.slice(0, end) : text;
+}

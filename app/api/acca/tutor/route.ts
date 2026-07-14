@@ -8,6 +8,7 @@ import {
   REVEAL_AFM_WRAPPER_SYSTEM,
   assembleAfmReveal,
   revealDecision,
+  trimToLastSentence,
 } from '@/lib/acca/tutor-personas';
 import { resolvePaper } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
@@ -197,7 +198,7 @@ function isCorrectVerdict(diagnosis: string): boolean {
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 interface TextBlock { type: 'text'; text: string }
-interface AnthropicMessage { content: Array<{ type: string } | TextBlock> }
+interface AnthropicMessage { content: Array<{ type: string } | TextBlock>; stop_reason?: string | null }
 
 function extractText(res: unknown): string {
   const msg = res as AnthropicMessage;
@@ -206,13 +207,27 @@ function extractText(res: unknown): string {
   return block.text;
 }
 
+// Anti-truncation guard for STUDENT-FACING prose legs: if the leg hit its token cap, trim to
+// the last complete sentence so a mid-sentence cutoff never reaches the student. (Internal
+// legs that emit a parsed word/structured list — call0_classify, completenessCheck — use raw
+// extractText; they must not be sentence-trimmed.)
+function finishClean(res: unknown): string {
+  const text = extractText(res);
+  return (res as AnthropicMessage).stop_reason === 'max_tokens' ? trimToLastSentence(text) : text;
+}
+
+// Appended to every capped student-facing leg's prompt: nudges natural completion so the cap
+// is rarely hit at all (the finishClean guard is the backstop for when it still is).
+const WRAP_UP =
+  ' Finish on a complete sentence; if you are near the length limit, wrap up the current point cleanly rather than starting a new one.';
+
 // ── CALL 1: Generate model answer (fallback only) ─────────────────────────────
 
 async function call1_generate(question: string, context: string): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 700,
+    max_tokens: 1500,
     system:
       'You are an experienced ACCA APM marker. Write a complete model answer at the level ' +
       'a top-band APM candidate would produce — applied to the specific scenario, ' +
@@ -292,7 +307,7 @@ async function call3_hint(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 350,
+    max_tokens: 500,
     system: systemFor(paper),
     messages: [
       {
@@ -306,11 +321,12 @@ async function call3_hint(
           'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
           'move. Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           'structured breakdown. Work in the command verb and ACCA intellectual level from the ' +
-          "authored values above (do not infer them when given). Don't state the answer.",
+          "authored values above (do not infer them when given). Don't state the answer." +
+          WRAP_UP,
       },
     ],
   });
-  return extractText(res);
+  return finishClean(res);
 }
 
 // ── CALL 3: Teach-through (second miss or stop-signal) ────────────────────────
@@ -335,7 +351,7 @@ async function call3_teach(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 400, // physical cap on lecture sprawl (was 600); wording caps are only nudges
+    max_tokens: 600, // headroom for a complete teach; WRAP_UP + finishClean keep it from sprawling or truncating
     system: systemFor(paper),
     messages: [
       {
@@ -351,11 +367,11 @@ async function call3_teach(
           'sentences, 4 at the most — no numbered points or structured breakdown, a sharp tutor ' +
           'talking not a marked script. Use the authored command verb and ACCA intellectual level ' +
           'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.' +
-          offerLine,
+          offerLine + WRAP_UP,
       },
     ],
   });
-  return extractText(res);
+  return finishClean(res);
 }
 
 // ── CALL 3: Confirm (correct answer) ──────────────────────────────────────────
@@ -383,7 +399,7 @@ async function call3_confirm(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 500,
+    max_tokens: 650,
     system: systemFor(paper),
     messages: [
       {
@@ -401,11 +417,11 @@ async function call3_confirm(
           "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
           'quote back their figures or workings — they already wrote them; refer to what they did ' +
           "in words, not numbers. Don't mark it as if it fell short." +
-          offerLine,
+          offerLine + WRAP_UP,
       },
     ],
   });
-  return extractText(res);
+  return finishClean(res);
 }
 
 // ── CALL 2b: Completeness gate (behind APM_COMPLETENESS_GATE) ──────────────────
@@ -433,7 +449,7 @@ async function completenessCheck(
   try {
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 256,
+      max_tokens: 400,
       system:
         'You audit whether a student answer attempted every REQUIRED component of a model answer. ' +
         'Numerical correctness is ALREADY verified — do NOT re-check numbers, and do NOT treat ' +
@@ -567,7 +583,7 @@ async function call_warm(
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 250,
+    max_tokens: 500,
     system: systemFor(paper),
     messages: [
       {
@@ -575,11 +591,11 @@ async function call_warm(
         content:
           `${contextLine}Drill question: ${question}\n\n` +
           `Student message: ${message}\n\n` +
-          WARM_INSTRUCTIONS[intent],
+          WARM_INSTRUCTIONS[intent] + WRAP_UP,
       },
     ],
   });
-  return extractText(res);
+  return finishClean(res);
 }
 
 // ── CALL 4: Earned reveal (redesign item 3) ───────────────────────────────────
@@ -616,7 +632,7 @@ async function call4_reveal(
       : '';
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300, // wrapper only — the worked answer is appended verbatim, not generated
+      max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
       system: REVEAL_AFM_WRAPPER_SYSTEM,
       messages: [
         {
@@ -628,17 +644,18 @@ async function call4_reveal(
             reframeLine +
             'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
             'misconception, and point them to a fresh application. Do NOT include any figures or the ' +
-            'worked answer; the verified worked answer is appended verbatim below your message.',
+            'worked answer; the verified worked answer is appended verbatim below your message.' +
+            WRAP_UP,
         },
       ],
     });
-    return assembleAfmReveal(extractText(res), modelAnswer);
+    return assembleAfmReveal(finishClean(res), modelAnswer);
   }
 
   // APM — model-authored walkthrough of the stored model_answer (unchanged pre-G3 behaviour).
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 700,
+    max_tokens: 1200,
     system: REVEAL_SYSTEM,
     messages: [
       {
@@ -652,7 +669,7 @@ async function call4_reveal(
       },
     ],
   });
-  return extractText(res);
+  return finishClean(res);
 }
 
 // ── POST handler ──────────────────────────────────────────────────────────────

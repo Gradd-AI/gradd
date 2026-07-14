@@ -15,6 +15,7 @@ import {
   assembleAfmReveal,
   sanitizeAfmWrapper,
   revealDecision,
+  trimToLastSentence,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -128,6 +129,23 @@ ok('gate: non-reveal message is never a reveal (even when resolved)',
 // missCount may reset to 0 — the reveal must STILL be reachable purely on resolved.
 ok('gate: resolved persists across reload (missCount reset to 0 → still reveal)',
   revealDecision({ wantsReveal: true, missCount: 0, resolved: true }) === 'reveal');
+
+// ── (5) Truncation guard — a capped (over-length) response serves sentence-complete ──
+// finishClean() calls trimToLastSentence ONLY when stop_reason === 'max_tokens'; this tests
+// the deterministic core: a mid-sentence cutoff is trimmed back to the last complete sentence,
+// never shipped mid-word. Complete text is returned unchanged (idempotent).
+ok('trim: over-length cutoff → serves sentence-complete (ends on ".", fragment dropped)',
+  trimToLastSentence('Good instinct on APV. The financing side-effects matter here, and the subsidised loan chang') === 'Good instinct on APV.');
+ok('trim: result never ends mid-word',
+  /[.!?]["’”)\]*]*$/.test(trimToLastSentence('You nailed the plumbing. Now the discount rate is where it went sideway')));
+ok('trim: complete text is returned unchanged (idempotent)',
+  trimToLastSentence('All correct. Well done.') === 'All correct. Well done.');
+ok('trim: keeps the closing markdown bold in the terminator',
+  trimToLastSentence('**You nailed it.** The next mo') === '**You nailed it.**');
+ok('trim: a decimal mid-number is NOT a sentence end',
+  trimToLastSentence('The modified duration is 6.297 years, which is close to matur') === 'The modified duration is 6.297 years, which is close to matur');
+ok('trim: ? and ! count as terminators',
+  trimToLastSentence('Is APV right here? Yes — and the reason is that financ') === 'Is APV right here?');
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILURE(S)'}`);
 process.exit(failures === 0 ? 0 : 1);
