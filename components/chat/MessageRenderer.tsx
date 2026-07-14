@@ -14,10 +14,10 @@ interface Props {
   breaks?: boolean;
 }
 
-// Inline markdown: bold, italic
+// Inline markdown: bold, italic, links [text](url)
 function renderInline(text: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
-  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*)/g;
+  const regex = /(\*\*(.+?)\*\*|\*(.+?)\*|\[([^\]]+)\]\(([^)]+)\))/g;
   let last = 0;
   let match;
   let i = 0;
@@ -30,6 +30,11 @@ function renderInline(text: string): React.ReactNode[] {
       parts.push(<strong key={i++} style={{ fontWeight: 700, color: 'var(--chat-strong, var(--chat-text))' }}>{match[2]}</strong>);
     } else if (match[3]) {
       parts.push(<em key={i++} style={{ fontStyle: 'italic', fontFamily: 'var(--chat-em-font, inherit)', fontSize: 'var(--chat-em-size, inherit)', color: 'var(--chat-em, inherit)' }}>{match[3]}</em>);
+    } else if (match[4] !== undefined) {
+      // Link — only http(s) and root-relative URLs; anything else (javascript:, data:) → '#'.
+      const url = match[5];
+      const safe = /^(https?:\/\/|\/)/.test(url) ? url : '#';
+      parts.push(<a key={i++} href={safe} style={{ color: 'var(--chat-accent, var(--chat-strong, var(--chat-text)))', fontWeight: 600, textDecoration: 'underline' }}>{match[4]}</a>);
     }
     last = match.index + match[0].length;
   }

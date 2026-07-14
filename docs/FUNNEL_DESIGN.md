@@ -38,3 +38,10 @@ The dormant cap counts MESSAGES, which can't tell marking from teaching. Rebuild
 
 ## Status
 Design locked. Build not started. Cap currently dormant (MAX_FREE_UNITS 9999).
+
+## ACCA instantiation — the earned reveal IS the burn (built + live 2026-07-14)
+The locked Bucket-B doctrine is now instantiated on the ACCA tutor (`/acca/tutor`). The **reveal artifact** (the full verbatim worked answer) is the gated asset; the **teaching stays free** (the 3 free teach-throughs are the taste). Access split (`revealDecision` in `lib/acca/tutor-personas.ts`, gates `call4_reveal` vs `call_burn` in `app/api/acca/tutor/route.ts`):
+- **SOLVED** (`resolved`): reveal serves for FREE and PAID alike — earned by producing the answer.
+- **STRUGGLE** (missCount ≥ 2, not solved): PAID → reveal; **FREE → the BURN** — a figure-free diagnosis-framing wrapper + the exact locked burn copy ("this is where I take you from 'sort of get it' to 'got it'") + upgrade CTA to `/acca/subscribe`. `call_burn` NEVER receives the model_answer, so the artifact cannot leak.
+- Neither: the "attempt first" moat (`EARN_REDIRECT`), for free and paid — the moat is pedagogical, not just monetization.
+This is the peak-end burn: the free user hits it exactly when the full answer would resolve the struggle. Copyright footer on served reveals; a reveal-velocity alert (>5/24h → Grant) backstops abuse. Full ruling + doctrine in `GENERATOR_DOCTRINE.md` and `APM_BUILD_CONTRACT.md` (2026-07-14).

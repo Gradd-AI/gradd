@@ -364,10 +364,12 @@ export default async function TermsPage() {
         <h2 style={styles.h2}>10. Intellectual Property</h2>
         <p style={styles.p}>
           All content on the Gradd platform — including curriculum materials,
+          practice questions, worked model answers, tutor feedback and reveals,
           system prompts, branding, and software — is owned by or licensed to
-          Gradd. You may use the platform for personal, non-commercial study
-          purposes only. You may not reproduce, distribute, or commercialise any
-          part of the platform without our written permission.
+          Gradd. Content is provided for your personal, non-commercial exam
+          preparation only. You may not reproduce, distribute, republish, resell,
+          or commercialise any part of the platform or its content — including
+          collecting or harvesting model answers — without our written permission.
         </p>
 
         {/* 11 */}
