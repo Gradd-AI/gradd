@@ -84,6 +84,43 @@ territory — follow the links for depth. Keep it under ~150 lines.
 - **This-is-not-vanilla-Next.js:** `AGENTS.md` (imported above) — read the guide in
   `node_modules/next/dist/docs/` before writing Next.js code.
 
+## Code map + pipeline runbook (banked — STOP re-deriving this every session)
+- **Drill content lives in the DB ONLY** — table `acca_drills`, editable fields
+  `question / context_text / model_answer / hint / full_reveal / answer_schema` (+
+  `lo_code / paper_code / status / published`). **No repo seed files.** Review packs in
+  `docs/reviews/*.md` are DB SNAPSHOTS (hand-maintained preamble + per-drill bodies copied
+  from the row fields).
+- **Calculator-family pattern** (one per calc #): `lib/acca/<family>.ts` (compute +
+  `build*Schema` + `build*ModelAnswer` — code owns EVERY figure) · fixtures
+  `scripts/test-<family>.ts` (`npm run test:<family>`) · generator wiring in
+  `scripts/generate-afm-drills.ts` (`draft*Drill` + `submit_*_scenario` tool +
+  `build*UserPrompt` + `--*-batch` flag). Duration = calc #6: `lib/acca/duration.ts` +
+  `scripts/test-duration.ts` (`npm run test:duration`).
+- **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
+  (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
+  model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR
+  (`buildOfrProof` in generator ↔ `verifyNumericAnswer`); P4 `lintJurisdiction`, P5
+  `lintCompleteness`, P6 `lintLossRelief` — all in `lib/acca/validate-afm-prose.ts`.
+- **Apply a content fix to a batch (in-place DB patch — the ACTUAL mechanism):** write/edit a
+  `scripts/_patch_afm_*.ts` (gitignored via `scripts/_*` — local throwaways, not committed;
+  working template: `scripts/_patch_afm_drill2_b4c.ts`) that holds
+  raw inputs + prose as literals → rebuilds `model_answer` + `answer_schema` via the lib
+  calculator → runs GATE1/2/3 in-process + a banned-phrase sweep → refuses to write unless
+  gates PASS → `supabase.from('acca_drills').update({…}).eq('id', …)` via the service client
+  (`NEXT_PUBLIC_SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`). Run:
+  `npx tsx --env-file=.env.local scripts/_patch_afm_<x>.ts`.
+- **Regenerate the pack (no dedicated exporter yet):** after patching, query the batch ids and
+  rewrite the per-drill sections of `docs/reviews/<PACK>.md` below the hand-maintained
+  preamble — inline `npx tsx --env-file=.env.local -e "…"` (SINGLE line). The preamble
+  (doctrine + `⛔ CLOSED RULINGS`) is hand-maintained, never auto-generated.
+- **Protocol files:** `docs/APM_BUILD_CONTRACT.md` (journal — append-only chronology) ·
+  `docs/AFM_SURFACED.md` (living backlog / open items) · `docs/GENERATOR_DOCTRINE.md`
+  (standing rulings) · `docs/reviews/*.md` (per-batch review packs).
+- **Batch lifecycle:** generate (`--*-batch`) → 6 gates → co-founder independent recompute →
+  blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → **flip by EXPLICIT-id
+  SQL** in the Supabase editor (reconcile approved-set vs journal FIRST; demote any
+  un-reviewed `approved` row back to `candidate` in the same transaction).
+
 ## Where work is tracked
 - Persistent cross-session memory: `memory/MEMORY.md` (index) + `memory/*.md` (one fact
   each). Check it at session start; write project/feedback facts as they arise.
