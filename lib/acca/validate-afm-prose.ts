@@ -25,25 +25,39 @@ export interface ProseIssue {
   message: string;
 }
 
-// P4b frozen-market-facts (duration round-1 FIX 6) — a scenario is a dated snapshot, not a live
-// feed. Real-world market claims phrased in the present tense ("currently above 40%", "current
-// market yield") will age the moment a rate moves; freeze every market fact as a dated scenario
-// assumption ("assumed at the valuation date to be …"). Runs across ALL drill fields.
-const LIVE_MARKET_CLAIM: { re: RegExp; what: string }[] = [
-  { re: /\bcurrently\b/i,        what: '"currently"' },
-  { re: /\bcurrent market\b/i,   what: '"current market"' },
-];
+// P4b frozen-market-facts (duration round-1 FIX 6; NARROWED — lint ruling 2026-07-14). A
+// scenario is a dated snapshot, not a live feed: a present-tense MARKET fact ("current market
+// rates", "currently yields 6%") ages the moment a rate moves and must be frozen as a dated
+// assumption ("at the valuation date"). But fictional scenario-STATE ("currently uses ROI",
+// "currently at 71% utilisation", "utilisation rate (currently 71%)", "sector benchmark") is
+// legitimate exam framing and must NOT flag. So we trigger ONLY on:
+//   (1) "current market …" — a live market claim by construction; or
+//   (2) "currently" (the adverb) within proximity of a MARKET-QUALIFIED term (yield, inflation,
+//       credit spread, exchange/interest/policy/market/swap/discount/coupon/benchmark rate,
+//       benchmark yield, basis points, a named reference rate, market price/level/data/input).
+// Bare "rate"/"benchmark" and the adjective "current" (as in "current yield level" = the
+// evaluation point, "current duration profile") deliberately do NOT trigger.
+const MARKET_QUALIFIED =
+  /\b(?:yields?|inflation|(?:credit )?spreads?|(?:exchange|interest|policy|market|swap|discount|coupon|benchmark) rates?|swap curve|benchmark yields?|basis points?|libor|sofr|euribor|jibor|sonia|market (?:price|level|data|input)s?)\b/i;
+const CURRENT_MARKET = /\bcurrent market\b/i;
+const CURRENTLY = /\bcurrently\b/gi;
+const PROXIMITY = 45;
 
 export function lintFrozenMarketFacts(fields: Record<string, string>): ProseIssue[] {
   const issues: ProseIssue[] = [];
+  const flag = (field: string, raw: string, idx: number) => issues.push({
+    gate: 'frozen-facts', field, code: 'live-market-claim',
+    message: `states a live market fact ("…${raw.slice(Math.max(0, idx - 12), idx + 42).replace(/\s+/g, ' ').trim()}…") — a scenario is a dated snapshot; freeze it as a dated assumption (e.g. "at the valuation date" / "as assumed in the scenario")`,
+  });
   for (const [field, raw] of Object.entries(fields)) {
     if (!raw) continue;
-    for (const p of LIVE_MARKET_CLAIM) {
-      const m = raw.match(p.re);
-      if (m) issues.push({
-        gate: 'frozen-facts', field, code: 'live-market-claim',
-        message: `states ${p.what} ("…${raw.slice(Math.max(0, m.index! - 20), m.index! + 30).trim()}…") — a scenario is a dated snapshot; freeze the market fact as a dated assumption (e.g. "assumed at the valuation date to be …")`,
-      });
+    const cm = CURRENT_MARKET.exec(raw);
+    if (cm) flag(field, raw, cm.index);
+    CURRENTLY.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = CURRENTLY.exec(raw))) {
+      const window = raw.slice(Math.max(0, m.index - PROXIMITY), m.index + m[0].length + PROXIMITY);
+      if (MARKET_QUALIFIED.test(window)) flag(field, raw, m.index);
     }
   }
   return issues;

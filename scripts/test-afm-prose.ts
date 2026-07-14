@@ -52,13 +52,19 @@ check('P5: IRR demanded but not delivered',
 check('P5: IRR + MIRR demanded and delivered',
   lintCompleteness('Appraise by IRR and MIRR.', 'IRR 21%. MIRR 17%. Accept.').length, 0);
 
-// (9) P4b frozen-market-facts — live "currently"/"current market" claim → FLAG; dated → clean.
-check('frozen-facts: "currently above 40%" flagged',
-  lintFrozenMarketFacts({ context_text: 'Lira borrowings currently above 40% in the domestic market.' }).length, 1, ['live-market-claim']);
-check('frozen-facts: "current market rates" flagged',
-  lintFrozenMarketFacts({ context_text: 'A single snapshot of current market rates.' }).length, 1, ['live-market-claim']);
+// (9) P4b frozen-market-facts (NARROWED) — a live MARKET claim flags; scenario-STATE does not.
+check('frozen-facts: "current market inputs" flagged',
+  lintFrozenMarketFacts({ model_answer: 'The WACC uses current market inputs rather than historical averages.' }).length, 1, ['live-market-claim']);
+check('frozen-facts: "currently yields" flagged (adverb + market term)',
+  lintFrozenMarketFacts({ context_text: 'The 8-year benchmark currently yields 6.2%.' }).length, 1, ['live-market-claim']);
+check('frozen-facts: scenario-state "currently uses ROI" NOT flagged',
+  lintFrozenMarketFacts({ context_text: 'The board currently uses ROI as its only divisional metric.' }).length, 0);
+check('frozen-facts: scenario-state "utilisation rate (currently 71%)" NOT flagged',
+  lintFrozenMarketFacts({ context_text: 'Average vehicle utilisation rate (currently 71%) and on-time delivery rate.' }).length, 0);
+check('frozen-facts: technical "current yield level" NOT flagged (adjective, evaluation point)',
+  lintFrozenMarketFacts({ model_answer: 'Modified duration is the slope of the tangent at the current yield level.' }).length, 0);
 check('frozen-facts: dated assumption is clean',
-  lintFrozenMarketFacts({ context_text: 'Lira borrowings assumed at the valuation date to be above 40%.' }).length, 0);
+  lintFrozenMarketFacts({ model_answer: 'The WACC uses market inputs at the valuation date rather than historical averages.' }).length, 0);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL AFM-PROSE FIXTURES PASS' : `${failures} AFM-PROSE FIXTURE(S) FAILED`);
