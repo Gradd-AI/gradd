@@ -1,6 +1,6 @@
 # AFM credit-risk batch — blind adversarial review pack
 
-**Calculator #7: credit risk (`lib/acca/credit.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated in full after every fix round (pre-review FIX 1–4 applied 2026-07-15).**
+**Calculator #7: credit risk (`lib/acca/credit.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated in full after every fix round (round-1 adjudication applied 2026-07-15).**
 
 Doctrine: code owns EVERY figure AND the over/under-valued verdict; the model authored PROSE only — never a rate, a spread, a price, a cost of debt, or an inequality. ALL kinds are **issuer-framed** (the entity ISSUES the debt): a wider spread / downgrade is higher FUNDING and refinancing cost, **never a "loss"** (loss language is for investors). Pure rates/bond family — **P6 loss-relief is a structural no-op**, no issue-cost analogue.
 
@@ -25,6 +25,8 @@ Doctrine: code owns EVERY figure AND the over/under-valued verdict; the model au
 - **downgrade ΔWACC conditional; existing coupon insulated** — the ΔWACC figure appears ONLY when weights+Ke+tax are supplied (else directional); the downgrade's Δ is a REFINANCING cost — the existing FIXED coupon is unchanged by a rating move (fixed-rate insulation). Both are ruled guards, not omissions.
 
 **Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on **Drill 1 (kd_term_structure, first-of-family)**, spot-check siblings WITH full recomputation of every figure. Hunt for semantic errors a deterministic gate cannot catch: a spot rate applied to the wrong maturity, the spread added in the wrong units (bp vs pp), the over/under-valued verdict inverted, issuer framing slipping into investor "loss" language, a rating symbol or spread ordering that is unrealistic, scenario-fact drift.
+
+---
 
 ---
 
@@ -286,7 +288,7 @@ Credit spread = corporate yield 4.29% − government yield 3.44% = **84.8bp** (0
 
 **Step 4 — Derived spread vs the rated peer benchmark (code-owned)**
 
-The derived spread of 84.8bp is **tighter (narrower) than** the issuer's BBB+ rated-band spread of 128bp — it sits inside even the A- band (the tightest rated band whose spread still exceeds it). On the dated table the market is therefore pricing the issuer's credit **tighter than its rating band implies**.
+The derived spread of 84.8bp is **tighter** than the BBB+ rated benchmark of 128bp and sits between the A and A- points in the dated spread table. On this snapshot, the market is pricing Meridian **materially inside its formal BBB+ rating level**.
 
 **Step 5 — Evaluation / advice to the board**
 
@@ -389,7 +391,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
 
 ### question
 
-Assess the likely increase in Cementos Andino's annual interest cost and the directional impact on its WACC following the one-notch downgrade, and advise the board on the issuer-side exposures this creates.
+Assess the likely increase in Cementos Andino's annual interest cost and the directional impact on its WACC following the one-notch downgrade, and advise the board on the issuer-side exposures this creates. Your answer should also explain how the rating agency's assessment of leverage, liquidity and operating outlook affects the issuer's market access and refinancing spread.
 
 ### context_text
 
@@ -449,6 +451,8 @@ Feeding the higher after-tax cost of debt through the given capital-structure we
 
 **Step 4 — Evaluation / advice to the board**
 
+The rating agency does not set Cementos Andino's coupon; it supplies the independent default assessment from which investors price the spread. Fitch's stated drivers — the rising leverage of the greenfield clinker expansion, tighter liquidity headroom, and a softer domestic construction outlook — are exactly the leverage, liquidity and operating-outlook judgements that move the applicable spread, so the downgrade is a market-access signal as much as a spread input: it narrows the pool of investors and mandates able to hold the bond at the same time as it widens the price they require, and both effects bear directly on the refinancing.
+
 The one-notch downgrade to BBB− reflects Fitch's concern about the leverage trajectory created by the greenfield clinker expansion — a project the board has already committed to — meaning the rating pressure is structural rather than transient and is unlikely to reverse quickly. Cementos Andino's refinancing exposure is heightened precisely because Colombia's high-rate environment amplifies even a modest spread widening into a material absolute funding cost; the board should treat the dated spread table as a floor, not a ceiling, given that market conditions may have tightened since the snapshot was taken. Beyond the refinancing-cost effect, a BBB− rating sits one notch above speculative grade, so any further deterioration in leverage during the expansion would risk a BB+ classification that pushes the bond outside many domestic institutional mandates, severely constraining the investor base at refinancing. The board should also examine whether any existing facility documentation contains ratings-based step-up clauses or covenant triggers that could accelerate the cost impact before the bond even matures. Given the combination of a committed capital programme, a weakened credit standing, and a high base-rate environment, the board is advised to explore pre-funding or liability-management options rather than waiting passively for the bond's maturity date.
 
 *Reconciliation: base Kd 14.05% → new Kd 14.80% (+75bp) → +COP 6000.0m annual interest on refinancing → +0.27% WACC. ✓*
@@ -459,7 +463,7 @@ Your spread arithmetic is the floor, not the ceiling — now tell the board what
 
 ### full_reveal
 
-The dominant misconception here is ABANDONED-AFTER-CALC: candidates diligently compute the new cost of debt and the WACC movement, then stop — handing the board a number when it needed a verdict. That thinking is wrong because the calculation is evidence, not the conclusion; a spread widening only becomes advice when you explain what it means for the issuer's funding decisions, covenant exposure, and investor-base risk. The correct mental model is to treat the quantitative steps as a diagnostic chain — each figure should open a question the board must act on, not close the analysis. A second, subtler error is UNDEVELOPED-ASSUMPTION: candidates note that "a downgrade raises the cost of debt" without probing why the downgrade happened (the leverage trajectory of the greenfield expansion), which means they miss that the rating pressure may be structural and unlikely to self-correct quickly. If your spread or WACC figure is off, carry it forward consistently into the interest-cost and WACC steps — where your downstream method is correct, those marks remain live and the error is charged once at its source, provided you use your own figure rigorously throughout.
+The dominant misconception here is ABANDONED-AFTER-CALC: candidates diligently compute the new cost of debt and the WACC movement, then stop — handing the board a number when it needed a verdict. That thinking is wrong because the calculation is evidence, not the conclusion; a spread widening only becomes advice when you explain what it means for the issuer's funding decisions, covenant exposure, and investor-base risk. The correct mental model is to treat the quantitative steps as a diagnostic chain — each figure should open a question the board must act on, not close the analysis. A second, subtler error is UNDEVELOPED-ASSUMPTION: candidates note that "a downgrade raises the cost of debt" without probing why the downgrade happened (the leverage trajectory of the greenfield expansion), which means they miss that the rating pressure may be structural and unlikely to self-correct quickly. If your spread or WACC figure is off, carry it forward consistently into the interest-cost and WACC steps — where your downstream method is correct, those marks remain live and the error is charged once at its source, provided you use your own figure rigorously throughout. Remember too that the agency's role is diagnostic, not mechanical: it supplies the independent leverage-liquidity-outlook assessment investors price the spread from, so a downgrade signals narrower market access, not merely a wider number.
 
 ### answer_schema
 
