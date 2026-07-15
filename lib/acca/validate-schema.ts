@@ -25,10 +25,11 @@
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { checkSpreadMonotonicity, type SpreadRow } from './credit';
+import { checkOptionBounds, type BsopComputed } from './bsop';
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -319,4 +320,14 @@ export function validateSpreadTable(
     }
   }
   return { ok: issues.length === 0, issues };
+}
+
+// ── GATE 10: option no-arbitrage bounds + put-call parity (BSOP batch, calculator #8, 2026-07-15) ──
+// A BSOP computation must respect the arbitrage identities: N(d)∈(0,1); the call within
+// [max(0,Pₐ−Pₑ·e^(−rt)), Pₐ]; the put within [max(0,Pₑ·e^(−rt)−Pₐ), Pₑ·e^(−rt)]; and put-call
+// parity within epsilon. A violation means a mis-wired d1/d2 or a broken parity route — the
+// figure is unmarkable. (Delegates to checkOptionBounds in bsop.ts.)
+export function validateOptionBounds(c: BsopComputed): ValidationResult {
+  const r = checkOptionBounds(c);
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(option)', gate: 'option-bounds', code: 'no-arbitrage-violation', message: r.reason ?? 'option value violates a no-arbitrage bound or put-call parity' }] };
 }
