@@ -53,8 +53,8 @@ import {
   type StudentSubmission,
   type Verdict,
 } from '../lib/acca/numeric-verifier';
-import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
-import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts } from '../lib/acca/validate-afm-prose';
+import { validateSchemaSelfConsistency, validateSpreadTable } from '../lib/acca/validate-schema';
+import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts, lintRatingSymbols } from '../lib/acca/validate-afm-prose';
 import {
   computeFcff,
   buildFcffSchema,
@@ -98,6 +98,14 @@ import {
   type DurationComputed,
   type DurationKind,
 } from '../lib/acca/duration';
+import {
+  computeCredit,
+  buildCreditSchema,
+  buildCreditModelAnswer,
+  type CreditInputs,
+  type CreditComputed,
+  type CreditKind,
+} from '../lib/acca/credit';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -140,6 +148,7 @@ interface AfmDrillSpec {
   apv_kind?:               ApvKind;   // B3j/B3k batch only — selects the APV drill variant
   capm_kind?:              CapmKind;  // B3d/B3e batch only — selects the CAPM drill variant
   duration_kind?:          DurationKind; // B3f batch only — selects the duration drill variant
+  credit_kind?:            CreditKind;   // B3h/B4a batch only — selects the credit-risk drill variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -162,6 +171,10 @@ const CAPM_LOS = new Set<LoCode>(['B3d', 'B3e']);
 // Bond duration (B3f Macaulay/modified; B3g convexity rider on the limitations kind). Pure
 // rates/bond family — P6 loss-relief no-op, no issue-cost analogue.
 const DURATION_LOS = new Set<LoCode>(['B3f']);
+// Credit risk (B3h rating agencies / credit spread / cost of debt via the term structure; B4a
+// corporate-debt valuation). Pure rates/bond family, ALL issuer-framed — P6 loss-relief no-op,
+// no issue-cost analogue. The non-flat govt spot curve opens here (duration's flat-YTM boundary).
+const CREDIT_LOS = new Set<LoCode>(['B3h', 'B4a']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -590,6 +603,47 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
+function buildCreditUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.credit_kind ?? 'kd_term_structure';
+  const kindBlock =
+    kind === 'downgrade_impact'
+      ? `- DRILL TYPE: DOWNGRADE IMPACT (rating-agency role, B3h(i)). The issuer is downgraded one or two notches. In raw_inputs give: \`spread_table\` (a rating→spread map, bp), \`base_rating\`, \`new_rating\` (the new one MUST be weaker → wider spread), \`benchmark_rate\` (the risk-free benchmark for the debt's maturity, PERCENT), \`debt_principal\` (millions). OPTIONALLY give \`equity_weight\`, \`debt_weight\`, \`ke\` (PERCENT), \`tax_rate\` (decimal) — ONLY if you want the exact ΔWACC computed; if you omit ANY of the four, code states the WACC effect DIRECTIONALLY (never an unsupported figure). Code owns the cost of debt at each rating, the Δ annual interest, and the ΔWACC. The MARKS are in the evaluation: the agencies' role in pricing default risk, and the issuer's real exposure (refinancing cost, covenant/disclosure optics, funding cost) — NOT a "loss".`
+      : kind === 'spread_estimation'
+      ? `- DRILL TYPE: CREDIT-SPREAD ESTIMATION (B3h(ii)). Give a corporate \`bond\` (face_value in millions, coupon_rate PERCENT, maturity), its quoted \`market_price\` (millions), the matched-maturity \`govt_yield\` (PERCENT), and two trial yields \`r_lo\` / \`r_hi\` (PERCENT) that BRACKET the market price. Code interpolates the corporate redemption yield and DERIVES the spread = corporate yield − government yield. Do NOT state any yield or spread in prose.`
+      : kind === 'debt_valuation'
+      ? `- DRILL TYPE: CORPORATE-DEBT VALUATION (B4a). Give a corporate \`bond\`, the issuer's \`rating\`, a \`spread_table\` containing that rating, the government \`govt_spot\` curve (an array of spot rates by maturity year, PERCENT, length = maturity), and a quoted \`market_price\` (millions). Code discounts each cash flow at its own maturity's (govt spot + spread), sums to the FAIR VALUE, and OWNS the over/under-valued verdict vs the market price. Do NOT state any price, rate, or the verdict in prose.`
+      : `- DRILL TYPE: COST OF DEBT VIA THE TERM STRUCTURE (B3h(iii), first-of-family). Give a corporate \`bond\`, the issuer's \`rating\`, a \`spread_table\` containing that rating, the government \`govt_spot\` curve (array of spot rates by maturity year, PERCENT, length = maturity), and two trial flat yields \`r_lo\` / \`r_hi\` (PERCENT). Code discounts each cash flow at its own maturity's (govt spot + spread) for the curve price, then interpolates the single flat cost of debt that reprices the bond. Do NOT state any rate or price in prose.`;
+
+  return `Write one original ACCA AFM credit-risk drill.
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+${kindBlock}
+
+HOUSE CONVENTIONS — MANDATORY.
+- ISSUER PERSPECTIVE: the entity ISSUES the debt. A wider spread / downgrade is higher FUNDING and refinancing cost, NEVER a "loss" (loss language is for investors). The issuer's genuine exposures are refinancing cost, covenant/disclosure optics, hedge-accounting, and future funding cost.
+- RATE CONVENTION: every rate — benchmark, spot curve, coupon, trial yields, Ke, govt yield — is a PERCENT NUMBER (7.25 for 7.25%, 0.30 for 0.30%). Spreads are BASIS POINTS (integers). Weights and tax_rate are DECIMALS in [0,1). Money is in MILLIONS.
+- TERM STRUCTURE: the government spot curve is a genuine curve (rates DIFFER by maturity) — this is the point of the family. Each cash flow discounts at its OWN maturity's spot + spread. No forward-rate bootstrapping.
+- RATING REALISM: use REAL agency symbols from ONE scale only — S&P/Fitch (AAA, AA+, …, BBB-, BB+, …, D) OR Moody's (Aaa, Aa1, …, Baa3, Ba1, …, C). Never invent a symbol, never mix agencies. The spread_table MUST be MONOTONIC: a weaker rating carries a WIDER spread.
+
+CODE-COMPUTES PROTOCOL — MANDATORY. Code owns EVERY figure: every discounted cash flow, price, yield, spread, cost of debt, fair value, the Δ figures, and the over/under-valued verdict. Supply the scenario, the raw inputs, and qualitative prose only. DO NOT state any rate, spread, price, yield, cost of debt, or verdict in prose.
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and its debt instrument(s) — a bond issue, a term loan, a facility — as the ISSUER.
+- CURRENCY REALISM: state a government/benchmark yield level realistic for the currency. If the currency is COP (Colombian peso), yields are DEEP (high single / low double digit) — acknowledge the high-rate environment in one line. Never a currency-implausible rate.
+- question: begins with the command verb; asks for the relevant figure(s) and an issuer-framed assessment.
+- context_text: scenario narrative + a clean labelled list of ALL raw inputs — STATE the full government spot curve and the spread table EXPLICITLY. Add 1 challengeable texture (the rating is a point-in-time view; the spread table is dated; the curve is a snapshot). Do NOT pre-compute anything.
+- Provide the SAME figures in raw_inputs (rates as PERCENT numbers, spreads as bp, money in millions).
+- interpretation_prose: qualitative evaluation ONLY (3–5 sentences) — issuer-framed, takes a POSITION (anti-fence-sitting), NO figures/rates/spreads/verdict. Reference ONLY context facts.
+- FROZEN FACTS (P4b) — MANDATORY in EVERY field: a scenario is a DATED snapshot, not a live feed. NEVER write "current market …", nor "currently" next to a yield/spread/rate/curve/basis-points/market price. Freeze every market fact as a dated assumption — "at the valuation date", "as assumed in the scenario", "the spread table as dated". (Say "the spread table is dated", NOT "current market spreads".)
+- QUESTION-COMPLETENESS (P5): the question must demand ONLY what the model answer delivers. Do NOT ask for an NPV, IRR, duration or a full WACC build.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
 function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -617,6 +671,7 @@ Quality rules (mandatory):
 - Use "may", "is likely to", "suggests" for causal chains; avoid "directly", "depends entirely on" where the scenario shows only plausibility.
 - Reference ONLY facts present in the scenario/context — never invent events, savings, or risks; phrase un-evidenced risks conditionally.
 - Do not state any computed figure or any inequality between computed figures — the model answer already carries them.
+- FROZEN FACTS (P4b): the scenario is a DATED snapshot. NEVER write "current market …" or "currently" next to a rate/yield/spread/curve/price — say "at the valuation date" / "the assumptions as dated" instead.
 - Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).`;
 }
 
@@ -822,6 +877,58 @@ const SUBMIT_DURATION_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+const CREDIT_BOND_PROPS = {
+  type: 'object' as const,
+  description: 'A corporate bond: face_value (millions), coupon_rate (PERCENT number, e.g. 3.5), maturity (whole years).',
+  properties: {
+    face_value:  { type: 'number', description: 'Redemption/par value in MILLIONS (e.g. 100).' },
+    coupon_rate: { type: 'number', description: 'Annual coupon rate as a PERCENT number (3.5 = 3.5%).' },
+    maturity:    { type: 'number', description: 'Whole years to redemption.' },
+    label:       { type: 'string', description: 'Optional short label for the instrument.' },
+  },
+  required: ['face_value', 'coupon_rate', 'maturity'],
+};
+
+const SUBMIT_CREDIT_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_credit_scenario',
+  description: 'Submit a credit-risk drill — raw inputs only; code builds the cost of debt / spread / curve-priced fair value and owns every figure and the over/under-valued verdict. Issuer-framed.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question:     { type: 'string', description: 'Drill question. Begins with the command verb; asks for the relevant figure(s) and an issuer-framed assessment.' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of ALL raw inputs. STATE the full government spot curve and the spread table EXPLICITLY. NO computed rate/spread/price/verdict — code computes them all. Add a challengeable texture (rating is point-in-time; the curve/table is a dated snapshot).' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "calculate and assess", "estimate and advise").' },
+      currency:     { type: 'string', description: 'ISO 4217 currency code, e.g. "JPY", "SEK", "SGD", "COP". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'The raw figures, matching context_text exactly. RATES as PERCENT numbers, SPREADS as basis points, MONEY in millions, weights/tax as decimals.',
+        properties: {
+          spread_table: { type: 'array', description: 'Rating→spread map (MONOTONIC: weaker rating → wider spread; ONE agency scale). Include the issuer\'s rating and ≥1 neighbour.', items: { type: 'object', properties: { rating: { type: 'string', description: 'A real S&P/Fitch or Moody\'s symbol.' }, spread_bps: { type: 'number', description: 'Credit spread in basis points.' } }, required: ['rating', 'spread_bps'] } },
+          // kind 1
+          base_rating:    { type: 'string', description: 'downgrade_impact: the current rating.' },
+          new_rating:     { type: 'string', description: 'downgrade_impact: the weaker post-downgrade rating (wider spread).' },
+          benchmark_rate: { type: 'number', description: 'downgrade_impact: risk-free benchmark for the maturity, PERCENT.' },
+          debt_principal: { type: 'number', description: 'downgrade_impact: debt principal, MILLIONS.' },
+          equity_weight:  { type: 'number', description: 'downgrade_impact OPTIONAL: equity weight (decimal). Give all of equity_weight/debt_weight/ke/tax_rate for an exact ΔWACC, or none.' },
+          debt_weight:    { type: 'number', description: 'downgrade_impact OPTIONAL: debt weight (decimal).' },
+          ke:             { type: 'number', description: 'downgrade_impact OPTIONAL: cost of equity, PERCENT.' },
+          tax_rate:       { type: 'number', description: 'downgrade_impact OPTIONAL: tax rate, decimal in [0,1).' },
+          // kinds 2/3/4
+          bond:           CREDIT_BOND_PROPS,
+          rating:         { type: 'string', description: 'kinds 3/4: the issuer\'s rating (must be in spread_table).' },
+          market_price:   { type: 'number', description: 'spread_estimation (target) / debt_valuation (comparator): quoted market price, MILLIONS.' },
+          govt_yield:     { type: 'number', description: 'spread_estimation: matched-maturity government yield, PERCENT.' },
+          r_lo:           { type: 'number', description: 'spread_estimation / kd_term_structure: low trial yield, PERCENT (bracket below the answer).' },
+          r_hi:           { type: 'number', description: 'spread_estimation / kd_term_structure: high trial yield, PERCENT (bracket above).' },
+          govt_spot:      { type: 'array', description: 'kinds 3/4: government spot curve by maturity year, PERCENT each, length = maturity (rates DIFFER by year).', items: { type: 'number' } },
+        },
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative evaluation ONLY (3–5 sentences), issuer-framed, takes a position (anti-fence-sitting). State NO rate, NO spread, NO price, NO yield, NO verdict — code owns all of those. Reference ONLY facts in context_text.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
   description: 'Submit the Ezra teaching reveal for a completed AFM drill',
@@ -856,6 +963,8 @@ interface DrillOutput {
   _capmComputed?: CapmComputed;      // CAPM only — dry-run inspection
   _durationInputs?:   DurationInputs;    // duration only — dry-run inspection
   _durationComputed?: DurationComputed;  // duration only — dry-run inspection
+  _creditInputs?:     CreditInputs;      // credit only — dry-run inspection + spread-table gate
+  _creditComputed?:   CreditComputed;    // credit only — dry-run inspection
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -1104,6 +1213,37 @@ async function draftDurationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Pro
   };
 }
 
+async function draftCreditDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: CreditKind = spec.credit_kind ?? 'kd_term_structure';
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2800,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_CREDIT_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_credit_scenario' },
+    messages: [{ role: 'user', content: buildCreditUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in credit Pass 1 response');
+  const inp = block.input as {
+    question: string; context_text: string; command_verb: string; currency?: string;
+    raw_inputs: CreditInputs; interpretation_prose: string;
+  };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (credit)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (credit): raw_inputs missing');
+
+  const currency = normaliseCurrency(inp.currency);
+  const rawInputs: CreditInputs = { ...inp.raw_inputs, currency };
+  const computed = computeCredit(rawInputs, kind);              // throws loud on bad data → retry
+  const { schema, serialized } = buildCreditSchema(rawInputs, computed, currency, kind);
+  const model_answer = buildCreditModelAnswer(rawInputs, computed, inp.interpretation_prose, currency, kind);
+
+  return {
+    question: inp.question, context_text: inp.context_text, command_verb: inp.command_verb.trim().toLowerCase(),
+    model_answer, answer_schema: serialized, _liveSchema: schema, _creditInputs: rawInputs, _creditComputed: computed, _currency: currency,
+  };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -1127,13 +1267,15 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   if (spec.apv_kind && APV_LOS.has(spec.lo_code)) return draftApvDrill(anthropic, spec);
   if (spec.capm_kind && CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
   if (spec.duration_kind && DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
+  if (spec.credit_kind && CREDIT_LOS.has(spec.lo_code)) return draftCreditDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
     if (APV_LOS.has(spec.lo_code))  return draftApvDrill(anthropic, spec);
     if (CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
     if (DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
-    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM, B3f duration)`);
+    if (CREDIT_LOS.has(spec.lo_code)) return draftCreditDrill(anthropic, spec);
+    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM, B3f duration, B3h/B4a credit)`);
   }
   if (spec.mode === 'mixed') {
     throw new Error(`Mixed LO ${spec.lo_code} not in pilot scope (needs a per-drill scenario_supplies_figures decision)`);
@@ -1253,6 +1395,27 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
   if (relief.length) { ok = false; for (const iss of relief) lines.push(`    ✗ ${iss.message}`); }
   else lines.push(`    ✓ ${hasLossYear ? 'loss year present and a relief assumption is stated' : 'no negative-taxable year'}`);
 
+  // (7) P8 rating-symbol realism — real single-agency symbols, no cross-agency mixing (credit
+  // family). Runs on all quantitative drills; only rating-cue prose can flag, so non-credit
+  // drills pass vacuously.
+  const ratingFields = { question: drill.question, context_text: drill.context_text, model_answer: drill.model_answer };
+  const ratings = lintRatingSymbols(ratingFields);
+  lines.push(`GATE 7 — rating-symbol realism (P8): ${ratings.length === 0 ? 'PASS' : 'FAIL'}`);
+  if (ratings.length) { ok = false; for (const iss of ratings) lines.push(`    ✗ [${iss.field}/${iss.code}] ${iss.message}`); }
+  else lines.push('    ✓ no invented or cross-agency rating symbols');
+
+  // (8) GATE 9 spread↔rating monotonicity — a credit scenario's rating→spread table must price
+  // credit quality monotonically (weaker rating → wider spread). Only credit drills carry one.
+  const spreadTable = drill._creditInputs?.spread_table;
+  if (spreadTable) {
+    const mono = validateSpreadTable(spreadTable);
+    lines.push(`GATE 8 — spread↔rating monotonicity (GATE 9): ${mono.ok ? 'PASS' : 'FAIL'}`);
+    if (!mono.ok) { ok = false; for (const iss of mono.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
+    else lines.push(`    ✓ rating→spread table is monotonic in credit quality (single-agency scale)`);
+  } else {
+    lines.push('GATE 8 — spread↔rating monotonicity (GATE 9): N/A (no spread table — not a credit drill)');
+  }
+
   return { ok, lines };
 }
 
@@ -1280,13 +1443,14 @@ async function main() {
   const apvBatch = flag('--apv-batch');
   const capmBatch = flag('--capm-batch');
   const durationBatch = flag('--duration-batch');
+  const creditBatch = flag('--credit-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  if ([npvBatch, apvBatch, capmBatch, durationBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch / --duration-batch.'); process.exit(1); }
+  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch / --duration-batch / --credit-batch.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
@@ -1316,6 +1480,20 @@ async function main() {
     specs = plan.map((p) => ({
       ...buildSpecsForList(['B3f'] as LoCode[])[0],
       duration_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
+    }));
+  } else if (creditBatch) {
+    // Credit-risk batch (calc #7). 4 kinds → 3× B3h (rating role / spread / cost of debt via term
+    // structure) + 1× B4a (corporate-debt valuation). kd_term_structure is first-of-family.
+    // Fresh sectors/currencies, zero overlap with the 17 burned. Rulings 2026-07-15.
+    const plan: { kind: CreditKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'kd_term_structure', lo: 'B3h', region: 'Japan',    sector: 'rail freight / railway operator (JPY — low government spot curve)' },
+      { kind: 'spread_estimation', lo: 'B3h', region: 'Singapore', sector: 'port / container-terminal operator (SGD)' },
+      { kind: 'downgrade_impact',  lo: 'B3h', region: 'Colombia', sector: 'cement / building materials (COP — deep double-digit government yields)' },
+      { kind: 'debt_valuation',    lo: 'B4a', region: 'Sweden',   sector: 'grocery / food retail (SEK)' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      credit_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
     }));
   } else if (apvBatch) {
     // 4 kinds → 3× B3j (quantitative) + 1× B3k (mixed). Fresh sectors/currencies, no overlap
