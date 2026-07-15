@@ -25,7 +25,7 @@ const SUBMIT_VERDICT: Anthropic.Tool = {
     type: 'object' as const,
     properties: {
       verdict: { type: 'string', enum: ['PASS', 'FLAG'], description: 'FLAG only on a genuine violation.' },
-      violations: { type: 'array', items: { type: 'number' }, description: 'The rubric codes (1–8) that fired; empty on PASS.' },
+      violations: { type: 'array', items: { type: 'number' }, description: 'The rubric codes (1–9) that fired; empty on PASS.' },
       note: { type: 'string', description: 'One line: what is wrong (FLAG) or "clean" (PASS).' },
     },
     required: ['verdict', 'violations', 'note'],
