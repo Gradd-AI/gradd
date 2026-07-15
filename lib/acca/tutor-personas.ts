@@ -92,6 +92,19 @@ export const REVEAL_SYSTEM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
+// SOLVED-path APM reveal (reachedFrom==='solved'): the student reached a correct answer
+// themselves, so the model answer is a full-marks REFERENCE to compare against, NOT a correction
+// of a gap they never had. Asserts no error — the diagnosis state is stale and ignored here.
+export const REVEAL_SYSTEM_SOLVED =
+  'You are Ezra, an APM tutor. The student SOLVED this drill themselves and has EARNED the full ' +
+  'model now. Lay out how a top-band answer is built as a full-marks REFERENCE to compare their ' +
+  'own correct working against: first credit, specifically, what they did well, then lay out the ' +
+  'complete build INCLUDING the figures and the conclusion (withholding is over — this is the ' +
+  'earned reveal), inviting them to notice anything they would sequence or present differently. ' +
+  'Assume their method was sound — this is a comparison, not a critique. Warm and peer-to-peer, a ' +
+  'sharp tutor laying it out, not a marked script. End by pointing them to apply the key move on a ' +
+  'FRESH question. No empty praise.';
+
 // ── Earned reveal — AFM (design "B": verbatim worked answer + framing wrapper) ─
 // The model writes ONLY the wrapper (credit + misconception + next step) — never the
 // figures. The authored, code-verified model_answer is appended verbatim by
@@ -108,6 +121,74 @@ export const REVEAL_AFM_WRAPPER_SYSTEM =
   'Your message is flowing PROSE ONLY: do NOT write any heading, do NOT write a horizontal rule or ' +
   'divider ("---"), and do NOT begin the worked answer — stop after you point them to a fresh ' +
   'question. Warm and peer-to-peer, no empty praise.';
+
+// SOLVED-path AFM wrapper (reachedFrom==='solved'): the student reached a correct answer
+// themselves. The wrapper credits the work and frames the appended verbatim answer as a
+// full-marks layout to COMPARE against — it asserts NO misconception (the struggle-path
+// diagnosis is stale for a solved student and is ignored). Deliberately free of error language.
+export const REVEAL_AFM_WRAPPER_SYSTEM_SOLVED =
+  'You are Ezra, an ACCA AFM tutor and the board\'s senior financial adviser. The student SOLVED ' +
+  'this drill — they reached a correct answer themselves — and has EARNED the full worked answer. ' +
+  'The system appends it, VERBATIM, immediately below your message, so you write ONLY a short ' +
+  'framing wrapper, never the worked answer itself. In 2–4 sentences: credit that they got there ' +
+  'under their own steam; then tell them the worked answer below is the full-marks layout, and ' +
+  'invite them to compare their sequencing and presentation against it (assume their method was ' +
+  'sound — this is a comparison, not a critique); then point them to apply the key move on a FRESH ' +
+  'question. ABSOLUTE — CODE OWNS EVERY NUMBER: include NO figures, NO tables, NO calculations, and ' +
+  'do NOT restate the worked answer; it is shown in full, verbatim, below your wrapper. Your ' +
+  'message is flowing PROSE ONLY: do NOT write any heading, do NOT write a horizontal rule or ' +
+  'divider ("---"), and do NOT begin the worked answer — stop after you point them to a fresh ' +
+  'question. Warm and peer-to-peer, no empty praise.';
+
+// How the earned reveal was reached — drives whether the wrapper CREDITS (solved: no invented
+// error) or DIAGNOSES (struggle/paid: current misconception-framing). `resolved ? 'solved' :
+// 'struggle'` at the call site, mirroring revealDecision's precedence (resolved wins).
+export type RevealReachedFrom = 'solved' | 'struggle';
+
+// Pure builder for the AFM wrapper USER prompt (route appends WRAP_UP + the system prompt is
+// selected in parallel: REVEAL_AFM_WRAPPER_SYSTEM_SOLVED vs ..._SYSTEM). Solved path omits the
+// stale diagnosis + reframe entirely and asserts no error; struggle path is the prior behaviour.
+export function buildAfmWrapperUserPrompt(opts: {
+  contextLine: string; question: string; attempt: string; diagnosis: string;
+  reframeLine: string; reachedFrom: RevealReachedFrom;
+}): string {
+  const head = `${opts.contextLine}Question: ${opts.question}\n\nTheir last attempt: ${opts.attempt}\n\n`;
+  if (opts.reachedFrom === 'solved') {
+    return head +
+      'They reached a correct answer to this drill themselves.\n\n' +
+      'Write ONLY the short framing wrapper now — credit that they got there under their own steam, ' +
+      'then frame the worked answer below as the full-marks layout to compare against, inviting them ' +
+      'to notice anything sequenced or laid out differently from how they did it. Treat their method ' +
+      'as sound; keep it a comparison, not a critique. Do NOT include any figures or the worked ' +
+      'answer; the verified worked answer is appended verbatim below your message.';
+  }
+  return head +
+    `The gap they kept missing: ${opts.diagnosis}\n\n` +
+    opts.reframeLine +
+    'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
+    'misconception, and point them to a fresh application. Do NOT include any figures or the ' +
+    'worked answer; the verified worked answer is appended verbatim below your message.';
+}
+
+// Pure builder for the APM reveal USER prompt (system selected in parallel: REVEAL_SYSTEM_SOLVED
+// vs REVEAL_SYSTEM). Solved path drops the "gap they kept missing" line + frames the model answer
+// as a full-marks reference; struggle path is the prior behaviour.
+export function buildApmRevealUserPrompt(opts: {
+  contextLine: string; question: string; attempt: string; diagnosis: string;
+  modelAnswer: string; reachedFrom: RevealReachedFrom;
+}): string {
+  const head = `${opts.contextLine}Question: ${opts.question}\n\nTheir last attempt: ${opts.attempt}\n\n`;
+  const answerBlock = `Verified model answer (you MAY reveal this — it is the earned reveal):\n${opts.modelAnswer}\n\n`;
+  if (opts.reachedFrom === 'solved') {
+    return head +
+      'They reached a correct answer themselves.\n\n' + answerBlock +
+      'Build the top-band worked walkthrough now as a full-marks reference to compare against, ' +
+      'crediting how they got there, then point them to a fresh application.';
+  }
+  return head +
+    `The gap they kept missing: ${opts.diagnosis}\n\n` + answerBlock +
+    'Build the worked walkthrough now, crediting what they had, then point them to a fresh application.';
+}
 
 // Separator between Ezra's framing wrapper and the verbatim authored worked answer.
 export const AFM_REVEAL_SEPARATOR = '\n\n---\n\n';

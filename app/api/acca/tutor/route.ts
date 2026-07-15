@@ -5,12 +5,17 @@ import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import {
   systemFor,
   REVEAL_SYSTEM,
+  REVEAL_SYSTEM_SOLVED,
   REVEAL_AFM_WRAPPER_SYSTEM,
+  REVEAL_AFM_WRAPPER_SYSTEM_SOLVED,
+  buildAfmWrapperUserPrompt,
+  buildApmRevealUserPrompt,
   assembleAfmReveal,
   revealDecision,
   trimToLastSentence,
   REVEAL_FOOTER,
   BURN_CTA,
+  type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
 import { resolvePaper } from '@/lib/acca/paper';
@@ -629,31 +634,28 @@ async function call4_reveal(
   modelAnswer: string,
   paper: string,
   fullReveal: string,
+  reachedFrom: RevealReachedFrom,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // SOLVED → credit (no invented error; the struggle diagnosis is stale for a solved student).
+  // STRUGGLE (paid) → the prior diagnosis-framing behaviour. Prompt + system move together.
+  const solved = reachedFrom === 'solved';
 
   if (paper === 'AFM') {
     // Authored misconception reframe (AFM full_reveal — pre-baked, 3–5 sentences). Anchors the
-    // wrapper's "name the misconception" beat. Empty when the column is null → omitted.
+    // struggle wrapper's "name the misconception" beat; the solved builder ignores it. Empty
+    // when the column is null → omitted.
     const reframeLine = fullReveal
       ? `Authored misconception reframe (name this and correct the thinking):\n${fullReveal}\n\n`
       : '';
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
-      system: REVEAL_AFM_WRAPPER_SYSTEM,
+      system: solved ? REVEAL_AFM_WRAPPER_SYSTEM_SOLVED : REVEAL_AFM_WRAPPER_SYSTEM,
       messages: [
         {
           role: 'user',
-          content:
-            `${contextLine}Question: ${question}\n\n` +
-            `Their last attempt: ${attempt}\n\n` +
-            `The gap they kept missing: ${diagnosis}\n\n` +
-            reframeLine +
-            'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
-            'misconception, and point them to a fresh application. Do NOT include any figures or the ' +
-            'worked answer; the verified worked answer is appended verbatim below your message.' +
-            WRAP_UP,
+          content: buildAfmWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + WRAP_UP,
         },
       ],
     });
@@ -664,16 +666,11 @@ async function call4_reveal(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1200,
-    system: REVEAL_SYSTEM,
+    system: solved ? REVEAL_SYSTEM_SOLVED : REVEAL_SYSTEM,
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
-          `Their last attempt: ${attempt}\n\n` +
-          `The gap they kept missing: ${diagnosis}\n\n` +
-          `Verified model answer (you MAY reveal this — it is the earned reveal):\n${modelAnswer}\n\n` +
-          'Build the worked walkthrough now, crediting what they had, then point them to a fresh application.',
+        content: buildApmRevealUserPrompt({ contextLine, question, attempt, diagnosis, modelAnswer, reachedFrom }),
       },
     ],
   });
@@ -955,7 +952,10 @@ export async function POST(request: Request): Promise<Response> {
       // (resolved, free & paid) or by PAID struggle. Marks resolved.
       intent = 'reveal';
       messageKind = 'reveal';
-      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal);
+      // reachedFrom mirrors revealDecision's precedence: resolved (solved) wins over struggle.
+      // SOLVED → credit-not-correct wrapper (no invented figures-slip); STRUGGLE (paid) → diagnose.
+      const reachedFrom: RevealReachedFrom = resolved ? 'solved' : 'struggle';
+      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal, reachedFrom);
       newResolved = true;
     } else if (revealGate === 'burn') {
       // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free

@@ -18,6 +18,11 @@ import {
   trimToLastSentence,
   REVEAL_FOOTER,
   BURN_CTA,
+  REVEAL_AFM_WRAPPER_SYSTEM,
+  REVEAL_AFM_WRAPPER_SYSTEM_SOLVED,
+  REVEAL_SYSTEM_SOLVED,
+  buildAfmWrapperUserPrompt,
+  buildApmRevealUserPrompt,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -147,6 +152,36 @@ ok('reveal footer: copyright line present + personal-prep wording',
 ok('reveal footer: assembled reveal STILL ends with model_answer verbatim (footer in wrapper)',
   assembleAfmReveal(WRAPPER, MODEL_ANSWER).endsWith(MODEL_ANSWER) &&
   assembleAfmReveal(WRAPPER, MODEL_ANSWER).includes('© Gradd'));
+
+// ── (4c) reachedFrom — SOLVED reveal credits (no invented error), STRUGGLE diagnoses ──
+// Bug fixed: the wrapper read stale diagnosis state and could tell a SOLVED student they made a
+// figures-slip they didn't. reachedFrom='solved' → credit-not-correct; 'struggle' → prior behaviour.
+// "Error-assertion language" = the correction vocabulary a solved student must never see.
+const ERR_ASSERT = /misconception|gap they kept missing|name and correct|walked into|\bmistake\b|\berror\b|\bslip\b|got it wrong|correct the thinking/i;
+const afmSolved = REVEAL_AFM_WRAPPER_SYSTEM_SOLVED + '\n' + buildAfmWrapperUserPrompt({
+  contextLine: 'Context: X\n\n', question: 'Q', attempt: 'my attempt', diagnosis: 'STALE DIAGNOSIS — should be ignored',
+  reframeLine: 'Authored misconception reframe (name this and correct the thinking):\nR\n\n', reachedFrom: 'solved',
+});
+const afmStruggle = REVEAL_AFM_WRAPPER_SYSTEM + '\n' + buildAfmWrapperUserPrompt({
+  contextLine: 'Context: X\n\n', question: 'Q', attempt: 'my attempt', diagnosis: 'You inverted the sign',
+  reframeLine: 'Authored misconception reframe (name this and correct the thinking):\nR\n\n', reachedFrom: 'struggle',
+});
+ok('reachedFrom: SOLVED AFM wrapper contains NO error-assertion language',
+  !ERR_ASSERT.test(afmSolved));
+ok('reachedFrom: SOLVED AFM wrapper ignores the (stale) diagnosis text',
+  !afmSolved.includes('STALE DIAGNOSIS'));
+ok('reachedFrom: SOLVED AFM wrapper frames the answer as a comparison (credits the work)',
+  /compare|comparison/i.test(afmSolved) && /got there/i.test(afmSolved));
+ok('reachedFrom: STRUGGLE AFM wrapper KEEPS the diagnosis-framing (misconception + the gap)',
+  afmStruggle.includes('misconception') && afmStruggle.includes('gap they kept missing') && afmStruggle.includes('You inverted the sign'));
+ok('reachedFrom: SOLVED and STRUGGLE AFM wrappers actually differ',
+  afmSolved !== afmStruggle);
+// APM reveal path — same discipline (solved credits, struggle diagnoses).
+const apmSolved = REVEAL_SYSTEM_SOLVED + '\n' + buildApmRevealUserPrompt({
+  contextLine: '', question: 'Q', attempt: 'a', diagnosis: 'STALE', modelAnswer: 'MA', reachedFrom: 'solved',
+});
+ok('reachedFrom: SOLVED APM reveal contains NO error-assertion language + drops the stale gap line',
+  !ERR_ASSERT.test(apmSolved) && !apmSolved.includes('gap they kept missing') && !apmSolved.includes('STALE'));
 
 // ── (5) Truncation guard — a capped (over-length) response serves sentence-complete ──
 // finishClean() calls trimToLastSentence ONLY when stop_reason === 'max_tokens'; this tests
