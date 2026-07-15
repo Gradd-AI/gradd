@@ -23,6 +23,7 @@
     "test:capm": "tsx scripts/test-capm.ts",
     "test:duration": "tsx scripts/test-duration.ts",
     "test:credit": "tsx scripts/test-credit.ts",
+    "test:bsop": "tsx scripts/test-bsop.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts"
