@@ -14,7 +14,7 @@ import {
   revealDecision,
   trimToLastSentence,
   REVEAL_FOOTER,
-  BURN_CTA,
+  buildBurnCta,
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
@@ -708,7 +708,7 @@ async function call_burn(
       },
     ],
   });
-  return finishClean(res) + BURN_CTA;
+  return finishClean(res) + buildBurnCta(paper);
 }
 
 // ── POST handler ──────────────────────────────────────────────────────────────

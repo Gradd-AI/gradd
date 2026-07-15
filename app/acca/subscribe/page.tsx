@@ -6,17 +6,20 @@ import Link from 'next/link';
 
 type APMProduct = 'pass' | 'monthly';
 
+// One ACCA subscription is a BUNDLE — it covers every live paper (APM + AFM today, more as
+// they ship), so the feature copy is paper-neutral: no APM-only breadth claim, no hardcoded
+// counts to drift. The paper the student came from only drives the lead line below.
 const PASS_FEATURES = [
+  'Every drill across APM and AFM — and every ACCA paper we add',
   'Unlimited teach-throughs with Ezra for 90 days',
-  'Full APM drill bank — every performance-management area',
   'Application & evaluation diagnosis on the specific scenario',
   'Command-verb + ACCA intellectual-level coaching on every answer',
   'One payment — no recurring charge',
 ];
 
 const MONTHLY_FEATURES = [
+  'Every drill across APM and AFM — and every ACCA paper we add',
   'Unlimited teach-throughs with Ezra',
-  'Full APM drill bank — every performance-management area',
   'Application & evaluation diagnosis on the specific scenario',
   'Command-verb + ACCA intellectual-level coaching on every answer',
   'Cancel any time',
@@ -102,9 +105,24 @@ function SuccessPoller() {
   );
 }
 
+// Resolve which paper the student came from: explicit ?paper= first, then an AFM referrer
+// heuristic (the burn CTA + tutor upsells pass ?paper=, so this is mostly the direct signal),
+// else null → paper-neutral lead. Bundle access is identical whichever paper they arrived on.
+function resolvePaperContext(param: string | null): 'APM' | 'AFM' | null {
+  const p = (param || '').toUpperCase();
+  if (p === 'APM' || p === 'AFM') return p;
+  if (typeof document !== 'undefined' && /(?:paper=afm|\/acca\/afm|\/afm)/i.test(document.referrer)) return 'AFM';
+  return null;
+}
+
 function APMSubscribeInner() {
   const searchParams = useSearchParams();
   const paymentSuccess = searchParams.get('success') === 'true';
+  const paper = resolvePaperContext(searchParams.get('paper'));
+  // Lead with the paper they came from; the offer (bundle) is identical either way.
+  const leadSub = paper
+    ? `Unlock the full ${paper} bank — and everything else. One Gradd subscription covers every drill across APM and AFM, plus every ACCA paper we add.`
+    : 'One Gradd subscription covers every drill across APM and AFM — unlimited coaching with Ezra, plus every ACCA paper we add.';
 
   const [selected, setSelected] = useState<APMProduct>('pass');
   const [loading, setLoading] = useState(false);
@@ -151,9 +169,7 @@ function APMSubscribeInner() {
 
       <div className="apm-sub-head">
         <h1 className="apm-sub-title">Keep drilling with Ezra</h1>
-        <p className="apm-sub-sub">
-          You&apos;ve used your free teach-throughs. Unlock the full APM drill bank and unlimited coaching.
-        </p>
+        <p className="apm-sub-sub">{leadSub}</p>
       </div>
 
       <div className="apm-sub-cards">

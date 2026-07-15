@@ -18,6 +18,7 @@ import {
   trimToLastSentence,
   REVEAL_FOOTER,
   BURN_CTA,
+  buildBurnCta,
   REVEAL_AFM_WRAPPER_SYSTEM,
   REVEAL_AFM_WRAPPER_SYSTEM_SOLVED,
   REVEAL_SYSTEM_SOLVED,
@@ -147,6 +148,12 @@ ok('burn: CTA carries the /acca/subscribe upgrade link',
   BURN_CTA.includes('](/acca/subscribe)'));
 ok('burn: CTA sells understanding ("sort of get it" → "got it")',
   BURN_CTA.includes('sort of get it') && BURN_CTA.includes('got it'));
+ok('burn: paper-aware CTA carries ?paper= so subscribe leads with their paper',
+  buildBurnCta('AFM').includes('](/acca/subscribe?paper=AFM)') && buildBurnCta('APM').includes('?paper=APM'));
+ok('burn: paper-aware CTA stays figure-free (no digits leak via the paper param)',
+  !/[0-9]/.test(buildBurnCta('AFM')));
+ok('burn: neutral CTA (no paper) falls back to the bare subscribe link',
+  buildBurnCta().includes('](/acca/subscribe)') && BURN_CTA === buildBurnCta());
 ok('reveal footer: copyright line present + personal-prep wording',
   REVEAL_FOOTER.includes('© Gradd') && REVEAL_FOOTER.includes('personal exam preparation'));
 ok('reveal footer: assembled reveal STILL ends with model_answer verbatim (footer in wrapper)',

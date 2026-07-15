@@ -249,14 +249,19 @@ export function revealDecision(opts: { wantsReveal: boolean; missCount: number; 
 // not DRM. (Deliberately NOT on the burn — the burn serves no artifact.)
 export const REVEAL_FOOTER = '\n\n*© Gradd — for your personal exam preparation.*';
 
-// Static conversion block for the FREE-struggle burn. Sells UNDERSTANDING, not information, and
-// carries the upgrade CTA. Figure-free by construction (fixture-checked) — the burn never
-// receives the model_answer, and this block contains no numbers from it.
-export const BURN_CTA =
-  '\n\n---\n\n' +
-  '**This is where I take you from "sort of get it" to "got it."** The full worked answer — every ' +
-  'step laid out — and unlimited coaching until it clicks are part of a Gradd subscription.\n\n' +
-  '[Unlock the full worked answer →](/acca/subscribe)';
+// Conversion block for the FREE-struggle burn. Sells UNDERSTANDING, not information, and carries
+// the upgrade CTA. Figure-free by construction (fixture-checked) — the burn never receives the
+// model_answer, and this block contains no numbers from it. Paper-aware: the CTA carries ?paper=
+// so /acca/subscribe leads with the paper they came from (bundle copy, neutral fallback).
+export function buildBurnCta(paper?: string): string {
+  const q = paper ? `?paper=${encodeURIComponent(paper)}` : '';
+  return '\n\n---\n\n' +
+    '**This is where I take you from "sort of get it" to "got it."** The full worked answer — every ' +
+    'step laid out — and unlimited coaching until it clicks are part of a Gradd subscription.\n\n' +
+    `[Unlock the full worked answer →](/acca/subscribe${q})`;
+}
+// Paper-neutral base (fixtures + the no-paper fallback); paper-aware links via buildBurnCta(paper).
+export const BURN_CTA = buildBurnCta();
 
 // ── Truncation guard (pure) ───────────────────────────────────────────────────
 // The deterministic half of the anti-truncation fix: when a model leg hits its token cap

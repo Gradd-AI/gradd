@@ -51,6 +51,9 @@ function ezraOpening(drill: Drill): Message {
 }
 
 export default function TutorChat({ drill, initialCapHit, userId, paper }: { drill: Drill; initialCapHit: boolean; userId: string; paper: string }) {
+  // Carry the paper into every upsell link so /acca/subscribe leads with the paper they came
+  // from (bundle copy is paper-aware; neutral fallback when absent).
+  const subscribeHref = `/acca/subscribe?paper=${encodeURIComponent(paper)}`;
   const [currentDrill, setCurrentDrill]           = useState<Drill>(drill);
   const [messages, setMessages]                   = useState<Message[]>([ezraOpening(drill)]);
   const [sessionState, setSessionState]           = useState<ClientSessionState | null>(null);
@@ -423,7 +426,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                         Continue coaching — €99 for 90 days, or €49/month.
                       </p>
                       <a
-                        href="/acca/subscribe"
+                        href={subscribeHref}
                         className="et-btn et-btn--rust"
                         style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
                       >
@@ -468,7 +471,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                 <p className="et-cap-title">You&apos;ve used your 3 free teach-throughs</p>
                 <p className="et-cap-copy">Continue coaching — €99 for 90 days, or €49/month.</p>
                 <a
-                  href="/acca/subscribe"
+                  href={subscribeHref}
                   className="et-btn et-btn--rust"
                   style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
                 >
@@ -510,7 +513,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                 </div>
                 {teachThroughDone && (
                   capHit
-                    ? <p className="et-cap-nudge">Go unlimited to drill the next question — <a href="/acca/subscribe">Get access →</a></p>
+                    ? <p className="et-cap-nudge">Go unlimited to drill the next question — <a href={subscribeHref}>Get access →</a></p>
                     : <button
                         className="et-btn et-btn--ghost et-try-another"
                         onClick={handleTryAnother}
