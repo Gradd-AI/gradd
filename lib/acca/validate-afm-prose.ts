@@ -217,7 +217,7 @@ export function lintCompleteness(question: string, modelAnswer: string): ProseIs
     { re: /macaulay|modified duration|\bduration\b/,           needs: /macaulay|modified/,                                     label: 'a Macaulay/modified duration calculation' },
     { re: /credit spread/,                                     needs: /spread/,                                                label: 'a credit-spread figure' },
     { re: /cost of debt/,                                      needs: /cost of debt|\bkd\b/,                                   label: 'a cost-of-debt figure' },
-    { re: /fair value|value (of )?the (corporate )?(bond|debt)|value the (corporate )?(bond|debt)/, needs: /fair value/,        label: 'a fair-value calculation' },
+    { re: /fair value|over-?valued|under-?valued|mispric/,     needs: /fair value/,                                            label: 'a fair-value calculation' },
   ];
   for (const d of demands) {
     if (d.re.test(q) && !d.needs.test(a)) {

@@ -127,6 +127,8 @@ ok('rating: BB+ is high-yield (below the IG floor)', ratingInfo('BB+')!.investme
 ok('rating: Baa3 is the Moody\'s IG floor', ratingInfo('Baa3')!.investmentGrade === true && ratingInfo('Baa3')!.agency === 'Moodys');
 ok('rating: Ba1 is Moody\'s high-yield', ratingInfo('Ba1')!.investmentGrade === false);
 ok('rating: invented symbol → null', ratingInfo('AAB') === null && ratingInfo('BBBB') === null);
+ok('rating: en-dash "AA–" normalises to a real AA- symbol', ratingInfo('AA–')?.ordinal === ratingInfo('AA-')!.ordinal);
+ok('monotonicity: an en-dash table still validates', checkSpreadMonotonicity([{ rating: 'AA–', spread_bps: 40 }, { rating: 'A', spread_bps: 70 }]).ok);
 ok('rating: scales are the canonical length', SP_SCALE.length === 22 && MOODYS_SCALE.length === 21);
 ok('monotonicity: a proper table passes', checkSpreadMonotonicity(COP_TABLE).ok);
 ok('monotonicity: non-monotonic (weaker rating, tighter spread) fails', !checkSpreadMonotonicity([{ rating: 'A', spread_bps: 200 }, { rating: 'BBB', spread_bps: 150 }]).ok);

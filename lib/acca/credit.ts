@@ -48,9 +48,11 @@ const SP_IG_FLOOR = SP_SCALE.indexOf('BBB-');       // investment-grade boundary
 const MOODYS_IG_FLOOR = MOODYS_SCALE.indexOf('Baa3');
 
 export interface RatingInfo { agency: 'SP' | 'Moodys'; ordinal: number; investmentGrade: boolean; }
-// ordinal: 0 = AAA/Aaa (best); larger = weaker credit. null for an unrecognised symbol.
+// ordinal: 0 = AAA/Aaa (best); larger = weaker credit. null for an unrecognised symbol. Dash
+// variants (en-dash –, em-dash —, minus −, figure-dash ‒) are normalised to a hyphen-minus so a
+// model that writes "AA–" (en-dash) isn't spuriously rejected as an invented symbol.
 export function ratingInfo(symbol: string): RatingInfo | null {
-  const s = symbol.trim();
+  const s = symbol.trim().replace(/[‐-―−]/g, '-');
   const sp = SP_SCALE.indexOf(s);
   if (sp !== -1) return { agency: 'SP', ordinal: sp, investmentGrade: sp <= SP_IG_FLOOR };
   const mo = MOODYS_SCALE.indexOf(s);
@@ -138,8 +140,10 @@ function req<T>(v: T | undefined, name: string): T {
   if (v === undefined) throw new Error(`Credit input "${name}" is required for this kind`);
   return v;
 }
+const normDash = (s: string): string => s.trim().replace(/[‐-―−]/g, '-');
 function lookupSpread(table: SpreadRow[], rating: string): number {
-  const row = table.find((r) => r.rating.trim() === rating.trim());
+  const want = normDash(rating);
+  const row = table.find((r) => normDash(r.rating) === want);
   if (!row) throw new Error(`rating "${rating}" not found in spread table`);
   return row.spread_bps;
 }
@@ -352,7 +356,7 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
       `**Step ${S()} — Redemption yield (interpolation to the market price ${m(c.market_price!)})**`, '',
       `PV is ${m(c.price_lo!)} at ${pct2(c.r_lo!)} and ${m(c.price_hi!)} at ${pct2(c.r_hi!)}. Interpolating for the yield that prices the bond at ${m(c.market_price!)} gives a redemption yield of **${pct2(c.corp_yield!)}**.`, '',
       `**Step ${S()} — Credit spread (code-owned)**`, '',
-      `Credit spread = corporate yield ${pct2(c.corp_yield!)} − government yield ${pct2(c.govt_yield!)} = **${c.spread_bp!.toFixed(0)}bp** (${pct2(c.spread_bp! / 100)}).`, '',
+      `Credit spread = corporate yield ${pct2(c.corp_yield!)} − government yield ${pct2(c.govt_yield!)} = **${c.spread_bp!.toFixed(1)}bp** (${pct2(c.spread_bp! / 100)}).`, '',
     );
   } else if (kind === 'kd_term_structure') {
     lines.push(
@@ -380,7 +384,7 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
 
   // Reconciliation
   if (kind === 'downgrade_impact') lines.push(`*Reconciliation: base Kd ${pct2(c.base_kd!)} → new Kd ${pct2(c.new_kd!)} (+${c.delta_kd_bps}bp) → +${m(c.delta_annual_interest!)} annual interest${c.delta_wacc !== undefined ? ` → +${pct2(c.delta_wacc!)} WACC` : ''}. ✓*`);
-  else if (kind === 'spread_estimation') lines.push(`*Reconciliation: PV ${m(c.price_lo!)}@${pct2(c.r_lo!)} / ${m(c.price_hi!)}@${pct2(c.r_hi!)} → yield ${pct2(c.corp_yield!)} → spread ${c.spread_bp!.toFixed(0)}bp. ✓*`);
+  else if (kind === 'spread_estimation') lines.push(`*Reconciliation: PV ${m(c.price_lo!)}@${pct2(c.r_lo!)} / ${m(c.price_hi!)}@${pct2(c.r_hi!)} → yield ${pct2(c.corp_yield!)} → spread ${c.spread_bp!.toFixed(1)}bp. ✓*`);
   else if (kind === 'kd_term_structure') lines.push(`*Reconciliation: curve price ${m(c.price_curve!)} → interpolated flat Kd ${pct2(c.implied_kd!)}. ✓*`);
   else lines.push(`*Reconciliation: fair value ${m(c.fair_value!)} vs market ${m(c.market_price!)} = ${m(c.mispricing!)} → ${c.overvalued! ? 'over' : 'under'}-valued. ✓*`);
 
