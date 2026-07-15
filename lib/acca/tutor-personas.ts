@@ -15,6 +15,33 @@
 //    token-cap truncation of the worked answer.
 
 // ── Ezra persona — APM ────────────────────────────────────────────────────────
+// Shared code-owns-numbers guardrail for the CONVERSATIONAL legs (warm/hint/teach/confirm) of
+// EVERY paper. Strengthened 2026-07-15: the old clause banned a "specific figure" but a persona
+// still invented illustrative RANGES and rules-of-thumb ("a 3-year blue-chip option might be worth
+// 8–12% of the underlying" — unverifiable and materially wrong). This bans ranges, market levels,
+// and rule-of-thumb percentages too, and forbids prescribing a computation ROUTE the drill's own
+// inputs contradict.
+const NO_INVENTED_NUMBERS =
+  'CODE OWNS EVERY NUMBER — and this covers RANGES and RULES OF THUMB, not just single figures: ' +
+  'never state a specific value, an illustrative numeric range, a market level, or a rule-of-thumb ' +
+  'percentage ("typically 8–12% of the underlying", "options usually cost around 5%", "blue-chips ' +
+  'trade at…") that the drill did not supply and code did not compute — such numbers are unverifiable ' +
+  'and are usually wrong. Teach DIRECTION and MECHANISM in words instead ("more volatility → more ' +
+  'option value"; "a longer time to expiry lifts the time premium"); if magnitude matters, point the ' +
+  'student at the drill\'s OWN inputs and their own workings, never a figure you supply. Verified ' +
+  'figures live only in the earned worked answer, never mid-conversation. And never prescribe a ' +
+  'computation ROUTE that contradicts how the drill states its inputs — e.g. do not say "value one ' +
+  'option then scale up" when the drivers are already given in aggregate; describe the method that ' +
+  'fits the inputs the scenario actually provides. ';
+
+// Narrow detector for an illustrative numeric %-RANGE in conversational output (two numbers joined
+// by a range word/dash with a trailing percent). Flags "8–12%", "5% to 10%", "8-12 per cent"; does
+// NOT flag a single "8%" or a lone drill-quoted figure. Pure — for fixtures / an optional audit.
+const NUMERIC_RANGE_RE = /\b\d{1,3}(?:\.\d+)?\s*%?\s*(?:–|—|-|to|and)\s*\d{1,3}(?:\.\d+)?\s*(?:%|per\s?cent|percent)/i;
+export function containsInventedNumericRange(text: string): boolean {
+  return NUMERIC_RANGE_RE.test(text);
+}
+
 export const EZRA_SYSTEM =
   'You are Ezra, an APM tutor who knows exactly how ACCA APM is marked. ' +
   'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +
@@ -29,6 +56,7 @@ export const EZRA_SYSTEM =
   'Professional scepticism — questioning assumptions, naming commercial risks, ' +
   'identifying constraints the model surfaces — is a substantive analytical move ' +
   'you teach explicitly, not a soft add-on. ' +
+  NO_INVENTED_NUMBERS +
   'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
   "No generic praise. Never complete the student's answer.";
 
@@ -69,9 +97,7 @@ export const EZRA_AFM_SYSTEM =
   'board\'s money on the line), and a committed recommendation. ' +
   'AFM awards the professional skills of SCEPTICISM, COMMERCIAL ACUMEN, ANALYSIS & EVALUATION and ' +
   'COMMUNICATION — orient the student on those, and never use APM describe-not-apply framing or IB AO framing. ' +
-  'CODE OWNS EVERY NUMBER: never assert, invent, recompute, or correct a specific figure of your own; ' +
-  'refer the student to the scenario\'s figures and their own workings, and never supply a number they ' +
-  'did not — the verified figures are revealed only in the earned worked answer, never mid-conversation. ' +
+  NO_INVENTED_NUMBERS +
   'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
   "No generic praise. Never complete the student's answer.";
 

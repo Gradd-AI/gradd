@@ -24,6 +24,7 @@ import {
   REVEAL_SYSTEM_SOLVED,
   buildAfmWrapperUserPrompt,
   buildApmRevealUserPrompt,
+  containsInventedNumericRange,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -39,6 +40,24 @@ ok('systemFor("APM") returns the APM persona', systemFor('APM') === EZRA_SYSTEM)
 ok('systemFor("") defaults to APM',            systemFor('') === EZRA_SYSTEM);
 ok('systemFor(unknown) defaults to APM',       systemFor('XYZ') === EZRA_SYSTEM);
 
+// ── (1b) code-owns-numbers guardrail — BOTH papers ban invented ranges/rules-of-thumb + bad routes ──
+for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] as const) {
+  ok(`${name} persona: bans invented RANGES + rules-of-thumb (not just single figures)`,
+    persona.includes('RANGES and RULES OF THUMB') && /illustrative numeric range/.test(persona));
+  ok(`${name} persona: teaches DIRECTION and MECHANISM instead of a number`,
+    persona.includes('DIRECTION and MECHANISM'));
+  ok(`${name} persona: forbids a computation ROUTE the drill's inputs contradict`,
+    persona.includes('computation ROUTE that contradicts'));
+}
+ok('detector: flags an illustrative %-range ("8–12% of the underlying")',
+  containsInventedNumericRange('a 3-year blue-chip option might be worth 8–12% of the underlying'));
+ok('detector: flags "5% to 10%" and "8-12 per cent"',
+  containsInventedNumericRange('around 5% to 10%') && containsInventedNumericRange('roughly 8-12 per cent'));
+ok('detector: does NOT flag a single figure or a drill-quoted value',
+  !containsInventedNumericRange('the option is worth roughly 8% of face value') &&
+  !containsInventedNumericRange('the 31% volatility input from the scenario') &&
+  !containsInventedNumericRange('a 3-year vesting cliff'));
+
 // ── (1) AFM persona carries the AFM failure-class frame ──────────────────────
 ok('AFM persona: board-adviser register',   EZRA_AFM_SYSTEM.includes('senior financial adviser to the board'));
 ok('AFM persona: FENCE-SITTING class',      EZRA_AFM_SYSTEM.includes('FENCE-SITTING'));
@@ -50,7 +69,7 @@ ok('AFM persona: ABANDONED-AFTER-CALC',     EZRA_AFM_SYSTEM.includes('ABANDONED-
 ok('AFM persona: code-owns-numbers guardrail present',
   EZRA_AFM_SYSTEM.includes('CODE OWNS EVERY NUMBER'));
 ok('AFM persona: forbids inventing a figure mid-conversation',
-  EZRA_AFM_SYSTEM.includes('never assert, invent, recompute, or correct a specific figure'));
+  EZRA_AFM_SYSTEM.includes('never mid-conversation') && EZRA_AFM_SYSTEM.includes('never state a specific value'));
 
 // ── (1) AFM persona does NOT adopt the APM diagnostic frame ──────────────────
 // (bare "APM" appears once, as the negation "never use APM describe-not-apply framing",
