@@ -61,13 +61,25 @@ function parseTableRow(line: string): string[] {
     .map(cell => cell.trim());
 }
 
+// A cell is "numeric" (right-aligned, nowrap, so figures scan down a column) when it carries a
+// digit and no long word — money/rates/durations ("SEK 364.7m", "1.45%", "0.9857", "120bp",
+// "6.297") qualify; text labels ("Cash flow", "Govt spot") do not.
+function isNumericCell(cell: string): boolean {
+  const bare = cell.replace(/\*/g, '').trim();
+  return /\d/.test(bare) && !/[A-Za-z]{4,}/.test(bare);
+}
+
 function renderTable(rows: string[], key: string | number): React.ReactNode {
   if (rows.length < 2) return null;
   const headerCells = parseTableRow(rows[0]);
   const bodyRows = rows.slice(1).filter(r => !isDividerRow(r));
+  // Font/padding scale down on narrow viewports (clamp on vw — no media query needed inline), so
+  // a 4–6-column working table fits a phone without scrolling; wider tables swipe WITHIN this
+  // overflow-x container (maxWidth:100% keeps it from pushing the bubble/page wide).
+  const cellFont = 'clamp(11px, 2.7vw, 14px)';
   return (
-    <div key={key} style={{ overflowX: 'auto', margin: '16px 0', borderRadius: 6, border: '1px solid var(--chat-border)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14, lineHeight: 1.5 }}>
+    <div key={key} style={{ overflowX: 'auto', maxWidth: '100%', margin: '16px 0', borderRadius: 6, border: '1px solid var(--chat-border)', WebkitOverflowScrolling: 'touch' }}>
+      <table style={{ borderCollapse: 'collapse', fontSize: cellFont, lineHeight: 1.45, minWidth: '100%' }}>
         <thead>
           <tr>
             {headerCells.map((cell, ci) => (
@@ -76,13 +88,12 @@ function renderTable(rows: string[], key: string | number): React.ReactNode {
                 color: 'var(--chat-thead-color, var(--chat-text))',
                 fontFamily: 'var(--font-display)',
                 fontWeight: 700,
-                fontSize: 13,
-                padding: '9px 14px',
-                textAlign: 'left',
-                borderRight: '1px solid var(--chat-border)',
+                fontSize: 'clamp(10px, 2.5vw, 13px)',
+                padding: 'clamp(5px, 1.4vw, 9px) clamp(7px, 1.8vw, 13px)',
+                textAlign: isNumericCell(cell) ? 'right' : 'left',
+                borderRight: ci < headerCells.length - 1 ? '1px solid var(--chat-border)' : undefined,
                 whiteSpace: 'nowrap',
                 letterSpacing: '-0.1px',
-                minWidth: 110,
               }}>
                 {renderInline(cell)}
               </th>
@@ -94,20 +105,25 @@ function renderTable(rows: string[], key: string | number): React.ReactNode {
             const cells = parseTableRow(row);
             return (
               <tr key={ri} style={{ background: ri % 2 === 0 ? 'transparent' : 'var(--chat-surface-2)' }}>
-                {cells.map((cell, ci) => (
-                  <td key={ci} style={{
-                    padding: '8px 14px',
-                    borderTop: '1px solid var(--chat-border)',
-                    borderRight: ci < cells.length - 1 ? '1px solid var(--chat-border)' : undefined,
-                    color: 'var(--chat-text)',
-                    verticalAlign: 'top',
-                    minWidth: 110,
-                    wordBreak: 'normal',
-                    overflowWrap: 'break-word',
-                  }}>
-                    {renderInline(cell)}
-                  </td>
-                ))}
+                {cells.map((cell, ci) => {
+                  const numeric = isNumericCell(cell);
+                  return (
+                    <td key={ci} style={{
+                      padding: 'clamp(5px, 1.3vw, 8px) clamp(7px, 1.8vw, 13px)',
+                      borderTop: '1px solid var(--chat-border)',
+                      borderRight: ci < cells.length - 1 ? '1px solid var(--chat-border)' : undefined,
+                      color: 'var(--chat-text)',
+                      verticalAlign: 'top',
+                      textAlign: numeric ? 'right' : 'left',
+                      whiteSpace: numeric ? 'nowrap' : 'normal',
+                      fontVariantNumeric: numeric ? 'tabular-nums' : undefined,
+                      wordBreak: 'normal',
+                      overflowWrap: 'break-word',
+                    }}>
+                      {renderInline(cell)}
+                    </td>
+                  );
+                })}
               </tr>
             );
           })}

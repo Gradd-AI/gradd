@@ -343,7 +343,10 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                   {currentDrill.context_text && (
                     <div className="et-panel et-panel--context">
                       <div className="et-panel-label">Scenario</div>
-                      <p className="et-context-text">{currentDrill.context_text}</p>
+                      {/* MUST route through MessageRenderer with `breaks` (same as the mobile panel
+                          above) — a raw <p> collapses the context's newlines (white-space:normal)
+                          into a wall. Regressed once (6b584a8 sidebar refactor); keep them in sync. */}
+                      <div className="et-context-text"><MessageRenderer content={currentDrill.context_text} breaks /></div>
                     </div>
                   )}
 
@@ -377,7 +380,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
             <div className="et-messages">
 
               {messages.map((msg, i) => (
-                <div key={i} className={`et-msg et-msg--${msg.role}`}>
+                <div key={i} className={`et-msg et-msg--${msg.role}${msg.kind === 'reveal' ? ' et-msg--wide' : ''}`}>
                   {msg.role === 'ezra' && (
                     <div className="et-msg-avatar" aria-hidden="true">E</div>
                   )}
@@ -774,6 +777,9 @@ const CSS = `
   gap: 12px;
   max-width: 680px;
 }
+/* The verbatim reveal is a DOCUMENT, not a chat line — give it up to the pane width so the
+   worked-answer tables (spot curve, WDA/tax) mostly fit without scrolling on desktop. */
+.et-msg--wide { max-width: min(940px, 100%); }
 .et-msg--student {
   flex-direction: row-reverse;
   align-self: flex-end;
@@ -796,6 +802,8 @@ const CSS = `
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;   /* let a wide reveal table scroll WITHIN its own overflow-x box instead of
+                     forcing the bubble/page to grow (flex children default to min-width:auto) */
 }
 .et-msg-sender {
   font-size: 11px;
@@ -837,6 +845,7 @@ const CSS = `
   border-radius: 12px;
   font-size: 14px;
   line-height: 1.65;
+  min-width: 0;   /* see .et-msg-body — required for per-table horizontal scroll containment */
 }
 .et-msg-content--student {
   background: var(--surface-2);
