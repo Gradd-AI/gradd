@@ -187,7 +187,7 @@ export function buildBsopModelAnswer(raw: BsopInputs, c: BsopComputed, prose: st
     : 'a financial option valued directly with BSOP';
 
   lines.push('**Option valuation — Black-Scholes (BSOP)**', '');
-  lines.push(`**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are read from the normal-distribution tables. ${kind === 'financial_product_valuation' ? 'The underlying is traded, so the model applies directly.' : `This is ${archetype}; the marked judgement is mapping the scenario to the five drivers.`}`, '');
+  lines.push(`**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are computed exactly here, and a normal-table read at the 2-dp rounding of d1/d2 scores within the marking tolerance. ${kind === 'financial_product_valuation' ? 'The underlying is traded, so the model applies directly.' : `This is ${archetype}; the marked judgement is mapping the scenario to the five drivers.`}`, '');
 
   lines.push(`**Step ${S()} — The five drivers (identification${kind === 'financial_product_valuation' ? '' : ' + mapping'})**`, '',
     `| Driver | Maps to | Value |`,
@@ -199,9 +199,14 @@ export function buildBsopModelAnswer(raw: BsopInputs, c: BsopComputed, prose: st
     `| Time, t | time to expiry | ${c.t.toFixed(1)} years |`,
     '');
 
+  // The illustrative table-read pair for THIS drill's own d-values: N at d rounded to 2 dp (what
+  // a student reading the printed normal tables would get). Injected so the claim matches the
+  // display — the exact computed N is shown, and the table read is given as "either scores".
+  const d1r = Math.round(c.d1 * 100) / 100, d2r = Math.round(c.d2 * 100) / 100;
+  const nd1Table = normCdf(d1r), nd2Table = normCdf(d2r);
   lines.push(`**Step ${S()} — d1, d2 and the cumulative normals**`, '',
     `d1 = [ln(Pₐ/Pₑ) + (r + s²/2)·t] / (s·√t) = **${d4(c.d1)}**; d2 = d1 − s·√t = **${d4(c.d2)}**.`, '',
-    `From the normal tables: **N(d1) = ${d4(c.Nd1)}**, **N(d2) = ${d4(c.Nd2)}** (read at the 2-dp rounding of d1/d2).`, '');
+    `**N(d1) = ${d4(c.Nd1)}**, **N(d2) = ${d4(c.Nd2)}** (computed exactly; a normal-table read at d1 = ${d1r.toFixed(2)} / d2 = ${d2r.toFixed(2)} gives ${d4(nd1Table)} / ${d4(nd2Table)} — either scores in full).`, '');
 
   lines.push(`**Step ${S()} — Option value**`, '',
     `c = Pₐ·N(d1) − Pₑ·e^(−rt)·N(d2) = ${m(c.Pa)}×${d4(c.Nd1)} − ${m(c.pv_exercise)}×${d4(c.Nd2)} = **${m(c.call)}**.`, '');
