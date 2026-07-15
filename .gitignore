@@ -53,3 +53,7 @@ scripts/_*
 
 # ClaudeSend.txt — transient handoff-to-Grant scratch file (overwritten each use), not VCS
 ClaudeSend.txt
+
+# tutor red-team run artifacts (scripts are committed; transcripts/verdicts are not)
+docs/redteam/run-*
+docs/redteam/prod-sample-*
