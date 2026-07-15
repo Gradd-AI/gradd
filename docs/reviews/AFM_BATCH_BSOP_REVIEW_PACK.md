@@ -27,6 +27,8 @@ Doctrine: code owns EVERY figure (d1, d2, N(d1), N(d2), the call/put value, the 
 
 ---
 
+---
+
 ## Drill 1 — financial_product_valuation (B2a) — FIRST-OF-FAMILY  ·  `b66fbf05-7727-4e4d-84f2-ebb630acd4d6`
 - LO B2a · mode quantitative · command_verb "apply and advise" · L3 · marks_guide 15
 
@@ -109,7 +111,7 @@ c = Pₐ·N(d1) − Pₑ·e^(−rt)·N(d2) = CHF 209.3m×0.6633 − CHF 192.7m×
 
 The five drivers collectively paint a picture of an option that is modestly in-the-money at the grant date, with a meaningful time premium arising from the three-year vesting cliff — the combination of moderate volatility and a multi-year horizon produces a non-trivial optionality value that the Compensation Committee must recognise in full as an IFRS 2 charge spread over the vesting period. The exercise price is set only slightly below the snapshot share price, which keeps the grant broadly aligned with shareholders' interests by requiring genuine appreciation before executives profit, yet still awards meaningful value on day one.
 
-The risk-free rate, anchored to the Swiss Confederation 3-year bond yield, is low by historical standards, which modestly inflates the present value of the deferred exercise price and thus tends to support call-option value; the Committee should confirm whether Swiss rates shift materially before the grant is formally executed, as even a small upward movement would alter the fair-value figure.
+The risk-free rate, anchored to the Swiss Confederation 3-year bond yield, is low by historical standards. This means the exercise price is discounted only modestly, so the present value of the amount executives would pay remains relatively high, reducing the call value compared with a higher-rate environment. The Committee should confirm whether Swiss rates shift materially before the grant is formally executed, because a higher risk-free rate would increase the BSOP value, all else equal.
 
 The loudest limitation is volatility estimation: the model relies on a single 36-month rolling historical figure sourced from SIX data, yet Helveta Medtech's share price may behave differently over the coming three years as the surgical-robotics market matures — regulatory outcomes, competitor product launches, or a shift in the company's revenue mix could cause realised volatility to diverge substantially from the historical estimate, and any such divergence feeds directly and non-linearly into the option value.
 
