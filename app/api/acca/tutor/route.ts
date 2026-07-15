@@ -9,7 +9,10 @@ import {
   assembleAfmReveal,
   revealDecision,
   trimToLastSentence,
+  REVEAL_FOOTER,
+  BURN_CTA,
 } from '@/lib/acca/tutor-personas';
+import { notifyGrant } from '@/lib/notify';
 import { resolvePaper } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
 
@@ -140,6 +143,11 @@ function isTeachRequest(input: string): boolean {
 // "show me how" could dump the answer. All reveal phrases are imperative-anchored so they
 // cannot appear inside a teach-style message ("walk me through the model answer" → teach).
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
+
+// Reveal-velocity alert threshold: alert Grant when an account is served MORE than this many
+// reveals in a rolling 24h (fires once, on the (N+1)th). Detection beats prevention — a human
+// harvester at 3-free-per-account velocity is slow and visible.
+const REVEAL_VELOCITY_N = 5;
 
 // Correct-verdict completeness gate: when call2 says "correct", verify every required
 // component (read from the model answer) was actually attempted before confirming. Runs
@@ -669,7 +677,41 @@ async function call4_reveal(
       },
     ],
   });
-  return finishClean(res);
+  return finishClean(res) + REVEAL_FOOTER;
+}
+
+// ── CALL 4b: Burn (FREE user, struggle path) ──────────────────────────────────
+// The reveal ARTIFACT is withheld; instead we serve a figure-free diagnosis-framing wrapper
+// (the teaching persona's own guardrail forbids completing the answer) + the conversion CTA.
+// NEVER receives modelAnswer — the worked answer cannot leak here by construction.
+async function call_burn(
+  question: string,
+  context: string,
+  attempt: string,
+  diagnosis: string,
+  paper: string,
+): Promise<string> {
+  const contextLine = context ? `Context: ${context}\n\n` : '';
+  const res = await anthropic.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 400,
+    system: systemFor(paper),
+    messages: [
+      {
+        role: 'user',
+        content:
+          `${contextLine}Question: ${question}\n\n` +
+          `Their last attempt: ${attempt}\n\n` +
+          `The gap they keep missing: ${diagnosis}\n\n` +
+          'They are on the cusp — the full worked answer would resolve this, but it is a paid ' +
+          'feature. In 2–3 sentences, name WHAT they are on the edge of and why seeing the full ' +
+          'reasoning laid out is what turns "sort of get it" into "got it". Warm and honest, not ' +
+          'pushy. Give NO figures, NO numbers, and NOT the answer. Stop before any call to action ' +
+          '(it is appended separately).' + WRAP_UP,
+      },
+    ],
+  });
+  return finishClean(res) + BURN_CTA;
 }
 
 // ── POST handler ──────────────────────────────────────────────────────────────
@@ -902,19 +944,26 @@ export async function POST(request: Request): Promise<Response> {
   const wantsReveal = REVEAL_ENABLED && isRevealRequest(student_message);
   const fastTeach   = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
 
-  // Earned-reveal gate (pure, single source of truth): EARNED by struggle (missCount >= 2)
-  // OR by having solved it (resolved — confirmed-correct or a prior reveal). Otherwise the
-  // static earn-it refusal (the moat holds for the unearned+unsolved case).
-  const revealGate = revealDecision({ wantsReveal, missCount, resolved });
+  // Access-aware earned-reveal gate (Bucket-B burn doctrine): SOLVED (resolved) → reveal for
+  // free & paid; STRUGGLE (missCount >= 2) → reveal for PAID, BURN for FREE (artifact gated,
+  // teaching stays free); neither → the static earn-it refusal. `paid` = active ACCA access.
+  const revealGate = revealDecision({ wantsReveal, missCount, resolved, paid: hasActiveAccess });
 
   try {
     if (revealGate === 'reveal') {
-      // The sole gated moat-lift; model_answer reaches the student ONLY here. Free follow-up
-      // (the earn — struggle teach-through or the confirm — already happened). Marks resolved.
+      // The sole gated moat-lift; model_answer reaches the student ONLY here. Reached by SOLVING
+      // (resolved, free & paid) or by PAID struggle. Marks resolved.
       intent = 'reveal';
       messageKind = 'reveal';
       ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal);
       newResolved = true;
+    } else if (revealGate === 'burn') {
+      // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
+      // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
+      // worked answer cannot leak). No miss++, no cap charge, no resolved — teaching stays free.
+      intent = 'reveal_burn';
+      messageKind = 'reveal_burn';
+      ezraResponse = await call_burn(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', paper);
     } else if (revealGate === 'earn_redirect') {
       // Reveal requested but NOT earned (missCount < 2 AND not resolved): static refusal gate.
       // model_answer is deliberately NOT referenced here — earned-not-dumped is structural.
@@ -1026,6 +1075,29 @@ export async function POST(request: Request): Promise<Response> {
       .eq('id', user.id);
     newTeachThroughCounted = true;
     capNowHit = newCount >= 3;
+  }
+
+  // ── 8b. Reveal-velocity alert (best-effort) ────────────────────────────────
+  // A served reveal (not a burn) crossing REVEAL_VELOCITY_N in a rolling 24h emails Grant the
+  // account + drill list. This reveal is logged in §10 (after here), so `recent` is the prior
+  // count; alert fires once, exactly on the (N+1)th. Never throws — a harvester tripping this
+  // must not break a legitimate reveal.
+  if (intent === 'reveal') {
+    try {
+      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: recent } = await supabase
+        .from('acca_drill_messages')
+        .select('drill_id')
+        .eq('user_id', user.id).eq('call_type', 'reveal').gte('created_at', dayAgo);
+      const nowServed = (recent?.length ?? 0) + 1;
+      if (nowServed === REVEAL_VELOCITY_N + 1) {
+        const drills = [...new Set([...(recent ?? []).map(r => r.drill_id as string), drillId])];
+        void notifyGrant(
+          `[Gradd] Reveal velocity: ${nowServed} in 24h`,
+          `Account ${user.id} (${hasActiveAccess ? 'PAID' : 'FREE'}) has been served ${nowServed} reveals in the last 24h. Drills: ${drills.join(', ')}`,
+        );
+      }
+    } catch { /* best-effort — a velocity-check failure never breaks the reveal */ }
   }
 
   // ── 9. Seal updated session state ─────────────────────────────────────────

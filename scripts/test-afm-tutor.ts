@@ -16,6 +16,8 @@ import {
   sanitizeAfmWrapper,
   revealDecision,
   trimToLastSentence,
+  REVEAL_FOOTER,
+  BURN_CTA,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -112,23 +114,39 @@ ok('subAreaName: AFM E2 = forex hedging (AFM-only section)',
 ok('subAreaName: unknown code falls back to the bare code',
   subAreaName('AFM', 'Z9') === 'Z9');
 
-// ── (4) Earned-reveal gate — reachable post-confirm, moat holds for the unearned case ──
-// Item-3 reveal-flow fix: resolved (confirmed-correct OR prior reveal) unlocks the reveal
-// alongside the original struggle path (missCount >= 2).
-ok('gate: post-confirm reveal reachable (resolved, missCount 0)',
-  revealDecision({ wantsReveal: true, missCount: 0, resolved: true }) === 'reveal');
-ok('gate: struggle path still earns (missCount 2, not resolved)',
-  revealDecision({ wantsReveal: true, missCount: 2, resolved: false }) === 'reveal');
-ok('gate: MOAT holds — unearned + unsolved refuses (missCount 0, not resolved)',
-  revealDecision({ wantsReveal: true, missCount: 0, resolved: false }) === 'earn_redirect');
-ok('gate: MOAT holds — one miss is still not enough (missCount 1, not resolved)',
-  revealDecision({ wantsReveal: true, missCount: 1, resolved: false }) === 'earn_redirect');
+// ── (4) Access-aware earned-reveal gate (Bucket-B burn doctrine) ──────────────
+// SOLVED → reveal for free & paid; STRUGGLE → reveal for paid, BURN for free; neither →
+// earn_redirect; non-reveal → none. The artifact is gated, teaching stays free.
+ok('gate: SOLVED + FREE → reveal (solved path free for all)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: true, paid: false }) === 'reveal');
+ok('gate: SOLVED + PAID → reveal (unchanged)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: true, paid: true }) === 'reveal');
+ok('gate: STRUGGLE + FREE → BURN (artifact gated)',
+  revealDecision({ wantsReveal: true, missCount: 2, resolved: false, paid: false }) === 'burn');
+ok('gate: STRUGGLE + PAID → reveal',
+  revealDecision({ wantsReveal: true, missCount: 2, resolved: false, paid: true }) === 'reveal');
+ok('gate: MOAT holds — unearned + unsolved refuses (missCount 0, free)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: false, paid: false }) === 'earn_redirect');
+ok('gate: MOAT holds even for PAID — must attempt first (missCount 1, paid)',
+  revealDecision({ wantsReveal: true, missCount: 1, resolved: false, paid: true }) === 'earn_redirect');
 ok('gate: non-reveal message is never a reveal (even when resolved)',
-  revealDecision({ wantsReveal: false, missCount: 5, resolved: true }) === 'none');
-// Reload-safety: on a fresh load the durable `resolved` (acca_tutor_progress) is re-read while
-// missCount may reset to 0 — the reveal must STILL be reachable purely on resolved.
-ok('gate: resolved persists across reload (missCount reset to 0 → still reveal)',
-  revealDecision({ wantsReveal: true, missCount: 0, resolved: true }) === 'reveal');
+  revealDecision({ wantsReveal: false, missCount: 5, resolved: true, paid: false }) === 'none');
+// Reload-safety: durable `resolved` re-read while missCount may reset to 0 → still reveal, free.
+ok('gate: resolved persists across reload (missCount 0, free → still reveal)',
+  revealDecision({ wantsReveal: true, missCount: 0, resolved: true, paid: false }) === 'reveal');
+
+// ── (4b) Burn body is figure-free + carries the CTA; reveal footer present ────
+ok('burn: CTA contains no digits (no figures can leak from the static block)',
+  !/[0-9]/.test(BURN_CTA));
+ok('burn: CTA carries the /acca/subscribe upgrade link',
+  BURN_CTA.includes('](/acca/subscribe)'));
+ok('burn: CTA sells understanding ("sort of get it" → "got it")',
+  BURN_CTA.includes('sort of get it') && BURN_CTA.includes('got it'));
+ok('reveal footer: copyright line present + personal-prep wording',
+  REVEAL_FOOTER.includes('© Gradd') && REVEAL_FOOTER.includes('personal exam preparation'));
+ok('reveal footer: assembled reveal STILL ends with model_answer verbatim (footer in wrapper)',
+  assembleAfmReveal(WRAPPER, MODEL_ANSWER).endsWith(MODEL_ANSWER) &&
+  assembleAfmReveal(WRAPPER, MODEL_ANSWER).includes('© Gradd'));
 
 // ── (5) Truncation guard — a capped (over-length) response serves sentence-complete ──
 // finishClean() calls trimToLastSentence ONLY when stop_reason === 'max_tokens'; this tests

@@ -135,7 +135,9 @@ export function sanitizeAfmWrapper(raw: string): string {
 // (drift-prone, truncation-prone) tables. The wrapper is sanitized here, so callers just pass
 // the raw model output.
 export function assembleAfmReveal(wrapper: string, modelAnswer: string): string {
-  return `${sanitizeAfmWrapper(wrapper)}${AFM_REVEAL_SEPARATOR}${modelAnswer}`;
+  // Footer sits in the wrapper (above the separator), so the model_answer stays the exact
+  // verbatim tail — the byte-equality anti-truncation invariant is unaffected.
+  return `${sanitizeAfmWrapper(wrapper)}${REVEAL_FOOTER}${AFM_REVEAL_SEPARATOR}${modelAnswer}`;
 }
 
 // ── Earned-reveal GATE (pure) ─────────────────────────────────────────────────
@@ -146,10 +148,34 @@ export function assembleAfmReveal(wrapper: string, modelAnswer: string): string 
 // A reveal request that meets neither hits the static earn-it refusal (the moat holds for the
 // unearned+unsolved case). A non-reveal request is 'none'. `wantsReveal` already folds in the
 // APM_EARNED_REVEAL flag + REVEAL_PHRASES match at the call site.
-export function revealDecision(opts: { wantsReveal: boolean; missCount: number; resolved: boolean }): 'reveal' | 'earn_redirect' | 'none' {
+// Access-aware earned-reveal gate (Bucket-B burn doctrine, Grant-ruled 2026-07-14). The reveal
+// ARTIFACT (full worked answer / verbatim tables) is what's gated, never the teaching:
+//   • SOLVED  (resolved) → 'reveal' for FREE and PAID alike — you earned it by producing the answer.
+//   • STRUGGLE (missCount >= 2, not resolved) → PAID: 'reveal'; FREE: 'burn' (a figure-free
+//     diagnosis-framing wrapper + conversion CTA — sells UNDERSTANDING, withholds the artifact).
+//   • Neither (missCount < 2, not resolved) → 'earn_redirect' (the "try first" moat).
+//   • Not a reveal request → 'none'.
+// `wantsReveal` already folds in the APM_EARNED_REVEAL flag + REVEAL_PHRASES match.
+export function revealDecision(opts: { wantsReveal: boolean; missCount: number; resolved: boolean; paid: boolean }): 'reveal' | 'burn' | 'earn_redirect' | 'none' {
   if (!opts.wantsReveal) return 'none';
-  return (opts.missCount >= 2 || opts.resolved) ? 'reveal' : 'earn_redirect';
+  if (opts.resolved) return 'reveal';                        // solved — free & paid alike
+  if (opts.missCount >= 2) return opts.paid ? 'reveal' : 'burn';  // struggle — artifact gated for free
+  return 'earn_redirect';                                     // not earned yet
 }
+
+// Copyright footer appended to every SERVED reveal (the wrapper's footer — sits above the
+// verbatim answer so the byte-equality tail invariant is preserved). Establishes the record;
+// not DRM. (Deliberately NOT on the burn — the burn serves no artifact.)
+export const REVEAL_FOOTER = '\n\n*© Gradd — for your personal exam preparation.*';
+
+// Static conversion block for the FREE-struggle burn. Sells UNDERSTANDING, not information, and
+// carries the upgrade CTA. Figure-free by construction (fixture-checked) — the burn never
+// receives the model_answer, and this block contains no numbers from it.
+export const BURN_CTA =
+  '\n\n---\n\n' +
+  '**This is where I take you from "sort of get it" to "got it."** The full worked answer — every ' +
+  'step laid out — and unlimited coaching until it clicks are part of a Gradd subscription.\n\n' +
+  '[Unlock the full worked answer →](/acca/subscribe)';
 
 // ── Truncation guard (pure) ───────────────────────────────────────────────────
 // The deterministic half of the anti-truncation fix: when a model leg hits its token cap
