@@ -53,7 +53,7 @@ import {
   type StudentSubmission,
   type Verdict,
 } from '../lib/acca/numeric-verifier';
-import { validateSchemaSelfConsistency, validateSpreadTable } from '../lib/acca/validate-schema';
+import { validateSchemaSelfConsistency, validateSpreadTable, validateOptionBounds } from '../lib/acca/validate-schema';
 import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts, lintRatingSymbols } from '../lib/acca/validate-afm-prose';
 import {
   computeFcff,
@@ -106,6 +106,14 @@ import {
   type CreditComputed,
   type CreditKind,
 } from '../lib/acca/credit';
+import {
+  computeBsop,
+  buildBsopSchema,
+  buildBsopModelAnswer,
+  type BsopInputs,
+  type BsopComputed,
+  type BsopKind,
+} from '../lib/acca/bsop';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -149,6 +157,7 @@ interface AfmDrillSpec {
   capm_kind?:              CapmKind;  // B3d/B3e batch only — selects the CAPM drill variant
   duration_kind?:          DurationKind; // B3f batch only — selects the duration drill variant
   credit_kind?:            CreditKind;   // B3h/B4a batch only — selects the credit-risk drill variant
+  bsop_kind?:              BsopKind;     // B2a/B2c batch only — selects the BSOP / real-option variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,6 +184,11 @@ const DURATION_LOS = new Set<LoCode>(['B3f']);
 // corporate-debt valuation). Pure rates/bond family, ALL issuer-framed — P6 loss-relief no-op,
 // no issue-cost analogue. The non-flat govt spot curve opens here (duration's flat-YTM boundary).
 const CREDIT_LOS = new Set<LoCode>(['B3h', 'B4a']);
+// BSOP / real options (B2a BSOP financial-product/asset valuation + the five drivers; B2c options
+// to delay/expand/withdraw; B2b archetype classification woven as prose). Spreadsheet-inputs
+// ruling EXTENDED (Design B): code grades the BSOP chain but tolerances are set to the normal
+// TABLES (N(d) ±0.01, d1/d2 ±0.05), never code precision. redeploy = the switch-texture in withdraw.
+const BSOP_LOS = new Set<LoCode>(['B2a', 'B2c']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -644,6 +658,47 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
+function buildBsopUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.bsop_kind ?? 'financial_product_valuation';
+  const kindBlock =
+    kind === 'financial_product_valuation'
+      ? `- DRILL TYPE: BSOP FINANCIAL-PRODUCT VALUATION (B2a, first-of-family). Value a TRADED option — a listed-equity warrant tranche or an executive-share-option grant valued in aggregate. In raw_inputs give the five drivers: \`underlying\` (Pₐ, aggregate value of the underlying shares, MILLIONS), \`exercise\` (Pₑ, aggregate exercise price, MILLIONS), \`volatility\` (s, PERCENT), \`risk_free\` (r, PERCENT), \`time\` (t, years). Code owns d1/d2/N(d)/the call value. The marks are the FIVE-DRIVER identification + interpretation.`
+      : kind === 'option_to_delay'
+      ? `- DRILL TYPE: REAL OPTION TO DELAY (B2c, a CALL). A firm can DEFER an irreversible investment. MAP the scenario: \`underlying\` (Pₐ = PV of the project's future cash flows, MILLIONS), \`exercise\` (Pₑ = the development/investment cost, MILLIONS), \`volatility\` (s of the project value, PERCENT), \`risk_free\` (r, PERCENT), \`time\` (t = the deferral window, years), and \`base_npv\` (the project's NPV WITHOUT the option, MILLIONS — make it modestly NEGATIVE so the option-to-wait keeps it alive). Also set \`underlying_label\`/\`exercise_label\` naming what Pₐ/Pₑ map to. Code owns the call value + the defer decision. CLASSIFY the archetype (option to delay) in prose.`
+      : kind === 'option_to_expand'
+      ? `- DRILL TYPE: REAL OPTION TO EXPAND (B2c, a CALL). A pilot/first phase carries a follow-on GROWTH option to scale up. MAP: \`underlying\` (Pₐ = PV of the full-scale expansion's cash flows, MILLIONS), \`exercise\` (Pₑ = the scale-up investment, MILLIONS), \`volatility\` (s, PERCENT), \`risk_free\` (r, PERCENT), \`time\` (t = time to the expand decision, years), \`base_npv\` (the base project NPV, MILLIONS — modestly NEGATIVE so the growth option can justify it), + labels. Code owns the call + expanded value (base + call) + the decision. CLASSIFY (option to expand) in prose.`
+      : `- DRILL TYPE: REAL OPTION TO WITHDRAW / ABANDON (B2c, a PUT via put-call parity). A project/asset can be ABANDONED (or REDEPLOYED) for a recoverable amount. MAP: \`underlying\` (Pₐ = PV of CONTINUING to operate, MILLIONS), \`exercise\` (Pₑ = the salvage / resale / redeployment value received on exit, MILLIONS), \`volatility\` (s, PERCENT), \`risk_free\` (r, PERCENT), \`time\` (t, years), \`base_npv\` (MILLIONS), + labels. Code values the abandonment PUT via put-call parity + the project value with the option. CLASSIFY (option to withdraw/abandon; note redeploy is the same put/switch family) in prose.`;
+
+  return `Write one original ACCA AFM Black-Scholes (BSOP) / real-options drill.
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+${kindBlock}
+
+HOUSE CONVENTIONS — MANDATORY.
+- The EXAM SUPPLIES the BSOP calculator (spreadsheet-inputs style): the marked skill is IDENTIFYING the five drivers${kind === 'financial_product_valuation' ? '' : ' and MAPPING the scenario to Pₐ (underlying) and Pₑ (exercise) — this mapping is the crux'} and INTERPRETING the result. Do NOT ask the student to derive d1/d2 by hand as the marked task.
+- UNITS: money in MILLIONS; volatility s and risk-free r are PERCENT NUMBERS (e.g. 30 = 30%, 2.5 = 2.5%); time t in years.
+- CALIBRATION — MANDATORY: choose the five drivers so the option is roughly AT-THE-MONEY — Pₐ within about ±25% of Pₑ, with a moderate s·√t (roughly 0.3–0.9) — so d1 and d2 land in roughly [−1.5, 1.5]. Deep in-/out-of-the-money cases (|d| > ~2) are less instructive AND make N(d) insensitive; avoid them.
+- STATE ALL FIVE DRIVERS EXPLICITLY as labelled scenario inputs. ${kind === 'financial_product_valuation' ? 'The underlying is traded, so BSOP applies directly.' : 'For the real option, ALSO state the base-case NPV (without the option).'}
+- LIMITATIONS: BSOP prices a EUROPEAN option; real options are often American (approximation). The LOUDEST limitation is VOLATILITY ESTIMATION${kind === 'financial_product_valuation' ? '' : ' — a non-traded real-asset underlying has no traded history, so s is a proxy/subjective, and the no-arbitrage replication that underpins BSOP breaks for a non-traded underlying, making the value INDICATIVE'}.
+
+CODE-COMPUTES PROTOCOL — MANDATORY. Code owns EVERY figure: d1, d2, N(d1), N(d2), the call/put value, the expanded value and the decision. Supply the scenario, the raw inputs, and qualitative prose only. DO NOT state any d-value, probability, option value, or inequality in prose.
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and the option/decision at stake.
+- question: begins with the command verb; asks to value the option using BSOP and ${kind === 'financial_product_valuation' ? 'discuss the five drivers' : 'advise on the real option, having identified the archetype'}.
+- context_text: scenario narrative + a clean labelled list of the FIVE DRIVERS${kind === 'financial_product_valuation' ? '' : ' + the base-case NPV'}. Do NOT pre-compute d1/d2/N(d)/the value.
+- Provide the SAME figures in raw_inputs (money MILLIONS; s, r PERCENT; t years).
+- interpretation_prose: qualitative ONLY (3–5 sentences) — the five-driver interpretation${kind === 'financial_product_valuation' ? '' : ' + the archetype classification'} + BSOP limitations, VOLATILITY-ESTIMATION the loudest. NO figures, NO probabilities, NO option value, NO inequality. Take a position on the decision.
+- FROZEN FACTS (P4b): never "current market …"/"currently" near a rate/price — dated-snapshot framing.
+- QUESTION-COMPLETENESS (P5): demand ONLY what the answer delivers (a BSOP option valuation${kind === 'financial_product_valuation' ? '' : ' + the real-option advice'}). Do NOT ask for an NPV build, IRR, duration or WACC.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
 function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -930,6 +985,37 @@ const SUBMIT_CREDIT_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+const SUBMIT_BSOP_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_bsop_scenario',
+  description: 'Submit a BSOP / real-options drill — raw inputs (the five drivers) only; code builds d1/d2/N(d), the call/put value, the expanded value and the decision. The exam supplies the calculator; the marked skill is the five-driver identification + mapping + interpretation.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question:     { type: 'string', description: 'Drill question. Begins with the command verb; asks to value the option using BSOP + advise.' },
+      context_text: { type: 'string', description: 'Scenario narrative + a labelled list of the FIVE DRIVERS (and the base-case NPV for a real option). NO computed d/N/value — code computes them. Dated-snapshot framing.' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "calculate and advise", "value and evaluate").' },
+      currency:     { type: 'string', description: 'ISO 4217 currency code, e.g. "CHF", "NOK", "DKK", "HKD". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'The five drivers + (real options) the base NPV. Money in MILLIONS; volatility & risk-free are PERCENT numbers; time in years.',
+        properties: {
+          underlying:       { type: 'number', description: 'Pₐ — value of the underlying asset (MILLIONS): traded shares (financial), or PV of the project/asset cash flows (real option).' },
+          exercise:         { type: 'number', description: 'Pₑ — exercise price (MILLIONS): the strike (financial), investment cost (delay/expand), or salvage/resale value (withdraw).' },
+          volatility:       { type: 'number', description: 'Volatility s as a PERCENT number (e.g. 30 = 30%).' },
+          risk_free:        { type: 'number', description: 'Risk-free rate r as a PERCENT number (e.g. 2.5 = 2.5%).' },
+          time:             { type: 'number', description: 'Time to expiry t, in years.' },
+          base_npv:         { type: 'number', description: 'Real options only: the project NPV WITHOUT the option (MILLIONS; make it modestly negative so the option is decision-relevant).' },
+          underlying_label: { type: 'string', description: 'Real options: what Pₐ maps to in the scenario (e.g. "the PV of the field\'s production cash flows").' },
+          exercise_label:   { type: 'string', description: 'Real options: what Pₑ maps to (e.g. "the development capex", "the vessel\'s resale value").' },
+        },
+        required: ['underlying', 'exercise', 'volatility', 'risk_free', 'time'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative ONLY (3–5 sentences): the five-driver interpretation (+ the archetype classification for a real option) + BSOP limitations with VOLATILITY-ESTIMATION the loudest. State NO d-value, NO probability, NO option value, NO inequality — code owns all of those. Take a position on the decision.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
   description: 'Submit the Ezra teaching reveal for a completed AFM drill',
@@ -966,6 +1052,8 @@ interface DrillOutput {
   _durationComputed?: DurationComputed;  // duration only — dry-run inspection
   _creditInputs?:     CreditInputs;      // credit only — dry-run inspection + spread-table gate
   _creditComputed?:   CreditComputed;    // credit only — dry-run inspection
+  _bsopInputs?:       BsopInputs;        // bsop only — dry-run inspection
+  _bsopComputed?:     BsopComputed;      // bsop only — dry-run inspection + option-bounds gate
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -1245,6 +1333,37 @@ async function draftCreditDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promi
   };
 }
 
+async function draftBsopDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: BsopKind = spec.bsop_kind ?? 'financial_product_valuation';
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2600,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_BSOP_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_bsop_scenario' },
+    messages: [{ role: 'user', content: buildBsopUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in BSOP Pass 1 response');
+  const inp = block.input as {
+    question: string; context_text: string; command_verb: string; currency?: string;
+    raw_inputs: BsopInputs; interpretation_prose: string;
+  };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (bsop)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (bsop): raw_inputs missing');
+
+  const currency = normaliseCurrency(inp.currency);
+  const rawInputs: BsopInputs = { ...inp.raw_inputs, currency };
+  const computed = computeBsop(rawInputs, kind);               // throws loud on bad data → retry
+  const { schema, serialized } = buildBsopSchema(rawInputs, computed, currency, kind);
+  const model_answer = buildBsopModelAnswer(rawInputs, computed, inp.interpretation_prose, currency, kind);
+
+  return {
+    question: inp.question, context_text: inp.context_text, command_verb: inp.command_verb.trim().toLowerCase(),
+    model_answer, answer_schema: serialized, _liveSchema: schema, _bsopInputs: rawInputs, _bsopComputed: computed, _currency: currency,
+  };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -1269,6 +1388,7 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   if (spec.capm_kind && CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
   if (spec.duration_kind && DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
   if (spec.credit_kind && CREDIT_LOS.has(spec.lo_code)) return draftCreditDrill(anthropic, spec);
+  if (spec.bsop_kind && BSOP_LOS.has(spec.lo_code)) return draftBsopDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
@@ -1276,7 +1396,8 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
     if (CAPM_LOS.has(spec.lo_code)) return draftCapmDrill(anthropic, spec);
     if (DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
     if (CREDIT_LOS.has(spec.lo_code)) return draftCreditDrill(anthropic, spec);
-    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM, B3f duration, B3h/B4a credit)`);
+    if (BSOP_LOS.has(spec.lo_code)) return draftBsopDrill(anthropic, spec);
+    throw new Error(`No calculator registered for quantitative LO ${spec.lo_code} (wired: B4b/B4c FCFF, B1a NPV, B3j/B3k APV, B3d/B3e CAPM, B3f duration, B3h/B4a credit, B2a/B2c BSOP)`);
   }
   if (spec.mode === 'mixed') {
     throw new Error(`Mixed LO ${spec.lo_code} not in pilot scope (needs a per-drill scenario_supplies_figures decision)`);
@@ -1347,7 +1468,8 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
   // Check at 1/2/3 dp: money displays at 1 dp, rates (%) at 2 dp, betas at 3 dp — a value is
   // "present" if any of those roundings is a substring (CAPM betas need >1 dp).
   const normalized = drill.model_answer.replace(/,/g, '');
-  const present = (n: number) => [1, 2, 3].some((d) => normalized.includes(n.toFixed(d)));
+  // 1/2/3 dp for money/rates/betas; 4 dp for BSOP N(d)/d1/d2 which display at the table convention.
+  const present = (n: number) => [1, 2, 3, 4].some((d) => normalized.includes(n.toFixed(d)));
   const missing: string[] = [];
   for (const c of schema.components) {
     if (!present(c.expected_value)) missing.push(`${c.component_id}=${fmt1(c.expected_value)}`);
@@ -1417,6 +1539,16 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     lines.push('GATE 8 — spread↔rating monotonicity (GATE 9): N/A (no spread table — not a credit drill)');
   }
 
+  // (10) GATE 10 option no-arbitrage bounds + put-call parity — only BSOP drills carry a computation.
+  if (drill._bsopComputed) {
+    const bounds = validateOptionBounds(drill._bsopComputed);
+    lines.push(`GATE 10 — option bounds + put-call parity: ${bounds.ok ? 'PASS' : 'FAIL'}`);
+    if (!bounds.ok) { ok = false; for (const iss of bounds.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
+    else lines.push('    ✓ N(d)∈(0,1), call/put within no-arbitrage bounds, put-call parity holds');
+  } else {
+    lines.push('GATE 10 — option bounds + put-call parity: N/A (not a BSOP drill)');
+  }
+
   return { ok, lines };
 }
 
@@ -1445,13 +1577,14 @@ async function main() {
   const capmBatch = flag('--capm-batch');
   const durationBatch = flag('--duration-batch');
   const creditBatch = flag('--credit-batch');
+  const bsopBatch = flag('--bsop-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch / --duration-batch / --credit-batch.'); process.exit(1); }
+  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch, bsopBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch / --duration-batch / --credit-batch / --bsop-batch.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
@@ -1495,6 +1628,20 @@ async function main() {
     specs = plan.map((p) => ({
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       credit_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
+    }));
+  } else if (bsopBatch) {
+    // BSOP / real-options batch (calc #8). 4 kinds → 1× B2a (financial-product, first-of-family) +
+    // 3× B2c (delay/expand/withdraw); B2b classification woven as prose. Fresh sector/currency pairs,
+    // zero overlap with the 21 burned. Rulings 2026-07-15.
+    const plan: { kind: BsopKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'financial_product_valuation', lo: 'B2a', region: 'Switzerland', sector: 'listed-equity warrant / executive share options (CHF — traded underlying)' },
+      { kind: 'option_to_delay',             lo: 'B2c', region: 'Norway',      sector: 'offshore oil & gas exploration licence (NOK — defer development)' },
+      { kind: 'option_to_expand',            lo: 'B2c', region: 'Denmark',     sector: 'green-hydrogen pilot plant (DKK — scale-up growth option)' },
+      { kind: 'option_to_withdraw',          lo: 'B2c', region: 'Hong Kong',   sector: 'container-shipping vessel operator (HKD — abandon/redeploy put)' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      bsop_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
     }));
   } else if (apvBatch) {
     // 4 kinds → 3× B3j (quantitative) + 1× B3k (mixed). Fresh sectors/currencies, no overlap
