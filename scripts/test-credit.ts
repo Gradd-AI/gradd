@@ -142,6 +142,31 @@ ok('guard: govt_spot length must equal maturity', throws(() => computeCredit({ c
 ok('guard: unscaled face (≥1e6) rejected', throws(() => computeCredit({ currency: 'SEK', bond: { face_value: 100_000_000, coupon_rate: 3, maturity: 4 }, rating: 'BBB', spread_table: SEK_TABLE, govt_spot: [2, 2.3, 2.6, 2.9], market_price: 92 }, 'debt_valuation')));
 ok('guard: a downgrade that tightens the spread is rejected', throws(() => computeCredit({ currency: 'COP', spread_table: COP_TABLE, base_rating: 'BBB', new_rating: 'A-', benchmark_rate: 9.5, debt_principal: 900 }, 'downgrade_impact')));
 ok('guard: r_hi must exceed r_lo', throws(() => computeCredit({ currency: 'SGD', bond: { face_value: 100, coupon_rate: 3.5, maturity: 5 }, market_price: 96, govt_yield: 3, r_lo: 5, r_hi: 4 }, 'spread_estimation')));
+// FIX 3 — interpolation target must lie strictly inside the trial-price bracket.
+ok('guard: unbracketed interpolation target is rejected (target above price_lo)', throws(() => computeCredit({ currency: 'SGD', bond: { face_value: 100, coupon_rate: 3.5, maturity: 5 }, market_price: 99.9, govt_yield: 3, r_lo: 4, r_hi: 5 }, 'spread_estimation')));
+ok('guard: a properly bracketed target passes', !throws(() => computeCredit({ currency: 'SGD', bond: { face_value: 100, coupon_rate: 3.5, maturity: 5 }, market_price: 96, govt_yield: 3, r_lo: 4, r_hi: 5 }, 'spread_estimation')));
+
+// ── (10) FIX 2 — code-owned spread-vs-rating-band comparison ──
+console.log('\n──── FIX 2 spread-vs-band ────');
+{
+  const raw: CreditInputs = { currency: 'SGD', bond: { face_value: 200, coupon_rate: 4.10, maturity: 5 }, market_price: 198.35, govt_yield: 3.44, r_lo: 4.10, r_hi: 4.50, rating: 'BBB+', spread_table: [{ rating: 'A', spread_bps: 80 }, { rating: 'A-', spread_bps: 100 }, { rating: 'BBB+', spread_bps: 128 }, { rating: 'BBB', spread_bps: 155 }] };
+  const c: any = computeCredit(raw, 'spread_estimation');
+  ok('FIX2: derived spread tighter than the BBB+ band (128bp)', c.tighter_than_band === true && c.band_spread_bps === 128);
+  ok('FIX2: sits inside the A- band (tightest wider band above ~85bp)', c.tightest_wider_band === 'A-');
+  const ans = buildCreditModelAnswer(raw, c, 'The market prices the port tighter than its rating band, a favourable window for the green-bond refinancing.', 'SGD', 'spread_estimation');
+  ok('FIX2: model answer states the code-owned band comparison', ans.includes('rated-band spread of 128bp') && /tighter \(narrower\) than/.test(ans));
+}
+
+// ── (11) FIX 4 — downgrade refinancing framing (fixed coupon insulated) ──
+console.log('\n──── FIX 4 refinancing framing ────');
+{
+  const raw: CreditInputs = { currency: 'COP', spread_table: COP_TABLE, base_rating: 'BBB', new_rating: 'BBB-', benchmark_rate: 11.40, debt_principal: 800000, existing_coupon_rate: 13.80 };
+  const c: any = computeCredit(raw, 'downgrade_impact');
+  ok('FIX4: existing fixed interest = principal × coupon', near(c.existing_fixed_interest, 800000 * 0.138, 1));
+  const ans = buildCreditModelAnswer(raw, c, 'The fixed coupon is insulated; the refinancing cost is what rises.', 'COP', 'downgrade_impact');
+  ok('FIX4: answer frames the Δ as refinancing + names the insulated fixed coupon', ans.includes('on refinancing') && ans.includes('fixed at') && ans.includes('unchanged by the downgrade'));
+  ok('FIX4: reconciliation says "on refinancing"', ans.includes('annual interest on refinancing'));
+}
 
 // ── (7) P8 rating-symbol lint ──
 console.log('\n──── P8 rating-symbol lint ────');

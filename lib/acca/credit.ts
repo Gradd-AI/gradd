@@ -92,6 +92,7 @@ export interface CreditInputs {
   new_rating?: string;
   benchmark_rate?: number;          // flat risk-free benchmark for the debt maturity (PERCENT)
   debt_principal?: number;          // millions
+  existing_coupon_rate?: number;    // optional (PERCENT): the existing FIXED coupon — insulated from the downgrade; the Δ is a refinancing cost
   equity_weight?: number;           // optional ΔWACC (all four required together, else prose-only)
   debt_weight?: number;
   ke?: number;                      // cost of equity (PERCENT)
@@ -118,6 +119,7 @@ export interface CreditComputed {
   base_kd?: number; new_kd?: number;
   delta_kd_bps?: number;
   base_annual_interest?: number; new_annual_interest?: number; delta_annual_interest?: number;
+  existing_coupon_rate?: number; existing_fixed_interest?: number;  // FIX 4: the insulated fixed coupon
   base_wacc?: number; new_wacc?: number; delta_wacc?: number;   // undefined if inputs absent
   // kind 2
   bond_rows?: { period: number; cash_flow: number }[];
@@ -126,6 +128,11 @@ export interface CreditComputed {
   govt_yield?: number;                       // PERCENT (given)
   spread_bp?: number;                        // = (corp_yield − govt_yield) × 100 (bp)
   market_price?: number;
+  // kind 2 — code-owned spread-vs-rating-band comparison (FIX 2, when spread_table+rating given)
+  band_spread_bps?: number;                  // the issuer's rated-band spread from the table
+  band_rating?: string;                      // the issuer's rating
+  tighter_than_band?: boolean;               // derived spread < rated-band spread (market prices it tighter)
+  tightest_wider_band?: string;              // best-rated band whose spread still exceeds the derived spread
   // kinds 3/4
   curve_rows?: CurveRow[];
   spread_used_bps?: number;
@@ -158,9 +165,17 @@ function bondCashFlows(b: CreditBond): { period: number; cash_flow: number }[] {
 const pvFlat = (rows: { period: number; cash_flow: number }[], rDec: number): number =>
   rows.reduce((s, r) => s + r.cash_flow * df(rDec, r.period), 0);
 // Examiner linear interpolation: the flat yield (DECIMAL) at which pvFlat(rows,y) = target.
+// GATE CHECK (pre-review FIX 3, 2026-07-15): the target MUST lie strictly inside the trial-price
+// bracket — otherwise the "interpolation" is really an extrapolation and the trials don't bracket
+// the answer. price falls as yield rises, so a valid pair has price(r_lo) > target > price(r_hi).
+// Throwing here makes it a de-facto generation gate: a batch cannot ship an unbracketed chain.
 function interpolateYieldDec(rows: { period: number; cash_flow: number }[], target: number, rLoDec: number, rHiDec: number): number {
   const pLo = pvFlat(rows, rLoDec), pHi = pvFlat(rows, rHiDec);
   if (Math.abs(pLo - pHi) < 1e-12) throw new Error('degenerate interpolation: trial PVs equal');
+  const hi = Math.max(pLo, pHi), lo = Math.min(pLo, pHi);
+  if (!(target < hi && target > lo)) {
+    throw new Error(`interpolation target ${target.toFixed(2)} is NOT strictly inside the trial-price bracket [${lo.toFixed(2)}, ${hi.toFixed(2)}] — choose trial yields that bracket the answer so price(r_lo) > target > price(r_hi)`);
+  }
   return rLoDec + ((pLo - target) / (pLo - pHi)) * (rHiDec - rLoDec);
 }
 
@@ -187,10 +202,12 @@ export function computeCredit(raw: CreditInputs, kind: CreditKind): CreditComput
       newWacc = we * ke + wd * newKd * (1 - t);
       deltaWacc = newWacc - baseWacc;
     }
+    const existingFixedInterest = raw.existing_coupon_rate !== undefined ? principal * D(raw.existing_coupon_rate) : undefined;
     return {
       kind, currency, base_spread_bps: baseSpread, new_spread_bps: newSpread,
       base_kd: baseKd, new_kd: newKd, delta_kd_bps: newSpread - baseSpread,
       base_annual_interest: baseInt, new_annual_interest: newInt, delta_annual_interest: newInt - baseInt,
+      existing_coupon_rate: raw.existing_coupon_rate, existing_fixed_interest: existingFixedInterest,
       base_wacc: baseWacc, new_wacc: newWacc, delta_wacc: deltaWacc,
     };
   }
@@ -205,7 +222,17 @@ export function computeCredit(raw: CreditInputs, kind: CreditKind): CreditComput
     const priceLo = pvFlat(rows, D(rLoP)), priceHi = pvFlat(rows, D(rHiP));
     const corpYield = interpolateYieldDec(rows, market, D(rLoP), D(rHiP)) * 100; // PERCENT
     const spreadBp = (corpYield - govtY) * 100;
-    return { kind, currency, bond_rows: rows, price_lo: priceLo, price_hi: priceHi, r_lo: rLoP, r_hi: rHiP, corp_yield: corpYield, govt_yield: govtY, spread_bp: spreadBp, market_price: market };
+    // Code-owned comparison to the issuer's rated peer band (FIX 2): is the market pricing the
+    // credit tighter or wider than its rating, and inside which band does the derived spread sit?
+    let bandSpreadBps: number | undefined, tighterThanBand: boolean | undefined, tightestWiderBand: string | undefined;
+    if (raw.spread_table && raw.rating) {
+      bandSpreadBps = lookupSpread(raw.spread_table, raw.rating);
+      tighterThanBand = spreadBp < bandSpreadBps;
+      const sorted = [...raw.spread_table].map((r) => ({ r, ord: ratingInfo(r.rating)?.ordinal ?? 999 })).sort((a, b) => a.ord - b.ord);
+      const widerBands = sorted.filter((x) => x.r.spread_bps > spreadBp); // bands whose spread exceeds the derived spread
+      tightestWiderBand = widerBands.length ? widerBands[0].r.rating : undefined; // best-rated band the spread still sits inside
+    }
+    return { kind, currency, bond_rows: rows, price_lo: priceLo, price_hi: priceHi, r_lo: rLoP, r_hi: rHiP, corp_yield: corpYield, govt_yield: govtY, spread_bp: spreadBp, market_price: market, band_spread_bps: bandSpreadBps, band_rating: raw.rating, tighter_than_band: tighterThanBand, tightest_wider_band: tightestWiderBand };
   }
 
   // kinds 3 & 4 — term structure (spot curve + spread)
@@ -333,9 +360,12 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
       `| ${raw.base_rating} (current) | ${c.base_spread_bps}bp | ${pct2(raw.benchmark_rate!)} | **${pct2(c.base_kd!)}** |`,
       `| ${raw.new_rating} (downgraded) | ${c.new_spread_bps}bp | ${pct2(raw.benchmark_rate!)} | **${pct2(c.new_kd!)}** |`,
       '',
-      `The downgrade widens the spread by **${c.delta_kd_bps}bp**, lifting the cost of debt from ${pct2(c.base_kd!)} to **${pct2(c.new_kd!)}**.`, '',
-      `**Step ${S()} — Effect on the annual interest cost**`, '',
-      `On ${m(raw.debt_principal!)} of debt, the annual interest cost rises from ${m(c.base_annual_interest!)} to ${m(c.new_annual_interest!)} — an increase of **${m(c.delta_annual_interest!)} a year**.`, '',
+      `The downgrade widens the spread by **${c.delta_kd_bps}bp**, lifting the market cost of debt from ${pct2(c.base_kd!)} to **${pct2(c.new_kd!)}**.`, '',
+      `**Step ${S()} — Effect on the cost of REFINANCING (not the existing coupon)**`, '',
+      c.existing_fixed_interest !== undefined
+        ? `The existing bond's coupon is **fixed at ${pct2(c.existing_coupon_rate!)}** (${m(c.existing_fixed_interest)} a year) and is **unchanged by the downgrade** — a fixed-rate liability is insulated from a rating move until it matures. What the downgrade changes is the cost of **new** debt: refinancing the ${m(raw.debt_principal!)} principal at the current rating would cost ${m(c.base_annual_interest!)} a year, but after the downgrade **${m(c.new_annual_interest!)}** — an increase of **${m(c.delta_annual_interest!)} a year on refinancing**.`
+        : `The existing bond's coupon is **fixed** and is **unchanged by the downgrade** — a fixed-rate liability is insulated from a rating move until it matures. What the downgrade changes is the cost of **new** debt: refinancing the ${m(raw.debt_principal!)} principal at the current rating would cost ${m(c.base_annual_interest!)} a year, but after the downgrade **${m(c.new_annual_interest!)}** — an increase of **${m(c.delta_annual_interest!)} a year on refinancing**.`,
+      '',
     );
     if (c.delta_wacc !== undefined) {
       lines.push(`**Step ${S()} — Effect on WACC**`, '', `Feeding the higher after-tax cost of debt through the given capital-structure weights raises the WACC by **${pct2(c.delta_wacc!)}** (from ${pct2(c.base_wacc!)} to ${pct2(c.new_wacc!)}), which lifts the hurdle every project must clear.`, '');
@@ -354,10 +384,19 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
     lines.push(`| **PV** | | | **${m(c.price_lo!)}** | | **${m(c.price_hi!)}** |`, '');
     lines.push(
       `**Step ${S()} — Redemption yield (interpolation to the market price ${m(c.market_price!)})**`, '',
-      `PV is ${m(c.price_lo!)} at ${pct2(c.r_lo!)} and ${m(c.price_hi!)} at ${pct2(c.r_hi!)}. Interpolating for the yield that prices the bond at ${m(c.market_price!)} gives a redemption yield of **${pct2(c.corp_yield!)}**.`, '',
+      `PV is ${m(c.price_lo!)} at ${pct2(c.r_lo!)} and ${m(c.price_hi!)} at ${pct2(c.r_hi!)}. Interpolating for the yield that prices the bond at ${m(c.market_price!)} gives a redemption yield of **${pct2(c.corp_yield!)}** — the issuer's effective (pre-tax) cost of debt at the valuation date.`, '',
       `**Step ${S()} — Credit spread (code-owned)**`, '',
       `Credit spread = corporate yield ${pct2(c.corp_yield!)} − government yield ${pct2(c.govt_yield!)} = **${c.spread_bp!.toFixed(1)}bp** (${pct2(c.spread_bp! / 100)}).`, '',
     );
+    if (c.band_spread_bps !== undefined) {
+      const insideLine = c.tightest_wider_band && c.tightest_wider_band !== c.band_rating
+        ? ` — it sits inside even the ${c.tightest_wider_band} band (${c.band_spread_bps > c.spread_bp! ? '' : ''}the tightest rated band whose spread still exceeds it)`
+        : '';
+      lines.push(
+        `**Step ${S()} — Derived spread vs the rated peer benchmark (code-owned)**`, '',
+        `The derived spread of ${c.spread_bp!.toFixed(1)}bp is **${c.tighter_than_band ? 'tighter (narrower) than' : 'wider than'}** the issuer's ${c.band_rating} rated-band spread of ${c.band_spread_bps}bp${insideLine}. On the dated table the market is therefore pricing the issuer's credit **${c.tighter_than_band ? 'tighter than its rating band implies' : 'wider than its rating band implies'}**.`, '',
+      );
+    }
   } else if (kind === 'kd_term_structure') {
     lines.push(
       `**Assumptions:** the cost of debt is built from the government spot (zero-coupon) yield curve, adding the issuer's credit spread at every maturity, then discounting each cash flow at its own maturity's corporate spot rate. The single cost of debt is the flat yield that reprices the bond to that curve-based price (found by interpolation).`, '',
@@ -383,7 +422,7 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
   lines.push(`**Step ${S()} — Evaluation / advice to the board**`, '', prose, '');
 
   // Reconciliation
-  if (kind === 'downgrade_impact') lines.push(`*Reconciliation: base Kd ${pct2(c.base_kd!)} → new Kd ${pct2(c.new_kd!)} (+${c.delta_kd_bps}bp) → +${m(c.delta_annual_interest!)} annual interest${c.delta_wacc !== undefined ? ` → +${pct2(c.delta_wacc!)} WACC` : ''}. ✓*`);
+  if (kind === 'downgrade_impact') lines.push(`*Reconciliation: base Kd ${pct2(c.base_kd!)} → new Kd ${pct2(c.new_kd!)} (+${c.delta_kd_bps}bp) → +${m(c.delta_annual_interest!)} annual interest on refinancing${c.delta_wacc !== undefined ? ` → +${pct2(c.delta_wacc!)} WACC` : ''}. ✓*`);
   else if (kind === 'spread_estimation') lines.push(`*Reconciliation: PV ${m(c.price_lo!)}@${pct2(c.r_lo!)} / ${m(c.price_hi!)}@${pct2(c.r_hi!)} → yield ${pct2(c.corp_yield!)} → spread ${c.spread_bp!.toFixed(1)}bp. ✓*`);
   else if (kind === 'kd_term_structure') lines.push(`*Reconciliation: curve price ${m(c.price_curve!)} → interpolated flat Kd ${pct2(c.implied_kd!)}. ✓*`);
   else lines.push(`*Reconciliation: fair value ${m(c.fair_value!)} vs market ${m(c.market_price!)} = ${m(c.mispricing!)} → ${c.overvalued! ? 'over' : 'under'}-valued. ✓*`);
