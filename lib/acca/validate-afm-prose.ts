@@ -18,11 +18,50 @@
 //   P5 question-completeness — every element the question demands has a delivered component
 //      in the model answer (the Drill-1 "demanded sensitivity, delivered none" defect).
 
+import { ratingInfo } from './credit';
+
 export interface ProseIssue {
-  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts';
+  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol';
   field: string;
   code: string;
   message: string;
+}
+
+// P8 rating-symbol realism (credit-risk batch, calculator #7, 2026-07-15). Rating symbols named
+// in a drill must be REAL agency symbols (S&P/Fitch AAA…D or Moody's Aaa…C), a single agency's
+// scale within one drill, with the investment-grade / high-yield boundary at BBB−/Baa3 (encoded
+// in ratingInfo). We scan only fields that carry a rating CUE (so a bare "A" or "BBB" outside a
+// ratings context never trips), extract rating-SHAPED tokens (a suffix, a 3–4 letter block, or an
+// agency-number form — never a bare single/double letter), and flag any token the canonical
+// scales reject, plus any drill that mixes the two agencies' scales.
+const RATING_CUE = /\b(rating|rated|grade|notch|downgrad|upgrad|Moody|Fitch|S&P|investment[- ]grade|high[- ]yield|speculative[- ]grade)\b/i;
+// Rating-shaped tokens: X+/X- suffix forms, 3–4 letter blocks (catches AAA/BBB and BBBB/AAB), and
+// Moody's agency-number forms. The (?![A-Za-z]) lookahead keeps "C-suite"/"A-rated" from matching.
+const SHAPED_RATING = /\b(?:[A-C]{1,3}[+-]|[A-C]{3,4}|Aaa|Aa\d|A\d|Baa\d|Ba\d|B\d|Caa\d|Ca)(?![A-Za-z])/g;
+
+export function lintRatingSymbols(fields: Record<string, string>): ProseIssue[] {
+  const issues: ProseIssue[] = [];
+  const agencies = new Set<'SP' | 'Moodys'>();
+  const seenInvented = new Set<string>();
+  for (const [field, raw] of Object.entries(fields)) {
+    if (!raw || !RATING_CUE.test(raw)) continue;
+    const tokens = raw.match(SHAPED_RATING) ?? [];
+    for (const tok of tokens) {
+      const info = ratingInfo(tok);
+      if (info === null) {
+        if (!seenInvented.has(tok)) {
+          seenInvented.add(tok);
+          issues.push({ gate: 'rating-symbol', field, code: 'invented-rating-symbol', message: `"${tok}" is not a real credit-rating symbol — use an S&P/Fitch (AAA…D) or Moody's (Aaa…C) scale symbol` });
+        }
+      } else {
+        agencies.add(info.agency);
+      }
+    }
+  }
+  if (agencies.size > 1) {
+    issues.push({ gate: 'rating-symbol', field: 'model_answer', code: 'mixed-rating-agencies', message: `the drill mixes rating agencies (S&P/Fitch and Moody's symbols) — pick ONE agency's scale and use it throughout` });
+  }
+  return issues;
 }
 
 // P4b frozen-market-facts (duration round-1 FIX 6; NARROWED — lint ruling 2026-07-14). A
@@ -176,6 +215,9 @@ export function lintCompleteness(question: string, modelAnswer: string): ProseIs
     { re: /internal rate of return|\birr\b/,                   needs: /\birr\b|internal rate of return/,                        label: 'an IRR appraisal' },
     { re: /net present value|\bnpv\b/,                         needs: /\bnpv\b|net present value/,                             label: 'an NPV appraisal' },
     { re: /macaulay|modified duration|\bduration\b/,           needs: /macaulay|modified/,                                     label: 'a Macaulay/modified duration calculation' },
+    { re: /credit spread/,                                     needs: /spread/,                                                label: 'a credit-spread figure' },
+    { re: /cost of debt/,                                      needs: /cost of debt|\bkd\b/,                                   label: 'a cost-of-debt figure' },
+    { re: /fair value|value (of )?the (corporate )?(bond|debt)|value the (corporate )?(bond|debt)/, needs: /fair value/,        label: 'a fair-value calculation' },
   ];
   for (const d of demands) {
     if (d.re.test(q) && !d.needs.test(a)) {
@@ -207,5 +249,6 @@ export function lintAfmProse(fields: {
     ...lintJurisdiction(scope),
     ...lintFrozenMarketFacts(scope),
     ...lintCompleteness(fields.question, fields.model_answer),
+    ...lintRatingSymbols(scope),
   ];
 }

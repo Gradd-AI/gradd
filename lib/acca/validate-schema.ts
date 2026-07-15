@@ -24,10 +24,11 @@
 //       the depends_on graph must be acyclic with no dangling references.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
+import { checkSpreadMonotonicity, type SpreadRow } from './credit';
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -287,4 +288,35 @@ export function validateSchemaSelfConsistency(schema: AnswerSchema): ValidationR
 
 function round(n: number): number {
   return Math.round(n * 10000) / 10000;
+}
+
+// ── GATE 9: spread ↔ rating monotonicity (credit-risk batch, calculator #7, 2026-07-15) ──
+// A scenario's rating→spread table must price credit quality monotonically: a WEAKER rating
+// (higher ordinal) carries a WIDER spread, and every symbol is one agency's canonical scale
+// (delegated to checkSpreadMonotonicity in credit.ts). A hard gate — a table that pays a weaker
+// issuer a tighter spread is internally incoherent and unmarkable.
+//
+// `maturitySpreads` is an OPTIONAL spread-by-maturity curve (bp per year, ascending maturity).
+// An INVERTED credit-term-structure (a shorter maturity paying a wider spread) is FLAG-not-fail:
+// it can be a real, deliberate scenario, but the drill must annotate it — pass `deliberate:true`
+// to accept. This batch uses flat per-rating spreads, so maturitySpreads is normally absent.
+export function validateSpreadTable(
+  table: SpreadRow[],
+  opts?: { maturitySpreads?: number[]; deliberate?: boolean },
+): ValidationResult {
+  const issues: ValidationIssue[] = [];
+  const mono = checkSpreadMonotonicity(table);
+  if (!mono.ok) {
+    issues.push({ component_id: '(spread-table)', gate: 'spread-monotonicity', code: 'rating-spread-not-monotonic', message: mono.reason ?? 'rating→spread table is not monotonic in credit quality' });
+  }
+  const ms = opts?.maturitySpreads;
+  if (ms && ms.length >= 2) {
+    for (let i = 1; i < ms.length; i++) {
+      if (ms[i] < ms[i - 1] - 1e-9 && !opts?.deliberate) {
+        issues.push({ component_id: '(spread-table)', gate: 'spread-monotonicity', code: 'inverted-credit-term-structure', message: `spread narrows from ${ms[i - 1]}bp (yr ${i}) to ${ms[i]}bp (yr ${i + 1}) — an inverted credit-term-structure is allowed only as a DELIBERATE scenario (annotate it and pass deliberate:true)` });
+        break;
+      }
+    }
+  }
+  return { ok: issues.length === 0, issues };
 }
