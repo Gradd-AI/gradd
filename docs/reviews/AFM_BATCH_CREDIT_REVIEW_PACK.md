@@ -1,28 +1,30 @@
 # AFM credit-risk batch — blind adversarial review pack
 
-**Calculator #7: credit risk (`lib/acca/credit.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated in full after every fix round.**
+**Calculator #7: credit risk (`lib/acca/credit.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated in full after every fix round (pre-review FIX 1–4 applied 2026-07-15).**
 
 Doctrine: code owns EVERY figure AND the over/under-valued verdict; the model authored PROSE only — never a rate, a spread, a price, a cost of debt, or an inequality. ALL kinds are **issuer-framed** (the entity ISSUES the debt): a wider spread / downgrade is higher FUNDING and refinancing cost, **never a "loss"** (loss language is for investors). Pure rates/bond family — **P6 loss-relief is a structural no-op**, no issue-cost analogue.
 
 **The four kinds** (three B3h sub-points + B4a; the three B3h kinds share the single `lo_code='B3h'`, sub-point coverage journalled — CAPM/duration dual-cover precedent, no migration):
 - **kd_term_structure** (B3h(iii)) — cost of debt built from the government spot curve + credit spread at every maturity, then the single flat Kd by interpolation. FIRST-OF-FAMILY.
-- **spread_estimation** (B3h(ii)) — the credit spread DERIVED as the corporate redemption yield (interpolated to the market price) less the matched-maturity government yield.
-- **downgrade_impact** (B3h(i), MIXED) — a downgrade widens the spread → higher Kd → higher annual interest (and ΔWACC only when the scenario supplies weights + Ke; otherwise directional prose, never an unsupported figure). The marks are in the agencies'-role evaluation.
+- **spread_estimation** (B3h(ii)) — the credit spread DERIVED as the corporate redemption yield (interpolated to the market price, = the effective cost of debt) less the matched-maturity government yield; code also owns the **spread-vs-rated-band comparison** (tighter/wider than the issuer's rating).
+- **downgrade_impact** (B3h(i), MIXED) — a downgrade widens the spread → higher Kd → higher REFINANCING interest (the existing fixed coupon is INSULATED); ΔWACC only when the scenario supplies weights + Ke, else directional. The marks are in the agencies'-role evaluation.
 - **debt_valuation** (B4a) — fair value = each cash flow discounted at its own maturity's (govt spot + spread); code owns the over/under-valued verdict vs the quoted market price.
 
 **Boundary with duration (#6):** duration uses a single FLAT stated YTM per bond. Credit (#7) is the CURVE world — the non-flat government spot curve, each cash flow at its own maturity's spot + spread. Credit does not compute durations.
 
-**Tolerances:** interpolated/root-found rates (corp_yield, implied_kd) abs ±0.2 pp (IRR precedent — students interpolate); additive/lookup rates (base/new Kd; a spread formed by subtracting two toleranced figures) abs ±0.05 pp; prices/fair values rel ±0.5%; the fair-value-vs-market verdict is strict, code-owned, no tolerance. **All 9 gates pass** (schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity at 1/2/3 dp; **distinct-factor** seeded-OFR carry-through; P4 jurisdiction + frozen-market-facts; P5 completeness incl. credit demands; P6 loss-relief [no-op]; **P8 rating-symbol realism**; **GATE 9 spread↔rating monotonicity**).
+**Interpolation bracketing (FIX 3):** every interpolation chain is guarded — the target price MUST lie strictly inside the trial-price bracket (price(r_lo) > target > price(r_hi)); the calculator throws otherwise, so a batch cannot ship an unbracketed (extrapolated) chain.
+
+**Tolerances:** interpolated/root-found rates (corp_yield, implied_kd) abs ±0.2 pp (IRR precedent); additive/lookup rates abs ±0.05 pp; prices/fair values rel ±0.5%; the fair-value-vs-market verdict is strict, code-owned, no tolerance. **All 9 gates pass** (schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity at 1/2/3 dp; **distinct-factor** seeded-OFR carry-through; P4 jurisdiction + frozen-market-facts; P5 completeness incl. credit demands; P6 loss-relief [no-op]; **P8 rating-symbol realism**; **GATE 9 spread↔rating monotonicity**).
 
 ## ⛔ CLOSED RULINGS — do NOT re-raise (spend hostility on open questions, not settled ones)
-- **OFR wording** — "the error is charged once, at its source" is deliberate HOUSE wording tied to the reviewer override log. Adjudicated closed on prior batches; do not propose softening.
-- **Issuer perspective (not "loss")** — every kind frames a wider spread / rate rise as the issuer's FUNDING / refinancing cost, covenant/disclosure optics, and future funding cost — NOT a mark-to-market "loss". This is the ruled house framing (duration issuer-pattern), not an error to correct.
-- **Spread as input vs derived** — the credit spread is a scenario INPUT looked up from the rating→spread table for kinds 1/3/4; it is DERIVED (corp yield − govt yield) ONLY in kind 2. The calculator never invents a spread from a rating (no proprietary rating model). Deliberate, not a gap.
-- **Spot rates given; no forward-rate bootstrapping** — the government spot (zero-coupon) curve is supplied directly; bootstrapping forward rates is out of scope by design (a future kind if ever demanded). Not an omission.
-- **Single-tag `lo_code`** — the three B3h sub-points (i/ii/iii) are covered across three drills sharing `lo_code='B3h'`; `acca_drills.lo_code` is single-valued and coverage is journalled (no migration). B4a is its own tag.
-- **downgrade ΔWACC conditional** — the ΔWACC figure appears ONLY when the scenario supplies equity/debt weights, Ke and tax; otherwise the WACC effect is stated DIRECTIONALLY. That is the ruled guard (never a WACC figure the inputs can't support), not a missing calculation.
+- **OFR wording** — "the error is charged once, at its source" is deliberate HOUSE wording tied to the reviewer override log. Adjudicated closed; do not propose softening.
+- **Issuer perspective (not "loss")** — every kind frames a wider spread / rate rise as the issuer's FUNDING / refinancing cost, covenant/disclosure optics, and future funding cost — NOT a mark-to-market "loss". Ruled house framing (duration issuer-pattern), not an error.
+- **Spread as input vs derived** — the credit spread is a scenario INPUT looked up from the rating→spread table for kinds 1/3/4; DERIVED (corp yield − govt yield) ONLY in kind 2. No proprietary rating model. Deliberate.
+- **Spot rates given; no forward-rate bootstrapping** — the government spot (zero-coupon) curve is supplied directly; bootstrapping forwards is out of scope by design (a future kind if ever demanded).
+- **Single-tag `lo_code`** — the three B3h sub-points share `lo_code='B3h'`; coverage journalled (no migration). B4a is its own tag.
+- **downgrade ΔWACC conditional; existing coupon insulated** — the ΔWACC figure appears ONLY when weights+Ke+tax are supplied (else directional); the downgrade's Δ is a REFINANCING cost — the existing FIXED coupon is unchanged by a rating move (fixed-rate insulation). Both are ruled guards, not omissions.
 
-**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on **Drill 1 (kd_term_structure, first-of-family)**, spot-check siblings WITH full recomputation of every figure. Hunt for semantic errors a deterministic gate cannot catch: a spot rate applied to the wrong maturity, the spread added in the wrong units (bp vs pp), an interpolation bracket the wrong side of the answer, the over/under-valued verdict inverted, issuer framing slipping into investor "loss" language, a rating symbol or spread ordering that is unrealistic, scenario-fact drift.
+**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on **Drill 1 (kd_term_structure, first-of-family)**, spot-check siblings WITH full recomputation of every figure. Hunt for semantic errors a deterministic gate cannot catch: a spot rate applied to the wrong maturity, the spread added in the wrong units (bp vs pp), the over/under-valued verdict inverted, issuer framing slipping into investor "loss" language, a rating symbol or spread ordering that is unrealistic, scenario-fact drift.
 
 ---
 
@@ -68,8 +70,8 @@ Credit spread table (S&P/Fitch scale, basis points, dated secondary-market snaps
 Hokusei's rating: A- (spread: 120 bps)
 
 Trial flat yields for interpolation:
-  r_lo: 2.10%
-  r_hi: 2.55%
+  r_lo: 1.75%
+  r_hi: 2.20%
 
 ### model_answer
 
@@ -91,7 +93,7 @@ Discounting every cash flow at its own maturity's corporate spot rate gives a bo
 
 **Step 2 — Cost of debt (single flat-yield equivalent, by interpolation)**
 
-A flat yield of 2.10% prices the bond at JPY 19810.1m and 2.55% at JPY 19474.0m. Interpolating for the flat yield that reproduces the curve price JPY 19907.1m gives a cost of debt of **1.97%** — the single Kd to carry into the WACC.
+A flat yield of 1.75% prices the bond at JPY 20076.6m and 2.20% at JPY 19734.7m. Interpolating for the flat yield that reproduces the curve price JPY 19907.1m gives a cost of debt of **1.97%** — the single Kd to carry into the WACC.
 
 **Step 3 — Evaluation / advice to the board**
 
@@ -112,8 +114,8 @@ The dominant misconception here is ABANDONED-AFTER-CALC: candidates produce a bo
 ```json
 {
   "params": {
-    "r_hi": 2.55,
-    "r_lo": 2.1,
+    "r_hi": 2.2,
+    "r_lo": 1.75,
     "govt_yield": 0,
     "kind_marker": 0,
     "market_price": 0,
@@ -137,29 +139,29 @@ The dominant misconception here is ABANDONED-AFTER-CALC: candidates produce a bo
     },
     {
       "unit": "JPYm",
-      "label": "Bond PV at the low trial flat yield (2.10%)",
+      "label": "Bond PV at the low trial flat yield (1.75%)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "price_lo",
       "working_steps": [
-        "Σ cash flow × DF at flat 2.10%"
+        "Σ cash flow × DF at flat 1.75%"
       ],
-      "expected_value": 19810.074678856283
+      "expected_value": 20076.61885079116
     },
     {
       "unit": "JPYm",
-      "label": "Bond PV at the high trial flat yield (2.55%)",
+      "label": "Bond PV at the high trial flat yield (2.20%)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "price_hi",
       "working_steps": [
-        "Σ cash flow × DF at flat 2.55%"
+        "Σ cash flow × DF at flat 2.20%"
       ],
-      "expected_value": 19473.957356123385
+      "expected_value": 19734.747598695434
     },
     {
       "unit": "%",
@@ -178,7 +180,7 @@ The dominant misconception here is ABANDONED-AFTER-CALC: candidates produce a bo
       "working_steps": [
         "interpolate the flat yield that reprices the bond to 19907.1"
       ],
-      "expected_value": 1.9700711266491113
+      "expected_value": 1.9731060138772225
     }
   ]
 }
@@ -233,8 +235,8 @@ RATED-PEER CREDIT SPREAD TABLE (S&P scale — dated snapshot; spreads reflect SG
   BBB-:  185 bps
 
 TRIAL YIELDS FOR INTERPOLATION
-  r_lo:  4.40%   (produces a price above SGD 198.35 million)
-  r_hi:  4.60%   (produces a price below SGD 198.35 million)
+  r_lo:  4.10%   (produces a price above SGD 198.35 million)
+  r_hi:  4.50%   (produces a price below SGD 198.35 million)
 
 CHALLENGEABLE TEXTURES
 1. RATING IS POINT-IN-TIME: Meridian's BBB+ rating was affirmed at the most recent annual review. Any deterioration in throughput volumes or a significant increase in leverage from the planned green-bond issuance could prompt a review; the spread table must be treated as a dated peer benchmark, not a guarantee of achievable pricing on the forthcoming refinancing.
@@ -253,8 +255,8 @@ RAW INPUTS SUMMARY
   Issuer rating:             BBB+
   Spread at BBB+:            128   (bps)
   Spread at BBB:             155   (bps)
-  r_lo:                      4.40  (%)
-  r_hi:                      4.60  (%)
+  r_lo:                      4.10  (%)
+  r_hi:                      4.50  (%)
 
 
 ### model_answer
@@ -265,28 +267,32 @@ RAW INPUTS SUMMARY
 
 **Step 1 — The bond's cash flows and trial prices**
 
-| Year | Cash flow | DF @ 4.40% | PV | DF @ 4.60% | PV |
+| Year | Cash flow | DF @ 4.10% | PV | DF @ 4.50% | PV |
 |------|------|------|------|------|------|
-| 1 | SGD 8.2m | 0.9579 | SGD 7.9m | 0.9560 | SGD 7.8m |
-| 2 | SGD 8.2m | 0.9175 | SGD 7.5m | 0.9140 | SGD 7.5m |
-| 3 | SGD 8.2m | 0.8788 | SGD 7.2m | 0.8738 | SGD 7.2m |
-| 4 | SGD 8.2m | 0.8418 | SGD 6.9m | 0.8354 | SGD 6.8m |
-| 5 | SGD 208.2m | 0.8063 | SGD 167.9m | 0.7986 | SGD 166.3m |
-| **PV** | | | **SGD 197.4m** | | **SGD 195.6m** |
+| 1 | SGD 8.2m | 0.9606 | SGD 7.9m | 0.9569 | SGD 7.8m |
+| 2 | SGD 8.2m | 0.9228 | SGD 7.6m | 0.9157 | SGD 7.5m |
+| 3 | SGD 8.2m | 0.8864 | SGD 7.3m | 0.8763 | SGD 7.2m |
+| 4 | SGD 8.2m | 0.8515 | SGD 7.0m | 0.8386 | SGD 6.9m |
+| 5 | SGD 208.2m | 0.8180 | SGD 170.3m | 0.8025 | SGD 167.1m |
+| **PV** | | | **SGD 200.0m** | | **SGD 196.5m** |
 
 **Step 2 — Redemption yield (interpolation to the market price SGD 198.3m)**
 
-PV is SGD 197.4m at 4.40% and SGD 195.6m at 4.60%. Interpolating for the yield that prices the bond at SGD 198.3m gives a redemption yield of **4.29%**.
+PV is SGD 200.0m at 4.10% and SGD 196.5m at 4.50%. Interpolating for the yield that prices the bond at SGD 198.3m gives a redemption yield of **4.29%** — the issuer's effective (pre-tax) cost of debt at the valuation date.
 
 **Step 3 — Credit spread (code-owned)**
 
-Credit spread = corporate yield 4.29% − government yield 3.44% = **84.6bp** (0.85%).
+Credit spread = corporate yield 4.29% − government yield 3.44% = **84.8bp** (0.85%).
 
-**Step 4 — Evaluation / advice to the board**
+**Step 4 — Derived spread vs the rated peer benchmark (code-owned)**
 
-Meridian Gateway's funding position reflects the structural premium the SGD investment-grade market assigns to BBB+ issuers relative to higher-rated peers: although the Company benefits from long-term throughput agreements that provide revenue visibility, its sub-single-A rating means the board cannot access the materially tighter spreads available to A-rated or better counterparts in the dated peer table. The planned SGD 350 million green-bond refinancing amplifies this exposure, because an incremental increase in leverage — or any throughput-volume deterioration before the deal is launched — could trigger a ratings review that would widen the spread band further, raising the annual interest burden on a materially larger principal. The board should also note that the SGS spot curve was captured as a dated snapshot and that MAS policy signalling and global rate dynamics could shift absolute SGD yields independently of any change in Meridian's credit quality, meaning the two drivers of refinancing cost — the risk-free curve and the credit spread — are both live variables. On balance, the Company's most actionable near-term priority is to protect the BBB+ rating through leverage discipline in the green-bond structure, since a one-notch downgrade to BBB would widen the spread band by a meaningful increment as evidenced in the dated peer table. Meridian's board should treat the interpolated spread as a planning floor, not a ceiling, given the point-in-time nature of the rating and the snapshot nature of the spread table.
+The derived spread of 84.8bp is **tighter (narrower) than** the issuer's BBB+ rated-band spread of 128bp — it sits inside even the A- band (the tightest rated band whose spread still exceeds it). On the dated table the market is therefore pricing the issuer's credit **tighter than its rating band implies**.
 
-*Reconciliation: PV SGD 197.4m@4.40% / SGD 195.6m@4.60% → yield 4.29% → spread 84.6bp. ✓*
+**Step 5 — Evaluation / advice to the board**
+
+The estimated spread tells the board something the rating alone does not: the secondary market is pricing Meridian's credit appreciably tighter than its BBB+ rating band, and closer to the single-A cohort, which admits two readings the board must weigh rather than choose between prematurely. The favourable reading is that strong throughput coverage and the long-term USD/SGD contract base have earned Meridian a funding cost inside its formal rating band — a genuine window to bring forward the planned green-bond refinancing and lock terms while the market's implied spread is benign. The cautious reading is that the spread table is a dated snapshot and may simply lag a market that has since repriced, in which case the tight secondary level overstates what a primary new issue would actually clear, especially once the additional leverage from the green bond is absorbed. On balance the board should treat the tight secondary spread as an opportunity to act on rather than a level to rely on: firm the green-bond timetable to exploit the pricing now, but stress-test the achievable new-issue spread against a reversion toward the rated band before committing size.
+
+*Reconciliation: PV SGD 200.0m@4.10% / SGD 196.5m@4.50% → yield 4.29% → spread 84.8bp. ✓*
 
 ### hint
 
@@ -301,8 +307,8 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
 ```json
 {
   "params": {
-    "r_hi": 4.6,
-    "r_lo": 4.4,
+    "r_hi": 4.5,
+    "r_lo": 4.1,
     "govt_yield": 3.44,
     "kind_marker": 0,
     "market_price": 198.35,
@@ -313,29 +319,29 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
   "components": [
     {
       "unit": "SGDm",
-      "label": "Bond PV at the low trial yield (4.40%)",
+      "label": "Bond PV at the low trial yield (4.10%)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "price_lo",
       "working_steps": [
-        "Σ cash flow × DF at 4.40%"
+        "Σ cash flow × DF at 4.10%"
       ],
-      "expected_value": 197.35865780378546
+      "expected_value": 200.00000000000006
     },
     {
       "unit": "SGDm",
-      "label": "Bond PV at the high trial yield (4.60%)",
+      "label": "Bond PV at the high trial yield (4.50%)",
       "tolerance": {
         "pct": 0.5,
         "kind": "relative"
       },
       "component_id": "price_hi",
       "working_steps": [
-        "Σ cash flow × DF at 4.60%"
+        "Σ cash flow × DF at 4.50%"
       ],
-      "expected_value": 195.6222296885152
+      "expected_value": 196.48801860445664
     },
     {
       "unit": "%",
@@ -351,9 +357,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       ],
       "component_id": "corp_yield",
       "working_steps": [
-        "interpolate between 4.40% and 4.60% for the yield that prices the bond at 198.3"
+        "interpolate between 4.10% and 4.50% for the yield that prices the bond at 198.3"
       ],
-      "expected_value": 4.28581822794775
+      "expected_value": 4.287928102591188
     },
     {
       "unit": "bp",
@@ -370,7 +376,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates complete the 
       "working_steps": [
         "= corporate yield − government yield 3.44%, ×100 to basis points"
       ],
-      "expected_value": 84.58182279477504
+      "expected_value": 84.7928102591188
     }
   ]
 }
@@ -431,11 +437,11 @@ Capital-structure data (for WACC impact):
 | BBB (current) | 265bp | 11.40% | **14.05%** |
 | BBB- (downgraded) | 340bp | 11.40% | **14.80%** |
 
-The downgrade widens the spread by **75bp**, lifting the cost of debt from 14.05% to **14.80%**.
+The downgrade widens the spread by **75bp**, lifting the market cost of debt from 14.05% to **14.80%**.
 
-**Step 2 — Effect on the annual interest cost**
+**Step 2 — Effect on the cost of REFINANCING (not the existing coupon)**
 
-On COP 800000.0m of debt, the annual interest cost rises from COP 112400.0m to COP 118400.0m — an increase of **COP 6000.0m a year**.
+The existing bond's coupon is **fixed at 13.80%** (COP 110400.0m a year) and is **unchanged by the downgrade** — a fixed-rate liability is insulated from a rating move until it matures. What the downgrade changes is the cost of **new** debt: refinancing the COP 800000.0m principal at the current rating would cost COP 112400.0m a year, but after the downgrade **COP 118400.0m** — an increase of **COP 6000.0m a year on refinancing**.
 
 **Step 3 — Effect on WACC**
 
@@ -443,9 +449,9 @@ Feeding the higher after-tax cost of debt through the given capital-structure we
 
 **Step 4 — Evaluation / advice to the board**
 
-The one-notch downgrade to BBB− reflects Fitch's concern about the leverage trajectory created by the greenfield clinker expansion — a project the board has already committed to — meaning the rating pressure is structural rather than transient and is unlikely to reverse quickly. Cementos Andino's refinancing exposure is heightened precisely because Colombia's high-rate environment amplifies even a modest spread widening into a material absolute funding cost; the board should treat the dated spread table as a floor, not a ceiling, given that market conditions may have tightened since the snapshot was taken. Beyond the direct interest-cost effect, a BBB− rating sits one notch above speculative grade, so any further deterioration in leverage during the expansion would risk a BB+ classification that pushes the bond outside many domestic institutional mandates, severely constraining the investor base at refinancing. The board should also examine whether any existing facility documentation contains ratings-based step-up clauses or covenant triggers that could accelerate the cost impact before the bond even matures. Given the combination of a committed capital programme, a weakened credit standing, and a high base-rate environment, the board is advised to explore pre-funding or liability-management options rather than waiting passively for the bond's maturity date.
+The one-notch downgrade to BBB− reflects Fitch's concern about the leverage trajectory created by the greenfield clinker expansion — a project the board has already committed to — meaning the rating pressure is structural rather than transient and is unlikely to reverse quickly. Cementos Andino's refinancing exposure is heightened precisely because Colombia's high-rate environment amplifies even a modest spread widening into a material absolute funding cost; the board should treat the dated spread table as a floor, not a ceiling, given that market conditions may have tightened since the snapshot was taken. Beyond the refinancing-cost effect, a BBB− rating sits one notch above speculative grade, so any further deterioration in leverage during the expansion would risk a BB+ classification that pushes the bond outside many domestic institutional mandates, severely constraining the investor base at refinancing. The board should also examine whether any existing facility documentation contains ratings-based step-up clauses or covenant triggers that could accelerate the cost impact before the bond even matures. Given the combination of a committed capital programme, a weakened credit standing, and a high base-rate environment, the board is advised to explore pre-funding or liability-management options rather than waiting passively for the bond's maturity date.
 
-*Reconciliation: base Kd 14.05% → new Kd 14.80% (+75bp) → +COP 6000.0m annual interest → +0.27% WACC. ✓*
+*Reconciliation: base Kd 14.05% → new Kd 14.80% (+75bp) → +COP 6000.0m annual interest on refinancing → +0.27% WACC. ✓*
 
 ### hint
 
@@ -611,7 +617,7 @@ Fair value SEK 481.0m versus a quoted market price of SEK 489.5m is a difference
 
 **Step 3 — Evaluation / advice to the board**
 
-Handelsboden's board should treat the valuation gap not as an abstract pricing curiosity but as a direct signal about the market's perception of the group's creditworthiness relative to the spread table as dated. Because the distribution-centre programme is still drawing down capital, the market's implied spread may already be reflecting a degree of rating-outlook deterioration that the point-in-time BBB rating has not yet formalised — a risk the board must take seriously rather than dismiss as a temporary dislocation. From the issuer's perspective, the direction of the gap shapes the urgency of the refinancing decision: if fresh issuance were required today, the actual funding cost would track the market-implied spread rather than the spread table as dated, exposing the group to materially higher interest charges on any rollover. The board should also note that the Swedish government spot curve, as a single-day closing snapshot at the valuation date, could shift if the Riksbank adjusts its policy path, further altering the absolute level of any new coupon the group would need to offer. Handelsboden's treasury team is therefore advised to accelerate scenario planning around the timing of the next capital-markets transaction, locking in terms before peak leverage coincides with any external credit-market tightening.
+The board should read the valuation gap from the issuer's seat: the market is pricing the bond above its credit-curve fair value, which means the spread investors are actually accepting is tighter than the dated rating table implies — Handelsboden is, for now, funded inside its BBB band. That is a favourable signal, and the board's response should be to exploit it rather than admire it: with the distribution-centre programme still drawing down and leverage set to peak, the pricing window is unlikely to persist, so accelerating the next issuance to lock terms while the market prices the credit richly is the prudent move. The board should hold one caveat in view: the same gap could instead mean the dated spread table overstates today's spread environment, so the favourable read is against a benchmark that may itself be stale — the achievable new-issue level should be confirmed against live pricing before size is committed. Either way the direction of travel points to acting sooner: a rating-outlook revision as capex peaks would widen the applicable spread and close the window, turning today's rich secondary pricing into tomorrow's costlier primary. Handelsboden's treasury team is therefore advised to firm the refinancing timetable now, using the inside-the-curve pricing as the reason to move, not a reason to wait.
 
 *Reconciliation: fair value SEK 481.0m vs market SEK 489.5m = SEK -8.5m → over-valued. ✓*
 
