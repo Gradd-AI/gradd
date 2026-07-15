@@ -152,9 +152,10 @@ console.log('\n──── FIX 2 spread-vs-band ────');
   const raw: CreditInputs = { currency: 'SGD', bond: { face_value: 200, coupon_rate: 4.10, maturity: 5 }, market_price: 198.35, govt_yield: 3.44, r_lo: 4.10, r_hi: 4.50, rating: 'BBB+', spread_table: [{ rating: 'A', spread_bps: 80 }, { rating: 'A-', spread_bps: 100 }, { rating: 'BBB+', spread_bps: 128 }, { rating: 'BBB', spread_bps: 155 }] };
   const c: any = computeCredit(raw, 'spread_estimation');
   ok('FIX2: derived spread tighter than the BBB+ band (128bp)', c.tighter_than_band === true && c.band_spread_bps === 128);
-  ok('FIX2: sits inside the A- band (tightest wider band above ~85bp)', c.tightest_wider_band === 'A-');
-  const ans = buildCreditModelAnswer(raw, c, 'The market prices the port tighter than its rating band, a favourable window for the green-bond refinancing.', 'SGD', 'spread_estimation');
-  ok('FIX2: model answer states the code-owned band comparison', ans.includes('rated-band spread of 128bp') && /tighter \(narrower\) than/.test(ans));
+  ok('FIX2: brackets between A (lower) and A- (upper)', c.tightest_wider_band === 'A-' && c.bracket_lower_rating === 'A');
+  const ans = buildCreditModelAnswer({ ...raw, issuer_label: 'Meridian' }, c, 'The market prices the port tighter than its rating band, a favourable window for the green-bond refinancing.', 'SGD', 'spread_estimation');
+  ok('FIX2: band step uses reviewer wording (benchmark + between A and A- + materially inside)',
+    ans.includes('rated benchmark of 128bp') && ans.includes('sits between the A and A- points') && ans.includes('pricing Meridian') && ans.includes('materially inside its formal BBB+ rating level'));
 }
 
 // ── (11) FIX 4 — downgrade refinancing framing (fixed coupon insulated) ──

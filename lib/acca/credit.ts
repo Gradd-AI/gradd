@@ -86,6 +86,7 @@ export interface SpreadRow { rating: string; spread_bps: number; }
 
 export interface CreditInputs {
   currency?: string;
+  issuer_label?: string;            // optional short issuer name for the code-owned band prose ("Meridian")
   spread_table?: SpreadRow[];       // rating→spread (bps); the monotonicity gate reads this
   // kind 1 — downgrade_impact
   base_rating?: string;
@@ -132,7 +133,8 @@ export interface CreditComputed {
   band_spread_bps?: number;                  // the issuer's rated-band spread from the table
   band_rating?: string;                      // the issuer's rating
   tighter_than_band?: boolean;               // derived spread < rated-band spread (market prices it tighter)
-  tightest_wider_band?: string;              // best-rated band whose spread still exceeds the derived spread
+  tightest_wider_band?: string;              // best-rated band whose spread still exceeds the derived spread (upper bracket)
+  bracket_lower_rating?: string;             // worst-rated band whose spread is still below the derived spread (lower bracket)
   // kinds 3/4
   curve_rows?: CurveRow[];
   spread_used_bps?: number;
@@ -224,15 +226,17 @@ export function computeCredit(raw: CreditInputs, kind: CreditKind): CreditComput
     const spreadBp = (corpYield - govtY) * 100;
     // Code-owned comparison to the issuer's rated peer band (FIX 2): is the market pricing the
     // credit tighter or wider than its rating, and inside which band does the derived spread sit?
-    let bandSpreadBps: number | undefined, tighterThanBand: boolean | undefined, tightestWiderBand: string | undefined;
+    let bandSpreadBps: number | undefined, tighterThanBand: boolean | undefined, tightestWiderBand: string | undefined, bracketLowerRating: string | undefined;
     if (raw.spread_table && raw.rating) {
       bandSpreadBps = lookupSpread(raw.spread_table, raw.rating);
       tighterThanBand = spreadBp < bandSpreadBps;
-      const sorted = [...raw.spread_table].map((r) => ({ r, ord: ratingInfo(r.rating)?.ordinal ?? 999 })).sort((a, b) => a.ord - b.ord);
+      const sorted = [...raw.spread_table].map((r) => ({ r, ord: ratingInfo(r.rating)?.ordinal ?? 999 })).sort((a, b) => a.ord - b.ord); // best → worst
       const widerBands = sorted.filter((x) => x.r.spread_bps > spreadBp); // bands whose spread exceeds the derived spread
-      tightestWiderBand = widerBands.length ? widerBands[0].r.rating : undefined; // best-rated band the spread still sits inside
+      tightestWiderBand = widerBands.length ? widerBands[0].r.rating : undefined;   // best-rated band above the spread (upper bracket)
+      const tighterBands = sorted.filter((x) => x.r.spread_bps < spreadBp);         // bands whose spread is below the derived spread
+      bracketLowerRating = tighterBands.length ? tighterBands[tighterBands.length - 1].r.rating : undefined; // closest below (lower bracket)
     }
-    return { kind, currency, bond_rows: rows, price_lo: priceLo, price_hi: priceHi, r_lo: rLoP, r_hi: rHiP, corp_yield: corpYield, govt_yield: govtY, spread_bp: spreadBp, market_price: market, band_spread_bps: bandSpreadBps, band_rating: raw.rating, tighter_than_band: tighterThanBand, tightest_wider_band: tightestWiderBand };
+    return { kind, currency, bond_rows: rows, price_lo: priceLo, price_hi: priceHi, r_lo: rLoP, r_hi: rHiP, corp_yield: corpYield, govt_yield: govtY, spread_bp: spreadBp, market_price: market, band_spread_bps: bandSpreadBps, band_rating: raw.rating, tighter_than_band: tighterThanBand, tightest_wider_band: tightestWiderBand, bracket_lower_rating: bracketLowerRating };
   }
 
   // kinds 3 & 4 — term structure (spot curve + spread)
@@ -389,13 +393,18 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
       `Credit spread = corporate yield ${pct2(c.corp_yield!)} − government yield ${pct2(c.govt_yield!)} = **${c.spread_bp!.toFixed(1)}bp** (${pct2(c.spread_bp! / 100)}).`, '',
     );
     if (c.band_spread_bps !== undefined) {
-      const insideLine = c.tightest_wider_band && c.tightest_wider_band !== c.band_rating
-        ? ` — it sits inside even the ${c.tightest_wider_band} band (${c.band_spread_bps > c.spread_bp! ? '' : ''}the tightest rated band whose spread still exceeds it)`
-        : '';
-      lines.push(
-        `**Step ${S()} — Derived spread vs the rated peer benchmark (code-owned)**`, '',
-        `The derived spread of ${c.spread_bp!.toFixed(1)}bp is **${c.tighter_than_band ? 'tighter (narrower) than' : 'wider than'}** the issuer's ${c.band_rating} rated-band spread of ${c.band_spread_bps}bp${insideLine}. On the dated table the market is therefore pricing the issuer's credit **${c.tighter_than_band ? 'tighter than its rating band implies' : 'wider than its rating band implies'}**.`, '',
-      );
+      const issuer = raw.issuer_label ?? 'the issuer';
+      lines.push(`**Step ${S()} — Derived spread vs the rated peer benchmark (code-owned)**`, '');
+      if (c.tighter_than_band) {
+        const between = c.bracket_lower_rating && c.tightest_wider_band
+          ? `and sits between the ${c.bracket_lower_rating} and ${c.tightest_wider_band} points in the dated spread table`
+          : c.tightest_wider_band
+          ? `and sits inside the ${c.tightest_wider_band} band in the dated spread table`
+          : 'in the dated spread table';
+        lines.push(`The derived spread of ${c.spread_bp!.toFixed(1)}bp is **tighter** than the ${c.band_rating} rated benchmark of ${c.band_spread_bps}bp ${between}. On this snapshot, the market is pricing ${issuer} **materially inside its formal ${c.band_rating} rating level**.`, '');
+      } else {
+        lines.push(`The derived spread of ${c.spread_bp!.toFixed(1)}bp is **wider** than the ${c.band_rating} rated benchmark of ${c.band_spread_bps}bp — on this snapshot the market is pricing ${issuer}'s credit **wider than its formal ${c.band_rating} rating level implies**.`, '');
+      }
     }
   } else if (kind === 'kd_term_structure') {
     lines.push(
