@@ -25,6 +25,8 @@ Doctrine: code owns EVERY figure (d1, d2, N(d1), N(d2), the call/put value, the 
 
 ---
 
+---
+
 ## Drill 1 — financial_product_valuation (B2a) — FIRST-OF-FAMILY  ·  `b66fbf05-7727-4e4d-84f2-ebb630acd4d6`
 - LO B2a · mode quantitative · command_verb "apply and advise" · L3 · marks_guide 15
 
@@ -81,7 +83,7 @@ The BSOP model is to be applied in European-call form. The computed fair value r
 
 **Option valuation — Black-Scholes (BSOP)**
 
-**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are read from the normal-distribution tables. The underlying is traded, so the model applies directly.
+**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are computed exactly here, and a normal-table read at the 2-dp rounding of d1/d2 scores within the marking tolerance. The underlying is traded, so the model applies directly.
 
 **Step 1 — The five drivers (identification)**
 
@@ -97,14 +99,13 @@ The BSOP model is to be applied in European-call form. The computed fair value r
 
 d1 = [ln(Pₐ/Pₑ) + (r + s²/2)·t] / (s·√t) = **0.4216**; d2 = d1 − s·√t = **-0.1154**.
 
-From the normal tables: **N(d1) = 0.6633**, **N(d2) = 0.4541** (read at the 2-dp rounding of d1/d2).
+**N(d1) = 0.6633**, **N(d2) = 0.4541** (computed exactly; a normal-table read at d1 = 0.42 / d2 = -0.12 gives 0.6628 / 0.4522 — either scores in full).
 
 **Step 3 — Option value**
 
 c = Pₐ·N(d1) − Pₑ·e^(−rt)·N(d2) = CHF 209.3m×0.6633 − CHF 192.7m×0.4541 = **CHF 51.3m**.
 
 **Step 4 — Interpretation, assumptions and limitations**
-
 
 The five drivers collectively paint a picture of an option that is modestly in-the-money at the grant date, with a meaningful time premium arising from the three-year vesting cliff — the combination of moderate volatility and a multi-year horizon produces a non-trivial optionality value that the Compensation Committee must recognise in full as an IFRS 2 charge spread over the vesting period. The exercise price is set only slightly below the snapshot share price, which keeps the grant broadly aligned with shareholders' interests by requiring genuine appreciation before executives profit, yet still awards meaningful value on day one.
 
@@ -115,7 +116,6 @@ The loudest limitation is volatility estimation: the model relies on a single 36
 A secondary limitation is the European-exercise assumption: IFRS 2 permits this simplification, but if the Compensation Committee later amends plan rules to allow early exercise (converting the option into an American-style instrument), the BSOP model would understate fair value, and a lattice or Monte Carlo approach should be substituted.
 
 On balance, the Compensation Committee should proceed with the grant at these parameters, recognising the computed aggregate fair value as the IFRS 2 charge; however, it is advised to commission an implied-volatility cross-check using traded SIX-listed options on Helveta Medtech shares, if available, to validate the 31% input before the award is formally approved.
-
 
 *Reconciliation: d1 0.4216 / d2 -0.1154 → N 0.6633/0.4541 → value CHF 51.3m. ✓*
 
@@ -359,7 +359,7 @@ BASE-CASE NPV (without the option to delay):   NOK −260 million
 
 **Option valuation — Black-Scholes (BSOP)**
 
-**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are read from the normal-distribution tables. This is an **option to delay** (a call option on the deferred investment); the marked judgement is mapping the scenario to the five drivers.
+**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are computed exactly here, and a normal-table read at the 2-dp rounding of d1/d2 scores within the marking tolerance. This is an **option to delay** (a call option on the deferred investment); the marked judgement is mapping the scenario to the five drivers.
 
 **Step 1 — The five drivers (identification + mapping)**
 
@@ -375,7 +375,7 @@ BASE-CASE NPV (without the option to delay):   NOK −260 million
 
 d1 = [ln(Pₐ/Pₑ) + (r + s²/2)·t] / (s·√t) = **0.4347**; d2 = d1 − s·√t = **-0.2453**.
 
-From the normal tables: **N(d1) = 0.6681**, **N(d2) = 0.4031** (read at the 2-dp rounding of d1/d2).
+**N(d1) = 0.6681**, **N(d2) = 0.4031** (computed exactly; a normal-table read at d1 = 0.43 / d2 = -0.25 gives 0.6664 / 0.4013 — either scores in full).
 
 **Step 3 — Option value**
 
@@ -619,7 +619,7 @@ BASE-CASE NPV (pilot phase, without the expansion option): DKK −28 million
 
 **Option valuation — Black-Scholes (BSOP)**
 
-**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are read from the normal-distribution tables. This is an **option to expand** (a call option on the follow-on investment); the marked judgement is mapping the scenario to the five drivers.
+**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are computed exactly here, and a normal-table read at the 2-dp rounding of d1/d2 scores within the marking tolerance. This is an **option to expand** (a call option on the follow-on investment); the marked judgement is mapping the scenario to the five drivers.
 
 **Step 1 — The five drivers (identification + mapping)**
 
@@ -635,7 +635,7 @@ BASE-CASE NPV (pilot phase, without the expansion option): DKK −28 million
 
 d1 = [ln(Pₐ/Pₑ) + (r + s²/2)·t] / (s·√t) = **0.2982**; d2 = d1 − s·√t = **-0.3600**.
 
-From the normal tables: **N(d1) = 0.6172**, **N(d2) = 0.3594** (read at the 2-dp rounding of d1/d2).
+**N(d1) = 0.6172**, **N(d2) = 0.3594** (computed exactly; a normal-table read at d1 = 0.30 / d2 = -0.36 gives 0.6179 / 0.3594 — either scores in full).
 
 **Step 3 — Option value**
 
@@ -909,7 +909,7 @@ BASE-CASE NPV (without the withdrawal option): −HKD 38 million.
 
 **Option valuation — Black-Scholes (BSOP)**
 
-**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are read from the normal-distribution tables. This is an **option to withdraw / abandon** (a put option on the recoverable value; a redeploy/switch option sits in the same put family); the marked judgement is mapping the scenario to the five drivers.
+**Assumptions:** the option is valued with the Black-Scholes model on the five drivers below. BSOP prices a EUROPEAN option; N(d1) and N(d2) are computed exactly here, and a normal-table read at the 2-dp rounding of d1/d2 scores within the marking tolerance. This is an **option to withdraw / abandon** (a put option on the recoverable value; a redeploy/switch option sits in the same put family); the marked judgement is mapping the scenario to the five drivers.
 
 **Step 1 — The five drivers (identification + mapping)**
 
@@ -925,7 +925,7 @@ BASE-CASE NPV (without the withdrawal option): −HKD 38 million.
 
 d1 = [ln(Pₐ/Pₑ) + (r + s²/2)·t] / (s·√t) = **0.2772**; d2 = d1 − s·√t = **-0.2078**.
 
-From the normal tables: **N(d1) = 0.6092**, **N(d2) = 0.4177** (read at the 2-dp rounding of d1/d2).
+**N(d1) = 0.6092**, **N(d2) = 0.4177** (computed exactly; a normal-table read at d1 = 0.28 / d2 = -0.21 gives 0.6103 / 0.4168 — either scores in full).
 
 **Step 3 — Option value**
 
