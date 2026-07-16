@@ -591,8 +591,14 @@ export function buildCompareSchema(raw: CompareInputs, c: CompareComputed, curre
     { component_id: 'equity_dcf', label: 'Equity value (DCF method)', expected_value: c.equity_dcf, unit: moneyUnit, tolerance: rel(0.5),
       depends_on: ['firm_value_dcf'], recompute: (d) => d.firm_value_dcf - D,
       working_steps: [`Equity (DCF) = EV − debt = ${fmt1(c.firm_value_dcf)} − ${fmt1(D)}`] },
-    { component_id: 'equity_multiple', label: `Equity value (relative method: ${c.method_label})`, expected_value: c.equity_multiple, unit: moneyUnit, tolerance: rel(0.5),
-      working_steps: [`Equity (relative) = ${c.method_label} = ${fmt1(c.equity_multiple)}`] },
+    { component_id: 'equity_multiple',
+      // FIX 3 (round-1, 2026-07-16): an EV/EBITDA multiple is an ENTERPRISE figure — the working must
+      // show EV first, THEN strip debt (a single "= equity" line falsely implied mult×EBITDA = equity).
+      label: c.enterprise_multiple !== null ? 'Equity value (EV/EBITDA, less debt)' : `Equity value (${c.method_label})`,
+      expected_value: c.equity_multiple, unit: moneyUnit, tolerance: rel(0.5),
+      working_steps: c.enterprise_multiple !== null
+        ? [`EV = ${c.method_label} = ${fmt1(c.enterprise_multiple)}`, `Equity = EV − debt ${fmt1(D)} = ${fmt1(c.equity_multiple)}`]
+        : [`Equity = ${c.method_label} = ${fmt1(c.equity_multiple)}`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { firm_value_dcf: 'firm_value_perpetuity_growth', equity_dcf: 'equity_value_strip_debt' };
   const params = { wacc, growth_rate: g, debt_value: D, offer_price: c.offer_price, equity_low: c.equity_low, equity_high: c.equity_high };

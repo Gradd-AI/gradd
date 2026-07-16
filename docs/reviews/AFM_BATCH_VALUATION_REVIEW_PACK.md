@@ -1,5 +1,9 @@
 # AFM BATCH #9 — VALUATION FAMILY — BLIND REVIEW PACK
 
+**ROUND-1 ADJUDICATION CLOSED (2026-07-16) — all 3 findings ACCEPTED (prose/metadata, zero figure impact, no confirm round): FIX 1 K1 advice reframed off "acquisition premium" to a bargain-scepticism reconciliation; FIX 2 K2 retagged B4b→B4c; FIX 3 K4 EV/EBITDA schema working split into EV-then-strip-debt (false equality removed). Figures unchanged throughout.**
+
+**Coverage map:** **B4a** = K1 fcff_enterprise (`0dc970a8`) + K4 valuation_compare (`9cb7d3f3`) · **B4b** = K3 dividend_capacity (`ef746ff0`) · **B4c** = K2 fcfe_equity (`cdef61d5`) + the rehab fcff_enterprise (`0a331272`).
+
 **Calculator #9 `lib/acca/valuation.ts` (was `fcff.ts`, git mv). 5 drills, all `status='candidate'`, `published=false`, all 11 gates green.** Family: FCFF firm valuation / FCFE equity valuation / dividend capacity / two-method valuation compare. Code owns EVERY figure AND every figure-vs-figure verdict (offer test, sustainability, range/position); the model authors PROSE only and never states a number or an inequality.
 
 **Review method (blind, hostile):** you have the AFM syllabus only; no project context. Recompute drill 1 of the family (K1) from scratch with full hostility; spot-check the siblings. Flag anything genuinely wrong — but the CLOSED RULINGS below are settled and MUST NOT be re-raised.
@@ -80,7 +84,7 @@ The model's equity value of SAR 1851.5m is roughly 3.0× the SAR 620.0m estimate
 
 **Step 6 — Advice to the board**
 
-The critical discipline in this valuation is matching the cash flow to the correct discount rate: FCFF is a pre-financing flow belonging to all providers of capital, so it must be discounted at WACC — the blended, market-value-weighted cost of both equity and debt — and the resulting figure is enterprise (firm) value, not equity value; debt must then be stripped away to isolate the equity value that is comparable to the vendor's offer. The CAPM derivation uses NMG's own geared beta, which already reflects the financial risk of the company's actual capital structure, so no re-gearing adjustment is needed here. The board should treat the 3.5% perpetuity growth assumption with scepticism: NMG's revenue is heavily concentrated in two corporate insurance contracts, meaning a contract loss or renegotiation could structurally impair long-run cash flows and make the assumed growth rate unsustainable, which would materially compress firm value. Similarly, the board should commission an independent technical review of whether the SAR 90 million capital expenditure figure represents steady-state reinvestment or the tail end of a bed-expansion cycle — overstating sustainable capex depresses FCFF and understates value, while understating it inflates value, so the direction of any bias must be confirmed before proceeding. Finally, any acquisition premium implied by the vendor's offer relative to the model's equity value should be evaluated against the strategic rationale of gaining a licensed, multi-facility hospital platform in Riyadh, where regulatory barriers to entry are high — but that strategic premium should be bounded by the board's own required return, not conceded simply because the sector is attractive.
+The critical discipline in this valuation is matching the cash flow to the correct discount rate: FCFF is a pre-financing flow belonging to all providers of capital, so it must be discounted at WACC — the blended, market-value-weighted cost of both equity and debt — and the resulting figure is enterprise (firm) value, not equity value; debt must then be stripped away to isolate the equity value that is comparable to the vendor's offer. The CAPM derivation uses NMG's own geared beta, which already reflects the financial risk of the company's actual capital structure, so no re-gearing adjustment is needed here. The board should treat the 3.5% perpetuity growth assumption with scepticism: NMG's revenue is heavily concentrated in two corporate insurance contracts, meaning a contract loss or renegotiation could structurally impair long-run cash flows and make the assumed growth rate unsustainable, which would materially compress firm value. Similarly, the board should commission an independent technical review of whether the SAR 90 million capital expenditure figure represents steady-state reinvestment or the tail end of a bed-expansion cycle — overstating sustainable capex depresses FCFF and understates value, while understating it inflates value, so the direction of any bias must be confirmed before proceeding. Finally, the apparent bargain implied by the vendor's offer sitting materially below the model equity value should not be accepted at face value: before treating the price as attractive, the board should reconcile the valuation gap against the perpetuity growth assumption, capex sustainability, client concentration, and the reliability of the equity estimate used in the WACC weighting.
 
 *Reconciliation: WACC 8.61% → firm SAR 2331.5m − debt SAR 480.0m = equity SAR 1851.5m ✓*
 
@@ -208,7 +212,7 @@ The classic misconception here is VALUATION PLUMBING: candidates either deduct i
 ---
 
 ## K2 · fcfe_equity (no-growth, exact FCFF↔FCFE reconciliation)
-**Pair:** Thailand / THB — branded household & personal-care FMCG  ·  **LO:** B4b  ·  **id:** `cdef61d5-0a93-47b2-8aee-724a9c276bf1`
+**Pair:** Thailand / THB — branded household & personal-care FMCG  ·  **LO:** B4c  ·  **id:** `cdef61d5-0a93-47b2-8aee-724a9c276bf1`
 
 ### Question
 Forecast Siam Bloom Consumer Products PCL's free cash flow to equity (FCFE) and, using the FCFE-based perpetuity, advise the board of Thanakit Capital on whether the vendor's indicative offer price represents fair value for the equity.
@@ -582,14 +586,15 @@ The classic misconception here is VALUATION PLUMBING: candidates either discount
   },
   {
    "unit": "PHPm",
-   "label": "Equity value (relative method: 9.2× × EBITDA 2460.0)",
+   "label": "Equity value (EV/EBITDA, less debt)",
    "tolerance": {
     "pct": 0.5,
     "kind": "relative"
    },
    "component_id": "equity_multiple",
    "working_steps": [
-    "Equity (relative) = 9.2× × EBITDA 2460.0 = 20532.0"
+    "EV = 9.2× × EBITDA 2460.0 = 22632.0",
+    "Equity = EV − debt 2100.0 = 20532.0"
    ],
    "expected_value": 20532
   }

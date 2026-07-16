@@ -105,6 +105,12 @@ ok('K4 EV/EBITDA is an ENTERPRISE multiple (strip debt): equity = 8×245 − 500
 const k4bAns = buildCompareModelAnswer(k4bIn, k4b, 'Prose.', CUR);
 ok('K4 FIX2: EV/EBITDA line reads cleanly (× × EBITDA, EV then strip debt), no "less debt =" garble',
   k4bAns.includes('× × EBITDA') && k4bAns.includes(fmt1(k4b.enterprise_multiple!)) && k4bAns.includes('− debt') && !k4bAns.includes('less debt ='));
+// FIX 3: the EV/EBITDA equity_multiple schema step is TWO-STEP (EV, then strip debt) — no false equality.
+const k4bEq = buildCompareSchema(k4bIn, k4b, CUR).schema.components.find((c) => c.component_id === 'equity_multiple')!;
+ok('K4 FIX3: equity_multiple working shows EV then strip debt (no false equality)',
+  (k4bEq.working_steps?.length ?? 0) === 2 &&
+  k4bEq.working_steps![0].includes(fmt1(k4b.enterprise_multiple!)) &&
+  k4bEq.working_steps![1].includes('EV − debt') && k4bEq.working_steps![1].includes(fmt1(k4b.equity_multiple)));
 
 // ─────────────────────────────── Bridge gate NEGATIVE tests (must FAIL on corruption) ───────────────────────────────
 ok('bridge FAILS on a broken FCFF strip (firm−debt ≠ equity)',
