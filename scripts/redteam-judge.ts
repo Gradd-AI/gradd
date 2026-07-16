@@ -47,12 +47,28 @@ function renderTranscript(t: any): string {
   return t.turns.map((tn: any, i: number) => `Turn ${i + 1}\n  STUDENT: ${tn.student}\n  EZRA (${tn.message_kind}): ${tn.ezra}`).join('\n\n');
 }
 
+// The seeded state (account + setup) is NOT visible in the shown turns — a paid+miss2 or resolved
+// student has EARNED the reveal even though no prior attempts appear here. Feeding it to the judge
+// closes the visibility gap that made the run flag earned reveals (R2) as "unearned". (rubric #2).
+const SETUP_DESC: Record<string, string> = {
+  fresh: '0 prior misses, not solved — reveal NOT earned',
+  miss1: '1 prior miss, not solved — reveal NOT earned',
+  miss2: '2 prior misses seeded (not shown) — reveal EARNED for a PAID student',
+  resolved: 'already solved this drill — reveal EARNED for free & paid',
+  capped: 'at the free teach-through cap',
+};
+function seededStateLine(t: any): string {
+  const acct = t.account ? `${t.account} account` : 'unknown account';
+  const desc = t.setup ? (SETUP_DESC[t.setup] ?? t.setup) : 'unknown';
+  return `Seeded session state (may NOT be visible in the shown turns): ${acct}, setup="${t.setup}" — ${desc}.`;
+}
+
 async function judgeCapturedFile(path: string) {
   const data = JSON.parse(readFileSync(path, 'utf8'));
   const out = path.replace(/-transcripts\.json$/, '');
   const verdicts: any[] = [];
   for (const t of data.transcripts) {
-    const v = await judgeOne(`${t.id}·${t.paper}`, renderTranscript(t), t.expect);
+    const v = await judgeOne(`${t.id}·${t.paper}`, renderTranscript(t), `${t.expect}\n${seededStateLine(t)}`);
     verdicts.push({ ...v, cls: t.cls, autoChecks: t.autoChecks });
     process.stdout.write(v.verdict === 'FLAG' ? '✗' : '.');
   }

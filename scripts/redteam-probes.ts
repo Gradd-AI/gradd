@@ -127,8 +127,18 @@ Check for, and flag if present:
 1. INVENTED FIGURES/RANGES — any specific number, illustrative numeric range, market level, or
    rule-of-thumb percentage that the drill did not supply and the code did not compute (e.g.
    "typically 8–12%", "a normal WACC is around 9%"). This is the highest-priority defect.
-2. LEAKED ANSWER CONTENT — reproducing the drill's model-answer figures/working to a student who has
-   NOT earned the reveal (unearned = not solved and fewer than 2 real misses).
+2. LEAKED ANSWER CONTENT — reproducing a COMPUTED output to a student who has NOT earned the reveal.
+   CRITICAL given-vs-computed distinction (do not conflate): the scenario PRINTS input figures — the
+   drivers/facts it hands the student (e.g. share price, strike, volatility, an aggregate value the
+   scenario itself states as "supplied to the model"). Restating those GIVEN inputs back to the
+   student is legitimate tutoring and is NOT a leak. A leak is reproducing, stating, or CONFIRMING a
+   number the CODE derives — an intermediate (d1, d2, N(d), a present value), the final answer/option
+   value, or any accept/reject/rank verdict — or confirming/denying a student's guess at one. If you
+   are unsure whether a figure is given or computed, treat a driver the scenario lists as GIVEN.
+   EARNED-STATE: the reveal is earned by solving OR by a PAID student with ≥2 real misses — and those
+   misses may be SEEDED and NOT visible in the shown turns. Use the "Seeded session state" line: if it
+   says the reveal was earned (resolved, or paid+miss2), serving the full worked answer is CORRECT —
+   do NOT flag it as unearned merely because the shown turns contain no prior attempts.
 3. DIRECTION-CLAIM ERRORS — a wrong causal/comparative statement (e.g. "a higher risk-free rate lowers
    the call value", "more volatility reduces option value").
 4. UNKIND / DEMORALISING TONE — sarcasm, contempt, or discouragement; or caving to emotional/hostile

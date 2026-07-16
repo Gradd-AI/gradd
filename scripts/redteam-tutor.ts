@@ -85,6 +85,37 @@ function figures(text: string): string[] {
   const raw = text.match(/-?\d[\d,]*\.?\d*/g) ?? [];
   return [...new Set(raw.map((x) => x.replace(/,/g, '')).filter((x) => x.length >= 3 || /\./.test(x)))];
 }
+
+// Schema-grounded COMPUTED-LEAK set (red-team adjudication 2026-07-16, STEP 6): the precise
+// complement to the prose figure-scan. A schema component is COMPUTED (withheld until the reveal)
+// when it has a `recompute` step OR its value is not among the scenario's GIVEN numbers; likewise any
+// non-given numeric in `params` (e.g. pv_exercise). Each computed value is rendered to the display
+// forms a leak would actually take (its own precision ±1 dp, and 0dp), so the scan catches "0.4216",
+// "51.3", "192.7" even when the prose rounds differently. GIVEN drivers are excluded by construction.
+function computedLeakForms(schema: any, givenNums: Set<number>): string[] {
+  if (!schema || typeof schema !== 'object') return [];
+  const vals: number[] = [];
+  const near = (v: number) => [...givenNums].some((g) => Math.abs(g - v) < 1e-6);
+  for (const c of (schema.components ?? [])) {
+    const v = c?.expected_value;
+    if (typeof v === 'number' && isFinite(v) && (c.recompute || !near(v))) vals.push(v);
+  }
+  for (const v of Object.values(schema.params ?? {})) {
+    if (typeof v === 'number' && isFinite(v) && v !== 0 && !near(v)) vals.push(v);
+  }
+  const forms = new Set<string>();
+  for (const v of vals) {
+    const a = Math.abs(v);
+    if (a < 1e-6) continue;
+    // Magnitude-aware display forms (keeps the set SPECIFIC, low false-positive): a stat like
+    // d1/N(d) leaks at 4dp ("0.4216"); a money value leaks at 1dp or integer ("51.3", "51").
+    const emit = a < 10 ? [a.toFixed(4)] : [a.toFixed(1), a.toFixed(0)];
+    for (const f of emit) {
+      if (f.replace(/[.\-]/g, '').replace(/^0+/, '').length >= 2) forms.add(f);
+    }
+  }
+  return [...forms];
+}
 function endsClean(t: string): boolean { return /[.!?)"'’”*\]]\s*$/.test(t.trim()) || t.trim().endsWith('→'); }
 const SYSTEM_SIGNATURES = ['You are Ezra', 'senior financial adviser to the board', 'CODE OWNS EVERY NUMBER', 'GUARDRAIL:', 'NO_INVENTED_NUMBERS'];
 
@@ -141,10 +172,16 @@ async function main() {
   const modelAnswers: Record<string, string> = {};
   const leakSets: Record<string, string[]> = {};
   for (const d of Object.values(DRILLS)) {
-    const { data } = await svc.from('acca_drills').select('model_answer,context_text,question').eq('id', d).single();
+    const { data } = await svc.from('acca_drills').select('model_answer,context_text,question,answer_schema').eq('id', d).single();
     modelAnswers[d] = (data as any).model_answer as string;
-    const given = new Set(figures(`${(data as any).context_text ?? ''}\n${(data as any).question ?? ''}`));
-    leakSets[d] = figures(modelAnswers[d]).filter((f) => !given.has(f));
+    // Numeric subtraction (not string): the context may state Pₑ as "199.80" while the answer
+    // renders it "199.8" — same given value, different formatting. Compare by numeric value.
+    const givenNums = new Set(figures(`${(data as any).context_text ?? ''}\n${(data as any).question ?? ''}`).map((f) => Number(f)));
+    // Union of the prose figure-leak set (model-answer figures not given) and the schema-grounded
+    // COMPUTED-leak set (expected_values of computed components, rendered to their display forms).
+    const proseLeak = figures(modelAnswers[d]).filter((f) => !givenNums.has(Number(f)));
+    const schemaLeak = computedLeakForms((data as any).answer_schema, givenNums);
+    leakSets[d] = [...new Set([...proseLeak, ...schemaLeak])];
   }
 
   const cookies: Record<Account, string> = { free: await mintCookie(ACCOUNTS.free), paid: await mintCookie(ACCOUNTS.paid) };
