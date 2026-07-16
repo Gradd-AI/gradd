@@ -192,7 +192,7 @@ const FCFF_LOS = new Set<LoCode>(['B4b', 'B4c']);
 // Valuation FAMILY (batch #9): FCFF-enterprise / FCFE-equity / dividend-capacity / two-method compare
 // + the B4c rehab. Keyed off spec.valuation_kind (set by --valuation-batch). B4a = equity valuation,
 // B4b = which-flows-which-rate, A6 = dividend capacity/policy, B4c = the parked-drill rehab.
-const VALUATION_LOS = new Set<LoCode>(['B4a', 'B4b', 'B4c', 'A6']);
+const VALUATION_LOS = new Set<LoCode>(['B4a', 'B4b', 'B4c']);
 const NPV_LOS  = new Set<LoCode>(['B1a']);
 // APV (B3j quantitative / B3k mixed). B3k is 'mixed' in SYLLABUS_MAP, so the APV route is
 // keyed off spec.apv_kind (set by --apv-batch), NOT off mode — the compare kind carries
@@ -1641,7 +1641,9 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
   // "present" if any of those roundings is a substring (CAPM betas need >1 dp).
   const normalized = drill.model_answer.replace(/,/g, '');
   // 1/2/3 dp for money/rates/betas; 4 dp for BSOP N(d)/d1/d2 which display at the table convention.
-  const present = (n: number) => [1, 2, 3, 4].some((d) => normalized.includes(n.toFixed(d)));
+  // A value is present at 1/2/3/4 dp; a SIGNED difference (equity − offer) is commonly displayed as
+  // its magnitude next to a direction word ("above/below by X"), so its absolute value counts too.
+  const present = (n: number) => [1, 2, 3, 4].some((d) => normalized.includes(n.toFixed(d)) || normalized.includes(Math.abs(n).toFixed(d)));
   const missing: string[] = [];
   for (const c of schema.components) {
     if (!present(c.expected_value)) missing.push(`${c.component_id}=${fmt1(c.expected_value)}`);
@@ -1763,7 +1765,7 @@ async function main() {
   const bsopBatch = flag('--bsop-batch');
   const valuationBatch = flag('--valuation-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/A6 valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)';
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)';
   const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
@@ -1836,7 +1838,7 @@ async function main() {
     const plan: { kind: ValuationKind; lo: LoCode; region: string; sector: string }[] = [
       { kind: 'fcff_enterprise',   lo: 'B4a', region: 'Saudi Arabia',    sector: 'private hospital / healthcare-services group (SAR — acquisition target; CAPM→WACC derived)' },
       { kind: 'fcfe_equity',       lo: 'B4b', region: 'Thailand',        sector: 'branded household & personal-care FMCG manufacturer (THB — FCFE @ Ke, no growth)' },
-      { kind: 'dividend_capacity', lo: 'A6',  region: 'New Zealand',     sector: 'regulated water & wastewater utility (NZD — mature, cash-generative; dividend policy)' },
+      { kind: 'dividend_capacity', lo: 'B4b', region: 'New Zealand',     sector: 'regulated water & wastewater utility (NZD — mature, cash-generative; dividend capacity, DOMESTIC — A6 multinational/transfer-pricing dividend policy naturally rides batch #10)' },
       { kind: 'valuation_compare', lo: 'B4a', region: 'Philippines',     sector: 'IT / business-process-outsourcing services group (PHP — two-method bid range)' },
       { kind: 'fcff_enterprise',   lo: 'B4c', region: 'Australia',       sector: 'diversified industrial group (AUD — the parked-B4c rehab, regenerated through the hardened calculator)' },
     ];
