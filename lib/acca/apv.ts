@@ -31,7 +31,7 @@
 // effects are code-owned ENRICHMENT (like NPV's PI/sensitivity), not graded steps.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fmt1, money, normaliseCurrency, type SerializedSchema } from './fcff';
+import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 import { computeNpv, type NpvInputs, type NpvComputed } from './npv';
 
 export { normaliseCurrency };

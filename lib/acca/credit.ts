@@ -29,7 +29,7 @@
 //    values rel ±0.5%; the fair-value-vs-market verdict is strict, code-owned, no tolerance.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fmt1, money, normaliseCurrency, type SerializedSchema } from './fcff';
+import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
 export { normaliseCurrency };
 

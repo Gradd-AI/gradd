@@ -10,7 +10,7 @@ import {
   ratingInfo, checkSpreadMonotonicity, SP_SCALE, MOODYS_SCALE,
   type CreditInputs, type CreditKind,
 } from '../lib/acca/credit';
-import { fmt1 } from '../lib/acca/fcff';
+import { fmt1 } from '../lib/acca/valuation';
 import type { Component } from '../lib/acca/numeric-verifier';
 import { lintRatingSymbols, lintCompleteness } from '../lib/acca/validate-afm-prose';
 import { validateSpreadTable } from '../lib/acca/validate-schema';

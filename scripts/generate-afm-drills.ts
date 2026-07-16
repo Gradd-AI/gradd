@@ -65,7 +65,7 @@ import {
   type FcffInputs,
   type FcffComputed,
   type SerializedSchema,
-} from '../lib/acca/fcff';
+} from '../lib/acca/valuation';
 import {
   computeNpv,
   buildNpvSchema,

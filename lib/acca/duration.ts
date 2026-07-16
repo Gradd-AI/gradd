@@ -16,7 +16,7 @@
 // uses abs ±0.1 pp.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fmt1, money, normaliseCurrency, type SerializedSchema } from './fcff';
+import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
 export { normaliseCurrency };
 

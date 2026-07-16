@@ -12,7 +12,7 @@
 //          promoted to a graded component only when a drill has multi-period outflows.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fmt1, money, normaliseCurrency, type SerializedSchema } from './fcff';
+import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 import { computeNpv, type NpvInputs, type NpvComputed } from './npv';
 
 export { normaliseCurrency };

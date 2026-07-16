@@ -19,7 +19,7 @@
 // put-call parity (redeploy = the switch-texture within the put family, not a calculated kind).
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fmt1, money, normaliseCurrency, type SerializedSchema } from './fcff';
+import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
 export { normaliseCurrency };
 

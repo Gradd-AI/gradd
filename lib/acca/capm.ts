@@ -17,7 +17,7 @@
 // is a structural no-op; the issue-cost convention has no analogue).
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import type { SerializedSchema } from './fcff';
+import type { SerializedSchema } from './valuation';
 
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const BETA_TOL = () => absTol(0.02);   // unitless beta

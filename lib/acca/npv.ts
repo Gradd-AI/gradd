@@ -12,7 +12,7 @@
 // they are injected into the model answer but are NOT schema components.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fmt1, money, normaliseCurrency, type SerializedSchema } from './fcff';
+import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
 export { normaliseCurrency };
 

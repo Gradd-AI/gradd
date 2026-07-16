@@ -1,5 +1,6 @@
-// lib/acca/fcff.ts
-// AFM FCFF firm-valuation calculator. Pure, deterministic, no model/DB/side-effects.
+// lib/acca/valuation.ts  (was fcff.ts — renamed batch #9, 2026-07-16, git mv history preserved)
+// AFM business-valuation family: FCFF (firm), FCFE (equity), dividend capacity, and a
+// two-method valuation compare. Pure, deterministic, no model/DB/side-effects.
 // Code owns EVERY figure a drill states — including comparisons between computed figures
 // and break-even sensitivities — so the model never asserts a number, an inequality, or a
 // break-even in prose (docs/AFM_NUMERIC_VERIFICATION_DESIGN.md §1; adversarial pattern
