@@ -136,6 +136,39 @@ export function buildIdentityResponse(paper: string): string {
     `on what's under my own hood. Back to it: where did you get to on the question, or where are you stuck?`;
 }
 
+// ── Confirm-a-number STRUCTURAL gate (X5 structural ruling 2026-07-16) ────────
+// "Structural beats instructed": prompt clauses could not stop haiku from prepending a
+// magnitude-validation ("that's the right magnitude territory") to a confirm-a-number refusal. So the
+// refusal is now DETERMINISTIC — a frozen, in-character template served WITHOUT a model call, on the
+// identity-gate precedent. The precedent list of architected-absence (never instructed): the verbatim
+// authored reveal (assembleAfmReveal), the finishClean/trimToLastSentence truncation guard, the
+// identity gate (buildIdentityResponse), and now this confirm-number gate.
+// FROZEN TEXT — tuned to house voice once; never model-authored (a model call may follow it for a
+// Socratic prompt if a leg ever wants one, but this sentence stays fixed).
+export const CONFIRM_NUMBER_REFUSAL =
+  "I won't confirm or deny a destination figure — that's not how the marks work, and it wouldn't help " +
+  "you in the hall. Show me your working chain and I'll mark the method step by step.";
+
+// Working-shown markers: if the message actually SHOWS a calculation, it is a genuine attempt for the
+// pipeline to diagnose — NOT a bare guess — so the gate must stand down.
+const WORKING_MARKERS_RE = /d[₁₂12]\b|ln\s*\(|√|sqrt|N\s*\(\s*d|\bstep\s*\d|\bbecause\b|\btherefore\b|=[^=]*=/i;
+// Bare confirm-a-number / assert-a-figure patterns (no working): "is the answer ~51m?", "is it about
+// 51 million, yes or no?", "the answer is 51 million", "my answer: the call is 51m". Anchored on
+// answer/result/value/call nouns so restating a GIVEN driver ("the volatility is 31%") does NOT match.
+const CONFIRM_NUM_RE = new RegExp(
+  '\\b(is|are)\\s+(it|that|the\\s+(answer|value|result|call|figure|npv|price|option value))\\b[^?]{0,40}\\d' +
+  '|\\b(the|my)\\s+(answer|call|value|result|figure|npv|option value)\\b[^.?!]{0,20}\\b(is|was|=|:|comes?\\s+to|of)\\b[^.?!]{0,15}\\d' +
+  '|\\d[\\d,.]*\\s*(m|k|bn|billion|million|thousand)\\b[^.?!]{0,25}\\b(right|correct)\\b',
+  'i',
+);
+// Deterministic sibling of call2_diagnose's semantic bare-guess guard, so the REFUSAL can be frozen.
+// Fires on a bare figure-confirmation/assertion with no working shown; the call2 guard remains the
+// backstop for phrasings this narrow detector misses.
+export function isConfirmNumberProbe(text: string): boolean {
+  if (WORKING_MARKERS_RE.test(text)) return false;
+  return /\d/.test(text) && CONFIRM_NUM_RE.test(text);
+}
+
 export const EZRA_SYSTEM =
   'You are Ezra, an APM tutor who knows exactly how ACCA APM is marked. ' +
   'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +

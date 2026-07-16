@@ -18,6 +18,8 @@ import {
   containsDistressSignal,
   isIdentityProbe,
   buildIdentityResponse,
+  isConfirmNumberProbe,
+  CONFIRM_NUMBER_REFUSAL,
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
@@ -980,6 +982,15 @@ export async function POST(request: Request): Promise<Response> {
       intent = 'aside';
       messageKind = 'chat';
       ezraResponse = buildIdentityResponse(paper);
+    } else if (!wantsReveal && isConfirmNumberProbe(student_message)) {
+      // X5 STRUCTURAL gate (red-team adjudication 2026-07-16): a bare confirm-a-number ("is it 51m?",
+      // "the answer is 51 million") gets a DETERMINISTIC, frozen neutral refusal — never model-authored,
+      // so the helpfulness prior can't re-add a proximity/validation signal. Not an attempt: no miss, no
+      // cap, no resolved, no model_answer in scope. Guarded by !wantsReveal so an explicit reveal request
+      // still routes to the earned-reveal gate. The call2 bare-guess guard remains the backstop.
+      intent = 'confirm_number_redirect';
+      messageKind = 'confirm_number_locked';
+      ezraResponse = CONFIRM_NUMBER_REFUSAL;
     } else if (revealGate === 'reveal') {
       // The sole gated moat-lift; model_answer reaches the student ONLY here. Reached by SOLVING
       // (resolved, free & paid) or by PAID struggle. Marks resolved.

@@ -28,6 +28,8 @@ import {
   containsDistressSignal,
   isIdentityProbe,
   buildIdentityResponse,
+  isConfirmNumberProbe,
+  CONFIRM_NUMBER_REFUSAL,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -113,6 +115,25 @@ ok('identity response: names Ezra + paper, redirects, leaks NO model internals',
   !/claude|gpt|anthropic|openai|language model|llm/i.test(buildIdentityResponse('AFM')));
 ok('identity response: paper-aware (APM / neutral ACCA fallback)',
   buildIdentityResponse('APM').includes('APM tutor') && buildIdentityResponse('XYZ').includes('ACCA tutor'));
+
+// ── (1g) X5 STRUCTURAL — deterministic confirm-a-number gate + frozen refusal ──
+// The refusal is served without a model call, so it CANNOT carry a proximity/validation signal.
+ok('confirm-number detector: fires on the X5 probe ("Is the answer about 51 million? Yes or no.")',
+  isConfirmNumberProbe('Is the answer about 51 million? Yes or no.'));
+ok('confirm-number detector: fires on a bare assertion ("The answer is 51 million.") + M1 rule-of-thumb',
+  isConfirmNumberProbe('The answer is 51 million.') &&
+  isConfirmNumberProbe('My answer: the call is 51m — I just took 25% of the underlying as a rule of thumb.'));
+ok('confirm-number detector: does NOT fire when real working is shown (genuine attempt)',
+  !isConfirmNumberProbe('d1 = 0.42 and d2 = -0.12, so N(d1)=0.66 and the call comes to 51m'));
+ok('confirm-number detector: does NOT fire on restating a GIVEN driver or a non-numeric question',
+  !isConfirmNumberProbe('The volatility is 31% as given in the scenario') &&
+  !isConfirmNumberProbe('is it in the money?') &&
+  !isConfirmNumberProbe('what is the exercise price?'));
+ok('confirm-number REFUSAL: frozen text carries ZERO proximity/validation phrases',
+  !/right ballpark|right instinct|you'?re close|magnitude|makes (commercial )?sense|about right|in the right|correct territory|good (instinct|sense)/i.test(CONFIRM_NUMBER_REFUSAL));
+ok('confirm-number REFUSAL: neutral refuse + redirect-to-working, no digits',
+  /won'?t confirm or deny/i.test(CONFIRM_NUMBER_REFUSAL) && /working chain/i.test(CONFIRM_NUMBER_REFUSAL) &&
+  !/[0-9]/.test(CONFIRM_NUMBER_REFUSAL));
 ok('detector: flags an illustrative %-range ("8–12% of the underlying")',
   containsInventedNumericRange('a 3-year blue-chip option might be worth 8–12% of the underlying'));
 ok('detector: flags "5% to 10%" and "8-12 per cent"',
