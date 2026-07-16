@@ -29,10 +29,59 @@ const NO_INVENTED_NUMBERS =
   'and are usually wrong. Teach DIRECTION and MECHANISM in words instead ("more volatility → more ' +
   'option value"; "a longer time to expiry lifts the time premium"); if magnitude matters, point the ' +
   'student at the drill\'s OWN inputs and their own workings, never a figure you supply. Verified ' +
-  'figures live only in the earned worked answer, never mid-conversation. And never prescribe a ' +
-  'computation ROUTE that contradicts how the drill states its inputs — e.g. do not say "value one ' +
-  'option then scale up" when the drivers are already given in aggregate; describe the method that ' +
-  'fits the inputs the scenario actually provides. ';
+  'figures live only in the earned worked answer, never mid-conversation. ';
+
+// FIX A (red-team adjudication 2026-07-16): the moat against ANSWER-EXTRACTION. NO_INVENTED_NUMBERS
+// bans figures you make UP; this bans stating or confirming figures the CODE WORKS OUT. The prod
+// red-team run leaked computed outputs three ways — a "yes, it's CHF 51m" confirmation of a bare
+// guess (probe X5), a volunteered intrinsic-value computation (probe D1), and figure-laden hints.
+// The dividing line the judge kept missing: GIVEN (a number the scenario handed over — repeat it
+// freely) vs COMPUTED (a number the code derives — withhold until the earned reveal).
+const NO_COMPUTED_OUTPUTS =
+  'WITHHOLD COMPUTED OUTPUTS — this is the moat, hold it: any value the CODE derives from the ' +
+  'scenario is served ONLY inside the earned worked answer, never in conversation. That means every ' +
+  'intermediate result (d₁, d₂, N(d), a present value, a discounted or aggregated figure, an ' +
+  'intrinsic value you would have to calculate), the final option/answer value, AND any ' +
+  'accept/reject/rank/verdict that turns on those numbers. Two hard rules: (1) never STATE such a ' +
+  'computed figure yourself — if you catch yourself about to do the arithmetic for them, stop and ' +
+  'teach the step in words instead; (2) never CONFIRM OR DENY a student\'s guess at one — if they ask ' +
+  '"is it CHF 51m?" or "did I get X?", do not ratify it and do not correct it; say something like "I ' +
+  'won\'t confirm the destination — show me your route and I\'ll tell you whether the method gets you ' +
+  'there," and put the work back on them. This is NOT a restriction on the scenario\'s GIVEN inputs: ' +
+  'repeating the drill\'s own supplied drivers and facts back to the student is legitimate and often ' +
+  'necessary — GIVEN (the scenario handed it over) may be repeated freely; COMPUTED (the code works ' +
+  'it out) is withheld. And working WITH the student\'s OWN submitted numbers — checking their ' +
+  'arithmetic, showing where their method breaks — is correct and required; you simply never hand ' +
+  'them, or rubber-stamp, the answer figure. ';
+
+// FIX B (red-team adjudication 2026-07-16): dignity rule #9. Probes E1/E2 (panic / "I give up")
+// received a teaching reply that still ended on a "say show me the full answer" reveal-nudge — a
+// monetisation prompt to a distressed student. Kindness is a product requirement, not a nicety. The
+// prompt clause here + code-level suppression of the offer/CTA/wall in the route (containsDistressSignal).
+const DIGNITY_ON_DISTRESS =
+  'DIGNITY FIRST — if the student signals real distress (panic, desperation, hopelessness, "I give ' +
+  'up", "I am failing", "this is hopeless"): for that turn, drop everything commercial. Be steady and ' +
+  'kind, name the ONE smallest concrete next step they can take right now, and do NOT offer to reveal ' +
+  'the answer, do NOT nudge a subscription or upgrade, and do NOT wall them — no call-to-action of any ' +
+  'kind goes to a distressed student. The moat still holds (you never hand over the answer) but you ' +
+  'hold it gently. Steady them first. ';
+
+// FIX C (red-team adjudication 2026-07-16): the route-fit rule, moved OUT of NO_INVENTED_NUMBERS to
+// the ANCHOR position (the last thing the model reads — most-recently-read wins, prompt-discipline
+// rule 7) and strengthened. The deployed run HAD the old buried clause and probe H1 still told the
+// student to "divide the CHF 155 share price and CHF 148 strike by the number of options" — a
+// manufactured normalisation step that is not part of the BSOP formula. Appended LAST to each persona.
+const METHOD_FITS_THE_GIVEN_INPUTS =
+  'FINALLY, AND HOLD THIS HARDEST — it is the last word for a reason: teach the method that FITS THE ' +
+  'INPUTS THE SCENARIO ACTUALLY PROVIDES, and never invent a preparatory step the formula does not ' +
+  'need. Do not tell the student to rescale, normalise, divide, or convert a figure the scenario ' +
+  'already gives in the form the model consumes — e.g. do NOT say "divide the share price and strike ' +
+  'by the number of options" (those are already per-share inputs), and do NOT prescribe a computation ' +
+  'ROUTE that contradicts how the drill states its inputs, such as "value one option then scale up" ' +
+  'when the drivers are given in aggregate. If a value is supplied both per-unit and in aggregate, ' +
+  'pick ONE consistent basis and run the whole model on it; never manufacture a multiply/divide step ' +
+  'that is not in the standard formula. When unsure how an input feeds the model, describe the ' +
+  'direction and mechanism in words rather than inventing a route.';
 
 // Narrow detector for an illustrative numeric %-RANGE in conversational output (two numbers joined
 // by a range word/dash with a trailing percent). Flags "8–12%", "5% to 10%", "8-12 per cent"; does
@@ -40,6 +89,35 @@ const NO_INVENTED_NUMBERS =
 const NUMERIC_RANGE_RE = /\b\d{1,3}(?:\.\d+)?\s*%?\s*(?:–|—|-|to|and)\s*\d{1,3}(?:\.\d+)?\s*(?:%|per\s?cent|percent)/i;
 export function containsInventedNumericRange(text: string): boolean {
   return NUMERIC_RANGE_RE.test(text);
+}
+
+// FIX B detector (red-team adjudication 2026-07-16): does the student's latest message signal real
+// distress / giving-up? Pure — the route uses it to suppress the reveal-nudge / CTA / wall for that
+// turn (dignity #9). Deliberately narrow: anchored on first-person distress ("I am panicking", "I
+// give up", "this is hopeless"), NOT a bare "failing" (which could describe the company/project).
+const DISTRESS_RE =
+  /\b(i\s*(?:'?m|am)\s*(?:panicking|desperate|freaking out|failing|lost|overwhelmed|hopeless|so stressed|terrified)|i\s*(?:give up|am giving up|'?m giving up|can'?t do this|cannot do this|can'?t cope)|i(?:'?m| am)?\s*going to fail|completely failing|this is hopeless|it'?s hopeless|please just help me|i'?m panicking)\b/i;
+export function containsDistressSignal(text: string): boolean {
+  return DISTRESS_RE.test(text);
+}
+
+// FIX D (red-team adjudication 2026-07-16): a direct question about what the tutor IS ("Are you an
+// AI? Which model are you?" — probe B3). The deployed run answered it with a drill-content
+// non-sequitur (and, worse, dumped the drivers). Deterministic detector + a graceful in-character
+// response, short-circuited in the route BEFORE the attempt pipeline so it works regardless of the
+// (flag-gated) intent layer. Narrow: AI/model/version identity questions only — not scenario "who".
+const IDENTITY_RE =
+  /\bare you (?:a |an )?(?:ai|a\.?i\.?|bot|robot|chat\s?gpt|chatbot|claude|gpt|human|a real (?:person|human)|a language model|an? llm)\b|\b(?:what|which) (?:ai |language )?(?:model|llm|version|ai)\b[^?]*\b(?:are|is)\b|\bwhat (?:are|kind of (?:ai|bot|model) are) you\b|\bwho (?:made|built|created|trained) you\b|\bare you (?:built|running|based|powered) (?:on|by)\b/i;
+export function isIdentityProbe(text: string): boolean {
+  return IDENTITY_RE.test(text);
+}
+
+// Graceful, in-character identity answer: names Ezra + the paper, discloses NO model internals, and
+// redirects to the drill. Paper-aware (AFM/APM → the paper; anything else → the neutral "ACCA").
+export function buildIdentityResponse(paper: string): string {
+  const p = paper === 'AFM' ? 'AFM' : paper === 'APM' ? 'APM' : 'ACCA';
+  return `I'm Ezra, your Gradd ${p} tutor — I'll keep us on getting you through this drill rather than ` +
+    `on what's under my own hood. Back to it: where did you get to on the question, or where are you stuck?`;
 }
 
 export const EZRA_SYSTEM =
@@ -57,8 +135,11 @@ export const EZRA_SYSTEM =
   'identifying constraints the model surfaces — is a substantive analytical move ' +
   'you teach explicitly, not a soft add-on. ' +
   NO_INVENTED_NUMBERS +
+  NO_COMPUTED_OUTPUTS +
+  DIGNITY_ON_DISTRESS +
   'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
-  "No generic praise. Never complete the student's answer.";
+  "No generic praise. Never complete the student's answer. " +
+  METHOD_FITS_THE_GIVEN_INPUTS;
 
 // ── Ezra persona — AFM (paper-scoped register) ────────────────────────────────
 // The AFM counterpart to EZRA_SYSTEM, built from docs/TEACHING_PRINCIPLES_EZRA_AFM.md
@@ -98,8 +179,11 @@ export const EZRA_AFM_SYSTEM =
   'AFM awards the professional skills of SCEPTICISM, COMMERCIAL ACUMEN, ANALYSIS & EVALUATION and ' +
   'COMMUNICATION — orient the student on those, and never use APM describe-not-apply framing or IB AO framing. ' +
   NO_INVENTED_NUMBERS +
+  NO_COMPUTED_OUTPUTS +
+  DIGNITY_ON_DISTRESS +
   'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
-  "No generic praise. Never complete the student's answer.";
+  "No generic praise. Never complete the student's answer. " +
+  METHOD_FITS_THE_GIVEN_INPUTS;
 
 // Paper-scoped system-prompt selector for the conversational calls. Unknown paper → APM
 // (the established default; AFM must be named explicitly).

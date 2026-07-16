@@ -15,6 +15,9 @@ import {
   trimToLastSentence,
   REVEAL_FOOTER,
   buildBurnCta,
+  containsDistressSignal,
+  isIdentityProbe,
+  buildIdentityResponse,
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
@@ -284,6 +287,12 @@ async function call2_diagnose(
       'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
       'A correct answer in a different format is NOT an error and must NOT be flagged. ' +
       "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
+      'BARE-GUESS GUARD (do this before the equivalence check): if the message states ONLY a final ' +
+      'answer VALUE or asks whether a value is right ("is it about 51 million?", "the answer is X, ' +
+      'yes?", a lone number) with NO working, method, or reasoning shown, it is NOT a markable ' +
+      'correct answer even if the value matches — you cannot credit a method that was never shown, ' +
+      'and confirming the figure would leak the answer. Output the gap label: ' +
+      '"states a figure but shows no working — cannot be credited" (NEVER the correct sentinel). ' +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
@@ -946,8 +955,20 @@ export async function POST(request: Request): Promise<Response> {
   // teaching stays free); neither → the static earn-it refusal. `paid` = active ACCA access.
   const revealGate = revealDecision({ wantsReveal, missCount, resolved, paid: hasActiveAccess });
 
+  // FIX B (red-team adjudication 2026-07-16): distress → dignity #9. Suppresses the reveal-nudge
+  // (offerReveal) on hint/teach/confirm and the burn wall for THIS turn — no CTA/upsell to a
+  // distressed student. The persona's DIGNITY_ON_DISTRESS clause carries the steady-and-kind tone.
+  const distressed = containsDistressSignal(student_message);
+
   try {
-    if (revealGate === 'reveal') {
+    if (isIdentityProbe(student_message)) {
+      // FIX D (red-team adjudication 2026-07-16): a direct "what are you?" question is answered
+      // gracefully in-character and short-circuits BEFORE the attempt pipeline (so it works with the
+      // intent layer off). Not an attempt: no miss, no cap charge, no resolved, no model_answer in scope.
+      intent = 'aside';
+      messageKind = 'chat';
+      ezraResponse = buildIdentityResponse(paper);
+    } else if (revealGate === 'reveal') {
       // The sole gated moat-lift; model_answer reaches the student ONLY here. Reached by SOLVING
       // (resolved, free & paid) or by PAID struggle. Marks resolved.
       intent = 'reveal';
@@ -958,12 +979,21 @@ export async function POST(request: Request): Promise<Response> {
       ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal, reachedFrom);
       newResolved = true;
     } else if (revealGate === 'burn') {
-      // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
-      // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
-      // worked answer cannot leak). No miss++, no cap charge, no resolved — teaching stays free.
-      intent = 'reveal_burn';
-      messageKind = 'reveal_burn';
-      ezraResponse = await call_burn(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', paper);
+      if (distressed) {
+        // FIX B dignity #9: a distressed free student at the struggle wall gets STEADIED, not sold
+        // to. Serve the figure-free teach (no CTA, no paywall block) instead of the burn. Stays
+        // free — teachThroughDelivered left false, exactly like the burn it replaces.
+        intent = 'teach_request';
+        messageKind = 'teaching';
+        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', verbLevel, false, paper);
+      } else {
+        // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
+        // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
+        // worked answer cannot leak). No miss++, no cap charge, no resolved — teaching stays free.
+        intent = 'reveal_burn';
+        messageKind = 'reveal_burn';
+        ezraResponse = await call_burn(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', paper);
+      }
     } else if (revealGate === 'earn_redirect') {
       // Reveal requested but NOT earned (missCount < 2 AND not resolved): static refusal gate.
       // model_answer is deliberately NOT referenced here — earned-not-dumped is structural.
@@ -975,7 +1005,7 @@ export async function POST(request: Request): Promise<Response> {
       messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, paper);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper);
       teachThroughDelivered = true;
     } else if (resolved) {
       // Item 4: a SOLVED drill never re-scaffolds from zero. Any non-reveal message post-solve
@@ -1023,7 +1053,7 @@ export async function POST(request: Request): Promise<Response> {
           // Item 1: mark the drill RESOLVED (success-solved mirrors reveal-solved) so the
           // model answer becomes reachable for comparison and the drill never re-scaffolds.
           // Item 3a: offerReveal=REVEAL_ENABLED → the confirm nudges the now-earned phrase.
-          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, REVEAL_ENABLED);
+          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, REVEAL_ENABLED && !distressed);
           messageKind        = 'correct';
           attemptOutcome     = 'correct';
           newLastRealAttempt = student_message;
@@ -1043,7 +1073,7 @@ export async function POST(request: Request): Promise<Response> {
             ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper);
             messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, paper);
+            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper);
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }

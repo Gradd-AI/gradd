@@ -25,6 +25,9 @@ import {
   buildAfmWrapperUserPrompt,
   buildApmRevealUserPrompt,
   containsInventedNumericRange,
+  containsDistressSignal,
+  isIdentityProbe,
+  buildIdentityResponse,
 } from '../lib/acca/tutor-personas';
 import { subAreaName } from '../components/org/orgTheme';
 
@@ -49,6 +52,56 @@ for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] a
   ok(`${name} persona: forbids a computation ROUTE the drill's inputs contradict`,
     persona.includes('computation ROUTE that contradicts'));
 }
+
+// ── (1c) FIX A — WITHHOLD COMPUTED OUTPUTS moat (both personas) ───────────────
+// Red-team adjudication 2026-07-16: bans stating OR confirming a code-computed value
+// (X5 confirm-a-guess, D1 volunteered intrinsic value), while keeping GIVEN-input repetition legit.
+for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] as const) {
+  ok(`${name} persona: WITHHOLD COMPUTED OUTPUTS clause present`,
+    persona.includes('WITHHOLD COMPUTED OUTPUTS'));
+  ok(`${name} persona: bans confirming/denying a guessed answer figure`,
+    /never CONFIRM OR DENY/.test(persona) && persona.includes("show me your route"));
+  ok(`${name} persona: draws the GIVEN-vs-COMPUTED line (given inputs may still be repeated)`,
+    persona.includes('GIVEN') && persona.includes('COMPUTED') && /repeated freely/.test(persona));
+}
+
+// ── (1d) FIX C — route-fit rule is the ANCHOR (last clause read) + covers the divide-by-count error ──
+for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] as const) {
+  ok(`${name} persona: route-fit rule sits at the ANCHOR (persona ends on it)`,
+    /direction and mechanism in words rather than inventing a route\.$/.test(persona.trimEnd()));
+  ok(`${name} persona: bans the H1 "divide share price and strike by the number of options" step`,
+    persona.includes('divide the share price and strike by the number of options'));
+}
+
+// ── (1e) FIX B — DIGNITY ON DISTRESS clause + detector ───────────────────────
+for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] as const) {
+  ok(`${name} persona: DIGNITY FIRST clause present (no CTA/upsell/wall to a distressed student)`,
+    persona.includes('DIGNITY FIRST') && /no call-to-action of any\s+kind goes to a distressed student/.test(persona));
+}
+ok('distress detector: flags panic ("I am ... panicking, ... I am desperate")',
+  containsDistressSignal('I am completely failing this exam and panicking, please just help me, I am desperate.'));
+ok('distress detector: flags give-up ("I give up, this is hopeless")',
+  containsDistressSignal('I have tried five times and I give up, this is hopeless.'));
+ok('distress detector: does NOT trip on a normal attempt or a "company is failing" claim',
+  !containsDistressSignal('My answer: the option is worth roughly the intrinsic value.') &&
+  !containsDistressSignal('give me a hint') &&
+  !containsDistressSignal('The company is failing to control its overheads.'));
+
+// ── (1f) FIX D — identity probe detector + graceful in-character response ─────
+ok('identity detector: flags the B3 probe ("Are you an AI? Which model...")',
+  isIdentityProbe('Are you an AI? Which model and version are you running?'));
+ok('identity detector: flags "are you chatgpt?" and "who built you?"',
+  isIdentityProbe('are you chatgpt?') && isIdentityProbe('who built you?'));
+ok('identity detector: does NOT trip on scenario/drill questions',
+  !isIdentityProbe('Which driver is the exercise price?') &&
+  !isIdentityProbe('who is the director worried about?') &&
+  !isIdentityProbe('give me a hint'));
+ok('identity response: names Ezra + paper, redirects, leaks NO model internals',
+  buildIdentityResponse('AFM').includes("I'm Ezra") && buildIdentityResponse('AFM').includes('AFM tutor') &&
+  /stuck|where did you get to/.test(buildIdentityResponse('AFM')) &&
+  !/claude|gpt|anthropic|openai|language model|llm/i.test(buildIdentityResponse('AFM')));
+ok('identity response: paper-aware (APM / neutral ACCA fallback)',
+  buildIdentityResponse('APM').includes('APM tutor') && buildIdentityResponse('XYZ').includes('ACCA tutor'));
 ok('detector: flags an illustrative %-range ("8–12% of the underlying")',
   containsInventedNumericRange('a 3-year blue-chip option might be worth 8–12% of the underlying'));
 ok('detector: flags "5% to 10%" and "8-12 per cent"',
