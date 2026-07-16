@@ -26,10 +26,18 @@
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { checkSpreadMonotonicity, type SpreadRow } from './credit';
 import { checkOptionBounds, type BsopComputed } from './bsop';
+import {
+  checkValuationBridge,
+  type ValuationKind,
+  type FcffComputed,
+  type FcfeComputed,
+  type DividendComputed,
+  type CompareComputed,
+} from './valuation';
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -330,4 +338,20 @@ export function validateSpreadTable(
 export function validateOptionBounds(c: BsopComputed): ValidationResult {
   const r = checkOptionBounds(c);
   return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(option)', gate: 'option-bounds', code: 'no-arbitrage-violation', message: r.reason ?? 'option value violates a no-arbitrage bound or put-call parity' }] };
+}
+
+// ── GATE 11: valuation flow↔rate↔bridge consistency (valuation batch, calculator #9, 2026-07-16) ──
+// The deterministic guard against the VALUATION-PLUMBING failure class: a FCFF (firm) flow discounts
+// at WACC and strips debt exactly once; a FCFE (equity) flow discounts at Ke and does NOT strip debt
+// (and its FCFF cross-check reconciles); dividend capacity equals FCFE with a consistent sustainability
+// verdict; a two-method compare brackets a coherent range with the offer correctly positioned. A
+// violation means the flow was matched to the wrong rate or the debt bridge was mis-applied — the
+// figure is unmarkable. (Delegates to checkValuationBridge in valuation.ts; g<r is guarded in compute.)
+export function validateValuationBridge(
+  kind: ValuationKind,
+  c: FcffComputed | FcfeComputed | DividendComputed | CompareComputed,
+  ctx: { debt_value: number },
+): ValidationResult {
+  const r = checkValuationBridge(kind, c, ctx);
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(valuation)', gate: 'valuation-bridge', code: 'flow-rate-bridge-violation', message: r.reason ?? 'valuation flow/rate/bridge inconsistency' }] };
 }

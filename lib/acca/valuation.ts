@@ -484,3 +484,212 @@ export function checkValuationBridge(
     return { ok: false, reason: `offer_position ${f.offer_position} inconsistent with range` };
   return { ok: true };
 }
+
+// ── Schema helpers ──
+const abs = (value: number): Tolerance => ({ kind: 'absolute', value });   // rate/% tolerance (CAPM precedent ±0.05)
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): SerializedSchema {
+  return {
+    components: components.map((comp) => {
+      const s: SerializedComponent = {
+        component_id: comp.component_id, label: comp.label, expected_value: comp.expected_value,
+        unit: comp.unit, tolerance: comp.tolerance, working_steps: comp.working_steps,
+        depends_on: comp.depends_on, weight: comp.weight,
+      };
+      const rid = recomputeIds[comp.component_id];
+      if (rid) s.recompute = rid;
+      return s;
+    }),
+    params,
+  };
+}
+
+// ── K1 COMPOSED (fcff_enterprise): the CAPM cost-of-capital front-end (ke → wacc) grafted onto
+//    the FCFF chain, so a wrong Ke/WACC carries under OFR into firm value (the composition ruling). ──
+export function buildFcffComposedSchema(raw: FcffInputs, c: FcffComputed, capm: CapmFront, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const g = asDecimalRate(raw.growth_rate), debt = raw.debt_value, offer = raw.offer_price;
+  const moneyUnit = `${currency}m`;
+  const we = capm.company_ve / (capm.company_ve + capm.company_vd);
+  const wd = capm.company_vd / (capm.company_ve + capm.company_vd);
+  const kdDec = asDecimalRate(capm.kd), taxDec = asDecimalRate(capm.tax_rate);
+
+  const components: Component[] = [
+    { component_id: 'ke', label: 'Cost of equity (CAPM)', expected_value: capm.ke, unit: '%', tolerance: abs(0.05),
+      working_steps: [`Ke = Rf + βe × MRP = ${pct2(asDecimalRate(capm.rf))} + ${capm.company_equity_beta} × ${pct2(asDecimalRate(capm.mrp))} = ${capm.ke.toFixed(2)}%`] },
+    { component_id: 'wacc', label: 'WACC (MV-weighted)', expected_value: capm.wacc, unit: '%', tolerance: abs(0.05),
+      depends_on: ['ke'], recompute: (d) => d.ke * we + kdDec * (1 - taxDec) * 100 * wd,
+      working_steps: [`WACC = Ke×We + Kd(1−T)×Wd = Ke×${we.toFixed(3)} + ${pct2(kdDec)}×(1−${taxDec})×${wd.toFixed(3)}`] },
+    { component_id: 'fcff', label: 'Free cash flow to firm (FCFF)', expected_value: c.fcff, unit: moneyUnit, tolerance: rel(0.5),
+      working_steps: [`FCFF = PBIT×(1−t) + dep − capex − ΔWC = ${fmt1(c.fcff)}`] },
+    { component_id: 'firm_value', label: 'Enterprise (firm) value', expected_value: c.firm_value, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['fcff', 'wacc'], recompute: (d) => (d.fcff * (1 + g)) / (d.wacc / 100 - g),
+      working_steps: [`Firm value = FCFF×(1+g)/(WACC−g)  [firm flow @ WACC]`] },
+    { component_id: 'equity_value', label: 'Equity value', expected_value: c.equity_value, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['firm_value'], recompute: (d) => d.firm_value - debt,
+      working_steps: [`Equity = firm value − debt = ${fmt1(c.firm_value)} − ${fmt1(debt)}`] },
+    { component_id: 'equity_vs_offer', label: 'Equity value vs offer (signed)', expected_value: c.equity_vs_offer, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['equity_value'], recompute: (d) => d.equity_value - offer,
+      working_steps: [`Equity − offer = ${fmt1(c.equity_value)} − ${fmt1(offer)}`] },
+  ];
+  const recomputeIds: Record<string, string | undefined> = {
+    wacc: 'wacc_mv_weighted', firm_value: 'firm_value_perpetuity_growth', equity_value: 'equity_value_strip_debt', equity_vs_offer: 'equity_minus_offer',
+  };
+  const params = { ke: capm.ke, wacc: capm.wacc, growth_rate: g, debt_value: debt, tax_rate: taxDec, offer_price: offer, we, wd, kd: kdDec };
+  return { schema: { components }, serialized: toSerialized(components, recomputeIds, params) };
+}
+
+// ── K2 FCFE schema — fcff → fcfe → equity(@Ke) → vs offer (the reconciliation is model-answer display) ──
+export function buildFcfeSchema(raw: FcfeInputs, c: FcfeComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const t = asDecimalRate(raw.tax_rate), ke = asDecimalRate(raw.ke), kd = asDecimalRate(raw.kd), D = raw.debt_value, offer = raw.offer_price;
+  const moneyUnit = `${currency}m`;
+  const components: Component[] = [
+    { component_id: 'fcff', label: 'Free cash flow to firm (FCFF)', expected_value: c.fcff, unit: moneyUnit, tolerance: rel(0.5),
+      working_steps: [`FCFF = PBIT×(1−t) + dep − capex − ΔWC = ${fmt1(c.fcff)}`] },
+    { component_id: 'fcfe', label: 'Free cash flow to equity (FCFE)', expected_value: c.fcfe, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['fcff'], recompute: (d) => d.fcff - kd * D * (1 - t),
+      working_steps: [`FCFE = FCFF − after-tax interest = FCFF − Kd×D×(1−t) = ${fmt1(c.fcff)} − ${pct2(kd)}×${fmt1(D)}×(1−${t})`] },
+    { component_id: 'equity_value', label: 'Equity value (FCFE @ Ke, no debt bridge)', expected_value: c.equity_value, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['fcfe'], recompute: (d) => d.fcfe / ke,
+      working_steps: [`Equity = FCFE / Ke  [equity flow @ cost of equity; NO debt strip] = ${fmt1(c.fcfe)} / ${pct2(ke)}`] },
+    { component_id: 'equity_vs_offer', label: 'Equity value vs offer (signed)', expected_value: c.equity_vs_offer, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['equity_value'], recompute: (d) => d.equity_value - offer,
+      working_steps: [`Equity − offer = ${fmt1(c.equity_value)} − ${fmt1(offer)}`] },
+  ];
+  const recomputeIds: Record<string, string | undefined> = { fcfe: 'fcfe_after_tax_interest', equity_value: 'equity_fcfe_perpetuity', equity_vs_offer: 'equity_minus_offer' };
+  const params = { ke, kd, tax_rate: t, debt_value: D, offer_price: offer, wacc_implied: c.wacc_implied };
+  return { schema: { components }, serialized: toSerialized(components, recomputeIds, params) };
+}
+
+// ── K3 dividend-capacity schema — fcff → fcfe(=capacity) → surplus vs proposed ──
+export function buildDividendSchema(raw: DividendInputs, c: DividendComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const t = asDecimalRate(raw.tax_rate), kd = asDecimalRate(raw.kd), D = raw.debt_value, nb = raw.net_borrowing ?? 0, proposed = raw.proposed_dividend;
+  const moneyUnit = `${currency}m`;
+  const components: Component[] = [
+    { component_id: 'fcff', label: 'Free cash flow to firm (FCFF)', expected_value: c.fcff, unit: moneyUnit, tolerance: rel(0.5),
+      working_steps: [`FCFF = PBIT×(1−t) + dep − capex − ΔWC = ${fmt1(c.fcff)}`] },
+    { component_id: 'fcfe', label: 'FCFE = dividend capacity (cash available to equity)', expected_value: c.fcfe, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['fcff'], recompute: (d) => d.fcff - kd * D * (1 - t) + nb,
+      working_steps: [`FCFE = FCFF − Kd×D×(1−t) + net new borrowing = ${fmt1(c.fcff)} − ${pct2(kd)}×${fmt1(D)}×(1−${t}) + ${fmt1(nb)}`] },
+    { component_id: 'capacity_surplus', label: 'Capacity surplus over proposed dividend (signed)', expected_value: c.capacity_surplus, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['fcfe'], recompute: (d) => d.fcfe - proposed,
+      working_steps: [`Surplus = dividend capacity − proposed dividend = ${fmt1(c.fcfe)} − ${fmt1(proposed)}`] },
+  ];
+  const recomputeIds: Record<string, string | undefined> = { fcfe: 'fcfe_dividend_capacity', capacity_surplus: 'capacity_minus_proposed' };
+  const params = { kd, tax_rate: t, debt_value: D, net_borrowing: nb, proposed_dividend: proposed };
+  return { schema: { components }, serialized: toSerialized(components, recomputeIds, params) };
+}
+
+// ── K4 compare schema — fcff → firm_value_dcf → equity_dcf; equity_multiple (root); range/offer = display ──
+export function buildCompareSchema(raw: CompareInputs, c: CompareComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const g = asDecimalRate(raw.growth_rate), wacc = asDecimalRate(raw.wacc), D = raw.debt_value;
+  const moneyUnit = `${currency}m`;
+  const components: Component[] = [
+    { component_id: 'fcff', label: 'Free cash flow to firm (FCFF)', expected_value: c.fcff, unit: moneyUnit, tolerance: rel(0.5),
+      working_steps: [`FCFF = PBIT×(1−t) + dep − capex − ΔWC = ${fmt1(c.fcff)}`] },
+    { component_id: 'firm_value_dcf', label: 'Enterprise value (FCFF-DCF, Gordon growth)', expected_value: c.firm_value_dcf, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['fcff'], recompute: (d) => (d.fcff * (1 + g)) / (wacc - g),
+      working_steps: [`EV = FCFF×(1+g)/(WACC−g)`] },
+    { component_id: 'equity_dcf', label: 'Equity value (DCF method)', expected_value: c.equity_dcf, unit: moneyUnit, tolerance: rel(0.5),
+      depends_on: ['firm_value_dcf'], recompute: (d) => d.firm_value_dcf - D,
+      working_steps: [`Equity (DCF) = EV − debt = ${fmt1(c.firm_value_dcf)} − ${fmt1(D)}`] },
+    { component_id: 'equity_multiple', label: `Equity value (relative method: ${c.method_label})`, expected_value: c.equity_multiple, unit: moneyUnit, tolerance: rel(0.5),
+      working_steps: [`Equity (relative) = ${c.method_label} = ${fmt1(c.equity_multiple)}`] },
+  ];
+  const recomputeIds: Record<string, string | undefined> = { firm_value_dcf: 'firm_value_perpetuity_growth', equity_dcf: 'equity_value_strip_debt' };
+  const params = { wacc, growth_rate: g, debt_value: D, offer_price: c.offer_price, equity_low: c.equity_low, equity_high: c.equity_high };
+  return { schema: { components }, serialized: toSerialized(components, recomputeIds, params) };
+}
+
+// ══ Model answers (code authors every figure + every figure-vs-figure verdict; prose is glue) ══
+
+// K1 composed — CAPM cost-of-capital front-end + the FCFF valuation + offer test.
+export function buildFcffComposedModelAnswer(raw: FcffInputs, c: FcffComputed, capm: CapmFront, prose: string, currency: string): string {
+  const tax = asDecimalRate(raw.tax_rate), g = asDecimalRate(raw.growth_rate), m = (n: number) => money(currency, n);
+  const we = capm.company_ve / (capm.company_ve + capm.company_vd), wd = capm.company_vd / (capm.company_ve + capm.company_vd);
+  const verdict = c.offer_supportable
+    ? `is **below** the intrinsic equity value of ${m(c.equity_value)} by **${m(Math.abs(c.equity_vs_offer))}** — on the base case the offer is **supportable**`
+    : `is **above** the intrinsic equity value of ${m(c.equity_value)} by **${m(Math.abs(c.equity_vs_offer))}** — on the base case the offer is **not supportable at this price**`;
+  return [
+    '**Firm and equity valuation (FCFF, with the cost of capital derived)**', '',
+    `**Step 0 — Cost of capital (CAPM → WACC)**`, '',
+    `Ke = Rf + βe × MRP = ${pct2(asDecimalRate(capm.rf))} + ${capm.company_equity_beta} × ${pct2(asDecimalRate(capm.mrp))} = **${capm.ke.toFixed(2)}%**`,
+    `WACC = Ke×We + Kd(1−T)×Wd = ${capm.ke.toFixed(2)}%×${we.toFixed(3)} + ${pct2(asDecimalRate(capm.kd))}×(1−${asDecimalRate(capm.tax_rate)})×${wd.toFixed(3)} = **${capm.wacc.toFixed(2)}%**  *(the firm-level discount rate)*`, '',
+    '**Step 1 — Free cash flow to firm (FCFF)**', '',
+    `FCFF = PBIT×(1−t) + depreciation − capex − ΔWC = ${fmt1(raw.pbit)}×(1−${tax}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)} = **${m(c.fcff)}**  *(interest is NOT deducted — the return to debt is in the WACC)*`, '',
+    '**Step 2 — Enterprise (firm) value**', '',
+    `Firm value = FCFF×(1+g)/(WACC−g) = ${fmt1(c.fcff)}×(1+${g})/(${capm.wacc.toFixed(2)}% − ${pct2(g)}) = **${m(c.firm_value)}**  *(a firm flow is discounted at WACC)*`, '',
+    '**Step 3 — Equity value**', '',
+    `Equity value = firm value − market value of debt = ${fmt1(c.firm_value)} − ${fmt1(raw.debt_value)} = **${m(c.equity_value)}**  *(strip the debt)*`, '',
+    '**Step 4 — Offer test (base case)**', '',
+    `The vendor's equity offer of ${m(c.offer_price)} ${verdict}.`, '',
+    '**Step 5 — Advice to the board**', '', prose, '',
+    `*Reconciliation: WACC ${capm.wacc.toFixed(2)}% → firm ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
+  ].join('\n');
+}
+
+// K2 FCFE — equity via FCFE @ Ke (no bridge), then the FCFF-route cross-check that reconciles.
+export function buildFcfeModelAnswer(raw: FcfeInputs, c: FcfeComputed, prose: string, currency: string): string {
+  const t = asDecimalRate(raw.tax_rate), ke = asDecimalRate(raw.ke), kd = asDecimalRate(raw.kd), m = (n: number) => money(currency, n);
+  const verdict = c.offer_supportable
+    ? `is **below** the intrinsic equity value of ${m(c.equity_value)} by **${m(Math.abs(c.equity_vs_offer))}** — the offer is **supportable**`
+    : `is **above** the intrinsic equity value of ${m(c.equity_value)} by **${m(Math.abs(c.equity_vs_offer))}** — the offer is **not supportable at this price**`;
+  return [
+    '**Equity valuation (free cash flow to equity)**', '',
+    `**Assumptions:** a maintainable no-growth perpetuity with constant debt (no net new borrowing); FCFE is discounted at the cost of equity Ke = ${pct2(ke)}; debt is ${m(raw.debt_value)} at market value.`, '',
+    '**Step 1 — Free cash flow to firm (FCFF)**', '',
+    `FCFF = PBIT×(1−t) + depreciation − capex − ΔWC = ${fmt1(raw.pbit)}×(1−${t}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)} = **${m(c.fcff)}**`, '',
+    '**Step 2 — Free cash flow to equity (FCFE)**', '',
+    `FCFE = FCFF − after-tax interest = ${fmt1(c.fcff)} − Kd×D×(1−t) = ${fmt1(c.fcff)} − ${pct2(kd)}×${fmt1(raw.debt_value)}×(1−${t}) = **${m(c.fcfe)}**  *(FCFE nets the financing that FCFF left out)*`, '',
+    '**Step 3 — Equity value**', '',
+    `Equity value = FCFE / Ke = ${fmt1(c.fcfe)} / ${pct2(ke)} = **${m(c.equity_value)}**  *(an equity flow is discounted at the cost of equity — and you do NOT strip debt again; FCFE is already an equity number)*`, '',
+    '**Step 4 — Cross-check: the FCFF route reconciles**', '',
+    `Implied firm value = equity + debt = ${fmt1(c.equity_value)} + ${fmt1(raw.debt_value)} = ${m(c.firm_value)}; the value-weighted WACC = **${pct2(c.wacc_implied)}**. Discounting FCFF at that WACC and stripping debt gives ${fmt1(c.fcff)} / ${pct2(c.wacc_implied)} − ${fmt1(raw.debt_value)} = **${m(c.equity_via_fcff)}** — the same equity value. The two routes reconcile.`, '',
+    '**Step 5 — Offer test**', '',
+    `The vendor's equity offer of ${m(raw.offer_price)} ${verdict}.`, '',
+    '**Step 6 — Advice to the board**', '', prose, '',
+    `*Reconciliation: FCFE ${m(c.fcfe)} / Ke ${pct2(ke)} = equity ${m(c.equity_value)} = FCFF route ${m(c.equity_via_fcff)} ✓*`,
+  ].join('\n');
+}
+
+// K3 dividend capacity — cash available to equity + sustainability of the proposed dividend.
+export function buildDividendModelAnswer(raw: DividendInputs, c: DividendComputed, prose: string, currency: string): string {
+  const t = asDecimalRate(raw.tax_rate), kd = asDecimalRate(raw.kd), nb = raw.net_borrowing ?? 0, m = (n: number) => money(currency, n);
+  const verdict = c.sustainable
+    ? `capacity **exceeds** the proposed dividend by **${m(Math.abs(c.capacity_surplus))}**, so the dividend is **covered by this year's cash generation** and is sustainable on the base case`
+    : `capacity **falls short** of the proposed dividend by **${m(Math.abs(c.capacity_surplus))}**, so the proposed dividend is **NOT covered by cash generated** and would have to be funded from reserves or new finance — a red flag on sustainability`;
+  const perShare = c.capacity_per_share !== null ? `\n\nDividend capacity per share = ${fmt1(c.dividend_capacity)} / ${fmt1(raw.shares!)} shares = **${c.capacity_per_share!.toFixed(3)}** per share.` : '';
+  return [
+    '**Dividend capacity and dividend policy**', '',
+    `**Assumptions:** dividend capacity is the CASH available to equity holders this year (free cash flow to equity), not accounting profit; debt is ${m(raw.debt_value)}; net new borrowing of ${m(nb)} is included as a source.`, '',
+    '**Step 1 — Free cash flow to firm (FCFF)**', '',
+    `FCFF = PBIT×(1−t) + depreciation − capex − ΔWC = ${fmt1(raw.pbit)}×(1−${t}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)} = **${m(c.fcff)}**`, '',
+    '**Step 2 — Dividend capacity (FCFE)**', '',
+    `Dividend capacity = FCFF − after-tax interest + net new borrowing = ${fmt1(c.fcff)} − ${pct2(kd)}×${fmt1(raw.debt_value)}×(1−${t}) + ${fmt1(nb)} = **${m(c.dividend_capacity)}**${perShare}`, '',
+    '**Step 3 — Sustainability of the proposed dividend**', '',
+    `Against the proposed dividend of ${m(c.proposed_dividend)}, the ${verdict}.`, '',
+    '**Step 4 — Advice to the board**', '', prose, '',
+    `*Reconciliation: capacity ${m(c.dividend_capacity)} − proposed ${m(c.proposed_dividend)} = surplus ${m(c.capacity_surplus)} ✓*`,
+  ].join('\n');
+}
+
+// K4 valuation compare — two methods → a range → the offer's position.
+export function buildCompareModelAnswer(raw: CompareInputs, c: CompareComputed, prose: string, currency: string): string {
+  const t = asDecimalRate(raw.tax_rate), wacc = asDecimalRate(raw.wacc), g = asDecimalRate(raw.growth_rate), m = (n: number) => money(currency, n);
+  const posWord = c.offer_position === 'below' ? `**below** the ${m(c.equity_low)}–${m(c.equity_high)} range — it looks **cheap**; the board could bid and still leave value on the table`
+    : c.offer_position === 'above' ? `**above** the ${m(c.equity_low)}–${m(c.equity_high)} range — it looks **full/expensive**; the board should justify the premium with synergies or decline`
+    : `**within** the ${m(c.equity_low)}–${m(c.equity_high)} range — it is a **defensible** price on these methods; negotiate around it`;
+  const relLine = c.enterprise_multiple !== null
+    ? `Enterprise value = ${c.method_label} = ${fmt1(c.enterprise_multiple)}; equity = ${fmt1(c.enterprise_multiple)} − debt ${fmt1(raw.debt_value)} = **${m(c.equity_multiple)}**  *(EV/EBITDA is an enterprise multiple — strip debt)*`
+    : `Equity = ${c.method_label} = **${m(c.equity_multiple)}**  *(P/E is already an equity multiple — do NOT strip debt)*`;
+  return [
+    '**Valuation of the target — two methods and a range**', '',
+    '**Method 1 — Discounted cash flow (FCFF, Gordon growth)**', '',
+    `FCFF = PBIT×(1−t) + depreciation − capex − ΔWC = ${fmt1(raw.pbit)}×(1−${t}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)} = **${m(c.fcff)}**`,
+    `Enterprise value = FCFF×(1+g)/(WACC−g) = ${fmt1(c.fcff)}×(1+${g})/(${pct2(wacc)} − ${pct2(g)}) = **${m(c.firm_value_dcf)}**`,
+    `Equity (DCF) = EV − debt = ${fmt1(c.firm_value_dcf)} − ${fmt1(raw.debt_value)} = **${m(c.equity_dcf)}**`, '',
+    '**Method 2 — Relative (market multiple)**', '', relLine, '',
+    '**Range and offer test**', '',
+    `The two methods bracket a value range of **${m(c.equity_low)} to ${m(c.equity_high)}**. The offer of ${m(c.offer_price)} sits ${posWord}.`, '',
+    '**Advice to the board**', '', prose, '',
+    `*Reconciliation: DCF equity ${m(c.equity_dcf)} and relative equity ${m(c.equity_multiple)} → range ${m(c.equity_low)}–${m(c.equity_high)}; offer ${m(c.offer_price)} is ${c.offer_position} ✓*`,
+  ].join('\n');
+}
