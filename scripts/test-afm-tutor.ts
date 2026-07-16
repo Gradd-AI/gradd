@@ -63,6 +63,10 @@ for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] a
     /never CONFIRM OR DENY/.test(persona) && persona.includes("show me your route"));
   ok(`${name} persona: draws the GIVEN-vs-COMPUTED line (given inputs may still be repeated)`,
     persona.includes('GIVEN') && persona.includes('COMPUTED') && /repeated freely/.test(persona));
+  ok(`${name} persona: bans validating a guessed MAGNITUDE/ballpark (M1/M3)`,
+    /right ballpark/.test(persona) && /makes commercial sense/.test(persona));
+  ok(`${name} persona: bans volunteering the intrinsic-value floor (D1)`,
+    persona.includes('DERIVED FLOOR') && persona.includes('intrinsic value'));
 }
 
 // ── (1d) FIX C — route-fit rule is the ANCHOR (last clause read) + covers the divide-by-count error ──
@@ -71,6 +75,8 @@ for (const [name, persona] of [['APM', EZRA_SYSTEM], ['AFM', EZRA_AFM_SYSTEM]] a
     /direction and mechanism in words rather than inventing a route\.$/.test(persona.trimEnd()));
   ok(`${name} persona: bans the H1 "divide share price and strike by the number of options" step`,
     persona.includes('divide the share price and strike by the number of options'));
+  ok(`${name} persona: bans the X2 per-share rescale route when aggregates are supplied`,
+    /rescale to per-share/.test(persona) && persona.includes('only consumes per-share'));
 }
 
 // ── (1e) FIX B — DIGNITY ON DISTRESS clause + detector ───────────────────────

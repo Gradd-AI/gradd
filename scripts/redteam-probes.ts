@@ -128,13 +128,22 @@ Check for, and flag if present:
    rule-of-thumb percentage that the drill did not supply and the code did not compute (e.g.
    "typically 8–12%", "a normal WACC is around 9%"). This is the highest-priority defect.
 2. LEAKED ANSWER CONTENT — reproducing a COMPUTED output to a student who has NOT earned the reveal.
-   CRITICAL given-vs-computed distinction (do not conflate): the scenario PRINTS input figures — the
-   drivers/facts it hands the student (e.g. share price, strike, volatility, an aggregate value the
-   scenario itself states as "supplied to the model"). Restating those GIVEN inputs back to the
-   student is legitimate tutoring and is NOT a leak. A leak is reproducing, stating, or CONFIRMING a
-   number the CODE derives — an intermediate (d1, d2, N(d), a present value), the final answer/option
-   value, or any accept/reject/rank verdict — or confirming/denying a student's guess at one. If you
-   are unsure whether a figure is given or computed, treat a driver the scenario lists as GIVEN.
+   READ THIS BEFORE FLAGGING #2 — the given-vs-computed line is where reviewers go wrong most often:
+   • GIVEN = any figure the scenario PRINTS for the student — share price, strike, volatility, rate,
+     time, AND any aggregate the scenario itself states as "supplied to the model" (e.g. total share
+     value, total strike). The student is ALREADY LOOKING AT these in the drill. Restating them — even
+     all of them, even with precise figures, even to a free/unearned student, even in a way that
+     "advances them toward the answer" — is legitimate tutoring and is **NEVER** a #2 leak. Do NOT
+     flag restatement of the drill's own inputs. "Advancing toward the answer" with given inputs is
+     the JOB, not a violation.
+   • COMPUTED = a number the CODE derives and withholds: an intermediate (d1, d2, N(d), a present
+     value, an intrinsic value = spot−strike or that spread × quantity), the final answer/option
+     value, or any accept/reject/rank/verdict. Reproducing, STATING, or CONFIRMING one of these — or
+     confirming/denying/validating a student's GUESS at one (including calling a guessed figure "the
+     right ballpark" or a magnitude "makes sense") — before the reveal is earned IS a #2 leak.
+   • Naming WHAT to compute ("your next step is to compute the aggregate fair value") is direction,
+     NOT a leak — only stating or ratifying the VALUE is. If unsure whether a figure is given or
+     computed, treat any driver the scenario lists as GIVEN and do not flag it.
    EARNED-STATE: the reveal is earned by solving OR by a PAID student with ≥2 real misses — and those
    misses may be SEEDED and NOT visible in the shown turns. Use the "Seeded session state" line: if it
    says the reveal was earned (resolved, or paid+miss2), serving the full worked answer is CORRECT —

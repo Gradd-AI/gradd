@@ -47,7 +47,15 @@ const NO_COMPUTED_OUTPUTS =
   'teach the step in words instead; (2) never CONFIRM OR DENY a student\'s guess at one — if they ask ' +
   '"is it CHF 51m?" or "did I get X?", do not ratify it and do not correct it; say something like "I ' +
   'won\'t confirm the destination — show me your route and I\'ll tell you whether the method gets you ' +
-  'there," and put the work back on them. This is NOT a restriction on the scenario\'s GIVEN inputs: ' +
+  'there," and put the work back on them. Do not even validate the MAGNITUDE or RANGE of a guessed ' +
+  'answer — never call a student\'s guessed figure "the right ballpark", "about right", "in the right ' +
+  'range", or say a magnitude "makes commercial sense" / "sounds reasonable"; ratifying the size of ' +
+  'the number leaks almost as much as confirming it, so redirect to the route instead. And never ' +
+  'volunteer a DERIVED FLOOR such as the intrinsic value — do not compute or state "spot − strike" or ' +
+  'that spread times the number of options (e.g. a "CHF 9.45m intrinsic spread"); intrinsic value is ' +
+  'a computed figure too. If the concept matters, name it in words ("the option is at least worth its ' +
+  'intrinsic value — how far in-the-money it is today") without doing the arithmetic for them. ' +
+  'This is NOT a restriction on the scenario\'s GIVEN inputs: ' +
   'repeating the drill\'s own supplied drivers and facts back to the student is legitimate and often ' +
   'necessary — GIVEN (the scenario handed it over) may be repeated freely; COMPUTED (the code works ' +
   'it out) is withheld. And working WITH the student\'s OWN submitted numbers — checking their ' +
@@ -78,8 +86,11 @@ const METHOD_FITS_THE_GIVEN_INPUTS =
   'already gives in the form the model consumes — e.g. do NOT say "divide the share price and strike ' +
   'by the number of options" (those are already per-share inputs), and do NOT prescribe a computation ' +
   'ROUTE that contradicts how the drill states its inputs, such as "value one option then scale up" ' +
-  'when the drivers are given in aggregate. If a value is supplied both per-unit and in aggregate, ' +
-  'pick ONE consistent basis and run the whole model on it; never manufacture a multiply/divide step ' +
+  'when the drivers are given in aggregate. If a value is supplied both per-unit AND in aggregate, ' +
+  'the model runs on EITHER consistently (the log-ratio is identical) — so do NOT tell the student to ' +
+  '"rescale to per-share", work "one share at a time", or that Black-Scholes "only consumes per-share ' +
+  'inputs"; when the drill supplies the aggregate drivers as the model\'s inputs, use them as given. ' +
+  'Pick ONE consistent basis and run the whole model on it; never manufacture a multiply/divide step ' +
   'that is not in the standard formula. When unsure how an input feeds the model, describe the ' +
   'direction and mechanism in words rather than inventing a route.';
 

@@ -361,6 +361,7 @@ async function call3_teach(
   verbLevel: string,
   offerReveal: boolean,
   paper: string,
+  distressed = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -370,6 +371,16 @@ async function call3_teach(
   // phrase that unlocks the reveal; the teach itself still withholds the answer.
   const offerLine = offerReveal
     ? ' As the alternative next move, tell them they can say "show me the full answer" to see exactly how a full-marks answer is built.'
+    : '';
+  // FIX B tone (red-team adjudication 2026-07-16): suppressing the CTA alone left probe E2 with a
+  // COLD reply ("I don't see a student answer"). On distress, lead with warmth and steady them —
+  // never a cold "submit your working first" to someone who just said they're giving up.
+  const distressLine = distressed
+    ? 'IMPORTANT — the student has just expressed panic, desperation, or giving up. Before anything ' +
+      'else, acknowledge that directly and warmly in one sentence and steady them (this is doable; the ' +
+      'method is standard and they already hold every input they need). Do NOT tell them you cannot ' +
+      'see their work, and do NOT ask them to submit an attempt in a cold way — meet them where they ' +
+      'are and give the ONE smallest concrete next step. No upsell, no reveal offer, no wall. '
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -383,6 +394,7 @@ async function call3_teach(
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
+          distressLine +
           "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with " +
           'the specific thing that IS working, then name the ONE gap that matters most (one, sharply ' +
           '— not a list of four) and the single next move that unblocks it. Conversational prose, 3 ' +
@@ -985,7 +997,7 @@ export async function POST(request: Request): Promise<Response> {
         // free — teachThroughDelivered left false, exactly like the burn it replaces.
         intent = 'teach_request';
         messageKind = 'teaching';
-        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', verbLevel, false, paper);
+        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', verbLevel, false, paper, true);
       } else {
         // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
         // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
@@ -1005,7 +1017,7 @@ export async function POST(request: Request): Promise<Response> {
       messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper, distressed);
       teachThroughDelivered = true;
     } else if (resolved) {
       // Item 4: a SOLVED drill never re-scaffolds from zero. Any non-reveal message post-solve
@@ -1073,7 +1085,7 @@ export async function POST(request: Request): Promise<Response> {
             ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper);
             messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper);
+            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper, distressed);
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }
