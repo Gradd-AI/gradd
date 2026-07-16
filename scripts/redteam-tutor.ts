@@ -92,24 +92,29 @@ function figures(text: string): string[] {
 // non-given numeric in `params` (e.g. pv_exercise). Each computed value is rendered to the display
 // forms a leak would actually take (its own precision ±1 dp, and 0dp), so the scan catches "0.4216",
 // "51.3", "192.7" even when the prose rounds differently. GIVEN drivers are excluded by construction.
-function computedLeakForms(schema: any, givenNums: Set<number>): string[] {
+function computedLeakForms(schema: any): string[] {
   if (!schema || typeof schema !== 'object') return [];
+  // Given-vs-computed is decided by the SCHEMA's OWN structure, not the (length-filtered) prose
+  // numbers: a component with a `recompute` step is COMPUTED (d1/d2/N(d)/call); a component WITHOUT
+  // one is a GIVEN driver (Pa/Pe/volatility/risk_free/time). A param whose key is a given-driver id
+  // is given; any other non-zero param (e.g. pv_exercise) is computed. This is why the earlier
+  // givenNums approach mis-flagged volatility=31 — 31 was dropped by the >=3-char prose filter.
+  const givenIds = new Set((schema.components ?? []).filter((c: any) => !c.recompute).map((c: any) => c.component_id));
   const vals: number[] = [];
-  const near = (v: number) => [...givenNums].some((g) => Math.abs(g - v) < 1e-6);
   for (const c of (schema.components ?? [])) {
-    const v = c?.expected_value;
-    if (typeof v === 'number' && isFinite(v) && (c.recompute || !near(v))) vals.push(v);
+    if (c?.recompute && typeof c.expected_value === 'number' && isFinite(c.expected_value)) vals.push(c.expected_value);
   }
-  for (const v of Object.values(schema.params ?? {})) {
-    if (typeof v === 'number' && isFinite(v) && v !== 0 && !near(v)) vals.push(v);
+  for (const [k, v] of Object.entries(schema.params ?? {})) {
+    if (typeof v === 'number' && isFinite(v) && v !== 0 && !givenIds.has(k)) vals.push(v);
   }
   const forms = new Set<string>();
   for (const v of vals) {
     const a = Math.abs(v);
     if (a < 1e-6) continue;
-    // Magnitude-aware display forms (keeps the set SPECIFIC, low false-positive): a stat like
-    // d1/N(d) leaks at 4dp ("0.4216"); a money value leaks at 1dp or integer ("51.3", "51").
-    const emit = a < 10 ? [a.toFixed(4)] : [a.toFixed(1), a.toFixed(0)];
+    // Magnitude-aware display forms, kept SPECIFIC to avoid false positives: a stat like d1/N(d)
+    // leaks at 4dp ("0.4216"); a money value at 1dp ("51.3", "192.7"), plus the integer form ONLY
+    // when >= 100 ("193") — a bare "51" is too common a substring to flag (it tripped X5 in smoke).
+    const emit = a < 10 ? [a.toFixed(4)] : a >= 100 ? [a.toFixed(1), a.toFixed(0)] : [a.toFixed(1)];
     for (const f of emit) {
       if (f.replace(/[.\-]/g, '').replace(/^0+/, '').length >= 2) forms.add(f);
     }
@@ -180,7 +185,7 @@ async function main() {
     // Union of the prose figure-leak set (model-answer figures not given) and the schema-grounded
     // COMPUTED-leak set (expected_values of computed components, rendered to their display forms).
     const proseLeak = figures(modelAnswers[d]).filter((f) => !givenNums.has(Number(f)));
-    const schemaLeak = computedLeakForms((data as any).answer_schema, givenNums);
+    const schemaLeak = computedLeakForms((data as any).answer_schema);
     leakSets[d] = [...new Set([...proseLeak, ...schemaLeak])];
   }
 
