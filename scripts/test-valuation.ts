@@ -13,7 +13,7 @@ import {
   computeFcfe, buildFcfeSchema, buildFcfeModelAnswer,
   computeDividendCapacity, buildDividendSchema, buildDividendModelAnswer,
   computeValuationCompare, buildCompareSchema, buildCompareModelAnswer,
-  checkValuationBridge,
+  checkValuationBridge, divergentEquity,
   type FcffInputs, type CapmFront, type FcfeInputs, type DividendInputs, type CompareInputs,
 } from '../lib/acca/valuation';
 import { computeCapm } from '../lib/acca/capm';
@@ -48,6 +48,10 @@ ok('K1 model answer: GATE2 figure-integrity (every component figure present)', f
 ok('K1 model answer: shows the derived Ke and WACC', k1ans.includes(capmFront.ke.toFixed(2)) && k1ans.includes(capmFront.wacc.toFixed(2)));
 ok('K1 bridge: firm − debt = equity (one strip)', validateValuationBridge('fcff_enterprise', k1, { debt_value: 300 }).ok);
 ok('K1 serialized: wacc carries recompute id + depends_on ke', k1s.serialized.components.find((c) => c.component_id === 'wacc')?.recompute === 'wacc_mv_weighted');
+// FIX 1 (pattern): DCF equity here (~2.7× the 700 equity weight) diverges >50% → code injects the reconciliation point.
+ok('K1 FIX1: divergentEquity predicate (true >50%, false ~3%)', divergentEquity(k1.equity_value, 700) === true && divergentEquity(720, 700) === false);
+ok('K1 FIX1: divergent equity INJECTS the code-owned reconciliation point (first, before advice)',
+  k1ans.includes('Reconcile the equity divergence') && /roughly [0-9.]+× the/.test(k1ans) && k1ans.indexOf('Reconcile the equity divergence') < k1ans.indexOf('Advice to the board'));
 
 // ─────────────────────────────── K2 — fcfe_equity (exact FCFF↔FCFE reconciliation) ───────────────────────────────
 const k2in: FcfeInputs = { pbit: 180, tax_rate: 0.25, depreciation: 40, capex: 35, delta_working_capital: 10, ke: 0.14, kd: 0.06, debt_value: 400, offer_price: 620 };
@@ -94,8 +98,13 @@ ok('K4 schema: GATE1 self-consistency clean (fcff→firm→equity + multiple roo
 ok('K4 model answer: GATE2 figure-integrity', figuresPresent(k4s.schema, k4ans));
 ok('K4 bridge: DCF bridge + range + offer-position consistent', validateValuationBridge('valuation_compare', k4, { debt_value: 500 }).ok);
 // EV/EBITDA variant strips debt
-const k4b = computeValuationCompare({ ...k4in, multiple_type: 'ev_ebitda', multiple: 8, ebitda: 245, earnings: undefined, offer_price: 1400 });
+const k4bIn: CompareInputs = { ...k4in, multiple_type: 'ev_ebitda', multiple: 8, ebitda: 245, earnings: undefined, offer_price: 1400 };
+const k4b = computeValuationCompare(k4bIn);
 ok('K4 EV/EBITDA is an ENTERPRISE multiple (strip debt): equity = 8×245 − 500', Math.abs(k4b.equity_multiple - (8 * 245 - 500)) < 1e-9);
+// FIX 2: the EV/EBITDA Method-2 line is clean — "8× × EBITDA 245.0 = EV; equity = EV − debt" (no "less debt =" garble).
+const k4bAns = buildCompareModelAnswer(k4bIn, k4b, 'Prose.', CUR);
+ok('K4 FIX2: EV/EBITDA line reads cleanly (× × EBITDA, EV then strip debt), no "less debt =" garble',
+  k4bAns.includes('× × EBITDA') && k4bAns.includes(fmt1(k4b.enterprise_multiple!)) && k4bAns.includes('− debt') && !k4bAns.includes('less debt ='));
 
 // ─────────────────────────────── Bridge gate NEGATIVE tests (must FAIL on corruption) ───────────────────────────────
 ok('bridge FAILS on a broken FCFF strip (firm−debt ≠ equity)',

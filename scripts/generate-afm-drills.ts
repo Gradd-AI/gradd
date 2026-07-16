@@ -73,6 +73,7 @@ import {
   buildCompareModelAnswer,
   buildFcffComposedSchema,
   buildFcffComposedModelAnswer,
+  divergentEquity,
   type FcffInputs,
   type FcffComputed,
   type SerializedSchema,
@@ -1171,6 +1172,7 @@ interface DrillOutput {
   _valuationKind?:    ValuationKind;     // valuation family — selects the bridge-gate branch
   _valuationComputed?: FcffComputed | FcfeComputed | DividendComputed | CompareComputed; // valuation — bridge gate + dry-run
   _valuationDebt?:    number;            // valuation — debt value for the bridge gate
+  _valuationEquityWeight?: number;       // fcff_enterprise — estimated equity weight, for the FIX-1 divergence lint
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -1511,7 +1513,7 @@ async function draftValuationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Pr
     const computed = computeFcff(fcffInputs);
     const { schema, serialized } = buildFcffComposedSchema(fcffInputs, computed, capm, currency);
     const model_answer = buildFcffComposedModelAnswer(fcffInputs, computed, capm, inp.interpretation_prose, currency);
-    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed, _valuationEquityWeight: capm.company_ve };
   }
   if (kind === 'fcfe_equity') {
     const fi: FcfeInputs = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital, ke: r.ke, kd: r.kd, debt_value: r.debt_value, offer_price: r.offer_price };
@@ -1730,6 +1732,16 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     lines.push(`GATE 11 — valuation flow/rate/bridge: ${bridge.ok ? 'PASS' : 'FAIL'}`);
     if (!bridge.ok) { ok = false; for (const iss of bridge.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
     else lines.push(`    ✓ ${drill._valuationKind}: flow matched to the right rate, debt bridge correct`);
+    // FIX 1 lint (pattern rule c): a fcff_enterprise whose DCF equity diverges >50% from the estimated
+    // equity weight MUST carry the divergence-reconciliation point (code injects it; this enforces it).
+    if (drill._valuationKind === 'fcff_enterprise' && drill._valuationEquityWeight) {
+      const eq = (drill._valuationComputed as FcffComputed).equity_value;
+      const diverges = divergentEquity(eq, drill._valuationEquityWeight);
+      const hasRecon = /Reconcile the equity divergence/.test(drill.model_answer);
+      const okDiv = !diverges || hasRecon;
+      lines.push(`GATE 11b — equity-divergence reconciliation: ${okDiv ? 'PASS' : 'FAIL'}${diverges ? ' (>50% divergence — point required)' : ' (no material divergence)'}`);
+      if (!okDiv) { ok = false; lines.push('    ✗ DCF equity diverges >50% from the estimated equity weight but the model answer omits the reconciliation point'); }
+    }
   } else {
     lines.push('GATE 11 — valuation flow/rate/bridge: N/A (not a valuation-family drill)');
   }

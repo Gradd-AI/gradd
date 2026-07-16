@@ -424,7 +424,7 @@ export function computeValuationCompare(raw: CompareInputs): CompareComputed {
     if (!(raw.ebitda! > 0)) throw new Error('ev_ebitda compare needs positive ebitda');
     enterprise_multiple = raw.multiple * raw.ebitda!;               // EV/EBITDA is an ENTERPRISE multiple → strip debt
     equity_multiple = enterprise_multiple - D;
-    method_label = `EV/EBITDA ${fmt1(raw.multiple)}× on EBITDA ${fmt1(raw.ebitda!)}, less debt`;
+    method_label = `${fmt1(raw.multiple)}× × EBITDA ${fmt1(raw.ebitda!)}`;   // the EV line strips debt separately (below)
   }
   if (!(equity_multiple > 0)) throw new Error(`Relative-method equity must be positive: ${equity_multiple}`);
 
@@ -533,7 +533,7 @@ export function buildFcffComposedSchema(raw: FcffInputs, c: FcffComputed, capm: 
   const recomputeIds: Record<string, string | undefined> = {
     wacc: 'wacc_mv_weighted', firm_value: 'firm_value_perpetuity_growth', equity_value: 'equity_value_strip_debt', equity_vs_offer: 'equity_minus_offer',
   };
-  const params = { ke: capm.ke, wacc: capm.wacc, growth_rate: g, debt_value: debt, tax_rate: taxDec, offer_price: offer, we, wd, kd: kdDec };
+  const params = { ke: capm.ke, wacc: capm.wacc, growth_rate: g, debt_value: debt, tax_rate: taxDec, offer_price: offer, we, wd, kd: kdDec, company_ve: capm.company_ve };
   return { schema: { components }, serialized: toSerialized(components, recomputeIds, params) };
 }
 
@@ -608,6 +608,18 @@ export function buildFcffComposedModelAnswer(raw: FcffInputs, c: FcffComputed, c
   const verdict = c.offer_supportable
     ? `is **below** the intrinsic equity value of ${m(c.equity_value)} by **${m(Math.abs(c.equity_vs_offer))}** — on the base case the offer is **supportable**`
     : `is **above** the intrinsic equity value of ${m(c.equity_value)} by **${m(Math.abs(c.equity_vs_offer))}** — on the base case the offer is **not supportable at this price**`;
+  // FIX 1 (pattern, K1-class, 2026-07-16): when the DCF equity diverges >50% from the ESTIMATED
+  // equity figure used to weight the WACC (a private-target simplification), CODE injects the
+  // divergence-reconciliation point FIRST — the board must not treat the offer as a bargain until the
+  // gap is reconciled. This is a code-owned figure-vs-figure comparison (per the code-owns-verdicts
+  // doctrine), not prose. `divergentEquity()` mirrors the generator lint that enforces it.
+  const diverges = divergentEquity(c.equity_value, capm.company_ve);
+  const ratio = c.equity_value / capm.company_ve;
+  const reconBlock = diverges ? [
+    '**Step 5 — Reconcile the equity divergence (before any bargain claim)**', '',
+    `The model's equity value of ${m(c.equity_value)} is roughly ${ratio.toFixed(1)}× the ${m(capm.company_ve)} estimated equity figure used to weight the WACC. Before treating the offer as a bargain the board must reconcile that gap — through the perpetuity growth-versus-WACC spread, the maintainable capex assumption, or a stale/understated equity estimate. *(Weight circularity: re-weighting the WACC at the model's own equity value would raise the equity weight, lift the WACC and lower the valuation; using the estimated equity for the weights is the standard exam simplification for a private target.)*`, '',
+  ] : [];
+  const adviceNo = diverges ? 6 : 5;
   return [
     '**Firm and equity valuation (FCFF, with the cost of capital derived)**', '',
     `**Step 0 — Cost of capital (CAPM → WACC)**`, '',
@@ -621,9 +633,18 @@ export function buildFcffComposedModelAnswer(raw: FcffInputs, c: FcffComputed, c
     `Equity value = firm value − market value of debt = ${fmt1(c.firm_value)} − ${fmt1(raw.debt_value)} = **${m(c.equity_value)}**  *(strip the debt — this is the fair value of the equity)*`, '',
     '**Step 4 — Offer test (base case)**', '',
     `The vendor's equity offer of ${m(c.offer_price)} ${verdict}.`, '',
-    '**Step 5 — Advice to the board**', '', prose, '',
+    ...reconBlock,
+    `**Step ${adviceNo} — Advice to the board**`, '', prose, '',
     `*Reconciliation: WACC ${capm.wacc.toFixed(2)}% → firm ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
   ].join('\n');
+}
+
+// FIX 1 lint predicate (pattern rule c): a fcff_enterprise DCF equity that diverges >50% from the
+// estimated equity figure used to weight the WACC MUST carry the divergence-reconciliation point.
+// Shared by the model-answer builder (injects it) and the generator gate (enforces it).
+export const VALUATION_DIVERGENCE_THRESHOLD = 0.5;
+export function divergentEquity(dcfEquity: number, equityWeight: number): boolean {
+  return equityWeight > 0 && Math.abs(dcfEquity - equityWeight) / equityWeight > VALUATION_DIVERGENCE_THRESHOLD;
 }
 
 // K2 FCFE — equity via FCFE @ Ke (no bridge), then the FCFF-route cross-check that reconciles.
@@ -678,7 +699,7 @@ export function buildCompareModelAnswer(raw: CompareInputs, c: CompareComputed, 
     : c.offer_position === 'above' ? `**above** the ${m(c.equity_low)}–${m(c.equity_high)} range — it looks **full/expensive**; the board should justify the premium with synergies or decline`
     : `**within** the ${m(c.equity_low)}–${m(c.equity_high)} range — it is a **defensible** price on these methods; negotiate around it`;
   const relLine = c.enterprise_multiple !== null
-    ? `Enterprise value = ${c.method_label} = ${fmt1(c.enterprise_multiple)}; equity = ${fmt1(c.enterprise_multiple)} − debt ${fmt1(raw.debt_value)} = **${m(c.equity_multiple)}**  *(EV/EBITDA is an enterprise multiple — strip debt)*`
+    ? `Enterprise value = ${c.method_label} = ${m(c.enterprise_multiple)}; equity = ${m(c.enterprise_multiple)} − debt ${m(raw.debt_value)} = **${m(c.equity_multiple)}**  *(EV/EBITDA is an enterprise multiple — strip debt)*`
     : `Equity = ${c.method_label} = **${m(c.equity_multiple)}**  *(P/E is already an equity multiple — do NOT strip debt)*`;
   return [
     '**Valuation of the target — two methods and a range**', '',

@@ -44,7 +44,7 @@ Raw inputs:
   Risk-free rate (Saudi government sukuk yield): 4.2%
   Equity / market risk premium: 6.5%
   NMG's own (geared) equity beta: 1.15
-  Market value of equity (weight for WACC): SAR 620 million
+  Vendor's estimated equity value (used for WACC weighting — a stated simplification for a private target): SAR 620 million
   Market value of debt (weight for WACC): SAR 480 million
   Pre-tax cost of debt: 5.8%
   Vendor's indicative equity offer: SAR 700 million
@@ -74,7 +74,11 @@ Equity value = firm value − market value of debt = 2331.5 − 480.0 = **SAR 18
 
 The vendor's equity offer of SAR 700.0m is **below** the intrinsic equity value of SAR 1851.5m by **SAR 1151.5m** — on the base case the offer is **supportable**.
 
-**Step 5 — Advice to the board**
+**Step 5 — Reconcile the equity divergence (before any bargain claim)**
+
+The model's equity value of SAR 1851.5m is roughly 3.0× the SAR 620.0m estimated equity figure used to weight the WACC. Before treating the offer as a bargain the board must reconcile that gap — through the perpetuity growth-versus-WACC spread, the maintainable capex assumption, or a stale/understated equity estimate. *(Weight circularity: re-weighting the WACC at the model's own equity value would raise the equity weight, lift the WACC and lower the valuation; using the estimated equity for the weights is the standard exam simplification for a private target.)*
+
+**Step 6 — Advice to the board**
 
 The critical discipline in this valuation is matching the cash flow to the correct discount rate: FCFF is a pre-financing flow belonging to all providers of capital, so it must be discounted at WACC — the blended, market-value-weighted cost of both equity and debt — and the resulting figure is enterprise (firm) value, not equity value; debt must then be stripped away to isolate the equity value that is comparable to the vendor's offer. The CAPM derivation uses NMG's own geared beta, which already reflects the financial risk of the company's actual capital structure, so no re-gearing adjustment is needed here. The board should treat the 3.5% perpetuity growth assumption with scepticism: NMG's revenue is heavily concentrated in two corporate insurance contracts, meaning a contract loss or renegotiation could structurally impair long-run cash flows and make the assumed growth rate unsustainable, which would materially compress firm value. Similarly, the board should commission an independent technical review of whether the SAR 90 million capital expenditure figure represents steady-state reinvestment or the tail end of a bed-expansion cycle — overstating sustainable capex depresses FCFF and understates value, while understating it inflates value, so the direction of any bias must be confirmed before proceeding. Finally, any acquisition premium implied by the vendor's offer relative to the model's equity value should be evaluated against the strategic rationale of gaining a licensed, multi-facility hospital platform in Riyadh, where regulatory barriers to entry are high — but that strategic premium should be bounded by the board's own required return, not conceded simply because the sector is attractive.
 
@@ -96,6 +100,7 @@ The classic misconception here is VALUATION PLUMBING: candidates either deduct i
   "we": 0.5636363636363636,
   "wacc": 8.605181818181817,
   "tax_rate": 0.2,
+  "company_ve": 620,
   "debt_value": 480,
   "growth_rate": 0.035,
   "offer_price": 700
@@ -498,7 +503,7 @@ Equity (DCF) = EV − debt = 16794.6 − 2100.0 = **PHP 14694.6m**
 
 **Method 2 — Relative (market multiple)**
 
-Enterprise value = EV/EBITDA 9.2× on EBITDA 2460.0, less debt = 22632.0; equity = 22632.0 − debt 2100.0 = **PHP 20532.0m**  *(EV/EBITDA is an enterprise multiple — strip debt)*
+Enterprise value = 9.2× × EBITDA 2460.0 = PHP 22632.0m; equity = PHP 22632.0m − debt PHP 2100.0m = **PHP 20532.0m**  *(EV/EBITDA is an enterprise multiple — strip debt)*
 
 **Range and offer test**
 
@@ -577,14 +582,14 @@ The classic misconception here is VALUATION PLUMBING: candidates either discount
   },
   {
    "unit": "PHPm",
-   "label": "Equity value (relative method: EV/EBITDA 9.2× on EBITDA 2460.0, less debt)",
+   "label": "Equity value (relative method: 9.2× × EBITDA 2460.0)",
    "tolerance": {
     "pct": 0.5,
     "kind": "relative"
    },
    "component_id": "equity_multiple",
    "working_steps": [
-    "Equity (relative) = EV/EBITDA 9.2× on EBITDA 2460.0, less debt = 20532.0"
+    "Equity (relative) = 9.2× × EBITDA 2460.0 = 20532.0"
    ],
    "expected_value": 20532
   }
@@ -615,7 +620,7 @@ Raw inputs:
   Risk-free rate:                              4.2%
   Equity / market risk premium:                6.0%
   Ironbark's own geared equity beta:           1.18
-  Market value of equity (weight):             AUD 490 m
+  Vendor's estimated equity value (used for WACC weighting — a stated simplification for a private target): AUD 490 m
   Market value of debt (weight / kd base):     AUD 310 m
   Pre-tax cost of debt:                        5.8%
   Vendor's indicative equity offer:            AUD 720 m
@@ -645,7 +650,11 @@ Equity value = firm value − market value of debt = 1810.8 − 310.0 = **AUD 15
 
 The vendor's equity offer of AUD 720.0m is **below** the intrinsic equity value of AUD 1500.8m by **AUD 780.8m** — on the base case the offer is **supportable**.
 
-**Step 5 — Advice to the board**
+**Step 5 — Reconcile the equity divergence (before any bargain claim)**
+
+The model's equity value of AUD 1500.8m is roughly 3.1× the AUD 490.0m estimated equity figure used to weight the WACC. Before treating the offer as a bargain the board must reconcile that gap — through the perpetuity growth-versus-WACC spread, the maintainable capex assumption, or a stale/understated equity estimate. *(Weight circularity: re-weighting the WACC at the model's own equity value would raise the equity weight, lift the WACC and lower the valuation; using the estimated equity for the weights is the standard exam simplification for a private target.)*
+
+**Step 6 — Advice to the board**
 
 The most fragile input is the perpetuity growth rate of 2.5%, which assumes Ironbark can sustain revenue expansion indefinitely despite its stated concentration in two Pilbara mining clients; the board should stress-test this rate against a scenario where commodity-cycle contraction suppresses volumes, because the perpetuity formula amplifies even a modest reduction in growth into a materially lower firm value. The normalised capital expenditure figure also deserves rigorous due diligence: if Ironbark's recent above-trend investment reflects ongoing capacity requirements rather than a one-off catch-up, the true free cash flow available to capital providers will be lower than this model implies, and the board should request audited asset-register and maintenance-capex schedules before relying on the supplied figure. On valuation plumbing, FCFF is a pre-financing flow — it represents cash generated for all capital providers before any interest deduction — and therefore must be discounted at WACC, which blends the returns required by both debt and equity holders; stripping the resulting firm value of debt then isolates the residual claim belonging to equity, which is what the vendor's offer should be compared against. The MV-weighted WACC derived here uses Ironbark's own geared beta, which already embeds the leverage observed in its current capital structure, so no peer-group ungearing adjustment is required; however, the board should confirm whether Kalgara's post-acquisition financing structure would differ materially, since a significant recapitalisation would alter the effective discount rate and therefore the equity value. Finally, the customer-concentration risk inherent in a 70%-revenue exposure to two counterparties is a legitimate basis for demanding a structural discount or earn-out mechanism in any final offer, a factor the Gordon-growth perpetuity model does not capture of its own accord.
 
@@ -667,6 +676,7 @@ The classic misconception on FCFF drills is VALUATION PLUMBING — typically, a 
   "we": 0.6125,
   "wacc": 8.527199999999999,
   "tax_rate": 0.28,
+  "company_ve": 490,
   "debt_value": 310,
   "growth_rate": 0.025,
   "offer_price": 720
