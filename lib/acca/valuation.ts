@@ -267,3 +267,220 @@ export function buildFcffModelAnswer(raw: FcffInputs, c: FcffComputed, prose: st
     `*Reconciliation: firm value ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
   ].join('\n');
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// BATCH #9 — the valuation FAMILY (2026-07-16): FCFE (equity), dividend capacity, a
+// two-method valuation compare, and the FCFF composition front-end (CAPM-derived WACC).
+// Each kind owns its arithmetic AND every figure-vs-figure verdict; the model authors prose
+// only. valuation.ts stays CAPM-FREE (capm.ts imports the money helpers from here, so
+// importing capm.ts back would be a cycle) — the CAPM-derived (ke, wacc) are computed by the
+// GENERATOR via computeCapm('org_wacc') and passed IN (the composition ruling; K1 light-compose).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export type ValuationKind = 'fcff_enterprise' | 'fcfe_equity' | 'dividend_capacity' | 'valuation_compare';
+
+function finiteGuard(raw: Record<string, unknown>, ctx: string): void {
+  for (const [k, v] of Object.entries(raw)) {
+    if (v === undefined) continue;
+    if (typeof v === 'number' && !Number.isFinite(v)) throw new Error(`${ctx} input "${k}" is not finite: ${JSON.stringify(v)}`);
+  }
+}
+
+// ── K1 composition: the CAPM front-end display block (ke, wacc DERIVED by computeCapm('org_wacc')
+//    and passed in; βe + structure supplied for the shown working). No peer ungearing (ruling). ──
+export interface CapmFront {
+  rf: number; mrp: number; tax_rate: number;           // decimals or %
+  company_equity_beta: number; company_ve: number; company_vd: number; kd: number;
+  ke: number;   // % — CAPM-derived (Ke = Rf + βe·MRP), passed in
+  wacc: number; // % — MV-weighted WACC, passed in
+}
+
+// ── K2: FCFE (equity value) — a maintainable NO-GROWTH perpetuity with constant debt (net
+//    borrowing = 0), which makes the FCFF-route and FCFE-route equity values reconcile EXACTLY
+//    (E = FCFE/Ke = FCFF/WACC_implied − D, proven under g=0, nb=0). The reconciliation is the
+//    K2 teaching point and is INTERNAL to this one target (ruling). ──
+export interface FcfeInputs {
+  pbit: number; tax_rate: number; depreciation: number; capex: number; delta_working_capital: number;
+  ke: number;          // SUPPLIED cost of equity (ruling: K2 rate supplied)
+  kd: number;          // pre-tax cost of debt (for after-tax interest + the implied WACC cross-check)
+  debt_value: number;
+  offer_price: number; // vendor equity offer under test
+}
+export interface FcfeComputed {
+  fcff: number; fcfe: number;
+  equity_value: number;        // FCFE / Ke — the PRIMARY route, NO debt bridge
+  firm_value: number;          // equity + debt (implied)
+  wacc_implied: number;        // decimal — from value weights, for the reconciling cross-check
+  equity_via_fcff: number;     // FCFF / WACC_implied − debt  (== equity_value by construction)
+  reconciliation_gap: number;  // equity_value − equity_via_fcff (== 0)
+  equity_vs_offer: number; offer_supportable: boolean;
+}
+export function computeFcfe(raw: FcfeInputs): FcfeComputed {
+  finiteGuard(raw as unknown as Record<string, unknown>, 'FCFE');
+  const t = asDecimalRate(raw.tax_rate), ke = asDecimalRate(raw.ke), kd = asDecimalRate(raw.kd);
+  const D = raw.debt_value, offer = raw.offer_price;
+  if (t < 0 || t >= 1) throw new Error(`tax_rate out of range [0,1): ${t}`);
+  if (ke <= 0 || ke >= 1) throw new Error(`ke out of range (0,1): ${ke}`);
+  if (kd <= 0 || kd >= 1) throw new Error(`kd out of range (0,1): ${kd}`);
+  if (!(D > 0)) throw new Error(`debt_value must be positive: ${D}`);
+  if (!(offer > 0)) throw new Error(`offer_price must be positive: ${offer}`);
+
+  const fcff = raw.pbit * (1 - t) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  const fcfe = fcff - kd * D * (1 - t);                 // constant debt, no new borrowing (g=0)
+  if (!(fcfe > 0)) throw new Error(`Computed FCFE must be positive: ${fcfe}`);
+
+  const equity_value = fcfe / ke;                        // no-growth perpetuity, discounted at Ke
+  const firm_value = equity_value + D;
+  const we = equity_value / firm_value, wd = D / firm_value;
+  const wacc_implied = we * ke + wd * kd * (1 - t);      // value-weighted → exact reconciliation
+  const equity_via_fcff = fcff / wacc_implied - D;
+  const reconciliation_gap = equity_value - equity_via_fcff;
+
+  return {
+    fcff, fcfe, equity_value, firm_value, wacc_implied, equity_via_fcff, reconciliation_gap,
+    equity_vs_offer: equity_value - offer,
+    offer_supportable: equity_value >= offer,
+  };
+}
+
+// ── K3: dividend capacity (FCFE-based cash available to equity) + the sustainability verdict.
+//    Net borrowing IS allowed here (real dividend capacity can draw on new debt); no discounting. ──
+export interface DividendInputs {
+  pbit: number; tax_rate: number; depreciation: number; capex: number; delta_working_capital: number;
+  kd: number; debt_value: number;
+  net_borrowing?: number;   // net new debt raised in the year (default 0)
+  proposed_dividend: number; // the board's intended / current total dividend under test
+  shares?: number;          // optional — for a per-share capacity figure
+}
+export interface DividendComputed {
+  fcff: number; fcfe: number; dividend_capacity: number;  // capacity == FCFE (cash to equity)
+  proposed_dividend: number; capacity_surplus: number;    // capacity − proposed (signed)
+  sustainable: boolean;                                   // capacity ≥ proposed
+  capacity_per_share: number | null;
+}
+export function computeDividendCapacity(raw: DividendInputs): DividendComputed {
+  finiteGuard(raw as unknown as Record<string, unknown>, 'Dividend');
+  const t = asDecimalRate(raw.tax_rate), kd = asDecimalRate(raw.kd);
+  const D = raw.debt_value, nb = raw.net_borrowing ?? 0, proposed = raw.proposed_dividend;
+  if (t < 0 || t >= 1) throw new Error(`tax_rate out of range [0,1): ${t}`);
+  if (kd <= 0 || kd >= 1) throw new Error(`kd out of range (0,1): ${kd}`);
+  if (!(D > 0)) throw new Error(`debt_value must be positive: ${D}`);
+  if (!(proposed > 0)) throw new Error(`proposed_dividend must be positive: ${proposed}`);
+
+  const fcff = raw.pbit * (1 - t) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  const fcfe = fcff - kd * D * (1 - t) + nb;
+  if (!(fcfe > 0)) throw new Error(`Computed FCFE (dividend capacity) must be positive: ${fcfe}`);
+  const capacity_per_share = raw.shares && raw.shares > 0 ? fcfe / raw.shares : null;
+
+  return {
+    fcff, fcfe, dividend_capacity: fcfe, proposed_dividend: proposed,
+    capacity_surplus: fcfe - proposed, sustainable: fcfe >= proposed, capacity_per_share,
+  };
+}
+
+// ── K4: two-method valuation compare → a value RANGE → the offer verdict. Method A = FCFF-DCF
+//    (Gordon growth); Method B = a relative multiple (P/E on equity earnings, or EV/EBITDA → strip
+//    debt). Code owns both figures, the range, and the offer's position. (Ruling: Gordon default +
+//    exit/relative multiple; method inputs supplied.) ──
+export type CompareMultiple = 'pe' | 'ev_ebitda';
+export interface CompareInputs {
+  pbit: number; tax_rate: number; depreciation: number; capex: number; delta_working_capital: number;
+  wacc: number; growth_rate: number; debt_value: number;   // DCF method
+  multiple_type: CompareMultiple; multiple: number;         // relative method
+  earnings?: number;   // pe: equity = multiple × earnings
+  ebitda?: number;     // ev_ebitda: EV = multiple × ebitda; equity = EV − debt
+  offer_price: number;
+}
+export interface CompareComputed {
+  fcff: number; firm_value_dcf: number; equity_dcf: number;
+  equity_multiple: number; method_label: string; enterprise_multiple: number | null;
+  equity_low: number; equity_high: number;
+  offer_price: number; offer_position: 'below' | 'within' | 'above';
+}
+export function computeValuationCompare(raw: CompareInputs): CompareComputed {
+  finiteGuard(raw as unknown as Record<string, unknown>, 'Compare');
+  const t = asDecimalRate(raw.tax_rate), wacc = asDecimalRate(raw.wacc), g = asDecimalRate(raw.growth_rate);
+  const D = raw.debt_value, offer = raw.offer_price;
+  if (t < 0 || t >= 1) throw new Error(`tax_rate out of range [0,1): ${t}`);
+  if (wacc <= 0 || wacc >= 1) throw new Error(`wacc out of range (0,1): ${wacc}`);
+  if (g < 0) throw new Error(`growth_rate must be ≥ 0: ${g}`);
+  if (wacc - g < 0.005) throw new Error(`WACC (${wacc}) must exceed growth (${g}) by ≥ 0.5%`);
+  if (!(D > 0)) throw new Error(`debt_value must be positive: ${D}`);
+  if (!(raw.multiple > 0)) throw new Error(`multiple must be positive: ${raw.multiple}`);
+  if (!(offer > 0)) throw new Error(`offer_price must be positive: ${offer}`);
+
+  const fcff = raw.pbit * (1 - t) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  if (!(fcff > 0)) throw new Error(`Computed FCFF must be positive: ${fcff}`);
+  const firm_value_dcf = (fcff * (1 + g)) / (wacc - g);
+  const equity_dcf = firm_value_dcf - D;
+  if (!(equity_dcf > 0)) throw new Error(`DCF equity must be positive: ${equity_dcf}`);
+
+  let equity_multiple: number, method_label: string, enterprise_multiple: number | null = null;
+  if (raw.multiple_type === 'pe') {
+    if (!(raw.earnings! > 0)) throw new Error('pe compare needs positive earnings');
+    equity_multiple = raw.multiple * raw.earnings!;                 // P/E is an EQUITY multiple — no debt strip
+    method_label = `P/E ${fmt1(raw.multiple)}× on earnings ${fmt1(raw.earnings!)}`;
+  } else {
+    if (!(raw.ebitda! > 0)) throw new Error('ev_ebitda compare needs positive ebitda');
+    enterprise_multiple = raw.multiple * raw.ebitda!;               // EV/EBITDA is an ENTERPRISE multiple → strip debt
+    equity_multiple = enterprise_multiple - D;
+    method_label = `EV/EBITDA ${fmt1(raw.multiple)}× on EBITDA ${fmt1(raw.ebitda!)}, less debt`;
+  }
+  if (!(equity_multiple > 0)) throw new Error(`Relative-method equity must be positive: ${equity_multiple}`);
+
+  const equity_low = Math.min(equity_dcf, equity_multiple);
+  const equity_high = Math.max(equity_dcf, equity_multiple);
+  const offer_position: 'below' | 'within' | 'above' =
+    offer < equity_low ? 'below' : offer > equity_high ? 'above' : 'within';
+
+  return {
+    fcff, firm_value_dcf, equity_dcf, equity_multiple, method_label, enterprise_multiple,
+    equity_low, equity_high, offer_price: offer, offer_position,
+  };
+}
+
+// ── The BRIDGE GATE core (calculator #9): asserts the flow↔rate↔bridge invariants the family
+//    teaches. Delegated to by validate-schema.ts::validateValuationBridge (GATE-11), the
+//    deterministic guard against the VALUATION-PLUMBING failure class. ──
+export interface ValuationBridgeCheck { ok: boolean; reason?: string }
+export function checkValuationBridge(
+  kind: ValuationKind,
+  c: FcffComputed | FcfeComputed | DividendComputed | CompareComputed,
+  ctx: { debt_value: number },
+): ValuationBridgeCheck {
+  const EPS = 1e-6;
+  const relClose = (a: number, b: number) => Math.abs(a - b) <= Math.abs(b) * 0.001 + EPS;
+  if (kind === 'fcff_enterprise') {
+    const f = c as FcffComputed;
+    if (!relClose(f.firm_value - ctx.debt_value, f.equity_value))
+      return { ok: false, reason: `FCFF bridge broken: firm ${f.firm_value} − debt ${ctx.debt_value} ≠ equity ${f.equity_value}` };
+    return { ok: true };
+  }
+  if (kind === 'fcfe_equity') {
+    const f = c as FcfeComputed;
+    // FCFE route must NOT strip debt (equity is direct) AND must reconcile with the FCFF route.
+    if (!relClose(f.equity_value, f.equity_via_fcff))
+      return { ok: false, reason: `FCFE↔FCFF reconciliation gap ${f.reconciliation_gap} (equity ${f.equity_value} vs via-FCFF ${f.equity_via_fcff})` };
+    if (!(f.wacc_implied > 0 && f.wacc_implied < 1))
+      return { ok: false, reason: `implied WACC out of range: ${f.wacc_implied}` };
+    return { ok: true };
+  }
+  if (kind === 'dividend_capacity') {
+    const f = c as DividendComputed;
+    if (!relClose(f.dividend_capacity, f.fcfe))
+      return { ok: false, reason: `dividend capacity ${f.dividend_capacity} ≠ FCFE ${f.fcfe}` };
+    if (f.sustainable !== (f.dividend_capacity >= f.proposed_dividend))
+      return { ok: false, reason: 'sustainability verdict inconsistent with capacity vs proposed' };
+    return { ok: true };
+  }
+  // valuation_compare
+  const f = c as CompareComputed;
+  if (!relClose(f.firm_value_dcf - ctx.debt_value, f.equity_dcf))
+    return { ok: false, reason: `DCF bridge broken in compare: firm ${f.firm_value_dcf} − debt ${ctx.debt_value} ≠ equity ${f.equity_dcf}` };
+  if (!(f.equity_low <= f.equity_high + EPS))
+    return { ok: false, reason: `range inverted: low ${f.equity_low} > high ${f.equity_high}` };
+  const pos = f.offer_price < f.equity_low ? 'below' : f.offer_price > f.equity_high ? 'above' : 'within';
+  if (pos !== f.offer_position)
+    return { ok: false, reason: `offer_position ${f.offer_position} inconsistent with range` };
+  return { ok: true };
+}
