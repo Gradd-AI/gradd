@@ -53,7 +53,7 @@ import {
   type StudentSubmission,
   type Verdict,
 } from '../lib/acca/numeric-verifier';
-import { validateSchemaSelfConsistency, validateSpreadTable, validateOptionBounds } from '../lib/acca/validate-schema';
+import { validateSchemaSelfConsistency, validateSpreadTable, validateOptionBounds, validateValuationBridge } from '../lib/acca/validate-schema';
 import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts, lintRatingSymbols } from '../lib/acca/validate-afm-prose';
 import {
   computeFcff,
@@ -62,9 +62,28 @@ import {
   normaliseCurrency,
   money,
   fmt1,
+  computeFcfe,
+  buildFcfeSchema,
+  buildFcfeModelAnswer,
+  computeDividendCapacity,
+  buildDividendSchema,
+  buildDividendModelAnswer,
+  computeValuationCompare,
+  buildCompareSchema,
+  buildCompareModelAnswer,
+  buildFcffComposedSchema,
+  buildFcffComposedModelAnswer,
   type FcffInputs,
   type FcffComputed,
   type SerializedSchema,
+  type ValuationKind,
+  type CapmFront,
+  type FcfeInputs,
+  type FcfeComputed,
+  type DividendInputs,
+  type DividendComputed,
+  type CompareInputs,
+  type CompareComputed,
 } from '../lib/acca/valuation';
 import {
   computeNpv,
@@ -158,6 +177,7 @@ interface AfmDrillSpec {
   duration_kind?:          DurationKind; // B3f batch only — selects the duration drill variant
   credit_kind?:            CreditKind;   // B3h/B4a batch only — selects the credit-risk drill variant
   bsop_kind?:              BsopKind;     // B2a/B2c batch only — selects the BSOP / real-option variant
+  valuation_kind?:         ValuationKind; // B4a/B4b/A6 batch only — selects the valuation-family variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -169,6 +189,10 @@ interface AfmDrillSpec {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const FCFF_LOS = new Set<LoCode>(['B4b', 'B4c']);
+// Valuation FAMILY (batch #9): FCFF-enterprise / FCFE-equity / dividend-capacity / two-method compare
+// + the B4c rehab. Keyed off spec.valuation_kind (set by --valuation-batch). B4a = equity valuation,
+// B4b = which-flows-which-rate, A6 = dividend capacity/policy, B4c = the parked-drill rehab.
+const VALUATION_LOS = new Set<LoCode>(['B4a', 'B4b', 'B4c', 'A6']);
 const NPV_LOS  = new Set<LoCode>(['B1a']);
 // APV (B3j quantitative / B3k mixed). B3k is 'mixed' in SYLLABUS_MAP, so the APV route is
 // keyed off spec.apv_kind (set by --apv-batch), NOT off mode — the compare kind carries
@@ -452,6 +476,42 @@ Requirements:
 - context_text: 2–3 sentences of scenario narrative + a clean labelled list of the raw inputs (money figures in millions of the LOCAL currency, rates in %): PBIT, tax rate, depreciation/non-cash, capex, the increase in working capital, the WACC, the long-term growth rate, the market value of debt, and the vendor's indicative equity offer/asking price. Use the local currency for ${spec.region_hint} (e.g. AUD, ZAR, BRL) consistently, and report its ISO code in the currency field. Add 1–2 challengeable textures (capex vs sustainable reinvestment; customer/contract concentration or cyclicality) so scepticism has something to bite. Give figures a candidate could compute from — do NOT pre-compute FCFF or value.
 - Provide the SAME figures as the structured raw_inputs object (including offer_price). Rates (tax_rate, wacc, growth_rate) as DECIMAL FRACTIONS (0.25 for 25%). WACC must exceed the growth rate by at least 1 percentage point. Choose figures so FCFF and equity value are positive and debt is below firm value; set the offer realistically so "is it justified?" is a genuine judgement.
 - interpretation_prose: qualitative advice ONLY (3–5 sentences), following the tool rules — NO numbers, NO inequalities between computed figures, NO break-evens, NO directional claim about a wrong discount rate, and ONLY facts present in context_text. Interest stays OUT of FCFF (financing is captured by the WACC and the debt strip). Cover which inputs are most fragile and why, and the due diligence the board should require.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
+function buildValuationUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.valuation_kind ?? 'fcff_enterprise';
+  const kindBlock =
+    kind === 'fcff_enterprise'
+      ? `- DRILL TYPE: FCFF FIRM VALUATION with the DISCOUNT RATE DERIVED. The candidate must first derive the cost of capital (CAPM → WACC), then value the firm by FCFF, strip debt to reach equity, and advise on the vendor's equity offer. In raw_inputs supply the FCF build (pbit, tax_rate [decimal], depreciation, capex, delta_working_capital), debt_value, growth_rate [decimal], offer_price, AND the CAPM front-end: rf [%], mrp [%], company_equity_beta (the firm's OWN geared beta — NO peer/ungearing here), company_ve, company_vd (=debt_value), kd [%]. context_text lists all of these as scenario facts. Code computes Ke = Rf+βe·MRP, the MV-weighted WACC, FCFF, firm value, equity value and the offer verdict — state NONE of them.`
+      : kind === 'fcfe_equity'
+      ? `- DRILL TYPE: FCFE EQUITY VALUATION (a maintainable NO-GROWTH perpetuity, constant debt — no new borrowing). The candidate values the equity DIRECTLY by discounting FCFE at the cost of equity Ke, with NO debt strip, then shows the FCFF route reconciles. In raw_inputs supply the FCF build (pbit, tax_rate [decimal], depreciation, capex, delta_working_capital), debt_value, ke [DECIMAL, e.g. 0.13], kd [DECIMAL, e.g. 0.06], offer_price. Do NOT supply growth_rate or a wacc (there is no growth; code derives the reconciling WACC). Code computes FCFF, FCFE = FCFF−Kd·D(1−t), equity = FCFE/Ke, the reconciliation, and the offer verdict — state NONE. The teaching crux: FCFE goes at Ke and you do NOT strip debt again.`
+      : kind === 'dividend_capacity'
+      ? `- DRILL TYPE: DIVIDEND CAPACITY + POLICY. The candidate computes the CASH available to equity this year (FCFE) and judges whether the board's proposed dividend is sustainable. In raw_inputs supply the FCF build (pbit, tax_rate [decimal], depreciation, capex, delta_working_capital), debt_value, kd [DECIMAL], net_borrowing (net new debt raised this year, may be 0), proposed_dividend, and optionally shares (millions) for a per-share figure. Do NOT supply a discount rate — there is no discounting here. Code computes FCFF, dividend capacity (=FCFE), the surplus/shortfall vs the proposed dividend, and the sustainability verdict — state NONE. The crux: dividend capacity is CASH, not accounting profit.`
+      : `- DRILL TYPE: TWO-METHOD VALUATION COMPARE → a value RANGE and a bid verdict. Value the target by (1) FCFF-DCF (Gordon growth) and (2) a relative market multiple, then advise on the offer against the range. In raw_inputs supply the FCF build (pbit, tax_rate [decimal], depreciation, capex, delta_working_capital), wacc [DECIMAL], growth_rate [DECIMAL, < wacc by ≥0.01], debt_value, offer_price, AND the relative method: multiple_type ("pe" or "ev_ebitda"), multiple, and either earnings (for pe — an EQUITY multiple, NO debt strip) or ebitda (for ev_ebitda — an ENTERPRISE multiple, code strips debt). Code computes both equity values, the range and the offer's position — state NONE. The crux: a P/E is an equity multiple; EV/EBITDA is an enterprise multiple you must de-lever; the answer is a range, not a point.`;
+  return `Write one original ACCA AFM business-valuation drill (kind: ${kind}).
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+
+CODE-COMPUTES-STATS PROTOCOL — MANDATORY. Code owns EVERY figure and EVERY figure-vs-figure verdict.
+Your job: supply the scenario, the raw input figures, and qualitative prose. DO NOT state anywhere any
+computed figure (FCFF, FCFE, firm/equity value, a derived Ke/WACC, dividend capacity, a multiple result),
+any inequality between computed figures, or any verdict. Those are ALL inserted by code.
+
+${kindBlock}
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name the organisation being valued (an acquisition target, a division, or the company itself).
+- TAX: state the applicable corporate tax rate cleanly as ONE scenario fact (a single decimal). Do NOT introduce tax-regime mechanics, mixed-ownership rules, zakat, or multi-rate structures — one stated rate, kept simple.
+- question: begins with the command verb and asks for EXACTLY what this kind delivers — no more (P5). Do NOT ask for an NPV, IRR, sensitivity, or anything outside this kind.
+- context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions of the LOCAL ${spec.region_hint} currency; rates in %). Report the ISO code in the currency field. Add 1–2 challengeable textures (capex vs sustainable reinvestment; concentration/cyclicality; durability of the growth or dividend) for scepticism. Do NOT pre-compute anything.
+- Provide the SAME figures in raw_inputs (supply ONLY the fields this kind needs, per the DRILL TYPE block). Choose figures so every computed value is positive and coherent.
+- interpretation_prose: qualitative advice ONLY (3–5 sentences), tool rules — NO numbers, NO inequalities, NO derived rate, NO verdict, ONLY context facts. Teach the flow-to-rate logic in WORDS.
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
@@ -781,6 +841,60 @@ const SUBMIT_FCFF_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+// Valuation FAMILY (batch #9). One tool; raw_inputs is a UNION across the four kinds — the prompt
+// (buildValuationUserPrompt, keyed off spec.valuation_kind) tells the model which fields to supply,
+// and the calculator throws loud on a bad/missing field → retry. Code owns EVERY figure and verdict.
+const SUBMIT_VALUATION_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_valuation_scenario',
+  description: 'Submit a business-valuation drill (FCFF firm / FCFE equity / dividend capacity / two-method compare) — raw inputs only; code computes every figure, the discount-rate composition, the reconciliation, and every verdict.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question: { type: 'string', description: 'Drill question starting with the command verb (usually "Advise" / "Calculate and advise"). Asks the candidate to do exactly what this kind delivers — no more.' },
+      context_text: { type: 'string', description: 'Scenario narrative (2–3 sentences) + a clean labelled list of the raw inputs (money in millions of the local currency; rates in %). NO computed figure (no FCFF, FCFE, firm/equity value, WACC where derived, dividend capacity, or multiple result). Add 1–2 challengeable textures (capex vs sustainable reinvestment; concentration/cyclicality; the durability of the growth or the dividend) so scepticism has something to bite.' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase.' },
+      currency: { type: 'string', description: 'ISO 4217 code for the money figures (e.g. "SAR", "THB", "NZD", "PHP", "AUD"). Code, not symbol; must match the scenario.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'Raw figures matching context_text exactly. Supply ONLY the fields this kind needs (the prompt says which). Code does ALL arithmetic + verdicts.',
+        properties: {
+          // Common FCF build (all kinds except a pure compare use these):
+          pbit:                  { type: 'number', description: 'Operating profit before interest and tax, maintainable base-year, in millions.' },
+          tax_rate:              { type: 'number', description: 'Corporate tax rate as a DECIMAL fraction, e.g. 0.20. State the rate cleanly as a scenario fact — no tax-regime mechanics.' },
+          depreciation:          { type: 'number', description: 'Depreciation / non-cash add-back, millions.' },
+          capex:                 { type: 'number', description: 'Capital expenditure (reinvestment), millions.' },
+          delta_working_capital: { type: 'number', description: 'Increase in working capital, millions.' },
+          debt_value:            { type: 'number', description: 'Market value of debt, millions — below firm value.' },
+          offer_price:           { type: 'number', description: 'FCFF/FCFE/COMPARE kinds: the vendor\'s indicative EQUITY offer under test, millions — set near a plausible equity value so the judgement is genuine.' },
+          // K1 fcff_enterprise — CAPM cost-of-capital front-end (βe + structure; NO peer ungearing):
+          rf:                    { type: 'number', description: 'K1 only: risk-free rate, PERCENT (e.g. 4).' },
+          mrp:                   { type: 'number', description: 'K1 only: equity/market risk premium, PERCENT (e.g. 6).' },
+          company_equity_beta:   { type: 'number', description: 'K1 only: the firm\'s OWN equity beta (already geared — no peer ungearing in this kind).' },
+          company_ve:            { type: 'number', description: 'K1 only: market value of equity (weight), millions.' },
+          company_vd:            { type: 'number', description: 'K1 only: market value of debt (weight), millions — normally = debt_value.' },
+          kd:                    { type: 'number', description: 'K1/K2/K3: pre-tax cost of debt, PERCENT for K1 (e.g. 6); DECIMAL for K2/K3 (e.g. 0.06).' },
+          growth_rate:           { type: 'number', description: 'K1/K4 only: long-term perpetuity growth, DECIMAL (e.g. 0.025) — must be below the discount rate.' },
+          // K2 fcfe_equity — supplied Ke; no-growth maintainable perpetuity, constant debt:
+          ke:                    { type: 'number', description: 'K2 only: SUPPLIED cost of equity, DECIMAL (e.g. 0.13).' },
+          // K3 dividend_capacity:
+          net_borrowing:         { type: 'number', description: 'K3 only: net NEW borrowing raised this year, millions (may be 0).' },
+          proposed_dividend:     { type: 'number', description: 'K3 only: the board\'s proposed/current TOTAL dividend under test, millions.' },
+          shares:                { type: 'number', description: 'K3 only (optional): number of shares (millions) for a per-share capacity figure.' },
+          // K4 valuation_compare — DCF (uses the FCFF build + wacc + growth_rate + debt) + a relative multiple:
+          wacc:                  { type: 'number', description: 'K4 only: WACC as a DECIMAL (e.g. 0.10) — must exceed growth_rate by ≥ 0.01.' },
+          multiple_type:         { type: 'string', enum: ['pe', 'ev_ebitda'], description: 'K4 only: "pe" (an EQUITY multiple on earnings) or "ev_ebitda" (an ENTERPRISE multiple → strip debt).' },
+          multiple:              { type: 'number', description: 'K4 only: the applied multiple (e.g. 12 for P/E, 8 for EV/EBITDA).' },
+          earnings:              { type: 'number', description: 'K4 pe only: the equity earnings the P/E applies to, millions.' },
+          ebitda:                { type: 'number', description: 'K4 ev_ebitda only: the EBITDA the EV/EBITDA applies to, millions.' },
+        },
+        required: ['pbit', 'tax_rate', 'depreciation', 'capex', 'delta_working_capital', 'debt_value'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed number, NO inequality between computed figures, NO discount rate you derived, NO verdict — code owns all of those. Reference ONLY facts stated in context_text; name only risks the scenario evidences. Cover which inputs are most fragile and WHY, the due-diligence the board should require, and (per kind) the flow-to-rate logic in WORDS — a firm flow (FCFF) belongs at WACC and strips debt; an equity flow (FCFE/dividends) belongs at the cost of equity and does not; dividend capacity is CASH not accounting profit; two methods bracket a range, not a point.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_NPV_SCENARIO_TOOL: Anthropic.Tool = {
   name: 'submit_npv_scenario',
   description: 'Submit an NPV investment-appraisal drill — raw inputs only; code computes the WDA schedule, tax, net cash flows, discounting, NPV, the accept/reject decision, and any ranking/sensitivity',
@@ -1054,6 +1168,9 @@ interface DrillOutput {
   _creditComputed?:   CreditComputed;    // credit only — dry-run inspection
   _bsopInputs?:       BsopInputs;        // bsop only — dry-run inspection
   _bsopComputed?:     BsopComputed;      // bsop only — dry-run inspection + option-bounds gate
+  _valuationKind?:    ValuationKind;     // valuation family — selects the bridge-gate branch
+  _valuationComputed?: FcffComputed | FcfeComputed | DividendComputed | CompareComputed; // valuation — bridge gate + dry-run
+  _valuationDebt?:    number;            // valuation — debt value for the bridge gate
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -1364,6 +1481,60 @@ async function draftBsopDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
   };
 }
 
+// Valuation FAMILY draft (batch #9). Dispatches by spec.valuation_kind. K1 LIGHT-COMPOSES the CAPM
+// calculator (computeCapm 'org_wacc' → Ke/WACC) then feeds the derived WACC into the FCFF chain — the
+// composition ruling; valuation.ts stays CAPM-free, the composition happens HERE. Code owns every figure.
+async function draftValuationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: ValuationKind = spec.valuation_kind ?? 'fcff_enterprise';
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2600,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_VALUATION_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_valuation_scenario' },
+    messages: [{ role: 'user', content: buildValuationUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in valuation Pass 1 response');
+  const inp = block.input as { question: string; context_text: string; command_verb: string; currency?: string; raw_inputs: Record<string, number & string>; interpretation_prose: string };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'interpretation_prose'], 'Pass 1 (valuation)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (valuation): raw_inputs missing');
+  const r = inp.raw_inputs as Record<string, number>;
+  const currency = normaliseCurrency(inp.currency);
+  const base = { command_verb: inp.command_verb.trim().toLowerCase(), question: inp.question, context_text: inp.context_text, _currency: currency, _valuationKind: kind, _valuationDebt: r.debt_value };
+
+  if (kind === 'fcff_enterprise') {
+    // Light-compose: derive Ke → WACC from the firm's OWN geared beta + structure (no peer ungearing).
+    const capmComputed = computeCapm({ rf: r.rf, mrp: r.mrp, tax_rate: r.tax_rate, company_equity_beta: r.company_equity_beta, company_ve: r.company_ve, company_vd: r.company_vd, kd: r.kd }, 'org_wacc');
+    const capm: CapmFront = { rf: r.rf, mrp: r.mrp, tax_rate: r.tax_rate, company_equity_beta: r.company_equity_beta, company_ve: r.company_ve, company_vd: r.company_vd, kd: r.kd, ke: capmComputed.ke!, wacc: capmComputed.wacc! };
+    const fcffInputs: FcffInputs = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital, wacc: capm.wacc, growth_rate: r.growth_rate, debt_value: r.debt_value, offer_price: r.offer_price };
+    const computed = computeFcff(fcffInputs);
+    const { schema, serialized } = buildFcffComposedSchema(fcffInputs, computed, capm, currency);
+    const model_answer = buildFcffComposedModelAnswer(fcffInputs, computed, capm, inp.interpretation_prose, currency);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
+  }
+  if (kind === 'fcfe_equity') {
+    const fi: FcfeInputs = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital, ke: r.ke, kd: r.kd, debt_value: r.debt_value, offer_price: r.offer_price };
+    const computed = computeFcfe(fi);
+    const { schema, serialized } = buildFcfeSchema(fi, computed, currency);
+    const model_answer = buildFcfeModelAnswer(fi, computed, inp.interpretation_prose, currency);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
+  }
+  if (kind === 'dividend_capacity') {
+    const di: DividendInputs = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital, kd: r.kd, debt_value: r.debt_value, net_borrowing: r.net_borrowing, proposed_dividend: r.proposed_dividend, shares: r.shares };
+    const computed = computeDividendCapacity(di);
+    const { schema, serialized } = buildDividendSchema(di, computed, currency);
+    const model_answer = buildDividendModelAnswer(di, computed, inp.interpretation_prose, currency);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
+  }
+  // valuation_compare
+  const ci: CompareInputs = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital, wacc: r.wacc, growth_rate: r.growth_rate, debt_value: r.debt_value, multiple_type: (r.multiple_type as unknown as CompareInputs['multiple_type']) ?? 'pe', multiple: r.multiple, earnings: r.earnings, ebitda: r.ebitda, offer_price: r.offer_price };
+  const computed = computeValuationCompare(ci);
+  const { schema, serialized } = buildCompareSchema(ci, computed, currency);
+  const model_answer = buildCompareModelAnswer(ci, computed, inp.interpretation_prose, currency);
+  return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -1389,6 +1560,7 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   if (spec.duration_kind && DURATION_LOS.has(spec.lo_code)) return draftDurationDrill(anthropic, spec);
   if (spec.credit_kind && CREDIT_LOS.has(spec.lo_code)) return draftCreditDrill(anthropic, spec);
   if (spec.bsop_kind && BSOP_LOS.has(spec.lo_code)) return draftBsopDrill(anthropic, spec);
+  if (spec.valuation_kind && VALUATION_LOS.has(spec.lo_code)) return draftValuationDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
@@ -1549,6 +1721,17 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     lines.push('GATE 10 — option bounds + put-call parity: N/A (not a BSOP drill)');
   }
 
+  // (11) GATE 11 valuation flow↔rate↔bridge — FCFF⇒WACC+bridge / FCFE⇒Ke+no-bridge+reconciles /
+  // capacity=FCFE+verdict / compare DCF-bridge+range+offer. Only valuation-family drills carry one.
+  if (drill._valuationComputed && drill._valuationKind) {
+    const bridge = validateValuationBridge(drill._valuationKind, drill._valuationComputed, { debt_value: drill._valuationDebt ?? 0 });
+    lines.push(`GATE 11 — valuation flow/rate/bridge: ${bridge.ok ? 'PASS' : 'FAIL'}`);
+    if (!bridge.ok) { ok = false; for (const iss of bridge.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
+    else lines.push(`    ✓ ${drill._valuationKind}: flow matched to the right rate, debt bridge correct`);
+  } else {
+    lines.push('GATE 11 — valuation flow/rate/bridge: N/A (not a valuation-family drill)');
+  }
+
   return { ok, lines };
 }
 
@@ -1578,13 +1761,14 @@ async function main() {
   const durationBatch = flag('--duration-batch');
   const creditBatch = flag('--credit-batch');
   const bsopBatch = flag('--bsop-batch');
+  const valuationBatch = flag('--valuation-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/A6 valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch, bsopBatch].filter(Boolean).length > 1) { console.error('Error: pass only one of --npv-batch / --apv-batch / --capm-batch / --duration-batch / --credit-batch / --bsop-batch.'); process.exit(1); }
+  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch, bsopBatch, valuationBatch].filter(Boolean).length > 1) { console.error('Error: pass only one calculator batch flag.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
@@ -1642,6 +1826,23 @@ async function main() {
     specs = plan.map((p) => ({
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       bsop_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
+    }));
+  } else if (valuationBatch) {
+    // Batch #9 (valuation family). 4 fresh kinds + the parked-B4c rehab (5th, in-family fcff_enterprise).
+    // Fresh sector/currency pairs, ZERO overlap with the 24 burned (SAR/THB/NZD/PHP all new). Rulings 2026-07-16:
+    // K1 light-composes CAPM (own geared βe + structure → Ke → WACC, no peer ungearing); K2 = no-growth FCFE @ Ke
+    // (exact FCFF↔FCFE reconciliation, internal); K3 dividend capacity domestic (remittance blocks → batch #10);
+    // K4 Gordon DCF + relative multiple → range; SAR states one clean tax rate (no zakat/mixed-ownership).
+    const plan: { kind: ValuationKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'fcff_enterprise',   lo: 'B4a', region: 'Saudi Arabia',    sector: 'private hospital / healthcare-services group (SAR — acquisition target; CAPM→WACC derived)' },
+      { kind: 'fcfe_equity',       lo: 'B4b', region: 'Thailand',        sector: 'branded household & personal-care FMCG manufacturer (THB — FCFE @ Ke, no growth)' },
+      { kind: 'dividend_capacity', lo: 'A6',  region: 'New Zealand',     sector: 'regulated water & wastewater utility (NZD — mature, cash-generative; dividend policy)' },
+      { kind: 'valuation_compare', lo: 'B4a', region: 'Philippines',     sector: 'IT / business-process-outsourcing services group (PHP — two-method bid range)' },
+      { kind: 'fcff_enterprise',   lo: 'B4c', region: 'Australia',       sector: 'diversified industrial group (AUD — the parked-B4c rehab, regenerated through the hardened calculator)' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      valuation_kind: p.kind, region_hint: p.region, sector_hint: p.sector, calculation_required: true,
     }));
   } else if (apvBatch) {
     // 4 kinds → 3× B3j (quantitative) + 1× B3k (mixed). Fresh sectors/currencies, no overlap
