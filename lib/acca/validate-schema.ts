@@ -34,10 +34,16 @@ import {
   type DividendComputed,
   type CompareComputed,
 } from './valuation';
+import {
+  checkParityConsistency,
+  checkCurrencyScale,
+  checkDoubleTaxCap,
+  type ParityBasis,
+} from './international';
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -354,4 +360,34 @@ export function validateValuationBridge(
 ): ValidationResult {
   const r = checkValuationBridge(kind, c, ctx);
   return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(valuation)', gate: 'valuation-bridge', code: 'flow-rate-bridge-violation', message: r.reason ?? 'valuation flow/rate/bridge inconsistency' }] };
+}
+
+// ── GATE 12: parity consistency (international batch, calculator #10, 2026-07-17) ──
+// Every forecast spot must reconcile to the parity formula from the drill's STATED basis + base
+// spot + rate differential (never asserted). A forward that does not derive from the stated inputs
+// is an invented number — the drill is unmarkable. (Delegates to checkParityConsistency; validates
+// against the basis the drill declares, not one hard-coded formula.)
+export function validateParityConsistency(
+  fx_curve: number[], base_spot: number, basis: ParityBasis, rate_home: number, rate_foreign: number,
+): ValidationResult {
+  const r = checkParityConsistency(fx_curve, base_spot, basis, rate_home, rate_foreign);
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(fx-curve)', gate: 'parity-consistency', code: 'forward-not-derived-from-parity', message: r.reason ?? 'a forecast spot does not reconcile to the stated parity basis' }] };
+}
+
+// ── GATE 13: currency / unit-scale integrity (international batch, 2026-07-17) ──
+// Every figure crossing a currency boundary must reconcile (home × spot = foreign) at a consistent
+// scale. Guards the cross-currency conversion + the thousands-vs-millions scale (the IDR-rendering
+// failure class). (Delegates to checkCurrencyScale.)
+export function validateCurrencyScale(years: { fx: number; foreign_remit_net: number; home_cf: number }[]): ValidationResult {
+  const r = checkCurrencyScale(years);
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(currency)', gate: 'currency-scale', code: 'cross-currency-scale-mismatch', message: r.reason ?? 'a cross-currency conversion or unit scale is inconsistent' }] };
+}
+
+// ── GATE 14: double-tax cap (international batch, 2026-07-17) ──
+// The additional home tax rate is max(0, h − w): the credit never exceeds the home liability, and
+// no period carries a negative additional home tax (no refund of excess host withholding). A
+// violation means the double-tax relief was mis-applied. (Delegates to checkDoubleTaxCap.)
+export function validateDoubleTaxCap(withholding: number, homeTax: number, addRateUsed: number, perYearAddTax: number[]): ValidationResult {
+  const r = checkDoubleTaxCap(withholding, homeTax, addRateUsed, perYearAddTax);
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(double-tax)', gate: 'double-tax-cap', code: 'credit-method-cap-violation', message: r.reason ?? 'double-tax relief exceeds the home liability or is negative' }] };
 }

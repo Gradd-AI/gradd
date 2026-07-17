@@ -29,6 +29,17 @@ function asDecimalRate(v: number): number {
 }
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 
+// The FCFF "build" — the one line every valuation kind (and international.ts, one-way) shares.
+// FCFF = PBIT × (1 − t) + depreciation − capex − ΔWorking capital. Extracted so there is ONE
+// FCFF-build implementation the whole family (and the international calculator) composes.
+export interface FcffBuild {
+  pbit: number; tax_rate: number; depreciation: number; capex: number; delta_working_capital: number;
+}
+export function fcffFromBuild(b: FcffBuild): number {
+  const t = asDecimalRate(b.tax_rate);
+  return b.pbit * (1 - t) + b.depreciation - b.capex - b.delta_working_capital;
+}
+
 // ── Inputs / outputs ──
 export interface FcffInputs {
   pbit:                  number; // operating profit before interest and tax ($m)
@@ -74,7 +85,7 @@ export function computeFcff(raw: FcffInputs): FcffComputed {
   if (wacc - g < 0.005)      throw new Error(`WACC (${wacc}) must exceed growth (${g}) by ≥ 0.5% for a stable perpetuity`);
   if (!(offer > 0))          throw new Error(`offer_price must be positive: ${offer}`);
 
-  const fcff = raw.pbit * (1 - tax) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  const fcff = fcffFromBuild(raw);
   if (!(fcff > 0)) throw new Error(`Computed FCFF must be positive for a coherent valuation drill: ${fcff}`);
 
   const firm_value = (fcff * (1 + g)) / (wacc - g);
@@ -325,7 +336,7 @@ export function computeFcfe(raw: FcfeInputs): FcfeComputed {
   if (!(D > 0)) throw new Error(`debt_value must be positive: ${D}`);
   if (!(offer > 0)) throw new Error(`offer_price must be positive: ${offer}`);
 
-  const fcff = raw.pbit * (1 - t) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  const fcff = fcffFromBuild(raw);
   const fcfe = fcff - kd * D * (1 - t);                 // constant debt, no new borrowing (g=0)
   if (!(fcfe > 0)) throw new Error(`Computed FCFE must be positive: ${fcfe}`);
 
@@ -367,7 +378,7 @@ export function computeDividendCapacity(raw: DividendInputs): DividendComputed {
   if (!(D > 0)) throw new Error(`debt_value must be positive: ${D}`);
   if (!(proposed > 0)) throw new Error(`proposed_dividend must be positive: ${proposed}`);
 
-  const fcff = raw.pbit * (1 - t) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  const fcff = fcffFromBuild(raw);
   const fcfe = fcff - kd * D * (1 - t) + nb;
   if (!(fcfe > 0)) throw new Error(`Computed FCFE (dividend capacity) must be positive: ${fcfe}`);
   const capacity_per_share = raw.shares && raw.shares > 0 ? fcfe / raw.shares : null;
@@ -409,7 +420,7 @@ export function computeValuationCompare(raw: CompareInputs): CompareComputed {
   if (!(raw.multiple > 0)) throw new Error(`multiple must be positive: ${raw.multiple}`);
   if (!(offer > 0)) throw new Error(`offer_price must be positive: ${offer}`);
 
-  const fcff = raw.pbit * (1 - t) + raw.depreciation - raw.capex - raw.delta_working_capital;
+  const fcff = fcffFromBuild(raw);
   if (!(fcff > 0)) throw new Error(`Computed FCFF must be positive: ${fcff}`);
   const firm_value_dcf = (fcff * (1 + g)) / (wacc - g);
   const equity_dcf = firm_value_dcf - D;

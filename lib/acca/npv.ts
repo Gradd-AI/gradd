@@ -19,7 +19,10 @@ export { normaliseCurrency };
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
-const df = (r: number, p: number): number => 1 / Math.pow(1 + r, p);
+// The single discounting primitive the appraisal calculators share — reused one-way by
+// lib/acca/international.ts so there is ONE present-value implementation (composition ruling).
+export function discountFactor(r: number, p: number): number { return 1 / Math.pow(1 + r, p); }
+const df = discountFactor;
 const EPS = 1e-9;
 
 export type NpvKind = 'standard' | 'rationing' | 'sensitivity' | 'section_a';
