@@ -149,9 +149,15 @@ extracted so there is a single build/discount implementation. Grant-ruled Step-0
   geometric single-differential compounding. Basis is CODE-OWNED in the generator (not model-chosen).
 - **Home-currency method is the taught primary** (convert-then-discount); the foreign-currency route
   reconciles by construction and is not separately graded this batch.
-- **Double-tax = credit method, home-liability cap.** Additional home tax rate = **max(0, h − w)** —
-  the credit never exceeds the home liability, never a refund of excess host withholding. Exemption
-  method journalled as a future kind. Net-of-both-taxes remittance factor = (1−w) − max(0, h−w).
+- **Double-tax = credit method on the CORPORATE DIFFERENTIAL (Fix Round 1, 2026-07-17 — supersedes the
+  earlier withholding-only wording).** Additional home tax = **max(0, home rate − foreign CORPORATE rate)
+  × taxable profit** (the PBIT base the FCFF build taxes), crediting the foreign corporate tax — its own
+  per-year schema component. Withholding is a SEPARATE layer on the remitted cash; each scenario STATES
+  whether the treaty makes it creditable (`wht_creditable`: if so, additional = max(0, home liability −
+  foreign corp tax − WHT)). Never negative, never a refund; never exceeds the home liability. The K1 NIL
+  case (foreign corporate ≥ home) is taught explicitly, not a silent zero. Evidence: Rule 22 quote (ACCA
+  AFM technical article "International project appraisal (part 2)") in `international.ts`. Exemption method
+  journalled as a future kind. GATE 14 validates this rule.
 - **Remittance blocking (K3):** blocked funds reinvested at a STATED local rate (never derived),
   released + converted at the terminal-year forecast spot; code owns the NPV and the cost-of-blocking
   delta vs free remittance. B5c (strategies for restricted remittance) rides as discursive dual
@@ -164,9 +170,10 @@ extracted so there is a single build/discount implementation. Grant-ruled Step-0
 - **THREE NEW GATES** (`validate-schema.ts`, run for international-family drills only):
   **GATE 12 parity-consistency** (every forecast spot reconciles to the drill's STATED basis — not a
   hard-coded formula), **GATE 13 currency/unit-scale integrity** (home × spot = foreign, consistent
-  scale — the IDR-rendering failure class), **GATE 14 double-tax cap** (additional home tax = max(0,
-  h−w), never negative). All existing gates + pattern gates (distinct-factor OFR, figure-integrity
-  1/2/3 dp, P4 frozen-market-facts, P5, P6) apply unchanged.
+  scale — the IDR-rendering failure class), **GATE 14 double-tax cap** (additional home tax = the
+  credit-method residual on the corporate differential; ≥ 0; ≤ home liability — Fix Round 1). Plus a new
+  **`floor` tolerance kind** (max rel%, abs floor) for money components. All existing gates + pattern
+  gates (distinct-factor OFR, figure-integrity 1/2/3 dp, P4 frozen-market-facts, P5, P6) apply unchanged.
 - **Decision-relevance is a generation quality bar, not a gate** (APV/CAPM precedent): `draft` runs
   best-of-4 with a per-kind penalty (K1/K3 → accept; K2 → base-accept + alt-reject flip; K4 →
   decisive surplus + material subsidiary share) and ships the least-bad. Numbers stay code-owned.
