@@ -525,7 +525,7 @@ export function buildIntlSensitivitySchema(raw: IntlSensitivityInputs, c: IntlSe
 
   const recomputeIds: Record<string, string | undefined> = { npv: 'intl_npv_from_fx', alt_npv: 'intl_npv_from_fx' };
   for (let t = 2; t <= c.base.years.length; t++) { recomputeIds[`fx_${t}`] = `parity_step_y${t}`; recomputeIds[`alt_fx_${t}`] = `parity_step_y${t}`; }
-  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), alt_rate_foreign: asDec(raw.alt_rate_foreign), home_outlay: c.base.home_outlay };
+  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), alt_rate_foreign: asDec(raw.alt_rate_foreign), home_outlay: c.base.home_outlay, add_tax_rate_effective: c.base.add_tax_rate_effective };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 
@@ -537,6 +537,9 @@ export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemi
   const blockedTp = c.blocked_tp_total, creditable = raw.wht_creditable;
   const k = parityDifferential(raw.basis, raw.rate_home, raw.rate_foreign);
   const comps: Component[] = [...fxComponents('', c.fx_curve, k, foreign, home)];
+  // label the deduction by the ACTUAL tax branch (Fix Round 2 item 4): only name "differential home
+  // tax" when it is actually charged; when nil, say so rather than implying a deduction that is zero.
+  const taxNote = c.has_additional_home_tax ? 'net of WHT + differential home tax' : 'net of WHT (differential home tax nil)';
 
   for (const y of c.years) {
     const remitForeign = y.foreign_remit_net;
@@ -544,7 +547,7 @@ export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemi
       component_id: `home_cf_${y.year}`, label: `Home cash flow from the remitted (free) portion, year ${y.year}`,
       expected_value: y.home_cf, unit: homeUnit, tolerance: moneyTol,
       depends_on: [`fx_${y.year}`], recompute: (d) => remitForeign / d[`fx_${y.year}`],
-      working_steps: [`= free remittance ${fmt1(remitForeign)} (net of WHT + differential home tax) ÷ spot ${fmt4(y.fx)}`],
+      working_steps: [`= free remittance ${fmt1(remitForeign)} (${taxNote}) ÷ spot ${fmt4(y.fx)}`],
     });
   }
   // blocked funds accumulate at the LOCAL rate to year N — a root (its inputs are stated params)
@@ -621,14 +624,52 @@ export function buildIntlDividendSchema(raw: IntlDividendInputs, c: IntlDividend
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // MODEL ANSWERS — code authors every figure + every figure-vs-figure verdict; prose is glue.
 // ═══════════════════════════════════════════════════════════════════════════════════════
+// The THREE tax branches (Fix Round 2, 2026-07-17). The nil case has TWO distinct causes and they
+// must be told apart with the TRUE inequality direction — never a false "foreign ≥ home" or a false
+// max():  (a) nil_corporate — foreign corporate rate ≥ home, so the corporate credit alone covers the
+// whole home liability;  (b) nil_wht_credit — home > foreign corporate (a positive residual), but the
+// creditable withholding covers the residual so the additional tax nets to nil;  (c) charged — a
+// positive residual survives and is charged per year.
+export type TaxBranch = 'nil_corporate' | 'nil_wht_credit' | 'charged';
+export function taxBranch(foreignCorp: number, homeTax: number, addRateEffective: number, hasAddTax: boolean): TaxBranch {
+  if (addRateEffective <= 1e-9) return 'nil_corporate';       // home ≤ foreign corporate
+  return hasAddTax ? 'charged' : 'nil_wht_credit';            // home > foreign corporate
+}
 function fiscalAssumptionLine(raw: FiscalInputs, foreignCorp: number, hasAddTax: boolean, addRate: number): string {
   const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(foreignCorp);
-  const whtLine = raw.wht_creditable
-    ? `withholding tax at ${pct2(w)} on remittances is creditable against the home liability under the bilateral treaty`
-    : `withholding tax at ${pct2(w)} on remittances is a separate cost (not creditable under the treaty)`;
-  return hasAddTax
-    ? `Taxable profits earned abroad are liable to the **differential income tax** between the two countries — additional home tax = max(0, home ${pct2(h)} − foreign corporate ${pct2(fc)}) = **${pct2(addRate)}** of taxable profit, crediting the foreign corporate tax already paid; ${whtLine}.`
-    : `The foreign corporate tax rate ${pct2(fc)} is **at or above** the parent's ${pct2(h)} home rate, so the credit for foreign corporate tax covers the whole home liability and there is **NO additional home tax** (max(0, ${pct2(h)} − ${pct2(fc)}) = 0); ${whtLine}.`;
+  const branch = taxBranch(fc, h, addRate, hasAddTax);
+  if (branch === 'nil_corporate') {
+    // (a) foreign corporate ≥ home. The WHT credit has NOTHING to offset (no residual home liability),
+    // so the withholding is a NET COST regardless of treaty creditability (Fix Round 2 item 3).
+    return `The foreign corporate tax rate ${pct2(fc)} is **at or above** the parent's ${pct2(h)} home rate, so the credit for foreign corporate tax already covers the whole home liability and there is **no additional home tax** (max(0, ${pct2(h)} − ${pct2(fc)}) = 0). The ${pct2(w)} withholding on remittances is therefore a **net cost** — with no residual home liability, the treaty's creditability gives it no relief.`;
+  }
+  if (branch === 'nil_wht_credit') {
+    // (b) home > foreign corporate, but the creditable WHT covers the residual → nets to nil.
+    return `The parent's ${pct2(h)} home rate **exceeds** the foreign corporate rate ${pct2(fc)}, a residual differential of ${pct2(Math.max(0, h - fc))} on taxable profit; but the **creditable** ${pct2(w)} withholding covers that residual, so the additional home tax **nets to nil** (max(0, home liability − foreign corporate tax − withholding) = 0).`;
+  }
+  // (c) charged: positive residual survives after the credits, shown per year.
+  return `The parent's ${pct2(h)} home rate **exceeds** the foreign corporate rate ${pct2(fc)} by ${pct2(Math.max(0, h - fc))}, so an additional home tax is **charged** on the foreign taxable profit — max(0, home ${pct2(h)} − foreign corporate ${pct2(fc)}${raw.wht_creditable ? ` − creditable withholding ${pct2(w)}` : ''}), shown per year${raw.wht_creditable ? '' : `; the ${pct2(w)} withholding is a separate cost`}.`;
+}
+
+// GATE-14 sub-check: the tax PROSE must match the params (Fix Round 2 item 1). The stated branch must
+// agree with add_tax_rate_effective and the TRUE rate ordering, and the model answer must never assert
+// a false inequality or a false max(). Runs on the assumption line the code generates (a regression guard).
+export function checkTaxProse(foreignCorp: number, homeTax: number, addRateEffective: number, hasAddTax: boolean, modelAnswer: string): IntlCheck {
+  const fc = asDec(foreignCorp), h = asDec(homeTax);
+  const homeGt = h > fc + 1e-9;                               // TRUE ordering: home > foreign corporate
+  const branch = taxBranch(fc, h, addRateEffective, hasAddTax);
+  const claimsForeignGe = /foreign corporate tax rate [\d.]+% is \*\*at or above\*\*/i.test(modelAnswer);
+  const claimsHomeGt = /home rate [\d.]+% \*\*exceeds\*\* the foreign corporate rate/i.test(modelAnswer);
+  if (homeGt && claimsForeignGe) return { ok: false, reason: `false inequality: home ${pct2(h)} > foreign corporate ${pct2(fc)}, but the model answer states the foreign corporate rate is "at or above" the home rate` };
+  if (!homeGt && claimsHomeGt) return { ok: false, reason: `false inequality: home ${pct2(h)} ≤ foreign corporate ${pct2(fc)}, but the model answer states the home rate "exceeds" the foreign corporate rate` };
+  // a false max(0, home − foreign) = 0 when home actually exceeds foreign corporate
+  if (homeGt && new RegExp(`max\\(0, ${pct2(h).replace('.', '\\.')} − ${pct2(fc).replace('.', '\\.')}\\) = 0`).test(modelAnswer))
+    return { ok: false, reason: `false max(): the answer writes max(0, ${pct2(h)} − ${pct2(fc)}) = 0, but home exceeds foreign corporate so the differential is positive` };
+  // branch ↔ charged-language consistency
+  const saysCharged = /is \*\*charged\*\*/i.test(modelAnswer);
+  if (branch === 'charged' && !saysCharged) return { ok: false, reason: 'positive residual (charged branch) but the model answer does not state the additional tax is charged' };
+  if (branch !== 'charged' && saysCharged) return { ok: false, reason: `nil branch (${branch}) but the model answer states the tax is charged` };
+  return { ok: true };
 }
 function fxTable(fx_curve: number[], foreign: string, home: string, basis: ParityBasis): string[] {
   const lines = [`| Year | Forecast spot (${foreign}/${home}) |`, `|------|------|`];
@@ -650,9 +691,12 @@ export function buildIntlNpvModelAnswer(raw: IntlNpvInputs, c: IntlNpvComputed, 
     `| Year | Foreign FCFF | Withholding | Additional home tax | Net remitted (${foreign}) | Spot | Home cash flow |`, `|------|------|------|------|------|------|------|`,
   ];
   for (const y of c.years) lines.push(`| ${y.year} | ${mF(y.foreign_cf)} | ${mF(y.wht)} | ${mF(y.additional_home_tax_foreign)} | ${mF(y.foreign_remit_net)} | ${fmt4(y.fx)} | ${mH(y.home_cf)} |`);
+  const npvBranch = taxBranch(asDec(raw.foreign_build.tax_rate), asDec(raw.home_tax_rate), c.add_tax_rate_effective, c.has_additional_home_tax);
   lines.push('', c.has_additional_home_tax
     ? `*(Net remitted = foreign FCFF − withholding − the differential additional home tax; converted at that year's forecast spot.)*`
-    : `*(Additional home tax is **nil** every year: the foreign corporate rate ${pct2(asDec(raw.foreign_build.tax_rate))} exceeds the parent's ${pct2(asDec(raw.home_tax_rate))} home rate, so the foreign-tax credit already covers the whole home liability. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*`, '');
+    : npvBranch === 'nil_corporate'
+      ? `*(Additional home tax is **nil** every year: the foreign corporate rate ${pct2(asDec(raw.foreign_build.tax_rate))} is at or above the parent's ${pct2(asDec(raw.home_tax_rate))} home rate, so the foreign-tax credit already covers the whole home liability. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*`
+      : `*(Additional home tax is **nil** every year: the residual differential (home ${pct2(asDec(raw.home_tax_rate))} − foreign corporate ${pct2(asDec(raw.foreign_build.tax_rate))}) is covered by the creditable withholding. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*`, '');
   lines.push('**Step 3 — Present values and NPV**', '', `| Year | Home cash flow | DF @ ${pct2(r)} | Present value |`, `|------|------|------|------|`);
   lines.push(`| 0 | ${mH(-c.home_outlay)} | 1.000 | ${mH(-c.home_outlay)} | *(foreign outlay ${mF(raw.initial_outlay_foreign)} ÷ ${fmt4(raw.base_spot)})*`);
   for (const y of c.years) lines.push(`| ${y.year} | ${mH(y.home_cf)} | ${y.df.toFixed(3)} | ${mH(y.pv)} |`);

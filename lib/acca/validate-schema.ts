@@ -38,6 +38,7 @@ import {
   checkParityConsistency,
   checkCurrencyScale,
   checkDoubleTaxCap,
+  checkTaxProse,
   type ParityBasis,
 } from './international';
 
@@ -409,4 +410,13 @@ export function validateCurrencyScale(years: { fx: number; foreign_remit_net: nu
 export function validateDoubleTaxCap(withholding: number, homeTax: number, foreignCorp: number, whtCreditable: boolean, periods: { taxable_profit: number; fcff: number; additional_home_tax_foreign: number }[]): ValidationResult {
   const r = checkDoubleTaxCap(withholding, homeTax, foreignCorp, whtCreditable, periods);
   return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(double-tax)', gate: 'double-tax-cap', code: 'credit-method-cap-violation', message: r.reason ?? 'double-tax relief exceeds the home liability or is negative' }] };
+}
+
+// ── GATE 14b: tax-prose ↔ params consistency (international; Fix Round 2, 2026-07-17) ──
+// The tax EXPLANATION in the model answer must match the computed branch — the stated inequality
+// direction must be the true one, no false max(), and charged-vs-nil language must match the residual.
+// (Delegates to checkTaxProse.) A regression guard on the code-generated assumption line.
+export function validateTaxProse(foreignCorp: number, homeTax: number, addRateEffective: number, hasAddTax: boolean, modelAnswer: string): ValidationResult {
+  const r = checkTaxProse(foreignCorp, homeTax, addRateEffective, hasAddTax, modelAnswer);
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(tax-prose)', gate: 'double-tax-cap', code: 'tax-prose-inconsistent', message: r.reason ?? 'the tax explanation does not match the computed branch / rate ordering' }] };
 }

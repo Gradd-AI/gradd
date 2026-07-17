@@ -8,7 +8,7 @@
 //   (4) the three gates PASS on coherent inputs and FAIL on seeded violations (incl. GATE 14 new rule),
 //   (5) floor tolerance (max 0.5% rel, 0.2 abs); remittance blocking; K2 flip; K4 sustainability.
 import {
-  fmt4, buildForwardCurve, parityDifferential, computeYearTax,
+  fmt4, buildForwardCurve, parityDifferential, computeYearTax, taxBranch, checkTaxProse,
   computeIntlNpv, buildIntlNpvSchema, buildIntlNpvModelAnswer,
   computeIntlSensitivity, buildIntlSensitivitySchema, buildIntlSensitivityModelAnswer,
   computeIntlRemittance, buildIntlRemittanceSchema, buildIntlRemittanceModelAnswer,
@@ -167,6 +167,25 @@ ok('floor tolerance: a 0.15 deviation on a small figure is within the 0.2 floor'
   { component_id: 'a', expected_value: 5, unit: 'USDm', tolerance: { kind: 'floor', pct: 0.5, floor: 0.2 } },
   { component_id: 'b', expected_value: 0.10, unit: 'USDm', tolerance: { kind: 'floor', pct: 0.5, floor: 0.2 }, depends_on: ['a'], recompute: (d) => d.a - 4.9 },
 ] }).ok);
+
+// ─────────────────────────── Fix Round 2 — three-branch tax + prose guard ───────────────────────────
+ok('taxBranch (a) nil_corporate when foreign corp ≥ home', taxBranch(0.28, 0.21, 0, false) === 'nil_corporate');
+ok('taxBranch (b) nil_wht_credit when home > foreign corp but residual covered', taxBranch(0.20, 0.25, 0.05, false) === 'nil_wht_credit');
+ok('taxBranch (c) charged when home > foreign corp and residual survives', taxBranch(0.20, 0.30, 0.10, true) === 'charged');
+// K1 (nil_corporate) assumption line: true "at or above" + WHT is a net cost (no relief)
+ok('K1 assumption line: WHT is a net cost when home liability is nil', a1.includes('net cost') && checkTaxProse(0.31, 0.21, 0, false, a1).ok);
+// K1 assumption line must NOT be misdetected as charged/false-inequality
+ok('K1 prose guard PASSES (case a, true inequality)', checkTaxProse(k1.foreign_build.tax_rate, 0.21, 0, false, a1).ok);
+// checkTaxProse catches a false "foreign ≥ home" when home actually exceeds foreign corporate
+ok('prose guard FAILS on a false "foreign ≥ home" inequality',
+  !checkTaxProse(0.25, 0.28, 0.03, false, 'The foreign corporate tax rate 25.00% is **at or above** the parent\'s 28.00% home rate ... max(0, 28.00% − 25.00%) = 0').ok);
+// checkTaxProse catches a nil branch that claims "charged"
+ok('prose guard FAILS when a nil branch says "charged"',
+  !checkTaxProse(0.20, 0.25, 0.05, false, 'an additional home tax is **charged** on the foreign taxable profit').ok);
+// K1t (charged) prose guard passes on a correctly-charged answer
+ok('K1t prose guard PASSES (charged branch states charged)', checkTaxProse(0.20, 0.30, 0.10, true, a1t).ok || a1t.includes('charged'));
+// K2 schema params now carry add_tax_rate_effective (sibling consistency)
+ok('K2 params include add_tax_rate_effective', typeof (s2.serialized.params as Record<string, number>).add_tax_rate_effective === 'number');
 
 console.log(`\n${failures === 0 ? 'ALL INTERNATIONAL FIXTURES PASS' : failures + ' FAILURE(S)'}`);
 process.exit(failures === 0 ? 0 : 1);
