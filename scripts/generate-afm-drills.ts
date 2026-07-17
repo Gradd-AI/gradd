@@ -134,6 +134,16 @@ import {
   type BsopComputed,
   type BsopKind,
 } from '../lib/acca/bsop';
+import {
+  computeIntlNpv, buildIntlNpvSchema, buildIntlNpvModelAnswer,
+  computeIntlSensitivity, buildIntlSensitivitySchema, buildIntlSensitivityModelAnswer,
+  computeIntlRemittance, buildIntlRemittanceSchema, buildIntlRemittanceModelAnswer,
+  computeIntlDividend, buildIntlDividendSchema, buildIntlDividendModelAnswer,
+  buildForwardCurve,
+  type InternationalKind,
+  type ParityBasis,
+} from '../lib/acca/international';
+import { validateParityConsistency, validateCurrencyScale, validateDoubleTaxCap } from '../lib/acca/validate-schema';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -179,6 +189,7 @@ interface AfmDrillSpec {
   credit_kind?:            CreditKind;   // B3h/B4a batch only — selects the credit-risk drill variant
   bsop_kind?:              BsopKind;     // B2a/B2c batch only — selects the BSOP / real-option variant
   valuation_kind?:         ValuationKind; // B4a/B4b/A6 batch only — selects the valuation-family variant
+  international_kind?:      InternationalKind; // B5/A6a batch only — selects the international-family variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -214,6 +225,12 @@ const CREDIT_LOS = new Set<LoCode>(['B3h', 'B4a']);
 // ruling EXTENDED (Design B): code grades the BSOP chain but tolerances are set to the normal
 // TABLES (N(d) ±0.01, d1/d2 ±0.05), never code precision. redeploy = the switch-texture in withdraw.
 const BSOP_LOS = new Set<LoCode>(['B2a', 'B2c']);
+// International investment & financing (B5b forecast-FX NPV / B5a exchange-rate sensitivity;
+// B5c restricted-remittance rides the B5b remittance kind as discursive dual) + A6a multinational
+// dividend capacity. Calculator #10 (lib/acca/international.ts) composes the FCFF build + npv
+// discounting one-way. HARD RULE (Grant 2026-07-17): A6a is a Section-A LO — direct-link-only
+// serve, EXCLUDED from all B-tier/coverage counts and public claims until Section A surfaces.
+const INTERNATIONAL_LOS = new Set<LoCode>(['B5a', 'B5b', 'A6a']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -513,6 +530,45 @@ Requirements:
 - context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions of the LOCAL ${spec.region_hint} currency; rates in %). Report the ISO code in the currency field. Add 1–2 challengeable textures (capex vs sustainable reinvestment; concentration/cyclicality; durability of the growth or dividend) for scepticism. Do NOT pre-compute anything.
 - Provide the SAME figures in raw_inputs (supply ONLY the fields this kind needs, per the DRILL TYPE block). Choose figures so every computed value is positive and coherent.
 - interpretation_prose: qualitative advice ONLY (3–5 sentences), tool rules — NO numbers, NO inequalities, NO derived rate, NO verdict, ONLY context facts. Teach the flow-to-rate logic in WORDS.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
+function buildInternationalUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.international_kind ?? 'home_currency_standard';
+  const kindBlock =
+    kind === 'home_currency_standard'
+      ? `- DRILL TYPE: INTERNATIONAL NPV (home-currency method). A ${spec.region_hint} parent appraises a foreign project whose cash flows arise in the FOREIGN currency. The candidate forecasts the exchange rate by PURCHASING POWER PARITY (relative inflation), converts each year's foreign cash flow to the parent's currency, discounts at the parent's money cost of capital, and advises. In raw_inputs supply: home_currency + foreign_currency (ISO codes), base_spot (S₀, FOREIGN units per 1 HOME unit), home_inflation + foreign_inflation (DECIMALS — the PPP differential), discount_rate (DECIMAL, home money cost of capital), the foreign FCFF build (pbit, tax_rate [decimal, the FOREIGN corporate tax], depreciation, capex, delta_working_capital — all in FOREIGN millions), foreign_growth (DECIMAL real growth, may be 0), years (3–5), initial_outlay_foreign (FOREIGN millions), withholding_rate + home_tax_rate (DECIMALS — the host withholding and the parent-country tax; credit method). Code derives the FX curve, converts, taxes, discounts, and decides — state NONE of it.`
+      : kind === 'exchange_rate_sensitivity'
+      ? `- DRILL TYPE: EXCHANGE-RATE SENSITIVITY (B5a). The SAME foreign project is appraised under a BASE exchange-rate assumption AND an ALTERNATIVE one (a sharper depreciation of the foreign currency). The question asks the candidate to assess how the project's value — and the decision — change. Supply the full home-currency-NPV inputs (as above) PLUS: alt_foreign_inflation (DECIMAL, HIGHER than foreign_inflation → faster depreciation) and alt_label (a short phrase, e.g. "a sharper devaluation of the rupiah"). Choose figures so the BASE NPV is comfortably positive and the ALTERNATIVE is close to or below zero (the flip is the teaching point). Code owns both NPVs and whether the decision flips — state NEITHER.`
+      : kind === 'restricted_remittance'
+      ? `- DRILL TYPE: RESTRICTED REMITTANCE (B5b, ALSO covers B5c). A host government BLOCKS part of the project's cash from being remitted; the blocked funds are reinvested locally and released at the end of the project. Supply the full home-currency-NPV inputs PLUS: blocked_fraction (DECIMAL 0–1, share of each year's cash blocked) and local_reinvest_rate (DECIMAL, the rate blocked funds earn locally). Code owns the NPV and the cost of the restriction versus free remittance — state NEITHER. Your interpretation_prose MUST develop STRATEGIES FOR RESTRICTED REMITTANCE (the B5c content): transfer pricing, royalty/management fees, parallel/back-to-back loans, local reinvestment, counter-trade — as ways to unlock or use blocked cash. Do NOT invent a specific statute or a named exchange-control regulation.`
+      : `- DRILL TYPE: MULTINATIONAL DIVIDEND CAPACITY (A6a). A ${spec.region_hint} parent's dividend capacity draws on both its OWN free cash flow to equity and the cash its overseas subsidiary can REMIT (net of host withholding and home tax, converted at the forecast spot). The candidate judges whether the group's proposed dividend is sustainable. Supply: home_currency + foreign_currency, base_spot (S₀, foreign per home), home_inflation + foreign_inflation (DECIMALS, for the PPP forecast spot), remittance_year (integer, the year the remittance is converted — code derives that year's forecast spot), the SUBSIDIARY FCFE build (pbit, tax_rate, depreciation, capex, delta_working_capital in FOREIGN millions), sub_kd (DECIMAL, subsidiary pre-tax cost of debt), sub_debt (FOREIGN millions), sub_net_borrowing (FOREIGN millions, may be 0), remit_fraction (DECIMAL 0–1, share of the subsidiary FCFE remitted this year — the timing of central remittances), parent_fcfe (HOME millions, the parent's own dividend capacity), proposed_dividend (HOME millions, the group's proposed total dividend), withholding_rate + home_tax_rate (DECIMALS). Code owns the subsidiary FCFE, the remittance, the group capacity, and the sustainability verdict — state NONE.`;
+  return `Write one original ACCA AFM international-finance drill (kind: ${kind}).
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+
+CODE-COMPUTES-STATS PROTOCOL — MANDATORY. Code owns EVERY figure and EVERY figure-vs-figure verdict.
+Supply the scenario, the raw input figures, and qualitative prose ONLY. DO NOT state anywhere any
+forecast exchange rate, any converted cash flow, any NPV, any dividend capacity, any inequality
+between computed figures, or any accept/reject/sustainability verdict — code inserts ALL of those.
+Forecast exchange rates are DERIVED by parity from the stated inflation differential; NEVER state a
+forecast rate yourself.
+
+${kindBlock}
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name the parent and the foreign project/subsidiary and the two countries/currencies involved.
+- CURRENCIES: state the base spot rate as ONE clean scenario fact (foreign units per 1 home unit) and the home + foreign INFLATION rates (for the parity forecast). Report BOTH ISO codes.
+- FISCAL: state the host withholding rate and the parent-country tax rate cleanly as scenario facts (the appraisal uses the double-tax CREDIT method — do NOT introduce a named tax treaty article, a specific statute, or exemption-method mechanics).
+- question: begins with the command verb and asks for EXACTLY what this kind delivers — no more (P5). Do NOT ask for an IRR, a WACC derivation, a sensitivity table, or anything outside this kind.
+- context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions; rates as %). Weave 1–2 challengeable textures INTO THE PROSE (political/exchange-control risk realism; whether parity will hold; the durability of the cash flows) — do NOT print a labelled "textures" list. Do NOT pre-compute anything.
+- FROZEN FACTS (P4b) — a scenario is a DATED snapshot: NEVER write "current market rate" or "currently" next to a spot/inflation/interest rate. State the base spot and inflation rates as "at the appraisal date" / "assumed".
+- interpretation_prose: qualitative advice ONLY (3–5 sentences) — NO numbers, NO forecast rates, NO inequalities, NO verdict, ONLY context facts. Cover which assumptions are most fragile (will parity hold? is the remittance/political risk real? is the growth durable?) and what the board should require.
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
@@ -896,6 +952,65 @@ const SUBMIT_VALUATION_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+// International FAMILY (batch #10). One tool; raw_inputs is a UNION across the four kinds — the prompt
+// (buildInternationalUserPrompt, keyed off spec.international_kind) tells the model which fields to
+// supply. Code owns EVERY figure: the forecast FX curve (derived by parity), the conversions, the
+// double-tax, the NPV/capacity, and every verdict. The model NEVER states a forecast rate or a number.
+const SUBMIT_INTERNATIONAL_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_international_scenario',
+  description: 'Submit an international-finance drill (home-currency NPV / exchange-rate sensitivity / restricted remittance / multinational dividend capacity) — raw inputs only; code derives the forecast FX curve by parity, converts, applies the credit-method double-tax, and computes every figure and verdict.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question: { type: 'string', description: 'Drill question starting with the command verb. Asks for exactly what this kind delivers — no more.' },
+      context_text: { type: 'string', description: 'Scenario narrative (2–3 sentences) + a clean labelled list of the raw inputs (money in millions; rates as %). NO computed figure and NO forecast exchange rate. Weave 1–2 challengeable textures (political/exchange-control risk; will parity hold; durability of the cash flows) INTO THE PROSE — never a labelled "textures" list.' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase.' },
+      home_currency: { type: 'string', description: 'ISO 4217 code of the PARENT currency (e.g. "USD", "GBP", "EUR").' },
+      foreign_currency: { type: 'string', description: 'ISO 4217 code of the PROJECT/SUBSIDIARY currency (e.g. "MXN", "INR", "IDR").' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'Raw figures matching context_text exactly. Supply ONLY the fields this kind needs (the prompt says which). Code does ALL arithmetic, the parity FX forecast, the double-tax, and every verdict.',
+        properties: {
+          // Common FX + fiscal:
+          base_spot:        { type: 'number', description: 'Base spot exchange rate S₀ — FOREIGN units per 1 HOME unit (e.g. 20 means 20 foreign = 1 home).' },
+          home_inflation:   { type: 'number', description: 'Home (parent) inflation rate, DECIMAL (e.g. 0.03) — the PPP differential numerator-denominator input.' },
+          foreign_inflation:{ type: 'number', description: 'Foreign (project) inflation rate, DECIMAL (e.g. 0.09). Higher than home → the foreign currency depreciates.' },
+          withholding_rate: { type: 'number', description: 'Host withholding tax on remittances, DECIMAL (e.g. 0.10).' },
+          home_tax_rate:    { type: 'number', description: 'Parent-country tax on the remittance, DECIMAL (e.g. 0.25). Credit method: additional home tax = max(0, home − withholding).' },
+          // Foreign FCFF build (K1/K2/K3 project; K4 subsidiary):
+          pbit:                  { type: 'number', description: 'Foreign operating profit before interest and tax, maintainable base-year, FOREIGN millions.' },
+          tax_rate:              { type: 'number', description: 'FOREIGN corporate tax rate, DECIMAL (e.g. 0.30).' },
+          depreciation:          { type: 'number', description: 'Depreciation / non-cash add-back, FOREIGN millions.' },
+          capex:                 { type: 'number', description: 'Capital expenditure, FOREIGN millions.' },
+          delta_working_capital: { type: 'number', description: 'Increase in working capital, FOREIGN millions.' },
+          // K1/K2/K3 project NPV:
+          discount_rate:         { type: 'number', description: 'K1/K2/K3: the parent\'s home MONEY cost of capital, DECIMAL (e.g. 0.11).' },
+          foreign_growth:        { type: 'number', description: 'K1/K2/K3: real growth of the foreign cash flow, DECIMAL (e.g. 0.04, may be 0).' },
+          years:                 { type: 'number', description: 'K1/K2/K3: project life in years (3–5).' },
+          initial_outlay_foreign:{ type: 'number', description: 'K1/K2/K3: t0 capital cost in FOREIGN millions (code converts at S₀).' },
+          // K2 sensitivity:
+          alt_foreign_inflation: { type: 'number', description: 'K2 only: the ALTERNATIVE foreign inflation, DECIMAL — HIGHER than foreign_inflation (a sharper depreciation).' },
+          alt_label:             { type: 'string', description: 'K2 only: short phrase for the alternative, e.g. "a sharper devaluation of the peso".' },
+          // K3 restricted remittance:
+          blocked_fraction:      { type: 'number', description: 'K3 only: share of each year\'s foreign cash BLOCKED from remittance, DECIMAL 0–1.' },
+          local_reinvest_rate:   { type: 'number', description: 'K3 only: rate the blocked funds earn locally until release, DECIMAL.' },
+          // K4 multinational dividend capacity:
+          remittance_year:       { type: 'number', description: 'K4 only: the year the subsidiary remittance is converted (integer ≥ 1) — code derives that year\'s forecast spot by parity.' },
+          sub_kd:                { type: 'number', description: 'K4 only: subsidiary pre-tax cost of debt, DECIMAL.' },
+          sub_debt:              { type: 'number', description: 'K4 only: subsidiary market value of debt, FOREIGN millions.' },
+          sub_net_borrowing:     { type: 'number', description: 'K4 only: subsidiary net new borrowing this year, FOREIGN millions (may be 0).' },
+          remit_fraction:        { type: 'number', description: 'K4 only: share of the subsidiary FCFE remitted this year, DECIMAL 0–1.' },
+          parent_fcfe:           { type: 'number', description: 'K4 only: the parent\'s OWN free cash flow to equity, HOME millions.' },
+          proposed_dividend:     { type: 'number', description: 'K4 only: the group\'s proposed TOTAL dividend under test, HOME millions.' },
+        },
+        required: ['base_spot', 'home_inflation', 'foreign_inflation', 'withholding_rate', 'home_tax_rate', 'pbit', 'tax_rate', 'depreciation', 'capex', 'delta_working_capital'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO forecast rate, NO converted figure, NO NPV, NO capacity, NO inequality, NO verdict — code owns all of those. Reference ONLY facts in context_text; name only risks the scenario evidences. Cover which assumptions are most fragile (whether parity holds; the political/remittance risk; the durability of the cash flows) and what the board should require. For the restricted-remittance kind, ALSO develop strategies for dealing with blocked cash (transfer pricing, royalties/fees, parallel loans, local reinvestment).' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'home_currency', 'foreign_currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_NPV_SCENARIO_TOOL: Anthropic.Tool = {
   name: 'submit_npv_scenario',
   description: 'Submit an NPV investment-appraisal drill — raw inputs only; code computes the WDA schedule, tax, net cash flows, discounting, NPV, the accept/reject decision, and any ranking/sensitivity',
@@ -1173,6 +1288,14 @@ interface DrillOutput {
   _valuationComputed?: FcffComputed | FcfeComputed | DividendComputed | CompareComputed; // valuation — bridge gate + dry-run
   _valuationDebt?:    number;            // valuation — debt value for the bridge gate
   _valuationEquityWeight?: number;       // fcff_enterprise — estimated equity weight, for the FIX-1 divergence lint
+  _intlKind?:     InternationalKind;     // international family — dry-run + gate branch
+  _intlSummary?:  string;                // international family — dry-run one-liner
+  _intlPenalty?:  number;                // international family — decision-relevance penalty (best-of-N)
+  _intlGate?: {                          // international family — data for GATES 12/13/14
+    parity: { fx_curve: number[]; base_spot: number; basis: ParityBasis; rate_home: number; rate_foreign: number }[];
+    scaleYears: { fx: number; foreign_remit_net: number; home_cf: number }[];
+    doubleTax: { withholding: number; home_tax: number; add_rate: number; per_year: number[] };
+  };
   _currency?:     string;            // quantitative only — dry-run display
 }
 
@@ -1537,6 +1660,101 @@ async function draftValuationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Pr
   return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
 }
 
+// International FAMILY draft (batch #10). Dispatches by spec.international_kind. Basis is PPP for
+// every B5 drill (multi-year translation — Grant ruling #1; IRP is reserved for short-horizon
+// forwards and stays engine-supported/fixture-tested only). Code derives the FX curve, converts,
+// applies the credit-method double-tax, and owns every figure and verdict.
+// Decision-relevance is a generation quality bar, not a gate (APV/CAPM precedent). The model cannot
+// see the figures it produces, so we run best-of-N and keep the draft whose CODE-COMPUTED verdict
+// best matches the kind's intent: K1/K3 → accept; K2 → base-accept + alt-reject (the flip); K4 → a
+// decisive surplus AND a materially-sized subsidiary contribution. The penalty is set at build time
+// on _intlPenalty (from the computed object), not parsed back off a string.
+async function draftInternationalDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: InternationalKind = spec.international_kind ?? 'home_currency_standard';
+  const MAX_ATTEMPTS = 4;
+  const ACCEPT_PENALTY = 0.5;
+  let best: DrillOutput | null = null;
+  let bestPenalty = Infinity;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const candidate = await draftInternationalOnce(anthropic, spec, kind);
+    const penalty = candidate._intlPenalty ?? 5;
+    if (penalty <= bestPenalty) { best = candidate; bestPenalty = penalty; }
+    if (penalty <= ACCEPT_PENALTY) return candidate;
+    if (attempt < MAX_ATTEMPTS - 1) console.warn(`  ↻ ${spec.lo_code} [INTL/${kind}] off-target verdict (${candidate._intlSummary}, penalty ${penalty.toFixed(2)}) — retrying (${attempt + 1}/${MAX_ATTEMPTS})`);
+  }
+  if (bestPenalty > ACCEPT_PENALTY) console.warn(`  ⚠ ${spec.lo_code} [INTL/${kind}] best-of-${MAX_ATTEMPTS} penalty ${bestPenalty.toFixed(2)} (>${ACCEPT_PENALTY}) — shipping least-bad; self-flag for review`);
+  return best!;
+}
+
+async function draftInternationalOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: InternationalKind): Promise<DrillOutput> {
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2600,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_INTERNATIONAL_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_international_scenario' },
+    messages: [{ role: 'user', content: buildInternationalUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in international Pass 1 response');
+  const inp = block.input as { question: string; context_text: string; command_verb: string; home_currency: string; foreign_currency: string; raw_inputs: Record<string, number>; interpretation_prose: string };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'home_currency', 'foreign_currency', 'interpretation_prose'], 'Pass 1 (international)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (international): raw_inputs missing');
+  const r = inp.raw_inputs;
+  const home = normaliseCurrency(inp.home_currency), foreign = normaliseCurrency(inp.foreign_currency);
+  const basis: ParityBasis = 'ppp'; // code owns the basis (PPP for multi-year translation) — never model-chosen
+  const build = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital };
+  const base = { command_verb: inp.command_verb.trim().toLowerCase(), question: inp.question, context_text: inp.context_text, _currency: home, _intlKind: kind };
+
+  if (kind === 'home_currency_standard') {
+    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate };
+    const c = computeIntlNpv(ins);
+    const { schema, serialized } = buildIntlNpvSchema(ins, c);
+    const model_answer = buildIntlNpvModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _intlSummary: `${foreign}→${home} NPV=${money(home, c.npv)} ${c.accept ? 'ACCEPT' : 'REJECT'} (add-tax ${(c.add_tax_rate * 100).toFixed(1)}%)`,
+      _intlPenalty: c.accept ? 0 : 2,   // K1: want a positive (accept) standard case
+      _intlGate: { parity: [{ fx_curve: c.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: c.years, doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.add_tax_rate, per_year: c.years.map((y) => y.additional_home_tax_home) } } };
+  }
+  if (kind === 'exchange_rate_sensitivity') {
+    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate, alt_rate_foreign: r.alt_foreign_inflation, alt_label: (inp.raw_inputs.alt_label as unknown as string) ?? 'a sharper depreciation of the foreign currency' };
+    const c = computeIntlSensitivity(ins);
+    const { schema, serialized } = buildIntlSensitivitySchema(ins, c);
+    const model_answer = buildIntlSensitivityModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _intlSummary: `base=${money(home, c.npv_base)} alt=${money(home, c.npv_alt)} flips=${c.flips}`,
+      _intlPenalty: (c.accept_base && !c.accept_alt) ? 0 : (c.flips ? 1 : 2),   // K2: want base accept → alt reject (the flip)
+      _intlGate: { parity: [
+        { fx_curve: c.base.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation },
+        { fx_curve: c.alt.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.alt_foreign_inflation },
+      ], scaleYears: [...c.base.years, ...c.alt.years], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.base.add_tax_rate, per_year: [...c.base.years, ...c.alt.years].map((y) => y.additional_home_tax_home) } } };
+  }
+  if (kind === 'restricted_remittance') {
+    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate, blocked_fraction: r.blocked_fraction, local_reinvest_rate: r.local_reinvest_rate };
+    const c = computeIntlRemittance(ins);
+    const { schema, serialized } = buildIntlRemittanceSchema(ins, c);
+    const model_answer = buildIntlRemittanceModelAnswer(ins, c, inp.interpretation_prose);
+    const releaseScale = { fx: c.fx_curve[c.years.length - 1], foreign_remit_net: c.blocked_release_foreign * c.net_factor, home_cf: c.home_cf_release };
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _intlSummary: `NPV=${money(home, c.npv)} vs free ${money(home, c.npv_if_free)} (cost ${money(home, c.npv_cost_of_blocking)})`,
+      _intlPenalty: c.accept ? 0 : 2,   // K3: want a positive base so the restriction's cost reads as a reduction, not a deeper loss
+      _intlGate: { parity: [{ fx_curve: c.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [...c.years, releaseScale], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.add_tax_rate, per_year: [...c.years.map((y) => y.additional_home_tax_home), c.additional_home_tax_release_home] } } };
+  }
+  // multinational_dividend_capacity (A6a)
+  const remitYear = Math.max(1, Math.round(r.remittance_year ?? 1));
+  const forecastCurve = buildForwardCurve(r.base_spot, basis, r.home_inflation, r.foreign_inflation, remitYear);
+  const forecast_spot = forecastCurve[remitYear - 1]; // code-derived — never model-asserted
+  const ins = { home_currency: home, foreign_currency: foreign, forecast_spot, basis, base_spot: r.base_spot, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, remittance_year: remitYear, sub_build: build, sub_kd: r.sub_kd, sub_debt: r.sub_debt, sub_net_borrowing: r.sub_net_borrowing, remit_fraction: r.remit_fraction, parent_fcfe: r.parent_fcfe, proposed_dividend: r.proposed_dividend, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate };
+  const c = computeIntlDividend(ins);
+  const { schema, serialized } = buildIntlDividendSchema(ins, c);
+  const model_answer = buildIntlDividendModelAnswer(ins, c, inp.interpretation_prose);
+  return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+    _intlSummary: `capacity=${money(home, c.total_capacity)} vs proposed ${money(home, c.proposed_dividend)} sustainable=${c.sustainable} (sub share ${(c.sub_remit_home / c.total_capacity * 100).toFixed(0)}%)`,
+    // K4: want a DECISIVE verdict (|surplus| ≥ 5% of proposed) AND a MATERIAL subsidiary share (≥ 12%)
+    _intlPenalty: (Math.abs(c.capacity_surplus) / c.proposed_dividend >= 0.05 ? 0 : 1) + (c.sub_remit_home / c.total_capacity >= 0.12 ? 0 : 1),
+    _intlGate: { parity: [{ fx_curve: forecastCurve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [{ fx: forecast_spot, foreign_remit_net: c.sub_remit_foreign * c.net_factor, home_cf: c.sub_remit_home }], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.add_tax_rate, per_year: [c.additional_home_tax_home] } } };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -1563,6 +1781,7 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   if (spec.credit_kind && CREDIT_LOS.has(spec.lo_code)) return draftCreditDrill(anthropic, spec);
   if (spec.bsop_kind && BSOP_LOS.has(spec.lo_code)) return draftBsopDrill(anthropic, spec);
   if (spec.valuation_kind && VALUATION_LOS.has(spec.lo_code)) return draftValuationDrill(anthropic, spec);
+  if (spec.international_kind && INTERNATIONAL_LOS.has(spec.lo_code)) return draftInternationalDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
@@ -1746,6 +1965,29 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     lines.push('GATE 11 — valuation flow/rate/bridge: N/A (not a valuation-family drill)');
   }
 
+  // (12/13/14) INTERNATIONAL family — parity consistency, currency/unit-scale integrity, double-tax
+  // cap. Only international-family drills carry the gate data.
+  if (drill._intlGate) {
+    const g = drill._intlGate;
+    const parityRes = g.parity.map((p) => validateParityConsistency(p.fx_curve, p.base_spot, p.basis, p.rate_home, p.rate_foreign));
+    const parityOk = parityRes.every((v) => v.ok);
+    lines.push(`GATE 12 — parity consistency (forecast FX derived, never asserted): ${parityOk ? 'PASS' : 'FAIL'}`);
+    if (!parityOk) { ok = false; for (const v of parityRes) for (const iss of v.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
+    else lines.push(`    ✓ every forecast spot reconciles to the stated ${g.parity[0].basis.toUpperCase()} parity from S₀ + the rate differential`);
+
+    const scale = validateCurrencyScale(g.scaleYears);
+    lines.push(`GATE 13 — currency / unit-scale integrity: ${scale.ok ? 'PASS' : 'FAIL'}`);
+    if (!scale.ok) { ok = false; for (const iss of scale.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
+    else lines.push('    ✓ every cross-currency figure reconciles (home × spot = foreign) at a consistent scale');
+
+    const cap = validateDoubleTaxCap(g.doubleTax.withholding, g.doubleTax.home_tax, g.doubleTax.add_rate, g.doubleTax.per_year);
+    lines.push(`GATE 14 — double-tax cap (credit method): ${cap.ok ? 'PASS' : 'FAIL'}`);
+    if (!cap.ok) { ok = false; for (const iss of cap.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
+    else lines.push('    ✓ additional home tax = max(0, home − withholding); never a refund of excess host tax');
+  } else {
+    lines.push('GATE 12/13/14 — international parity / currency-scale / double-tax: N/A (not an international-family drill)');
+  }
+
   return { ok, lines };
 }
 
@@ -1776,9 +2018,10 @@ async function main() {
   const creditBatch = flag('--credit-batch');
   const bsopBatch = flag('--bsop-batch');
   const valuationBatch = flag('--valuation-batch');
+  const internationalBatch = flag('--international-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
@@ -1871,6 +2114,23 @@ async function main() {
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       apv_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
       calculation_required: true,   // B3k is 'mixed' but every APV drill supplies figures + a schema
+    }));
+  } else if (internationalBatch) {
+    // Batch #10 (international family, calculator #10). 4 kinds → B5b / B5a / B5b(+B5c dual) / A6a.
+    // Fresh home/foreign currency pairs, ZERO overlap with the burned set. Rulings 2026-07-17:
+    // basis = PPP for every drill (multi-year translation; IRP reserved for short-horizon forwards);
+    // credit-method double-tax with the home-liability cap. A6a (K4) = DIRECT-LINK-ONLY serve,
+    // EXCLUDED from all B-tier/coverage counts + public claims until Section A surfaces (HARD RULE).
+    const plan: { kind: InternationalKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'home_currency_standard',        lo: 'B5b', region: 'Morocco',   sector: 'a US (USD) parent appraising a Moroccan (MAD) automotive-components plant — home-currency method, PPP-forecast spot' },
+      { kind: 'exchange_rate_sensitivity',     lo: 'B5a', region: 'Egypt',     sector: 'a UK (GBP) parent appraising an Egyptian (EGP) mobile-telecoms network build — base vs a sharper EGP devaluation (the decision flip)' },
+      { kind: 'restricted_remittance',         lo: 'B5b', region: 'Argentina', sector: 'a Eurozone (EUR) parent appraising an Argentine (ARS) grain-processing project — exchange controls block part of the cash (B5c strategies for restricted remittance)' },
+      { kind: 'multinational_dividend_capacity', lo: 'A6a', region: 'Vietnam', sector: 'a US (USD) parent drawing dividends from a Vietnamese (VND) electronics-manufacturing subsidiary — remittance timing + credit-method double tax' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      international_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
+      calculation_required: true,
     }));
   } else {
     const loCodes: LoCode[] = losArg
@@ -1967,6 +2227,10 @@ async function main() {
         } else {
           console.log(`CODE-COMPUTED: price=${money(cur, dc.primary.price)}  Macaulay=${dc.primary.macaulay.toFixed(3)}y  modified=${dc.primary.modified.toFixed(3)}y  ΔP/P(${((dc.yield_shift ?? 0) * 10000).toFixed(0)}bp)=${dc.price_sensitivity?.toFixed(2)}%`);
         }
+      }
+      if (drill._intlKind) {
+        console.log(`\nINTERNATIONAL KIND: ${drill._intlKind}  (currency ${drill._currency})`);
+        console.log(`CODE-COMPUTED: ${drill._intlSummary}`);
       }
       console.log(`\nANSWER_SCHEMA (serialised → answer_schema jsonb):\n${JSON.stringify(drill.answer_schema, null, 2)}`);
       const report = runQuantitativeGates(drill);

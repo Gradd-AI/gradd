@@ -511,14 +511,19 @@ export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemi
 export function buildIntlDividendSchema(raw: IntlDividendInputs, c: IntlDividendComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.home_currency, foreign = raw.foreign_currency, homeUnit = `${home}m`, foreignUnit = `${foreign}m`;
   const S = raw.forecast_spot, rf = raw.remit_fraction, net = c.net_factor;
+  // parent_fcfe is a graded ROOT (a figure the answer states and sums), so total_capacity depends on
+  // BOTH the subsidiary chain and the parent figure — the seeded-OFR proof then carries even when the
+  // parent contribution dominates (perturbing either root moves total_capacity out of tolerance).
   const comps: Component[] = [
     { component_id: 'sub_fcfe', label: 'Subsidiary free cash flow to equity (foreign)', expected_value: c.sub_fcfe_foreign, unit: foreignUnit, tolerance: rel(0.5),
       working_steps: [`FCFE = FCFF − Kd·D(1−t) + net new borrowing (subsidiary, foreign)`] },
     { component_id: 'sub_remit_home', label: 'Subsidiary remittance received by the parent (home, net of double-tax)', expected_value: c.sub_remit_home, unit: homeUnit, tolerance: rel(0.5),
       depends_on: ['sub_fcfe'], recompute: (d) => (d.sub_fcfe * rf * net) / S,
       working_steps: [`= FCFE ${fmt1(c.sub_fcfe_foreign)} × remitted ${(rf * 100).toFixed(0)}% × net-of-tax ${net.toFixed(4)} ÷ spot ${fmt4(S)}`] },
+    { component_id: 'parent_fcfe', label: 'Parent free cash flow to equity (home currency)', expected_value: raw.parent_fcfe, unit: homeUnit, tolerance: rel(0.5),
+      working_steps: [`the parent's own dividend capacity (home currency)`] },
     { component_id: 'total_capacity', label: 'Group dividend capacity (home currency)', expected_value: c.total_capacity, unit: homeUnit, tolerance: rel(0.5),
-      depends_on: ['sub_remit_home'], recompute: (d) => d.sub_remit_home + raw.parent_fcfe,
+      depends_on: ['sub_remit_home', 'parent_fcfe'], recompute: (d) => d.sub_remit_home + d.parent_fcfe,
       working_steps: [`= parent FCFE ${fmt1(raw.parent_fcfe)} + remitted subsidiary FCFE`] },
     { component_id: 'capacity_surplus', label: 'Capacity surplus over the proposed dividend (signed)', expected_value: c.capacity_surplus, unit: homeUnit, tolerance: rel(0.5),
       depends_on: ['total_capacity'], recompute: (d) => d.total_capacity - raw.proposed_dividend,

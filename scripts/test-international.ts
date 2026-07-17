@@ -131,11 +131,13 @@ ok('K4 schema: GATE1 self-consistency clean (sub_fcfe → remit → total → su
 ok('K4 model answer: GATE2 figure-integrity', figuresPresent(s4.schema, a4));
 ok('K4 parity gate PASSES on the forecast spot (single-period)', validateParityConsistency([c4.forecast_spot], k4.base_spot, 'ppp', k4.rate_home, k4.rate_foreign).ok);
 // OFR: wrong subsidiary FCFE, correct method downstream → carried
+const badRemit = ((c4.sub_fcfe_foreign + 300) * 0.60 * c4.net_factor) / 105;
 const k4ofr = verifyNumericAnswer(s4.schema, { components: [
   { component_id: 'sub_fcfe', value: c4.sub_fcfe_foreign + 300, workings: 'wrong FCFE' },
-  { component_id: 'sub_remit_home', value: ((c4.sub_fcfe_foreign + 300) * 0.60 * c4.net_factor) / 105, workings: 'FCFE×rf×net÷spot' },
-  { component_id: 'total_capacity', value: k4.parent_fcfe + ((c4.sub_fcfe_foreign + 300) * 0.60 * c4.net_factor) / 105, workings: 'parent + remit' },
-  { component_id: 'capacity_surplus', value: (k4.parent_fcfe + ((c4.sub_fcfe_foreign + 300) * 0.60 * c4.net_factor) / 105) - k4.proposed_dividend, workings: 'total − proposed' },
+  { component_id: 'sub_remit_home', value: badRemit, workings: 'FCFE×rf×net÷spot' },
+  { component_id: 'parent_fcfe', value: k4.parent_fcfe, workings: 'given parent FCFE' },
+  { component_id: 'total_capacity', value: k4.parent_fcfe + badRemit, workings: 'parent + remit' },
+  { component_id: 'capacity_surplus', value: (k4.parent_fcfe + badRemit) - k4.proposed_dividend, workings: 'total − proposed' },
 ] });
 ok('K4 OFR: wrong sub FCFE → remit/total/surplus all carried',
   k4ofr.per_component.find((v) => v.component_id === 'sub_remit_home')?.verdict === 'carried' &&
