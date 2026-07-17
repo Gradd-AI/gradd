@@ -538,14 +538,15 @@ function buildInternationalUserPrompt(spec: AfmDrillSpec): string {
   const kindBlock =
     kind === 'home_currency_standard'
       ? `- DRILL TYPE: INTERNATIONAL NPV (home-currency method). A ${spec.region_hint} parent appraises a foreign project whose cash flows arise in the FOREIGN currency. The candidate forecasts the exchange rate by PURCHASING POWER PARITY (relative inflation), converts each year's foreign cash flow to the parent's currency, discounts at the parent's money cost of capital, and advises. In raw_inputs supply: home_currency + foreign_currency (ISO codes), base_spot (S₀, FOREIGN units per 1 HOME unit), home_inflation + foreign_inflation (DECIMALS — the PPP differential), discount_rate (DECIMAL, home money cost of capital), the foreign FCFF build (pbit, tax_rate [decimal, the FOREIGN corporate tax], depreciation, capex, delta_working_capital — all in FOREIGN millions), foreign_growth (DECIMAL real growth, may be 0), years (3–5), initial_outlay_foreign (FOREIGN millions), withholding_rate + home_tax_rate (DECIMALS — the host withholding and the parent-country tax; credit method). Code derives the FX curve, converts, taxes, discounts, and decides — state NONE of it.
-  - SIZING (IMPORTANT): the foreign currency DEPRECIATES over time, the double-tax removes ~25% of each remittance, and cash flows are discounted — so a domestically-marginal project turns NEGATIVE in the parent's currency. Choose a CLEARLY value-adding project: the SUM of the foreign annual cash flows over the project life must be about 2.5–3× the initial_outlay_foreign (e.g. base-year FCFF ≈ PBIT×(1−t)+dep−capex−ΔWC ≈ 900 with a ~1200 outlay over 4 years). The base-case NPV must come out comfortably POSITIVE.`
+  - SIZING (IMPORTANT): the foreign currency DEPRECIATES over time, withholding removes ~5–10% of each remittance, and cash flows are discounted — so a domestically-marginal project turns NEGATIVE in the parent's currency. Choose a CLEARLY value-adding project: the SUM of the foreign annual cash flows over the project life must be about 2.5–3× the initial_outlay_foreign (e.g. base-year FCFF ≈ PBIT×(1−t)+dep−capex−ΔWC ≈ 900 with a ~1200 outlay over 4 years). The base-case NPV must come out comfortably POSITIVE.
+  - TAX TEACHING POINT (K1): set the FOREIGN corporate tax rate ABOVE the parent's home rate (e.g. foreign 28% > home 21%), so the additional home tax is **NIL** — the credit for foreign corporate tax already covers the whole home liability. The model answer teaches WHY the additional tax is zero; do NOT present it as a silent zero.`
       : kind === 'exchange_rate_sensitivity'
       ? `- DRILL TYPE: EXCHANGE-RATE SENSITIVITY (B5a). The SAME foreign project is appraised under a BASE exchange-rate assumption AND an ALTERNATIVE one (a sharper depreciation of the foreign currency). The question asks the candidate to assess how the project's value — and the decision — change. Supply the full home-currency-NPV inputs (as above) PLUS: alt_foreign_inflation (DECIMAL, HIGHER than foreign_inflation → faster depreciation) and alt_label (a short phrase, e.g. "a sharper devaluation of the rupiah"). Code owns both NPVs and whether the decision flips — state NEITHER.
-  - SIZING (CRITICAL — the flip is the whole point): the BASE case must be comfortably POSITIVE, so the SUM of the foreign annual cash flows must be about 3× the initial_outlay_foreign. The ALTERNATIVE foreign inflation must be MUCH higher — about 2.5–3× the base foreign inflation (e.g. base 8% → alt 22%) — so the sharper depreciation pushes the NPV NEGATIVE and the decision FLIPS from accept to reject. If the base is not clearly positive or the alternative does not flip it, the drill fails its purpose.`
+  - SIZING (CRITICAL — the flip is the whole point): the BASE case must be MEANINGFULLY positive (aim ~+2 to +4 on a ~25-scale outlay — a clear accept, NOT razor-thin), so the SUM of the foreign annual cash flows must be about 3× the initial_outlay_foreign. The ALTERNATIVE foreign inflation must be MUCH higher — about 2.5–3× the base foreign inflation (e.g. base 8% → alt 22%) — so the sharper depreciation pushes the NPV clearly NEGATIVE and the decision FLIPS from accept to reject. If the base is not clearly positive or the alternative does not flip it, the drill fails its purpose.`
       : kind === 'restricted_remittance'
       ? `- DRILL TYPE: RESTRICTED REMITTANCE (B5b, ALSO covers B5c). A host government BLOCKS part of the project's cash from being remitted; the blocked funds are reinvested locally and released at the end of the project. Supply the full home-currency-NPV inputs PLUS: blocked_fraction (DECIMAL 0–1, share of each year's cash blocked) and local_reinvest_rate (DECIMAL, the rate blocked funds earn locally). Code owns the NPV and the cost of the restriction versus free remittance — state NEITHER. Your interpretation_prose MUST develop STRATEGIES FOR RESTRICTED REMITTANCE (the B5c content): transfer pricing, royalty/management fees, parallel/back-to-back loans, local reinvestment, counter-trade — as ways to unlock or use blocked cash. Do NOT invent a specific statute or a named exchange-control regulation.
   - SIZING (the teaching case is the FLIP): the project must be value-adding IF cash can be freely remitted — so size it so the FREE-remittance NPV (no blocking) is comfortably POSITIVE: the SUM of the foreign annual cash flows over the life ≈ 3× the initial_outlay_foreign, with only MODERATE host inflation (~3–5%, so parity depreciation is mild). Then make the restriction MATERIAL — blocked_fraction ≈ 0.25–0.35 and local_reinvest_rate WELL BELOW the parent's discount_rate (e.g. local 3% vs discount 11%) — large enough that the exchange controls REDUCE the NPV and ideally TIP the decision into rejection. The story: a good project that the capital controls make uneconomic.`
-      : `- DRILL TYPE: MULTINATIONAL DIVIDEND CAPACITY (A6a). A ${spec.region_hint} parent's dividend capacity draws on both its OWN free cash flow to equity and the cash its overseas subsidiary can REMIT (net of host withholding and home tax, converted at the forecast spot). The candidate judges whether the group's proposed dividend is sustainable. Supply: home_currency + foreign_currency, base_spot (S₀, foreign per home), home_inflation + foreign_inflation (DECIMALS, for the PPP forecast spot), remittance_year (integer, the year the remittance is converted — code derives that year's forecast spot), the SUBSIDIARY FCFE build (pbit, tax_rate, depreciation, capex, delta_working_capital in FOREIGN millions), sub_kd (DECIMAL, subsidiary pre-tax cost of debt), sub_debt (FOREIGN millions), sub_net_borrowing (FOREIGN millions, may be 0), remit_fraction (DECIMAL 0–1, share of the subsidiary FCFE remitted this year — the timing of central remittances), parent_fcfe (HOME millions, the parent's own dividend capacity), proposed_dividend (HOME millions, the group's proposed total dividend), withholding_rate + home_tax_rate (DECIMALS). Code owns the subsidiary FCFE, the remittance, the group capacity, and the sustainability verdict — state NONE.`;
+      : `- DRILL TYPE: MULTINATIONAL DIVIDEND CAPACITY (A6a). A ${spec.region_hint} parent's dividend capacity draws on both its OWN free cash flow to equity and the cash its overseas subsidiary can REMIT (net of host withholding and the differential home tax, converted at the forecast spot). The candidate judges whether the group's proposed dividend is sustainable. Supply: home_currency + foreign_currency, base_spot (S₀, foreign per home), home_inflation + foreign_inflation (DECIMALS, for the PPP forecast spot), **remittance_year = 2** (the remittance is made and converted in year 2 — code derives year 2's forecast spot by parity), the SUBSIDIARY FCFE build (pbit, tax_rate [foreign corporate rate], depreciation, capex, delta_working_capital in FOREIGN millions), sub_kd (DECIMAL, subsidiary pre-tax cost of debt), sub_debt (FOREIGN millions), sub_net_borrowing (FOREIGN millions, may be 0), remit_fraction (DECIMAL 0–1, share of the subsidiary FCFE remitted in year 2 — the timing of central remittances), parent_fcfe (HOME millions, the parent's own dividend capacity), proposed_dividend (HOME millions, the group's proposed total dividend), withholding_rate + home_tax_rate + wht_creditable. Say the remittance is made IN YEAR 2 (not "this year"). Code owns the subsidiary FCFE, the remittance, the group capacity, and the sustainability verdict — state NONE.`;
   return `Write one original ACCA AFM international-finance drill (kind: ${kind}).
 
 Specification:
@@ -566,8 +567,8 @@ ${kindBlock}
 
 Requirements:
 - Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name the parent and the foreign project/subsidiary and the two countries/currencies involved.
-- CURRENCIES: state the base spot rate as ONE clean scenario fact (foreign units per 1 home unit) and the home + foreign INFLATION rates (for the parity forecast). Report BOTH ISO codes.
-- FISCAL: state the host withholding rate and the parent-country tax rate cleanly as scenario facts (the appraisal uses the double-tax CREDIT method — do NOT introduce a named tax treaty article, a specific statute, or exemption-method mechanics).
+- CURRENCIES: state the base spot rate as ONE clean scenario fact (foreign units per 1 home unit) and the home + foreign INFLATION rates (for the parity forecast). For a foreign project, ALSO label the growth input as "Annual growth of foreign cash flows (money terms)". Report BOTH ISO codes.
+- FISCAL (DIFFERENTIAL CREDIT BASE): state the foreign CORPORATE tax rate (raw_inputs.tax_rate), the parent-country tax rate on foreign taxable profit (home_tax_rate), the host withholding rate, and whether a bilateral treaty makes the withholding CREDITABLE (wht_creditable). A bilateral tax treaty makes taxable profits earned abroad liable to the DIFFERENTIAL income tax between the two countries — additional home tax = max(0, home − foreign corporate) on taxable profit, crediting the foreign corporate tax. Do NOT introduce a named treaty article, a specific statute, or exemption-method mechanics — state the RATES and the treaty's creditability only.
 - question: begins with the command verb and asks for EXACTLY what this kind delivers — no more (P5). Do NOT ask for an IRR, a WACC derivation, a sensitivity table, or anything outside this kind.
 - context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions; rates as %). Weave 1–2 challengeable textures INTO THE PROSE (political/exchange-control risk realism; whether parity will hold; the durability of the cash flows) — do NOT print a labelled "textures" list. Do NOT pre-compute anything.
 - FROZEN FACTS (P4b) — a scenario is a DATED snapshot: NEVER write "current market rate" or "currently" next to a spot/inflation/interest rate. State the base spot and inflation rates as "at the appraisal date" / "assumed".
@@ -978,8 +979,9 @@ const SUBMIT_INTERNATIONAL_SCENARIO_TOOL: Anthropic.Tool = {
           base_spot:        { type: 'number', description: 'Base spot exchange rate S₀ — FOREIGN units per 1 HOME unit (e.g. 20 means 20 foreign = 1 home).' },
           home_inflation:   { type: 'number', description: 'Home (parent) inflation rate, DECIMAL (e.g. 0.03) — the PPP differential numerator-denominator input.' },
           foreign_inflation:{ type: 'number', description: 'Foreign (project) inflation rate, DECIMAL (e.g. 0.09). Higher than home → the foreign currency depreciates.' },
-          withholding_rate: { type: 'number', description: 'Host withholding tax on remittances, DECIMAL (e.g. 0.10).' },
-          home_tax_rate:    { type: 'number', description: 'Parent-country tax on the remittance, DECIMAL (e.g. 0.25). Credit method: additional home tax = max(0, home − withholding).' },
+          withholding_rate: { type: 'number', description: 'Host withholding tax on remittances, DECIMAL (e.g. 0.10) — a SEPARATE layer on the remitted cash.' },
+          home_tax_rate:    { type: 'number', description: 'Parent-country tax rate on foreign TAXABLE PROFIT, DECIMAL (e.g. 0.25). The additional home tax is the DIFFERENTIAL: max(0, home − foreign CORPORATE rate [= raw_inputs.tax_rate]) on the taxable profit, crediting the foreign corporate tax. NOTE: pick home_tax_rate vs tax_rate deliberately per the drill (K1 wants foreign corporate ≥ home so the additional tax is NIL — the teaching point).' },
+          wht_creditable:   { type: 'boolean', description: 'Does the bilateral treaty make the withholding tax CREDITABLE against the home liability? true = the differential credits the WHT too (additional = max(0, home liab − foreign corp − WHT)); false = WHT is a separate cost. State it in context_text.' },
           // Foreign FCFF build (K1/K2/K3 project; K4 subsidiary):
           pbit:                  { type: 'number', description: 'Foreign operating profit before interest and tax, maintainable base-year, FOREIGN millions.' },
           tax_rate:              { type: 'number', description: 'FOREIGN corporate tax rate, DECIMAL (e.g. 0.30).' },
@@ -1297,7 +1299,7 @@ interface DrillOutput {
   _intlGate?: {                          // international family — data for GATES 12/13/14
     parity: { fx_curve: number[]; base_spot: number; basis: ParityBasis; rate_home: number; rate_foreign: number }[];
     scaleYears: { fx: number; foreign_remit_net: number; home_cf: number }[];
-    doubleTax: { withholding: number; home_tax: number; add_rate: number; per_year: number[] };
+    doubleTax: { withholding: number; home_tax: number; foreign_corp: number; wht_creditable: boolean; periods: { taxable_profit: number; fcff: number; additional_home_tax_foreign: number }[] };
   };
   _currency?:     string;            // quantitative only — dry-run display
 }
@@ -1707,50 +1709,57 @@ async function draftInternationalOnce(anthropic: Anthropic, spec: AfmDrillSpec, 
   const home = normaliseCurrency(inp.home_currency), foreign = normaliseCurrency(inp.foreign_currency);
   const basis: ParityBasis = 'ppp'; // code owns the basis (PPP for multi-year translation) — never model-chosen
   const build = { pbit: r.pbit, tax_rate: r.tax_rate, depreciation: r.depreciation, capex: r.capex, delta_working_capital: r.delta_working_capital };
+  const whtCreditable = (inp.raw_inputs as Record<string, unknown>).wht_creditable !== false; // stated per scenario; default creditable
+  const fiscal = { withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate, wht_creditable: whtCreditable };
+  // GATE-14 period tuples from an IntlYear-shaped list (differential-tax validation input)
+  const periodsOf = (ys: { taxable_profit: number; foreign_cf: number; additional_home_tax_foreign: number }[]) =>
+    ys.map((y) => ({ taxable_profit: y.taxable_profit, fcff: y.foreign_cf, additional_home_tax_foreign: y.additional_home_tax_foreign }));
   const base = { command_verb: inp.command_verb.trim().toLowerCase(), question: inp.question, context_text: inp.context_text, _currency: home, _intlKind: kind };
 
   if (kind === 'home_currency_standard') {
-    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate };
+    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, ...fiscal };
     const c = computeIntlNpv(ins);
     const { schema, serialized } = buildIntlNpvSchema(ins, c);
     const model_answer = buildIntlNpvModelAnswer(ins, c, inp.interpretation_prose);
     return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
-      _intlSummary: `${foreign}→${home} NPV=${money(home, c.npv)} ${c.accept ? 'ACCEPT' : 'REJECT'} (add-tax ${(c.add_tax_rate * 100).toFixed(1)}%)`,
+      _intlSummary: `${foreign}→${home} NPV=${money(home, c.npv)} ${c.accept ? 'ACCEPT' : 'REJECT'} (add-tax ${(c.add_tax_rate_effective * 100).toFixed(1)}%${c.has_additional_home_tax ? '' : ' NIL'})`,
       _intlPenalty: c.accept ? 0 : 2,   // K1: want a positive (accept) standard case
-      _intlGate: { parity: [{ fx_curve: c.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: c.years, doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.add_tax_rate, per_year: c.years.map((y) => y.additional_home_tax_home) } } };
+      _intlGate: { parity: [{ fx_curve: c.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: c.years, doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, foreign_corp: r.tax_rate, wht_creditable: whtCreditable, periods: periodsOf(c.years) } } };
   }
   if (kind === 'exchange_rate_sensitivity') {
-    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate, alt_rate_foreign: r.alt_foreign_inflation, alt_label: (inp.raw_inputs.alt_label as unknown as string) ?? 'a sharper depreciation of the foreign currency' };
+    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, ...fiscal, alt_rate_foreign: r.alt_foreign_inflation, alt_label: (inp.raw_inputs.alt_label as unknown as string) ?? 'a sharper depreciation of the foreign currency' };
     const c = computeIntlSensitivity(ins);
     const { schema, serialized } = buildIntlSensitivitySchema(ins, c);
     const model_answer = buildIntlSensitivityModelAnswer(ins, c, inp.interpretation_prose);
     return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
       _intlSummary: `base=${money(home, c.npv_base)} alt=${money(home, c.npv_alt)} flips=${c.flips}`,
-      _intlPenalty: (c.accept_base && !c.accept_alt) ? 0 : (c.flips ? 1 : 2),   // K2: want base accept → alt reject (the flip)
+      // K2: want a MEANINGFUL positive base (≥ 1.0m, not razor-thin) AND the flip to reject under the alt
+      _intlPenalty: (c.accept_base && !c.accept_alt && c.npv_base >= 1.0) ? 0 : (c.accept_base && !c.accept_alt) ? 0.7 : (c.flips ? 1 : 2),
       _intlGate: { parity: [
         { fx_curve: c.base.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation },
         { fx_curve: c.alt.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.alt_foreign_inflation },
-      ], scaleYears: [...c.base.years, ...c.alt.years], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.base.add_tax_rate, per_year: [...c.base.years, ...c.alt.years].map((y) => y.additional_home_tax_home) } } };
+      ], scaleYears: [...c.base.years, ...c.alt.years], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, foreign_corp: r.tax_rate, wht_creditable: whtCreditable, periods: periodsOf([...c.base.years, ...c.alt.years]) } } };
   }
   if (kind === 'restricted_remittance') {
-    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate, blocked_fraction: r.blocked_fraction, local_reinvest_rate: r.local_reinvest_rate };
+    const ins = { home_currency: home, foreign_currency: foreign, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, discount_rate: r.discount_rate, foreign_build: build, foreign_growth: r.foreign_growth, years: r.years, initial_outlay_foreign: r.initial_outlay_foreign, ...fiscal, blocked_fraction: r.blocked_fraction, local_reinvest_rate: r.local_reinvest_rate };
     const c = computeIntlRemittance(ins);
     const { schema, serialized } = buildIntlRemittanceSchema(ins, c);
     const model_answer = buildIntlRemittanceModelAnswer(ins, c, inp.interpretation_prose);
-    const releaseScale = { fx: c.fx_curve[c.years.length - 1], foreign_remit_net: c.blocked_release_foreign * c.net_factor, home_cf: c.home_cf_release };
+    const releaseScale = { fx: c.fx_curve[c.years.length - 1], foreign_remit_net: c.release_tax.net_remit_foreign, home_cf: c.home_cf_release };
+    const releasePeriod = { taxable_profit: c.blocked_tp_total, fcff: c.blocked_release_foreign, additional_home_tax_foreign: c.release_tax.additional_home_tax_foreign };
     return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
       _intlSummary: `NPV=${money(home, c.npv)} vs free ${money(home, c.npv_if_free)} (cost ${money(home, c.npv_cost_of_blocking)})`,
       // K3 ideal = the FLIP: free-remittance NPV positive, blocked NPV negative (the controls are what
       // make it uneconomic — the strongest B5c story). Positive base with a material cost is acceptable.
       // Continuous so best-of-N breaks ties toward the least-negative free NPV (no worst-of-ties bug).
       _intlPenalty: (c.npv_if_free > 0 && c.npv < 0) ? 0 : (c.npv > 0 ? 0.3 : 1 + Math.max(0, -c.npv_if_free) / 20),
-      _intlGate: { parity: [{ fx_curve: c.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [...c.years, releaseScale], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.add_tax_rate, per_year: [...c.years.map((y) => y.additional_home_tax_home), c.additional_home_tax_release_home] } } };
+      _intlGate: { parity: [{ fx_curve: c.fx_curve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [...c.years, releaseScale], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, foreign_corp: r.tax_rate, wht_creditable: whtCreditable, periods: [...periodsOf(c.years), releasePeriod] } } };
   }
   // multinational_dividend_capacity (A6a)
   const remitYear = Math.max(1, Math.round(r.remittance_year ?? 1));
   const forecastCurve = buildForwardCurve(r.base_spot, basis, r.home_inflation, r.foreign_inflation, remitYear);
   const forecast_spot = forecastCurve[remitYear - 1]; // code-derived — never model-asserted
-  const ins = { home_currency: home, foreign_currency: foreign, forecast_spot, basis, base_spot: r.base_spot, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, remittance_year: remitYear, sub_build: build, sub_kd: r.sub_kd, sub_debt: r.sub_debt, sub_net_borrowing: r.sub_net_borrowing, remit_fraction: r.remit_fraction, parent_fcfe: r.parent_fcfe, proposed_dividend: r.proposed_dividend, withholding_rate: r.withholding_rate, home_tax_rate: r.home_tax_rate };
+  const ins = { home_currency: home, foreign_currency: foreign, forecast_spot, basis, base_spot: r.base_spot, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation, remittance_year: remitYear, sub_build: build, sub_kd: r.sub_kd, sub_debt: r.sub_debt, sub_net_borrowing: r.sub_net_borrowing, remit_fraction: r.remit_fraction, parent_fcfe: r.parent_fcfe, proposed_dividend: r.proposed_dividend, ...fiscal };
   const c = computeIntlDividend(ins);
   const { schema, serialized } = buildIntlDividendSchema(ins, c);
   const model_answer = buildIntlDividendModelAnswer(ins, c, inp.interpretation_prose);
@@ -1758,7 +1767,7 @@ async function draftInternationalOnce(anthropic: Anthropic, spec: AfmDrillSpec, 
     _intlSummary: `capacity=${money(home, c.total_capacity)} vs proposed ${money(home, c.proposed_dividend)} sustainable=${c.sustainable} (sub share ${(c.sub_remit_home / c.total_capacity * 100).toFixed(0)}%)`,
     // K4: want a DECISIVE verdict (|surplus| ≥ 5% of proposed) AND a MATERIAL subsidiary share (≥ 12%)
     _intlPenalty: (Math.abs(c.capacity_surplus) / c.proposed_dividend >= 0.05 ? 0 : 1) + (c.sub_remit_home / c.total_capacity >= 0.12 ? 0 : 1),
-    _intlGate: { parity: [{ fx_curve: forecastCurve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [{ fx: forecast_spot, foreign_remit_net: c.sub_remit_foreign * c.net_factor, home_cf: c.sub_remit_home }], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, add_rate: c.add_tax_rate, per_year: [c.additional_home_tax_home] } } };
+    _intlGate: { parity: [{ fx_curve: forecastCurve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [{ fx: forecast_spot, foreign_remit_net: c.remit_tax.net_remit_foreign, home_cf: c.sub_remit_home }], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, foreign_corp: r.tax_rate, wht_creditable: whtCreditable, periods: [{ taxable_profit: c.remit_tp_foreign, fcff: c.sub_remit_foreign, additional_home_tax_foreign: c.remit_tax.additional_home_tax_foreign }] } } };
 }
 
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
@@ -1986,10 +1995,10 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     if (!scale.ok) { ok = false; for (const iss of scale.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
     else lines.push('    ✓ every cross-currency figure reconciles (home × spot = foreign) at a consistent scale');
 
-    const cap = validateDoubleTaxCap(g.doubleTax.withholding, g.doubleTax.home_tax, g.doubleTax.add_rate, g.doubleTax.per_year);
-    lines.push(`GATE 14 — double-tax cap (credit method): ${cap.ok ? 'PASS' : 'FAIL'}`);
+    const cap = validateDoubleTaxCap(g.doubleTax.withholding, g.doubleTax.home_tax, g.doubleTax.foreign_corp, g.doubleTax.wht_creditable, g.doubleTax.periods);
+    lines.push(`GATE 14 — double-tax cap (differential credit base): ${cap.ok ? 'PASS' : 'FAIL'}`);
     if (!cap.ok) { ok = false; for (const iss of cap.issues) lines.push(`    ✗ [${iss.gate}/${iss.code}] ${iss.message}`); }
-    else lines.push('    ✓ additional home tax = max(0, home − withholding); never a refund of excess host tax');
+    else lines.push('    ✓ additional home tax = max(0, home liability − foreign corp tax [− WHT if creditable]); ≥ 0, never exceeds home liability');
   } else {
     lines.push('GATE 12/13/14 — international parity / currency-scale / double-tax: N/A (not an international-family drill)');
   }

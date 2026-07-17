@@ -23,6 +23,13 @@ export function money(currency: string, n: number): string {
   return /^[A-Za-z]{2,4}$/.test(currency) ? `${currency} ${fmt1(n)}m` : `${currency}${fmt1(n)}m`;
 }
 
+// A SIGNED surplus/shortfall, worded by sign — never "surplus -X" (walk-log finding 3, 2026-07-17).
+// A positive figure reads "a surplus of X"; a negative reads "a shortfall of |X|". Shared by every
+// calculator that displays a signed capacity/margin (dividend capacity here, international K4).
+export function signedSurplus(currency: string, n: number): string {
+  return n >= 0 ? `a surplus of ${money(currency, n)}` : `a shortfall of ${money(currency, Math.abs(n))}`;
+}
+
 // Rates sometimes arrive as percentages (10) rather than decimals (0.10); normalise.
 function asDecimalRate(v: number): number {
   return v > 1 ? v / 100 : v;
@@ -705,7 +712,7 @@ export function buildDividendModelAnswer(raw: DividendInputs, c: DividendCompute
     '**Step 3 — Sustainability of the proposed dividend**', '',
     `Against the proposed dividend of ${m(c.proposed_dividend)}, the ${verdict}.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
-    `*Reconciliation: capacity ${m(c.dividend_capacity)} − proposed ${m(c.proposed_dividend)} = surplus ${m(c.capacity_surplus)} ✓*`,
+    `*Reconciliation: capacity ${m(c.dividend_capacity)} − proposed ${m(c.proposed_dividend)} = ${signedSurplus(currency, c.capacity_surplus)} ✓*`,
   ].join('\n');
 }
 

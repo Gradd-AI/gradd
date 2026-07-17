@@ -19,10 +19,15 @@
 // deterministic code" per §6. When schemas are persisted (Phase 2B-later, jsonb), the
 // string would resolve to one of these functions via a registry.
 
-// ── Tolerance (§4): absolute + relative, authored in the schema, never inferred ──
+// ── Tolerance (§4): absolute + relative + floor, authored in the schema, never inferred ──
 export type Tolerance =
   | { kind: 'absolute'; value: number }   // |student − expected| ≤ value (in the component's unit)
-  | { kind: 'relative'; pct: number };    // |student − expected| ≤ |expected| × pct/100
+  | { kind: 'relative'; pct: number }     // |student − expected| ≤ |expected| × pct/100
+  // floor: a relative band with an absolute FLOOR — the effective band is the LARGER of the two,
+  // so a small-magnitude money figure (near-zero additional tax, a thin cash flow) is not held to
+  // a punishingly tight relative band. Introduced for the international family (calc #10); the
+  // relative part keeps large figures honest, the floor keeps small ones fair.
+  | { kind: 'floor'; pct: number; floor: number };  // |student − expected| ≤ max(|expected|×pct/100, floor)
 
 // ── Answer schema (§2) ──
 export interface Component {
@@ -87,6 +92,7 @@ const EPS = 1e-9;
 function within(student: number, expected: number, tol: Tolerance): boolean {
   const diff = Math.abs(student - expected);
   if (tol.kind === 'absolute') return diff <= tol.value + EPS;
+  if (tol.kind === 'floor') return diff <= Math.max(Math.abs(expected) * (tol.pct / 100), tol.floor) + EPS;
   return diff <= Math.abs(expected) * (tol.pct / 100) + EPS;
 }
 

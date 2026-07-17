@@ -58,6 +58,7 @@ const EPS = 1e-9;
 function within(student: number, expected: number, tol: Tolerance): boolean {
   const diff = Math.abs(student - expected);
   if (tol.kind === 'absolute') return diff <= tol.value + EPS;
+  if (tol.kind === 'floor') return diff <= Math.max(Math.abs(expected) * (tol.pct / 100), tol.floor) + EPS;
   return diff <= Math.abs(expected) * (tol.pct / 100) + EPS;
 }
 
@@ -248,6 +249,23 @@ export function validateSchemaSelfConsistency(schema: AnswerSchema): ValidationR
       if (isRateUnit(unit)) {
         issues.push({ component_id: c.component_id, gate: 'tolerance', code: 'rate-should-use-absolute', message: `rate/% component "${c.component_id}" should use a tight absolute tolerance, not relative` });
       }
+    } else if (tol.kind === 'floor') {
+      // floor = relative band with an absolute floor — a MONEY tolerance (the small-magnitude
+      // guard). The relative part is still capped so it can't let method errors score; the floor
+      // must be a sane small absolute band, not a wide one.
+      if (!(tol.pct > 0)) {
+        issues.push({ component_id: c.component_id, gate: 'tolerance', code: 'floor-pct-nonpositive', message: `floor pct must be > 0 (got ${tol.pct})` });
+      } else if (tol.pct > 2) {
+        issues.push({ component_id: c.component_id, gate: 'tolerance', code: 'floor-pct-too-wide', message: `floor pct ${tol.pct}% > 2% would let method errors score` });
+      }
+      if (!(tol.floor > 0)) {
+        issues.push({ component_id: c.component_id, gate: 'tolerance', code: 'floor-nonpositive', message: `floor must be > 0 (got ${tol.floor})` });
+      } else if (tol.floor > 1) {
+        issues.push({ component_id: c.component_id, gate: 'tolerance', code: 'floor-too-wide', message: `absolute floor ±${tol.floor} > 1.0 (display-currency m) is too wide for a small-magnitude guard` });
+      }
+      if (isRateUnit(unit)) {
+        issues.push({ component_id: c.component_id, gate: 'tolerance', code: 'rate-should-not-use-floor', message: `rate/% component "${c.component_id}" should use a tight absolute tolerance, not a money floor` });
+      }
     } else {
       // absolute
       if (!(tol.value > 0)) {
@@ -383,11 +401,12 @@ export function validateCurrencyScale(years: { fx: number; foreign_remit_net: nu
   return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(currency)', gate: 'currency-scale', code: 'cross-currency-scale-mismatch', message: r.reason ?? 'a cross-currency conversion or unit scale is inconsistent' }] };
 }
 
-// ── GATE 14: double-tax cap (international batch, 2026-07-17) ──
-// The additional home tax rate is max(0, h − w): the credit never exceeds the home liability, and
-// no period carries a negative additional home tax (no refund of excess host withholding). A
-// violation means the double-tax relief was mis-applied. (Delegates to checkDoubleTaxCap.)
-export function validateDoubleTaxCap(withholding: number, homeTax: number, addRateUsed: number, perYearAddTax: number[]): ValidationResult {
-  const r = checkDoubleTaxCap(withholding, homeTax, addRateUsed, perYearAddTax);
+// ── GATE 14: double-tax cap — differential credit base (international batch; Fix Round 1, 2026-07-17) ──
+// The additional home tax each period must equal the credit-method residual on the TAXABLE PROFIT —
+// max(0, home_liability − foreign_corp_tax [− WHT if treaty-creditable]) — be ≥ 0 (never a refund),
+// and never exceed the home liability. A violation means the double-tax relief was mis-applied.
+// (Delegates to checkDoubleTaxCap.)
+export function validateDoubleTaxCap(withholding: number, homeTax: number, foreignCorp: number, whtCreditable: boolean, periods: { taxable_profit: number; fcff: number; additional_home_tax_foreign: number }[]): ValidationResult {
+  const r = checkDoubleTaxCap(withholding, homeTax, foreignCorp, whtCreditable, periods);
   return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(double-tax)', gate: 'double-tax-cap', code: 'credit-method-cap-violation', message: r.reason ?? 'double-tax relief exceeds the home liability or is negative' }] };
 }

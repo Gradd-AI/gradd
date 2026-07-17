@@ -31,7 +31,7 @@
 //   remitNetFactor(w, h) = (1 − w) − max(0, h − w)  =  min(1 − w, 1 − h).
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fcffFromBuild, computeDividendCapacity, money, fmt1, normaliseCurrency, type FcffBuild } from './valuation';
+import { fcffFromBuild, computeDividendCapacity, money, signedSurplus, fmt1, normaliseCurrency, type FcffBuild } from './valuation';
 import { discountFactor } from './npv';
 
 export { normaliseCurrency };
@@ -40,6 +40,10 @@ export { normaliseCurrency };
 const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
+// Money components carry a FLOOR tolerance: a 0.5% relative band with a 0.2 (display-currency m)
+// absolute floor, so a small-magnitude figure (a near-nil additional tax, a thin converted flow) is
+// not held to a punishingly tight relative band. Scoped to this family now (Fix Round 1, 2026-07-17).
+const moneyTol: Tolerance = { kind: 'floor', pct: 0.5, floor: 0.2 };
 const EPS = 1e-9;
 // Forecast spots display at 4 dp so GATE2 figure-integrity always finds them (present() checks 1–4 dp).
 export const fmt4 = (n: number): string => n.toFixed(4);
@@ -66,19 +70,45 @@ export function buildForwardCurve(s0: number, basis: ParityBasis, rateHome: numb
   return curve;
 }
 
-// The net-of-both-taxes fraction of a foreign remittance that reaches the parent (credit method, capped).
-export function remitNetFactor(withholding: number, homeTax: number): number {
-  const w = asDec(withholding), h = asDec(homeTax);
-  return (1 - w) - Math.max(0, h - w);
+// ── DOUBLE-TAX — the exam-orthodox CREDIT base is the CORPORATE DIFFERENTIAL (Fix Round 1, ruled) ──
+// Rule 22 evidence (ACCA AFM technical article, "International project appraisal (part 2)",
+// accaglobal.com — P4/AFM technical articles:
+// https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles.html):
+//   "A bilateral tax treaty exists between the countries of Ayjai and Nuruk — hence, taxable profits
+//    earned in Nuruk will be liable to the differential income tax rate on company profits that
+//    applies between the two countries."
+// So the parent's ADDITIONAL home tax is charged on the foreign TAXABLE PROFIT (the same PBIT-based
+// tax base the FCFF build already taxes), crediting the foreign CORPORATE tax already paid:
+//   additional home tax = max(0, home_rate − foreign_CORPORATE_rate) × taxable profit.
+// Withholding tax (WHT) is a SEPARATE layer on the remitted amount. Whether the treaty makes WHT
+// creditable is STATED per scenario; if creditable, the credit extends to the WHT too:
+//   additional home tax = max(0, home_liability − foreign_corp_tax − WHT paid).
+// Never negative, never a refund of excess foreign tax.
+export interface YearTax {
+  wht: number;                       // withholding on the remittance (foreign)
+  home_liability: number;            // home_rate × taxable profit (foreign)
+  foreign_corp_tax: number;          // foreign_corp_rate × taxable profit (foreign) — the credit base
+  additional_home_tax_foreign: number; // the residual additional home tax (foreign), ≥ 0
+  net_remit_foreign: number;         // FCFF − WHT − additional home tax (foreign)
 }
-export function additionalHomeTaxRate(withholding: number, homeTax: number): number {
-  return Math.max(0, asDec(homeTax) - asDec(withholding));
+export function computeYearTax(fcff: number, taxable_profit: number, withholding: number, homeTax: number, foreignCorp: number, whtCreditable: boolean): YearTax {
+  const w = asDec(withholding), h = asDec(homeTax), fc = asDec(foreignCorp);
+  const wht = w * fcff;                                   // WHT on the remittance
+  const home_liability = h * taxable_profit;
+  const foreign_corp_tax = fc * taxable_profit;
+  const additional_home_tax_foreign = whtCreditable
+    ? Math.max(0, home_liability - foreign_corp_tax - wht)  // treaty credits the WHT too
+    : Math.max(0, home_liability - foreign_corp_tax);       // WHT not creditable — a pure cost
+  const net_remit_foreign = fcff - wht - additional_home_tax_foreign;
+  return { wht, home_liability, foreign_corp_tax, additional_home_tax_foreign, net_remit_foreign };
 }
 
-// Shared fiscal inputs (host withholding + home tax under the credit method).
+// Shared fiscal inputs (host withholding + home tax; the foreign CORPORATE rate is the FCFF build's
+// tax_rate; whether WHT is treaty-creditable is stated per scenario).
 interface FiscalInputs {
-  withholding_rate: number; // host withholding on remittances, decimal or %
-  home_tax_rate: number;    // parent-country tax on the remittance, decimal or %
+  withholding_rate: number;  // host withholding on remittances, decimal or %
+  home_tax_rate: number;     // parent-country tax on foreign taxable profit, decimal or %
+  wht_creditable: boolean;   // does the bilateral treaty make the WHT creditable against home tax?
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
@@ -96,17 +126,20 @@ export interface IntlNpvInputs extends FiscalInputs {
   initial_outlay_foreign: number;    // t0 capital cost in FOREIGN currency (converted at S0)
 }
 export interface IntlYear {
-  year: number; fx: number; foreign_cf: number; foreign_remit_net: number; home_cf: number; df: number; pv: number;
-  additional_home_tax_home: number;  // additional home tax that year, in HOME currency (for the cap gate)
+  year: number; fx: number; foreign_cf: number; taxable_profit: number;
+  wht: number; foreign_corp_tax: number; home_liability: number;
+  additional_home_tax_foreign: number; additional_home_tax_home: number; // the differential home tax (foreign / converted)
+  foreign_remit_net: number; home_cf: number; df: number; pv: number;
 }
 export interface IntlNpvComputed {
   years: IntlYear[];
   fx_curve: number[];
   home_outlay: number;
   base_fcff_foreign: number;
+  base_pbit_foreign: number;
   npv: number; accept: boolean;
-  add_tax_rate: number;              // max(0, h − w) — the code-owned additional home tax rate
-  net_factor: number;                // remitNetFactor(w, h)
+  has_additional_home_tax: boolean;  // false when foreign corporate rate ≥ home rate (K1 NIL case)
+  add_tax_rate_effective: number;    // max(0, home − foreign_corp) — for display/teaching (0 = nil)
 }
 export function computeIntlNpv(raw: IntlNpvInputs): IntlNpvComputed {
   finiteGuard(raw as unknown as Record<string, unknown>, 'IntlNpv');
@@ -117,31 +150,33 @@ export function computeIntlNpv(raw: IntlNpvInputs): IntlNpvComputed {
   if (r <= 0 || r >= 1) throw new Error(`discount_rate out of range (0,1): ${r}`);
   if (!(raw.base_spot > 0)) throw new Error(`base_spot must be positive: ${raw.base_spot}`);
   if (!(raw.initial_outlay_foreign > 0)) throw new Error(`initial_outlay_foreign must be positive`);
-  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate);
+  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(raw.foreign_build.tax_rate);
   if (w < 0 || w >= 1) throw new Error(`withholding_rate out of range [0,1): ${w}`);
   if (h < 0 || h >= 1) throw new Error(`home_tax_rate out of range [0,1): ${h}`);
 
   const baseFcff = fcffFromBuild(raw.foreign_build);
+  const basePbit = raw.foreign_build.pbit;                            // the taxable-profit base (PBIT)
   if (!(baseFcff > 0)) throw new Error(`base foreign FCFF must be positive: ${baseFcff}`);
   const fx_curve = buildForwardCurve(raw.base_spot, raw.basis, raw.rate_home, raw.rate_foreign, N);
-  const netFactor = remitNetFactor(w, h);
-  const addRate = additionalHomeTaxRate(w, h);
   const home_outlay = raw.initial_outlay_foreign / raw.base_spot;
 
   const years: IntlYear[] = [];
   let npv = -home_outlay;
   for (let t = 1; t <= N; t++) {
     const fx = fx_curve[t - 1];
-    const foreign_cf = baseFcff * Math.pow(1 + g, t - 1);
-    const foreign_remit_net = foreign_cf * netFactor;                 // after withholding + additional home tax (in foreign terms)
-    const home_cf = foreign_remit_net / fx;
-    const additional_home_tax_home = (foreign_cf * addRate) / fx;     // for the double-tax cap gate
+    const scale = Math.pow(1 + g, t - 1);
+    const foreign_cf = baseFcff * scale;                             // FCFF (cash to remit), foreign
+    const taxable_profit = basePbit * scale;                        // taxable profit (PBIT base), foreign
+    const tax = computeYearTax(foreign_cf, taxable_profit, w, h, fc, raw.wht_creditable);
+    const home_cf = tax.net_remit_foreign / fx;
+    const additional_home_tax_home = tax.additional_home_tax_foreign / fx;
     const d = discountFactor(r, t);
     const pv = home_cf * d;
     npv += pv;
-    years.push({ year: t, fx, foreign_cf, foreign_remit_net, home_cf, df: d, pv, additional_home_tax_home });
+    years.push({ year: t, fx, foreign_cf, taxable_profit, wht: tax.wht, foreign_corp_tax: tax.foreign_corp_tax, home_liability: tax.home_liability, additional_home_tax_foreign: tax.additional_home_tax_foreign, additional_home_tax_home, foreign_remit_net: tax.net_remit_foreign, home_cf, df: d, pv });
   }
-  return { years, fx_curve, home_outlay, base_fcff_foreign: baseFcff, npv, accept: npv > 0, add_tax_rate: addRate, net_factor: netFactor };
+  const has_additional_home_tax = years.some((y) => y.additional_home_tax_foreign > EPS);
+  return { years, fx_curve, home_outlay, base_fcff_foreign: baseFcff, base_pbit_foreign: basePbit, npv, accept: npv > 0, has_additional_home_tax, add_tax_rate_effective: Math.max(0, h - fc) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
@@ -180,10 +215,11 @@ export interface IntlRemittanceInputs extends IntlNpvInputs {
 export interface IntlRemittanceComputed {
   years: IntlYear[];                 // the FREE (remitted) portion per year
   fx_curve: number[]; home_outlay: number; base_fcff_foreign: number;
-  add_tax_rate: number; net_factor: number;
+  has_additional_home_tax: boolean; add_tax_rate_effective: number;
   blocked_release_foreign: number;   // accumulated blocked funds released in year N (foreign, pre-tax)
+  blocked_tp_total: number;          // total blocked taxable profit (deferred, taxed at release)
+  release_tax: YearTax;              // WHT + differential on the release
   home_cf_release: number;           // release converted + net of double-tax, HOME currency (year N)
-  additional_home_tax_release_home: number;
   npv: number; accept: boolean;
   npv_if_free: number;               // the freely-remitted counterfactual NPV (no blocking)
   npv_cost_of_blocking: number;      // npv − npv_if_free (signed; ≤ 0 unless local rate beats the home rate)
@@ -194,41 +230,43 @@ export function computeIntlRemittance(raw: IntlRemittanceInputs): IntlRemittance
   if (!(b > 0 && b < 1)) throw new Error(`blocked_fraction out of range (0,1): ${b}`);
   if (rho < 0 || rho >= 1) throw new Error(`local_reinvest_rate out of range [0,1): ${rho}`);
   const r = asDec(raw.discount_rate), N = raw.years, g = asDec(raw.foreign_growth ?? 0);
-  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate);
+  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(raw.foreign_build.tax_rate);
 
-  const baseFcff = fcffFromBuild(raw.foreign_build);
+  const baseFcff = fcffFromBuild(raw.foreign_build), basePbit = raw.foreign_build.pbit;
   const fx_curve = buildForwardCurve(raw.base_spot, raw.basis, raw.rate_home, raw.rate_foreign, N);
-  const netFactor = remitNetFactor(w, h), addRate = additionalHomeTaxRate(w, h);
   const home_outlay = raw.initial_outlay_foreign / raw.base_spot;
 
   const years: IntlYear[] = [];
   let npv = -home_outlay;
-  let blocked_release_foreign = 0;
+  let blocked_release_foreign = 0, blocked_tp_total = 0;
   for (let t = 1; t <= N; t++) {
     const fx = fx_curve[t - 1];
-    const foreign_cf = baseFcff * Math.pow(1 + g, t - 1);
-    const free_foreign = foreign_cf * (1 - b);
-    const foreign_remit_net = free_foreign * netFactor;
-    const home_cf = foreign_remit_net / fx;
-    const additional_home_tax_home = (free_foreign * addRate) / fx;
+    const scale = Math.pow(1 + g, t - 1);
+    const foreign_cf = baseFcff * scale, taxable_profit = basePbit * scale;
+    // FREE share: taxed and remitted this year (differential on its share of taxable profit)
+    const free_fcff = foreign_cf * (1 - b), free_tp = taxable_profit * (1 - b);
+    const tax = computeYearTax(free_fcff, free_tp, w, h, fc, raw.wht_creditable);
+    const home_cf = tax.net_remit_foreign / fx;
     const d = discountFactor(r, t);
     const pv = home_cf * d;
     npv += pv;
-    years.push({ year: t, fx, foreign_cf, foreign_remit_net, home_cf, df: d, pv, additional_home_tax_home });
-    // blocked portion compounds at the LOCAL rate to the terminal year N
+    years.push({ year: t, fx, foreign_cf: free_fcff, taxable_profit: free_tp, wht: tax.wht, foreign_corp_tax: tax.foreign_corp_tax, home_liability: tax.home_liability, additional_home_tax_foreign: tax.additional_home_tax_foreign, additional_home_tax_home: tax.additional_home_tax_foreign / fx, foreign_remit_net: tax.net_remit_foreign, home_cf, df: d, pv });
+    // BLOCKED share: accumulates locally to year N; its taxable profit is deferred to release
     blocked_release_foreign += foreign_cf * b * Math.pow(1 + rho, N - t);
+    blocked_tp_total += taxable_profit * b;
   }
   const fxN = fx_curve[N - 1];
-  const additional_home_tax_release_home = (blocked_release_foreign * addRate) / fxN;
-  const home_cf_release = (blocked_release_foreign * netFactor) / fxN;
+  const release_tax = computeYearTax(blocked_release_foreign, blocked_tp_total, w, h, fc, raw.wht_creditable);
+  const home_cf_release = release_tax.net_remit_foreign / fxN;
   const pv_release = home_cf_release * discountFactor(r, N);
   npv += pv_release;
 
+  const has_additional_home_tax = years.some((y) => y.additional_home_tax_foreign > EPS) || release_tax.additional_home_tax_foreign > EPS;
   // the freely-remitted counterfactual (no blocking): every year's whole cash remitted when earned
   const free = computeIntlNpv(raw);
   return {
-    years, fx_curve, home_outlay, base_fcff_foreign: baseFcff, add_tax_rate: addRate, net_factor: netFactor,
-    blocked_release_foreign, home_cf_release, additional_home_tax_release_home,
+    years, fx_curve, home_outlay, base_fcff_foreign: baseFcff, has_additional_home_tax, add_tax_rate_effective: Math.max(0, h - fc),
+    blocked_release_foreign, blocked_tp_total, release_tax, home_cf_release,
     npv, accept: npv > 0,
     npv_if_free: free.npv, npv_cost_of_blocking: npv - free.npv,
   };
@@ -255,16 +293,17 @@ export interface IntlDividendInputs extends FiscalInputs {
 export interface IntlDividendComputed {
   sub_fcfe_foreign: number;          // subsidiary FCFE (foreign)
   sub_remit_foreign: number;         // fraction remitted (foreign, pre-tax)
+  remit_tp_foreign: number;          // taxable profit attributable to the remitted portion (PBIT × remit%)
+  remit_tax: YearTax;                // WHT + differential on the remittance
   sub_remit_home: number;            // remitted, net of double-tax, converted to HOME
-  additional_home_tax_home: number;
   parent_fcfe: number;
   total_capacity: number;            // parent + remitted subsidiary (HOME)
   proposed_dividend: number; capacity_surplus: number; sustainable: boolean;
-  add_tax_rate: number; net_factor: number; forecast_spot: number;
+  has_additional_home_tax: boolean; add_tax_rate_effective: number; forecast_spot: number;
 }
 export function computeIntlDividend(raw: IntlDividendInputs): IntlDividendComputed {
   finiteGuard(raw as unknown as Record<string, unknown>, 'IntlDividend');
-  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate);
+  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(raw.sub_build.tax_rate);
   const rf = raw.remit_fraction;
   if (!(rf > 0 && rf <= 1)) throw new Error(`remit_fraction out of range (0,1]: ${rf}`);
   if (!(raw.forecast_spot > 0)) throw new Error(`forecast_spot must be positive`);
@@ -277,17 +316,17 @@ export function computeIntlDividend(raw: IntlDividendInputs): IntlDividendComput
     net_borrowing: raw.sub_net_borrowing ?? 0, proposed_dividend: 1, // proposed unused here; capacity = FCFE
   });
   const sub_fcfe_foreign = sub.fcfe;
-  const sub_remit_foreign = sub_fcfe_foreign * rf;
-  const netFactor = remitNetFactor(w, h), addRate = additionalHomeTaxRate(w, h);
-  const sub_remit_home = (sub_remit_foreign * netFactor) / raw.forecast_spot;
-  const additional_home_tax_home = (sub_remit_foreign * addRate) / raw.forecast_spot;
+  const sub_remit_foreign = sub_fcfe_foreign * rf;                    // remitted cash (foreign, pre-tax)
+  const remit_tp_foreign = raw.sub_build.pbit * rf;                  // taxable profit behind the remitted portion
+  const remit_tax = computeYearTax(sub_remit_foreign, remit_tp_foreign, w, h, fc, raw.wht_creditable);
+  const sub_remit_home = remit_tax.net_remit_foreign / raw.forecast_spot;
   const total_capacity = raw.parent_fcfe + sub_remit_home;
   const capacity_surplus = total_capacity - raw.proposed_dividend;
   return {
-    sub_fcfe_foreign, sub_remit_foreign, sub_remit_home, additional_home_tax_home,
+    sub_fcfe_foreign, sub_remit_foreign, remit_tp_foreign, remit_tax, sub_remit_home,
     parent_fcfe: raw.parent_fcfe, total_capacity, proposed_dividend: raw.proposed_dividend,
     capacity_surplus, sustainable: total_capacity >= raw.proposed_dividend,
-    add_tax_rate: addRate, net_factor: netFactor, forecast_spot: raw.forecast_spot,
+    has_additional_home_tax: remit_tax.additional_home_tax_foreign > EPS, add_tax_rate_effective: Math.max(0, h - fc), forecast_spot: raw.forecast_spot,
   };
 }
 
@@ -335,17 +374,26 @@ export function checkCurrencyScale(years: { fx: number; foreign_remit_net: numbe
   return { ok: true };
 }
 
-// GATE 14 — DOUBLE-TAX CAP. The additional home tax rate is max(0, h − w) — the credit never
-// exceeds the home liability, and no year carries a NEGATIVE additional home tax (no refund of
-// excess host withholding when w ≥ h).
-export function checkDoubleTaxCap(withholding: number, homeTax: number, addRateUsed: number, perYearAddTax: number[]): IntlCheck {
-  const expected = additionalHomeTaxRate(withholding, homeTax);
-  if (Math.abs(addRateUsed - expected) > 1e-9) {
-    return { ok: false, reason: `additional home tax rate ${(addRateUsed * 100).toFixed(3)}% ≠ the credit-method cap max(0, h − w) = ${(expected * 100).toFixed(3)}% (h=${pct2(asDec(homeTax))}, w=${pct2(asDec(withholding))})` };
-  }
-  for (let i = 0; i < perYearAddTax.length; i++) {
-    if (perYearAddTax[i] < -EPS) {
-      return { ok: false, reason: `additional home tax in period ${i + 1} is negative (${fmt1(perYearAddTax[i])}) — the credit method never refunds excess host tax` };
+// GATE 14 — DOUBLE-TAX CAP (differential credit base). The additional home tax each period must equal
+// the credit-method residual on the TAXABLE PROFIT — max(0, home_liability − foreign_corp_tax [− WHT
+// if the treaty makes it creditable]) — must be ≥ 0 (never a refund of excess foreign tax), and must
+// never exceed the home liability on that profit. Validates the NEW rule (Fix Round 1). Each period:
+//   { taxable_profit, fcff (the remitted base for WHT), additional_home_tax_foreign }.
+export function checkDoubleTaxCap(withholding: number, homeTax: number, foreignCorp: number, whtCreditable: boolean, periods: { taxable_profit: number; fcff: number; additional_home_tax_foreign: number }[]): IntlCheck {
+  const w = asDec(withholding), h = asDec(homeTax), fc = asDec(foreignCorp);
+  for (let i = 0; i < periods.length; i++) {
+    const p = periods[i];
+    const homeLiab = h * p.taxable_profit;
+    const wht = w * p.fcff;
+    const expected = whtCreditable ? Math.max(0, homeLiab - fc * p.taxable_profit - wht) : Math.max(0, (h - fc) * p.taxable_profit);
+    if (Math.abs(p.additional_home_tax_foreign - expected) > Math.abs(expected) * 0.001 + 1e-6) {
+      return { ok: false, reason: `additional home tax in period ${i + 1} = ${fmt1(p.additional_home_tax_foreign)} ≠ the credit-method residual ${fmt1(expected)} (home liab ${fmt1(homeLiab)} − foreign corp ${fmt1(fc * p.taxable_profit)}${whtCreditable ? ` − WHT ${fmt1(wht)}` : ''}, floored at 0)` };
+    }
+    if (p.additional_home_tax_foreign < -EPS) {
+      return { ok: false, reason: `additional home tax in period ${i + 1} is negative (${fmt1(p.additional_home_tax_foreign)}) — the credit method never refunds excess foreign tax` };
+    }
+    if (p.additional_home_tax_foreign > homeLiab + Math.abs(homeLiab) * 0.001 + 1e-6) {
+      return { ok: false, reason: `additional home tax in period ${i + 1} = ${fmt1(p.additional_home_tax_foreign)} exceeds the home liability ${fmt1(homeLiab)} — the credit cannot make the tax larger than the home charge` };
     }
   }
   return { ok: true };
@@ -395,36 +443,57 @@ function fxComponents(prefix: string, fx_curve: number[], k: number, foreign: st
   return comps;
 }
 
-// ── K1 schema: fx curve → home_cf_t (= foreign_remit_net_t / fx_t) → npv ──
+// ── K1 schema: fx curve → [additional home tax_t (when non-nil)] → home_cf_t → npv ──
+// The additional home tax is its OWN component when the differential bites (home > foreign corp); when
+// it is NIL (foreign corp ≥ home, the K1 case) no per-year tax component is emitted — the teaching is
+// in the prose (WHY it is nil), and home_cf converts the remittance net of WHT only.
 export function buildIntlNpvSchema(raw: IntlNpvInputs, c: IntlNpvComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.home_currency, foreign = raw.foreign_currency, homeUnit = `${home}m`;
   const r = asDec(raw.discount_rate);
   const k = parityDifferential(raw.basis, raw.rate_home, raw.rate_foreign);
   const comps: Component[] = [...fxComponents('', c.fx_curve, k, foreign, home)];
+  const taxed = c.has_additional_home_tax;
 
   for (const y of c.years) {
-    const remitForeign = y.foreign_remit_net; // constant (foreign) for this year
-    comps.push({
-      component_id: `home_cf_${y.year}`, label: `Home-currency net cash flow, year ${y.year}`,
-      expected_value: y.home_cf, unit: homeUnit, tolerance: rel(0.5),
-      depends_on: [`fx_${y.year}`], recompute: (d) => remitForeign / d[`fx_${y.year}`],
-      working_steps: [`= foreign remittance ${fmt1(remitForeign)} (net of withholding + home tax) ÷ spot ${fmt4(y.fx)}`],
-    });
+    const remitPreAddTax = y.foreign_cf - y.wht;    // foreign remittance net of WHT (before the differential home tax)
+    if (taxed) {
+      // the additional home tax is the FOREIGN figure shown in the Step-2 table (differential on the
+      // taxable profit) — a ROOT (its inputs are the stated rates + taxable profit, not graded edges);
+      // home_cf nets it and the WHT, then converts at the forecast spot, carrying OFR from both roots.
+      comps.push({
+        component_id: `add_tax_${y.year}`, label: `Additional home tax, year ${y.year} (foreign, on taxable profit)`,
+        expected_value: y.additional_home_tax_foreign, unit: `${foreign}m`, tolerance: moneyTol,
+        working_steps: [`= max(0, home liability − foreign corporate tax${raw.wht_creditable ? ' − withholding' : ''}) on the year's taxable profit`],
+      });
+      comps.push({
+        component_id: `home_cf_${y.year}`, label: `Home-currency net cash flow, year ${y.year}`,
+        expected_value: y.home_cf, unit: homeUnit, tolerance: moneyTol,
+        depends_on: [`fx_${y.year}`, `add_tax_${y.year}`], recompute: (d) => (remitPreAddTax - d[`add_tax_${y.year}`]) / d[`fx_${y.year}`],
+        working_steps: [`= (remittance net of WHT ${fmt1(remitPreAddTax)} − additional home tax ${fmt1(y.additional_home_tax_foreign)}) ÷ spot ${fmt4(y.fx)}`],
+      });
+    } else {
+      comps.push({
+        component_id: `home_cf_${y.year}`, label: `Home-currency net cash flow, year ${y.year}`,
+        expected_value: y.home_cf, unit: homeUnit, tolerance: moneyTol,
+        depends_on: [`fx_${y.year}`], recompute: (d) => y.foreign_remit_net / d[`fx_${y.year}`],
+        working_steps: [`= foreign remittance ${fmt1(y.foreign_remit_net)} (net of WHT; no additional home tax) ÷ spot ${fmt4(y.fx)}`],
+      });
+    }
   }
   const homeIds = c.years.map((y) => `home_cf_${y.year}`);
   const dfById: Record<string, number> = {};
   for (const y of c.years) dfById[`home_cf_${y.year}`] = y.df;
   comps.push({
     component_id: 'npv', label: 'Net present value (to the parent, home currency)',
-    expected_value: c.npv, unit: homeUnit, tolerance: rel(0.5),
+    expected_value: c.npv, unit: homeUnit, tolerance: moneyTol,
     depends_on: homeIds, recompute: (d) => homeIds.reduce((s, id) => s + d[id] * dfById[id], 0) - c.home_outlay,
     working_steps: [`= Σ (home cash flow × DF @ ${pct2(r)}) − home outlay ${fmt1(c.home_outlay)}`],
   });
 
   const recomputeIds: Record<string, string | undefined> = { npv: 'intl_npv_sum_less_outlay' };
-  for (const y of c.years) recomputeIds[`home_cf_${y.year}`] = `home_cf_convert_y${y.year}`;
+  for (const y of c.years) { recomputeIds[`home_cf_${y.year}`] = `home_cf_convert_y${y.year}`; if (taxed) recomputeIds[`add_tax_${y.year}`] = `add_tax_convert_y${y.year}`; }
   for (let t = 2; t <= c.years.length; t++) recomputeIds[`fx_${t}`] = `parity_step_y${t}`;
-  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), home_outlay: c.home_outlay, add_tax_rate: c.add_tax_rate, net_factor: c.net_factor };
+  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), home_outlay: c.home_outlay, add_tax_rate_effective: c.add_tax_rate_effective };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 
@@ -446,7 +515,7 @@ export function buildIntlSensitivitySchema(raw: IntlSensitivityInputs, c: IntlSe
     for (const y of comp.years) { remit[`${prefix}fx_${y.year}`] = y.foreign_remit_net; dfBy[`${prefix}fx_${y.year}`] = y.df; }
     comps.push({
       component_id: `${prefix}npv`, label: `NPV under the ${prefix === 'alt_' ? 'alternative' : 'base'} exchange-rate assumption`,
-      expected_value: comp.npv, unit: homeUnit, tolerance: rel(0.5),
+      expected_value: comp.npv, unit: homeUnit, tolerance: moneyTol,
       depends_on: fxIds, recompute: (d) => fxIds.reduce((s, id) => s + (remit[id] / d[id]) * dfBy[id], 0) - comp.home_outlay,
       working_steps: [`= Σ (foreign remittance ÷ forecast spot × DF @ ${pct2(r)}) − home outlay ${fmt1(comp.home_outlay)}`],
     });
@@ -464,6 +533,8 @@ export function buildIntlSensitivitySchema(raw: IntlSensitivityInputs, c: IntlSe
 export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemittanceComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.home_currency, foreign = raw.foreign_currency, homeUnit = `${home}m`, foreignUnit = `${foreign}m`;
   const r = asDec(raw.discount_rate), N = raw.years;
+  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(raw.foreign_build.tax_rate);
+  const blockedTp = c.blocked_tp_total, creditable = raw.wht_creditable;
   const k = parityDifferential(raw.basis, raw.rate_home, raw.rate_foreign);
   const comps: Component[] = [...fxComponents('', c.fx_curve, k, foreign, home)];
 
@@ -471,22 +542,28 @@ export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemi
     const remitForeign = y.foreign_remit_net;
     comps.push({
       component_id: `home_cf_${y.year}`, label: `Home cash flow from the remitted (free) portion, year ${y.year}`,
-      expected_value: y.home_cf, unit: homeUnit, tolerance: rel(0.5),
+      expected_value: y.home_cf, unit: homeUnit, tolerance: moneyTol,
       depends_on: [`fx_${y.year}`], recompute: (d) => remitForeign / d[`fx_${y.year}`],
-      working_steps: [`= free remittance ${fmt1(remitForeign)} (net of tax) ÷ spot ${fmt4(y.fx)}`],
+      working_steps: [`= free remittance ${fmt1(remitForeign)} (net of WHT + differential home tax) ÷ spot ${fmt4(y.fx)}`],
     });
   }
   // blocked funds accumulate at the LOCAL rate to year N — a root (its inputs are stated params)
   comps.push({
     component_id: 'blocked_release', label: `Blocked funds released in year ${N} (foreign, accumulated locally)`,
-    expected_value: c.blocked_release_foreign, unit: foreignUnit, tolerance: rel(0.5),
+    expected_value: c.blocked_release_foreign, unit: foreignUnit, tolerance: moneyTol,
     working_steps: [`Σ blocked cash × (1 + local rate)^(${N} − t) accumulated to year ${N}`],
   });
+  // release net of WHT + the deferred differential home tax on the blocked taxable profit, converted
   comps.push({
     component_id: 'home_cf_release', label: `Home cash flow from the released blocked funds, year ${N}`,
-    expected_value: c.home_cf_release, unit: homeUnit, tolerance: rel(0.5),
-    depends_on: ['blocked_release', `fx_${N}`], recompute: (d) => (d.blocked_release * c.net_factor) / d[`fx_${N}`],
-    working_steps: [`= released ${fmt1(c.blocked_release_foreign)} × net-of-tax factor ${c.net_factor.toFixed(4)} ÷ spot ${fmt4(c.fx_curve[N - 1])}`],
+    expected_value: c.home_cf_release, unit: homeUnit, tolerance: moneyTol,
+    depends_on: ['blocked_release', `fx_${N}`],
+    recompute: (d) => {
+      const rel = d.blocked_release, wht = w * rel;
+      const add = creditable ? Math.max(0, h * blockedTp - fc * blockedTp - wht) : Math.max(0, (h - fc) * blockedTp);
+      return (rel - wht - add) / d[`fx_${N}`];
+    },
+    working_steps: [`= (released ${fmt1(c.blocked_release_foreign)} − WHT − deferred differential tax) ÷ spot ${fmt4(c.fx_curve[N - 1])}`],
   });
   const homeIds = c.years.map((y) => `home_cf_${y.year}`);
   const dfById: Record<string, number> = {};
@@ -494,7 +571,7 @@ export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemi
   const dfN = discountFactor(r, N);
   comps.push({
     component_id: 'npv', label: 'Net present value with the remittance restriction (home currency)',
-    expected_value: c.npv, unit: homeUnit, tolerance: rel(0.5),
+    expected_value: c.npv, unit: homeUnit, tolerance: moneyTol,
     depends_on: [...homeIds, 'home_cf_release'],
     recompute: (d) => homeIds.reduce((s, id) => s + d[id] * dfById[id], 0) + d.home_cf_release * dfN - c.home_outlay,
     working_steps: [`= Σ (free home cash flow × DF) + released home cash × DF @ year ${N} − home outlay ${fmt1(c.home_outlay)}`],
@@ -503,45 +580,55 @@ export function buildIntlRemittanceSchema(raw: IntlRemittanceInputs, c: IntlRemi
   const recomputeIds: Record<string, string | undefined> = { npv: 'intl_remit_npv', home_cf_release: 'home_cf_release_convert' };
   for (const y of c.years) recomputeIds[`home_cf_${y.year}`] = `home_cf_convert_y${y.year}`;
   for (let t = 2; t <= N; t++) recomputeIds[`fx_${t}`] = `parity_step_y${t}`;
-  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), blocked_fraction: raw.blocked_fraction, local_reinvest_rate: asDec(raw.local_reinvest_rate), home_outlay: c.home_outlay, net_factor: c.net_factor, add_tax_rate: c.add_tax_rate };
+  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), blocked_fraction: raw.blocked_fraction, local_reinvest_rate: asDec(raw.local_reinvest_rate), home_outlay: c.home_outlay, add_tax_rate_effective: c.add_tax_rate_effective };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 
 // ── K4 schema: sub_fcfe (root) → sub_remit_home (dep on sub_fcfe) → total_capacity (dep) → surplus ──
 export function buildIntlDividendSchema(raw: IntlDividendInputs, c: IntlDividendComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.home_currency, foreign = raw.foreign_currency, homeUnit = `${home}m`, foreignUnit = `${foreign}m`;
-  const S = raw.forecast_spot, rf = raw.remit_fraction, net = c.net_factor;
+  const S = raw.forecast_spot, rf = raw.remit_fraction;
+  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(raw.sub_build.tax_rate);
+  const remitTp = c.remit_tp_foreign, creditable = raw.wht_creditable;
   // parent_fcfe is a graded ROOT (a figure the answer states and sums), so total_capacity depends on
   // BOTH the subsidiary chain and the parent figure — the seeded-OFR proof then carries even when the
   // parent contribution dominates (perturbing either root moves total_capacity out of tolerance).
   const comps: Component[] = [
-    { component_id: 'sub_fcfe', label: 'Subsidiary free cash flow to equity (foreign)', expected_value: c.sub_fcfe_foreign, unit: foreignUnit, tolerance: rel(0.5),
+    { component_id: 'sub_fcfe', label: 'Subsidiary free cash flow to equity (foreign)', expected_value: c.sub_fcfe_foreign, unit: foreignUnit, tolerance: moneyTol,
       working_steps: [`FCFE = FCFF − Kd·D(1−t) + net new borrowing (subsidiary, foreign)`] },
-    { component_id: 'sub_remit_home', label: 'Subsidiary remittance received by the parent (home, net of double-tax)', expected_value: c.sub_remit_home, unit: homeUnit, tolerance: rel(0.5),
-      depends_on: ['sub_fcfe'], recompute: (d) => (d.sub_fcfe * rf * net) / S,
-      working_steps: [`= FCFE ${fmt1(c.sub_fcfe_foreign)} × remitted ${(rf * 100).toFixed(0)}% × net-of-tax ${net.toFixed(4)} ÷ spot ${fmt4(S)}`] },
-    { component_id: 'parent_fcfe', label: 'Parent free cash flow to equity (home currency)', expected_value: raw.parent_fcfe, unit: homeUnit, tolerance: rel(0.5),
+    { component_id: 'sub_remit_home', label: 'Subsidiary remittance received by the parent (home, net of WHT + differential home tax)', expected_value: c.sub_remit_home, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['sub_fcfe'],
+      recompute: (d) => {
+        const remit = d.sub_fcfe * rf, wht = w * remit;
+        const add = creditable ? Math.max(0, h * remitTp - fc * remitTp - wht) : Math.max(0, (h - fc) * remitTp);
+        return (remit - wht - add) / S;
+      },
+      working_steps: [`= (FCFE ${fmt1(c.sub_fcfe_foreign)} × remitted ${(rf * 100).toFixed(0)}% − WHT − differential home tax) ÷ spot ${fmt4(S)}`] },
+    { component_id: 'parent_fcfe', label: 'Parent free cash flow to equity (home currency)', expected_value: raw.parent_fcfe, unit: homeUnit, tolerance: moneyTol,
       working_steps: [`the parent's own dividend capacity (home currency)`] },
-    { component_id: 'total_capacity', label: 'Group dividend capacity (home currency)', expected_value: c.total_capacity, unit: homeUnit, tolerance: rel(0.5),
+    { component_id: 'total_capacity', label: 'Group dividend capacity (home currency)', expected_value: c.total_capacity, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['sub_remit_home', 'parent_fcfe'], recompute: (d) => d.sub_remit_home + d.parent_fcfe,
       working_steps: [`= parent FCFE ${fmt1(raw.parent_fcfe)} + remitted subsidiary FCFE`] },
-    { component_id: 'capacity_surplus', label: 'Capacity surplus over the proposed dividend (signed)', expected_value: c.capacity_surplus, unit: homeUnit, tolerance: rel(0.5),
+    { component_id: 'capacity_surplus', label: 'Capacity surplus over the proposed dividend (signed)', expected_value: c.capacity_surplus, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['total_capacity'], recompute: (d) => d.total_capacity - raw.proposed_dividend,
       working_steps: [`= dividend capacity − proposed dividend ${fmt1(raw.proposed_dividend)}`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { sub_remit_home: 'sub_remit_convert', total_capacity: 'capacity_add_parent', capacity_surplus: 'capacity_minus_proposed' };
-  const params = { forecast_spot: S, remit_fraction: rf, net_factor: net, parent_fcfe: raw.parent_fcfe, proposed_dividend: raw.proposed_dividend, add_tax_rate: c.add_tax_rate };
+  const params = { forecast_spot: S, remit_fraction: rf, parent_fcfe: raw.parent_fcfe, proposed_dividend: raw.proposed_dividend, add_tax_rate_effective: c.add_tax_rate_effective };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // MODEL ANSWERS — code authors every figure + every figure-vs-figure verdict; prose is glue.
 // ═══════════════════════════════════════════════════════════════════════════════════════
-function fiscalAssumptionLine(raw: FiscalInputs, homeCur: string, foreignCur: string, addRate: number): string {
-  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate);
-  return addRate > 0
-    ? `Remittances suffer host withholding at ${pct2(w)}; the parent's ${pct2(h)} home tax is charged with a credit for the host tax, so the additional home tax is max(0, ${pct2(h)} − ${pct2(w)}) = **${pct2(addRate)}** (credit method, capped at the home liability).`
-    : `Remittances suffer host withholding at ${pct2(w)}; because the ${pct2(w)} host tax is at least the ${pct2(h)} home rate, the credit method leaves **no additional home tax** (and no refund of the excess).`;
+function fiscalAssumptionLine(raw: FiscalInputs, foreignCorp: number, hasAddTax: boolean, addRate: number): string {
+  const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(foreignCorp);
+  const whtLine = raw.wht_creditable
+    ? `withholding tax at ${pct2(w)} on remittances is creditable against the home liability under the bilateral treaty`
+    : `withholding tax at ${pct2(w)} on remittances is a separate cost (not creditable under the treaty)`;
+  return hasAddTax
+    ? `Taxable profits earned abroad are liable to the **differential income tax** between the two countries — additional home tax = max(0, home ${pct2(h)} − foreign corporate ${pct2(fc)}) = **${pct2(addRate)}** of taxable profit, crediting the foreign corporate tax already paid; ${whtLine}.`
+    : `The foreign corporate tax rate ${pct2(fc)} is **at or above** the parent's ${pct2(h)} home rate, so the credit for foreign corporate tax covers the whole home liability and there is **NO additional home tax** (max(0, ${pct2(h)} − ${pct2(fc)}) = 0); ${whtLine}.`;
 }
 function fxTable(fx_curve: number[], foreign: string, home: string, basis: ParityBasis): string[] {
   const lines = [`| Year | Forecast spot (${foreign}/${home}) |`, `|------|------|`];
@@ -556,14 +643,16 @@ export function buildIntlNpvModelAnswer(raw: IntlNpvInputs, c: IntlNpvComputed, 
   const r = asDec(raw.discount_rate);
   const lines: string[] = [
     '**International investment appraisal — net present value to the parent**', '',
-    `**Assumptions:** project cash flows arise in ${foreign}; the maintainable base-year foreign free cash flow is ${mF(c.base_fcff_foreign)}${(raw.foreign_growth ?? 0) > 0 ? ` growing at ${pct2(asDec(raw.foreign_growth ?? 0))} a year` : ''}; forecast spot rates are derived by ${raw.basis.toUpperCase()} parity from the stated base spot ${fmt4(raw.base_spot)} ${foreign}/${home}; converted cash flows are discounted at the parent's ${pct2(r)} money cost of capital. ${fiscalAssumptionLine(raw, home, foreign, c.add_tax_rate)}`, '',
+    `**Assumptions:** project cash flows arise in ${foreign}; the maintainable base-year foreign free cash flow is ${mF(c.base_fcff_foreign)}${(raw.foreign_growth ?? 0) > 0 ? ` growing at ${pct2(asDec(raw.foreign_growth ?? 0))} a year` : ''} on a taxable profit (PBIT) base of ${mF(c.base_pbit_foreign)}; forecast spot rates are derived by ${raw.basis.toUpperCase()} parity from the stated base spot ${fmt4(raw.base_spot)} ${foreign}/${home}; converted cash flows are discounted at the parent's ${pct2(r)} money cost of capital. ${fiscalAssumptionLine(raw, raw.foreign_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective)}`, '',
     '**Step 1 — Forecast exchange rates (parity, never assumed)**', '',
     ...fxTable(c.fx_curve, foreign, home, raw.basis), '',
-    '**Step 2 — Foreign cash flows, remittance, and conversion to home currency**', '',
-    `| Year | Foreign cash flow | Remitted net of tax (${foreign}) | Spot | Home cash flow |`, `|------|------|------|------|------|`,
+    '**Step 2 — Foreign cash flows, tax, remittance, and conversion**', '',
+    `| Year | Foreign FCFF | Withholding | Additional home tax | Net remitted (${foreign}) | Spot | Home cash flow |`, `|------|------|------|------|------|------|------|`,
   ];
-  for (const y of c.years) lines.push(`| ${y.year} | ${mF(y.foreign_cf)} | ${mF(y.foreign_remit_net)} | ${fmt4(y.fx)} | ${mH(y.home_cf)} |`);
-  lines.push('', `*(Remitted net of tax = foreign cash flow × the net-of-both-taxes factor ${c.net_factor.toFixed(4)}; converted at that year's forecast spot.)*`, '');
+  for (const y of c.years) lines.push(`| ${y.year} | ${mF(y.foreign_cf)} | ${mF(y.wht)} | ${mF(y.additional_home_tax_foreign)} | ${mF(y.foreign_remit_net)} | ${fmt4(y.fx)} | ${mH(y.home_cf)} |`);
+  lines.push('', c.has_additional_home_tax
+    ? `*(Net remitted = foreign FCFF − withholding − the differential additional home tax; converted at that year's forecast spot.)*`
+    : `*(Additional home tax is **nil** every year: the foreign corporate rate ${pct2(asDec(raw.foreign_build.tax_rate))} exceeds the parent's ${pct2(asDec(raw.home_tax_rate))} home rate, so the foreign-tax credit already covers the whole home liability. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*`, '');
   lines.push('**Step 3 — Present values and NPV**', '', `| Year | Home cash flow | DF @ ${pct2(r)} | Present value |`, `|------|------|------|------|`);
   lines.push(`| 0 | ${mH(-c.home_outlay)} | 1.000 | ${mH(-c.home_outlay)} | *(foreign outlay ${mF(raw.initial_outlay_foreign)} ÷ ${fmt4(raw.base_spot)})*`);
   for (const y of c.years) lines.push(`| ${y.year} | ${mH(y.home_cf)} | ${y.df.toFixed(3)} | ${mH(y.pv)} |`);
@@ -584,7 +673,7 @@ export function buildIntlSensitivityModelAnswer(raw: IntlSensitivityInputs, c: I
     : `the recommendation does **not** change (${c.accept_base ? 'accept' : 'reject'} under both), though the NPV moves by ${mH(Math.abs(c.npv_swing))}. The decision is **robust** to this exchange-rate assumption over the range tested.`;
   return [
     '**Impact of alternative exchange-rate assumptions on project value**', '',
-    `**Assumptions:** the project's ${foreign} cash flows are unchanged; only the forecast-FX path (the ${raw.basis.toUpperCase()}-parity foreign rate) differs between the base case and ${raw.alt_label}. Both NPVs are to the parent, discounted at ${pct2(r)}. ${fiscalAssumptionLine(raw, home, foreign, c.base.add_tax_rate)}`, '',
+    `**Assumptions:** the project's ${foreign} cash flows are unchanged; only the forecast-FX path (the ${raw.basis.toUpperCase()}-parity foreign rate) differs between the base case and ${raw.alt_label}. Both NPVs are to the parent, discounted at ${pct2(r)}. ${fiscalAssumptionLine(raw, raw.foreign_build.tax_rate, c.base.has_additional_home_tax, c.base.add_tax_rate_effective)}`, '',
     '**Step 1 — Base exchange-rate assumption**', '',
     ...fxTable(c.base.fx_curve, foreign, home, raw.basis), '',
     `NPV under the base assumption = **${mH(c.npv_base)}** → ${c.accept_base ? 'accept' : 'reject'}.`, '',
@@ -602,12 +691,14 @@ export function buildIntlRemittanceModelAnswer(raw: IntlRemittanceInputs, c: Int
   const home = raw.home_currency, foreign = raw.foreign_currency, N = raw.years;
   const mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
   const r = asDec(raw.discount_rate);
+  // explicit subtraction so the reader sees free NPV, restricted NPV, and the cost as DISTINCT roles
+  // (they can share a magnitude — e.g. free 5.6 − restricted 2.8 = cost 2.8 — so the subtraction is shown)
   const costWord = c.npv_cost_of_blocking < 0
-    ? `the restriction **reduces** the NPV by ${mH(Math.abs(c.npv_cost_of_blocking))} versus free remittance (${mH(c.npv_if_free)})`
-    : `the restriction **adds** ${mH(c.npv_cost_of_blocking)} versus free remittance (${mH(c.npv_if_free)}) because the local reinvestment rate exceeds the parent's discount rate`;
+    ? `the restriction **reduces** the NPV: free-remittance NPV ${mH(c.npv_if_free)} − restricted NPV ${mH(c.npv)} = a cost of the restriction of **${mH(Math.abs(c.npv_cost_of_blocking))}**`
+    : `the restriction **adds** value: restricted NPV ${mH(c.npv)} − free-remittance NPV ${mH(c.npv_if_free)} = **${mH(c.npv_cost_of_blocking)}**, because the local reinvestment rate exceeds the parent's discount rate`;
   return [
     '**International appraisal with a remittance restriction**', '',
-    `**Assumptions:** ${(raw.blocked_fraction * 100).toFixed(0)}% of each year's ${foreign} cash flow is blocked from remittance and reinvested locally at ${pct2(asDec(raw.local_reinvest_rate))}, released in year ${N}; the free portion is remitted when earned. Forecast spots by ${raw.basis.toUpperCase()} parity; home discount rate ${pct2(r)}. ${fiscalAssumptionLine(raw, home, foreign, c.add_tax_rate)}`, '',
+    `**Assumptions:** ${(raw.blocked_fraction * 100).toFixed(0)}% of each year's ${foreign} cash flow is blocked from remittance and reinvested locally at ${pct2(asDec(raw.local_reinvest_rate))}, released in year ${N}; the free portion is remitted when earned. Forecast spots by ${raw.basis.toUpperCase()} parity; home discount rate ${pct2(r)}. ${fiscalAssumptionLine(raw, raw.foreign_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective)}`, '',
     '**Step 1 — Forecast exchange rates (parity)**', '',
     ...fxTable(c.fx_curve, foreign, home, raw.basis), '',
     '**Step 2 — Remitted (free) cash flows converted to home currency**', '',
@@ -625,21 +716,23 @@ export function buildIntlRemittanceModelAnswer(raw: IntlRemittanceInputs, c: Int
 export function buildIntlDividendModelAnswer(raw: IntlDividendInputs, c: IntlDividendComputed, prose: string): string {
   const home = raw.home_currency, foreign = raw.foreign_currency;
   const mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
+  const yr = raw.remittance_year;
   const verdict = c.sustainable
-    ? `capacity **exceeds** the proposed dividend by ${mH(Math.abs(c.capacity_surplus))}, so the group dividend is **covered** by this year's cash generation and is sustainable on the base case`
+    ? `capacity **exceeds** the proposed dividend by ${mH(Math.abs(c.capacity_surplus))}, so the group dividend is **covered** by the year's cash generation and is sustainable on the base case`
     : `capacity **falls short** of the proposed dividend by ${mH(Math.abs(c.capacity_surplus))}, so the proposed dividend is **not covered** and would have to draw on reserves or new finance — a red flag on sustainability`;
+  const remitTax = c.remit_tax;
   return [
     '**Multinational dividend capacity and policy**', '',
-    `**Assumptions:** group dividend capacity is the CASH the parent can pay this year — its own free cash flow to equity plus the cash the overseas subsidiary can remit. ${(raw.remit_fraction * 100).toFixed(0)}% of the subsidiary's FCFE is remitted this year at a forecast spot of ${fmt4(c.forecast_spot)} ${foreign}/${home} (${raw.basis.toUpperCase()} parity). ${fiscalAssumptionLine(raw, home, foreign, c.add_tax_rate)}`, '',
+    `**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. ${(raw.remit_fraction * 100).toFixed(0)}% of the subsidiary's FCFE is remitted in year ${yr} at the ${raw.basis.toUpperCase()} forecast spot of ${fmt4(c.forecast_spot)} ${foreign}/${home}. ${fiscalAssumptionLine(raw, raw.sub_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective)}`, '',
     '**Step 1 — Subsidiary free cash flow to equity (foreign)**', '',
     `Subsidiary FCFE = FCFF − after-tax interest + net new borrowing = **${mF(c.sub_fcfe_foreign)}**.`, '',
-    '**Step 2 — Remittance to the parent (net of double-tax, converted to home)**', '',
-    `Remitted = ${mF(c.sub_fcfe_foreign)} × ${(raw.remit_fraction * 100).toFixed(0)}% × net-of-tax factor ${c.net_factor.toFixed(4)} ÷ ${fmt4(c.forecast_spot)} = **${mH(c.sub_remit_home)}**.`, '',
+    '**Step 2 — Remittance to the parent (net of withholding + differential home tax, converted to home)**', '',
+    `Remitted (foreign) = ${mF(c.sub_fcfe_foreign)} × ${(raw.remit_fraction * 100).toFixed(0)}% = ${mF(c.sub_remit_foreign)}; less withholding ${mF(remitTax.wht)}${c.has_additional_home_tax ? ` and differential home tax ${mF(remitTax.additional_home_tax_foreign)}` : ' (no additional home tax — foreign corporate rate ≥ home rate)'} = ${mF(remitTax.net_remit_foreign)}; ÷ ${fmt4(c.forecast_spot)} = **${mH(c.sub_remit_home)}**.`, '',
     '**Step 3 — Group dividend capacity**', '',
     `Group capacity = parent FCFE ${mH(c.parent_fcfe)} + remitted subsidiary FCFE ${mH(c.sub_remit_home)} = **${mH(c.total_capacity)}**.`, '',
     '**Step 4 — Sustainability of the proposed dividend**', '',
     `Against the proposed group dividend of ${mH(c.proposed_dividend)}, the ${verdict}.`, '',
     '**Step 5 — Advice to the board**', '', prose, '',
-    `*Reconciliation: parent ${mH(c.parent_fcfe)} + remitted ${mH(c.sub_remit_home)} = capacity ${mH(c.total_capacity)}; − proposed ${mH(c.proposed_dividend)} = surplus ${mH(c.capacity_surplus)} ✓*`,
+    `*Reconciliation: parent ${mH(c.parent_fcfe)} + remitted ${mH(c.sub_remit_home)} = capacity ${mH(c.total_capacity)}; capacity − proposed ${mH(c.proposed_dividend)} = ${signedSurplus(home, c.capacity_surplus)} ✓*`,
   ].join('\n');
 }
