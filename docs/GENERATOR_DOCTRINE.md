@@ -132,7 +132,44 @@ The doctrine instead is **withhold-not-cripple**: the free user never sees a deg
 Black-Scholes option pricing is taught **spreadsheet-inputs style** — the exam supplies the calculator (J24 Littlebredy). Marked components = the **five input identifications + interpretation**, NOT manual option maths. (Pilot #2 / E2 extension gets its own fixtures and full hostility.)
 
 ### Roadmap order (AFM Phase 1, calculator by calculator)
-NPV → IRR/MIRR → APV → cost-of-capital/CAPM → duration → FCFF-extension → **then** the E2 verifier extension (enum/integer component types) → **then** FX + interest-rate hedging. B + E deep first (~45 drills toward ~101 total AFM).
+NPV → IRR/MIRR → APV → cost-of-capital/CAPM → duration → FCFF/valuation → **international NPV
+(B5 + A6a, calc #10)** → risk & uncertainty (B1) → **then** the E2 verifier extension (enum/integer
+component types) → **then** FX + interest-rate HEDGING (E2 derivatives — distinct from B5 appraisal).
+B + E deep first (~45 drills toward ~101 total AFM). *(International NPV named explicitly per Step-0
+ruling #6, 2026-07-17 — it is B5 project appraisal, NOT the E2 hedging item.)*
+
+### International investment & financing rulings (calculator #10, B5 + A6a, 2026-07-17)
+`lib/acca/international.ts`. COMPOSES the FCFF build (`fcffFromBuild`, `valuation.ts`) and the
+discounting (`discountFactor`, `npv.ts`) ONE-WAY — no back-imports; the two shared primitives were
+extracted so there is a single build/discount implementation. Grant-ruled Step-0 (8 items):
+- **Parity basis = PPP for every B5 drill** (relative INFLATION — the exam-orthodox route for
+  translating a multi-year project cash-flow stream). IRP (relative interest) is reserved for
+  short-horizon forwards/hedging (E2) and stays engine-supported + fixture-tested only; no B5 drill
+  uses it. The forward curve is **DERIVED, never asserted**: Sₜ = S₀ · ((1+r_foreign)/(1+r_home))ᵗ,
+  geometric single-differential compounding. Basis is CODE-OWNED in the generator (not model-chosen).
+- **Home-currency method is the taught primary** (convert-then-discount); the foreign-currency route
+  reconciles by construction and is not separately graded this batch.
+- **Double-tax = credit method, home-liability cap.** Additional home tax rate = **max(0, h − w)** —
+  the credit never exceeds the home liability, never a refund of excess host withholding. Exemption
+  method journalled as a future kind. Net-of-both-taxes remittance factor = (1−w) − max(0, h−w).
+- **Remittance blocking (K3):** blocked funds reinvested at a STATED local rate (never derived),
+  released + converted at the terminal-year forecast spot; code owns the NPV and the cost-of-blocking
+  delta vs free remittance. B5c (strategies for restricted remittance) rides as discursive dual
+  coverage on the B5b remittance kind (single-tag `lo_code`, journalled — APV/B3k precedent).
+- **A6a (K4) multinational dividend capacity** reuses `computeDividendCapacity` (batch #9) for the
+  subsidiary FCFE. `parent_fcfe` is graded as a ROOT so the seeded-OFR proof carries even when the
+  parent contribution dominates group capacity. **HARD RULE (Grant):** A6a is a Section-A LO —
+  **direct-link-only serve, EXCLUDED from all B-tier / coverage counts and every public claim until
+  Section A surfaces.**
+- **THREE NEW GATES** (`validate-schema.ts`, run for international-family drills only):
+  **GATE 12 parity-consistency** (every forecast spot reconciles to the drill's STATED basis — not a
+  hard-coded formula), **GATE 13 currency/unit-scale integrity** (home × spot = foreign, consistent
+  scale — the IDR-rendering failure class), **GATE 14 double-tax cap** (additional home tax = max(0,
+  h−w), never negative). All existing gates + pattern gates (distinct-factor OFR, figure-integrity
+  1/2/3 dp, P4 frozen-market-facts, P5, P6) apply unchanged.
+- **Decision-relevance is a generation quality bar, not a gate** (APV/CAPM precedent): `draft` runs
+  best-of-4 with a per-kind penalty (K1/K3 → accept; K2 → base-accept + alt-reject flip; K4 →
+  decisive surplus + material subsidiary share) and ships the least-bad. Numbers stay code-owned.
 
 ---
 
