@@ -1,78 +1,85 @@
 # AFM international-finance batch — blind adversarial review pack
 
-**Calculator #10: international investment & financing (`lib/acca/international.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. AT THE REVIEW GATE (Fix Round 1 applied). Awaiting co-founder independent recompute, THEN a blind GPT round. CURRENT STATE — regenerated after every fix round.**
+**Calculator #10: international investment & financing (`lib/acca/international.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. AT THE REVIEW GATE (Fix Rounds 1 + 2 applied). Awaiting co-founder independent recompute, THEN a blind GPT round. CURRENT STATE — regenerated after every fix round.**
 
-Doctrine: code owns EVERY figure AND every figure-vs-figure verdict — the forecast FX curve (DERIVED by parity, never asserted), every conversion, the credit-method double-tax, the NPV, the decision FLIP under an alternative FX path, the sustainability verdict. The model authored PROSE only. The calculator COMPOSES the FCFF build (`fcffFromBuild`, `valuation.ts`) and the discounting (`discountFactor`, `npv.ts`) ONE-WAY, no back-imports.
+Doctrine: code owns EVERY figure AND every figure-vs-figure verdict — the forecast FX curve (DERIVED by parity, never asserted), every conversion, the credit-method double-tax, the NPV, the decision FLIP, the sustainability verdict. The model authored PROSE only. The calculator COMPOSES the FCFF build (`fcffFromBuild`, `valuation.ts`) and the discounting (`discountFactor`, `npv.ts`) ONE-WAY, no back-imports.
 
-## Fix Round 1 (ruled 2026-07-17) — applied in this pack
-- **DOUBLE-TAX credit base = the CORPORATE DIFFERENTIAL (major).** Additional home tax = **max(0, home rate − foreign CORPORATE rate) × taxable profit** (the PBIT base the FCFF build already taxes), crediting the foreign corporate tax — its OWN per-year schema component. Withholding is a SEPARATE layer on the remitted amount; each scenario STATES whether the treaty makes it creditable (if so: additional = max(0, home liability − foreign corp tax − WHT)). Never negative, never a refund. Evidence (Rule 22, verbatim, in `international.ts`): *"A bilateral tax treaty exists between the countries of Ayjai and Nuruk — hence, taxable profits earned in Nuruk will be liable to the differential income tax rate on company profits that applies between the two countries."* — ACCA AFM technical article, "International project appraisal (part 2)", accaglobal.com. **K1 shows the NIL case** (foreign corporate ≥ home → the credit covers the whole home liability) and teaches WHY.
-- **GATE 14 rewritten** to validate the new rule (each period: additional = the credit-method residual; ≥ 0; ≤ home liability).
-- **Floor tolerance** on money components: max(0.5% relative, 0.2 absolute) — a small-magnitude figure is not held to a punishing relative band.
-- **K2 re-sized** so the base NPV is meaningfully positive (not razor-thin) and the alternative clearly flips it.
-- **K1 growth input** relabelled "Annual growth of foreign cash flows (money terms)". **K4** says "remitted in year 2". **K3** prints the explicit free − restricted = cost subtraction. **Reconciliation template** prints "a shortfall of X" for a negative surplus (was "surplus −X"; clears walk-log item 3).
+## Double-tax = the CORPORATE DIFFERENTIAL (Fix Round 1) — THREE branches (Fix Round 2)
+Additional home tax = **max(0, home rate − foreign CORPORATE rate) × taxable profit** (the PBIT base), crediting the foreign corporate tax; withholding is a SEPARATE layer with a per-scenario `wht_creditable` flag (if creditable: additional = max(0, home liability − foreign corp − WHT)). Evidence (Rule 22, verbatim, in `international.ts`): *"A bilateral tax treaty exists between the countries of Ayjai and Nuruk — hence, taxable profits earned in Nuruk will be liable to the differential income tax rate on company profits that applies between the two countries."* — ACCA AFM technical article, "International project appraisal (part 2)", accaglobal.com.
 
-Money components carry the floor tolerance; forecast spots display at 4 dp. **All gates pass** — the 6 base/pattern gates (schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity at 1/2/3/4 dp; distinct-factor seeded-OFR; P4 jurisdiction + frozen-market-facts; P5 completeness; P6 loss-relief) PLUS **GATE 12 parity-consistency**, **GATE 13 currency/unit-scale integrity**, **GATE 14 double-tax cap (differential base)**.
+**The nil case has TWO distinct causes, told apart with the TRUE inequality direction (Fix Round 2 — the earlier template printed a FALSE "foreign ≥ home" + a false max() for every nil):**
+- **(a) nil-by-corporate-credit** — foreign corporate rate ≥ home; the corporate credit alone covers the home liability; the withholding is then a **net cost** (no residual liability to relieve). *(K1)*
+- **(b) nil-by-WHT-credit** — home > foreign corporate (a positive residual), but the **creditable withholding** covers the residual → additional tax **nets to nil**. *(K2, K3)*
+- **(c) charged** — a positive residual survives after the credits, charged per year. *(K4 — Malaysia levies 0% dividend WHT, so the 6% Australia-vs-Malaysia differential is charged.)*
 
-## Kinds → ids → code-computed verdicts
-- **home_currency_standard (K1)** `52bf38ce-c7cf-4037-8283-6d32eb37c6da` — MAD→USD NPV = **USD +16.4m** → ACCEPT; additional home tax is **NIL** (foreign corporate rate 31% > US home rate 21%, so the foreign-tax credit covers the whole home liability — taught explicitly, not a silent zero)
-- **exchange_rate_sensitivity (K2)** `e911d20f-83c9-4be2-8454-ec0aafc3d54e` — base **GBP +1.8m** (accept) → alternative **GBP −5.4m** (reject) — the decision **FLIPS**; base is meaningfully positive (Fix-Round-1 re-size)
-- **restricted_remittance (K3, B5b + B5c dual)** `3f24d830-f090-4c3e-98e7-f45af4340fa3` — NPV **EUR +11.2m** with the controls vs **EUR +13.3m** free — the restriction costs **EUR −2.1m** (shown as an explicit free − restricted subtraction)
-- **multinational_dividend_capacity (K4, A6a — DIRECT-LINK-ONLY)** `39a0fbd6-100a-41ab-877e-af00f3108697` — group capacity **USD 45.2m** vs proposed **USD 55.0m** → **NOT sustainable** (a shortfall of 9.8m; subsidiary remits in year 2 and contributes ~16%)
+**This batch demonstrates all three branches.** GATE 14 validates the arithmetic; **GATE 14b** (new) validates the PROSE — the stated branch must match `add_tax_rate_effective` and the true rate ordering, with no false inequality or false max().
 
-## ⛔ CLOSED RULINGS — do NOT re-raise (spend hostility on open questions, not settled ones)
-- **Credit base = the CORPORATE differential (Fix Round 1, Rule 22 evidence).** Additional home tax = max(0, home − foreign CORPORATE rate) on taxable profit, crediting foreign corporate tax; withholding is a separate creditable-or-not layer. This is the exam-orthodox base per the ACCA technical article. Do NOT re-raise the earlier withholding-only credit model, and do NOT propose taxing the cash flow rather than the taxable profit.
-- **Parity basis = PPP for B5** — relative inflation is the orthodox multi-year-translation route; IRP is E2/short-horizon and deliberately not used here.
-- **Double-tax = credit method only** — exemption method is journalled as a future kind, out of scope.
-- **Home-currency method primary** — the foreign-currency route reconciles by construction and is not separately graded.
-- **A6a (K4) direct-link-only + excluded from B-tier counts** — a Section-A LO riding batch #10 by design; not a coverage claim.
-- **Forecast rates are DERIVED, never asserted** — GATE 12 enforces it. **OFR wording** — "charged once, at its source" is house wording, closed.
+Money components carry a **floor tolerance** (max 0.5% relative, 0.2 absolute). **All gates pass** — the 6 base/pattern gates + GATE 12 parity-consistency, GATE 13 currency/unit-scale, GATE 14 double-tax cap (differential base), **GATE 14b tax-prose consistency**.
 
-**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (K1, first-of-family), spot-check siblings WITH full recomputation of every figure. Hunt for semantic errors a deterministic gate cannot catch: the differential-tax base or credit mis-explained, a parity forecast mis-stated, a conversion inverted (multiply vs divide), the remittance-blocking story incoherent, the dividend-capacity flow mis-plumbed, scenario-fact drift, an invented statute/treaty.
+## Kinds → ids → code-computed verdicts (tax branch noted)
+- **home_currency_standard (K1)** `499357f7-466f-4e2d-ab22-cf7175c83968` — MAD→USD NPV = **USD +18.6m** → ACCEPT; additional home tax **NIL** — tax branch **(a) nil-by-corporate-credit** (foreign corporate 28% ≥ US home 21%; the withholding is then a net cost with no residual liability to relieve)
+- **exchange_rate_sensitivity (K2)** `fcf14ae8-90ea-4ad5-a23b-9c7423974a67` — base **GBP +9.3m** (accept) → alternative **GBP −1.0m** (reject) — the decision **FLIPS**; additional home tax **NIL** via tax branch **(b) nil-by-WHT-credit** (home 25% exceeds foreign corporate 22.5% — a 2.5% residual — but the creditable 10% withholding covers it)
+- **restricted_remittance (K3, B5b + B5c dual)** `eac98c43-9c45-4659-8042-dc608efb7c94` — NPV **EUR +6.8m** with the controls vs **EUR +9.4m** free — restriction costs **EUR −2.6m** (explicit subtraction); additional home tax **NIL** via tax branch **(b) nil-by-WHT-credit** (home 28% exceeds foreign corporate 24% — a 4% residual — covered by the creditable 10% withholding)
+- **multinational_dividend_capacity (K4, A6a — DIRECT-LINK-ONLY)** `2b0513a0-7734-4e62-ae1b-54e54d983152` — group capacity **AUD 33.6m** vs proposed **AUD 38.0m** → **NOT sustainable** (subsidiary ~35% of capacity, remitted in year 2); additional home tax **CHARGED** via tax branch **(c)** (Australian home 30% exceeds Malaysian corporate 24% by 6%; Malaysia levies 0% dividend withholding, so the 6% differential is charged)
+
+## Reviewer notes (Fix-Round-2 resolutions + one known interaction)
+- Fix Round 1's false-inequality bug (K2/K3/K4 all printed "foreign corporate ≥ home" and "max(0,h−fc)=0" when home actually exceeded the foreign corporate rate) is **fixed** — see the three-branch prose above; GATE 14b now guards it.
+- K1 no longer carries a free-zone framing inconsistent with the full corporate rate; the withholding is stated as a net cost.
+- **Known interaction (surfaced, not a defect here):** the 0.2 absolute floor tolerance can swallow the seeded-OFR perturbation for a graded money dependent whose magnitude is under ~1.3 (display m) — it verdicts "correct" instead of "carried" and fails GATE 3. Resolved for this batch by SIZING (moderate-denomination currencies, material figures — the AUD/Vietnam K4 draft that tripped it was replaced by AUD/Malaysia). Flagged in `AFM_SURFACED.md` as a thing to weigh in the platform-wide floor-tolerance sweep.
+
+## ⛔ CLOSED RULINGS — do NOT re-raise
+- **Credit base = the CORPORATE differential (Fix Round 1, Rule 22 evidence).** Additional home tax = max(0, home − foreign CORPORATE rate) on taxable profit, crediting foreign corporate tax; withholding is a separate creditable-or-not layer. Do NOT re-raise the withholding-only credit model, and do NOT propose taxing the cash flow rather than the taxable profit.
+- **Three tax branches (Fix Round 2)** — (a) nil-by-corporate, (b) nil-by-WHT-credit, (c) charged; each with the true inequality. The template + GATE 14b are settled.
+- **Parity basis = PPP for B5** (IRP is E2/short-horizon). **Double-tax = credit method only** (exemption journalled as a future kind). **Home-currency method primary.** **A6a (K4) direct-link-only + excluded from B-tier counts.** **Forecast rates DERIVED, never asserted (GATE 12).** **OFR wording** "charged once, at its source" — house wording, closed.
+
+**Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (K1, first-of-family), spot-check siblings WITH full recomputation of every figure. Hunt for semantic errors a deterministic gate cannot catch: the differential-tax base/branch/credit mis-explained, a parity forecast mis-stated, a conversion inverted, the remittance-blocking story incoherent, the dividend-capacity flow mis-plumbed, scenario-fact drift, an invented statute/treaty.
 
 ---
 
-## Drill — home_currency_standard (K1)  ·  `52bf38ce-c7cf-4037-8283-6d32eb37c6da`
+## Drill — home_currency_standard (K1)  ·  `499357f7-466f-4e2d-ab22-cf7175c83968`
 - LO B5b · mode quantitative · command_verb "forecast" · marks_guide 10
-- CODE-COMPUTED: MAD→USD NPV = **USD +16.4m** → ACCEPT; additional home tax is **NIL** (foreign corporate rate 31% > US home rate 21%, so the foreign-tax credit covers the whole home liability — taught explicitly, not a silent zero)
+- CODE-COMPUTED: MAD→USD NPV = **USD +18.6m** → ACCEPT; additional home tax **NIL** — tax branch **(a) nil-by-corporate-credit** (foreign corporate 28% ≥ US home 21%; the withholding is then a net cost with no residual liability to relieve)
 
 ### question
 
-Forecast the annual free cash flows of the Moroccan plant in MAD, convert them to USD using PPP-derived exchange rates, and determine the USD net present value of the investment for Apex Driveline Corporation's board.
+Forecast the MAD cash flows of Axion Driveline Maroc SA for each year of the project life, convert them to USD using purchasing-power-parity exchange rates, and determine the USD net present value of the investment for Axion Automotive Group Inc.
 
 ### context_text
 
-Apex Driveline Corporation (ADC), a US-headquartered automotive-components manufacturer listed on the NYSE, is appraising the construction of a precision-forging plant in Kenitra, Morocco, to be operated through its wholly owned subsidiary, Atlas Forgetech SARL. The Kenitra Free Zone offers a stable operating environment, yet Morocco's exchange-control framework occasionally imposes administrative delays on profit remittances — a risk the board should weigh against the attractive labour-cost base — and it is unclear whether purchasing power parity will hold closely given that the dirham is managed against a currency basket rather than allowed to float freely. ADC's treasury has assembled the following appraisal inputs at the appraisal date:
+Axion Automotive Group Inc., a US-based automotive-components manufacturer listed on NASDAQ, is appraising a greenfield stamping and sub-assembly plant — Axion Driveline Maroc SA — to be established near Kenitra, Morocco. The plant will supply aluminium structural components to European OEM customers under a five-year off-take framework, though the board acknowledges that OEM procurement cycles can be renegotiated and the contracted volumes should not be treated as unconditional; in addition, while PPP is used to forecast the MAD/USD rate, Morocco's managed-float regime means the dirham does not always move in line with the inflation differential, and deviations from parity are a genuine appraisal risk. Morocco imposes a withholding tax on profit remittances to the US parent, and the bilateral tax treaty makes that withholding tax creditable against the US parent's home liability. The plant will be a fully-taxed corporate operation subject to Morocco's standard corporate income tax rate.
 
-- Base spot rate (MAD per USD) at appraisal date: 10.20
-- Home (USD) inflation rate, assumed: 2.5%
-- Foreign (MAD) inflation rate, assumed: 4.5%
+Raw inputs (at the appraisal date):
+- Initial capital outlay: MAD 1,200 million
+- Annual PBIT (base year, MAD): MAD 520 million
+- Foreign (Morocco) corporate tax rate: 28%
+- Parent (US) tax rate on foreign taxable profit: 21%
+- Host withholding tax rate on remittances: 8%
+- Withholding tax creditable under bilateral treaty: Yes
+- Depreciation (annual, MAD): MAD 180 million
+- Capital expenditure (annual, MAD): MAD 60 million
+- Increase in working capital (annual, MAD): MAD 40 million
 - Annual growth of foreign cash flows (money terms): 0%
-- Project life: 4 years
-- Initial outlay (MAD millions): 1,200
-- Foreign (MAD) PBIT, base year (MAD millions): 520
-- Foreign corporate tax rate (Morocco): 31%
-- Parent-country (US) tax rate on foreign taxable profit: 21%
-- Depreciation / non-cash add-back (MAD millions): 300
-- Capital expenditure (MAD millions): 120
-- Increase in working capital (MAD millions): 40
-- Host withholding tax on remittances: 7.5%
-- Bilateral treaty: the US–Morocco bilateral arrangement makes the withholding tax creditable against the US liability (wht_creditable = true)
-- ADC's home money cost of capital (USD): 11%
+- Project life: 5 years
+- Spot exchange rate at appraisal date (MAD per USD 1): 10.20
+- Moroccan inflation rate (assumed): 6%
+- US inflation rate (assumed): 2%
+- Parent's USD money cost of capital: 11%
 
 ### model_answer
 
 **International investment appraisal — net present value to the parent**
 
-**Assumptions:** project cash flows arise in MAD; the maintainable base-year foreign free cash flow is MAD 498.8m on a taxable profit (PBIT) base of MAD 520.0m; forecast spot rates are derived by PPP parity from the stated base spot 10.2000 MAD/USD; converted cash flows are discounted at the parent's 11.00% money cost of capital. The foreign corporate tax rate 31.00% is **at or above** the parent's 21.00% home rate, so the credit for foreign corporate tax covers the whole home liability and there is **NO additional home tax** (max(0, 21.00% − 31.00%) = 0); withholding tax at 7.50% on remittances is creditable against the home liability under the bilateral treaty.
+**Assumptions:** project cash flows arise in MAD; the maintainable base-year foreign free cash flow is MAD 454.4m on a taxable profit (PBIT) base of MAD 520.0m; forecast spot rates are derived by PPP parity from the stated base spot 10.2000 MAD/USD; converted cash flows are discounted at the parent's 11.00% money cost of capital. The foreign corporate tax rate 28.00% is **at or above** the parent's 21.00% home rate, so the credit for foreign corporate tax already covers the whole home liability and there is **no additional home tax** (max(0, 21.00% − 28.00%) = 0). The 8.00% withholding on remittances is therefore a **net cost** — with no residual home liability, the treaty's creditability gives it no relief.
 
 **Step 1 — Forecast exchange rates (parity, never assumed)**
 
 | Year | Forecast spot (MAD/USD) |
 |------|------|
-| 1 | 10.3990 |
-| 2 | 10.6019 |
-| 3 | 10.8088 |
-| 4 | 11.0197 |
+| 1 | 10.6000 |
+| 2 | 11.0157 |
+| 3 | 11.4477 |
+| 4 | 11.8966 |
+| 5 | 12.3631 |
 
 *Forecast spots derived by purchasing-power parity (relative inflation): Sₜ = S₀ × ((1 + r_foreign)/(1 + r_home))ᵗ.*
 
@@ -80,42 +87,44 @@ Apex Driveline Corporation (ADC), a US-headquartered automotive-components manuf
 
 | Year | Foreign FCFF | Withholding | Additional home tax | Net remitted (MAD) | Spot | Home cash flow |
 |------|------|------|------|------|------|------|
-| 1 | MAD 498.8m | MAD 37.4m | MAD 0.0m | MAD 461.4m | 10.3990 | USD 44.4m |
-| 2 | MAD 498.8m | MAD 37.4m | MAD 0.0m | MAD 461.4m | 10.6019 | USD 43.5m |
-| 3 | MAD 498.8m | MAD 37.4m | MAD 0.0m | MAD 461.4m | 10.8088 | USD 42.7m |
-| 4 | MAD 498.8m | MAD 37.4m | MAD 0.0m | MAD 461.4m | 11.0197 | USD 41.9m |
+| 1 | MAD 454.4m | MAD 36.4m | MAD 0.0m | MAD 418.0m | 10.6000 | USD 39.4m |
+| 2 | MAD 454.4m | MAD 36.4m | MAD 0.0m | MAD 418.0m | 11.0157 | USD 38.0m |
+| 3 | MAD 454.4m | MAD 36.4m | MAD 0.0m | MAD 418.0m | 11.4477 | USD 36.5m |
+| 4 | MAD 454.4m | MAD 36.4m | MAD 0.0m | MAD 418.0m | 11.8966 | USD 35.1m |
+| 5 | MAD 454.4m | MAD 36.4m | MAD 0.0m | MAD 418.0m | 12.3631 | USD 33.8m |
 
-*(Additional home tax is **nil** every year: the foreign corporate rate 31.00% exceeds the parent's 21.00% home rate, so the foreign-tax credit already covers the whole home liability. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*
+*(Additional home tax is **nil** every year: the foreign corporate rate 28.00% is at or above the parent's 21.00% home rate, so the foreign-tax credit already covers the whole home liability. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*
 
 **Step 3 — Present values and NPV**
 
 | Year | Home cash flow | DF @ 11.00% | Present value |
 |------|------|------|------|
 | 0 | USD -117.6m | 1.000 | USD -117.6m | *(foreign outlay MAD 1200.0m ÷ 10.2000)*
-| 1 | USD 44.4m | 0.901 | USD 40.0m |
-| 2 | USD 43.5m | 0.812 | USD 35.3m |
-| 3 | USD 42.7m | 0.731 | USD 31.2m |
-| 4 | USD 41.9m | 0.659 | USD 27.6m |
+| 1 | USD 39.4m | 0.901 | USD 35.5m |
+| 2 | USD 38.0m | 0.812 | USD 30.8m |
+| 3 | USD 36.5m | 0.731 | USD 26.7m |
+| 4 | USD 35.1m | 0.659 | USD 23.1m |
+| 5 | USD 33.8m | 0.593 | USD 20.1m |
 
-**NPV to the parent = USD 16.4m.**
+**NPV to the parent = USD 18.6m.**
 
 **Step 4 — Decision**
 
-The NPV of USD 16.4m is **positive**, so on these exchange-rate and fiscal assumptions the project **adds value to the parent and should be accepted**.
+The NPV of USD 18.6m is **positive**, so on these exchange-rate and fiscal assumptions the project **adds value to the parent and should be accepted**.
 
 **Step 5 — Advice to the board**
 
-The most fragile assumption in this appraisal is the PPP-based exchange-rate forecast: because Morocco manages the dirham against a currency basket, the actual depreciation path may diverge materially from the inflation-differential prediction, and the board should commission a scenario analysis using both a managed-peg and a free-float depreciation assumption before committing capital. The durability of the MAD cash flows rests on the Kenitra Free Zone's continued cost advantages and on automotive-sector demand remaining stable over the four-year horizon — neither of which can be treated as certain given global supply-chain realignment pressures that the scenario acknowledges through its zero real-growth assumption. Morocco's exchange-control framework introduces remittance risk: administrative delays could defer cash conversions to periods of less favourable rates, so the board should require a contractual comfort letter or an escrow mechanism from the Moroccan regulatory authority as a condition precedent to approval. On the tax side, the Moroccan corporate rate exceeds ADC's US statutory rate, meaning the foreign tax credit is expected to shelter the full US liability on the project's taxable profit — but the board should confirm that the treaty creditability of the withholding tax is operative under current bilateral arrangements and has not been modified by recent protocol changes.
+The most fragile assumption in this appraisal is that PPP will hold over five years: Morocco operates a managed-float regime, meaning the dirham's path is administered rather than purely market-determined, and deviations from the inflation-implied depreciation path would alter every converted cash flow. The board should stress-test the appraisal against a scenario in which the dirham depreciates faster than PPP implies — for example, a sudden float or a balance-of-payments adjustment — because the MAD cash flows are fixed in local terms while the USD present value is acutely sensitive to the exchange path. The off-take framework with European OEMs is the commercial foundation of the cash-flow forecast, yet the board has acknowledged that procurement cycles are renegotiable; the durability of the MAD 520 million base-year PBIT should therefore be verified against the contracted volumes and the penalties for volume shortfall before the figure is accepted as maintainable. On the fiscal side, the foreign corporate tax rate exceeds the US parent rate, which determines the additional home-tax outcome and is a key teaching point the board should understand — confirming whether the creditable withholding tax treaty treatment will be recognised by the US Internal Revenue Service under current US foreign-tax-credit rules is a matter of legal due diligence. Finally, Morocco's exchange-control framework governs the timing and permissibility of profit remittances; any tightening of those controls after project inception — a political risk that is non-trivial in a managed-currency environment — would defer the USD cash flows and erode the present value computed here.
 
-*Reconciliation: Σ present values USD 134.1m − home outlay USD 117.6m = NPV USD 16.4m ✓*
+*Reconciliation: Σ present values USD 136.2m − home outlay USD 117.6m = NPV USD 18.6m ✓*
 
 ### hint
 
-Check whether you've correctly isolated the tax layer that falls away — specifically, when the foreign corporate rate exceeds the parent's home rate, what happens to the additional home tax charge on remittances, and whether you've then applied the withholding tax to the right base before converting at PPP-derived spots rather than the base-year spot.
+Before you convert a single MAD cash flow, check whether the foreign corporate tax rate clears the parent's home rate — that comparison determines whether any additional home tax is owed, and then ask whether the withholding tax has anywhere to shelter once that comparison is made.
 
 ### full_reveal
 
-The classic misconception in cross-border NPV drills is VALUATION-PLUMBING applied to the tax and conversion sequence: candidates either apply a flat spot rate throughout (ignoring PPP-derived forecasts) or double-count the tax burden by levying additional home tax even when the foreign rate already exceeds the parent's statutory rate — producing a remittance figure that is too small and a present value that is correspondingly misstated. The causal mechanism is a misunderstanding of how foreign-tax credits operate: the credit extinguishes the home liability up to the amount of foreign tax already paid, so when the foreign corporate rate exceeds the home rate the additional home tax is nil by construction, not a matter of judgment. A wrong number at the remittance stage is not fatal to your mark if you carry it forward consistently into the conversion and discounting steps — where your downstream method is correct, own-figure credit is available, charged once at the source error and not again; that credit is conditional on you actually using your own figure correctly rather than switching to a different number mid-table. And once the arithmetic is done, the board still needs a recommendation and a scepticism challenge: PPP assumes freely floating rates, but because Morocco manages the dirham against a currency basket the actual depreciation path may diverge from the inflation-differential forecast — that tension is what the advice section must surface, not leave implicit in the numbers.
+The dominant misconception in cross-border NPV drills is UNDEVELOPED-ASSUMPTION: candidates list the tax treaty, the PPP formula, and the withholding rate as inputs, but never interrogate what each assumption actually produces in this scenario. The critical mechanism is the tax-credit stack — when the foreign corporate rate already meets or exceeds the parent's home rate, the foreign-tax credit extinguishes the entire home liability, leaving withholding tax with no residual home charge to shelter against, which makes it a full net cost on every remittance; candidates who skip that reasoning either double-count relief or omit the withholding deduction entirely, and both errors corrupt every subsequent converted cash flow. On the exchange-rate side, PPP is not a description of what will happen — it is a contractual assumption the appraisal imposes because the scenario provides no forward market data; if your PPP spot rates are wrong, carry them forward consistently into the conversion step, because where the downstream method is sound those marks still score (own-figure relief is conditional on correct subsequent use, not automatic). Finally, a positive NPV is the floor of the board answer, not the ceiling — the board needs to hear which assumption is most fragile (the managed-float regime means the dirham's path is administered, not purely inflation-driven) and what would be verified before committing capital, not just a number with a sign attached.
 
 ### answer_schema (serialised jsonb)
 
@@ -123,9 +132,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
 {
   "params": {
     "base_spot": 10.2,
-    "rate_home": 0.025,
+    "rate_home": 0.02,
     "home_outlay": 117.64705882352942,
-    "rate_foreign": 0.045,
+    "rate_foreign": 0.06,
     "discount_rate": 0.11,
     "add_tax_rate_effective": 0
   },
@@ -139,9 +148,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       },
       "component_id": "fx_1",
       "working_steps": [
-        "S₁ = S₀ × (1+r_f)/(1+r_h) = 10.2000 × 1.01951 = 10.3990"
+        "S₁ = S₀ × (1+r_f)/(1+r_h) = 10.2000 × 1.03922 = 10.6000"
       ],
-      "expected_value": 10.399024390243902
+      "expected_value": 10.6
     },
     {
       "unit": "MAD/USD",
@@ -156,9 +165,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "fx_2",
       "working_steps": [
-        "S2 = S1 × 1.01951 = 10.6019"
+        "S2 = S1 × 1.03922 = 11.0157"
       ],
-      "expected_value": 10.601932183224271
+      "expected_value": 11.015686274509806
     },
     {
       "unit": "MAD/USD",
@@ -173,9 +182,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "fx_3",
       "working_steps": [
-        "S3 = S2 × 1.01951 = 10.8088"
+        "S3 = S2 × 1.03922 = 11.4477"
       ],
-      "expected_value": 10.808799152653037
+      "expected_value": 11.447673971549406
     },
     {
       "unit": "MAD/USD",
@@ -190,9 +199,26 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "fx_4",
       "working_steps": [
-        "S4 = S3 × 1.01951 = 11.0197"
+        "S4 = S3 × 1.03922 = 11.8966"
       ],
-      "expected_value": 11.019702550753584
+      "expected_value": 11.89660236259056
+    },
+    {
+      "unit": "MAD/USD",
+      "label": "Forecast spot, year 5 (MAD/USD)",
+      "recompute": "parity_step_y5",
+      "tolerance": {
+        "pct": 0.5,
+        "kind": "relative"
+      },
+      "depends_on": [
+        "fx_4"
+      ],
+      "component_id": "fx_5",
+      "working_steps": [
+        "S5 = S4 × 1.03922 = 12.3631"
+      ],
+      "expected_value": 12.363135788574505
     },
     {
       "unit": "USDm",
@@ -208,9 +234,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "home_cf_1",
       "working_steps": [
-        "= foreign remittance 461.4 (net of WHT; no additional home tax) ÷ spot 10.3990"
+        "= foreign remittance 418.0 (net of WHT; no additional home tax) ÷ spot 10.6000"
       ],
-      "expected_value": 44.368585233136315
+      "expected_value": 39.438490566037736
     },
     {
       "unit": "USDm",
@@ -226,9 +252,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "home_cf_2",
       "working_steps": [
-        "= foreign remittance 461.4 (net of WHT; no additional home tax) ÷ spot 10.6019"
+        "= foreign remittance 418.0 (net of WHT; no additional home tax) ÷ spot 11.0157"
       ],
-      "expected_value": 43.51942570714328
+      "expected_value": 37.95024563901744
     },
     {
       "unit": "USDm",
@@ -244,9 +270,9 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "home_cf_3",
       "working_steps": [
-        "= foreign remittance 461.4 (net of WHT; no additional home tax) ÷ spot 10.8088"
+        "= foreign remittance 418.0 (net of WHT; no additional home tax) ÷ spot 11.4477"
       ],
-      "expected_value": 42.68651803810704
+      "expected_value": 36.51816089792244
     },
     {
       "unit": "USDm",
@@ -262,9 +288,27 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
       ],
       "component_id": "home_cf_4",
       "working_steps": [
-        "= foreign remittance 461.4 (net of WHT; no additional home tax) ÷ spot 11.0197"
+        "= foreign remittance 418.0 (net of WHT; no additional home tax) ÷ spot 11.8966"
       ],
-      "expected_value": 41.86955118570308
+      "expected_value": 35.140117090453664
+    },
+    {
+      "unit": "USDm",
+      "label": "Home-currency net cash flow, year 5",
+      "recompute": "home_cf_convert_y5",
+      "tolerance": {
+        "pct": 0.5,
+        "kind": "floor",
+        "floor": 0.2
+      },
+      "depends_on": [
+        "fx_5"
+      ],
+      "component_id": "home_cf_5",
+      "working_steps": [
+        "= foreign remittance 418.0 (net of WHT; no additional home tax) ÷ spot 12.3631"
+      ],
+      "expected_value": 33.81407493609692
     },
     {
       "unit": "USDm",
@@ -279,13 +323,14 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
         "home_cf_1",
         "home_cf_2",
         "home_cf_3",
-        "home_cf_4"
+        "home_cf_4",
+        "home_cf_5"
       ],
       "component_id": "npv",
       "working_steps": [
         "= Σ (home cash flow × DF @ 11.00%) − home outlay 117.6"
       ],
-      "expected_value": 16.43876609730053
+      "expected_value": 18.601039315319063
     }
   ]
 }
@@ -293,97 +338,100 @@ The classic misconception in cross-border NPV drills is VALUATION-PLUMBING appli
 
 ---
 
-## Drill — exchange_rate_sensitivity (K2)  ·  `e911d20f-83c9-4be2-8454-ec0aafc3d54e`
+## Drill — exchange_rate_sensitivity (K2)  ·  `fcf14ae8-90ea-4ad5-a23b-9c7423974a67`
 - LO B5a · mode quantitative · command_verb "assess" · marks_guide 15
-- CODE-COMPUTED: base **GBP +1.8m** (accept) → alternative **GBP −5.4m** (reject) — the decision **FLIPS**; base is meaningfully positive (Fix-Round-1 re-size)
+- CODE-COMPUTED: base **GBP +9.3m** (accept) → alternative **GBP −1.0m** (reject) — the decision **FLIPS**; additional home tax **NIL** via tax branch **(b) nil-by-WHT-credit** (home 25% exceeds foreign corporate 22.5% — a 2.5% residual — but the creditable 10% withholding covers it)
 
 ### question
 
-Assess the impact on the GBP net present value of Meridian Telecoms plc's proposed Egyptian network build under the base exchange-rate assumption and under a scenario of a sharper devaluation of the Egyptian pound, and assess whether the investment decision changes between the two scenarios.
+Assess the impact on the sterling NPV of CairoCom Networks' proposed Egyptian mobile-telecoms build under two exchange-rate assumptions — the base PPP-derived EGP depreciation and a sharper EGP devaluation — and advise Albion Telecoms plc's board whether the project should proceed.
 
 ### context_text
 
-Meridian Telecoms plc, a UK-listed mobile-network operator, is evaluating a four-year greenfield build-out for its Egyptian subsidiary, MerTel Egypt LLC, which would deploy 4G/5G infrastructure across three urban governorates. The Egyptian pound has been under sustained pressure following successive IMF programme reviews, and the Egyptian Central Bank's managed-float regime means that the parity assumption — that purchasing-power parity will govern the EGP/GBP path — may understate the speed of any future step-devaluation, particularly if foreign-exchange reserves deteriorate; the board must therefore stress-test the appraisal against a materially faster depreciation. Subscriber revenue growth is projected in money terms at the rate below, but analysts have questioned whether competitive entry from a third operator — whose licence application is pending at the National Telecommunications Regulatory Authority — could erode volumes, making the stated growth rate a ceiling rather than a central estimate. A bilateral tax treaty between the UK and Egypt makes the Egyptian withholding tax creditable against Meridian's UK corporation tax liability.
+Albion Telecoms plc, a UK-listed mobile network operator, is evaluating a five-year greenfield build-out of CairoCom Networks, a wholly-owned Egyptian subsidiary that would provide 4G/5G coverage across three governorates. The Egyptian telecoms regulator has approved the licence, but Egypt's history of managed EGP devaluations — including the sharp float of November 2022 — means the board regards exchange-rate risk as the central appraisal risk; whether purchasing-power parity will hold in a managed-currency environment is genuinely uncertain, and Egypt's capital-account controls mean that remittances could be delayed or restricted at short notice. Annual cash flows are projected on the basis of a contracted subscriber base and tower-sharing revenues, but the durability of those flows beyond year three depends on competitive behaviour from two state-backed incumbents, which the board should stress-test.
 
 Raw inputs (at the appraisal date):
-- Base spot rate (EGP per GBP): 49.00
-- UK (home) inflation: 3.0%
-- Egyptian (foreign) inflation: 14.0%
-- Annual growth of foreign cash flows (money terms): 0.0%
-- Project life: 4 years
-- Initial capital outlay: EGP 980 million
-- Foreign PBIT (maintainable base year): EGP 560 million
-- Depreciation (non-cash add-back): EGP 180 million
-- Capital expenditure (years 1–4): EGP 90 million
-- Increase in working capital (years 1–4): EGP 30 million
+- Base spot rate (EGP per GBP): 48.00
+- UK (home) inflation assumed: 3%
+- Egyptian (foreign) inflation assumed — base case: 9%
+- Egyptian (foreign) inflation assumed — alternative (sharper EGP devaluation): 25%
+- Annual growth of foreign cash flows (money terms): 4%
+- Project life: 5 years
+- Initial outlay: EGP 1,200m
+- PBIT (base year, maintainable): EGP 620m
+- Depreciation (non-cash add-back): EGP 180m
+- Capital expenditure (Years 1–5): EGP 95m per year
+- Increase in working capital (Years 1–5): EGP 25m per year
 - Egyptian corporate tax rate: 22.5%
-- UK corporation tax rate on foreign taxable profit: 25.0%
-- Egyptian withholding tax on remittances: 10.0%
-- Withholding tax creditable under bilateral treaty: Yes
-- UK parent's money cost of capital (discount rate): 12.0%
-- Alternative scenario: a sharper devaluation of the Egyptian pound, assumed Egyptian inflation: 38.0%
+- UK parent tax rate on foreign taxable profit: 25%
+- Host withholding tax on remittances: 10%
+- Bilateral treaty: withholding tax IS creditable against UK liability
+- Albion's sterling cost of capital (money terms): 11%
 
 ### model_answer
 
 **Impact of alternative exchange-rate assumptions on project value**
 
-**Assumptions:** the project's EGP cash flows are unchanged; only the forecast-FX path (the PPP-parity foreign rate) differs between the base case and a sharper devaluation of the Egyptian pound. Both NPVs are to the parent, discounted at 12.00%. The foreign corporate tax rate 22.50% is **at or above** the parent's 25.00% home rate, so the credit for foreign corporate tax covers the whole home liability and there is **NO additional home tax** (max(0, 25.00% − 22.50%) = 0); withholding tax at 10.00% on remittances is creditable against the home liability under the bilateral treaty.
+**Assumptions:** the project's EGP cash flows are unchanged; only the forecast-FX path (the PPP-parity foreign rate) differs between the base case and a sharper devaluation of the Egyptian pound. Both NPVs are to the parent, discounted at 11.00%. The parent's 25.00% home rate **exceeds** the foreign corporate rate 22.50%, a residual differential of 2.50% on taxable profit; but the **creditable** 10.00% withholding covers that residual, so the additional home tax **nets to nil** (max(0, home liability − foreign corporate tax − withholding) = 0).
 
 **Step 1 — Base exchange-rate assumption**
 
 | Year | Forecast spot (EGP/GBP) |
 |------|------|
-| 1 | 54.2330 |
-| 2 | 60.0249 |
-| 3 | 66.4353 |
-| 4 | 73.5303 |
+| 1 | 50.7961 |
+| 2 | 53.7551 |
+| 3 | 56.8865 |
+| 4 | 60.2003 |
+| 5 | 63.7071 |
 
 *Forecast spots derived by purchasing-power parity (relative inflation): Sₜ = S₀ × ((1 + r_foreign)/(1 + r_home))ᵗ.*
 
-NPV under the base assumption = **GBP 1.8m** → accept.
+NPV under the base assumption = **GBP 9.3m** → accept.
 
 **Step 2 — Alternative exchange-rate assumption (a sharper devaluation of the Egyptian pound)**
 
 | Year | Forecast spot (EGP/GBP) |
 |------|------|
-| 1 | 65.6505 |
-| 2 | 87.9589 |
-| 3 | 117.8479 |
-| 4 | 157.8932 |
+| 1 | 58.2524 |
+| 2 | 70.6947 |
+| 3 | 85.7945 |
+| 4 | 104.1196 |
+| 5 | 126.3587 |
 
 *Forecast spots derived by purchasing-power parity (relative inflation): Sₜ = S₀ × ((1 + r_foreign)/(1 + r_home))ᵗ.*
 
-NPV under the alternative assumption = **GBP -5.4m** → reject.
+NPV under the alternative assumption = **GBP -1.0m** → reject.
 
 **Step 3 — Sensitivity of the decision**
 
-Moving from the base assumption to a sharper devaluation of the Egyptian pound changes the NPV by **GBP -7.3m** (from GBP 1.8m to GBP -5.4m); the recommendation **FLIPS**: accept under the base assumption, reject under a sharper devaluation of the Egyptian pound. The decision is **not robust** to the exchange-rate assumption.
+Moving from the base assumption to a sharper devaluation of the Egyptian pound changes the NPV by **GBP -10.4m** (from GBP 9.3m to GBP -1.0m); the recommendation **FLIPS**: accept under the base assumption, reject under a sharper devaluation of the Egyptian pound. The decision is **not robust** to the exchange-rate assumption.
 
 **Step 4 — Advice to the board**
 
-The most fragile assumption in this appraisal is whether purchasing-power parity will hold as the governing mechanism for the EGP/GBP path: Egypt's managed-float regime has historically produced discrete, politically-timed step-devaluations rather than the smooth, inflation-differential depreciation that PPP implies, so the base-case forecast exchange rates may materially overstate the sterling value of EGP remittances in each of the four project years. The creditability of the Egyptian withholding tax under the bilateral treaty limits — but does not eliminate — the fiscal drag on remitted cash flows; the board should confirm that treaty benefits remain available for a newly incorporated subsidiary and that repatriation of dividends is not subject to Central Bank approval queues, which have in practice blocked timely remittance for foreign investors during prior foreign-currency shortage episodes. Subscriber revenue durability is a second structural risk: the NTRA's pending licence decision for a third operator could intensify price competition across the three target governorates, meaning the maintainable PBIT figure and the zero-growth assumption in money terms could prove optimistic if average revenue per user declines. The board should require a minimum internal approval threshold — such as a positive GBP NPV under the alternative devaluation scenario — before committing the EGP 980 million outlay, and should also explore whether the capital structure of MerTel Egypt LLC can be weighted towards inter-company debt (subject to thin-capitalisation rules) to reduce reliance on dividend remittances as the primary repatriation route.
+The most fragile assumption in this appraisal is whether purchasing-power parity will track EGP depreciation reliably over five years: Egypt operates a managed float overseen by the Central Bank of Egypt, and the authorities have historically allowed the currency to lag inflation differentials before a discrete, discontinuous devaluation event — precisely the pattern that produced the 2022 shock — so the PPP-derived forecast may materially understate the speed and depth of any correction. The durability of CairoCom's projected PBIT is also contested: the revenue base rests on contracted subscribers and tower-sharing income, but two state-backed incumbents retain pricing power and spectrum advantages that could compress margins beyond year three, making the maintainable-PBIT assumption an optimistic anchor. Egypt's capital-account controls represent a separate, non-market risk: even if the project generates strong EGP cash flows, the Central Bank has previously imposed queuing mechanisms and priority rules on foreign-currency remittances, meaning the timing of sterling receipts could be significantly delayed regardless of the exchange-rate scenario. The board should require (i) an independent assessment of EGP convertibility risk from a specialist EM treasury adviser, (ii) a sensitivity analysis on PBIT under competitive-pressure scenarios, and (iii) confirmation that the bilateral treaty's creditability clause covers the full withholding rate applicable to telecoms-sector remittances before committing to the outlay.
 
-*Reconciliation: base NPV GBP 1.8m, alternative NPV GBP -5.4m, swing GBP -7.3m; decision flips ✓*
+*Reconciliation: base NPV GBP 9.3m, alternative NPV GBP -1.0m, swing GBP -10.4m; decision flips ✓*
 
 ### hint
 
-Your exchange-rate forecasts and NPVs may be technically sound, but the board needs to know whether the decision flips between the two scenarios — and why the PPP-based base-case path may be the less reliable of the two assumptions given Egypt's managed-float history.
+Your exchange-rate work may be sound — now check whether your answer tells the board what to do differently under each scenario and why the swing in NPV means the decision cannot safely rest on the base assumption alone.
 
 ### full_reveal
 
-The classic misconception here is FENCE-SITTING: candidates produce two NPV figures and annotate them "accept" and "reject" respectively, then stop — as if laying two numbers side by side constitutes advice. That is the floor, not the ceiling. The boardroom question is not "what are the two NPVs?" but "is this investment decision robust, and what should the board do about the uncertainty?" — which demands an explicit verdict on whether the swing between scenarios is large enough to change the recommendation and why the more pessimistic exchange-rate path deserves weight alongside the base case. The reason fence-sitting produces the wrong conclusion is structural: a decision-maker reading two numbers without a recommendation cannot act, so the analytical work has failed its commercial purpose regardless of arithmetic accuracy. The correct mental model is scenario-resolution: state which assumption is more fragile (here, whether PPP-driven smooth depreciation is a reliable proxy for a managed-float currency that has historically moved in discrete, politically-timed steps), then translate that fragility into a concrete board instruction — such as a minimum approval threshold or an alternative repatriation structure — so the recommendation survives scrutiny even under the adverse scenario. If your own NPV figures differ from the model's, carry them forward consistently into the flip-or-no-flip verdict and the board advice; where your downstream reasoning is sound, those marks remain in reach — OFR credit is conditional on correct subsequent use of your own figures, not automatic.
+The dominant misconception here is FENCE-SITTING: candidates produce two NPV figures, note that one is positive and one is negative, and then stop — treating the calculation as the destination rather than the departure point. That thinking is wrong because the examiner's credit lies not in the arithmetic but in the synthesis: the board cannot act on a pair of numbers without a reasoned verdict on which scenario is more credible and what the magnitude of the swing implies about decision robustness. The correct mental model is to treat the two scenarios as stress-test bookends — the question is not "which NPV is higher?" but "is the base-case recommendation robust enough to survive the alternative, and if not, what conditions must the board verify before committing?" Here, the scenario provides specific evidence — managed-float history, capital-account controls, contracted revenue assumptions — that should be used to challenge the reliability of the PPP path and the durability of projected profits, rather than left as generic EM-risk labels. If your NPV figures differ from the model's, carry them forward consistently into the sensitivity swing and the flip-or-hold verdict; where your method is correct downstream, those marks remain available, with any error charged once at its source.
 
 ### answer_schema (serialised jsonb)
 
 ```json
 {
   "params": {
-    "base_spot": 49,
+    "base_spot": 48,
     "rate_home": 0.03,
-    "home_outlay": 20,
-    "rate_foreign": 0.14,
-    "discount_rate": 0.12,
-    "alt_rate_foreign": 0.38
+    "home_outlay": 25,
+    "rate_foreign": 0.09,
+    "discount_rate": 0.11,
+    "alt_rate_foreign": 0.25,
+    "add_tax_rate_effective": 0.024999999999999994
   },
   "components": [
     {
@@ -395,9 +443,9 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       },
       "component_id": "fx_1",
       "working_steps": [
-        "S₁ = S₀ × (1+r_f)/(1+r_h) = 49.0000 × 1.10680 = 54.2330"
+        "S₁ = S₀ × (1+r_f)/(1+r_h) = 48.0000 × 1.05825 = 50.7961"
       ],
-      "expected_value": 54.233009708737875
+      "expected_value": 50.79611650485437
     },
     {
       "unit": "EGP/GBP",
@@ -412,9 +460,9 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       ],
       "component_id": "fx_2",
       "working_steps": [
-        "S2 = S1 × 1.10680 = 60.0249"
+        "S2 = S1 × 1.05825 = 53.7551"
       ],
-      "expected_value": 60.02488453200115
+      "expected_value": 53.755113582807056
     },
     {
       "unit": "EGP/GBP",
@@ -429,9 +477,9 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       ],
       "component_id": "fx_3",
       "working_steps": [
-        "S3 = S2 × 1.10680 = 66.4353"
+        "S3 = S2 × 1.05825 = 56.8865"
       ],
-      "expected_value": 66.4353090936712
+      "expected_value": 56.88647942258222
     },
     {
       "unit": "EGP/GBP",
@@ -446,9 +494,26 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       ],
       "component_id": "fx_4",
       "working_steps": [
-        "S4 = S3 × 1.10680 = 73.5303"
+        "S4 = S3 × 1.05825 = 60.2003"
       ],
-      "expected_value": 73.53034210367493
+      "expected_value": 60.20025492292681
+    },
+    {
+      "unit": "EGP/GBP",
+      "label": "Forecast spot, year 5 (EGP/GBP)",
+      "recompute": "parity_step_y5",
+      "tolerance": {
+        "pct": 0.5,
+        "kind": "relative"
+      },
+      "depends_on": [
+        "fx_4"
+      ],
+      "component_id": "fx_5",
+      "working_steps": [
+        "S5 = S4 × 1.05825 = 63.7071"
+      ],
+      "expected_value": 63.7070658893109
     },
     {
       "unit": "GBPm",
@@ -463,13 +528,14 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
         "fx_1",
         "fx_2",
         "fx_3",
-        "fx_4"
+        "fx_4",
+        "fx_5"
       ],
       "component_id": "npv",
       "working_steps": [
-        "= Σ (foreign remittance ÷ forecast spot × DF @ 12.00%) − home outlay 20.0"
+        "= Σ (foreign remittance ÷ forecast spot × DF @ 11.00%) − home outlay 25.0"
       ],
-      "expected_value": 1.8304068460136351
+      "expected_value": 9.317431728937327
     },
     {
       "unit": "EGP/GBP",
@@ -480,9 +546,9 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       },
       "component_id": "alt_fx_1",
       "working_steps": [
-        "S₁ = S₀ × (1+r_f)/(1+r_h) = 49.0000 × 1.33981 = 65.6505"
+        "S₁ = S₀ × (1+r_f)/(1+r_h) = 48.0000 × 1.21359 = 58.2524"
       ],
-      "expected_value": 65.65048543689319
+      "expected_value": 58.252427184466015
     },
     {
       "unit": "EGP/GBP",
@@ -497,9 +563,9 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       ],
       "component_id": "alt_fx_2",
       "working_steps": [
-        "S2 = S1 × 1.33981 = 87.9589"
+        "S2 = S1 × 1.21359 = 70.6947"
       ],
-      "expected_value": 87.95890281836175
+      "expected_value": 70.69469318503157
     },
     {
       "unit": "EGP/GBP",
@@ -514,9 +580,9 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       ],
       "component_id": "alt_fx_3",
       "working_steps": [
-        "S3 = S2 × 1.33981 = 117.8479"
+        "S3 = S2 × 1.21359 = 85.7945"
       ],
-      "expected_value": 117.84785037799921
+      "expected_value": 85.7945305643587
     },
     {
       "unit": "EGP/GBP",
@@ -531,9 +597,26 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
       ],
       "component_id": "alt_fx_4",
       "working_steps": [
-        "S4 = S3 × 1.33981 = 157.8932"
+        "S4 = S3 × 1.21359 = 104.1196"
       ],
-      "expected_value": 157.89323642877565
+      "expected_value": 104.11957592761976
+    },
+    {
+      "unit": "EGP/GBP",
+      "label": "Forecast spot, year 5 (EGP/GBP)",
+      "recompute": "parity_step_y5",
+      "tolerance": {
+        "pct": 0.5,
+        "kind": "relative"
+      },
+      "depends_on": [
+        "alt_fx_4"
+      ],
+      "component_id": "alt_fx_5",
+      "working_steps": [
+        "S5 = S4 × 1.21359 = 126.3587"
+      ],
+      "expected_value": 126.35870865002397
     },
     {
       "unit": "GBPm",
@@ -548,13 +631,14 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
         "alt_fx_1",
         "alt_fx_2",
         "alt_fx_3",
-        "alt_fx_4"
+        "alt_fx_4",
+        "alt_fx_5"
       ],
       "component_id": "alt_npv",
       "working_steps": [
-        "= Σ (foreign remittance ÷ forecast spot × DF @ 12.00%) − home outlay 20.0"
+        "= Σ (foreign remittance ÷ forecast spot × DF @ 11.00%) − home outlay 25.0"
       ],
-      "expected_value": -5.449031429613022
+      "expected_value": -1.0499475747678328
     }
   ]
 }
@@ -562,51 +646,51 @@ The classic misconception here is FENCE-SITTING: candidates produce two NPV figu
 
 ---
 
-## Drill — restricted_remittance (K3, B5b + B5c dual)  ·  `3f24d830-f090-4c3e-98e7-f45af4340fa3`
+## Drill — restricted_remittance (K3, B5b + B5c dual)  ·  `eac98c43-9c45-4659-8042-dc608efb7c94`
 - LO B5b · mode quantitative · command_verb "forecast" · marks_guide 10
-- CODE-COMPUTED: NPV **EUR +11.2m** with the controls vs **EUR +13.3m** free — the restriction costs **EUR −2.1m** (shown as an explicit free − restricted subtraction)
+- CODE-COMPUTED: NPV **EUR +6.8m** with the controls vs **EUR +9.4m** free — restriction costs **EUR −2.6m** (explicit subtraction); additional home tax **NIL** via tax branch **(b) nil-by-WHT-credit** (home 28% exceeds foreign corporate 24% — a 4% residual — covered by the creditable 10% withholding)
 
 ### question
 
-Forecast the annual free cash flows for Lumière Chimie SA's proposed Shenyang speciality-chemicals project in CNY and EUR, incorporating the Chinese capital-control restriction, and determine the project's EUR net present value under both free-remittance and restricted-remittance assumptions.
+Forecast the annual free cash flows of Luminos Chemicals' Tianjin subsidiary in both CNY and EUR, apply purchasing-power-parity exchange rates for each year, account for the host-country capital controls that block a portion of each year's remittance and reinvest those blocked funds locally until project end, apply the applicable withholding and corporate tax treatments under the bilateral treaty, and determine the EUR net present value of the project both with and without the remittance restriction.
 
 ### context_text
 
-Lumière Chimie SA, a Eurozone-based speciality-chemicals group headquartered in Lyon, France, is appraising a greenfield manufacturing project to be operated by its proposed Chinese subsidiary, Shenyang Lumi Chemicals Co. Ltd., in Liaoning Province. The project will produce high-purity solvents for the Chinese industrial market, and although the underlying demand outlook is considered robust, the board is aware that Chinese capital-account regulations have historically restricted the proportion of after-tax profits that foreign-owned subsidiaries may freely remit offshore — a constraint that has tightened unpredictably in periods of renminbi depreciation pressure, raising genuine doubts about whether the blocked fraction stated at appraisal will remain stable across the four-year project life. A further concern is that the PPP-implied depreciation path assumes Chinese consumer-price conditions remain anchored at appraisal-date levels, yet any structural shift in Chinese monetary policy could cause the CNY to move independently of the inflation differential, undermining the parity forecast entirely.
+Luminos Speciality Chemicals SE, a Frankfurt-listed Eurozone parent, is appraising a four-year greenfield speciality-chemicals facility in Tianjin, China, to be operated by its wholly-owned subsidiary Luminos Tianjin Chemical Co. Ltd. China's capital-control regime requires that a material fraction of each year's free cash flow be retained onshore and reinvested locally at prevailing interbank rates before being released in a lump sum at project end — a restriction that the board recognises could persist or even tighten given the geopolitical climate and Beijing's history of adjusting outward-remittance rules without notice. Purchasing-power parity is assumed to hold between the euro and the renminbi over the appraisal period, though in practice CNY is a managed currency and the actual path of EUR/CNY may diverge from the parity forecast, exposing the project to exchange-rate basis risk that PPP cannot capture. A bilateral double-tax treaty between the EU and China makes the Chinese withholding tax creditable against any residual home-country liability; the additional Eurozone corporate tax on the repatriated profit is therefore the differential between the two headline rates, reduced first by the foreign corporate tax credit and then by the withholding-tax credit, with any excess withholding credit available to extinguish the residual differential entirely.
 
 Raw inputs (at the appraisal date):
-- Base spot rate (CNY per EUR 1): 7.80
-- Home (EUR) inflation rate: 2.5%
-- Foreign (CNY) inflation rate: 4.5%
+- Initial outlay: CNY 360 million
+- Maintainable foreign PBIT (base year, money terms): CNY 195 million
+- Depreciation (non-cash add-back): CNY 48 million
+- Capital expenditure (maintenance): CNY 18 million
+- Increase in working capital per year: CNY 12 million
 - Annual growth of foreign cash flows (money terms): 0%
+- Foreign (China) corporate tax rate: 24%
+- Host withholding tax on remittances: 10%
+- Bilateral treaty — withholding tax creditable against home liability: yes
+- Eurozone parent corporate tax rate on foreign taxable profit: 28%
 - Project life: 4 years
-- Initial outlay (CNY millions): 280
-- Foreign PBIT (maintainable, CNY millions): 165
-- Depreciation (CNY millions per year): 35
-- Capital expenditure (CNY millions per year): 10
-- Increase in working capital (CNY millions per year): 5
-- Foreign corporate tax rate: 25%
-- Parent (EUR) tax rate on foreign taxable profit: 28%
-- Host withholding tax rate on remittances: 10%
-- Withholding tax creditable under bilateral treaty: Yes
-- Fraction of annual cash flow blocked from remittance: 30%
-- Local reinvestment rate on blocked funds: 3%
-- Parent's EUR discount rate (money cost of capital): 11%
+- Base spot rate (CNY per EUR, at the appraisal date): 7.80
+- Assumed annual inflation — China: 4.5%
+- Assumed annual inflation — Eurozone: 1.5%
+- Parent's EUR cost of capital: 11%
+- Blocked fraction of each year's CNY free cash flow: 30%
+- Local reinvestment rate on blocked funds (onshore China): 3%
 
 ### model_answer
 
 **International appraisal with a remittance restriction**
 
-**Assumptions:** 30% of each year's CNY cash flow is blocked from remittance and reinvested locally at 3.00%, released in year 4; the free portion is remitted when earned. Forecast spots by PPP parity; home discount rate 11.00%. The foreign corporate tax rate 25.00% is **at or above** the parent's 28.00% home rate, so the credit for foreign corporate tax covers the whole home liability and there is **NO additional home tax** (max(0, 28.00% − 25.00%) = 0); withholding tax at 10.00% on remittances is creditable against the home liability under the bilateral treaty.
+**Assumptions:** 30% of each year's CNY cash flow is blocked from remittance and reinvested locally at 3.00%, released in year 4; the free portion is remitted when earned. Forecast spots by PPP parity; home discount rate 11.00%. The parent's 28.00% home rate **exceeds** the foreign corporate rate 24.00%, a residual differential of 4.00% on taxable profit; but the **creditable** 10.00% withholding covers that residual, so the additional home tax **nets to nil** (max(0, home liability − foreign corporate tax − withholding) = 0).
 
 **Step 1 — Forecast exchange rates (parity)**
 
 | Year | Forecast spot (CNY/EUR) |
 |------|------|
-| 1 | 7.9522 |
-| 2 | 8.1074 |
-| 3 | 8.2656 |
-| 4 | 8.4268 |
+| 1 | 8.0305 |
+| 2 | 8.2679 |
+| 3 | 8.5123 |
+| 4 | 8.7639 |
 
 *Forecast spots derived by purchasing-power parity (relative inflation): Sₜ = S₀ × ((1 + r_foreign)/(1 + r_home))ᵗ.*
 
@@ -614,32 +698,32 @@ Raw inputs (at the appraisal date):
 
 | Year | Foreign cash flow | Free & remitted net (CNY) | Spot | Home cash flow | PV |
 |------|------|------|------|------|------|
-| 1 | CNY 100.6m | CNY 90.6m | 7.9522 | EUR 11.4m | EUR 10.3m |
-| 2 | CNY 100.6m | CNY 90.6m | 8.1074 | EUR 11.2m | EUR 9.1m |
-| 3 | CNY 100.6m | CNY 90.6m | 8.2656 | EUR 11.0m | EUR 8.0m |
-| 4 | CNY 100.6m | CNY 90.6m | 8.4268 | EUR 10.7m | EUR 7.1m |
+| 1 | CNY 116.3m | CNY 104.7m | 8.0305 | EUR 13.0m | EUR 11.7m |
+| 2 | CNY 116.3m | CNY 104.7m | 8.2679 | EUR 12.7m | EUR 10.3m |
+| 3 | CNY 116.3m | CNY 104.7m | 8.5123 | EUR 12.3m | EUR 9.0m |
+| 4 | CNY 116.3m | CNY 104.7m | 8.7639 | EUR 11.9m | EUR 7.9m |
 
 **Step 3 — Blocked funds accumulated and released in year 4**
 
-Blocked cash reinvested locally at 3.00% accumulates to **CNY 180.4m** by year 4; remitted then (net of tax) and converted at 8.4268 = **EUR 19.3m** (PV EUR 12.7m).
+Blocked cash reinvested locally at 3.00% accumulates to **CNY 208.6m** by year 4; remitted then (net of tax) and converted at 8.7639 = **EUR 21.4m** (PV EUR 14.1m).
 
 **Step 4 — NPV and the cost of the restriction**
 
-NPV with the restriction = **EUR 11.2m** (accept). By comparison the restriction **reduces** the NPV: free-remittance NPV EUR 13.3m − restricted NPV EUR 11.2m = a cost of the restriction of **EUR 2.1m**.
+NPV with the restriction = **EUR 6.8m** (accept). By comparison the restriction **reduces** the NPV: free-remittance NPV EUR 9.4m − restricted NPV EUR 6.8m = a cost of the restriction of **EUR 2.6m**.
 
 **Step 5 — Advice to the board**
 
-The most fragile assumption is that the blocked fraction of 30% remains fixed throughout the project life: the scenario explicitly notes that Chinese capital-account restrictions have tightened unpredictably during periods of CNY depreciation pressure, so the board should stress-test the NPV against a materially higher blocked fraction before committing capital. The PPP-based exchange-rate path is equally vulnerable — if the CNY diverges from its inflation-implied trajectory due to a policy shift by the People's Bank of China, the EUR-converted cash flows will differ substantially from the appraisal forecast, and the board should require sensitivity analysis around the parity assumption. On the revenue side, the zero real-growth assumption for CNY cash flows is conservative but not guaranteed to be so: the solvent-demand outlook is described as robust, yet any competitive or regulatory disruption to the Chinese industrial market could erode PBIT below the maintainable level used here, so the board should require independent market validation of the demand forecast. To mitigate the drag from blocked cash, Lumière Chimie should explore structuring intra-group royalty payments and management-service fees payable by Shenyang Lumi Chemicals to the Lyon parent, thereby legally extracting value prior to the remittance-restriction point; alternatively, a parallel loan or back-to-back structure — whereby the parent lends to a Chinese counterpart onshore while a mirroring loan is extended offshore — could effectively repatriate value without triggering the blocked-remittance rule. Any residual blocked balances that cannot be extracted by these mechanisms should be directed into high-quality CNY-denominated financial assets or reinvested in capacity that reduces future capex, since the 3% local reinvestment rate cited at appraisal substantially understates what a well-managed treasury deployment could achieve.
+The most fragile assumption is that purchasing-power parity will hold over the four-year horizon: because the renminbi is a managed currency, the People's Bank of China can maintain EUR/CNY at levels that diverge persistently from the inflation-differential path, meaning the actual EUR receipts could be materially lower than the parity-derived forecast — the board should commission a scenario analysis using a range of managed-rate paths rather than relying solely on PPP. The durability of the CNY 195 million PBIT figure also warrants scrutiny, given that speciality-chemicals margins are sensitive to feedstock pricing and domestic regulatory shifts in China that could compress profitability before the project reaches the end of year four. On the remittance restriction, the board should treat the 30 % blocked fraction as a floor rather than a ceiling, since China's outward-remittance rules can be tightened administratively at short notice; the local reinvestment rate of 3 % that the blocked funds are assumed to earn is well below Luminos's EUR cost of capital, confirming that the restriction destroys value relative to free remittance. To mitigate the impact of blocked cash, the board should consider (i) structuring a portion of the subsidiary's funding as an intercompany loan repayable to the parent, allowing principal and interest to flow out as debt service rather than a dividend remittance subject to the cap; (ii) charging the Tianjin entity arm's-length royalties and management-service fees for the parent's intellectual property and technical support, converting trapped operating surplus into deductible fee income that can be remitted under a different regulatory classification; (iii) exploring a parallel back-to-back loan structure with a Chinese counterparty, whereby Luminos SE deposits funds with a third-party bank that simultaneously lends an equivalent amount to the subsidiary, with repayment effectively netting across borders; and (iv) directing the locally reinvested blocked cash into productive capex that reduces future maintenance spend or grows the subsidiary's asset base, preserving value even if cash cannot leave China promptly.
 
-*Reconciliation: free-flow PVs + released-funds PV − home outlay EUR 35.9m = NPV EUR 11.2m; vs free-remittance NPV EUR 13.3m ✓*
+*Reconciliation: free-flow PVs + released-funds PV − home outlay EUR 46.2m = NPV EUR 6.8m; vs free-remittance NPV EUR 9.4m ✓*
 
 ### hint
 
-Before you convert anything to EUR, check whether you have applied the capital-control split correctly: the blocked 30% is not lost — it earns a local reinvestment return and is released in year 4, so your free-remittance and restricted-remittance NPVs should differ by the present-value drag of that delay, and if they do not, the most likely culprit is that you have either omitted the accumulated blocked-fund release or forgotten to strip withholding tax from the remitted flows before discounting.
+Before you can convert or discount anything, check whether your blocked-funds mechanic is correctly separating each year's free portion from the reinvested portion and accumulating the blocked tranches at the local reinvestment rate through to year 4 — that sequencing error, if present, will cascade into every EUR cash flow and both NPV figures.
 
 ### full_reveal
 
-The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through the exchange-rate parity table and the CNY cash flows, then treat the NPV number as the finish line — never telling the board what the restriction actually costs the business or whether the project should proceed on those terms. That thinking is wrong because the NPV differential between the two remittance scenarios is itself a decision-relevant figure: it quantifies the monetary drag imposed by capital-account policy, which is precisely what a board needs to weigh before committing an irreversible capital outlay. The correct mental model is that a quantitative international-appraisal drill has two outputs, not one — the NPV and the structured advice that follows from it, including the scepticism drill on the assumptions most likely to move the number (the blocked fraction, the PPP path, and the local reinvestment rate). Where your exchange-rate forecast or blocked-fund accumulation figure is wrong, carry your own number forward consistently into both NPV calculations: provided the method is correct downstream, those marks are recoverable — OFR credit is conditional on correct subsequent use of your own figure, not granted automatically. Finally, on tax: the question of whether additional home-country tax arises is determined by comparing the foreign effective rate against the home rate, and collapsing that comparison into a single step — rather than addressing withholding-tax creditability separately — is the second most common place marks are dropped in this type of drill.
+The most common misconception in international project appraisals with remittance restrictions is ABANDONED-AFTER-CALC: candidates correctly compute the free-remittance NPV, then either omit the blocked-funds accumulation altogether or treat the restriction as a simple haircut on each year's cash flow rather than a reinvestment-and-release mechanism — meaning the year-4 terminal inflow from accumulated blocked funds never appears, and the "cost of the restriction" comparison is never made. This matters because the restriction does not destroy the blocked cash permanently; it defers and revalues it, and the difference between what that cash earns locally and what it would have earned at the parent's discount rate is precisely where the value destruction is measured. A second structural error is VALUATION-PLUMBING of a different kind: candidates sometimes apply the home corporate tax rate in full on remitted dividends without working through the bilateral treaty logic — because foreign corporate tax and creditable withholding must be netted against the home liability before any residual is charged, failing to do so overstates the tax drag on remittances in a way the scenario's treaty terms do not support. On own-figure rule: if your PPP spots or your accumulated blocked-funds figure is wrong, carry it forward consistently through the conversion and discounting steps — where your downstream method is correct, those marks remain available and the error is charged once at its source, not repeatedly. The board question the model answer is really asking is whether the restriction is a dealbreaker or a manageable drag, and what financing structures might reclassify trapped cash as debt service or fee income — that advisory layer is where the calculation earns its keep.
 
 ### answer_schema (serialised jsonb)
 
@@ -647,13 +731,13 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
 {
   "params": {
     "base_spot": 7.8,
-    "rate_home": 0.025,
-    "home_outlay": 35.8974358974359,
+    "rate_home": 0.015,
+    "home_outlay": 46.15384615384615,
     "rate_foreign": 0.045,
     "discount_rate": 0.11,
     "blocked_fraction": 0.3,
     "local_reinvest_rate": 0.03,
-    "add_tax_rate_effective": 0.030000000000000027
+    "add_tax_rate_effective": 0.040000000000000036
   },
   "components": [
     {
@@ -665,9 +749,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       },
       "component_id": "fx_1",
       "working_steps": [
-        "S₁ = S₀ × (1+r_f)/(1+r_h) = 7.8000 × 1.01951 = 7.9522"
+        "S₁ = S₀ × (1+r_f)/(1+r_h) = 7.8000 × 1.02956 = 8.0305"
       ],
-      "expected_value": 7.9521951219512195
+      "expected_value": 8.030541871921182
     },
     {
       "unit": "CNY/EUR",
@@ -682,9 +766,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "fx_2",
       "working_steps": [
-        "S2 = S1 × 1.01951 = 8.1074"
+        "S2 = S1 × 1.02956 = 8.2679"
       ],
-      "expected_value": 8.10735990481856
+      "expected_value": 8.267897789317866
     },
     {
       "unit": "CNY/EUR",
@@ -699,9 +783,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "fx_3",
       "working_steps": [
-        "S3 = S2 × 1.01951 = 8.2656"
+        "S3 = S2 × 1.02956 = 8.5123"
       ],
-      "expected_value": 8.265552293205264
+      "expected_value": 8.512269152548937
     },
     {
       "unit": "CNY/EUR",
@@ -716,9 +800,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "fx_4",
       "working_steps": [
-        "S4 = S3 × 1.01951 = 8.4268"
+        "S4 = S3 × 1.02956 = 8.7639"
       ],
-      "expected_value": 8.426831362340977
+      "expected_value": 8.76386331469324
     },
     {
       "unit": "EURm",
@@ -734,9 +818,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "home_cf_1",
       "working_steps": [
-        "= free remittance 90.6 (net of WHT + differential home tax) ÷ spot 7.9522"
+        "= free remittance 104.7 (net of WHT (differential home tax nil)) ÷ spot 8.0305"
       ],
-      "expected_value": 11.388364924549135
+      "expected_value": 13.038472580051527
     },
     {
       "unit": "EURm",
@@ -752,9 +836,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "home_cf_2",
       "working_steps": [
-        "= free remittance 90.6 (net of WHT + differential home tax) ÷ spot 8.1074"
+        "= free remittance 104.7 (net of WHT (differential home tax nil)) ÷ spot 8.2679"
       ],
-      "expected_value": 11.17040578723719
+      "expected_value": 12.664162362442394
     },
     {
       "unit": "EURm",
@@ -770,9 +854,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "home_cf_3",
       "working_steps": [
-        "= free remittance 90.6 (net of WHT + differential home tax) ÷ spot 8.2656"
+        "= free remittance 104.7 (net of WHT (differential home tax nil)) ÷ spot 8.5123"
       ],
-      "expected_value": 10.956618116668057
+      "expected_value": 12.300597892707204
     },
     {
       "unit": "EURm",
@@ -788,9 +872,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "home_cf_4",
       "working_steps": [
-        "= free remittance 90.6 (net of WHT + differential home tax) ÷ spot 8.4268"
+        "= free remittance 104.7 (net of WHT (differential home tax nil)) ÷ spot 8.7639"
       ],
-      "expected_value": 10.746922076157663
+      "expected_value": 11.947470680476377
     },
     {
       "unit": "CNYm",
@@ -804,7 +888,7 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       "working_steps": [
         "Σ blocked cash × (1 + local rate)^(4 − t) accumulated to year 4"
       ],
-      "expected_value": 180.41891437499999
+      "expected_value": 208.59564221999995
     },
     {
       "unit": "EURm",
@@ -821,9 +905,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "home_cf_release",
       "working_steps": [
-        "= (released 180.4 − WHT − deferred differential tax) ÷ spot 8.4268"
+        "= (released 208.6 − WHT − deferred differential tax) ÷ spot 8.7639"
       ],
-      "expected_value": 19.269048584875396
+      "expected_value": 21.421611823092572
     },
     {
       "unit": "EURm",
@@ -843,9 +927,9 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
       ],
       "component_id": "npv",
       "working_steps": [
-        "= Σ (free home cash flow × DF) + released home cash × DF @ year 4 − home outlay 35.9"
+        "= Σ (free home cash flow × DF) + released home cash × DF @ year 4 − home outlay 46.2"
       ],
-      "expected_value": 11.212338576803138
+      "expected_value": 6.846383199394226
     }
   ]
 }
@@ -853,89 +937,89 @@ The classic misconception here is ABANDONED-AFTER-CALC: candidates grind through
 
 ---
 
-## Drill — multinational_dividend_capacity (K4, A6a — DIRECT-LINK-ONLY)  ·  `39a0fbd6-100a-41ab-877e-af00f3108697`
+## Drill — multinational_dividend_capacity (K4, A6a — DIRECT-LINK-ONLY)  ·  `2b0513a0-7734-4e62-ae1b-54e54d983152`
 - LO A6a · mode quantitative · command_verb "determine" · marks_guide 15
-- CODE-COMPUTED: group capacity **USD 45.2m** vs proposed **USD 55.0m** → **NOT sustainable** (a shortfall of 9.8m; subsidiary remits in year 2 and contributes ~16%)
+- CODE-COMPUTED: group capacity **AUD 33.6m** vs proposed **AUD 38.0m** → **NOT sustainable** (subsidiary ~35% of capacity, remitted in year 2); additional home tax **CHARGED** via tax branch **(c)** (Australian home 30% exceeds Malaysian corporate 24% by 6%; Malaysia levies 0% dividend withholding, so the 6% differential is charged)
 
 ### question
 
-Determine the group dividend capacity of Crestline Electronics Inc and assess whether its proposed dividend is sustainable, given the year-2 remittance from its Vietnamese subsidiary, VinaCircuit Manufacturing Co., the applicable credit-method double taxation, and the parent's own free cash flow to equity.
+Determine the group dividend capacity of Verdant Agri Holdings Ltd and assess whether its proposed total dividend of AUD 38 million is sustainable, given the remittance from its Malaysian palm-oil-processing subsidiary, Kijang Oils Sdn Bhd, is to be made in year 2.
 
 ### context_text
 
-Crestline Electronics Inc is a US-domiciled electronics group whose principal offshore manufacturing operation, VinaCircuit Manufacturing Co., is incorporated in Vietnam and produces printed circuit board assemblies for export. The board is evaluating whether the group's proposed dividend can be met from sustainable cash flows: Vietnam's exchange-control environment has periodically restricted profit repatriations, and the board should treat any assumed remittance timing as contingent on regulatory approval — a material political risk given the subsidiary's size relative to group earnings. The assumed PPP-based forecast of the VND/USD rate rests on inflation-differential parity, yet Vietnam's inflation has historically been more volatile than the assumed rate, meaning the converted remittance in year 2 could differ materially if parity does not hold.
+Verdant Agri Holdings Ltd (Verdant), an Australian agribusiness group listed on the ASX, owns Kijang Oils Sdn Bhd (Kijang Oils), a palm-oil-processing subsidiary incorporated in Malaysia. Verdant is evaluating its group dividend capacity for the forthcoming distribution cycle; the Kijang Oils remittance is scheduled in year 2, and although Malaysia's single-tier tax system imposes no withholding tax on outbound dividends paid to a foreign corporate parent, the Australian parent's headline corporate tax rate of 30% meaningfully exceeds the Malaysian corporate rate of 24%, giving rise to a charged differential of approximately six percentage points on taxable profit remitted — the board should note that the durability of this favourable gap depends on future Malaysian or Australian fiscal policy, neither of which can be treated as fixed. The MYR/AUD spot rate at the appraisal date is 2.90 MYR per AUD, and whilst purchasing-power parity is assumed to forecast the year-2 exchange rate from the stated inflation differential, the board should be alert to the risk that MYR may not follow PPP precisely given Malaysia's managed-float regime and commodity-export sensitivity, meaning the converted AUD remittance could differ from the parity-derived figure; equally, Kijang Oils' cash flows rest on palm-oil processing margins that can be compressed by feedstock-price volatility and environmental-certification pressures, so the maintainable PBIT figure assumed here warrants stress-testing before the board commits to a recurring dividend level.
 
-Raw inputs (appraisal date):
-- Base spot rate (VND per USD) at appraisal date: 25,000
-- US (home) inflation rate (assumed): 2.5%
-- Vietnam (foreign) inflation rate (assumed): 6.0%
-- Subsidiary PBIT: VND 520,000 million
-- Vietnamese corporate tax rate: 20%
-- Depreciation (non-cash add-back): VND 85,000 million
-- Capital expenditure: VND 110,000 million
-- Increase in working capital: VND 30,000 million
-- Subsidiary pre-tax cost of debt: 7.5%
-- Subsidiary market value of debt: VND 400,000 million
-- Subsidiary net new borrowing in year 2: VND 0 million
-- Fraction of subsidiary FCFE remitted in year 2: 60%
-- Annual growth of foreign cash flows (money terms): 0%
-- Remittance made in year 2
-- Host withholding tax on remittances: 5%
-- US parent tax rate on foreign taxable profit: 21%
-- Bilateral treaty makes withholding tax creditable: Yes
-- Parent's own FCFE (USD million): 38
-- Proposed group total dividend (USD million): 55
+Raw inputs at the appraisal date:
+• Base spot rate (MYR per AUD): 2.90
+• Australian (home) inflation rate (assumed): 3.0%
+• Malaysian (foreign) inflation rate (assumed): 5.5%
+• Kijang Oils — maintainable PBIT (MYR m): 95.0
+• Malaysian corporate tax rate: 24%
+• Kijang Oils — depreciation / non-cash add-back (MYR m): 18.0
+• Kijang Oils — capital expenditure (MYR m): 22.0
+• Kijang Oils — increase in working capital (MYR m): 6.0
+• Kijang Oils — market value of debt (MYR m): 120.0
+• Kijang Oils — pre-tax cost of debt: 6.5%
+• Kijang Oils — net new borrowing in year 2 (MYR m): 0
+• Fraction of Kijang Oils FCFE remitted in year 2: 70%
+• Host withholding tax on outbound dividends: 0%
+• Australian parent corporate tax rate on foreign taxable profit: 30%
+• Bilateral treaty: withholding tax is creditable against Australian liability
+• Verdant parent own free cash flow to equity (AUD m): 22.0
+• Verdant proposed total group dividend (AUD m): 38.0
+• Remittance year: 2
+• Annual growth of foreign cash flows (money terms): 0%
 
 ### model_answer
 
 **Multinational dividend capacity and policy**
 
-**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. 60% of the subsidiary's FCFE is remitted in year 2 at the PPP forecast spot of 26736.4664 VND/USD. The foreign corporate tax rate 20.00% is **at or above** the parent's 21.00% home rate, so the credit for foreign corporate tax covers the whole home liability and there is **NO additional home tax** (max(0, 21.00% − 20.00%) = 0); withholding tax at 5.00% on remittances is creditable against the home liability under the bilateral treaty.
+**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. 70% of the subsidiary's FCFE is remitted in year 2 at the PPP forecast spot of 3.0425 MYR/AUD. The parent's 30.00% home rate **exceeds** the foreign corporate rate 24.00% by 6.00%, so an additional home tax is **charged** on the foreign taxable profit — max(0, home 30.00% − foreign corporate 24.00% − creditable withholding 0.00%), shown per year.
 
 **Step 1 — Subsidiary free cash flow to equity (foreign)**
 
-Subsidiary FCFE = FCFF − after-tax interest + net new borrowing = **VND 337000.0m**.
+Subsidiary FCFE = FCFF − after-tax interest + net new borrowing = **MYR 56.3m**.
 
 **Step 2 — Remittance to the parent (net of withholding + differential home tax, converted to home)**
 
-Remitted (foreign) = VND 337000.0m × 60% = VND 202200.0m; less withholding VND 10110.0m (no additional home tax — foreign corporate rate ≥ home rate) = VND 192090.0m; ÷ 26736.4664 = **USD 7.2m**.
+Remitted (foreign) = MYR 56.3m × 70% = MYR 39.4m; less withholding MYR 0.0m and differential home tax MYR 4.0m = MYR 35.4m; ÷ 3.0425 = **AUD 11.6m**.
 
 **Step 3 — Group dividend capacity**
 
-Group capacity = parent FCFE USD 38.0m + remitted subsidiary FCFE USD 7.2m = **USD 45.2m**.
+Group capacity = parent FCFE AUD 22.0m + remitted subsidiary FCFE AUD 11.6m = **AUD 33.6m**.
 
 **Step 4 — Sustainability of the proposed dividend**
 
-Against the proposed group dividend of USD 55.0m, the capacity **falls short** of the proposed dividend by USD 9.8m, so the proposed dividend is **not covered** and would have to draw on reserves or new finance — a red flag on sustainability.
+Against the proposed group dividend of AUD 38.0m, the capacity **falls short** of the proposed dividend by AUD 4.4m, so the proposed dividend is **not covered** and would have to draw on reserves or new finance — a red flag on sustainability.
 
 **Step 5 — Advice to the board**
 
-The most fragile assumption in this analysis is whether PPP-based parity will hold for the VND over the two-year horizon: Vietnam's inflation has historically been subject to sudden policy-driven spikes, and a sharper-than-assumed depreciation of the VND would reduce the USD value of VinaCircuit's remittance materially, eroding the group's dividend capacity. Equally challenging is the timing and regulatory certainty of the remittance itself — Vietnam's State Bank has previously invoked exchange-control powers to defer or cap profit repatriations, and the board should require written confirmation from Vietnamese legal counsel that no such restriction is in force before committing to the proposed dividend. The durability of VinaCircuit's operating profit rests on sustained export orders for printed circuit board assemblies, a demand base that is sensitive to global electronics-cycle downturns, and the board should stress-test the PBIT against a demand-contraction scenario. On the tax side, the creditability of the withholding tax under the bilateral treaty reduces the double-tax burden, but the board should confirm the treaty's current operative status and that VinaCircuit's profit classification qualifies for credit treatment. Finally, the board should consider whether consistently paying out close to the full group capacity leaves insufficient retained liquidity to fund VinaCircuit's capital expenditure programme without recourse to additional external borrowing.
+The most fragile assumption in this analysis is whether purchasing-power parity will govern the MYR/AUD exchange rate by year 2: Malaysia operates a managed float influenced by commodity revenues and Bank Negara intervention, so the actual rate at the time of remittance could diverge materially from the parity-derived forecast, directly altering the AUD value of Kijang Oils' contribution to group capacity. The board should also scrutinise the maintainability of Kijang Oils' stated PBIT, since palm-oil processing margins are exposed to feedstock-price volatility and the tightening of sustainability-certification requirements, either of which could erode the MYR cash flows underpinning the remittance. On the fiscal side, the six-percentage-point differential between Australia's 30% corporate rate and Malaysia's 24% rate is assumed stable, but any reduction in the Australian corporate rate — or an increase in the Malaysian rate — would alter the additional home tax charged and change the net AUD receipts; the board should confirm with its tax advisers whether the bilateral treaty's creditability provisions will apply in full to this structure. Finally, the decision to remit only 70% of Kijang Oils' free cash flow to equity reflects a reinvestment discipline that the board should formally link to a documented capital-expenditure plan for the subsidiary; retaining the blocked balance locally without a clear deployment strategy creates an opportunity cost that should be reported to shareholders alongside the dividend decision.
 
-*Reconciliation: parent USD 38.0m + remitted USD 7.2m = capacity USD 45.2m; capacity − proposed USD 55.0m = a shortfall of USD 9.8m ✓*
+*Reconciliation: parent AUD 22.0m + remitted AUD 11.6m = capacity AUD 33.6m; capacity − proposed AUD 38.0m = a shortfall of AUD 4.4m ✓*
 
 ### hint
 
-Before you can compare capacity to the proposed dividend, check whether you have applied the credit method correctly — specifically, whether the relationship between the foreign corporate tax rate and the parent's home rate means any additional home tax is actually owed on the grossed-up remittance, or whether the withholding tax alone is what remains to reduce the cash received.
+Before you can assess sustainability, check whether you have correctly sequenced the three tax layers — subsidiary FCFE, withholding tax on remittance, and the differential home tax on foreign taxable profit — and then converted only the net cash actually received by the parent at the PPP-derived year-2 spot rate.
 
 ### full_reveal
 
-The misconception this drill exposes is ABANDONED-AFTER-CALC: candidates often work through the remittance arithmetic and then stop, leaving the sustainability verdict — and the board-level advice — unwritten, surrendering the linked marks that the question is actually rewarding. The deeper technical trap is treating the credit method as a simple withholding-tax deduction, without first checking whether the foreign corporate rate already extinguishes the home liability; failing to run that comparison means the cash remittance figure is wrong before you ever reach the capacity total, and every downstream number inherits that error at its source — so if your remittance figure is wrong, carry it forward consistently, because where your subsequent method holds, those marks still score, but OFR credit is conditional on correct use, not automatic. At the boardroom bar, a calculated capacity figure is the floor, not the ceiling: the board needs to know whether the proposed dividend is covered, what the shortfall or surplus implies for reserves or new finance, and which assumptions — PPP parity, remittance regulatory freedom, treaty status — are fragile enough to warrant stress-testing before the dividend is committed. The correct mental model is: credit method → resolve the grossing-up and offset sequence first; then build group capacity as parent FCFE plus net remittance; then deliver a recommendation with the assumption challenges that a senior adviser would insist the board confront.
+The most common misconception here is ABANDONED-AFTER-CALC: candidates grind through the subsidiary's FCFF-to-FCFE bridge and the currency conversion, then stop — leaving the board with a number but no verdict on whether the proposed dividend is sustainable. That omission is costly because the sustainability assessment and the board-level advice are precisely where the higher-level marks sit. The causal error is treating the calculation as the deliverable: in reality, the arithmetic is only the evidence base — the board needs to know whether the shortfall (or surplus) requires a cut to the proposed dividend, a draw on reserves, or a reconsideration of the remittance ratio, and it needs to understand which assumption in the model is most likely to move that conclusion. If your FCFE figure differs from the model's, carry it forward consistently through the remittance, conversion, and capacity steps — where your downstream method is sound, those marks remain available, and the error is charged once at its source. At the boardroom bar, the question is never "what is the number?" — it is "given this number and its fragility, what should the board do about the dividend?"
 
 ### answer_schema (serialised jsonb)
 
 ```json
 {
   "params": {
-    "parent_fcfe": 38,
-    "forecast_spot": 26736.46638905415,
-    "remit_fraction": 0.6,
-    "proposed_dividend": 55,
-    "add_tax_rate_effective": 0.009999999999999981
+    "parent_fcfe": 22,
+    "forecast_spot": 3.042485154114431,
+    "remit_fraction": 0.7,
+    "proposed_dividend": 38,
+    "add_tax_rate_effective": 0.06
   },
   "components": [
     {
-      "unit": "VNDm",
+      "unit": "MYRm",
       "label": "Subsidiary free cash flow to equity (foreign)",
       "tolerance": {
         "pct": 0.5,
@@ -946,10 +1030,10 @@ The misconception this drill exposes is ABANDONED-AFTER-CALC: candidates often w
       "working_steps": [
         "FCFE = FCFF − Kd·D(1−t) + net new borrowing (subsidiary, foreign)"
       ],
-      "expected_value": 337000
+      "expected_value": 56.272000000000006
     },
     {
-      "unit": "USDm",
+      "unit": "AUDm",
       "label": "Subsidiary remittance received by the parent (home, net of WHT + differential home tax)",
       "recompute": "sub_remit_convert",
       "tolerance": {
@@ -962,12 +1046,12 @@ The misconception this drill exposes is ABANDONED-AFTER-CALC: candidates often w
       ],
       "component_id": "sub_remit_home",
       "working_steps": [
-        "= (FCFE 337000.0 × remitted 60% − WHT − differential home tax) ÷ spot 26736.4664"
+        "= (FCFE 56.3 × remitted 70% − WHT − differential home tax) ÷ spot 3.0425"
       ],
-      "expected_value": 7.18456946422214
+      "expected_value": 11.635356692579789
     },
     {
-      "unit": "USDm",
+      "unit": "AUDm",
       "label": "Parent free cash flow to equity (home currency)",
       "tolerance": {
         "pct": 0.5,
@@ -978,10 +1062,10 @@ The misconception this drill exposes is ABANDONED-AFTER-CALC: candidates often w
       "working_steps": [
         "the parent's own dividend capacity (home currency)"
       ],
-      "expected_value": 38
+      "expected_value": 22
     },
     {
-      "unit": "USDm",
+      "unit": "AUDm",
       "label": "Group dividend capacity (home currency)",
       "recompute": "capacity_add_parent",
       "tolerance": {
@@ -995,12 +1079,12 @@ The misconception this drill exposes is ABANDONED-AFTER-CALC: candidates often w
       ],
       "component_id": "total_capacity",
       "working_steps": [
-        "= parent FCFE 38.0 + remitted subsidiary FCFE"
+        "= parent FCFE 22.0 + remitted subsidiary FCFE"
       ],
-      "expected_value": 45.184569464222136
+      "expected_value": 33.63535669257979
     },
     {
-      "unit": "USDm",
+      "unit": "AUDm",
       "label": "Capacity surplus over the proposed dividend (signed)",
       "recompute": "capacity_minus_proposed",
       "tolerance": {
@@ -1013,9 +1097,9 @@ The misconception this drill exposes is ABANDONED-AFTER-CALC: candidates often w
       ],
       "component_id": "capacity_surplus",
       "working_steps": [
-        "= dividend capacity − proposed dividend 55.0"
+        "= dividend capacity − proposed dividend 38.0"
       ],
-      "expected_value": -9.815430535777864
+      "expected_value": -4.364643307420209
     }
   ]
 }

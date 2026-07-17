@@ -158,6 +158,19 @@ extracted so there is a single build/discount implementation. Grant-ruled Step-0
   case (foreign corporate ≥ home) is taught explicitly, not a silent zero. Evidence: Rule 22 quote (ACCA
   AFM technical article "International project appraisal (part 2)") in `international.ts`. Exemption method
   journalled as a future kind. GATE 14 validates this rule.
+  - **THREE tax branches (Fix Round 2, 2026-07-17)** — the nil case has TWO causes and must be told apart
+    with the TRUE inequality direction (the FR1 template printed a false "foreign ≥ home" + false max()
+    for every nil): **(a) nil-by-corporate-credit** (foreign corporate ≥ home; the WHT is then a net cost,
+    no residual liability to relieve) · **(b) nil-by-WHT-credit** (home > foreign corporate — a positive
+    residual — but the creditable WHT covers it → nets to nil) · **(c) charged** (residual survives, shown
+    per year). `taxBranch()` selects; **GATE 14b (`checkTaxProse`)** guards the code-generated prose vs the
+    params — the stated branch must match `add_tax_rate_effective` + the true ordering, with no false
+    inequality or false max(). A batch should aim to demonstrate all three (batch #10: K1=a, K2/K3=b, K4=c).
+  - **⚠ Floor tolerance × seeded-OFR (surfaced):** the 0.2 absolute floor can swallow the GATE-3
+    perturbation for a graded MONEY dependent under ~1.3 (display m) → it verdicts 'correct' not 'carried'
+    → GATE 3 fails. Size drills so graded dependents are material (moderate-denomination currencies), OR
+    weigh the floor value in the platform-wide floor-tolerance sweep. (Hit by an AUD/Vietnam K4 draft; fixed
+    by re-pairing to AUD/Malaysia.)
 - **Remittance blocking (K3):** blocked funds reinvested at a STATED local rate (never derived),
   released + converted at the terminal-year forecast spot; code owns the NPV and the cost-of-blocking
   delta vs free remittance. B5c (strategies for restricted remittance) rides as discursive dual
