@@ -1,7 +1,7 @@
 # AFM COVERAGE CONTRACT — definitive product-readiness definition
 **Created 12/07/2026, from the ACCA AFM Syllabus & Study Guide Sep 2026–Jun 2027 (no syllabus changes this cycle). This doc defines what "viable" and "exam-ready" mean for the AFM product, by exact LO coverage. Update status columns as batches ship; do not change tier definitions without a logged decision. Mirrored from the project master 18/07/2026 — keep both in sync at batch close.**
 
-**STATUS 18/07/2026: 37 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 10 calculators shipped · delivery layer complete and in production · batch #10 (international) closed incl. student walk · calculator #3 (risk & uncertainty) BUILT + 4 candidates generated → AT THE REVIEW GATE (conventions fetched + page-verified S1–S7; awaiting co-founder recompute → blind GPT → flip = the LAST calculator of the B-section-live tier), then B narrative cluster (~5 prose drills — first narrative-marking build).**
+**STATUS 18/07/2026: 41 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 11 calculators total, ALL 10 B-SECTION-TIER CALCULATORS (calcs #1–#10) COMPLETE · delivery layer complete and in production · calculator #3 (risk & uncertainty) FLIPPED LIVE 18/07 (batch #3 CLOSED pending student walk). The B-section-live tier's ONLY remaining item is the 5-drill B-narrative cluster (the first narrative-marking build).**
 
 ## Exam facts (source: syllabus §7)
 - 3h15 CBE. Section A: one 50-mark case (40 technical + 10 professional skills), spans ≥2 syllabus sections. Section B: two 25-mark scenario questions (20 + 5 PS each), never wholly narrative.
@@ -15,7 +15,7 @@
 |---|---|---|---|
 | 1 | NPV (inflation, tax-allowable depn, tax lag, scrap) | B1a(i,ii) | **LIVE 13/07** — 4 drills published |
 | 2 | IRR / MIRR | B1c | **LIVE 13/07** — 4 drills published |
-| 3 | Risk & uncertainty (expected NPV, sensitivity margins, RADR compare, project duration + VaR) | B1a(iv,v,vi), B1b(ii) | **AT REVIEW GATE 18/07** — 4 candidates generated (enpv/sensitivity/radr-flip/duration+VaR); conventions FETCHED + page-verified (S1–S7, docs/evidence/AFM_RISK_EVIDENCE.md); G-a…G-e gates; composes npv.ts+capm.ts one-way. Awaiting co-founder recompute → blind GPT round → flip (last calculator of the B-section-live tier) |
+| 3 | Risk & uncertainty (expected NPV, sensitivity margins, RADR compare, project duration + VaR) | B1a(iv,v,vi), B1b(ii) | **LIVE 18/07** — 4 drills published (enpv/sensitivity/radr-flip/duration+VaR); conventions page-verified (S1–S7, docs/evidence/AFM_RISK_EVIDENCE.md); G-a…G-e gates; composes npv.ts+capm.ts one-way. Co-founder recompute (FR1 outlay distractor) + blind GPT round 1 (FR2, 4 accepts) + FR3 (residual relabel, sweep-all-fields); reconcile-before-flip clean. Last of the 10 B-section calculators |
 | 4 | APV (financing side-effects, issue costs, tax shield) | B3j, B3k | **LIVE 13/07** — 4 drills published (2 hostile rounds; P6 loss-relief gate + issue-cost convention born here) |
 | 5 | Cost of capital (CAPM, asset-beta ungear/regear, project-specific WACC) | B3d, B3e | **LIVE 13/07** — 4 drills published (APV/CAPM boundary closed: APV states Keu, CAPM derives it) |
 | 6 | Duration (Macaulay + modified) | B3f (B3g narrative rider) | **LIVE 14/07** — 4 drills (distinct-factor OFR gate + issuer-perspective doctrine born here) |
@@ -30,7 +30,7 @@
 | 15 | Business reorganisation & reconstruction schedules (scheme design, capital-market response, unbundling numbers, MBO) | D1a, D1b, D2a, D2b, D2c | — (exam-ready tier) |
 | 16 | Ratio/trend performance assessment (light) | A2a | — (candidate for merge into 9 or narrative) |
 
-Quant total: 16 families × 4 kinds = **~64 drills** (allow 60–64 if 16 merges). **Shipped: 37/64** (incl. the A6a rider; B5 browse-count = K1–K3 only per the hard rule).
+Quant total: 16 families × 4 kinds = **~64 drills** (allow 60–64 if 16 merges). **Shipped: 41/64** (incl. the A6a rider; B5 browse-count = K1–K3 only per the hard rule).
 
 Parked candidates (not in any batch): 47c9d5ce (A3a ESG) — queued for its own mixed-family review pass. (d0727187 deleted 16/07 at flip — constraint fallback, journalled.)
 
@@ -69,7 +69,7 @@ Parked candidates (not in any batch): 47c9d5ce (A3a ESG) — queued for its own 
 | **VIABLE PAID LAUNCH** | B+E complete: calcs 1–12 + 8 narrative + 1 mock | ~56 drills + 1 mock | "Covers the sections guaranteed on every AFM exam" |
 | **EXAM-READY** | Full A–E: 16 calcs + 22 narrative + 3 mocks | ~86 drills + 3 mocks | "Scratch to exam-ready for the AFM written paper" |
 
-**Progress against tiers (18/07): 10 of 10 calculators toward B-section-live — remaining for the tier: calculator #3 + the 5 B narrative drills. 10 of 12 calculators toward viable paid launch. Measured pace holds at ~1 calculator batch per session, even through batch #10's 4 fix rounds.**
+**Progress against tiers (18/07): ALL 10 B-section-tier calculators (calcs #1–#10) LIVE — the tier's ONLY remaining item is the 5-drill B-narrative cluster (the first narrative-marking build). 10 of 12 calculators toward viable paid launch (E-section hedging #11/#12 remain). Measured pace holds at ~1 calculator batch per session.**
 
 ## Standing rules
 - No "exam-ready" or full-coverage claim before the EXAM-READY tier is shipped and verified (GRADD_SELLING_BIBLE — do not sell what isn't built).
