@@ -156,6 +156,20 @@ ok('K4 OFR: wrong sub FCFE → remit/total/surplus carried',
   k4ofr.per_component.find((v) => v.component_id === 'sub_remit_home')?.verdict === 'carried' &&
   k4ofr.per_component.find((v) => v.component_id === 'capacity_surplus')?.verdict === 'carried');
 
+// ── K4b — nil-WHT-credit dividend branch: the Step-2 parenthetical must be branch-accurate (Fix Round 3
+// close-out). The VND case above IS the (b) nil case (home 25% > foreign corp 20%, creditable WHT covers
+// the 5% residual). The nil note must name the WHT-credit cause, never a false "foreign ≥ home"; and GATE
+// 14b (checkTaxProse) must catch that false inequality in the answer BODY, not only the assumption line. ──
+const k4bAddRate = Math.max(0, 0.25 - 0.20);
+ok('K4b branch is (b) nil-by-WHT-credit (home 25% > foreign 20%, WHT covers)',
+  taxBranch(0.20, 0.25, k4bAddRate, c4.has_additional_home_tax) === 'nil_wht_credit' && !c4.has_additional_home_tax);
+ok('K4b Step-2 nil note names the WHT-credit cause, not a false "foreign ≥ home"',
+  a4.includes('covered by the creditable withholding') && !/foreign corporate rate\b[^\n]{0,60}?(≥|at or above)[^\n]{0,25}?home rate/i.test(a4));
+ok('K4b GATE14b (checkTaxProse) PASSES on the branch-accurate nil body',
+  checkTaxProse(0.20, 0.25, k4bAddRate, c4.has_additional_home_tax, a4).ok);
+ok('GATE14b FAILS a false "foreign ≥ home" hidden in a STEP/nil note (body-level, not just the assumption line)',
+  !checkTaxProse(0.20, 0.25, k4bAddRate, false, 'Remitted … less withholding (no additional home tax — foreign corporate rate ≥ home rate) = …').ok);
+
 // ─────────────────────────── GATE 14 negative tests (differential rule) ───────────────────────────
 ok('GATE14 FAILS on a negative additional tax (a refund)', !checkDoubleTaxCap(0.10, 0.30, 0.20, true, [{ taxable_profit: 120, fcff: 100, additional_home_tax_foreign: -1 }]).ok);
 ok('GATE14 FAILS on additional tax exceeding the home liability', !checkDoubleTaxCap(0.10, 0.30, 0.20, false, [{ taxable_profit: 120, fcff: 100, additional_home_tax_foreign: 40 }]).ok);

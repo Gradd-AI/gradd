@@ -1,6 +1,8 @@
 # AFM international-finance batch — blind adversarial review pack
 
-**Calculator #10: international investment & financing (`lib/acca/international.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. AT THE REVIEW GATE (Fix Rounds 1 + 2 applied). Awaiting co-founder independent recompute, THEN a blind GPT round. CURRENT STATE — regenerated after every fix round.**
+**Calculator #10: international investment & financing (`lib/acca/international.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. AT THE REVIEW GATE (Fix Rounds 1 + 2 + 3 applied). Awaiting co-founder independent recompute, THEN a blind GPT round. CURRENT STATE — regenerated after every fix round.**
+
+**Fix Round 3 (2026-07-18, prose-only — figures unchanged, verified byte-identical):** (1) K3 fiscal framing named a concrete home jurisdiction — the treaty is now "between Germany and China", the parent's tax the "German" rate; the loose "EU treaty" / "Eurozone rate" phrasing is killed (currency stays EUR — Germany is a euro member — so no figure moves). (2) K4 states the charged differential on **"the remitted share of the foreign taxable profit"** (assumption line + Step 2), matching the calculator, which charges 6% on PBIT × the 70% remitted share = the MYR 4.0m shown (lib change in `international.ts`, survives regeneration). (3) new CLOSED RULING on scenario-stated fiscal regimes (below).
 
 Doctrine: code owns EVERY figure AND every figure-vs-figure verdict — the forecast FX curve (DERIVED by parity, never asserted), every conversion, the credit-method double-tax, the NPV, the decision FLIP, the sustainability verdict. The model authored PROSE only. The calculator COMPOSES the FCFF build (`fcffFromBuild`, `valuation.ts`) and the discounting (`discountFactor`, `npv.ts`) ONE-WAY, no back-imports.
 
@@ -31,6 +33,7 @@ Money components carry a **floor tolerance** (max 0.5% relative, 0.2 absolute). 
 - **Credit base = the CORPORATE differential (Fix Round 1, Rule 22 evidence).** Additional home tax = max(0, home − foreign CORPORATE rate) on taxable profit, crediting foreign corporate tax; withholding is a separate creditable-or-not layer. Do NOT re-raise the withholding-only credit model, and do NOT propose taxing the cash flow rather than the taxable profit.
 - **Three tax branches (Fix Round 2)** — (a) nil-by-corporate, (b) nil-by-WHT-credit, (c) charged; each with the true inequality. The template + GATE 14b are settled.
 - **Parity basis = PPP for B5** (IRP is E2/short-horizon). **Double-tax = credit method only** (exemption journalled as a future kind). **Home-currency method primary.** **A6a (K4) direct-link-only + excluded from B-tier counts.** **Forecast rates DERIVED, never asserted (GATE 12).** **OFR wording** "charged once, at its source" — house wording, closed.
+- **Scenario-stated fiscal regimes are the AFM exam device (Fix Round 3).** Each drill STATES its tax facts — the corporate rates, the withholding rate, whether the treaty makes the WHT creditable — and the appraisal is built strictly on those stated facts. This is deliberate: the real AFM exam uses fictional countries (Ayjai/Nuruk in the technical article) for exactly this reason — so the candidate appraises the numbers given, not a memorised national tax code. **Do NOT flag** that a real-world participation-exemption regime, a specific double-tax-treaty article, a controlled-foreign-company rule, or an actual national rate would change the answer — those regimes are **out of scope by construction**. The named countries (Germany, China, Australia, Malaysia, Morocco, Egypt) are colour for realism, never a claim that the drill models that country's actual statute. Closed.
 
 **Review method:** fresh model, no project context, AFM syllabus PDF attached; FULL hostility on drill 1 (K1, first-of-family), spot-check siblings WITH full recomputation of every figure. Hunt for semantic errors a deterministic gate cannot catch: the differential-tax base/branch/credit mis-explained, a parity forecast mis-stated, a conversion inverted, the remittance-blocking story incoherent, the dividend-capacity flow mis-plumbed, scenario-fact drift, an invented statute/treaty.
 
@@ -656,7 +659,7 @@ Forecast the annual free cash flows of Luminos Chemicals' Tianjin subsidiary in 
 
 ### context_text
 
-Luminos Speciality Chemicals SE, a Frankfurt-listed Eurozone parent, is appraising a four-year greenfield speciality-chemicals facility in Tianjin, China, to be operated by its wholly-owned subsidiary Luminos Tianjin Chemical Co. Ltd. China's capital-control regime requires that a material fraction of each year's free cash flow be retained onshore and reinvested locally at prevailing interbank rates before being released in a lump sum at project end — a restriction that the board recognises could persist or even tighten given the geopolitical climate and Beijing's history of adjusting outward-remittance rules without notice. Purchasing-power parity is assumed to hold between the euro and the renminbi over the appraisal period, though in practice CNY is a managed currency and the actual path of EUR/CNY may diverge from the parity forecast, exposing the project to exchange-rate basis risk that PPP cannot capture. A bilateral double-tax treaty between the EU and China makes the Chinese withholding tax creditable against any residual home-country liability; the additional Eurozone corporate tax on the repatriated profit is therefore the differential between the two headline rates, reduced first by the foreign corporate tax credit and then by the withholding-tax credit, with any excess withholding credit available to extinguish the residual differential entirely.
+Luminos Speciality Chemicals SE, a Frankfurt-listed German parent, is appraising a four-year greenfield speciality-chemicals facility in Tianjin, China, to be operated by its wholly-owned subsidiary Luminos Tianjin Chemical Co. Ltd. China's capital-control regime requires that a material fraction of each year's free cash flow be retained onshore and reinvested locally at prevailing interbank rates before being released in a lump sum at project end — a restriction that the board recognises could persist or even tighten given the geopolitical climate and Beijing's history of adjusting outward-remittance rules without notice. Purchasing-power parity is assumed to hold between the euro and the renminbi over the appraisal period, though in practice CNY is a managed currency and the actual path of EUR/CNY may diverge from the parity forecast, exposing the project to exchange-rate basis risk that PPP cannot capture. A bilateral double-tax treaty between Germany and China makes the Chinese withholding tax creditable against any residual home-country liability; the additional German corporate tax on the repatriated profit is therefore the differential between the two headline rates, reduced first by the foreign corporate tax credit and then by the withholding-tax credit, with any excess withholding credit available to extinguish the residual differential entirely.
 
 Raw inputs (at the appraisal date):
 - Initial outlay: CNY 360 million
@@ -668,11 +671,11 @@ Raw inputs (at the appraisal date):
 - Foreign (China) corporate tax rate: 24%
 - Host withholding tax on remittances: 10%
 - Bilateral treaty — withholding tax creditable against home liability: yes
-- Eurozone parent corporate tax rate on foreign taxable profit: 28%
+- German parent corporate tax rate on foreign taxable profit: 28%
 - Project life: 4 years
 - Base spot rate (CNY per EUR, at the appraisal date): 7.80
 - Assumed annual inflation — China: 4.5%
-- Assumed annual inflation — Eurozone: 1.5%
+- Assumed annual inflation — Germany: 1.5%
 - Parent's EUR cost of capital: 11%
 - Blocked fraction of each year's CNY free cash flow: 30%
 - Local reinvestment rate on blocked funds (onshore China): 3%
@@ -974,7 +977,7 @@ Raw inputs at the appraisal date:
 
 **Multinational dividend capacity and policy**
 
-**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. 70% of the subsidiary's FCFE is remitted in year 2 at the PPP forecast spot of 3.0425 MYR/AUD. The parent's 30.00% home rate **exceeds** the foreign corporate rate 24.00% by 6.00%, so an additional home tax is **charged** on the foreign taxable profit — max(0, home 30.00% − foreign corporate 24.00% − creditable withholding 0.00%), shown per year.
+**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. 70% of the subsidiary's FCFE is remitted in year 2 at the PPP forecast spot of 3.0425 MYR/AUD. The parent's 30.00% home rate **exceeds** the foreign corporate rate 24.00% by 6.00%, so an additional home tax is **charged** on the remitted share of the foreign taxable profit — max(0, home 30.00% − foreign corporate 24.00% − creditable withholding 0.00%), shown per year.
 
 **Step 1 — Subsidiary free cash flow to equity (foreign)**
 
@@ -982,7 +985,7 @@ Subsidiary FCFE = FCFF − after-tax interest + net new borrowing = **MYR 56.3m*
 
 **Step 2 — Remittance to the parent (net of withholding + differential home tax, converted to home)**
 
-Remitted (foreign) = MYR 56.3m × 70% = MYR 39.4m; less withholding MYR 0.0m and differential home tax MYR 4.0m = MYR 35.4m; ÷ 3.0425 = **AUD 11.6m**.
+Remitted (foreign) = MYR 56.3m × 70% = MYR 39.4m; less withholding MYR 0.0m and differential home tax MYR 4.0m (6.00% on the remitted share of the foreign taxable profit) = MYR 35.4m; ÷ 3.0425 = **AUD 11.6m**.
 
 **Step 3 — Group dividend capacity**
 

@@ -635,7 +635,10 @@ export function taxBranch(foreignCorp: number, homeTax: number, addRateEffective
   if (addRateEffective <= 1e-9) return 'nil_corporate';       // home ≤ foreign corporate
   return hasAddTax ? 'charged' : 'nil_wht_credit';            // home > foreign corporate
 }
-function fiscalAssumptionLine(raw: FiscalInputs, foreignCorp: number, hasAddTax: boolean, addRate: number): string {
+// chargedBase names the base the charged differential bites on. It defaults to the full foreign
+// taxable profit (K1/K2 remit the whole year's profit); the dividend kind (K4) remits only a
+// FRACTION, so it passes "the remitted share of the foreign taxable profit" (Fix Round 3 item 2).
+function fiscalAssumptionLine(raw: FiscalInputs, foreignCorp: number, hasAddTax: boolean, addRate: number, chargedBase = 'the foreign taxable profit'): string {
   const w = asDec(raw.withholding_rate), h = asDec(raw.home_tax_rate), fc = asDec(foreignCorp);
   const branch = taxBranch(fc, h, addRate, hasAddTax);
   if (branch === 'nil_corporate') {
@@ -648,7 +651,7 @@ function fiscalAssumptionLine(raw: FiscalInputs, foreignCorp: number, hasAddTax:
     return `The parent's ${pct2(h)} home rate **exceeds** the foreign corporate rate ${pct2(fc)}, a residual differential of ${pct2(Math.max(0, h - fc))} on taxable profit; but the **creditable** ${pct2(w)} withholding covers that residual, so the additional home tax **nets to nil** (max(0, home liability − foreign corporate tax − withholding) = 0).`;
   }
   // (c) charged: positive residual survives after the credits, shown per year.
-  return `The parent's ${pct2(h)} home rate **exceeds** the foreign corporate rate ${pct2(fc)} by ${pct2(Math.max(0, h - fc))}, so an additional home tax is **charged** on the foreign taxable profit — max(0, home ${pct2(h)} − foreign corporate ${pct2(fc)}${raw.wht_creditable ? ` − creditable withholding ${pct2(w)}` : ''}), shown per year${raw.wht_creditable ? '' : `; the ${pct2(w)} withholding is a separate cost`}.`;
+  return `The parent's ${pct2(h)} home rate **exceeds** the foreign corporate rate ${pct2(fc)} by ${pct2(Math.max(0, h - fc))}, so an additional home tax is **charged** on ${chargedBase} — max(0, home ${pct2(h)} − foreign corporate ${pct2(fc)}${raw.wht_creditable ? ` − creditable withholding ${pct2(w)}` : ''}), shown per year${raw.wht_creditable ? '' : `; the ${pct2(w)} withholding is a separate cost`}.`;
 }
 
 // GATE-14 sub-check: the tax PROSE must match the params (Fix Round 2 item 1). The stated branch must
@@ -662,6 +665,12 @@ export function checkTaxProse(foreignCorp: number, homeTax: number, addRateEffec
   const claimsHomeGt = /home rate [\d.]+% \*\*exceeds\*\* the foreign corporate rate/i.test(modelAnswer);
   if (homeGt && claimsForeignGe) return { ok: false, reason: `false inequality: home ${pct2(h)} > foreign corporate ${pct2(fc)}, but the model answer states the foreign corporate rate is "at or above" the home rate` };
   if (!homeGt && claimsHomeGt) return { ok: false, reason: `false inequality: home ${pct2(h)} ≤ foreign corporate ${pct2(fc)}, but the model answer states the home rate "exceeds" the foreign corporate rate` };
+  // Fix Round 3 close-out: the same false inequality can hide in a STEP working / nil parenthetical
+  // ("no additional home tax — foreign corporate rate ≥ home rate") rather than the bold assumption
+  // line. Catch it ANYWHERE in the body: a nil cause that asserts foreign corporate ≥ / at-or-above
+  // home while home actually exceeds the foreign corporate rate (the (b) nil case mislabelled as (a)).
+  const claimsForeignGeBody = /foreign corporate rate\b[^\n]{0,60}?(≥|at or above)[^\n]{0,25}?home rate/i.test(modelAnswer);
+  if (homeGt && claimsForeignGeBody) return { ok: false, reason: `false inequality in the answer body: home ${pct2(h)} > foreign corporate ${pct2(fc)}, but a step/nil note states the foreign corporate rate is at or above the home rate (the residual is covered by the creditable withholding — that is the (b) nil cause, not (a))` };
   // a false max(0, home − foreign) = 0 when home actually exceeds foreign corporate
   if (homeGt && new RegExp(`max\\(0, ${pct2(h).replace('.', '\\.')} − ${pct2(fc).replace('.', '\\.')}\\) = 0`).test(modelAnswer))
     return { ok: false, reason: `false max(): the answer writes max(0, ${pct2(h)} − ${pct2(fc)}) = 0, but home exceeds foreign corporate so the differential is positive` };
@@ -765,13 +774,20 @@ export function buildIntlDividendModelAnswer(raw: IntlDividendInputs, c: IntlDiv
     ? `capacity **exceeds** the proposed dividend by ${mH(Math.abs(c.capacity_surplus))}, so the group dividend is **covered** by the year's cash generation and is sustainable on the base case`
     : `capacity **falls short** of the proposed dividend by ${mH(Math.abs(c.capacity_surplus))}, so the proposed dividend is **not covered** and would have to draw on reserves or new finance — a red flag on sustainability`;
   const remitTax = c.remit_tax;
+  // The nil parenthetical must name the TRUE cause (Fix Round 3 close-out), exactly as the assumption
+  // line does: (a) foreign corporate ≥ home, or (b) home > foreign corporate but the creditable
+  // withholding covers the residual — never a blanket "foreign ≥ home" (a false inequality in the (b)
+  // case). GATE 14b now guards this class in the answer BODY, not only the assumption line.
+  const nilNote = taxBranch(asDec(raw.sub_build.tax_rate), asDec(raw.home_tax_rate), c.add_tax_rate_effective, c.has_additional_home_tax) === 'nil_corporate'
+    ? ' (no additional home tax — the foreign corporate rate is at or above the home rate)'
+    : ' (no additional home tax — the residual differential is covered by the creditable withholding)';
   return [
     '**Multinational dividend capacity and policy**', '',
-    `**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. ${(raw.remit_fraction * 100).toFixed(0)}% of the subsidiary's FCFE is remitted in year ${yr} at the ${raw.basis.toUpperCase()} forecast spot of ${fmt4(c.forecast_spot)} ${foreign}/${home}. ${fiscalAssumptionLine(raw, raw.sub_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective)}`, '',
+    `**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. ${(raw.remit_fraction * 100).toFixed(0)}% of the subsidiary's FCFE is remitted in year ${yr} at the ${raw.basis.toUpperCase()} forecast spot of ${fmt4(c.forecast_spot)} ${foreign}/${home}. ${fiscalAssumptionLine(raw, raw.sub_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective, 'the remitted share of the foreign taxable profit')}`, '',
     '**Step 1 — Subsidiary free cash flow to equity (foreign)**', '',
     `Subsidiary FCFE = FCFF − after-tax interest + net new borrowing = **${mF(c.sub_fcfe_foreign)}**.`, '',
     '**Step 2 — Remittance to the parent (net of withholding + differential home tax, converted to home)**', '',
-    `Remitted (foreign) = ${mF(c.sub_fcfe_foreign)} × ${(raw.remit_fraction * 100).toFixed(0)}% = ${mF(c.sub_remit_foreign)}; less withholding ${mF(remitTax.wht)}${c.has_additional_home_tax ? ` and differential home tax ${mF(remitTax.additional_home_tax_foreign)}` : ' (no additional home tax — foreign corporate rate ≥ home rate)'} = ${mF(remitTax.net_remit_foreign)}; ÷ ${fmt4(c.forecast_spot)} = **${mH(c.sub_remit_home)}**.`, '',
+    `Remitted (foreign) = ${mF(c.sub_fcfe_foreign)} × ${(raw.remit_fraction * 100).toFixed(0)}% = ${mF(c.sub_remit_foreign)}; less withholding ${mF(remitTax.wht)}${c.has_additional_home_tax ? ` and differential home tax ${mF(remitTax.additional_home_tax_foreign)} (${pct2(c.add_tax_rate_effective)} on the remitted share of the foreign taxable profit)` : nilNote} = ${mF(remitTax.net_remit_foreign)}; ÷ ${fmt4(c.forecast_spot)} = **${mH(c.sub_remit_home)}**.`, '',
     '**Step 3 — Group dividend capacity**', '',
     `Group capacity = parent FCFE ${mH(c.parent_fcfe)} + remitted subsidiary FCFE ${mH(c.sub_remit_home)} = **${mH(c.total_capacity)}**.`, '',
     '**Step 4 — Sustainability of the proposed dividend**', '',
