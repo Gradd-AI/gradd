@@ -744,6 +744,8 @@ export function buildIntlRemittanceModelAnswer(raw: IntlRemittanceInputs, c: Int
   const home = raw.home_currency, foreign = raw.foreign_currency, N = raw.years;
   const mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
   const r = asDec(raw.discount_rate);
+  const blockedPct = (raw.blocked_fraction * 100).toFixed(0);
+  const freePct = ((1 - raw.blocked_fraction) * 100).toFixed(0);
   // explicit subtraction so the reader sees free NPV, restricted NPV, and the cost as DISTINCT roles
   // (they can share a magnitude — e.g. free 5.6 − restricted 2.8 = cost 2.8 — so the subtraction is shown)
   const costWord = c.npv_cost_of_blocking < 0
@@ -755,7 +757,12 @@ export function buildIntlRemittanceModelAnswer(raw: IntlRemittanceInputs, c: Int
     '**Step 1 — Forecast exchange rates (parity)**', '',
     ...fxTable(c.fx_curve, foreign, home, raw.basis), '',
     '**Step 2 — Remitted (free) cash flows converted to home currency**', '',
-    `| Year | Foreign cash flow | Free & remitted net (${foreign}) | Spot | Home cash flow | PV |`, `|------|------|------|------|------|------|`,
+    // Honest split (GPT round-1, Fix Round 4): state the TOTAL foreign FCFF and the free/blocked split
+    // up front, and label the first column as the free portion (before WHT). The table shows only the
+    // remittable slice, so a bare "Foreign cash flow" header (implying the whole FCFF) mislabelled it.
+    // Applies to the FAMILY template — every restricted-remittance drill inherits the honest label.
+    `Total foreign FCFF = ${mF(c.base_fcff_foreign)}; ${freePct}% immediately remittable, ${blockedPct}% blocked.`, '',
+    `| Year | Free portion before WHT (${freePct}% of FCFF) | Free & remitted net (${foreign}) | Spot | Home cash flow | PV |`, `|------|------|------|------|------|------|`,
     ...c.years.map((y) => `| ${y.year} | ${mF(y.foreign_cf)} | ${mF(y.foreign_remit_net)} | ${fmt4(y.fx)} | ${mH(y.home_cf)} | ${mH(y.pv)} |`), '',
     `**Step 3 — Blocked funds accumulated and released in year ${N}**`, '',
     `Blocked cash reinvested locally at ${pct2(asDec(raw.local_reinvest_rate))} accumulates to **${mF(c.blocked_release_foreign)}** by year ${N}; remitted then (net of tax) and converted at ${fmt4(c.fx_curve[N - 1])} = **${mH(c.home_cf_release)}** (PV ${mH(c.home_cf_release * discountFactor(r, N))}).`, '',

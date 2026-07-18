@@ -121,6 +121,13 @@ ok('K3 model answer: GATE2 figure-integrity', figuresPresent(s3.schema, a3));
 ok('K3 model answer shows the explicit cost subtraction (free − restricted)', a3.includes('free-remittance NPV') && a3.includes('cost of the restriction'));
 ok('K3 currency-scale gate PASSES on the free-flow years', validateCurrencyScale(c3.years).ok);
 ok('K3 double-tax cap gate PASSES (free years + release period)', validateDoubleTaxCap(0.075, 0.30, 0.20, true, [...c3.years.map((y) => ({ taxable_profit: y.taxable_profit, fcff: y.foreign_cf, additional_home_tax_foreign: y.additional_home_tax_foreign })), { taxable_profit: c3.blocked_tp_total, fcff: c3.blocked_release_foreign, additional_home_tax_foreign: c3.release_tax.additional_home_tax_foreign }]).ok);
+// ── Step-2 honest split (GPT round-1, Fix Round 4). Family template: state the TOTAL foreign FCFF and the
+// free/blocked split up front; the first column is the free portion before WHT (not a bare "Foreign cash flow"). ──
+ok('K3 Step-2 states the total FCFF and the free/blocked split (GPT round-1, FR4)',
+  a3.includes('Total foreign FCFF = ') && /\d+% immediately remittable, \d+% blocked\./.test(a3));
+ok('K3 Step-2 first column honestly labels the free portion before WHT (family template)',
+  /Free portion before WHT \(\d+% of FCFF\)/.test(a3) && !a3.includes('| Year | Foreign cash flow |'));
+ok('K3 free portion shown = (1 − blocked) × total FCFF', approx(c3.years[0].foreign_cf, c3.base_fcff_foreign * (1 - k3.blocked_fraction), 1e-6));
 
 // ─────────────────────────── K4 — multinational_dividend_capacity (A6a) ───────────────────────────
 const k4spot = buildForwardCurve(25000, 'ppp', 0.02, 0.04, 2)[1]; // code-derived forecast spot at year 2
