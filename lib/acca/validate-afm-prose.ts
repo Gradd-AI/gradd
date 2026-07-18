@@ -214,7 +214,10 @@ export function lintCompleteness(question: string, modelAnswer: string): ProseIs
     { re: /modified internal rate of return|\bmirr\b/,        needs: /\bmirr\b|modified internal rate of return/,             label: 'a MIRR calculation' },
     { re: /internal rate of return|\birr\b/,                   needs: /\birr\b|internal rate of return/,                        label: 'an IRR appraisal' },
     { re: /net present value|\bnpv\b/,                         needs: /\bnpv\b|net present value/,                             label: 'an NPV appraisal' },
-    { re: /macaulay|modified duration|\bduration\b/,           needs: /macaulay|modified/,                                     label: 'a Macaulay/modified duration calculation' },
+    // "duration" is satisfied by EITHER a bond Macaulay/modified duration (calc #6) OR a PROJECT
+    // duration = Σ(t×PV)÷ΣPV (calc #3 risk & uncertainty, B1a vi — S1/S2; ACCA calls it "project
+    // duration"/PV-weighted average time, NOT "Macaulay"). Accept both so the risk family passes P5.
+    { re: /macaulay|modified duration|\bduration\b/,           needs: /macaulay|modified|project duration|present-value-weighted|pv-weighted/, label: 'a Macaulay/modified or project (Σ(t×PV)÷ΣPV) duration calculation' },
     { re: /credit spread/,                                     needs: /spread/,                                                label: 'a credit-spread figure' },
     { re: /cost of debt/,                                      needs: /cost of debt|\bkd\b/,                                   label: 'a cost-of-debt figure' },
     { re: /fair value|over-?valued|under-?valued|mispric/,     needs: /fair value/,                                            label: 'a fair-value calculation' },

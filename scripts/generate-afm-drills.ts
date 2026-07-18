@@ -144,6 +144,15 @@ import {
   type ParityBasis,
 } from '../lib/acca/international';
 import { validateParityConsistency, validateCurrencyScale, validateDoubleTaxCap, validateTaxProse } from '../lib/acca/validate-schema';
+import {
+  computeEnpv, buildEnpvSchema, buildEnpvModelAnswer,
+  computeSensitivity, buildSensitivitySchema, buildSensitivityModelAnswer,
+  computeRadr, buildRadrSchema, buildRadrModelAnswer,
+  computeRiskMeasures, buildRiskMeasuresSchema, buildRiskMeasuresModelAnswer,
+  type RiskKind, type EnpvComputed, type SensitivityComputed, type RadrComputed, type RiskMeasuresComputed,
+  type RadrInputs, type RiskMeasuresInputs,
+} from '../lib/acca/risk';
+import { validateProbabilitySum, validateEnpvConsistency, validateSensitivityReconciliation, validateRadrOrdering, validateVarAndDuration } from '../lib/acca/validate-schema';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -190,6 +199,7 @@ interface AfmDrillSpec {
   bsop_kind?:              BsopKind;     // B2a/B2c batch only — selects the BSOP / real-option variant
   valuation_kind?:         ValuationKind; // B4a/B4b/A6 batch only — selects the valuation-family variant
   international_kind?:      InternationalKind; // B5/A6a batch only — selects the international-family variant
+  risk_kind?:              RiskKind;     // B1a/B1b risk & uncertainty batch only — selects the risk-family variant
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -231,6 +241,10 @@ const BSOP_LOS = new Set<LoCode>(['B2a', 'B2c']);
 // discounting one-way. HARD RULE (Grant 2026-07-17): A6a is a Section-A LO — direct-link-only
 // serve, EXCLUDED from all B-tier/coverage counts and public claims until Section A surfaces.
 const INTERNATIONAL_LOS = new Set<LoCode>(['B5a', 'B5b', 'A6a']);
+// Risk & uncertainty (calculator #3, B1a iv/v/vi + B1b ii). Keyed off spec.risk_kind (set by
+// --risk-batch), NOT off lo_code — B1a is shared with the NPV family, so the risk route must key on
+// the kind (routed BEFORE the NPV_LOS mode check). Conventions verified: docs/evidence/AFM_RISK_EVIDENCE.md.
+const RISK_LOS = new Set<LoCode>(['B1a', 'B1b']);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // THE BOARDROOM BAR — the universal documented AFM failure (every examiner report
@@ -574,6 +588,50 @@ Requirements:
 - context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions; rates as %). Weave 1–2 challengeable textures INTO THE PROSE (political/exchange-control risk realism; whether parity will hold; the durability of the cash flows) — do NOT print a labelled "textures" list. Do NOT pre-compute anything.
 - FROZEN FACTS (P4b) — a scenario is a DATED snapshot: NEVER write "current market rate" or "currently" next to a spot/inflation/interest rate. State the base spot and inflation rates as "at the appraisal date" / "assumed".
 - interpretation_prose: qualitative advice ONLY (3–5 sentences) — NO numbers, NO forecast rates, NO inequalities, NO verdict, ONLY context facts. Cover which assumptions are most fragile (will parity hold? is the remittance/political risk real? is the growth durable?) and what the board should require.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
+function buildRiskUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.risk_kind ?? 'enpv';
+  const kindBlock =
+    kind === 'enpv'
+      ? `- DRILL TYPE: EXPECTED NPV (B1a iv). A project has several mutually-exclusive economic states (e.g. optimistic / most-likely / pessimistic), each with a STATED probability and its OWN net post-tax cash-flow stream. The candidate computes each state's NPV, the probability-weighted ENPV, and the probability of a negative NPV, then advises. In raw_inputs supply: outlay (millions), discount_rate (DECIMAL), and scenarios (2–4 items, each {label, probability, cash_flows[]}). Probabilities MUST sum to 1. Code computes each scenario NPV, the ENPV, P(negative NPV) and the decision — state NONE of it.
+  - SIZING: make at least one state give a clearly NEGATIVE NPV (so P(negative NPV) is a real risk measure) and the ENPV DECISIVE (not razor-thin). The one-shot caveat is the teaching point.`
+      : kind === 'sensitivity'
+      ? `- DRILL TYPE: SENSITIVITY ANALYSIS (B1a iv). A project's NPV is tested for how far a variable can move before the decision reverses, AND for its sensitivity to the discount rate. Supply: outlay (millions), discount_rate (DECIMAL), net_cash_flows[] (the TOTAL net post-tax cash flow per year — the base NPV and the IRR come from this), affected_cash_flows[] (the FLEXED variable's OWN post-tax stream, e.g. contribution — the PV base of the variable sensitivity), and variable_label. Code computes the base NPV, the affected PV, the variable sensitivity % = 100 × NPV ÷ PV-affected [S3, S4], the IRR, and the discount-rate sensitivity % = (IRR − r) ÷ r × 100 [S4] — state NONE. Do NOT ask for the bare IRR − r as a "sensitivity"; the model answer teaches that the bare difference is headroom, the sensitivity divides by the original rate.
+  - SIZING: base NPV clearly POSITIVE; affected_cash_flows a genuine SUBSET/component of the net cash flows (e.g. the contribution stream), so the variable sensitivity is a sensible single-digit-to-low-double-digit %.`
+      : kind === 'radr_compare'
+      ? `- DRILL TYPE: RISK-ADJUSTED DISCOUNT RATE (B1a v). The firm is appraising a project in a DIFFERENT risk class from its own operations, so a project-specific RADR is derived from a PROXY (different-industry) company's equity beta — ungeared from the proxy's gearing and regeared to this firm's — via CAPM [S5, S6], and the SAME project cash flows are discounted at the company's own rate vs the project RADR. Supply: outlay, discount_rate (DECIMAL, used only for display context), project_cash_flows[] (net post-tax, millions), company_rate (DECIMAL, the firm's own cost of capital — the WRONG hurdle here), rf, mrp, tax_rate, kd (DECIMALS), peer_equity_beta, peer_ve, peer_vd (the proxy, for ungearing), own_ve, own_vd (this firm, to regear). Code derives the RADR, both NPVs, and whether the decision FLIPS — state NONE.
+  - SIZING (the FLIP is the point — be deliberate; you cannot see the computed rates, so engineer BOTH sides): (1) make the RADR clearly ABOVE company_rate — set peer_equity_beta HIGH (1.6–2.0, a genuinely riskier industry than the firm's), keep the proxy's gearing moderate and the appraising firm's gearing LOW (own_vd small vs own_ve), and set company_rate LOW (0.07–0.09); aim for a RADR ~3–6 points above the company rate. (2) make the project MARGINAL at the company rate — choose project_cash_flows whose UNDISCOUNTED SUM is only about 1.08–1.18× the outlay, so the NPV at the company rate is SMALL and positive; the higher RADR then pushes it NEGATIVE. Both together deliver the accept→reject flip. If it does not flip, the drill fails its purpose.`
+      : `- DRILL TYPE: PROJECT DURATION & VALUE AT RISK (B1a vi + B1b ii). TWO risk measures read together: (1) the COMPARATIVE project duration of two projects — Σ(t × PV) ÷ Σ PV [S1, S2], the PV-weighted average time; the longer-duration project is more exposed. (2) the project value at risk — z × σ × √N, one-tail. Supply: discount_rate (DECIMAL), project_a {label, cash_flows[]} and project_b {label, cash_flows[]} (make ONE front-loaded and ONE back-loaded so the durations differ materially), var_sigma_annual (the annual σ of project value, MILLIONS — STATED), var_confidence (0.95 or 0.99), var_tail ("one"), var_horizon_years (N). Code owns both durations, which is longer, the z, and the VaR — state NONE. Duration is COMPARATIVE (never a standalone accept/reject).
+  - SIZING: the two projects should have the SAME (or similar) total cash but DIFFERENT timing, so the duration comparison is clean; σ and N chosen so the VaR is a material money figure.`;
+  return `Write one original ACCA AFM risk & uncertainty drill (kind: ${kind}).
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+
+CODE-COMPUTES-STATS PROTOCOL — MANDATORY. Code owns EVERY figure and EVERY figure-vs-figure verdict.
+Supply the scenario, the raw input figures, and qualitative prose ONLY. DO NOT state anywhere any NPV,
+ENPV, sensitivity %, IRR, RADR, duration, VaR, probability of a negative NPV, any inequality between
+computed figures, or any accept/reject/sustainability verdict — code inserts ALL of those.
+
+CONVENTIONS ARE FETCHED — these are page-verified ACCA conventions (do NOT re-derive from memory): the
+variable sensitivity is 100 × NPV ÷ PV of the affected post-tax stream; discount-rate sensitivity is
+(IRR − r) ÷ r × 100 (the bare IRR − r is headroom, not sensitivity); project duration is Σ(t × PV) ÷ Σ PV;
+the RADR is a proxy asset beta ungeared then regeared via CAPM; ENPV is Σ(p × NPV); VaR uses a one-tail z.
+
+${kindBlock}
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name an organisation and the specific project(s) / decision at stake.
+- question: begins with the command verb and asks for EXACTLY what this kind delivers — no more (P5). Do NOT ask for anything outside this kind.
+- context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions; probabilities and rates as stated). Weave 1–2 challengeable textures INTO THE PROSE (where the probabilities came from; the quality of the σ estimate; whether the normality assumption holds; that EV is a repeated-game argument for a one-shot project) — do NOT print a labelled "textures" list. Do NOT pre-compute anything.
+- FROZEN FACTS (P4b): a scenario is a DATED snapshot — never write "current market rate" / "currently" next to a rate; state figures as "assumed" / "at the appraisal date".
+- interpretation_prose: qualitative advice ONLY (3–5 sentences) — NO numbers, NO inequalities, NO verdict, ONLY context facts. Cover which assumptions are most fragile and what the board should require.
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
@@ -1017,6 +1075,67 @@ const SUBMIT_INTERNATIONAL_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+// RISK & UNCERTAINTY FAMILY (calculator #3). One tool; raw_inputs is a UNION across the four kinds —
+// buildRiskUserPrompt (keyed off spec.risk_kind) tells the model which fields to supply. Code owns
+// EVERY figure: each scenario NPV, the ENPV, the sensitivity margins, the IRR, the RADR, both NPVs and
+// the flip, the durations, the VaR — and every verdict. The model NEVER states a computed number.
+// Conventions page-verified (docs/evidence/AFM_RISK_EVIDENCE.md): S1/S2 duration, S3/S4 sensitivity,
+// S5/S6 RADR, S6/S7 ENPV, the technical article for VaR.
+const SUBMIT_RISK_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_risk_scenario',
+  description: 'Submit a risk & uncertainty drill (expected NPV / sensitivity analysis / risk-adjusted discount rate / project duration & value at risk) — raw inputs only; code computes every scenario NPV, the ENPV, the sensitivity margins, the IRR, the RADR (via CAPM ungear/regear), the durations and the VaR, and every verdict.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question: { type: 'string', description: 'Drill question starting with the command verb. Asks for exactly what this kind delivers — no more (P5).' },
+      context_text: { type: 'string', description: 'Scenario narrative (2–3 sentences) + a clean labelled list of the raw inputs (money in millions; rates/probabilities as stated). NO computed figure and NO verdict. Weave 1–2 challengeable textures (probability provenance; σ estimation quality; the normality assumption; EV vs a one-shot decision) INTO THE PROSE — never a labelled "textures" list.' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase (e.g. "calculate and advise", "assess").' },
+      currency: { type: 'string', description: 'ISO 4217 currency code used in context_text, e.g. "GBP", "EUR". Code, not symbol.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'Raw figures matching context_text exactly. Supply ONLY the fields this kind needs (the prompt says which). Code does ALL arithmetic and every verdict. Money in millions; rates DECIMAL (0.10 = 10%); probabilities DECIMAL summing to 1.',
+        properties: {
+          discount_rate: { type: 'number', description: 'The discount / risk-adjusted rate applied, DECIMAL (e.g. 0.10). Common to all kinds.' },
+          // K1 enpv:
+          outlay: { type: 'number', description: 'K1/K2/K3: the initial outlay at t0, millions (positive).' },
+          scenarios: { type: 'array', description: 'K1 enpv ONLY: 2–4 mutually-exclusive economic states. Probabilities MUST sum to 1. Design so at least one state gives a NEGATIVE NPV (so P(negative NPV) is a live risk measure) — the ENPV can be positive or negative; make the decision DECISIVE, not razor-thin.',
+            items: { type: 'object' as const, properties: {
+              label: { type: 'string', description: 'e.g. "Optimistic", "Most likely", "Pessimistic".' },
+              probability: { type: 'number', description: 'DECIMAL in (0,1]; all scenario probabilities sum to 1.' },
+              cash_flows: { type: 'array', items: { type: 'number' }, description: 'That state\'s net post-tax cash flow per year (year 1..N), millions.' },
+            }, required: ['label', 'probability', 'cash_flows'] } },
+          // K2 sensitivity:
+          net_cash_flows: { type: 'array', items: { type: 'number' }, description: 'K2 sensitivity ONLY: the project\'s TOTAL net post-tax cash flow per year (year 1..N), millions — the base NPV and the IRR come from this. Make the base NPV clearly POSITIVE so the margins are meaningful.' },
+          affected_cash_flows: { type: 'array', items: { type: 'number' }, description: 'K2 sensitivity ONLY: the FLEXED variable\'s OWN post-tax cash-flow stream per year (e.g. the contribution or the revenue), millions — this is the PV BASE of the variable sensitivity [S3, S4]. It is a SUBSET/component of the net cash flows, not the whole.' },
+          variable_label: { type: 'string', description: 'K2 sensitivity ONLY: the variable being flexed, e.g. "the selling price", "contribution", "sales volume".' },
+          // K3 radr_compare:
+          project_cash_flows: { type: 'array', items: { type: 'number' }, description: 'K3 RADR ONLY: the project\'s net post-tax cash flow per year, millions. Discounted at BOTH the company rate and the project RADR; size so the decision FLIPS between them.' },
+          company_rate: { type: 'number', description: 'K3 RADR ONLY: the company\'s OWN cost of capital, DECIMAL — the WRONG hurdle for a project in a different risk class.' },
+          rf: { type: 'number', description: 'K3 RADR ONLY: risk-free rate, DECIMAL.' },
+          mrp: { type: 'number', description: 'K3 RADR ONLY: equity/market risk premium, DECIMAL.' },
+          tax_rate: { type: 'number', description: 'K3 RADR ONLY: corporate tax rate, DECIMAL (needed to ungear/regear).' },
+          kd: { type: 'number', description: 'K3 RADR ONLY: pre-tax cost of debt, DECIMAL.' },
+          peer_equity_beta: { type: 'number', description: 'K3 RADR ONLY: the proxy (different-industry) company\'s EQUITY beta.' },
+          peer_ve: { type: 'number', description: 'K3 RADR ONLY: proxy equity market value (for ungearing).' },
+          peer_vd: { type: 'number', description: 'K3 RADR ONLY: proxy debt market value (for ungearing).' },
+          own_ve: { type: 'number', description: 'K3 RADR ONLY: the appraising firm\'s equity market value (to regear into).' },
+          own_vd: { type: 'number', description: 'K3 RADR ONLY: the appraising firm\'s debt market value (to regear into).' },
+          // K4 risk_measures:
+          project_a: { type: 'object' as const, description: 'K4 ONLY: the FIRST project for the comparative duration.', properties: { label: { type: 'string' }, cash_flows: { type: 'array', items: { type: 'number' }, description: 'net cash flow per year, millions' } }, required: ['label', 'cash_flows'] },
+          project_b: { type: 'object' as const, description: 'K4 ONLY: the SECOND project. Make one clearly FRONT-loaded and one BACK-loaded so the durations differ materially (the comparative point).', properties: { label: { type: 'string' }, cash_flows: { type: 'array', items: { type: 'number' }, description: 'net cash flow per year, millions' } }, required: ['label', 'cash_flows'] },
+          var_sigma_annual: { type: 'number', description: 'K4 ONLY: the annual standard deviation (σ) of project value, MILLIONS (money terms) — STATED, never derived.' },
+          var_confidence: { type: 'number', description: 'K4 ONLY: VaR confidence level, 0.95 or 0.99.' },
+          var_tail: { type: 'string', description: 'K4 ONLY: "one" — a downside VaR is one-tail (z = 1.65 @95% / 2.33 @99%).' },
+          var_horizon_years: { type: 'number', description: 'K4 ONLY: the VaR horizon N in years (σ scales by √N).' },
+        },
+        required: ['discount_rate'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed number, NO inequality between computed figures, NO verdict — code owns all of those. Reference ONLY facts in context_text; name only risks the scenario evidences. Cover which assumptions are most fragile and WHY (probability provenance; σ / normality; the durability of the estimates). For the ENPV kind, MAKE the one-shot point: ENPV is a repeated-game mean, so for a single project the individual state NPVs and the probability of a negative NPV matter alongside the mean [S7]. For sensitivity, distinguish a small margin (fragile) from a large one. For RADR, note that using the company rate for a different-risk project misprices it.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_NPV_SCENARIO_TOOL: Anthropic.Tool = {
   name: 'submit_npv_scenario',
   description: 'Submit an NPV investment-appraisal drill — raw inputs only; code computes the WDA schedule, tax, net cash flows, discounting, NPV, the accept/reject decision, and any ranking/sensitivity',
@@ -1301,6 +1420,16 @@ interface DrillOutput {
     parity: { fx_curve: number[]; base_spot: number; basis: ParityBasis; rate_home: number; rate_foreign: number }[];
     scaleYears: { fx: number; foreign_remit_net: number; home_cf: number }[];
     doubleTax: { withholding: number; home_tax: number; foreign_corp: number; wht_creditable: boolean; periods: { taxable_profit: number; fcff: number; additional_home_tax_foreign: number }[] };
+  };
+  _riskKind?:     RiskKind;              // risk & uncertainty family — dry-run + gate branch
+  _riskSummary?:  string;                // risk family — dry-run one-liner
+  _riskPenalty?:  number;                // risk family — decision-relevance penalty (best-of-N)
+  _riskGate?: {                          // risk family — data for the kind's gate (G-a…G-e); only one is set
+    probabilities?: number[];                                                                     // G-a (enpv)
+    enpv?: { scenarios: { probability: number; npv: number }[]; value: number };                  // G-b (enpv)
+    sensitivity?: { base_npv: number; pv_affected: number; variable_sensitivity_pct: number; irr: number; discount_rate: number; disc_rate_sensitivity_pct: number; headroom_pp: number }; // G-c
+    radr?: { raw: RadrInputs; computed: RadrComputed };                                           // G-d
+    varDur?: { raw: RiskMeasuresInputs; computed: RiskMeasuresComputed };                         // G-e
   };
   _currency?:     string;            // quantitative only — dry-run display
 }
@@ -1666,6 +1795,81 @@ async function draftValuationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Pr
   return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema, _valuationComputed: computed };
 }
 
+// RISK & UNCERTAINTY FAMILY draft (calculator #3). Dispatches by spec.risk_kind. Code owns every
+// figure + verdict; the model authors prose only. Decision-relevance is a generation quality bar
+// (best-of-N), not a gate: K1 wants a decisive ENPV + a live negative-NPV state; K2 a positive base +
+// a sensible margin; K3 the FLIP; K4 a material duration difference.
+async function draftRiskDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: RiskKind = spec.risk_kind ?? 'enpv';
+  const MAX_ATTEMPTS = 4, ACCEPT_PENALTY = 0.5;
+  let best: DrillOutput | null = null, bestPenalty = Infinity;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const candidate = await draftRiskOnce(anthropic, spec, kind);
+    const penalty = candidate._riskPenalty ?? 5;
+    if (penalty < bestPenalty) { best = candidate; bestPenalty = penalty; }
+    if (penalty <= ACCEPT_PENALTY) return candidate;
+    if (attempt < MAX_ATTEMPTS - 1) console.warn(`  ↻ ${spec.lo_code} [RISK/${kind}] off-target (${candidate._riskSummary}, penalty ${penalty.toFixed(2)}) — retrying (${attempt + 1}/${MAX_ATTEMPTS})`);
+  }
+  if (bestPenalty > ACCEPT_PENALTY) console.warn(`  ⚠ ${spec.lo_code} [RISK/${kind}] best-of-${MAX_ATTEMPTS} penalty ${bestPenalty.toFixed(2)} — shipping least-bad; self-flag for review`);
+  return best!;
+}
+
+async function draftRiskOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: RiskKind): Promise<DrillOutput> {
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6', max_tokens: 2600, system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_RISK_SCENARIO_TOOL], tool_choice: { type: 'tool', name: 'submit_risk_scenario' },
+    messages: [{ role: 'user', content: buildRiskUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in risk Pass 1 response');
+  const inp = block.input as { question: string; context_text: string; command_verb: string; currency: string; raw_inputs: Record<string, unknown>; interpretation_prose: string };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'currency', 'interpretation_prose'], 'Pass 1 (risk)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (risk): raw_inputs missing');
+  const r = inp.raw_inputs as Record<string, unknown>;
+  const cur = normaliseCurrency(inp.currency);
+  const base = { command_verb: inp.command_verb.trim().toLowerCase(), question: inp.question, context_text: inp.context_text, _currency: cur, _riskKind: kind };
+
+  if (kind === 'enpv') {
+    const ins = { currency: cur, outlay: r.outlay as number, discount_rate: r.discount_rate as number, scenarios: r.scenarios as unknown as { label: string; probability: number; cash_flows: number[] }[], hurdle: r.hurdle as number | undefined };
+    const c = computeEnpv(ins);
+    const { schema, serialized } = buildEnpvSchema(ins, c);
+    const model_answer = buildEnpvModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _riskSummary: `ENPV=${money(cur, c.enpv)} ${c.accept ? 'ACCEPT' : 'REJECT'} P(neg)=${(c.p_negative * 100).toFixed(0)}%`,
+      _riskPenalty: (Math.abs(c.enpv) / ins.outlay >= 0.05 ? 0 : 1) + (c.p_negative > 0 ? 0 : 1),
+      _riskGate: { probabilities: c.scenarios.map((s) => s.probability), enpv: { scenarios: c.scenarios.map((s) => ({ probability: s.probability, npv: s.npv })), value: c.enpv } } };
+  }
+  if (kind === 'sensitivity') {
+    const ins = { currency: cur, outlay: r.outlay as number, net_cash_flows: r.net_cash_flows as unknown as number[], affected_cash_flows: r.affected_cash_flows as unknown as number[], variable_label: r.variable_label as string, discount_rate: r.discount_rate as number };
+    const c = computeSensitivity(ins);
+    const { schema, serialized } = buildSensitivitySchema(ins, c);
+    const model_answer = buildSensitivityModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _riskSummary: `base NPV=${money(cur, c.base_npv)} var-sens=${c.variable_sensitivity_pct.toFixed(1)}% disc-sens=${c.disc_rate_sensitivity_pct.toFixed(1)}%`,
+      _riskPenalty: (c.base_npv > 0 ? 0 : 1) + (c.variable_sensitivity_pct > 0 && c.variable_sensitivity_pct < 100 ? 0 : 1),
+      _riskGate: { sensitivity: { base_npv: c.base_npv, pv_affected: c.pv_affected, variable_sensitivity_pct: c.variable_sensitivity_pct, irr: c.irr, discount_rate: c.discount_rate, disc_rate_sensitivity_pct: c.disc_rate_sensitivity_pct, headroom_pp: c.headroom_pp } } };
+  }
+  if (kind === 'radr_compare') {
+    const ins: RadrInputs = { currency: cur, outlay: r.outlay as number, project_cash_flows: r.project_cash_flows as unknown as number[], company_rate: r.company_rate as number, rf: r.rf as number, mrp: r.mrp as number, tax_rate: r.tax_rate as number, kd: r.kd as number, peer_equity_beta: r.peer_equity_beta as number, peer_ve: r.peer_ve as number, peer_vd: r.peer_vd as number, own_ve: r.own_ve as number, own_vd: r.own_vd as number };
+    const c = computeRadr(ins);
+    const { schema, serialized } = buildRadrSchema(ins, c);
+    const model_answer = buildRadrModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _riskSummary: `RADR=${(c.radr * 100).toFixed(2)}% company=${(c.company_rate * 100).toFixed(2)}% flips=${c.flips}`,
+      _riskPenalty: c.flips ? 0 : 2,
+      _riskGate: { radr: { raw: ins, computed: c } } };
+  }
+  // risk_measures
+  const ins: RiskMeasuresInputs = { currency: cur, discount_rate: r.discount_rate as number, project_a: r.project_a as unknown as { label: string; cash_flows: number[] }, project_b: r.project_b as unknown as { label: string; cash_flows: number[] }, var_sigma_annual: r.var_sigma_annual as number, var_confidence: r.var_confidence as number, var_tail: (r.var_tail as string) === 'two' ? 'two' : 'one', var_horizon_years: r.var_horizon_years as number };
+  const c = computeRiskMeasures(ins);
+  const { schema, serialized } = buildRiskMeasuresSchema(ins, c);
+  const model_answer = buildRiskMeasuresModelAnswer(ins, c, inp.interpretation_prose);
+  return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+    _riskSummary: `dur ${c.duration_a.toFixed(2)}y vs ${c.duration_b.toFixed(2)}y (longer=${c.longer}) VaR=${money(cur, c.var_amount)}`,
+    _riskPenalty: Math.abs(c.duration_a - c.duration_b) >= 0.3 ? 0 : 1,
+    _riskGate: { varDur: { raw: ins, computed: c } } };
+}
+
 // International FAMILY draft (batch #10). Dispatches by spec.international_kind. Basis is PPP for
 // every B5 drill (multi-year translation — Grant ruling #1; IRP is reserved for short-horizon
 // forwards and stays engine-supported/fixture-tested only). Code derives the FX curve, converts,
@@ -1798,6 +2002,7 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   if (spec.bsop_kind && BSOP_LOS.has(spec.lo_code)) return draftBsopDrill(anthropic, spec);
   if (spec.valuation_kind && VALUATION_LOS.has(spec.lo_code)) return draftValuationDrill(anthropic, spec);
   if (spec.international_kind && INTERNATIONAL_LOS.has(spec.lo_code)) return draftInternationalDrill(anthropic, spec);
+  if (spec.risk_kind && RISK_LOS.has(spec.lo_code)) return draftRiskDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
@@ -2012,6 +2217,23 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     lines.push('GATE 12/13/14 — international parity / currency-scale / double-tax: N/A (not an international-family drill)');
   }
 
+  // (G-a…G-e) RISK & UNCERTAINTY family — probability-sum / ENPV consistency / sensitivity reconciliation
+  // / RADR composition+ordering / VaR tail + duration bounds. Only the kind's own gate data is set.
+  if (drill._riskGate) {
+    const g = drill._riskGate;
+    const run = (label: string, res: { ok: boolean; issues: { gate: string; message: string }[] }, pass: string) => {
+      lines.push(`${label}: ${res.ok ? 'PASS' : 'FAIL'}`);
+      if (!res.ok) { ok = false; for (const iss of res.issues) lines.push(`    ✗ [${iss.gate}] ${iss.message}`); } else lines.push(`    ✓ ${pass}`);
+    };
+    if (g.probabilities) run('GATE G-a — probabilities sum to 1', validateProbabilitySum(g.probabilities), 'scenario probabilities are exhaustive and mutually exclusive');
+    if (g.enpv) run('GATE G-b — ENPV = Σ(p×NPV)', validateEnpvConsistency(g.enpv.scenarios, g.enpv.value), 'ENPV is the probability-weighted mean of the scenario NPVs');
+    if (g.sensitivity) run('GATE G-c — sensitivity reconciliation', validateSensitivityReconciliation(g.sensitivity), 'variable margin zeros the NPV; discount-rate sensitivity divides by the original rate, not the bare IRR−r [S4]');
+    if (g.radr) run('GATE G-d — RADR composition + ordering', validateRadrOrdering(g.radr.raw, g.radr.computed), 'RADR = the CAPM-composed project WACC; higher-risk project carries the higher rate');
+    if (g.varDur) run('GATE G-e — VaR tail + duration bounds', validateVarAndDuration(g.varDur.raw, g.varDur.computed), 'one-tail z matches the stated confidence; each duration ≤ its project life');
+  } else {
+    lines.push('GATE G-a…G-e — risk & uncertainty: N/A (not a risk-family drill)');
+  }
+
   return { ok, lines };
 }
 
@@ -2043,13 +2265,14 @@ async function main() {
   const bsopBatch = flag('--bsop-batch');
   const valuationBatch = flag('--valuation-batch');
   const internationalBatch = flag('--international-batch');
+  const riskBatch = flag('--risk-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
-  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch, bsopBatch, valuationBatch].filter(Boolean).length > 1) { console.error('Error: pass only one calculator batch flag.'); process.exit(1); }
+  if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch, bsopBatch, valuationBatch, internationalBatch, riskBatch].filter(Boolean).length > 1) { console.error('Error: pass only one calculator batch flag.'); process.exit(1); }
 
   let specs: AfmDrillSpec[];
   if (npvBatch) {
@@ -2154,6 +2377,21 @@ async function main() {
     specs = plan.map((p) => ({
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       international_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
+      calculation_required: true,
+    }));
+  } else if (riskBatch) {
+    // Risk & uncertainty (calculator #3, B1a iv/v/vi + B1b ii). 4 kinds; conventions page-verified
+    // (S1–S7, docs/evidence/AFM_RISK_EVIDENCE.md). All lo_code B1a except VaR/duration which also
+    // covers B1b(ii) — tagged B1a (single-tag, dual-coverage journalled). B1 ENTRY-RANK stays NPV.
+    const plan: { kind: RiskKind; lo: LoCode; region: string; sector: string }[] = [
+      { kind: 'enpv',          lo: 'B1a', region: 'Vietnam',      sector: 'consumer-electronics assembly — a new production line under three demand states (probability-weighted ENPV + P(negative NPV))' },
+      { kind: 'sensitivity',   lo: 'B1a', region: 'South Africa', sector: 'a platinum-group-metals processing project — selling-price and discount-rate sensitivity margins' },
+      { kind: 'radr_compare',  lo: 'B1a', region: 'Poland',       sector: 'an industrials group entering renewable-energy generation (a DIFFERENT risk class) — company WACC vs a proxy-beta project-specific RADR (the decision flip)' },
+      { kind: 'risk_measures', lo: 'B1a', region: 'Brazil',       sector: 'an infrastructure operator choosing between a front-loaded and a back-loaded concession — comparative project duration + a one-tail project VaR' },
+    ];
+    specs = plan.map((p) => ({
+      ...buildSpecsForList([p.lo] as LoCode[])[0],
+      risk_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
       calculation_required: true,
     }));
   } else {
