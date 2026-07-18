@@ -26,6 +26,7 @@
     "test:bsop": "tsx scripts/test-bsop.ts",
     "test:valuation": "tsx scripts/test-valuation.ts",
     "test:international": "tsx scripts/test-international.ts",
+    "test:risk": "tsx scripts/test-risk.ts",
     "test:area-entry": "tsx scripts/test-area-entry.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",

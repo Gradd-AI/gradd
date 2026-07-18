@@ -41,10 +41,21 @@ import {
   checkTaxProse,
   type ParityBasis,
 } from './international';
+import {
+  checkProbabilitySum,
+  checkEnpvConsistency,
+  checkSensitivityReconciliation,
+  checkRadrOrdering,
+  checkVarAndDuration,
+  type RadrInputs,
+  type RadrComputed,
+  type RiskMeasuresInputs,
+  type RiskMeasuresComputed,
+} from './risk';
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -419,4 +430,24 @@ export function validateDoubleTaxCap(withholding: number, homeTax: number, forei
 export function validateTaxProse(foreignCorp: number, homeTax: number, addRateEffective: number, hasAddTax: boolean, modelAnswer: string): ValidationResult {
   const r = checkTaxProse(foreignCorp, homeTax, addRateEffective, hasAddTax, modelAnswer);
   return { ok: r.ok, issues: r.ok ? [] : [{ component_id: '(tax-prose)', gate: 'double-tax-cap', code: 'tax-prose-inconsistent', message: r.reason ?? 'the tax explanation does not match the computed branch / rate ordering' }] };
+}
+
+// ── RISK & UNCERTAINTY family gates G-a…G-e (calculator #3, 2026-07-18) — delegate to risk.ts cores ──
+function riskResult(gate: ValidationIssue['gate'], code: string, r: { ok: boolean; reason?: string }): ValidationResult {
+  return { ok: r.ok, issues: r.ok ? [] : [{ component_id: `(${gate})`, gate, code, message: r.reason ?? code }] };
+}
+export function validateProbabilitySum(probs: number[]): ValidationResult {
+  return riskResult('probability-sum', 'probabilities-not-exhaustive', checkProbabilitySum(probs));
+}
+export function validateEnpvConsistency(scenarios: { probability: number; npv: number }[], enpv: number): ValidationResult {
+  return riskResult('enpv-consistency', 'enpv-not-prob-weighted', checkEnpvConsistency(scenarios, enpv));
+}
+export function validateSensitivityReconciliation(c: { base_npv: number; pv_affected: number; variable_sensitivity_pct: number; irr: number; discount_rate: number; disc_rate_sensitivity_pct: number; headroom_pp: number }): ValidationResult {
+  return riskResult('sensitivity-reconciliation', 'sensitivity-margin-or-base-wrong', checkSensitivityReconciliation(c));
+}
+export function validateRadrOrdering(raw: RadrInputs, c: RadrComputed): ValidationResult {
+  return riskResult('radr-ordering', 'radr-composition-or-ordering', checkRadrOrdering(raw, c));
+}
+export function validateVarAndDuration(raw: RiskMeasuresInputs, c: RiskMeasuresComputed): ValidationResult {
+  return riskResult('var-duration', 'var-tail-or-duration-bound', checkVarAndDuration(raw, c));
 }

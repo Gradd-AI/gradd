@@ -22,6 +22,12 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   // ── B1 — investment appraisal (NPV is the foundational entry; IRR builds on the NPV mechanics) ──
   '**Investment appraisal — net present value**': 10,
   '**Investment appraisal — internal rate of return**': 12,
+  // Risk & uncertainty (calculator #3) is B1a/B1b too — ranked AFTER NPV/IRR so a risk drill never
+  // preempts NPV as the B1 entry (Grant Step-0 ruling): ENPV → sensitivity → RADR → duration/VaR.
+  '**Risk & uncertainty — expected net present value (ENPV)**': 13,
+  '**Risk & uncertainty — sensitivity analysis**': 14,
+  '**Risk & uncertainty — risk-adjusted discount rate (RADR)**': 15,
+  '**Risk & uncertainty — project duration and value at risk**': 16,
   // ── B2 — options ──
   '**Option valuation — Black-Scholes (BSOP)**': 20,
   // ── B3 — cost of capital is foundational; APV / duration / credit build on it ──
