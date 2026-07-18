@@ -7,8 +7,30 @@ import {
   computeEnpv, computeSensitivity, computeRadr, computeRiskMeasures,
   pvOfStream, npvOfStream, irrOfStream, projectDuration, zForConfidence,
   checkProbabilitySum, checkEnpvConsistency, checkSensitivityReconciliation, checkRadrOrdering, checkVarAndDuration,
+  buildEnpvSchema, buildEnpvModelAnswer, buildSensitivitySchema, buildSensitivityModelAnswer,
+  buildRadrSchema, buildRadrModelAnswer, buildRiskMeasuresSchema, buildRiskMeasuresModelAnswer,
   type EnpvInputs, type SensitivityInputs, type RadrInputs, type RiskMeasuresInputs,
 } from '../lib/acca/risk';
+import { validateSchemaSelfConsistency } from '../lib/acca/validate-schema';
+import { verifyNumericAnswer, type AnswerSchema, type StudentSubmission, type Verdict } from '../lib/acca/numeric-verifier';
+
+// GATE2 figure-integrity: every component expected_value present in the worked answer (1–4 dp, abs too).
+function figuresPresent(schema: AnswerSchema, answer: string): boolean {
+  const n = answer.replace(/,/g, '');
+  return schema.components.every((c) => [1, 2, 3, 4].some((d) => n.includes(c.expected_value.toFixed(d)) || n.includes(Math.abs(c.expected_value).toFixed(d))));
+}
+// GATE3 seeded-OFR (distinct-factor root perturbation), mirroring the generator.
+function ofrCarries(schema: AnswerSchema): boolean {
+  const own = new Map<string, number>(); const components: StudentSubmission['components'] = []; const expected: Record<string, Verdict> = {};
+  let rootIdx = 0;
+  for (const c of schema.components) {
+    const deps = c.depends_on ?? [];
+    if (deps.length === 0 || !c.recompute) { const f = Math.max(0.30, 0.85 - rootIdx * 0.06); rootIdx++; const v = c.expected_value * f; own.set(c.component_id, v); components.push({ component_id: c.component_id, value: v, workings: 'seeded' }); expected[c.component_id] = 'incorrect'; }
+    else { const dv: Record<string, number> = {}; for (const d of deps) dv[d] = own.get(d)!; const v = c.recompute(dv); own.set(c.component_id, v); components.push({ component_id: c.component_id, value: v, workings: 'ofr' }); expected[c.component_id] = 'carried'; }
+  }
+  const res = verifyNumericAnswer(schema, { components });
+  return res.per_component.every((p) => p.verdict === expected[p.component_id]) && res.per_component.some((p) => p.verdict === 'carried');
+}
 
 let failures = 0;
 function ok(name: string, cond: boolean) { if (!cond) failures++; console.log(`${cond ? 'PASS' : 'FAIL'} :: ${name}`); }
@@ -89,6 +111,31 @@ ok('K4 VaR = z×σ×√N = 1.65×12×√4 = 39.6', approx(c4.var_amount, 1.65 * 
 ok('K4 GATE G-e VaR tail + duration bounds', checkVarAndDuration(k4, c4).ok);
 ok('K4 GATE G-e FAILS on a two-tail z (1.96) for a one-tail VaR', !checkVarAndDuration(k4, { ...c4, z: 1.96 }).ok);
 ok('K4 GATE G-e FAILS on a duration exceeding project life', !checkVarAndDuration(k4, { ...c4, duration_a: 9.9 }).ok);
+
+// ─────────────────────── schema gates GATE1/2/3 per kind (code owns every figure; OFR carries) ───────────────────────
+const s1 = buildEnpvSchema(k1, c1), a1 = buildEnpvModelAnswer(k1, c1, 'Board advice prose.');
+ok('K1 GATE1 self-consistency', validateSchemaSelfConsistency(s1.schema).ok);
+ok('K1 GATE2 figure-integrity (every figure in the model answer)', figuresPresent(s1.schema, a1));
+ok('K1 GATE3 OFR: wrong scenario NPV → ENPV carried', ofrCarries(s1.schema));
+ok('K1 model answer carries the ENPV heading + one-shot caveat', a1.includes('expected net present value (ENPV)') && a1.includes('once'));
+
+const s2 = buildSensitivitySchema(k2, c2), a2 = buildSensitivityModelAnswer(k2, c2, 'Board advice prose.');
+ok('K2 GATE1 self-consistency', validateSchemaSelfConsistency(s2.schema).ok);
+ok('K2 GATE2 figure-integrity', figuresPresent(s2.schema, a2));
+ok('K2 GATE3 OFR: wrong base_npv/pv/irr → margins carried', ofrCarries(s2.schema));
+ok('K2 model answer distinguishes headroom (pp) from sensitivity (%)', a2.includes('headroom') && a2.includes('not sensitivity'));
+
+const s3 = buildRadrSchema(k3flip, c3f), a3 = buildRadrModelAnswer(k3flip, c3f, 'Board advice prose.');
+ok('K3 GATE1 self-consistency', validateSchemaSelfConsistency(s3.schema).ok);
+ok('K3 GATE2 figure-integrity', figuresPresent(s3.schema, a3));
+ok('K3 GATE3 OFR: wrong RADR → NPV-at-RADR carried', ofrCarries(s3.schema));
+ok('K3 model answer states the FLIP', a3.includes('FLIPS'));
+
+const s4 = buildRiskMeasuresSchema(k4, c4), a4 = buildRiskMeasuresModelAnswer(k4, c4, 'Board advice prose.');
+ok('K4 GATE1 self-consistency', validateSchemaSelfConsistency(s4.schema).ok);
+ok('K4 GATE2 figure-integrity', figuresPresent(s4.schema, a4));
+ok('K4 GATE3 OFR: wrong Σ(t×PV) → duration carried', ofrCarries(s4.schema));
+ok('K4 model answer names the longer-duration project + one-tail VaR', a4.includes(c4.longer) && a4.includes('one-tail'));
 
 console.log(failures === 0 ? '\nALL RISK FIXTURES PASS' : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
