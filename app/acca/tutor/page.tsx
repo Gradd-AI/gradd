@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper } from '@/lib/acca/paper';
+import { pickEntryDrill } from '@/lib/acca/area-entry';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
 import TutorChat from './TutorChat';
 
@@ -90,7 +91,7 @@ export default async function APMTutorPage({
   if (!data && areaCode) {
     const { data: drills } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text, paper_code')
+      .select('id, lo_code, topic, question, context_text, paper_code, model_answer')
       .eq('exam_board', 'ACCA')
       .eq('paper_code', paper)
       .eq('status', 'approved')
@@ -98,7 +99,19 @@ export default async function APMTutorPage({
       .like('lo_code', `${areaCode}%`)
       .limit(20);
     if (drills && drills.length > 0) {
-      data = pickRandom(drills) as Drill;
+      // Zero-attempt FIRST serve in an area → the deterministic ENTRY drill (foundational kind);
+      // any prior attempt in the area → random ("try another"). Entry keyed on the stable
+      // model_answer heading (regen-safe), never created_at/id. See lib/acca/area-entry.ts.
+      const { count } = await supabase
+        .from('acca_drill_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .like('lo_code', `${areaCode}%`);
+      const zeroAttemptInArea = (count ?? 0) === 0;
+      const picked = (zeroAttemptInArea ? pickEntryDrill(drills) : null) ?? pickRandom(drills);
+      // model_answer was fetched ONLY for entry ranking — take the serve fields explicitly so the
+      // answer never reaches the client props (the POST re-reads the answer server-side for marking).
+      data = { id: picked.id, lo_code: picked.lo_code, topic: picked.topic, question: picked.question, context_text: picked.context_text, paper_code: picked.paper_code };
     }
   }
 

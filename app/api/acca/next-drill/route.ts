@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper, type AccaPaper } from '@/lib/acca/paper';
+import { pickEntryDrill } from '@/lib/acca/area-entry';
 
 export async function GET(request: Request): Promise<Response> {
   const authClient = await createServerClient();
@@ -22,11 +23,13 @@ export async function GET(request: Request): Promise<Response> {
 
   const supabase = createServiceClient();
 
-  // area= mode: pick a random drill from a sub-area (e.g. ?area=B1 → lo_code LIKE 'B1%')
+  // area= mode: pick a drill from a sub-area (e.g. ?area=B1 → lo_code LIKE 'B1%'). A zero-attempt
+  // FIRST serve in the area gets the deterministic ENTRY drill (foundational kind); any prior attempt
+  // in the area → random ("try another"). Entry keyed on the stable model_answer heading (regen-safe).
   if (area && !lo) {
     const { data: areaData } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text')
+      .select('id, lo_code, topic, question, context_text, model_answer')
       .eq('exam_board', 'ACCA')
       .eq('paper_code', paper)
       .eq('status', 'approved')
@@ -35,7 +38,16 @@ export async function GET(request: Request): Promise<Response> {
       .limit(20);
 
     if (areaData && areaData.length > 0) {
-      return NextResponse.json(areaData[Math.floor(Math.random() * areaData.length)]);
+      const { count } = await supabase
+        .from('acca_drill_attempts')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .like('lo_code', `${area}%`);
+      const entry = (count ?? 0) === 0 ? pickEntryDrill(areaData) : null;
+      const chosen = entry ?? areaData[Math.floor(Math.random() * areaData.length)];
+      // model_answer was fetched ONLY for entry ranking — return the serve fields explicitly so it
+      // never reaches the client (the serve payload is question/context only).
+      return NextResponse.json({ id: chosen.id, lo_code: chosen.lo_code, topic: chosen.topic, question: chosen.question, context_text: chosen.context_text });
     }
     return NextResponse.json({ error: 'No drills found for this area' }, { status: 404 });
   }
