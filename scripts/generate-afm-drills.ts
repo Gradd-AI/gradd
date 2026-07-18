@@ -2383,12 +2383,15 @@ async function main() {
     // Risk & uncertainty (calculator #3, B1a iv/v/vi + B1b ii). 4 kinds; conventions page-verified
     // (S1–S7, docs/evidence/AFM_RISK_EVIDENCE.md). All lo_code B1a except VaR/duration which also
     // covers B1b(ii) — tagged B1a (single-tag, dual-coverage journalled). B1 ENTRY-RANK stays NPV.
+    // Currencies are MODERATE-denomination (THB/ZAR/PLN/BRL) — huge-denomination units (VND/IDR) make
+    // "X millions" an unrealistic scale for a project (international-batch lesson). RISK_ONLY regenerates
+    // a single kind (delete the stale candidate first).
     const plan: { kind: RiskKind; lo: LoCode; region: string; sector: string }[] = [
-      { kind: 'enpv',          lo: 'B1a', region: 'Vietnam',      sector: 'consumer-electronics assembly — a new production line under three demand states (probability-weighted ENPV + P(negative NPV))' },
+      { kind: 'enpv',          lo: 'B1a', region: 'Thailand',     sector: 'an automotive-components assembly project — a new production line under three demand states (probability-weighted ENPV + P(negative NPV)); THB is moderate-denomination so THB millions is a realistic scale' },
       { kind: 'sensitivity',   lo: 'B1a', region: 'South Africa', sector: 'a platinum-group-metals processing project — selling-price and discount-rate sensitivity margins' },
       { kind: 'radr_compare',  lo: 'B1a', region: 'Poland',       sector: 'an industrials group entering renewable-energy generation (a DIFFERENT risk class) — company WACC vs a proxy-beta project-specific RADR (the decision flip)' },
       { kind: 'risk_measures', lo: 'B1a', region: 'Brazil',       sector: 'an infrastructure operator choosing between a front-loaded and a back-loaded concession — comparative project duration + a one-tail project VaR' },
-    ];
+    ].filter((p) => !process.env.RISK_ONLY || p.kind === process.env.RISK_ONLY);
     specs = plan.map((p) => ({
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       risk_kind: p.kind, region_hint: p.region, sector_hint: p.sector,

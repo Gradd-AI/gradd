@@ -1,7 +1,7 @@
 # AFM COVERAGE CONTRACT — definitive product-readiness definition
 **Created 12/07/2026, from the ACCA AFM Syllabus & Study Guide Sep 2026–Jun 2027 (no syllabus changes this cycle). This doc defines what "viable" and "exam-ready" mean for the AFM product, by exact LO coverage. Update status columns as batches ship; do not change tier definitions without a logged decision. Mirrored from the project master 18/07/2026 — keep both in sync at batch close.**
 
-**STATUS 18/07/2026: 37 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 10 calculators shipped · delivery layer complete and in production · batch #10 (international) closed incl. student walk · next calculator = #3 risk & uncertainty (last for B-section-live tier), then B narrative cluster (~5 prose drills — first narrative-marking build).**
+**STATUS 18/07/2026: 37 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 10 calculators shipped · delivery layer complete and in production · batch #10 (international) closed incl. student walk · calculator #3 (risk & uncertainty) BUILT + 4 candidates generated → AT THE REVIEW GATE (conventions fetched + page-verified S1–S7; awaiting co-founder recompute → blind GPT → flip = the LAST calculator of the B-section-live tier), then B narrative cluster (~5 prose drills — first narrative-marking build).**
 
 ## Exam facts (source: syllabus §7)
 - 3h15 CBE. Section A: one 50-mark case (40 technical + 10 professional skills), spans ≥2 syllabus sections. Section B: two 25-mark scenario questions (20 + 5 PS each), never wholly narrative.
@@ -15,7 +15,7 @@
 |---|---|---|---|
 | 1 | NPV (inflation, tax-allowable depn, tax lag, scrap) | B1a(i,ii) | **LIVE 13/07** — 4 drills published |
 | 2 | IRR / MIRR | B1c | **LIVE 13/07** — 4 drills published |
-| 3 | Risk & uncertainty (sensitivity margins, probability/expected NPV, RADR, project duration, PV-at-risk interpretation) | B1a(iv,v,vi), B1b(ii) | **NEXT** — last calculator of the B-section-live tier. Convention layers (EV decision rules, VaR one-tail/root-T, sensitivity base) → sources FETCHED at Step-0 per doctrine |
+| 3 | Risk & uncertainty (expected NPV, sensitivity margins, RADR compare, project duration + VaR) | B1a(iv,v,vi), B1b(ii) | **AT REVIEW GATE 18/07** — 4 candidates generated (enpv/sensitivity/radr-flip/duration+VaR); conventions FETCHED + page-verified (S1–S7, docs/evidence/AFM_RISK_EVIDENCE.md); G-a…G-e gates; composes npv.ts+capm.ts one-way. Awaiting co-founder recompute → blind GPT round → flip (last calculator of the B-section-live tier) |
 | 4 | APV (financing side-effects, issue costs, tax shield) | B3j, B3k | **LIVE 13/07** — 4 drills published (2 hostile rounds; P6 loss-relief gate + issue-cost convention born here) |
 | 5 | Cost of capital (CAPM, asset-beta ungear/regear, project-specific WACC) | B3d, B3e | **LIVE 13/07** — 4 drills published (APV/CAPM boundary closed: APV states Keu, CAPM derives it) |
 | 6 | Duration (Macaulay + modified) | B3f (B3g narrative rider) | **LIVE 14/07** — 4 drills (distinct-factor OFR gate + issuer-perspective doctrine born here) |
