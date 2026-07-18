@@ -27,6 +27,7 @@ Every convention was verified by reading the cited ACCA page (`pdftotext`), not 
 - **Project duration = Σ(t×PV)÷ΣPV is DISTINCT from bond Macaulay/modified duration** (calc #6). Do NOT flag the absence of the words "Macaulay/modified" — ACCA calls this "project duration" (S1/S2). It is comparative (which project is more exposed), never a standalone accept/reject.
 - **Discount-rate sensitivity = (IRR−r)/r×100; the bare IRR−r is HEADROOM, never sensitivity** [S4]. Do NOT "correct" it to the bare difference — that is the exact error ACCA marks down.
 - **K2 overlaps the live batch-#1 NPV `sensitivity` kind BY DESIGN.** This is the cited risk-family home and it ADDS the discount-rate form; the live NPV drills are untouched. Do NOT flag duplication.
+- **Sensitivity variable ↔ PV-base pairing (S3, FR2).** A **volume** (or contribution) flex uses the **contribution** PV as the sensitivity base; a **selling-price** flex uses the **post-tax revenue** PV. K2 flexes **sales volume** on the contribution base — correct per S3's own worked example. Do NOT require a revenue base for a volume flex, or a contribution base for a price flex.
 - **ENPV one-shot caveat is REQUIRED house content** [S7]: the per-state NPVs and P(negative NPV) sit alongside the mean because a real project is undertaken once. Do NOT flag it as over-hedging.
 - **B1 ENTRY-RANK stays NPV** (risk headings ranked 13–16); these are lo_code B1a (B1b ii dual-covered on risk_measures, single-tag). **OFR** "charged once, at its source" — house wording, closed.
 
@@ -75,7 +76,7 @@ On the expected-value criterion the ENPV of THB -86.2m is **not positive**, so t
 
 **Step 4 — Advice to the board**
 
-The most fragile assumption in this appraisal is the probability assigned to each demand state: because those probabilities were drawn from a single consultant's scenario model, the board should require an independent cross-check — for instance, triangulating against published ASEAN EV-penetration forecasts or OEM capacity plans — before treating them as reliable inputs. The assumed post-tax discount rate of twelve percent should also be interrogated, since SPAC's actual cost of capital will depend on the gearing it takes on to fund the THB 480 million outlay and on the specific operating-risk profile of a dedicated EV-harness line, which may differ materially from the company's blended rate. Even if the ENPV is positive, the board must weigh this alongside the probability and magnitude of a loss under the Pessimistic state, because this is a single, capital-irreversible project: there is no portfolio of repeated trials across which an expected-value argument will self-correct. The post-tax cash-flow estimates for all three states assume that the OEM supply agreements hold for the full five-year life and that input costs (copper, polymer insulation) remain stable, both of which the board should stress-test given commodity-price volatility in the Thai manufacturing supply chain. Finally, the board should confirm whether the THB 480 million outlay captures all commissioning, tooling, and working-capital requirements, as an understatement of the initial investment would render every state NPV optimistic.
+The most fragile assumption in this appraisal is the probability assigned to each demand state: because those probabilities were drawn from a single consultant's scenario model, the board should require an independent cross-check — for instance, triangulating against published ASEAN EV-penetration forecasts or OEM capacity plans — before treating them as reliable inputs. The assumed post-tax discount rate of twelve percent should also be interrogated, since SPAC's actual cost of capital will depend on the gearing it takes on to fund the THB 480 million outlay and on the specific operating-risk profile of a dedicated EV-harness line, which may differ materially from the company's blended rate. Even before considering the negative ENPV, the board must weigh the 75% probability and magnitude of a loss under the Pessimistic state, because this is a single, capital-irreversible project: there is no portfolio of repeated trials across which an expected-value argument will self-correct. The post-tax cash-flow estimates for all three states assume that the OEM supply agreements hold for the full five-year life and that input costs (copper, polymer insulation) remain stable, both of which the board should stress-test given commodity-price volatility in the Thai manufacturing supply chain. Finally, the board should confirm whether the THB 480 million outlay captures all commissioning, tooling, and working-capital requirements, as an understatement of the initial investment would render every state NPV optimistic.
 
 *Reconciliation: Σ(p×NPV) = THB -86.2m; P(NPV<0) = 75% ✓*
 
@@ -172,18 +173,18 @@ The classic misconception here is FENCE-SITTING layered on top of ABANDONED-AFTE
 
 ### question
 
-Evaluate the sensitivity of the proposed Mogalakwena Refinery Expansion Project's NPV to (i) the platinum-group-metals selling price and (ii) the discount rate, and advise the board on the robustness of the investment decision.
+Evaluate the sensitivity of the proposed Mogalakwena Refinery Expansion Project's NPV to (i) sales volume and (ii) the discount rate, and advise the board on the robustness of the investment decision.
 
 ### context_text
 
-Northveld Platinum Processing (Pty) Ltd, headquartered in Limpopo, South Africa, is appraising a four-year expansion of its Mogalakwena refinery that would increase annual refined platinum-group-metals (PGM) output by approximately 18%. The board has adopted a hurdle rate of 12% per annum — assumed at the appraisal date — which reflects the company's blended cost of capital, though it is worth noting that PGM selling prices are notoriously cyclical and the revenue forecasts underlying these cash flows were derived from a single commodity-price consultant's base-case model, raising a question about forecast provenance and whether a mean-reversion scenario has been adequately stress-tested. The project's net post-tax cash flows embed contribution (selling-price-driven revenue less variable processing costs) as the dominant value driver, and the board should recognise that, because this is a one-shot, long-dated capital commitment rather than a frequently repeated investment, the sensitivity margins computed below are the more decision-relevant risk measure than any expected-value arithmetic alone.
+Northveld Platinum Processing (Pty) Ltd, headquartered in Limpopo, South Africa, is appraising a four-year expansion of its Mogalakwena refinery that would increase annual refined platinum-group-metals (PGM) output by approximately 18%. The board has adopted a hurdle rate of 12% per annum — assumed at the appraisal date — which reflects the company's blended cost of capital, though it is worth noting that refined-output volumes are inherently uncertain — sensitive to ore grade, recovery rates and processing uptime — and the volume forecasts underlying these cash flows were derived from a single technical consultant's base-case model, raising a question about forecast provenance and whether a downside-throughput scenario has been adequately stress-tested. The project's net post-tax cash flows embed contribution (sales-volume-driven revenue less variable processing costs) as the dominant value driver, and the board should recognise that, because this is a one-shot, long-dated capital commitment rather than a frequently repeated investment, the sensitivity margins computed below are the more decision-relevant risk measure than any expected-value arithmetic alone.
 
 Raw inputs:
 - Outlay (t0): ZAR 520 million
 - Discount rate (assumed at appraisal date): 12% per annum
 - Net post-tax cash flows (years 1–4): ZAR 175m, ZAR 195m, ZAR 200m, ZAR 185m
 - Affected cash flows — PGM contribution stream (years 1–4): ZAR 230m, ZAR 250m, ZAR 258m, ZAR 240m
-- Flexed variable: the PGM selling price (via contribution)
+- Flexed variable: sales volume (contribution is the PV base — S3 convention for a volume flex)
 
 ### model_answer
 
@@ -193,11 +194,11 @@ Raw inputs:
 
 **Step 1 — Base NPV and the affected present value**
 
-Base-case NPV = **ZAR 51.6m**; PV of the PGM selling price (via contribution) (the affected post-tax stream) = **ZAR 740.8m**.
+Base-case NPV = **ZAR 51.6m**; PV of sales volume (the affected post-tax stream) = **ZAR 740.8m**.
 
-**Step 2 — Sensitivity to the PGM selling price (via contribution)**
+**Step 2 — Sensitivity to sales volume**
 
-Sensitivity = 100 × NPV ÷ PV of the PGM selling price (via contribution) = 100 × 51.6 ÷ 740.8 = **6.97%** [S3, S4]. the PGM selling price (via contribution) can move by this margin before the decision reverses.
+Sensitivity = 100 × NPV ÷ PV of sales volume = 100 × 51.6 ÷ 740.8 = **6.97%** [S3, S4]. Sales volume can move by this margin before the decision reverses.
 
 **Step 3 — Sensitivity to the discount rate**
 
@@ -205,7 +206,7 @@ Project IRR = **16.58%** (NPV = 0). The headroom over the 12.00% rate is 4.58 pe
 
 **Step 4 — Advice to the board**
 
-The most fragile assumption underpinning this appraisal is the PGM selling-price forecast: derived from a single consultant's base case, it carries no visible cross-check against futures curves or mean-reversion modelling, and a sustained price correction — historically common in platinum-group metals following supply-side expansions — could erode contribution materially over the project's four-year life. The discount rate assumption is also exposed, because the 12% hurdle was set to reflect Northveld's current blended cost of capital rather than the specific systematic risk of a capacity-expansion project in a cyclical commodity sector, and if South African sovereign spreads or rand volatility widen, the true project cost of capital may be higher. The board should treat a narrow selling-price sensitivity margin as a strong caution signal, given that PGM spot prices can move by double-digit percentages within a single quarter; conversely, a wide discount-rate margin would indicate that the accept decision is insensitive to moderate changes in the hurdle rate, providing some comfort on the financing-cost assumption. Before committing ZAR 520 million, the board should commission an independent price-scenario review spanning at least a pessimistic mean-reversion path, and should confirm whether the 12% hurdle adequately compensates for the project's commodity-price beta relative to Northveld's broader portfolio.
+The most fragile assumption underpinning this appraisal is the refined-output volume forecast: derived from a single consultant's base case, it carries no visible cross-check against independent throughput or off-take projections, and a shortfall in refined volumes — for example from ore-grade variability, recovery-rate slippage or unplanned processing downtime — could erode contribution materially over the project's four-year life. The discount rate assumption is also exposed, because the 12% hurdle was set to reflect Northveld's current blended cost of capital rather than the specific systematic risk of a capacity-expansion project in a cyclical commodity sector, and if South African sovereign spreads or rand volatility widen, the true project cost of capital may be higher. The board should treat a narrow sales-volume sensitivity margin as a strong caution signal, given that refined-output volumes can swing materially with ore grade, recovery rates and unplanned downtime; conversely, a wide discount-rate margin would indicate that the accept decision is insensitive to moderate changes in the hurdle rate, providing some comfort on the financing-cost assumption. Before committing ZAR 520 million, the board should commission an independent volume/throughput-scenario review spanning at least a pessimistic downtime-and-grade path, and should confirm whether the 12% hurdle adequately compensates for the project's commodity-price beta relative to Northveld's broader portfolio.
 
 *Reconciliation: applying the 6.97% margin to ZAR 740.8m removes the ZAR 51.6m NPV ✓*
 
@@ -243,7 +244,7 @@ The most common misconception here is ABANDONED-AFTER-CALC: candidates produce t
     },
     {
       "unit": "ZARm",
-      "label": "PV of the PGM selling price (via contribution) (the affected post-tax stream)",
+      "label": "PV of sales volume (via contribution) (the affected post-tax stream)",
       "tolerance": {
         "pct": 0.5,
         "kind": "floor",
@@ -257,7 +258,7 @@ The most common misconception here is ABANDONED-AFTER-CALC: candidates produce t
     },
     {
       "unit": "%",
-      "label": "Sensitivity of the decision to the PGM selling price (via contribution) (%)",
+      "label": "Sensitivity of the decision to sales volume (%)",
       "recompute": "sensitivity_100_npv_over_pv",
       "tolerance": {
         "kind": "absolute",
@@ -357,7 +358,7 @@ Comparing the two, the decision **FLIPS**: accept at the company rate, reject at
 
 **Step 4 — Advice to the board**
 
-The most fragile assumption in this analysis is that Energetix Renewables A.S. is a sufficiently close proxy for the Wiatr Południe project: a single-peer beta conflates Energetix's own financing decisions, its geographic market, and its stage of development with Stalmet's specific project, and the board should require at least two or three additional pure-play comparators before treating the derived asset beta as reliable. Stalmet's own WACC reflects the blended risk of steel fabrication and engineering — sectors whose cash-flow cyclicality and regulatory environment differ fundamentally from a wind-energy generation asset operating under Polish renewable support mechanisms — so using the company rate for this project would systematically misrepresent the project's risk to equity holders. The durability of the post-tax cash-flow estimates also deserves scrutiny: wind-energy revenues in Poland depend on both electricity spot prices and the evolving capacity-market and green-certificate regime, neither of which is locked in for the full seven-year horizon modelled, meaning the assumed year-by-year figures may overstate stability. The board should further confirm whether the pre-tax cost of debt assumed for regearing reflects the incremental borrowing rate Stalmet would actually face on ring-fenced project-finance debt for a renewables asset, rather than its corporate bond rate, since these can differ materially. Finally, because this is a one-shot, strategically irreversible commitment — Stalmet cannot repeat it across many trials to average out outcomes — the board should weigh the individual scenario NPVs and downside sensitivity alongside the point estimate from the risk-adjusted rate before committing capital.
+The most fragile assumption in this analysis is that Energetix Renewables A.S. is a sufficiently close proxy for the Wiatr Południe project: a single-peer beta conflates Energetix's own financing decisions, its geographic market, and its stage of development with Stalmet's specific project, and the board should require at least two or three additional pure-play comparators before treating the derived asset beta as reliable. Stalmet's own WACC reflects the blended risk of steel fabrication and engineering — sectors whose cash-flow cyclicality and regulatory environment differ fundamentally from a wind-energy generation asset operating under Polish renewable support mechanisms — so using the company rate for this project would systematically misrepresent the project's risk to equity holders. The durability of the post-tax cash-flow estimates also deserves scrutiny: wind-energy revenues in Poland depend on both electricity spot prices and the evolving capacity-market and green-certificate regime, neither of which is locked in for the full seven-year horizon modelled, meaning the assumed year-by-year figures may overstate stability. The board should further confirm whether the pre-tax cost of debt assumed for regearing reflects the incremental borrowing rate Stalmet would actually face on ring-fenced project-finance debt for a renewables asset, rather than its corporate bond rate, since these can differ materially. Finally, the board should treat the risk-adjusted NPV as the base-case signal rather than a point forecast and — because this is a one-shot, strategically irreversible commitment Stalmet cannot repeat across many trials to average out — commission downside sensitivities on the project’s key value drivers (support-tariff levels, construction cost and schedule, and output/load factor) before committing capital.
 
 *Reconciliation: same cash flows, two rates — NPV PLN 4.6m at 8.20% vs PLN -32.6m at the 10.90% RADR; decision flips ✓*
 
@@ -458,7 +459,7 @@ Raw inputs:
 
 **Risk & uncertainty — project duration and value at risk**
 
-**Assumptions:** project duration is the present-value-weighted average time to recover value, Σ(t × PV) ÷ Σ PV [S1, S2] — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail 99% confidence (z = 2.33) and scales the annual σ by √N over the 5-year horizon.
+**Assumptions:** project duration is the PV-weighted average timing of cash inflows, Σ(t × PV) ÷ Σ PV [S1, S2] — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail 99% confidence (z = 2.33) and scales the annual σ by √N over the 5-year horizon.
 
 **Step 1 — Project duration (compared)**
 

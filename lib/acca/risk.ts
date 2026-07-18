@@ -481,7 +481,7 @@ export function buildRiskMeasuresModelAnswer(raw: RiskMeasuresInputs, c: RiskMea
   const conf = (asDec(raw.var_confidence) * 100).toFixed(0);
   return [
     RISK_HEADINGS.risk_measures, '',
-    `**Assumptions:** project duration is the present-value-weighted average time to recover value, Σ(t × PV) ÷ Σ PV [S1, S2] — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail ${conf}% confidence (z = ${c.z}) and scales the annual σ by √N over the ${raw.var_horizon_years}-year horizon.`, '',
+    `**Assumptions:** project duration is the PV-weighted average timing of cash inflows, Σ(t × PV) ÷ Σ PV [S1, S2] — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail ${conf}% confidence (z = ${c.z}) and scales the annual σ by √N over the ${raw.var_horizon_years}-year horizon.`, '',
     '**Step 1 — Project duration (compared)**', '',
     `| Project | Σ PV | Σ (t × PV) | Duration |`, `|------|------|------|------|`,
     `| ${raw.project_a.label} | ${m(c.sum_pv_a)} | ${fmt1(c.sum_t_pv_a)} | ${fmtY(c.duration_a)} |`,

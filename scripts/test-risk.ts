@@ -136,6 +136,8 @@ ok('K4 GATE1 self-consistency', validateSchemaSelfConsistency(s4.schema).ok);
 ok('K4 GATE2 figure-integrity', figuresPresent(s4.schema, a4));
 ok('K4 GATE3 OFR: wrong Σ(t×PV) → duration carried', ofrCarries(s4.schema));
 ok('K4 model answer names the longer-duration project + one-tail VaR', a4.includes(c4.longer) && a4.includes('one-tail'));
+ok('K4 duration phrased as "PV-weighted average timing of cash inflows" (FR2, not "time to recover value")',
+  a4.includes('PV-weighted average timing of cash inflows') && !a4.includes('time to recover value'));
 
 console.log(failures === 0 ? '\nALL RISK FIXTURES PASS' : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
