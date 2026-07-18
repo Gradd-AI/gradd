@@ -448,7 +448,7 @@ Raw inputs:
 - Discount rate: 11%
 - Concession A (Expresso Norte) cash flows (BRL m, Years 1–8): 95, 90, 80, 65, 50, 40, 30, 20
 - Concession B (Ramal Sul) cash flows (BRL m, Years 1–8): 20, 30, 40, 50, 65, 80, 90, 95
-- Initial outlay (both concessions): BRL 340 m
+- Initial outlay (both concessions): BRL 260 m
 - VaR annual sigma: BRL 38 m
 - VaR confidence level: 99%
 - VaR tail: one-tail
