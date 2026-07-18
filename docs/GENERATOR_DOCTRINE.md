@@ -31,6 +31,21 @@ A correction that touches one claim must be applied across **all five drill fiel
 
 ## Standing rulings
 
+### CONVENTIONS ARE FETCHED, NOT REMEMBERED (Step-0 gate, PATTERN — batch #10 lesson, 2026-07-18)
+Any new calculator family with a **convention layer** — tax treatment, marking convention, regulatory
+mechanics, an accounting-standard rule, anything where the "right" behaviour is an external convention
+rather than pure arithmetic — must **cite the authoritative ACCA source verbatim (Rule 22 style) AT
+STEP-0, before the engine is built.** The convention is settled by a fetched quote from the ACCA
+syllabus / examiner report / technical article, pasted into the calculator as an evidence comment and
+into the review pack — never ruled from memory and never "it's probably X." **Why:** batch #10's
+double-tax base was ruled from memory as a withholding-only credit; it was wrong (the exam-orthodox base
+is the CORPORATE differential), and the miss cost **two full regeneration cycles** (Fix Rounds 1–2) to
+unwind across four drills. The evidence fetch that finally settled it — the "International project
+appraisal (part 2)" technical-article quote, now Rule 22 in `international.ts` — took **five minutes**.
+Five minutes at Step-0 beats two regen cycles at review. This is a **hard Step-0 gate**: a family whose
+convention layer has no cited source is not ready to build. Reference implementation: the international
+double-tax evidence (Rule 22) + the three-branch ruling below.
+
 ### OFR — own-figure rule (conditional, charged once at source)
 Where a downstream method is correct on the student's own wrong upstream figure, it scores in full; the error is charged **once, at its source**, never again downstream. Credit is **conditional on the own figure being used correctly in each subsequent step** — not granted automatically. Authority: **ACCA examiner report, P2 June 2015** ("…if the own figure is subsequently used correctly"). This ruling is **closed** — do not re-open it in review. Encoded in `numeric-verifier.ts` (`carried` verdict) and taught verbatim in every drill `full_reveal`.
 
