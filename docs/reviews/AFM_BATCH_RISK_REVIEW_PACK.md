@@ -1,6 +1,6 @@
 # AFM risk & uncertainty batch — blind adversarial review pack
 
-**Calculator #3: risk & uncertainty (`lib/acca/risk.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. AT THE REVIEW GATE. Awaiting co-founder independent recompute, THEN a blind GPT round. Last for the B-section-live tier.**
+**Calculator #3: risk & uncertainty (`lib/acca/risk.ts`). 4 drills, `paper_code=AFM`. FLIPPED LIVE 2026-07-18 (`status=approved`, `published=true`) — batch #3 CLOSED after the student walk. History: FR1 (outlay distractor) → FR2 (blind GPT round 1, 4 accepts) → FR3 (residual relabel, sweep-all-fields) → close-out (S-id citation strip from student surfaces). Last calculator of the B-section-live tier; all 10 B-section calculators now complete.**
 
 Doctrine: code owns EVERY figure AND every figure-vs-figure verdict — each scenario NPV, the ENPV, P(negative NPV), the sensitivity margins, the IRR, the RADR (proxy asset-beta ungear→regear via CAPM), both NPVs and the decision FLIP, the durations, the VaR. The model authored PROSE only. The calculator COMPOSES the discounting (`discountFactor`, `npv.ts`) and the RADR derivation (`computeCapm`, `capm.ts`) ONE-WAY, no back-imports.
 
@@ -184,7 +184,7 @@ Raw inputs:
 - Discount rate (assumed at appraisal date): 12% per annum
 - Net post-tax cash flows (years 1–4): ZAR 175m, ZAR 195m, ZAR 200m, ZAR 185m
 - Affected cash flows — PGM contribution stream (years 1–4): ZAR 230m, ZAR 250m, ZAR 258m, ZAR 240m
-- Flexed variable: sales volume (contribution is the PV base — S3 convention for a volume flex)
+- Flexed variable: sales volume (contribution is the PV base for a volume flex)
 
 ### model_answer
 
@@ -198,11 +198,11 @@ Base-case NPV = **ZAR 51.6m**; PV of sales volume (the affected post-tax stream)
 
 **Step 2 — Sensitivity to sales volume**
 
-Sensitivity = 100 × NPV ÷ PV of sales volume = 100 × 51.6 ÷ 740.8 = **6.97%** [S3, S4]. Sales volume can move by this margin before the decision reverses.
+Sensitivity = 100 × NPV ÷ PV of sales volume = 100 × 51.6 ÷ 740.8 = **6.97%**. Sales volume can move by this margin before the decision reverses.
 
 **Step 3 — Sensitivity to the discount rate**
 
-Project IRR = **16.58%** (NPV = 0). The headroom over the 12.00% rate is 4.58 percentage points — but the **sensitivity** is that change expressed as a percentage of the original rate: (IRR − r) ÷ r × 100 = **38.15%** [S4]. (The bare 4.58pp difference is headroom, not sensitivity.)
+Project IRR = **16.58%** (NPV = 0). The headroom over the 12.00% rate is 4.58 percentage points — but the **sensitivity** is that change expressed as a percentage of the original rate: (IRR − r) ÷ r × 100 = **38.15%**. (The bare 4.58pp difference is headroom, not sensitivity.)
 
 **Step 4 — Advice to the board**
 
@@ -270,7 +270,7 @@ The most common misconception here is ABANDONED-AFTER-CALC: candidates produce t
       ],
       "component_id": "var_sensitivity",
       "working_steps": [
-        "= 100 × NPV ÷ PV of the contribution stream [S3, S4]"
+        "= 100 × NPV ÷ PV of the contribution stream"
       ],
       "expected_value": 6.969270823039019
     },
@@ -300,7 +300,7 @@ The most common misconception here is ABANDONED-AFTER-CALC: candidates produce t
       ],
       "component_id": "disc_sensitivity",
       "working_steps": [
-        "= (IRR − r) ÷ r × 100 [S4] — NOT the bare IRR − r headroom"
+        "= (IRR − r) ÷ r × 100 — NOT the bare IRR − r headroom"
       ],
       "expected_value": 38.1460574769941
     }
@@ -339,7 +339,7 @@ Stalmet own debt market value: 75
 
 **Risk & uncertainty — risk-adjusted discount rate (RADR)**
 
-**Assumptions:** because the project is in a different risk class from the company's existing operations, a **project-specific** risk-adjusted discount rate is derived from a proxy company's asset beta (ungeared from the proxy's gearing, regeared to this firm's) via CAPM [S5, S6], and applied to the project's stated cash flows. The company's own 8.20% rate is shown for contrast — it is the WRONG hurdle for a different-risk project.
+**Assumptions:** because the project is in a different risk class from the company's existing operations, a **project-specific** risk-adjusted discount rate is derived from a proxy company's asset beta (ungeared from the proxy's gearing, regeared to this firm's) via CAPM, and applied to the project's stated cash flows. The company's own 8.20% rate is shown for contrast — it is the WRONG hurdle for a different-risk project.
 
 **Step 1 — The project-specific RADR**
 
@@ -391,7 +391,7 @@ The classic misconception here is FENCE-SITTING wrapped inside UNDEVELOPED-ASSUM
       },
       "component_id": "radr",
       "working_steps": [
-        "proxy asset beta 1.236 regeared to 1.315 → project WACC [S5, S6]"
+        "proxy asset beta 1.236 regeared to 1.315 → project WACC"
       ],
       "expected_value": 10.902083428409192
     },
@@ -459,7 +459,7 @@ Raw inputs:
 
 **Risk & uncertainty — project duration and value at risk**
 
-**Assumptions:** project duration is the PV-weighted average timing of cash inflows, Σ(t × PV) ÷ Σ PV [S1, S2] — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail 99% confidence (z = 2.33) and scales the annual σ by √N over the 5-year horizon.
+**Assumptions:** project duration is the PV-weighted average timing of cash inflows, Σ(t × PV) ÷ Σ PV — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail 99% confidence (z = 2.33) and scales the annual σ by √N over the 5-year horizon.
 
 **Step 1 — Project duration (compared)**
 
@@ -541,7 +541,7 @@ The dominant misconception here is ABANDONED-AFTER-CALC: candidates compute dura
       ],
       "component_id": "duration_a",
       "working_steps": [
-        "= Σ(t × PV) ÷ Σ PV [S1, S2]"
+        "= Σ(t × PV) ÷ Σ PV"
       ],
       "expected_value": 3.069715235847607
     },
@@ -587,7 +587,7 @@ The dominant misconception here is ABANDONED-AFTER-CALC: candidates compute dura
       ],
       "component_id": "duration_b",
       "working_steps": [
-        "= Σ(t × PV) ÷ Σ PV [S1, S2]"
+        "= Σ(t × PV) ÷ Σ PV"
       ],
       "expected_value": 5.061333816377741
     },
@@ -601,7 +601,7 @@ The dominant misconception here is ABANDONED-AFTER-CALC: candidates compute dura
       },
       "component_id": "var_amount",
       "working_steps": [
-        "= z 2.33 × σ 38.0 × √5 [article]"
+        "= z 2.33 × σ 38.0 × √5"
       ],
       "expected_value": 197.9814587278314
     }

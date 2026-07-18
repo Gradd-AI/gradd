@@ -139,5 +139,12 @@ ok('K4 model answer names the longer-duration project + one-tail VaR', a4.includ
 ok('K4 duration phrased as "PV-weighted average timing of cash inflows" (FR2, not "time to recover value")',
   a4.includes('PV-weighted average timing of cash inflows') && !a4.includes('time to recover value'));
 
+// ─── citations are builder/reviewer artefacts — NO S-id / [article] tag in student-facing output ───
+const TAG = /\[S[0-9]|\[article\]/;
+for (const [name, ma] of [['K1', a1], ['K2', a2], ['K3', a3], ['K4', a4]] as const)
+  ok(`${name} model answer carries NO S-id/[article] citation tag (student-facing)`, !TAG.test(ma));
+for (const [name, sc] of [['K1', s1], ['K2', s2], ['K3', s3], ['K4', s4]] as const)
+  ok(`${name} schema working_steps carry NO citation tag`, !sc.schema.components.some((c) => (c.working_steps ?? []).some((w) => TAG.test(w))));
+
 console.log(failures === 0 ? '\nALL RISK FIXTURES PASS' : `\n${failures} FAILURE(S)`);
 process.exit(failures === 0 ? 0 : 1);
