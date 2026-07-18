@@ -1,0 +1,93 @@
+{
+  "created": "18/07/2026",
+  "purpose": "Official ACCA evidence for AFM/FM investment-risk conventions",
+  "sources": [
+    {
+      "id": "S1",
+      "title": "P4 Advanced Financial Management September/December 2016 - Official Answers",
+      "filename": "01_ACCA_P4_SD2016_Official_Answers.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/exampapers/sd16_hybrid_p4_a.pdf",
+      "page_ref": "Printed page 18; PDF page 5 of 11",
+      "use": "Project duration and a worked selling-price sensitivity margin.",
+      "finding": "Duration is calculated as the PV-weighted average time. Selling-price headroom is NPV divided by the discounted, post-tax revenue cash flows affected.",
+      "formula": "Duration = \u03a3(t \u00d7 PV_t) / \u03a3PV_t; selling-price sensitivity = NPV / PV of affected post-tax revenue cash flows."
+    },
+    {
+      "id": "S2",
+      "title": "AFM September/December 2019 - Official Sample Answers",
+      "filename": "02_ACCA_AFM_SD2019_Official_Answers.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/exampapers/sd19_sample_afm_a.pdf",
+      "page_ref": "Printed page 17; PDF page 4 of 10",
+      "use": "Second, very explicit AFM project-duration calculation.",
+      "finding": "The answer totals PV \u00d7 time and divides by total positive PVs, producing 3.04 years.",
+      "formula": "Project duration = total (PV \u00d7 time) / total PV."
+    },
+    {
+      "id": "S3",
+      "title": "F9 June 2016 Examiner\u2019s Report",
+      "filename": "03_ACCA_F9_June2016_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/f9/examinersreports/f9.examreport.j16.pdf",
+      "page_ref": "Printed page 2; PDF page 2 of 8",
+      "use": "Black-and-white statement of the general sensitivity formula.",
+      "finding": "The denominator must be the present value of the project variable affected, after relevant tax effects.",
+      "formula": "Sensitivity % = 100 \u00d7 NPV / PV of project variable."
+    },
+    {
+      "id": "S4",
+      "title": "FM September/December 2023 Examiner\u2019s Report",
+      "filename": "04_ACCA_FM_SD2023_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/f9/examinersreports/D23%20FM%20examiner%27s%20report.pdf",
+      "page_ref": "Printed pages 13-14; PDF pages 13-14 of 20",
+      "use": "Current ACCA convention for variable sensitivity and discount-rate sensitivity.",
+      "finding": "For the discount rate, IRR minus the original rate is the absolute headroom in percentage points. ACCA says percentage sensitivity divides that change by the original rate.",
+      "formula": "Variable sensitivity % = NPV / PV of affected post-tax variable \u00d7 100. Discount-rate sensitivity % = (IRR \u2212 original discount rate) / original discount rate \u00d7 100."
+    },
+    {
+      "id": "S5",
+      "title": "AFM March/June 2019 - Official Sample Answers",
+      "filename": "05_ACCA_AFM_MJ2019_Official_Answers.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/exampapers/MJ19_Sample_AFM_ANS%202.pdf",
+      "page_ref": "Printed pages 15-16; PDF pages 2-3 of 10",
+      "use": "Official RADR presentation and application.",
+      "finding": "The answer identifies an 11% project-specific risk-adjusted cost of capital based on a proxy company asset beta, then discounts the project cash flows at 11%.",
+      "formula": "Use the project-specific RADR as the discount rate applied to the project\u2019s relevant cash flows."
+    },
+    {
+      "id": "S6",
+      "title": "FM March/June 2018 - Official Sample Answers",
+      "filename": "06_ACCA_FM_MJ2018_Official_Answers.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/f9/exampapers/fm-2018-marjun-hybrid-a.pdf",
+      "page_ref": "Printed pages 11-13; PDF pages 3-4 of 10",
+      "use": "Joint-probability ENPV table and ACCA explanation of RADR derivation.",
+      "finding": "The official answer constructs joint probabilities and ENPV, and explains that a proxy beta can be ungeared and regeared to obtain a project-specific discount rate.",
+      "formula": "ENPV = \u03a3(probability \u00d7 outcome NPV); RADR may be derived through CAPM using a proxy beta ungeared and regeared."
+    },
+    {
+      "id": "S7",
+      "title": "F9 June 2015 - Official Answers",
+      "filename": "07_ACCA_F9_June2015_Official_Answers.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/f9/exampapers/F9_2015_Jun_A.pdf",
+      "page_ref": "Printed page 19; PDF page 6 of 8",
+      "use": "Expected-NPV appraisal and interpretation.",
+      "finding": "The answer calculates an expected input using probabilities, carries it through the project cash-flow table, and labels the result ENPV.",
+      "formula": "Expected input = \u03a3(probability \u00d7 outcome); ENPV is the NPV based on probability-weighted expected inputs/outcomes."
+    }
+  ],
+  "question_sources": [
+    {
+      "title": "P4 September/December 2016 Question Paper",
+      "filename": "Q1_ACCA_P4_SD2016_Question.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/exampapers/sd16_hybrid_p4_q.pdf"
+    },
+    {
+      "title": "AFM March/June 2019 Question Paper",
+      "filename": "Q2_ACCA_AFM_MJ2019_Question.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/exampapers/MJ19_Sample_AFM_qp.pdf"
+    },
+    {
+      "title": "F9 June 2015 Question Paper",
+      "filename": "Q3_ACCA_F9_June2015_Question.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/f9/exampapers/F9-2015-jun-q.pdf"
+    }
+  ]
+}

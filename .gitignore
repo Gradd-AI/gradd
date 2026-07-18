@@ -57,3 +57,6 @@ ClaudeSend.txt
 # tutor red-team run artifacts (scripts + README committed; transcripts/verdicts are not)
 docs/redteam/*
 !docs/redteam/README.md
+
+# ACCA official PDFs — re-fetchable evidence, never redistributed in-repo (copyright/brand)
+official_acca_pdfs/

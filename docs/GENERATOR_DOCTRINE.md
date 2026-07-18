@@ -206,6 +206,35 @@ extracted so there is a single build/discount implementation. Grant-ruled Step-0
   best-of-4 with a per-kind penalty (K1/K3 → accept; K2 → base-accept + alt-reject flip; K4 →
   decisive surplus + material subsidiary share) and ships the least-bad. Numbers stay code-owned.
 
+### Risk & uncertainty rulings (calculator #3, B1a iv/v/vi + B1b ii — Step-0 evidence VERIFIED 2026-07-18)
+Convention layer FETCHED and page-verified against official ACCA answers/reports (CONVENTIONS ARE
+FETCHED, NOT REMEMBERED). Evidence + verbatim quotes + citations: `docs/evidence/AFM_RISK_EVIDENCE.md`
+(source PDFs git-ignored, re-fetchable via `docs/evidence/fetch_acca_sources.ps1`). Every convention
+below carries its S-id; the engine's code comments must cite the S-id + PDF page + accaglobal URL
+(international Rule 22 style). All seven claims verified on their stated page — zero memory substitution.
+- **Variable sensitivity % = 100 × NPV ÷ PV of the affected post-tax cash-flow stream** (the variable's
+  own PV base, after relevant tax). Evidence **S3** (F9 J16 examiner report, p2, verbatim "Sensitivity =
+  100 x NPV/ PV of project variable") + **S4** (FM SD23 examiner report, pp13–14). This is the SAME
+  convention already shipped in `npv.ts` (batch #1) — now CITED, no longer house-remembered.
+- **Discount-rate sensitivity % = (IRR − r) ÷ r × 100** (r = original discount rate). The bare `IRR − r`
+  is **headroom** in percentage points, and must NEVER be labelled sensitivity — ACCA marks that error
+  down explicitly. Evidence **S4** (verbatim "= (7.4 / 11) x 100%" + the examiner warning that the bare
+  difference "was sometimes shown incorrectly as the discount rate sensitivity itself").
+- **Project duration = Σ(t × PVₜ) ÷ ΣPVₜ** (PV-weighted average time). Evidence **S1** (P4 SD16 answers,
+  p5, "2·78 years") + **S2** (AFM SD19 answers, p4, "173,254,000/57,005,000 = 3·04 years"). This is a
+  DIFFERENT application from `duration.ts` (that is bond Macaulay/modified) — new engine logic.
+- **RADR = a project-specific rate from a proxy asset beta, ungeared then regeared** to the investing
+  company's financial risk (CAPM), applied as the discount rate to the project's relevant cash flows.
+  Evidence **S5** (AFM MJ19 answers, pp2–3) + **S6** (FM MJ18 answers, pp3–4, verbatim ungear/regear).
+  **Composes `capm.ts` ONE-WAY** (that engine already owns MM ungear/regear) — no re-implementation.
+- **ENPV = Σ(pᵢ × NPVᵢ)** (probability-weighted; joint probabilities when independent variables combine).
+  Evidence **S6** (FM MJ18 ENPV table + negative-NPV probability) + **S7** (F9 J15 answers, p6). ENPV is
+  a repeated-game mean — **for a one-shot project the per-state NPVs and P(negative NPV) carry the
+  decision** (S7 verbatim: "as the project is not being repeated, the NPVs associated with each future
+  economic state must be calculated"). That caveat is the family's core L3 scepticism texture.
+- **VaR** stays covered by the existing technical-article citation ("The risks of uncertainty"): one-tail
+  z = 1.65 (95%) / 2.33 (99%); σ scales √T; project VaR scales annual σ by √N. Not re-fetched (already cited).
+
 ---
 
 *New rulings: append here when a session bank adjudicates one; note the source bank date. The full journal-lesson-vs-rulebook reconciliation is banked as an idle-session sweep.*
