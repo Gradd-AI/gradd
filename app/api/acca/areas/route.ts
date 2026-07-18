@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { resolvePaper } from '@/lib/acca/paper';
+import { resolvePaper, isDirectLinkOnlyArea } from '@/lib/acca/paper';
 
 export async function GET(request: Request): Promise<Response> {
   const authClient = await createServerClient();
@@ -20,6 +20,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const groups = new Map<string, { count: number; sampleTopic: string }>();
   for (const row of (data ?? []) as { lo_code: string; topic: string }[]) {
+    if (isDirectLinkOnlyArea(paper, row.lo_code)) continue; // direct-link-only (AFM Section A / K4) — not browsable
     const subArea = row.lo_code.slice(0, 2);
     if (!groups.has(subArea)) {
       groups.set(subArea, { count: 0, sampleTopic: row.topic });

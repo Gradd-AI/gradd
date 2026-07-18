@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { resolvePaper } from '@/lib/acca/paper';
+import { resolvePaper, isDirectLinkOnlyArea } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
 import ACCADashboard from './ACCADashboard';
 import MetaTrackSignup from '@/components/MetaTrackSignup';
@@ -45,6 +45,7 @@ export default async function ACCAPage({
 
   const groups = new Map<string, { count: number; sampleTopic: string }>();
   for (const row of (data ?? []) as { lo_code: string; topic: string }[]) {
+    if (isDirectLinkOnlyArea(paper, row.lo_code)) continue; // direct-link-only (AFM Section A / K4) — not browsable / not the first-run default
     const subArea = row.lo_code.slice(0, 2);
     if (!groups.has(subArea)) {
       groups.set(subArea, { count: 0, sampleTopic: row.topic });
