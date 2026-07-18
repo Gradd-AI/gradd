@@ -216,7 +216,7 @@ You've calculated both sensitivity percentages — now check whether you've dist
 
 ### full_reveal
 
-The most common misconception here is ABANDONED-AFTER-CALC: candidates produce the sensitivity percentages and stop, treating the arithmetic as the deliverable rather than the starting point. That thinking fails the board because a percentage figure in isolation carries no decision weight — the examiner's marks are waiting on the interpretation of *what that margin means given this project's specific risk profile*. The correct mental model is that sensitivity analysis is a stress-test narrative: a narrow selling-price margin signals a fragile assumption, and the board needs to know *why* that assumption is fragile — here, because PGM prices are historically volatile and the forecast rests on a single consultant's base case with no visible cross-check. On the discount-rate sensitivity, a further trap is reporting the raw IRR-minus-hurdle difference as the sensitivity figure; that is headroom, not sensitivity — sensitivity is that gap expressed as a proportion of the original rate, because the question asks how much the *rate itself* can move before the decision reverses. If your base-case NPV or IRR differs from the model answer, carry your own figures forward consistently into the sensitivity ratios and the board narrative — where your method is correct downstream, those marks remain available, and the error is charged once at its source.
+The most common misconception here is ABANDONED-AFTER-CALC: candidates produce the sensitivity percentages and stop, treating the arithmetic as the deliverable rather than the starting point. That thinking fails the board because a percentage figure in isolation carries no decision weight — the examiner's marks are waiting on the interpretation of *what that margin means given this project's specific risk profile*. The correct mental model is that sensitivity analysis is a stress-test narrative: a narrow sales-volume margin signals a fragile assumption, and the board needs to know *why* that assumption is fragile — here, because refined-output volumes swing with ore grade, recovery rates and processing uptime, and the forecast rests on a single consultant's base case with no visible downside-throughput cross-check. On the discount-rate sensitivity, a further trap is reporting the raw IRR-minus-hurdle difference as the sensitivity figure; that is headroom, not sensitivity — sensitivity is that gap expressed as a proportion of the original rate, because the question asks how much the *rate itself* can move before the decision reverses. If your base-case NPV or IRR differs from the model answer, carry your own figures forward consistently into the sensitivity ratios and the board narrative — where your method is correct downstream, those marks remain available, and the error is charged once at its source.
 
 ### answer_schema (serialised jsonb)
 
@@ -252,7 +252,7 @@ The most common misconception here is ABANDONED-AFTER-CALC: candidates produce t
       },
       "component_id": "pv_affected",
       "working_steps": [
-        "= Σ (the PGM selling price (via contribution) cash flow × DF @ 12.00%)"
+        "= Σ (sales volume (contribution stream) cash flow × DF @ 12.00%)"
       ],
       "expected_value": 740.8192549979174
     },
@@ -270,7 +270,7 @@ The most common misconception here is ABANDONED-AFTER-CALC: candidates produce t
       ],
       "component_id": "var_sensitivity",
       "working_steps": [
-        "= 100 × NPV ÷ PV of the PGM selling price (via contribution) [S3, S4]"
+        "= 100 × NPV ÷ PV of the contribution stream [S3, S4]"
       ],
       "expected_value": 6.969270823039019
     },
