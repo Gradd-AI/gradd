@@ -235,6 +235,41 @@ below carries its S-id; the engine's code comments must cite the S-id + PDF page
 - **VaR** stays covered by the existing technical-article citation ("The risks of uncertainty"): one-tail
   z = 1.65 (95%) / 2.33 (99%); σ scales √T; project VaR scales annual σ by √N. Not re-fetched (already cited).
 
+### Narrative-marking rulings (pipeline #2, B narrative cluster D1–D5, 2026-07-20)
+The second pipeline marks **discursive** drills against an authored rubric. Canonical design +
+claim ceiling: `docs/NARRATIVE_MARKING_DESIGN.md`; detection targets (F1–F12, page-VERIFIED):
+`docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b; marker + gates: `lib/acca/narrative-marker.ts`; the
+constrained model grader: `lib/acca/narrative-grader.ts`; generator wiring: `--narrative-batch` in
+`scripts/generate-afm-drills.ts`.
+- **CLAIM CEILING binds every surface (Grant 2026-07-18).** Narrative marking is *constrained-model
+  marking with a code-owned rubric + code-owned aggregation + deterministic copy/anchor/coverage
+  checks + Rule-23 consistency*. The per-criterion QUALITY verdict (developed? applied?) is
+  MODEL-graded under constraint — **NEVER write "code owns the marks" for narrative** (that claim is
+  the calculators' alone). The honest verb is *structured / consistency-checked*.
+- **OFR analog = graduated per-criterion partial credit, code-owned (ruling 2).** There is no figure
+  to carry; the analog is **0 / ½ / full per criterion** (`aggregate()` owns the met→marks mapping,
+  the F1 hard-zero, and the disqualifier ½-cap). An **F9 (own-figure) criterion is required ONLY where
+  the scenario actually gives the student data to use** in the discussion — its anchor is the ACCA
+  examiner statement of the rule verbatim (**J24 p.14**, AFM_NARRATIVE_EVIDENCE.md §1b F9: *"…using
+  their own calculations… as long as their recommendation is consistent with their own workings"*).
+  A pure-conceptual drill with no supplied data carries no F9 criterion.
+- **CONCEPTUAL-ONLY — a narrative drill NEVER computes (overlap ruling, Grant 2026-07-20).** The
+  narrative cluster interprets / evaluates / discusses a **GIVEN** output; it never runs a calculation
+  that a calculator family already owns. Two explicit boundaries: **D1 (Monte Carlo, B1b) interprets a
+  GIVEN simulation output** (mean/σ/P(loss)/VaR figures printed in the scenario) — it does **NOT**
+  compute VaR, which is calculator #3's `risk_measures` kind. **D5 (exchange controls, B5c/d)
+  evaluates restricted-remittance strategy CONCEPTUALLY** — it does **NOT** compute the blocked-funds
+  NPV, which is calculator #10's K3. Any figure a narrative scenario shows is a **GIVEN driver** (free
+  to restate, never a leak — the GIVEN-vs-COMPUTED distinction from the red-team ruling); the drill has
+  no code-derived figure at all.
+- **F12 (required output format ignored) is documented but UNWIRED in v1.** Added to the F-catalogue
+  from SD24 p.7 (page-verified); a rubric criterion keys it only when a drill's requirement names an
+  output format (report/memo to a named board). Most narrative drills impose no format, so F12 stays
+  detected-but-off pending a format-criterion ruling. See NARRATIVE_MARKING_DESIGN.md CLOSED RULINGS.
+- **Provenance gate (STILL BINDING).** §1b evidence is now page-VERIFIED (2026-07-20), but **no
+  coverage / tier-complete / ads claim on narrative until the pipeline is WALKED** (design §7). v1 is
+  authoring-time only — the marker is a gate, live per-student marking is Horizon-2.
+
 ---
 
 *New rulings: append here when a session bank adjudicates one; note the source bank date. The full journal-lesson-vs-rulebook reconciliation is banked as an idle-session sweep.*
