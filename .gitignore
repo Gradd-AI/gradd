@@ -60,3 +60,7 @@ docs/redteam/*
 
 # ACCA official PDFs — re-fetchable evidence, never redistributed in-repo (copyright/brand)
 official_acca_pdfs/
+# AFM examiner reports — registered in docs/evidence/sources.json (E1–E5), fetch via
+# docs/evidence/fetch_acca_sources.ps1. Local working copies must never be committed.
+*AFM examiner*.pdf
+afm_examiner_report_*.pdf

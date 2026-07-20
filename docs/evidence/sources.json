@@ -1,6 +1,6 @@
 {
   "created": "18/07/2026",
-  "purpose": "Official ACCA evidence for AFM/FM investment-risk conventions",
+  "purpose": "Official ACCA evidence for AFM/FM investment-risk conventions (sources S1-S7) and AFM narrative-marking failure modes (examiner_reports E1-E5). ACCA PDFs are never committed in-repo (copyright) - fetch them with fetch_acca_sources.ps1.",
   "sources": [
     {
       "id": "S1",
@@ -71,6 +71,58 @@
       "use": "Expected-NPV appraisal and interpretation.",
       "finding": "The answer calculates an expected input using probabilities, carries it through the project cash-flow table, and labels the result ENPV.",
       "formula": "Expected input = \u03a3(probability \u00d7 outcome); ENPV is the NPV based on probability-weighted expected inputs/outcomes."
+    }
+  ],
+  "examiner_reports": [
+    {
+      "id": "E1",
+      "label": "SD23",
+      "title": "AFM September/December 2023 Examiner's Report",
+      "filename": "08_ACCA_AFM_SD2023_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/D23%20AFM%20examiner%27s%20report.pdf",
+      "bytes": 386496,
+      "questions": "McKeever, Abertafol, Southmed",
+      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
+    },
+    {
+      "id": "E2",
+      "label": "J24",
+      "title": "AFM March/June 2024 Examiner's Report",
+      "filename": "09_ACCA_AFM_MJ2024_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/J24%20AFM%20examiner%27s%20report.pdf",
+      "bytes": 494537,
+      "questions": "Mahoney, Littlebredy, Garnod",
+      "use": "Narrative failure modes F1-F11; states the own-figure-rule (OFR) principle verbatim at p.14."
+    },
+    {
+      "id": "E3",
+      "label": "SD24",
+      "title": "AFM September/December 2024 Examiner's Report",
+      "filename": "10_ACCA_AFM_SD2024_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/SD24%20AFM%20examiner%27s%20report.pdf",
+      "bytes": 480902,
+      "questions": "Northney, Mortexa, Zulla",
+      "use": "Narrative failure modes F1-F11 + source of new mode F12 (required output format ignored, p.7); fullest scepticism definition incl. the 'providing reasons' clause (p.7)."
+    },
+    {
+      "id": "E4",
+      "label": "MJ25",
+      "title": "AFM March/June 2025 Examiner's Report",
+      "filename": "11_ACCA_AFM_MJ2025_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/MJ25%20AFM%20examiner%27s%20report.pdf",
+      "bytes": 414034,
+      "questions": "Kampai, Sohbet, GCR",
+      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
+    },
+    {
+      "id": "E5",
+      "label": "SD25",
+      "title": "AFM September/December 2025 Examiner's Report",
+      "filename": "12_ACCA_AFM_SD2025_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/afm_examiner_report_d25.pdf",
+      "bytes": 1003837,
+      "questions": "Halstock, Drimpton, Passmore",
+      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
     }
   ],
   "question_sources": [
