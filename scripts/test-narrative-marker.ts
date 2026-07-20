@@ -73,6 +73,12 @@ ok('hasConclusion: GOOD commits, BAD does not', hasConclusion(good) && !hasConcl
   const f1Res = aggregate(rubric, f1Verdicts, scenario, good);
   ok('F1 hard-zero: a criterion whose evidence span is copied scores 0 (voided)', f1Res.per_criterion.find((p) => p.criterion_id === 'c1')!.marks === 0 && f1Res.per_criterion.find((p) => p.criterion_id === 'c1')!.capped);
 
+  // F12 in the union + evidence_anchor on a criterion (page-verified F-catalogue extension 2026-07-20)
+  const f12Crit = { ...rubric.criteria[0], disqualifiers: ['F1', 'F12'] as FailureMode[], evidence_anchor: 'J24 p.14' };
+  const f12Rubric = { ...rubric, criteria: [f12Crit, rubric.criteria[1], rubric.criteria[2]] };
+  const f12Res = aggregate(f12Rubric, goodV, scenario, good);
+  ok('F12 disqualifier + evidence_anchor: criterion still aggregates (F12 latent, not raised on a clean answer)', f12Res.per_criterion[0].marks === 2 && !f12Res.per_criterion[0].flags.includes('F12' as FailureMode));
+
   // ── N1–N5 gates ──
   ok('N1 rubric-coverage PASS (reveal all-yes; every part mapped)', (await checkRubricCoverage(rubric, good, scenario, mockGrader)).ok);
   const gap = { ...rubric, requirement_parts: [...rubric.requirement_parts, '(iii) discuss risk'] };

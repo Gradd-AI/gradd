@@ -13,7 +13,11 @@
 // per-criterion model verdict is an INJECTED interface (CriterionGrader) — a mock in fixtures, a real
 // grader at authoring time; there is NO live wiring in v1.
 
-export type FailureMode = 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6' | 'F7' | 'F8' | 'F9' | 'F10' | 'F11';
+// F1–F11 page-VERIFIED 2026-07-20 (docs/evidence/AFM_NARRATIVE_EVIDENCE.md §1b). F12 (required output
+// format ignored, SD24 p.7) is in the type so it is ready, but v1 emits it on NO drill — it keys a
+// criterion only when a requirement names an output format (report/memo). See NARRATIVE_MARKING_DESIGN.md
+// CLOSED RULINGS.
+export type FailureMode = 'F1' | 'F2' | 'F3' | 'F4' | 'F5' | 'F6' | 'F7' | 'F8' | 'F9' | 'F10' | 'F11' | 'F12';
 export type Met = 'no' | 'partial' | 'yes';
 
 export interface ScenarioFact {
@@ -31,6 +35,8 @@ export interface Criterion {
   anchor_facts: string[];             // ScenarioFact ids this point must USE (F5)
   disqualifiers: FailureMode[];       // F-modes that void/cap this criterion
   development_required: boolean;      // claim→because→implication (F2/F3/F6)
+  evidence_anchor?: string;           // authoring provenance: the examiner quote/page this criterion's
+                                      // marking basis rests on (e.g. F9 → "J24 p.14"); never served, not marked on
 }
 export interface NarrativeRubric {
   mode: 'narrative';
@@ -80,6 +86,26 @@ export function missingAnchors(answer: string, c: Criterion, facts: ScenarioFact
 // F4/F11 — the answer commits to a conclusion/recommendation.
 export function hasConclusion(answer: string): boolean {
   return /\b(recommend|conclude|in conclusion|the board should|we advise|should proceed|should not proceed|should adopt|should reject|on balance)\b/i.test(answer);
+}
+// F1 (copied a sentence) — the longest contiguous verbatim word-run shared with the scenario. A single
+// copied sentence stays detectable here even when the rest of the answer dilutes the 6-gram OVERLAP
+// fraction below threshold (scenarioCopyOverlap measures share; this measures the longest lift).
+export function longestVerbatimRun(answer: string, scenario: string): number {
+  const a = norm(answer), sc = norm(scenario);
+  if (a.length === 0 || sc.length === 0) return 0;
+  const scSet = new Set<string>();
+  // index every scenario position by its starting word for a quick contiguous-match scan
+  let best = 0;
+  for (let i = 0; i < a.length; i++) {
+    for (let j = 0; j < sc.length; j++) {
+      if (a[i] !== sc[j]) continue;
+      let k = 0;
+      while (i + k < a.length && j + k < sc.length && a[i + k] === sc[j + k]) k++;
+      if (k > best) best = k;
+    }
+  }
+  void scSet;
+  return best;   // in words
 }
 
 // ── CODE-OWNED AGGREGATION (partial credit + disqualifier caps + band) ──
@@ -144,7 +170,13 @@ export async function checkRule23(rubric: NarrativeRubric, scenario: string, goo
   const gRes = aggregate(rubric, gv, scenario, good), bRes = aggregate(rubric, bv, scenario, bad);
   if (gRes.fraction < passFraction) return { ok: false, reason: `golden GOOD scores ${(gRes.fraction * 100).toFixed(0)}% (< ${(passFraction * 100).toFixed(0)}%) — the marker under-marks a full answer` };
   if (bRes.fraction >= gRes.fraction) return { ok: false, reason: `golden BAD (${(bRes.fraction * 100).toFixed(0)}%) does not score below GOOD (${(gRes.fraction * 100).toFixed(0)}%) — the marker cannot tell them apart` };
-  const raised = new Set(bRes.per_criterion.flatMap((p) => p.flags));
+  // The marker's DETERMINISTIC whole-answer detectors are part of the marker too: a BAD that copies the
+  // scenario (F1) or never commits a recommendation (F4) is detected without the model layer. Fold those
+  // into the raised set so N4 credits detection the marker genuinely has (the per-criterion set already
+  // carries the model flags + F5 missing-anchor + F1 copied-span).
+  const raised = new Set<FailureMode>(bRes.per_criterion.flatMap((p) => p.flags));
+  if (scenarioCopyOverlap(bad, scenario, 6) >= 0.18 || longestVerbatimRun(bad, scenario) >= 8) raised.add('F1');
+  if (!hasConclusion(bad)) raised.add('F4');
   const missing = designedBadFlags.filter((f) => !raised.has(f));
   if (missing.length) return { ok: false, reason: `golden BAD did not raise its designed failure mode(s): ${missing.join(', ')}` };
   return { ok: true };
