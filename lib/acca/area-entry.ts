@@ -50,6 +50,15 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   '**International appraisal with a remittance restriction**': 52,
   // A6 is DIRECT-LINK-ONLY (never browsable) — ranked for completeness / a future Section A launch.
   '**Multinational dividend capacity and policy**': 53,
+  // ── NARRATIVE cluster (pipeline #2, discursive drills D1–D5). Ranked in a dedicated band ABOVE every
+  // calculator (all calculators are ≤ 53) so a narrative drill is NEVER an area's entry — a beginner's
+  // first serve in any area is always the foundational CALCULATOR, not a discursive drill. Grouped by the
+  // drill's primary area: D1→B1, D2/D3→B3, D4→B4, D5→B5. (Map-before-close: new narrative heading ranked here.)
+  '**Monte Carlo simulation — interpreting the simulation output**': 60,          // D1 · B1b (after risk 16)
+  '**Sources of finance — appropriateness for the organisation**': 61,            // D2 · B3a-c (after credit 48)
+  '**Capital structure — theory and practical impact**': 62,                      // D3 · B3i
+  '**Option pricing models — role in valuing equity, debt and default risk**': 63, // D4 · B4d (after credit 48)
+  '**Exchange controls and international sources of finance**': 64,                // D5 · B5c/d (after international 53)
 };
 
 const UNRANKED = Number.POSITIVE_INFINITY;
