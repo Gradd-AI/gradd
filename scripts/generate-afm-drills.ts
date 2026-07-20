@@ -55,6 +55,13 @@ import {
 } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency, validateSpreadTable, validateOptionBounds, validateValuationBridge } from '../lib/acca/validate-schema';
 import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts, lintRatingSymbols } from '../lib/acca/validate-afm-prose';
+// Narrative pipeline (#2) — the discursive-drill marker + constrained model grader (authoring-time gate).
+import {
+  checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
+  scenarioCopyOverlap, hasConclusion, missingAnchors, longestVerbatimRun,
+  type NarrativeRubric, type Criterion, type ScenarioFact, type FailureMode as NarrativeFailureMode,
+} from '../lib/acca/narrative-marker';
+import { makeAnthropicCriterionGrader } from '../lib/acca/narrative-grader';
 import {
   computeFcff,
   buildFcffSchema,
@@ -2245,6 +2252,433 @@ function round2(n: number): number { return Math.round(n * 100) / 100; }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+// ═════════════════════════════════════════════════════════════════════════════
+// NARRATIVE PIPELINE (#2) — discursive drills marked against an authored rubric.
+// CONCEPTUAL-ONLY: interprets/evaluates a GIVEN output; NEVER computes (overlap ruling — D1 ≠ calc #3
+// VaR, D5 ≠ calc #10 K3). CLAIM CEILING: the rubric + aggregation + copy/anchor/coverage checks are
+// code-owned; the per-criterion QUALITY verdict is MODEL-graded (never "code owns the marks").
+// v1 = AUTHORING-TIME gate only (no live wiring). Design: docs/NARRATIVE_MARKING_DESIGN.md.
+// ═════════════════════════════════════════════════════════════════════════════
+
+interface NarrativePlan {
+  id: 'D1' | 'D2' | 'D3' | 'D4' | 'D5';
+  lo_code: LoCode;              // primary tag
+  covers: string[];            // all LOs this drill exercises (per-criterion `lo`, for coverage journalling)
+  level: 2 | 3;
+  region: string;
+  sector: string;
+  heading: string;             // STABLE model_answer first line — the area-entry rank key (lib/acca/area-entry.ts)
+  brief: string;               // conceptual-only task description fed to the author prompt
+}
+
+// Code-owned default bands (fraction of total_marks). Narrative marking's band→verdict is code-owned.
+const NARRATIVE_BANDS = [
+  { min: 0, label: 'fail' },
+  { min: 0.5, label: 'pass' },
+  { min: 0.7, label: 'good' },
+  { min: 0.85, label: 'excellent' },
+];
+
+const NARRATIVE_PLAN: NarrativePlan[] = [
+  {
+    id: 'D1', lo_code: 'B1b', covers: ['B1b'], level: 2, region: 'Vietnam',
+    sector: 'a deep-water port / container-terminal expansion project',
+    heading: '**Monte Carlo simulation — interpreting the simulation output**',
+    brief:
+      'B1b (L2, discursive) — Monte Carlo. The scenario PRINTS a GIVEN simulation output for the project ' +
+      '(e.g. the mean/expected NPV, the standard deviation of NPV, the probability of a negative NPV, and a ' +
+      'stated project value-at-risk figure at a named confidence level). The requirement asks the candidate to ' +
+      'INTERPRET that output: what the simulation says about the likelihood of project success, and how to read ' +
+      'the value-at-risk figure. CONCEPTUAL-ONLY — the candidate does NOT run the simulation and does NOT ' +
+      'compute VaR (that is a different, calculator-owned skill). Every figure in the scenario is GIVEN. The ' +
+      'answer must USE the given figures in its interpretation (own-figure discipline, F9).',
+  },
+  {
+    id: 'D2', lo_code: 'B3a', covers: ['B3a', 'B3b', 'B3c'], level: 3, region: 'Kenya',
+    sector: 'a renewable-energy (solar-plus-storage) developer',
+    heading: '**Sources of finance — appropriateness for the organisation**',
+    brief:
+      'B3a/B3b/B3c (L3, discursive) — sources of finance including Islamic finance (B3b) and green finance ' +
+      '(B3c). The scenario names an organisation with a specific financing need and stated constraints ' +
+      '(e.g. an amount, a stance on gearing/dilution, an ethical or sustainability mandate). The requirement ' +
+      'asks the candidate to ASSESS the appropriateness of a range of sources for THIS organisation — the range ' +
+      'must include an Islamic-finance instrument (e.g. sukuk) and a green instrument (e.g. a green bond), ' +
+      'assessed against the organisation\'s position and constraints, ending in a justified recommendation. ' +
+      'CONCEPTUAL-ONLY — no computation; assess appropriateness, do not price anything.',
+  },
+  {
+    id: 'D3', lo_code: 'B3i', covers: ['B3i'], level: 3, region: 'Chile',
+    sector: 'an established mining-and-metals group considering a large recapitalisation',
+    heading: '**Capital structure — theory and practical impact**',
+    brief:
+      'B3i (L3, discursive) — capital-structure theory ONLY: (i) Modigliani & Miller before and after tax; ' +
+      '(ii) static trade-off theory; (iii) pecking-order; (iv) agency effects. The scenario names a firm ' +
+      'proposing a change in capital structure with stated specifics (current gearing, a tax rate, a stated ' +
+      'director view). The requirement asks the candidate to ASSESS the impact of the financing/capital-structure ' +
+      'change using the theories, applied to the firm. CONCEPTUAL-ONLY — no WACC computation; the theories are ' +
+      'the lens. Do NOT drift into duration/convexity (that is a different LO).',
+  },
+  {
+    id: 'D4', lo_code: 'B4d', covers: ['B4d'], level: 2, region: 'Indonesia',
+    sector: 'a highly-geared toll-road concession company and its lending banks',
+    heading: '**Option pricing models — role in valuing equity, debt and default risk**',
+    brief:
+      'B4d (L2, discursive) — the ROLE of option pricing models (such as the BSOP model) in assessing the value ' +
+      'of equity, the value of debt, and default risk. The scenario names a geared firm where equity can be ' +
+      'framed as a call option on the firm\'s assets (struck at the debt repayment). The requirement asks the ' +
+      'candidate to EXPLAIN the role of the model: how equity-as-call, debt-as-(riskless-debt-minus-put), and ' +
+      'default risk are read from the framework. CONCEPTUAL-ONLY — the candidate does NOT compute a BSOP value ' +
+      '(that is the calculator-owned skill); explain what the model contributes and its limitations.',
+  },
+  {
+    id: 'D5', lo_code: 'B5c', covers: ['B5c', 'B5d'], level: 3, region: 'Nigeria',
+    sector: 'a multinational consumer-goods parent with a subsidiary facing capital controls',
+    heading: '**Exchange controls and international sources of finance**',
+    brief:
+      'B5c/B5d (L3, discursive) — (B5c) evaluate the significance of exchange controls for an investment ' +
+      'decision and strategies for dealing with restricted remittance, AND (B5d) assess the costs and benefits ' +
+      'of alternative sources of finance in the international equity and bond markets. The scenario names a ' +
+      'parent/subsidiary where remittance is restricted and international financing is on the table, with stated ' +
+      'specifics. The requirement asks the candidate to EVALUATE the significance of the controls and the ' +
+      'strategies, and to assess international financing options. CONCEPTUAL-ONLY — the candidate does NOT ' +
+      'compute a blocked-funds NPV (that is calculator #10 K3); evaluate strategy and significance in words.',
+  },
+];
+
+const SUBMIT_NARRATIVE_DRILL_TOOL: Anthropic.Tool = {
+  name: 'submit_narrative_drill',
+  description:
+    'Submit one ACCA AFM DISCURSIVE practice drill AND its marking rubric AND a golden GOOD (full-marks) and ' +
+    'golden BAD (deliberately flawed) answer. The drill is CONCEPTUAL-ONLY — it interprets/evaluates GIVEN ' +
+    'information and NEVER asks the candidate to compute anything.',
+  input_schema: {
+    type: 'object',
+    properties: {
+      context_text: { type: 'string', description: 'The scenario/exhibit (3–6 sentences). Names a non-UK/non-Ireland organisation and the situation, with SPECIFIC usable detail. Where the brief says an output is GIVEN, PRINT the exact figures here (they are given drivers, not something the candidate computes).' },
+      question: { type: 'string', description: 'The requirement, beginning with the capitalised lead command verb (Discuss/Evaluate/Assess/Explain/Interpret). It must ask for interpretation/evaluation/explanation — NEVER a calculation. Split into clearly labelled parts if it has more than one.' },
+      command_verb: { type: 'string', description: 'The verb(s) the question actually demands, lowercase (e.g. "evaluate and recommend").' },
+      requirement_parts: { type: 'array', items: { type: 'string' }, description: 'Each distinct part of the requirement, verbatim short labels (e.g. "(i) assess Islamic finance"). Every part MUST map to at least one criterion.' },
+      scenario_facts: {
+        type: 'array',
+        description: 'The named facts the answer must USE. Each key MUST appear LITERALLY in context_text.',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'stable id, e.g. "f_mean_npv"' },
+            text: { type: 'string', description: 'human description, e.g. "the mean NPV of $180m from the simulation"' },
+            key: { type: 'string', description: 'a distinctive token that appears verbatim in context_text AND that a good answer will repeat, e.g. "$180m" or "sukuk" or "12%"' },
+            kind: { type: 'string', enum: ['figure', 'entity', 'constraint'] },
+          },
+          required: ['id', 'text', 'key', 'kind'],
+        },
+      },
+      criteria: {
+        type: 'array',
+        description: 'The rubric — one entry per markable point. Total marks across criteria = total_marks.',
+        items: {
+          type: 'object',
+          properties: {
+            id: { type: 'string', description: 'e.g. "c1"' },
+            requirement_part: { type: 'string', description: 'must equal one of requirement_parts' },
+            lo: { type: 'string', description: 'the LO this point serves (e.g. "B3b" for the Islamic-finance point)' },
+            required_point: { type: 'string', description: 'the point a full-marks answer makes — specific, developed, applied to the scenario' },
+            marks: { type: 'number', description: 'integer marks for this criterion' },
+            anchor_facts: { type: 'array', items: { type: 'string' }, description: 'scenario_fact ids this point must USE (F5). [] only for a purely conceptual point.' },
+            disqualifiers: { type: 'array', items: { type: 'string', enum: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11'] }, description: 'F-modes that void/cap this criterion. Include F9 ONLY where the scenario supplies data the point must use.' },
+            development_required: { type: 'boolean', description: 'true if the point needs claim→because→implication' },
+            evidence_anchor: { type: 'string', description: 'OPTIONAL authoring note: the examiner anchor for this criterion (e.g. "J24 p.14" for an F9 own-figure criterion). Omit if none.' },
+          },
+          required: ['id', 'requirement_part', 'lo', 'required_point', 'marks', 'anchor_facts', 'disqualifiers', 'development_required'],
+        },
+      },
+      total_marks: { type: 'number', description: 'sum of criteria marks (typically 8–12)' },
+      reveal: { type: 'string', description: 'The golden GOOD answer (the model answer). 150–300 words. Makes EVERY required_point, DEVELOPED (claim→because→implication), USING every anchor fact\'s key token verbatim, ORIGINAL phrasing (do NOT copy scenario sentences), ending with a COMMITTED conclusion/recommendation. This is the full-marks standard.' },
+      golden_bad: { type: 'string', description: 'A deliberately flawed answer that EXHIBITS the designed_bad_flags: e.g. copies scenario sentences (F1), lists without developing (F2), stays generic / ignores the named facts (F5), never commits (F4). It must be plausibly wrong, not empty.' },
+      designed_bad_flags: { type: 'array', items: { type: 'string', enum: ['F1', 'F2', 'F3', 'F4', 'F5', 'F6', 'F7', 'F8', 'F9', 'F10', 'F11'] }, description: 'The F-modes golden_bad is built to exhibit (2–4 of them). The marker MUST raise these on the BAD answer.' },
+    },
+    required: ['context_text', 'question', 'command_verb', 'requirement_parts', 'scenario_facts', 'criteria', 'total_marks', 'reveal', 'golden_bad', 'designed_bad_flags'],
+  },
+};
+
+const NARRATIVE_AUTHOR_PERSONA =
+  'You are an ACCA Advanced Financial Management (AFM) examiner AND mark-scheme author. You write wholly ' +
+  'original DISCURSIVE (prose) practice drills — never from any ACCA past paper — together with the marking ' +
+  'rubric and a pair of golden answers. AFM candidates answer as the senior financial adviser to the board. ' +
+  'CRITICAL — CONCEPTUAL ONLY: these drills interpret, evaluate, discuss or explain GIVEN information. They ' +
+  'NEVER ask the candidate to perform a calculation, and the rubric NEVER credits a computed figure. Any ' +
+  'number in the scenario is a GIVEN driver the candidate reads, not something they derive. ' +
+  'The rubric encodes the ACCA examiner failure modes (candidates lose marks for: F1 restating the scenario; ' +
+  'F2 listing without developing; F3 stating assumptions without discussing; F4 fence-sitting; F5 generic/not ' +
+  'anchored to the scenario; F6 superficial figure-commentary; F7 answering the wrong part; F8 confusing issue ' +
+  'with action; F9 not using given figures; F10 no scepticism/commercial acumen; F11 no breadth/conclusion). ' +
+  'The golden GOOD is a full-marks answer that avoids every mode; the golden BAD deliberately commits its ' +
+  'designed modes. DIVERSITY: scenarios are international, NEVER UK or Ireland.';
+
+function buildNarrativeUserPrompt(plan: NarrativePlan, feedback?: string): string {
+  const lo = SYLLABUS_MAP[plan.lo_code];
+  return `Write one original ACCA AFM DISCURSIVE drill + rubric + golden pair.
+
+TASK (${plan.id}):
+${plan.brief}
+
+Specification:
+- Primary LO: ${plan.lo_code} — ${lo.sub_area}: ${lo.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${lo.descriptor}"
+- Covers LOs: ${plan.covers.join(', ')}
+- Intellectual level: L${plan.level} ${plan.level === 2 ? '(apply/explain a bounded concept)' : '(synthesise + evaluate — weigh, assess appropriateness, recommend with justified reasoning)'}
+- Setting: ${plan.region} — ${plan.sector} (do NOT set in the UK or Ireland)
+
+HARD RULES:
+- CONCEPTUAL ONLY. The question must NOT ask for any calculation. The rubric must NOT credit any computed figure. Numbers in the scenario are GIVEN.
+- Every scenario_fact.key MUST appear verbatim in context_text.
+- The reveal (golden GOOD) must make EVERY required_point, DEVELOPED, USING every anchor fact's key token verbatim, in ORIGINAL wording (not copied from the scenario), and END with a committed recommendation/conclusion.
+- Every requirement_part must map to at least one criterion.
+- Include F9 as a disqualifier ONLY on criteria where the scenario supplies data the point must use; where you do, set evidence_anchor to "J24 p.14".
+- total_marks = sum of criteria marks (aim 8–12).
+
+GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
+- designed_bad_flags MUST be EXACTLY ["F1","F5","F4"] — no more, no fewer.
+- F1: copy at least one FULL sentence (8+ words) VERBATIM from context_text into the bad answer (restating, no analysis).
+- F5: stay generic — do NOT use at least one of the named scenario_facts that a criterion requires (leave that anchor fact's key token OUT of the bad answer entirely).
+- F4: NEVER state a recommendation or conclusion in the bad answer (do not use the words recommend, conclude, on balance, should, advise).
+- Ensure the criteria's disqualifiers collectively include F1, F5 and F4 (put F5 on an anchored criterion, F4 on the recommendation criterion, F1 where restating would earn nothing).${feedback ? `\n\nYOUR PREVIOUS ATTEMPT FAILED THE AUTHORING GATES. FIX EXACTLY THESE, keep everything else:\n${feedback}` : ''}`;
+}
+
+interface NarrativeDrill {
+  question: string;
+  context_text: string;
+  command_verb: string;
+  rubric: NarrativeRubric;
+  reveal: string;              // golden GOOD prose (no heading)
+  golden_bad: string;
+  designed_bad_flags: NarrativeFailureMode[];
+}
+
+async function draftNarrativeDrill(anthropic: Anthropic, plan: NarrativePlan, feedback?: string): Promise<NarrativeDrill> {
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4000,
+    system: NARRATIVE_AUTHOR_PERSONA,
+    tools: [SUBMIT_NARRATIVE_DRILL_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_narrative_drill' },
+    messages: [{ role: 'user', content: buildNarrativeUserPrompt(plan, feedback) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in narrative Pass-1 response');
+  const inp = block.input as {
+    context_text: string; question: string; command_verb: string; requirement_parts: string[];
+    scenario_facts: ScenarioFact[]; criteria: Criterion[]; total_marks: number;
+    reveal: string; golden_bad: string; designed_bad_flags: NarrativeFailureMode[];
+  };
+  assertNonEmpty(inp as unknown as Record<string, unknown>, ['context_text', 'question', 'command_verb', 'reveal', 'golden_bad'], 'Narrative Pass 1');
+  if (!Array.isArray(inp.criteria) || inp.criteria.length === 0) throw new Error('Narrative Pass 1: no criteria');
+  if (!Array.isArray(inp.scenario_facts) || inp.scenario_facts.length === 0) throw new Error('Narrative Pass 1: no scenario_facts');
+  const rubric: NarrativeRubric = {
+    mode: 'narrative',
+    requirement_parts: inp.requirement_parts,
+    scenario_facts: inp.scenario_facts,
+    criteria: inp.criteria,
+    total_marks: inp.total_marks,
+    bands: NARRATIVE_BANDS,
+  };
+  return {
+    question: inp.question,
+    context_text: inp.context_text,
+    command_verb: inp.command_verb.trim().toLowerCase(),
+    rubric,
+    reveal: inp.reveal,
+    golden_bad: inp.golden_bad,
+    designed_bad_flags: Array.from(new Set(inp.designed_bad_flags ?? [])),
+  };
+}
+
+// N1–N5 gate runner. Deterministic gates (N2/N3/N5) run FIRST (free); the grader-backed gates (N1/N4)
+// run only if they pass, to save model spend. Returns pass/fail + printable lines + a feedback string
+// (the failure reasons, fed back into the next authoring attempt — the RADR-flip tuning pattern).
+async function runNarrativeGates(
+  drill: NarrativeDrill,
+  grader: ReturnType<typeof makeAnthropicCriterionGrader>,
+): Promise<{ ok: boolean; lines: string[]; feedback: string }> {
+  const { rubric, reveal, context_text: scenario, golden_bad, designed_bad_flags } = drill;
+  const lines: string[] = [];
+  const fails: string[] = [];
+
+  // N2 scenario-anchor (deterministic)
+  const n2 = checkScenarioAnchor(rubric, scenario, reveal);
+  lines.push(`N2 scenario-anchor (facts in scenario + used in reveal): ${n2.ok ? 'PASS' : 'FAIL — ' + n2.reason}`);
+  if (!n2.ok) fails.push(`N2: ${n2.reason}`);
+  // N3 generic/copy (deterministic)
+  const n3 = checkGenericCopy(reveal, scenario);
+  lines.push(`N3 generic/copy lint (reveal not scenario-restating): ${n3.ok ? 'PASS' : 'FAIL — ' + n3.reason}`);
+  if (!n3.ok) fails.push(`N3: ${n3.reason}`);
+  // N5 committed verdict (deterministic)
+  const n5 = checkCommittedVerdict(rubric, reveal);
+  lines.push(`N5 committed-verdict/structure: ${n5.ok ? 'PASS' : 'FAIL — ' + n5.reason}`);
+  if (!n5.ok) fails.push(`N5: ${n5.reason}`);
+
+  // N4-pre (deterministic raiseability): every designed BAD flag must be STRUCTURALLY raiseable by the
+  // marker, else N4 can never pass. F1 = golden_bad copies the scenario; F4 = golden_bad has no
+  // conclusion; F5 = golden_bad omits an anchor some criterion requires; anything else = a criterion
+  // lists it as a disqualifier (the grader can raise it). Fail cheaply with fix-feedback.
+  const disqUnion = new Set<NarrativeFailureMode>(rubric.criteria.flatMap((c) => c.disqualifiers));
+  const badOverlap = scenarioCopyOverlap(golden_bad, scenario, 6);
+  const badOmitsAnAnchor = rubric.criteria.some((c) => missingAnchors(golden_bad, c, rubric.scenario_facts).length > 0);
+  const badRun = longestVerbatimRun(golden_bad, scenario);
+  const badHasConclusion = hasConclusion(golden_bad);
+  for (const f of designed_bad_flags) {
+    // For the backbone flags, raiseability is the DETERMINISTIC condition N4 actually checks — NOT merely
+    // "a criterion lists it" — so a pass here guarantees N4 can raise it. Other flags fall back to the
+    // grader (a criterion must list them).
+    let raiseable: boolean;
+    if (f === 'F1') raiseable = badOverlap >= 0.18 || badRun >= 8;
+    else if (f === 'F4') raiseable = !badHasConclusion;
+    else if (f === 'F5') raiseable = badOmitsAnAnchor && disqUnion.has('F5');
+    else raiseable = disqUnion.has(f);
+    if (!raiseable) {
+      const why = f === 'F1' ? `golden_bad overlaps ${(badOverlap * 100).toFixed(0)}% / longest verbatim run ${badRun} words (<8) — copy a full 8+ word context_text sentence VERBATIM into the bad answer`
+        : f === 'F4' ? `golden_bad contains a conclusion/recommendation but F4 needs fence-sitting — DELETE every "recommend/conclude/should/advise/on balance" from the bad answer so it ends with NO recommendation`
+        : f === 'F5' ? `golden_bad uses every required anchor fact (or no criterion lists F5) — make the bad answer generic by OMITTING one named scenario fact a criterion requires, and put F5 on that criterion`
+        : `no criterion lists ${f} as a disqualifier — add ${f} to the relevant criterion's disqualifiers so the marker can raise it`;
+      fails.push(`N4-pre: designed BAD flag ${f} is not raiseable — ${why}`);
+    }
+  }
+  lines.push(`N4-pre designed-flag raiseability (${designed_bad_flags.join(',')}): ${fails.some((x) => x.startsWith('N4-pre')) ? 'FAIL' : 'PASS'}`);
+
+  if (fails.length) {
+    lines.push('   (skipping grader-backed N1/N4 — deterministic gates failed first, saving model spend)');
+    return { ok: false, lines, feedback: fails.join('\n') };
+  }
+
+  // N1 rubric-coverage (grader: the reveal must be a full-marks answer + every part mapped)
+  const n1 = await checkRubricCoverage(rubric, reveal, scenario, grader);
+  lines.push(`N1 rubric-coverage (reveal = full marks; every part mapped): ${n1.ok ? 'PASS' : 'FAIL — ' + n1.reason}`);
+  if (!n1.ok) fails.push(`N1: ${n1.reason}`);
+  // N4 Rule-23 (grader: GOOD in band, BAD below + designed flags raised) — the load-bearing gate
+  const n4 = await checkRule23(rubric, scenario, reveal, golden_bad, designed_bad_flags, grader);
+  lines.push(`N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): ${n4.ok ? 'PASS' : 'FAIL — ' + n4.reason}`);
+  if (!n4.ok) fails.push(`N4: ${n4.reason}`);
+
+  return { ok: fails.length === 0, lines, feedback: fails.join('\n') };
+}
+
+// Serialize the narrative rubric to the answer_schema jsonb (ruling 7 — no new column). Carries
+// rubric_version + the golden BAD/designed-flags as authoring artefacts (_authoring; never served).
+function serializeNarrativeSchema(drill: NarrativeDrill): Record<string, unknown> {
+  return {
+    mode: 'narrative',
+    rubric_version: 'narrative_v1',
+    requirement_parts: drill.rubric.requirement_parts,
+    scenario_facts: drill.rubric.scenario_facts,
+    criteria: drill.rubric.criteria,
+    total_marks: drill.rubric.total_marks,
+    bands: drill.rubric.bands,
+    _authoring: {
+      golden_bad: drill.golden_bad,
+      designed_bad_flags: drill.designed_bad_flags,
+      note: 'Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.',
+    },
+  };
+}
+
+async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string) {
+  const grader = makeAnthropicCriterionGrader(anthropic);
+  const plans = NARRATIVE_PLAN.filter((p) => !only || p.id === only);
+  const MAX_ATTEMPTS = 5;
+  const failed: string[] = [];
+
+  for (const plan of plans) {
+    const lo = SYLLABUS_MAP[plan.lo_code];
+    console.log(`\n${'═'.repeat(80)}`);
+    console.log(`NARRATIVE ${plan.id}: ${plan.lo_code} — ${lo.sub_area}: ${lo.topic}  (covers ${plan.covers.join('/')}, L${plan.level})`);
+    console.log(`geo: ${plan.region} / ${plan.sector}`);
+    console.log('─'.repeat(80));
+
+    let drill: NarrativeDrill | null = null;
+    let feedback: string | undefined;
+    let lastLines: string[] = [];
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      let candidate: NarrativeDrill;
+      try { candidate = await draftNarrativeDrill(anthropic, plan, feedback); }
+      catch (err) { console.warn(`  ↻ ${plan.id} attempt ${attempt} draft error: ${(err as Error).message}`); await sleep(2000); continue; }
+
+      const report = await runNarrativeGates(candidate, grader);
+      console.log(`\n  attempt ${attempt}:`);
+      report.lines.forEach((l) => console.log(`    ${l}`));
+      if (report.ok) { drill = candidate; lastLines = report.lines; break; }
+      feedback = report.feedback;
+      await sleep(500);
+    }
+
+    if (!drill) { console.error(`  ✗ ${plan.id} — did not pass N1–N5 in ${MAX_ATTEMPTS} attempts`); failed.push(plan.id); continue; }
+
+    // Build the served model_answer = STABLE HEADING (area-entry key) + the golden-GOOD reveal.
+    const model_answer = `${plan.heading}\n\n${drill.reveal.trim()}`;
+    const answer_schema = serializeNarrativeSchema(drill);
+
+    console.log(`\n  ✓ ${plan.id} gates PASS (${lastLines.length} checks)`);
+    console.log(`\n  CONTEXT_TEXT:\n${drill.context_text}`);
+    console.log(`\n  QUESTION:\n${drill.question}`);
+    console.log(`\n  MODEL_ANSWER (heading + golden GOOD):\n${model_answer}`);
+    console.log(`\n  RUBRIC: ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · parts: ${drill.rubric.requirement_parts.join(' | ')}`);
+    console.log(`  designed BAD flags: ${drill.designed_bad_flags.join(', ')}`);
+
+    // Pass 2 — Ezra teaching reveal (hint + full_reveal), same as every AFM drill.
+    const spec: AfmDrillSpec = {
+      ...buildSpecsForList([plan.lo_code])[0],
+      intellectual_level: plan.level, region_hint: plan.region, sector_hint: plan.sector,
+      command_verb: drill.command_verb, calculation_required: false,
+    };
+    let reveal: { hint: string; full_reveal: string } | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try { reveal = await draftReveal(anthropic, spec, drill.question, model_answer); break; }
+      catch (err) { if (attempt === 0) { console.warn(`  ↻ ${plan.id} [Ezra] retry (${(err as Error).message})`); await sleep(2000); } else { console.error(`  ✗ ${plan.id} [Ezra] FAILED`); } }
+    }
+    if (!reveal) { failed.push(plan.id); continue; }
+    // P4 invented-fact / frozen-facts lint on the teaching reveal (matches the calculator loop).
+    const revealJur = [
+      ...lintJurisdiction({ hint: reveal.hint, full_reveal: reveal.full_reveal }, { context: drill.context_text }),
+      ...lintFrozenMarketFacts({ hint: reveal.hint, full_reveal: reveal.full_reveal }),
+    ];
+    if (revealJur.length) {
+      console.error(`  ✗ ${plan.id} — reveal jurisdiction lint (P4) FAILED:`);
+      for (const iss of revealJur) console.error(`      ✗ [${iss.field}] ${iss.message}`);
+      failed.push(plan.id); continue;
+    }
+    console.log(`\n  HINT:\n${reveal.hint}`);
+    console.log(`\n  FULL_REVEAL:\n${reveal.full_reveal}`);
+
+    if (dryRun) { console.log(`\n  (dry-run — not inserted)`); await sleep(200); continue; }
+
+    const { error: insErr } = await supabase!.from('acca_drills').insert({
+      exam_board:             'ACCA',
+      paper_code:             'AFM',
+      lo_code:                plan.lo_code,
+      topic:                  lo.topic,
+      command_verb:           drill.command_verb,
+      intellectual_level:     plan.level,
+      professional_skill_tag: null,
+      calculation_required:   false,
+      mode:                   'discursive',
+      marks_guide:            drill.rubric.total_marks,
+      question:               drill.question,
+      context_text:           drill.context_text,
+      model_answer,
+      hint:                   reveal.hint,
+      full_reveal:            reveal.full_reveal,
+      answer_schema,
+      status:                 'candidate',
+      published:              false,
+    });
+    if (insErr) { console.error(`  ✗ ${plan.id} INSERT failed: ${insErr.message}`); failed.push(plan.id); }
+    else { console.log(`\n  ✓ ${plan.id} — inserted as candidate (mode=discursive, rubric_version=narrative_v1)`); }
+    await sleep(300);
+  }
+
+  console.log(`\n${'─'.repeat(60)}`);
+  console.log(dryRun ? `Narrative dry-run complete — ${plans.length - failed.length}/${plans.length} passed gates, 0 inserted.` : `Narrative batch done. ${plans.length - failed.length}/${plans.length} inserted.`);
+  if (failed.length) console.log(`Failed: ${failed.join(', ')}`);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Main
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2266,11 +2700,21 @@ async function main() {
   const valuationBatch = flag('--valuation-batch');
   const internationalBatch = flag('--international-batch');
   const riskBatch = flag('--risk-batch');
+  const narrativeBatch = flag('--narrative-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --narrative-batch [--dry-run] B narrative cluster (5 discursive drills D1–D5: MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls). --narrative-only D3 regenerates one.';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--narrative-batch', '--narrative-only']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
+
+  // Narrative pipeline (#2) — dedicated path (rubric-graded discursive drills, N1–N5, real grader).
+  if (narrativeBatch) {
+    const only = arg('--narrative-only');
+    const anthropicN = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    const supabaseN = dryRun ? null : createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+    await runNarrativeBatch(anthropicN, supabaseN, dryRun, only);
+    return;
+  }
 
   if ([npvBatch, apvBatch, capmBatch, durationBatch, creditBatch, bsopBatch, valuationBatch, internationalBatch, riskBatch].filter(Boolean).length > 1) { console.error('Error: pass only one calculator batch flag.'); process.exit(1); }
 
