@@ -20,6 +20,17 @@
 // Intellectual levels — ACCA standard framework definitions
 // Superscripts [2] and [3] in the study guide correspond to these levels.
 // No [1]-level LOs appear in APM (professional strategic exam — application minimum).
+//
+// ⚠️ NOT VERBATIM — DO NOT QUOTE AS STUDY-GUIDE TEXT (added 20/07/2026).
+// The APM guide states ONLY the bare labels: 'Knowledge and comprehension',
+// 'Application and analysis', 'Synthesis and evaluation'. Everything after the colon
+// below is an EDITORIAL GLOSS written here — verified 20/07/2026 against
+// docs/apm_s26_j27_syllabus_and_study_guide.pdf: all eight gloss phrases ('explain
+// mechanisms', 'perform calculations', 'evaluate appropriateness', 'assess trade-offs',
+// 'apply frameworks strategically', 'recall facts', etc.) return ZERO hits in the guide.
+// Currently quoted by no document (checked) — keep it that way. This is the same defect
+// class fixed in afm-framework.ts / AFM_NARRATIVE_EVIDENCE.md §1a (VERIFICATION LOG G1);
+// a full APM §1a-style trace has NOT been done.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const INTELLECTUAL_LEVELS = {

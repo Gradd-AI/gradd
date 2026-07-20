@@ -11,8 +11,18 @@
  * levels, and exam structure independently confirmed against the official PDF.
  *
  * EVERY item cites its guide page number (the page numbers printed in the PDF).
- * Nothing here is invented or inferred: where the guide is silent (e.g. Section G
- * has no intellectual levels), the field is null and the gap is noted, not filled.
+ * Where the guide is silent (e.g. Section G has no intellectual levels), the field is
+ * null and the gap is noted, not filled.
+ *
+ * ⚠️ VERBATIM SCOPE (corrected 20/07/2026 — this header previously claimed "nothing here
+ * is invented or inferred", which was not true of INTELLECTUAL_LEVELS). Blocks explicitly
+ * marked "verbatim" ARE guide text: COMMAND_VERBS, PROFESSIONAL_SKILLS, EMPLOYABILITY_SKILLS,
+ * EXAM_STRUCTURE, plus the SYLLABUS_MAP LO descriptors (list sub-items inlined — see below).
+ * INTELLECTUAL_LEVELS is NOT verbatim: its em-dash tails are an editorial gloss found
+ * nowhere in the guide (see the warning on that constant; use INTELLECTUAL_LEVEL_LABELS
+ * when you need quotable text). LO descriptors are substance-verbatim but normalise the
+ * guide's sub-item lists — guide 'i) The significance…' is stored as '(i) the significance…'.
+ * Before quoting ANY string from this file as ACCA text, confirm it sits in a verbatim block.
  *
  * PAGE REFERENCES (guide's own page numbers):
  *   Main capabilities ....................... p.4
@@ -41,12 +51,31 @@
 // Intellectual levels — ACCA standard framework definitions (guide p.5)
 // Superscripts [2] and [3] in the study guide correspond to these levels.
 // No [1]-level LOs appear in AFM (Strategic Professional — application minimum).
+//
+// ⚠️ NOT VERBATIM — DO NOT QUOTE THESE STRINGS AS STUDY-GUIDE TEXT (added 20/07/2026).
+// The guide states ONLY the bare labels on p.5: 'Knowledge and comprehension',
+// 'Application and analysis', 'Synthesis and evaluation'. Everything after the em-dash
+// below is an EDITORIAL GLOSS written here — each tail phrase returns ZERO hits across
+// all 21 pages of the S26–J27 guide. (Unlike PROFESSIONAL_SKILLS / EMPLOYABILITY_SKILLS /
+// COMMAND_VERBS / EXAM_STRUCTURE, this block is not marked "verbatim" — that is the
+// distinction to check before quoting anything out of this file.)
+// A prior revision of docs/evidence/AFM_NARRATIVE_EVIDENCE.md §1a quoted the L2/L3 tails
+// as guide-verbatim; corrected there 20/07/2026 (VERIFICATION LOG G1). If you need the
+// quotable text, use the bare label only, or re-read guide p.5 (sources.json E6).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const INTELLECTUAL_LEVELS = {
+  // label — <editorial gloss, NOT guide text>
   L1: 'Knowledge and comprehension — broadly equates with Applied Knowledge; not the primary level examined at AFM',
   L2: 'Application and analysis — apply concepts, perform calculations, analyse, advise on application of techniques',
   L3: 'Synthesis and evaluation — evaluate, recommend justified actions, assess trade-offs, exercise strategic judgement',
+} as const;
+
+/** The guide-verbatim level labels (guide p.5) — safe to quote. */
+export const INTELLECTUAL_LEVEL_LABELS = {
+  L1: 'Knowledge and comprehension',
+  L2: 'Application and analysis',
+  L3: 'Synthesis and evaluation',
 } as const;
 
 // ─────────────────────────────────────────────────────────────────────────────
