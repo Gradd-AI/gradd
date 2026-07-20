@@ -3,7 +3,7 @@ $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Out = Join-Path $Root "official_acca_pdfs"
 New-Item -ItemType Directory -Force -Path $Out | Out-Null
 $Manifest = Get-Content (Join-Path $Root "sources.json") -Raw | ConvertFrom-Json
-$Items = @($Manifest.sources) + @($Manifest.examiner_reports) + @($Manifest.question_sources)
+$Items = @($Manifest.sources) + @($Manifest.examiner_reports) + @($Manifest.syllabus_sources) + @($Manifest.question_sources)
 foreach ($Item in $Items) {
     $Target = Join-Path $Out $Item.filename
     Write-Host "Fetching $($Item.title) -> $($Item.filename)"

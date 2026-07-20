@@ -125,6 +125,18 @@
       "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
     }
   ],
+  "syllabus_sources": [
+    {
+      "id": "E6",
+      "label": "GUIDE",
+      "title": "AFM Syllabus and Study Guide September 2026 to June 2027",
+      "filename": "13_ACCA_AFM_S26_J27_Syllabus_and_Study_Guide.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/studyguides/afm_s26_j27_syllabus_and_study_guide.pdf",
+      "bytes": 568640,
+      "use": "Syllabus marking basis for AFM_NARRATIVE_EVIDENCE.md §1a: intellectual levels (p.5), LO descriptors (pp.9-11), professional skills Section F (p.13), exam structure (pp.15-16), professional-skills mark split 80/20 (p.18). Also the source of record for scripts/afm-framework.ts.",
+      "note": "Page-verified 20/07/2026. The detailed study guide is laid out in TWO COLUMNS - pdftotext without -layout interleaves them, so verify with -layout and split columns, or quotes will appear to be missing when they are present."
+    }
+  ],
   "question_sources": [
     {
       "title": "P4 September/December 2016 Question Paper",
