@@ -3,7 +3,8 @@
 **PROVENANCE (read before using):**
 - **§1b failure modes (F1–F12): VERIFIED 20/07/2026.** Every quote below was page-verified in-repo against the source PDF via `pdftotext`: the verbatim string was located character-for-character and the real page recorded as `[REPORT p.N]`. Original extraction 18/07/2026 by the co-founder (MJ25 / SD23 / SD25); this pass added page refs, corrected the rendering deltas listed in the VERIFICATION LOG, and extended the base with **J24 + SD24**. **Zero misquotes and zero not-found** — see the log for the five typographic/editorial deltas recorded.
 - **Page refs are PDF page = printed footer page.** Verified aligned on all five reports (pdftotext page N carries printed footer "N"), so `p.N` is unambiguous in either numbering.
-- **§1a syllabus basis:** verbatim from `scripts/afm-framework.ts` (the earlier syllabus extraction — ACCA AFM Study Guide Sep 2026–Jun 2027; guide page refs as noted in the framework). **STILL PROVISIONAL** — the AFM syllabus PDF is not in-repo; a page-verify pass on §1a remains a lower-priority follow-up. §1a is NOT covered by the 20/07/2026 verification.
+- **§1a syllabus basis: VERIFIED 20/07/2026** against the ACCA AFM Syllabus and Study Guide S26–J27 itself (registered **E6** in `sources.json`; the PDF was found on the work machine at `docs/afm_s26_j27_syllabus_and_study_guide.pdf`, gitignored by `docs/*.pdf`). Every §1a quote now carries a **[GUIDE p.N]** ref taken from the guide, not from `scripts/afm-framework.ts`. **Two defects were found and fixed** — one fabricated-gloss (G1) and one wrong page citation (G2); both are recorded in the VERIFICATION LOG. Three descriptors are substance-verbatim but list-format-normalised (G3).
+- **Anchor rule for §1a.** `scripts/afm-framework.ts` is a *convenience* anchor, **not** an evidence anchor: it marks only four blocks "verbatim" (command verbs, professional skills, employability, exam structure). Anything outside those four — notably `INTELLECTUAL_LEVELS` — must be traced to the guide before being quoted. G1 is exactly the failure that rule prevents.
 
 ## Source register (label → file → actual title)
 
@@ -21,32 +22,48 @@ The co-founder's report labels were all **correct**; the local filenames are sho
 
 **PDF custody:** these five PDFs are ACCA copyright and follow the standing repo rule — **not redistributed in-repo** (`.gitignore`: "ACCA official PDFs — re-fetchable evidence, never redistributed in-repo"). They are cited by label + page exactly as `SOURCE_MAP.md` cites S1–S7. **Registered 20/07/2026 as E1–E5 in `docs/evidence/sources.json`** — re-fetch with `docs/evidence/fetch_acca_sources.ps1`, which now verifies each download's byte size against the manifest. All five source URLs were confirmed live and **byte-identical to the copies used for this verification** (SD23 386,496 · J24 494,537 · SD24 480,902 · MJ25 414,034 · SD25 1,003,837), so any future re-fetch that changes size will throw and force a page-ref re-verification.
 
+**Study guide custody:** the AFM Syllabus and Study Guide S26–J27 is registered **E6** (`syllabus_sources` in `sources.json`), URL confirmed live and **byte-identical** to the local copy (568,640 bytes). Local copy lives at `docs/afm_s26_j27_syllabus_and_study_guide.pdf`, gitignored by the pre-existing `docs/*.pdf` rule. **Extraction warning:** the detailed study guide is laid out in **two columns** — `pdftotext` *without* `-layout` interleaves them, which makes present quotes look missing. Use `-layout` and split columns (a descriptor may also wrap left-column-bottom → right-column-top on the same page).
+
 ---
 
-## §1a — SYLLABUS MARKING BASIS (verbatim, framework/study-guide)
+## §1a — SYLLABUS MARKING BASIS (guide-verified 20/07/2026 — every quote carries a [GUIDE p.N])
 
-### Intellectual levels (study guide p.5; superscripts [2]/[3] in the guide)
-- **L2 — Application and analysis:** "Application and analysis — apply concepts, perform calculations, analyse, advise on application of techniques."
-- **L3 — Synthesis and evaluation:** "Synthesis and evaluation — evaluate, recommend justified actions, assess trade-offs, exercise strategic judgement."
-- No L1 LOs appear in AFM (Strategic Professional — application minimum).
+### Intellectual levels (study guide **p.5**; superscripts [2]/[3] in the guide)
+The guide states the three levels as **bare labels only** — it gives no per-level descriptor sentence:
+- **L1:** "Knowledge and comprehension" — **[GUIDE p.5]**
+- **L2:** "Application and analysis" — **[GUIDE p.5]**
+- **L3:** "Synthesis and evaluation" — **[GUIDE p.5]**
+- Context sentence: "The specific capabilities within the detailed syllabuses and study guides are assessed at one of three intellectual or cognitive levels" — **[GUIDE p.5]**
+- No L1 LOs appear in AFM (0 of 80 LOs are level 1 — counted from `SYLLABUS_MAP`; Strategic Professional = application minimum).
 
-### Professional skills — Section F, 20/100 marks, all four at L3 (study guide p.5)
-*(All four ARE examined in Section A; a Section B question examines a minimum of two from {analysis & evaluation, scepticism, commercial acumen}. Examiner reports flag scepticism + commercial acumen as the weakest-earned — see F10.)*
-- **Communication (L3):** "Inform concisely, objectively and unambiguously, adopting a suitable style and format, using appropriate technology." · "Persuade using compelling and logical arguments, demonstrating the ability to counter argue where appropriate." · "Clarify and simplify complex issues to convey relevant information in a way that adopts an appropriate tone and is easily understood by and reflects the requirements of the intended audience."
-- **Analysis and evaluation (L3):** "Investigate relevant information from a range of sources, using appropriate analytical techniques to estimate outcomes, assist in decision-making and to identify opportunities or solutions." · "Consider information, evidence and findings carefully, reflecting on their implications and how they can be used in the interests of the wider organisational goals." · "Assess and apply appropriate judgement when considering organisational issues, problems or when making financial management decisions; taking into account the implications of such decisions on the organisation and those affected." · "Appraise information objectively with a view to balancing the costs, risks, benefits and opportunities, before recommending appropriate solutions or decisions."
-- **Scepticism (L3):** "Explore the underlying reasons for a given situation, applying the attitude of an enquiring mind, beyond what is immediately apparent." · "Question opinions, assertions and assumptions, by seeking justifications and obtaining sufficient evidence for either their support and acceptance or rejection." · "Challenge and critically assess the information presented or decisions made, where this is clearly justified, in the wider professional, ethical, organisational, or public interest."
-- **Commercial acumen (L3):** "Demonstrate awareness of organisational and external factors, which will affect the financial management decisions of an organisation." · "Recognise key issues in a given scenario and use judgement in proposing and recommending commercially viable solutions." · "Show insight and perception in understanding financial issues and wider organisational matters, demonstrating acumen in arriving at appropriate recommendations."
+> ⚠️ **CORRECTED 20/07/2026 — do not reinstate the old wording.** Earlier revisions of this file quoted L2 as *"Application and analysis — apply concepts, perform calculations, analyse, advise on application of techniques"* and L3 as *"Synthesis and evaluation — evaluate, recommend justified actions, assess trade-offs, exercise strategic judgement"*, presented as study-guide verbatim. **The em-dash tails appear NOWHERE in the guide** (each phrase returns 0 hits across all 21 pages). They are an editorial gloss authored in `scripts/afm-framework.ts` (`INTELLECTUAL_LEVELS`), which — unlike that file's professional-skills, employability, command-verb and exam-structure blocks — is *not* marked "verbatim". The bare labels above are what ACCA actually publishes. See VERIFICATION LOG G1.
 
-### The 5-cluster target LO descriptors (verbatim, framework)
-- **B1b (L2, discursive) — Monte Carlo:** "Outline the application of Monte Carlo simulation to investment appraisal. Candidates will not be expected to undertake simulations in an examination context but will be expected to demonstrate an understanding of: (i) the significance of the simulation output and the assessment of the likelihood of project success; (ii) the measurement and interpretation of project value at risk."
-- **B3a (L3, discursive) — sources of finance:** "Identify and assess the appropriateness of the range of sources of finance available to an organisation including equity, debt, hybrids, lease finance, venture capital, business angel finance, private equity, asset securitisation and sale, Islamic finance and security token offerings. Including assessment on the financial position, financial risk and the value of an organisation."
-- **B3b (L2, discursive) — Islamic finance:** "Discuss the role of, and developments in, Islamic financing as a growing source of finance for organisations; explaining the rationale for its use, and identifying its benefits and deficiencies."
-- **B3c (L2, discursive) — green finance:** "Discuss the role of green finance for organisations pursuing an environmental/sustainable agenda."
-- **B3i (L3, discursive) — capital-structure theory:** "Assess the impact of financing and capital structure upon the organisation with respect to: (i) Modigliani and Miller propositions, before and after tax; (ii) static trade-off theory; (iii) pecking order propositions; (iv) agency effects."
-- **B3g (L3, discursive) — duration limitations/convexity:** "Discuss the benefits and limitations of duration including the impact of convexity." *(NOTE: B3g is a DURATION concept already narrative-ridden by calculator #6 (duration `limitations` kind). Its pairing with capital-structure theory in the coverage contract is a likely mislabel — flagged in the Step-0 risks.)*
-- **B4d (L2, discursive) — BSOP conceptual:** "Explain the role of option pricing models, such as the BSOP model, in the assessment of the value of equity, the value of debt and of default risk."
-- **B5c (L3, discursive) — exchange controls:** "Evaluate the significance of exchange controls for a given investment decision and strategies for dealing with restricted remittance." *(Dual coverage: calculator #10 (international, `restricted_remittance`) covered B5c numerically; this narrative drill is the conceptual/strategy evaluation.)*
-- **B5d (L3, discursive) — international finance sources:** "Assess and advise on the costs and benefits of alternative sources of finance available within the international equity and bond markets."
+### Professional skills — Section F, 20/100 marks, all four at L3 (study guide **p.13**)
+*(Page corrected 20/07/2026: this heading previously cited "p.5" — that is the intellectual-levels page. Section F sits on **p.13**. See VERIFICATION LOG G2.)*
+
+Mark split and examining rules, all guide-verbatim:
+- "The 50 marks will comprise of 40 technical marks and 10 professional skills marks. **All of the professional skills will be examined in Section A**." — **[GUIDE p.15]**
+- "The 25 marks will comprise of 20 technical marks and 5 professional skills marks… **Each question will contain a minimum of two professional skills from Analysis and Evaluation, Scepticism and Commercial Acumen**." — **[GUIDE p.16]**
+- "All option exams contain a total of 80 technical marks and **20 professional skills marks**." — **[GUIDE p.18]** (direct source of the 20/100 figure; also reconciles as 10 + 5×2)
+- All 13 sub-descriptors below carry the guide's `[3]` superscript → all four skills at L3. — **[GUIDE p.13]**
+
+*(Examiner reports flag scepticism + commercial acumen as the weakest-earned — see F10.)*
+- **Communication (L3):** "Inform concisely, objectively and unambiguously, adopting a suitable style and format, using appropriate technology." · "Persuade using compelling and logical arguments, demonstrating the ability to counter argue where appropriate." · "Clarify and simplify complex issues to convey relevant information in a way that adopts an appropriate tone and is easily understood by and reflects the requirements of the intended audience." — **[GUIDE p.13]**
+- **Analysis and evaluation (L3):** "Investigate relevant information from a range of sources, using appropriate analytical techniques to estimate outcomes, assist in decision-making and to identify opportunities or solutions." · "Consider information, evidence and findings carefully, reflecting on their implications and how they can be used in the interests of the wider organisational goals." · "Assess and apply appropriate judgement when considering organisational issues, problems or when making financial management decisions; taking into account the implications of such decisions on the organisation and those affected." · "Appraise information objectively with a view to balancing the costs, risks, benefits and opportunities, before recommending appropriate solutions or decisions." — **[GUIDE p.13]**
+- **Scepticism (L3):** "Explore the underlying reasons for a given situation, applying the attitude of an enquiring mind, beyond what is immediately apparent." · "Question opinions, assertions and assumptions, by seeking justifications and obtaining sufficient evidence for either their support and acceptance or rejection." · "Challenge and critically assess the information presented or decisions made, where this is clearly justified, in the wider professional, ethical, organisational, or public interest." — **[GUIDE p.13]**
+- **Commercial acumen (L3):** "Demonstrate awareness of organisational and external factors, which will affect the financial management decisions of an organisation." · "Recognise key issues in a given scenario and use judgement in proposing and recommending commercially viable solutions." · "Show insight and perception in understanding financial issues and wider organisational matters, demonstrating acumen in arriving at appropriate recommendations." — **[GUIDE p.13]**
+
+### The 5-cluster target LO descriptors (guide-verified; pages below)
+*(All nine located in the guide's detailed study guide, Section B, pp.9–11. Levels and discursive/quantitative modes cross-checked against `SYLLABUS_MAP` — all nine agree. **Formatting note (G3):** the guide renders sub-items as a list with capitalised openers — `i) The significance…`, `ii) Static trade-off theory` — where the text below inlines them as `(i) the significance…; (ii) static trade-off theory`. Substance identical; list formatting normalised by the framework extraction. Affects B1b and B3i.)*
+- **B1b (L2, discursive) — Monte Carlo:** "Outline the application of Monte Carlo simulation to investment appraisal. Candidates will not be expected to undertake simulations in an examination context but will be expected to demonstrate an understanding of: (i) the significance of the simulation output and the assessment of the likelihood of project success; (ii) the measurement and interpretation of project value at risk." — **[GUIDE p.9]**
+- **B3a (L3, discursive) — sources of finance:** "Identify and assess the appropriateness of the range of sources of finance available to an organisation including equity, debt, hybrids, lease finance, venture capital, business angel finance, private equity, asset securitisation and sale, Islamic finance and security token offerings. Including assessment on the financial position, financial risk and the value of an organisation." — **[GUIDE p.9]**
+- **B3b (L2, discursive) — Islamic finance:** "Discuss the role of, and developments in, Islamic financing as a growing source of finance for organisations; explaining the rationale for its use, and identifying its benefits and deficiencies." — **[GUIDE p.10]**
+- **B3c (L2, discursive) — green finance:** "Discuss the role of green finance for organisations pursuing an environmental/sustainable agenda." — **[GUIDE p.10]**
+- **B3i (L3, discursive) — capital-structure theory:** "Assess the impact of financing and capital structure upon the organisation with respect to: (i) Modigliani and Miller propositions, before and after tax; (ii) static trade-off theory; (iii) pecking order propositions; (iv) agency effects." — **[GUIDE p.10]**
+- **B3g (L3, discursive) — duration limitations/convexity:** "Discuss the benefits and limitations of duration including the impact of convexity." *(NOTE: B3g is a DURATION concept already narrative-ridden by calculator #6 (duration `limitations` kind). Its pairing with capital-structure theory in the coverage contract is a likely mislabel — flagged in the Step-0 risks.)* — **[GUIDE p.10]**
+- **B4d (L2, discursive) — BSOP conceptual:** "Explain the role of option pricing models, such as the BSOP model, in the assessment of the value of equity, the value of debt and of default risk." — **[GUIDE p.10]**
+- **B5c (L3, discursive) — exchange controls:** "Evaluate the significance of exchange controls for a given investment decision and strategies for dealing with restricted remittance." *(Dual coverage: calculator #10 (international, `restricted_remittance`) covered B5c numerically; this narrative drill is the conceptual/strategy evaluation.)* — **[GUIDE p.11]**
+- **B5d (L3, discursive) — international finance sources:** "Assess and advise on the costs and benefits of alternative sources of finance available within the international equity and bond markets." — **[GUIDE p.11]**
 
 ---
 
@@ -183,4 +200,35 @@ Five rendering deltas recorded (none substantive — no word, number, or meaning
 
 **Self-check on this pass (page refs).** The first draft of the page refs was derived by mapping a quote's *line* in the extracted text to a page. That is unsafe: `pdftotext` emits a whole logical paragraph as one line, so a paragraph starting on page N can carry the quoted sentence onto page N+1. A second, content-based pass (searching each page's actual text) caught **8 wrong refs** in the draft and they were corrected before this file was finalised: F2/SD24 6→7, F4/J24 8→9, F7a/J24 17→18, F7b/SD24 3→4, F10a/J24 3→4, F11b/SD24 6→7, F5b/SD24 6→**6–7 (spans)**, F5c/MJ25 18→**18–19 (spans)**. **Every page ref in this file is now content-verified**, not line-derived. Three quotes span a page break (F5c, F7b, F5-SD24b) — in each the printed sentence is continuous and only the page furniture (running header + footer) interrupts it in extraction.
 
-**Scope note.** This pass verified **§1b only**. §1a (syllabus basis) remains PROVISIONAL — sourced from `scripts/afm-framework.ts`, not page-verified against the AFM Study Guide PDF, which is not in-repo.
+---
+
+## VERIFICATION LOG — §1a TRACE, 20/07/2026 (work machine)
+
+**Method.** Every §1a claim was traced to an anchor: (a) an `afm-framework.ts` evidence constant, or (b) a verified §1b quote. All 24 quoted strings matched a framework constant, and all structural claims (20/100 marks, all-four-at-L3, Section A/B skill rules, zero L1 LOs, and all 9 LO level/mode pairs) reconciled against `EXAM_STRUCTURE` / `PROFESSIONAL_SKILLS` / `SYLLABUS_MAP`. **The framework anchor alone was then treated as insufficient** — the guide PDF turned out to be present on this machine, so every claim was re-verified against ACCA's own text (21 pages, `pdftotext -layout` + column splitting).
+
+**Result: §1a VERIFIED, with 2 defects found and fixed + 1 formatting note.**
+
+| # | Finding | Detail | Disposition |
+|---|---|---|---|
+| **G1** | **FABRICATED GLOSS (the residue)** | §1a quoted L2 as "Application and analysis — **apply concepts, perform calculations, analyse, advise on application of techniques**" and L3 as "Synthesis and evaluation — **evaluate, recommend justified actions, assess trade-offs, exercise strategic judgement**", presented as study-guide verbatim. The guide gives **only the bare labels** on p.5. Each gloss phrase scores **0 hits across all 21 guide pages** ("perform calculations", "advise on application of techniques", "assess trade-offs", "exercise strategic judgement", "recommend justified actions"). Origin: `INTELLECTUAL_LEVELS` in `scripts/afm-framework.ts`, whose L1 sibling also carries the plainly editorial clause "not the primary level examined at AFM". That constant is **not** marked "verbatim", unlike the framework's four blocks that are. | **FIXED** — replaced with the guide's bare labels + the p.5 context sentence; old wording quarantined in an explicit do-not-reinstate note. Framework annotated (see below). |
+| **G2** | **WRONG PAGE CITATION** | The Professional-skills heading cited "(study guide p.5)". p.5 is the *intellectual levels* page; Section F professional skills are on **p.13** (the framework itself says pp.13–14). | **FIXED** — corrected to p.13; the mark-split/examining rules now cite their own pages (p.15 Section A, p.16 Section B, p.18 the 80/20 split). |
+| **G3** | **LIST-FORMAT NORMALISATION** (not a misquote) | Guide renders LO sub-items as a capitalised list — B1b `i) The significance… ii) The measurement…`, B3i `i) Modigliani and Miller… ii) Static trade-off theory` — where §1a/the framework inline them as `(i) the significance…; (ii) static trade-off theory`. Substance and wording identical; only list punctuation and opener capitalisation differ. | **RECORDED**, text left inlined for readability; noted at the LO section head. |
+
+**Anchor map (all §1a claims → guide page).**
+
+| Claim group | Anchor | Guide page |
+|---|---|---|
+| Intellectual level labels L1/L2/L3 + context sentence | GUIDE | p.5 |
+| No L1 LOs in AFM | `SYLLABUS_MAP` (0 of 80 at level 1) + GUIDE p.5 | p.5 |
+| 13 professional-skills sub-descriptors (all four skills) | GUIDE | p.13 |
+| All four skills at L3 (`[3]` superscripts) | GUIDE | p.13 |
+| Section A: 40 technical + 10 prof skills, all four examined | GUIDE | p.15 |
+| Section B: 20 technical + 5 prof skills, min two of A&E/Scep/CA | GUIDE | p.16 |
+| 20/100 professional-skills marks | GUIDE ("80 technical + 20 professional skills marks") | p.18 |
+| B1b, B3a descriptors | GUIDE | p.9 |
+| B3b, B3c, B3g, B3i, B4d descriptors | GUIDE | p.10 |
+| B5c, B5d descriptors | GUIDE | p.11 |
+
+**Residue: NONE remaining.** G1 was the residue — a claim that traced to a framework constant but to no verified source, because the constant itself was authored. It did not need to be referred out: the guide was on the machine, so it was resolved against ACCA's own text rather than paraphrased.
+
+**Upstream fix.** `scripts/afm-framework.ts` now carries a warning on `INTELLECTUAL_LEVELS` recording that the em-dash tails are editorial and must not be quoted as guide text — otherwise the same gloss would be re-extracted into the next document that trusts the framework.
