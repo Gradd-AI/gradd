@@ -2433,7 +2433,9 @@ HARD RULES:
 - Every scenario_fact.key MUST appear verbatim in context_text.
 - The reveal (golden GOOD) must make EVERY required_point, DEVELOPED, USING every anchor fact's key token verbatim, in ORIGINAL wording (not copied from the scenario), and END with a committed recommendation/conclusion.
 - Every requirement_part must map to at least one criterion.
-- Include F9 as a disqualifier ONLY on criteria where the scenario supplies data the point must use; where you do, set evidence_anchor to "J24 p.14".
+- DISQUALIFIERS: a figure-INTERPRETATION criterion (the point reads/interprets a GIVEN figure) uses [F1, F5, F6] — F6 catches superficial state-the-figure commentary. Do NOT put F9 on a conceptual/interpretation criterion. F9 is reserved for a CARRY-A-VALUE-DOWNSTREAM criterion (uses one figure to justify a later step); conceptual narrative drills have none, so F9 is OFF by default. Do NOT set evidence_anchor.
+- A criterion marks RECOGNITION of the insight, however the candidate expresses it — never require a named statistic or a specific ratio VALUE in required_point (an insight stated in words earns full marks).
+- COHERENCE: if the scenario GIVES statistical output (mean / standard deviation / probability / VaR), cross-check those figures for internal consistency BEFORE writing any prose characterising the distribution's SHAPE. Do NOT assert "fat tails" / "thin tails" / skew unless the given figures actually imply it (e.g. a normal distribution fixes P(NPV<0)=Φ(−mean/sd) and the 5th-percentile loss ≈ mean − 1.65·sd). A VaR is a THRESHOLD — the loss the outcome will not exceed at the stated confidence — NOT a severity measure: never quote it as a "we will not lose more than X" ceiling, and never claim the tail is fatter/thinner than the figures support.
 - total_marks = sum of criteria marks (aim 8–12).
 
 GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:

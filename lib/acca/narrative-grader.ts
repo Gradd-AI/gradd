@@ -41,6 +41,10 @@ const SYSTEM =
   'applied to the specific named scenario facts. ' +
   '(2) "partial" if the point is present but undeveloped, merely listed, or not anchored to the named facts. ' +
   '(3) "no" if the point is absent, or the text is only restating the scenario. ' +
+  '(4) Credit the INSIGHT however the candidate expresses it — an insight stated correctly IN WORDS earns ' +
+  'full marks. NEVER require a named statistic, a specific ratio, or a reproduced number; a criterion marks ' +
+  'RECOGNITION of the point, not arithmetic. (A candidate who says "the spread of outcomes is very wide ' +
+  'relative to the average" has met a dispersion point as fully as one who quotes a coefficient of variation.) ' +
   'Ground every verdict in a SHORT VERBATIM quote from the student answer (evidence_span); use "" only for "no". ' +
   'Raise a failure_flag ONLY from the provided list and ONLY when the answer genuinely exhibits it for THIS ' +
   'criterion. Be conservative: do not invent development that is not on the page, and do not reward a generic ' +

@@ -79,6 +79,13 @@ ok('hasConclusion: GOOD commits, BAD does not', hasConclusion(good) && !hasConcl
   const f12Res = aggregate(f12Rubric, goodV, scenario, good);
   ok('F12 disqualifier + evidence_anchor: criterion still aggregates (F12 latent, not raised on a clean answer)', f12Res.per_criterion[0].marks === 2 && !f12Res.per_criterion[0].flags.includes('F12' as FailureMode));
 
+  // FR1 (Grant 20/07/2026): a criterion marks RECOGNITION however expressed — an insight stated in WORDS,
+  // using the scenario anchors but quoting NO ratio/statistic, scores in full. Marks are not gated on a number.
+  const goodWords = "Debt suits Verdano because the €120m solar project is asset-backed, therefore lenders have security over the plant, and because debt avoids touching the founders' 60% stake it fits the board's dilution concern. New equity is unattractive here because it would dilute that 60% holding the board wishes to protect, so it works against a stated objective. On balance we recommend project-finance debt for the €120m, as it funds the asset while preserving control.";
+  const wordsV = await Promise.all(rubric.criteria.map((c) => mockGrader(c, goodWords, scenario)));
+  const wordsRes = aggregate(rubric, wordsV, scenario, goodWords);
+  ok('FR1: insight-in-words (anchored, no quoted ratio/statistic) scores FULL marks', wordsRes.awarded === 6 && wordsRes.band === 'good');
+
   // ── N1–N5 gates ──
   ok('N1 rubric-coverage PASS (reveal all-yes; every part mapped)', (await checkRubricCoverage(rubric, good, scenario, mockGrader)).ok);
   const gap = { ...rubric, requirement_parts: [...rubric.requirement_parts, '(iii) discuss risk'] };

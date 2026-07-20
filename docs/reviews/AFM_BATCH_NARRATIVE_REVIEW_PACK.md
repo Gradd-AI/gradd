@@ -38,8 +38,10 @@ pair before insert. There is **no live per-student marking** in v1 (Horizon-2).
    the golden BAD genuinely exhibit its designed F-modes (copies scenario = F1, generic = F5, fence-sits = F4)?
 3. **CONCEPTUAL-ONLY.** The drill must NOT ask for a computation and the rubric must NOT credit a computed
    figure. Every number in the scenario is a GIVEN driver.
-4. **F9 anchor.** Where a criterion supplies data the answer must use, it carries `disqualifiers: [… "F9"]`
-   and `evidence_anchor: "J24 p.14"` (the ACCA own-figure quote).
+4. **F9 vs F6 (FR1).** A figure-INTERPRETATION criterion uses `[F1, F5, F6]` (F6 = superficial
+   state-the-figure). **F9 is OFF** on conceptual drills — it is reserved for carry-a-value-downstream.
+   Rows carry no `evidence_anchor`; the J24 p.14 own-figure quote is the aggregation principle (design §1).
+   Marks credit RECOGNITION however expressed — never a reproduced number.
 
 ---
 
@@ -53,8 +55,9 @@ pair before insert. There is **no live per-student marking** in v1 (Horizon-2).
   GIVEN drivers, free to restate (GIVEN-vs-COMPUTED). Interpreting two given figures as a ratio in prose is
   interpretation, not a "calculation."
 - **OFR analog = graduated 0/½/full per criterion (ruling 2),** code-owned in `aggregate()`. Not "code owns
-  the marks." **F9 criterion only where the scenario supplies data;** its anchor is **J24 p.14** (verbatim
-  ACCA own-figure statement). A pure-conceptual criterion carries no F9.
+  the marks." **F9 vs F6 (FR1):** figure-interpretation criteria use `[F1, F5, F6]`; F9 is reserved for
+  carry-a-value-downstream and is OFF on conceptual drills. The J24 p.14 own-figure quote is the
+  partial-credit principle (design §1), not a per-criterion anchor. Marks credit recognition, never a number.
 - **F12 (required output format ignored) — documented, UNWIRED.** In the F-catalogue (SD24 p.7, page-verified)
   but keyed on NO D1–D5 drill (none imposes a report format). Do not ask why F12 is unused.
 - **`rubric_version: 'narrative_v1'`** stamped on every narrative `answer_schema`; the golden BAD + designed
@@ -92,23 +95,25 @@ pair before insert. There is **no live per-student marking** in v1 (Horizon-2).
 >
 > However, the standard deviation of USD 61 million — which exceeds the mean of USD 38 million — reveals that the distribution of NPV outcomes is extremely wide. A coefficient of variation above 1.0 signals that the positive mean is, in isolation, a dangerously optimistic summary statistic; a sizeable share of outcomes cluster below zero. This is directly confirmed by the 27% probability of negative NPV: more than one in four simulated scenarios resulted in value destruction. Against a USD 420 million capital commitment, a failure rate of 27% is commercially significant — it is not a remote tail risk but a plausible central-scenario variant the board must price in.
 >
-> Turning to project VaR: the USD 55 million VaR at the 95% confidence level means that, under 95% of simulated outcomes, the project will not lose more than USD 55 million in NPV terms beyond the chosen base. The corollary is that in the worst 5% of cases losses exceed that threshold, potentially by a wide margin given the fat-tailed nature of large infrastructure projects. Measured against the USD 420 million commitment, the USD 55 million tail exposure represents approximately 13% of capital, indicating a non-trivial residual risk that CSB must be able to absorb from its balance sheet.
+> Turning to project VaR: the USD 55 million VaR at the 95% confidence level is a THRESHOLD, not a ceiling — it means there is a 5% probability that the project's NPV outcome is worse than a USD 55 million loss relative to the base. Critically, VaR is silent on HOW severe those worst-5% outcomes are; that depends on the shape of the full NPV distribution, so the figure must be read alongside the mean and standard deviation and never quoted in isolation as a "we will not lose more than USD 55 million" reassurance. Measured against the USD 420 million commitment, the USD 55 million threshold is roughly 13% of capital — a material downside marker the board must be satisfied CSB's balance sheet can absorb.
 >
 > In conclusion, the board should not approve the USD 420 million commitment in its current form. The mean NPV is too narrowly positive relative to the dispersion and the 27% downside probability; CSB should first secure demand-side revenue guarantees or adopt phased construction to narrow the NPV distribution before sanctioning the project.
 
 ### rubric (answer_schema.criteria) — 6 criteria / 12 marks · bands: fail / pass 0.5 / good 0.7 / excellent 0.85
 
-| id | part | marks | required point (short) | anchors | disqualifiers | evidence_anchor |
-|----|------|-------|------------------------|---------|---------------|-----------------|
-| c1 | (i) | 2 | Mean NPV +USD 38m is positive → central outcome value-creating → prima facie proceed | f_mean_npv, f_entity | F1, F5, **F9** | J24 p.14 |
-| c2 | (i) | 2 | SD USD 61m >> mean 38m (CoV > 1) → highly dispersed → mean alone misleading | f_mean_npv, f_sd_npv | F1, F5, **F9** | J24 p.14 |
-| c3 | (i) | 2 | 27% P(neg NPV) = >1-in-4 value destruction → material for a USD 420m commitment | f_prob_neg, f_capex | F1, F5, **F9** | J24 p.14 |
-| c4 | (ii) | 2 | VaR USD 55m @ 95% = 95% of scenarios lose ≤ 55m below base; 5% worse than threshold | f_var, f_confidence | F1, F5, **F9** | J24 p.14 |
-| c5 | (ii) | 2 | 55m tail ≈ 13% of the USD 420m capital → assess balance-sheet resilience to absorb tail | f_var, f_capex, f_entity | F1, F5, **F9** | J24 p.14 |
-| c6 | (ii) | 2 | Committed recommendation: approve only with resilience / demand mitigation to cut P(neg) | f_prob_neg, f_capex | **F4**, F5 | — |
+*(FR1-patched: figure-interpretation criteria use `[F1, F5, F6]` — F6 catches superficial state-the-figure
+commentary. **No F9, no evidence_anchor** — F9 is for carry-a-value-downstream only, and this conceptual
+drill has none. The J24 p.14 own-figure quote is the aggregation/partial-credit principle in the design
+doc, not a per-criterion anchor. Marks credit RECOGNITION however expressed — never a reproduced number.)*
 
-*(F9 on every figure-interpretation criterion — the scenario supplies the figures the point must USE; the
-conclusion criterion c6 carries F4, not F9, and no evidence_anchor — it is the commitment, not a figure-use point.)*
+| id | part | marks | required point (short) | anchors | disqualifiers |
+|----|------|-------|------------------------|---------|---------------|
+| c1 | (i) | 2 | Mean NPV +USD 38m is positive → central outcome value-creating → prima facie proceed | f_mean_npv, f_entity | F1, F5, **F6** |
+| c2 | (i) | 2 | SD USD 61m large vs mean 38m → highly dispersed → mean alone misleading | f_mean_npv, f_sd_npv | F1, F5, **F6** |
+| c3 | (i) | 2 | 27% P(neg NPV) = >1-in-4 value destruction → material for a USD 420m commitment | f_prob_neg, f_capex | F1, F5, **F6** |
+| c4 | (ii) | 2 | VaR USD 55m @ 95% = 5% chance of an outcome worse than that threshold (a threshold, not a ceiling) | f_var, f_confidence | F1, F5, **F6** |
+| c5 | (ii) | 2 | 55m threshold ≈ 13% of the USD 420m capital → assess balance-sheet resilience | f_var, f_capex, f_entity | F1, F5, **F6** |
+| c6 | (ii) | 2 | Committed recommendation: approve only with resilience / demand mitigation to cut P(neg) | f_prob_neg, f_capex | **F4**, F5 |
 
 **scenario_facts** (each `key` verbatim in context_text): f_mean_npv "USD 38 million" · f_sd_npv "USD 61 million"
 · f_prob_neg "27%" · f_var "USD 55 million" · f_capex "USD 420 million" · f_entity "CSB" · f_confidence "95%"
@@ -133,7 +138,7 @@ no recommendation. The marker scores this below band and raises F1/F5/F4.)*
 > Your answer reports the simulation statistics correctly — but the board needs to know what those numbers mean for the capital commitment decision, so make sure you translate the probability of negative NPV and the VaR figure into an explicit recommendation on whether to proceed, and on what conditions.
 
 ### full_reveal (served — Ezra teaching reveal)
-> The classic misconception here is FENCE-SITTING: candidates recite the mean NPV, the standard deviation, and the VaR figure accurately, then stop — leaving the board with a table of numbers but no steer on the USD 420 million decision. That is not interpretation; it is transcription. The error matters because a positive mean NPV in isolation is a dangerously partial summary: when the standard deviation exceeds the mean, the distribution is so wide that the mean is likely to mislead — a large share of the probability mass may sit below zero, and the 27% downside probability confirms that this is not a remote tail event but a plausible outcome the board must price into its approval. On VaR specifically, candidates often treat it as a reassuring ceiling — "we will not lose more than USD 55 million" — when the correct reading is the opposite: VaR defines the threshold beyond which the worst outcomes begin, and in fat-tailed infrastructure projects those tail losses may be substantially larger, which is why the figure must be benchmarked against total capital at risk rather than quoted in isolation. The boardroom bar demands that you close the loop: the simulation output is the floor of the argument, not the ceiling — the advice is whether to commit, defer, or restructure the project to narrow the NPV distribution, and that verdict must be stated explicitly.
+> The classic misconception here is FENCE-SITTING: candidates recite the mean NPV, the standard deviation, and the VaR figure accurately, then stop — leaving the board with a table of numbers but no steer on the USD 420 million decision. That is not interpretation; it is transcription. The error matters because a positive mean NPV in isolation is a dangerously partial summary: when the standard deviation exceeds the mean, the distribution is so wide that the mean is likely to mislead — a large share of the probability mass may sit below zero, and the 27% downside probability confirms that this is not a remote tail event but a plausible outcome the board must price into its approval. On VaR specifically, candidates often treat it as a reassuring ceiling — "we will not lose more than USD 55 million" — when the correct reading is the opposite: VaR is only a THRESHOLD marking where the worst 5% of outcomes begin, and it is silent on HOW severe those outcomes are (that depends on the shape of the full distribution), which is why the figure must be read against the mean, the dispersion and total capital at risk rather than quoted in isolation as a ceiling. The boardroom bar demands that you close the loop: the simulation output is the floor of the argument, not the ceiling — the advice is whether to commit, defer, or restructure the project to narrow the NPV distribution, and that verdict must be stated explicitly.
 
 ---
 
