@@ -1,8 +1,25 @@
 # AFM narrative-marking evidence — examiner-report failure modes + syllabus marking basis
 
 **PROVENANCE (read before using):**
-- **§1b failure modes (F1–F11):** extracted 18/07/2026 by the co-founder from the ACCA AFM examiner reports **MJ25, SD23, SD25** (PDFs held in the Claude project). **SOURCE = co-founder read; quotes verbatim; NOT yet page-verified in-repo.** The work-machine repo holds all five PDFs — **next work-machine session: run a page-verification pass (add page refs) + extend with J24 + SD24, then mark this file VERIFIED.** Until then every §1b claim is provisional; the marking pipeline built on it is provisional and MUST NOT ground any coverage/marketing claim until VERIFIED + walked.
-- **§1a syllabus basis:** verbatim from `scripts/afm-framework.ts` (the earlier syllabus extraction — ACCA AFM Study Guide Sep 2026–Jun 2027; guide page refs as noted in the framework). The AFM syllabus PDF is not yet in-repo; adding it to `docs/evidence/` for a page-verify pass is a lower-priority follow-up than J24/SD24.
+- **§1b failure modes (F1–F12): VERIFIED 20/07/2026.** Every quote below was page-verified in-repo against the source PDF via `pdftotext`: the verbatim string was located character-for-character and the real page recorded as `[REPORT p.N]`. Original extraction 18/07/2026 by the co-founder (MJ25 / SD23 / SD25); this pass added page refs, corrected the rendering deltas listed in the VERIFICATION LOG, and extended the base with **J24 + SD24**. **Zero misquotes and zero not-found** — see the log for the five typographic/editorial deltas recorded.
+- **Page refs are PDF page = printed footer page.** Verified aligned on all five reports (pdftotext page N carries printed footer "N"), so `p.N` is unambiguous in either numbering.
+- **§1a syllabus basis:** verbatim from `scripts/afm-framework.ts` (the earlier syllabus extraction — ACCA AFM Study Guide Sep 2026–Jun 2027; guide page refs as noted in the framework). **STILL PROVISIONAL** — the AFM syllabus PDF is not in-repo; a page-verify pass on §1a remains a lower-priority follow-up. §1a is NOT covered by the 20/07/2026 verification.
+
+## Source register (label → file → actual title)
+
+The co-founder's report labels were all **correct**; the local filenames are shorthand. Confirmed by title page + question names.
+
+| Label | Local PDF filename | Actual report title | Questions |
+|---|---|---|---|
+| **MJ25** | `MJ25 AFM examiner's report.pdf` | AFM **March/June 2025** Examiner's report | Kampai, Sohbet, GCR |
+| **SD23** | `D23 AFM examiner's report.pdf` | AFM **September/December 2023** Examiner's report | McKeever, Abertafol, Southmed |
+| **SD25** | `afm_examiner_report_d25.pdf` | AFM **September/December 2025** Examiner's report | Halstock, Drimpton, Passmore |
+| **J24** | `J24 AFM examiner's report.pdf` | AFM **March/June 2024** Examiner's report | Mahoney, Littlebredy, Garnod |
+| **SD24** | `SD24 AFM examiner's report.pdf` | AFM **September/December 2024** Examiner's report | Northney, Mortexa, Zulla |
+
+*(SD24's PDF carries a stray "March/June 2024" artifact on its title page; the authoritative body text reads "the published September/December 2024 sample exam". Labelled SD24 on the body text.)*
+
+**PDF custody:** these five PDFs are ACCA copyright and follow the standing repo rule — **not redistributed in-repo** (`.gitignore`: "ACCA official PDFs — re-fetchable evidence, never redistributed in-repo"). They are cited by label + page exactly as `SOURCE_MAP.md` cites S1–S7. **Registered 20/07/2026 as E1–E5 in `docs/evidence/sources.json`** — re-fetch with `docs/evidence/fetch_acca_sources.ps1`, which now verifies each download's byte size against the manifest. All five source URLs were confirmed live and **byte-identical to the copies used for this verification** (SD23 386,496 · J24 494,537 · SD24 480,902 · MJ25 414,034 · SD25 1,003,837), so any future re-fetch that changes size will throw and force a page-ref re-verification.
 
 ---
 
@@ -33,61 +50,137 @@
 
 ---
 
-## §1b — NARRATIVE FAILURE MODES (examiner reports MJ25 / SD23 / SD25) — the DETECTION TARGETS
-*(Extracted 18/07/2026 from ACCA AFM examiner reports MJ25, SD23, SD25. ACCA's own statements of why discursive answers lose marks — each is a detection target for the narrative rubric. SOURCE = co-founder read; page-verify pending.)*
+## §1b — NARRATIVE FAILURE MODES — the DETECTION TARGETS
+*(Base extracted 18/07/2026 from MJ25 / SD23 / SD25; page-verified and extended with J24 + SD24 on 20/07/2026. ACCA's own statements of why discursive answers lose marks — each is a detection target for the narrative rubric.)*
 
 ### F1 — SCENARIO REPETITION EARNS NOTHING (every report, standing text)
-"Marks are not allocated for information which is repeated from the scenario without any analysis or evaluation." (MJ25; SD23; SD25 — near-identical in all three)
-"a significant minority of candidates simply copied information from the question in their response... with little or no attempt to develop their points further" (SD25, Halstock)
+- "Marks are not allocated for information which is repeated from the scenario without any analysis or evaluation." — **[MJ25 p.3] [SD23 p.2] [SD25 p.3] [J24 p.3] [SD24 p.3]** — standing text, now confirmed in **all five** reports.
+- Variant: "marks are not awarded for information which is repeated from the scenario without any analysis or evaluation." — **[SD24 p.9, Mortexa]**
+- "a significant minority of candidates simply copied information from the question in their response…with little or no attempt to develop their points further" — **[SD25 p.8, Halstock]**
+- *(NEW, J24)* "some candidates copy paragraphs from the question as part of their answer which is to be discouraged since no marks are awarded for this approach." — **[J24 p.13, Littlebredy c]**
+- *(NEW, SD24)* "a significant number of candidates simply repeated information from the question in requirement (b), with little attempt to develop their points further to add value." — **[SD24 p.10, Mortexa]**
+- *(NEW, SD24)* "a sizable minority of candidates presented answers that were generic and did little more than simply restate the information given in exhibit three." — **[SD24 p.12, Mortexa b]** *(also F5)*
 
 ### F2 — LISTS WITHOUT DEVELOPMENT
-"some candidates listed advantages rather than really explain them" (SD25)
-"responses that adopt a list-based approach with little analysis or discussion other than to say, for example, 'it is assumed that the cost of capital is calculated correctly'" (SD23, McKeever iv)
-"bullet point lists should be fully explained" (MJ25, Sohbet c)
+- "some candidates listed advantages rather than really explain them" — **[SD25 p.4]**
+- "responses that adopt a list-based approach with little analysis or discussion other than to say, for example, 'it is assumed that the cost of capital is calculated correctly'" — **[SD23 p.5, McKeever iv]** *(inner quote is double in the original — see log D1)*
+- "bullet point lists should be fully explained" — **[MJ25 p.13, Sohbet c]**
+- *(NEW, J24)* "points did need to be explained, albeit briefly, and candidates who produced a bullet point list of points were penalised to some extent." — **[J24 p.4, Mahoney a]** *(repeated near-verbatim at [J24 p.16, Garnod a])*
+- *(NEW, J24)* "There are some candidates who produce brief bullet point lists with little or no explanation and in this case, few if any marks are awarded." — **[J24 p.13, Littlebredy c]**
+- *(NEW, SD24)* "bullet points with little or no explanation did not achieve much credit." — **[SD24 p.7, Northney vi]**
 
 ### F3 — UNDEVELOPED ASSUMPTIONS (the state-vs-discuss line)
-"rather than just stating 'it is assumed the 4% annual cash flow growth rate is accurate' candidates should go on to say that 'growth is in reality unlikely to progress so smoothly due to, for example, changes in economic conditions over time.'" (MJ25, Kampai iv)
-"A common failing was to simply state assumptions rather than discuss them." (SD25, Drimpton b-ii)
-"candidates have a habit of suggesting that sensitivity analysis should be used without any further explanation. To earn credit candidates need to discuss how, or why" (SD25, Drimpton b-ii)
+- "rather than just stating 'it is assumed the 4% annual cash flow growth rate is accurate' candidates should go on to say that 'growth is in reality unlikely to progress so smoothly due to, for example, changes in economic conditions over time.'" — **[MJ25 p.6, Kampai iv]**
+- "A common failing was to simply state assumptions rather than discuss them." — **[SD25 p.5, Drimpton b-ii]**
+- "candidates have a habit of suggesting that sensitivity analysis should be used without any further explanation. To earn credit candidates need to discuss how, or why" — **[SD25 p.5, Drimpton b-ii]**
+- *(NEW, J24)* "the assumptions given were often stated (sometimes using a bullet point format) rather than discussed in any meaningful way. Candidates were not given full credit where this was the case." — **[J24 p.8, Mahoney b-v]**
+- *(NEW, J24 — the development pattern spelled out)* "many candidates discussed the assumption that the exchange rate forecasts were based on PPPT and that this may not hold true. However, candidates who went on to say that the actual NPV may be lower or higher than that forecast as a result of this issue could earn additional credit." — **[J24 p.8, Mahoney b-v]**
+- *(NEW, SD24)* "to earn credit for being sceptical candidates need to demonstrate that they understand how and why the estimates could be wrong and how this could impact on the values calculated." — **[SD24 p.16, Zulla b]**
 
 ### F4 — FENCE-SITTING / NO COMMITTED RECOMMENDATION
-"Candidates should avoid 'sitting on the fence' and must recognise that, in any question where a conclusion or recommendation is asked for, there will be marks awarded for making a clear conclusion or recommendation even if the conclusion or recommendation they make is not necessarily that which was expected." (MJ25, Kampai v)
-"a surprising number of candidates seemed to 'sit on the fence' and fail to ever make a clear recommendation" (SD25, Drimpton b-ii)
-"it was disappointing to note that quite a few candidates failed to [recommend]" (SD25, Passmore a)
+- "Candidates should avoid 'sitting on the fence' and must recognise that, in any question where a conclusion or recommendation is asked for, there will be marks awarded for making a clear conclusion or recommendation even if the conclusion or recommendation they make is not necessarily that which was expected." — **[MJ25 p.7, Kampai v]**
+- "a surprising number of candidates seemed to 'sit on the fence' and fail to ever make a clear recommendation" — **[SD25 p.5, Drimpton b-ii]**
+- "The requirement does ask for a recommendation, and it was disappointing to note that quite a few candidates failed to do this." — **[SD25 p.13, Passmore a]** *(the base file rendered the tail as "failed to [recommend]" — editorial gloss, see log D3)*
+- *(NEW, J24)* "Candidates must make sure that recommendations and advice are clearly stated as it is often the case that candidates 'sit on the fence' and never finally give any clear recommendation or advice. As a result, they may lose marks they could have easily gained." — **[J24 p.9, Mahoney professional skills]**
 
 ### F5 — GENERIC / NOT ANCHORED TO THE SCENARIO
-"there was frequently a lack of application of a candidates' discussion to the scenario" (MJ25, Sohbet b)
-"many candidates tried to address the queries in a generic way, with no effort to link the explanations to the context and environment in the scenario" (SD23, Abertafol b)
-"many discussed the performance of GCR in generic terms just focussing on the numbers, without considering the implications... in the context of a railway services operating company" (MJ25, GCR)
-"Some candidates spent too long describing ESG issues in general and not answering the specific question posed" (SD25, Drimpton b-iii)
+- "there was frequently a lack of application of a candidates' discussion to the scenario" — **[MJ25 p.12, Sohbet b]**
+- "many candidates tried to address the queries in a generic way, with no effort to link the explanations to the context and environment in the scenario" — **[SD23 p.15, Abertafol b]**
+- "many discussed the performance of GCR in generic terms just focussing on the numbers, without considering the implications…in the context of a railway services operating company" — **[MJ25 pp.18–19, GCR]** *(legitimate elision; sentence spans the page break; see log D4 for the full unelided sentence)*
+- "Some candidates spent too long describing ESG issues in general and not answering the specific question posed" — **[SD25 p.6, Drimpton b-iii]**
+- *(NEW, J24)* "the answers produced were often rather general and did not make use of the scenario as much as they could have." — **[J24 p.6, Mahoney b-iii]**
+- *(NEW, SD24)* "many candidates did not answer the question according to the facts provided in the scenario in exhibit one." — **[SD24 p.4, Northney i]**
+- *(NEW, SD24)* "responses which listed a wide range of general issues that weren't specifically related to either of the two risks" — **[SD24 pp.6–7, Northney vi]** *(sentence spans the page break)*
 
 ### F6 — SUPERFICIAL STATE-THE-FIGURE COMMENTARY
-"It is vitally important at this level of the qualification that candidates present answers that explain and challenge the figures calculated, rather than simply stating what the figures show." (MJ25, GCR)
-"Weaker candidates tended to present discussion that was limited to general comments, not adding much more than whether a ratio or trend had moved up or down" (SD23, Southmed)
+- "It is vitally important at this level of the qualification that candidates present answers that explain and challenge the figures calculated, rather than simply stating what the figures show." — **[MJ25 p.17, GCR]**
+- "Weaker candidates tended to present discussion that was limited to general comments, not adding much more than whether a ratio or trend had moved up or down" — **[SD23 p.11, Southmed]**
+- *(NEW, SD24)* "Weaker candidates provided rather thin answers with little meaningful comment and either failed to show any scepticism or were too vague." — **[SD24 p.16, Zulla b]**
+- *(NEW, SD24 — the non-answer assertion)* "weaker candidates simply stated that the valuation method which they had calculated produced the highest value for Zulla Co, was the best valuation method. Unfortunately, this does not answer the question posed." — **[SD24 p.16, Zulla b]** *(also F7)*
+- *(NEW, J24 — ABSOLUTIST OVERCLAIM, candidate detector)* "candidates would often state that an advantage was that this netting would eliminate all risks arising from currency rate fluctuations. In reality, this is not the case and the situation is far more nuanced." — **[J24 p.6, Mahoney b-iii]** — suggests an absolutist-language detector ("eliminates all", "no risk", "guarantees").
 
 ### F7 — ANSWERING THE WRONG QUESTION / DRIFT / MISSED PARTS
-"some candidates failed to focus clearly on the requirement and drifted away from the question actually posed" (SD25, Drimpton a)
-"Many candidates ignored the requirement set, instead focusing their discussion on the advantages and disadvantages of a centralised treasury department" (SD25, Passmore b)
-"candidates would often discuss issues that would arise due to the negative comments... rather than describing actions that could be done to address the issue" (MJ25, Kampai vi)
-"The second part of the discussion requirement... was missed out by many candidates. It is important to always read the requirements carefully and to answer all parts." (MJ25, GCR)
+- "some candidates failed to focus clearly on the requirement and drifted away from the question actually posed" — **[SD25 p.4, Drimpton a]**
+- "Many candidates ignored the requirement set, instead focusing their discussion on the advantages and disadvantages of a centralised treasury department" — **[SD25 pp.13–14, Passmore b]** *(sentence spans the page break; see log D2)*
+- "candidates would often discuss issues that would arise due to the negative comments…rather than describing actions that could be done to address the issue" — **[MJ25 p.7, Kampai vi]**
+- "The second part of the discussion requirement…was missed out by many candidates. It is important to always read the requirements carefully and to answer all parts." — **[MJ25 p.17, GCR]**
+- *(NEW, SD24 — the same standing sentence recurs)* "A large number of candidates did not present a calculation showing the impact on earnings per share (EPS). It is important to always read the requirements carefully and to answer all parts." — **[SD24 p.11, Mortexa a-ii]**
+- *(NEW, J24)* "It is not uncommon for candidates to answer the question they were hoping for rather than the question actually posed and candidates should make sure they read questions carefully in order to avoid doing this." — **[J24 p.18, Garnod b]**
+- *(NEW, J24)* "There were quite a few candidates who misread the requirement and answered the question by discussing the factors that affect Littlebredy Co's future investment strategy." — **[J24 p.13, Littlebredy c]**
+- *(NEW, SD24)* "some candidates who were not familiar with the specific scenario answered a different question to the one set out in the requirement." — **[SD24 p.4, Northney]**
+- *(NEW, SD24 — missed second part)* "Many candidates failed to consider the second part of the requirement concerning the impact of the new group function on the existing treasury function." — **[SD24 p.4, Northney i]**
+- *(NEW, SD24 — one-sided coverage)* "many candidates only commented on the potential reaction of Yekkon Co's shareholders, whereas the requirement did ask for an analysis of the likelihood of approval by both companies' shareholders." — **[SD24 p.12, Mortexa a-iii]**
 
 ### F8 — ISSUE≠ACTION CONFUSION; INFEASIBLE ACTIONS
-"Weaker candidates often presented a general discussion where it was hard to distinguish between what was an issue and what was a recommended action." (SD25, Drimpton b-iii)
-"a tendency for some candidates to spend too much time discussing the barrier itself and as a result failed to make any or few recommendations" (SD25, Halstock c)
-"Candidates need to make sure that the actions they suggest are both sensible and feasible." (SD25, Drimpton b-iii — with the equal-wages counter-example)
+- "Weaker candidates often presented a general discussion where it was hard to distinguish between what was an issue and what was a recommended action." — **[SD25 p.6, Drimpton b-iii]**
+- "a tendency for some candidates to spend too much time discussing the barrier itself and as a result failed to make any or few recommendations" — **[SD25 p.10, Halstock c]**
+- "Candidates need to make sure that the actions they suggest are both sensible and feasible." — **[SD25 p.6, Drimpton b-iii — with the equal-wages counter-example]**
+- *(NEW, J24)* "some answers were rather underdeveloped and did not consider both feasibility and effectiveness." — **[J24 p.18, Garnod c]**
 
 ### F9 — OWN FIGURES NOT USED IN THE DISCUSSION
-"They should bring forward the results of their calculations and use them to justify their recommendation, rather than just stating what their results are." (MJ25, Sohbet b)
-"Few candidates recognised that the board of directors wanted to achieve a 4% return and therefore did not compare their results to this target." (MJ25, Sohbet b)
+- "They should bring forward the results of their calculations and use them to justify their recommendation, rather than just stating what their results are." — **[MJ25 p.12, Sohbet b]**
+- "Few candidates recognised that the board of directors wanted to achieve a 4% return and therefore did not compare their results to this target." — **[MJ25 p.12, Sohbet b]**
+- *(NEW, SD25 — found during this pass)* "Candidates should base their recommendation on their own workings and bring in their calculations to justify their decision for maximum marks." — **[SD25 p.13, Passmore a]**
+- *(NEW, J24)* "candidates had to make sure they included both a recommendation in (a)(i)and (a)(ii) commenting on their previous analysis and using their own calculations. Candidates can be reassured that if they recommend a decision different to the suggested solution, they will still be awarded credit as long as their recommendation is consistent with their own workings." — **[J24 p.14, Littlebredy prof skills]** — **the OFR principle in ACCA's own words.**
+- *(NEW, SD24)* "Even if calculations are incorrect, markers will reward sensible advice drawn from an analysis of those calculations." — **[SD24 p.12, Mortexa a-iii]**
 
 ### F10 — SCEPTICISM + COMMERCIAL ACUMEN: THE WEAKEST-EARNED MARKS
-"candidates did not generally earn so many of the scepticism and commercial acumen marks that were available" (MJ25 + SD25, General)
-Scepticism = "adopt a questioning approach in a way that would lead to effective challenges of the information provided in the scenario" (definition repeated MJ25/SD23/SD25)
-Commercial acumen = "use the information in the scenario or from the real world and relate this to their discussion" (MJ25); "recognition of external constraints" (SD23)
+- "candidates did not generally earn so many of the scepticism and commercial acumen marks that were available" — **[MJ25 p.4] [SD25 p.3]** (General)
+- Scepticism definition: "adopt a questioning approach in a way that would lead to effective challenges of the information provided in the scenario" — **[MJ25 p.13] [SD23 p.16] [SD25 p.14] [SD24 p.12]** — standing definition across four reports.
+- Commercial acumen: "use the information in the scenario or from the real world and relate this to their discussion" — **[MJ25 p.13]**; "recognition of external constraints" — **[SD23 p.8]**
+- *(NEW, J24)* "candidates did not earn so many of the more specific scepticism and commercial acumen marks that were available." — **[J24 p.4, Mahoney]**
+- *(NEW, J24 — thin answers suppress skills marks)* "candidates seem to be less capable at earning the scepticism and commercial acumen marks and this is especially true where a candidate's answer is rather thin and underdeveloped." — **[J24 p.9, Mahoney prof skills]**
+- *(NEW, SD24)* "The skill of scepticism is not demonstrated very well by the majority of candidates." — **[SD24 p.4, Northney]**
+- *(NEW, SD24 — the fullest scepticism definition found)* "Scepticism marks are awarded for challenging information relating to the assumptions, directors' views, decisions and/ or techniques and providing reasons for such challenges." — **[SD24 p.7, Northney]** — note the **"providing reasons"** clause: a bare challenge is not creditable.
+- *(NEW, SD24 — vagueness bar)* "candidates' attempts to be sceptical were often too vague to be creditable." — **[SD24 p.17, Zulla prof skills]**
 
 ### F11 — BREADTH/BALANCE + STRUCTURE
-"other candidates over explained one or two advantages rather than provide an answer with suitable breadth" (SD25, Drimpton a)
-"Far too many candidates miss out on a mark they have nearly earned by failing to finish their report with a conclusion." (MJ25 + SD25)
+- "other candidates over explained one or two advantages rather than provide an answer with suitable breadth" — **[SD25 p.4, Drimpton a]**
+- "Far too many candidates miss out on a mark they have nearly earned by failing to finish their report with a conclusion." — **[MJ25 p.8] [SD25 p.6]**
+- *(NEW, J24)* "To maximise their marks candidates should avoid repeating or over explaining what is in fact only one point. Their time would be better spent thinking about, and then succinctly explaining a second point." — **[J24 p.4, Mahoney a]** *(repeated at [J24 p.16, Garnod a])*
+- *(NEW, J24)* "very many candidates could earn extra marks by making sure that they structure their report with suitable sub-headings and finish their report with a brief conclusion." — **[J24 p.8, Mahoney prof skills]**
+- *(NEW, SD24)* "there are still quite a few candidates who could improve by making sure that they structure their report with suitable sub-headings and finish their report with a brief conclusion which is very often missing." — **[SD24 p.7, Northney communication]**
+- *(NEW, SD24 — breadth over both halves)* "In order to gain the maximum marks candidates needed to discuss a range of both political and operational risks." — **[SD24 p.7, Northney vi]**
+
+### F12 — REQUIRED OUTPUT FORMAT IGNORED *(NEW MODE — surfaced by SD24, 20/07/2026)*
+Distinct from F11 (breadth/structure *within* the answer): this is non-compliance with the **required document format** itself, which carries communication marks in its own right.
+- "there is still a significant number of candidates who totally ignore the report format required and who submit their word document answers simply relating to the numbered requirements of the question and, as a result, lose valuable marks." — **[SD24 p.7, Northney communication]**
+- Supporting: "The communication marks are largely earned by the format and style of the report and for using a style and language which creates a clear well-presented report with a suitable tone." — **[J24 p.8, Mahoney prof skills]**
+- **Detector implication:** where a drill's requirement names an output format (report / memo / briefing notes to a named audience), format compliance — opening rubric, addressee, sub-headings, conclusion — is separately markable. **Grant's ruling needed** on whether v1 rubrics carry a format criterion or whether F12 stays documented-but-unwired (most AFM narrative drills built so far do not impose a report format).
 
 ## Rubric implications (the deterministic detection targets)
-Each drill's marking contract derives its criteria from F1–F11: requirement-coverage (F7), scenario-anchor count — named scenario facts actually USED (F5), point development claim→because→implication (F2/F3/F6), committed verdict present (F4), issue→action mapping + feasibility (F8), own-figure carry into discussion where data exists (F9), scepticism challenge of stated information (F10), breadth balance (F11), zero credit for scenario restating (F1).
+Each drill's marking contract derives its criteria from F1–F12: requirement-coverage (F7), scenario-anchor count — named scenario facts actually USED (F5), point development claim→because→implication (F2/F3/F6), committed verdict present (F4), issue→action mapping + feasibility (F8), own-figure carry into discussion where data exists (F9), scepticism challenge of stated information **with reasons given** (F10), breadth balance (F11), zero credit for scenario restating (F1), format compliance where a format is required (F12, unwired pending ruling).
+
+Two detector refinements surfaced by this pass:
+- **F10 "providing reasons"** [SD24 p.7] — a challenge without a stated reason should not score the scepticism criterion; and a challenge that is "too vague to be creditable" [SD24 p.17] needs a specificity floor.
+- **F6 absolutist overclaim** [J24 p.6] — "eliminate all risks" style absolutes are explicitly marked down as insufficiently nuanced; a banned-absolutes sweep is a cheap deterministic detector.
+
+---
+
+## VERIFICATION LOG — 20/07/2026 (work machine)
+
+**Method.** Each of the five PDFs converted with `pdftotext` (v4.00), split on form-feed to give true page boundaries. Every §1b quote located by normalised-whitespace substring match (curly→straight quotes, en/em dash→hyphen, ligatures folded) so that any word- or number-level difference would still fail to match. PDF page number confirmed equal to the printed footer number on all five reports.
+
+**Result: 32/32 base quotes VERIFIED. 0 MISQUOTE. 0 NOT FOUND.**
+
+Five rendering deltas recorded (none substantive — no word, number, or meaning differs):
+
+| # | Quote | Delta | Disposition |
+|---|---|---|---|
+| **D1** | F2b (SD23 p.5) | Base file renders the nested quote as `'it is assumed…correctly'` (single); the original uses **double** quotes `"it is assumed…correctly"`. | Typographic only. Left as single in the base text for readability; original style noted here. |
+| **D2** | F7b (SD25) | Sentence spans the p.13→p.14 page break; the quoted text ends mid-sentence at "treasury department". Original continues: "…or the advantages of setting up regional treasury functions across Asia." | Legitimate truncation. Page ref corrected to **pp.13–14**. |
+| **D3** | F4c (SD25 p.13) | Base file rendered "…quite a few candidates failed to **[recommend]**". Original reads "…quite a few candidates failed to **do this**", where "this" = the recommendation asked for in the preceding clause. | Editorial gloss, correctly bracketed. **Replaced with the true verbatim sentence** (incl. the preceding clause so the antecedent is explicit). |
+| **D4** | F5c (MJ25 pp.18–19) | Ellipsis elides real text. Unelided: "…without considering the implications **of things like a reducing profit margin, increasing customer complaints and a lack of capital investment** in the context of a railway services operating company." | Legitimate elision; both fragments verbatim. Head on p.18, tail on **p.19** — page ref corrected from the base file's implied single page. |
+| **D5** | F3a / F4a / F4b | `pdftotext` renders the original's opening curly single-quote as a backtick (`` `sitting on the fence' ``). Initially read as a mismatch. | Extraction artifact, not a quote defect. Words identical. |
+
+**Report-label audit.** The co-founder's labels MJ25 / SD23 / SD25 are all **correct** and map to local filenames `MJ25…`, `D23…`, `afm_examiner_report_d25.pdf` respectively (see Source register). No misattribution: every quote attributed to a report was found *in that report*, and the distinctive question names (Kampai/Sohbet/GCR, McKeever/Abertafol/Southmed, Halstock/Drimpton/Passmore) appear in exactly one PDF each with zero cross-contamination.
+
+**J24 + SD24 extension.** Both reports mined in full.
+- **J24 (March/June 2024 — Mahoney, Littlebredy, Garnod):** 13 new instances added across **F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11**. Notable: the OFR principle stated explicitly by ACCA [p.14]; the absolutist-overclaim instance [p.6].
+- **SD24 (September/December 2024 — Northney, Mortexa, Zulla):** 20 new instances added across **F1, F2, F3, F5, F6, F7, F9, F10, F11**, plus the **new mode F12**. Notable: the fullest scepticism definition incl. the "providing reasons" clause [p.7]; the "too vague to be creditable" bar [p.17].
+- **No J24 instance of F4** beyond the professional-skills statement, and **no SD24 instance of F4 or F8** — fence-sitting and issue≠action are attested in MJ25/SD25 but not independently in SD24. Recorded so the base is not overstated.
+- **Observed but NOT adopted as a mode:** candidate *abandonment* after a failed calculation ("seemed to get disheartened and give up" [SD24 p.11]; also [J24 p.16], [SD24 p.14]). Real and repeated, but it is an exam-technique failure producing an *absent* answer, not a defect detectable in a submitted narrative — no rubric criterion proposed.
+
+**Self-check on this pass (page refs).** The first draft of the page refs was derived by mapping a quote's *line* in the extracted text to a page. That is unsafe: `pdftotext` emits a whole logical paragraph as one line, so a paragraph starting on page N can carry the quoted sentence onto page N+1. A second, content-based pass (searching each page's actual text) caught **8 wrong refs** in the draft and they were corrected before this file was finalised: F2/SD24 6→7, F4/J24 8→9, F7a/J24 17→18, F7b/SD24 3→4, F10a/J24 3→4, F11b/SD24 6→7, F5b/SD24 6→**6–7 (spans)**, F5c/MJ25 18→**18–19 (spans)**. **Every page ref in this file is now content-verified**, not line-derived. Three quotes span a page break (F5c, F7b, F5-SD24b) — in each the printed sentence is continuous and only the page furniture (running header + footer) interrupts it in extraction.
+
+**Scope note.** This pass verified **§1b only**. §1a (syllabus basis) remains PROVISIONAL — sourced from `scripts/afm-framework.ts`, not page-verified against the AFM Study Guide PDF, which is not in-repo.
