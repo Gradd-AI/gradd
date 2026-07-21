@@ -4,20 +4,27 @@
 
 *Last refreshed: 2026-07-21.*
 
-## ⛔ AD-MEASUREMENT BLIND SPOT (surfaced 21/07, blocks the December campaign) — fix before next spend
-Ad autopsy (07/07–21/07) found the app cannot currently see ad-driven traffic AT ALL: all-time, zero of
-11 profiles have a non-null `signup_attribution`, and exactly ONE `resit_runs` row has ever existed
-(a manual test, `utm_source=test`). Root cause: `AttributionCapture` (the `gradd_attr` first-touch
-cookie capture) is wired into `ACCALandingPage.tsx` + `ProductLandingPage.tsx` but **NOT into
-`app/acca/resit/page.tsx`** — the free resit diagnostic `app/sitemap.ts` itself calls the "primary CTA"
-(priority 0.9). Any campaign landing there (painA/resitB naming strongly implies this is exactly where
-traffic lands) has its UTM tag dropped at the door — invisible to our own DB regardless of real spend/
-clicks. Meta Pixel (`PageView`, global) gives LPVs in Meta Ads Manager only (external); the only custom
-Meta event (`trackMetaEvent('Lead')`) fires at email-capture, the very bottom of the funnel — so even
-Meta's own dashboard has no mid-funnel "started the diagnostic" checkpoint. **Fix before the December
-campaign**: (1) add `AttributionCapture` to `/acca/resit`; (2) consider a funnel-entry event (mirroring
-`acca_funnel_events`'s shape but anon_id-keyed, pre-signup) so "started but didn't finish" becomes
-measurable. Full autopsy detail: `APM_BUILD_CONTRACT.md` 2026-07-21 "ADS-GATE SMALL ITEMS" entry.
+## ✅ AD-MEASUREMENT BLIND SPOT — FIXED + LIVE-FIRE VERIFIED 21/07 (was: blocks the December campaign)
+Ad autopsy (07/07–21/07) found the app could not see ad-driven traffic AT ALL: all-time, zero of 11
+profiles had a non-null `signup_attribution`, and the only `resit_runs` row that had ever existed was a
+manual test. Root cause: `AttributionCapture` (the `gradd_attr` first-touch cookie capture) was wired
+into `ACCALandingPage.tsx` + `ProductLandingPage.tsx` but **not** `app/acca/resit/page.tsx` — the free
+resit diagnostic `app/sitemap.ts` itself calls the "primary CTA" (priority 0.9). **Fixed same day**:
+`AttributionCapture` added to `/acca/resit` (commit `992a2fb`) — plus a full sweep of every
+campaign-reachable page (resit/afm/acca/apm/ib-landing/proof) surfaced TWO more real gaps, `/ib`
+(`IBLandingPage.tsx`) and `/acca/afm/proof`, both fixed the same session (commit `36e8e6e`). **Live-fire
+proved end-to-end**: a real browser hit `gradd.ai/acca/resit?utm_source=livefire&utm_campaign=gate_check_v2`,
+walked the full diagnostic, and a `resit_runs` row landed with the correct attribution
+(`3af6daa0-cbcb-4b1e-aead-be9ca75465ab`) — not just "the code looks right." **July verdict revised**:
+that spend (if it ran) was unmeasurable, not failed — no traffic-quality/landing-page/offer conclusion
+can be drawn from a zero-attribution dataset. December inherits "instrument, live-fire, then spend."
+Funnel-entry event (pre-signup, anon_id-keyed, mirroring `acca_funnel_events`) remains a nice-to-have,
+not fixed. Full detail: `APM_BUILD_CONTRACT.md` 2026-07-21 "ATTRIBUTION FIX + LIVE-FIRE" entry.
+
+**Standing rule (instrumentation discipline):** an instrumentation claim requires a live-fire DB row,
+never code presence. First-touch cookie logic, ad-blockers, consent gates, and stale browser state can
+silently no-op a structurally-correct implementation — code review or "the import is there" is not
+proof. Re-verify per landing page before spend, not just once at the mechanism level.
 
 ## BACKLOG — session history / revision review (December-window candidate feature)
 **Gap:** `/acca/progress` is an aggregate stats dashboard (activity sparkline, weak areas, stuck-drill
