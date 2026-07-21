@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import AttributionCapture from '@/components/AttributionCapture';
 
 const PRICING = {
   monthly: { amount: '44', cents: '.99', per: '/ month', note: null },
@@ -63,6 +64,8 @@ export default function IBLandingPage() {
 
   return (
     <>
+      {/* First-touch utm_* / fbclid → cookie → persisted to the profile at signup. */}
+      <AttributionCapture />
       <style>{CSS}</style>
 
       <div className="ib-lp">

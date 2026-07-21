@@ -15,6 +15,7 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import Link from 'next/link';
 import MessageRenderer from '@/components/chat/MessageRenderer';
+import AttributionCapture from '@/components/AttributionCapture';
 import { AFM_LANDING } from '@/components/landing/product-landing-config';
 
 const TITLE = 'A real AFM walkthrough — Gradd';
@@ -53,6 +54,9 @@ const EZRA_REVEAL =
 export default function AFMProofRoute() {
   return (
     <>
+      {/* First-touch utm_* / fbclid → cookie — a proof-style creative can point ad traffic
+          straight here, so this needs the same capture as any other landing page. */}
+      <AttributionCapture />
       <style>{CSS}</style>
       <div className="pf">
         <header className="pf-header">
