@@ -1457,3 +1457,38 @@ Out of scope (not named in the task, not fixed): `/` on gradd.ie (`LandingPage.t
 **Journal (b) — new standing rule.** Added to the persona-hardening / instrumentation discipline: **an instrumentation claim requires a live-fire DB row, never code presence.** Code review, a screenshot of the component tree, or "the import is there" is not proof a measurement pipeline works — first-touch cookie logic, ad-blockers, consent gates, and stale browser state can all silently no-op a structurally-correct implementation. The proof is the row that lands with the expected attribution shape, produced by an actual browser hitting the actual live URL with actual UTM params, in a clean (or explicitly-cleared) cookie state.
 
 `next build` green. Both commits pushed and deployed READY before this entry.
+
+## 2026-07-21 — END-OF-SESSION BANK — day close
+
+**Day's arc — narrative cluster (pipeline #2), start to finish.** D2–D5 generated → FR2 (co-founder
+review: D2 IFRS 16 BLOCKING fix) → FR3 (blind GPT round 1: D5 exchange-control overclaim, 2 must-fix)
+→ delta confirm → GATE-P FLIP (published AFM 41→46) → walked (D1 full loop including a push-back probe;
+D5 compressed) → batch CLOSED. **B-SECTION-LIVE TIER: CONTENT COMPLETE — both pipelines (10 calculators
++ the 5-drill narrative cluster) proven end to end.**
+
+**Persona-hardening BUILT** (`93b3d43`): the `GroundingPack` mechanism, 3-location triangulation (system
+block / delivery-protocol instructions / per-turn anchor). 7-probe red-green battery (PH1–PH7) banked
+into the standing red-team suite — claimed honestly as ~80–90% behavioral (LLM-prompted, not a
+deterministic code gate); a weekly `--prod-sample` judge run is the intended monitor of the residual.
+X1/X2 pre-existing suite fails carried forward, unrelated to this session (confirmed via `git stash`) —
+diagnose next session.
+
+**Ads gate.** ② AFM landing CTA fixed + verified live. ③ July campaign verdict REVISED to
+unmeasurable-not-failed (not a creative/targeting/offer failure — the measurement pipeline was broken).
+④ Attribution fixed on `/acca/resit` + `/ib` + `/acca/afm/proof`; live-fire DB row proven
+(`3af6daa0-cbcb-4b1e-aead-be9ca75465ab`); the live-fire-not-code-presence standing rule banked. THIS
+WEEK'S DEPOSIT (w/c 20/07) SHIPPED — the public proof-transcript page at `/acca/afm/proof`.
+
+**CARRIED — THE ONE OPEN GATE ITEM.** Spot walk on the hardened persona: D1 golden-BAD replay +
+push-back + K2 "equally valid" bait; pass bars journalled 21/07 (this doc, persona-hardening entries
+above). **The ads gate opens on this walk's pass — nothing else is blocking.**
+
+**Also carried:**
+- Session-history / revision-review backlog item (`AFM_SURFACED.md`) — Size M, portability HIGH,
+  recommended December-window slot.
+- gradd.ie LC attribution gap — flagged (out of scope for this ads-gate session, not fixed).
+- Whitelabel ruling — pending Grant; recommendation on file is institutional-under-own-brand,
+  evidence-gated.
+
+**NEXT SESSION OPENS:** pull → spot walk → gate ruling → then E-section calc #11 (FX hedging) Step-0,
+conventions fetched first (per the standing Step-0 discipline — conventions before code).
