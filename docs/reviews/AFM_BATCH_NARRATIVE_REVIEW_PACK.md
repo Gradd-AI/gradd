@@ -1,6 +1,6 @@
 # AFM BATCH — NARRATIVE CLUSTER (pipeline #2, discursive D1–D5) — REVIEW PACK
 
-**Status: D1–D3 GENERATED + inserted (candidate). D4–D5 pending.**
+**Status: D1–D4 GENERATED + inserted (candidate). D5 pending.**
 DB snapshot (hand-maintained preamble + per-drill body copied from the row fields). This is the FIRST
 narrative-marking batch — the pilot for pipeline #2. Design: `docs/NARRATIVE_MARKING_DESIGN.md`;
 detection targets (F1–F12, page-VERIFIED 2026-07-20): `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
@@ -297,6 +297,80 @@ no recommendation. The marker scores this below band and raises F1/F5/F4.)*
 
 ---
 
-## D4–D5 — PENDING (not yet appended to pack)
-- **D4** BSOP conceptual — role of option pricing models (B4d, L2) — generated + inserted
+## D4 — BSOP conceptual: role of option pricing in valuing equity, debt and default risk (B4d, L2, discursive)
+
+- **id:** `d413fbe7-63f3-492a-af97-8532e0c376c8` · **status:** candidate · **published:** false
+- **lo_code:** B4d (covers B4d) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 12
+- **command_verb:** explain · **rubric_version:** narrative_v1 · **6 criteria / 12 marks**
+- **geo:** Indonesia / highly-geared toll-road concession company and its lending banks
+- **GATES:** N2 ✓ · N3 ✓ · N5 ✓ · N4-pre ✓ · N1 ✓ · **N4 (Rule-23) ✓** — golden GOOD in band, golden BAD below + raised [F1, F5, F4]. (attempt 3 — N1 caught undeveloped criteria c4 then c5 on earlier attempts; pipeline self-corrected)
+
+### context_text (scenario — all figures are GIVEN; NO BSOP value is computed)
+> PT Nusantara Jalan Tol (NJT) is an Indonesian toll-road concession company that operates a 35-year government-awarded concession expiring in 2057. The company is highly geared: its total asset value is currently estimated at IDR 18 trillion, while outstanding debt (a single-tranche bond) requires a bullet repayment of IDR 14 trillion at maturity in five years. NJT's asset-value volatility has been assessed by its financial advisers at 28% per annum. The lending syndicate, led by Bank Mandiri Internasional, is concerned that a prolonged traffic-volume decline could impair NJT's ability to service this debt. Because NJT's equity holders have limited liability, the equity stake can be modelled as a European call option on the firm's assets, struck at the IDR 14 trillion debt repayment, with the five-year horizon as the option's time to expiry.
+
+### question
+> Explain the role that an option pricing model, such as the Black-Scholes-Merton (BSOP) model, plays in assessing:
+> (i) the value of NJT's equity and the value of its debt; and
+> (ii) NJT's default risk and the limitations of this framework for the lending syndicate.
+
+*(Conceptual-only: "explain the role", never "compute". No d1/d2/N(d)/BSOP value is calculated — calc #8 owns that; here the candidate explains what the framework contributes.)*
+
+### model_answer (the golden GOOD — full-marks standard; first line is the area-entry heading)
+> **Option pricing models — role in valuing equity, debt and default risk**
+>
+> **Part (i) — Equity value and debt value**
+>
+> Because NJT's shareholders benefit from limited liability, their economic position is asymmetric: if, at the end of the five-year bullet horizon, the firm's asset value exceeds the IDR 14 trillion repayment, equity holders capture the surplus; if assets fall short, they surrender the keys and bear no further loss. This asymmetric payoff — uncapped gain, floored loss — mirrors precisely the payoff of a European call option. The BSOP model therefore prices equity as a call on NJT's IDR 18 trillion asset base, struck at IDR 14 trillion. The current positive difference (IDR 4 trillion "moneyness") reflects both intrinsic value and time value arising from the five-year remaining horizon and the 28% asset-value volatility.
+>
+> Debt valuation follows from put-call parity applied at the firm level. Risky debt equals the present value of riskless debt minus the value of an equivalent put option on the assets. That put quantifies the credit loss Bank Mandiri Internasional's syndicate absorbs if NJT's assets are worth less than IDR 14 trillion at maturity; the model thus converts an otherwise qualitative credit concern into a priced quantity embedded directly in bond value.
+>
+> **Part (ii) — Default risk and limitations**
+>
+> The BSOP model signals default risk through the risk-neutral probability N(−d2): the higher the 28% asset-value volatility, the more the asset-value distribution spreads over the five-year horizon, raising the probability that it finishes below IDR 14 trillion. This gives the lending syndicate a forward-looking default metric that responds dynamically to changes in leverage and volatility — unlike backward-looking credit-rating approaches.
+>
+> A material limitation is the model's log-normal, constant-volatility assumption. NJT's toll revenues are subject to Indonesian regulatory action on the 35-year concession, traffic-policy shifts, and macroeconomic shocks that can produce abrupt, discontinuous asset-value jumps the model cannot price. Standard BSOP will therefore under-price tail risk in precisely the stress scenarios the syndicate most needs to evaluate.
+>
+> A further limitation concerns input observability. The IDR 18 trillion asset value is itself an estimate, and the 28% figure is derived rather than market-observed. Using equity-volatility proxies introduces estimation error that can materially mis-state N(−d2), distorting the default probability signal on which credit decisions depend.
+>
+> **Conclusion:** Bank Mandiri Internasional should use the BSOP framework as a structured way to integrate leverage, volatility, and tenor into a single default-risk signal, but must complement it with scenario-based cash-flow stress tests that explicitly model concession-specific discontinuities. Relying on the model alone would be imprudent given its estimation limitations.
+
+### rubric (answer_schema.criteria) — 6 criteria / 12 marks · bands: fail / pass 0.5 / good 0.7 / excellent 0.85
+
+*(FR1: the five explain criteria use `[F1, F5, F6]`; the closing verdict criterion uses `[F4]`. **No F9, no evidence_anchor** — the framework inputs (IDR 18tn / 14tn / 28% / N(−d2)) are GIVEN drivers being INTERPRETED, never computed. F6 catches naming the option analogy without developing why it holds.)*
+
+| id | part | lo | marks | required point (short) | anchors | disqualifiers |
+|----|------|----|-------|------------------------|---------|---------------|
+| c1 | (i) | B4d | 3 | Limited liability → asymmetric payoff = call option → BSOP prices equity as a call on assets struck at the debt level | f_assets, f_debt | F1, F5, **F6** |
+| c2 | (i) | B4d | 2 | Debt = riskless debt − put (put-call parity at firm level); the put = the syndicate's credit loss → priced credit discount | f_debt, f_entity | F1, F5, **F6** |
+| c3 | (ii) | B4d | 2 | Default risk = N(−d2); higher 28% vol widens the distribution → higher P(default), a forward-looking metric | f_vol, f_tenor | F1, F5, **F6** |
+| c4 | (ii) | B4d | 2 | Limitation: constant-vol log-normal can't price concession/regulatory discontinuous jumps → under-prices tail risk | f_concession | F1, F5, **F6** |
+| c5 | (ii) | B4d | 2 | Limitation: asset value + volatility are unobservable estimates; proxy error mis-states N(−d2) | f_assets, f_vol | F1, F5, **F6** |
+| c6 | (ii) | B4d | 1 | Verdict: use BSOP as a complement to scenario cash-flow analysis, not a standalone credit tool | f_entity | **F4** |
+
+**scenario_facts** (each `key` verbatim in context_text): f_assets "IDR 18 trillion" · f_debt "IDR 14 trillion" · f_vol "28%" · f_tenor "five-year" · f_entity "Bank Mandiri Internasional" · f_concession "35-year".
+
+### golden BAD (authoring artefact — `answer_schema._authoring`, NOT served) — designed flags [F1, F5, F4]
+> PT Nusantara Jalan Tol is an Indonesian toll-road concession company. Its total asset value is currently estimated at IDR 18 trillion, while outstanding debt requires a bullet repayment of IDR 14 trillion at maturity in five years. The BSOP model can be used to value equity and debt.
+>
+> In the BSOP model, equity is like a call option. If the asset value is high, equity holders benefit. If the asset value is low, debt holders suffer the loss. The model uses inputs such as asset value, exercise price, time, risk-free rate, and volatility to produce an option value.
+>
+> Debt can also be valued using option pricing. The value of risky debt is equal to riskless debt minus a put option. This is based on put-call parity. The put option represents the potential loss to bondholders.
+>
+> Default risk is linked to the probability that the firm's assets fall below the debt repayment level. The model produces a probability measure that indicates how likely default is. When volatility is higher, the probability of default increases.
+>
+> There are limitations to this approach. The model assumes that asset values follow a log-normal distribution and that volatility is constant. These assumptions may not always hold in practice. The firm's asset value may not be directly observable. Volatility estimates may be inaccurate. There could also be jumps or discontinuities in value that the model cannot capture.
+>
+> The BSOP model is a useful tool but has limitations. It can be used alongside other methods. There are arguments on both sides as to whether it is the best approach for credit analysis. Different analysts may reach different conclusions depending on the inputs used.
+
+*(F1 — para 1 lifts the scenario's figures sentence verbatim; F5 — names the call/put analogy but never anchors to NJT's limited-liability payoff or the syndicate's decision (Bank Mandiri never mentioned); F4 — "arguments on both sides" / no verdict. The marker scores this below band and raises F1/F5/F4.)*
+
+### hint (served — one-sentence nudge)
+> You've described the BSOP inputs — now push one level deeper: explain *why* the asymmetric payoff of limited liability maps onto a specific option structure, and then use that structure to tell the lending syndicate what N(−d2) actually signals about NJT's default risk and where the model's constant-volatility assumption is most likely to mislead them given the concession-specific risks in this scenario.
+
+### full_reveal (served — Ezra teaching reveal)
+> The typical misconception here is UNDEVELOPED-ASSUMPTION: candidates list the BSOP inputs — asset value, strike, volatility, tenor — and confirm that equity "looks like a call option," but never develop *why* that analogy holds or what it implies for the syndicate's credit decision. The failure is mechanical: naming the structure without explaining the causal logic means the answer stays at level 1 description when the command verb "explain" demands level 2 reasoning. The correct mental model is to trace the limited-liability payoff to its asymmetric consequence — shareholders gain from upside but are floored at zero on the downside — and then show how that asymmetry is *exactly* what an option prices, so BSOP converts a qualitative credit concern into a priced default-risk signal via N(−d2). Limitations must be anchored to the scenario's specific features — regulatory action on the 35-year concession and the derived rather than market-observed volatility figure — because a generic "volatility may change" observation does not survive a boardroom; the syndicate needs to know *which* discontinuities the model is blind to and *why* constant log-normal volatility is structurally unable to price them. The boardroom test here is not "can you name the model?" but "can you tell the lending syndicate where to trust it, where to stress-test beyond it, and why relying on it alone would be imprudent?"
+
+---
+
+## D5 — PENDING (not yet appended to pack)
 - **D5** exchange controls + international sources of finance (B5c/d, L3) — generated + inserted
