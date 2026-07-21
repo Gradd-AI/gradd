@@ -131,6 +131,29 @@ territory — follow the links for depth. Keep it under ~150 lines.
   **FR1:** interpretation criteria `[F1,F5,F6]` (F6=state-the-figure); F9 OFF (carry-a-value-downstream only);
   no `evidence_anchor`; marks credit RECOGNITION not a number. area-entry ranks 60–64 (above every calculator).
   Design: `docs/NARRATIVE_MARKING_DESIGN.md`; evidence F1–F12: `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
+- **PERSONA-HARDENING — the live tutor's grounding mechanism ("Rule 24 triangulation," shipped 2026-07-21):**
+  `lib/acca/tutor-grounding.ts` — `buildGroundingPack(drill, resolvableAreas)` builds a `GroundingPack`
+  (narrative: `criteria[]`/`scenario_facts[]` from the rubric; numeric: `**Step N — Label**` headers
+  parsed from `model_answer` + `Component.working_steps[]` — NO schema change, NO backfill, works on
+  all 46 published rows today) with **trust-tier discipline**: `checklist`/`facts` (fullTrust, SAME
+  tier as `model_answer` — diagnose/completeness ONLY) vs `conventions`/`misconceptionLead`
+  (method-only, safe broadcast-wide) vs `resolvableTopics` (real published areas only, outro/close).
+  **3 injection locations (Rule 24):** (1) system block — `GROUNDING_DISCIPLINE` + `RETRACTION_PROTOCOL`
+  in `lib/acca/tutor-personas.ts` (both `EZRA_SYSTEM`/`EZRA_AFM_SYSTEM`); (2) delivery-protocol
+  instructions (`GROUNDING_INSTRUCTION_*` exports) — per-leg HOW-to-use text; (3) per-turn anchor —
+  the actual pack data, rendered by `renderChecklistAndFacts`/`renderConventionsAndMisconception`/
+  `renderResolvableTopics` and threaded through `app/api/acca/tutor/route.ts`'s `call2_diagnose`,
+  `completenessCheck`, `call3_hint/teach/confirm`, and `call4_reveal` (each takes a `grounding: GroundingPack`
+  param; `drillSelect()` now fetches `answer_schema`, never fetched on this path before). Fixes
+  AFM_SURFACED.md's 7-category persona-hardening slot: false-positive diagnosis, fog-retraction,
+  false-complete (Nakheel-shaped), hint-base-wobble, invented-inventory, convention-softening,
+  K3-hint-diversification. **Red-team regression lock:** `scripts/redteam-probes.ts` PH1–PH7 (one per
+  sighting, `drillId` field targets a specific published drill by id) + new `AutoCheck` codes
+  (`no-false-diagnosis`/`flags-incomplete`/`concedes-explicitly`/`no-loose-convention`/
+  `no-invented-drill-name`/`contains-any-keyword`) in `scripts/redteam-tutor.ts`. Run:
+  `npx tsx --env-file=.env.local scripts/redteam-tutor.ts --target local --probes PH1,PH2,PH3,PH4,PH5,PH6,PH7`.
+  **Claim discipline:** an LLM-prompted behavioural fix, NOT a deterministic code gate like the numeric
+  moat — PH4/PH6 observed ~80-90% clean across repeated sampling, not a hard 100% guarantee.
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR

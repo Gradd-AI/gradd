@@ -25,6 +25,18 @@ import {
 import { notifyGrant } from '@/lib/notify';
 import { resolvePaper } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
+import {
+  buildGroundingPack,
+  renderChecklistAndFacts,
+  renderConventionsAndMisconception,
+  renderResolvableTopics,
+  GROUNDING_INSTRUCTION_DIAGNOSE,
+  GROUNDING_INSTRUCTION_COMPLETENESS,
+  GROUNDING_INSTRUCTION_HINT,
+  GROUNDING_INSTRUCTION_CONVENTION,
+  GROUNDING_INSTRUCTION_OUTRO,
+  type GroundingPack,
+} from '@/lib/acca/tutor-grounding';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -271,11 +283,21 @@ async function call2_diagnose(
   attempt: string,
   modelAnswer: string,
   markScheme: string,
+  grounding: GroundingPack,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const msLine = markScheme
     ? `Authored mark scheme (use to identify WHICH criterion/level the student missed; do NOT quote it or state the answer):\n${markScheme}\n\n`
     : '';
+  // PERSONA-HARDENING (2026-07-21): fullTrust tier (checklist + facts) — SAME trust tier as
+  // modelAnswer above (diagnose already sees the answer; its output stays a content-neutral label).
+  // Fixes AFM_SURFACED findings 1/5: a narrative claim that already matches a rubric point/fact is
+  // now checkable against real data instead of the model inferring equivalence from scratch — the
+  // EQUIVALENCE CHECK below is deliberately widened from "numeric convention differs" to "the claim
+  // already matches the grounding data", so it covers narrative claims too, not just sign/table
+  // conventions. Empty when no schema (mode:'none') — behaviourally identical to before this change.
+  const groundingText = renderChecklistAndFacts(grounding);
+  const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_DIAGNOSE}\n\n${groundingText}` : '';
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 40,
@@ -284,16 +306,22 @@ async function call2_diagnose(
       "that names what the student did wrong, using the student's error as the referent. " +
       'EQUIVALENCE CHECK — do this before naming any error: ' +
       'The model answer and student answer may use different but equivalent sign conventions ' +
-      '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ' +
-      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
-      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
-      'A correct answer in a different format is NOT an error and must NOT be flagged. ' +
+      '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings — ' +
+      'AND (when a GROUNDING block is supplied below) a narrative claim may use different WORDING than ' +
+      'a checklist point or fact while still being substantively correct. ' +
+      "Check whether the student's claim (numerical OR narrative) is substantively equivalent to the " +
+      "model's / the grounding data's, before concluding it is wrong. " +
+      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention or wording. ' +
+      'A correct answer in a different format or phrasing is NOT an error and must NOT be flagged. ' +
       "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
-      'BARE-GUESS GUARD (do this before the equivalence check): if the message states ONLY a final ' +
-      'answer VALUE or asks whether a value is right ("is it about 51 million?", "the answer is X, ' +
-      'yes?", a lone number) with NO working, method, or reasoning shown, it is NOT a markable ' +
-      'correct answer even if the value matches — you cannot credit a method that was never shown, ' +
-      'and confirming the figure would leak the answer. Output the gap label: ' +
+      'BARE-GUESS GUARD (do this before the equivalence check) — NUMERIC drills only: if the message ' +
+      'states ONLY a final answer VALUE or asks whether a value is right ("is it about 51 million?", ' +
+      '"the answer is X, yes?", a lone number) with NO working, method, or reasoning shown, it is NOT ' +
+      'a markable correct answer even if the value matches. This guard does NOT apply to a narrative/ ' +
+      'discursive claim — a short but substantively correct interpretive statement (e.g. "VaR is a ' +
+      'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
+      'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
+      'fires (a numeric value-only guess), output the gap label: ' +
       '"states a figure but shows no working — cannot be credited" (NEVER the correct sentinel). ' +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
@@ -307,6 +335,7 @@ async function call2_diagnose(
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
           msLine +
+          groundingLine +
           `Model answer (reference only — do NOT restate or correct in output):\n${modelAnswer}\n\n` +
           'Output the gap label only. Name the error pattern. Do not state what is correct.',
       },
@@ -324,11 +353,18 @@ async function call3_hint(
   diagnosis: string,
   verbLevel: string,
   paper: string,
+  grounding: GroundingPack,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
     ? `Authored command verb + intellectual level (name these — do not infer):\n${verbLevel}\n\n`
     : '';
+  // PERSONA-HARDENING (2026-07-21): fixes finding 4 (HINT-BASE-WOBBLE — a hint that hedges between
+  // two possible conventions instead of declaring the drill's own stated one) and constraint (g)
+  // (the hint should lead with the drill's DESIGNED misconception). Tier B — method/failure-pattern
+  // only, never the drill's specific figure or point. Empty when no schema → identical to before.
+  const groundingText = renderConventionsAndMisconception(grounding);
+  const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_HINT}\n\n${groundingText}` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
@@ -341,6 +377,7 @@ async function call3_hint(
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
+          groundingLine +
           'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
           'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
           'move. Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
@@ -364,10 +401,17 @@ async function call3_teach(
   offerReveal: boolean,
   paper: string,
   distressed = false,
+  grounding: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [] },
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
     ? `Authored command verb + intellectual level (diagnose against these — do not infer):\n${verbLevel}\n\n`
+    : '';
+  // PERSONA-HARDENING (2026-07-21): conventions only (Tier B) — a second-miss teach-through can
+  // ALSO be the site of a convention-softening moment ("either form works"); misconceptionLead is
+  // deliberately NOT repeated here (call3_hint already led with it on miss #1).
+  const conventionsLine = grounding.conventions.length
+    ? `${GROUNDING_INSTRUCTION_CONVENTION}\n\nCONVENTIONS (required methods for this drill):\n${grounding.conventions.map((c) => `- ${c}`).join('\n')}\n\n`
     : '';
   // Earned-reveal nudge — only when struggle-gated (offerReveal). Tells the student the
   // phrase that unlocks the reveal; the teach itself still withholds the answer.
@@ -396,6 +440,7 @@ async function call3_teach(
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
+          conventionsLine +
           distressLine +
           "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with " +
           'the specific thing that IS working, then name the ONE gap that matters most (one, sharply ' +
@@ -422,6 +467,7 @@ async function call3_confirm(
   verbLevel: string,
   paper: string,
   offerReveal: boolean,
+  grounding: GroundingPack,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -432,6 +478,16 @@ async function call3_confirm(
   // model_answer is shown; this only advertises the now-unlocked route).
   const offerLine = offerReveal
     ? ' Then, as a light closing offer, tell them that since they nailed it they can say "show me the model answer" to see exactly how a full-marks version is laid out for comparison.'
+    : '';
+  // PERSONA-HARDENING (2026-07-21): fixes finding 6 (CONVENTION-SOFTENING — a close that validated an
+  // alternative WRONG/unscaled form as "equally valid" alongside the correct one). The old prompt's
+  // own "say it's equally valid" clause is REMOVED below — it was written for genuine format/layout
+  // differences (sign convention, A/F labelling) but a model reading it broadly could extend that
+  // permission to a WRONG figure the student mentions in passing. The conventions block, when
+  // present, gives an explicit list of what counts as the ONE required method so "equally valid" is
+  // never applied to something that fails it.
+  const conventionsLine = grounding.conventions.length
+    ? `${GROUNDING_INSTRUCTION_CONVENTION}\n\nCONVENTIONS (required methods for this drill — if the student mentions an alternative form, check it against these before calling anything equally valid):\n${grounding.conventions.map((c) => `- ${c}`).join('\n')}\n\n`
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -444,15 +500,19 @@ async function call3_confirm(
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
           vlLine +
-          'The answer is CORRECT — it may use a different but equivalent convention ' +
-          '(sign convention, A/F labelling, layout) than a model answer would. Tell them they ' +
-          'nailed it, and mean it: 2–3 sentences, warm and peer-to-peer, leading with the specific ' +
-          'thing they did well (the real move, not empty praise). Name the command verb and ACCA ' +
-          'intellectual level the answer hit (from the authored values above — do not infer when ' +
-          'given) and say briefly why it holds / what puts it in the top band. If their convention ' +
-          "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
-          'quote back their figures or workings — they already wrote them; refer to what they did ' +
-          "in words, not numbers. Don't mark it as if it fell short." +
+          conventionsLine +
+          'The answer is CORRECT — it may use a different but equivalent PRESENTATION convention ' +
+          '(sign convention, A/F labelling, layout) than a model answer would; those genuinely ARE ' +
+          'equally valid. Tell them they nailed it, and mean it: 2–3 sentences, warm and peer-to-peer, ' +
+          'leading with the specific thing they did well (the real move, not empty praise). Name the ' +
+          'command verb and ACCA intellectual level the answer hit (from the authored values above — ' +
+          'do not infer when given) and say briefly why it holds / what puts it in the top band. If ' +
+          'their PRESENTATION differs from the usual model (layout/labelling only), say that is ' +
+          'equally valid — but if they also mention an ALTERNATIVE FIGURE or METHOD (not just ' +
+          'presentation), check it against the CONVENTIONS above first and correct it plainly if it ' +
+          'fails the required method; never call a wrong or unscaled form "equally valid" to protect ' +
+          'their mood. Do NOT restate, re-derive, or quote back their figures or workings — they ' +
+          "already wrote them; refer to what they did in words, not numbers. Don't mark it as if it fell short." +
           offerLine + WRAP_UP,
       },
     ],
@@ -479,9 +539,20 @@ async function completenessCheck(
   modelAnswer: string,
   attempt: string,
   verbLevel: string,
+  grounding: GroundingPack,
 ): Promise<string | null> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel ? `Command verb + intellectual level: ${verbLevel}\n\n` : '';
+  // PERSONA-HARDENING (2026-07-21): fixes AFM_SURFACED finding 3 (FALSE-COMPLETE, the Nakheel-shaped
+  // gap — a numerically-exact answer that never advises the board). When a checklist exists (narrative
+  // criteria, or numeric "Step N — Label" headers extracted from model_answer), it is now the
+  // AUTHORITATIVE required-component list — the model no longer re-infers structure from prose alone
+  // (which is exactly what the design note "Haiku snap-judged long calc answers 'complete' regardless
+  // of wording" was catching). Falls back to today's prose-inference when no checklist exists (older/
+  // simpler drills) — behaviourally identical to before this change for that case.
+  const checklistText = grounding.checklist.length
+    ? `${GROUNDING_INSTRUCTION_COMPLETENESS}\n\nCHECKLIST (the authoritative required components):\n${grounding.checklist.map((c) => `- ${c.label}`).join('\n')}\n\n`
+    : '';
   try {
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -491,10 +562,12 @@ async function completenessCheck(
         'Numerical correctness is ALREADY verified — do NOT re-check numbers, and do NOT treat ' +
         'convention/format/layout differences as missing (sign convention, A/F labelling, table ' +
         'layout are all fine). ' +
-        'STEP 1: read the model answer and identify its distinct REQUIRED components — what the ' +
-        'question/command verb actually demands (e.g. the calculation, the evaluation/recommendation, ' +
-        'the sceptical challenge, the limitations/bias commentary — wording varies, do not rely on ' +
-        'headings; ignore incidental flourishes the verb does not require). ' +
+        'STEP 1: if a CHECKLIST is supplied in the user message, that IS the required-component list — ' +
+        'use it directly, do not re-derive one. Otherwise, read the model answer and identify its ' +
+        'distinct REQUIRED components — what the question/command verb actually demands (e.g. the ' +
+        'calculation, the evaluation/recommendation, the sceptical challenge, the limitations/bias ' +
+        'commentary — wording varies, do not rely on headings; ignore incidental flourishes the verb ' +
+        'does not require). ' +
         'STEP 2: for EACH required component, judge whether the student answer makes ANY genuine ' +
         'attempt at it — however brief, oblique or thinly developed still counts as an attempt. ' +
         'Depth is NOT your concern; only attempted-at-all vs not-there-at-all. ' +
@@ -507,6 +580,7 @@ async function completenessCheck(
           content:
             `${contextLine}Question: ${question}\n\n` +
             vlLine +
+            checklistText +
             `Model answer (defines the required components — reference only, do NOT restate):\n${modelAnswer}\n\n` +
             `Student answer:\n${attempt}\n\n` +
             'List each required component on its own line as "PRESENT — name" or "ABSENT — name". Nothing else.',
@@ -658,11 +732,16 @@ async function call4_reveal(
   paper: string,
   fullReveal: string,
   reachedFrom: RevealReachedFrom,
+  grounding: GroundingPack,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   // SOLVED → credit (no invented error; the struggle diagnosis is stale for a solved student).
   // STRUGGLE (paid) → the prior diagnosis-framing behaviour. Prompt + system move together.
   const solved = reachedFrom === 'solved';
+  // PERSONA-HARDENING (2026-07-21): fixes finding 5 (INVENTED-INVENTORY — the reveal's "point them to
+  // a fresh question" close inventing a scenario-specific drill description that does not exist).
+  // Appended to BOTH reveal prompts below; empty for APM (resolvableAreas is AFM-only for now).
+  const outroLine = renderResolvableTopics(grounding) ? `${GROUNDING_INSTRUCTION_OUTRO}\n\n${renderResolvableTopics(grounding)}` : '';
 
   if (paper === 'AFM') {
     // Authored misconception reframe (AFM full_reveal — pre-baked, 3–5 sentences). Anchors the
@@ -678,7 +757,7 @@ async function call4_reveal(
       messages: [
         {
           role: 'user',
-          content: buildAfmWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + WRAP_UP,
+          content: buildAfmWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + '\n\n' + outroLine + WRAP_UP,
         },
       ],
     });
@@ -693,7 +772,7 @@ async function call4_reveal(
     messages: [
       {
         role: 'user',
-        content: buildApmRevealUserPrompt({ contextLine, question, attempt, diagnosis, modelAnswer, reachedFrom }),
+        content: buildApmRevealUserPrompt({ contextLine, question, attempt, diagnosis, modelAnswer, reachedFrom }) + '\n\n' + outroLine,
       },
     ],
   });
@@ -791,9 +870,12 @@ export async function POST(request: Request): Promise<Response> {
   // paper is exactly what made AFM ids 404 before G1. An lo-addressed fetch (legacy fallback)
   // MUST scope by paper: AFM and APM LO codes collide, and paper_code is the only separator.
   // paper comes from the request body (default APM via resolvePaper).
+  // answer_schema added (PERSONA-HARDENING 2026-07-21): feeds buildGroundingPack (lib/acca/
+  // tutor-grounding.ts). Was never fetched on this path before — see AFM_SURFACED.md's persona-
+  // hardening slot ("Rule 24 triangulation"). Read-only addition; nothing downstream required it.
   const drillSelect = () => supabase
     .from('acca_drills')
-    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal')
+    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal, answer_schema')
     .eq('exam_board', 'ACCA')
     .eq('status', 'approved')
     .eq('published', true);
@@ -818,6 +900,16 @@ export async function POST(request: Request): Promise<Response> {
   const paper             = (drill.paper_code as string | null) ?? 'APM';
   // AFM full_reveal (pre-baked misconception reframe); null for APM drills → '' → omitted.
   const fullReveal        = (drill.full_reveal as string | null) ?? '';
+
+  // PERSONA-HARDENING (2026-07-21): the GroundingPack — narrative criteria/scenario_facts, or numeric
+  // step-headers/working_steps, or (no schema / unrecognised shape) an empty pack that changes NOTHING
+  // downstream. AFM area labels are static (all 5 areas — B1-B5 — are live; no per-request query).
+  // See lib/acca/tutor-grounding.ts for the trust-tier discipline this depends on.
+  const resolvableAreas = paper === 'AFM' ? ['B1', 'B2', 'B3', 'B4', 'B5'] : [];
+  const grounding: GroundingPack = buildGroundingPack(
+    { model_answer: storedModelAnswer, full_reveal: fullReveal, answer_schema: drill.answer_schema },
+    resolvableAreas,
+  );
 
   // Authored mark-scheme metadata (redesign item 1 / Principle 5): feed Ezra the
   // criterion to name instead of inferring verb/level from the question text.
@@ -999,7 +1091,7 @@ export async function POST(request: Request): Promise<Response> {
       // reachedFrom mirrors revealDecision's precedence: resolved (solved) wins over struggle.
       // SOLVED → credit-not-correct wrapper (no invented figures-slip); STRUGGLE (paid) → diagnose.
       const reachedFrom: RevealReachedFrom = resolved ? 'solved' : 'struggle';
-      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal, reachedFrom);
+      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal, reachedFrom, grounding);
       newResolved = true;
     } else if (revealGate === 'burn') {
       if (distressed) {
@@ -1008,7 +1100,7 @@ export async function POST(request: Request): Promise<Response> {
         // free — teachThroughDelivered left false, exactly like the burn it replaces.
         intent = 'teach_request';
         messageKind = 'teaching';
-        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', verbLevel, false, paper, true);
+        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', verbLevel, false, paper, true, grounding);
       } else {
         // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
         // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
@@ -1028,7 +1120,7 @@ export async function POST(request: Request): Promise<Response> {
       messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper, distressed);
+      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper, distressed, grounding);
       teachThroughDelivered = true;
     } else if (resolved) {
       // Item 4: a SOLVED drill never re-scaffolds from zero. Any non-reveal message post-solve
@@ -1058,7 +1150,7 @@ export async function POST(request: Request): Promise<Response> {
                     : classified === 'confusion' ? 'coaching' : 'chat';
       } else {
         // ── THE MOAT — existing withholding pipeline, unchanged ──
-        const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme);
+        const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme, grounding);
 
         // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
         // verifies every required component was attempted. Runs ONLY when call2 says correct, so
@@ -1066,7 +1158,7 @@ export async function POST(request: Request): Promise<Response> {
         // correct verdict to a miss whose gap NAMES the missing component (case 2).
         let completenessGap: string | null = null;
         if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
-          completenessGap = await completenessCheck(question, context, modelAnswer, student_message, verbLevel);
+          completenessGap = await completenessCheck(question, context, modelAnswer, student_message, verbLevel, grounding);
         }
         const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
 
@@ -1076,7 +1168,7 @@ export async function POST(request: Request): Promise<Response> {
           // Item 1: mark the drill RESOLVED (success-solved mirrors reveal-solved) so the
           // model answer becomes reachable for comparison and the drill never re-scaffolds.
           // Item 3a: offerReveal=REVEAL_ENABLED → the confirm nudges the now-earned phrase.
-          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, REVEAL_ENABLED && !distressed);
+          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, REVEAL_ENABLED && !distressed, grounding);
           messageKind        = 'correct';
           attemptOutcome     = 'correct';
           newLastRealAttempt = student_message;
@@ -1093,10 +1185,10 @@ export async function POST(request: Request): Promise<Response> {
           attemptOutcome   = 'miss';
 
           if (newMissCount === 1) {
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper, grounding);
             messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper, distressed);
+            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper, distressed, grounding);
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }
