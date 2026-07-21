@@ -1,7 +1,7 @@
 # AFM COVERAGE CONTRACT — definitive product-readiness definition
 **Created 12/07/2026, from the ACCA AFM Syllabus & Study Guide Sep 2026–Jun 2027 (no syllabus changes this cycle). This doc defines what "viable" and "exam-ready" mean for the AFM product, by exact LO coverage. Update status columns as batches ship; do not change tier definitions without a logged decision. Mirrored from the project master 18/07/2026 — keep both in sync at batch close.**
 
-**STATUS 21/07/2026: 46 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 11 calculators total + the 5-drill B narrative cluster (pipeline #2) FLIPPED LIVE 21/07 · delivery layer complete and in production. B-SECTION-LIVE TIER CONTENT IS COMPLETE (calcs #1–#10 + B narrative all published) — the tier CLAIM and ads trigger stay GATED pending the student walk (provenance gate, design §7); calculator #3 walked 18/07, the narrative cluster's walk is the one remaining exit criterion.**
+**STATUS 21/07/2026: 46 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 11 calculators total + the 5-drill B narrative cluster (pipeline #2) FLIPPED LIVE 21/07 AND WALKED 21/07 · delivery layer complete and in production. B-SECTION-LIVE TIER CONTENT IS COMPLETE AND WALKED** (calcs #1–#10 + B narrative all published, all walked — calculator #3 walked 18/07, the narrative cluster walked 21/07, frozen-layer PASS across both drills walked). **The tier CLAIM and ads trigger are now a business decision for Grant to rule on, not a build gate** — both provenance-gate conditions (content shipped, pipeline walked) are satisfied. Conversational-layer findings from the narrative walk are journalled to `AFM_SURFACED.md`'s consolidated persona-hardening slot (systemic across pipelines, not a narrative-content defect).
 
 ## Exam facts (source: syllabus §7)
 - 3h15 CBE. Section A: one 50-mark case (40 technical + 10 professional skills), spans ≥2 syllabus sections. Section B: two 25-mark scenario questions (20 + 5 PS each), never wholly narrative.
@@ -65,11 +65,11 @@ Parked candidates (not in any batch): 47c9d5ce (A3a ESG) — queued for its own 
 | Tier | Definition | Count | Claim permitted (selling bible binds) |
 |---|---|---|---|
 | Demo | Calculators 1–2 | 8 drills | None — no public claims |
-| **B-section live** | Calculators 1–10 + B narrative (5) | **46 drills — CONTENT SHIPPED 21/07** | "Complete advanced investment appraisal practice" — free tier, demand signal. **ADS TRIGGER GATED: content complete, but the claim + landing template + "Failed AFM?" ads do not fire until the narrative cluster's student walk passes (provenance gate, design §7)** |
+| **B-section live** | Calculators 1–10 + B narrative (5) | **46 drills — CONTENT SHIPPED + WALKED 21/07** | "Complete advanced investment appraisal practice" — free tier, demand signal. **ADS TRIGGER: build-side provenance gate CLEARED (content shipped + walked, design §7) — claim + landing template + "Failed AFM?" ads await Grant's business ruling, not a further build gate** |
 | **VIABLE PAID LAUNCH** | B+E complete: calcs 1–12 + 8 narrative + 1 mock | ~56 drills + 1 mock | "Covers the sections guaranteed on every AFM exam" |
 | **EXAM-READY** | Full A–E: 16 calcs + 22 narrative + 3 mocks | ~86 drills + 3 mocks | "Scratch to exam-ready for the AFM written paper" |
 
-**Progress against tiers (21/07): B-SECTION-LIVE TIER CONTENT COMPLETE — all 10 calculators (calcs #1–#10) + the 5-drill B narrative cluster (pipeline #2) are LIVE. The tier's ONLY remaining item is the narrative cluster's student walk (content is shipped; the CLAIM + ads trigger are gated on that walk passing, not on more content). 10 of 12 calculators toward viable paid launch (E-section hedging #11/#12 remain). Measured pace holds at ~1 calculator batch per session.**
+**Progress against tiers (21/07): B-SECTION-LIVE TIER CONTENT COMPLETE AND WALKED — all 10 calculators (calcs #1–#10) + the 5-drill B narrative cluster (pipeline #2) are LIVE, and both the calculator content (walked 18/07) and the narrative cluster (walked 21/07, frozen-layer PASS) have cleared their student walks. The tier CLAIM + ads trigger are now Grant's business decision to rule on — the build-side provenance-gate conditions are both satisfied. 10 of 12 calculators toward viable paid launch (E-section hedging #11/#12 remain). Measured pace holds at ~1 calculator batch per session.**
 
 ## Standing rules
 - No "exam-ready" or full-coverage claim before the EXAM-READY tier is shipped and verified (GRADD_SELLING_BIBLE — do not sell what isn't built).
