@@ -85,7 +85,12 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
 }
 
 const CSS = `
-.plp { --rust: oklch(64% 0.17 47); background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
+.plp {
+  --rust: oklch(64% 0.17 47);
+  --rust-2: oklch(58% 0.17 47);
+  --rust-ink: oklch(98% 0.01 70);
+  background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column;
+}
 .plp *, .plp *::before, .plp *::after { box-sizing: border-box; }
 .plp-wrap { max-width: 920px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); width: 100%; }
 .plp-header { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-light, var(--border)); }
@@ -94,6 +99,14 @@ const CSS = `
 .plp-nav { display: flex; align-items: center; gap: 16px; }
 .plp-navlink { font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; white-space: nowrap; }
 .plp-navlink:hover { color: var(--text); }
+/* AFM_SURFACED bug (flagged 21/07, fixed 21/07): .plp used className="btn btn-rust" throughout but,
+   unlike ACCALandingPage.tsx/IBLandingPage.tsx (each of which defines its own scoped .btn-rust),
+   never defined it here — the Start-free CTA has been rendering unstyled (bare .btn) since this file
+   was built. */
+.plp .btn-rust { background: var(--rust); color: var(--rust-ink); }
+.plp .btn-rust:hover:not(:disabled) { background: var(--rust-2); }
+.plp .btn .arrow { transition: transform 0.18s ease; }
+.plp .btn:hover .arrow { transform: translateX(3px); }
 .plp-hero { padding: clamp(44px, 8vw, 88px) 0 clamp(28px, 5vw, 52px); }
 .plp-hero-inner { max-width: 720px; }
 .plp-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rust); margin: 0 0 14px; }
