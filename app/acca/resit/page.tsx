@@ -6,6 +6,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import AttributionCapture from '@/components/AttributionCapture';
 import {
   TOPIC_GROUPS,
   HABIT_QUESTIONS,
@@ -113,6 +114,11 @@ export default function ResitPage() {
 
   return (
     <div className="resit">
+      {/* First-touch utm_* / fbclid → cookie → read server-side by /api/acca/resit to stamp
+          resit_runs.attribution. This route had NO capture until 21/07 (the ad-measurement
+          blind spot): the cookie-reader existed in the API route but nothing ever set the
+          cookie on this, the primary paid-traffic landing page. */}
+      <AttributionCapture />
       <style>{CSS}</style>
 
       <div className="resit-logo">
