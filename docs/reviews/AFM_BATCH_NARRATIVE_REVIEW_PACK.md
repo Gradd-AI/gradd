@@ -1,6 +1,6 @@
 # AFM BATCH — NARRATIVE CLUSTER (pipeline #2, discursive D1–D5) — REVIEW PACK
 
-**Status: D1–D4 GENERATED + inserted (candidate). D5 pending.**
+**Status: D1–D5 GENERATED + inserted (candidate) — FULL narrative cluster complete. Awaiting co-founder rubric review.**
 DB snapshot (hand-maintained preamble + per-drill body copied from the row fields). This is the FIRST
 narrative-marking batch — the pilot for pipeline #2. Design: `docs/NARRATIVE_MARKING_DESIGN.md`;
 detection targets (F1–F12, page-VERIFIED 2026-07-20): `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
@@ -372,5 +372,86 @@ no recommendation. The marker scores this below band and raises F1/F5/F4.)*
 
 ---
 
-## D5 — PENDING (not yet appended to pack)
-- **D5** exchange controls + international sources of finance (B5c/d, L3) — generated + inserted
+## D5 — Exchange controls + international sources of finance (B5c/B5d, L3, discursive)
+
+- **id:** `32ef124c-350e-4fb9-a02f-dd4e8e7f529f` · **status:** candidate · **published:** false
+- **lo_code:** B5c (covers B5c/B5d) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 15
+- **command_verb:** evaluate, assess and recommend · **rubric_version:** narrative_v1 · **8 criteria / 15 marks**
+- **geo:** Nigeria / multinational consumer-goods parent with a subsidiary facing capital controls
+- **GATES:** N2 ✓ · N3 ✓ · N5 ✓ · N4-pre ✓ · N1 ✓ · **N4 (Rule-23) ✓** — golden GOOD in band, golden BAD below + raised [F1, F5, F4]. (attempt 1)
+
+### context_text (scenario — all figures are GIVEN; NO blocked-funds NPV is computed)
+> Zephyr Consumer Goods plc ("Zephyr"), a multinational headquartered in the Netherlands, operates a wholly-owned subsidiary, Zephyr Nigeria Ltd ("ZNL"), which manufactures and distributes fast-moving consumer goods across West Africa. The Central Bank of Nigeria has imposed strict exchange controls: ZNL may only repatriate dividends equal to 50% of after-tax profits in any calendar year, and all remittances require prior CBN approval, which has averaged a 14-month processing delay in recent years. ZNL's most recent annual after-tax profit is NGN 18 billion, yet Zephyr's treasury estimates that the trapped cash balance — funds that cannot currently be remitted — has accumulated to NGN 42 billion. To fund a planned expansion of its African distribution network, Zephyr's board is considering two international financing options: (a) a Eurobond issuance of USD 300 million at a fixed coupon of 6.8% per annum, and (b) a Global Depository Receipt (GDR) equity issuance targeting institutional investors on the Luxembourg Stock Exchange, expected to raise USD 280 million but subject to disclosure and governance requirements aligned with EU prospectus rules. The board has asked its senior financial adviser to evaluate the significance of Nigeria's exchange controls for the investment decision and assess the two financing alternatives.
+
+### question
+> You are the senior financial adviser to the board of Zephyr Consumer Goods plc.
+>
+> (i) Evaluate the significance of Nigeria's exchange controls for Zephyr's investment decision in ZNL, and assess the strategies available to deal with the restricted remittance of funds from ZNL to the parent.
+>
+> (ii) Assess the costs and benefits of the two international financing options — the Eurobond and the GDR issuance — and recommend which the board should prefer for funding the African distribution network expansion.
+
+*(Conceptual-only: "evaluate / assess / recommend", never "compute". No blocked-funds NPV is calculated — calc #10 K3 owns that; here the candidate evaluates strategy and significance in words.)*
+
+### model_answer (the golden GOOD — full-marks standard; first line is the area-entry heading)
+> **Exchange controls and international sources of finance**
+>
+> **Part (i) — Significance of exchange controls and remittance strategies**
+>
+> Nigeria's CBN restricts ZNL to repatriating only 50% of after-tax profits annually, meaning that even though ZNL earns NGN 18 billion per year, the parent's accessible cash yield is structurally capped at roughly half that figure. This is material for investment appraisal: Zephyr must discount only the genuinely repatriable cash flows, not the subsidiary's gross profit, otherwise it will systematically overstate the investment's value.
+>
+> The 14-month average processing delay worsens this picture further. Even the permitted tranche of remittances arrives late, reducing its present value and creating a timing mismatch between ZNL's cash generation and Zephyr's ability to deploy it — this may force unnecessary external borrowing at the group level in the interim.
+>
+> The accumulated NGN 42 billion trapped cash balance illustrates the long-run severity of these controls: a stock of value equivalent to more than two years of ZNL's profits is stranded in Nigeria. Inflation and naira depreciation could erode this balance in real, euro-equivalent terms over time, meaning political risk compounds currency risk. Zephyr should factor this erosion risk explicitly into its investment case.
+>
+> The most practical remittance strategy is to redeploy the NGN 42 billion trapped funds within Nigeria — for instance, financing the local infrastructure of the distribution network expansion — thereby converting idle trapped cash into a productive asset without triggering CBN approval. Supplementary strategies such as intra-group management fees, royalties, or intercompany loan interest can move value upstream within arm's-length OECD transfer pricing rules, though Zephyr must weigh the tax and reputational risk.
+>
+> **Part (ii) — Eurobond vs GDR: assessment and recommendation**
+>
+> The Eurobond at a fixed coupon of 6.8% offers certainty of cost and protects existing shareholders from dilution. For a group already holding NGN 42 billion of trapped equity-equivalent value in Nigeria that it cannot access, adding further equity via a GDR would deepen the disconnect between the group's book equity and its accessible capital — shareholders bear additional dilution for a problem that equity issuance does not solve.
+>
+> The GDR on the Luxembourg Stock Exchange avoids fixed debt service, which is an advantage in principle, but the EU prospectus disclosure requirements would force Zephyr to publicly detail ZNL's remittance constraints and the trapped-cash balance, creating investor-relations risk and potentially triggering governance scrutiny precisely when the Nigerian situation is already sensitive.
+>
+> **Recommendation:** The board should proceed with the Eurobond. The 6.8% fixed coupon is serviceable if the distribution network expansion earns a return in excess of that rate, the no-dilution feature protects existing shareholders, and the absence of enhanced public disclosure avoids inflaming investor concern about the CBN restrictions. The GDR is unsuitable given the circumstances: it dilutes equity without addressing the trapped-cash problem and introduces disclosure obligations that heighten, rather than manage, the political-risk exposure.
+
+### rubric (answer_schema.criteria) — 8 criteria / 15 marks · bands: fail / pass 0.5 / good 0.7 / excellent 0.85
+
+*(FR1: interpretation/assessment criteria use `[F1, F5, F6]`; the two strategy/recommendation criteria carrying a verdict use `[F1, F4, F5]`; c5 (a supplementary strategy) uses `[F1, F5]`. **No F9, no evidence_anchor** — conceptual/evaluative only. Part (i) = B5c, Part (ii) = B5d.)*
+
+| id | part | lo | marks | required point (short) | anchors | disqualifiers |
+|----|------|----|-------|------------------------|---------|---------------|
+| c1 | (i) | B5c | 2 | 50% cap → parent's accessible yield structurally < ZNL's accounting profit; appraise repatriable cash, not gross | f_remit_cap, f_profit | F1, F5, **F6** |
+| c2 | (i) | B5c | 2 | 14-month delay compounds the cap → time-value erosion + parent liquidity risk / unnecessary external borrowing | f_delay, f_remit_cap | F1, F5, **F6** |
+| c3 | (i) | B5c | 2 | NGN 42bn trapped = structural blockage; inflation/naira depreciation erodes it → currency risk on top of political risk | f_trapped | F1, F5, **F6** |
+| c4 | (i) | B5c | 2 | Strategy: redeploy the NGN 42bn productively within Nigeria (fund the local leg) → avoid controls, no CBN approval | f_trapped | F1, F5, **F4** |
+| c5 | (i) | B5c | 1 | Strategy: transfer pricing (mgmt fees/royalties/loan interest) bypasses the cap — bounded by arm's-length OECD + reputational risk | f_remit_cap | F1, F5 |
+| c6 | (ii) | B5d | 2 | Eurobond: fixed 6.8% predictable + no dilution, but an unconditional cash obligation raising financial risk | f_eurobond | F1, F5, **F6** |
+| c7 | (ii) | B5d | 2 | GDR: no fixed coupon but dilutive + EU-prospectus disclosure exposes ZNL's trapped-cash/CBN problems to scrutiny | f_gdr, f_gdr_disclosure | F1, F5, **F6** |
+| c8 | (ii) | B5d | 2 | Recommendation: prefer the Eurobond — group already equity-rich-but-trapped in Nigeria; GDR dilutes without solving the blockage | f_trapped, f_eurobond | F1, **F4**, F5 |
+
+**scenario_facts** (each `key` verbatim in context_text): f_remit_cap "50%" · f_delay "14-month" · f_profit "NGN 18 billion" · f_trapped "NGN 42 billion" · f_eurobond "6.8%" · f_gdr "Luxembourg Stock Exchange" · f_gdr_disclosure "EU prospectus".
+
+### golden BAD (authoring artefact — `answer_schema._authoring`, NOT served) — designed flags [F1, F5, F4]
+> Exchange controls are restrictions imposed by a country's government on the ability of companies to transfer money in and out of the country. The Central Bank of Nigeria has imposed strict exchange controls, and ZNL may only repatriate dividends equal to 50% of after-tax profits in any calendar year. This limits the amount of money that Zephyr can receive from ZNL.
+>
+> Exchange controls are significant for investment decisions because they affect cash flows. If a company cannot remit funds freely, it may not be able to recover its investment. There are several strategies available to deal with restricted remittance. One is to use transfer pricing. Another is to pay management fees. Another is to use royalties. These all allow funds to flow between companies in different countries.
+>
+> Regarding the two financing options, a Eurobond is a bond issued in a currency other than that of the country where it is issued. It offers a fixed rate of interest. A GDR is a certificate that represents shares in a foreign company. It can be listed on a stock exchange. The Eurobond has a fixed coupon and no dilution. The GDR does not have fixed coupon payments and can be listed on an exchange. Both options have advantages and disadvantages and different companies may prefer different options depending on their circumstances. There are many factors to consider when choosing between debt and equity financing in international markets.
+
+*(F1 — para 1 lifts the scenario's 50%-cap sentence verbatim; F5 — generic definitions never anchored to the NGN 42bn trapped balance, the 14-month delay or the Luxembourg prospectus; F4 — "different companies may prefer different options" / no recommendation. The marker scores this below band and raises F1/F5/F4.)*
+
+### hint (served — one-sentence nudge)
+> Before you can recommend the Eurobond or GDR, check whether your Part (i) analysis has distinguished between ZNL's gross profit and the genuinely repatriable cash flows — because the remittance cap and the trapped-cash balance each affect a different part of the financing argument, and conflating them will leave the recommendation hanging in mid-air.
+
+### full_reveal (served — Ezra teaching reveal)
+> The dominant misconception here is FENCE-SITTING combined with UNDEVELOPED-ASSUMPTION: candidates list the exchange-control features and the two financing instruments, but never weigh the scenario-specific facts against each other to arrive at a board-ready verdict. This is wrong not because lists are useless, but because a list of features carries zero decision weight — the board cannot act on "the GDR avoids fixed debt service" without knowing whether that benefit survives the disclosure obligation and the trapped-cash dynamic that equity issuance cannot resolve. The correct mental model is to treat each scenario fact as a constraint that either disqualifies or qualifies an option: the CBN repatriation cap is not background colour, it is a filter that changes the value of equity-based financing relative to debt-based financing in this specific situation. On the remittance strategies in Part (i), a further UNDEVELOPED-ASSUMPTION failure appears when candidates name "transfer pricing mechanisms" or "management fees" without discussing why they are bounded — arm's-length OECD rules and reputational risk are the binding constraints that determine whether those strategies are viable, and leaving them undeveloped converts a Level 3 analytical point into a Level 1 bullet. The boardroom test is simple: if your answer could apply to any multinational with any exchange control regime, you have not yet used the scenario — Zephyr's 14-month delay, the NGN 42 billion trapped balance, and the Luxembourg prospectus requirement are the facts that earn the marks, and only a recommendation that explicitly reconciles them survives the boardroom.
+
+---
+
+## BATCH RECONCILE (at generation close)
+
+- **Discursive AFM rows: 6** = **5 narrative candidates** (D1 `cb9b411c` · D2 `08044fb6` · D3 `fda46d99` · D4 `d413fbe7` · D5 `32ef124c`) + **parked A3a `47c9d5ce`** (the expected 6th, pre-existing).
+- **approved-unpublished (all AFM): 0.** No publish flip performed — the cluster stays `candidate` pending co-founder rubric review then blind adversarial review.
+- All five carry `rubric_version: narrative_v1`, `mode: discursive`, `calculation_required: false`; every rubric is FR1-clean (no F9, no `evidence_anchor`; interpretation/assessment criteria `[F1,F5,F6]`; recommendation/verdict criteria carry F4).
+- Area-entry headings for D1–D5 ranked 60–64 in `lib/acca/area-entry.ts` (above every calculator ≤ 53 — a narrative drill is never an area entry).
+
+**NEXT:** co-founder independent rubric review → blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → (only then) publish flip by explicit-id, reconcile-first.
