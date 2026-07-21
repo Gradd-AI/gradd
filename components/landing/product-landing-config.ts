@@ -15,6 +15,7 @@ export interface ProductLandingConfig {
   pricing: { free: string; paid: string };
   freeCta: { label: string; href: string };
   footnote: string;
+  proof?: { label: string; href: string };  // optional link to a real walkthrough proof page
 }
 
 // AFM — early-access honest. Coverage states EXACTLY what is live (16 drills, four
@@ -52,4 +53,5 @@ export const AFM_LANDING: ProductLandingConfig = {
     href: `/acca/auth?next=${encodeURIComponent('/acca?paper=AFM')}`,
   },
   footnote: 'Gradd is not affiliated with or endorsed by ACCA. Scenarios are original works built to the public syllabus structure.',
+  proof: { label: 'See a real walkthrough', href: '/acca/afm/proof' },
 };

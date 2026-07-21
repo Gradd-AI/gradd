@@ -16,6 +16,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       { url: AI_BASE,                    lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 }, // APM flagship landing
       { url: `${AI_BASE}/acca/resit`,    lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 }, // free resit diagnostic (primary CTA)
       { url: `${AI_BASE}/acca/afm`,      lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 }, // AFM product landing (early access)
+      { url: `${AI_BASE}/acca/afm/proof`,lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 }, // real proof-transcript deposit
       { url: `${AI_BASE}/ib`,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // IB landing (moved off root)
       { url: `${AI_BASE}/blog`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
       { url: `${AI_BASE}/acca/subscribe`,lastModified: new Date(), changeFrequency: 'monthly', priority: 0.7 }, // public subscribe/pricing page

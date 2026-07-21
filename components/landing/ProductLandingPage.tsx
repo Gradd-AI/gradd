@@ -18,6 +18,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 22, width: 'auto', display: 'block' }} />
             </Link>
             <nav className="plp-nav">
+              {c.proof && <Link href={c.proof.href} className="plp-navlink">{c.proof.label}</Link>}
               <Link href="/" className="plp-navlink">ACCA APM</Link>
               <Link href={c.freeCta.href} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </nav>
@@ -35,6 +36,11 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                 <Link href={c.freeCta.href} className="btn btn-rust btn-lg">{c.freeCta.label} <span className="arrow">→</span></Link>
               </div>
               <p className="plp-microcopy">Free to start · no card · {c.examName} ({c.paper})</p>
+              {c.proof && (
+                <p className="plp-microcopy">
+                  <Link href={c.proof.href} className="plp-prooflink">{c.proof.label} — a real, unedited transcript →</Link>
+                </p>
+              )}
             </div>
           </section>
 
@@ -97,6 +103,8 @@ const CSS = `
 .plp-coverage strong { color: var(--rust); }
 .plp-cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
 .plp-microcopy { font-size: 12.5px; color: var(--text-muted); margin: 14px 0 0; }
+.plp-prooflink { color: var(--rust); font-weight: 600; text-decoration: none; }
+.plp-prooflink:hover { text-decoration: underline; }
 .plp-points { padding: clamp(24px, 4vw, 40px) 0; }
 .plp-points-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
 @media (max-width: 720px) { .plp-points-grid { grid-template-columns: 1fr; } }
