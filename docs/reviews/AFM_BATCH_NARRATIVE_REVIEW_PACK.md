@@ -1,6 +1,6 @@
 # AFM BATCH — NARRATIVE CLUSTER (pipeline #2, discursive D1–D5) — REVIEW PACK
 
-**Status: D1 GENERATED + inserted (candidate) — checkpoint pack. D2–D5 pending (Grant: "generate D1 to pack first, then stop").**
+**Status: D1–D2 GENERATED + inserted (candidate). D3–D5 pending.**
 DB snapshot (hand-maintained preamble + per-drill body copied from the row fields). This is the FIRST
 narrative-marking batch — the pilot for pipeline #2. Design: `docs/NARRATIVE_MARKING_DESIGN.md`;
 detection targets (F1–F12, page-VERIFIED 2026-07-20): `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
@@ -142,11 +142,79 @@ no recommendation. The marker scores this below band and raises F1/F5/F4.)*
 
 ---
 
-## D2–D5 — PENDING (not yet generated)
-- **D2** sources of finance incl. Islamic + green (B3a/b/c, L3)
-- **D3** capital-structure theory (B3i, L3)
-- **D4** BSOP conceptual — role of option pricing models (B4d, L2)
-- **D5** exchange controls + international sources of finance (B5c/d, L3)
+## D2 — Sources of finance incl. Islamic + green, appropriateness for the organisation (B3a/b/c, L3, discursive)
 
-Next: generate D2–D5 through the same N1–N5 pipeline, append their bodies here, then DB reconcile
-(5 new candidates + parked A3a `47c9d5ce` as the expected 6th) and hand to review.
+- **id:** `08044fb6-eecb-4498-9c16-56381f66dc92` · **status:** candidate · **published:** false
+- **lo_code:** B3a (covers B3a/B3b/B3c) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 12
+- **command_verb:** assess and recommend · **rubric_version:** narrative_v1 · **5 criteria / 12 marks**
+- **geo:** Kenya / renewable-energy (solar-plus-storage) developer
+- **GATES:** N2 ✓ · N3 ✓ · N5 ✓ · N4-pre ✓ · N1 ✓ · **N4 (Rule-23) ✓** — golden GOOD in band, golden BAD below + raised [F1, F5, F4]. (attempt 1)
+
+### context_text (scenario — all figures are GIVEN)
+> Savanna Solar Kenya Ltd ("SSK") is a Nairobi-based renewable-energy developer seeking KES 8.4 billion to finance the construction of a 120 MW solar-plus-storage facility in Turkana County. SSK's board has adopted a formal green mandate, committing the company to instruments whose proceeds are ring-fenced for certified climate-positive assets. The company's current debt-to-equity ratio stands at 2.1×, which the board regards as the maximum tolerable gearing level, meaning any new instrument that increases reported on-balance-sheet debt further is structurally ruled out. SSK's largest shareholders are a consortium of Gulf-based sovereign wealth funds that require all financing to comply with Shariah principles, prohibiting interest (riba) and speculative uncertainty (gharar). An independent credit assessment has rated SSK's long-term obligations BB+, reflecting the early-stage revenue profile of the Turkana project and the limited operating history of the company.
+
+### question
+> Assess the appropriateness of each of the following four sources of finance for SSK's KES 8.4 billion requirement, and provide a justified recommendation identifying which source (or combination) the board should adopt:
+> (i) A conventional investment-grade bond issue
+> (ii) A green bond aligned to the ICMA Green Bond Principles
+> (iii) An ijara sukuk structured over the Turkana project assets
+> (iv) A new equity placing to external institutional investors
+>
+> Your answer should weigh each instrument against SSK's financial position, its gearing constraint, its green mandate, and its Shariah compliance requirement.
+
+*(Conceptual-only: "assess … recommend", never "compute". No instrument is priced — the figures are GIVEN.)*
+
+### model_answer (the golden GOOD — full-marks standard; first line is the area-entry heading)
+> **Sources of finance — appropriateness for the organisation**
+>
+> **Conventional bond [(i)]** SSK's BB+ rating signals sub-investment-grade credit quality, reflecting its early-stage revenue profile, which means a conventional bond would carry punishing coupon costs. More critically, interest payments constitute riba, flatly contravening the Shariah principles demanded by the Gulf sovereign wealth fund investors. It would also add to reported debt, pushing gearing beyond the 2.1× ceiling the board has set as an absolute limit. On all three axes — cost, Shariah, gearing — it fails.
+>
+> **Green bond [(ii)]** Aligning proceeds with the ICMA Green Bond Principles would satisfy the green mandate by ring-fencing funds to the certified climate-positive 120 MW Turkana facility. Yet the instrument still pays a coupon (riba), violating Shariah, and it is reported as debt, risking a breach of the 2.1× constraint. It solves one problem while leaving the other two unresolved.
+>
+> **Ijara sukuk [(iii)]** This is the strongest fit. Structured as a lease over the Turkana project assets, it generates returns through rental income rather than interest, eliminating riba and gharar and achieving full Shariah compliance for the Gulf sovereign wealth fund shareholders. Labelling it a green sukuk under the ICMA framework ring-fences the KES 8.4 billion proceeds to the 120 MW project, satisfying the green mandate. Crucially, an appropriately structured ijara may achieve off-balance-sheet accounting treatment, shielding the 2.1× gearing position — though this must be confirmed with auditors under IFRS 16.
+>
+> **Equity placing [(iv)]** Equity unambiguously protects the 2.1× ceiling by adding no debt. However, placing shares with external institutions dilutes the Gulf sovereign wealth fund shareholders and could generate opposition from the investors whose requirements drive the entire financing strategy; moreover, a BB+ issuer raising KES 8.4 billion in equity faces a steep return hurdle.
+>
+> **Recommendation** The board should proceed with a green ijara sukuk as the primary financing instrument — it is the sole option that satisfies Shariah compliance, the green mandate, and the gearing constraint simultaneously. If a capital buffer beyond KES 8.4 billion is later required, a pre-emptive rights issue to the existing Gulf shareholders would preserve both Shariah alignment and investor control without breaching the 2.1× ceiling.
+
+### rubric (answer_schema.criteria) — 5 criteria / 12 marks · bands: fail / pass 0.5 / good 0.7 / excellent 0.85
+
+*(FR1: assessment criteria use `[F1, F5, F6]` (F6 = superficial state-the-figure); the recommendation criterion uses `[F1, F4, F5]` (F4 = fence-sitting). **No F9, no evidence_anchor** — this conceptual drill carries no carry-a-value-downstream step. Marks credit RECOGNITION however expressed.)*
+
+| id | part | lo | marks | required point (short) | anchors | disqualifiers |
+|----|------|----|-------|------------------------|---------|---------------|
+| c1 | (i) | B3a | 2 | Conventional bond fails on cost (BB+), riba, AND the 2.1× ceiling → unsuitable on all three axes | f_gearing, f_rating, f_shariah | F1, F5, **F6** |
+| c2 | (ii) | B3c | 2 | Green bond satisfies the green mandate (ring-fenced to 120 MW) but still pays riba + adds debt → only 1 of 3 constraints met | f_green, f_gearing, f_shariah, f_capacity | F1, F5, **F6** |
+| c3 | (iii) | B3b | 3 | Ijara sukuk = strongest fit: lease/rental avoids riba+gharar (Shariah ✓), green-sukuk label (mandate ✓), possible off-BS (gearing ✓, verify IFRS 16) | f_amount, f_shariah, f_green, f_gearing, f_capacity | F1, F5, **F6** |
+| c4 | (iv) | B3a | 2 | Equity protects the 2.1× ceiling but dilutes the Gulf holders + steep BB+ return hurdle | f_gearing, f_shariah, f_amount, f_rating | F1, F5, **F6** |
+| c5 | (v) | B3a | 3 | Committed recommendation: green ijara sukuk (only option clearing all three constraints); rights issue to Gulf holders as buffer | f_amount, f_gearing, f_green, f_shariah, f_capacity | F1, **F4**, F5 |
+
+**scenario_facts** (each `key` verbatim in context_text): f_amount "KES 8.4 billion" · f_gearing "2.1×" · f_green "green mandate" · f_shariah "Shariah" · f_rating "BB+" · f_capacity "120 MW".
+
+### golden BAD (authoring artefact — `answer_schema._authoring`, NOT served) — designed flags [F1, F5, F4]
+> Savanna Solar Kenya Ltd is a Nairobi-based renewable-energy developer seeking KES 8.4 billion to finance the construction of a 120 MW solar-plus-storage facility in Turkana County. There are several sources of finance the company could consider.
+>
+> A conventional bond could be issued. Bonds are a common source of debt finance. They involve paying a coupon to investors. The credit rating of the company may affect the terms available. There are advantages and disadvantages to bond financing in general.
+>
+> A green bond could also be considered. Green bonds are used by companies that have environmental objectives. They require the proceeds to be used for green projects. SSK has a green mandate so this could be relevant.
+>
+> An ijara sukuk is an Islamic finance instrument. Islamic finance prohibits interest. A sukuk is a certificate of ownership. It can be used to raise capital in compliance with Islamic principles. There are various types of sukuk available in the market.
+>
+> An equity placing involves issuing new shares to investors. This would dilute existing shareholders. Equity does not require fixed interest payments. However, it may be expensive for the company.
+>
+> There are therefore several options available to SSK, each with their own merits and drawbacks. The conventional bond and the green bond are debt instruments, whereas the equity placing is not. The ijara sukuk is an Islamic finance instrument. All four instruments could potentially be used depending on circumstances, and each has positive and negative features that the board would need to weigh up carefully before making any decision.
+
+*(F1 — para 1 lifts the scenario's opening sentence verbatim; F5 — pure textbook definitions, never anchored to SSK's 2.1×/Shariah/green constraints; F4 — "before making any decision" fence-sits, no recommendation. The marker scores this below band and raises F1/F5/F4.)*
+
+### hint (served — one-sentence nudge)
+> Your answer lists what each instrument is — now check whether you have explicitly tested each one against all three of SSK's binding constraints (Shariah compliance, the 2.1× gearing ceiling, and the green mandate) and then closed with a single justified recommendation the board can act on.
+
+### full_reveal (served — Ezra teaching reveal)
+> The misconception here is FENCE-SITTING combined with SCENARIO-FREE discussion: candidates describe each instrument in general terms — "bonds pay coupons," "equity avoids debt" — without anchoring the assessment to SSK's three specific, non-negotiable constraints, and then decline to name a preferred course of action. This is the wrong mental model because the command verb "assess and recommend" requires a verdict, not a tour of the options; a board cannot act on a balanced description of trade-offs, only on a justified choice. The correct move is to use SSK's constraints as a filter applied sequentially to each instrument: an instrument that fails even one binding constraint (riba prohibition, the 2.1× ceiling, or the green mandate) is disqualified regardless of its other merits, and the recommendation names whichever instrument — or combination — clears all three filters simultaneously. Where two instruments each clear all filters, the recommendation must weigh them against each other using scenario evidence (cost, dilution risk, accounting treatment) and declare a primary choice, since "either could work" is still fence-sitting. The Shariah constraint is particularly fertile ground for undeveloped assumptions: stating that an ijara sukuk is "Shariah-compliant" without explaining the mechanism — rental income replacing riba, and the lease structure over identifiable project assets — leaves the assumption listed but not discussed, which is the UNDEVELOPED-ASSUMPTION failure that costs the interpretive marks.
+
+---
+
+## D3–D5 — PENDING (not yet appended to pack)
+- **D3** capital-structure theory (B3i, L3) — generated + inserted
+- **D4** BSOP conceptual — role of option pricing models (B4d, L2) — generated + inserted
+- **D5** exchange controls + international sources of finance (B5c/d, L3) — generated + inserted
