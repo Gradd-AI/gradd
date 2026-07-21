@@ -1,6 +1,6 @@
 # AFM BATCH — NARRATIVE CLUSTER (pipeline #2, discursive D1–D5) — REVIEW PACK
 
-**Status: D1–D5 GENERATED + inserted (candidate). Co-founder rubric review ADJUDICATED (FR2, 2026-07-21): D1/D4/D5 clean passes; D2 1 BLOCKING (IFRS 16) + 2 minor FIXED; D3 2 prose accepts FIXED. Blind GPT round 1 ADJUDICATED (FR3, 2026-07-21): 4 accepts — D5 2 MUST-FIX (exchange-control overclaim + Eurobond funding-source risk) FIXED; D3 1 polish (agency-paragraph free-float framing) FIXED; D2 1 minor sweep VERIFIED CLEAN (no edit). All re-gated N1–N5 clean. Awaiting confirm-pass / a second blind round, then the publish flip.**
+**Status: GATE-P FLIP EXECUTED 2026-07-21 — LIVE, pending student walk.** D1–D5 generated → co-founder rubric review (FR2: D2 1 BLOCKING IFRS16 + 2 minor FIXED; D3 2 prose accepts FIXED) → blind GPT round 1 (FR3: D5 2 MUST-FIX FIXED; D3 1 polish FIXED; D2 1 minor sweep VERIFIED CLEAN) → all re-gated N1–N5 clean → Grant ruled FLIP → reconcile-before-flip clean (published AFM 41→46, discursive candidates 6→1 [parked A3a only], approved-unpublished 0 throughout) → guarded explicit-id flip, all 5 → `approved`/`published=true`. **B-section-live tier content COMPLETE; tier claim + ads stay GATED on the student walk (provenance gate, design §7).**
 DB snapshot (hand-maintained preamble + per-drill body copied from the row fields). This is the FIRST
 narrative-marking batch — the pilot for pipeline #2. Design: `docs/NARRATIVE_MARKING_DESIGN.md`;
 detection targets (F1–F12, page-VERIFIED 2026-07-20): `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
@@ -70,7 +70,7 @@ pair before insert. There is **no live per-student marking** in v1 (Horizon-2).
 
 ## D1 — Monte Carlo simulation, interpreting a GIVEN output (B1b, L2, discursive)
 
-- **id:** `cb9b411c-40b3-4739-b70c-3d5b8e65e578` · **status:** candidate · **published:** false
+- **id:** `cb9b411c-40b3-4739-b70c-3d5b8e65e578` · **status:** approved · **published:** true
 - **lo_code:** B1b (covers B1b) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 12
 - **command_verb:** interpret and explain · **rubric_version:** narrative_v1 · **6 criteria / 12 marks**
 - **geo:** Vietnam / deep-water container-terminal expansion
@@ -144,7 +144,7 @@ no recommendation. The marker scores this below band and raises F1/F5/F4.)*
 
 ## D2 — Sources of finance incl. Islamic + green, appropriateness for the organisation (B3a/b/c, L3, discursive)
 
-- **id:** `08044fb6-eecb-4498-9c16-56381f66dc92` · **status:** candidate · **published:** false
+- **id:** `08044fb6-eecb-4498-9c16-56381f66dc92` · **status:** approved · **published:** true
 - **lo_code:** B3a (covers B3a/B3b/B3c) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 12
 - **command_verb:** assess and recommend · **rubric_version:** narrative_v1 · **5 criteria / 12 marks**
 - **geo:** Kenya / renewable-energy (solar-plus-storage) developer
@@ -225,7 +225,7 @@ Golden BAD untouched structurally (still exhibits F1/F5/F4) — only its copied 
 
 ## D3 — Capital-structure theory and practical impact (B3i, L3, discursive)
 
-- **id:** `fda46d99-5d57-4017-9945-2d0c3ca55498` · **status:** candidate · **published:** false
+- **id:** `fda46d99-5d57-4017-9945-2d0c3ca55498` · **status:** approved · **published:** true
 - **lo_code:** B3i (covers B3i) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 11
 - **command_verb:** assess · **rubric_version:** narrative_v1 · **4 criteria / 11 marks**
 - **geo:** Chile / mining-and-metals group considering a large recapitalisation
@@ -317,7 +317,7 @@ Only `model_answer` (+ c4's `required_point`, FR3) changed — rubric structure/
 
 ## D4 — BSOP conceptual: role of option pricing in valuing equity, debt and default risk (B4d, L2, discursive)
 
-- **id:** `d413fbe7-63f3-492a-af97-8532e0c376c8` · **status:** candidate · **published:** false
+- **id:** `d413fbe7-63f3-492a-af97-8532e0c376c8` · **status:** approved · **published:** true
 - **lo_code:** B4d (covers B4d) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 12
 - **command_verb:** explain · **rubric_version:** narrative_v1 · **6 criteria / 12 marks**
 - **geo:** Indonesia / highly-geared toll-road concession company and its lending banks
@@ -392,7 +392,7 @@ Only `model_answer` (+ c4's `required_point`, FR3) changed — rubric structure/
 
 ## D5 — Exchange controls + international sources of finance (B5c/B5d, L3, discursive)
 
-- **id:** `32ef124c-350e-4fb9-a02f-dd4e8e7f529f` · **status:** candidate · **published:** false
+- **id:** `32ef124c-350e-4fb9-a02f-dd4e8e7f529f` · **status:** approved · **published:** true
 - **lo_code:** B5c (covers B5c/B5d) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 15
 - **command_verb:** evaluate, assess and recommend · **rubric_version:** narrative_v1 · **8 criteria / 15 marks**
 - **geo:** Nigeria / multinational consumer-goods parent with a subsidiary facing capital controls
@@ -473,11 +473,11 @@ Patch + re-gate script: `scripts/_patch_afm_narrative_fr3.ts` (gitignored). Full
 
 ## BATCH RECONCILE (at generation close)
 
-- **Discursive AFM rows: 6** = **5 narrative candidates** (D1 `cb9b411c` · D2 `08044fb6` · D3 `fda46d99` · D4 `d413fbe7` · D5 `32ef124c`) + **parked A3a `47c9d5ce`** (the expected 6th, pre-existing).
-- **approved-unpublished (all AFM): 0.** No publish flip performed — the cluster stays `candidate` pending confirm-pass / a second blind round.
+- **Discursive AFM rows: 6** = **5 narrative drills, now LIVE** (D1 `cb9b411c` · D2 `08044fb6` · D3 `fda46d99` · D4 `d413fbe7` · D5 `32ef124c`) + **parked A3a `47c9d5ce`** (untouched, the expected 6th, pre-existing).
 - All five carry `rubric_version: narrative_v1`, `mode: discursive`, `calculation_required: false`; every rubric is FR1-clean (no F9, no `evidence_anchor`; interpretation/assessment criteria `[F1,F5,F6]`; recommendation/verdict criteria carry F4).
-- Area-entry headings for D1–D5 ranked 60–64 in `lib/acca/area-entry.ts` (above every calculator ≤ 53 — a narrative drill is never an area entry).
+- Area-entry headings for D1–D5 ranked 60–64 in `lib/acca/area-entry.ts` (above every calculator ≤ 53 — a narrative drill is never an area entry); verified live post-flip via `pickEntryDrill` — every area's zero-attempt entry still resolves to its calculator (NPV/CAPM/FCFE/international-NPV), never a narrative heading.
 - **FR2 co-founder adjudication CLOSED (2026-07-21):** D1/D4/D5 clean passes, zero changes. D2 `08044fb6` — 1 BLOCKING (false IFRS 16 off-balance-sheet claim → corrected to the covenant-measure mechanism) + KES 8.4bn→26bn (all surfaces) + c5 part-tag fix ("(v)" invented → "justified recommendation (per the stem)"). D3 `fda46d99` — 2 prose accepts (pecking-order over-claim deleted; agency paragraph made two-sided via Jensen FCF-discipline, reject verdict unchanged). Both re-gated N1–N5 clean via the real grader (`scripts/_patch_afm_narrative_fr2.ts`, gitignored). Full-row prove-negative confirmed zero residue (the calc #3 full-row-sweep lesson applied: grep the whole row, not just the edited paragraph).
 - **FR3 blind GPT round 1 CLOSED (2026-07-21): 4 accepts / 0 rejects.** D1/D4 (implicitly, no findings raised) clean. D5 `32ef124c` — 2 MUST-FIX: the transfer-pricing/management-fees supplementary strategy overclaimed a "bypass" of the CBN dividend cap (rewritten to a bounded mitigation-tool framing — still subject to CBN approval/FX delay/WHT/transfer-pricing scrutiny, c5 + full_reveal aligned); the Eurobond paragraph in the golden GOOD omitted that the coupon is an unconditional USD obligation serviced from OTHER group cash flows while ZNL's remittances stay trapped (added, c6 extended to match). D3 `fda46d99` — 1 polish: the unconditional "equity buyback concentrates control" claim made conditional on free float/monitoring; the lender–equity conflict at the 80% covenant trigger named as the clearer agency issue (c4 re-worded, reject verdict unchanged). D2 `08044fb6` — 1 minor sweep, VERIFIED CLEAN (no "ICMA certification" phrasing found; GBP-alignment framing only; no edit). D5 + D3 re-gated N1–N5 clean via the real grader (`scripts/_patch_afm_narrative_fr3.ts`, gitignored). Full-row prove-negative confirmed zero unqualified-bypass residue.
+- **GATE-P FLIP CLOSED (2026-07-21, Grant-ruled).** Reconcile-before-flip: pre published AFM = 41, approved-unpublished = 0, discursive candidates = exactly 6 (the 5 narrative ids + parked A3a) — clean, no mismatch. Guarded explicit-id flip (`scripts/_flip_narrative_cluster.ts`: the 5 ids IN + `status='candidate'` + `paper_code='AFM'` guard; parked A3a not enumerated, untouchable by construction) → all 5 `approved`/`published=true`. **POST: published AFM = 46**, candidates = 1 (parked A3a only), approved-unpublished = 0, all 5 confirmed approved+published, A3a confirmed untouched. Browse deltas: B1:12→13, B3:15→17, B4:6→7, B5:3→4 (B2 unchanged — no B2 narrative in this cluster). Both `docs/AFM_COVERAGE_CONTRACT.md` status lines synced.
 
-**NEXT:** confirm-pass / a second blind GPT round if warranted → then the publish flip by explicit-id, reconcile-first.
+**NEXT:** the narrative cluster's student walk — the tier's one remaining exit criterion before the B-section-live CLAIM + ads trigger unlock (provenance gate, design §7). Content is shipped; the walk is what's gating.

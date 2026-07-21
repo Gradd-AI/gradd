@@ -1,7 +1,7 @@
 # AFM COVERAGE CONTRACT — definitive product-readiness definition
 **Created 12/07/2026, from the ACCA AFM Syllabus & Study Guide Sep 2026–Jun 2027 (no syllabus changes this cycle). This doc defines what "viable" and "exam-ready" mean for the AFM product, by exact LO coverage. Update status columns as batches ship; do not change tier definitions without a logged decision. Mirrored from the project master 18/07/2026 — keep both in sync at batch close.**
 
-**STATUS 18/07/2026: 41 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 11 calculators total, ALL 10 B-SECTION-TIER CALCULATORS (calcs #1–#10) COMPLETE · delivery layer complete and in production · calculator #3 (risk & uncertainty) FLIPPED LIVE 18/07 (batch #3 CLOSED pending student walk). The B-section-live tier's ONLY remaining item is the 5-drill B-narrative cluster (the first narrative-marking build).**
+**STATUS 21/07/2026: 46 drills LIVE (published) across B1–B5 + A6a (direct-link-only) · 11 calculators total + the 5-drill B narrative cluster (pipeline #2) FLIPPED LIVE 21/07 · delivery layer complete and in production. B-SECTION-LIVE TIER CONTENT IS COMPLETE (calcs #1–#10 + B narrative all published) — the tier CLAIM and ads trigger stay GATED pending the student walk (provenance gate, design §7); calculator #3 walked 18/07, the narrative cluster's walk is the one remaining exit criterion.**
 
 ## Exam facts (source: syllabus §7)
 - 3h15 CBE. Section A: one 50-mark case (40 technical + 10 professional skills), spans ≥2 syllabus sections. Section B: two 25-mark scenario questions (20 + 5 PS each), never wholly narrative.
@@ -36,24 +36,24 @@ Parked candidates (not in any batch): 47c9d5ce (A3a ESG) — queued for its own 
 
 ## Narrative drill clusters (no calculator; graded prose, L2/L3)
 
-| Cluster | LOs | Drills |
-|---|---|---|
-| Adviser role & financial strategy | A1a–c, A2b–h | 3 |
-| ESG & ethics | A3a–h | 2 |
-| International trade, institutions, planning frameworks | A4a–g, A5a | 3 |
-| Monte Carlo interpretation | B1b | 1 |
-| Sources of finance incl. Islamic + green | B3a, B3b, B3c | 2 |
-| Capital-structure theory (M&M, trade-off, pecking order, agency) | B3i, B3g | 1 |
-| BSOP for equity/debt/default risk (conceptual) | B4d | 1 |
-| International finance sources / exchange controls | B5c, B5d | 1 |
-| M&A rationale, target choice, failure, listing routes | C1a–d, C1f | 2 |
-| M&A regulation & defences; start-up valuation procedure | C3a, C3b, C2d | 2 |
-| Treasury function & derivatives-market operations (basis risk, margin, greeks) | E1a, E1b | 2 |
-| Forex risk types (translation/transaction/economic) | E2a | 1 |
-| Reconstruction narrative rider | D (with calc 15) | 1 |
-| **Total** | | **~22** |
+| Cluster | LOs | Drills | Status |
+|---|---|---|---|
+| Adviser role & financial strategy | A1a–c, A2b–h | 3 | — |
+| ESG & ethics | A3a–h | 2 | — (47c9d5ce parked, own pass) |
+| International trade, institutions, planning frameworks | A4a–g, A5a | 3 | — |
+| Monte Carlo interpretation | B1b | 1 | **LIVE 21/07** — `cb9b411c` |
+| Sources of finance incl. Islamic + green | B3a, B3b, B3c | 1 | **LIVE 21/07** — `08044fb6` (ijara sukuk + green bond, IFRS 16 covenant-measure fix FR2) |
+| Capital-structure theory (M&M, trade-off, pecking order, agency) | B3i, B3g | 1 | **LIVE 21/07** — `fda46d99` (Jensen FCF two-sided agency treatment) |
+| BSOP for equity/debt/default risk (conceptual) | B4d | 1 | **LIVE 21/07** — `d413fbe7` |
+| International finance sources / exchange controls | B5c, B5d | 1 | **LIVE 21/07** — `32ef124c` (bounded transfer-pricing mitigation framing FR3) |
+| M&A rationale, target choice, failure, listing routes | C1a–d, C1f | 2 | — |
+| M&A regulation & defences; start-up valuation procedure | C3a, C3b, C2d | 2 | — |
+| Treasury function & derivatives-market operations (basis risk, margin, greeks) | E1a, E1b | 2 | — |
+| Forex risk types (translation/transaction/economic) | E2a | 1 | — |
+| Reconstruction narrative rider | D (with calc 15) | 1 | — |
+| **Total** | | **~21** (5 shipped) | |
 
-**The B narrative cluster (~5: Monte Carlo, sources of finance ×2, capital structure, B4d conceptual + B5c/d) is required for the B-section-live tier and is the FIRST narrative-marking build — the pilot for the rubric-deterministic second pipeline that C/D/A narrative and future narrative-heavy papers depend on.**
+**The B narrative cluster (5: Monte Carlo, sources of finance, capital structure, B4d conceptual, B5c/d exchange controls) was required for the B-section-live tier and is the FIRST narrative-marking build to ship — the pilot for the rubric-deterministic second pipeline that C/D/A narrative and future narrative-heavy papers depend on. FLIPPED LIVE 21/07/2026** (co-founder rubric review FR2 + blind GPT round 1 FR3, both adjudicated, all fixes re-gated N1–N5 clean before the flip). **Live marking is v1 AUTHORING-TIME ONLY** — the N1–N5 gate validated the rubric+reveal+golden-pair before insert; there is no live per-student narrative marking yet (Horizon-2). Student walk is the tier's one remaining exit criterion before the tier CLAIM/ads gate lifts.
 
 ## Mock exams (exam-rehearsal engine — NOT drills)
 - 1 mock = 1×50-mark Section A case (≥2 sections, all 4 PS skills) + 2×25-mark Section B questions (B and E always represented).
@@ -65,11 +65,11 @@ Parked candidates (not in any batch): 47c9d5ce (A3a ESG) — queued for its own 
 | Tier | Definition | Count | Claim permitted (selling bible binds) |
 |---|---|---|---|
 | Demo | Calculators 1–2 | 8 drills | None — no public claims |
-| **B-section live** | Calculators 1–10 + B narrative (5) | 45 drills | "Complete advanced investment appraisal practice" — free tier, demand signal. **ADS TRIGGER: landing template + "Failed AFM?" ads into the December-sitting window** |
+| **B-section live** | Calculators 1–10 + B narrative (5) | **46 drills — CONTENT SHIPPED 21/07** | "Complete advanced investment appraisal practice" — free tier, demand signal. **ADS TRIGGER GATED: content complete, but the claim + landing template + "Failed AFM?" ads do not fire until the narrative cluster's student walk passes (provenance gate, design §7)** |
 | **VIABLE PAID LAUNCH** | B+E complete: calcs 1–12 + 8 narrative + 1 mock | ~56 drills + 1 mock | "Covers the sections guaranteed on every AFM exam" |
 | **EXAM-READY** | Full A–E: 16 calcs + 22 narrative + 3 mocks | ~86 drills + 3 mocks | "Scratch to exam-ready for the AFM written paper" |
 
-**Progress against tiers (18/07): ALL 10 B-section-tier calculators (calcs #1–#10) LIVE — the tier's ONLY remaining item is the 5-drill B-narrative cluster (the first narrative-marking build). 10 of 12 calculators toward viable paid launch (E-section hedging #11/#12 remain). Measured pace holds at ~1 calculator batch per session.**
+**Progress against tiers (21/07): B-SECTION-LIVE TIER CONTENT COMPLETE — all 10 calculators (calcs #1–#10) + the 5-drill B narrative cluster (pipeline #2) are LIVE. The tier's ONLY remaining item is the narrative cluster's student walk (content is shipped; the CLAIM + ads trigger are gated on that walk passing, not on more content). 10 of 12 calculators toward viable paid launch (E-section hedging #11/#12 remain). Measured pace holds at ~1 calculator batch per session.**
 
 ## Standing rules
 - No "exam-ready" or full-coverage claim before the EXAM-READY tier is shipped and verified (GRADD_SELLING_BIBLE — do not sell what isn't built).

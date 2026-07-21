@@ -1312,3 +1312,29 @@ All figures verified UNCHANGED (patched in place via gitignored `scripts/_patch_
 **DB state unchanged by this patch:** D3/D5 stay `candidate`/`published=false` — content fix, not a flip. Reconcile still holds (5 narrative candidates + parked A3a, 0 approved-unpublished).
 
 **NEXT:** confirm-pass / a second blind GPT round if warranted → then the publish flip by explicit-id, reconcile-first. Provenance gate still binds.
+
+## 2026-07-21 — GATE-P FLIP EXECUTED: NARRATIVE CLUSTER (pipeline #2) LIVE. B-SECTION-LIVE TIER: CONTENT COMPLETE, CLAIM/ADS REMAIN GATED ON THE WALK
+
+Grant ruled FLIP. **Reconcile-before-flip:** pre published AFM = **41**, approved-unpublished = **0**, discursive rows = exactly **6** = the 5 narrative ids (D1 `cb9b411c`, D2 `08044fb6`, D3 `fda46d99`, D4 `d413fbe7`, D5 `32ef124c`) + parked A3a `47c9d5ce` — clean, zero mismatch, no STOP triggered.
+
+**Flip mechanics:** `scripts/_flip_narrative_cluster.ts` (gitignored) — explicit-id `IN` list of the 5 narrative ids ONLY (A3a not enumerated, untouchable by construction), guarded by `.eq('status','candidate').eq('paper_code','AFM')`, set `status='approved', published=true`, `.select()` returned exactly 5 rows matching the 5 ids (hard-asserted — mismatch would have aborted).
+
+**POST-VERIFY (all confirmed):**
+- **published AFM = 46** (41 + 5).
+- **candidates (AFM) = 1** — parked A3a only.
+- **approved-unpublished (AFM) = 0.**
+- **A3a confirmed untouched** (`status=candidate`, `published=false`).
+- **All 5 confirmed `approved`/`published=true`.**
+- **Browse area deltas:** B1 12→13 (+1, D1), B3 15→17 (+2, D2+D3), B4 6→7 (+1, D4), B5 3→4 (+1, D5); B2 unchanged (no B2 narrative in this cluster) — matches the 5-drill area split exactly.
+- **Area-entry integrity verified live:** `pickEntryDrill` on each of B1/B3/B4/B5's published rows still resolves to the calculator entry heading (NPV / CAPM-WACC / FCFE / international-NPV respectively) — no narrative heading ever wins, confirming the rank-60–64-above-every-calculator-≤53 design holds under real published data, not just the static map.
+
+**Docs synced (map-before-close discipline, extended to publish flips):**
+- `docs/reviews/AFM_BATCH_NARRATIVE_REVIEW_PACK.md` — status banner + all 5 per-drill `status`/`published` lines flipped to approved/true; batch-reconcile block appended with the GATE-P flip record (pre/post counts, browse deltas).
+- `docs/AFM_COVERAGE_CONTRACT.md` — **both status-line mirrors synced**: the top STATUS banner (line 4) and the bottom "Progress against tiers" line now both read 46 published / B-section-live tier CONTENT COMPLETE / claim+ads GATED on the walk. Narrative table gained a Status column (all 5 B-cluster rows marked LIVE 21/07 with ids); the B-section-live tier-definition row's drill count corrected 45→46 (actual, not the earlier estimate) with an explicit ADS-TRIGGER-GATED caveat.
+- `docs/AFM_SURFACED.md` — narrative-cluster bullet rewritten to the LIVE/flipped state; a fresh CURRENT (2026-07-21) line supersedes the stale 2026-07-18 one (37→46 published, area map refreshed).
+
+**Tier claim discipline (provenance gate, design §7 — do NOT relax):** B-section-live tier CONTENT is complete (all 10 calculators + the 5-drill narrative cluster published), but the tier CLAIM ("Complete advanced investment appraisal practice") and the ads trigger stay GATED until the narrative cluster passes its own student walk — mirroring how calc #3 shipped content on 18/07 but only counted as tier-complete after its 18/07 walk. Narrative marking's CLAIM CEILING also still binds independently: never "code owns the marks" for this pipeline, regardless of publish status — v1 is authoring-time-only, there is no live per-student narrative marking (Horizon-2).
+
+`test:narrative-marker` green. `next build` green.
+
+**NEXT:** Grant's narrative-cluster student walk (some or all of D1–D5) — the tier's one remaining exit criterion. On PASS: B-section-live tier CLAIM unlocks + the landing-template/ads work becomes unblocked (design doc + AFM_COVERAGE_CONTRACT both already scope it).
