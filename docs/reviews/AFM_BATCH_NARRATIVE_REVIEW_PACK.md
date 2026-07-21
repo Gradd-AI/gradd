@@ -1,6 +1,6 @@
 # AFM BATCH — NARRATIVE CLUSTER (pipeline #2, discursive D1–D5) — REVIEW PACK
 
-**Status: D1–D2 GENERATED + inserted (candidate). D3–D5 pending.**
+**Status: D1–D3 GENERATED + inserted (candidate). D4–D5 pending.**
 DB snapshot (hand-maintained preamble + per-drill body copied from the row fields). This is the FIRST
 narrative-marking batch — the pilot for pipeline #2. Design: `docs/NARRATIVE_MARKING_DESIGN.md`;
 detection targets (F1–F12, page-VERIFIED 2026-07-20): `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
@@ -214,7 +214,89 @@ no recommendation. The marker scores this below band and raises F1/F5/F4.)*
 
 ---
 
-## D3–D5 — PENDING (not yet appended to pack)
-- **D3** capital-structure theory (B3i, L3) — generated + inserted
+## D3 — Capital-structure theory and practical impact (B3i, L3, discursive)
+
+- **id:** `fda46d99-5d57-4017-9945-2d0c3ca55498` · **status:** candidate · **published:** false
+- **lo_code:** B3i (covers B3i) · **mode:** discursive · **calculation_required:** false · **marks_guide:** 11
+- **command_verb:** assess · **rubric_version:** narrative_v1 · **4 criteria / 11 marks**
+- **geo:** Chile / mining-and-metals group considering a large recapitalisation
+- **GATES:** N2 ✓ · N3 ✓ · N5 ✓ · N4-pre ✓ · N1 ✓ · **N4 (Rule-23) ✓** — golden GOOD in band, golden BAD below + raised [F1, F5, F4]. (attempt 1)
+
+### context_text (scenario — all figures are GIVEN)
+> Cobre Pacífico S.A. ("CPSA") is an established Chilean mining-and-metals group listed on the Santiago Stock Exchange. The board is evaluating a large recapitalisation under which CPSA would issue new bonds worth CLP 420 billion and use the proceeds to buy back equity, raising net debt-to-equity from the current 25% to a target of 95%. The corporate tax rate in Chile applicable to CPSA is 27%. The CFO argues that the additional tax shield will permanently enhance firm value, while the CEO cautions that the mining sector's highly volatile cash flows make the elevated leverage risky, and the finance director warns that mining covenants will restrict future capital expenditure if gearing rises above 80%. Historically, CPSA has funded growth primarily through retained earnings, accessing equity markets only twice in its 30-year existence.
+
+### question
+> ASSESS the impact of the proposed recapitalisation on CPSA's value and financial strategy, using capital-structure theory as your framework. Your answer should address:
+> (i) The relevance of Modigliani and Miller propositions before and after tax to the CFO's argument.
+> (ii) Whether static trade-off theory supports the move to a 95% debt-to-equity ratio.
+> (iii) What pecking-order theory reveals about CPSA's historical financing behaviour and the proposed transaction.
+> (iv) The agency effects that the recapitalisation is likely to trigger.
+
+*(Conceptual-only: "assess … using theory as your framework", never "compute". No WACC/value is calculated — theory is the lens applied to GIVEN facts.)*
+
+### model_answer (the golden GOOD — full-marks standard; first line is the area-entry heading)
+> **Capital structure — theory and practical impact**
+>
+> **Part (i) — MM before and after tax**
+>
+> In a frictionless world, MM's pre-tax proposition asserts that firm value is independent of financing mix, implying that the CFO's enthusiasm for issuing CLP 420 billion of debt is theoretically groundless in perfect markets. Once the 27% Chilean corporate tax rate is introduced, however, MM's post-tax world generates a positive tax shield — so the CFO is partially correct that new debt raises value. The critical qualification is that MM's tax model abstracts away bankruptcy costs and market imperfections; in a mining business where volatile cash flows mean operating income can turn sharply negative, that abstraction is untenable. The CFO's argument is therefore theoretically valid only within an unrealistic framing.
+>
+> **Part (ii) — Static trade-off theory**
+>
+> Static trade-off theory endorses leverage up to the point where marginal distress costs equal the marginal tax benefit. The 27% tax rate applied to CLP 420 billion of new bonds does generate a meaningful shield, but the proposed leap from 25% to 95% debt-to-equity overshoots any plausible optimum. Once gearing crosses the covenant trigger at 80%, bondholders impose capital-expenditure restrictions that directly damage future cash generation — a concrete distress cost visible before any formal default. The theory therefore contradicts, rather than supports, the proposed transaction at this scale.
+>
+> **Part (iii) — Pecking-order theory**
+>
+> CPSA's three-decade reliance on retained earnings to finance growth is textbook pecking-order behaviour: internal funding is cheapest because it avoids adverse-selection signalling. Issuing CLP 420 billion of new bonds purely to retire equity violates that hierarchy and signals to the market that management believes debt is cheaper than equity for reasons beyond a mere funding shortage — most plausibly a tax or control agenda — which the market may interpret as a negative signal about equity valuation.
+>
+> **Part (iv) — Agency effects**
+>
+> Elevating leverage to 95% amplifies shareholder–bondholder conflicts dramatically. Covenants at the 80% threshold reveal that lenders already anticipate monitoring costs; once breached, restricted capex leaves equity holders with incentives to substitute riskier projects to extract value from debtholders (asset substitution) or to forgo positive-NPV investments (underinvestment). The equity buyback also concentrates control, reducing the disciplining force of dispersed shareholders. These agency costs compound the distress costs identified under trade-off theory.
+>
+> **Overall assessment:** The proposed recapitalisation should be rejected in its current form. While the 27% tax rate provides a genuine, but limited, shield benefit, the crossing of the 80% covenant threshold, the amplification of agency conflicts, and the violation of CPSA's long-standing pecking-order behaviour all indicate that the costs outweigh the gains. The board should retain leverage well below 80% and pursue incremental debt financing if a tax shield is desired.
+
+### rubric (answer_schema.criteria) — 4 criteria / 11 marks · bands: fail / pass 0.5 / good 0.7 / excellent 0.85
+
+*(FR1: the three theory-application criteria use `[F1, F5, F6]`; the agency + verdict criterion uses `[F1, F4, F5]` (F4 = fence-sitting on the overall verdict). **No F9, no evidence_anchor.** F5 is the enemy here — theory recited without application to CPSA's mining specifics earns nothing.)*
+
+| id | part | lo | marks | required point (short) | anchors | disqualifiers |
+|----|------|----|-------|------------------------|---------|---------------|
+| c1 | (i) | B3i | 3 | MM pre-tax = irrelevance refutes CFO; post-tax shield partially validates, but perfect-markets assumption strained by volatile mining cash flows | f_tax, f_sector | F1, F5, **F6** |
+| c2 | (ii) | B3i | 3 | Trade-off: 27% shield real, but 25%→95% overshoots optimum; crossing 80% covenant = concrete distress cost → theory does NOT support | f_de_current, f_de_target, f_tax, f_bonds, f_covenant | F1, F5, **F6** |
+| c3 | (iii) | B3i | 2 | Pecking-order: 30yr retained-earnings history fits; bonds-to-retire-equity inverts it → signals a tax/control motive, not a funding gap | f_retained, f_bonds | F1, F5, **F6** |
+| c4 | (iv) | B3i | 3 | Agency: 95% amplifies bondholder–equity conflict (asset substitution/underinvestment); buyback concentrates control → reject/scale back | f_de_target, f_covenant | F1, **F4**, F5 |
+
+**scenario_facts** (each `key` verbatim in context_text): f_de_current "25%" · f_de_target "95%" · f_tax "27%" · f_bonds "CLP 420 billion" · f_covenant "80%" · f_retained "retained earnings" · f_sector "volatile cash flows".
+
+### golden BAD (authoring artefact — `answer_schema._authoring`, NOT served) — designed flags [F1, F5, F4]
+> Cobre Pacífico S.A. ("CPSA") is an established Chilean mining-and-metals group listed on the Santiago Stock Exchange. The board is evaluating a large recapitalisation under which CPSA would issue new bonds and use the proceeds to buy back equity.
+>
+> **Part (i) — MM**
+>
+> Modigliani and Miller showed that in a world without taxes, capital structure does not matter. However, when taxes exist, debt creates a tax shield which adds value to the firm. The CFO's argument relates to this tax shield. There are also costs of financial distress which must be considered. MM is a theoretical framework that makes many assumptions that do not hold in the real world.
+>
+> **Part (ii) — Static trade-off**
+>
+> Static trade-off theory says that firms should balance the benefits of debt against the costs of financial distress. If a firm takes on too much debt, distress costs rise. If debt is too low, the firm does not benefit from the tax shield. There is an optimal point. CPSA needs to consider where this optimal point is. The theory may or may not support the proposed increase in leverage.
+>
+> **Part (iii) — Pecking order**
+>
+> Pecking-order theory was developed by Myers and Majluf. It suggests that firms prefer internal financing first, then external debt, and finally equity. This is because of information asymmetry. Firms that have historically used internal finance are consistent with pecking-order theory. The proposed transaction involves issuing bonds. This may be consistent or inconsistent with pecking-order theory depending on circumstances.
+>
+> **Part (iv) — Agency effects**
+>
+> Agency theory identifies conflicts between principals and agents. In a levered firm, there can be conflicts between shareholders and bondholders. These include asset substitution and underinvestment problems. Covenants are often used to mitigate these problems. High leverage generally increases agency costs. There are various agency issues that could arise from a recapitalisation of this kind.
+
+*(F1 — para 1 lifts the scenario's opening two sentences verbatim; F5 — every theory recited generically, never anchored to the 27% rate / 80% covenant / retained-earnings history; F4 — "may or may not support" / no overall verdict. The marker scores this below band and raises F1/F5/F4.)*
+
+### hint (served — one-sentence nudge)
+> You've marshalled the theory correctly — now check whether each proposition is being applied to CPSA's specific conditions (volatile mining cash flows, the 80% covenant trigger, three decades of retained-earnings financing) or whether your answer could have been written about any firm in any industry.
+
+### full_reveal (served — Ezra teaching reveal)
+> The dominant misconception here is SCENARIO-FREE discussion: candidates recite MM, trade-off, pecking-order and agency theory as a textbook list, but never anchor each proposition to the facts CPSA actually presents — the mining-sector cash-flow volatility, the concrete 80% covenant breach, and the firm's documented three-decade internal-funding history. That matters because theory only earns marks at Level 3 when it is used as a diagnostic lens on the scenario; a generic rehearsal of propositions produces a description of theory, not an assessment of CPSA. The correct mental model is to treat each theory as a hypothesis and then test it against the scenario's evidence: MM's tax abstraction is untenable *because* mining cash flows can turn sharply negative, static trade-off is contradicted *because* the covenant trigger is a visible, pre-default distress cost, and pecking-order is violated *because* the transaction retires equity rather than filling a funding gap. The second failure is FENCE-SITTING on the overall verdict: candidates who present "on the one hand / on the other hand" without closing with a board-level recommendation have described the tension but not resolved it — and the command verb "assess" demands a verdict. At the boardroom bar, the CFO needs to know whether to proceed, not a balanced summary of capital-structure literature.
+
+---
+
+## D4–D5 — PENDING (not yet appended to pack)
 - **D4** BSOP conceptual — role of option pricing models (B4d, L2) — generated + inserted
 - **D5** exchange controls + international sources of finance (B5c/d, L3) — generated + inserted
