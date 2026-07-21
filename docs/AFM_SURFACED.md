@@ -4,6 +4,40 @@
 
 *Last refreshed: 2026-07-21.*
 
+## ⛔ AD-MEASUREMENT BLIND SPOT (surfaced 21/07, blocks the December campaign) — fix before next spend
+Ad autopsy (07/07–21/07) found the app cannot currently see ad-driven traffic AT ALL: all-time, zero of
+11 profiles have a non-null `signup_attribution`, and exactly ONE `resit_runs` row has ever existed
+(a manual test, `utm_source=test`). Root cause: `AttributionCapture` (the `gradd_attr` first-touch
+cookie capture) is wired into `ACCALandingPage.tsx` + `ProductLandingPage.tsx` but **NOT into
+`app/acca/resit/page.tsx`** — the free resit diagnostic `app/sitemap.ts` itself calls the "primary CTA"
+(priority 0.9). Any campaign landing there (painA/resitB naming strongly implies this is exactly where
+traffic lands) has its UTM tag dropped at the door — invisible to our own DB regardless of real spend/
+clicks. Meta Pixel (`PageView`, global) gives LPVs in Meta Ads Manager only (external); the only custom
+Meta event (`trackMetaEvent('Lead')`) fires at email-capture, the very bottom of the funnel — so even
+Meta's own dashboard has no mid-funnel "started the diagnostic" checkpoint. **Fix before the December
+campaign**: (1) add `AttributionCapture` to `/acca/resit`; (2) consider a funnel-entry event (mirroring
+`acca_funnel_events`'s shape but anon_id-keyed, pre-signup) so "started but didn't finish" becomes
+measurable. Full autopsy detail: `APM_BUILD_CONTRACT.md` 2026-07-21 "ADS-GATE SMALL ITEMS" entry.
+
+## BACKLOG — session history / revision review (December-window candidate feature)
+**Gap:** `/acca/progress` is an aggregate stats dashboard (activity sparkline, weak areas, stuck-drill
+resume links, a 12-row recent-attempts table) — every "Revisit"/"Resume" link re-enters the LIVE tutor
+chat; there is **no read-only past-conversation review** anywhere in ACCA. IB has exactly this feature,
+proven and working: `/sessions` (list, `SessionListClient`) → `/sessions/[id]` (read-only transcript,
+`TranscriptRenderer` built on the same `MessageRenderer` the ACCA proof-transcript page + live tutor
+chat already share), reading `sessions`+`session_messages`+`session_events`+`lessons`.
+**Portability: HIGH.** `acca_drill_messages` already carries everything needed per (user_id, drill_id) —
+role/content/call_type/outcome/created_at, chronologically orderable, reveals included verbatim
+(confirmed directly this session — the D5 walk transcript pulled for the proof page came straight from
+this table). `TranscriptRenderer` needs only its IB-specific diagram-signal parsing stripped (ACCA
+drills carry no diagrams) and its header adapted from lesson/session metadata to the drill's own
+question/context_text.
+**Size: M.** Two new routes mirroring `/sessions`→`/sessions/[id]` (a history list + a per-drill
+transcript detail) + one adapted component + a paid/free gate decision (consistent with
+`/acca/progress`'s existing locked-slot pattern). No new tables, no schema change — this is wiring +
+UI, not a new data model. **Recommended slot:** December-window feature (revision/exam-prep framing —
+"review what Ezra told you" — fits the sitting-window narrative already anchoring the ads timeline).
+
 ## PERSONA-HARDENING SLOT — consolidated (7 categories, spans batches #9/#10/#3/narrative)
 
 **⛔ AD-SPEND BLOCKER — MECHANISM SHIPPED 2026-07-21, VERIFICATION (Grant + co-founder spot-walk) STILL OWED.** Design-then-build session delivered the grounding mechanism ("Rule 24 triangulation," `lib/acca/tutor-grounding.ts` + wiring — CLAUDE.md code map has the full entry) targeting all 7 categories below. **RED-GREEN discipline applied:** 7 new red-team probes (PH1–PH7, one per category, `scripts/redteam-probes.ts`) fired against the UNMODIFIED prompts first — 4 showed reliable, reproducible failures (PH1 false-complete, PH2 hint-base-wobble, PH4 convention-softening, PH6 fog-retraction); PH3 (invented-inventory) and PH5 (false-positive-diagnosis) did NOT reproduce a reliable failure despite multiple good-faith redesigns — documented honestly as a lower-frequency/probabilistic risk rather than forced. Post-fix: all 7 probes GREEN, `next build` green, zero regression on the existing 45-probe suite (2 pre-existing unrelated flakes on X1/X2 confirmed via git-stash to predate this session entirely) and the 75-check offline fixture suite. **Claim discipline: this is an LLM-prompted behavioural improvement, not a deterministic code gate** — PH4/PH6 repeated-sampling showed ~80–90% clean, a large improvement over the RED baseline but not a hard 100% guarantee (unlike the numeric figure-withholding moat, which IS structural). **STOP called per the task's own instruction — no live walk performed by the builder; Grant + co-founder spot-walk verifies before the ad-spend condition is considered cleared.**
