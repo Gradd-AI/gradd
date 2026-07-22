@@ -99,13 +99,42 @@ export { normaliseCurrency };
 const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
-const moneyTol: Tolerance = { kind: 'floor', pct: 0.5, floor: 0.2 };
+// PLAIN relative tolerance for every money-shaped figure in this family — never a floor. The
+// floor-tolerance kind exists (international.ts) specifically to protect a figure that can be
+// LEGITIMATELY near-zero (a near-nil additional tax). No fx-hedge money component is ever
+// legitimately near-zero — a hedge outcome is always a real conversion of a real exposure — so a
+// floor only does harm here: a modest, genuine outcome (a single-contract hedge can easily convert
+// to under 2m in home currency) would sit entirely inside a 0.2-floor band, silently swallowing a
+// real GATE-3 seeded-OFR error (surfaced during authoring, 2026-07-22, on both home_from_futures
+// and the option premium — both structurally small figures relative to international.ts's typical
+// multi-million cash flows the floor was calibrated for).
+const moneyTol: Tolerance = { kind: 'relative', pct: 0.5 };
+// ABSOLUTE tolerance for a rate-shaped figure that is a SUM of a large given constant (spot0) and a
+// small graded/perturbable term (the basis adjustment) — e.g. lock_in_rate = spot0 − unexpired_basis.
+// A relative band on the SUM barely moves when only the small term is perturbed (the large constant
+// dominates), so a genuine upstream error can hide inside a relative tolerance; a tight absolute band
+// bounds the deviation directly, regardless of which term contributed it. Matches house doctrine for
+// rate-like figures (BSOP's d1/d2 ±0.05, N(d) ±0.01) — never a loose relative band on a rate.
+const rateTol: Tolerance = { kind: 'absolute', value: 0.01 };
+// Plain relative tolerance for a money figure that is reliably non-trivial in magnitude (an option
+// premium is never legitimately near-zero) — moneyTol's 0.2 floor was calibrated for the international
+// family's multi-million-scale figures (where a near-nil additional tax needs protecting) and would
+// swallow a genuine error in a premium figure that is naturally sub-1 in millions.
+const premiumTol: Tolerance = { kind: 'relative', pct: 1 };
 const EPS = 1e-9;
 export const fmt1 = (n: number): string => n.toFixed(1);
 export const fmt4 = (n: number): string => n.toFixed(4);
 
 export type QuoteDirection = 'foreign_per_home' | 'home_per_foreign';
 export type ExposureDirection = 'receipt' | 'payment';
+// ⚠ KNOWN INTERACTION (surfaced during authoring, 2026-07-22 — same class as the international
+// family's documented floor-tolerance × seeded-OFR interaction). Under 'forward_topup', home_settlement
+// = home_from_futures + home_from_residual, both fed by the shared root `contracts` but converting at
+// TWO DIFFERENT rates (lock_in_rate vs topup_forward_rate). If those two rates sit close together, a
+// GATE-3 seeded error in `contracts` redistributes exposure between the two legs without moving the
+// TOTAL much — a near-cancellation the generic seeded-OFR proof can misread as 'correct' rather than
+// 'carried'. Not a schema bug: keep the topup forward rate MEANINGFULLY different from the lock-in
+// rate (a real forward legitimately differs from a futures lock-in) when authoring a forward_topup drill.
 export type ResidualPolicy = 'immaterial' | 'forward_topup';
 export type FxHedgeKind = 'forward_mmh_compare' | 'futures' | 'options' | 'swap';
 
@@ -498,9 +527,17 @@ export function buildFuturesSchema(raw: FuturesDrillInputs, c: FuturesComputed):
   const comps: Component[] = [
     { component_id: 'contracts', label: 'Number of futures contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
       working_steps: [`= round(${foreign} ${fmt1(raw.exposure)} ÷ contract size ${fmt1(raw.contract_size)}) — whole contracts only`] },
-    { component_id: 'unexpired_basis', label: 'Unexpired basis at the transaction date', expected_value: c.unexpired_basis, unit: raw.quote_direction === 'foreign_per_home' ? `${foreign}/${home}` : `${home}/${foreign}`, tolerance: rel(1),
+    // unit is a plain 'rate' label (NOT the "foreign/home" pair string) so the tolerance lint's
+    // isMoneyUnit heuristic — which flags any unit containing a currency symbol/code — doesn't
+    // misclassify an FX RATE as a MONEY magnitude; a rate legitimately wants a tight ABSOLUTE
+    // tolerance (house doctrine: BSOP's d1/d2 ±0.05), not a relative band. A relative band on
+    // lock_in_rate (= a large given spot₀ + a small perturbable basis term) barely moves when only
+    // the small term is wrong — the constant dominates — so it can silently swallow a genuine
+    // upstream error; the absolute band bounds the deviation directly regardless of which term it
+    // came from (surfaced by the GATE-3 seeded-OFR proof during authoring, 2026-07-22).
+    { component_id: 'unexpired_basis', label: 'Unexpired basis at the transaction date', expected_value: c.unexpired_basis, unit: 'rate', tolerance: rateTol,
       working_steps: [`basis₀ = spot₀ ${fmt4(raw.spot0)} − futures₀ ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; unexpired = basis₀ × (${raw.months_to_expiry - raw.months_to_transaction})/${raw.months_to_expiry} months remaining/total`] },
-    { component_id: 'lock_in_rate', label: 'Lock-in rate', expected_value: c.lock_in_rate, unit: raw.quote_direction === 'foreign_per_home' ? `${foreign}/${home}` : `${home}/${foreign}`, tolerance: rel(1),
+    { component_id: 'lock_in_rate', label: 'Lock-in rate', expected_value: c.lock_in_rate, unit: 'rate', tolerance: rateTol,
       depends_on: ['unexpired_basis'], recompute: (d) => raw.spot0 - d.unexpired_basis,
       working_steps: [`= spot₀ ${fmt4(raw.spot0)} − unexpired basis`] },
     { component_id: 'home_from_futures', label: `${home} outcome from the futures hedge`, expected_value: c.home_from_futures, unit: homeUnit, tolerance: moneyTol,
@@ -543,10 +580,10 @@ export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed):
   const comps: Component[] = [
     { component_id: 'contracts', label: 'Number of option contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
       working_steps: [`= round(${foreign} ${fmt1(raw.exposure)} ÷ contract size ${fmt1(raw.contract_size)}) — whole contracts only`] },
-    { component_id: 'premium', label: `Total premium (${raw.premium_currency})`, expected_value: c.premium, unit: premiumUnit, tolerance: moneyTol,
+    { component_id: 'premium', label: `Total premium (${raw.premium_currency})`, expected_value: c.premium, unit: premiumUnit, tolerance: premiumTol,
       depends_on: ['contracts'], recompute: (d) => raw.premium_pct * d.contracts * raw.contract_size * (raw.months_covered / 12),
       working_steps: [`= premium ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} contracts × ${fmt1(raw.contract_size)} × ${raw.months_covered}/12`] },
-    { component_id: 'premium_home_fv', label: `Premium, future-valued to settlement (${home})`, expected_value: c.premium_home_fv, unit: homeUnit, tolerance: moneyTol,
+    { component_id: 'premium_home_fv', label: `Premium, future-valued to settlement (${home})`, expected_value: c.premium_home_fv, unit: homeUnit, tolerance: premiumTol,
       depends_on: ['premium'], recompute: (d) => (raw.premium_currency === 'home' ? d.premium : toHome(d.premium, raw.strike, raw.quote_direction)) * (1 + asDec(raw.compounding_rate) * (raw.months_to_transaction / 12)),
       working_steps: [`= premium${raw.premium_currency === 'foreign' ? ` converted at the strike ${fmt4(raw.strike)}` : ' (already home currency, no further conversion)'}, grown at ${raw.compounding_rate}% for ${raw.months_to_transaction} months`] },
     { component_id: 'home_from_strike', label: `${home} outcome if exercised (at the strike)`, expected_value: c.home_from_strike, unit: homeUnit, tolerance: moneyTol,
@@ -563,15 +600,21 @@ export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed):
 }
 export function buildOptionsModelAnswer(raw: OptionsDrillInputs, c: OptionsComputed, prose: string): string {
   const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n);
-  const premiumStr = raw.premium_currency === 'home' ? money(home, c.premium) : money(foreign, c.premium);
+  // Premium figures are naturally small (a fraction of a percent of notional) — money()'s 1dp
+  // rounding can display as a misleading "0.0m" even though the underlying value is a real,
+  // non-trivial figure. Display premium-scale figures at 4dp instead (matches the project's own
+  // convention for other naturally-small computed stats, e.g. BSOP's d1/d2/N(d)).
+  const money4 = (currency: string, n: number) => `${currency} ${fmt4(n)}m`;
+  const premiumStr = money4(raw.premium_currency === 'home' ? home : foreign, c.premium);
+  const premiumFvStr = money4(home, c.premium_home_fv);
   return [
     '**FX hedging — currency options**', '',
     `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${(raw.premium_pct * 100).toFixed(3)}% quoted in ${raw.premium_currency === 'home' ? home : foreign}. A ${raw.direction} must **${c.side.toUpperCase()}** the options. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
     '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}). Premium = ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} × ${fmt1(raw.contract_size)} × ${raw.months_covered}/12 = **${premiumStr}**${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
     '**Step 2 — Exercise outcome**', '', `${fmt1(c.hedged_amount)} at the strike ${fmt4(raw.strike)} = ${mH(c.home_from_strike)}.`, '',
-    '**Step 3 — Net of the premium**', '', `Premium future-valued to settlement = ${mH(c.premium_home_fv)}; ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
+    '**Step 3 — Net of the premium**', '', `Premium future-valued to settlement = ${premiumFvStr}; ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
-    `*Reconciliation: strike outcome ${mH(c.home_from_strike)} ${raw.direction === 'receipt' ? '−' : '+'} premium FV ${mH(c.premium_home_fv)} = ${mH(c.home_settlement)} ✓*`,
+    `*Reconciliation: strike outcome ${mH(c.home_from_strike)} ${raw.direction === 'receipt' ? '−' : '+'} premium FV ${premiumFvStr} = ${mH(c.home_settlement)} ✓*`,
   ].join('\n');
 }
 
