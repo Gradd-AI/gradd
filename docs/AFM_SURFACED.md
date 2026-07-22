@@ -4,6 +4,26 @@
 
 *Last refreshed: 2026-07-22.*
 
+## LOCKED — POST-COVERAGE PRODUCT LAYER (ruled 2026-07-22, `docs/GRADD_PRODUCT_ROADMAP_POST_COVERAGE.md`)
+Next product layer once AFM is EXAM-READY (drills + mocks + the marking engine — not merely
+"content complete"): **PS-skills coaching (top priority)**, spaced return to weak areas, and
+time-pressure/timing practice. A kill list of rejected ideas is on file in the roadmap doc. **Do
+NOT build any of this pre-coverage** — it is strictly gated on AFM reaching exam-ready, not a
+parallel workstream. Calculator #11 (FX hedging) is coverage work and precedes this gate.
+
+## IN FLIGHT — CALCULATOR #11 FX HEDGING (E2b), generated + gated 2026-07-22, awaiting recompute
+Step-0 evidence (Passmore/Mahoney/Abertafol/Northney examiner reports + SD2019 Okan Co + F9 technical
+article "Foreign currency risk and its management") → ruled → `lib/acca/fxhedge.ts` built (engine +
+schemas + model answers + GATES 15–19) → generator wired (`--fxhedge-batch`,
+`scripts/generate-afm-drills.ts`) → **4 candidates generated, all 6+5 gates PASS**
+(`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`, ids `fd0ba548`/`93fc30f7`/`001c8b07`/`13882862`,
+`status=candidate`, `published=false`). First family in AFM section E — area-picker verified to need
+no code change; area-entry ranked 70–73. Full detail + the tolerance/currency-labelling bugs found
+and fixed during authoring: `APM_BUILD_CONTRACT.md` 2026-07-22 entry. **NEXT: co-founder independent
+recompute → blind adversarial review (CLOSED RULINGS present in the pack) → adjudicate → flip by
+explicit-id SQL.** Not flipped, not published — the pack is the STOP point per the task's own
+instruction.
+
 ## ✅ AD-MEASUREMENT BLIND SPOT — FIXED + LIVE-FIRE VERIFIED 21/07 (was: blocks the December campaign)
 Ad autopsy (07/07–21/07) found the app could not see ad-driven traffic AT ALL: all-time, zero of 11
 profiles had a non-null `signup_attribution`, and the only `resit_runs` row that had ever existed was a

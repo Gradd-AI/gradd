@@ -117,6 +117,31 @@ territory — follow the links for depth. Keep it under ~150 lines.
   comment in-file. Gates beyond the 6: **12** parity-consistency, **13** currency/unit-scale, **14**
   double-tax cap, **14b** tax-prose consistency (all in `validate-schema.ts`, cores in
   `international.ts`). Fixtures: `scripts/test-international.ts` (`npm run test:international`).
+- **Calc #11 — FX hedging (E2b, first calc in AFM section E):** `lib/acca/fxhedge.ts`. COMPOSES
+  `parityDifferential` (`international.ts`) ONE-WAY for the OPTIONAL IRP-derived forward
+  (`buildForwardCurve` itself NOT reused — annual-compounding vs this family's sub-annual periods);
+  every sourced question states the forward rate directly, so K1's primary path takes it as a stated
+  input. Four kinds: **K1** forward vs money-market hedge compare (receipt: borrow foreign/deposit
+  home; payment: deposit foreign/borrow home — F9 technical article + SD2019 Okan Co) · **K2** currency
+  futures (whole contracts, linear basis decay → lock-in rate) · **K3** currency options (whole
+  contracts, premium in the quoted currency, assume-exercised) · **K4** currency swap (stated
+  fraction × swap rate + residual × forward rate — thin evidence, flagged). `quote_direction`
+  (foreign-per-home / home-per-foreign) and `residual_policy` (immaterial / forward-topup) are
+  PARAMETERISED PER DRILL, code-decided, never hardcoded or model-chosen (Step-0 ruling,
+  2026-07-22) — sources genuinely quote both directions. Gates beyond the 6: **15** whole-contract
+  integrity, **16** basis-decay reconciliation, **17** currency-direction integrity (catches a quote
+  inversion either way — the canonical student AND authoring error), **18** premium-currency check,
+  **19** best-method verdict integrity (all in `validate-schema.ts`, cores in `fxhedge.ts`). Money
+  components use a PLAIN relative tolerance (no floor) — fx-hedge outcomes are never legitimately
+  near-zero, unlike international.ts's near-nil-tax edge case the floor kind was built for; rate-shaped
+  components (`unexpired_basis`/`lock_in_rate`) use a tight ABSOLUTE tolerance with `unit:'rate'`
+  (never a currency-pair unit string, which the tolerance lint misreads as money). Fixtures:
+  `scripts/test-fxhedge.ts` (`npm run test:fxhedge`) — reproduces the Okan Co MMH figures and the
+  Abertafol premium formula exactly. `--fxhedge-batch` in `scripts/generate-afm-drills.ts`
+  (`draftFxHedgeDrill` + `SUBMIT_FXHEDGE_SCENARIO_TOOL` + `buildFxHedgeUserPrompt`; `spec.fx_*`
+  fields carry the code-decided conventions). area-entry ranks 70–73 (own band, K1 forward+MMH
+  entry). 4 candidates generated + gated 2026-07-22 (`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`)
+  — awaiting co-founder recompute, not flipped.
 - **NARRATIVE PIPELINE (#2) — discursive drills (D1–D5), NOT a calculator:** `lib/acca/narrative-marker.ts`
   (rubric type + DETERMINISTIC detectors `scenarioCopyOverlap`/`factUsed`/`missingAnchors`/`hasConclusion`/
   `longestVerbatimRun` + code-owned `aggregate` (partial-credit 0/½/full + disqualifier caps + band→verdict)

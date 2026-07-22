@@ -1558,3 +1558,87 @@ No code changed this session. `docs/redteam/prod-autoscan.md` (15/07, founding) 
 3. **"just tell me" → conceptual teach + counter burn is RULED INTENDED BEHAVIOUR.** Not a defect;
    `TEACH_REQUEST_PHRASES` routing a cold "just tell me the answer" to a full teach-through (spending a
    free teach-through, never leaking figures) stands as designed. No code change required for this item.
+
+## 2026-07-22 — CALCULATOR #11: FX HEDGING (E2b) — Step-0 → build → generate, STOP at the pack
+
+**STEP 0 (evidence + proposal only, no code).** Delegated to an Opus research agent: extracted
+verbatim, page-referenced FX-hedging content from the five local AFM examiner reports (SD25 Passmore,
+J24 Mahoney, D23 Abertafol, SD24 Northney, MJ25 Sohbet) plus the on-machine SD2019 Okan Co official
+answer for the money-market-hedge mechanics (not present in any examiner report). Correction to the
+map: Abertafol/Sohbet/Northney(iv) are INTEREST-RATE hedges, not currency — mechanics shared and
+citable, instrument specifics not. Full evidence log delivered in `ClaudeSend.txt`, proposal covered
+drill set / engine shape / gate candidates / textures / risks-for-ruling; stopped at steers per the
+task's own instruction.
+
+**RULING (Grant, 2026-07-22).** (1) `quote_direction` parameterised per drill, never hardcoded —
+sources genuinely quote both ways (Passmore foreign-per-home, Okan home-per-foreign); GATE extended to
+catch direction inversion both as a student error and an authoring error. (2) Residual-balance: not a
+conflict — Passmore's own words are the rule ("unless instructed otherwise"); default = immaterial,
+per-drill instructed override = forward top-up, both legitimate, gate checks against the drill's
+declared policy. (3) Money-market — both directions now cited: receipt (Okan SD19 p.16 + F9 technical
+article) and payment (same F9 article, mechanism only, no worked numbers — the home-funding leg is an
+authored symmetric convention, flagged for recompute). (4) IR-vs-FX annotation noted for
+`TEACHING_PRINCIPLES_EZRA_AFM.md` (protects future calc #12). (5) IRP fixtures: new work, composed
+one-way from `parityDifferential` (not `buildForwardCurve` — annual-compounding mismatch with this
+family's sub-annual periods). (6) E-section first light: verified BEFORE build — `isDirectLinkOnlyArea`
+excludes only Section A; the browse bucket/sort has no hardcoded section list. No code risk.
+
+**BUILD — Phase 1 (engine + gates), commits `d102ba5`/`6e12b71`.** `lib/acca/fxhedge.ts`: forward
+(stated rate), money-market hedge (both directions), currency futures (whole contracts + linear
+basis decay), currency options (whole contracts + premium formula + assume-exercised), currency swap
+(stated-fraction + residual), all-methods comparison + recommendation verdict. GATES 15–19 in
+`validate-schema.ts`. Schema + model-answer builders for all four kinds, following the `**Step N —
+Label**` convention the persona-hardening grounding pack parses. `area-entry.ts` ranked 70–73 (own
+band, forward+MMH the Step-0 entry). Fixtures (`scripts/test-fxhedge.ts`, `npm run test:fxhedge`)
+reproduce the Okan Co MMH figures and the Abertafol premium formula exactly — 55 checks pass; tsc
+clean; `next build` green.
+
+**BUILD — Phase 2 (generator wiring + live generation).** `scripts/generate-afm-drills.ts`:
+`SUBMIT_FXHEDGE_SCENARIO_TOOL`, `buildFxHedgeUserPrompt` (kind-conditional, `quote_direction`/
+`exposure_direction`/`residual_policy`/`premium_currency` all CODE-DECIDED via new `spec.fx_*`
+fields, never model-chosen — same doctrine as `international.ts` hardcoding `basis='ppp'`),
+`draftFxHedgeDrill`/`draftFxHedgeOnce` (best-of-4 retry on margin/teaching-point penalty), GATE 15–19
+dispatch, `--fxhedge-batch` CLI wiring. `FXHEDGE_LOS = {E2b}` (SYLLABUS_MAP already carried E2b as
+`quantitative` — no syllabus-map change needed, confirms the Step-0 LO choice was correct).
+
+**THREE real authoring-time bugs found and fixed BEFORE any drill was accepted** (dry-run → live,
+not discovered after the fact):
+1. **Tolerance-scale mismatch, `lock_in_rate`/`unexpired_basis`.** A relative tolerance on a figure
+   that is a large given constant (`spot0`) plus a small perturbable term barely moves when only the
+   small term is wrong — GATE 3's seeded-OFR proof verdicted a genuinely-wrong `lock_in_rate`
+   'correct' instead of 'carried'. Fixed: tight ABSOLUTE tolerance + a `unit:'rate'` label (the
+   tolerance lint's currency-symbol heuristic was misreading the old `"foreign/home"` unit string as
+   money and demanding a relative band).
+2. **Floor-tolerance mismatch, `premium`/`premium_home_fv`.** Reused `international.ts`'s floor
+   tolerance (0.2 floor, calibrated for that family's multi-million cash flows) on a figure that is
+   legitimately sub-1 in "millions" for this family (an option premium at ~0.3% of a modest notional)
+   — the floor swallowed a real seeded error. Fixed: `moneyTol` redefined LOCALLY in `fxhedge.ts` as
+   plain relative (no floor) — no fx-hedge money component is ever legitimately near-zero, unlike
+   international's near-nil-tax edge case the floor kind exists for.
+3. **Currency-labelling defect, live-generated content.** The first live drill's context_text
+   described the exposure using the HOME currency code while the raw number was actually the FOREIGN
+   amount (schema-internally self-consistent, but a nonsensical/unusable scenario). Fixed by
+   strengthening the tool-schema field description AND adding an explicit mandatory
+   pre-submit currency-labelling checklist to the prompt; verified clean on the next generation.
+   Also fixed on sight: option-premium display switched from 1dp (misleadingly shows "0.0m" for a
+   genuine sub-1 figure) to 4dp.
+4. **Known interaction, documented not "fixed"** (same class as international's own documented
+   floor×seeded-OFR interaction): `residual_policy:'forward_topup'` can near-cancel in GATE 3's
+   generic seeded-OFR proof when the topup rate sits close to the lock-in rate. Fixture-proven
+   (`test-fxhedge.ts`) but NOT exercised in the live batch — K2 uses the default `'immaterial'`
+   policy (Passmore's own primary convention) instead. Documented in-code next to `ResidualPolicy`.
+
+**LIVE GENERATION — 4/4 candidates, all gates PASS.** `status=candidate`, `published=false`:
+`fd0ba548` (K1 forward+MMH, PEN receipt, forward wins by USD 0.1m) · `93fc30f7` (K2 futures, GHS
+payment, 43 contracts, GBP 0.6m) · `001c8b07` (K3 options, USD receipt, home-per-foreign quote — the
+Okan direction — 12 contracts, JOD 5.9m net) · `13882862` (K4 swap, JPY payment, 72%/28% split,
+LKR 2461.2m). Full pack: `docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md` (conventions, gates,
+CLOSED RULINGS, all four drills in full). `npm run test:fxhedge` (55 checks) + `test:area-entry` +
+`test:international` + `test:risk` all pass; tsc clean; `next build` green throughout.
+
+**MAP-BEFORE-CLOSE done** — `CLAUDE.md` code map has the calc #11 entry (module, gates, fixtures,
+tolerance conventions, generator wiring).
+
+**STOP called here, exactly as instructed.** No flip, no publish, no student walk. Next: co-founder
+independent recompute → blind adversarial review (the pack, CLOSED RULINGS present) → adjudicate →
+flip by explicit-id SQL (reconcile-before-flip; E2b is a brand-new LO, trivially clean reconcile).
