@@ -18,16 +18,26 @@ import {
   compareHedgeMethods,
   checkWholeContractIntegrity, checkBasisDecayReconciliation, checkCurrencyDirectionIntegrity,
   checkPremiumCurrency, checkBestMethodVerdict,
+  computeForwardMmhCompare, buildForwardMmhCompareSchema, buildForwardMmhCompareModelAnswer,
+  buildFuturesSchema, buildFuturesModelAnswer,
+  buildOptionsSchema, buildOptionsModelAnswer,
+  buildSwapSchema, buildSwapModelAnswer,
+  type ForwardMmhCompareInputs, type FuturesDrillInputs, type OptionsDrillInputs, type SwapDrillInputs,
 } from '../lib/acca/fxhedge';
 import {
   validateWholeContractIntegrity, validateBasisDecayReconciliation, validateCurrencyDirectionIntegrity,
-  validatePremiumCurrency, validateBestMethodVerdict,
+  validatePremiumCurrency, validateBestMethodVerdict, validateSchemaSelfConsistency,
 } from '../lib/acca/validate-schema';
+import type { AnswerSchema } from '../lib/acca/numeric-verifier';
 
 let failures = 0;
 function ok(name: string, cond: boolean) { if (!cond) failures++; console.log(`${cond ? 'PASS' : 'FAIL'} :: ${name}`); }
 const approx = (a: number, b: number, tol = 1e-6) => Math.abs(a - b) < tol;
 const approxRel = (a: number, b: number, relTol = 0.001) => Math.abs(a - b) <= Math.abs(b) * relTol + 1e-6;
+function figuresPresent(schema: AnswerSchema, answer: string): boolean {
+  const norm = answer.replace(/,/g, '');
+  return schema.components.every((c) => [1, 2, 3, 4].some((d) => norm.includes(c.expected_value.toFixed(d)) || norm.includes(Math.abs(c.expected_value).toFixed(d))));
+}
 
 // ─────────────────────────── quote direction — both ways, evidenced ───────────────────────────
 // foreign_per_home (Passmore-style, R per $1 with $ home): home = foreign / rate
@@ -156,6 +166,55 @@ ok('GATE18 FAILS on a premium that silently applied an extra ×100', !checkPremi
 ok('GATE19 passes when the stated recommendation matches the computed best', validateBestMethodVerdict('receipt', cmpReceipt.results, 'mmh', cmpReceipt.margin).ok);
 ok('GATE19 FAILS when a worse method is recommended', !checkBestMethodVerdict('receipt', cmpReceipt.results, 'forward', cmpReceipt.margin).ok);
 ok('GATE19 FAILS when the stated margin does not match', !checkBestMethodVerdict('receipt', cmpReceipt.results, 'mmh', 999).ok);
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// SCHEMAS + MODEL ANSWERS — GATE1 self-consistency + GATE2-style figure-integrity, all 4 kinds
+// ═══════════════════════════════════════════════════════════════════════════════════════
+const k1Inputs: ForwardMmhCompareInputs = {
+  currency_home: '$', currency_foreign: 'R', exposure: 202, direction: 'receipt', quote_direction: 'foreign_per_home',
+  forward_rate: 14.20, spot: 14.35, months: 6, rate_foreign_borrow: 8, rate_foreign_deposit: 6, rate_home_borrow: 5, rate_home_deposit: 3,
+};
+const k1Computed = computeForwardMmhCompare(k1Inputs);
+const k1Schema = buildForwardMmhCompareSchema(k1Inputs, k1Computed);
+const k1Answer = buildForwardMmhCompareModelAnswer(k1Inputs, k1Computed, 'Given the guaranteed-outcome margin, take the better-paying hedge and lock in certainty over the exposed period.');
+ok('K1 forward+MMH: GATE1 self-consistency passes', validateSchemaSelfConsistency(k1Schema.schema).ok);
+ok('K1 forward+MMH: every schema figure appears in the model answer', figuresPresent(k1Schema.schema, k1Answer));
+ok('K1 forward+MMH: model answer carries the Step N — Label headers (grounding-pack parseable)', /\*\*Step 1 — /.test(k1Answer) && /\*\*Step 4 — Advice to the board\*\*/.test(k1Answer));
+
+const k2Inputs: FuturesDrillInputs = {
+  currency_home: '$', currency_foreign: 'R', exposure: 2_020_000, direction: 'payment', quote_direction: 'foreign_per_home',
+  contract_size: 50_000, spot0: 14.20, futures0: 14.05, months_to_expiry: 6, months_to_transaction: 3, residual_policy: 'forward_topup', topup_forward_rate: 14.10,
+};
+const k2Computed = computeFuturesHedge(k2Inputs);
+const k2Schema = buildFuturesSchema(k2Inputs, k2Computed);
+const k2Answer = buildFuturesModelAnswer(k2Inputs, k2Computed, 'The futures hedge fixes the bulk of the exposure; the residual is small and cleanly topped up on the forward.');
+ok('K2 futures: GATE1 self-consistency passes', validateSchemaSelfConsistency(k2Schema.schema).ok);
+ok('K2 futures: every schema figure appears in the model answer', figuresPresent(k2Schema.schema, k2Answer));
+
+const k3Inputs: OptionsDrillInputs = {
+  currency_home: '$', currency_foreign: 'R', exposure: 30_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
+  contract_size: 500_000, strike: 14.10, premium_pct: 0.00298, premium_currency: 'foreign', months_covered: 3, months_to_transaction: 3, compounding_rate: 5, residual_policy: 'immaterial',
+};
+const k3Computed = computeOptionsHedge(k3Inputs);
+const k3Schema = buildOptionsSchema(k3Inputs, k3Computed);
+const k3Answer = buildOptionsModelAnswer(k3Inputs, k3Computed, 'The option preserves upside if the currency moves favourably, at the cost of the premium — worth it given the uncertainty over the period.');
+ok('K3 options: GATE1 self-consistency passes', validateSchemaSelfConsistency(k3Schema.schema).ok);
+ok('K3 options: every schema figure appears in the model answer', figuresPresent(k3Schema.schema, k3Answer));
+
+const k4Inputs: SwapDrillInputs = {
+  currency_home: '$', currency_foreign: 'R', exposure: 5_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
+  swap_fraction: 0.7, swap_rate: 14.0, residual_forward_rate: 14.15,
+};
+const k4Computed = computeSwapHedge(k4Inputs);
+const k4Schema = buildSwapSchema(k4Inputs, k4Computed);
+const k4Answer = buildSwapModelAnswer(k4Inputs, k4Computed, 'The swap covers the bulk of the flow at a known rate; hedge the uncovered residual on the forward rather than leave it exposed.');
+ok('K4 swap: GATE1 self-consistency passes', validateSchemaSelfConsistency(k4Schema.schema).ok);
+ok('K4 swap: every schema figure appears in the model answer', figuresPresent(k4Schema.schema, k4Answer));
+
+const k4FullInputs: SwapDrillInputs = { ...k4Inputs, swap_fraction: 1, residual_forward_rate: undefined };
+const k4FullComputed = computeSwapHedge(k4FullInputs);
+const k4FullSchema = buildSwapSchema(k4FullInputs, k4FullComputed);
+ok('K4 swap (full coverage): GATE1 self-consistency passes with no residual component', validateSchemaSelfConsistency(k4FullSchema.schema).ok && k4FullSchema.schema.components.every((c) => c.component_id !== 'home_from_residual'));
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILURE(S)`}`);
 process.exit(failures === 0 ? 0 : 1);

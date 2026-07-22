@@ -90,7 +90,10 @@
 // is the ONLY local citation for the swap kind — flagged as the thinnest-evidenced of the four.
 
 import { parityDifferential } from './international';
+import { money, normaliseCurrency, type SerializedSchema } from './valuation';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
+
+export { normaliseCurrency };
 
 // ── formatting / rates ──
 const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
@@ -400,4 +403,212 @@ export function checkBestMethodVerdict(direction: ExposureDirection, results: He
   if (statedBestMethod !== c.best.method) return { ok: false, reason: `recommended method '${statedBestMethod}' ≠ the computed best ('${c.best.method}', ${fmt1(c.best.home_settlement)}) for a ${direction}` };
   if (Math.abs(statedMargin - c.margin) > Math.abs(c.margin) * 0.001 + EPS) return { ok: false, reason: `stated margin ${fmt1(statedMargin)} ≠ computed margin ${fmt1(c.margin)} between the best and second-best method` };
   return { ok: true };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// SERIALIZATION — mirrors valuation.ts's private toSerialized (same SerializedSchema shape,
+// duplicated locally per the established per-family convention, e.g. apv.ts/bsop.ts/credit.ts).
+// ═══════════════════════════════════════════════════════════════════════════════════════
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): SerializedSchema {
+  return {
+    components: components.map((comp) => {
+      const s: SerializedSchema['components'][number] = {
+        component_id: comp.component_id, label: comp.label, expected_value: comp.expected_value,
+        unit: comp.unit, tolerance: comp.tolerance, working_steps: comp.working_steps,
+        depends_on: comp.depends_on, weight: comp.weight,
+      };
+      const rid = recomputeIds[comp.component_id];
+      if (rid) s.recompute = rid;
+      return s;
+    }),
+    params,
+  };
+}
+const intTol: Tolerance = { kind: 'absolute', value: 0.5 };
+const t2 = (raw: { months: number }): number => raw.months / 12;
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// K1 — forward_mmh_compare drill (forward, stated rate, vs the money-market hedge)
+// ═══════════════════════════════════════════════════════════════════════════════════════
+export interface ForwardMmhCompareInputs {
+  currency_home: string; currency_foreign: string;
+  exposure: number; direction: ExposureDirection; quote_direction: QuoteDirection;
+  forward_rate: number; spot: number; months: number;
+  rate_foreign_borrow: number; rate_foreign_deposit: number;
+  rate_home_borrow: number; rate_home_deposit: number;
+}
+export interface ForwardMmhCompareComputed {
+  forward: ForwardComputed; mmh: MoneyMarketComputed; comparison: ComparisonComputed;
+}
+export function computeForwardMmhCompare(raw: ForwardMmhCompareInputs): ForwardMmhCompareComputed {
+  const forward = computeForwardHedge({ exposure: raw.exposure, direction: raw.direction, forward_rate: raw.forward_rate, quote_direction: raw.quote_direction });
+  const mmh = computeMoneyMarketHedge(raw);
+  const comparison = compareHedgeMethods(raw.direction, [
+    { method: 'the forward', home_settlement: forward.home_settlement },
+    { method: 'the money-market hedge', home_settlement: mmh.home_settlement },
+  ]);
+  return { forward, mmh, comparison };
+}
+export function buildForwardMmhCompareSchema(raw: ForwardMmhCompareInputs, c: ForwardMmhCompareComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`, foreignUnit = `${foreign}m`;
+  const t = t2(raw);
+  const borrowLeg = raw.direction === 'receipt' ? 'rate_foreign_borrow' : 'rate_foreign_deposit';
+  const growLeg = raw.direction === 'receipt' ? raw.rate_home_deposit : raw.rate_home_borrow;
+  const comps: Component[] = [
+    { component_id: 'forward_home', label: `Guaranteed ${home} outcome under the forward hedge`, expected_value: c.forward.home_settlement, unit: homeUnit, tolerance: moneyTol,
+      working_steps: [`= ${foreign} ${fmt1(raw.exposure)} converted at the forward rate ${fmt4(raw.forward_rate)}`] },
+    { component_id: 'mmh_foreign_now', label: `Foreign currency ${raw.direction === 'receipt' ? 'borrowed' : 'bought'} today (money-market hedge)`, expected_value: c.mmh.foreign_now, unit: foreignUnit, tolerance: moneyTol,
+      working_steps: [`= ${foreign} ${fmt1(raw.exposure)} ÷ (1 + ${(raw as unknown as Record<string, number>)[borrowLeg]}% × ${raw.months}/12)`] },
+    { component_id: 'mmh_home_now', label: `${home} equivalent today`, expected_value: c.mmh.home_now, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['mmh_foreign_now'], recompute: (d) => toHome(d.mmh_foreign_now, raw.spot, raw.quote_direction),
+      working_steps: [`= foreign amount converted at today's spot ${fmt4(raw.spot)}`] },
+    { component_id: 'mmh_home_settlement', label: `Guaranteed ${home} outcome under the money-market hedge`, expected_value: c.mmh.home_settlement, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['mmh_home_now'], recompute: (d) => d.mmh_home_now * (1 + asDec(growLeg) * t),
+      working_steps: [`= ${home} deposited/borrowed at ${growLeg}% for ${raw.months} months`] },
+  ];
+  const recomputeIds: Record<string, string | undefined> = { mmh_home_now: 'fxh_mmh_convert_spot', mmh_home_settlement: 'fxh_mmh_grow_home' };
+  const params = { exposure: raw.exposure, forward_rate: raw.forward_rate, spot: raw.spot, months: raw.months, rate_foreign_borrow: raw.rate_foreign_borrow, rate_foreign_deposit: raw.rate_foreign_deposit, rate_home_borrow: raw.rate_home_borrow, rate_home_deposit: raw.rate_home_deposit };
+  return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
+}
+export function buildForwardMmhCompareModelAnswer(raw: ForwardMmhCompareInputs, c: ForwardMmhCompareComputed, prose: string): string {
+  const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
+  const noun = raw.direction === 'receipt' ? 'receipt' : 'payment';
+  const legWord = raw.direction === 'receipt' ? 'borrow the foreign currency now and deposit the home proceeds' : 'buy the foreign currency now and deposit it so it grows to the amount payable';
+  return [
+    '**FX hedging — forward vs money-market hedge**', '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${noun} is due in ${raw.months} months, quoted ${raw.quote_direction === 'foreign_per_home' ? `${foreign} per 1 ${home}` : `${home} per 1 ${foreign}`}. The forward rate for the period is stated at ${fmt4(raw.forward_rate)}. The money-market hedge would ${legWord}, using today's spot of ${fmt4(raw.spot)}.`, '',
+    '**Step 1 — Forward hedge**', '', `${foreign} ${fmt1(raw.exposure)} converted at the forward rate ${fmt4(raw.forward_rate)} = **${mH(c.forward.home_settlement)}**, guaranteed.`, '',
+    '**Step 2 — Money-market hedge**', '',
+    `${legWord[0].toUpperCase()}${legWord.slice(1)}: ${mF(c.mmh.foreign_now)} today, converted at spot to ${mH(c.mmh.home_now)}, then grown to **${mH(c.mmh.home_settlement)}** by the settlement date.`, '',
+    '**Step 3 — All-methods comparison and recommendation**', '',
+    `| Method | Guaranteed ${home} outcome |`, `|------|------|`,
+    `| Forward | ${mH(c.forward.home_settlement)} |`, `| Money-market hedge | ${mH(c.mmh.home_settlement)} |`, '',
+    `${c.comparison.best.method === 'the forward' ? 'The forward' : 'The money-market hedge'} gives the ${raw.direction === 'receipt' ? 'higher' : 'lower-cost'} outcome, by **${mH(c.comparison.margin)}**, and is **recommended**.`, '',
+    '**Step 4 — Advice to the board**', '', prose, '',
+    `*Reconciliation: forward ${mH(c.forward.home_settlement)} vs MMH ${mH(c.mmh.home_settlement)}; margin ${mH(c.comparison.margin)} to ${c.comparison.best.method} ✓*`,
+  ].join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// K2 — futures drill
+// ═══════════════════════════════════════════════════════════════════════════════════════
+export interface FuturesDrillInputs extends FuturesInputs { currency_home: string; currency_foreign: string; }
+export function buildFuturesSchema(raw: FuturesDrillInputs, c: FuturesComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`;
+  const comps: Component[] = [
+    { component_id: 'contracts', label: 'Number of futures contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
+      working_steps: [`= round(${foreign} ${fmt1(raw.exposure)} ÷ contract size ${fmt1(raw.contract_size)}) — whole contracts only`] },
+    { component_id: 'unexpired_basis', label: 'Unexpired basis at the transaction date', expected_value: c.unexpired_basis, unit: raw.quote_direction === 'foreign_per_home' ? `${foreign}/${home}` : `${home}/${foreign}`, tolerance: rel(1),
+      working_steps: [`basis₀ = spot₀ ${fmt4(raw.spot0)} − futures₀ ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; unexpired = basis₀ × (${raw.months_to_expiry - raw.months_to_transaction})/${raw.months_to_expiry} months remaining/total`] },
+    { component_id: 'lock_in_rate', label: 'Lock-in rate', expected_value: c.lock_in_rate, unit: raw.quote_direction === 'foreign_per_home' ? `${foreign}/${home}` : `${home}/${foreign}`, tolerance: rel(1),
+      depends_on: ['unexpired_basis'], recompute: (d) => raw.spot0 - d.unexpired_basis,
+      working_steps: [`= spot₀ ${fmt4(raw.spot0)} − unexpired basis`] },
+    { component_id: 'home_from_futures', label: `${home} outcome from the futures hedge`, expected_value: c.home_from_futures, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['contracts', 'lock_in_rate'], recompute: (d) => toHome(d.contracts * raw.contract_size, d.lock_in_rate, raw.quote_direction),
+      working_steps: [`= hedged amount (contracts × contract size) converted at the lock-in rate`] },
+  ];
+  if (raw.residual_policy === 'forward_topup') {
+    comps.push({ component_id: 'home_from_residual', label: `${home} outcome from the forward-topped-up residual`, expected_value: c.home_from_residual, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['contracts'], recompute: (d) => toHome(raw.exposure - d.contracts * raw.contract_size, raw.topup_forward_rate!, raw.quote_direction),
+      working_steps: [`= residual (exposure − hedged amount) converted at the topup forward rate ${fmt4(raw.topup_forward_rate!)}`] });
+  }
+  comps.push({ component_id: 'home_settlement', label: `Total ${home} outcome`, expected_value: c.home_settlement, unit: homeUnit, tolerance: moneyTol,
+    depends_on: raw.residual_policy === 'forward_topup' ? ['home_from_futures', 'home_from_residual'] : ['home_from_futures'],
+    recompute: (d) => d.home_from_futures + (raw.residual_policy === 'forward_topup' ? d.home_from_residual : 0),
+    working_steps: [raw.residual_policy === 'immaterial' ? '= the futures outcome; the residual is immaterial and not separately hedged' : '= futures outcome + the forward-topped-up residual'] });
+  const recomputeIds: Record<string, string | undefined> = { lock_in_rate: 'fxh_lock_in', home_from_futures: 'fxh_futures_convert', home_from_residual: 'fxh_topup_convert', home_settlement: 'fxh_futures_total' };
+  const params = { exposure: raw.exposure, contract_size: raw.contract_size, spot0: raw.spot0, futures0: raw.futures0, months_to_expiry: raw.months_to_expiry, months_to_transaction: raw.months_to_transaction, ...(raw.topup_forward_rate ? { topup_forward_rate: raw.topup_forward_rate } : {}) };
+  return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
+}
+export function buildFuturesModelAnswer(raw: FuturesDrillInputs, c: FuturesComputed, prose: string): string {
+  const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n);
+  return [
+    '**FX hedging — currency futures**', '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; futures of contract size ${fmt1(raw.contract_size)} expire in ${raw.months_to_expiry} months, spot₀ ${fmt4(raw.spot0)}, futures₀ ${fmt4(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
+    '**Step 1 — Number of contracts (whole contracts only)**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → rounds to **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}), hedging ${fmt1(c.hedged_amount)}; residual ${fmt1(c.residual)} ${raw.residual_policy === 'immaterial' ? 'is immaterial and not separately hedged' : 'is topped up on the forward'}.`, '',
+    '**Step 2 — Basis and the lock-in rate**', '', `Basis₀ = ${fmt4(raw.spot0)} − ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; assumed to decline linearly to zero by expiry, so the unexpired basis at the transaction date = ${fmt4(c.unexpired_basis)}. Lock-in rate = ${fmt4(raw.spot0)} − ${fmt4(c.unexpired_basis)} = **${fmt4(c.lock_in_rate)}**.`, '',
+    '**Step 3 — Outcome**', '', `${fmt1(c.hedged_amount)} at the lock-in rate = ${mH(c.home_from_futures)}${raw.residual_policy === 'forward_topup' ? ` + residual on the forward ${mH(c.home_from_residual)}` : ''} = **${mH(c.home_settlement)}**.`, '',
+    '**Step 4 — Advice to the board**', '', prose, '',
+    `*Reconciliation: ${c.contracts} contracts × ${fmt1(raw.contract_size)} = ${fmt1(c.hedged_amount)}; at lock-in ${fmt4(c.lock_in_rate)} → ${mH(c.home_settlement)} ✓*`,
+  ].join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// K3 — options drill
+// ═══════════════════════════════════════════════════════════════════════════════════════
+export interface OptionsDrillInputs extends OptionsInputs { currency_home: string; currency_foreign: string; }
+export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`;
+  const premiumUnit = raw.premium_currency === 'home' ? homeUnit : `${foreign}m`;
+  const comps: Component[] = [
+    { component_id: 'contracts', label: 'Number of option contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
+      working_steps: [`= round(${foreign} ${fmt1(raw.exposure)} ÷ contract size ${fmt1(raw.contract_size)}) — whole contracts only`] },
+    { component_id: 'premium', label: `Total premium (${raw.premium_currency})`, expected_value: c.premium, unit: premiumUnit, tolerance: moneyTol,
+      depends_on: ['contracts'], recompute: (d) => raw.premium_pct * d.contracts * raw.contract_size * (raw.months_covered / 12),
+      working_steps: [`= premium ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} contracts × ${fmt1(raw.contract_size)} × ${raw.months_covered}/12`] },
+    { component_id: 'premium_home_fv', label: `Premium, future-valued to settlement (${home})`, expected_value: c.premium_home_fv, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['premium'], recompute: (d) => (raw.premium_currency === 'home' ? d.premium : toHome(d.premium, raw.strike, raw.quote_direction)) * (1 + asDec(raw.compounding_rate) * (raw.months_to_transaction / 12)),
+      working_steps: [`= premium${raw.premium_currency === 'foreign' ? ` converted at the strike ${fmt4(raw.strike)}` : ' (already home currency, no further conversion)'}, grown at ${raw.compounding_rate}% for ${raw.months_to_transaction} months`] },
+    { component_id: 'home_from_strike', label: `${home} outcome if exercised (at the strike)`, expected_value: c.home_from_strike, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['contracts'], recompute: (d) => toHome(d.contracts * raw.contract_size, raw.strike, raw.quote_direction),
+      working_steps: [`= hedged amount converted at the strike ${fmt4(raw.strike)} (assume exercised)`] },
+  ];
+  comps.push({ component_id: 'home_settlement', label: `Net ${home} outcome`, expected_value: c.home_settlement, unit: homeUnit, tolerance: moneyTol,
+    depends_on: ['home_from_strike', 'premium_home_fv'],
+    recompute: (d) => d.home_from_strike + (raw.direction === 'receipt' ? -d.premium_home_fv : d.premium_home_fv),
+    working_steps: [`= strike proceeds ${raw.direction === 'receipt' ? '− the FV premium (cost)' : '+ the FV premium (cost)'}`] });
+  const recomputeIds: Record<string, string | undefined> = { premium: 'fxh_option_premium', premium_home_fv: 'fxh_premium_fv', home_from_strike: 'fxh_strike_convert', home_settlement: 'fxh_option_net' };
+  const params = { exposure: raw.exposure, contract_size: raw.contract_size, strike: raw.strike, premium_pct: raw.premium_pct, months_covered: raw.months_covered, months_to_transaction: raw.months_to_transaction, compounding_rate: raw.compounding_rate };
+  return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
+}
+export function buildOptionsModelAnswer(raw: OptionsDrillInputs, c: OptionsComputed, prose: string): string {
+  const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n);
+  const premiumStr = raw.premium_currency === 'home' ? money(home, c.premium) : money(foreign, c.premium);
+  return [
+    '**FX hedging — currency options**', '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${(raw.premium_pct * 100).toFixed(3)}% quoted in ${raw.premium_currency === 'home' ? home : foreign}. A ${raw.direction} must **${c.side.toUpperCase()}** the options. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
+    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}). Premium = ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} × ${fmt1(raw.contract_size)} × ${raw.months_covered}/12 = **${premiumStr}**${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
+    '**Step 2 — Exercise outcome**', '', `${fmt1(c.hedged_amount)} at the strike ${fmt4(raw.strike)} = ${mH(c.home_from_strike)}.`, '',
+    '**Step 3 — Net of the premium**', '', `Premium future-valued to settlement = ${mH(c.premium_home_fv)}; ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
+    '**Step 4 — Advice to the board**', '', prose, '',
+    `*Reconciliation: strike outcome ${mH(c.home_from_strike)} ${raw.direction === 'receipt' ? '−' : '+'} premium FV ${mH(c.premium_home_fv)} = ${mH(c.home_settlement)} ✓*`,
+  ].join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// K4 — swap drill (thin evidence — Mahoney J24 p.7 only; flagged for co-founder recompute)
+// ═══════════════════════════════════════════════════════════════════════════════════════
+export interface SwapDrillInputs extends SwapInputs { currency_home: string; currency_foreign: string; }
+export function buildSwapSchema(raw: SwapDrillInputs, c: SwapComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
+  const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`, foreignUnit = `${foreign}m`;
+  const comps: Component[] = [
+    { component_id: 'swapped_amount', label: `Exposure covered by the swap (${(raw.swap_fraction * 100).toFixed(0)}%)`, expected_value: c.swapped_amount, unit: foreignUnit, tolerance: moneyTol,
+      working_steps: [`= ${foreign} ${fmt1(raw.exposure)} × ${(raw.swap_fraction * 100).toFixed(0)}%`] },
+    { component_id: 'home_from_swap', label: `${home} outcome from the swapped portion`, expected_value: c.home_from_swap, unit: homeUnit, tolerance: moneyTol,
+      depends_on: ['swapped_amount'], recompute: (d) => toHome(d.swapped_amount, raw.swap_rate, raw.quote_direction),
+      working_steps: [`= swapped amount converted at the swap rate ${fmt4(raw.swap_rate)}`] },
+  ];
+  if (raw.swap_fraction < 1) {
+    comps.push({ component_id: 'home_from_residual', label: `${home} outcome from the un-swapped residual (forward)`, expected_value: c.home_from_residual, unit: homeUnit, tolerance: moneyTol,
+      working_steps: [`= residual ${fmt1(raw.exposure * (1 - raw.swap_fraction))} converted at the forward rate ${fmt4(raw.residual_forward_rate!)} — the swap only covers a proportion of the flow`] });
+  }
+  comps.push({ component_id: 'home_settlement', label: `Total ${home} outcome`, expected_value: c.home_settlement, unit: homeUnit, tolerance: moneyTol,
+    depends_on: raw.swap_fraction < 1 ? ['home_from_swap', 'home_from_residual'] : ['home_from_swap'],
+    recompute: (d) => d.home_from_swap + (raw.swap_fraction < 1 ? d.home_from_residual : 0),
+    working_steps: [raw.swap_fraction < 1 ? '= swap outcome + the residual hedged on the forward' : '= the swap outcome (the swap covers the full exposure)'] });
+  const recomputeIds: Record<string, string | undefined> = { home_from_swap: 'fxh_swap_convert', home_settlement: 'fxh_swap_total' };
+  const params = { exposure: raw.exposure, swap_fraction: raw.swap_fraction, swap_rate: raw.swap_rate, ...(raw.residual_forward_rate ? { residual_forward_rate: raw.residual_forward_rate } : {}) };
+  return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
+}
+export function buildSwapModelAnswer(raw: SwapDrillInputs, c: SwapComputed, prose: string): string {
+  const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
+  return [
+    '**FX hedging — currency swap**', '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due; a currency swap is available at ${fmt4(raw.swap_rate)} but covers only ${(raw.swap_fraction * 100).toFixed(0)}% of the flow${raw.swap_fraction < 1 ? `; the residual is hedged on the forward at ${fmt4(raw.residual_forward_rate!)}` : ''}.`, '',
+    '**Step 1 — The swapped portion**', '', `${(raw.swap_fraction * 100).toFixed(0)}% of ${fmt1(raw.exposure)} = ${mF(c.swapped_amount)}, converted at the swap rate ${fmt4(raw.swap_rate)} = **${mH(c.home_from_swap)}**.`, '',
+    ...(raw.swap_fraction < 1 ? ['**Step 2 — The residual (not covered by the swap)**', '', `${mF(c.residual)} does not benefit from the swap rate and is hedged on the forward at ${fmt4(raw.residual_forward_rate!)} = **${mH(c.home_from_residual)}**.`, ''] : []),
+    `**Step ${raw.swap_fraction < 1 ? 3 : 2} — Total outcome**`, '', `**${mH(c.home_settlement)}**.`, '',
+    `**Step ${raw.swap_fraction < 1 ? 4 : 3} — Advice to the board**`, '', prose, '',
+    `*Reconciliation: swap ${mH(c.home_from_swap)}${raw.swap_fraction < 1 ? ` + residual ${mH(c.home_from_residual)}` : ''} = ${mH(c.home_settlement)} ✓*`,
+  ].join('\n');
 }

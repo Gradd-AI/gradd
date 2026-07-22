@@ -59,6 +59,12 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   '**Capital structure — theory and practical impact**': 62,                      // D3 · B3i
   '**Option pricing models — role in valuing equity, debt and default risk**': 63, // D4 · B4d (after credit 48)
   '**Exchange controls and international sources of finance**': 64,                // D5 · B5c/d (after international 53)
+  // ── E2 — FX hedging (calculator #11). Own area (never overlaps a B-prefix), so these ranks only
+  // order K1..K4 against each other: forward+MMH (the Step-0 entry) → futures → options → swap. ──
+  '**FX hedging — forward vs money-market hedge**': 70,
+  '**FX hedging — currency futures**': 71,
+  '**FX hedging — currency options**': 72,
+  '**FX hedging — currency swap**': 73,
 };
 
 const UNRANKED = Number.POSITIVE_INFINITY;
