@@ -160,6 +160,20 @@ import {
   type RadrInputs, type RiskMeasuresInputs,
 } from '../lib/acca/risk';
 import { validateProbabilitySum, validateEnpvConsistency, validateSensitivityReconciliation, validateRadrOrdering, validateVarAndDuration } from '../lib/acca/validate-schema';
+import {
+  computeForwardMmhCompare, buildForwardMmhCompareSchema, buildForwardMmhCompareModelAnswer,
+  computeFuturesHedge, buildFuturesSchema, buildFuturesModelAnswer,
+  computeOptionsHedge, buildOptionsSchema, buildOptionsModelAnswer,
+  computeSwapHedge, buildSwapSchema, buildSwapModelAnswer,
+  instrumentSide, fmt4,
+  type FxHedgeKind, type ForwardMmhCompareInputs, type ForwardMmhCompareComputed,
+  type FuturesDrillInputs, type FuturesComputed, type OptionsDrillInputs, type OptionsComputed,
+  type SwapDrillInputs, type SwapComputed, type QuoteDirection, type ExposureDirection, type ResidualPolicy,
+} from '../lib/acca/fxhedge';
+import {
+  validateWholeContractIntegrity, validateBasisDecayReconciliation, validateCurrencyDirectionIntegrity,
+  validatePremiumCurrency, validateBestMethodVerdict,
+} from '../lib/acca/validate-schema';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -207,6 +221,15 @@ interface AfmDrillSpec {
   valuation_kind?:         ValuationKind; // B4a/B4b/A6 batch only — selects the valuation-family variant
   international_kind?:      InternationalKind; // B5/A6a batch only — selects the international-family variant
   risk_kind?:              RiskKind;     // B1a/B1b risk & uncertainty batch only — selects the risk-family variant
+  fxhedge_kind?:           FxHedgeKind;  // E2b FX-hedging batch only — selects the fx-hedge family variant
+  // fx-hedge family CONVENTIONS — code-decided per drill (never model-chosen), same doctrine as
+  // international.ts hardcoding basis='ppp': the model is TOLD which convention to narrate in
+  // prose, it never picks one. Varies per drill (unlike basis, which is uniform), so these ride
+  // the spec rather than a literal inside the draft function.
+  fx_quote_direction?:     QuoteDirection;
+  fx_exposure_direction?:  ExposureDirection;
+  fx_residual_policy?:     ResidualPolicy;
+  fx_premium_currency?:    'home' | 'foreign';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -248,6 +271,14 @@ const BSOP_LOS = new Set<LoCode>(['B2a', 'B2c']);
 // discounting one-way. HARD RULE (Grant 2026-07-17): A6a is a Section-A LO — direct-link-only
 // serve, EXCLUDED from all B-tier/coverage counts and public claims until Section A surfaces.
 const INTERNATIONAL_LOS = new Set<LoCode>(['B5a', 'B5b', 'A6a']);
+// FX hedging (calculator #11). E2b is the QUANTITATIVE LO ("Evaluate ... the forward exchange
+// market and money market hedge / SAFEs / currency futures / currency swaps / FOREX swaps /
+// currency options" — SYLLABUS_MAP, scripts/afm-framework.ts). E2a (translation/transaction/
+// economic risk, discursive) and E2c (netting/matching, mixed) are NOT wired here — E2c's netting
+// is woven as scenario TEXTURE only, per the Step-0 ruling. E section, first family to surface it —
+// the browse bucket/sort (app/api/acca/areas/route.ts, app/acca/page.tsx) needs no code change
+// (verified 2026-07-22, no hardcoded section list).
+const FXHEDGE_LOS = new Set<LoCode>(['E2b']);
 // Risk & uncertainty (calculator #3, B1a iv/v/vi + B1b ii). Keyed off spec.risk_kind (set by
 // --risk-batch), NOT off lo_code — B1a is shared with the NPV family, so the risk route must key on
 // the kind (routed BEFORE the NPV_LOS mode check). Conventions verified: docs/evidence/AFM_RISK_EVIDENCE.md.
@@ -639,6 +670,72 @@ Requirements:
 - context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions; probabilities and rates as stated). Weave 1–2 challengeable textures INTO THE PROSE (where the probabilities came from; the quality of the σ estimate; whether the normality assumption holds; that EV is a repeated-game argument for a one-shot project) — do NOT print a labelled "textures" list. Do NOT pre-compute anything.
 - FROZEN FACTS (P4b): a scenario is a DATED snapshot — never write "current market rate" / "currently" next to a rate; state figures as "assumed" / "at the appraisal date".
 - interpretation_prose: qualitative advice ONLY (3–5 sentences) — NO numbers, NO inequalities, NO verdict, ONLY context facts. Cover which assumptions are most fragile and what the board should require.
+- DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
+}
+
+function buildFxHedgeUserPrompt(spec: AfmDrillSpec): string {
+  const kind = spec.fxhedge_kind ?? 'forward_mmh_compare';
+  const dir = spec.fx_exposure_direction ?? 'receipt';
+  const qd = spec.fx_quote_direction ?? 'foreign_per_home';
+  const qdWords = qd === 'foreign_per_home' ? '1 unit of the HOME currency per FOREIGN currency amount stated (foreign per home — e.g. "quoted as R14.20 per $1")' : '1 unit of the FOREIGN currency per HOME currency amount stated (home per foreign — e.g. "quoted as Y$2.52 per €1")';
+  const noun = dir === 'receipt' ? 'RECEIPT (an incoming foreign-currency cash flow)' : 'PAYMENT (an outgoing foreign-currency obligation)';
+  const kindBlock =
+    kind === 'forward_mmh_compare'
+      ? `- DRILL TYPE: FORWARD vs MONEY-MARKET HEDGE (E2b, i). A ${spec.region_hint} company has a foreign-currency ${noun} due in a few months and must choose between a forward contract (a rate is STATED — do not derive it) and a money-market hedge (borrow/deposit in the two currencies). In raw_inputs supply: exposure (foreign millions), months (3–7), forward_rate (STATED, quoted ${qdWords}), spot (today's rate, same quote direction), rate_foreign_borrow, rate_foreign_deposit, rate_home_borrow, rate_home_deposit (annual %, e.g. 8 for 8% — give ALL FOUR even though only two are used, as a real rate table would). Code computes both methods' guaranteed outcome and recommends the better one — state NEITHER outcome nor the recommendation.
+  - SIZING: pick rates so the money-market hedge and the forward give a CLEAR (not razor-thin) margin — a difference of at least a few percent of the exposure, so the recommendation is decisive.`
+      : kind === 'futures'
+      ? `- DRILL TYPE: CURRENCY FUTURES (E2b, iii). A ${spec.region_hint} company has a foreign-currency ${noun} and hedges with exchange-traded currency futures. In raw_inputs supply: exposure (foreign millions), contract_size (foreign millions per contract — pick a size so exposure ÷ contract_size is NOT a round number, e.g. 40.4, so the whole-contract rounding is a real teaching point), spot0 (today's spot, quoted ${qdWords}), futures0 (today's futures price, same quote direction — should differ from spot0 by a modest basis), months_to_expiry (the futures' expiry, 4–8 months), months_to_transaction (when the exposure actually settles — STRICTLY LESS than months_to_expiry, so there is a real unexpired basis to compute)${spec.fx_residual_policy === 'forward_topup' ? ', topup_forward_rate (a forward rate for the un-hedged residual — the scenario must EXPLICITLY instruct the residual to be hedged on the forward, per Passmore Co\'s own wording: "unless instructed otherwise" the residual is immaterial, so this drill is the INSTRUCTED-OVERRIDE case)' : ' (do NOT supply topup_forward_rate — this drill uses the DEFAULT policy: the residual after whole-contract rounding is immaterial and is NOT separately hedged, per Passmore Co\'s own examiner wording)'}. Code owns the whole-contract count, the basis decay, the lock-in rate, and the final outcome — state NONE.
+  - TEACHING POINT: the question must be answerable with a FULL SET OF INSTRUCTIONS — how many contracts, buy or sell, and the contract month — do not let context_text pre-state any of these.`
+      : kind === 'options'
+      ? `- DRILL TYPE: CURRENCY OPTIONS (E2b, vi). A ${spec.region_hint} company has a foreign-currency ${noun} and hedges with traded currency options, assumed EXERCISED (no gain/loss calculation is needed — state this explicitly in context_text, matching Passmore Co's own examiner note). In raw_inputs supply: exposure (foreign millions), contract_size (foreign millions per contract — again NOT a round multiple of exposure), strike (quoted ${qdWords}), premium_pct (a DECIMAL FRACTION, e.g. 0.003 for 0.3% — realistic option premiums are well under 1%), premium_currency is fixed to '${spec.fx_premium_currency ?? 'foreign'}' by the drill design — state the premium in ${spec.fx_premium_currency === 'home' ? 'the HOME' : 'the SAME (foreign/quoted) currency the company is working with — and note in context_text that no further conversion is needed for it, matching Passmore Co\'s own examiner point'}, months_covered (the option's life, matching or close to months_to_transaction), months_to_transaction (3–7), compounding_rate (annual home-currency %, used to value the premium's time cost to settlement). Code owns the whole-contract count, the premium, and the net outcome — state NONE.`
+      : `- DRILL TYPE: CURRENCY SWAP (E2b, iv). A ${spec.region_hint} company has a foreign-currency ${noun} and is offered a currency swap that covers only PART of the exposure — the classic Mahoney Co teaching point ("the swap rate would only account for a proportion of the cash"). In raw_inputs supply: exposure (foreign millions), swap_fraction (a DECIMAL below 1, e.g. 0.65–0.8 — the swap does NOT cover the whole flow), swap_rate (quoted ${qdWords}), residual_forward_rate (a forward rate for the un-swapped residual — MUST differ from swap_rate so the residual's treatment is a genuine distinct step, not a copy). Code owns the swapped amount, the residual, and the total outcome — state NONE.`;
+  return `Write one original ACCA AFM FX-hedging drill (kind: ${kind}).
+
+Specification:
+- LO code: ${spec.lo_code} — ${spec.sub_area}: ${spec.topic}
+- LO descriptor (verbatim, ACCA S26–J27 study guide): "${spec.descriptor}"
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+- Marks guide: ${spec.marks_guide} marks
+
+CODE-COMPUTES-STATS PROTOCOL — MANDATORY. Code owns EVERY figure AND every figure-vs-figure verdict
+(including which hedge method wins and by how much). Supply the scenario, the raw input figures, and
+qualitative prose ONLY. DO NOT state anywhere any guaranteed outcome, any contract count, any premium
+figure, any basis/lock-in rate, any swap split, or any recommendation — code inserts ALL of those.
+
+QUOTE DIRECTION — MANDATORY, STATE IT PLAINLY. Every rate in this drill (spot, forward, futures,
+strike, swap) is quoted ${qdWords}. context_text MUST say this in plain words as a scenario fact
+(e.g. "exchange rates are quoted as [foreign] per 1 [home]") — this is the canonical ACCA authoring
+point (a direction inversion is the single most common student AND authoring error in this topic).
+
+EXPOSURE DIRECTION: this drill's exposure is a ${noun}. State this plainly in context_text.
+
+CURRENCY-LABELLING CHECK (MANDATORY, re-read before you submit): raw_inputs.exposure is denominated
+in currency_foreign, NEVER currency_home. The company whose board you are advising holds
+currency_home as its OWN operating currency and is exposed to a cash flow denominated in
+currency_foreign — every mention of the exposure amount anywhere in context_text and the question
+MUST use the currency_foreign code, never the currency_home code. Before you call the tool, verify:
+(1) which company's board you are advising — that company's OWN currency is currency_home; (2) which
+currency the exposure/counterparty payment is actually denominated in — that is currency_foreign,
+and that is what raw_inputs.exposure must be; (3) that context_text never swaps the two, and never
+states the exposure amount using the currency_home code. A scenario that labels the exposure in
+currency_home is unusable — code will silently compute a nonsense conversion.
+
+CONVENTIONS ARE FETCHED — page-verified ACCA examiner conventions (do NOT re-derive from memory):
+futures/options trade in WHOLE contracts only, rounded to the nearest whole number; the unexpired
+basis at the transaction date = basis₀ × (months remaining to expiry) ÷ (months to expiry from
+today), assumed to decline LINEARLY to zero by expiry; the lock-in rate = spot₀ − unexpired basis;
+an option premium = premium% × contracts × contract size × (months covered ÷ 12); a swap may cover
+only a STATED PROPORTION of the flow, with the residual hedged separately.
+
+${kindBlock}
+
+Requirements:
+- Scenario set in ${spec.region_hint}, sector: ${spec.sector_hint}. Name the company and the counterparty/trading relationship giving rise to the exposure.
+- question: begins with the command verb and asks for EXACTLY what this kind delivers, including a recommendation where the kind compares methods — no more (P5).
+- context_text: 2–3 sentences of narrative + a clean labelled list of the raw inputs (money in millions; rates as %). Weave 1–2 challengeable textures INTO THE PROSE (basis risk; counterparty/margin risk on an OTC or exchange-traded instrument; an overconfident claim from a director about which hedge is best, in the style of Abertafol Co's "options should never be the best choice" — a claim the model answer must rebut WITH the computed figures, never just assert against) — do NOT print a labelled "textures" list. Do NOT pre-compute anything.
+- FROZEN FACTS (P4b): a scenario is a DATED snapshot — never write "current market rate" / "currently" next to a rate; state figures as "assumed" / "at the appraisal date".
+- interpretation_prose: qualitative advice ONLY (3–5 sentences) — NO numbers, NO contract counts, NO recommendation, ONLY context facts. Cover which assumptions are most fragile and what the board should require before committing to the hedge.
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
@@ -1143,6 +1240,58 @@ const SUBMIT_RISK_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+// FX HEDGING FAMILY (calculator #11, E2b). One tool; raw_inputs is a UNION across the four kinds —
+// buildFxHedgeUserPrompt (keyed off spec.fxhedge_kind) tells the model which fields to supply.
+// quote_direction / direction / residual_policy / premium_currency are CODE-DECIDED (spec.fx_*
+// fields, never model-chosen — same doctrine as international.ts hardcoding basis='ppp'); the
+// prompt tells the model which convention to narrate, it never picks one. Code computes every
+// figure: the forward/MMH outcomes, the whole-contract count, the basis decay + lock-in rate, the
+// premium, the swap split, and the all-methods comparison + recommendation verdict.
+const SUBMIT_FXHEDGE_SCENARIO_TOOL: Anthropic.Tool = {
+  name: 'submit_fxhedge_scenario',
+  description: 'Submit an FX-hedging drill (forward vs money-market hedge / currency futures / currency options / currency swap) — raw inputs only; code computes the guaranteed outcome under each method, the whole-contract count, the basis decay and lock-in rate, the premium, the swap split, and the all-methods comparison + recommendation.',
+  input_schema: {
+    type: 'object' as const,
+    properties: {
+      question: { type: 'string', description: 'Drill question starting with the command verb. Asks for exactly what this kind delivers, incl. a recommendation where the kind is a comparison — no more.' },
+      context_text: { type: 'string', description: 'Scenario narrative (2–3 sentences) + a clean labelled list of the raw inputs (money in millions; rates as %). NO computed figure, NO guaranteed rate/outcome, NO contract count. MUST plainly state the quote direction given in the prompt (e.g. "quoted as R per $1"). Weave 1–2 challengeable textures (basis risk; counterparty/margin risk; an overconfident claim about which hedge is best) INTO THE PROSE — never a labelled "textures" list.' },
+      command_verb: { type: 'string', description: 'The verb(s) the question demands, lowercase.' },
+      currency_home: { type: 'string', description: 'ISO 4217 code (or a short symbol) of the HOME currency, as given in the prompt.' },
+      currency_foreign: { type: 'string', description: 'ISO 4217 code (or a short symbol) of the FOREIGN currency, as given in the prompt.' },
+      raw_inputs: {
+        type: 'object' as const,
+        description: 'Raw figures matching context_text exactly. Supply ONLY the fields this kind needs (the prompt says which). Code does ALL arithmetic and every verdict.',
+        properties: {
+          exposure: { type: 'number', description: 'The exposure amount, millions (positive), DENOMINATED IN currency_foreign — NEVER currency_home. In context_text you MUST label this figure with the currency_foreign code (e.g. "PEN 8.5 million"), never the currency_home code — labelling the exposure in the wrong currency is the single most common authoring error in this family.' },
+          months: { type: 'number', description: 'K1 (forward+MMH) ONLY: months to the transaction/settlement date.' },
+          forward_rate: { type: 'number', description: 'K1 ONLY: the forward rate for the period, STATED (never derived by the student in the sourced questions).' },
+          spot: { type: 'number', description: 'K1 ONLY: today\'s spot rate, in the DECLARED quote direction.' },
+          rate_foreign_borrow: { type: 'number', description: 'K1 ONLY: annual foreign-currency borrowing rate, % (e.g. 8 for 8%).' },
+          rate_foreign_deposit: { type: 'number', description: 'K1 ONLY: annual foreign-currency deposit rate, %.' },
+          rate_home_borrow: { type: 'number', description: 'K1 ONLY: annual home-currency borrowing rate, %.' },
+          rate_home_deposit: { type: 'number', description: 'K1 ONLY: annual home-currency deposit rate, %.' },
+          contract_size: { type: 'number', description: 'K2/K3 ONLY: foreign-currency units per futures/option contract, millions.' },
+          spot0: { type: 'number', description: 'K2 ONLY: spot rate today (the trade date), in the declared quote direction.' },
+          futures0: { type: 'number', description: 'K2 ONLY: futures price today, same quote direction as spot0.' },
+          months_to_expiry: { type: 'number', description: 'K2 ONLY: months from today to the futures\' expiry.' },
+          months_to_transaction: { type: 'number', description: 'K2/K3 ONLY: months from today to the transaction (close-out/settlement) date, ≤ months_to_expiry for K2.' },
+          topup_forward_rate: { type: 'number', description: 'K2 ONLY, when told the residual is topped up on the forward: the forward rate for the residual leg.' },
+          strike: { type: 'number', description: 'K3 ONLY: the option strike, in the declared quote direction.' },
+          premium_pct: { type: 'number', description: 'K3 ONLY: the option premium as a DECIMAL FRACTION of notional (e.g. 0.00298 for 0.298% — NOT 0.298).' },
+          months_covered: { type: 'number', description: 'K3 ONLY: the option\'s life used in the premium formula (months).' },
+          compounding_rate: { type: 'number', description: 'K3 ONLY: annual home-currency rate used to future-value the premium to settlement, %.' },
+          swap_fraction: { type: 'number', description: 'K4 ONLY: share of the exposure covered by the swap, DECIMAL (0,1]. Use < 1 (Mahoney Co: "the swap rate would only account for a proportion of the cash") unless told to use 1.' },
+          swap_rate: { type: 'number', description: 'K4 ONLY: the currency swap rate, in the declared quote direction.' },
+          residual_forward_rate: { type: 'number', description: 'K4 ONLY, when swap_fraction < 1: the forward rate for the un-swapped residual.' },
+        },
+        required: ['exposure'],
+      },
+      interpretation_prose: { type: 'string', description: 'Qualitative advice ONLY (3–5 sentences). State NO computed outcome, NO contract count, NO premium figure, NO recommendation — code owns all of those. Reference ONLY facts in context_text; name only risks the scenario evidences. Cover which assumptions are most fragile (whether the rates/quotes hold; basis risk for K2; counterparty/OTC risk; margin calls) and what the board should require before committing to the hedge.' },
+    },
+    required: ['question', 'context_text', 'command_verb', 'currency_home', 'currency_foreign', 'raw_inputs', 'interpretation_prose'],
+  },
+};
+
 const SUBMIT_NPV_SCENARIO_TOOL: Anthropic.Tool = {
   name: 'submit_npv_scenario',
   description: 'Submit an NPV investment-appraisal drill — raw inputs only; code computes the WDA schedule, tax, net cash flows, discounting, NPV, the accept/reject decision, and any ranking/sensitivity',
@@ -1437,6 +1586,16 @@ interface DrillOutput {
     sensitivity?: { base_npv: number; pv_affected: number; variable_sensitivity_pct: number; irr: number; discount_rate: number; disc_rate_sensitivity_pct: number; headroom_pp: number }; // G-c
     radr?: { raw: RadrInputs; computed: RadrComputed };                                           // G-d
     varDur?: { raw: RiskMeasuresInputs; computed: RiskMeasuresComputed };                         // G-e
+  };
+  _fxKind?:       FxHedgeKind;       // fx-hedge family — dry-run + gate branch
+  _fxSummary?:    string;            // fx-hedge family — dry-run one-liner
+  _fxPenalty?:    number;            // fx-hedge family — decision-relevance penalty (best-of-N)
+  _fxGate?: {                        // fx-hedge family — data for GATES 15–19; only the fields the kind used are set
+    wholeContract?: { exposure: number; contract_size: number; contracts: number; residual: number; residual_policy: ResidualPolicy; home_from_residual: number };
+    basisDecay?: { spot0: number; futures0: number; months_to_expiry: number; months_to_transaction: number; unexpired_basis: number; lock_in_rate: number };
+    currencyDirection: { foreignAmt: number; rate: number; homeAmt: number; dir: QuoteDirection; direction: ExposureDirection; side: 'buy' | 'sell' }[];
+    premiumCurrency?: { premium_pct: number; contracts: number; contract_size: number; months_covered: number; premium: number };
+    bestMethod?: { direction: ExposureDirection; results: { method: string; home_settlement: number }[]; statedBestMethod: string; statedMargin: number };
   };
   _currency?:     string;            // quantitative only — dry-run display
 }
@@ -1982,6 +2141,107 @@ async function draftInternationalOnce(anthropic: Anthropic, spec: AfmDrillSpec, 
     _intlGate: { parity: [{ fx_curve: forecastCurve, base_spot: r.base_spot, basis, rate_home: r.home_inflation, rate_foreign: r.foreign_inflation }], scaleYears: [{ fx: forecast_spot, foreign_remit_net: c.remit_tax.net_remit_foreign, home_cf: c.sub_remit_home }], doubleTax: { withholding: r.withholding_rate, home_tax: r.home_tax_rate, foreign_corp: r.tax_rate, wht_creditable: whtCreditable, periods: [{ taxable_profit: c.remit_tp_foreign, fcff: c.sub_remit_foreign, additional_home_tax_foreign: c.remit_tax.additional_home_tax_foreign }] } } };
 }
 
+// FX HEDGING family draft (calculator #11, E2b). Dispatches by spec.fxhedge_kind. quote_direction /
+// exposure direction / residual_policy / premium_currency are CODE-DECIDED (spec.fx_* fields) —
+// never model-chosen, same doctrine as international.ts hardcoding basis='ppp'.
+async function draftFxHedgeDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<DrillOutput> {
+  const kind: FxHedgeKind = spec.fxhedge_kind ?? 'forward_mmh_compare';
+  const MAX_ATTEMPTS = 4;
+  const ACCEPT_PENALTY = 0.5;
+  let best: DrillOutput | null = null;
+  let bestPenalty = Infinity;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const candidate = await draftFxHedgeOnce(anthropic, spec, kind);
+    const penalty = candidate._fxPenalty ?? 5;
+    if (penalty < bestPenalty) { best = candidate; bestPenalty = penalty; }
+    if (penalty <= ACCEPT_PENALTY) return candidate;
+    if (attempt < MAX_ATTEMPTS - 1) console.warn(`  ↻ ${spec.lo_code} [FX/${kind}] off-target margin (${candidate._fxSummary}, penalty ${penalty.toFixed(2)}) — retrying (${attempt + 1}/${MAX_ATTEMPTS})`);
+  }
+  if (bestPenalty > ACCEPT_PENALTY) console.warn(`  ⚠ ${spec.lo_code} [FX/${kind}] best-of-${MAX_ATTEMPTS} penalty ${bestPenalty.toFixed(2)} (>${ACCEPT_PENALTY}) — shipping least-bad; self-flag for review`);
+  return best!;
+}
+
+async function draftFxHedgeOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: FxHedgeKind): Promise<DrillOutput> {
+  const res = await anthropic.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 2200,
+    system: AFM_EXAMINER_PERSONA,
+    tools: [SUBMIT_FXHEDGE_SCENARIO_TOOL],
+    tool_choice: { type: 'tool', name: 'submit_fxhedge_scenario' },
+    messages: [{ role: 'user', content: buildFxHedgeUserPrompt(spec) }],
+  });
+  const block = res.content.find((b) => b.type === 'tool_use');
+  if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in fx-hedge Pass 1 response');
+  const inp = block.input as { question: string; context_text: string; command_verb: string; currency_home: string; currency_foreign: string; raw_inputs: Record<string, number>; interpretation_prose: string };
+  assertNonEmpty(inp, ['question', 'context_text', 'command_verb', 'currency_home', 'currency_foreign', 'interpretation_prose'], 'Pass 1 (fx-hedge)');
+  if (!inp.raw_inputs || typeof inp.raw_inputs !== 'object') throw new Error('Pass 1 (fx-hedge): raw_inputs missing');
+  const r = inp.raw_inputs;
+  const home = normaliseCurrency(inp.currency_home), foreign = normaliseCurrency(inp.currency_foreign);
+  const direction: ExposureDirection = spec.fx_exposure_direction ?? 'receipt';
+  const quote_direction: QuoteDirection = spec.fx_quote_direction ?? 'foreign_per_home';
+  const base = { command_verb: inp.command_verb.trim().toLowerCase(), question: inp.question, context_text: inp.context_text, _currency: home, _fxKind: kind };
+  const currencyDirCheck = (foreignAmt: number, rate: number, homeAmt: number, side: 'buy' | 'sell') => ({ foreignAmt, rate, homeAmt, dir: quote_direction, direction, side });
+
+  if (kind === 'forward_mmh_compare') {
+    const ins: ForwardMmhCompareInputs = { currency_home: home, currency_foreign: foreign, exposure: r.exposure, direction, quote_direction, forward_rate: r.forward_rate, spot: r.spot, months: r.months, rate_foreign_borrow: r.rate_foreign_borrow, rate_foreign_deposit: r.rate_foreign_deposit, rate_home_borrow: r.rate_home_borrow, rate_home_deposit: r.rate_home_deposit };
+    const c: ForwardMmhCompareComputed = computeForwardMmhCompare(ins);
+    const { schema, serialized } = buildForwardMmhCompareSchema(ins, c);
+    const model_answer = buildForwardMmhCompareModelAnswer(ins, c, inp.interpretation_prose);
+    const side = instrumentSide(direction);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _fxSummary: `forward=${money(home, c.forward.home_settlement)} mmh=${money(home, c.mmh.home_settlement)} margin=${money(home, c.comparison.margin)} best=${c.comparison.best.method}`,
+      // want a clearly decisive margin (≥ 2% of the exposure's home equivalent) so the recommendation is not razor-thin
+      _fxPenalty: c.comparison.margin >= 0.02 * c.forward.home_settlement ? 0 : 1,
+      _fxGate: {
+        currencyDirection: [currencyDirCheck(r.exposure, r.forward_rate, c.forward.home_settlement, side), currencyDirCheck(c.mmh.foreign_now, r.spot, c.mmh.home_now, side)],
+        bestMethod: { direction, results: c.comparison.results, statedBestMethod: c.comparison.best.method, statedMargin: c.comparison.margin },
+      } };
+  }
+  if (kind === 'futures') {
+    const residual_policy: ResidualPolicy = spec.fx_residual_policy ?? 'immaterial';
+    const ins: FuturesDrillInputs = { currency_home: home, currency_foreign: foreign, exposure: r.exposure, direction, quote_direction, contract_size: r.contract_size, spot0: r.spot0, futures0: r.futures0, months_to_expiry: r.months_to_expiry, months_to_transaction: r.months_to_transaction, residual_policy, topup_forward_rate: r.topup_forward_rate };
+    const c: FuturesComputed = computeFuturesHedge(ins);
+    const { schema, serialized } = buildFuturesSchema(ins, c);
+    const model_answer = buildFuturesModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _fxSummary: `${c.contracts} contracts (${c.side}) lock-in=${fmt4(c.lock_in_rate)} outcome=${money(home, c.home_settlement)}`,
+      // want a genuine fractional pre-rounding (real teaching point) and a non-trivial unexpired basis
+      _fxPenalty: (Math.abs(r.exposure / r.contract_size - c.contracts) >= 0.1 ? 0 : 1) + (Math.abs(c.unexpired_basis) > 1e-6 ? 0 : 1),
+      _fxGate: {
+        wholeContract: { exposure: r.exposure, contract_size: r.contract_size, contracts: c.contracts, residual: c.residual, residual_policy, home_from_residual: c.home_from_residual },
+        basisDecay: { spot0: r.spot0, futures0: r.futures0, months_to_expiry: r.months_to_expiry, months_to_transaction: r.months_to_transaction, unexpired_basis: c.unexpired_basis, lock_in_rate: c.lock_in_rate },
+        currencyDirection: [currencyDirCheck(c.hedged_amount, c.lock_in_rate, c.home_from_futures, c.side)],
+      } };
+  }
+  if (kind === 'options') {
+    const premium_currency = spec.fx_premium_currency ?? 'foreign';
+    const ins: OptionsDrillInputs = { currency_home: home, currency_foreign: foreign, exposure: r.exposure, direction, quote_direction, contract_size: r.contract_size, strike: r.strike, premium_pct: r.premium_pct, premium_currency, months_covered: r.months_covered, months_to_transaction: r.months_to_transaction, compounding_rate: r.compounding_rate, residual_policy: 'immaterial' };
+    const c: OptionsComputed = computeOptionsHedge(ins);
+    const { schema, serialized } = buildOptionsSchema(ins, c);
+    const model_answer = buildOptionsModelAnswer(ins, c, inp.interpretation_prose);
+    return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+      _fxSummary: `${c.contracts} contracts (${c.side}) premium=${fmt1(c.premium)} outcome=${money(home, c.home_settlement)}`,
+      _fxPenalty: (Math.abs(r.exposure / r.contract_size - c.contracts) >= 0.1 ? 0 : 1) + (c.premium > 0 ? 0 : 1),
+      _fxGate: {
+        premiumCurrency: { premium_pct: r.premium_pct, contracts: c.contracts, contract_size: r.contract_size, months_covered: r.months_covered, premium: c.premium },
+        currencyDirection: [currencyDirCheck(c.hedged_amount, r.strike, c.home_from_strike, c.side)],
+      } };
+  }
+  // swap
+  const ins: SwapDrillInputs = { currency_home: home, currency_foreign: foreign, exposure: r.exposure, direction, quote_direction, swap_fraction: r.swap_fraction, swap_rate: r.swap_rate, residual_forward_rate: r.residual_forward_rate };
+  const c: SwapComputed = computeSwapHedge(ins);
+  const { schema, serialized } = buildSwapSchema(ins, c);
+  const model_answer = buildSwapModelAnswer(ins, c, inp.interpretation_prose);
+  const side = instrumentSide(direction);
+  return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
+    _fxSummary: `swap ${(r.swap_fraction * 100).toFixed(0)}% @ ${fmt4(r.swap_rate)}; residual ${money(foreign, c.residual)}; outcome=${money(home, c.home_settlement)}`,
+    // want a genuine partial-coverage swap (the teaching point) with a materially different residual rate
+    _fxPenalty: (r.swap_fraction < 0.95 ? 0 : 1) + (c.residual > 1e-6 && Math.abs(r.residual_forward_rate - r.swap_rate) > 1e-6 ? 0 : 1),
+    _fxGate: {
+      currencyDirection: [currencyDirCheck(c.swapped_amount, r.swap_rate, c.home_from_swap, side), ...(c.residual > 1e-6 ? [currencyDirCheck(c.residual, r.residual_forward_rate, c.home_from_residual, side)] : [])],
+    } };
+}
+
 async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -2010,6 +2270,7 @@ async function generateDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   if (spec.valuation_kind && VALUATION_LOS.has(spec.lo_code)) return draftValuationDrill(anthropic, spec);
   if (spec.international_kind && INTERNATIONAL_LOS.has(spec.lo_code)) return draftInternationalDrill(anthropic, spec);
   if (spec.risk_kind && RISK_LOS.has(spec.lo_code)) return draftRiskDrill(anthropic, spec);
+  if (spec.fxhedge_kind && FXHEDGE_LOS.has(spec.lo_code)) return draftFxHedgeDrill(anthropic, spec);
   if (spec.mode === 'quantitative') {
     if (FCFF_LOS.has(spec.lo_code)) return draftFcffDrill(anthropic, spec);
     if (NPV_LOS.has(spec.lo_code))  return draftNpvDrill(anthropic, spec);
@@ -2239,6 +2500,24 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
     if (g.varDur) run('GATE G-e — VaR tail + duration bounds', validateVarAndDuration(g.varDur.raw, g.varDur.computed), 'one-tail z matches the stated confidence; each duration ≤ its project life');
   } else {
     lines.push('GATE G-a…G-e — risk & uncertainty: N/A (not a risk-family drill)');
+  }
+
+  // (GATES 15-19) FX HEDGING family — whole-contract integrity / basis-decay reconciliation /
+  // currency-direction integrity / premium-currency check / best-method verdict integrity. Only
+  // the fields the kind actually used are set (a swap carries no wholeContract/basisDecay data).
+  if (drill._fxGate) {
+    const g = drill._fxGate;
+    const run = (label: string, res: { ok: boolean; issues: { gate: string; message: string }[] }, pass: string) => {
+      lines.push(`${label}: ${res.ok ? 'PASS' : 'FAIL'}`);
+      if (!res.ok) { ok = false; for (const iss of res.issues) lines.push(`    ✗ [${iss.gate}] ${iss.message}`); } else lines.push(`    ✓ ${pass}`);
+    };
+    if (g.wholeContract) { const w = g.wholeContract; run('GATE 15 — whole-contract integrity', validateWholeContractIntegrity(w.exposure, w.contract_size, w.contracts, w.residual, w.residual_policy, w.home_from_residual), 'contracts round to a whole number; the residual matches the declared policy'); }
+    if (g.basisDecay) { const b = g.basisDecay; run('GATE 16 — basis-decay reconciliation', validateBasisDecayReconciliation(b.spot0, b.futures0, b.months_to_expiry, b.months_to_transaction, b.unexpired_basis, b.lock_in_rate), 'unexpired basis declines linearly to zero at expiry; lock-in = spot₀ − unexpired basis'); }
+    for (const cd of g.currencyDirection) run('GATE 17 — currency-direction integrity', validateCurrencyDirectionIntegrity(cd.foreignAmt, cd.rate, cd.homeAmt, cd.dir, cd.direction, cd.side), 'every conversion reconciles to the declared quote direction; the instrument side matches the exposure');
+    if (g.premiumCurrency) { const p = g.premiumCurrency; run('GATE 18 — premium-currency check', validatePremiumCurrency(p.premium_pct, p.contracts, p.contract_size, p.months_covered, p.premium), 'premium = premium% × contracts × contract size × months/12, no needless conversion'); }
+    if (g.bestMethod) { const m = g.bestMethod; run('GATE 19 — best-method verdict integrity', validateBestMethodVerdict(m.direction, m.results, m.statedBestMethod, m.statedMargin), 'the recommended method is the computed best, with the correct margin'); }
+  } else {
+    lines.push('GATE 15–19 — fx-hedging: N/A (not an fx-hedge-family drill)');
   }
 
   return { ok, lines };
@@ -2702,10 +2981,11 @@ async function main() {
   const valuationBatch = flag('--valuation-batch');
   const internationalBatch = flag('--international-batch');
   const riskBatch = flag('--risk-batch');
+  const fxhedgeBatch = flag('--fxhedge-batch');
   const narrativeBatch = flag('--narrative-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --narrative-batch [--dry-run] B narrative cluster (5 discursive drills D1–D5: MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls). --narrative-only D3 regenerates one.';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--narrative-batch', '--narrative-only']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] B narrative cluster (5 discursive drills D1–D5: MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls). --narrative-only D3 regenerates one.';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
@@ -2841,6 +3121,32 @@ async function main() {
     specs = plan.map((p) => ({
       ...buildSpecsForList([p.lo] as LoCode[])[0],
       risk_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
+      calculation_required: true,
+    }));
+  } else if (fxhedgeBatch) {
+    // FX hedging (calculator #11, E2b) — Step-0 ruled 2026-07-22 (evidence: SD25 Passmore,
+    // J24 Mahoney, D23 Abertafol premium formula, SD2019 Okan Co MMH, F9 technical article).
+    // 4 kinds, all E2b (the quantitative FX-hedging LO). Both quote directions exercised
+    // (K1/K2/K4 foreign_per_home, K3 home_per_foreign) per the ruling — never one hardcoded
+    // direction. K2 exercises the forward_topup residual policy (the Mahoney instructed-override
+    // shape); the others use the Passmore default (residual immaterial). Fresh currencies, no
+    // overlap with the burned set. FX_ONLY regenerates a single kind (delete the stale candidate first).
+    const plan: { kind: FxHedgeKind; region: string; sector: string; qd: QuoteDirection; dir: ExposureDirection; residual?: ResidualPolicy; premiumCcy?: 'home' | 'foreign' }[] = [
+      { kind: 'forward_mmh_compare', region: 'Peru', sector: 'a US (USD) agricultural-commodities trading house with a Peruvian (PEN) sol-denominated export receipt — forward vs money-market hedge', qd: 'foreign_per_home', dir: 'receipt' },
+      // residual_policy left at the DEFAULT ('immaterial', Passmore Co's own primary convention) —
+      // NOT 'forward_topup' — see the KNOWN INTERACTION note on ResidualPolicy in fxhedge.ts: when
+      // the topup forward rate sits close to the lock-in rate, GATE 3's generic seeded-OFR proof can
+      // near-cancel across the two redistribution legs. forward_topup is fixture-proven (test-fxhedge.ts)
+      // but not exercised in this live batch; a future forward_topup drill needs a topup rate that
+      // differs meaningfully from the lock-in rate.
+      { kind: 'futures', region: 'Ghana', sector: 'a UK (GBP) cocoa-processing importer paying a Ghanaian (GHS) supplier — currency futures', qd: 'foreign_per_home', dir: 'payment' },
+      { kind: 'options', region: 'Jordan', sector: 'a Jordanian (JOD) pharmaceuticals manufacturer with a US-dollar (USD) export receipt — currency options, premium quoted in the home currency (matching Passmore Co\'s own examiner point)', qd: 'home_per_foreign', dir: 'receipt', premiumCcy: 'home' },
+      { kind: 'swap', region: 'Sri Lanka', sector: 'a Sri Lankan (LKR) tea-export group with a Japanese-yen (JPY) equipment-financing payment — currency swap covering only part of the flow (the Mahoney Co shape)', qd: 'foreign_per_home', dir: 'payment' },
+    ].filter((p) => !process.env.FX_ONLY || p.kind === process.env.FX_ONLY);
+    specs = plan.map((p) => ({
+      ...buildSpecsForList(['E2b'] as LoCode[])[0],
+      fxhedge_kind: p.kind, region_hint: p.region, sector_hint: p.sector,
+      fx_quote_direction: p.qd, fx_exposure_direction: p.dir, fx_residual_policy: p.residual, fx_premium_currency: p.premiumCcy,
       calculation_required: true,
     }));
   } else {
