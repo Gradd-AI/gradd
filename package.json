@@ -27,6 +27,7 @@
     "test:valuation": "tsx scripts/test-valuation.ts",
     "test:international": "tsx scripts/test-international.ts",
     "test:risk": "tsx scripts/test-risk.ts",
+    "test:fxhedge": "tsx scripts/test-fxhedge.ts",
     "test:narrative-marker": "tsx scripts/test-narrative-marker.ts",
     "test:area-entry": "tsx scripts/test-area-entry.ts",
     "test:notify": "tsx scripts/test-notify.ts",
