@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-21.*
+*Last refreshed: 2026-07-22.*
 
 ## ✅ AD-MEASUREMENT BLIND SPOT — FIXED + LIVE-FIRE VERIFIED 21/07 (was: blocks the December campaign)
 Ad autopsy (07/07–21/07) found the app could not see ad-driven traffic AT ALL: all-time, zero of 11
@@ -45,9 +45,29 @@ transcript detail) + one adapted component + a paid/free gate decision (consiste
 UI, not a new data model. **Recommended slot:** December-window feature (revision/exam-prep framing —
 "review what Ezra told you" — fits the sitting-window narrative already anchoring the ads timeline).
 
+## BACKLOG — PASTE-RESOLUTION GUARD (December-window candidate, ruled 2026-07-22 off the X1 diagnosis)
+**Gap:** the attempt/diagnose pipeline has no check for near-verbatim overlap between a student's
+"attempt" and the drill's own `model_answer`/golden content — on the X1 red-team probe's founding run
+(2026-07-15, `docs/redteam/prod-autoscan.md`) a pasted model-answer excerpt was once judged a **correct**
+attempt (`call_type=correct`). No figures leaked and the check was retired as a stale expectation (see
+the X1/X2 ruling above), but the underlying gap is real: a student who pastes model-answer prose (their
+own, a friend's, or lifted from the new public `/acca/afm/proof` transcript page — the exact mechanism
+that makes this live, not hypothetical) risks being credited as having solved it themselves.
+**Fix direction:** reuse the narrative pipeline's existing overlap detectors —
+`scenarioCopyOverlap`/`longestVerbatimRun` (`lib/acca/narrative-marker.ts`, already deterministic,
+already fixtured) — against `model_answer` (not `scenario` as in the narrative case) to flag a
+near-verbatim attempt BEFORE it reaches `call2_diagnose`. A flagged attempt must not be judged
+correct/resolving; the leg should ask for the student's own-words working instead, same spirit as the
+existing gibberish/noise handling. **Size:** small-to-medium — the detector functions exist and are
+proven; the new work is the model-answer-vs-attempt overlap wiring + a guard state before the diagnose
+call + the redirect copy. **Recommended slot:** December-window, batched with the session-history
+feature above (both touch the same read/attempt surfaces).
+
 ## PERSONA-HARDENING SLOT — consolidated (7 categories, spans batches #9/#10/#3/narrative)
 
 **⛔ AD-SPEND BLOCKER — MECHANISM SHIPPED 2026-07-21, VERIFICATION (Grant + co-founder spot-walk) STILL OWED.** Design-then-build session delivered the grounding mechanism ("Rule 24 triangulation," `lib/acca/tutor-grounding.ts` + wiring — CLAUDE.md code map has the full entry) targeting all 7 categories below. **RED-GREEN discipline applied:** 7 new red-team probes (PH1–PH7, one per category, `scripts/redteam-probes.ts`) fired against the UNMODIFIED prompts first — 4 showed reliable, reproducible failures (PH1 false-complete, PH2 hint-base-wobble, PH4 convention-softening, PH6 fog-retraction); PH3 (invented-inventory) and PH5 (false-positive-diagnosis) did NOT reproduce a reliable failure despite multiple good-faith redesigns — documented honestly as a lower-frequency/probabilistic risk rather than forced. Post-fix: all 7 probes GREEN, `next build` green, zero regression on the existing 45-probe suite (2 pre-existing unrelated flakes on X1/X2 confirmed via git-stash to predate this session entirely) and the 75-check offline fixture suite. **Claim discipline: this is an LLM-prompted behavioural improvement, not a deterministic code gate** — PH4/PH6 repeated-sampling showed ~80–90% clean, a large improvement over the RED baseline but not a hard 100% guarantee (unlike the numeric figure-withholding moat, which IS structural). **STOP called per the task's own instruction — no live walk performed by the builder; Grant + co-founder spot-walk verifies before the ad-spend condition is considered cleared.**
+
+**✅ X1/X2 RULED 2026-07-22 — CLOSED (`APM_BUILD_CONTRACT.md` same-date entry — full detail there).** Both were stale probe expectations from the suite's founding commit (`85ba57c`, 2026-07-15) — never a regression. **Ruling:** `is-earn-redirect` dropped from both probes' `autoChecks` in `scripts/redteam-probes.ts`; each now checks only what actually matters (`no-figure-leak` / `no-reveal-content`, X1 keeps `humanEye`). Probe `expect` text rewritten to the two legitimate not-yet-earned behaviours. **"just tell me" → conceptual teach + counter burn is RULED INTENDED behaviour** (X2) — not a bug, not to be changed. One residual watch-item carried into the PASTE-RESOLUTION GUARD backlog item below (X1's founding-run "correct" verdict on a pasted excerpt).
 
 Every conversational-leg quality issue found across walks lands here, not scattered per-batch. **Fix mechanism (ONE fix, not per-category patches):** inject a rubric/key-facts-in-context payload into ALL conversational legs (diagnose/confirm/hint/close), so the persona is grounded against the drill's OWN criteria, scenario facts, and failure-mode list rather than reasoning about the student's answer from scratch each turn. **Lands narrative-first** — narrative rubrics already carry the exact shape needed (`criteria[]`, `scenario_facts[]`, `disqualifiers[]`) with zero extraction work; **numeric families are a follow-on retrofit phase** (they have no equivalent rubric object yet — would need a key-facts extraction step per calculator family before the same mechanism applies). **Scope as ONE focused session** — do not attempt to patch categories piecemeal across future batches; the next persona-hardening session builds the mechanism once and it should collapse all 7 categories below, not just the newest ones.
 
