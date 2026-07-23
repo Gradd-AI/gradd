@@ -13,6 +13,7 @@
 
 import type Anthropic from '@anthropic-ai/sdk';
 import type { Criterion, CriterionVerdict, CriterionGrader, FailureMode, Met } from './narrative-marker';
+import { cacheBlock } from './prompt-cache';
 
 // One-line definitions of the detection targets (docs/evidence/AFM_NARRATIVE_EVIDENCE.md §1b, page-VERIFIED
 // 2026-07-20). The grader is shown ONLY the modes a given criterion lists as disqualifiers, so it flags
@@ -102,11 +103,18 @@ export function makeAnthropicCriterionGrader(anthropic: Anthropic, opts: GraderO
     let lastErr: unknown;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
+        // SYSTEM is byte-identical across every criterion x every drill this grader is asked to
+        // check in a run (N1/N4 gates call it once per criterion) — cached below.
+        // NOT split at the message level: buildUserPrompt puts the per-CALL-variable CRITERION
+        // block first and the per-DRILL-stable SCENARIO/STUDENT ANSWER after it, so there is no
+        // leading stable prefix shared across the N criterion-calls for one drill without
+        // reordering (SCENARIO+ANSWER first, CRITERION last) — flagged per the PROMPT CACHING
+        // task's own step 3, not restructured.
         const res = await anthropic.messages.create({
           model,
           max_tokens: 500,
           temperature: 0,
-          system: SYSTEM,
+          system: cacheBlock(SYSTEM),
           tools: [SUBMIT_VERDICT_TOOL],
           tool_choice: { type: 'tool', name: 'submit_criterion_verdict' },
           messages: [{ role: 'user', content: buildUserPrompt(c, answer, scenario) }],

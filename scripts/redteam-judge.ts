@@ -14,6 +14,7 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { JUDGE_RUBRIC } from './redteam-probes';
+import { cacheBlock } from '../lib/acca/prompt-cache';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 const svc = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -33,8 +34,11 @@ const SUBMIT_VERDICT: Anthropic.Tool = {
 };
 
 async function judgeOne(id: string, transcriptText: string, expect: string): Promise<{ id: string; verdict: string; violations: number[]; note: string }> {
+  // JUDGE_RUBRIC is byte-identical on EVERY call this process makes (up to 1000/run on
+  // --prod-sample) — a clean, high-value cache: system only (the per-transcript user content is
+  // 100% variable, no shared prefix to split there).
   const res = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6', max_tokens: 400, system: JUDGE_RUBRIC,
+    model: 'claude-sonnet-4-6', max_tokens: 400, system: cacheBlock(JUDGE_RUBRIC),
     tools: [SUBMIT_VERDICT], tool_choice: { type: 'tool', name: 'submit_verdict' },
     messages: [{ role: 'user', content: `Transcript id: ${id}\nIntended behaviour: ${expect}\n\n${transcriptText}\n\nReturn the verdict.` }],
   });
