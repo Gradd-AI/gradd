@@ -249,12 +249,34 @@ async function call1_generate(question: string, context: string): Promise<string
   return extractText(res);
 }
 
+// Presents the student's most recent FULL attempt (if any, and distinct from the current
+// message) alongside their latest message. FIX (2026-07-23, investigation confirmed live):
+// the standard withholding-pipeline turn (call2_diagnose + call3_teach's second-miss branch)
+// previously read ONLY `student_message` — no prior-attempt context at all — unlike the
+// reveal/burn/fast-teach paths (:1132/:1141/:1148/:1159 as of this fix), which already fell
+// back to `lastRealAttempt`. A short, natural follow-up ("so which one should I recommend?")
+// was diagnosed and taught as if the student had submitted NOTHING, because from the model's
+// point of view they genuinely had submitted nothing else. Collapses to the plain single-block
+// form when there is nothing new to show (turn 1, or an unchanged re-send) — no duplicate
+// block, no empty label. This block is always per-turn VARIABLE — callers must place it in the
+// UNCACHED remainder of a `cachePrefix` split, never inside the cached stable prefix.
+function buildStudentAnswerBlock(attempt: string, priorAttempt: string | null): string {
+  if (!priorAttempt || priorAttempt === attempt) {
+    return `Student answer: ${attempt}\n\n`;
+  }
+  return (
+    `Student's most recent full attempt: ${priorAttempt}\n\n` +
+    `Student's latest message: ${attempt}\n\n`
+  );
+}
+
 // ── CALL 2: Diagnose → content-neutral gap label ──────────────────────────────
 
 async function call2_diagnose(
   question: string,
   context: string,
   attempt: string,
+  priorAttempt: string | null,
   modelAnswer: string,
   markScheme: string,
   grounding: GroundingPack,
@@ -272,11 +294,12 @@ async function call2_diagnose(
   // conventions. Empty when no schema (mode:'none') — behaviourally identical to before this change.
   const groundingText = renderChecklistAndFacts(grounding);
   const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_DIAGNOSE}\n\n${groundingText}` : '';
-  // Cache split: `Student answer: ${attempt}` sits BEFORE the per-drill mark scheme/grounding/
-  // model-answer blocks in this call's byte order (never reordered to chase cacheability — see
-  // lib/acca/prompt-cache.ts header), so only the leading context+question segment forms a clean
-  // stable prefix; the larger stable chunk that trails the attempt is not independently cacheable
-  // without reordering. Flagged, not restructured (PROMPT CACHING task, step 3).
+  // Cache split: the student-answer block (buildStudentAnswerBlock, per-turn variable by
+  // construction) sits BEFORE the per-drill mark scheme/grounding/model-answer blocks in this
+  // call's byte order (never reordered to chase cacheability — see lib/acca/prompt-cache.ts
+  // header), so only the leading context+question segment forms a clean stable prefix; the
+  // larger stable chunk that trails the attempt is not independently cacheable without
+  // reordering. Flagged, not restructured (PROMPT CACHING task, step 3).
   const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
@@ -315,7 +338,7 @@ async function call2_diagnose(
         content: cachePrefix(
           stablePrefix,
           stablePrefix +
-          `Student answer: ${attempt}\n\n` +
+          buildStudentAnswerBlock(attempt, priorAttempt) +
           msLine +
           groundingLine +
           `Model answer (reference only — do NOT restate or correct in output):\n${modelAnswer}\n\n` +
@@ -385,6 +408,7 @@ async function call3_teach(
   question: string,
   context: string,
   attempt: string,
+  priorAttempt: string | null,
   diagnosis: string,
   verbLevel: string,
   offerReveal: boolean,
@@ -431,7 +455,7 @@ async function call3_teach(
         content: cachePrefix(
           stablePrefix,
           stablePrefix +
-          `Student answer: ${attempt}\n\n` +
+          buildStudentAnswerBlock(attempt, priorAttempt) +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
           conventionsLine +
@@ -1138,7 +1162,7 @@ export async function POST(request: Request): Promise<Response> {
         // free — teachThroughDelivered left false, exactly like the burn it replaces.
         intent = 'teach_request';
         messageKind = 'teaching';
-        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', verbLevel, false, paper, true, grounding);
+        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, null, lastDiagnosis ?? '', verbLevel, false, paper, true, grounding);
       } else {
         // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
         // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
@@ -1158,7 +1182,7 @@ export async function POST(request: Request): Promise<Response> {
       messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper, distressed, grounding);
+      ezraResponse = await call3_teach(question, context, contextAttempt, null, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper, distressed, grounding);
       teachThroughDelivered = true;
     } else if (resolved) {
       // Item 4: a SOLVED drill never re-scaffolds from zero. Any non-reveal message post-solve
@@ -1187,8 +1211,14 @@ export async function POST(request: Request): Promise<Response> {
         messageKind = classified === 'question' ? 'answer'
                     : classified === 'confusion' ? 'coaching' : 'chat';
       } else {
-        // ── THE MOAT — existing withholding pipeline, unchanged ──
-        const diagnosis  = await call2_diagnose(question, context, student_message, modelAnswer, markScheme, grounding);
+        // ── THE MOAT — existing withholding pipeline ──
+        // FIX (2026-07-23): lastRealAttempt (the PRIOR turn's real attempt, read at §5b) is now
+        // threaded alongside student_message — previously this call saw only the current
+        // message, so a short follow-up on a genuine prior attempt was diagnosed as if nothing
+        // had been submitted at all. buildStudentAnswerBlock collapses to the old single-block
+        // form on turn 1 (lastRealAttempt is null) or an unchanged re-send — byte-identical to
+        // before this fix in both of those cases.
+        const diagnosis  = await call2_diagnose(question, context, student_message, lastRealAttempt, modelAnswer, markScheme, grounding);
 
         // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
         // verifies every required component was attempted. Runs ONLY when call2 says correct, so
@@ -1226,7 +1256,10 @@ export async function POST(request: Request): Promise<Response> {
             ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper, grounding);
             messageKind = 'hint';
           } else {
-            ezraResponse = await call3_teach(question, context, student_message, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper, distressed, grounding);
+            // FIX (2026-07-23): same threading as call2_diagnose above — the second-miss teach
+            // now sees the prior turn's real attempt alongside the current message, matching the
+            // pattern already used at the reveal/burn/fast-teach call sites.
+            ezraResponse = await call3_teach(question, context, student_message, lastRealAttempt, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper, distressed, grounding);
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }
