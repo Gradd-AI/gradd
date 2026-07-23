@@ -687,7 +687,7 @@ function buildFxHedgeUserPrompt(spec: AfmDrillSpec): string {
       ? `- DRILL TYPE: CURRENCY FUTURES (E2b, iii). A ${spec.region_hint} company has a foreign-currency ${noun} and hedges with exchange-traded currency futures. In raw_inputs supply: exposure (foreign millions), contract_size (foreign millions per contract — pick a size so exposure ÷ contract_size is NOT a round number, e.g. 40.4, so the whole-contract rounding is a real teaching point), spot0 (today's spot, quoted ${qdWords}), futures0 (today's futures price, same quote direction — should differ from spot0 by a modest basis), months_to_expiry (the futures' expiry, 4–8 months), months_to_transaction (when the exposure actually settles — STRICTLY LESS than months_to_expiry, so there is a real unexpired basis to compute)${spec.fx_residual_policy === 'forward_topup' ? ', topup_forward_rate (a forward rate for the un-hedged residual — the scenario must EXPLICITLY instruct the residual to be hedged on the forward, per Passmore Co\'s own wording: "unless instructed otherwise" the residual is immaterial, so this drill is the INSTRUCTED-OVERRIDE case)' : ' (do NOT supply topup_forward_rate — this drill uses the DEFAULT policy: the residual after whole-contract rounding is immaterial and is NOT separately hedged, per Passmore Co\'s own examiner wording)'}. Code owns the whole-contract count, the basis decay, the lock-in rate, and the final outcome — state NONE.
   - TEACHING POINT: the question must be answerable with a FULL SET OF INSTRUCTIONS — how many contracts, buy or sell, and the contract month — do not let context_text pre-state any of these.`
       : kind === 'options'
-      ? `- DRILL TYPE: CURRENCY OPTIONS (E2b, vi). A ${spec.region_hint} company has a foreign-currency ${noun} and hedges by BUYING traded currency options — a ${dir === 'receipt' ? 'PUT (the right to sell the foreign currency)' : 'CALL (the right to buy the foreign currency)'} — assumed EXERCISED (no gain/loss calculation is needed — state this explicitly in context_text, matching Passmore Co's own examiner note). NEVER describe this as "selling" options — selling/writing options is a different, higher-risk strategy, not the standard corporate hedge; the instruction is always "buy N ${dir === 'receipt' ? 'put' : 'call'} options". In raw_inputs supply: exposure (foreign millions), contract_size (foreign millions per contract — again NOT a round multiple of exposure), strike (quoted ${qdWords}), premium_pct (a DECIMAL FRACTION, ALL-IN for the option's whole life, e.g. 0.00285 for 0.285% — realistic option premiums are well under 1%; do NOT prorate by time, code applies it as a flat charge), premium_currency is fixed to '${spec.fx_premium_currency ?? 'foreign'}' by the drill design — state the premium in ${spec.fx_premium_currency === 'home' ? 'the HOME' : 'the SAME (foreign/quoted) currency the company is working with — and note in context_text that no further conversion is needed for it, matching Passmore Co\'s own examiner point'}, months_to_transaction (3–7, display only — the premium is NOT prorated by this). The premium is deducted/added AS PAID, undiscounted (no future-value step) — if you want to note its financing cost, do so QUALITATIVELY in interpretation_prose, never as a computed figure. Code owns the whole-contract count, the premium, and the net outcome — state NONE.`
+      ? `- DRILL TYPE: CURRENCY OPTIONS (E2b, vi). A ${spec.region_hint} company has a foreign-currency ${noun} and hedges by BUYING traded currency options — a ${dir === 'receipt' ? 'PUT (the right to sell the foreign currency)' : 'CALL (the right to buy the foreign currency)'} — assumed EXERCISED (no gain/loss calculation is needed — state this explicitly in context_text, matching Passmore Co's own examiner note). NEVER describe this as "selling" options — selling/writing options is a different, higher-risk strategy, not the standard corporate hedge; the instruction is always "buy N ${dir === 'receipt' ? 'put' : 'call'} options". In raw_inputs supply: exposure (foreign millions), contract_size (foreign millions per contract — again NOT a round multiple of exposure), strike (quoted ${qdWords}), spot (today's spot rate, same quote direction — REQUIRED even when premium_currency is home; used to convert the premium, never the strike), premium_pct (a DECIMAL FRACTION PER UNIT of contract size, ALL-IN for the option's whole life, e.g. 0.0048 — realistic option premiums are well under 1% of notional expressed this way; do NOT prorate by time, code applies it as a flat per-unit charge — and STATE IT in context_text as a per-unit rate, e.g. "premium JOD 0.0048 per USD 1 of contract size", NEVER as a bare percentage like "0.48%"), premium_currency is fixed to '${spec.fx_premium_currency ?? 'foreign'}' by the drill design — state the premium in ${spec.fx_premium_currency === 'home' ? 'the HOME' : 'the SAME (foreign/quoted) currency the company is working with — and note in context_text that no further conversion is needed for it, matching Passmore Co\'s own examiner point'}, months_to_transaction (3–7, display only — the premium is NOT prorated by this). The premium is deducted/added AS PAID, undiscounted (no future-value step) — if you want to note its financing cost, do so QUALITATIVELY in interpretation_prose, never as a computed figure. Code owns the whole-contract count, the premium, and the net outcome — state NONE.`
       : `- DRILL TYPE: CURRENCY SWAP (E2b, iv). A ${spec.region_hint} company has a foreign-currency ${noun} and is offered a currency swap that covers only PART of the exposure — the classic Mahoney Co teaching point ("the swap rate would only account for a proportion of the cash"). In raw_inputs supply: exposure (foreign millions), swap_fraction (a DECIMAL below 1, e.g. 0.65–0.8 — the swap does NOT cover the whole flow), swap_rate (quoted ${qdWords}), residual_forward_rate (a forward rate for the un-swapped residual — MUST differ from swap_rate so the residual's treatment is a genuine distinct step, not a copy). Code owns the swapped amount, the residual, and the total outcome — state NONE.`;
   return `Write one original ACCA AFM FX-hedging drill (kind: ${kind}).
 
@@ -727,13 +727,14 @@ and that is what raw_inputs.exposure must be; (3) that context_text never swaps 
 states the exposure amount using the currency_home code. A scenario that labels the exposure in
 currency_home is unusable — code will silently compute a nonsense conversion.
 
-CONVENTIONS — futures/options trade in WHOLE contracts only, rounded to the nearest whole number;
-the unexpired basis at the transaction date = basis₀ × (months remaining to expiry) ÷ (months to
-expiry from today), assumed to decline LINEARLY to zero by expiry; the lock-in rate = futures₀ +
-unexpired basis (co-founder-recomputed convention, 2026-07-22 — NOT spot₀ − unexpired basis); an
-option premium = premium% × contracts × contract size, ALL-IN for the option's life, NO time
-proration (unsourced for currency options — the documented fallback convention until a primary
-source is found); a swap may cover only a STATED PROPORTION of the flow, with the residual hedged
+CONVENTIONS (source-verified, ACCA P4/AFM technical articles + official answers — see
+docs/evidence/sources.json T1/T2/T3/S8/S9) — futures/options trade in WHOLE contracts only,
+rounded to the nearest whole number; the unexpired basis at the transaction date = basis₀ ×
+(months remaining to expiry) ÷ (months to expiry from today), assumed to decline LINEARLY to zero
+by expiry; the lock-in rate = futures₀ + unexpired basis (NOT spot₀ − unexpired basis); an option
+premium is a PER-UNIT rate × contracts × contract size, ALL-IN for the option's life, NO time
+proration, converted to the home currency at SPOT if quoted in a different currency (never at the
+strike, which prices exercise on a later date); a swap may cover only a STATED PROPORTION of the flow, with the residual hedged
 separately. An option hedge always BUYS (a put for a receipt, a call for a payment) — never sells.
 
 ${kindBlock}
@@ -1273,7 +1274,7 @@ const SUBMIT_FXHEDGE_SCENARIO_TOOL: Anthropic.Tool = {
           exposure: { type: 'number', description: 'The exposure amount, millions (positive), DENOMINATED IN currency_foreign — NEVER currency_home. In context_text you MUST label this figure with the currency_foreign code (e.g. "PEN 8.5 million"), never the currency_home code — labelling the exposure in the wrong currency is the single most common authoring error in this family.' },
           months: { type: 'number', description: 'K1 (forward+MMH) ONLY: months to the transaction/settlement date.' },
           forward_rate: { type: 'number', description: 'K1 ONLY: the forward rate for the period, STATED (never derived by the student in the sourced questions).' },
-          spot: { type: 'number', description: 'K1 ONLY: today\'s spot rate, in the DECLARED quote direction.' },
+          spot: { type: 'number', description: 'K1 and K3: today\'s spot rate, in the DECLARED quote direction. K3 uses this to convert the option premium to the home currency when premium_currency is foreign (never the strike — the premium is paid today, not at exercise) — supply it even when premium_currency is home (the field is always required).' },
           rate_foreign_borrow: { type: 'number', description: 'K1 ONLY: annual foreign-currency borrowing rate, % (e.g. 8 for 8%).' },
           rate_foreign_deposit: { type: 'number', description: 'K1 ONLY: annual foreign-currency deposit rate, %.' },
           rate_home_borrow: { type: 'number', description: 'K1 ONLY: annual home-currency borrowing rate, %.' },
@@ -1285,7 +1286,7 @@ const SUBMIT_FXHEDGE_SCENARIO_TOOL: Anthropic.Tool = {
           months_to_transaction: { type: 'number', description: 'K2/K3 ONLY: months from today to the transaction (close-out/settlement) date, ≤ months_to_expiry for K2.' },
           topup_forward_rate: { type: 'number', description: 'K2 ONLY, when told the residual is topped up on the forward: the forward rate for the residual leg.' },
           strike: { type: 'number', description: 'K3 ONLY: the option strike, in the declared quote direction.' },
-          premium_pct: { type: 'number', description: 'K3 ONLY: the option premium as a DECIMAL FRACTION of notional, ALL-IN for the option\'s whole life (e.g. 0.00285 for 0.285%) — NOT an annualised rate; do NOT suggest or imply a time-proration, code applies it as a flat per-unit charge.' },
+          premium_pct: { type: 'number', description: 'K3 ONLY: the option premium as a DECIMAL FRACTION PER UNIT of contract size, ALL-IN for the option\'s whole life (e.g. 0.0048 — state this in context_text as "premium X per unit", never as a bare percentage like "0.48%") — NOT an annualised rate; do NOT suggest or imply a time-proration, code applies it as a flat per-unit charge.' },
           swap_fraction: { type: 'number', description: 'K4 ONLY: share of the exposure covered by the swap, DECIMAL (0,1]. Use < 1 (Mahoney Co: "the swap rate would only account for a proportion of the cash") unless told to use 1.' },
           swap_rate: { type: 'number', description: 'K4 ONLY: the currency swap rate, in the declared quote direction.' },
           residual_forward_rate: { type: 'number', description: 'K4 ONLY, when swap_fraction < 1: the forward rate for the un-swapped residual.' },
@@ -2232,17 +2233,24 @@ async function draftFxHedgeOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: 
   }
   if (kind === 'options') {
     const premium_currency = spec.fx_premium_currency ?? 'foreign';
-    const ins: OptionsDrillInputs = { currency_home: home, currency_foreign: foreign, exposure: r.exposure, direction, quote_direction, contract_size: r.contract_size, strike: r.strike, premium_pct: r.premium_pct, premium_currency, months_to_transaction: r.months_to_transaction, residual_policy: 'immaterial' };
+    // FIX ROUND 2 (GPT adjudication, 2026-07-23): spot is now a required OptionsInputs field — the
+    // premium (when quoted in a currency other than home) converts at SPOT, never the strike.
+    const ins: OptionsDrillInputs = { currency_home: home, currency_foreign: foreign, exposure: r.exposure, direction, quote_direction, contract_size: r.contract_size, strike: r.strike, premium_pct: r.premium_pct, premium_currency, spot: r.spot, months_to_transaction: r.months_to_transaction, residual_policy: 'immaterial' };
     const c: OptionsComputed = computeOptionsHedge(ins);
     const { schema, serialized } = buildOptionsSchema(ins, c);
     const model_answer = buildOptionsModelAnswer(ins, c, inp.interpretation_prose);
+    const premiumLegCheck = premium_currency === 'foreign'
+      ? [currencyDirCheck(c.premium, r.spot, c.premium_home, 'buy', 'buy')] // premium leg: must use SPOT, not strike
+      : [];
     return { ...base, model_answer, answer_schema: serialized, _liveSchema: schema,
       _fxSummary: `${c.contracts} ${c.option_type} contracts (buy) premium=${fmt1(c.premium)} outcome=${money(home, c.home_settlement)}`,
       _fxPenalty: (Math.abs(r.exposure / r.contract_size - c.contracts) >= 0.1 ? 0 : 1) + (c.premium > 0 ? 0 : 1),
       _fxGate: {
         premiumCurrency: { premium_pct: r.premium_pct, contracts: c.contracts, contract_size: r.contract_size, premium: c.premium },
-        // an option hedge always BUYS — a put (receipt) or a call (payment); never 'sell' (FIX ROUND 1)
-        currencyDirection: [currencyDirCheck(c.hedged_amount, r.strike, c.home_from_strike, 'buy', 'buy')],
+        // an option hedge always BUYS — a put (receipt) or a call (payment); never 'sell' (FIX ROUND 1).
+        // The exercise leg (home_from_strike) legitimately uses the strike; the premium leg (when
+        // quoted in a foreign currency) must use spot instead (FIX ROUND 2) — checked separately.
+        currencyDirection: [currencyDirCheck(c.hedged_amount, r.strike, c.home_from_strike, 'buy', 'buy'), ...premiumLegCheck],
         quoteSentence,
       } };
   }

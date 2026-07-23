@@ -114,25 +114,28 @@ ok('futures: forward_topup residual reconciles to toHome(residual, topup_rate)',
 // ─────────────────────────── options — all-in premium (FIX ROUND 1, no time proration/FV) ───────────────────────────
 // FIX ROUND 1 (2026-07-22): premium = premium_pct × contracts × contract_size, ALL-IN — the
 // Abertafol-borrowed (months/12) proration was unsourced for currency options and is removed.
-// Premium is deducted as paid, NOT future-valued.
+// Premium is deducted as paid, NOT future-valued. spot DELIBERATELY DIFFERS from strike below (14.05
+// vs 14.10) — FIX ROUND 2 (2026-07-23): the premium leg must convert at SPOT, never the strike; using
+// distinct values makes this a genuine regression lock (the old strike-based bug would fail it).
 const opt = computeOptionsHedge({
   exposure: 30_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
-  contract_size: 500_000, strike: 14.10,
+  contract_size: 500_000, strike: 14.10, spot: 14.05,
   premium_pct: 0.00298, premium_currency: 'foreign', months_to_transaction: 3, residual_policy: 'immaterial',
 });
 ok('options: premium is all-in, no time proration (0.298% × 60 × $500,000 = 89,400)', approx(opt.premium, 89_400) && opt.contracts === 60);
 ok('options: option_type derives from exposure direction (receipt → put)', opt.option_type === 'put');
-ok('options: premium_home has NO future-value growth (deducted as paid)', approx(opt.premium_home, toHome(opt.premium, 14.10, 'foreign_per_home')));
+ok('options: premium_home has NO future-value growth (deducted as paid)', approx(opt.premium_home, toHome(opt.premium, 14.05, 'foreign_per_home')));
+ok('FIX ROUND 2: premium converts at SPOT (14.05), not the strike (14.10) — the exact GPT-adjudication regression lock', !approx(opt.premium_home, toHome(opt.premium, 14.10, 'foreign_per_home')));
 ok('options: a receipt nets the premium OFF the strike proceeds', opt.home_settlement < opt.home_from_strike);
 
 const optPayment = computeOptionsHedge({
   exposure: 30_000_000, direction: 'payment', quote_direction: 'foreign_per_home',
-  contract_size: 500_000, strike: 14.10,
+  contract_size: 500_000, strike: 14.10, spot: 14.05,
   premium_pct: 0.00298, premium_currency: 'home', months_to_transaction: 3, residual_policy: 'immaterial',
 });
 ok('options: option_type derives from exposure direction (payment → call)', optPayment.option_type === 'call');
 ok('options: a payment ADDS the premium to the strike cost', optPayment.home_settlement > optPayment.home_from_strike);
-ok('options: premium_currency=home skips the strike re-conversion (premium already home, no FV)', approx(optPayment.premium_home, optPayment.premium));
+ok('options: premium_currency=home skips ALL conversion — spot and strike both irrelevant (premium already home, no FV)', approx(optPayment.premium_home, optPayment.premium));
 
 // ─────────────────────────── swap — thin evidence (Mahoney J24 p.7), mechanism-only ───────────────────────────
 const swap = computeSwapHedge({ exposure: 5_000_000, direction: 'receipt', quote_direction: 'foreign_per_home', swap_fraction: 0.7, swap_rate: 14.0, residual_forward_rate: 14.15 });
@@ -221,7 +224,7 @@ ok('K2 futures: model answer prose uses the corrected lock-in formula wording', 
 
 const k3Inputs: OptionsDrillInputs = {
   currency_home: '$', currency_foreign: 'R', exposure: 30_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
-  contract_size: 500_000, strike: 14.10, premium_pct: 0.00298, premium_currency: 'foreign', months_to_transaction: 3, residual_policy: 'immaterial',
+  contract_size: 500_000, strike: 14.10, spot: 14.05, premium_pct: 0.00298, premium_currency: 'foreign', months_to_transaction: 3, residual_policy: 'immaterial',
 };
 const k3Computed = computeOptionsHedge(k3Inputs);
 const k3Schema = buildOptionsSchema(k3Inputs, k3Computed);
@@ -232,6 +235,8 @@ ok('K3 options: every schema figure appears in the model answer', figuresPresent
 // class this guards is the INSTRUMENT SIDE being described as "sell N options/contracts", never a
 // bare ban on the word "sell" (which legitimately appears describing what a put's right IS).
 ok('K3 options: model answer says "buy N put options", never "sell N options/contracts" (FIX ROUND 1)', /buy \*\*60 put options\*\*/.test(k3Answer) && !/sell \d+ (options|contracts)/i.test(k3Answer));
+ok('K3 options: model answer states the premium PER UNIT, never as a bare "%" (FIX ROUND 2)', k3Answer.includes('R 0.0030 per unit of contract size') && !/0\.298%|0\.30%/.test(k3Answer));
+ok('K3 options: model answer names spot (not strike) as the premium conversion rate (FIX ROUND 2)', k3Answer.includes("converted at today's spot 14.0500, not the strike"));
 
 const k3Payment: OptionsDrillInputs = { ...k3Inputs, direction: 'payment' };
 const k3PaymentComputed = computeOptionsHedge(k3Payment);
