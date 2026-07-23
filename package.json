@@ -18,6 +18,7 @@
     "calibrate-marking": "tsx --env-file=.env.local scripts/calibrate-marking.ts",
     "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts",
     "test:afm-tutor": "tsx scripts/test-afm-tutor.ts",
+    "test:phrase-match": "tsx scripts/test-phrase-match.ts",
     "test:npv": "tsx scripts/test-npv.ts",
     "test:apv": "tsx scripts/test-apv.ts",
     "test:capm": "tsx scripts/test-capm.ts",
