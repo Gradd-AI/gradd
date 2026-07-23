@@ -58,6 +58,7 @@ import {
   checkCurrencyDirectionIntegrity,
   checkPremiumCurrency,
   checkBestMethodVerdict,
+  checkQuoteSentencePresence,
   type ResidualPolicy,
   type QuoteDirection,
   type ExposureDirection,
@@ -66,7 +67,7 @@ import {
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -471,12 +472,15 @@ export function validateWholeContractIntegrity(exposure: number, contract_size: 
 export function validateBasisDecayReconciliation(spot0: number, futures0: number, months_to_expiry: number, months_to_transaction: number, unexpired_basis: number, lock_in_rate: number): ValidationResult {
   return riskResult('basis-decay', 'basis-not-linear-or-lock-in-mismatch', checkBasisDecayReconciliation(spot0, futures0, months_to_expiry, months_to_transaction, unexpired_basis, lock_in_rate));
 }
-export function validateCurrencyDirectionIntegrity(foreignAmt: number, rate: number, homeAmt: number, dir: QuoteDirection, direction: ExposureDirection, side: 'buy' | 'sell'): ValidationResult {
-  return riskResult('currency-direction', 'quote-direction-inversion', checkCurrencyDirectionIntegrity(foreignAmt, rate, homeAmt, dir, direction, side));
+export function validateCurrencyDirectionIntegrity(foreignAmt: number, rate: number, homeAmt: number, dir: QuoteDirection, direction: ExposureDirection, side: 'buy' | 'sell', expectedSide: 'buy' | 'sell'): ValidationResult {
+  return riskResult('currency-direction', 'quote-direction-inversion', checkCurrencyDirectionIntegrity(foreignAmt, rate, homeAmt, dir, direction, side, expectedSide));
 }
-export function validatePremiumCurrency(premium_pct: number, contracts: number, contract_size: number, months_covered: number, premium: number): ValidationResult {
-  return riskResult('premium-currency', 'premium-formula-or-conversion-mismatch', checkPremiumCurrency(premium_pct, contracts, contract_size, months_covered, premium));
+export function validatePremiumCurrency(premium_pct: number, contracts: number, contract_size: number, premium: number): ValidationResult {
+  return riskResult('premium-currency', 'premium-formula-or-conversion-mismatch', checkPremiumCurrency(premium_pct, contracts, contract_size, premium));
 }
 export function validateBestMethodVerdict(direction: ExposureDirection, results: HedgeMethodResult[], statedBestMethod: string, statedMargin: number): ValidationResult {
   return riskResult('best-method-verdict', 'recommendation-not-the-computed-best', checkBestMethodVerdict(direction, results, statedBestMethod, statedMargin));
+}
+export function validateQuoteSentencePresence(context_text: string, dir: QuoteDirection, foreign: string, home: string): ValidationResult {
+  return riskResult('quote-sentence', 'quote-sentence-not-code-generated', checkQuoteSentencePresence(context_text, dir, foreign, home));
 }

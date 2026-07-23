@@ -110,7 +110,7 @@ const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 // multi-million cash flows the floor was calibrated for).
 const moneyTol: Tolerance = { kind: 'relative', pct: 0.5 };
 // ABSOLUTE tolerance for a rate-shaped figure that is a SUM of a large given constant (spot0) and a
-// small graded/perturbable term (the basis adjustment) — e.g. lock_in_rate = spot0 − unexpired_basis.
+// small graded/perturbable term (the basis adjustment) — e.g. lock_in_rate = futures0 + unexpired_basis.
 // A relative band on the SUM barely moves when only the small term is perturbed (the large constant
 // dominates), so a genuine upstream error can hide inside a relative tolerance; a tight absolute band
 // bounds the deviation directly, regardless of which term contributed it. Matches house doctrine for
@@ -228,7 +228,19 @@ export interface FuturesComputed {
   residual: number;              // exposure − hedged_amount (foreign, signed)
   basis0: number;                // spot0 − futures0
   unexpired_basis: number;       // basis0 × (months remaining to expiry at the transaction date) / months_to_expiry
-  lock_in_rate: number;          // spot0 − unexpired_basis
+  lock_in_rate: number;          // futures0 + unexpired_basis (≡ spot0 − expired_basis) — FIX ROUND 1,
+                                  // 2026-07-22: co-founder independent recompute against Passmore Co's
+                                  // own worked lock-in figure found the engine had this one-sided (it
+                                  // computed spot0 − unexpired_basis = futures0 + EXPIRED_basis, the
+                                  // wrong route). The two forms are algebraically distinct in general;
+                                  // GATE 16 now cross-checks both routes so a future one-sided
+                                  // reimplementation can't silently recur. NOT independently re-verified
+                                  // against a fetched official-answer PDF this round — the SD25 sample-
+                                  // answers document could not be located publicly (searched; only the
+                                  // examiner's REPORT is public, and it carries no worked figures) — this
+                                  // fix rests on the co-founder's own recompute, per the project's
+                                  // established recompute-authority discipline, flagged honestly rather
+                                  // than claimed as source-verified.
   home_from_futures: number;     // hedged_amount converted at the lock-in rate
   home_from_residual: number;    // residual handled per residual_policy (0 if immaterial)
   home_settlement: number;       // home_from_futures + home_from_residual
@@ -244,7 +256,7 @@ export function computeFuturesHedge(raw: FuturesInputs): FuturesComputed {
   const basis0 = raw.spot0 - raw.futures0;
   const monthsRemainingAtTransaction = raw.months_to_expiry - raw.months_to_transaction;
   const unexpired_basis = basis0 * (monthsRemainingAtTransaction / raw.months_to_expiry);
-  const lock_in_rate = raw.spot0 - unexpired_basis;
+  const lock_in_rate = raw.futures0 + unexpired_basis;
   const home_from_futures = toHome(hedged_amount, lock_in_rate, raw.quote_direction);
   let home_from_residual = 0;
   if (raw.residual_policy === 'forward_topup') {
@@ -258,43 +270,63 @@ export function computeFuturesHedge(raw: FuturesInputs): FuturesComputed {
 // K3 — CURRENCY OPTIONS (whole contracts, premium in the quoted currency, assume exercised)
 // ═══════════════════════════════════════════════════════════════════════════════════════
 export type PremiumCurrency = 'home' | 'foreign';
+// An option HEDGE always BUYS an option — a put (the right to SELL the foreign currency) for a
+// receipt, a call (the right to BUY the foreign currency) for a payment. Never 'sell': writing/
+// selling an option is a different, higher-risk strategy, not the standard corporate hedge — this
+// is the "buy N put/call options" fix (FIX ROUND 1, 2026-07-22, co-founder recompute). Unlike
+// futures/forward/swap, options do NOT reuse instrumentSide()'s buy/sell — that helper describes
+// which way the underlying moves, not which side of an option contract a hedger takes.
+export type OptionType = 'put' | 'call';
+export function optionType(direction: ExposureDirection): OptionType {
+  return direction === 'receipt' ? 'put' : 'call';
+}
 export interface OptionsInputs {
   exposure: number; direction: ExposureDirection; quote_direction: QuoteDirection;
   contract_size: number; strike: number;
-  // premium as a DECIMAL fraction of notional (e.g. 0.00298 for Abertafol's "0.298%") — NOT run
-  // through asDec's >1-means-percent heuristic: option premiums are routinely sub-1-as-a-percent
-  // (0.298%), which asDec would misread as already-decimal (29.8%) and silently 100x the premium.
+  // premium as a DECIMAL fraction of notional (e.g. 0.00285), ALL-IN for the option's whole life —
+  // NOT prorated by months. FIX ROUND 1 (2026-07-22, co-founder recompute): the engine originally
+  // prorated by (months_covered/12), borrowing Abertafol Co's INTEREST-RATE-options formula
+  // ("0.298% x 60 x $500,000 x 3/12", D23 p.14) — but that proration is UNSOURCED for CURRENCY
+  // options (Abertafol is interest-rate-specific; no local currency-options source states or
+  // contradicts a proration). The SD25 sample-answers PDF that would settle it from Passmore Co's
+  // own worked figure could not be located publicly (searched; only the examiner's REPORT is
+  // public, and it carries no worked numbers) — per the project's unfetchable-source discipline,
+  // this is the documented FALLBACK: an all-in per-unit premium, no time-proration, a formula-free
+  // convention until a primary source is found. NOT run through asDec's >1-means-percent heuristic:
+  // option premiums are routinely sub-1-as-a-percent (0.285%), which asDec would misread as
+  // already-decimal (28.5%) and silently 100x the premium.
   premium_pct: number;
   premium_currency: PremiumCurrency; // the currency the premium is QUOTED in (no further conversion)
-  months_covered: number;        // the option's life used in the premium formula
-  months_to_transaction: number; // months to the settlement date — premium is FV'd to this date
-  compounding_rate: number;      // the home-currency rate used to FV the premium to settlement
+  months_to_transaction: number;     // months to the settlement date — display only, no longer feeds the premium
   residual_policy: ResidualPolicy;
   topup_forward_rate?: number;
 }
 export interface OptionsComputed {
-  side: 'buy' | 'sell';
+  option_type: OptionType;
   contracts: number; hedged_amount: number; residual: number;
   premium_per_contract_notional: number; // contract_size (the notional base the % is applied to)
   premium: number;                 // total premium, in premium_currency, at t0
-  premium_home_fv: number;         // premium future-valued to settlement, in HOME currency
+  premium_home: number;            // premium converted to HOME currency — NO time-value adjustment
+                                    // (FIX ROUND 1: the FV-to-settlement compounding was an authored,
+                                    // unsourced convention; the SD25 answer that would confirm or
+                                    // replace it is unfetchable, so per the documented fallback the
+                                    // premium is deducted as paid, undiscounted — the financing cost
+                                    // of paying it upfront is noted in PROSE, not computed)
   home_from_strike: number;        // hedged_amount converted at the strike (exercised)
   home_from_residual: number;
-  home_settlement: number;         // net of the FV'd premium (a receipt: minus cost; a payment: plus cost)
+  home_settlement: number;         // net of the premium (a receipt: minus cost; a payment: plus cost)
 }
 export function computeOptionsHedge(raw: OptionsInputs): OptionsComputed {
   if (!(raw.exposure > 0)) throw new Error(`exposure must be positive: ${raw.exposure}`);
   if (!(raw.contract_size > 0)) throw new Error(`contract_size must be positive`);
-  const side = instrumentSide(raw.direction);
+  const option_type = optionType(raw.direction);
   const contracts = Math.round(raw.exposure / raw.contract_size);
   const hedged_amount = contracts * raw.contract_size;
   const residual = raw.exposure - hedged_amount;
   const premium_per_contract_notional = raw.contract_size;
-  // Abertafol formula: premium (decimal fraction) × contracts covered × contract size × (months/12)
-  const premium = raw.premium_pct * contracts * raw.contract_size * (raw.months_covered / 12);
-  const premiumHome = raw.premium_currency === 'home' ? premium : toHome(premium, raw.strike, raw.quote_direction);
-  const t = raw.months_to_transaction / 12;
-  const premium_home_fv = premiumHome * (1 + asDec(raw.compounding_rate) * t);
+  // all-in per-unit premium × contracts covered × contract size — NO time proration (see interface note)
+  const premium = raw.premium_pct * contracts * raw.contract_size;
+  const premium_home = raw.premium_currency === 'home' ? premium : toHome(premium, raw.strike, raw.quote_direction);
   const home_from_strike = toHome(hedged_amount, raw.strike, raw.quote_direction);
   let home_from_residual = 0;
   if (raw.residual_policy === 'forward_topup') {
@@ -302,8 +334,8 @@ export function computeOptionsHedge(raw: OptionsInputs): OptionsComputed {
     home_from_residual = toHome(residual, raw.topup_forward_rate, raw.quote_direction);
   }
   // a receipt nets the premium cost off the proceeds; a payment adds the premium to the cost
-  const net = raw.direction === 'receipt' ? -premium_home_fv : premium_home_fv;
-  return { side, contracts, hedged_amount, residual, premium_per_contract_notional, premium, premium_home_fv, home_from_strike, home_from_residual, home_settlement: home_from_strike + home_from_residual + net };
+  const net = raw.direction === 'receipt' ? -premium_home : premium_home;
+  return { option_type, contracts, hedged_amount, residual, premium_per_contract_notional, premium, premium_home, home_from_strike, home_from_residual, home_settlement: home_from_strike + home_from_residual + net };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
@@ -386,40 +418,58 @@ export function checkWholeContractIntegrity(exposure: number, contract_size: num
 
 // GATE 16 — BASIS-DECAY RECONCILIATION. unexpired_basis must reconcile to basis0 scaled by the
 // (remaining months to expiry at the transaction date) / (months to expiry from today), and
-// lock_in_rate = spot0 − unexpired_basis. Motivated by Passmore SD25 p.13 ("basis declines
-// linearly to zero by the futures expiry date") and Abertafol D23 p.14 ("a separate unexpired
-// basis calculation was need for each" instrument).
+// lock_in_rate = futures0 + unexpired_basis (≡ spot0 − expired_basis). Motivated by Passmore SD25
+// p.13 ("basis declines linearly to zero by the futures expiry date") and Abertafol D23 p.14 ("a
+// separate unexpired basis calculation was need for each" instrument).
+//
+// TWO-ROUTE SELF-CHECK (FIX ROUND 1, 2026-07-22, co-founder recompute against Passmore Co's own
+// worked figure): the engine originally computed lock_in_rate = spot0 − unexpired_basis, which
+// algebraically equals futures0 + EXPIRED_basis — the WRONG route. The correct convention is
+// lock_in_rate = futures0 + unexpired_basis ≡ spot0 − expired_basis. Both correct forms are
+// checked here independently and cross-verified against each other (route A: futures0 +
+// unexpired_basis; route B: spot0 − expired_basis) — a future one-sided reimplementation (coding
+// only one route, or reverting to the old spot0−unexpired form) cannot silently pass, because
+// route A and route B are computed from DIFFERENT given constants (futures0 vs spot0) and only
+// agree when the lock-in formula itself is right.
 export function checkBasisDecayReconciliation(spot0: number, futures0: number, months_to_expiry: number, months_to_transaction: number, unexpired_basis: number, lock_in_rate: number): FxCheck {
   const basis0 = spot0 - futures0;
   const expectedUnexpired = basis0 * ((months_to_expiry - months_to_transaction) / months_to_expiry);
   if (Math.abs(unexpired_basis - expectedUnexpired) > Math.abs(basis0) * 0.001 + EPS) return { ok: false, reason: `unexpired basis ${fmt4(unexpired_basis)} ≠ basis0 ${fmt4(basis0)} × remaining/total months = ${fmt4(expectedUnexpired)} — basis must decline LINEARLY to zero at expiry` };
-  const expectedLockIn = spot0 - unexpired_basis;
-  if (Math.abs(lock_in_rate - expectedLockIn) > Math.abs(spot0) * 0.001 + EPS) return { ok: false, reason: `lock-in rate ${fmt4(lock_in_rate)} ≠ spot0 − unexpired basis = ${fmt4(expectedLockIn)}` };
+  const expired_basis = basis0 - unexpired_basis;
+  const routeA = futures0 + unexpired_basis;       // the correct convention
+  const routeB = spot0 - expired_basis;             // the algebraically-equivalent second route
+  if (Math.abs(routeA - routeB) > Math.abs(spot0) * 0.001 + EPS) return { ok: false, reason: `internal inconsistency: futures0 + unexpired basis (${fmt4(routeA)}) ≠ spot0 − expired basis (${fmt4(routeB)}) — these two routes to the lock-in rate must always agree algebraically; a formula was miscoded` };
+  if (Math.abs(lock_in_rate - routeA) > Math.abs(spot0) * 0.001 + EPS) return { ok: false, reason: `lock-in rate ${fmt4(lock_in_rate)} ≠ futures0 + unexpired basis = ${fmt4(routeA)} (NOT spot0 − unexpired basis, which is the one-sided error fixed 2026-07-22 — that computes futures0 + EXPIRED basis instead)` };
   return { ok: true };
 }
 
 // GATE 17 — CURRENCY-DIRECTION INTEGRITY. Every foreign↔home conversion must reconcile to the
-// drill's DECLARED quote_direction, and the instrument side (buy/sell, or the MMH borrow/deposit
-// leg selection) must match the exposure direction. Motivated by Passmore SD25 p.12 ("the R202m
-// was a receipt ... some candidates ... used the incorrect rate") and Northney SD24 p.5 ("not
-// stating whether ... bought or sold"). Catches BOTH the student-shaped error and the mirror-image
-// authoring error (Step-0 ruling item 1).
-export function checkCurrencyDirectionIntegrity(foreignAmt: number, rate: number, homeAmt: number, dir: QuoteDirection, direction: ExposureDirection, side: 'buy' | 'sell'): FxCheck {
+// drill's DECLARED quote_direction, and the instrument side must match the caller-supplied
+// EXPECTED side for this instrument type. Motivated by Passmore SD25 p.12 ("the R202m was a
+// receipt ... some candidates ... used the incorrect rate") and Northney SD24 p.5 ("not stating
+// whether ... bought or sold"). Catches BOTH the student-shaped error and the mirror-image
+// authoring error (Step-0 ruling item 1). `expectedSide` is CALLER-SUPPLIED, not derived
+// internally via instrumentSide() — futures/forward/swap pass instrumentSide(direction) (buy/sell
+// genuinely varies), but options ALWAYS pass 'buy' regardless of direction (FIX ROUND 1,
+// 2026-07-22: a hedge always BUYS an option — a put for a receipt, a call for a payment — never
+// 'sell'; the gate must not assume instrumentSide's convention applies to every instrument).
+export function checkCurrencyDirectionIntegrity(foreignAmt: number, rate: number, homeAmt: number, dir: QuoteDirection, direction: ExposureDirection, side: 'buy' | 'sell', expectedSide: 'buy' | 'sell'): FxCheck {
   const expectedHome = toHome(foreignAmt, rate, dir);
   if (Math.abs(homeAmt - expectedHome) > Math.abs(expectedHome) * 0.001 + EPS) return { ok: false, reason: `home amount ${fmt1(homeAmt)} ≠ foreign ${fmt1(foreignAmt)} converted per the declared quote_direction (${dir}) = ${fmt1(expectedHome)} — a direction inversion` };
-  const expectedSide = instrumentSide(direction);
-  if (side !== expectedSide) return { ok: false, reason: `instrument side is '${side}' but a '${direction}' exposure must ${expectedSide.toUpperCase()} the foreign currency` };
+  if (side !== expectedSide) return { ok: false, reason: `instrument side is '${side}' but a '${direction}' exposure must ${expectedSide.toUpperCase()} here` };
   return { ok: true };
 }
 
 // GATE 18 — PREMIUM-CURRENCY CHECK. The stated premium must equal premium_pct × contracts ×
-// contract_size × (months_covered/12), and — when premium_currency is 'home' — must NOT be
-// silently re-converted before FV-ing to settlement. Motivated by Passmore SD25 p.13 ("the option
-// premium was given in dollars ... they attempted a further currency conversion that was not
-// required") and Abertafol D23 p.14 (the premium formula itself).
-export function checkPremiumCurrency(premium_pct: number, contracts: number, contract_size: number, months_covered: number, premium: number): FxCheck {
-  const expected = premium_pct * contracts * contract_size * (months_covered / 12);
-  if (Math.abs(premium - expected) > Math.abs(expected) * 0.001 + EPS) return { ok: false, reason: `premium ${fmt1(premium)} ≠ premium% × contracts × contract size × months/12 = ${fmt1(expected)} — check for a needless extra currency conversion` };
+// contract_size — an ALL-IN per-unit premium, NO time proration (FIX ROUND 1, 2026-07-22: the
+// (months/12) proration was an unsourced import from Abertafol Co's interest-rate-options formula;
+// the SD25 currency-options source that would confirm or replace it is unfetchable, so this is the
+// documented fallback convention). And — when premium_currency is 'home' — the premium must NOT be
+// silently re-converted. Motivated by Passmore SD25 p.13 ("the option premium was given in dollars
+// ... they attempted a further currency conversion that was not required").
+export function checkPremiumCurrency(premium_pct: number, contracts: number, contract_size: number, premium: number): FxCheck {
+  const expected = premium_pct * contracts * contract_size;
+  if (Math.abs(premium - expected) > Math.abs(expected) * 0.001 + EPS) return { ok: false, reason: `premium ${fmt1(premium)} ≠ premium% × contracts × contract size (all-in, no proration) = ${fmt1(expected)} — check for a needless extra currency conversion or a stray time-proration factor` };
   return { ok: true };
 }
 
@@ -431,6 +481,28 @@ export function checkBestMethodVerdict(direction: ExposureDirection, results: He
   const c = compareHedgeMethods(direction, results);
   if (statedBestMethod !== c.best.method) return { ok: false, reason: `recommended method '${statedBestMethod}' ≠ the computed best ('${c.best.method}', ${fmt1(c.best.home_settlement)}) for a ${direction}` };
   if (Math.abs(statedMargin - c.margin) > Math.abs(c.margin) * 0.001 + EPS) return { ok: false, reason: `stated margin ${fmt1(statedMargin)} ≠ computed margin ${fmt1(c.margin)} between the best and second-best method` };
+  return { ok: true };
+}
+
+// GATE 17b — QUOTE-SENTENCE STRUCTURAL INTEGRITY (FIX ROUND 1, 2026-07-22, co-founder recompute).
+// The live K4 batch drill's prose described the quote as home-per-foreign while the drill's actual
+// `quote_direction` parameter was foreign-per-home — a parameter↔prose inversion no earlier gate
+// caught, because GATE 17 only checks that COMPUTED conversions reconcile to the parameter, not
+// that the SCENARIO PROSE describes the same direction the parameter uses. Fix is structural, not
+// a detection-only gate: `quoteDirectionSentence` below is the ONE canonical, code-generated
+// sentence for a given (quote_direction, foreign, home) triple; the generator INJECTS it into
+// context_text via a placeholder token rather than letting the model author it freely, so a
+// mismatch becomes impossible by construction. This gate is the regression lock — it verifies the
+// canonical sentence is actually present verbatim, catching an injection-mechanism bug (e.g. a
+// missing placeholder) that would otherwise let a model-authored, possibly-wrong sentence stand.
+export function quoteDirectionSentence(dir: QuoteDirection, foreign: string, home: string): string {
+  return dir === 'foreign_per_home'
+    ? `All exchange rates are quoted as ${foreign} per ${home} 1 (i.e. ${foreign} per 1 unit of ${home}).`
+    : `All exchange rates are quoted as ${home} per ${foreign} 1 (i.e. ${home} per 1 unit of ${foreign}).`;
+}
+export function checkQuoteSentencePresence(context_text: string, dir: QuoteDirection, foreign: string, home: string): FxCheck {
+  const expected = quoteDirectionSentence(dir, foreign, home);
+  if (!context_text.includes(expected)) return { ok: false, reason: `context_text does not contain the canonical quote-direction sentence for ${dir} (expected verbatim: "${expected}") — the generator's placeholder injection did not run, or the sentence was altered after injection` };
   return { ok: true };
 }
 
@@ -538,8 +610,8 @@ export function buildFuturesSchema(raw: FuturesDrillInputs, c: FuturesComputed):
     { component_id: 'unexpired_basis', label: 'Unexpired basis at the transaction date', expected_value: c.unexpired_basis, unit: 'rate', tolerance: rateTol,
       working_steps: [`basis₀ = spot₀ ${fmt4(raw.spot0)} − futures₀ ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; unexpired = basis₀ × (${raw.months_to_expiry - raw.months_to_transaction})/${raw.months_to_expiry} months remaining/total`] },
     { component_id: 'lock_in_rate', label: 'Lock-in rate', expected_value: c.lock_in_rate, unit: 'rate', tolerance: rateTol,
-      depends_on: ['unexpired_basis'], recompute: (d) => raw.spot0 - d.unexpired_basis,
-      working_steps: [`= spot₀ ${fmt4(raw.spot0)} − unexpired basis`] },
+      depends_on: ['unexpired_basis'], recompute: (d) => raw.futures0 + d.unexpired_basis,
+      working_steps: [`= futures₀ ${fmt4(raw.futures0)} + unexpired basis`] },
     { component_id: 'home_from_futures', label: `${home} outcome from the futures hedge`, expected_value: c.home_from_futures, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['contracts', 'lock_in_rate'], recompute: (d) => toHome(d.contracts * raw.contract_size, d.lock_in_rate, raw.quote_direction),
       working_steps: [`= hedged amount (contracts × contract size) converted at the lock-in rate`] },
@@ -563,7 +635,7 @@ export function buildFuturesModelAnswer(raw: FuturesDrillInputs, c: FuturesCompu
     '**FX hedging — currency futures**', '',
     `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; futures of contract size ${fmt1(raw.contract_size)} expire in ${raw.months_to_expiry} months, spot₀ ${fmt4(raw.spot0)}, futures₀ ${fmt4(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
     '**Step 1 — Number of contracts (whole contracts only)**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → rounds to **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}), hedging ${fmt1(c.hedged_amount)}; residual ${fmt1(c.residual)} ${raw.residual_policy === 'immaterial' ? 'is immaterial and not separately hedged' : 'is topped up on the forward'}.`, '',
-    '**Step 2 — Basis and the lock-in rate**', '', `Basis₀ = ${fmt4(raw.spot0)} − ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; assumed to decline linearly to zero by expiry, so the unexpired basis at the transaction date = ${fmt4(c.unexpired_basis)}. Lock-in rate = ${fmt4(raw.spot0)} − ${fmt4(c.unexpired_basis)} = **${fmt4(c.lock_in_rate)}**.`, '',
+    '**Step 2 — Basis and the lock-in rate**', '', `Basis₀ = ${fmt4(raw.spot0)} − ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; assumed to decline linearly to zero by expiry, so the unexpired basis at the transaction date = ${fmt4(c.unexpired_basis)}. Lock-in rate = futures₀ ${fmt4(raw.futures0)} + unexpired basis ${fmt4(c.unexpired_basis)} = **${fmt4(c.lock_in_rate)}**.`, '',
     '**Step 3 — Outcome**', '', `${fmt1(c.hedged_amount)} at the lock-in rate = ${mH(c.home_from_futures)}${raw.residual_policy === 'forward_topup' ? ` + residual on the forward ${mH(c.home_from_residual)}` : ''} = **${mH(c.home_settlement)}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
     `*Reconciliation: ${c.contracts} contracts × ${fmt1(raw.contract_size)} = ${fmt1(c.hedged_amount)}; at lock-in ${fmt4(c.lock_in_rate)} → ${mH(c.home_settlement)} ✓*`,
@@ -581,21 +653,21 @@ export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed):
     { component_id: 'contracts', label: 'Number of option contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
       working_steps: [`= round(${foreign} ${fmt1(raw.exposure)} ÷ contract size ${fmt1(raw.contract_size)}) — whole contracts only`] },
     { component_id: 'premium', label: `Total premium (${raw.premium_currency})`, expected_value: c.premium, unit: premiumUnit, tolerance: premiumTol,
-      depends_on: ['contracts'], recompute: (d) => raw.premium_pct * d.contracts * raw.contract_size * (raw.months_covered / 12),
-      working_steps: [`= premium ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} contracts × ${fmt1(raw.contract_size)} × ${raw.months_covered}/12`] },
-    { component_id: 'premium_home_fv', label: `Premium, future-valued to settlement (${home})`, expected_value: c.premium_home_fv, unit: homeUnit, tolerance: premiumTol,
-      depends_on: ['premium'], recompute: (d) => (raw.premium_currency === 'home' ? d.premium : toHome(d.premium, raw.strike, raw.quote_direction)) * (1 + asDec(raw.compounding_rate) * (raw.months_to_transaction / 12)),
-      working_steps: [`= premium${raw.premium_currency === 'foreign' ? ` converted at the strike ${fmt4(raw.strike)}` : ' (already home currency, no further conversion)'}, grown at ${raw.compounding_rate}% for ${raw.months_to_transaction} months`] },
+      depends_on: ['contracts'], recompute: (d) => raw.premium_pct * d.contracts * raw.contract_size,
+      working_steps: [`= premium ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} contracts × ${fmt1(raw.contract_size)} (all-in, no time proration)`] },
+    { component_id: 'premium_home', label: `Premium, converted to ${home} (no time-value adjustment)`, expected_value: c.premium_home, unit: homeUnit, tolerance: premiumTol,
+      depends_on: ['premium'], recompute: (d) => (raw.premium_currency === 'home' ? d.premium : toHome(d.premium, raw.strike, raw.quote_direction)),
+      working_steps: [`= premium${raw.premium_currency === 'foreign' ? ` converted at the strike ${fmt4(raw.strike)}` : ' (already home currency, no further conversion)'} — deducted as paid, not future-valued`] },
     { component_id: 'home_from_strike', label: `${home} outcome if exercised (at the strike)`, expected_value: c.home_from_strike, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['contracts'], recompute: (d) => toHome(d.contracts * raw.contract_size, raw.strike, raw.quote_direction),
       working_steps: [`= hedged amount converted at the strike ${fmt4(raw.strike)} (assume exercised)`] },
   ];
   comps.push({ component_id: 'home_settlement', label: `Net ${home} outcome`, expected_value: c.home_settlement, unit: homeUnit, tolerance: moneyTol,
-    depends_on: ['home_from_strike', 'premium_home_fv'],
-    recompute: (d) => d.home_from_strike + (raw.direction === 'receipt' ? -d.premium_home_fv : d.premium_home_fv),
-    working_steps: [`= strike proceeds ${raw.direction === 'receipt' ? '− the FV premium (cost)' : '+ the FV premium (cost)'}`] });
-  const recomputeIds: Record<string, string | undefined> = { premium: 'fxh_option_premium', premium_home_fv: 'fxh_premium_fv', home_from_strike: 'fxh_strike_convert', home_settlement: 'fxh_option_net' };
-  const params = { exposure: raw.exposure, contract_size: raw.contract_size, strike: raw.strike, premium_pct: raw.premium_pct, months_covered: raw.months_covered, months_to_transaction: raw.months_to_transaction, compounding_rate: raw.compounding_rate };
+    depends_on: ['home_from_strike', 'premium_home'],
+    recompute: (d) => d.home_from_strike + (raw.direction === 'receipt' ? -d.premium_home : d.premium_home),
+    working_steps: [`= strike proceeds ${raw.direction === 'receipt' ? '− the premium (cost)' : '+ the premium (cost)'}`] });
+  const recomputeIds: Record<string, string | undefined> = { premium: 'fxh_option_premium', premium_home: 'fxh_premium_convert', home_from_strike: 'fxh_strike_convert', home_settlement: 'fxh_option_net' };
+  const params = { exposure: raw.exposure, contract_size: raw.contract_size, strike: raw.strike, premium_pct: raw.premium_pct, months_to_transaction: raw.months_to_transaction };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 export function buildOptionsModelAnswer(raw: OptionsDrillInputs, c: OptionsComputed, prose: string): string {
@@ -606,15 +678,17 @@ export function buildOptionsModelAnswer(raw: OptionsDrillInputs, c: OptionsCompu
   // convention for other naturally-small computed stats, e.g. BSOP's d1/d2/N(d)).
   const money4 = (currency: string, n: number) => `${currency} ${fmt4(n)}m`;
   const premiumStr = money4(raw.premium_currency === 'home' ? home : foreign, c.premium);
-  const premiumFvStr = money4(home, c.premium_home_fv);
+  const premiumHomeStr = money4(home, c.premium_home);
+  const otWord = c.option_type === 'put' ? 'put' : 'call';
+  const otRight = c.option_type === 'put' ? `the right to SELL ${foreign}` : `the right to BUY ${foreign}`;
   return [
     '**FX hedging — currency options**', '',
-    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${(raw.premium_pct * 100).toFixed(3)}% quoted in ${raw.premium_currency === 'home' ? home : foreign}. A ${raw.direction} must **${c.side.toUpperCase()}** the options. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
-    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}). Premium = ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} × ${fmt1(raw.contract_size)} × ${raw.months_covered}/12 = **${premiumStr}**${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${(raw.premium_pct * 100).toFixed(3)}% (all-in, quoted in ${raw.premium_currency === 'home' ? home : foreign}). A ${raw.direction} is hedged by **BUYING ${otWord} options** (${otRight}) — never by selling/writing options, which is a different strategy. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
+    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → buy **${c.contracts} ${otWord} options** (${c.contracts.toFixed(1)} contracts). Premium = ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} × ${fmt1(raw.contract_size)} = **${premiumStr}** (all-in for the option's life, no time proration)${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
     '**Step 2 — Exercise outcome**', '', `${fmt1(c.hedged_amount)} at the strike ${fmt4(raw.strike)} = ${mH(c.home_from_strike)}.`, '',
-    '**Step 3 — Net of the premium**', '', `Premium future-valued to settlement = ${premiumFvStr}; ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
+    '**Step 3 — Net of the premium**', '', `Premium = ${premiumHomeStr}, deducted as paid at the outset (not future-valued — paying it upfront has a real financing cost, addressed below rather than computed into the figure); ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
-    `*Reconciliation: strike outcome ${mH(c.home_from_strike)} ${raw.direction === 'receipt' ? '−' : '+'} premium FV ${premiumFvStr} = ${mH(c.home_settlement)} ✓*`,
+    `*Reconciliation: strike outcome ${mH(c.home_from_strike)} ${raw.direction === 'receipt' ? '−' : '+'} premium ${premiumHomeStr} = ${mH(c.home_settlement)} ✓*`,
   ].join('\n');
 }
 
