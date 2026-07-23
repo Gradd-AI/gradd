@@ -1,15 +1,20 @@
 // scripts/test-fxhedge.ts
-// Fixtures for the AFM FX-hedging family (lib/acca/fxhedge.ts, calculator #11, Phase 1: engine +
-// gates). Pure — no env/DB/model. Exit 1 on any mismatch.
+// Fixtures for the AFM FX-hedging family (lib/acca/fxhedge.ts, calculator #11). Pure — no env/DB/model.
+// Exit 1 on any mismatch.
 //
 // Where possible, fixtures reproduce the ACTUAL sourced worked numbers (Step-0 evidence, ruled
 // 2026-07-22) so the engine is checked against real ACCA figures, not just internal consistency:
 //   - Money-market hedge (receipt): SD2019 Okan Co official answer, Appendix 1, printed p.16.
-//   - Option premium formula: Abertafol Co (D23), printed p.14 ("0.298% x 60 x $500,000 x 3/12").
-// Futures/swap fixtures are synthetic (mechanism-only) — no local source gives a full numeric
-// futures/swap worked example with every input reproducible from the citation alone.
+// Futures/options/swap fixtures are synthetic (mechanism-only) — no local source gives a full
+// numeric worked example with every input reproducible from the citation alone. FIX ROUND 1
+// (2026-07-22, co-founder recompute): the SD25 sample-answers PDF that would settle the K2 lock-in
+// direction and the K3 premium/FV conventions from Passmore Co's own worked figures could not be
+// located publicly (searched multiple ways; only the examiner's REPORT is public, and it carries
+// no worked numbers) — the K2 fix is applied on the co-founder's own independent-recompute
+// authority (the established mechanism in this project); the K3 fix uses Grant's documented
+// fallback convention. Neither is claimed here as independently source-verified.
 import {
-  toHome, toForeign, instrumentSide,
+  toHome, toForeign, instrumentSide, optionType,
   computeForwardHedge, deriveIrpForwardRate,
   computeMoneyMarketHedge,
   computeFuturesHedge,
@@ -17,7 +22,7 @@ import {
   computeSwapHedge,
   compareHedgeMethods,
   checkWholeContractIntegrity, checkBasisDecayReconciliation, checkCurrencyDirectionIntegrity,
-  checkPremiumCurrency, checkBestMethodVerdict,
+  checkPremiumCurrency, checkBestMethodVerdict, checkQuoteSentencePresence, quoteDirectionSentence,
   computeForwardMmhCompare, buildForwardMmhCompareSchema, buildForwardMmhCompareModelAnswer,
   buildFuturesSchema, buildFuturesModelAnswer,
   buildOptionsSchema, buildOptionsModelAnswer,
@@ -26,7 +31,7 @@ import {
 } from '../lib/acca/fxhedge';
 import {
   validateWholeContractIntegrity, validateBasisDecayReconciliation, validateCurrencyDirectionIntegrity,
-  validatePremiumCurrency, validateBestMethodVerdict, validateSchemaSelfConsistency,
+  validatePremiumCurrency, validateBestMethodVerdict, validateQuoteSentencePresence, validateSchemaSelfConsistency,
 } from '../lib/acca/validate-schema';
 import type { AnswerSchema } from '../lib/acca/numeric-verifier';
 
@@ -48,6 +53,8 @@ ok('home_per_foreign: toHome multiplies', approx(toHome(1000, 2.521, 'home_per_f
 ok('home_per_foreign: toForeign divides', approx(toForeign(100, 2.521, 'home_per_foreign'), 100 / 2.521));
 ok('instrumentSide: a receipt must SELL the foreign currency', instrumentSide('receipt') === 'sell');
 ok('instrumentSide: a payment must BUY the foreign currency', instrumentSide('payment') === 'buy');
+ok('optionType: a receipt is hedged with a PUT', optionType('receipt') === 'put');
+ok('optionType: a payment is hedged with a CALL', optionType('payment') === 'call');
 
 // ─────────────────────────── forward (stated rate — the sourced convention) ───────────────────────────
 const fwd = computeForwardHedge({ exposure: 202, direction: 'receipt', forward_rate: 14.2, quote_direction: 'foreign_per_home' });
@@ -79,6 +86,8 @@ ok('MMH payment: foreign deposited now grows to exactly the payable', approx(mmh
 ok('MMH payment: home funding leg grows at the home borrowing rate to settlement', approx(mmhPayment.home_settlement, mmhPayment.home_now * (1 + 0.06 * 0.25)));
 
 // ─────────────────────────── futures — whole contracts + linear basis decay (mechanism-only) ───────────────────────────
+// FIX ROUND 1 (2026-07-22): lock-in rate = futures0 + unexpired_basis (NOT spot0 - unexpired_basis,
+// the one-sided error co-founder recompute found against Passmore Co's own worked figure).
 const fut = computeFuturesHedge({
   exposure: 2_020_000, direction: 'receipt', quote_direction: 'foreign_per_home',
   contract_size: 50_000, spot0: 14.20, futures0: 14.05,
@@ -89,7 +98,8 @@ ok('futures: side derives from exposure direction', fut.side === 'sell');
 ok('futures: contracts is a whole number = round(exposure/contract_size)', fut.contracts === Math.round(2_020_000 / 50_000) && Number.isInteger(fut.contracts));
 ok('futures: basis0 = spot0 − futures0', approx(fut.basis0, 0.15));
 ok('futures: unexpired basis decays linearly (half the life remaining → half the basis)', approx(fut.unexpired_basis, 0.15 * 0.5));
-ok('futures: lock-in rate = spot0 − unexpired basis', approx(fut.lock_in_rate, 14.20 - fut.unexpired_basis));
+ok('futures: lock-in rate = futures0 + unexpired basis (FIX ROUND 1)', approx(fut.lock_in_rate, 14.05 + fut.unexpired_basis));
+ok('futures: lock-in rate ALSO equals spot0 − expired basis (the two-route identity)', approx(fut.lock_in_rate, 14.20 - (fut.basis0 - fut.unexpired_basis)));
 ok('futures: residual carries no home value under the immaterial policy', fut.home_from_residual === 0);
 
 const futTopup = computeFuturesHedge({
@@ -101,27 +111,28 @@ const futTopup = computeFuturesHedge({
 ok('futures: forward_topup policy converts the residual at the stated topup rate', futTopup.residual !== 0 && futTopup.home_from_residual !== 0);
 ok('futures: forward_topup residual reconciles to toHome(residual, topup_rate)', approx(futTopup.home_from_residual, futTopup.residual / 14.10));
 
-// ─────────────────────────── options — premium formula reproducing Abertafol Co (D23, p.14) ───────────────────────────
-// "0.298% x 60 x $500,000 x 3/12" = 22,350 (premium currency = the notional's own currency here).
+// ─────────────────────────── options — all-in premium (FIX ROUND 1, no time proration/FV) ───────────────────────────
+// FIX ROUND 1 (2026-07-22): premium = premium_pct × contracts × contract_size, ALL-IN — the
+// Abertafol-borrowed (months/12) proration was unsourced for currency options and is removed.
+// Premium is deducted as paid, NOT future-valued.
 const opt = computeOptionsHedge({
   exposure: 30_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
   contract_size: 500_000, strike: 14.10,
-  premium_pct: 0.00298, premium_currency: 'foreign', months_covered: 3, months_to_transaction: 3,
-  compounding_rate: 5, residual_policy: 'immaterial',
+  premium_pct: 0.00298, premium_currency: 'foreign', months_to_transaction: 3, residual_policy: 'immaterial',
 });
-ok('options: premium reproduces the Abertafol formula (0.298% × 60 × $500,000 × 3/12 = 22,350)', approx(opt.premium, 22_350) && opt.contracts === 60);
-ok('options: side derives from exposure direction', opt.side === 'sell');
-ok('options: FV premium ≥ the raw premium (positive compounding rate)', opt.premium_home_fv >= toHome(opt.premium, 14.10, 'foreign_per_home') - 1e-6);
-ok('options: a receipt nets the FV premium OFF the strike proceeds', opt.home_settlement < opt.home_from_strike);
+ok('options: premium is all-in, no time proration (0.298% × 60 × $500,000 = 89,400)', approx(opt.premium, 89_400) && opt.contracts === 60);
+ok('options: option_type derives from exposure direction (receipt → put)', opt.option_type === 'put');
+ok('options: premium_home has NO future-value growth (deducted as paid)', approx(opt.premium_home, toHome(opt.premium, 14.10, 'foreign_per_home')));
+ok('options: a receipt nets the premium OFF the strike proceeds', opt.home_settlement < opt.home_from_strike);
 
 const optPayment = computeOptionsHedge({
   exposure: 30_000_000, direction: 'payment', quote_direction: 'foreign_per_home',
   contract_size: 500_000, strike: 14.10,
-  premium_pct: 0.00298, premium_currency: 'home', months_covered: 3, months_to_transaction: 3,
-  compounding_rate: 5, residual_policy: 'immaterial',
+  premium_pct: 0.00298, premium_currency: 'home', months_to_transaction: 3, residual_policy: 'immaterial',
 });
-ok('options: a payment ADDS the FV premium to the strike cost', optPayment.home_settlement > optPayment.home_from_strike);
-ok('options: premium_currency=home skips the strike re-conversion (premium already home)', approx(optPayment.premium_home_fv, optPayment.premium * (1 + 0.05 * 0.25)));
+ok('options: option_type derives from exposure direction (payment → call)', optPayment.option_type === 'call');
+ok('options: a payment ADDS the premium to the strike cost', optPayment.home_settlement > optPayment.home_from_strike);
+ok('options: premium_currency=home skips the strike re-conversion (premium already home, no FV)', approx(optPayment.premium_home, optPayment.premium));
 
 // ─────────────────────────── swap — thin evidence (Mahoney J24 p.7), mechanism-only ───────────────────────────
 const swap = computeSwapHedge({ exposure: 5_000_000, direction: 'receipt', quote_direction: 'foreign_per_home', swap_fraction: 0.7, swap_rate: 14.0, residual_forward_rate: 14.15 });
@@ -141,31 +152,47 @@ const cmpPayment = compareHedgeMethods('payment', [
 ok('comparison: a payment picks the LOWEST home cost', cmpPayment.best.method === 'mmh' && approx(cmpPayment.margin, 5));
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
-// GATES 15–19 — pass on coherent inputs, FAIL on seeded violations
+// GATES 15–19 + 17b — pass on coherent inputs, FAIL on seeded violations
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // GATE 15 — whole-contract integrity
 ok('GATE15 passes on the real futures fixture', validateWholeContractIntegrity(2_020_000, 50_000, fut.contracts, fut.residual, 'immaterial', fut.home_from_residual).ok);
 ok('GATE15 FAILS on a fractional contract count', !checkWholeContractIntegrity(2_020_000, 50_000, 40.4, fut.residual, 'immaterial', 0).ok);
 ok('GATE15 FAILS when an immaterial residual still carries home value', !checkWholeContractIntegrity(2_020_000, 50_000, fut.contracts, fut.residual, 'immaterial', 500).ok);
 
-// GATE 16 — basis-decay reconciliation
-ok('GATE16 passes on the real futures fixture', validateBasisDecayReconciliation(14.20, 14.05, 6, 3, fut.unexpired_basis, fut.lock_in_rate).ok);
-ok('GATE16 FAILS on a non-linear (asserted) basis figure', !checkBasisDecayReconciliation(14.20, 14.05, 6, 3, 0.15, 14.20 - 0.15).ok);
+// GATE 16 — basis-decay reconciliation + the two-route self-check (FIX ROUND 1)
+ok('GATE16 passes on the real futures fixture (corrected formula)', validateBasisDecayReconciliation(14.20, 14.05, 6, 3, fut.unexpired_basis, fut.lock_in_rate).ok);
+ok('GATE16 FAILS on a non-linear (asserted) basis figure', !checkBasisDecayReconciliation(14.20, 14.05, 6, 3, 0.15, 14.05 + 0.15).ok);
+// The elapsed/remaining split must be ASYMMETRIC (3 of 6 months is symmetric — old and new formulas
+// coincide there) for the old-vs-new formula distinction to actually bite: 2 of 5 months remaining.
+const asymUnexpired = (14.20 - 14.05) * (2 / 5);
+ok('GATE16 FAILS on the OLD (one-sided) formula spot0 − unexpired_basis — the exact FIX ROUND 1 regression', !checkBasisDecayReconciliation(14.20, 14.05, 5, 3, asymUnexpired, 14.20 - asymUnexpired).ok);
+ok('GATE16 passes on the corrected formula with the same asymmetric split', checkBasisDecayReconciliation(14.20, 14.05, 5, 3, asymUnexpired, 14.05 + asymUnexpired).ok);
 
 // GATE 17 — currency-direction integrity (catches an inversion, both quote directions)
-ok('GATE17 passes on a correct foreign_per_home conversion', validateCurrencyDirectionIntegrity(202, 14.2, 202 / 14.2, 'foreign_per_home', 'receipt', 'sell').ok);
-ok('GATE17 FAILS on an inverted foreign_per_home conversion (× instead of ÷)', !checkCurrencyDirectionIntegrity(202, 14.2, 202 * 14.2, 'foreign_per_home', 'receipt', 'sell').ok);
-ok('GATE17 FAILS when the instrument side contradicts the exposure direction', !checkCurrencyDirectionIntegrity(202, 14.2, 202 / 14.2, 'foreign_per_home', 'receipt', 'buy').ok);
-ok('GATE17 passes on a correct home_per_foreign conversion', validateCurrencyDirectionIntegrity(10_000_000, 2.521, 10_000_000 * 2.521, 'home_per_foreign', 'payment', 'buy').ok);
+ok('GATE17 passes on a correct foreign_per_home conversion', validateCurrencyDirectionIntegrity(202, 14.2, 202 / 14.2, 'foreign_per_home', 'receipt', 'sell', 'sell').ok);
+ok('GATE17 FAILS on an inverted foreign_per_home conversion (× instead of ÷)', !checkCurrencyDirectionIntegrity(202, 14.2, 202 * 14.2, 'foreign_per_home', 'receipt', 'sell', 'sell').ok);
+ok('GATE17 FAILS when the instrument side contradicts the expected side', !checkCurrencyDirectionIntegrity(202, 14.2, 202 / 14.2, 'foreign_per_home', 'receipt', 'sell', 'buy').ok);
+ok('GATE17 passes on a correct home_per_foreign conversion', validateCurrencyDirectionIntegrity(10_000_000, 2.521, 10_000_000 * 2.521, 'home_per_foreign', 'payment', 'buy', 'buy').ok);
+ok('GATE17 an option ALWAYS expects buy, even for a receipt (never sell) — FIX ROUND 1', validateCurrencyDirectionIntegrity(opt.hedged_amount, 14.10, opt.home_from_strike, 'foreign_per_home', 'receipt', 'buy', 'buy').ok);
+ok('GATE17 FAILS if an option is described as sell (the old, wrong terminology)', !checkCurrencyDirectionIntegrity(opt.hedged_amount, 14.10, opt.home_from_strike, 'foreign_per_home', 'receipt', 'sell', 'buy').ok);
 
-// GATE 18 — premium-currency check
-ok('GATE18 passes on the Abertafol-reproduced premium', validatePremiumCurrency(0.00298, 60, 500_000, 3, opt.premium).ok);
-ok('GATE18 FAILS on a premium that silently applied an extra ×100', !checkPremiumCurrency(0.00298, 60, 500_000, 3, opt.premium * 100).ok);
+// GATE 18 — premium-currency check (FIX ROUND 1: no months proration)
+ok('GATE18 passes on the all-in premium', validatePremiumCurrency(0.00298, 60, 500_000, opt.premium).ok);
+ok('GATE18 FAILS on a premium that silently applied an extra ×100', !checkPremiumCurrency(0.00298, 60, 500_000, opt.premium * 100).ok);
+ok('GATE18 FAILS on the OLD (proration) formula — the exact FIX ROUND 1 regression', !checkPremiumCurrency(0.00298, 60, 500_000, 0.00298 * 60 * 500_000 * (3 / 12)).ok);
 
 // GATE 19 — best-method verdict integrity
 ok('GATE19 passes when the stated recommendation matches the computed best', validateBestMethodVerdict('receipt', cmpReceipt.results, 'mmh', cmpReceipt.margin).ok);
 ok('GATE19 FAILS when a worse method is recommended', !checkBestMethodVerdict('receipt', cmpReceipt.results, 'forward', cmpReceipt.margin).ok);
 ok('GATE19 FAILS when the stated margin does not match', !checkBestMethodVerdict('receipt', cmpReceipt.results, 'mmh', 999).ok);
+
+// GATE 17b — quote-sentence structural integrity (FIX ROUND 1, new)
+const injectedForeignPerHome = `Some scenario prose. ${quoteDirectionSentence('foreign_per_home', 'R', '$')} More prose.`;
+ok('GATE17b passes when the canonical sentence is present verbatim', validateQuoteSentencePresence(injectedForeignPerHome, 'foreign_per_home', 'R', '$').ok);
+ok('GATE17b FAILS when the prose states the OPPOSITE direction', !checkQuoteSentencePresence(injectedForeignPerHome, 'home_per_foreign', 'R', '$').ok);
+ok('GATE17b FAILS when the canonical sentence is entirely absent', !checkQuoteSentencePresence('Some scenario prose with no quote sentence at all.', 'foreign_per_home', 'R', '$').ok);
+ok('quoteDirectionSentence renders the correct direction words (foreign_per_home)', quoteDirectionSentence('foreign_per_home', 'R', '$').includes('R per $ 1'));
+ok('quoteDirectionSentence renders the correct direction words (home_per_foreign)', quoteDirectionSentence('home_per_foreign', 'R', '$').includes('$ per R 1'));
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // SCHEMAS + MODEL ANSWERS — GATE1 self-consistency + GATE2-style figure-integrity, all 4 kinds
@@ -190,16 +217,26 @@ const k2Schema = buildFuturesSchema(k2Inputs, k2Computed);
 const k2Answer = buildFuturesModelAnswer(k2Inputs, k2Computed, 'The futures hedge fixes the bulk of the exposure; the residual is small and cleanly topped up on the forward.');
 ok('K2 futures: GATE1 self-consistency passes', validateSchemaSelfConsistency(k2Schema.schema).ok);
 ok('K2 futures: every schema figure appears in the model answer', figuresPresent(k2Schema.schema, k2Answer));
+ok('K2 futures: model answer prose uses the corrected lock-in formula wording', k2Answer.includes('futures₀') && !k2Answer.includes('spot₀ − unexpired'));
 
 const k3Inputs: OptionsDrillInputs = {
   currency_home: '$', currency_foreign: 'R', exposure: 30_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
-  contract_size: 500_000, strike: 14.10, premium_pct: 0.00298, premium_currency: 'foreign', months_covered: 3, months_to_transaction: 3, compounding_rate: 5, residual_policy: 'immaterial',
+  contract_size: 500_000, strike: 14.10, premium_pct: 0.00298, premium_currency: 'foreign', months_to_transaction: 3, residual_policy: 'immaterial',
 };
 const k3Computed = computeOptionsHedge(k3Inputs);
 const k3Schema = buildOptionsSchema(k3Inputs, k3Computed);
 const k3Answer = buildOptionsModelAnswer(k3Inputs, k3Computed, 'The option preserves upside if the currency moves favourably, at the cost of the premium — worth it given the uncertainty over the period.');
 ok('K3 options: GATE1 self-consistency passes', validateSchemaSelfConsistency(k3Schema.schema).ok);
 ok('K3 options: every schema figure appears in the model answer', figuresPresent(k3Schema.schema, k3Answer));
+// "the right to SELL R" is CORRECT put-option terminology (a put IS the right to sell) — the bug
+// class this guards is the INSTRUMENT SIDE being described as "sell N options/contracts", never a
+// bare ban on the word "sell" (which legitimately appears describing what a put's right IS).
+ok('K3 options: model answer says "buy N put options", never "sell N options/contracts" (FIX ROUND 1)', /buy \*\*60 put options\*\*/.test(k3Answer) && !/sell \d+ (options|contracts)/i.test(k3Answer));
+
+const k3Payment: OptionsDrillInputs = { ...k3Inputs, direction: 'payment' };
+const k3PaymentComputed = computeOptionsHedge(k3Payment);
+const k3PaymentAnswer = buildOptionsModelAnswer(k3Payment, k3PaymentComputed, 'A call locks in the maximum cost while leaving room to benefit from favourable moves.');
+ok('K3 options (payment): model answer says "buy N call options", never sell N options/contracts', /buy \*\*\d+ call options\*\*/.test(k3PaymentAnswer) && !/sell \d+ (options|contracts)/i.test(k3PaymentAnswer));
 
 const k4Inputs: SwapDrillInputs = {
   currency_home: '$', currency_foreign: 'R', exposure: 5_000_000, direction: 'receipt', quote_direction: 'foreign_per_home',
