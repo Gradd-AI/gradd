@@ -25,6 +25,7 @@ import {
 import { notifyGrant } from '@/lib/notify';
 import { resolvePaper } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
+import { isTeachRequest, isRevealRequest, REVEAL_PHRASE_STRUGGLE, REVEAL_PHRASE_SOLVED } from '@/lib/acca/phrase-match';
 import {
   buildGroundingPack,
   renderChecklistAndFacts,
@@ -140,28 +141,17 @@ function isStopSignal(input: string): boolean {
 // which routes it to `confusion` → a warm reassure-and-offer (free) rather than an
 // immediate, cap-charging teach-through. With the flag OFF, the legacy isStopSignal
 // (full list) is used instead, so flag-off is an exact behavioural rollback.
-const TEACH_REQUEST_PHRASES = [
-  'just tell me',
-  'show me how',
-  'walk me through',
-  'talk me through',
-  'teach me',
-  'how would a full-marks',
-  'how would a full marks',
-  'what would a full-marks',
-  'what would a full marks',
-];
-
-function isTeachRequest(input: string): boolean {
-  const lower = input.toLowerCase().trim();
-  return TEACH_REQUEST_PHRASES.some(p => lower.includes(p));
-}
+//
+// TEACH_REQUEST_PHRASES / REVEAL_PHRASES / isTeachRequest / isRevealRequest now live in
+// lib/acca/phrase-match.ts (X1 field-bug fix, 2026-07-23 — see that module's header for the
+// full incident: a typo'd/article-dropped reveal request fell through the old exact-substring
+// matcher and was mis-treated as a wrong attempt). Imported above.
 
 // ── Earned reveal (redesign item 3) ───────────────────────────────────────────
 // Behind APM_EARNED_REVEAL. The reveal is the ONE place the stored model_answer is shown
 // to the student — gated by an explicit REVEAL_PHRASES match AND genuine struggle
 // (miss_count >= 2, persisted). REVEAL_PHRASES MUST stay disjoint from TEACH_REQUEST_PHRASES
-// (unit-tested: 0 exact / 0 substring overlap, no message matches both) — otherwise
+// (unit-tested: scripts/test-phrase-match.ts, 0 match under the fuzzy matcher too) — otherwise
 // "show me how" could dump the answer. All reveal phrases are imperative-anchored so they
 // cannot appear inside a teach-style message ("walk me through the model answer" → teach).
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
@@ -175,26 +165,6 @@ const REVEAL_VELOCITY_N = 5;
 // component (read from the model answer) was actually attempted before confirming. Runs
 // ONLY on the correct branch; flag off = today's behaviour verbatim.
 const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
-
-const REVEAL_PHRASES = [
-  'show me the full answer',
-  'show me the answer',
-  'show me the model answer',
-  'show me the worked answer',
-  'show me the full build',
-  'show the full answer',
-  'show the answer',
-  'show the model answer',
-  'just show me the answer',
-  'reveal the answer',
-  'reveal the full answer',
-  'reveal the model answer',
-];
-
-function isRevealRequest(input: string): boolean {
-  const lower = input.toLowerCase().trim();
-  return REVEAL_PHRASES.some(p => lower.includes(p));
-}
 
 // Static earn-it refusal for a reveal request below the struggle threshold. Deterministic
 // on purpose — zero-cost, zero-latency, cannot drift or leak; its only job is "not yet,
@@ -415,8 +385,10 @@ async function call3_teach(
     : '';
   // Earned-reveal nudge — only when struggle-gated (offerReveal). Tells the student the
   // phrase that unlocks the reveal; the teach itself still withholds the answer.
+  // X1 fix item 2: built from the SAME canonical constant the router matches on
+  // (lib/acca/phrase-match.ts) — offer and router can never diverge again.
   const offerLine = offerReveal
-    ? ' As the alternative next move, tell them they can say "show me the full answer" to see exactly how a full-marks answer is built.'
+    ? ` As the alternative next move, tell them they can say "${REVEAL_PHRASE_STRUGGLE}" to see exactly how a full-marks answer is built.`
     : '';
   // FIX B tone (red-team adjudication 2026-07-16): suppressing the CTA alone left probe E2 with a
   // COLD reply ("I don't see a student answer"). On distress, lead with warmth and steady them —
@@ -475,9 +447,10 @@ async function call3_confirm(
     : '';
   // Post-success reveal nudge — the student has earned the model answer by solving; offer the
   // phrase that surfaces it for comparison (the reveal itself is still the ONLY place the
-  // model_answer is shown; this only advertises the now-unlocked route).
+  // model_answer is shown; this only advertises the now-unlocked route). X1 fix item 2: built
+  // from the SAME canonical constant the router matches on — offer and router can never diverge.
   const offerLine = offerReveal
-    ? ' Then, as a light closing offer, tell them that since they nailed it they can say "show me the model answer" to see exactly how a full-marks version is laid out for comparison.'
+    ? ` Then, as a light closing offer, tell them that since they nailed it they can say "${REVEAL_PHRASE_SOLVED}" to see exactly how a full-marks version is laid out for comparison.`
     : '';
   // PERSONA-HARDENING (2026-07-21): fixes finding 6 (CONVENTION-SOFTENING — a close that validated an
   // alternative WRONG/unscaled form as "equally valid" alongside the correct one). The old prompt's

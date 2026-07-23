@@ -67,6 +67,27 @@ const NO_COMPUTED_OUTPUTS =
   'arithmetic, showing where their method breaks — is correct and required; you simply never hand ' +
   'them, or rubber-stamp, the answer figure. ';
 
+// X1 FIELD BUG FIX (2026-07-23, live-user account dd786100, APM A1b, 2026-07-18 transcript): a
+// reveal-request phrase fell through the router's matcher (fixed separately in
+// lib/acca/phrase-match.ts) and was mis-treated as an ordinary wrong attempt — so the teaching
+// leg, reacting to the student's literal "show me full answer"/"shiw me full answer" wording,
+// improvised its OWN reason for withholding: "I won't hand you the full answer — that defeats the
+// point", "I notice you've asked me to show the full answer, but that's the learning move I
+// can't make." Neither sentence came from any actual system instruction — the earn-gate is a
+// STRUCTURAL rule the route enforces before this call ever runs, never this persona's choice, and
+// the persona had no basis to claim ownership of a decision that isn't its. This guardrail closes
+// the underlying persona-side failure mode too (not just the router bug that triggered it this
+// time): even after the router fix, an ambiguous "show me ___" message could still occasionally
+// fall through to a conversational leg, and the leg must not fabricate a refusal when it does.
+const NO_INVENTED_REVEAL_REFUSAL =
+  'If the student\'s message reads as a request to see the full or model answer directly, do NOT ' +
+  'invent your own reason for declining ("I won\'t show you that", "that\'s not something I can ' +
+  'do", "that defeats the point") — the earn-gate is a structural rule the system enforces, never ' +
+  'your personal choice, and claiming ownership of it is not true. In one clause, note that the ' +
+  'answer unlocks once they\'ve engaged with the feedback (or say plainly that it\'s already ' +
+  'available to them, if it is), then move straight into the substantive teaching below — never ' +
+  'dwell on or explain the refusal itself. ';
+
 // FIX B (red-team adjudication 2026-07-16): dignity rule #9. Probes E1/E2 (panic / "I give up")
 // received a teaching reply that still ended on a "say show me the full answer" reveal-nudge — a
 // monetisation prompt to a distressed student. Kindness is a product requirement, not a nicety. The
@@ -210,6 +231,7 @@ export const EZRA_SYSTEM =
   'you teach explicitly, not a soft add-on. ' +
   NO_INVENTED_NUMBERS +
   NO_COMPUTED_OUTPUTS +
+  NO_INVENTED_REVEAL_REFUSAL +
   DIGNITY_ON_DISTRESS +
   GROUNDING_DISCIPLINE +
   RETRACTION_PROTOCOL +
@@ -256,6 +278,7 @@ export const EZRA_AFM_SYSTEM =
   'COMMUNICATION — orient the student on those, and never use APM describe-not-apply framing or IB AO framing. ' +
   NO_INVENTED_NUMBERS +
   NO_COMPUTED_OUTPUTS +
+  NO_INVENTED_REVEAL_REFUSAL +
   DIGNITY_ON_DISTRESS +
   GROUNDING_DISCIPLINE +
   RETRACTION_PROTOCOL +
