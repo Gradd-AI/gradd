@@ -1809,6 +1809,114 @@ co-founder independent recompute + blind adversarial review this pack has been a
 Round 1, now against a pack whose two previously-flagged corrections carry independent source
 verification.
 
+## 2026-07-23 — PROMPT CACHING — direct-API spend fix (billing structure only, content byte-identical)
+
+**Mapped every direct Anthropic call site** (`anthropic.messages.create`) across the four areas the
+task named: the tutor route (`app/api/acca/tutor/route.ts`, 11 call sites — call1_generate,
+call2_diagnose, call3_hint/teach/confirm, completenessCheck, call0_classify, call_warm, call4_reveal
+×2 branches, call_burn); the narrative `CriterionGrader` (`lib/acca/narrative-grader.ts`, 1 site);
+the AFM generator (`scripts/generate-afm-drills.ts`, 14 sites — 12 share `AFM_EXAMINER_PERSONA`, 1
+uses `EZRA_TEACHING_PERSONA`, 1 uses `NARRATIVE_AUTHOR_PERSONA`); and the red-team judge
+(`scripts/redteam-judge.ts`, 1 site, looped up to 1000×/run on `--prod-sample`).
+
+**New shared helper** `lib/acca/prompt-cache.ts` — two pure functions, no behaviour: `cacheBlock(text)`
+wraps a stable string (a whole system prompt, or content with no per-turn variable part) as one
+cached block; `cachePrefix(stable, full)` splits a built prompt into a cached stable prefix + an
+uncached remainder, throwing if `full` doesn't actually start with `stable` (a desync guard, not a
+content change). Both rely on the documented fact that consecutive `text` content blocks concatenate
+with no separator — splitting one string into blocks is byte-identical to sending it as one block.
+**Proved, not assumed**: a throwaway unit check (`scripts/_cache_byte_equality.ts`, gitignored)
+asserts `blocks.map(b => b.text).join('') === original` for every shape used below — all pass.
+
+**Breakpoints added, call site by call site** (system-level everywhere; message-level where the byte
+order allows it without reordering — never restructured to chase a bigger win):
+- **call1_generate** — content has NO per-turn variable part (question/context only) → cached whole.
+- **call2_diagnose / call3_hint / call3_teach / call3_confirm / call_warm / call_burn** — PARTIAL
+  win: `Context+Question` always leads these calls' content, so it forms a clean cached prefix, but
+  `Student answer`/`diagnosis` sits BEFORE the trailing stable blocks (mark scheme, grounding,
+  model answer, conventions) in every one of these — caching that larger trailing stable chunk too
+  would require moving the variable content to the end, which the task's own step 3 rules out
+  ("DO NOT reorder... flag it for a ruling instead"). Flagged, not restructured.
+- **completenessCheck** — the ONE full-win shape: context+question+vlLine+checklist+model_answer are
+  ALL contiguous before the variable `Student answer` in the existing byte order, so the whole
+  stable block (often the largest of any call site, since it includes the full model answer) caches
+  as one prefix with zero reordering.
+- **call4_reveal** (AFM + APM branches) — same partial-win shape as above; the split is done AT THE
+  CALL SITE by re-deriving the identical `${contextLine}Question: ${question}\n\n` leading literal
+  and handing it to `cachePrefix` against the builder functions' output — `buildAfmWrapperUserPrompt`/
+  `buildApmRevealUserPrompt` in `tutor-personas.ts` are UNTOUCHED (their return type and the 3
+  existing fixture call sites in `test-afm-tutor.ts` stay exactly as they were).
+- **call0_classify** — NOT split: `prevLine` (Ezra's last message, per-turn variable) sits FIRST,
+  before the stable `Drill question` line, so there is no leading stable prefix without reordering.
+  Flagged; low-stakes anyway (`max_tokens: 10`, short classifier).
+- **narrative-grader.ts** — system cached (byte-identical across every criterion × every drill a
+  batch's N1/N4 gates grade); message NOT split — `buildUserPrompt` puts the per-call-variable
+  CRITERION block before the per-drill-stable SCENARIO/STUDENT ANSWER, the same sandwich shape as
+  call0_classify. Flagged, not restructured.
+- **redteam-judge.ts** — `JUDGE_RUBRIC` cached (system only; every transcript's content is 100%
+  variable, nothing to split there). Highest call-volume site of the four areas (up to 1000
+  calls/run on `--prod-sample`), all sharing this one byte-identical block.
+- **generate-afm-drills.ts** — all 14 systems cached (`AFM_EXAMINER_PERSONA`/`EZRA_TEACHING_PERSONA`/
+  `NARRATIVE_AUTHOR_PERSONA`); no message-level split (each draft*Drill's Pass-1 prompt is 100%
+  spec-specific, no shared prefix across calls).
+
+**Minimum cacheable length — CONFIRMED LIVE-FIRE, not assumed from training data (a genuine
+knowledge-update trap, exactly the class AGENTS.md warns about).** Docs fetched + verified against
+the real account:
+- **Sonnet 4.6: 1024 tokens.** Confirmed twice — `EZRA_AFM_SYSTEM` (~2200 tokens) cache-wrote on
+  call 1 and cache-read on call 2; `JUDGE_RUBRIC` (1283 tokens) did the same.
+- **Haiku 4.5: 4096 tokens — DOUBLE the old Haiku 3.5 floor (2048) my first draft assumed.** Caught
+  BEFORE writing it into the journal: a live-fire test at ~2204-2210 tokens (Haiku, `EZRA_AFM_SYSTEM`
+  + a realistic stable prefix) showed ZERO cache activity on either call, on both the per-block AND
+  the newer top-level `cache_control` mechanism — which first looked like a bug, until the same
+  content on Sonnet cached correctly, isolating the cause to Haiku 4.5's real (higher) floor, not a
+  wiring defect. **Confirmed harmless**: a sub-minimum breakpoint produces no error, no
+  `cache_creation`/`cache_read`, and no change to `input_tokens` — exactly the safe no-op the design
+  relies on.
+- **Practical consequence, stated honestly, not oversold:** most of the tutor route's Haiku legs
+  (hint/teach/confirm/warm/burn/reveal — the DOMINANT VOLUME of live student traffic) only clear
+  4096 tokens on longer drills (persona ~2000-2200 tokens + a substantial context/model-answer
+  block); shorter drills currently get ZERO caching benefit from these breakpoints — self-activating
+  as content grows, never a behaviour change either way. `call2_diagnose` (Sonnet, fires on every
+  single student attempt) has the lower 1024 floor but only caches its own small leading
+  context+question segment (see partial-win note above) — a short drill's context+question alone
+  (566 tokens, tested) does NOT clear it either. The reliable, guaranteed wins today are
+  `redteam-judge.ts`'s `JUDGE_RUBRIC` (proven) and the generator's `AFM_EXAMINER_PERSONA` (not
+  independently live-fire tested — importing `generate-afm-drills.ts` triggers its own unconditional
+  `main()`, a known import-guard gap, `memory/project_backlog_script_guards` — but comfortably larger
+  than `JUDGE_RUBRIC` by inspection, composing `BOARDROOM_BAR_PASS1` + `AFM_CATALOGUE_RULES` on top
+  of its own persona text).
+
+**Verified two ways, per the task's own step 4:**
+1. **Live-fire (real API calls, not code inspection)** — the byte-equality proof above, plus the
+   Sonnet/Haiku minimum-floor tests, plus `redteam-judge.ts`'s own `JUDGE_RUBRIC` cache-hit test.
+2. **Behaviour unchanged** — `npm run test:afm-tutor` (36 checks, exercises the untouched
+   `buildAfmWrapperUserPrompt`/`buildApmRevealUserPrompt`) and `npm run test:phrase-match` both
+   green; `tsc --noEmit` clean; `next build` green. A targeted red-team battery (6 probes — C1, M2,
+   H1 covering classify/diagnose/hint/teach; X6, X7, R1 covering the reveal paths) fired against a
+   local dev server: the first pass showed 5/8 auto-FAILs on the reveal probes — traced to the
+   dev server's `.env.local` not having `APM_EARNED_REVEAL` set (the SAME flag-not-live trap
+   `memory/feedback_apm_test_protocol` already journals as a recurring class — verified via the
+   env, not assumed as a caching regression). Re-run with the flag exported for that process:
+   0 auto-FAILs. Judge pass on the corrected run: 1/5 flagged, reproducing consistently on a
+   third independent run — `X6·APM` (typo'd reveal request), the APM `REVEAL_SYSTEM` wrapper
+   occasionally inventing illustrative example figures/percentages beyond the drill's own
+   `model_answer`. **Ruled out as a caching regression** by the byte-equality proof (identical bytes
+   reach the model with or without `cache_control`) — a genuine, pre-existing content-quality gap,
+   flagged in `AFM_SURFACED.md` for a future prompt-tightening pass, NOT fixed here (out of this
+   task's scope, and fixing it would be a content change this task explicitly rules out).
+
+**Cost note — PENDING, per the task's own step 5** ("journal with a before/after cost note once a
+day of traffic accrues"). Today's entry is mechanism + verification only; the before/after console
+comparison is owed once a day of post-deploy production traffic has accrued — tracked in
+`AFM_SURFACED.md`.
+
+**Files touched:** `lib/acca/prompt-cache.ts` (new), `app/api/acca/tutor/route.ts` (11 call sites),
+`lib/acca/narrative-grader.ts` (1 site), `scripts/redteam-judge.ts` (1 site),
+`scripts/generate-afm-drills.ts` (14 sites). `scripts/_cache_livefire.ts` +
+`scripts/_cache_byte_equality.ts` (gitignored throwaways, not committed — the live-fire proof
+artifacts).
+
 ## 2026-07-23 — LIVE-USER BUG: reveal-request phrase matching (APM tutor, field-confirmed)
 
 **First real-user field report on the earned-reveal mechanism since its 2026-07-14 go-live.**
