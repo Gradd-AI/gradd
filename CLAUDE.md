@@ -150,9 +150,16 @@ territory — follow the links for depth. Keep it under ~150 lines.
   70–73 (own band, K1 forward+MMH entry). **FIX ROUND 1 (2026-07-22/23):** co-founder independent
   recompute found 3 majors — K2 lock-in formula misencoded (one-sided; now two-route self-checked),
   K3 premium formula unsourced-imported from an interest-rate family (now an all-in fallback
-  convention, not source-verified — the settling SD25 source is unfetchable), K4 quote-direction
-  parameter↔prose inversion (now structurally prevented). All 4 drills regenerated (`docs/reviews/
-  AFM_BATCH_FXHEDGE_REVIEW_PACK.md`) — awaiting a FRESH co-founder recompute, not flipped.
+  convention), K4 quote-direction parameter↔prose inversion (now structurally prevented). **FIX ROUND
+  2 (2026-07-23):** GPT full-round adjudication — all 4 figure sets accepted unchanged; the K2/K3
+  formula corrections upgraded from co-founder-recompute authority to independently source-verified
+  (T1/S9 for K2's lock-in, T2/S8 for K3's premium — `docs/evidence/sources.json`); K3's premium
+  restated per-unit (wording only, figure unchanged); an inert engine bug fixed (premium-currency
+  conversion now uses spot, not strike, when the premium is quoted in a non-home currency — zero
+  live-drill impact, the only published K3 quotes home-currency). **LIVE (GATE-P flip, 2026-07-23):**
+  all 4 drills (K1 `51163dac`/K2 `1528e10f`/K3 `359207f6`/K4 `ba811dd0`) approved+published — the
+  FIRST-EVER AFM section E rows. Pack: `docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`. Grant's
+  student walk still owed (post-flip, non-blocking).
 - **NARRATIVE PIPELINE (#2) — discursive drills (D1–D5), NOT a calculator:** `lib/acca/narrative-marker.ts`
   (rubric type + DETERMINISTIC detectors `scenarioCopyOverlap`/`factUsed`/`missingAnchors`/`hasConclusion`/
   `longestVerbatimRun` + code-owned `aggregate` (partial-credit 0/½/full + disqualifier caps + band→verdict)
