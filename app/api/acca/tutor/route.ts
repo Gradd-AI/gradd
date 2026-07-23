@@ -38,6 +38,7 @@ import {
   GROUNDING_INSTRUCTION_OUTRO,
   type GroundingPack,
 } from '@/lib/acca/tutor-grounding';
+import { cacheBlock, cachePrefix } from '@/lib/acca/prompt-cache';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -225,20 +226,23 @@ const WRAP_UP =
 
 async function call1_generate(question: string, context: string): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // No per-student variable content at all (this leg only ever sees question/context) — the
+  // whole user turn is stable per-drill, so it is cached as ONE block, same as the system prompt.
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1500,
-    system:
+    system: cacheBlock(
       'You are an experienced ACCA APM marker. Write a complete model answer at the level ' +
       'a top-band APM candidate would produce — applied to the specific scenario, ' +
       'with professional judgement, not just model recitation. ' +
       'SIGN CONVENTION: Express all variances as standard − actual. ' +
       'Label the result A (adverse) when actual exceeds standard, F (favourable) when actual is below standard. ' +
       'State the formula direction in your workings and ensure the A/F label is consistent with the arithmetic sign.',
+    ),
     messages: [
       {
         role: 'user',
-        content: `${contextLine}Question: ${question}\n\nWrite the full model answer.`,
+        content: cacheBlock(`${contextLine}Question: ${question}\n\nWrite the full model answer.`),
       },
     ],
   });
@@ -268,10 +272,16 @@ async function call2_diagnose(
   // conventions. Empty when no schema (mode:'none') — behaviourally identical to before this change.
   const groundingText = renderChecklistAndFacts(grounding);
   const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_DIAGNOSE}\n\n${groundingText}` : '';
+  // Cache split: `Student answer: ${attempt}` sits BEFORE the per-drill mark scheme/grounding/
+  // model-answer blocks in this call's byte order (never reordered to chase cacheability — see
+  // lib/acca/prompt-cache.ts header), so only the leading context+question segment forms a clean
+  // stable prefix; the larger stable chunk that trails the attempt is not independently cacheable
+  // without reordering. Flagged, not restructured (PROMPT CACHING task, step 3).
+  const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 40,
-    system:
+    system: cacheBlock(
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
       'EQUIVALENCE CHECK — do this before naming any error: ' +
@@ -298,16 +308,19 @@ async function call2_diagnose(
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
       '(3) Output ONLY the label — no prose, no prefix, no explanation. ' +
       'BAD (forbidden): any phrase that states the correct answer.',
+    ),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
+        content: cachePrefix(
+          stablePrefix,
+          stablePrefix +
           `Student answer: ${attempt}\n\n` +
           msLine +
           groundingLine +
           `Model answer (reference only — do NOT restate or correct in output):\n${modelAnswer}\n\n` +
           'Output the gap label only. Name the error pattern. Do not state what is correct.',
+        ),
       },
     ],
   });
@@ -335,15 +348,20 @@ async function call3_hint(
   // only, never the drill's specific figure or point. Empty when no schema → identical to before.
   const groundingText = renderConventionsAndMisconception(grounding);
   const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_HINT}\n\n${groundingText}` : '';
+  // Same partial-cache shape as call2_diagnose: attempt/diagnosis sit before the trailing stable
+  // vlLine/groundingLine/instruction block, so only the leading context+question forms a clean
+  // stable prefix without reordering (see lib/acca/prompt-cache.ts header).
+  const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
-    system: systemFor(paper),
+    system: cacheBlock(systemFor(paper)),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
+        content: cachePrefix(
+          stablePrefix,
+          stablePrefix +
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
@@ -354,6 +372,7 @@ async function call3_hint(
           'structured breakdown. Work in the command verb and ACCA intellectual level from the ' +
           "authored values above (do not infer them when given). Don't state the answer." +
           WRAP_UP,
+        ),
       },
     ],
   });
@@ -400,15 +419,18 @@ async function call3_teach(
       'see their work, and do NOT ask them to submit an attempt in a cold way — meet them where they ' +
       'are and give the ONE smallest concrete next step. No upsell, no reveal offer, no wall. '
     : '';
+  // Same partial-cache shape as call2_diagnose/call3_hint — see stablePrefix comment there.
+  const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 600, // headroom for a complete teach; WRAP_UP + finishClean keep it from sprawling or truncating
-    system: systemFor(paper),
+    system: cacheBlock(systemFor(paper)),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
+        content: cachePrefix(
+          stablePrefix,
+          stablePrefix +
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
@@ -421,6 +443,7 @@ async function call3_teach(
           'talking not a marked script. Use the authored command verb and ACCA intellectual level ' +
           'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.' +
           offerLine + WRAP_UP,
+        ),
       },
     ],
   });
@@ -462,15 +485,19 @@ async function call3_confirm(
   const conventionsLine = grounding.conventions.length
     ? `${GROUNDING_INSTRUCTION_CONVENTION}\n\nCONVENTIONS (required methods for this drill — if the student mentions an alternative form, check it against these before calling anything equally valid):\n${grounding.conventions.map((c) => `- ${c}`).join('\n')}\n\n`
     : '';
+  // Same partial-cache shape as call2_diagnose/call3_hint/call3_teach — see stablePrefix
+  // comment on call2_diagnose.
+  const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 650,
-    system: systemFor(paper),
+    system: cacheBlock(systemFor(paper)),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
+        content: cachePrefix(
+          stablePrefix,
+          stablePrefix +
           `Student answer: ${attempt}\n\n` +
           vlLine +
           conventionsLine +
@@ -487,6 +514,7 @@ async function call3_confirm(
           'their mood. Do NOT restate, re-derive, or quote back their figures or workings — they ' +
           "already wrote them; refer to what they did in words, not numbers. Don't mark it as if it fell short." +
           offerLine + WRAP_UP,
+        ),
       },
     ],
   });
@@ -526,11 +554,20 @@ async function completenessCheck(
   const checklistText = grounding.checklist.length
     ? `${GROUNDING_INSTRUCTION_COMPLETENESS}\n\nCHECKLIST (the authoritative required components):\n${grounding.checklist.map((c) => `- ${c.label}`).join('\n')}\n\n`
     : '';
+  // FULL cache win (unlike call2_diagnose/call3_*): every per-drill stable field here — context,
+  // question, vlLine, checklistText, AND the (often substantial) model answer — already sits
+  // CONTIGUOUSLY before the per-turn variable "Student answer" line in the existing byte order,
+  // so the whole stable block forms one clean prefix with no reordering needed.
+  const stablePrefix =
+    `${contextLine}Question: ${question}\n\n` +
+    vlLine +
+    checklistText +
+    `Model answer (defines the required components — reference only, do NOT restate):\n${modelAnswer}\n\n`;
   try {
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 400,
-      system:
+      system: cacheBlock(
         'You audit whether a student answer attempted every REQUIRED component of a model answer. ' +
         'Numerical correctness is ALREADY verified — do NOT re-check numbers, and do NOT treat ' +
         'convention/format/layout differences as missing (sign convention, A/F labelling, table ' +
@@ -547,16 +584,16 @@ async function completenessCheck(
         'OUTPUT: one line per required component and NOTHING else — no preamble, no summary — in ' +
         'exactly this form:  PRESENT — <2-4 word component name>  OR  ABSENT — <2-4 word name>. ' +
         'When unsure whether a faint attempt counts, mark it PRESENT (never invent an absence).',
+      ),
       messages: [
         {
           role: 'user',
-          content:
-            `${contextLine}Question: ${question}\n\n` +
-            vlLine +
-            checklistText +
-            `Model answer (defines the required components — reference only, do NOT restate):\n${modelAnswer}\n\n` +
+          content: cachePrefix(
+            stablePrefix,
+            stablePrefix +
             `Student answer:\n${attempt}\n\n` +
             'List each required component on its own line as "PRESENT — name" or "ABSENT — name". Nothing else.',
+          ),
         },
       ],
     });
@@ -621,11 +658,16 @@ function parseIntent(text: string): Intent {
 
 async function call0_classify(message: string, question: string, lastEzra: string): Promise<Intent> {
   const prevLine = lastEzra ? `Ezra's previous message: ${lastEzra}\n\n` : '';
+  // NO message-level cache split here — PROMPT CACHING task, step 3 (flag, don't restructure):
+  // the per-turn-variable prevLine sits FIRST in this call's byte order, before the per-drill
+  // stable "Drill question" line, so there is no leading stable prefix to cache without
+  // reordering. Low-stakes anyway (max_tokens: 10, a short classification call) — system prompt
+  // is still cached below.
   try {
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 10,
-      system: CLASSIFY_SYSTEM,
+      system: cacheBlock(CLASSIFY_SYSTEM),
       messages: [
         { role: 'user', content: `${prevLine}Drill question: ${question}\n\nStudent message: ${message}\n\nLabel:` },
       ],
@@ -664,17 +706,21 @@ async function call_warm(
   paper: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // Same partial-cache shape as call2_diagnose — see stablePrefix comment there.
+  const stablePrefix = `${contextLine}Drill question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
-    system: systemFor(paper),
+    system: cacheBlock(systemFor(paper)),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Drill question: ${question}\n\n` +
+        content: cachePrefix(
+          stablePrefix,
+          stablePrefix +
           `Student message: ${message}\n\n` +
           WARM_INSTRUCTIONS[intent] + WRAP_UP,
+        ),
       },
     ],
   });
@@ -723,14 +769,23 @@ async function call4_reveal(
     const reframeLine = fullReveal
       ? `Authored misconception reframe (name this and correct the thinking):\n${fullReveal}\n\n`
       : '';
+    // buildAfmWrapperUserPrompt's own `head` literal is `${contextLine}Question: ${question}\n\n` +
+    // `Their last attempt: ${attempt}\n\n` — i.e. context+question ALWAYS leads, attempt follows
+    // immediately, so that same leading substring is the clean stable prefix here too (tutor-
+    // personas.ts is untouched — the split is done at the call site by re-deriving the identical
+    // leading literal, verified by cachePrefix's own runtime startsWith check).
+    const afmStablePrefix = `${contextLine}Question: ${question}\n\n`;
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
-      system: solved ? REVEAL_AFM_WRAPPER_SYSTEM_SOLVED : REVEAL_AFM_WRAPPER_SYSTEM,
+      system: cacheBlock(solved ? REVEAL_AFM_WRAPPER_SYSTEM_SOLVED : REVEAL_AFM_WRAPPER_SYSTEM),
       messages: [
         {
           role: 'user',
-          content: buildAfmWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + '\n\n' + outroLine + WRAP_UP,
+          content: cachePrefix(
+            afmStablePrefix,
+            buildAfmWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + '\n\n' + outroLine + WRAP_UP,
+          ),
         },
       ],
     });
@@ -738,14 +793,20 @@ async function call4_reveal(
   }
 
   // APM — model-authored walkthrough of the stored model_answer (unchanged pre-G3 behaviour).
+  // Same leading-literal technique as the AFM branch above; buildApmRevealUserPrompt's `head` is
+  // identical in shape (context+question, then attempt) — see comment there.
+  const apmStablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 1200,
-    system: solved ? REVEAL_SYSTEM_SOLVED : REVEAL_SYSTEM,
+    system: cacheBlock(solved ? REVEAL_SYSTEM_SOLVED : REVEAL_SYSTEM),
     messages: [
       {
         role: 'user',
-        content: buildApmRevealUserPrompt({ contextLine, question, attempt, diagnosis, modelAnswer, reachedFrom }) + '\n\n' + outroLine,
+        content: cachePrefix(
+          apmStablePrefix,
+          buildApmRevealUserPrompt({ contextLine, question, attempt, diagnosis, modelAnswer, reachedFrom }) + '\n\n' + outroLine,
+        ),
       },
     ],
   });
@@ -764,15 +825,18 @@ async function call_burn(
   paper: string,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // Same partial-cache shape as call2_diagnose — see stablePrefix comment there.
+  const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 400,
-    system: systemFor(paper),
+    system: cacheBlock(systemFor(paper)),
     messages: [
       {
         role: 'user',
-        content:
-          `${contextLine}Question: ${question}\n\n` +
+        content: cachePrefix(
+          stablePrefix,
+          stablePrefix +
           `Their last attempt: ${attempt}\n\n` +
           `The gap they keep missing: ${diagnosis}\n\n` +
           'They are on the cusp — the full worked answer would resolve this, but it is a paid ' +
@@ -780,6 +844,7 @@ async function call_burn(
           'reasoning laid out is what turns "sort of get it" into "got it". Warm and honest, not ' +
           'pushy. Give NO figures, NO numbers, and NOT the answer. Stop before any call to action ' +
           '(it is appended separately).' + WRAP_UP,
+        ),
       },
     ],
   });
