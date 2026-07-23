@@ -1,6 +1,14 @@
 {
   "created": "18/07/2026",
   "purpose": "Official ACCA evidence for AFM/FM investment-risk conventions (sources S1-S7) and AFM narrative-marking failure modes (examiner_reports E1-E5). ACCA PDFs are never committed in-repo (copyright) - fetch them with fetch_acca_sources.ps1.",
+  "unverified_citations_do_not_bake_in": [
+    {
+      "cited_as": "AFM \"March 2020\"",
+      "cited_by": "GPT adjudication round, calculator #11 (fxhedge.ts) FIX ROUND 2, 2026-07-23, alongside S8/S9 for the same K2/K3 FX-hedging conventions",
+      "status": "UNVERIFIED - searched multiple ways (AFM P4 \"March 2020\", \"MJ20\") for a publicly locatable ACCA AFM official-answers PDF or examiner's report matching this citation; none found. 2020 AFM sittings were disrupted (remote/staggered exams that period) and do not appear in the standard past-exam-papers archive the way pre- and post-2020 sittings do.",
+      "note": "Deliberately kept OUT of the sources/examiner_reports arrays above (which fetch_acca_sources.ps1 iterates and would crash on a null url) - this is a plain audit note, not a fetchable entry. NOT cited in fxhedge.ts. If a specific URL surfaces later, verify by direct fetch before citing."
+    }
+  ],
   "sources": [
     {
       "id": "S1",
@@ -71,6 +79,28 @@
       "use": "Expected-NPV appraisal and interpretation.",
       "finding": "The answer calculates an expected input using probabilities, carries it through the project cash-flow table, and labels the result ENPV.",
       "formula": "Expected input = \u03a3(probability \u00d7 outcome); ENPV is the NPV based on probability-weighted expected inputs/outcomes."
+    },
+    {
+      "id": "S8",
+      "title": "AFM September 2018 - Official Answers (Airone / Washi Co)",
+      "filename": "S18_AFM_Ans.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/exampapers/S18_AFM_Ans.pdf",
+      "bytes": 612609,
+      "page_ref": "Printed page 18; PDF page 3 of 10",
+      "use": "Calculator #11 (fxhedge.ts) FIX ROUND 2, 2026-07-23 - per-unit currency option premium formula, cited by the GPT adjudication round and independently re-verified here by direct fetch.",
+      "finding": "The official answer computes the option premium as a flat per-unit rate multiplied by the number of contracts and contract size, with NO time proration applied - confirming the FIX ROUND 1 K3 correction (an earlier engine version wrongly prorated by months/12, an unsourced import from an interest-rate-options formula).",
+      "formula": "Premium payable = premium per unit \u00d7 contract size \u00d7 number of contracts (worked: JPY 3.8 \u00d7 125,000 \u00d7 640 = JPY 304m)."
+    },
+    {
+      "id": "S9",
+      "title": "AFM March/June 2021 Examiner's Report (currency futures/options hedge question)",
+      "filename": "AFM_MJ21_examiners_report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/AFM%20MJ21%20examiner's%20report.pdf",
+      "bytes": 393492,
+      "page_ref": "Printed page 11; PDF page 11 of 13",
+      "use": "Calculator #11 (fxhedge.ts) FIX ROUND 2, 2026-07-23 - full worked lock-in-rate calculation, cited by the GPT adjudication round (\"MJ21\") and independently re-verified here by direct fetch. Algebraically checked against the engine's own formula and found to be an EXACT match under a sign-convention transposition (see finding).",
+      "finding": "The report's own convention defines basis = opening futures price \u2212 spot rate (the OPPOSITE sign to this engine's basis0 = spot0 \u2212 futures0), and its lock-in formula is 'opening futures price \u2212 basis remaining'. Substituting the sign-flip shows this is algebraically IDENTICAL to this engine's lock_in_rate = futures0 + unexpired_basis - both routes compute exactly 0.2374 US$/MR1 on the worked figures. Also confirms premium-currency conversion (not proration) is the graded error class the examiner flags, matching GATE 18's scope.",
+      "formula": "Worked: current basis = 0.2378 \u2212 0.2358 = 0.0020; basis remaining = 0.0020 \u00d7 1/5 = 0.0004; lock-in rate = 0.2378 \u2212 0.0004 = 0.2374 US$/MR1."
     }
   ],
   "examiner_reports": [
@@ -152,6 +182,38 @@
       "title": "F9 June 2015 Question Paper",
       "filename": "Q3_ACCA_F9_June2015_Question.pdf",
       "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/f9/exampapers/F9-2015-jun-q.pdf"
+    }
+  ],
+  "technical_articles": [
+    {
+      "id": "T1",
+      "title": "Foreign currency futures – step by step (ACCA P4/AFM technical article)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/foreign-currency-futures.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-23, quote is the verification anchor instead. Re-verify the quote if re-citing after any gap.",
+      "accessed": "2026-07-23",
+      "use": "Calculator #11 (fxhedge.ts) FIX ROUND 2 - the lock-in-rate formula, cited by the GPT adjudication round and independently re-verified here.",
+      "finding": "States and worked-examples the lock-in-rate formula exactly as this engine implements it post-FIX-ROUND-1.",
+      "formula": "Verbatim: \"'Lock in rate' = opening futures price + unexpired basis\" — worked: \"'Lock in rate' = 1.2300 + -0.0025 = 1.2275\"."
+    },
+    {
+      "id": "T2",
+      "title": "Exchange traded foreign exchange derivatives (ACCA P4/AFM technical article)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/exchange-derivatives.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-23.",
+      "accessed": "2026-07-23",
+      "use": "Calculator #11 (fxhedge.ts) FIX ROUND 2 - the per-unit option premium formula (K3), cited by the GPT adjudication round and independently re-verified here.",
+      "finding": "Options premium is quoted and computed on a PER-UNIT basis (e.g. £/€ per 1 unit), multiplied by contracts and contract size — no time proration shown. Confirms the FIX ROUND 1 K3 correction.",
+      "formula": "Verbatim worked example: \"Premium to pay – £/€0.00585 x 35 contracts x €125,000 = £25,594\"."
+    },
+    {
+      "id": "T3",
+      "title": "How to answer a foreign exchange risk management question (ACCA P4/AFM technical article)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/foreign-exchange-risk-mgt.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-23.",
+      "accessed": "2026-07-23",
+      "use": "Calculator #11 (fxhedge.ts) FIX ROUND 2 - (a) confirms a RECEIPT is hedged by SELLING futures (the direction/instrumentSide convention), (b) a second per-unit premium example (quoted in cents, not the notional's own major unit), (c) a second, independently-worded lock-in-rate example.",
+      "finding": "Nutourne Co (USA-based) receives CHF and hedges by SELLING CHF futures — confirms the receipt-sells / payment-buys direction convention. Separately shows a premium quoted as 0.86 US cents per CHF unit (a currency-denomination nuance: the premium's quote currency need not match the notional's major-unit convention). A second lock-in-rate worked example (1.0369 − 0.0011 = 1.0358) is ALGEBRAICALLY the same formula as T1, confirming it is not a one-off phrasing.",
+      "formula": "Verbatim: \"Sell CHF futures now to hedge against sale of CHF when money received from Swiss customer.\"; premium: \"Multiply number of contracts × size of one contract × 0.0086, as premium is quoted in US cents (not US dollars) per CHF.\""
     }
   ]
 }
