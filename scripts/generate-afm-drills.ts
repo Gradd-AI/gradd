@@ -62,6 +62,7 @@ import {
   type NarrativeRubric, type Criterion, type ScenarioFact, type FailureMode as NarrativeFailureMode,
 } from '../lib/acca/narrative-marker';
 import { makeAnthropicCriterionGrader } from '../lib/acca/narrative-grader';
+import { cacheBlock } from '../lib/acca/prompt-cache';
 import {
   computeFcff,
   buildFcffSchema,
@@ -1621,7 +1622,7 @@ async function draftDiscursiveDrill(anthropic: Anthropic, spec: AfmDrillSpec): P
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2000,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_DRILL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_drill' },
     messages: [{ role: 'user', content: buildDiscursiveUserPrompt(spec) }],
@@ -1642,7 +1643,7 @@ async function draftFcffDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1600,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_FCFF_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_fcff_scenario' },
     messages: [{ role: 'user', content: buildFcffUserPrompt(spec) }],
@@ -1679,7 +1680,7 @@ async function draftNpvDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 1800,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_NPV_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_npv_scenario' },
     messages: [{ role: 'user', content: buildNpvUserPrompt(spec) }],
@@ -1741,7 +1742,7 @@ async function draftApvDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise<
     const res = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 3200,   // APV scenarios carry many raw inputs + long prose; 2000 truncated the compare tool-use
-      system: AFM_EXAMINER_PERSONA,
+      system: cacheBlock(AFM_EXAMINER_PERSONA),
       tools: [SUBMIT_APV_SCENARIO_TOOL],
       tool_choice: { type: 'tool', name: 'submit_apv_scenario' },
       messages: [{ role: 'user', content: buildApvUserPrompt(spec) }],
@@ -1791,7 +1792,7 @@ async function draftCapmDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
     const res = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: 2600,
-      system: AFM_EXAMINER_PERSONA,
+      system: cacheBlock(AFM_EXAMINER_PERSONA),
       tools: [SUBMIT_CAPM_SCENARIO_TOOL],
       tool_choice: { type: 'tool', name: 'submit_capm_scenario' },
       messages: [{ role: 'user', content: buildCapmUserPrompt(spec) }],
@@ -1828,7 +1829,7 @@ async function draftDurationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Pro
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2600,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_DURATION_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_duration_scenario' },
     messages: [{ role: 'user', content: buildDurationUserPrompt(spec) }],
@@ -1858,7 +1859,7 @@ async function draftCreditDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promi
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2800,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_CREDIT_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_credit_scenario' },
     messages: [{ role: 'user', content: buildCreditUserPrompt(spec) }],
@@ -1889,7 +1890,7 @@ async function draftBsopDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2600,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_BSOP_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_bsop_scenario' },
     messages: [{ role: 'user', content: buildBsopUserPrompt(spec) }],
@@ -1923,7 +1924,7 @@ async function draftValuationDrill(anthropic: Anthropic, spec: AfmDrillSpec): Pr
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2600,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_VALUATION_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_valuation_scenario' },
     messages: [{ role: 'user', content: buildValuationUserPrompt(spec) }],
@@ -1990,7 +1991,7 @@ async function draftRiskDrill(anthropic: Anthropic, spec: AfmDrillSpec): Promise
 
 async function draftRiskOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: RiskKind): Promise<DrillOutput> {
   const res = await anthropic.messages.create({
-    model: 'claude-sonnet-4-6', max_tokens: 2600, system: AFM_EXAMINER_PERSONA,
+    model: 'claude-sonnet-4-6', max_tokens: 2600, system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_RISK_SCENARIO_TOOL], tool_choice: { type: 'tool', name: 'submit_risk_scenario' },
     messages: [{ role: 'user', content: buildRiskUserPrompt(spec) }],
   });
@@ -2074,7 +2075,7 @@ async function draftInternationalOnce(anthropic: Anthropic, spec: AfmDrillSpec, 
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2600,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_INTERNATIONAL_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_international_scenario' },
     messages: [{ role: 'user', content: buildInternationalUserPrompt(spec) }],
@@ -2173,7 +2174,7 @@ async function draftFxHedgeOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: 
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 2200,
-    system: AFM_EXAMINER_PERSONA,
+    system: cacheBlock(AFM_EXAMINER_PERSONA),
     tools: [SUBMIT_FXHEDGE_SCENARIO_TOOL],
     tool_choice: { type: 'tool', name: 'submit_fxhedge_scenario' },
     messages: [{ role: 'user', content: buildFxHedgeUserPrompt(spec) }],
@@ -2274,7 +2275,7 @@ async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: s
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 600,
-    system: EZRA_TEACHING_PERSONA,
+    system: cacheBlock(EZRA_TEACHING_PERSONA),
     tools: [SUBMIT_REVEAL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_reveal' },
     messages: [{ role: 'user', content: buildRevealPrompt(spec, question, modelAnswer) }],
@@ -2768,7 +2769,7 @@ async function draftNarrativeDrill(anthropic: Anthropic, plan: NarrativePlan, fe
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4000,
-    system: NARRATIVE_AUTHOR_PERSONA,
+    system: cacheBlock(NARRATIVE_AUTHOR_PERSONA),
     tools: [SUBMIT_NARRATIVE_DRILL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_narrative_drill' },
     messages: [{ role: 'user', content: buildNarrativeUserPrompt(plan, feedback) }],
