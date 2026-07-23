@@ -2130,3 +2130,72 @@ ledger, rather than re-duplicating a per-calculator history that will only go st
 **Files touched:** `CLAUDE.md` (calc #11 map entry), `docs/AFM_COVERAGE_CONTRACT.md` (both status
 mirrors + calc #11 table row + quant-shipped count), `docs/APM_BUILD_CONTRACT.md` (this entry). DB:
 4 rows in `acca_drills` (`status`/`published` only — zero content bytes touched by this flip).
+
+## 2026-07-23 — TUTOR BUG FIX: standard withholding pipeline lost the prior attempt on every follow-up
+
+**Field-confirmed on Grant's own live walk of calc #11 (drill `51163dac`, AFM K1).** The hint leg
+correctly credited attempt 1 ("You've locked the arithmetic and correctly computed both
+outcomes"); the very next leg (teaching, after a short second message) responded as if NOTHING
+had been submitted ("I don't see a complete forward hedge calculation or a complete
+money-market hedge calculation"). DB confirmed all 4 messages persisted correctly
+(`acca_drill_messages`) — the loss was between the DB and the Anthropic call, not a persistence
+bug.
+
+**Root cause — pre-existing design, NOT a caching regression (investigated first, fixed second,
+per Grant's own instruction to establish fact before guessing).** `call2_diagnose` (`route.ts`,
+was line 1215) and `call3_teach`'s standard second-miss branch (was line 1253) read ONLY
+`student_message` — the current turn's raw text — with no reference to `lastRealAttempt` at all.
+Every OTHER leg that can reach a second/later turn already falls back to
+`lastRealAttempt ?? student_message` (reveal `:1132`, distress-teach `:1141`, burn `:1148`,
+fast-teach `:1159`, as of pre-fix line numbers) — the standard pipeline was the one path that
+never got that treatment. `git blame` on the two affected lines dated `2026-06-19`/`2026-06-27`/
+`2026-07-21` — all before the prompt-caching work (`2026-07-23`); the one tutor-route commit in
+that range (`446a5ff`) never touched these argument lists. **Live-fire proof (BEFORE):** seeded
+`acca_tutor_progress` with a distinctive marker in `last_real_attempt`, fired a short follow-up
+against the real route, and grepped the dev-server log — the marker appeared **zero times** in
+either call's request body. Confirmed: a short, natural follow-up on a genuine first attempt was
+diagnosed and taught as if the student had submitted nothing.
+
+**Fix (Grant-ruled).** New `buildStudentAnswerBlock(attempt, priorAttempt)` in `route.ts`:
+presents `priorAttempt` as a labelled `Student's most recent full attempt:` block ahead of
+`Student's latest message:` when a prior attempt exists AND differs from the current message;
+collapses to the original single `Student answer: {attempt}` block otherwise (turn 1, where
+`priorAttempt` is null, or an unchanged re-send) — byte-identical to pre-fix behaviour in both
+of those cases. Both `call2_diagnose` and `call3_teach` gained a new `priorAttempt: string |
+null` parameter; the two call sites in the standard pipeline (`route.ts:1221`/`:1262` post-fix)
+now pass `lastRealAttempt` (the PRIOR turn's attempt, read at §5b); the two call sites that
+already folded history into `attempt` itself (distress-teach, fast-teach) pass `null` for the new
+parameter — unchanged behaviour, no duplicate block.
+
+**Caching interplay, verified not just asserted.** The new block is per-turn VARIABLE by
+construction and sits entirely inside `cachePrefix`'s uncached remainder (after `stablePrefix =
+context+question`, which is untouched) — `lib/acca/prompt-cache.ts` itself was not touched by
+this fix. The dev-server log confirmed the cached `Context: ...` prefix preview was byte-identical
+before and after.
+
+**Live-fire proof (AFTER).** Same seeded-marker methodology, same drill, same short follow-up:
+the marker now appears in BOTH request bodies, correctly labelled —
+`"Student's most recent full attempt: ATTEMPT-1-MARKER-...\n\nStudent's l[atest message: ...]"`
+— in both `call2_diagnose` and `call3_teach`. The served response changed character accordingly:
+from *"You're asking the question before you've done the work"* to *"you've got the framework...
+You've done the arithmetic (I'll look at those workings in a moment)"* — the teach leg now
+genuinely coaches the existing work while answering the follow-up, instead of re-scaffolding from
+zero.
+
+**Verification.** `tsc --noEmit` clean; `next build` green; `test:afm-tutor` (36 checks) +
+`test:phrase-match` unaffected (neither touches `call2_diagnose`/`call3_teach`'s new parameter).
+6-probe red-team battery (C1/M2/H1 covering classify-diagnose-hint/teach; X6/X7/R1 covering
+reveal) against a local dev server: **0 auto-FAILs.** Judge pass: 1/8 flagged —
+`X6·APM` invented-figures, the SAME pre-existing `REVEAL_SYSTEM` content-quality gap already
+flagged in `AFM_SURFACED.md` from the prompt-caching session (reproducing a 3rd time,
+independent of this fix — `call4_reveal` was not touched here).
+
+**Scope discipline.** `completenessCheck` (also reads `student_message` for its own "was every
+component attempted" check) was deliberately NOT touched — out of the ruled scope (only
+`call2_diagnose` + the standard `call3_teach` branch), and a genuinely separate question (whether
+completeness should also see prior-turn context) left for its own ruling if it ever surfaces.
+`call3_hint` (first miss) was also not touched — `lastRealAttempt` is null on turn 1 by
+construction, so there is nothing to thread there.
+
+**Files touched:** `app/api/acca/tutor/route.ts` only (`buildStudentAnswerBlock` new;
+`call2_diagnose`/`call3_teach` signatures + all 4 call sites).
