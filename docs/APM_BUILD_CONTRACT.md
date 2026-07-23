@@ -1723,3 +1723,143 @@ this before assuming green gates mean a batch is recompute-ready.
 **STOP called here, exactly as instructed.** No flip, no publish, no student walk. Next: a FRESH
 co-founder independent recompute against the regenerated pack (new ids) → blind adversarial review →
 adjudicate → flip by explicit-id SQL.
+
+## 2026-07-23 — LIVE-USER BUG: reveal-request phrase matching (APM tutor, field-confirmed)
+
+**First real-user field report on the earned-reveal mechanism since its 2026-07-14 go-live.**
+Account `dd786100-7d5d-4e1b-a0af-62f5ac8686e1` (maphosaan@gmail.com), APM A1b (Vantia performance
+measurement), transcript 2026-07-18T20:54–22:29. Pulled the full 18-message `acca_drill_messages`
+transcript + the `acca_tutor_progress` row (`miss_count=7`, `resolved=false`) + `profiles` directly
+from the DB before touching any code.
+
+**CORRECTION to the task's framing — verify-before-headline.** The task assumed this user was
+FREE. Checked the actual row: `apm_subscription_status='inactive'` but `apm_pass_expires_at =
+2026-10-31` (future) — `hasActiveACCAAccess()` (`lib/acca/access.ts`) returns **true** for this
+account. He is PAID (an active 90-day-style pass, set by the Stripe webhook, not a default). This
+matters concretely: under `revealDecision()` (`lib/acca/tutor-personas.ts`), a paid user at
+`missCount>=2` gets `revealGate='reveal'` (the REAL earned reveal, `call4_reveal`), never the
+free-tier `'burn'` wall. Every fix below is scoped against his actual state, not the assumed one.
+
+**THE BUG.** Three of his messages, verbatim from the transcript:
+1. `"just tell me"` (20:56, 21:01) — correctly routed to `call_type=teaching` (a full conceptual
+   teach-through). This is INTENDED behaviour, ruled 2026-07-22 in the X1/X2 disposition — confirmed
+   still correct, not touched.
+2. `"shiw me full answer"` (21:53) — a typo of "show" — failed the OLD exact-substring
+   `REVEAL_PHRASES` match. Routed instead through the ordinary withholding pipeline as if it were a
+   WRONG ATTEMPT AT THE APM QUESTION. `call2_diagnose` dutifully diagnosed "shiw me full answer" as
+   a miss, and the teaching leg then produced: **"I won't hand you the full answer — that defeats
+   the point of you building it — but I can see what's gone wrong here."**
+3. `"show me full answer"` (21:58, 22:21) — correctly spelled but missing "the" — same failure,
+   same fall-through. The teaching leg produced: **"I notice you've asked me to show the full
+   answer, but that's the learning move I can't make."**
+
+Both fabricated sentences are **not grounded in any actual system instruction** — the code never
+decided to withhold on those turns (the earn-gate simply never fired, because the phrase never
+matched); the model invented its own justification for a decision that was never made. Across the
+whole session this user never once received a `call_type=reveal` row — despite being paid, despite
+`miss_count` climbing to 7, he was denied a feature that was correctly built and correctly live.
+
+**ROOT CAUSE.** `REVEAL_PHRASES` (`app/api/acca/tutor/route.ts`, pre-fix) matched via
+`lower.includes(exactPhrase)` — no typo tolerance, no article flexibility. `"show me the full
+answer"` (12 chars different) never matches `"shiw me full answer"` or `"show me full answer"` as
+a substring.
+
+**FIX 1 — fuzzy, normalized phrase matching.** New module `lib/acca/phrase-match.ts`: lowercase +
+strip punctuation, optional-article stripping ("the"/"a"/"an"/"my", skippable on the input side),
+per-word typo tolerance via an **optimal-string-alignment distance** (Levenshtein + an
+adjacent-transposition operation at cost 1 — "teh"→"the" is 1 edit, not 2, since transposed-adjacent
+letters are one of the single most common human typo shapes). Tolerance is capped at ≤2 per the
+task's spec, narrowed to ≤1 for words of 3 letters or fewer (an uncapped ≤2 on a 2-letter word like
+"me" would treat almost any short word as a plausible "typo" of it — a real false-positive risk).
+Matching stays **contiguous** (only input-side articles are skippable as filler, not a loose
+subsequence-anywhere search) — a genuine multi-paragraph APM/AFM attempt could otherwise scatter
+"show" ... "the answer" across unrelated sentences and false-trigger a reveal; verified directly
+with an adversarial fixture ("The dashboard should **show** management the true picture... a
+considered **answer**...") that must NOT match.
+
+**Self-caught regression during build, worth recording:** an early version fuzzy-matched ALL four
+articles (including 2-letter "a"/"my"), which meant "me" (distance 1 from "my") was silently treated
+as skippable filler — breaking `isTeachRequest` on "just tell me" / "teach me" / "walk me through"
+entirely (the fixture suite caught this immediately, before it went anywhere near a commit). Fixed
+by scoping the fuzzy-article tolerance to "the" only (the empirically-observed typo, "teh"), with a
+length window — "a"/"an"/"my" stay exact-match-only. Documented in the module as a cautionary
+comment for the next person tempted to widen it again.
+
+**FIX 2 — single source of truth for the offer sentence (item 2).** The "say 'show me the full
+answer' to unlock..." sentence in `call3_teach`/`call3_confirm` was a SEPARATE hardcoded literal
+from the router's `REVEAL_PHRASES[0]` — coincidentally identical today, but nothing enforced that.
+`phrase-match.ts` now exports `REVEAL_PHRASE_STRUGGLE`/`REVEAL_PHRASE_SOLVED` as the canonical
+strings; `REVEAL_PHRASES` is built FROM them (not a parallel copy), and both offer-line template
+literals in `route.ts` now interpolate the same constants. Fixture-locked (§7 of
+`test-phrase-match.ts`): the canonical constants are asserted to be REVEAL_PHRASES members and to
+self-match `isRevealRequest` — offer and router cannot diverge again.
+
+**FIX 3 — persona guardrail against inventing a refusal.** New `NO_INVENTED_REVEAL_REFUSAL` constant
+in `lib/acca/tutor-personas.ts`, following the established `NO_INVENTED_NUMBERS`/`NO_COMPUTED_OUTPUTS`/
+`DIGNITY_ON_DISTRESS` pattern, spliced into both `EZRA_SYSTEM` and `EZRA_AFM_SYSTEM`: if a message
+reads as a direct reveal request, the persona must NOT invent its own reason for declining ("I
+won't...", "that's not something I can do...", "that defeats the point...") — the earn-gate is
+structural, never the persona's choice, and claiming ownership of it is false. This is defense in
+depth: the router fix (FIX 1) means this exact bug's trigger no longer reaches the teaching leg at
+all, but an ambiguous future "show me ___" message could still occasionally fall through, and the
+persona must not fabricate when it does.
+
+**RED-GREEN (item 1).** `scripts/test-phrase-match.ts` (`npm run test:phrase-match`), 31 checks:
+- **RED** — the OLD matcher is reproduced verbatim, frozen, for permanent regression evidence (not
+  imported from anywhere live) and asserted to FAIL on both of the user's real typo'd/article-dropped
+  utterances — the permanent record that this was a real bug, not a retrofit story.
+- **GREEN** — the exported `isRevealRequest`/`isTeachRequest` correctly classify all three of the
+  user's exact utterances (`"shiw me full answer"` → reveal, `"show me full answer"` → reveal,
+  `"just tell me"` → stays TEACH, asserted explicitly per the 2026-07-22 ruling), plus: canonical
+  phrases still match exactly (no happy-path regression); more typo/article/punctuation/case
+  variants; a false-positive guard on two real long APM attempts from this same transcript (must NOT
+  match either reveal or teach); a deliberate contiguity-defeat adversarial sentence; REVEAL_PHRASES
+  vs TEACH_REQUEST_PHRASES disjointness re-verified under the NEW fuzzy matcher (the original
+  discipline, re-checked against the new logic, not just the old exact-substring one); the
+  single-source-of-truth check (FIX 2); direct unit checks on the `fuzzyPhraseMatch` primitive.
+All 31 pass. `npm run test:afm-tutor` (existing tutor gate/burn/reveal/trim fixtures) — zero
+regression, all pass. `tsc --noEmit` clean. `next build` green.
+
+**ITEM 3 — verified the path this user would actually have hit; no second bug.** Paid + `missCount
+>= 2` throughout → `revealGate === 'reveal'` → `call4_reveal` (APM branch): a genuine
+model-authored walkthrough of the REAL stored `model_answer` — not a silent fallback, not a dark
+flag. Confirmed `APM_EARNED_REVEAL` has been live in production since 2026-07-14 (the go-live entry
+above, first-ever `call_type=reveal` row that date) — well before this user's 18/07 session, so the
+flag itself was never dark for him. **Conclusion: this was purely a routing bug. Once the phrase
+matches, the served experience is correct and real — no second fix required.**
+
+**KNOWN RESIDUAL — `lib/acca/teach-engine.ts` not touched.** The case-session route
+(`app/api/acca/case/*`) carries its OWN pre-fix inline copy of `REVEAL_PHRASES`/
+`TEACH_REQUEST_PHRASES`/the exact-substring matcher. Its own header explicitly documents this as a
+deliberate "byte-for-byte kept separate" decision, with consolidation reserved as "a separate,
+deliberate follow-up once cases have proven out" — respected rather than silently overridden by this
+fix. Flagged here for that future pass: `teach-engine.ts`'s matcher is now behind `route.ts`'s and
+should adopt `lib/acca/phrase-match.ts` when cases graduate. Not a live-traffic risk today (cases are
+pre-paywall per prior journal entries, not a production surface this bug could reach).
+
+**Live-route regression lock added, not fired.** Two new redteam probes (`scripts/redteam-probes.ts`,
+`X6`/`X7`) reproduce the user's exact typo'd/article-dropped phrasing at `paid`+`miss2` (his real
+state) and assert `is-reveal` + a new `no-invented-reveal-refusal` autoCheck (a regex anchored on the
+two real fabricated sentences above, verified to catch both and not false-positive on legitimate "I
+won't correct your figure for you" phrasing). Registered and list-verified
+(`redteam-tutor.ts --list`); NOT fired live this session (the pure fixture above is the red-green
+evidence; X6/X7 are the live-route lock for the next full battery run).
+
+**PROOF_TRANSCRIPTS candidate — flagged, not actioned.** This session is also organic evidence the
+teach loop works: the student's attempt quality visibly climbs across the four real submissions —
+from a generic "measurement drives behaviour" opener (20:54) to, by the final attempt (22:29), a
+precise mechanism-level diagnosis ("management focus solely on revenue growth... managers are only
+rewarded on revenue, they have little incentive to control costs, creating dysfunctional
+behaviour"). The existing `/acca/afm/proof` page (shipped 2026-07-21) is explicitly AFM-only, with
+a prior journal note flagging "a matching APM proof-transcript page once a comparably strong APM
+walk exists" as future, unscoped work — this transcript is a real candidate for exactly that. **Not
+actioned** — it is a real user's actual data; using it (even anonymised) requires Grant reaching out
+for explicit consent first, same discipline as any other with-permission student-data use. Flagging
+for Grant's awareness only.
+
+**Files touched:** `lib/acca/phrase-match.ts` (new), `app/api/acca/tutor/route.ts` (import +
+offer-line wiring, local REVEAL_PHRASES/TEACH_REQUEST_PHRASES/isRevealRequest/isTeachRequest
+removed), `lib/acca/tutor-personas.ts` (NO_INVENTED_REVEAL_REFUSAL), `scripts/test-phrase-match.ts`
+(new, 31 checks), `scripts/redteam-probes.ts` (X6/X7 + new AutoCheck type),
+`scripts/redteam-tutor.ts` (the check's regex + evaluator), `package.json` (`test:phrase-match`
+script).
