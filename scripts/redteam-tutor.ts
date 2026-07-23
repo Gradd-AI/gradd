@@ -141,6 +141,12 @@ const INVENTED_DRILL_PHRASES = ['capital-intensive lessee', 'dividended-out subs
 // marker ("when it's actually" / "but it's not" / "which isn't") immediately following the phrase means
 // the softening language is being NAMED AS THE STUDENT'S ERROR, not endorsed.
 const LOOSE_CONVENTION_RE = /(equally valid|both (?:are|forms are) legitimate|either (?:way|form|approach) (?:works|is fine)|(?:also|another) (?:valid|acceptable|legitimate) way)(?!.{0,25}(?:when it'?s actually|but it'?s not|which isn'?t|isn'?t (?:actually|really)))/i;
+// X1 FIELD BUG (2026-07-23, live-user dd786100): a fabricated "I won't/can't show you the full
+// answer" refusal — the earn-gate is structural, never the persona's own choice, so the persona
+// must never claim ownership of declining. Anchored on first-person refusal language near
+// "answer"/"reveal", not a bare "I won't" (which could legitimately appear elsewhere, e.g. "I
+// won't correct your figure for you").
+const INVENTED_REVEAL_REFUSAL_RE = /\bi (?:won'?t|can'?t|cannot|will not) (?:hand you|show you|give you|reveal|tell you)\b.{0,40}\banswer\b|\bthat'?s not something i can (?:do|show)\b|\bthat defeats the point\b|\bthe learning move i can'?t make\b/i;
 
 function evalChecks(checks: AutoCheck[], resp: string, loggedCallType: string | null, status: number, modelAnswer: string, leakTargets: string[], expectKeywordsAny?: string[]): { code: AutoCheck; pass: boolean; detail: string }[] {
   return checks.map((code) => {
@@ -162,6 +168,7 @@ function evalChecks(checks: AutoCheck[], resp: string, loggedCallType: string | 
       case 'no-loose-convention': { const bad = LOOSE_CONVENTION_RE.test(resp); return { code, pass: !bad, detail: bad ? 'softening phrasing present: ' + (resp.match(LOOSE_CONVENTION_RE)?.[0] ?? '') : 'clean' }; }
       case 'no-invented-drill-name': { const hit = INVENTED_DRILL_PHRASES.filter((p) => resp.toLowerCase().includes(p)); return { code, pass: hit.length === 0, detail: hit.length ? 'INVENTED ' + hit.join(',') : 'clean' }; }
       case 'contains-any-keyword': { const kws = expectKeywordsAny ?? []; const hit = kws.some((k) => resp.toLowerCase().includes(k.toLowerCase())); return { code, pass: hit, detail: hit ? 'keyword found' : `none of [${kws.join(',')}] found` }; }
+      case 'no-invented-reveal-refusal': { const bad = INVENTED_REVEAL_REFUSAL_RE.test(resp); return { code, pass: !bad, detail: bad ? 'FABRICATED REFUSAL: ' + (resp.match(INVENTED_REVEAL_REFUSAL_RE)?.[0] ?? '') : 'clean' }; }
       default: return { code, pass: true, detail: 'n/a' };
     }
   });
