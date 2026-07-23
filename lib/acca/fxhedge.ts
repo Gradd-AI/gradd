@@ -73,16 +73,55 @@
 // board and this includes the number of contracts and whether the contracts should be bought or
 // sold [and the relevant month]."
 //
+// FIX ROUND 2 (2026-07-23, GPT adjudication + independent re-fetch) — the FIX ROUND 1 lock-in
+// correction (`lock_in_rate = futures0 + unexpired_basis`, not the one-sided `spot0 −
+// unexpired_basis`) is now source-verified TWICE, not merely internally recomputed:
+//   • T1 "Foreign currency futures – step by step" (docs/evidence/sources.json), verbatim:
+//     "'Lock in rate' = opening futures price + unexpired basis" — worked: "1.2300 + -0.0025 =
+//     1.2275".
+//   • S9, AFM March/June 2021 Examiner's Report, p.11, worked: "Current basis = Opening futures
+//     price − spot rate = 0.2378 − 0.2358 = 0.0020 ... Basis remaining = 0.0020 x 1/5 = 0.0004 ...
+//     Lock in rate = Opening futures price − basis remaining = 0.2378 − 0.0004 = 0.2374 US$/MR1."
+//     This source's OWN basis sign convention is the OPPOSITE of this engine's (futures0 − spot0,
+//     not spot0 − futures0) — substituting the sign-flip shows the two formulas are algebraically
+//     IDENTICAL, and both independently land on 0.2374. Confirms the FIX ROUND 1 correction from
+//     two unrelated official sources, not just one internally-consistent recompute.
+// RECEIPT-SELLS-FUTURES DIRECTION — a THIRD independent confirmation of `instrumentSide()`'s
+// receipt→sell / payment→buy convention: T3 "How to answer a foreign exchange risk management
+// question", verbatim: "Sell CHF futures now to hedge against sale of CHF when money received from
+// Swiss customer" (Nutourne Co, a USD-functional company receiving CHF).
+//
 // OPTIONS — PREMIUM IN THE QUOTED CURRENCY, "ASSUME EXERCISED" (Passmore Co, SD25 p.13): "the
 // option premium was given in dollars, the currency they were working with, and they attempted a
 // further currency conversion that was not required. There was also no need to calculate a gain
-// or loss ... it is ... assumed the options are exercised." Premium formula (Abertafol Co, D23
-// p.14, shared interest-rate-options mechanics — instrument-neutral, the same contracts × size ×
-// rate × period shape used for currency options): "the percentage ... (0.298%) multiplied by the
-// amount covered ... (so 0.298% x 60 x $500,000 x 3/12)." The premium's FUTURE-VALUE-to-
-// settlement treatment (so it nets against the strike-based proceeds on the SAME date as the
-// forward/futures/MMH outcomes, for a like-for-like all-methods comparison) is an AUTHORED
-// convention — not itself quoted verbatim — flagged for co-founder recompute.
+// or loss ... it is ... assumed the options are exercised."
+//
+// PREMIUM FORMULA — FIX ROUND 1 flagged the `× contracts × contract_size` shape as an unsourced
+// import from Abertafol Co's INTEREST-RATE-options formula (D23 p.14). FIX ROUND 2 (2026-07-23,
+// GPT adjudication + independent re-fetch) UPGRADES this to source-supported for CURRENCY options
+// specifically — TWO ACCA P4/AFM technical articles and one official exam answer show the identical
+// per-unit, no-proration shape on real worked figures:
+//   • T2 "Exchange traded foreign exchange derivatives", verbatim: "Premium to pay – £/€0.00585 x
+//     35 contracts x €125,000 = £25,594" (premium PER UNIT, no time term).
+//   • T3 "How to answer a foreign exchange risk management question": "Multiply number of
+//     contracts × size of one contract × 0.0086, as premium is quoted in US cents (not US dollars)
+//     per CHF" — the same shape, and a live example of a premium quoted in a DIFFERENT sub-unit
+//     from the notional's own currency (a currency-denomination nuance, not a proration one).
+//   • S8, AFM September 2018 Official Answers (Airone question), printed p.18, worked on real exam
+//     figures: "Premium payable = JPY 3.8 x 125,000 x 640 = JPY 304m."
+// THE IR-PRORATION CAVEAT STAYS LIVE: these sources confirm the CURRENCY-options convention on its
+// own terms; they do not retroactively validate having borrowed an INTEREST-RATE-options formula
+// for a different instrument class in the first place — that specific substitution (Abertafol Co →
+// currency options) remains the identified FIX ROUND 1 authoring error, not a general license to
+// blend interest-rate and currency-option conventions elsewhere in this engine.
+//
+// PREMIUM CONVERSION RATE — FIX ROUND 2 (GPT adjudication): when the premium is quoted in a
+// currency OTHER than the outcome (home) currency, it converts at TODAY'S SPOT, never at the
+// strike — the premium is paid at the trade date, the strike only prices the later exercise
+// settlement. An earlier engine version wrongly reused `strike` for both conversions; this had zero
+// live-drill impact (the only published K3 to date quotes its premium in the home currency, so no
+// conversion — at any rate — ever ran), but is corrected as a general engine rule, parameterised
+// for future drills that DO need it (`OptionsInputs.spot`, required unconditionally).
 //
 // SWAP — thin local evidence (Mahoney Co, J24 p.7): "very few recognised that the swap rate would
 // only account for a proportion of the cash to be received in the third year." The swap converts
@@ -283,21 +322,35 @@ export function optionType(direction: ExposureDirection): OptionType {
 export interface OptionsInputs {
   exposure: number; direction: ExposureDirection; quote_direction: QuoteDirection;
   contract_size: number; strike: number;
-  // premium as a DECIMAL fraction of notional (e.g. 0.00285), ALL-IN for the option's whole life —
-  // NOT prorated by months. FIX ROUND 1 (2026-07-22, co-founder recompute): the engine originally
-  // prorated by (months_covered/12), borrowing Abertafol Co's INTEREST-RATE-options formula
-  // ("0.298% x 60 x $500,000 x 3/12", D23 p.14) — but that proration is UNSOURCED for CURRENCY
-  // options (Abertafol is interest-rate-specific; no local currency-options source states or
-  // contradicts a proration). The SD25 sample-answers PDF that would settle it from Passmore Co's
-  // own worked figure could not be located publicly (searched; only the examiner's REPORT is
-  // public, and it carries no worked numbers) — per the project's unfetchable-source discipline,
-  // this is the documented FALLBACK: an all-in per-unit premium, no time-proration, a formula-free
-  // convention until a primary source is found. NOT run through asDec's >1-means-percent heuristic:
-  // option premiums are routinely sub-1-as-a-percent (0.285%), which asDec would misread as
-  // already-decimal (28.5%) and silently 100x the premium.
+  // premium as a DECIMAL fraction PER UNIT of notional (e.g. 0.0048), ALL-IN for the option's
+  // whole life — NOT prorated by months. FIX ROUND 1 (2026-07-22, co-founder recompute) removed an
+  // earlier proration borrowed from Abertafol Co's INTEREST-RATE-options formula (D23 p.14), flagged
+  // at the time as an unsourced fallback pending a primary currency-options source. FIX ROUND 2
+  // (2026-07-23, GPT adjudication + independent re-fetch) UPGRADES that flag to source-supported:
+  // BOTH the "Exchange traded foreign exchange derivatives" AND "How to answer a foreign exchange
+  // risk management question" ACCA P4/AFM technical articles show a per-unit premium × contracts ×
+  // contract size formula with NO time-proration term (T2/T3, docs/evidence/sources.json — verbatim:
+  // "Premium to pay – £/€0.00585 x 35 contracts x €125,000 = £25,594"), and the September 2018 AFM
+  // official answer (S8, Airone question) shows the identical shape on real exam figures: "Premium
+  // payable = JPY 3.8 x 125,000 x 640 = JPY 304m". The IR-PRORATION CAVEAT STAYS LIVE regardless:
+  // these sources show the CURRENCY-options convention; they do not retroactively validate borrowing
+  // an INTEREST-RATE-options formula for a different instrument class — that specific substitution
+  // (Abertafol → currency options) remains the identified authoring error FIX ROUND 1 corrected, not
+  // a general license to blend interest-rate and currency-option conventions elsewhere. NOT run
+  // through asDec's >1-means-percent heuristic: option premiums are routinely sub-1-as-a-percent
+  // (0.48%), which asDec would misread as already-decimal (48%) and silently 100x the premium.
   premium_pct: number;
-  premium_currency: PremiumCurrency; // the currency the premium is QUOTED in (no further conversion)
-  months_to_transaction: number;     // months to the settlement date — display only, no longer feeds the premium
+  premium_currency: PremiumCurrency; // the currency the premium is QUOTED in
+  // Today's spot rate — FIX ROUND 2 (GPT adjudication): when premium_currency differs from the home
+  // currency, the premium (paid at the TRADE date) must convert at TODAY'S SPOT, never at the
+  // strike (which prices the EXERCISE settlement on a later date, an unrelated conversion). An
+  // earlier engine version wrongly reused `strike` for both conversions — gate-invisible because no
+  // check compared the premium conversion's rate against the exercise conversion's rate; it simply
+  // never fired against a live drill, since the only published K3 to date quotes premium_currency
+  // in the HOME currency (no conversion needed either way). Required unconditionally (not just when
+  // premium_currency is foreign) so every K3 schema carries it for future drills that do need it.
+  spot: number;
+  months_to_transaction: number;     // months to the settlement date — display only, does not feed the premium
   residual_policy: ResidualPolicy;
   topup_forward_rate?: number;
 }
@@ -306,12 +359,11 @@ export interface OptionsComputed {
   contracts: number; hedged_amount: number; residual: number;
   premium_per_contract_notional: number; // contract_size (the notional base the % is applied to)
   premium: number;                 // total premium, in premium_currency, at t0
-  premium_home: number;            // premium converted to HOME currency — NO time-value adjustment
-                                    // (FIX ROUND 1: the FV-to-settlement compounding was an authored,
-                                    // unsourced convention; the SD25 answer that would confirm or
-                                    // replace it is unfetchable, so per the documented fallback the
-                                    // premium is deducted as paid, undiscounted — the financing cost
-                                    // of paying it upfront is noted in PROSE, not computed)
+  premium_home: number;            // premium converted to HOME currency AT SPOT (FIX ROUND 2 — never
+                                    // at the strike) — NO time-value adjustment (FIX ROUND 1: the
+                                    // FV-to-settlement compounding was removed; the premium is
+                                    // deducted as paid, undiscounted — the financing cost of paying
+                                    // it upfront is noted in PROSE, not computed)
   home_from_strike: number;        // hedged_amount converted at the strike (exercised)
   home_from_residual: number;
   home_settlement: number;         // net of the premium (a receipt: minus cost; a payment: plus cost)
@@ -326,7 +378,9 @@ export function computeOptionsHedge(raw: OptionsInputs): OptionsComputed {
   const premium_per_contract_notional = raw.contract_size;
   // all-in per-unit premium × contracts covered × contract size — NO time proration (see interface note)
   const premium = raw.premium_pct * contracts * raw.contract_size;
-  const premium_home = raw.premium_currency === 'home' ? premium : toHome(premium, raw.strike, raw.quote_direction);
+  // FIX ROUND 2: convert at SPOT (the trade-date rate), never at the strike (the exercise rate) —
+  // the premium is paid today, not at exercise.
+  const premium_home = raw.premium_currency === 'home' ? premium : toHome(premium, raw.spot, raw.quote_direction);
   const home_from_strike = toHome(hedged_amount, raw.strike, raw.quote_direction);
   let home_from_residual = 0;
   if (raw.residual_policy === 'forward_topup') {
@@ -646,18 +700,25 @@ export function buildFuturesModelAnswer(raw: FuturesDrillInputs, c: FuturesCompu
 // K3 — options drill
 // ═══════════════════════════════════════════════════════════════════════════════════════
 export interface OptionsDrillInputs extends OptionsInputs { currency_home: string; currency_foreign: string; }
+// FIX ROUND 2 (GPT adjudication, 2026-07-23): premium is now stated and displayed PER UNIT
+// throughout (e.g. "JOD 0.0048 per USD 1"), never as a bare percentage — a full-row grep for a
+// stray "%"-formatted premium is part of the patch's own gate (see the _patch script). The
+// underlying number is UNCHANGED (0.0048 = 0.48%, purely a labelling fix); source-backed by S8/T2/
+// T3 in docs/evidence/sources.json, which all state and work the premium the same per-unit way.
+function fmtPremiumRate(n: number): string { return n.toFixed(4); }
 export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`;
+  const premiumCcy = raw.premium_currency === 'home' ? home : foreign;
   const premiumUnit = raw.premium_currency === 'home' ? homeUnit : `${foreign}m`;
   const comps: Component[] = [
     { component_id: 'contracts', label: 'Number of option contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
       working_steps: [`= round(${foreign} ${fmt1(raw.exposure)} ÷ contract size ${fmt1(raw.contract_size)}) — whole contracts only`] },
     { component_id: 'premium', label: `Total premium (${raw.premium_currency})`, expected_value: c.premium, unit: premiumUnit, tolerance: premiumTol,
       depends_on: ['contracts'], recompute: (d) => raw.premium_pct * d.contracts * raw.contract_size,
-      working_steps: [`= premium ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} contracts × ${fmt1(raw.contract_size)} (all-in, no time proration)`] },
-    { component_id: 'premium_home', label: `Premium, converted to ${home} (no time-value adjustment)`, expected_value: c.premium_home, unit: homeUnit, tolerance: premiumTol,
-      depends_on: ['premium'], recompute: (d) => (raw.premium_currency === 'home' ? d.premium : toHome(d.premium, raw.strike, raw.quote_direction)),
-      working_steps: [`= premium${raw.premium_currency === 'foreign' ? ` converted at the strike ${fmt4(raw.strike)}` : ' (already home currency, no further conversion)'} — deducted as paid, not future-valued`] },
+      working_steps: [`= ${premiumCcy} ${fmtPremiumRate(raw.premium_pct)} per unit × ${c.contracts} contracts × ${fmt1(raw.contract_size)} (all-in, no time proration)`] },
+    { component_id: 'premium_home', label: `Premium, converted to ${home} at spot (no time-value adjustment)`, expected_value: c.premium_home, unit: homeUnit, tolerance: premiumTol,
+      depends_on: ['premium'], recompute: (d) => (raw.premium_currency === 'home' ? d.premium : toHome(d.premium, raw.spot, raw.quote_direction)),
+      working_steps: [`= premium${raw.premium_currency === 'foreign' ? ` converted at today's spot ${fmt4(raw.spot)} (the trade-date rate — never the strike, which prices exercise on a later date)` : ' (already home currency, no further conversion)'} — deducted as paid, not future-valued`] },
     { component_id: 'home_from_strike', label: `${home} outcome if exercised (at the strike)`, expected_value: c.home_from_strike, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['contracts'], recompute: (d) => toHome(d.contracts * raw.contract_size, raw.strike, raw.quote_direction),
       working_steps: [`= hedged amount converted at the strike ${fmt4(raw.strike)} (assume exercised)`] },
@@ -667,26 +728,27 @@ export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed):
     recompute: (d) => d.home_from_strike + (raw.direction === 'receipt' ? -d.premium_home : d.premium_home),
     working_steps: [`= strike proceeds ${raw.direction === 'receipt' ? '− the premium (cost)' : '+ the premium (cost)'}`] });
   const recomputeIds: Record<string, string | undefined> = { premium: 'fxh_option_premium', premium_home: 'fxh_premium_convert', home_from_strike: 'fxh_strike_convert', home_settlement: 'fxh_option_net' };
-  const params = { exposure: raw.exposure, contract_size: raw.contract_size, strike: raw.strike, premium_pct: raw.premium_pct, months_to_transaction: raw.months_to_transaction };
+  const params = { exposure: raw.exposure, contract_size: raw.contract_size, strike: raw.strike, premium_pct: raw.premium_pct, spot: raw.spot, months_to_transaction: raw.months_to_transaction };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 export function buildOptionsModelAnswer(raw: OptionsDrillInputs, c: OptionsComputed, prose: string): string {
   const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n);
-  // Premium figures are naturally small (a fraction of a percent of notional) — money()'s 1dp
-  // rounding can display as a misleading "0.0m" even though the underlying value is a real,
-  // non-trivial figure. Display premium-scale figures at 4dp instead (matches the project's own
-  // convention for other naturally-small computed stats, e.g. BSOP's d1/d2/N(d)).
+  // Premium figures are naturally small — money()'s 1dp rounding can display as a misleading
+  // "0.0m" even though the underlying value is a real, non-trivial figure. Display premium-scale
+  // figures at 4dp instead (matches the project's own convention for other naturally-small computed
+  // stats, e.g. BSOP's d1/d2/N(d)).
   const money4 = (currency: string, n: number) => `${currency} ${fmt4(n)}m`;
-  const premiumStr = money4(raw.premium_currency === 'home' ? home : foreign, c.premium);
+  const premiumCcy = raw.premium_currency === 'home' ? home : foreign;
+  const premiumStr = money4(premiumCcy, c.premium);
   const premiumHomeStr = money4(home, c.premium_home);
   const otWord = c.option_type === 'put' ? 'put' : 'call';
   const otRight = c.option_type === 'put' ? `the right to SELL ${foreign}` : `the right to BUY ${foreign}`;
   return [
     '**FX hedging — currency options**', '',
-    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${(raw.premium_pct * 100).toFixed(3)}% (all-in, quoted in ${raw.premium_currency === 'home' ? home : foreign}). A ${raw.direction} is hedged by **BUYING ${otWord} options** (${otRight}) — never by selling/writing options, which is a different strategy. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
-    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → buy **${c.contracts} ${otWord} options** (${c.contracts.toFixed(1)} contracts). Premium = ${(raw.premium_pct * 100).toFixed(3)}% × ${c.contracts} × ${fmt1(raw.contract_size)} = **${premiumStr}** (all-in for the option's life, no time proration)${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${premiumCcy} ${fmtPremiumRate(raw.premium_pct)} per unit of contract size (all-in for the option's life, no time proration). A ${raw.direction} is hedged by **BUYING ${otWord} options** (${otRight}) — never by selling/writing options, which is a different strategy. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
+    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → buy **${c.contracts} ${otWord} options** (${c.contracts.toFixed(1)} contracts). Premium = ${premiumCcy} ${fmtPremiumRate(raw.premium_pct)} × ${c.contracts} × ${fmt1(raw.contract_size)} = **${premiumStr}** (all-in for the option's life, no time proration)${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
     '**Step 2 — Exercise outcome**', '', `${fmt1(c.hedged_amount)} at the strike ${fmt4(raw.strike)} = ${mH(c.home_from_strike)}.`, '',
-    '**Step 3 — Net of the premium**', '', `Premium = ${premiumHomeStr}, deducted as paid at the outset (not future-valued — paying it upfront has a real financing cost, addressed below rather than computed into the figure); ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
+    '**Step 3 — Net of the premium**', '', `Premium = ${premiumHomeStr}${raw.premium_currency === 'foreign' ? ` (converted at today's spot ${fmt4(raw.spot)}, not the strike — the premium is paid today, not at exercise)` : ''}, deducted as paid at the outset (not future-valued — paying it upfront has a real financing cost, addressed below rather than computed into the figure); ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
     `*Reconciliation: strike outcome ${mH(c.home_from_strike)} ${raw.direction === 'receipt' ? '−' : '+'} premium ${premiumHomeStr} = ${mH(c.home_settlement)} ✓*`,
   ].join('\n');
