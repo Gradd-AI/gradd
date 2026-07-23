@@ -1642,3 +1642,84 @@ tolerance conventions, generator wiring).
 **STOP called here, exactly as instructed.** No flip, no publish, no student walk. Next: co-founder
 independent recompute → blind adversarial review (the pack, CLOSED RULINGS present) → adjudicate →
 flip by explicit-id SQL (reconcile-before-flip; E2b is a brand-new LO, trivially clean reconcile).
+
+## 2026-07-22/23 — CALCULATOR #11 FX HEDGING — FIX ROUND 1 (3 majors, co-founder independent recompute)
+
+**First-ever independent recompute against the batch found three genuine defects, gate-invisible in
+three distinct ways** — none caught by the 24 automated checks that had all shown green, because each
+class of gate was checking a DIFFERENT thing than the one that was actually wrong:
+
+1. **K2 lock-in rate — a misencoded convention.** The engine computed `lock_in_rate = spot0 −
+   unexpired_basis`, algebraically equal to `futures0 + EXPIRED_basis` — a ONE-SIDED formula. GATE 16
+   verified internal self-consistency of that formula against itself, which is exactly why a wrong
+   formula sailed through: self-consistency proves nothing about correctness against a source. The
+   corrected convention, per co-founder recompute against Passmore Co's own worked figures: `lock_in_rate
+   = futures0 + unexpired_basis` (≡ `spot0 − expired_basis`). GATE 16 hardened with a TWO-ROUTE
+   self-check — both algebraic paths to the lock-in rate must independently agree, which a future
+   one-sided reimplementation cannot satisfy by construction (they're built from different given
+   constants and only coincide when the formula is right).
+2. **K3 option premium — an unsourced formula import.** The `× months_covered/12` proration was
+   borrowed from Abertafol Co's INTEREST-RATE-options formula (D23 p.14) on the assumption that
+   instrument-neutral mechanics transfer to currency options — but no currency-options source (local
+   or fetched) confirms or denies a time proration. GATE 18 verified the premium against its OWN
+   stated formula, which is why an unsourced formula choice was invisible to it: the gate checks
+   arithmetic fidelity to a convention, not whether that convention was the right one to import.
+   **Attempted to settle this definitively**: searched multiple ways for the AFM September/December
+   2025 (SD25) official/sample-answers PDF that would carry Passmore Co's own worked option-premium
+   figures — could not locate it publicly; only the examiner's REPORT (commentary, no worked numbers)
+   is public. Per Grant's explicit fallback instruction, applied the documented alternative: an
+   ALL-IN per-unit premium (`premium_pct × contracts × contract_size`, no proration), deducted/added
+   AS PAID (the future-value-to-settlement step removed entirely — a financing-cost point now belongs
+   in prose, not a computed figure). Instruction wording also fixed: "buy N put/call options," never
+   "sell N contracts" — an option hedge always BUYS. This surfaced a related gate gap: GATE 17 had
+   derived the expected buy/sell side internally via `instrumentSide()`, which is correct for
+   futures/forward/swap but WRONG for options (a hedge always buys an option regardless of exposure
+   direction) — GATE 17 now takes an explicit caller-supplied `expectedSide` instead of assuming one
+   convention fits every instrument.
+3. **K4 direction + realism — a parameter↔prose inversion.** The live K4 drill's scenario prose
+   stated "LKR per JPY 1" while the code's `quote_direction` parameter was actually `foreign_per_home`
+   (JPY per LKR) — no prior gate checked prose against the parameter AT ALL (there wasn't one; this
+   is a genuinely new gate, not a hardened one). The mismatch also produced an unrealistic rate
+   (~0.72; real-world LKR/JPY ≈ 2.0). Fixed by re-homing K4 to `home_per_foreign` (matching the
+   prose) with realistic magnitudes. **NEW GATE 17b** makes the class structurally impossible going
+   forward, not just detectable: `buildFxHedgeUserPrompt` now requires a literal `{{QUOTE_SENTENCE}}`
+   placeholder in `context_text`; the model is EXPLICITLY forbidden from authoring the quote sentence
+   itself; `draftFxHedgeOnce` rejects the Pass-1 response outright if the placeholder is missing, then
+   injects the ONE canonical, code-generated sentence (`quoteDirectionSentence`) at that exact point.
+   GATE 17b regression-locks the injection mechanism itself (verifies the sentence landed verbatim).
+   **A related, self-found issue** surfaced while regenerating K1: the original US/USD-company-with-
+   PEN-receipt framing (quoted `foreign_per_home`) inverted once the model wrote the realistic
+   Peruvian-exporter framing, producing a ~14×-wrong conversion. Re-homed K1 to `home_per_foreign`
+   (PEN per USD — PEN is the objectively weaker currency, matching the pattern in both original
+   sourced conventions). No gate caught this — GATE 17b proves sentence↔parameter agreement, not that
+   the parameter is economically sane for the chosen currency pairing; this stays a human judgment
+   call at batch-plan authoring time, noted in the pack for reviewer awareness, not journalled as a
+   fourth numbered fix.
+
+**Regeneration, not patching.** All 4 drills fully deleted and regenerated from scratch (the schema
+shape itself changed — `premium_home_fv` renamed to `premium_home`, `months_covered`/
+`compounding_rate` dropped from K3, `expectedSide` added to every GATE 17 call site) — a content
+patch would not have been sufficient. `test-fxhedge.ts` re-anchored with 5 new regression-lock
+fixtures that pin the OLD (wrong) formulas as explicit MUST-FAIL cases, so neither defect class can
+silently recur even if someone reverts the fix without realizing why. 68/68 fixtures pass; `tsc`
+clean; `next build` green; `test:international`/`test:risk`/`test:area-entry` unaffected (zero
+regression).
+
+**Pack fully regenerated** (`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`) with a dedicated FIX
+ROUND 1 section up top, revised conventions (⚠-marked where amended), revised gate descriptions,
+NEW ids for all four drills (the old ids `fd0ba548`/`93fc30f7`/`001c8b07`/`13882862` were deleted, not
+reused), and an explicit non-claim: the K2/K3 corrections are NOT independently source-verified (the
+settling SD25 PDF is unfetchable) — they stand on the co-founder's recompute authority per standing
+project discipline, flagged honestly rather than self-certified.
+
+**Claim discipline note:** this fix round is a textbook case for why the recompute step exists —
+three defects, each invisible to a DIFFERENT category of automated gate (misencoded-but-self-consistent
+formula; unsourced-but-internally-valid formula; untested prose↔parameter relationship), all caught
+only by a human recomputing from first principles against real source material. `tsc`/`next build`
+green and 68/68 fixtures passing throughout — none of that is evidence of correctness against the
+external world, only of internal consistency. Journalled explicitly so the next family author reads
+this before assuming green gates mean a batch is recompute-ready.
+
+**STOP called here, exactly as instructed.** No flip, no publish, no student walk. Next: a FRESH
+co-founder independent recompute against the regenerated pack (new ids) → blind adversarial review →
+adjudicate → flip by explicit-id SQL.
