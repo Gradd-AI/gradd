@@ -1,6 +1,6 @@
 # AFM FX-hedging batch — blind adversarial review pack
 
-**Calculator #11: FX hedging (`lib/acca/fxhedge.ts`). 4 drills, `paper_code=AFM`, `lo_code=E2b`. REGENERATED + GATED 2026-07-22/23 after FIX ROUND 1 (`status=candidate`, `published=false`) — awaiting a FRESH co-founder independent recompute + blind adversarial review before any flip. FIRST family in AFM section E. Superseded the original 2026-07-22 batch (ids `fd0ba548`/`93fc30f7`/`001c8b07`/`13882862`, all deleted) — see FIX ROUND 1 below for what changed and why.**
+**Calculator #11: FX hedging (`lib/acca/fxhedge.ts`). 4 drills, `paper_code=AFM`, `lo_code=E2b`. GATED 2026-07-22/23 after FIX ROUND 1, then FIX ROUND 2 (2026-07-23, GPT full-round adjudication — all four figure sets accepted unchanged, one drill patched for prose/evidence only) (`status=candidate`, `published=false`) — awaiting a FRESH co-founder independent recompute + blind adversarial review before any flip. FIRST family in AFM section E. Superseded the original 2026-07-22 batch (ids `fd0ba548`/`93fc30f7`/`001c8b07`/`13882862`, all deleted) — see FIX ROUND 1 below for what changed and why.**
 
 Doctrine: code owns EVERY figure AND every figure-vs-figure verdict (including which hedge method
 wins, and by how much) — the model authored PROSE only. The calculator composes
@@ -78,6 +78,84 @@ in place — a schema-shape change, not a content edit). `test-fxhedge.ts` re-an
 regression-lock fixtures pin the OLD (wrong) formulas as MUST-FAIL cases, so neither defect class can
 silently recur. 68/68 fixtures pass; tsc clean; `next build` green.
 
+## ✅ FIX ROUND 2 (2026-07-23) — GPT full-round adjudication: all four figure sets ACCEPTED unchanged
+A fresh, full-round GPT adjudication recomputed all four drills from raw inputs. Verdict: **4/4
+figure sets clean — 0.0408 / 15.758 / 981.12 / 31.79 / 32.735 all confirmed byte-identical**, no
+numeric or gate defect found. The round's only findings were (a) one wording must-fix (K3's premium
+was stated as a percentage, obscuring the underlying per-unit convention) and (b) a citation-upgrade
+opportunity for Fix Round 1's two "internal authority only" corrections (lock-in formula, premium
+formula) — both independently source-verifiable, not previously fetched. Nothing here changes a
+single figure; this round is prose and evidence only.
+
+1. **Citations independently re-fetched and registered** (`docs/evidence/sources.json`), each
+   verified by direct fetch (WebFetch/curl+pdftotext) before being cited, per standing evidence
+   discipline — no citation baked in on GPT's say-so alone:
+   - **T1** "Foreign currency futures – step by step" (ACCA P4/AFM technical article), verbatim:
+     *"'Lock in rate' = opening futures price + unexpired basis"* — worked: *"1.2300 + -0.0025 =
+     1.2275"*. Confirms the Fix Round 1 lock-in formula exactly.
+   - **S9**, AFM March/June 2021 Examiner's Report, printed p.11, worked: *"Current basis = 0.2378
+     − 0.2358 = 0.0020; Basis remaining = 0.0020 x 1/5 = 0.0004; Lock in rate = 0.2378 − 0.0004 =
+     0.2374 US$/MR1."* This source's OWN basis sign convention is the OPPOSITE of the engine's
+     (`futures0 − spot0`, not `spot0 − futures0`) — substituting the sign-flip proves the two
+     formulas are algebraically IDENTICAL; both independently land on exactly 0.2374. A SECOND,
+     unrelated official source confirming Fix Round 1's correction, not just one internally
+     self-consistent recompute.
+   - **T3** "How to answer a foreign exchange risk management question", verbatim: *"Sell CHF
+     futures now to hedge against sale of CHF when money received from Swiss customer"* (Nutourne
+     Co) — a third independent confirmation of the receipt-sells/payment-buys futures direction
+     convention already implemented in `instrumentSide()`.
+   - **T2** "Exchange traded foreign exchange derivatives", verbatim: *"Premium to pay – £/€0.00585
+     x 35 contracts x €125,000 = £25,594"* — the option premium quoted and computed PER UNIT,
+     multiplied by contracts and contract size, no time term. Upgrades Fix Round 1's premium
+     formula from "unsourced" to source-supported for CURRENCY options specifically.
+   - **S8**, AFM September 2018 Official Answers (Airone), printed p.18, worked on real exam
+     figures: *"Premium payable = JPY 3.8 x 125,000 x 640 = JPY 304m"* — the identical per-unit,
+     no-proration shape, on an official mark scheme rather than a technical article.
+   - **T3** again, second premium example: premium quoted in US cents per CHF (a currency-
+     denomination nuance — the premium's quote currency need not match the notional's major-unit
+     convention), reinforcing the per-unit shape is standard across sources, not a one-off phrasing.
+   - **"March 2020"** (GPT's fourth citation, alongside S8/S9 for the same K2/K3 conventions) —
+     searched multiple ways; **NOT locatable** in the standard ACCA past-papers archive (2020 AFM
+     sittings were disrupted/remote that period). Recorded honestly as
+     `unverified_citations_do_not_bake_in` in `sources.json`, deliberately kept OUT of the arrays
+     the fetch script iterates, and NOT cited anywhere in `fxhedge.ts`. Per the task's own
+     instruction — "NO trust without the fetch" — this citation is flagged, not baked in.
+2. **K3 premium restated PER-UNIT everywhere** (id `359207f6-bb0a-41a8-904c-27c38dbf408e`) — the
+   live figure (JOD 0.0408m) is UNCHANGED; only the wording changed, from a bare "0.48%" framing
+   (which obscured that the rate is per-unit-of-contract-size, not a percentage of notional) to the
+   explicit per-unit statement matching T2/S8/T3's own convention. `context_text`'s raw-input line
+   now reads *"Premium: JOD 0.0048 per USD 1 of contract size, all-in for the option's life; no
+   time proration; paid in JOD at trade date"*; `model_answer`'s Step 1 now reads *"Premium = JOD
+   0.0048 × 17 × 0.5 = JOD 0.0408m"*; `answer_schema`'s `premium`/`premium_home` `working_steps`
+   aligned to the same per-unit language. A full-row grep for `0.48%`/`0.480%`/`0.298%` returns
+   zero matches across `context_text`, `model_answer`, `hint`, `full_reveal`, and
+   `answer_schema.components[].working_steps`. Patched via `scripts/_patch_afm_fxhedge_k3.ts`
+   (in-process GATE 1/2/3/15/17/17b/18 re-run before write; DB read-back confirmed figures
+   byte-identical pre/post-patch).
+3. **ENGINE RULE (now cited, not just patched): premium quoted in a currency OTHER than the
+   outcome (home) currency converts at TODAY'S SPOT, never at the strike.** An earlier engine
+   version wrongly reused `strike` for both the premium conversion AND the exercise-settlement
+   conversion. This had **zero live-drill impact** — the only published K3 quotes its premium in
+   the home currency, so no currency conversion of the premium ever ran, buggy or otherwise — but
+   is corrected as a general engine rule ahead of any future drill that DOES need it.
+   `OptionsInputs.spot` is now a required field (previously used for K1 only); `computeOptionsHedge`
+   converts the premium via `toHome(premium, raw.spot, ...)` instead of `raw.strike`.
+   Regression-locked in `test-fxhedge.ts` with a fixture using deliberately distinct spot (14.05)
+   and strike (14.10) values, proving the premium-to-home conversion uses spot, not strike.
+4. **K1 realism aside softened** — "Rates quoted PEN per USD 1 (realistic magnitude, ≈3.7–3.8)"
+   became "Rates quoted PEN per USD 1 (stated at the appraisal date, economically plausible in
+   order of magnitude, ≈3.7–3.8)" — a precision fix (every sourced FX rate in this batch is a
+   point-in-time appraisal-date figure, not a claim of durable "realism").
+5. **Re-gated**: K3 re-ran GATE 1/2/3/15/17/17b/18 in-process before the DB write (all PASS); the
+   engine-level spot-fix is covered by the new `test-fxhedge.ts` fixture (73/73 total, up from
+   68/68 — 5 new checks: the spot-vs-strike regression lock plus per-unit wording assertions on the
+   generated K3 model answer). `next build` green, `npm run test:fxhedge` green.
+
+**Net effect: every number in this pack is exactly as it was after Fix Round 1. Fix Round 2 raises
+two of Fix Round 1's corrections from "co-founder recompute authority" to "independently
+source-verified," fixes an inert engine bug pre-emptively, and clarifies K3's premium wording. See
+the ⛔ CLOSED RULINGS section below for the updated evidence status.**
+
 ## Conventions — FETCHED, page-verified against local sources (2026-07-22), AS AMENDED by Fix Round 1
 Evidence gathered by a dedicated research pass (see `ClaudeSend.txt` in that session, and
 `APM_BUILD_CONTRACT.md` 2026-07-22/23 entries) before any code was written; two conventions revised
@@ -95,13 +173,18 @@ per Fix Round 1 above (marked ⚠):
 - **Full instruction set (direction + count + month)** — Northney Co (AFM SD24 examiner's report,
   p.5): "expected to provide a full set of instructions to the board and this includes the number of
   contracts and whether the contracts should be bought or sold."
-- ⚠ **Option premium — ALL-IN, no time proration** (Fix Round 1: the previous `× months/12` was an
-  unsourced import from Abertafol Co's interest-rate-options formula, D23 p.14 — instrument-neutral
-  mechanics were assumed to transfer to currency options without a currency-options source
-  confirming it). Passmore Co (SD25 p.13) sources the quoted-currency discipline and assume-exercised
-  convention, but not the proration question. **Grant's documented fallback convention** (the SD25
-  source that would settle this definitively is unfetchable): premium = premium% × contracts ×
-  contract size, deducted/added as paid, undiscounted.
+- ✅ **Option premium — ALL-IN per-unit charge, no time proration** (Fix Round 1: the previous
+  `× months/12` was an unsourced import from Abertafol Co's interest-rate-options formula, D23
+  p.14 — instrument-neutral mechanics were assumed to transfer to currency options without a
+  currency-options source confirming it. Fix Round 2, 2026-07-23: NOW SOURCE-VERIFIED — T2
+  "Exchange traded foreign exchange derivatives" (*"Premium to pay – £/€0.00585 x 35 contracts x
+  €125,000 = £25,594"*) and S8, AFM September 2018 Official Answers p.18 (*"Premium payable = JPY
+  3.8 x 125,000 x 640 = JPY 304m"*) both show the identical per-unit, no-proration shape on real
+  worked figures.) Passmore Co (SD25 p.13) sources the quoted-currency discipline and
+  assume-exercised convention. **Formula: premium = premium-per-unit × contracts × contract
+  size**, deducted/added as paid, undiscounted. When the premium is quoted in a currency OTHER
+  than the outcome (home) currency, it converts at TODAY'S SPOT, never the strike (Fix Round 2
+  engine rule — see below).
 - **Money-market hedge, both directions** — F9 technical article "Foreign currency risk and its
   management" (accaglobal.com, section "6. Money market hedging", fetched 2026-07-22): receipt =
   borrow foreign at the foreign borrowing rate / convert at spot / deposit home at the home deposit
@@ -131,8 +214,9 @@ per Fix Round 1 above (marked ⚠):
 - **GATE 17b (NEW, Fix Round 1)** quote-sentence structural integrity — the canonical, code-generated
   quote-direction sentence must be present verbatim in `context_text`; a parameter↔prose mismatch is
   structurally prevented by the `{{QUOTE_SENTENCE}}` injection mechanism this gate regression-locks.
-- **GATE 18** premium-currency check (Fix Round 1 corrected) — premium = premium% × contracts ×
-  contract size, ALL-IN, no time proration; no needless extra currency conversion.
+- **GATE 18** premium-currency check (Fix Round 1 corrected; source-verified Fix Round 2 — T2/S8)
+  — premium = premium-per-unit × contracts × contract size, ALL-IN, no time proration; converts at
+  spot (not strike) when the premium currency differs from home (Fix Round 2 engine rule).
 - **GATE 19** best-method verdict integrity — the recommended method is the computed best (highest
   guaranteed receipt / lowest cost), with the stated margin matching exactly.
 All green on all four regenerated drills, alongside GATE 1/2/3 (self-consistency, figure integrity,
@@ -159,7 +243,8 @@ proven by GATE 1 (self-consistency) AND a manual seeded-OFR replay for every kin
   lock-in **15.7580** (`futures0 + unexpired_basis`, the corrected formula), residual −0.1
   immaterial; outcome **GBP 1.2m**.
 - **options (K3)** `359207f6-bb0a-41a8-904c-27c38dbf408e` — USD 8.4m receipt; **buy 17 put options**
-  (never "sell"), premium JOD 0.0408m (0.48%, all-in, NO time proration, NOT future-valued), net
+  (never "sell"), premium **JOD 0.0048 per unit** × 17 × 0.5 = JOD 0.0408m (all-in, NO time
+  proration, NOT future-valued — Fix Round 2: restated per-unit throughout, figure unchanged), net
   outcome **JOD 6.0m**.
 - **swap (K4)** `ba811dd0-7bf1-41fb-a467-f1ad82b6da2d` — JPY 480m payment; 72% swapped at LKR 2.03
   per JPY1 (LKR 701.6m) + 28% residual on the forward at LKR 2.08 per JPY1 (LKR 279.6m) = **LKR
@@ -200,11 +285,23 @@ proven by GATE 1 (self-consistency) AND a manual seeded-OFR replay for every kin
   built — out of scope for this batch, not a gap in K1–K4's own coverage.
 - **Netting is scenario TEXTURE only** (E2c, a separate mixed-mode LO, not wired) — do not ask why
   netting isn't a fifth kind.
-- **The K2/K3 formula corrections are NOT independently source-verified** — flagged honestly above.
-  If the reviewer has access to the SD25 sample-answers PDF (or any other primary source with
-  Passmore Co's actual worked lock-in/premium figures), that would be the definitive confirmation;
-  absent that, these stand on the co-founder's independent-recompute authority per standing project
-  discipline, not as a closed factual question.
+- **The K2/K3 formula corrections ARE now independently source-verified (Fix Round 2, 2026-07-23)
+  — do not re-raise as "internal authority only."** K2's lock-in formula (`futures0 +
+  unexpired_basis`) is confirmed by TWO unrelated official sources on real worked figures: T1
+  ("Foreign currency futures – step by step," worked 1.2300 + (−0.0025) = 1.2275) and S9 (AFM
+  MJ21 Examiner's Report, worked 0.2378 − 0.0004 = 0.2374 under an algebraically-identical
+  sign-flipped convention). K3's premium formula (per-unit × contracts × contract size, no time
+  proration) is confirmed by T2 (per-unit worked example, £/€0.00585 × 35 × €125,000 = £25,594)
+  and S8 (AFM September 2018 Official Answers, JPY 3.8 × 125,000 × 640 = JPY 304m). Neither the
+  SD25 sample-answers PDF nor the co-founder's independent recompute is the load-bearing authority
+  for these two corrections anymore — the sources above are. **The IR-proration caveat STAYS
+  LIVE and is NOT resolved by this upgrade**: T2/S8/T1/S9 confirm the CURRENCY-options and
+  futures conventions on their own terms; they do not retroactively license having borrowed an
+  INTEREST-RATE-options formula (Abertafol Co, D23) for a different instrument class in the first
+  place — that specific substitution remains the identified Fix Round 1 authoring error, not a
+  general permission to blend interest-rate and currency-option conventions elsewhere in this
+  engine. The one remaining unverified citation is "March 2020" (GPT's fourth source) — searched,
+  not publicly locatable, honestly flagged in `sources.json` and never cited in `fxhedge.ts`.
 
 ## Area-picker note (verified 2026-07-22, before authoring)
 E is a brand-new top-level syllabus section for AFM. `isDirectLinkOnlyArea` (`lib/acca/paper.ts`)
@@ -271,25 +368,31 @@ proceed with this strategy.
 months from Gulf Pharma Distribution LLC (UAE). The CFO asserts a forward is always superior because
 "options premiums make them uncompetitive." Rates quoted JOD per USD 1 (home per foreign). Premium
 stated in JOD (home), all-in for the option's life, no time proration, undiscounted at trade date —
-consistent with the FIX ROUND 1 corrected convention.
+consistent with the FIX ROUND 1 corrected convention, and (Fix Round 2) source-verified against
+T2/S8's per-unit shape.
 
 Raw inputs: exposure USD 8.4m receipt; spot 0.7085; strike JOD 0.7120/USD1; contract size USD 0.5m;
-premium 0.48% (decimal fraction, all-in); months to transaction 5.
+premium **JOD 0.0048 per USD 1 of contract size**, all-in for the option's life, no time proration,
+paid in JOD at trade date (Fix Round 2: restated per-unit — was "0.48%" pre-Fix-Round-2, same
+underlying rate, wording only); months to transaction 5.
 
 **Model answer:** 8.4 ÷ 0.5 = 16.8 → **buy 17 put options** (never "sell N contracts" — Fix Round 1
-wording fix; a put gives the right to SELL USD, which is what a USD receipt needs). Premium = 0.48% ×
-17 × 0.5 = **JOD 0.0408m**, all-in, NO time proration, deducted as paid (NOT future-valued — Fix
-Round 1). Exercise outcome: 17×0.5 = USD 8.5m at strike 0.7120 = **JOD 6.052m**. Net = 6.052 − 0.0408
-= **JOD 6.0112m ≈ JOD 6.0m**. Advice: tests the CFO's blanket claim against the actual optionality-vs-
-premium trade-off (options preserve upside a forward forecloses), exchange-traded margin/clearing
-mechanics, expiry-vs-settlement alignment risk.
+wording fix; a put gives the right to SELL USD, which is what a USD receipt needs). Premium = **JOD
+0.0048 × 17 × 0.5 = JOD 0.0408m** (Fix Round 2: per-unit statement, figure unchanged), all-in, NO
+time proration, deducted as paid (NOT future-valued — Fix Round 1). Exercise outcome: 17×0.5 = USD
+8.5m at strike 0.7120 = **JOD 6.1m** (6.052 at full precision). Net = 6.052 − 0.0408 = **JOD 6.0112m
+≈ JOD 6.0m**. Advice: tests the CFO's blanket claim against the actual optionality-vs-premium
+trade-off (options preserve upside a forward forecloses), exchange-traded margin/clearing mechanics,
+expiry-vs-settlement alignment risk.
 
 **Gates:** 1 PASS (5 components) · 2 PASS (4dp premium display, genuinely present, not a coincidental
 substring match) · 3 PASS (contracts verdict incorrect as root; premium/premium_home/home_from_strike/
-home_settlement verdict carried) · 4–7 PASS · 18 PASS (all-in premium formula reconciles exactly, NO
-proration factor) · 17 PASS (option ALWAYS expects 'buy', explicitly — Fix Round 1's `expectedSide`
-parameter, not derived from `instrumentSide`) · 17b PASS (canonical JOD-per-USD sentence present
-verbatim).
+home_settlement verdict carried) · 4–7 PASS · 18 PASS (all-in per-unit premium formula reconciles
+exactly, NO proration factor, source-verified Fix Round 2) · 17 PASS (option ALWAYS expects 'buy',
+explicitly — Fix Round 1's `expectedSide` parameter, not derived from `instrumentSide`) · 17b PASS
+(canonical JOD-per-USD sentence present verbatim). Re-gated in full (1/2/3/15/17/17b/18) after the
+Fix Round 2 wording patch, via `scripts/_patch_afm_fxhedge_k3.ts` — all PASS, figures confirmed
+byte-identical pre/post-patch by DB read-back.
 
 ---
 
@@ -338,7 +441,8 @@ strategy the board should adopt.
 **Context:** Campiña Andina S.A. (Peru, PEN-functional) will receive USD 8.5 million in five months
 from AgriSource LLC (US). The Finance Director asserts the forward is "always the simpler and
 superior hedge," a claim the board should test rather than accept given the PEN/USD interest-rate
-differential. Rates quoted PEN per USD 1 (realistic magnitude, ≈3.7–3.8).
+differential. Rates quoted PEN per USD 1 (stated at the appraisal date, economically plausible in
+order of magnitude, ≈3.7–3.8).
 
 Raw inputs: exposure USD 8.5m receipt; spot PEN 3.82/USD1; forward PEN 3.74/USD1 (5-month, stated);
 USD borrow 5.5% / deposit 4.0%; PEN borrow 9.5% / deposit 7.5%.

@@ -1724,6 +1724,91 @@ this before assuming green gates mean a batch is recompute-ready.
 co-founder independent recompute against the regenerated pack (new ids) → blind adversarial review →
 adjudicate → flip by explicit-id SQL.
 
+## 2026-07-23 — CALCULATOR #11 FX HEDGING — FIX ROUND 2 (GPT full-round adjudication: all accepts, prose/evidence only)
+
+**A fresh, full-round GPT adjudication recomputed all four Fix Round 1 drills from raw inputs.
+Verdict: 4/4 figure sets clean — every figure (0.0408 / 15.758 / 981.12 / 31.79 / 32.735) confirmed
+byte-identical to the live rows. No numeric or gate defect found.** The round's only findings were
+one wording must-fix (K3's premium stated as a bare "%," obscuring the underlying per-unit
+convention) and a citation-upgrade opportunity for two of Fix Round 1's corrections that had stood
+on co-founder recompute authority alone, never independently source-verified.
+
+**Citation verify-then-bake, not trust-on-say-so.** Per the task's own "NO trust without the fetch"
+instruction, every GPT-cited source was independently re-fetched (WebFetch for the two live ACCA
+technical-article pages; `curl` + `pdftotext -layout` for the two PDFs, after WebFetch's own PDF
+extraction returned garbled font-metadata text on both):
+- **T1** "Foreign currency futures – step by step" — verbatim *"'Lock in rate' = opening futures
+  price + unexpired basis"*, worked 1.2300 + (−0.0025) = 1.2275. Confirms Fix Round 1's K2 formula.
+- **S9**, AFM March/June 2021 Examiner's Report p.11 — worked lock-in 0.2378 − 0.0004 = 0.2374
+  under a sign-convention the OPPOSITE of the engine's own; algebraic transposition proves the two
+  formulas are identical, both landing on exactly 0.2374. A SECOND, independent confirmation of the
+  K2 correction (not merely a re-read of the same SD25 report Fix Round 1 already had).
+- **T3** "How to answer a foreign exchange risk management question" — verbatim *"Sell CHF futures
+  now to hedge against sale of CHF when money received"* (Nutourne Co), a third confirmation of the
+  receipt-sells/payment-buys futures direction already implemented; also a second per-unit premium
+  worked example (cents-denominated, a currency-nuance variant of the same shape).
+- **T2** "Exchange traded foreign exchange derivatives" — verbatim *"Premium to pay – £/€0.00585 x
+  35 contracts x €125,000 = £25,594"*, the per-unit, no-proration shape.
+- **S8**, AFM September 2018 Official Answers (Airone) p.18 — worked *"Premium payable = JPY 3.8 x
+  125,000 x 640 = JPY 304m"*, the same shape on an official mark scheme. Together T2/S8 upgrade Fix
+  Round 1's K3 premium formula from "unsourced fallback" to source-supported for CURRENCY options
+  specifically — **the IR-proration caveat stays live and is explicitly NOT resolved by this
+  upgrade**: these sources confirm the currency-options convention on its own terms; they do not
+  retroactively license having imported an INTEREST-RATE-options formula (Abertafol Co) for a
+  different instrument class in the first place.
+- **"March 2020"** (GPT's fourth citation) — searched multiple ways, not publicly locatable (2020
+  AFM sittings were disrupted). Recorded honestly in `docs/evidence/sources.json` under a new
+  `unverified_citations_do_not_bake_in` array (deliberately outside the arrays `fetch_acca_sources.ps1`
+  iterates, to avoid crashing it on a null url), and never cited in `fxhedge.ts`. Flagged, not baked
+  in — per standing evidence discipline.
+
+All five verified sources registered as S8/S9 (`sources`) and T1/T2/T3 (new `technical_articles`
+array) in `docs/evidence/sources.json`, each with a Rule-22-style verbatim citation comment added to
+`lib/acca/fxhedge.ts`'s module header.
+
+**K3 (`359207f6-bb0a-41a8-904c-27c38dbf408e`) restated per-unit, figure unchanged.** `context_text`'s
+raw-input line and `model_answer`'s Step 1 now read the premium as "JOD 0.0048 per USD 1 of contract
+size" / "JOD 0.0048 × 17 × 0.5 = JOD 0.0408m" instead of "0.48%"; `answer_schema`'s
+`premium`/`premium_home` `working_steps` aligned. Full-row grep for `0.48%`/`0.480%`/`0.298%` across
+`context_text`/`model_answer`/`hint`/`full_reveal`/`working_steps` returns zero matches. Patched via
+`scripts/_patch_afm_fxhedge_k3.ts` (gitignored `_patch_afm_*` convention) — GATE 1/2/3/15/17/17b/18
+re-run in-process before the write, all PASS; DB read-back confirms every figure byte-identical
+pre/post-patch (only prose changed).
+
+**ENGINE RULE (now cited): premium in a currency other than the outcome currency converts at
+SPOT, never the strike.** An earlier engine version wrongly reused `strike` for both the premium
+conversion and the exercise-settlement conversion — a genuine defect, though with **zero live-drill
+impact** (the only published K3 quotes its premium in the home currency, so the buggy branch never
+executed). Fixed as a general engine rule ahead of any future drill that needs it:
+`OptionsInputs.spot` is now required unconditionally (previously used for K1 only);
+`computeOptionsHedge` converts via `toHome(premium, raw.spot, ...)`. Regression-locked in
+`test-fxhedge.ts` with `spot: 14.05` deliberately distinct from `strike: 14.10`, proving the premium
+conversion uses spot. Generator wiring (`scripts/generate-afm-drills.ts`) updated to match: K3's
+dispatch now supplies `spot`, and a conditional `premiumLegCheck` runs GATE 17 on the premium leg
+whenever `premium_currency === 'foreign'`.
+
+**K1 realism aside softened** — "realistic magnitude" → "stated at the appraisal date, economically
+plausible in order of magnitude," a precision fix (every sourced rate here is point-in-time, not a
+durable-realism claim).
+
+**Pack rewritten** (`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`) with a dedicated FIX ROUND 2
+section, updated Conventions/Gates sections citing S8/S9/T1/T2/T3, K3's write-up updated to the
+per-unit wording, and the stale "K2/K3 corrections are NOT independently source-verified... internal
+authority only" CLOSED RULING rewritten to the source-supported status above — with the IR-proration
+caveat explicitly preserved, not silently dropped.
+
+**Re-gated and re-tested.** `test-fxhedge.ts`: 73/73 pass (up from 68/68 — 5 new checks: the
+spot-vs-strike regression lock, K1's grounding-pack header check, and 2 K3 per-unit wording
+assertions verified against actual generated output before being written as fixtures). `tsc --noEmit`
+clean. `next build` green.
+
+**Net effect: every figure in this pack is exactly as it was after Fix Round 1 — this round changed
+prose and evidence status only.** No re-gen, no new ids (K3 patched in place; K1/K2/K4 untouched).
+**STOP called again, exactly as instructed.** No flip, no publish, no student walk. Next: the FRESH
+co-founder independent recompute + blind adversarial review this pack has been awaiting since Fix
+Round 1, now against a pack whose two previously-flagged corrections carry independent source
+verification.
+
 ## 2026-07-23 — LIVE-USER BUG: reveal-request phrase matching (APM tutor, field-confirmed)
 
 **First real-user field report on the earned-reveal mechanism since its 2026-07-14 go-live.**
