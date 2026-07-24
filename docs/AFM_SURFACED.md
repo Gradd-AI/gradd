@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-23.*
+*Last refreshed: 2026-07-24.*
 
 ## LOCKED — POST-COVERAGE PRODUCT LAYER (ruled 2026-07-22, `docs/GRADD_PRODUCT_ROADMAP_POST_COVERAGE.md`)
 Next product layer once AFM is EXAM-READY (drills + mocks + the marking engine — not merely
@@ -11,24 +11,32 @@ time-pressure/timing practice. A kill list of rejected ideas is on file in the r
 NOT build any of this pre-coverage** — it is strictly gated on AFM reaching exam-ready, not a
 parallel workstream. Calculator #11 (FX hedging) is coverage work and precedes this gate.
 
-## IN FLIGHT — CALCULATOR #11 FX HEDGING (E2b), FIX ROUND 1 applied 2026-07-22/23, awaiting a FRESH recompute
-Step-0 evidence (Passmore/Mahoney/Abertafol/Northney examiner reports + SD2019 Okan Co + F9 technical
-article) → ruled → `lib/acca/fxhedge.ts` built (engine + schemas + model answers + GATES 15–19) →
-generator wired → 4 candidates generated → **first co-founder independent recompute found 3
-MAJORS**: K2 lock-in rate misencoded (one-sided formula), K3 option premium formula unsourced-imported
-from an interest-rate family (the settling SD25 currency-options source is unfetchable — the fix is
-an explicit fallback convention, NOT independently source-verified), K4 quote-direction
-parameter↔prose inversion (plus a self-found matching issue in K1). **All 3 fixed, engine hardened
-(GATE 16 two-route self-check; NEW GATE 17b makes prose↔parameter mismatch structurally impossible
-via code-injected quote sentences), all 4 drills fully regenerated with NEW ids** —
-`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md` (superseded pack, old ids
-`fd0ba548`/`93fc30f7`/`001c8b07`/`13882862` deleted). `test-fxhedge.ts` re-anchored (68 checks,
-regression-locks both old wrong formulas as MUST-FAIL). First family in AFM section E — area-picker
-verified to need no code change; area-entry ranked 70–73. Full fix detail:
-`APM_BUILD_CONTRACT.md` 2026-07-22/23 entries. **NEXT: a FRESH co-founder independent recompute
-against the regenerated pack (new ids — do not reuse the prior recompute)** → blind adversarial
-review (CLOSED RULINGS present in the pack) → adjudicate → flip by explicit-id SQL. Not flipped, not
-published — the pack is the STOP point per the task's own instruction.
+## ✅ CALCULATOR #11 FX HEDGING (E2b) — LIVE (GATE-P flip, 2026-07-23)
+Step-0 evidence → `lib/acca/fxhedge.ts` (engine + GATES 15–19) → FIX ROUND 1 (3 majors: K2 lock-in
+one-sided formula, K3 premium unsourced interest-rate import, K4 quote-direction inversion) → FIX
+ROUND 2 (GPT adjudication, all 4 figure sets accepted unchanged) → co-founder recompute + blind GPT
+review → adjudicated → **flipped**: all 4 drills (K1 `51163dac`/K2 `1528e10f`/K3 `359207f6`/K4
+`ba811dd0`) approved+published — the first-ever AFM section E rows. Pack:
+`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`. Full detail: `APM_BUILD_CONTRACT.md` 2026-07-22/23
+entries. Grant's student walk still owed (post-flip, non-blocking).
+
+## ✅ CALCULATOR #12 INTEREST-RATE HEDGING (E3a) — LIVE (GATE-P flip, 2026-07-24)
+Step-0 evidence (T4–T7 technical articles + Abertafol/Sohbet/Northney examiner reports, registered in
+`docs/evidence/sources.json`) → both Phase-1 source conditions resolved favourably (swap = Style A per
+T4's AFM-tier "Suggested swap"; borrower collar confirmed verbatim via ACCA's "Options" page) →
+`lib/acca/irhedge.ts` built (4 kinds: futures/options/collar/swap; GATES 20–25; SHARES ZERO CODE with
+`fxhedge.ts` — the premium/basis/lock-in conventions are structurally different by design) →
+`test-irhedge.ts` (94 checks, reproduces T5's own worked futures example + Abertafol's premium +
+T4's swap arithmetic exactly) → 4 drills authored direct-to-DB via a one-off gitignored script
+(`scripts/_author_irhedge_batch.ts` — **no `--irhedge-batch` generator wiring exists yet**, a future
+batch needs either a repeat of that script or proper generator wiring) → all gates 1/2/3 + P4–P8 +
+20–25 PASS → FR1 (2 wording-only fixes: position-sensitive futures gain/loss convention;
+K1 "guaranteed" → "locked in" register fix, zero-hit sweep proof) → co-founder recompute + GPT
+adjudication → **flipped**: all 4 drills (K1 `56989d69`/K2 `1c133573`/K3 `f088daa5`/K4 `26a4167b`)
+approved+published — the second AFM section E family. Pack:
+`docs/reviews/AFM_BATCH_IRHEDGE_REVIEW_PACK.md`. area-entry ranked 74–77 (K1 futures = entry).
+**Next: sync docs/AFM_COVERAGE_CONTRACT.md (now 54 published drills, 13 calculators, E2+E3 both
+live); Grant's student walk owed (post-flip, non-blocking).**
 
 ## ✅ AD-MEASUREMENT BLIND SPOT — FIXED + LIVE-FIRE VERIFIED 21/07 (was: blocks the December campaign)
 Ad autopsy (07/07–21/07) found the app could not see ad-driven traffic AT ALL: all-time, zero of 11

@@ -25,6 +25,10 @@ const H = {
   intlNpv: '**International investment appraisal — net present value to the parent**',
   intlSens: '**Impact of alternative exchange-rate assumptions on project value**',
   intlRemit: '**International appraisal with a remittance restriction**',
+  irFutures: '**Interest-rate hedging — futures**',
+  irOptions: '**Interest-rate hedging — options on futures**',
+  irCollar: '**Interest-rate hedging — collar**',
+  irSwap: '**Interest-rate hedging — swap (comparative advantage)**',
 };
 // build a drill with a heading + trailing body (heading is the FIRST line, as in the real model_answer)
 const drill = (id: string, lo_code: string, heading: string) => ({ id, lo_code, model_answer: `${heading}\n\nbody line\nmore` });
@@ -76,6 +80,18 @@ const b4 = [
 ];
 ok('B4 zero-attempt serve = the FCFE valuation kind (entry), NOT the dual-tagged credit drill', pickEntryDrill(b4)?.id === 'v3');
 ok('B4 entry is a valuation heading, not the credit heading', entryRank(pickEntryDrill(b4)!.model_answer) === entryRank(H.fcfe));
+
+// ── E3 — interest-rate hedging (calc #12). Entry = K1 futures (a single locked rate). ──
+const e3 = [
+  drill('ir1', 'E3a', H.irFutures),  // K1 — entry
+  drill('ir2', 'E3a', H.irOptions),  // K2
+  drill('ir3', 'E3a', H.irCollar),   // K3
+  drill('ir4', 'E3a', H.irSwap),     // K4
+];
+ok('E3 zero-attempt serve = K1 (interest-rate futures), not options/collar/swap', pickEntryDrill(e3)?.id === 'ir1');
+ok('E3 entry stable under input reordering', pickEntryDrill([e3[3], e3[1], e3[0], e3[2]])?.id === 'ir1');
+ok('E3 futures ranks below options, collar and swap', entryRank(H.irFutures) < entryRank(H.irOptions) && entryRank(H.irOptions) < entryRank(H.irCollar) && entryRank(H.irCollar) < entryRank(H.irSwap));
+ok('E3 ranks sit entirely above E2 (own area, never overlaps FX hedging)', entryRank(H.irFutures) > entryRank('**FX hedging — currency swap**'));
 
 // ── Unknown headings → null (caller falls back to the existing random pick) ──
 ok('all-unknown-heading area returns null (safe fallback)', pickEntryDrill([drill('x1', 'Z9z', '**Some brand-new family heading**'), drill('x2', 'Z9z', '**Another new heading**')]) === null);

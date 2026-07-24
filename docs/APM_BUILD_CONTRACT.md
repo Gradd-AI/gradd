@@ -2199,3 +2199,82 @@ construction, so there is nothing to thread there.
 
 **Files touched:** `app/api/acca/tutor/route.ts` only (`buildStudentAnswerBlock` new;
 `call2_diagnose`/`call3_teach` signatures + all 4 call sites).
+
+## 2026-07-24 — CALCULATOR #12 IR HEDGING — GATE-P FLIP: SECOND AFM SECTION E FAMILY LIVE, ALL 12 VIABLE-TIER CALCULATORS SHIPPED
+
+**Grant-ruled FLIP** on the FR1-patched interest-rate-hedging batch — co-founder independent
+recompute passed and GPT adjudication approved, so the pack was ready. Executed directly under
+GATE-P (`CLAUDE.md`, Grant-ruled 2026-07-14): reconcile passed, explicit-id guarded statement,
+pre/post counts verified, journal entry written — no separate SQL-Editor step.
+
+**RECONCILE (before flip) — clean, no mismatch:**
+- Published AFM: **50** (matches the running count from the calc #11 flip).
+- Approved-unpublished AFM: **0** (no orphan approved rows) — status×published breakdown was
+  exactly two buckets: `approved|published=true` × 50, `candidate|published=false` × 5.
+- All AFM candidates, pre-flip: exactly **5** — the 4 IR ids
+  (`56989d69`/`1c133573`/`f088daa5`/`26a4167b`, all `E3a`, all `candidate`/`published=false`) + the
+  parked `47c9d5ce` (A3a ESG, correctly NOT enumerated in the flip).
+
+**FLIP — explicit id, status-guarded:**
+```
+UPDATE acca_drills SET status='approved', published=true
+WHERE id IN ('56989d69-bc4d-4768-b00f-8f533de2df35','1c133573-44b3-4c78-b38e-5d0e0646e0cf',
+             'f088daa5-5107-4d5b-b105-fc4a10a51ad1','26a4167b-0167-4be5-aa57-ac64d09c208f')
+  AND status='candidate';
+```
+Run via the guarded service-client update (`.in('id', [...4 ids]).eq('status','candidate')`), never
+a bare `WHERE status='candidate'`. **4 rows flipped — exactly 4, matching the WHERE.**
+
+**POST-VERIFY:**
+- Published AFM: **54** (50 + 4, matches).
+- Candidates: **1** — only the parked `47c9d5ce` (A3a) remains, as expected.
+- All 4 IR ids independently confirmed `status='approved'`, `published=true`.
+- **Entry-rank check, live data + live production function** (`pickEntryDrill` from
+  `lib/acca/area-entry.ts`, called against the real post-flip DB rows, not a mock): the E3 area now
+  returns exactly the 4 published drills; `pickEntryDrill` selects K1 `56989d69` (rank 74,
+  `**Interest-rate hedging — futures**` heading, byte-matched against the live `model_answer` row)
+  as the deterministic zero-attempt entry — proven against real data, not code inspection alone.
+- **Picker sort order** (`app/api/acca/areas/route.ts`): `subArea = lo_code.slice(0,2)` groups the 4
+  rows under `'E3'`; the array sorts via `localeCompare`, and `'E3'` sorts after `'E2'` (and every
+  `'B1'`–`'B5'`) lexicographically — E3 lands after FX hedging, as intended, no special-case needed.
+- **Scope note on the live check:** verified via a real Supabase query (the identical filter
+  `/api/acca/next-drill?area=E3` uses) plus the real `pickEntryDrill` function against live
+  post-flip rows — a genuine live-data check, not a mock. Did NOT traverse the full HTTP+session
+  layer (would need a real authenticated browser session for the test account); flagged here rather
+  than silently claimed as a complete end-to-end proof.
+
+**Section E is now FULLY OPEN, and ALL 12 calculators for the VIABLE PAID LAUNCH tier are shipped.**
+12 of 12 calculators toward that tier are now live; the only remaining items to close it are 3
+narrative drills (Treasury function & derivatives E1a/E1b, Forex risk types E2a) and the
+mock-rehearsal engine. **AFM = 54 published, 12 calculators (E-section done).**  Grant's student
+walk on the IR-hedging batch is owed (non-blocking on this LIVE status, per the same pattern as
+calc #3/#9/#10/#11's post-flip walks) — as is the still-outstanding FX-hedging (calc #11) walk.
+
+**Map-before-close:** `CLAUDE.md`'s calc #12 map entry added (new — this is the family's first
+appearance in the code map, added at authoring time in the prior session and now updated with the
+LIVE ids replacing the "candidate" line). `lib/acca/area-entry.ts` registered E3's 4 headings at
+ranks 74–77 (K1 futures = entry); `scripts/test-area-entry.ts` gained E3 coverage (4 new checks,
+all pass, `npm run test:area-entry` green).
+
+**Coverage-contract mirrors synced (repo copy; Grant syncs the project-master copy separately,
+after the walk):** `docs/AFM_COVERAGE_CONTRACT.md` — top STATUS banner (line 4) gained an E3-CLOSED
+paragraph and the drill count bumped 50→54; calculator #12's table row flipped from
+`— (viable tier)` to `LIVE 24/07` with ids/gates/sources; quant-shipped count `45/64` → `49/64`; the
+VIABLE PAID LAUNCH tier row and the bottom "Progress against tiers" mirror line both rewritten to
+state all 12 calculators are now shipped, only narrative + mock engine remain.
+`docs/reviews/AFM_BATCH_IRHEDGE_REVIEW_PACK.md` already carries the FR1 history — no further edit
+needed there.
+
+**AFM_SURFACED.md updated (rewritten, not appended, per its own discipline):** the stale
+"IN FLIGHT — CALCULATOR #11" block (which had drifted — it still said "awaiting a FRESH recompute,
+not flipped" despite calc #11 having flipped 2026-07-23 in a prior session) replaced with a ✅
+completed summary for calc #11 AND a new ✅ completed summary for calc #12, both pointing at their
+review packs rather than re-narrating settled history.
+
+**Files touched:** `CLAUDE.md` (calc #12 map entry, LIVE ids), `lib/acca/area-entry.ts` (E3 ranks
+74–77), `scripts/test-area-entry.ts` (E3 fixtures), `docs/AFM_COVERAGE_CONTRACT.md` (status banner,
+calc #12 row, quant-shipped count, tier row, progress line), `docs/AFM_SURFACED.md` (stale calc #11
+block replaced, new calc #12 entry added, refreshed date), `docs/APM_BUILD_CONTRACT.md` (this
+entry). DB: 4 rows in `acca_drills` (`status`/`published` only — zero content bytes touched by this
+flip; the FR1 wording patch that touched content was a separate, already-journaled prior-session
+change).

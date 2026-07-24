@@ -65,6 +65,13 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   '**FX hedging — currency futures**': 71,
   '**FX hedging — currency options**': 72,
   '**FX hedging — currency swap**': 73,
+  // ── E3 — interest-rate hedging (calculator #12). Own area (never overlaps a B-prefix), so these
+  // ranks only order K1..K4 against each other: futures (the Step-0 entry, a single locked rate — the
+  // simplest outcome to reason about) → options → collar (builds on options) → swap. ──
+  '**Interest-rate hedging — futures**': 74,
+  '**Interest-rate hedging — options on futures**': 75,
+  '**Interest-rate hedging — collar**': 76,
+  '**Interest-rate hedging — swap (comparative advantage)**': 77,
 };
 
 const UNRANKED = Number.POSITIVE_INFINITY;

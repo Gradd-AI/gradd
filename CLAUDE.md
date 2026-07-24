@@ -160,6 +160,45 @@ territory — follow the links for depth. Keep it under ~150 lines.
   all 4 drills (K1 `51163dac`/K2 `1528e10f`/K3 `359207f6`/K4 `ba811dd0`) approved+published — the
   FIRST-EVER AFM section E rows. Pack: `docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md`. Grant's
   student walk still owed (post-flip, non-blocking).
+- **Calc #12 — interest-rate hedging (E3a, second calc in AFM section E):** `lib/acca/irhedge.ts`.
+  SHARES ZERO CODE with `fxhedge.ts` — the two families' premium/basis/lock-in conventions are
+  structurally different (IR futures quote as 100−rate, not a currency rate; IR option premium is
+  PRORATED by the contract period, the FX currency-option premium is ALL-IN) and were deliberately
+  kept separate, not composed. Four kinds: **futures** (borrower SELLS/depositor BUYS, contracts =
+  notional/size × hedge/contract-months, linear basis decay, closing price = 100 − expected rate −
+  unexpired basis, locks ONE effective annual rate reconciling across rate-rise/rate-fall scenarios —
+  reproduces ACCA's own T5 worked example exactly) · **options** (borrower buys PUT / depositor buys
+  CALL, premium = premium% × contracts × size × contract-months/12, exercise decided per scenario
+  against the strike) · **collar** (Northney 6-step: options needed → contracts → net premium
+  [bought − received] → basis/expected price → exercise decision per leg → net effect; borrower buys
+  put+sells call, depositor buys call+sells put — ACCA "Options" page confirms both directions) ·
+  **swap** (Style A comparative-advantage: saving = fixed-rate differential − floating-rate
+  differential, split after a bank fee — the T4 Titans FC/Kendri Co shape; thinnest-evidenced kind,
+  flagged). Gates beyond the 6: **20** direction-lock (borrower/depositor × instrument matrix), **21**
+  contract-count (seeds the #1 examiner-flagged wrong-period error as a distinct OFR case), **22**
+  premium-separation (asserts the IR prorated premium never collapses to the FX all-in shape), **23**
+  basis-decay + scepticism-hook presence, **24** convention-sentence presence (the `{{QUOTE_SENTENCE}}`
+  analogue, injected via `{{CONVENTION_SENTENCE}}`) + **24b** the unexpired-basis sentence must say "N
+  months REMAINING of the contract's M-month life" (never "elapsed" — kills an inversion risk), **25**
+  effective-rate reconciliation (a futures lock must agree across every rate scenario) — all in
+  `validate-schema.ts`, cores in `irhedge.ts`. Fixtures: `scripts/test-irhedge.ts`
+  (`npm run test:irhedge`, 94 checks) — reproduces T5's Sohbet-style futures figures exactly (90-
+  contract fixture; the live K1 drill uses its own 64-contract scenario) + Abertafol's prorated
+  premium + T4's swap-saving arithmetic; regression-locks the FX lock-in / FX all-in-premium formulas
+  as MUST-FAIL cases if ever wrongly imported here. **NO `--irhedge-batch` generator wiring** —
+  unlike every other family, this batch was authored directly via a one-off gitignored script
+  (`scripts/_author_irhedge_batch.ts`, `scripts/_*`) that builds each drill from literal inputs
+  through the calculator, runs every gate in-process, and writes via the service client; a future
+  batch needs either a repeat of that script or proper `draft*Drill`/`SUBMIT_*_TOOL` generator wiring
+  (Grant's call, not yet done). area-entry ranks 74–77 (E3, own band; K1 futures is the entry — a
+  single locked rate is the simplest outcome to reason about). **FR1 (2026-07-24):** two wording-only
+  fixes, zero figures changed — the futures gain/loss Rule-22 comment/pack made position-sensitive
+  (long: closing−opening; short: opening−closing, the engine itself was already correct) and K1's
+  question "guaranteed effective borrowing cost" → "effective borrowing cost locked in" (T4's own
+  register; swept all 4 drills × 5 fields for "guaranteed", zero hits remain). **LIVE (GATE-P flip,
+  2026-07-24):** all 4 drills (K1 `56989d69`/K2 `1c133573`/K3 `f088daa5`/K4 `26a4167b`)
+  approved+published — the SECOND AFM section E family. Pack:
+  `docs/reviews/AFM_BATCH_IRHEDGE_REVIEW_PACK.md`.
 - **NARRATIVE PIPELINE (#2) — discursive drills (D1–D5), NOT a calculator:** `lib/acca/narrative-marker.ts`
   (rubric type + DETERMINISTIC detectors `scenarioCopyOverlap`/`factUsed`/`missingAnchors`/`hasConclusion`/
   `longestVerbatimRun` + code-owned `aggregate` (partial-credit 0/½/full + disqualifier caps + band→verdict)
