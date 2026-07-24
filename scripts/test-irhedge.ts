@@ -220,6 +220,7 @@ const futSchema = buildIrFuturesSchema(t5, t5c);
 ok('K1 futures: GATE1 self-consistency passes', validateSchemaSelfConsistency(futSchema.schema).ok);
 ok('K1 futures: every schema figure appears in the model answer', figuresPresent(futSchema.schema, futAns));
 ok('K1 futures: model answer carries Step N — headers (grounding-pack parseable)', /\*\*Step 1 — /.test(futAns) && /\*\*Step 4 — Advice to the board\*\*/.test(futAns));
+ok('K1 futures: unexpired-basis sentence says "months REMAINING of the contract\'s life", never "elapsed" (inversion guard)', /months remaining of the contract's \d+-month life/.test(futAns) && !/elapsed/i.test(futAns));
 
 const depOptSchema = buildIrOptionsSchema(depOpt, depOptC);
 const depOptAns = buildIrOptionsModelAnswer(depOpt, depOptC, 'The option keeps the upside if rates rise while capping the downside — worth the premium given recent volatility.');

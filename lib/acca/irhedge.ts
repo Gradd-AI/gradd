@@ -187,6 +187,15 @@ function effectiveAnnualPct(net: number, notional: number, hedge_months: number)
 export const BASIS_SCEPTICISM_HOOK =
   'Basis is assumed to fall to zero at a constant (linear) rate by expiry — a simplifying assumption that may not hold in practice, so the outcome is exposed to basis risk.';
 
+// The canonical unexpired-basis sentence — code-injected so the elapsed/remaining split can never
+// be inverted by hand (the inversion risk flagged at Step-0). It ALWAYS phrases the fraction as the
+// months REMAINING of the contract's full life (never "elapsed"): unexpired basis scales with the
+// UNEXPIRED (remaining) fraction, so stating "remaining" keeps the direction unambiguous.
+export function unexpiredBasisSentence(months_to_expiry: number, months_to_transaction: number, basis0: number, unexpired_basis: number): string {
+  const remaining = months_to_expiry - months_to_transaction;
+  return `With ${remaining} months remaining of the contract's ${months_to_expiry}-month life, the unexpired basis = basis₀ ${fmt4(basis0)} × ${remaining}/${months_to_expiry} months remaining = ${fmt4(unexpired_basis)}.`;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // K1 — INTEREST-RATE FUTURES (borrower sells / depositor buys; locks ONE effective rate)
 // ═══════════════════════════════════════════════════════════════════════════════════════
@@ -556,7 +565,7 @@ export function buildIrFuturesModelAnswer(raw: IrFuturesInputs, c: IrFuturesComp
     '**Interest-rate hedging — futures**', '',
     `**Assumptions:** a ${cur} ${fmt1(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} runs for ${raw.hedge_months} months from a start date ${raw.months_to_transaction} months away; ${raw.contract_months}-month futures of size ${fmt1(raw.contract_size)} expire in ${raw.months_to_expiry} months, base rate today ${pctStr(raw.spot_rate0)}, futures price ${fmt2(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
     '**Step 1 — Number of contracts (amount AND period)**', '', `${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} = **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}).`, '',
-    '**Step 2 — Basis and the expected closing price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(c.basis0)}; unexpired basis at the transaction date = ${fmt4(c.unexpired_basis)}. Expected closing futures price = 100 − expected rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
+    '**Step 2 — Basis and the expected closing price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(c.basis0)}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, c.basis0, c.unexpired_basis)} Expected closing futures price = 100 − expected rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 3 — Outcome under each scenario**', '',
     `| Scenario | Actual rate | MM interest | Closing price | Futures P/(L) | Net | Effective |`, `|---|---|---|---|---|---|---|`,
     ...scenLines, '',
@@ -610,7 +619,7 @@ export function buildIrOptionsModelAnswer(raw: IrOptionsInputs, c: IrOptionsComp
     '**Interest-rate hedging — options on futures**', '',
     `**Assumptions:** a ${cur} ${fmt1(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months; ${raw.contract_months}-month options of size ${fmt1(raw.contract_size)} at strike ${fmt2(raw.strike_price)}, premium ${pctStr(raw.premium_pct)}. A ${raw.direction} **BUYS ${c.option_type.toUpperCase()} options** — never sells/writes options.`, '',
     '**Step 1 — Contracts and premium**', '', `Buy **${c.contracts} ${c.option_type} options** (${c.contracts.toFixed(1)}). Premium = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12 = **${m(c.premium)}** (prorated by the contract period — an option premium, unlike a currency-option premium, carries the contract-period fraction).`, '',
-    '**Step 2 — Exercise decision and outcome per scenario**', '',
+    '**Step 2 — Basis and exercise decision per scenario**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(computeBasis0(raw.spot_rate0, raw.futures0))}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, computeBasis0(raw.spot_rate0, raw.futures0), c.unexpired_basis)} Each scenario's expected closing price = 100 − expected rate − unexpired basis; a ${c.option_type} is exercised when the price is ${c.option_type === 'call' ? 'ABOVE' : 'BELOW'} the strike ${fmt2(raw.strike_price)}. ${BASIS_SCEPTICISM_HOOK}`, '',
     `| Scenario | Closing price | Decision | Option gain | Net | Effective |`, `|---|---|---|---|---|---|`,
     ...scenLines, '',
     `Unlike a futures lock, the option leaves a **range** of outcomes — it caps the downside while preserving the upside if rates move favourably. ${BASIS_SCEPTICISM_HOOK}`, '',
@@ -664,7 +673,7 @@ export function buildIrCollarModelAnswer(raw: IrCollarInputs, c: IrCollarCompute
     '**Step 1 — Options needed**', '', `Buy ${c.bought_type} (the protection) and sell ${c.sold_type} (to fund it) — the collar confines the outcome to a range.`, '',
     '**Step 2 — Number of contracts**', '', `round(${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months}) = **${c.contracts} contracts** (${c.contracts.toFixed(1)}).`, '',
     '**Step 3 — Net premium**', '', `Premium paid ${m(c.buy_premium)} − premium received ${m(c.sell_premium)} = **${m(c.net_premium)}** (each prorated by the ${raw.contract_months}/12 contract period).`, '',
-    '**Step 4 — Basis and expected price**', '', `Unexpired basis ${fmt4(c.unexpired_basis)}; expected closing price = 100 − base rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
+    '**Step 4 — Basis and expected price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(computeBasis0(raw.spot_rate0, raw.futures0))}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, computeBasis0(raw.spot_rate0, raw.futures0), c.unexpired_basis)} Expected closing price = 100 − base rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 5 — Exercise decision per leg, and Step 6 — net effect**', '',
     `| Scenario | Closing price | Bought exercised | Sold exercised | Net | Effective |`, `|---|---|---|---|---|---|`,
     ...scenLines, '',
