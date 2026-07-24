@@ -1,12 +1,25 @@
 # AFM interest-rate-hedging batch — independent-recompute + adversarial review pack
 
-**Calculator #12: interest-rate hedging (`lib/acca/irhedge.ts`). 4 drills, `paper_code=AFM`, `lo_code=E3a`. GATED 2026-07-24 (`status=candidate`, `published=false`) — awaiting a co-founder independent recompute FIRST, then blind GPT adversarial review, before any flip. SECOND family in AFM section E (after FX hedging E2b). Shares ZERO premium/basis/lock-in code with `fxhedge.ts` — the two families' conventions are structurally different (see CLOSED RULINGS).**
+**Calculator #12: interest-rate hedging (`lib/acca/irhedge.ts`). 4 drills, `paper_code=AFM`, `lo_code=E3a`. GATED 2026-07-24, FR1-patched 2026-07-24 (`status=candidate`, `published=false`) — awaiting a co-founder independent recompute FIRST, then blind GPT adversarial review, before any flip. SECOND family in AFM section E (after FX hedging E2b). Shares ZERO premium/basis/lock-in code with `fxhedge.ts` — the two families' conventions are structurally different (see CLOSED RULINGS).**
 
 Doctrine: code owns EVERY figure AND every figure-vs-figure verdict (contract counts, exercise
 decisions per scenario, the effective-rate lock reconciliation, the collar-vs-plain-call comparison,
 the swap saving split) — the model authored PROSE only (the Step-N advice paragraph, the scenario
 framing, hint, full_reveal). Every figure that appears in an advice paragraph is interpolated from the
 engine's own compute output, never hand-typed.
+
+## FR1 (2026-07-24) — two wording fixes, NO figures changed
+1. **Futures gain/loss convention made position-sensitive** in both the conventions section below and
+   the Rule 22 evidence comment in `lib/acca/irhedge.ts` — LONG (buy) = (closing − opening)/100 × ...;
+   SHORT (sell) = the MIRROR (opening − closing)/100 × ... . The engine itself was already correct
+   (`side === 'buy' ? closing - futures0 : futures0 - closing`, `computeIrFutures`) — this was a
+   comment/doc-only fix, no schema or figure changed.
+2. **K1 question wording**: "guaranteed effective borrowing cost" → "effective borrowing cost locked
+   in" (matching T4's own register, "effective locked rate," rather than "guaranteed," which overstates
+   a futures hedge as risk-free when it is a LOCK, not a guarantee against basis risk). Swept all 4
+   rows × 5 fields (question/context_text/model_answer/hint/full_reveal) for "guaranteed" — the ONE hit
+   was this K1 question phrase; zero hits remain (proof: `TOTAL guaranteed HITS across all 4 rows x 5
+   fields: 0`). Model-answer scepticism hooks were not touched (none contained "guaranteed").
 
 ## Step-0 source conditions — BOTH resolved favourably (2026-07-24)
 - **1a — SWAPS IN, Style A.** The comparative-advantage swap lives in an AFM/P4-tier technical article
@@ -49,9 +62,10 @@ reports, annotated for IR use). PDFs are git-ignored; re-fetch via `docs/evidenc
   (`fxhedge.ts`: opening futures + unexpired basis) — an IR future is quoted as (100 − rate), an FX
   future as a currency rate, so the formulas are structurally different; the non-reuse is deliberate.
   - **T5**: *"Expected futures price: 100 – 5.3 – 0.34 = 94.36"* (rise); *"100 – 3.6 – 0.34 = 96.06"* (fall).
-- **FUTURES GAIN/LOSS = (closing − opening)/100 × contract size × contract-months/12 × contracts**, netted
-  against the money-market actual interest → a single EFFECTIVE ANNUAL RATE that reconciles across
-  scenarios:
+- **FUTURES GAIN/LOSS is POSITION-SENSITIVE: LONG (buy) = (closing − opening)/100 × contract size ×
+  contract-months/12 × contracts; SHORT (sell) = the MIRROR (opening − closing)/100 × the same** —
+  netted against the money-market actual interest → a single EFFECTIVE ANNUAL RATE that reconciles
+  across scenarios:
   - **T5**: *"(0.9436 – 0.9478) × D500,000 × 3/12 × 90 = (47,250)"* → *"Net return = 515,250 ... Effective
     annual interest rate 515,250/27,000,000 × 12/5 = 4.58%"*, the SAME 4.58% under both scenarios.
 - **OPTION PREMIUM = premium% × contracts × size × contract-months/12 — PRORATED by the contract period.**
@@ -154,7 +168,7 @@ at 74–77 in the closing (flip) commit**, alongside the CLAUDE.md CODE-MAP entr
   a BORROWER hedging a forthcoming loan (sell futures)
 
 **Question:** Evaluate the interest-rate futures hedge available to Brackenmoor Industrial plc for its
-forthcoming loan, including the guaranteed effective borrowing cost under both a rise and a fall in the
+forthcoming loan, including the effective borrowing cost locked in under both a rise and a fall in the
 base rate, and recommend whether the board should proceed.
 
 **Context:** Brackenmoor Industrial plc (UK, £) draws a £24,000,000 loan in 3 months, held for 4 months.

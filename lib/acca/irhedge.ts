@@ -53,9 +53,11 @@
 // deliberate non-reuse, NOT an oversight:
 //   • T5: "Expected futures price: 100 – 5.3 – 0.34 = 94.36" (rate rises to 5.3%); "100 – 3.6 – 0.34
 //     = 96.06" (rate falls to 3.6%).
-// FUTURES GAIN/LOSS = (closing − opening)/100 × contract size × contract months/12 × contracts (a
-// buyer profits when the price rises; a seller when it falls), netted against the money-market
-// actual interest, giving a single EFFECTIVE ANNUAL RATE that reconciles across rate scenarios:
+// FUTURES GAIN/LOSS IS POSITION-SENSITIVE: a LONG position (buyer) gains (closing − opening)/100 ×
+// contract size × contract months/12 × contracts; a SHORT position (seller) gains the MIRROR
+// (opening − closing)/100 × the same — a buyer profits when the price rises, a seller when it falls
+// — netted against the money-market actual interest, giving a single EFFECTIVE ANNUAL RATE that
+// reconciles across rate scenarios:
 //   • T5: "Loss on the futures market: (0.9436 – 0.9478) × D500,000 × 3/12 × 90 = (47,250)" then
 //     "Net return = 515,250 ... Effective annual interest rate 515,250/27,000,000 × 12/5 = 4.58%",
 //     and the SAME 4.58% under the rate-fall scenario — the hedge locks one effective rate (the
