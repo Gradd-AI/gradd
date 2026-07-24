@@ -21,7 +21,7 @@
 import { ratingInfo } from './credit';
 
 export interface ProseIssue {
-  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol';
+  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol' | 'misconception-lead';
   field: string;
   code: string;
   message: string;
@@ -233,6 +233,35 @@ export function lintCompleteness(question: string, modelAnswer: string): ProseIs
   return issues;
 }
 
+// P7 — misconception-lead authoring gate (2026-07-24). `extractMisconceptionLead`
+// (lib/acca/tutor-grounding.ts) is consumed LIVE by every conversational tutor leg's
+// GroundingPack.misconceptionLead — but it only extracts a REAL fact when full_reveal contains a
+// literal "...misconception...: " sentence; otherwise it SILENTLY falls back to full_reveal's first
+// sentence (generic scaffolding, not the drill's actual designed failure mode). Measured blast
+// radius (2026-07-24, read-only): 70/145 live drills (48%) on the fallback path — AFM 8/54 (15%),
+// APM 62/91 (68%). This gate is AUTHORING-TIME ONLY: it stops NEW rows and EDITED rows from joining
+// that set. It does NOT touch extractMisconceptionLead or any live/runtime path, and it does NOT
+// retroactively block the 70 existing rows (they are inert until next touched — fix-on-touch).
+//
+// MISCONCEPTION_PATTERN is a byte-identical COPY of extractMisconceptionLead's own primary regex
+// (tutor-grounding.ts:59), duplicated deliberately rather than imported so this authoring-time gate
+// has zero coupling to — and can never accidentally alter — the live grounding-pack code path. If
+// extractMisconceptionLead's primary pattern is ever changed, update this copy to match.
+const MISCONCEPTION_PATTERN = /^.*?misconception[^:]*:/i;
+
+export function lintMisconceptionLead(fullReveal: string): ProseIssue[] {
+  if (!fullReveal) return []; // empty full_reveal is a separate, pre-existing gap — out of this gate's scope
+  if (MISCONCEPTION_PATTERN.test(fullReveal)) return [];
+  return [{
+    gate: 'misconception-lead', field: 'full_reveal', code: 'fallback-not-real-match',
+    message: 'full_reveal has no literal "...misconception...: " sentence — extractMisconceptionLead ' +
+      '(lib/acca/tutor-grounding.ts) will silently fall back to the first sentence (generic scaffolding, ' +
+      'not a real failure-mode fact), breaking GroundingPack.misconceptionLead for every conversational ' +
+      'tutor leg on this drill. Add an explicit sentence naming the drill\'s designed misconception, e.g. ' +
+      '"The classic misconception here is X: ..." or "The dominant misconception is Y: ...".',
+  }];
+}
+
 /** Run both prose gates over whatever fields are present. */
 export function lintAfmProse(fields: {
   question: string;
@@ -253,5 +282,6 @@ export function lintAfmProse(fields: {
     ...lintFrozenMarketFacts(scope),
     ...lintCompleteness(fields.question, fields.model_answer),
     ...lintRatingSymbols(scope),
+    ...lintMisconceptionLead(scope.full_reveal),
   ];
 }

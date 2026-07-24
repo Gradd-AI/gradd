@@ -54,7 +54,7 @@ import {
   type Verdict,
 } from '../lib/acca/numeric-verifier';
 import { validateSchemaSelfConsistency, validateSpreadTable, validateOptionBounds, validateValuationBridge } from '../lib/acca/validate-schema';
-import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts, lintRatingSymbols } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFacts, lintRatingSymbols, lintMisconceptionLead } from '../lib/acca/validate-afm-prose';
 // Narrative pipeline (#2) — the discursive-drill marker + constrained model grader (authoring-time gate).
 import {
   checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
@@ -2955,6 +2955,14 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       for (const iss of revealJur) console.error(`      ✗ [${iss.field}] ${iss.message}`);
       failed.push(plan.id); continue;
     }
+    // P7 — misconception-lead gate: full_reveal must carry a REAL "...misconception...: " sentence,
+    // never the extractMisconceptionLead fallback (see validate-afm-prose.ts). Fails loud, no insert.
+    const revealMisconception = lintMisconceptionLead(reveal.full_reveal);
+    if (revealMisconception.length) {
+      console.error(`  ✗ ${plan.id} — misconception-lead gate (P7) FAILED:`);
+      for (const iss of revealMisconception) console.error(`      ✗ [${iss.field}] ${iss.message}`);
+      failed.push(plan.id); continue;
+    }
     console.log(`\n  HINT:\n${reveal.hint}`);
     console.log(`\n  FULL_REVEAL:\n${reveal.full_reveal}`);
 
@@ -3326,6 +3334,15 @@ async function main() {
     if (revealJur.length) {
       console.error(`  ✗ ${label} — reveal jurisdiction lint (P4) FAILED, will not insert`);
       for (const iss of revealJur) console.error(`      ✗ [${iss.field}] ${iss.message}`);
+      failed.push(i + 1);
+      gatesOk = false;
+    }
+    // P7 — misconception-lead gate: full_reveal must carry a REAL "...misconception...: " sentence,
+    // never the extractMisconceptionLead fallback (see validate-afm-prose.ts). Fails loud, no insert.
+    const revealMisconception = lintMisconceptionLead(reveal.full_reveal);
+    if (revealMisconception.length) {
+      console.error(`  ✗ ${label} — misconception-lead gate (P7) FAILED, will not insert`);
+      for (const iss of revealMisconception) console.error(`      ✗ [${iss.field}] ${iss.message}`);
       failed.push(i + 1);
       gatesOk = false;
     }

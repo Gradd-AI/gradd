@@ -1,7 +1,7 @@
 // scripts/test-afm-prose.ts
 // Fixtures for the rescoped AFM prose lints (lib/acca/validate-afm-prose.ts). Pure — no
 // env/DB/model. Exit 1 on any mismatch.
-import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead } from '../lib/acca/validate-afm-prose';
 
 let failures = 0;
 function check(name: string, got: number, want: number, codes: string[] = []) {
@@ -65,6 +65,17 @@ check('frozen-facts: technical "current yield level" NOT flagged (adjective, eva
   lintFrozenMarketFacts({ model_answer: 'Modified duration is the slope of the tangent at the current yield level.' }).length, 0);
 check('frozen-facts: dated assumption is clean',
   lintFrozenMarketFacts({ model_answer: 'The WACC uses market inputs at the valuation date rather than historical averages.' }).length, 0);
+
+// (10) P7 misconception-lead — a real "...misconception...: " sentence passes; scaffolding-only prose
+// with no such sentence hits the fallback and FAILS the gate.
+check('P7: real misconception sentence passes',
+  lintMisconceptionLead('The dominant misconception here is treating the sold leg as pure income: it is an obligation that can be exercised against you.').length, 0);
+check('P7: differently-worded real misconception sentence still passes (case-insensitive, any lead-in)',
+  lintMisconceptionLead('A classic error is the misconception that a collar is a free hedge: the net premium is real.').length, 0);
+check('P7: scaffolding prose with no misconception sentence FAILS (fallback)',
+  lintMisconceptionLead('A collar answer earns its marks by following the sequence and then reading the trade-off. The most common stall is stopping at the net premium.').length, 1, ['fallback-not-real-match']);
+check('P7: empty full_reveal is out of scope (no issue raised)',
+  lintMisconceptionLead('').length, 0);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL AFM-PROSE FIXTURES PASS' : `${failures} AFM-PROSE FIXTURE(S) FAILED`);
