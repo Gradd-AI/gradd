@@ -112,7 +112,7 @@
       "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/D23%20AFM%20examiner%27s%20report.pdf",
       "bytes": 386496,
       "questions": "McKeever, Abertafol, Southmed",
-      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
+      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b). Abertafol Co (Section B, 25 marks, pp.12-16) is ALSO the calc #12 (IR hedging) Step-0 evidence anchor: FRA/futures/options convention citations, incl. the option-premium-WITH-time-proration formula (0.298% x 60 x $500,000 x 3/12)."
     },
     {
       "id": "E2",
@@ -132,7 +132,7 @@
       "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/SD24%20AFM%20examiner%27s%20report.pdf",
       "bytes": 480902,
       "questions": "Northney, Mortexa, Zulla",
-      "use": "Narrative failure modes F1-F11 + source of new mode F12 (required output format ignored, p.7); fullest scepticism definition incl. the 'providing reasons' clause (p.7)."
+      "use": "Narrative failure modes F1-F11 + source of new mode F12 (required output format ignored, p.7); fullest scepticism definition incl. the 'providing reasons' clause (p.7). Northney Co (Section A, req (iv)/(v), pp.4-5) is ALSO the calc #12 (IR hedging) Step-0 evidence anchor for the COLLAR direction: a depositor's collar is 'the purchase of a call option and the selling of a put option'."
     },
     {
       "id": "E4",
@@ -142,7 +142,7 @@
       "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/p4/examinersreports/MJ25%20AFM%20examiner%27s%20report.pdf",
       "bytes": 414034,
       "questions": "Kampai, Sohbet, GCR",
-      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
+      "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b). Sohbet Co (Section B, 25 marks, pp.8-13) is ALSO the calc #12 (IR hedging) Step-0 evidence anchor: a depositor's futures/options hedge on a $54m deposit, incl. the buy-futures/buy-call-options depositor direction and a discussion of FRA/collar as stated alternatives."
     },
     {
       "id": "E5",
@@ -214,6 +214,46 @@
       "use": "Calculator #11 (fxhedge.ts) FIX ROUND 2 - (a) confirms a RECEIPT is hedged by SELLING futures (the direction/instrumentSide convention), (b) a second per-unit premium example (quoted in cents, not the notional's own major unit), (c) a second, independently-worded lock-in-rate example.",
       "finding": "Nutourne Co (USA-based) receives CHF and hedges by SELLING CHF futures — confirms the receipt-sells / payment-buys direction convention. Separately shows a premium quoted as 0.86 US cents per CHF unit (a currency-denomination nuance: the premium's quote currency need not match the notional's major-unit convention). A second lock-in-rate worked example (1.0369 − 0.0011 = 1.0358) is ALGEBRAICALLY the same formula as T1, confirming it is not a one-off phrasing.",
       "formula": "Verbatim: \"Sell CHF futures now to hedge against sale of CHF when money received from Swiss customer.\"; premium: \"Multiply number of contracts × size of one contract × 0.0086, as premium is quoted in US cents (not US dollars) per CHF.\""
+    },
+    {
+      "id": "T4",
+      "title": "Interest rate risk management (ACCA P4/AFM technical article)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/irrm.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-24.",
+      "accessed": "2026-07-24",
+      "use": "Calculator #12 (IR hedging) Step-0 - the canonical IR-risk article: FRA rate-locking, futures direction/contract-count/premium worked example, the classic comparative-advantage swap (Titans FC / Kendri Co), and a bare mention of the collar.",
+      "finding": "Part (a): borrower sells March futures to hedge a loan; contracts = notional/contract-size x loan-period/contract-period (40 contracts worked); a borrower's PUT option caps the rate (\"MARCH PUT AT 94.000\"); option premium = rate% x contracts x contract-size x contract-period/12 (WITH time proration - differs from the FX K3 all-in convention). Part (b): a full comparative-advantage swap between an absolute-advantage party (Titans FC) and a comparative-advantage party (Kendri Co), intermediated by a bank, saving split (fixed-rate-diff - floating-rate-diff) x 1/2 before fees, then each party nets a bank fee off their share. Collar mentioned only in passing: \"reduce this cost by selecting to cap at a higher rate ... or using a collar hedge\", sacrificing benefit if rates fall below the floor - NO worked collar example in this article.",
+      "formula": "Contracts = $30m/$0.5m x 2mths/3mths = 40; premium = 0.255% x 40 x $500,000 x 3/12 = $12,750; swap saving = (3%-1%) x 1/2 = 1% pa excluding fees, then each party nets a 0.5% bank fee off their share."
+    },
+    {
+      "id": "T5",
+      "title": "How to answer an interest rate risk management question (ACCA P4/AFM technical article)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/hedging.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-24.",
+      "accessed": "2026-07-24",
+      "use": "Calculator #12 (IR hedging) Step-0 - the fullest worked depositor-side FRA/futures/options example found (D27,000,000 deposit), incl. the full futures expected-close-price mechanic through to net result under BOTH a rate-rise and a rate-fall scenario.",
+      "finding": "Depositor buys futures (\"Buy futures now (go long in the futures market), as the hedge is against a fall in interest rates\") and buys CALL options (\"Buy call options as need to hedge against a fall in interest rates\"; exercise if strike below expected futures price). Contracts = notional/contract-size x deposit-period/contract-period (90 contracts worked). Basis = (100 - spot rate) - futures price; unexpired basis diminishes linearly by elapsed/total contract life (2/6 x 1.02 = 0.34). Expected closing futures price = 100 - expected rate - unexpired basis (NOT the FX lock-in-rate formula 'opening futures + unexpired basis' - the two families' formulas are structurally different because IR futures price = 100-rate while FX futures price is a currency rate). Gain/loss on futures = (closing price - opening price) x contract-size x contract-period/12 x contracts, netted against the money-market actual return/cost to give a net result and effective annual rate - reconciles to the SAME effective rate (4.58%) under both a rate-rise and a rate-fall scenario, confirming the hedge locks a single effective rate as designed.",
+      "formula": "Contracts = D27,000,000/D500,000 x 5/3 = 90; basis = (100-4.20)-94.78 = 1.02; unexpired basis (31 Jan) = 2/6 x 1.02 = 0.34; expected futures price (rate=5.3%) = 100-5.3-0.34 = 94.36; futures gain/loss = (0.9436-0.9478) x D500,000 x 3/12 x 90 = (47,250); net result (both scenarios) = 515,250, effective annual rate 515,250/27,000,000 x 12/5 = 4.58%."
+    },
+    {
+      "id": "T6",
+      "title": "Basis risk (ACCA P4/AFM technical article)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/basis-risk.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-24.",
+      "accessed": "2026-07-24",
+      "use": "Calculator #12 (IR hedging) Step-0 - confirms the linear-diminishing-basis assumption used across T4/T5 is the general ACCA convention, not a one-off worked-example artefact, and flags it as a simplifying assumption ACCA itself calls out as not holding in practice (this is the standard scepticism-mark hook seen in the Northney/Sohbet examiner reports).",
+      "finding": "\"Basis is the difference between the futures and spot prices\" and \"basis is often assumed to diminish at a constant rate\", explicitly flagged as a simplifying assumption that \"may not hold true in practice\" - the source of the basis-risk discussion/scepticism marks referenced in the Abertafol and Sohbet examiner reports (E1, E4).",
+      "formula": "Basis = spot price - futures price = (100-4.20)-94.78 = 1.02; unexpired basis (31 Jan) = 2/6 x 1.02 = 0.34."
+    },
+    {
+      "id": "T7",
+      "title": "Determining interest rate forwards and their application to swap valuation (ACCA P4/AFM technical article, Nov 2011)",
+      "url": "https://www.accaglobal.com/gb/en/student/exam-support-resources/professional-exams-study-resources/p4/technical-articles/interest-rate-swap-valuation.html",
+      "note": "Live HTML page, not a stable PDF - no byte-guard applies; verified by direct WebFetch 2026-07-24. A byte-identical PDF companion (sa_nov2011_intrateswaps.pdf) was also fetched and cross-checked - same content.",
+      "accessed": "2026-07-24",
+      "use": "Calculator #12 (IR hedging) Step-0 - the ONLY ACCA technical article on interest rate swaps beyond T4's comparative-advantage example. Uses a DIFFERENT presentation: deriving annual forward rates from a company's spot yield curve, then solving for the swap's fixed-equivalent rate by NPV-ing the net swap flows to zero.",
+      "finding": "Bank offers to swap a company's variable-rate loan payments for a fixed rate: \"the company pays a fixed rate of interest to the bank in exchange for receiving a variable rate of return from the bank based on the above yield rates less 50 basis points\" (a bank margin/spread taken off the floating leg, not a flat fee as in T4). The fixed-equivalent rate R is solved by setting the NPV of (variable receipt - R) over the loan life to zero, discounting at the spot yield-curve rates. \"In practice the receipts and payments of the swap would be netted off\" - year-by-year net cash flow is receipt-or-payment depending on sign, not a single flat annual swap payment. AMBIGUITY: this NPV/forward-curve swap style and T4's comparative-advantage swap style are BOTH on ACCA's technical-articles page but structurally unrelated - neither the SD23/MJ25/SD24 examiner reports (Abertafol/Sohbet/Northney) feature a swap requirement at all, so there is no recent real-exam anchor confirming which style (or a third, simpler style) AFM currently examines.",
+      "formula": "One-year forward rate = spot(2yr)^2 / spot(1yr) (e.g. 1.0460^2/1.0350 = 1.0571, i.e. 5.71%); swap fixed rate R solves Σ[(variable_t - R) x 100m] x discount_factor_t = 0 across the loan life."
     }
   ]
 }
