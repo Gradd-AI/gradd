@@ -112,6 +112,12 @@ const pctStr = (p: number): string => `${p.toFixed(2)}%`;
 function amt(currency: string, n: number): string {
   return `${currency} ${n.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
 }
+// Raw quantity (notional, contract size) with thousands separators — a whole-number amount displayed
+// honestly ("24,000,000" not "24000000.0"). Not a schema figure, so its format is free; commas are
+// stripped by the figure-integrity check regardless.
+function qty(n: number): string {
+  return n.toLocaleString('en-US');
+}
 const EPS = 1e-9;
 // Money-shaped figures: plain relative band, no floor — an IR hedge outcome (interest earned/paid,
 // a futures P&L, a premium) is never legitimately near-zero, so a floor would only mask a genuine
@@ -533,25 +539,25 @@ export function buildIrFuturesSchema(raw: IrFuturesInputs, c: IrFuturesComputed)
   const s0 = c.scenarios[0];
   const comps: Component[] = [
     { component_id: 'contracts', label: 'Number of futures contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
-      working_steps: [`= round(${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} months) — amount AND period`] },
+      working_steps: [`= round(${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} months) — amount AND period`] },
     { component_id: 'unexpired_basis', label: 'Unexpired basis at the transaction date', expected_value: c.unexpired_basis, unit: 'price', tolerance: priceTol,
       working_steps: [`basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(c.basis0)}; unexpired = basis₀ × ${raw.months_to_expiry - raw.months_to_transaction}/${raw.months_to_expiry}`] },
     { component_id: 'closing_price', label: `Expected closing futures price (${s0.label})`, expected_value: s0.closing_price, unit: 'price', tolerance: priceTol,
       depends_on: ['unexpired_basis'], recompute: (d) => 100 - s0.base_rate - d.unexpired_basis,
       working_steps: [`= 100 − ${fmt2(s0.base_rate)} − unexpired basis`] },
     { component_id: 'mm_interest', label: `Money-market interest (${s0.label})`, expected_value: s0.mm_interest, unit: moneyUnit, tolerance: moneyTol,
-      working_steps: [`= ${fmt2(s0.actual_rate)}% × ${raw.hedge_months}/12 × ${fmt1(raw.notional)}`] },
+      working_steps: [`= ${fmt2(s0.actual_rate)}% × ${raw.hedge_months}/12 × ${qty(raw.notional)}`] },
     { component_id: 'futures_profit', label: `Futures profit/(loss) (${s0.label})`, expected_value: s0.futures_profit, unit: moneyUnit, tolerance: moneyTol,
       depends_on: ['contracts', 'closing_price'],
       recompute: (d) => ((c.side === 'buy' ? d.closing_price - raw.futures0 : raw.futures0 - d.closing_price) / 100) * raw.contract_size * (raw.contract_months / 12) * d.contracts,
-      working_steps: [`= (${c.side === 'buy' ? 'closing − opening' : 'opening − closing'})/100 × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12 × contracts`] },
+      working_steps: [`= (${c.side === 'buy' ? 'closing − opening' : 'opening − closing'})/100 × ${qty(raw.contract_size)} × ${raw.contract_months}/12 × contracts`] },
     { component_id: 'net_outcome', label: `Net ${raw.direction === 'depositor' ? 'return' : 'cost'} (${s0.label})`, expected_value: s0.net, unit: moneyUnit, tolerance: moneyTol,
       depends_on: ['mm_interest', 'futures_profit'],
       recompute: (d) => raw.direction === 'depositor' ? d.mm_interest + d.futures_profit : d.mm_interest - d.futures_profit,
       working_steps: [`= money-market interest ${raw.direction === 'depositor' ? '+' : '−'} futures profit`] },
     { component_id: 'effective_rate', label: `Effective annual ${raw.direction === 'depositor' ? 'return' : 'cost'} rate (locked)`, expected_value: s0.effective_rate, unit: '%', tolerance: rateTol,
       depends_on: ['net_outcome'], recompute: (d) => (d.net_outcome / raw.notional) * (12 / raw.hedge_months) * 100,
-      working_steps: [`= net ÷ ${fmt1(raw.notional)} × 12/${raw.hedge_months} × 100`] },
+      working_steps: [`= net ÷ ${qty(raw.notional)} × 12/${raw.hedge_months} × 100`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { closing_price: 'irh_closing_price', futures_profit: 'irh_futures_profit', net_outcome: 'irh_net', effective_rate: 'irh_effective' };
   const params = { notional: raw.notional, contract_size: raw.contract_size, hedge_months: raw.hedge_months, contract_months: raw.contract_months, spot_rate0: raw.spot_rate0, futures0: raw.futures0, months_to_expiry: raw.months_to_expiry, months_to_transaction: raw.months_to_transaction, company_spread: raw.company_spread, base_rate: s0.base_rate };
@@ -563,8 +569,8 @@ export function buildIrFuturesModelAnswer(raw: IrFuturesInputs, c: IrFuturesComp
     `| ${s.label} (base ${pctStr(s.base_rate)}) | ${pctStr(s.actual_rate)} | ${m(s.mm_interest)} | ${fmt2(s.closing_price)} | ${m(s.futures_profit)} | ${m(s.net)} | ${pctStr(s.effective_rate)} |`);
   return [
     '**Interest-rate hedging — futures**', '',
-    `**Assumptions:** a ${cur} ${fmt1(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} runs for ${raw.hedge_months} months from a start date ${raw.months_to_transaction} months away; ${raw.contract_months}-month futures of size ${fmt1(raw.contract_size)} expire in ${raw.months_to_expiry} months, base rate today ${pctStr(raw.spot_rate0)}, futures price ${fmt2(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
-    '**Step 1 — Number of contracts (amount AND period)**', '', `${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} = **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}).`, '',
+    `**Assumptions:** a ${cur} ${qty(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} runs for ${raw.hedge_months} months from a start date ${raw.months_to_transaction} months away; ${raw.contract_months}-month futures of size ${qty(raw.contract_size)} expire in ${raw.months_to_expiry} months, base rate today ${pctStr(raw.spot_rate0)}, futures price ${fmt2(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
+    '**Step 1 — Number of contracts (amount AND period)**', '', `${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} = **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}).`, '',
     '**Step 2 — Basis and the expected closing price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(c.basis0)}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, c.basis0, c.unexpired_basis)} Expected closing futures price = 100 − expected rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 3 — Outcome under each scenario**', '',
     `| Scenario | Actual rate | MM interest | Closing price | Futures P/(L) | Net | Effective |`, `|---|---|---|---|---|---|---|`,
@@ -583,10 +589,10 @@ export function buildIrOptionsSchema(raw: IrOptionsInputs, c: IrOptionsComputed)
   const s0 = c.scenarios[0];
   const comps: Component[] = [
     { component_id: 'contracts', label: 'Number of option contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
-      working_steps: [`= round(${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months})`] },
+      working_steps: [`= round(${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months})`] },
     { component_id: 'premium', label: `Total premium (${c.option_type} options bought)`, expected_value: c.premium, unit: moneyUnit, tolerance: moneyTol,
       depends_on: ['contracts'], recompute: (d) => irOptionPremium(raw.premium_pct, d.contracts, raw.contract_size, raw.contract_months),
-      working_steps: [`= ${pctStr(raw.premium_pct)} × contracts × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12 (prorated by the contract period)`] },
+      working_steps: [`= ${pctStr(raw.premium_pct)} × contracts × ${qty(raw.contract_size)} × ${raw.contract_months}/12 (prorated by the contract period)`] },
     { component_id: 'closing_price', label: `Expected closing futures price (${s0.label})`, expected_value: s0.closing_price, unit: 'price', tolerance: priceTol,
       working_steps: [`= 100 − ${fmt2(s0.base_rate)} − unexpired basis ${fmt4(c.unexpired_basis)}`] },
     { component_id: 'option_payoff', label: `Option gain if exercised (${s0.label})`, expected_value: s0.option_payoff, unit: moneyUnit, tolerance: moneyTol,
@@ -617,14 +623,14 @@ export function buildIrOptionsModelAnswer(raw: IrOptionsInputs, c: IrOptionsComp
     `| ${s.label} (base ${pctStr(s.base_rate)}) | ${fmt2(s.closing_price)} | ${s.exercised ? 'exercise' : 'lapse'} | ${m(s.option_payoff)} | ${m(s.net)} | ${pctStr(s.effective_rate)} |`);
   return [
     '**Interest-rate hedging — options on futures**', '',
-    `**Assumptions:** a ${cur} ${fmt1(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months; ${raw.contract_months}-month options of size ${fmt1(raw.contract_size)} at strike ${fmt2(raw.strike_price)}, premium ${pctStr(raw.premium_pct)}. A ${raw.direction} **BUYS ${c.option_type.toUpperCase()} options** — never sells/writes options.`, '',
-    '**Step 1 — Contracts and premium**', '', `Buy **${c.contracts} ${c.option_type} options** (${c.contracts.toFixed(1)}). Premium = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12 = **${m(c.premium)}** (prorated by the contract period — an option premium, unlike a currency-option premium, carries the contract-period fraction).`, '',
+    `**Assumptions:** a ${cur} ${qty(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months; ${raw.contract_months}-month options of size ${qty(raw.contract_size)} at strike ${fmt2(raw.strike_price)}, premium ${pctStr(raw.premium_pct)}. A ${raw.direction} **BUYS ${c.option_type.toUpperCase()} options** — never sells/writes options.`, '',
+    '**Step 1 — Contracts and premium**', '', `Buy **${c.contracts} ${c.option_type} options** (${c.contracts.toFixed(1)}). Premium = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${qty(raw.contract_size)} × ${raw.contract_months}/12 = **${m(c.premium)}** (prorated by the contract period — an option premium, unlike a currency-option premium, carries the contract-period fraction).`, '',
     '**Step 2 — Basis and exercise decision per scenario**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(computeBasis0(raw.spot_rate0, raw.futures0))}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, computeBasis0(raw.spot_rate0, raw.futures0), c.unexpired_basis)} Each scenario's expected closing price = 100 − expected rate − unexpired basis; a ${c.option_type} is exercised when the price is ${c.option_type === 'call' ? 'ABOVE' : 'BELOW'} the strike ${fmt2(raw.strike_price)}. ${BASIS_SCEPTICISM_HOOK}`, '',
     `| Scenario | Closing price | Decision | Option gain | Net | Effective |`, `|---|---|---|---|---|---|`,
     ...scenLines, '',
     `Unlike a futures lock, the option leaves a **range** of outcomes — it caps the downside while preserving the upside if rates move favourably. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 3 — Advice to the board**', '', prose, '',
-    `*Reconciliation: premium ${m(c.premium)} = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12 ✓*`,
+    `*Reconciliation: premium ${m(c.premium)} = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${qty(raw.contract_size)} × ${raw.contract_months}/12 ✓*`,
   ].join('\n');
 }
 
@@ -636,13 +642,13 @@ export function buildIrCollarSchema(raw: IrCollarInputs, c: IrCollarComputed): {
   const s0 = c.scenarios[0];
   const comps: Component[] = [
     { component_id: 'contracts', label: 'Number of option contracts (whole)', expected_value: c.contracts, unit: 'contracts', tolerance: intTol,
-      working_steps: [`= round(${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months})`] },
+      working_steps: [`= round(${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months})`] },
     { component_id: 'buy_premium', label: `Premium PAID on the ${c.bought_type} bought`, expected_value: c.buy_premium, unit: moneyUnit, tolerance: moneyTol,
       depends_on: ['contracts'], recompute: (d) => irOptionPremium(raw.buy_premium_pct, d.contracts, raw.contract_size, raw.contract_months),
-      working_steps: [`= ${pctStr(raw.buy_premium_pct)} × contracts × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12`] },
+      working_steps: [`= ${pctStr(raw.buy_premium_pct)} × contracts × ${qty(raw.contract_size)} × ${raw.contract_months}/12`] },
     { component_id: 'sell_premium', label: `Premium RECEIVED on the ${c.sold_type} sold`, expected_value: c.sell_premium, unit: moneyUnit, tolerance: moneyTol,
       depends_on: ['contracts'], recompute: (d) => irOptionPremium(raw.sell_premium_pct, d.contracts, raw.contract_size, raw.contract_months),
-      working_steps: [`= ${pctStr(raw.sell_premium_pct)} × contracts × ${fmt1(raw.contract_size)} × ${raw.contract_months}/12`] },
+      working_steps: [`= ${pctStr(raw.sell_premium_pct)} × contracts × ${qty(raw.contract_size)} × ${raw.contract_months}/12`] },
     { component_id: 'net_premium', label: 'Net premium (bought − received)', expected_value: c.net_premium, unit: moneyUnit, tolerance: moneyTol,
       depends_on: ['buy_premium', 'sell_premium'], recompute: (d) => d.buy_premium - d.sell_premium,
       working_steps: [`= premium bought − premium received`] },
@@ -669,9 +675,9 @@ export function buildIrCollarModelAnswer(raw: IrCollarInputs, c: IrCollarCompute
     `| ${s.label} (base ${pctStr(s.base_rate)}) | ${fmt2(s.closing_price)} | ${s.bought_exercised ? 'yes' : 'no'} | ${s.sold_exercised ? 'yes' : 'no'} | ${m(s.net)} | ${pctStr(s.effective_rate)} |`);
   return [
     '**Interest-rate hedging — collar**', '',
-    `**Assumptions:** a ${cur} ${fmt1(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months. As a ${raw.direction}'s collar, the company **BUYS ${c.bought_type.toUpperCase()} options (strike ${fmt2(raw.buy_strike)}) and SELLS ${c.sold_type.toUpperCase()} options (strike ${fmt2(raw.sell_strike)})**.`, '',
+    `**Assumptions:** a ${cur} ${qty(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months. As a ${raw.direction}'s collar, the company **BUYS ${c.bought_type.toUpperCase()} options (strike ${fmt2(raw.buy_strike)}) and SELLS ${c.sold_type.toUpperCase()} options (strike ${fmt2(raw.sell_strike)})**.`, '',
     '**Step 1 — Options needed**', '', `Buy ${c.bought_type} (the protection) and sell ${c.sold_type} (to fund it) — the collar confines the outcome to a range.`, '',
-    '**Step 2 — Number of contracts**', '', `round(${fmt1(raw.notional)} ÷ ${fmt1(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months}) = **${c.contracts} contracts** (${c.contracts.toFixed(1)}).`, '',
+    '**Step 2 — Number of contracts**', '', `round(${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months}) = **${c.contracts} contracts** (${c.contracts.toFixed(1)}).`, '',
     '**Step 3 — Net premium**', '', `Premium paid ${m(c.buy_premium)} − premium received ${m(c.sell_premium)} = **${m(c.net_premium)}** (each prorated by the ${raw.contract_months}/12 contract period).`, '',
     '**Step 4 — Basis and expected price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(computeBasis0(raw.spot_rate0, raw.futures0))}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, computeBasis0(raw.spot_rate0, raw.futures0), c.unexpired_basis)} Expected closing price = 100 − base rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 5 — Exercise decision per leg, and Step 6 — net effect**', '',
