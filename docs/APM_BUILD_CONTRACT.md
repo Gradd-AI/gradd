@@ -2278,3 +2278,91 @@ block replaced, new calc #12 entry added, refreshed date), `docs/APM_BUILD_CONTR
 entry). DB: 4 rows in `acca_drills` (`status`/`published` only — zero content bytes touched by this
 flip; the FR1 wording patch that touched content was a separate, already-journaled prior-session
 change).
+
+## 2026-07-24 — E-NARRATIVE CLUSTER — GATE-P FLIP: FIRST NARRATIVE CONTENT IN SECTION E, VIABLE-TIER NARRATIVE QUOTA COMPLETE
+
+**Grant-ruled FLIP** on the GPT-approved, co-founder-reviewed, FR1-patched E-narrative batch (3
+discursive drills, pipeline #2's second batch). Executed directly under GATE-P (`CLAUDE.md`,
+Grant-ruled 2026-07-14): reconcile passed, explicit-id guarded statement, pre/post counts verified,
+journal entry written — no separate SQL-Editor step.
+
+**RECONCILE (before flip) — clean, no mismatch:**
+- Published AFM: **54** (matches the running count from the calc #12 flip).
+- Approved-unpublished AFM: **0** (no orphan approved rows).
+- All AFM candidates, pre-flip: exactly **4** — the 3 narrative ids
+  (`55181aa8`/`d0be009d`/`f9f4f3d4`, all `candidate`/`published=false`, `mode=discursive`) + the
+  parked `47c9d5ce` (A3a ESG, correctly NOT enumerated in the flip).
+
+**FLIP — explicit id, status-guarded:**
+```
+UPDATE acca_drills SET status='approved', published=true
+WHERE id IN ('55181aa8-dcde-42cd-8c01-dbd0b392a734','d0be009d-2625-4f2d-a489-a52d798dbaea',
+             'f9f4f3d4-ff4c-4d73-854c-9150db322c14')
+  AND status='candidate';
+```
+Run via the guarded service-client update (`.in('id', [...3 ids]).eq('status','candidate')`), never
+a bare `WHERE status='candidate'`. **3 rows flipped — exactly 3, matching the WHERE.**
+
+**POST-VERIFY:**
+- Published AFM: **57** (54 + 3, matches).
+- Candidates: **1** — only the parked `47c9d5ce` (A3a) remains, as expected.
+- All 3 narrative ids independently confirmed `status='approved'`, `published=true`,
+  `mode='discursive'` intact (unchanged by the flip — a `status`/`published` write only).
+
+**AREA-ENTRY — the ordering subtlety, proven not assumed.** B-narrative (ranks 60–64) sits above
+the B-calculators automatically, because every B-calc is ≤53. The E-calculators are 70–77
+(fxhedge E2b/E2c, irhedge E3a) — ranking E-narrative in a low band would let a narrative drill
+STEAL an E-area's zero-attempt entry from its calculator, the exact failure `area-entry.ts` exists
+to prevent. Registered **80–82**, strictly above every E-calculator: EN1 `80` (E1a, establishing/
+relocating — the E1 entry; E1 has no calculator to protect against), EN2 `81` (E1a, positive
+financial contribution), EN3 `82` (E2a — shares the E2 area bucket with fxhedge via the 2-char
+`lo_code` prefix, so it must rank above ALL FOUR fxhedge kinds, not merely above K1).
+`scripts/test-area-entry.ts` gained: an E2 block (fxhedge K1–K4 alone, confirming K1 `51163dac`-shaped
+is the entry); the **load-bearing mixed-data case** — fxhedge K1–K4 **plus EN3** in one
+`pickEntryDrill` call, proving EN3 does NOT steal the E2 entry, order-independent; an E1 block
+(EN1 vs EN2, confirming EN1 wins). All new + existing cases PASS (`npm run test:area-entry`).
+
+**LIVE-DATA entry-serve checks (real post-flip rows, not mocks):**
+- E1 area: 2 published rows (EN1 rank 80, EN2 rank 81). `pickEntryDrill` (live data) selects
+  `55181aa8` (EN1) — confirmed against the real row set, not code inspection alone.
+- E2 area: 5 published rows (fxhedge K1–K4 + EN3, ranks 70/71/72/73/82). `pickEntryDrill` (live
+  data) STILL selects `51163dac` (fxhedge K1) — EN3 sits in the same live area fetch and does not
+  steal the entry, proven against real data.
+- Picker sort order (`app/api/acca/areas/route.ts`, `subArea = lo_code.slice(0,2)`): E1a → `'E1'`,
+  E2a → `'E2'` (same bucket as E2b/E2c) — confirmed generic, no code change needed.
+
+**Narrative cluster's VIABLE-TIER quota is now MET: 8/8 (5 B + 3 E).** This closes the narrative
+line item of the VIABLE PAID LAUNCH tier — **only the mock-rehearsal engine remains** to close that
+tier. **E1b (derivatives-market operations) stays explicitly DEFERRED to exam-ready** — it was never
+silently dropped from the 8-drill viable-tier count; that count was always "8 narrative drills," not
+"one drill per syllabus sub-LO," and this batch met it via E1a×2 instead of E1a×1+E1b×1 (Step-0
+ruling, this batch). **AFM = 57 published, 12 calculators, 8 narrative drills, areas B1–B5 + E1 + E2
++ E3.** Grant's student walk on the E-narrative batch is owed (non-blocking on this LIVE status, per
+the same pattern as calc #11/#12's still-outstanding walks).
+
+**Map-before-close:** `CLAUDE.md`'s E-narrative CODE-MAP entry added (new — first appearance for
+this cluster) — kinds/ids, the `evidence_anchor` re-enablement ruling, the E1b-deferred and
+internal/external-not-ACCA rulings, the FR1 prose fix, and the area-entry ordering subtlety in full.
+`lib/acca/area-entry.ts` registered E-narrative's 3 headings at ranks 80–82;
+`scripts/test-area-entry.ts` gained the E2/E1/mixed-E2 cases above.
+
+**Coverage-contract mirrors synced (repo copy; Grant syncs the project-master copy separately,
+after the walk):** `docs/AFM_COVERAGE_CONTRACT.md` — top STATUS banner (line 4) gained an
+E-NARRATIVE-CLOSED paragraph, drill count bumped 54→57; the narrative table's E1a/E1b/E2a row
+split into three (E1a LIVE with both ids, E1b explicitly deferred not silently blank, E2a LIVE);
+narrative total shipped 5→8; the VIABLE PAID LAUNCH tier row and the bottom "Progress against
+tiers" mirror line both rewritten to state the narrative quota is met and only the mock engine
+remains. `docs/reviews/AFM_BATCH_E_NARRATIVE_REVIEW_PACK.md` already carries the FR1 history — no
+further edit needed there.
+
+**AFM_SURFACED.md updated (rewritten, not appended, per its own discipline):** stale calc #11/#12
+"Next" pointers referencing the coverage-contract sync (already done in prior sessions) collapsed;
+new ✅ completed summary added for the E-narrative cluster, pointing at its review pack rather than
+re-narrating settled history.
+
+**Files touched:** `CLAUDE.md` (E-narrative code-map entry), `lib/acca/area-entry.ts` (ranks
+80–82), `scripts/test-area-entry.ts` (E2/E1/mixed-E2 fixtures), `docs/AFM_COVERAGE_CONTRACT.md`
+(status banner, narrative table, total, tier row, progress line), `docs/AFM_SURFACED.md` (new
+E-narrative entry, stale pointers collapsed), `docs/APM_BUILD_CONTRACT.md` (this entry). DB: 3 rows
+in `acca_drills` (`status`/`published` only — zero content bytes touched by this flip; the FR1
+prose fix that touched content was a separate, already-journaled prior-session change).

@@ -72,6 +72,18 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   '**Interest-rate hedging — options on futures**': 75,
   '**Interest-rate hedging — collar**': 76,
   '**Interest-rate hedging — swap (comparative advantage)**': 77,
+  // ── E-NARRATIVE cluster (pipeline #2, discursive EN1–EN3). CRITICAL ORDERING SUBTLETY, different
+  // from the B-narrative case: B-narrative (60–64) sits above the B-calculators because every B-calc
+  // is ≤53, so "above every calculator" was automatic. The E-calculators are 70–77 (fxhedge E2b/E2c,
+  // irhedge E3a) — an E-narrative rank BELOW 73 would steal E2's zero-attempt entry from fxhedge K1
+  // (rank 70), the exact "narrative is never an entry" violation this module exists to prevent. So
+  // EN3 (E2a — shares the E2 area bucket with fxhedge E2b/E2c) MUST rank ABOVE 77, not merely above
+  // 73, to also clear the full irhedge/fxhedge E-calculator span. EN1/EN2 (E1a) have NO calculator in
+  // E1 at all — a narrative drill is the ONLY thing there, so it is the E1 entry by construction; still
+  // ranked in this same above-every-E-calculator band for consistency, not because E1 needs protecting.
+  '**Treasury function — establishing a group treasury and its impact on existing functions**': 80,   // EN1 · E1a — the E1 entry (no calculator to protect against)
+  '**Treasury function — how a dedicated treasury department makes a positive financial contribution**': 81, // EN2 · E1a
+  '**Foreign-exchange exposure — identifying, distinguishing and managing the three exposure types**': 82,   // EN3 · E2a — ABOVE fxhedge's 70–73, so K1 (70) keeps the E2 entry
 };
 
 const UNRANKED = Number.POSITIVE_INFINITY;

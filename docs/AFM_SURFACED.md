@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-24.*
+*Last refreshed: 2026-07-24 (E-narrative flip).*
 
 ## LOCKED — POST-COVERAGE PRODUCT LAYER (ruled 2026-07-22, `docs/GRADD_PRODUCT_ROADMAP_POST_COVERAGE.md`)
 Next product layer once AFM is EXAM-READY (drills + mocks + the marking engine — not merely
@@ -35,8 +35,29 @@ K1 "guaranteed" → "locked in" register fix, zero-hit sweep proof) → co-found
 adjudication → **flipped**: all 4 drills (K1 `56989d69`/K2 `1c133573`/K3 `f088daa5`/K4 `26a4167b`)
 approved+published — the second AFM section E family. Pack:
 `docs/reviews/AFM_BATCH_IRHEDGE_REVIEW_PACK.md`. area-entry ranked 74–77 (K1 futures = entry).
-**Next: sync docs/AFM_COVERAGE_CONTRACT.md (now 54 published drills, 13 calculators, E2+E3 both
-live); Grant's student walk owed (post-flip, non-blocking).**
+Coverage-contract synced same session. Grant's student walk owed (post-flip, non-blocking).
+
+## ✅ E-NARRATIVE CLUSTER (E1a×2 + E2a×1) — LIVE (GATE-P flip, 2026-07-24)
+Step-0 evidence (SD24 p.4 Northney, SD25 pp.13-14/p.13 Passmore, F9 J16 p.5 — registered **S3** —
+for the E2a "named-but-not-described" mode) → both ambiguities ruled (E1a takes 2 of the 3 slots —
+establishing/relocating + positive-financial-contribution, each independently evidenced; E1b
+deferred to exam-ready; "internal vs external hedging" confirmed NOT ACCA vocabulary) →
+hand-authored rubrics (not generator-drafted) via a one-off gitignored script
+(`scripts/_author_enarrative_batch.ts`) so every criterion carries a cited `evidence_anchor`
+(RE-ENABLED for this batch, provenance-only, never served) → all gates N1–N5 PASS on the REAL
+constrained grader + P4/P7 lints → FR1 (GPT-requested: EN3's translation-priority sentence
+softened from "warrants little more than awareness" to name a concrete reason it still matters —
+reported gearing / loan covenants — while keeping the committed transaction-first priority; one
+further hit found + fixed in `full_reveal`; re-gated N1+N4 clean before the write) → co-founder
+review + GPT adjudication → **flipped**: all 3 drills (EN1 `55181aa8`/EN2 `d0be009d`/EN3
+`f9f4f3d4`) approved+published — the first narrative content in Section E. Pack:
+`docs/reviews/AFM_BATCH_E_NARRATIVE_REVIEW_PACK.md`. **area-entry ranked 80–82** (strictly above
+the E-calculators 70–77, not merely above fxhedge K1 — the ordering subtlety this cluster needed
+its own rule for; proven with real mixed data in `test-area-entry.ts` AND against live post-flip
+rows: E2's `pickEntryDrill` still returns fxhedge K1 with EN3 in the same area fetch). **Narrative
+cluster's VIABLE-TIER quota now MET: 8/8 (5 B + 3 E) — only the mock-rehearsal engine remains to
+close that tier.** Coverage-contract synced same session. Grant's student walk owed (post-flip,
+non-blocking, same pattern as calc #11/#12).
 
 ## ✅ AD-MEASUREMENT BLIND SPOT — FIXED + LIVE-FIRE VERIFIED 21/07 (was: blocks the December campaign)
 Ad autopsy (07/07–21/07) found the app could not see ad-driven traffic AT ALL: all-time, zero of 11

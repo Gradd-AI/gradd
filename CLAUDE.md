@@ -213,6 +213,44 @@ territory — follow the links for depth. Keep it under ~150 lines.
   **FR1:** interpretation criteria `[F1,F5,F6]` (F6=state-the-figure); F9 OFF (carry-a-value-downstream only);
   no `evidence_anchor`; marks credit RECOGNITION not a number. area-entry ranks 60–64 (above every calculator).
   Design: `docs/NARRATIVE_MARKING_DESIGN.md`; evidence F1–F12: `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
+- **E-NARRATIVE CLUSTER — pipeline #2's SECOND batch, E1a×2 + E2a×1 (EN1/EN2/EN3), first narrative content in
+  Section E.** Same engine as D1–D5 (`narrative-marker.ts`/`narrative-grader.ts`), authored via a one-off
+  gitignored script (`scripts/_author_enarrative_batch.ts`) rather than the generator's `runNarrativeBatch`
+  loop — hand-authored rubrics so every criterion + disqualifier carries a cited `evidence_anchor`
+  (`evidence_anchor` **RE-ENABLED for this batch**, a deliberate deviation from D1–D5's "no evidence_anchor"
+  rule — the field is provenance-only, never served/marked on). **Kinds → ids:** EN1 `55181aa8` (E1a,
+  establishing/relocating a group treasury — SD24 p.4 Northney "location and control were rarely discussed")
+  · EN2 `d0be009d` (E1a, positive financial contribution — SD25 pp.13-14/p.13 Passmore, incl. the
+  "additional costs and procedures … not given credit" boundary) · EN3 `f9f4f3d4` (E2a, forex exposure
+  types + how managed — F9 J16 p.5 "named-but-not-described" fundamentals-tier evidence, tagged
+  `[tier=fundamentals (F9/FM), level-agnostic]` in its `evidence_anchor` to read as level-agnostic, not
+  AFM-examiner-specific). **CLOSED RULINGS:** E1b (derivatives-market operations) DEFERRED to exam-ready —
+  reads mechanical/definitional, no located E1b-specific examiner evidence; "internal vs external hedging"
+  is **NOT ACCA vocabulary** (T8, the only located conceptual source, uses neither word) — EN3's management
+  criteria never assert it; E2a's evidence base is thinner than D1–D5 (zero direct hit across the 5
+  registered AFM examiner reports — a bounded re-search of older/other reports found ONE hit, F9 June 2016,
+  registered **S3**, before this batch closed) so its translation≠transaction confusion disqualifier is
+  **HOUSE-AUTHORED**, tagged explicitly, not claimed as examiner-sourced. Designed golden-BAD flags use the
+  proven `[F1,F5,F4]` deterministic backbone (matching D1–D5); the SIGNATURE disqualifiers — F7
+  generic-centralisation-substitution (E1a) and F2 named-but-not-described (E2a) — are the cited MARKING
+  BASIS on the relevant criteria but are grader-judgment calls N4 can't deterministically pre-verify, so
+  they sit outside the backbone set (documented in the pack, not silently dropped). **FR1 (GPT-requested):**
+  EN3's golden GOOD/full_reveal originally taught translation exposure as "warrant[ing] little more than
+  awareness" — reworded to name a concrete reason it still matters (drags on reported gearing / trips a
+  loan covenant) while keeping the committed transaction-first priority; re-gated on the REAL grader (N1+N4
+  both PASS post-edit) before the DB write. **area-entry ordering subtlety (the reason this cluster needed
+  its own rule, not just "copy the D1–D5 band"):** B-narrative (60–64) sits above the B-calculators only
+  because every B-calc is ≤53 — automatic. The E-calculators are 70–77 (fxhedge E2b/E2c, irhedge E3a), so
+  ranking E-narrative in a low band would let it STEAL an E-area's zero-attempt entry from its calculator —
+  the exact failure this module exists to prevent. Ranked **80–82**, strictly above every E-calculator:
+  EN1 `74`→`80`, EN2 `81` (E1 has no calculator — EN1 is the E1 entry by construction), EN3 `82` (E2a
+  shares the E2 area bucket with fxhedge via the 2-char `lo_code` prefix — EN3 must rank above ALL FOUR
+  fxhedge kinds, not merely above K1, so K1 `51163dac` keeps the E2 entry). Proven with REAL mixed data
+  (fxhedge K1–K4 + EN3 in one `pickEntryDrill` call) in `test-area-entry.ts`, not rank inspection alone —
+  live-data check against real post-flip rows independently confirms the same result. Fixtures:
+  `scripts/test-narrative-marker.ts` (unchanged) + `scripts/test-area-entry.ts` (new E2/E1/mixed-E2 cases).
+  Pack: `docs/reviews/AFM_BATCH_E_NARRATIVE_REVIEW_PACK.md`. **LIVE (GATE-P flip, 2026-07-24):** all 3
+  drills approved+published — AFM narrative cluster now 8/8 (5 B + 3 E).
 - **PERSONA-HARDENING — the live tutor's grounding mechanism ("Rule 24 triangulation," shipped 2026-07-21):**
   `lib/acca/tutor-grounding.ts` — `buildGroundingPack(drill, resolvableAreas)` builds a `GroundingPack`
   (narrative: `criteria[]`/`scenario_facts[]` from the rubric; numeric: `**Step N — Label**` headers

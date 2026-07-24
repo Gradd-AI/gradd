@@ -29,6 +29,13 @@ const H = {
   irOptions: '**Interest-rate hedging — options on futures**',
   irCollar: '**Interest-rate hedging — collar**',
   irSwap: '**Interest-rate hedging — swap (comparative advantage)**',
+  fxForwardMmh: '**FX hedging — forward vs money-market hedge**',
+  fxFutures: '**FX hedging — currency futures**',
+  fxOptions: '**FX hedging — currency options**',
+  fxSwap: '**FX hedging — currency swap**',
+  enTreasuryEstablish: '**Treasury function — establishing a group treasury and its impact on existing functions**',
+  enTreasuryContribution: '**Treasury function — how a dedicated treasury department makes a positive financial contribution**',
+  enForexExposure: '**Foreign-exchange exposure — identifying, distinguishing and managing the three exposure types**',
 };
 // build a drill with a heading + trailing body (heading is the FIRST line, as in the real model_answer)
 const drill = (id: string, lo_code: string, heading: string) => ({ id, lo_code, model_answer: `${heading}\n\nbody line\nmore` });
@@ -92,6 +99,37 @@ ok('E3 zero-attempt serve = K1 (interest-rate futures), not options/collar/swap'
 ok('E3 entry stable under input reordering', pickEntryDrill([e3[3], e3[1], e3[0], e3[2]])?.id === 'ir1');
 ok('E3 futures ranks below options, collar and swap', entryRank(H.irFutures) < entryRank(H.irOptions) && entryRank(H.irOptions) < entryRank(H.irCollar) && entryRank(H.irCollar) < entryRank(H.irSwap));
 ok('E3 ranks sit entirely above E2 (own area, never overlaps FX hedging)', entryRank(H.irFutures) > entryRank('**FX hedging — currency swap**'));
+
+// ── E2 — FX hedging (calc #11). Entry = K1 forward+MMH (the Step-0 entry). ──
+const e2 = [
+  drill('fx1', 'E2b', H.fxForwardMmh), // K1 — entry
+  drill('fx2', 'E2b', H.fxFutures),    // K2
+  drill('fx3', 'E2b', H.fxOptions),    // K3
+  drill('fx4', 'E2b', H.fxSwap),       // K4
+];
+ok('E2 zero-attempt serve = K1 (forward+MMH), not futures/options/swap', pickEntryDrill(e2)?.id === 'fx1');
+ok('E2 entry stable under input reordering', pickEntryDrill([e2[3], e2[1], e2[0], e2[2]])?.id === 'fx1');
+
+// ── E-NARRATIVE ordering subtlety (GATE-P flip 2026-07-24) — the case this section exists to prove.
+// EN3 (E2a) shares the E2 area BUCKET with fxhedge (E2b/E2c) via the 2-char lo_code prefix. A narrative
+// drill must NEVER become an area's entry when a calculator exists there — proven here with REAL mixed
+// data (fxhedge K1–K4 + the EN3 narrative drill all in one E2 area fetch), not just by rank inspection. ──
+const e2WithNarrative = [...e2, drill('en3', 'E2a', H.enForexExposure)];
+ok('E2 zero-attempt serve STILL = fxhedge K1 (51163dac-shaped) when EN3 (E2a) is mixed into the same area fetch — EN3 does NOT steal the entry', pickEntryDrill(e2WithNarrative)?.id === 'fx1');
+ok('EN3 (E2a) ranks strictly above every fxhedge kind (K1–K4), not merely above K1', entryRank(H.enForexExposure) > entryRank(H.fxForwardMmh) && entryRank(H.enForexExposure) > entryRank(H.fxFutures) && entryRank(H.enForexExposure) > entryRank(H.fxOptions) && entryRank(H.enForexExposure) > entryRank(H.fxSwap));
+// order-independence: EN3 first in the array, fxhedge K1 still wins
+ok('E2+EN3 entry is order-independent (EN3 listed first)', pickEntryDrill([drill('en3', 'E2a', H.enForexExposure), ...e2])?.id === 'fx1');
+
+// ── E1 — treasury narrative (EN1/EN2). NO calculator exists in E1 — narrative is the ONLY content,
+// so it is the E1 entry by construction (not a "narrative beats a calculator" case, unlike E2 above).
+// EN1 (establishing/relocating) ranks below EN2 (positive contribution) — EN1 is the entry. ──
+const e1 = [
+  drill('en1', 'E1a', H.enTreasuryEstablish),   // EN1 — entry
+  drill('en2', 'E1a', H.enTreasuryContribution), // EN2
+];
+ok('E1 zero-attempt serve = EN1 (establishing a group treasury), not EN2', pickEntryDrill(e1)?.id === 'en1');
+ok('E1 entry stable under input reordering', pickEntryDrill([e1[1], e1[0]])?.id === 'en1');
+ok('EN1 ranks below EN2 (both E1a)', entryRank(H.enTreasuryEstablish) < entryRank(H.enTreasuryContribution));
 
 // ── Unknown headings → null (caller falls back to the existing random pick) ──
 ok('all-unknown-heading area returns null (safe fallback)', pickEntryDrill([drill('x1', 'Z9z', '**Some brand-new family heading**'), drill('x2', 'Z9z', '**Another new heading**')]) === null);
