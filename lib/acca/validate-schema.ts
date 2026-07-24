@@ -64,10 +64,21 @@ import {
   type ExposureDirection,
   type HedgeMethodResult,
 } from './fxhedge';
+import {
+  checkDirectionLock,
+  checkContractCount,
+  checkPremiumSeparation,
+  checkBasisDecayAndScepticism,
+  checkConventionSentencePresence,
+  checkEffectiveRateReconciliation,
+  type IrDirection,
+  type IrHedgeKind,
+  type OptionType,
+} from './irhedge';
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence' | 'direction-lock' | 'contract-count' | 'premium-separation' | 'ir-basis-scepticism' | 'convention-sentence' | 'effective-rate-reconciliation';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -483,4 +494,27 @@ export function validateBestMethodVerdict(direction: ExposureDirection, results:
 }
 export function validateQuoteSentencePresence(context_text: string, dir: QuoteDirection, foreign: string, home: string): ValidationResult {
   return riskResult('quote-sentence', 'quote-sentence-not-code-generated', checkQuoteSentencePresence(context_text, dir, foreign, home));
+}
+
+// ── INTEREST-RATE HEDGING family gates 20–25 (calculator #12, Step-0 ruled 2026-07-24) — delegate
+// to irhedge.ts cores. Naming follows on from GATE 19 (the fx-hedge family's last slot). NO code is
+// shared with the fx-hedge premium/lock-in helpers — GATE 22 (premium-separation) enforces that the
+// two families' premium conventions stay structurally distinct. ──
+export function validateDirectionLock(direction: IrDirection, kind: IrHedgeKind, observed: { futures_side?: 'buy' | 'sell'; option_type?: OptionType; collar_bought?: OptionType; collar_sold?: OptionType }): ValidationResult {
+  return riskResult('direction-lock', 'instrument-side-or-type-wrong-for-direction', checkDirectionLock(direction, kind, observed));
+}
+export function validateContractCount(notional: number, contract_size: number, hedge_months: number, contract_months: number, contracts: number): ValidationResult {
+  return riskResult('contract-count', 'contract-count-or-period-wrong', checkContractCount(notional, contract_size, hedge_months, contract_months, contracts));
+}
+export function validatePremiumSeparation(premium_pct: number, contracts: number, contract_size: number, contract_months: number, premium: number): ValidationResult {
+  return riskResult('premium-separation', 'ir-premium-missing-period-fraction', checkPremiumSeparation(premium_pct, contracts, contract_size, contract_months, premium));
+}
+export function validateBasisDecayAndScepticism(spot_rate0: number, futures0: number, months_to_expiry: number, months_to_transaction: number, unexpired_basis: number, base_rate: number, closing_price: number, model_answer: string): ValidationResult {
+  return riskResult('ir-basis-scepticism', 'basis-decay-or-scepticism-hook-missing', checkBasisDecayAndScepticism(spot_rate0, futures0, months_to_expiry, months_to_transaction, unexpired_basis, base_rate, closing_price, model_answer));
+}
+export function validateConventionSentencePresence(context_text: string, direction: IrDirection, kind: IrHedgeKind): ValidationResult {
+  return riskResult('convention-sentence', 'convention-sentence-not-code-generated', checkConventionSentencePresence(context_text, direction, kind));
+}
+export function validateEffectiveRateReconciliation(effectiveRates: number[]): ValidationResult {
+  return riskResult('effective-rate-reconciliation', 'futures-lock-does-not-reconcile', checkEffectiveRateReconciliation(effectiveRates));
 }
