@@ -2,7 +2,52 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-25 (mock-engine Phase-1 preconditions; FR3 rounding blocker CLEARED — Piece 2 unblocked).*
+*Last refreshed: 2026-07-25 (mock-engine Phase-1 preconditions; FR3 rounding blocker CLEARED — Piece 2 unblocked; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## 🟡 OPEN (INERT) — the param-drift sweep was AFM-ONLY; APM is UNMEASURED, not clean
+
+**Logged 2026-07-25.** State the scope every time the sweep result is cited, and never let the
+headline travel without it:
+
+> **the 2026-07-25 param-drift sweep covered AFM ONLY. It says NOTHING about APM. The APM
+> published corpus is UNMEASURED, not clean.**
+
+The sweep ran over **365 params across the 49 published AFM drills**, reading
+`acca_drills.answer_schema`. The **91 published APM drills carry no `answer_schema` at all** — APM
+numeric content lives in **`acca_case_requirements`**, a different table with a different shape,
+which the sweep never looked at. So an empty APM finding would have measured the absence of a
+column, not the quality of the data. It was not run on APM, and as written it could not have been.
+
+**Why INERT today:** nothing parses APM figures at serve time, so an undetected APM param defect
+has no live blast radius right now.
+
+**What it blocks:** an equivalent sweep over `acca_case_requirements` is a **precondition for APM
+exact-figure parsing** (the APM analogue of Piece 2). Verifying a student's own figures against an
+unmeasured numeric corpus would be checking them against numbers nobody has checked. **The AFM
+CLEAN result is not transferable evidence** — it is evidence about AFM, and the two corpora share
+neither a table nor an authoring path. Same discipline as GATE 27's "unmeasured, not clean".
+
+## 🟡 OPEN (INERT) — the `?? 0` serialiser default is LOSSY; fix FORWARD-ONLY, folded into the next batch
+
+**Logged 2026-07-25.** Every calculator family serialises ONE param block across all of its kinds
+with a `?? 0` default, so a kind that does not use a key stores `0` instead of omitting it.
+**32 params corpus-wide are zero purely because their kind does not use them.** The cost: a stored
+`0` is **indistinguishable from "not applicable"** — and that ambiguity is **the exact mechanism
+that hid the B3d defect** (`own_ve`/`own_vd` silently rewritten 48200/12600 → 0, invisible precisely
+because a legitimate not-applicable zero looks identical to a wrongly-written one).
+
+**Structural fix: OMIT the key rather than serialise it as `0`.** An absent key is unambiguous; a
+zero is not.
+
+**Scope discipline — this is deliberately NOT its own change:**
+- **FORWARD-ONLY — new authoring only. NO backfill of published rows.** Rewriting 32 params across
+  the published corpus is a DB write to live rows (process rules **P-DB1..3**) to remove an
+  ambiguity that is currently harmless; the rewrite would carry more risk than the thing it fixes.
+- **Fold it into the NEXT authoring batch**, as part of that batch's own serialiser/gate work. Do
+  not raise it as a standalone refactor, and do not let it grow into a corpus migration.
+
+**Harmless today:** nothing reads these params at serve time, and GATE 27 merely loses a few
+allowed-set entries. This is a latent-ambiguity log, not a defect report.
 
 ## 🟡 OPEN (INERT) — GATE 27 published-corpus coverage gap
 
@@ -51,9 +96,11 @@ Scope: **365 params across all 49 published AFM drills.** Result:
 | param not locatable in its own `context_text` | **0** |
 | key absent vs same-kind siblings | **0** |
 
-**APM is structurally out of scope, not "checked and clean":** all 91 published APM drills carry
-**no `answer_schema` at all** (APM numeric content lives in `acca_case_requirements`). State it
-that way — an empty result there measures the schema, not the data.
+**Scope: AFM ONLY.** APM is structurally out of scope, not "checked and clean" — all 91 published
+APM drills carry **no `answer_schema` at all** (APM numeric content lives in
+`acca_case_requirements`). An empty result there would measure the schema, not the data.
+**→ tracked as its own OPEN item at the top of this file** ("the param-drift sweep was AFM-ONLY;
+APM is UNMEASURED, not clean"), which is the canonical statement of the gap and of what it blocks.
 
 **What the sweep can and cannot prove.** Full re-derivation of every drill is a per-drill hand job
 (5 took a session). This ran the mechanical check that *would* have caught both P-DB4 defects: for
@@ -81,8 +128,10 @@ findings and every one was false:
 **🔹 INERT observation — the `?? 0` serialiser default is LOSSY.** 32 params across the corpus are
 zero purely because their kind does not use them. Harmless today (nothing reads them; GATE 27 just
 loses a few allowed-set entries), but it is the same mechanism that hid the B3d defect: a zero is
-indistinguishable from "not applicable". If it ever matters, the fix is to OMIT an unused key
-rather than serialise it as 0. **No code change made — log only.**
+indistinguishable from "not applicable". The fix is to OMIT an unused key rather than serialise it
+as 0. **No code change made — log only. → tracked as its own OPEN item at the top of this file**
+("the `?? 0` serialiser default is LOSSY"), which carries the binding scope ruling: FORWARD-ONLY,
+no backfill of published rows, folded into the next authoring batch rather than done standalone.
 
 ## ✅ RESOLVED — HALFWAY_ROUNDING_RISK is GREEN; PIECE 2 (exact-figure parsing) IS UNBLOCKED
 
