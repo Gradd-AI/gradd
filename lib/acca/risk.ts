@@ -380,15 +380,15 @@ export function buildEnpvModelAnswer(raw: EnpvInputs, c: EnpvComputed, prose: st
     `**Assumptions:** each economic state's cash flows are STATED; every scenario NPV is computed from its own stream discounted at ${pct2(c.discount_rate)} (outlay ${m(raw.outlay)} at t0); probabilities are exhaustive and sum to 1. ENPV is the probability-weighted mean NPV — a **repeated-game** figure. Because this project is undertaken **once**, the individual state NPVs and the probability of a negative NPV carry the decision alongside the mean.`, '',
     '**Step 1 — Scenario NPVs (each from its own stated cash flows)**', '',
     `| Scenario | Probability | NPV |`, `|------|------|------|`,
-    ...c.scenarios.map((s) => `| ${s.label} | ${s.probability.toFixed(2)} | ${m(s.npv)} |`), '',
+    ...c.scenarios.map((s) => `| ${s.label} | ${fixedHalfUp(s.probability, 2)} | ${m(s.npv)} |`), '',
     '**Step 2 — Expected NPV**', '',
-    `ENPV = Σ(pᵢ × NPVᵢ) = **${m(c.enpv)}**. Probability of a negative NPV = **${(c.p_negative * 100).toFixed(0)}%**.`, '',
+    `ENPV = Σ(pᵢ × NPVᵢ) = **${m(c.enpv)}**. Probability of a negative NPV = **${fixedHalfUp(c.p_negative * 100, 0)}%**.`, '',
     '**Step 3 — Decision**', '',
     c.accept
       ? `On the expected-value criterion the ENPV of ${m(c.enpv)} is **positive**, so the project is **acceptable on EV terms** — subject to the one-shot caveat below.`
       : `On the expected-value criterion the ENPV of ${m(c.enpv)} is **not positive**, so the project is **not acceptable on EV terms** as it stands.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
-    `*Reconciliation: Σ(p×NPV) = ${m(c.enpv)}; P(NPV<0) = ${(c.p_negative * 100).toFixed(0)}% ✓*`,
+    `*Reconciliation: Σ(p×NPV) = ${m(c.enpv)}; P(NPV<0) = ${fixedHalfUp(c.p_negative * 100, 0)}% ✓*`,
   ];
   return lines.join('\n');
 }
@@ -420,7 +420,7 @@ export function buildSensitivityModelAnswer(raw: SensitivityInputs, c: Sensitivi
     `**Step 2 — Sensitivity to ${raw.variable_label}**`, '',
     `Sensitivity = 100 × NPV ÷ PV of ${raw.variable_label} = 100 × ${fmt1(c.base_npv)} ÷ ${fmt1(c.pv_affected)} = **${fmtPct(c.variable_sensitivity_pct)}**. ${raw.variable_label} can move by this margin before the decision reverses.`, '',
     '**Step 3 — Sensitivity to the discount rate**', '',
-    `Project IRR = **${fmtPct(c.irr * 100)}** (NPV = 0). The headroom over the ${pct2(c.discount_rate)} rate is ${c.headroom_pp.toFixed(2)} percentage points — but the **sensitivity** is that change expressed as a percentage of the original rate: (IRR − r) ÷ r × 100 = **${fmtPct(c.disc_rate_sensitivity_pct)}**. (The bare ${c.headroom_pp.toFixed(2)}pp difference is headroom, not sensitivity.)`, '',
+    `Project IRR = **${fmtPct(c.irr * 100)}** (NPV = 0). The headroom over the ${pct2(c.discount_rate)} rate is ${fixedHalfUp(c.headroom_pp, 2)} percentage points — but the **sensitivity** is that change expressed as a percentage of the original rate: (IRR − r) ÷ r × 100 = **${fmtPct(c.disc_rate_sensitivity_pct)}**. (The bare ${fixedHalfUp(c.headroom_pp, 2)}pp difference is headroom, not sensitivity.)`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
     `*Reconciliation: applying the ${fmtPct(c.variable_sensitivity_pct)} margin to ${m(c.pv_affected)} removes the ${m(c.base_npv)} NPV ✓*`,
   ].join('\n');
@@ -431,7 +431,7 @@ export function buildRadrSchema(raw: RadrInputs, c: RadrComputed): { schema: Ans
   const cur = normaliseCurrency(raw.currency), unit = `${cur}m`;
   const outlay = raw.outlay, cfs = raw.project_cash_flows;
   const comps: Component[] = [
-    { component_id: 'radr', label: 'Project-specific RADR (%)', expected_value: c.radr * 100, unit: '%', tolerance: RATE_TOL, working_steps: [`proxy asset beta ${c.asset_beta.toFixed(3)} regeared to ${c.regeared_beta.toFixed(3)} → project WACC`] },
+    { component_id: 'radr', label: 'Project-specific RADR (%)', expected_value: c.radr * 100, unit: '%', tolerance: RATE_TOL, working_steps: [`proxy asset beta ${fixedHalfUp(c.asset_beta, 3)} regeared to ${fixedHalfUp(c.regeared_beta, 3)} → project WACC`] },
     { component_id: 'npv_at_company', label: `NPV at the company rate ${pct2(c.company_rate)}`, expected_value: c.npv_at_company, unit, tolerance: moneyTol, working_steps: [`= −outlay ${fmt1(outlay)} + Σ (project cash flow × DF @ ${pct2(c.company_rate)})`] },
     { component_id: 'npv_at_radr', label: 'NPV at the project-specific RADR', expected_value: c.npv_at_radr, unit, tolerance: moneyTol,
       depends_on: ['radr'], recompute: (d) => npvOfStream(outlay, cfs, d.radr / 100), working_steps: [`= −outlay ${fmt1(outlay)} + Σ (project cash flow × DF @ the RADR)`] },
@@ -449,7 +449,7 @@ export function buildRadrModelAnswer(raw: RadrInputs, c: RadrComputed, prose: st
     RISK_HEADINGS.radr_compare, '',
     `**Assumptions:** because the project is in a different risk class from the company's existing operations, a **project-specific** risk-adjusted discount rate is derived from a proxy company's asset beta (ungeared from the proxy's gearing, regeared to this firm's) via CAPM, and applied to the project's stated cash flows. The company's own ${pct2(c.company_rate)} rate is shown for contrast — it is the WRONG hurdle for a different-risk project.`, '',
     '**Step 1 — The project-specific RADR**', '',
-    `Proxy asset beta = ${c.asset_beta.toFixed(3)}; regeared to this firm = ${c.regeared_beta.toFixed(3)}; project-specific RADR = **${fmtPct(c.radr * 100)}**.`, '',
+    `Proxy asset beta = ${fixedHalfUp(c.asset_beta, 3)}; regeared to this firm = ${fixedHalfUp(c.regeared_beta, 3)}; project-specific RADR = **${fmtPct(c.radr * 100)}**.`, '',
     '**Step 2 — NPV at each rate (same project cash flows)**', '',
     `| Discount rate | NPV | Decision |`, `|------|------|------|`,
     `| Company rate ${pct2(c.company_rate)} | ${m(c.npv_at_company)} | ${c.accept_company ? 'accept' : 'reject'} |`,
@@ -471,7 +471,7 @@ export function buildRiskMeasuresSchema(raw: RiskMeasuresInputs, c: RiskMeasures
     { component_id: 'sum_pv_b', label: `Σ PV — ${raw.project_b.label}`, expected_value: c.sum_pv_b, unit, tolerance: moneyTol, working_steps: [`Σ of the positive present values @ ${pct2(c.discount_rate)}`] },
     { component_id: 'sum_t_pv_b', label: `Σ (t × PV) — ${raw.project_b.label}`, expected_value: c.sum_t_pv_b, unit: `${cur}m·yr`, tolerance: moneyTol, working_steps: [`Σ of (year × present value)`] },
     { component_id: 'duration_b', label: `Duration — ${raw.project_b.label} (years)`, expected_value: c.duration_b, unit: 'years', tolerance: YEAR_TOL, depends_on: ['sum_t_pv_b', 'sum_pv_b'], recompute: (d) => d.sum_t_pv_b / d.sum_pv_b, working_steps: [`= Σ(t × PV) ÷ Σ PV`] },
-    { component_id: 'var_amount', label: `Project value at risk (${(asDec(raw.var_confidence) * 100).toFixed(0)}%, one-tail, ${raw.var_horizon_years}y)`, expected_value: c.var_amount, unit, tolerance: moneyTol, working_steps: [`= z ${c.z} × σ ${fmt1(raw.var_sigma_annual)} × √${raw.var_horizon_years}`] },
+    { component_id: 'var_amount', label: `Project value at risk (${fixedHalfUp(asDec(raw.var_confidence) * 100, 0)}%, one-tail, ${raw.var_horizon_years}y)`, expected_value: c.var_amount, unit, tolerance: moneyTol, working_steps: [`= z ${c.z} × σ ${fmt1(raw.var_sigma_annual)} × √${raw.var_horizon_years}`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { duration_a: 'duration_ratio', duration_b: 'duration_ratio' };
   const params = { discount_rate: c.discount_rate, z: c.z, sigma: raw.var_sigma_annual, horizon: raw.var_horizon_years };
@@ -479,7 +479,7 @@ export function buildRiskMeasuresSchema(raw: RiskMeasuresInputs, c: RiskMeasures
 }
 export function buildRiskMeasuresModelAnswer(raw: RiskMeasuresInputs, c: RiskMeasuresComputed, prose: string): string {
   const cur = normaliseCurrency(raw.currency), m = (n: number) => money(cur, n);
-  const conf = (asDec(raw.var_confidence) * 100).toFixed(0);
+  const conf = fixedHalfUp(asDec(raw.var_confidence) * 100, 0);
   return [
     RISK_HEADINGS.risk_measures, '',
     `**Assumptions:** project duration is the PV-weighted average timing of cash inflows, Σ(t × PV) ÷ Σ PV — a **comparative** risk measure (the longer-duration project is the more exposed), never a standalone accept/reject. Value at risk uses a one-tail ${conf}% confidence (z = ${c.z}) and scales the annual σ by √N over the ${raw.var_horizon_years}-year horizon.`, '',

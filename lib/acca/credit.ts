@@ -342,7 +342,7 @@ export function buildCreditSchema(raw: CreditInputs, c: CreditComputed, currency
 // ── Model answer (code owns every figure + the over/under-valued verdict) ───────
 function curveTable(m: (n: number) => string, rows: CurveRow[]): string[] {
   const lines = ['| Year | Cash flow | Govt spot | + spread | Corp spot | DF | PV |', '|------|------|------|------|------|------|------|'];
-  for (const r of rows) lines.push(`| ${r.period} | ${m(r.cash_flow)} | ${pct2(r.govt_spot)} | ${pct2(r.corp_spot - r.govt_spot)} | ${pct2(r.corp_spot)} | ${r.df.toFixed(4)} | ${m(r.pv)} |`);
+  for (const r of rows) lines.push(`| ${r.period} | ${m(r.cash_flow)} | ${pct2(r.govt_spot)} | ${pct2(r.corp_spot - r.govt_spot)} | ${pct2(r.corp_spot)} | ${fixedHalfUp(r.df, 4)} | ${m(r.pv)} |`);
   const total = rows.reduce((s, r) => s + r.pv, 0);
   lines.push(`| **Total** | | | | | | **${m(total)}** |`);
   return lines;
@@ -385,13 +385,13 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
       `|------|------|------|------|------|------|`,
     );
     const rLo = D(c.r_lo!), rHi = D(c.r_hi!);
-    for (const r of c.bond_rows!) lines.push(`| ${r.period} | ${m(r.cash_flow)} | ${df(rLo, r.period).toFixed(4)} | ${m(r.cash_flow * df(rLo, r.period))} | ${df(rHi, r.period).toFixed(4)} | ${m(r.cash_flow * df(rHi, r.period))} |`);
+    for (const r of c.bond_rows!) lines.push(`| ${r.period} | ${m(r.cash_flow)} | ${fixedHalfUp(df(rLo, r.period), 4)} | ${m(r.cash_flow * df(rLo, r.period))} | ${fixedHalfUp(df(rHi, r.period), 4)} | ${m(r.cash_flow * df(rHi, r.period))} |`);
     lines.push(`| **PV** | | | **${m(c.price_lo!)}** | | **${m(c.price_hi!)}** |`, '');
     lines.push(
       `**Step ${S()} — Redemption yield (interpolation to the market price ${m(c.market_price!)})**`, '',
       `PV is ${m(c.price_lo!)} at ${pct2(c.r_lo!)} and ${m(c.price_hi!)} at ${pct2(c.r_hi!)}. Interpolating for the yield that prices the bond at ${m(c.market_price!)} gives a redemption yield of **${pct2(c.corp_yield!)}** — the issuer's effective (pre-tax) cost of debt at the valuation date.`, '',
       `**Step ${S()} — Credit spread (code-owned)**`, '',
-      `Credit spread = corporate yield ${pct2(c.corp_yield!)} − government yield ${pct2(c.govt_yield!)} = **${c.spread_bp!.toFixed(1)}bp** (${pct2(c.spread_bp! / 100)}).`, '',
+      `Credit spread = corporate yield ${pct2(c.corp_yield!)} − government yield ${pct2(c.govt_yield!)} = **${fixedHalfUp(c.spread_bp!, 1)}bp** (${pct2(c.spread_bp! / 100)}).`, '',
     );
     if (c.band_spread_bps !== undefined) {
       const issuer = raw.issuer_label ?? 'the issuer';
@@ -402,9 +402,9 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
           : c.tightest_wider_band
           ? `and sits inside the ${c.tightest_wider_band} band in the dated spread table`
           : 'in the dated spread table';
-        lines.push(`The derived spread of ${c.spread_bp!.toFixed(1)}bp is **tighter** than the ${c.band_rating} rated benchmark of ${c.band_spread_bps}bp ${between}. On this snapshot, the market is pricing ${issuer} **materially inside its formal ${c.band_rating} rating level**.`, '');
+        lines.push(`The derived spread of ${fixedHalfUp(c.spread_bp!, 1)}bp is **tighter** than the ${c.band_rating} rated benchmark of ${c.band_spread_bps}bp ${between}. On this snapshot, the market is pricing ${issuer} **materially inside its formal ${c.band_rating} rating level**.`, '');
       } else {
-        lines.push(`The derived spread of ${c.spread_bp!.toFixed(1)}bp is **wider** than the ${c.band_rating} rated benchmark of ${c.band_spread_bps}bp — on this snapshot the market is pricing ${issuer}'s credit **wider than its formal ${c.band_rating} rating level implies**.`, '');
+        lines.push(`The derived spread of ${fixedHalfUp(c.spread_bp!, 1)}bp is **wider** than the ${c.band_rating} rated benchmark of ${c.band_spread_bps}bp — on this snapshot the market is pricing ${issuer}'s credit **wider than its formal ${c.band_rating} rating level implies**.`, '');
       }
     }
   } else if (kind === 'kd_term_structure') {
@@ -433,7 +433,7 @@ export function buildCreditModelAnswer(raw: CreditInputs, c: CreditComputed, pro
 
   // Reconciliation
   if (kind === 'downgrade_impact') lines.push(`*Reconciliation: base Kd ${pct2(c.base_kd!)} → new Kd ${pct2(c.new_kd!)} (+${c.delta_kd_bps}bp) → +${m(c.delta_annual_interest!)} annual interest on refinancing${c.delta_wacc !== undefined ? ` → +${pct2(c.delta_wacc!)} WACC` : ''}. ✓*`);
-  else if (kind === 'spread_estimation') lines.push(`*Reconciliation: PV ${m(c.price_lo!)}@${pct2(c.r_lo!)} / ${m(c.price_hi!)}@${pct2(c.r_hi!)} → yield ${pct2(c.corp_yield!)} → spread ${c.spread_bp!.toFixed(1)}bp. ✓*`);
+  else if (kind === 'spread_estimation') lines.push(`*Reconciliation: PV ${m(c.price_lo!)}@${pct2(c.r_lo!)} / ${m(c.price_hi!)}@${pct2(c.r_hi!)} → yield ${pct2(c.corp_yield!)} → spread ${fixedHalfUp(c.spread_bp!, 1)}bp. ✓*`);
   else if (kind === 'kd_term_structure') lines.push(`*Reconciliation: curve price ${m(c.price_curve!)} → interpolated flat Kd ${pct2(c.implied_kd!)}. ✓*`);
   else lines.push(`*Reconciliation: fair value ${m(c.fair_value!)} vs market ${m(c.market_price!)} = ${m(c.mispricing!)} → ${c.overvalued! ? 'over' : 'under'}-valued. ✓*`);
 

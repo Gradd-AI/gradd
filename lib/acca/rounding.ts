@@ -18,6 +18,25 @@
 //
 // DISPLAY ONLY. Component `expected_value`s keep full precision — nothing here touches a
 // stored figure, a tolerance, or a marking decision.
+//
+// ── THE INVARIANT (2026-07-25 audit) ──────────────────────────────────────────────────────
+// EVERY figure a STUDENT SEES is rendered through `fixedHalfUp`. No exceptions, no per-site
+// risk judgement. FR3's original sweep converted formatters case by case and MISSED
+// valuation.ts and irr.ts — which is precisely how B4a's Ke shipped printing "11.67%" when the
+// exact value 11.675 is a tie a hand-working student rounds to 11.68%. A judged invariant is
+// not auditable; a total one is a one-line grep.
+//
+// So: `grep -rn "toFixed(" lib/acca/*.ts | grep -v fixedHalfUp` must return ONLY these two
+// classes, and a new hit in neither class is a defect:
+//   (a) THE DETECTORS, where the naive `toFixed` rendering IS the thing being detected or
+//       matched — `validate-schema.ts` (HALFWAY_ROUNDING_RISK compares naive vs hand),
+//       `derived-figure-integrity.ts` (GATE 27's allowed-set must hold BOTH forms),
+//       `case-authoring-gates.ts` (GATE 2's dual-form presence check), and `fixedHalfUp`'s
+//       own final render below.
+//   (b) AUTHOR-FACING DIAGNOSTICS — `throw new Error(...)` text, validator `reason:` strings,
+//       gate-report labels, and internal lookup keys. Never rendered to a student, so a
+//       last-digit disagreement there has no marking consequence.
+// Anything a student can read goes through this function.
 
 /** Half-way boundary tolerance. A value within this of a `.5` boundary at the target
  *  precision is treated as sitting ON the boundary. Shared with validate-schema.ts. */

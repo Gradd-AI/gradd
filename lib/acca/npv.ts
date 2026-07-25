@@ -251,7 +251,7 @@ export function buildNpvSchema(raw: NpvInputs, c: NpvComputed, currency: string)
       tolerance: rel(0.5),
       depends_on: [`ncf_${per.period}`],
       recompute: (dep) => dep[`ncf_${per.period}`] * d,
-      working_steps: [`= ncf_${per.period} × ${d.toFixed(3)} (discount factor at ${pct2(r)})`],
+      working_steps: [`= ncf_${per.period} × ${fixedHalfUp(d, 3)} (discount factor at ${pct2(r)})`],
     });
   }
   const pvIds = c.periods.map((p) => `pv_${p.period}`);
@@ -322,7 +322,7 @@ export function buildNpvModelAnswer(raw: NpvInputs, c: NpvComputed, prose: strin
   lines.push('**Step 3 — Net cash flows and present values**', '');
   lines.push(`| Period | Net cash flow | DF @ ${pct2(r)} | Present value |`, `|--------|------|------|------|`);
   lines.push(`| 0 | ${m(-raw.initial_outlay)} | 1.000 | ${m(-raw.initial_outlay)} |`);
-  for (const p of c.periods) lines.push(`| ${p.period} | ${m(p.ncf)} | ${p.df.toFixed(3)} | ${m(p.pv)} |`);
+  for (const p of c.periods) lines.push(`| ${p.period} | ${m(p.ncf)} | ${fixedHalfUp(p.df, 3)} | ${m(p.pv)} |`);
   lines.push('');
   lines.push(`**Present value of future cash flows ${m(c.pv_inflows)}; less initial outlay ${m(raw.initial_outlay)}; NPV ${m(c.npv)}.**`, '');
 
@@ -339,9 +339,9 @@ export function buildNpvModelAnswer(raw: NpvInputs, c: NpvComputed, prose: strin
   if (kind === 'rationing' && c.ranking && c.pi !== undefined) {
     const limit = c.capital_limit ?? raw.initial_outlay;
     lines.push('**Step 5 — Single-period capital rationing (profitability index)**', '');
-    lines.push(`Because this project is **indivisible**, the PI ranking cannot be applied mechanically; the board must compare the best feasible portfolio that funds this project against the best feasible portfolio that skips it. Its profitability index (PV of inflows ÷ outlay) is **${c.pi.toFixed(3)}**; the competing projects are divisible; the capital limit is ${m(limit)}. The remaining capital fills the divisible projects in PI order:`, '');
+    lines.push(`Because this project is **indivisible**, the PI ranking cannot be applied mechanically; the board must compare the best feasible portfolio that funds this project against the best feasible portfolio that skips it. Its profitability index (PV of inflows ÷ outlay) is **${fixedHalfUp(c.pi, 3)}**; the competing projects are divisible; the capital limit is ${m(limit)}. The remaining capital fills the divisible projects in PI order:`, '');
     lines.push(`| Rank (by PI) | Project | PI | Outlay | Capital allocated |`, `|------|------|------|------|------|`);
-    c.ranking.forEach((row, i) => lines.push(`| ${i + 1} | ${row.name}${row.divisible ? '' : ' (indivisible)'} | ${row.pi.toFixed(3)} | ${m(row.outlay)} | ${m(row.taken)} |`));
+    c.ranking.forEach((row, i) => lines.push(`| ${i + 1} | ${row.name}${row.divisible ? '' : ' (indivisible)'} | ${fixedHalfUp(row.pi, 3)} | ${m(row.outlay)} | ${m(row.taken)} |`));
     if (c.ration_npv_with !== undefined && c.ration_npv_without !== undefined) {
       lines.push('', `Portfolio comparison: the best feasible portfolio that **funds** this project has a total NPV of **${m(c.ration_npv_with)}**, versus **${m(c.ration_npv_without)}** for the best portfolio that **skips** it — so ${c.ration_takes_project ? 'funding it is optimal' : 'skipping it is optimal'}.`);
     }
@@ -353,7 +353,7 @@ export function buildNpvModelAnswer(raw: NpvInputs, c: NpvComputed, prose: strin
   // Sensitivity enrichment (code-owned figure, base explicitly named)
   if (kind === 'sensitivity' && c.sensitivity_pct !== undefined) {
     lines.push('**Step 5 — Sensitivity of the decision**', '');
-    lines.push(`Holding all else equal, ${c.sensitivity_label} can fall by **~${c.sensitivity_pct.toFixed(2)}%** — measured against the post-tax present value of the operating cash flows (${m(c.sensitivity_base ?? 0)}) — before the NPV reaches zero, below which the decision reverses. The smaller this margin, the more the recommendation depends on the reliability of that estimate.`, '');
+    lines.push(`Holding all else equal, ${c.sensitivity_label} can fall by **~${fixedHalfUp(c.sensitivity_pct, 2)}%** — measured against the post-tax present value of the operating cash flows (${m(c.sensitivity_base ?? 0)}) — before the NPV reaches zero, below which the decision reverses. The smaller this margin, the more the recommendation depends on the reliability of that estimate.`, '');
   }
 
   // Advice — opener keyed to the CODE-COMPUTED decision (never model-authored), then prose

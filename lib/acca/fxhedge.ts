@@ -690,7 +690,7 @@ export function buildFuturesModelAnswer(raw: FuturesDrillInputs, c: FuturesCompu
   return [
     '**FX hedging — currency futures**', '',
     `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; futures of contract size ${fmt1(raw.contract_size)} expire in ${raw.months_to_expiry} months, spot₀ ${fmt4(raw.spot0)}, futures₀ ${fmt4(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
-    '**Step 1 — Number of contracts (whole contracts only)**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → rounds to **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}), hedging ${fmt1(c.hedged_amount)}; residual ${fmt1(c.residual)} ${raw.residual_policy === 'immaterial' ? 'is immaterial and not separately hedged' : 'is topped up on the forward'}.`, '',
+    '**Step 1 — Number of contracts (whole contracts only)**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${fixedHalfUp(raw.exposure / raw.contract_size, 1)} → rounds to **${c.contracts} contracts** (${fixedHalfUp(c.contracts, 1)}, ${c.side}), hedging ${fmt1(c.hedged_amount)}; residual ${fmt1(c.residual)} ${raw.residual_policy === 'immaterial' ? 'is immaterial and not separately hedged' : 'is topped up on the forward'}.`, '',
     '**Step 2 — Basis and the lock-in rate**', '', `Basis₀ = ${fmt4(raw.spot0)} − ${fmt4(raw.futures0)} = ${fmt4(raw.spot0 - raw.futures0)}; assumed to decline linearly to zero by expiry, so the unexpired basis at the transaction date = ${fmt4(c.unexpired_basis)}. Lock-in rate = futures₀ ${fmt4(raw.futures0)} + unexpired basis ${fmt4(c.unexpired_basis)} = **${fmt4(c.lock_in_rate)}**.`, '',
     '**Step 3 — Outcome**', '', `${fmt1(c.hedged_amount)} at the lock-in rate = ${mH(c.home_from_futures)}${raw.residual_policy === 'forward_topup' ? ` + residual on the forward ${mH(c.home_from_residual)}` : ''} = **${mH(c.home_settlement)}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
@@ -748,7 +748,7 @@ export function buildOptionsModelAnswer(raw: OptionsDrillInputs, c: OptionsCompu
   return [
     '**FX hedging — currency options**', '',
     `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due in ${raw.months_to_transaction} months; traded options of contract size ${fmt1(raw.contract_size)} at strike ${fmt4(raw.strike)}, premium ${premiumCcy} ${fmtPremiumRate(raw.premium_pct)} per unit of contract size (all-in for the option's life, no time proration). A ${raw.direction} is hedged by **BUYING ${otWord} options** (${otRight}) — never by selling/writing options, which is a different strategy. It is assumed the options are **exercised** (no separate gain/loss calculation is needed).`, '',
-    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${(raw.exposure / raw.contract_size).toFixed(1)} → buy **${c.contracts} ${otWord} options** (${c.contracts.toFixed(1)} contracts). Premium = ${premiumCcy} ${fmtPremiumRate(raw.premium_pct)} × ${c.contracts} × ${fmt1(raw.contract_size)} = **${premiumStr}** (all-in for the option's life, no time proration)${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
+    '**Step 1 — Number of contracts and the premium**', '', `${fmt1(raw.exposure)} ÷ ${fmt1(raw.contract_size)} = ${fixedHalfUp(raw.exposure / raw.contract_size, 1)} → buy **${c.contracts} ${otWord} options** (${fixedHalfUp(c.contracts, 1)} contracts). Premium = ${premiumCcy} ${fmtPremiumRate(raw.premium_pct)} × ${c.contracts} × ${fmt1(raw.contract_size)} = **${premiumStr}** (all-in for the option's life, no time proration)${raw.premium_currency === 'foreign' ? ' — already in the currency being worked with; no further conversion is needed' : ''}.`, '',
     '**Step 2 — Exercise outcome**', '', `${fmt1(c.hedged_amount)} at the strike ${fmt4(raw.strike)} = ${mH(c.home_from_strike)}.`, '',
     '**Step 3 — Net of the premium**', '', `Premium = ${premiumHomeStr}${raw.premium_currency === 'foreign' ? ` (converted at today's spot ${fmt4(raw.spot)}, not the strike — the premium is paid today, not at exercise)` : ''}, deducted as paid at the outset (not future-valued — paying it upfront has a real financing cost, addressed below rather than computed into the figure); ${raw.direction === 'receipt' ? 'deducted from' : 'added to'} the strike outcome = **${mH(c.home_settlement)}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
@@ -763,8 +763,8 @@ export interface SwapDrillInputs extends SwapInputs { currency_home: string; cur
 export function buildSwapSchema(raw: SwapDrillInputs, c: SwapComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`, foreignUnit = `${foreign}m`;
   const comps: Component[] = [
-    { component_id: 'swapped_amount', label: `Exposure covered by the swap (${(raw.swap_fraction * 100).toFixed(0)}%)`, expected_value: c.swapped_amount, unit: foreignUnit, tolerance: moneyTol,
-      working_steps: [`= ${foreign} ${fmt1(raw.exposure)} × ${(raw.swap_fraction * 100).toFixed(0)}%`] },
+    { component_id: 'swapped_amount', label: `Exposure covered by the swap (${fixedHalfUp(raw.swap_fraction * 100, 0)}%)`, expected_value: c.swapped_amount, unit: foreignUnit, tolerance: moneyTol,
+      working_steps: [`= ${foreign} ${fmt1(raw.exposure)} × ${fixedHalfUp(raw.swap_fraction * 100, 0)}%`] },
     { component_id: 'home_from_swap', label: `${home} outcome from the swapped portion`, expected_value: c.home_from_swap, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['swapped_amount'], recompute: (d) => toHome(d.swapped_amount, raw.swap_rate, raw.quote_direction),
       working_steps: [`= swapped amount converted at the swap rate ${fmt4(raw.swap_rate)}`] },
@@ -785,8 +785,8 @@ export function buildSwapModelAnswer(raw: SwapDrillInputs, c: SwapComputed, pros
   const home = raw.currency_home, foreign = raw.currency_foreign, mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
   return [
     '**FX hedging — currency swap**', '',
-    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due; a currency swap is available at ${fmt4(raw.swap_rate)} but covers only ${(raw.swap_fraction * 100).toFixed(0)}% of the flow${raw.swap_fraction < 1 ? `; the residual is hedged on the forward at ${fmt4(raw.residual_forward_rate!)}` : ''}.`, '',
-    '**Step 1 — The swapped portion**', '', `${(raw.swap_fraction * 100).toFixed(0)}% of ${fmt1(raw.exposure)} = ${mF(c.swapped_amount)}, converted at the swap rate ${fmt4(raw.swap_rate)} = **${mH(c.home_from_swap)}**.`, '',
+    `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${raw.direction} is due; a currency swap is available at ${fmt4(raw.swap_rate)} but covers only ${fixedHalfUp(raw.swap_fraction * 100, 0)}% of the flow${raw.swap_fraction < 1 ? `; the residual is hedged on the forward at ${fmt4(raw.residual_forward_rate!)}` : ''}.`, '',
+    '**Step 1 — The swapped portion**', '', `${fixedHalfUp(raw.swap_fraction * 100, 0)}% of ${fmt1(raw.exposure)} = ${mF(c.swapped_amount)}, converted at the swap rate ${fmt4(raw.swap_rate)} = **${mH(c.home_from_swap)}**.`, '',
     ...(raw.swap_fraction < 1 ? ['**Step 2 — The residual (not covered by the swap)**', '', `${mF(c.residual)} does not benefit from the swap rate and is hedged on the forward at ${fmt4(raw.residual_forward_rate!)} = **${mH(c.home_from_residual)}**.`, ''] : []),
     `**Step ${raw.swap_fraction < 1 ? 3 : 2} — Total outcome**`, '', `**${mH(c.home_settlement)}**.`, '',
     `**Step ${raw.swap_fraction < 1 ? 4 : 3} — Advice to the board**`, '', prose, '',

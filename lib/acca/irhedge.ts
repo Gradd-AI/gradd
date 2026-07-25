@@ -573,7 +573,7 @@ export function buildIrFuturesModelAnswer(raw: IrFuturesInputs, c: IrFuturesComp
   return [
     '**Interest-rate hedging — futures**', '',
     `**Assumptions:** a ${cur} ${qty(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} runs for ${raw.hedge_months} months from a start date ${raw.months_to_transaction} months away; ${raw.contract_months}-month futures of size ${qty(raw.contract_size)} expire in ${raw.months_to_expiry} months, base rate today ${pctStr(raw.spot_rate0)}, futures price ${fmt2(raw.futures0)}. A ${raw.direction} must **${c.side.toUpperCase()}** the futures.`, '',
-    '**Step 1 — Number of contracts (amount AND period)**', '', `${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} = **${c.contracts} contracts** (${c.contracts.toFixed(1)}, ${c.side}).`, '',
+    '**Step 1 — Number of contracts (amount AND period)**', '', `${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months} = **${c.contracts} contracts** (${fixedHalfUp(c.contracts, 1)}, ${c.side}).`, '',
     '**Step 2 — Basis and the expected closing price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(c.basis0)}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, c.basis0, c.unexpired_basis)} Expected closing futures price = 100 − expected rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 3 — Outcome under each scenario**', '',
     `| Scenario | Actual rate | MM interest | Closing price | Futures P/(L) | Net | Effective |`, `|---|---|---|---|---|---|---|`,
@@ -627,7 +627,7 @@ export function buildIrOptionsModelAnswer(raw: IrOptionsInputs, c: IrOptionsComp
   return [
     '**Interest-rate hedging — options on futures**', '',
     `**Assumptions:** a ${cur} ${qty(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months; ${raw.contract_months}-month options of size ${qty(raw.contract_size)} at strike ${fmt2(raw.strike_price)}, premium ${pctStr(raw.premium_pct)}. A ${raw.direction} **BUYS ${c.option_type.toUpperCase()} options** — never sells/writes options.`, '',
-    '**Step 1 — Contracts and premium**', '', `Buy **${c.contracts} ${c.option_type} options** (${c.contracts.toFixed(1)}). Premium = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${qty(raw.contract_size)} × ${raw.contract_months}/12 = **${m(c.premium)}** (prorated by the contract period — an option premium, unlike a currency-option premium, carries the contract-period fraction).`, '',
+    '**Step 1 — Contracts and premium**', '', `Buy **${c.contracts} ${c.option_type} options** (${fixedHalfUp(c.contracts, 1)}). Premium = ${pctStr(raw.premium_pct)} × ${c.contracts} × ${qty(raw.contract_size)} × ${raw.contract_months}/12 = **${m(c.premium)}** (prorated by the contract period — an option premium, unlike a currency-option premium, carries the contract-period fraction).`, '',
     '**Step 2 — Basis and exercise decision per scenario**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(computeBasis0(raw.spot_rate0, raw.futures0))}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, computeBasis0(raw.spot_rate0, raw.futures0), c.unexpired_basis)} Each scenario's expected closing price = 100 − expected rate − unexpired basis; a ${c.option_type} is exercised when the price is ${c.option_type === 'call' ? 'ABOVE' : 'BELOW'} the strike ${fmt2(raw.strike_price)}. ${BASIS_SCEPTICISM_HOOK}`, '',
     `| Scenario | Closing price | Decision | Option gain | Net | Effective |`, `|---|---|---|---|---|---|`,
     ...scenLines, '',
@@ -680,7 +680,7 @@ export function buildIrCollarModelAnswer(raw: IrCollarInputs, c: IrCollarCompute
     '**Interest-rate hedging — collar**', '',
     `**Assumptions:** a ${cur} ${qty(raw.notional)} ${raw.direction === 'depositor' ? 'deposit' : 'loan'} for ${raw.hedge_months} months. As a ${raw.direction}'s collar, the company **BUYS ${c.bought_type.toUpperCase()} options (strike ${fmt2(raw.buy_strike)}) and SELLS ${c.sold_type.toUpperCase()} options (strike ${fmt2(raw.sell_strike)})**.`, '',
     '**Step 1 — Options needed**', '', `Buy ${c.bought_type} (the protection) and sell ${c.sold_type} (to fund it) — the collar confines the outcome to a range.`, '',
-    '**Step 2 — Number of contracts**', '', `round(${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months}) = **${c.contracts} contracts** (${c.contracts.toFixed(1)}).`, '',
+    '**Step 2 — Number of contracts**', '', `round(${qty(raw.notional)} ÷ ${qty(raw.contract_size)} × ${raw.hedge_months}/${raw.contract_months}) = **${c.contracts} contracts** (${fixedHalfUp(c.contracts, 1)}).`, '',
     '**Step 3 — Net premium**', '', `Premium paid ${m(c.buy_premium)} − premium received ${m(c.sell_premium)} = **${m(c.net_premium)}** (each prorated by the ${raw.contract_months}/12 contract period).`, '',
     '**Step 4 — Basis and expected price**', '', `Basis₀ = (100 − ${fmt2(raw.spot_rate0)}) − ${fmt2(raw.futures0)} = ${fmt2(computeBasis0(raw.spot_rate0, raw.futures0))}. ${unexpiredBasisSentence(raw.months_to_expiry, raw.months_to_transaction, computeBasis0(raw.spot_rate0, raw.futures0), c.unexpired_basis)} Expected closing price = 100 − base rate − unexpired basis. ${BASIS_SCEPTICISM_HOOK}`, '',
     '**Step 5 — Exercise decision per leg, and Step 6 — net effect**', '',
@@ -708,10 +708,10 @@ export function buildIrSwapSchema(raw: IrSwapInputs, c: IrSwapComputed): { schem
       working_steps: [`= total gain − bank fee ${pctStr(raw.bank_fee_total)}`] },
     { component_id: 'a_benefit', label: `${raw.party_a}'s benefit`, expected_value: c.a_benefit, unit: '%', tolerance: rateTol,
       depends_on: ['net_gain'], recompute: (d) => d.net_gain * raw.savings_split,
-      working_steps: [`= net gain × ${(raw.savings_split * 100).toFixed(0)}%`] },
+      working_steps: [`= net gain × ${fixedHalfUp(raw.savings_split * 100, 0)}%`] },
     { component_id: 'b_benefit', label: `${raw.party_b}'s benefit`, expected_value: c.b_benefit, unit: '%', tolerance: rateTol,
       depends_on: ['net_gain'], recompute: (d) => d.net_gain * (1 - raw.savings_split),
-      working_steps: [`= net gain × ${((1 - raw.savings_split) * 100).toFixed(0)}%`] },
+      working_steps: [`= net gain × ${fixedHalfUp((1 - raw.savings_split) * 100, 0)}%`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { total_gain: 'irh_swap_gain', net_gain: 'irh_swap_netgain', a_benefit: 'irh_swap_abenefit', b_benefit: 'irh_swap_bbenefit' };
   const params = { a_fixed: raw.a_fixed, a_floating_margin: raw.a_floating_margin, b_fixed: raw.b_fixed, b_floating_margin: raw.b_floating_margin, bank_fee_total: raw.bank_fee_total, savings_split: raw.savings_split };
@@ -727,6 +727,6 @@ export function buildIrSwapModelAnswer(raw: IrSwapInputs, c: IrSwapComputed, pro
     '**Step 2 — The saving to share**', '', `Total gain = ${pctStr(c.fixed_diff)} − ${pctStr(c.floating_diff)} = **${pctStr(c.total_gain)}**; after the bank's ${pctStr(raw.bank_fee_total)} fee, net gain = **${pctStr(c.net_gain)}**.`, '',
     "**Step 3 — Each party's benefit and effective rate**", '', `${raw.party_a}: ${pctStr(c.a_benefit)} → effective **${aResult}**. ${raw.party_b}: ${pctStr(c.b_benefit)} → effective **${bResult}**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
-    `*Reconciliation: ${pctStr(c.fixed_diff)} − ${pctStr(c.floating_diff)} − ${pctStr(raw.bank_fee_total)} = ${pctStr(c.net_gain)}, split ${(raw.savings_split * 100).toFixed(0)}/${((1 - raw.savings_split) * 100).toFixed(0)} ✓*`,
+    `*Reconciliation: ${pctStr(c.fixed_diff)} − ${pctStr(c.floating_diff)} − ${pctStr(raw.bank_fee_total)} = ${pctStr(c.net_gain)}, split ${fixedHalfUp(raw.savings_split * 100, 0)}/${fixedHalfUp((1 - raw.savings_split) * 100, 0)} ✓*`,
   ].join('\n');
 }

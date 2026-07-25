@@ -440,12 +440,12 @@ function fxComponents(prefix: string, fx_curve: number[], k: number, foreign: st
     const t = i + 1;
     if (t === 1) {
       comps.push({ component_id: `${prefix}fx_1`, label: `Forecast spot, year 1 (${unit})`, expected_value: fx, unit, tolerance: rel(0.5),
-        working_steps: [`S₁ = S₀ × (1+r_f)/(1+r_h) = ${fmt4(fx_curve[0] / k)} × ${k.toFixed(5)} = ${fmt4(fx)}`] });
+        working_steps: [`S₁ = S₀ × (1+r_f)/(1+r_h) = ${fmt4(fx_curve[0] / k)} × ${fixedHalfUp(k, 5)} = ${fmt4(fx)}`] });
     } else {
       const prev = `${prefix}fx_${t - 1}`;
       comps.push({ component_id: `${prefix}fx_${t}`, label: `Forecast spot, year ${t} (${unit})`, expected_value: fx, unit, tolerance: rel(0.5),
         depends_on: [prev], recompute: (d) => d[prev] * k,
-        working_steps: [`S${t} = S${t - 1} × ${k.toFixed(5)} = ${fmt4(fx)}`] });
+        working_steps: [`S${t} = S${t - 1} × ${fixedHalfUp(k, 5)} = ${fmt4(fx)}`] });
     }
   });
   return comps;
@@ -614,7 +614,7 @@ export function buildIntlDividendSchema(raw: IntlDividendInputs, c: IntlDividend
         const add = creditable ? Math.max(0, h * remitTp - fc * remitTp - wht) : Math.max(0, (h - fc) * remitTp);
         return (remit - wht - add) / S;
       },
-      working_steps: [`= (FCFE ${fmt1(c.sub_fcfe_foreign)} × remitted ${(rf * 100).toFixed(0)}% − WHT − differential home tax) ÷ spot ${fmt4(S)}`] },
+      working_steps: [`= (FCFE ${fmt1(c.sub_fcfe_foreign)} × remitted ${fixedHalfUp(rf * 100, 0)}% − WHT − differential home tax) ÷ spot ${fmt4(S)}`] },
     { component_id: 'parent_fcfe', label: 'Parent free cash flow to equity (home currency)', expected_value: raw.parent_fcfe, unit: homeUnit, tolerance: moneyTol,
       working_steps: [`the parent's own dividend capacity (home currency)`] },
     { component_id: 'total_capacity', label: 'Group dividend capacity (home currency)', expected_value: c.total_capacity, unit: homeUnit, tolerance: moneyTol,
@@ -716,7 +716,7 @@ export function buildIntlNpvModelAnswer(raw: IntlNpvInputs, c: IntlNpvComputed, 
       : `*(Additional home tax is **nil** every year: the residual differential (home ${pct2(asDec(raw.home_tax_rate))} − foreign corporate ${pct2(asDec(raw.foreign_build.tax_rate))}) is covered by the creditable withholding. Net remitted = foreign FCFF − withholding; converted at the forecast spot.)*`, '');
   lines.push('**Step 3 — Present values and NPV**', '', `| Year | Home cash flow | DF @ ${pct2(r)} | Present value |`, `|------|------|------|------|`);
   lines.push(`| 0 | ${mH(-c.home_outlay)} | 1.000 | ${mH(-c.home_outlay)} | *(foreign outlay ${mF(raw.initial_outlay_foreign)} ÷ ${fmt4(raw.base_spot)})*`);
-  for (const y of c.years) lines.push(`| ${y.year} | ${mH(y.home_cf)} | ${y.df.toFixed(3)} | ${mH(y.pv)} |`);
+  for (const y of c.years) lines.push(`| ${y.year} | ${mH(y.home_cf)} | ${fixedHalfUp(y.df, 3)} | ${mH(y.pv)} |`);
   lines.push('', `**NPV to the parent = ${mH(c.npv)}.**`, '');
   lines.push('**Step 4 — Decision**', '', c.accept
     ? `The NPV of ${mH(c.npv)} is **positive**, so on these exchange-rate and fiscal assumptions the project **adds value to the parent and should be accepted**.`
@@ -752,8 +752,8 @@ export function buildIntlRemittanceModelAnswer(raw: IntlRemittanceInputs, c: Int
   const home = raw.home_currency, foreign = raw.foreign_currency, N = raw.years;
   const mH = (n: number) => money(home, n), mF = (n: number) => money(foreign, n);
   const r = asDec(raw.discount_rate);
-  const blockedPct = (raw.blocked_fraction * 100).toFixed(0);
-  const freePct = ((1 - raw.blocked_fraction) * 100).toFixed(0);
+  const blockedPct = fixedHalfUp(raw.blocked_fraction * 100, 0);
+  const freePct = fixedHalfUp((1 - raw.blocked_fraction) * 100, 0);
   // explicit subtraction so the reader sees free NPV, restricted NPV, and the cost as DISTINCT roles
   // (they can share a magnitude — e.g. free 5.6 − restricted 2.8 = cost 2.8 — so the subtraction is shown)
   const costWord = c.npv_cost_of_blocking < 0
@@ -761,7 +761,7 @@ export function buildIntlRemittanceModelAnswer(raw: IntlRemittanceInputs, c: Int
     : `the restriction **adds** value: restricted NPV ${mH(c.npv)} − free-remittance NPV ${mH(c.npv_if_free)} = **${mH(c.npv_cost_of_blocking)}**, because the local reinvestment rate exceeds the parent's discount rate`;
   return [
     '**International appraisal with a remittance restriction**', '',
-    `**Assumptions:** ${(raw.blocked_fraction * 100).toFixed(0)}% of each year's ${foreign} cash flow is blocked from remittance and reinvested locally at ${pct2(asDec(raw.local_reinvest_rate))}, released in year ${N}; the free portion is remitted when earned. Forecast spots by ${raw.basis.toUpperCase()} parity; home discount rate ${pct2(r)}. ${fiscalAssumptionLine(raw, raw.foreign_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective)}`, '',
+    `**Assumptions:** ${fixedHalfUp(raw.blocked_fraction * 100, 0)}% of each year's ${foreign} cash flow is blocked from remittance and reinvested locally at ${pct2(asDec(raw.local_reinvest_rate))}, released in year ${N}; the free portion is remitted when earned. Forecast spots by ${raw.basis.toUpperCase()} parity; home discount rate ${pct2(r)}. ${fiscalAssumptionLine(raw, raw.foreign_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective)}`, '',
     '**Step 1 — Forecast exchange rates (parity)**', '',
     ...fxTable(c.fx_curve, foreign, home, raw.basis), '',
     '**Step 2 — Remitted (free) cash flows converted to home currency**', '',
@@ -798,11 +798,11 @@ export function buildIntlDividendModelAnswer(raw: IntlDividendInputs, c: IntlDiv
     : ' (no additional home tax — the residual differential is covered by the creditable withholding)';
   return [
     '**Multinational dividend capacity and policy**', '',
-    `**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. ${(raw.remit_fraction * 100).toFixed(0)}% of the subsidiary's FCFE is remitted in year ${yr} at the ${raw.basis.toUpperCase()} forecast spot of ${fmt4(c.forecast_spot)} ${foreign}/${home}. ${fiscalAssumptionLine(raw, raw.sub_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective, 'the remitted share of the foreign taxable profit')}`, '',
+    `**Assumptions:** group dividend capacity is the CASH the parent can pay — its own free cash flow to equity plus the cash the overseas subsidiary can remit. ${fixedHalfUp(raw.remit_fraction * 100, 0)}% of the subsidiary's FCFE is remitted in year ${yr} at the ${raw.basis.toUpperCase()} forecast spot of ${fmt4(c.forecast_spot)} ${foreign}/${home}. ${fiscalAssumptionLine(raw, raw.sub_build.tax_rate, c.has_additional_home_tax, c.add_tax_rate_effective, 'the remitted share of the foreign taxable profit')}`, '',
     '**Step 1 — Subsidiary free cash flow to equity (foreign)**', '',
     `Subsidiary FCFE = FCFF − after-tax interest + net new borrowing = **${mF(c.sub_fcfe_foreign)}**.`, '',
     '**Step 2 — Remittance to the parent (net of withholding + differential home tax, converted to home)**', '',
-    `Remitted (foreign) = ${mF(c.sub_fcfe_foreign)} × ${(raw.remit_fraction * 100).toFixed(0)}% = ${mF(c.sub_remit_foreign)}; less withholding ${mF(remitTax.wht)}${c.has_additional_home_tax ? ` and differential home tax ${mF(remitTax.additional_home_tax_foreign)} (${pct2(c.add_tax_rate_effective)} on the remitted share of the foreign taxable profit)` : nilNote} = ${mF(remitTax.net_remit_foreign)}; ÷ ${fmt4(c.forecast_spot)} = **${mH(c.sub_remit_home)}**.`, '',
+    `Remitted (foreign) = ${mF(c.sub_fcfe_foreign)} × ${fixedHalfUp(raw.remit_fraction * 100, 0)}% = ${mF(c.sub_remit_foreign)}; less withholding ${mF(remitTax.wht)}${c.has_additional_home_tax ? ` and differential home tax ${mF(remitTax.additional_home_tax_foreign)} (${pct2(c.add_tax_rate_effective)} on the remitted share of the foreign taxable profit)` : nilNote} = ${mF(remitTax.net_remit_foreign)}; ÷ ${fmt4(c.forecast_spot)} = **${mH(c.sub_remit_home)}**.`, '',
     '**Step 3 — Group dividend capacity**', '',
     `Group capacity = parent FCFE ${mH(c.parent_fcfe)} + remitted subsidiary FCFE ${mH(c.sub_remit_home)} = **${mH(c.total_capacity)}**.`, '',
     '**Step 4 — Sustainability of the proposed dividend**', '',
