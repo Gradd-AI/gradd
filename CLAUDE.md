@@ -45,6 +45,25 @@ territory — follow the links for depth. Keep it under ~150 lines.
 - Actions that are outward-facing or hard to reverse (deploys, sends, deletes): confirm
   first unless the task already authorised it.
 
+## SESSION CLOSE
+
+**Every session ends PUSHED.** After the final merge to `main`: `git push origin main`, then
+confirm the Vercel deploy is **green** (state `READY`, target `production`, and the commit SHA
+matches `main`) before reporting done. A push whose deploy is still `BUILDING` is not confirmed —
+wait for it, or say plainly that it was still building.
+
+- **Never leave `main` ahead of `origin/main`.** Check with `git rev-list --count origin/main..main`
+  — it must be `0` at close. Unpushed work on a production branch is invisible to the other
+  machine and to the deploy, and "merged" reads as "shipped" when it is not.
+- **Never leave a known-stale doc or review pack open across a session boundary.** Either
+  regenerate it in-session, or record it as an explicit open item in `docs/AFM_SURFACED.md`.
+  Silence is the failure mode: a review pack that quietly contradicts the DB gets reviewed as if
+  it were current. Review packs are DB snapshots — after ANY content write, re-audit every pack
+  that quotes the affected rows (audit, don't assume: a grep for a drill id proves a pack
+  MENTIONS the row, not that it quotes a body that moved).
+- A DB write to published rows is **not** covered by any of this — it ships the moment it runs,
+  independent of git. See `GENERATOR_DOCTRINE.md` process rules **P-DB1..3**.
+
 ## Architecture
 - **One codebase, one Supabase, one Stripe** serve all products. **Two hosts:**
   `gradd.ie` = Leaving Cert Business; `gradd.ai` = IB (Economics + Business Management, at
