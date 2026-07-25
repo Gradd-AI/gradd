@@ -92,6 +92,11 @@ export interface ApvComputed {
   tax_shield?:     number;
   subsidy_rows?:   SubsidyRow[];
   subsidy_benefit?: number;
+  /** Kd − subsidised coupon, the interest SAVING RATE the subsidy prose quotes ("the firm
+   *  saves 5.50% of BRL 520.0m"). A named field for the same FR3/GATE 27 reason as capm.ts's
+   *  `kd_after_tax`: computed inline in the builder it was an ORPHAN — a derived figure the
+   *  prose asserts with no code-owned value behind it. Only set on the subsidised kind. */
+  subsidy_spread?: number;
   issue_costs?:    number;    // NEGATIVE (a cost); grossed-up from net proceeds
   coupon?:         number;    // interest rate actually paid (subsidised_rate ?? kd)
   kd?:             number;    // market cost of debt
@@ -99,6 +104,11 @@ export interface ApvComputed {
 
   apv:         number;        // headline APV (the chosen package for compare)
   accept:      boolean;       // apv > 0
+  /** tax_shield + subsidy_benefit + issue_costs — the total the reconciliation line quotes
+   *  ("base-case NPV X + financing side-effects Y = APV Z"). Named for the same GATE 27
+   *  reason as `subsidy_spread`. Not set on financing_compare, whose reconciliation names
+   *  the two package APVs instead of a single side-effect total. */
+  side_effects_total?: number;
 
   // financing_compare enrichment (code-owned, not graded)
   apv_debt?:        number;
@@ -223,6 +233,7 @@ export function computeApv(raw: ApvInputs, kind: ApvKind): ApvComputed {
     // the shield and trading tax. Discounted in two timed halves, not collapsed in-year.
     const subsidyRows: SubsidyRow[] = [];
     let subsidyTotal = 0;
+    out.subsidy_spread = kd - coupon;
     for (let y = 1; y <= term; y++) {
       const saving = debt * (kd - coupon);
       const savingDf = df(kd, y);
@@ -248,6 +259,7 @@ export function computeApv(raw: ApvInputs, kind: ApvKind): ApvComputed {
 
   out.apv = apv;
   out.accept = apv > 0;
+  out.side_effects_total = (out.tax_shield ?? 0) + (out.subsidy_benefit ?? 0) + (out.issue_costs ?? 0);
   return out;
 }
 
@@ -439,7 +451,7 @@ export function buildApvModelAnswer(raw: ApvInputs, c: ApvComputed, prose: strin
   }
 
   if (c.subsidy_rows && c.subsidy_benefit !== undefined) {
-    lines.push(`*Subsidised-loan benefit* — the loan is priced below the market rate, so the firm saves ${pct2(kd - coupon)} of ${m(debt)} = ${m(debt * (kd - coupon))} of interest each year (a pre-tax cash saving in the interest year); the smaller interest deduction then adds tax of ${m(debt * (kd - coupon) * taxRate)} **${lag === 0 ? 'in the same year' : 'one year later — the same lag as the shield'}**. Both legs are discounted at the market Kd ${pct2(kd)}:`, '');
+    lines.push(`*Subsidised-loan benefit* — the loan is priced below the market rate, so the firm saves ${pct2(c.subsidy_spread ?? kd - coupon)} of ${m(debt)} = ${m(debt * (kd - coupon))} of interest each year (a pre-tax cash saving in the interest year); the smaller interest deduction then adds tax of ${m(debt * (kd - coupon) * taxRate)} **${lag === 0 ? 'in the same year' : 'one year later — the same lag as the shield'}**. Both legs are discounted at the market Kd ${pct2(kd)}:`, '');
     lines.push(`| Interest year | Pre-tax saving (period ${lag === 0 ? 'y' : 'y'}) | Extra tax (period y+${lag}) | Net PV |`, `|------|------|------|------|`);
     for (const r of c.subsidy_rows) lines.push(`| ${r.year} | +${m(r.saving)} @ ${r.saving_df.toFixed(3)} | −${m(r.tax)} @ ${r.tax_df.toFixed(3)} (period ${r.tax_period}) | ${m(r.pv)} |`);
     lines.push('', `**PV of the subsidised-loan benefit = ${m(c.subsidy_benefit)}.**`, '');
@@ -499,7 +511,7 @@ export function buildApvModelAnswer(raw: ApvInputs, c: ApvComputed, prose: strin
     '',
   );
   lines.push(prose, '');
-  const sideTotal = (c.tax_shield ?? 0) + (c.subsidy_benefit ?? 0) + (c.issue_costs ?? 0);
+  const sideTotal = c.side_effects_total ?? ((c.tax_shield ?? 0) + (c.subsidy_benefit ?? 0) + (c.issue_costs ?? 0));
   lines.push(
     kind === 'financing_compare'
       ? `*Reconciliation: base-case NPV ${m(c.base_npv)}; debt APV ${m(c.apv_debt ?? 0)} vs equity APV ${m(c.apv_equity ?? 0)} — higher is ${c.financing_choice}. ✓*`

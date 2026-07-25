@@ -21,6 +21,7 @@
     "test:phrase-match": "tsx scripts/test-phrase-match.ts",
     "test:npv": "tsx scripts/test-npv.ts",
     "test:apv": "tsx scripts/test-apv.ts",
+    "test:irr": "tsx scripts/test-irr.ts",
     "test:capm": "tsx scripts/test-capm.ts",
     "test:duration": "tsx scripts/test-duration.ts",
     "test:credit": "tsx scripts/test-credit.ts",

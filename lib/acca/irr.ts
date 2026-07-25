@@ -22,6 +22,10 @@ const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
+// A rate ALREADY in percentage units, displayed at 2 dp. Boundary-aware for the same reason
+// fmt1 is (lib/acca/rounding.ts) — an IRR/MIRR landing exactly on a .xx5 tie must print the
+// digit a hand-working student gets, not the IEEE-754 artefact below it.
+const fmtR2 = (rPct: number): string => fixedHalfUp(rPct, 2);
 const df = (r: number, p: number): number => 1 / Math.pow(1 + r, p);
 
 export type IrrKind = 'standard' | 'mirr' | 'nonconventional' | 'conflict';
@@ -210,7 +214,7 @@ export function buildIrrModelAnswer(raw: IrrInputs, c: IrrComputed, prose: strin
   // Step 4 — IRR by interpolation
   lines.push('**Step 4 — Internal rate of return (linear interpolation)**', '');
   lines.push(`NPV at ${pct2(c.r_lo_dec)} = ${m(c.npv_lo)}; NPV at ${pct2(c.r_hi_dec)} = ${m(c.npv_hi)}.`, '');
-  lines.push(`**IRR ≈ ${pct2(c.r_lo_dec)} + ${m(c.npv_lo)}/(${m(c.npv_lo)} − ${m(c.npv_hi)}) × (${pct2(c.r_hi_dec)} − ${pct2(c.r_lo_dec)}) = ${c.irr.toFixed(2)}%.**`, '');
+  lines.push(`**IRR ≈ ${pct2(c.r_lo_dec)} + ${m(c.npv_lo)}/(${m(c.npv_lo)} − ${m(c.npv_hi)}) × (${pct2(c.r_hi_dec)} − ${pct2(c.r_lo_dec)}) = ${fmtR2(c.irr)}%.**`, '');
 
   if (kind === 'nonconventional') {
     lines.push(`Because the net cash flows change sign more than once, this project can have **multiple IRRs** (or none), so a single interpolated IRR is unreliable here. The NPV at the ${pct2(c.coc)} cost of capital is ${m(c.npv_at_coc)} — **NPV governs the decision**, not IRR.`, '');
@@ -219,16 +223,16 @@ export function buildIrrModelAnswer(raw: IrrInputs, c: IrrComputed, prose: strin
   if (kind === 'mirr') {
     lines.push('**Step 5 — Modified internal rate of return**', '');
     lines.push(`Terminal value of inflows, reinvested at ${pct2(c.reinvest)} = ${m(c.tv_inflows)}; PV of outflows = ${m(c.pv_outflows)}.`, '');
-    lines.push(`**MIRR = (${m(c.tv_inflows)} / ${m(c.pv_outflows)})^(1/${c.horizon}) − 1 = ${c.mirr.toFixed(2)}%.**`, '');
-    lines.push(`The IRR of ${c.irr.toFixed(2)}% overstates the return because it implicitly assumes interim cash flows are reinvested at the IRR itself; MIRR reinvests them at the stated ${pct2(c.reinvest)} reinvestment rate — a more realistic assumption than the IRR itself — and is the sounder ranking measure.`, '');
+    lines.push(`**MIRR = (${m(c.tv_inflows)} / ${m(c.pv_outflows)})^(1/${c.horizon}) − 1 = ${fmtR2(c.mirr)}%.**`, '');
+    lines.push(`The IRR of ${fmtR2(c.irr)}% overstates the return because it implicitly assumes interim cash flows are reinvested at the IRR itself; MIRR reinvests them at the stated ${pct2(c.reinvest)} reinvestment rate — a more realistic assumption than the IRR itself — and is the sounder ranking measure.`, '');
   }
 
   if (kind === 'conflict' && raw.competitor) {
     const projLabel = raw.project_label ?? 'This project';
     lines.push('**Step 5 — Ranking against the mutually exclusive alternative**', '');
     lines.push(`| Project | IRR | NPV @ ${pct2(c.coc)} |`, `|------|------|------|`);
-    lines.push(`| ${projLabel} | ${c.irr.toFixed(2)}% | ${m(c.npv_at_coc)} |`);
-    lines.push(`| ${raw.competitor.name} | ${asDec(raw.competitor.irr) >= 1 ? raw.competitor.irr.toFixed(2) : (raw.competitor.irr * 100).toFixed(2)}% | ${m(raw.competitor.npv)} |`);
+    lines.push(`| ${projLabel} | ${fmtR2(c.irr)}% | ${m(c.npv_at_coc)} |`);
+    lines.push(`| ${raw.competitor.name} | ${asDec(raw.competitor.irr) >= 1 ? fmtR2(raw.competitor.irr) : fmtR2(raw.competitor.irr * 100)}% | ${m(raw.competitor.npv)} |`);
     const thisWins = c.npv_at_coc >= raw.competitor.npv;
     lines.push('', `IRR and NPV can rank mutually exclusive projects differently; where they conflict, **NPV wins** (it measures absolute value added and assumes reinvestment at the cost of capital, not the IRR). On NPV, **${thisWins ? projLabel : raw.competitor.name}** is preferred.`, '');
   }
@@ -248,7 +252,7 @@ export function buildIrrModelAnswer(raw: IrrInputs, c: IrrComputed, prose: strin
       ? `${projLabel}'s NPV of ${m(c.npv_at_coc)} is positive, so it would be acceptable on a standalone basis. But the two lines are mutually exclusive and ${winnerName} adds more value at the cost of capital (${m(winnerNpv)} vs ${m(loserNpv)}), so the board should fund ${winnerName}; ${loserName}, though value-adding in isolation, is displaced.`
       : `${projLabel}'s NPV of ${m(c.npv_at_coc)} is negative, so it should be rejected outright; on value grounds the board should fund ${winnerName} (${m(winnerNpv)}).`, '');
   } else {
-    const metric = kind === 'mirr' ? `MIRR of ${c.mirr.toFixed(2)}%` : kind === 'standard' ? `IRR of ${c.irr.toFixed(2)}%` : `NPV of ${m(c.npv_at_coc)}`;
+    const metric = kind === 'mirr' ? `MIRR of ${fmtR2(c.mirr)}%` : kind === 'standard' ? `IRR of ${fmtR2(c.irr)}%` : `NPV of ${m(c.npv_at_coc)}`;
     lines.push(c.accept
       ? `The ${metric} ${kind === 'standard' || kind === 'mirr' ? `exceeds the ${pct2(c.coc)} cost of capital` : 'is positive'}, so on these assumptions the project **adds shareholder value and should be accepted**.`
       : `The ${metric} ${kind === 'standard' || kind === 'mirr' ? `is below the ${pct2(c.coc)} cost of capital` : 'is negative'}, so on these assumptions the project **destroys value and should be rejected** as it stands.`, '');
@@ -260,7 +264,7 @@ export function buildIrrModelAnswer(raw: IrrInputs, c: IrrComputed, prose: strin
     ? `On these assumptions the return clears the hurdle; a positive signal is a floor, not a mandate, so the recommendation is conditional on the following assumptions holding.`
     : `On these assumptions the return is below the hurdle, so the base-case recommendation is to **reject**; the board should treat rejection as the default unless the assumptions below prove materially conservative.`, '');
   lines.push(prose, '');
-  lines.push(`*Reconciliation: NPV at ${pct2(c.r_lo_dec)} ${m(c.npv_lo)} and at ${pct2(c.r_hi_dec)} ${m(c.npv_hi)} bracket the IRR ${c.irr.toFixed(2)}%.*`);
+  lines.push(`*Reconciliation: NPV at ${pct2(c.r_lo_dec)} ${m(c.npv_lo)} and at ${pct2(c.r_hi_dec)} ${m(c.npv_hi)} bracket the IRR ${fmtR2(c.irr)}%.*`);
 
   return lines.join('\n');
 }

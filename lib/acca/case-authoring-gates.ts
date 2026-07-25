@@ -38,6 +38,7 @@ import {
   validateEffectiveRateReconciliation,
   validateBasisDecayAndScepticism,
   validateHalfwayRounding,
+  validateValuationBridge,
   type ValidationResult,
 } from './validate-schema';
 import {
@@ -56,6 +57,7 @@ import type { IntlNpvInputs, IntlNpvComputed } from './international';
 import type { ForwardMmhCompareInputs, ForwardMmhCompareComputed } from './fxhedge';
 import type { EnpvInputs, EnpvComputed } from './risk';
 import type { IrFuturesInputs, IrFuturesComputed } from './irhedge';
+import { divergentEquity, type FcffComputed } from './valuation';
 
 export interface GateLine { name: string; ok: boolean; detail?: string }
 
@@ -218,7 +220,8 @@ export type FamilyGateInput =
   | { lo: 'B5b'; npvIn: IntlNpvInputs; npvC: IntlNpvComputed; modelAnswer: string }
   | { lo: 'E2b'; fxIn: ForwardMmhCompareInputs; fxC: ForwardMmhCompareComputed }
   | { lo: 'B1a'; enpvIn: EnpvInputs; enpvC: EnpvComputed }
-  | { lo: 'E3a'; irIn: IrFuturesInputs; irC: IrFuturesComputed; modelAnswer: string };
+  | { lo: 'E3a'; irIn: IrFuturesInputs; irC: IrFuturesComputed; modelAnswer: string }
+  | { lo: 'B4a'; fcffC: FcffComputed; debtValue: number; equityWeight: number; modelAnswer: string };
 
 export function runFamilyGates(input: FamilyGateInput): GateLine[] {
   const g: GateLine[] = [];
@@ -250,6 +253,24 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
       add('IRH-21 contract-count', validateContractCount(irIn.notional, irIn.contract_size, irIn.hedge_months, irIn.contract_months, irC.contracts));
       add('IRH-23 basis-decay+scepticism', validateBasisDecayAndScepticism(irIn.spot_rate0, irIn.futures0, irIn.months_to_expiry, irIn.months_to_transaction, irC.unexpired_basis, irIn.scenarios[0].base_rate, irC.scenarios[0].closing_price, modelAnswer));
       add('IRH-25 effective-rate-reconciliation', validateEffectiveRateReconciliation(irC.scenarios.map((sc) => sc.effective_rate)));
+      break;
+    }
+    case 'B4a': {
+      // Valuation family (fcff_enterprise, the CAPM→WACC-composed kind). GATE 11 checks the
+      // flow is matched to the right rate and the debt bridge runs the right way; GATE 11b is
+      // the FIX-1 pattern rule — a DCF equity diverging >50% from the ESTIMATED equity figure
+      // used to weight the WACC must carry the divergence-reconciliation point (the builder
+      // injects it; this enforces that it survived). Both mirror the drill generator's own
+      // loop in scripts/generate-afm-drills.ts, kept here so a case/mock caller gets them too.
+      const { fcffC, debtValue, equityWeight, modelAnswer } = input;
+      add('VAL-11 flow/rate/bridge', validateValuationBridge('fcff_enterprise', fcffC, { debt_value: debtValue }));
+      const diverges = divergentEquity(fcffC.equity_value, equityWeight);
+      const hasRecon = /Reconcile the equity divergence/.test(modelAnswer);
+      g.push({
+        name: 'VAL-11b equity-divergence reconciliation',
+        ok: !diverges || hasRecon,
+        detail: !diverges || hasRecon ? '' : 'DCF equity diverges >50% from the estimated equity weight but the model answer omits the reconciliation point',
+      });
       break;
     }
   }

@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-25 (mock-engine Phase-1 preconditions; FR3 rounding + Piece-2 dependency).*
+*Last refreshed: 2026-07-25 (mock-engine Phase-1 preconditions; FR3 rounding blocker CLEARED — Piece 2 unblocked).*
 
 ## 🟡 OPEN (INERT) — GATE 27 published-corpus coverage gap
 
@@ -22,36 +22,99 @@ gate-green mock requirements yield **2** orphans WITH result objects and **29** 
 
 **INERT** because the gate is authoring-time only and touches no serving path; published rows
 are unaffected today. To actually MEASURE the published corpus, each drill must be re-run
-through its calculator (the same re-derivation that FR3 found impossible from stored params —
-see the Piece-2 blocker below). Until then no claim may be made in either direction about
-derived figures in published drills.
+through its calculator. Until then no claim may be made in either direction about derived
+figures in published drills.
 
-## ⛔ BLOCKER ON PIECE 2 (exact-figure parsing) — HALFWAY_ROUNDING_RISK must be green first
+**UPDATE 2026-07-25 (boundary re-author): 5 of the 49 published numeric drills ARE now measured,
+and the gate was RIGHT.** The re-derivation FR3 thought impossible turned out to be possible
+(the missing inputs are stated in each drill's own `context_text`, not its stored params — see
+the RESOLVED section below), so `B1c 796651c2` / `B3d 2a145f7d` / `B3j 34f9e897` / `B3k
+dedca530` / `B4a 0dc970a8` were run through GATE 27 **with** their calculator result objects.
+Four genuine orphans surfaced across three families — the WACC market-value weights (capm +
+valuation), the subsidy spread and the financing-side-effects total (apv), and the
+equity-divergence multiple (valuation) — every one a derived figure asserted in prose with no
+code-owned value behind it. All four are fixed at source (named result fields / a shared
+exported helper), not exempted. **The remaining 44 stay UNMEASURED, and the 14.5× measurement-
+artefact caveat above still governs any sweep run without result objects.** The method is now
+proven, though: re-derive from `context_text`, not from `answer_schema.params`.
 
-**Ruled 2026-07-25 (FR3).** Piece 2 — live parsing of the student's OWN figures and verdicting
-them against `answer_schema` tolerances — **MUST NOT SHIP** until `validateHalfwayRounding`
-(GATE HALFWAY_ROUNDING_RISK, `lib/acca/validate-schema.ts`) reports **zero rendered boundary
-hits across all published content**. Today it does not: **5 published AFM drills** render a
-figure at a precision where the exact value is a rounding tie, so code prints one last digit
-and a hand-working student legitimately gets the other. While marking is model-graded this is
-only a presentation defect; the day figures are machine-compared it becomes **mismarking a
-correct student**.
+## ✅ RESOLVED — HALFWAY_ROUNDING_RISK is GREEN; PIECE 2 (exact-figure parsing) IS UNBLOCKED
 
-Outstanding (report-only sweep, 2026-07-25 — see `docs/reviews/AFM_MOCK_PAPER1_REVIEW_PACK.md` §FR3):
-- **`B3k dedca530` `debt_issue_costs` = −1.95** prints `-1.9`, hand-working `-2.0`; relative
-  0.5% tolerance (±0.0098) **does NOT absorb** the 0.1 step — the one hit that is a true
-  mismarking risk rather than cosmetic.
-- `B1c 796651c2` `ncf_1` 47.15 · `B3d 2a145f7d` `company_ke` 11.275 · `B3j 34f9e897` `ncf_1`
-  449.35 · `B4a 0dc970a8` `ke` 11.675 — all tolerance-absorbed (cosmetic).
-- Plus 4 LATENT hits (ambiguous at a precision the prose does not currently render): `B1a
-  4e6df0b6` `ncf_2` · `B1c 712cf3aa` `ncf_1`/`ncf_2` · `B3j 34f9e897` `ncf_2`.
+**Closed 2026-07-25 (FR3 follow-up). Branch `fix/afm-boundary-rounding-reauthor` — NOT merged,
+awaiting Grant's review; the DB rows are already written (see the write-vs-merge note below).**
 
-**Why these 5 were not patched in FR3:** the ruled method was to re-derive each from its stored
-`answer_schema.params` through the corrected formatter. **None of the 5 is re-derivable** — the
-stored params carry rates and capital structure but NOT the per-year operating cash-flow build
-(APV/NPV/valuation) nor the betas and `project_return` (CAPM `wrong_hurdle`). Per the ruling's
-own STOP clause, hand-editing the prose was refused. Re-authoring them through the generator
-(which now renders via `fixedHalfUp`) is the clean fix and is the outstanding work.
+The gate that blocked Piece 2 — `validateHalfwayRounding` (GATE HALFWAY_ROUNDING_RISK,
+`lib/acca/validate-schema.ts`) — now reports **0 rendered boundary hits across all 49 published
+AFM numeric drills** (was 5). Piece 2 — live parsing of the student's OWN figures and verdicting
+them against `answer_schema` tolerances — **is no longer blocked on this**. Piece 2 itself is
+untouched by this work.
+
+**What was done.** All 5 drills re-authored end-to-end through their live calculator family
+(`apv` / `irr` / `capm` / `valuation`) and the durable barrier in
+`lib/acca/case-authoring-gates.ts` (GATE1–3, P4–P9, GATE 26, TAX_RATE_ASSIGNMENT,
+HALFWAY_ROUNDING_RISK, GATE 27 + family gates) — **no hand-edited prose, no SQL patching**. The
+FR3 note said none of the 5 was re-derivable from `answer_schema.params`; that was true of the
+params, but every missing input (the per-year operating cash-flow build, the betas,
+`project_return`) is stated verbatim in each drill's OWN `context_text`, so full re-derivation
+was possible. Every rebuilt component matched its stored `expected_value` **exactly**, which is
+what proves the recovered inputs were right — the only figure changes are the ones below.
+
+| drill | figure | exact value | was printed | now printed |
+|---|---|---|---|---|
+| `B1c 796651c2` | `ncf_1` | 47.15 | `47.1` | `47.2` |
+| `B3d 2a145f7d` | `company_ke` | 11.275 | `11.27%` | `11.28%` |
+| `B3j 34f9e897` | `ncf_1` | 449.35 | `449.3` | `449.4` |
+| `B4a 0dc970a8` | `ke` | 11.675 | `11.67%` | `11.68%` |
+| `B3k dedca530` | `debt_issue_costs` | −1.95 → **−1.30** | `-1.9` | `-1.3` (input re-picked) |
+
+**`B3k` is the one drill that needed a PARAM re-pick, and the reason is worth keeping.** Rendered
+through `fixedHalfUp` it correctly prints `-2.0` and the real hazard is gone — but the gate still
+FAILS CLOSED, rightly: the unsigned artefact string `1.9` also appears in that answer as the
+year-4 tax charge (`PLN 1.9m`), so the gate cannot attribute the two from text alone. Rather
+than weaken a safety gate to pass a change, the remedy the gate message itself offers was taken —
+debt arrangement fee **3.0% → 2.0%** (65 × 2.0% = 1.30, exact at every display precision). The
+pedagogical target is unchanged (gross-vs-net issue-cost convention; debt-vs-equity APV ranking)
+and the code-owned `financing_choice` does **not** flip — debt still wins, APV 7.0 vs 2.5 (was
+6.3 vs 2.5). The scenario's own raw-input bullet was updated to match (`context_text` is a
+stored literal — PROSE OWNERSHIP RULE).
+
+**LATENT hits: 4 confirmed unchanged, all inert.** `B1a 4e6df0b6` `ncf_2` (4dp) · `B1c 712cf3aa`
+`ncf_1` (2dp) / `ncf_2` (4dp) · `B3j 34f9e897` `ncf_2` (3dp). None fell out naturally and none
+needed to: every one is a tie at a precision the prose **never renders** (all four display at
+1dp, where they are unambiguous), so no code-vs-student disagreement is reachable. `B1a
+4e6df0b6` and `B1c 712cf3aa` were not re-authored — nothing in them required it. (`E3a
+f088daa5` `closing_price` remains the known FR3 non-issue: a 1dp tie rendered at 2dp.)
+
+**Library fixes this surfaced — the FR3 conversion was incomplete.** `capm.ts` / `npv.ts` /
+`apv.ts` routed rate display through `fixedHalfUp`; **`valuation.ts` and `irr.ts` did not**, and
+that raw `toFixed(2)` is exactly what printed `B4a`'s Ke as `11.67%`. Both now use it. GATE 27
+also fired on four genuine orphan derived figures never previously checked (it has never run on
+these drills), each fixed the way `capm.ts`'s `kd_after_tax` already established — promote the
+derived value to a NAMED field rather than compute it inline: `CapmComputed.weight_equity` /
+`.weight_debt`, `ApvComputed.subsidy_spread` / `.side_effects_total`, and the exported
+`equityDivergenceRatio()` in `valuation.ts` (it spans two objects, so it is a shared helper
+rather than a result field). `runFamilyGates` gained a **`B4a`** branch (VAL-11 flow/rate/bridge
++ VAL-11b equity-divergence reconciliation), per that module's own extension rule.
+
+**WRITE-vs-MERGE, stated plainly:** the 5 `acca_drills` rows are **already updated in the live
+DB** — a DB write is not branch-scoped, and the "0 rendered hits" sweep above is a measurement of
+production, not of the branch. `status`/`published` were NOT touched (all still
+`approved`/`true`); no publish flip occurred. Rollback snapshot of the exact pre-write
+`model_answer` / `answer_schema` / `context_text` for all 5 rows:
+`ClaudeSend_boundary_rollback.json` (repo root, untracked).
+
+**⚠️ OPEN — review packs are now STALE for these 5 drills** (they are hand-maintained DB
+snapshots and were not regenerated): `AFM_BATCH_APV_REVIEW_PACK.md`,
+`AFM_BATCH_CAPM_REVIEW_PACK.md`, `AFM_BATCH_VALUATION_REVIEW_PACK.md`,
+`AFM_IRR_BATCH2_REVIEW_PACK.md`, `AFM_IRR_BATCH2_REVIEW_PACK_R2.md`, `APV_REVIEW_PACK_R2.md`.
+`B3k`'s drift is the material one (a param + 4 figures); the other four are a single digit each.
+
+**🔹 INERT / GATE-HARDENING — HALFWAY_ROUNDING_RISK cannot attribute a shared artefact string.**
+The `B3k` case above is the general form: when the naive rendering of component A's value also
+appears in the prose as an unrelated figure B, the gate fails closed and the author cannot clear
+it except by re-picking inputs. That is the safe default and no change was made, but it means a
+correctly-rendered figure can still block. If it recurs often enough to be a nuisance, the fix is
+attribution (match the token in its own row/sentence context), not relaxing the check.
 
 
 ## ✅ MOCK ENGINE — PHASE 1 PRECONDITIONS DONE (2026-07-25); RULINGS CLOSED; NO CASE CONTENT AUTHORED YET

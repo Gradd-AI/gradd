@@ -1,0 +1,884 @@
+{
+ "_README": "Pre-write snapshot (2026-07-25) of model_answer / answer_schema / context_text for the 5 published AFM drills re-authored to clear the HALFWAY_ROUNDING_RISK boundary hits — B3k dedca530, B3j 34f9e897, B1c 796651c2, B3d 2a145f7d, B4a 0dc970a8. Restore = write these 3 fields back to acca_drills by id; status/published were never touched.",
+ "dedca530-3bad-4537-9f73-7ffc5631cc5f": {
+  "model_answer": "**Investment appraisal — adjusted present value (APV)**\n\n**Assumptions:** the project is valued in two stages — the base case as if **all-equity financed**, discounted at the ungeared cost of equity Keu of 13.50%, then the present value of the financing side-effects it triggers. Operating cash flows are in money terms, inflated at 4.00%; tax at 19.00% is charged on operating cash flow less tax-allowable depreciation (20.00% reducing balance, balancing allowance/charge in year 4) and paid one year in arrears. The debt tax shield is discounted at the **pre-tax cost of debt Kd** of 7.00%; discounting the shield at the risk-free rate instead is an accepted examiner alternative and would raise its present value slightly.\n\n**Step 1 — Tax-allowable depreciation (reducing balance)**\n\n| Year | WDA |\n|------|-----|\n| 1 | PLN 17.6m |\n| 2 | PLN 14.1m |\n| 3 | PLN 11.3m |\n| 4 | PLN 31.1m |\n\n**Step 2 — Taxable profit and tax**\n\n| Year | Operating cash flow | WDA | Taxable | Tax |\n|------|------|------|------|------|\n| 1 | PLN 28.1m | PLN 17.6m | PLN 10.5m | PLN 2.0m |\n| 2 | PLN 32.4m | PLN 14.1m | PLN 18.4m | PLN 3.5m |\n| 3 | PLN 37.1m | PLN 11.3m | PLN 25.9m | PLN 4.9m |\n| 4 | PLN 40.9m | PLN 31.1m | PLN 9.9m | PLN 1.9m |\n\n**Step 3 — Base-case NPV (all-equity, discounted at Keu)**\n\n| Period | Net cash flow | DF @ Keu 13.50% | Present value |\n|--------|------|------|------|\n| 0 | PLN -95.0m | 1.000 | PLN -95.0m |\n| 1 | PLN 28.1m | 0.881 | PLN 24.7m |\n| 2 | PLN 30.5m | 0.776 | PLN 23.6m |\n| 3 | PLN 33.6m | 0.684 | PLN 23.0m |\n| 4 | PLN 50.0m | 0.603 | PLN 30.1m |\n| 5 | PLN -1.9m | 0.531 | PLN -1.0m |\n\n**Base-case NPV = present value of the operating flows PLN 100.5m − initial outlay PLN 95.0m = PLN 5.5m.**\n\n**Step 4 — Financing side-effects**\n\n*Debt tax shield* — interest is tax-deductible, so PLN 65.0m of debt at 7.00% gives annual tax relief of PLN 0.9m, **received one year in arrears (the same lag as trading tax)** and discounted at the pre-tax cost of debt Kd 7.00%:\n\n| Interest year | Interest | Tax relief | Received (period) | DF @ 7.00% | PV |\n|------|------|------|------|------|------|\n| 1 | PLN 4.6m | PLN 0.9m | 2 | 0.873 | PLN 0.8m |\n| 2 | PLN 4.6m | PLN 0.9m | 3 | 0.816 | PLN 0.7m |\n| 3 | PLN 4.6m | PLN 0.9m | 4 | 0.763 | PLN 0.7m |\n| 4 | PLN 4.6m | PLN 0.9m | 5 | 0.713 | PLN 0.6m |\n\n**PV of the tax shield = PLN 2.7m.**\n\n**Step 5 — Adjusted present value under each financing package**\n\n| | Debt package | Equity (rights) package |\n|------|------|------|\n| Base-case NPV | PLN 5.5m | PLN 5.5m |\n| Tax shield | PLN 2.7m | — |\n| Issue costs | PLN -1.9m | PLN -3.1m |\n| **APV** | **PLN 6.3m** | **PLN 2.5m** |\n\n*Debt issue costs = 3.00% of the PLN 65.0m gross principal; the rights issue is stated net, so its 4.50% cost is grossed up.*\n\n*Reported-position overlay:* the debt package lifts gearing (D/(D+E), market values) to **43.36%** and adds PLN 4.6m of annual interest (reducing interest cover), whereas the rights issue lowers gearing to **31.86%** but dilutes existing shareholders.\n\n**Step 6 — Decision**\n\nBoth packages fund the same base case, so the ranking turns on the financing side-effects. The **debt** package is **preferred** — it gives the higher APV (PLN 6.3m vs PLN 2.5m), so on these assumptions the board should **fund the project using debt finance**; the project adds value and the debt route captures more of it.\n\n**Step 7 — Advice to the board**\n\nOn these assumptions the APV is positive; a positive result is a floor, not a mandate, so the recommendation is conditional on the base-case and financing assumptions below holding under scrutiny.\n\nThe board should first scrutinise whether the finance director's peer-benchmarked Keu of 13.5% is genuinely appropriate for this project: listed European logistics peers may operate predominantly in leased, lighter-weight assets, whereas the Łódź Regional Hub is a purpose-built, temperature-controlled warehousing property — an inherently less liquid, longer-duration asset class that may warrant a higher ungeared rate; if Keu is understated, the base-case NPV is overstated and the project may appear more attractive than it truly is. Turning to the financing side-effects, the board must satisfy itself that the PLN 65m term loan under Package A will remain fully outstanding for the entire four-year term, since any early repayment or covenant-triggered accelerated repayment would reduce the interest tax shield and erode Package A's advantage; PKO Bank Polski's minimum interest-cover covenant of 2.5× on a consolidated basis is a real constraint, and if operating cash flows disappoint — a plausible risk given the finance director's own caveat that near-shoring demand may not persist — VFP could breach this threshold, triggering renegotiation costs or forced early repayment. Under Package B, shareholder dilution is the primary concern: a rights issue of PLN 65m against a current equity market value of PLN 320m represents a material enlargement of the share register, and if the rights are not fully taken up, the underwriting cost embedded in the 4.5% issue-cost rate will be incurred in full while the project's revenue assumptions remain unproven. The qualitative trade-off is therefore between the discipline and tax efficiency of geared financing under Package A — which materially increases VFP's consolidated leverage and tightens interest-cover headroom — and the balance-sheet resilience of Package B, which preserves debt capacity for future acquisitions but dilutes existing shareholders and signals to the market that VFP's free cash flow cannot fund growth organically; the board should weigh both outcomes against any intention VFP may have to expand the hub network further across Central Europe, since a heavily geared structure today may foreclose the next transaction.\n\n*Reconciliation: base-case NPV PLN 5.5m; debt APV PLN 6.3m vs equity APV PLN 2.5m — higher is debt. ✓*",
+  "answer_schema": {
+   "params": {
+    "kd": 0.07,
+    "keu": 0.135,
+    "tax_lag": 1,
+    "tax_rate": 0.19,
+    "wda_rate": 0.2,
+    "debt_term": 4,
+    "debt_amount": 65,
+    "scrap_value": 14,
+    "inflation_rate": 0.04,
+    "initial_outlay": 95,
+    "capital_for_wda": 88
+   },
+   "components": [
+    {
+     "unit": "PLNm",
+     "label": "Net after-tax cash flow, year 1",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_1",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 1"
+     ],
+     "expected_value": 28.080000000000002
+    },
+    {
+     "unit": "PLNm",
+     "label": "Net after-tax cash flow, year 2",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_2",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 2"
+     ],
+     "expected_value": 30.4568
+    },
+    {
+     "unit": "PLNm",
+     "label": "Net after-tax cash flow, year 3",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_3",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 3"
+     ],
+     "expected_value": 33.63059200000001
+    },
+    {
+     "unit": "PLNm",
+     "label": "Net after-tax cash flow, year 4",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_4",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) + scrap for year 4"
+     ],
+     "expected_value": 50.03231232
+    },
+    {
+     "unit": "PLNm",
+     "label": "Net after-tax cash flow, year 5",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_5",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 5"
+     ],
+     "expected_value": -1.878919424
+    },
+    {
+     "unit": "PLNm",
+     "label": "Base-case present value, year 1",
+     "recompute": "pv_discount_keu_y1",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_1"
+     ],
+     "component_id": "pv_1",
+     "working_steps": [
+      "= ncf_1 × 0.881 (discount factor at Keu 13.50%)"
+     ],
+     "expected_value": 24.740088105726873
+    },
+    {
+     "unit": "PLNm",
+     "label": "Base-case present value, year 2",
+     "recompute": "pv_discount_keu_y2",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_2"
+     ],
+     "component_id": "pv_2",
+     "working_steps": [
+      "= ncf_2 × 0.776 (discount factor at Keu 13.50%)"
+     ],
+     "expected_value": 23.64245376389994
+    },
+    {
+     "unit": "PLNm",
+     "label": "Base-case present value, year 3",
+     "recompute": "pv_discount_keu_y3",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_3"
+     ],
+     "component_id": "pv_3",
+     "working_steps": [
+      "= ncf_3 × 0.684 (discount factor at Keu 13.50%)"
+     ],
+     "expected_value": 23.0010111067862
+    },
+    {
+     "unit": "PLNm",
+     "label": "Base-case present value, year 4",
+     "recompute": "pv_discount_keu_y4",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_4"
+     ],
+     "component_id": "pv_4",
+     "working_steps": [
+      "= ncf_4 × 0.603 (discount factor at Keu 13.50%)"
+     ],
+     "expected_value": 30.148598545827973
+    },
+    {
+     "unit": "PLNm",
+     "label": "Base-case present value, year 5",
+     "recompute": "pv_discount_keu_y5",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_5"
+     ],
+     "component_id": "pv_5",
+     "working_steps": [
+      "= ncf_5 × 0.531 (discount factor at Keu 13.50%)"
+     ],
+     "expected_value": -0.9975366215694306
+    },
+    {
+     "unit": "PLNm",
+     "label": "Base-case NPV (all-equity, discounted at Keu)",
+     "recompute": "base_npv_sum_less_outlay",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "pv_1",
+      "pv_2",
+      "pv_3",
+      "pv_4",
+      "pv_5"
+     ],
+     "component_id": "base_npv",
+     "working_steps": [
+      "= Σ base-case present values − initial outlay 95.0"
+     ],
+     "expected_value": 5.534614900671556
+    },
+    {
+     "unit": "PLNm",
+     "label": "PV of the debt tax shield",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "tax_shield",
+     "working_steps": [
+      "Σ debt × 7.00% × 19.00% tax relief, discounted at Kd 7.00%"
+     ],
+     "expected_value": 2.73667675814305
+    },
+    {
+     "unit": "PLNm",
+     "label": "Issue costs — debt package (gross principal × f)",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "debt_issue_costs",
+     "working_steps": [
+      "−(gross debt principal × f) at 3.00%"
+     ],
+     "expected_value": -1.95
+    },
+    {
+     "unit": "PLNm",
+     "label": "Issue costs — equity (rights) package (net, grossed up)",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "equity_issue_costs",
+     "working_steps": [
+      "−(net proceeds × f/(1−f)) at 4.50%"
+     ],
+     "expected_value": -3.06282722513089
+    },
+    {
+     "unit": "PLNm",
+     "label": "APV — debt financing package",
+     "recompute": "apv_sum",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "base_npv",
+      "tax_shield",
+      "debt_issue_costs"
+     ],
+     "component_id": "apv_debt",
+     "working_steps": [
+      "= base-case NPV + tax shield + debt issue costs"
+     ],
+     "expected_value": 6.321291658814606
+    },
+    {
+     "unit": "PLNm",
+     "label": "APV — equity (rights) financing package",
+     "recompute": "apv_sum",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "base_npv",
+      "equity_issue_costs"
+     ],
+     "component_id": "apv_equity",
+     "working_steps": [
+      "= base-case NPV + equity issue costs (no tax shield)"
+     ],
+     "expected_value": 2.4717876755406665
+    }
+   ]
+  },
+  "context_text": "BACKGROUND\nVistula Freight Partners S.A. (VFP) is a mid-sized Polish logistics and warehousing group headquartered in Warsaw, listed on the Warsaw Stock Exchange (GPW). The group operates a network of cross-dock and bonded-warehouse facilities serving e-commerce retailers and automotive-parts distributors across Central Europe. Following a surge in near-shoring demand from German manufacturers, VFP's board has approved a strategic expansion: the construction of a 42,000 m² temperature-controlled distribution hub on the outskirts of Łódź (the \"Łódź Regional Hub\" or \"the Project\"). The Project represents the single largest capital commitment in VFP's history and will materially alter the group's financing structure — the primary reason why APV, rather than a WACC-based NPV, is the appropriate appraisal technique here.\n\nCURRENT CAPITAL STRUCTURE (market values)\n- Existing market value of debt:   PLN 180m\n- Existing market value of equity:  PLN 320m\n\nPROJECT DETAILS\n- Initial capital outlay (Time 0):       PLN 95m\n- Capital qualifying for tax-allowable depreciation: PLN 88m\n- Tax-allowable depreciation method:      Reducing-balance at 20% p.a.\n- Residual / scrap value at end of Year 4: PLN 14m\n- Project life:                 4 years\n- Pre-tax operating cash flows (REAL terms, PLN m):\n    Year 1: PLN 27m\n    Year 2: PLN 30m\n    Year 3: PLN 33m\n    Year 4: PLN 35m\n- Inflation rate:                4.0% p.a.\n- Corporate income tax rate (CIT):        19%\n- Tax payment lag:               1 year in arrears\n- Ungeared (all-equity) cost of equity, Keu:  13.5% p.a.\n\nFINANCING — TWO PACKAGES UNDER CONSIDERATION\nThe board is evaluating two mutually exclusive financing packages. In both cases the remainder of the initial outlay not covered by external finance is funded from existing cash reserves.\n\nPackage A — Secured Term Loan (Debt)\n- Term loan amount:                 PLN 65m\n- Pre-tax market cost of debt, Kd:         7.0% p.a.\n- Loan term:                     4 years (matches project life)\n- Debt issue / arrangement costs:          3.0% of gross proceeds\n\nPackage B — Rights Issue (Equity)\n- Net proceeds of rights issue (after underwriting): PLN 65m\n- Rights issue cost rate (gross-up basis):       4.5% of gross proceeds\n- No new debt is raised under this package; Kd remains 7.0% for tax-shield purposes on existing debt (no incremental tax shield applies under Package B)\n\nNOTE: Under Package A the full PLN 65m term loan is outstanding throughout the 4-year project life and generates an annual interest tax shield. Under Package B no incremental debt is raised, so no incremental tax shield arises; only the equity issue costs are relevant.\n\nADDITIONAL CONTEXT\nVFP's existing debt comprises a PLN 180m syndicated facility arranged through Bank Pekao S.A. and mBank S.A. The board has received indicative credit terms for Package A from PKO Bank Polski, subject to VFP maintaining a minimum interest-cover ratio of 2.5× on a consolidated basis. VFP's finance director notes that the near-shoring trend driving Project revenues is an external demand factor that may not persist at current rates beyond the four-year horizon. VFP's treasury team has benchmarked Keu at 13.5% by reference to listed European logistics peers with comparable asset-intensity and geographic exposure; the board should consider whether this benchmark is truly appropriate for a property-heavy, long-duration warehousing asset of this specific type.\n\nFor the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated."
+ },
+ "34f9e897-4de7-4a68-8cf5-5cac2846567b": {
+  "model_answer": "**Investment appraisal — adjusted present value (APV)**\n\n**Assumptions:** the project is valued in two stages — the base case as if **all-equity financed**, discounted at the ungeared cost of equity Keu of 16.00%, then the present value of the financing side-effects it triggers. Operating cash flows are in money terms, inflated at 4.50%; tax at 34.00% is charged on operating cash flow less tax-allowable depreciation (25.00% reducing balance, balancing allowance/charge in year 4) and paid one year in arrears. The debt tax shield is discounted at the **pre-tax cost of debt Kd** of 11.50%; discounting the shield at the risk-free rate instead is an accepted examiner alternative and would raise its present value slightly.\n\n**Step 1 — Tax-allowable depreciation (reducing balance)**\n\n| Year | WDA |\n|------|-----|\n| 1 | BRL 350.0m |\n| 2 | BRL 262.5m |\n| 3 | BRL 196.9m |\n| 4 | BRL 410.6m |\n\n**Step 2 — Taxable profit and tax**\n\n| Year | Operating cash flow | WDA | Taxable | Tax |\n|------|------|------|------|------|\n| 1 | BRL 449.3m | BRL 350.0m | BRL 99.3m | BRL 33.8m |\n| 2 | BRL 546.0m | BRL 262.5m | BRL 283.5m | BRL 96.4m |\n| 3 | BRL 650.5m | BRL 196.9m | BRL 453.6m | BRL 154.2m |\n| 4 | BRL 739.4m | BRL 410.6m | BRL 328.7m | BRL 111.8m |\n\n**Step 3 — Base-case NPV (all-equity, discounted at Keu)**\n\n| Period | Net cash flow | DF @ Keu 16.00% | Present value |\n|--------|------|------|------|\n| 0 | BRL -1400.0m | 1.000 | BRL -1400.0m |\n| 1 | BRL 449.3m | 0.862 | BRL 387.4m |\n| 2 | BRL 512.2m | 0.743 | BRL 380.7m |\n| 3 | BRL 554.1m | 0.641 | BRL 355.0m |\n| 4 | BRL 765.1m | 0.552 | BRL 422.6m |\n| 5 | BRL -111.8m | 0.476 | BRL -53.2m |\n\n**Base-case NPV = present value of the operating flows BRL 1492.4m − initial outlay BRL 1400.0m = BRL 92.4m.**\n\n**Step 4 — Financing side-effects**\n\n*Debt tax shield* — interest is tax-deductible, so BRL 520.0m of debt at 6.00% gives annual tax relief of BRL 10.6m, **received one year in arrears (the same lag as trading tax)** and discounted at the pre-tax cost of debt Kd 11.50%:\n\n| Interest year | Interest | Tax relief | Received (period) | DF @ 11.50% | PV |\n|------|------|------|------|------|------|\n| 1 | BRL 31.2m | BRL 10.6m | 2 | 0.804 | BRL 8.5m |\n| 2 | BRL 31.2m | BRL 10.6m | 3 | 0.721 | BRL 7.7m |\n| 3 | BRL 31.2m | BRL 10.6m | 4 | 0.647 | BRL 6.9m |\n| 4 | BRL 31.2m | BRL 10.6m | 5 | 0.580 | BRL 6.2m |\n\n**PV of the tax shield = BRL 29.2m.**\n\n*Subsidised-loan benefit* — the loan is priced below the market rate, so the firm saves 5.50% of BRL 520.0m = BRL 28.6m of interest each year (a pre-tax cash saving in the interest year); the smaller interest deduction then adds tax of BRL 9.7m **one year later — the same lag as the shield**. Both legs are discounted at the market Kd 11.50%:\n\n| Interest year | Pre-tax saving (period y) | Extra tax (period y+1) | Net PV |\n|------|------|------|------|\n| 1 | +BRL 28.6m @ 0.897 | −BRL 9.7m @ 0.804 (period 2) | BRL 17.8m |\n| 2 | +BRL 28.6m @ 0.804 | −BRL 9.7m @ 0.721 (period 3) | BRL 16.0m |\n| 3 | +BRL 28.6m @ 0.721 | −BRL 9.7m @ 0.647 (period 4) | BRL 14.3m |\n| 4 | +BRL 28.6m @ 0.647 | −BRL 9.7m @ 0.580 (period 5) | BRL 12.9m |\n\n**PV of the subsidised-loan benefit = BRL 61.0m.**\n\n**Step 5 — Adjusted present value**\n\n| Component | Amount |\n|------|------|\n| Base-case NPV (all-equity) | BRL 92.4m |\n| PV of debt tax shield | BRL 29.2m |\n| PV of subsidised-loan benefit | BRL 61.0m |\n| **Adjusted present value** | **BRL 182.6m** |\n\n**Step 6 — Decision**\n\nThe APV of BRL 182.6m is **positive**, so once the financing side-effects are added to the all-equity base case the project **adds shareholder value and should be accepted**.\n\n**Step 7 — Advice to the board**\n\nOn these assumptions the APV is positive; a positive result is a floor, not a mandate, so the recommendation is conditional on the base-case and financing assumptions below holding under scrutiny.\n\nThe first question the board must press is whether Keu of 16.0% is a genuinely ungeared rate that reflects only the operating risk of a regulated toll-road concession in Brazil's Centro-Oeste at this point in the concession cycle. If the finance team derived this figure from the observed equity beta of a partially-geared peer group without fully stripping out financial risk, Keu will be overstated, which would systematically penalise the base-case valuation; the board should request the peer-group data and the ungearing methodology before treating 16.0% as definitive. The subsidised financing is central to the case: the BNDES coupon of 6.0% is fixed for four years, but the scenario is explicit that the facility lapses if the concession is not granted the required environmental installation licence, so the subsidy benefit is contingent on that approval landing in time for the drawdown at inception; the board must confirm the licence-approval timeline against the financing schedule, since a lapse would extinguish the subsidy entirely and could force reliance on market-rate finance. The board should also weigh the traffic-volume uncertainty inherent in newly-added express-toll lanes: the operating cash flows are forecasts, and if throughput on the widened corridor builds more slowly than assumed the base case weakens regardless of the financing. Finally, the loan is repaid as a single bullet at the end of Year 4, so Via Planalto must refinance or hold liquid reserves of BRL 520 million at that date; the board should satisfy itself that its liquidity and refinancing access are adequate, particularly given that Brazilian sovereign spreads and domestic credit conditions can shift materially over a four-year horizon.\n\n*Reconciliation: base-case NPV BRL 92.4m + financing side-effects BRL 90.2m = APV BRL 182.6m ✓*",
+  "answer_schema": {
+   "params": {
+    "kd": 0.115,
+    "keu": 0.16,
+    "tax_lag": 1,
+    "tax_rate": 0.34,
+    "wda_rate": 0.25,
+    "debt_term": 4,
+    "debt_amount": 520,
+    "scrap_value": 180,
+    "inflation_rate": 0.045,
+    "initial_outlay": 1400,
+    "capital_for_wda": 1400
+   },
+   "components": [
+    {
+     "unit": "BRLm",
+     "label": "Net after-tax cash flow, year 1",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_1",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 1"
+     ],
+     "expected_value": 449.34999999999997
+    },
+    {
+     "unit": "BRLm",
+     "label": "Net after-tax cash flow, year 2",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_2",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 2"
+     ],
+     "expected_value": 512.2334999999999
+    },
+    {
+     "unit": "BRLm",
+     "label": "Net after-tax cash flow, year 3",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_3",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 3"
+     ],
+     "expected_value": 554.0704412499999
+    },
+    {
+     "unit": "BRLm",
+     "label": "Net after-tax cash flow, year 4",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_4",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) + scrap for year 4"
+     ],
+     "expected_value": 765.1410373624998
+    },
+    {
+     "unit": "BRLm",
+     "label": "Net after-tax cash flow, year 5",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_5",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 5"
+     ],
+     "expected_value": -111.77042101174993
+    },
+    {
+     "unit": "BRLm",
+     "label": "Base-case present value, year 1",
+     "recompute": "pv_discount_keu_y1",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_1"
+     ],
+     "component_id": "pv_1",
+     "working_steps": [
+      "= ncf_1 × 0.862 (discount factor at Keu 16.00%)"
+     ],
+     "expected_value": 387.3706896551724
+    },
+    {
+     "unit": "BRLm",
+     "label": "Base-case present value, year 2",
+     "recompute": "pv_discount_keu_y2",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_2"
+     ],
+     "component_id": "pv_2",
+     "working_steps": [
+      "= ncf_2 × 0.743 (discount factor at Keu 16.00%)"
+     ],
+     "expected_value": 380.67293400713436
+    },
+    {
+     "unit": "BRLm",
+     "label": "Base-case present value, year 3",
+     "recompute": "pv_discount_keu_y3",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_3"
+     ],
+     "component_id": "pv_3",
+     "working_steps": [
+      "= ncf_3 × 0.641 (discount factor at Keu 16.00%)"
+     ],
+     "expected_value": 354.9694798692546
+    },
+    {
+     "unit": "BRLm",
+     "label": "Base-case present value, year 4",
+     "recompute": "pv_discount_keu_y4",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_4"
+     ],
+     "component_id": "pv_4",
+     "working_steps": [
+      "= ncf_4 × 0.552 (discount factor at Keu 16.00%)"
+     ],
+     "expected_value": 422.5805835583404
+    },
+    {
+     "unit": "BRLm",
+     "label": "Base-case present value, year 5",
+     "recompute": "pv_discount_keu_y5",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_5"
+     ],
+     "component_id": "pv_5",
+     "working_steps": [
+      "= ncf_5 × 0.476 (discount factor at Keu 16.00%)"
+     ],
+     "expected_value": -53.215352182019195
+    },
+    {
+     "unit": "BRLm",
+     "label": "Base-case NPV (all-equity, discounted at Keu)",
+     "recompute": "base_npv_sum_less_outlay",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "pv_1",
+      "pv_2",
+      "pv_3",
+      "pv_4",
+      "pv_5"
+     ],
+     "component_id": "base_npv",
+     "working_steps": [
+      "= Σ base-case present values − initial outlay 1400.0"
+     ],
+     "expected_value": 92.37833490788262
+    },
+    {
+     "unit": "BRLm",
+     "label": "PV of the debt tax shield",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "tax_shield",
+     "working_steps": [
+      "Σ debt × 6.00% × 34.00% tax relief, received at year+1 and discounted at Kd 11.50%"
+     ],
+     "expected_value": 29.204002855470364
+    },
+    {
+     "unit": "BRLm",
+     "label": "PV of the interest saving vs the market rate (subsidised loan)",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "subsidy_benefit",
+     "working_steps": [
+      "Σ [ debt × (Kd 11.50% − 6.00%) in-year − its tax at year+1 ], discounted at Kd"
+     ],
+     "expected_value": 61.020618711491394
+    },
+    {
+     "unit": "BRLm",
+     "label": "Adjusted present value",
+     "recompute": "apv_sum",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "base_npv",
+      "tax_shield",
+      "subsidy_benefit"
+     ],
+     "component_id": "apv",
+     "working_steps": [
+      "= base-case NPV + tax shield + subsidy benefit"
+     ],
+     "expected_value": 182.60295647484438
+    }
+   ]
+  },
+  "context_text": "\nSCENARIO NARRATIVE\n\nVia Planalto Concessões S.A. (\"Via Planalto\") is a Brazilian transport-infrastructure group that operates four highway concessions across the Centro-Oeste region under regulatory oversight from ANTT (Agência Nacional de Transportes Terrestres). The company currently carries modest financial leverage, and its existing WACC is relatively stable. The board is evaluating a material expansion — the Corredor Norte project — which would widen and resurface a 180 km stretch of federal highway BR-163 between Sinop (Mato Grosso) and Sorriso, adding two express-toll lanes and four new toll plazas.\n\nThe project changes Via Planalto's financing structure substantially: a BRL 520 million development loan, tied exclusively to this project, has been offered by the Banco Nacional de Desenvolvimento Econômico e Social (BNDES) at a below-market subsidised coupon. Because the project-specific debt is large, temporary, and extinguished at the end of the concession horizon, the conventional WACC-based NPV — which assumes a constant debt ratio — is an unreliable appraisal tool. APV, which values the financing side-effects explicitly and separately from the project's operating cash flows, is therefore the appropriate methodology.\n\nThe Corredor Norte concession runs for four years from the date of first toll collection (the appraisal horizon); the BNDES facility is drawn at project inception and outstanding in full until a single bullet repayment at the end of Year 4. The ungeared (all-equity) cost of equity, Keu, has been assessed by the finance team at 16.0% per annum, reflecting the systematic operating risk of a regulated toll-road in the Brazilian market at the current stage of the concession cycle.\n\nRAW INPUTS (all monetary figures in BRL millions)\n\n- Initial capital outlay (Time 0):                          BRL 1,400m\n- Pre-tax operating cash flows (real terms, per year):\n    Year 1:  BRL 430m\n    Year 2:  BRL 500m\n    Year 3:  BRL 570m\n    Year 4:  BRL 620m\n- Annual inflation rate:                                    4.5%\n- Corporate tax rate (IRPJ + CSLL combined):                34%\n- Tax-payment lag:                                          1 year (taxes paid one year in arrears)\n- Capital qualifying for tax-allowable depreciation:        BRL 1,400m\n- Tax-allowable depreciation rate (reducing-balance):       25% per annum\n- Scrap / residual value at end of Year 4:                  BRL 180m\n- Ungeared cost of equity, Keu (STATED, given):             16.0% per annum\n- BNDES subsidised-loan amount:                             BRL 520m\n- Market (pre-tax) cost of debt, kd:                        11.5% per annum\n- Subsidised coupon actually paid on the BNDES loan:         6.0% per annum\n- Loan term:                                                4 years (co-terminus with the appraisal horizon)\n\nADDITIONAL NOTES\nThe BNDES facility is project-tied: it cannot be drawn for any other purpose and lapses if the Corredor Norte concession is not granted the required environmental installation licence by the relevant environmental authority before drawdown. The loan carries no prepayment option; the subsidised coupon is fixed for the full four-year term. Interest is calculated on the outstanding principal each year; the principal is repaid in a single bullet at the end of Year 4.\n\nFor the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated.\n"
+ },
+ "796651c2-8373-4d97-b0dd-58b74e7d7b5e": {
+  "model_answer": "**Investment appraisal — internal rate of return**\n\n**Assumptions:** cash flows are in money (nominal) terms; operating cash flows are inflated at 2.50% a year; tax at 25.00% is charged on operating cash flow less tax-allowable depreciation and paid one year in arrears; tax-allowable depreciation is 18.00% reducing balance with a balancing allowance/charge on disposal in year 4; the cost of capital is 10.00%.\n\n**Step 1 — Tax-allowable depreciation (reducing balance)**\n\n| Year | WDA |\n|------|-----|\n| 1 | GBP 30.6m |\n| 2 | GBP 25.1m |\n| 3 | GBP 20.6m |\n| 4 | GBP 71.7m |\n\n**Step 2 — Taxable profit and tax**\n\n| Year | Operating cash flow | WDA | Taxable | Tax |\n|------|------|------|------|------|\n| 1 | GBP 47.1m | GBP 30.6m | GBP 16.6m | GBP 4.1m |\n| 2 | GBP 63.0m | GBP 25.1m | GBP 37.9m | GBP 9.5m |\n| 3 | GBP 68.9m | GBP 20.6m | GBP 48.3m | GBP 12.1m |\n| 4 | GBP 64.0m | GBP 71.7m | GBP -7.7m | GBP -1.9m |\n\n**Step 3 — Net cash flows**\n\n| Period | Net cash flow |\n|--------|------|\n| 0 | GBP -180.0m |\n| 1 | GBP 47.1m |\n| 2 | GBP 58.9m |\n| 3 | GBP 59.4m |\n| 4 | GBP 73.9m |\n| 5 | GBP 1.9m |\n\n**Step 4 — Internal rate of return (linear interpolation)**\n\nNPV at 10.00% = GBP 7.9m; NPV at 15.00% = GBP -12.2m.\n\n**IRR ≈ 10.00% + GBP 7.9m/(GBP 7.9m − GBP -12.2m) × (15.00% − 10.00%) = 11.97%.**\n\n**Step 5 — Decision**\n\nThe IRR of 11.97% exceeds the 10.00% cost of capital, so on these assumptions the project **adds shareholder value and should be accepted**.\n\n**Step 6 — Advice to the board**\n\nOn these assumptions the return clears the hurdle; a positive signal is a floor, not a mandate, so the recommendation is conditional on the following assumptions holding.\n\nThe single most fragile input is the operating cash-flow forecast: it rests on a load factor and a wholesale price both set at the top of the commercial team's range and neither contracted for the full horizon, so the board should require a downside case at a softer merchant price before committing the outlay — the later years, which carry the most weight, are where a price fall bites hardest. The cost of capital is the second concern; it predates the current rate environment and was not re-derived for a project with more merchant exposure than the existing fleet, so the board should confirm the rate genuinely reflects this project's risk before treating a return above it as sufficient. The residual value is a management figure with no independent valuation and rests on a working secondary market for used offshore plant, which the board should verify. Before treating the depreciation timing as settled, the board should confirm the correct tax classification of the turbine and export-cable assets.\n\n*Reconciliation: NPV at 10.00% GBP 7.9m and at 15.00% GBP -12.2m bracket the IRR 11.97%.*",
+  "answer_schema": {
+   "params": {
+    "r_hi": 0.15,
+    "r_lo": 0.1,
+    "tax_lag": 1,
+    "tax_rate": 0.25,
+    "wda_rate": 0.18,
+    "scrap_value": 22,
+    "reinvest_rate": 0.1,
+    "inflation_rate": 0.025,
+    "initial_outlay": 180,
+    "capital_for_wda": 170,
+    "cost_of_capital": 0.1
+   },
+   "components": [
+    {
+     "unit": "GBPm",
+     "label": "Net after-tax cash flow, year 1",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_1",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 1"
+     ],
+     "expected_value": 47.15
+    },
+    {
+     "unit": "GBPm",
+     "label": "Net after-tax cash flow, year 2",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_2",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 2"
+     ],
+     "expected_value": 58.89999999999999
+    },
+    {
+     "unit": "GBPm",
+     "label": "Net after-tax cash flow, year 3",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_3",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 3"
+     ],
+     "expected_value": 59.43462499999998
+    },
+    {
+     "unit": "GBPm",
+     "label": "Net after-tax cash flow, year 4",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_4",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) + scrap for year 4"
+     ],
+     "expected_value": 73.93475765624999
+    },
+    {
+     "unit": "GBPm",
+     "label": "Net after-tax cash flow, year 5",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "ncf_5",
+     "working_steps": [
+      "Operating cash flow (inflated) − tax (timed) for year 5"
+     ],
+     "expected_value": 1.9278530859375067
+    },
+    {
+     "unit": "GBPm",
+     "label": "NPV at 10.00%",
+     "recompute": "npv_at_rate",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_1",
+      "ncf_2",
+      "ncf_3",
+      "ncf_4",
+      "ncf_5"
+     ],
+     "component_id": "npv_lo",
+     "working_steps": [
+      "Σ ncf_p × discount factor at 10.00% − outlay 180.0"
+     ],
+     "expected_value": 7.890915149742881
+    },
+    {
+     "unit": "GBPm",
+     "label": "NPV at 15.00%",
+     "recompute": "npv_at_rate",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "ncf_1",
+      "ncf_2",
+      "ncf_3",
+      "ncf_4",
+      "ncf_5"
+     ],
+     "component_id": "npv_hi",
+     "working_steps": [
+      "Σ ncf_p × discount factor at 15.00% − outlay 180.0"
+     ],
+     "expected_value": -12.152985934714764
+    },
+    {
+     "unit": "%",
+     "label": "Internal rate of return",
+     "recompute": "irr_interpolate",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.2
+     },
+     "depends_on": [
+      "npv_lo",
+      "npv_hi"
+     ],
+     "component_id": "irr",
+     "working_steps": [
+      "= 10.00% + npv_lo/(npv_lo − npv_hi) × (15.00% − 10.00%)"
+     ],
+     "expected_value": 11.968408025087896
+    }
+   ]
+  },
+  "context_text": "Brecon Offshore Renewables plc develops and operates offshore wind capacity off the coast of the United Kingdom, selling generation into the wholesale market under a mix of fixed-price and merchant arrangements. The board is evaluating the Meridian Array — an expansion adding turbines and a shared export cable to an existing site.\n\nRaw inputs (all monetary figures in GBP millions):\n- Initial capital outlay (Time 0): GBP 180.0 m; of which capital qualifying for tax-allowable depreciation: GBP 170.0 m at 18% reducing balance\n- Pre-tax operating cash flows (REAL, today's purchasing power): Year 1 GBP 46.0 m; Year 2 GBP 60.0 m; Year 3 GBP 64.0 m; Year 4 GBP 58.0 m\n- Residual/scrap value (end of Year 4, nominal): GBP 22.0 m — provided by management, not independently valued\n- General inflation rate: 2.5%; corporate tax rate: 25%; tax paid one year in arrears; cost of capital: 10.0%\n\nChallengeable textures. (1) The operating cash flows assume a load factor and a wholesale price that the commercial team has set at the upper end of its own range; neither is contracted for the full horizon, and a softer merchant price would erode the later years most. (2) The 10.0% cost of capital predates the current rate environment and has not been re-derived for a project whose merchant exposure is higher than the existing fleet's.\n\nAssume the company has sufficient taxable profits from other operations to use any project tax loss immediately, with the tax effect timed on the same basis as the tax charge.\n\nFor the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated."
+ },
+ "2a145f7d-9957-46e8-893c-15204cb8d444": {
+  "model_answer": "**Cost of capital — CAPM / weighted average cost of capital**\n\n**Assumptions:** a peer's equity beta is **ungeared** to an asset beta and **regeared** to the appraising firm's capital structure using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **0 (debt assumed risk-free)**; the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 3.80% and MRP = 6.50%; the corporate tax rate is 20.00%.\n\n\n**Step 1 — The company's own WACC (the tempting but WRONG hurdle here)**\n\nCompany Ke = Rf + β_company × MRP = 3.80% + 1.150 × 6.50% = 11.27%.\n\nCompany WACC = 11.27% × 0.793 + 5.76% × 0.207 = **10.13%**.\n\n**Step 2 — The project-specific rate (ungear the peer, regear to your gearing)**\n\nβ_a = 1.680 × 9400/(9400 + 3800×(1−0.2)) = 1.269; β_e' = 1.535.\n\nProject Ke = 3.80% + 1.535 × 6.50% = 13.78%; Project WACC = **12.12%**.\n\n**Step 3 — Decision (code-owned)**\n\nThe project's expected return is **11.40%**. Against the correct **project-specific** hurdle of 12.12%, the decision is **REJECT**. Against the company WACC of 10.13%, you would have wrongly **accepted** it — the wrong hurdle **flips the decision**. The project must be judged on its OWN risk, not the firm's average.\n\n**Step 4 — Evaluation / advice to the board**\n\nThe central question of appropriateness turns on whether Novatel MicroSystems Co., Ltd. genuinely represents the business risk of MSC's proposed MEMS sensor fabrication line. NMC is described as a pure-play MEMS manufacturer serving automotive and industrial IoT customers — a customer base and demand cycle that differ materially from MSC's existing logic and memory fabrication, which gives some confidence in the proxy selection at the sector level. However, the board should scrutinise whether NMC's revenue mix, geographic sales exposure, and stage of operational maturity are sufficiently aligned with the MEMS fabrication line MSC intends to build before treating NMC's beta as a reliable anchor for business risk. The peer-comparability concern is compounded by the fact that NMC's beta was estimated over the 2021–2022 COVID-19 recovery window — a period of exceptional MEMS demand driven by automotive supply-chain restocking — which may have caused NMC's returns to co-move with the market in a way that does not reflect the sector's long-run systematic characteristics; a longer estimation window, or a Blume-adjusted or industry-average beta, would provide a more robust estimate. The distinction between business risk and financial risk is critical here: by ungearing NMC's beta and then regearing it to MSC's own capital structure, the methodology isolates the systematic operating risk of MEMS fabrication and reattaches only MSC's financial risk, ensuring the hurdle rate prices the specific investment rather than MSC's blended portfolio of activities. Applying MSC's company-wide WACC — which blends the risk of its mature logic/memory operations with any diversification effect across its existing asset base — would be an inappropriate hurdle for a project whose operating risk profile is demonstrably different from that base, potentially distorting the investment decision in a way that misallocates MSC's capital across its strategic portfolio.\n\n*Reconciliation: company WACC 10.13% vs project WACC 12.12%; correct hurdle = project-specific. ✓*",
+  "answer_schema": {
+   "params": {
+    "kd": 0.072,
+    "rf": 0.038,
+    "mrp": 0.065,
+    "own_vd": 12600,
+    "own_ve": 48200,
+    "peer_vd": 3800,
+    "peer_ve": 9400,
+    "tax_rate": 0.2,
+    "debt_beta": 0,
+    "company_vd": 12600,
+    "company_ve": 48200
+   },
+   "components": [
+    {
+     "unit": "%",
+     "label": "Company cost of equity (CAPM)",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.1
+     },
+     "component_id": "company_ke",
+     "working_steps": [
+      "Ke = Rf + β_company × MRP"
+     ],
+     "expected_value": 11.274999999999999
+    },
+    {
+     "unit": "%",
+     "label": "Company WACC (the wrong hurdle for this project)",
+     "recompute": "wacc_mv_weighted",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.1
+     },
+     "depends_on": [
+      "company_ke"
+     ],
+     "component_id": "company_wacc",
+     "working_steps": [
+      "WACC = Ke×We + Kd(1−T)×Wd"
+     ],
+     "expected_value": 10.132088815789473
+    },
+    {
+     "unit": "beta",
+     "label": "Project asset beta (from the peer)",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.02
+     },
+     "component_id": "project_asset_beta",
+     "working_steps": [
+      "β_a = β_e × Ve/(Ve+Vd(1−T)) on the peer's gearing"
+     ],
+     "expected_value": 1.2694533762057878
+    },
+    {
+     "unit": "beta",
+     "label": "Project equity beta (regeared to your gearing)",
+     "recompute": "mm_regear",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.02
+     },
+     "depends_on": [
+      "project_asset_beta"
+     ],
+     "component_id": "project_beta",
+     "working_steps": [
+      "β_e' = β_a × (Ve+Vd(1−T))/Ve"
+     ],
+     "expected_value": 1.534932422516044
+    },
+    {
+     "unit": "%",
+     "label": "Project cost of equity (CAPM)",
+     "recompute": "capm_ke",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.1
+     },
+     "depends_on": [
+      "project_beta"
+     ],
+     "component_id": "project_ke",
+     "working_steps": [
+      "Ke = Rf + β_e' × MRP"
+     ],
+     "expected_value": 13.777060746354286
+    },
+    {
+     "unit": "%",
+     "label": "Project-specific WACC (the correct hurdle)",
+     "recompute": "wacc_mv_weighted",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.1
+     },
+     "depends_on": [
+      "project_ke"
+     ],
+     "component_id": "project_wacc",
+     "working_steps": [
+      "WACC = Ke×We + Kd(1−T)×Wd"
+     ],
+     "expected_value": 12.11563039431376
+    }
+   ]
+  },
+  "context_text": "SCENARIO — MERIDIAN SEMICONDUCTOR CORPORATION (MSC), TAIWAN\n\nMeridian Semiconductor Corporation (MSC) is a Hsinchu-based integrated circuit designer and contract fab operator listed on the Taiwan Stock Exchange. MSC's existing operations are concentrated in high-volume logic and memory chip fabrication — a capital-intensive but relatively mature segment of the semiconductor value chain.\n\nMSC's board is evaluating a proposed capital expansion into Micro-Electro-Mechanical Systems (MEMS) sensor fabrication, supplying motion and pressure sensors to the automotive and industrial IoT markets. MEMS fabrication carries a distinctly different demand profile, customer base, and revenue cyclicality from MSC's existing logic/memory work. The board's treasury team has proposed using MSC's own company-wide WACC as the hurdle rate for this project, on the grounds that it is the \"established internal benchmark.\"\n\nA senior director on the investment committee has identified Novatel MicroSystems Co., Ltd. (NMC) — a Taipei-listed pure-play MEMS sensor manufacturer — as a suitable proxy company whose equity beta is observable in the market.\n\nCHALLENGEABLE TEXTURE: NMC's equity beta is derived from a single 24-month observation window covering the COVID-19 recovery period (2021–2022), during which global MEMS sensor demand was unusually elevated by supply-chain restocking and automotive production catch-ups. The board should consider whether this beta estimate is representative of NMC's long-run systematic risk.\n\nThe corporate tax rate in Taiwan is 20%.\n\nRAW INPUTS\n\nMSC (the appraising firm):\n  Equity beta (observable, own listed shares):     1.15\n  Market value of equity (Ve):                     TWD 48,200 million\n  Market value of debt (Vd):                       TWD 12,600 million\n  Pre-tax cost of debt (Kd):                       7.2%\n\nNovatel MicroSystems Co., Ltd. — MEMS peer proxy:\n  Equity beta (NMC, 24-month window):              1.68\n  Market value of equity (Ve, NMC):                TWD 9,400 million\n  Market value of debt (Vd, NMC):                  TWD 3,800 million\n\nMarket / economy-wide:\n  Risk-free rate (rf):                             3.8%\n  Equity risk premium (ERP / MRP):                 6.5%\n  Corporate tax rate:                              20%\n\nProject:\n  Expected IRR of MEMS fabrication line:           11.4%"
+ },
+ "0dc970a8-3d60-4fb1-97db-2084e5df97ef": {
+  "model_answer": "**Firm and equity valuation (FCFF, with the cost of capital derived)**\n\n**Step 0 — Cost of capital (CAPM → WACC)**\n\nKe = Rf + βe × MRP = 4.20% + 1.15 × 6.50% = **11.67%**\nWACC = Ke×We + Kd(1−T)×Wd = 11.67%×0.564 + 5.80%×(1−0.2)×0.436 = **8.61%**  *(the firm-level discount rate)*\n\n**Step 1 — Free cash flow to firm (FCFF)**\n\nFCFF = PBIT×(1−t) + depreciation − capex − ΔWC = 210.0×(1−0.2) + 55.0 − 90.0 − 18.0 = **SAR 115.0m**  *(interest is NOT deducted — the return to debt is in the WACC)*\n\n**Step 2 — Enterprise (firm) value**\n\nFirm value = FCFF×(1+g)/(WACC−g) = 115.0×(1+0.035)/(8.61% − 3.50%) = **SAR 2331.5m**  *(a firm flow is discounted at WACC)*\n\n**Step 3 — Equity value (fair value of the equity)**\n\nEquity value = firm value − market value of debt = 2331.5 − 480.0 = **SAR 1851.5m**  *(strip the debt — this is the fair value of the equity)*\n\n**Step 4 — Offer test (base case)**\n\nThe vendor's equity offer of SAR 700.0m is **below** the intrinsic equity value of SAR 1851.5m by **SAR 1151.5m** — on the base case the offer is **supportable**.\n\n**Step 5 — Reconcile the equity divergence (before any bargain claim)**\n\nThe model's equity value of SAR 1851.5m is roughly 3.0× the SAR 620.0m estimated equity figure used to weight the WACC. Before treating the offer as a bargain the board must reconcile that gap — through the perpetuity growth-versus-WACC spread, the maintainable capex assumption, or a stale/understated equity estimate. *(Weight circularity: re-weighting the WACC at the model's own equity value would raise the equity weight, lift the WACC and lower the valuation; using the estimated equity for the weights is the standard exam simplification for a private target.)*\n\n**Step 6 — Advice to the board**\n\nThe critical discipline in this valuation is matching the cash flow to the correct discount rate: FCFF is a pre-financing flow belonging to all providers of capital, so it must be discounted at WACC — the blended, market-value-weighted cost of both equity and debt — and the resulting figure is enterprise (firm) value, not equity value; debt must then be stripped away to isolate the equity value that is comparable to the vendor's offer. The CAPM derivation uses NMG's own geared beta, which already reflects the financial risk of the company's actual capital structure, so no re-gearing adjustment is needed here. The board should treat the 3.5% perpetuity growth assumption with scepticism: NMG's revenue is heavily concentrated in two corporate insurance contracts, meaning a contract loss or renegotiation could structurally impair long-run cash flows and make the assumed growth rate unsustainable, which would materially compress firm value. Similarly, the board should commission an independent technical review of whether the SAR 90 million capital expenditure figure represents steady-state reinvestment or the tail end of a bed-expansion cycle — overstating sustainable capex depresses FCFF and understates value, while understating it inflates value, so the direction of any bias must be confirmed before proceeding. Finally, the apparent bargain implied by the vendor's offer sitting materially below the model equity value should not be accepted at face value: before treating the price as attractive, the board should reconcile the valuation gap against the perpetuity growth assumption, capex sustainability, client concentration, and the reliability of the equity estimate used in the WACC weighting.\n\n*Reconciliation: WACC 8.61% → firm SAR 2331.5m − debt SAR 480.0m = equity SAR 1851.5m ✓*",
+  "answer_schema": {
+   "params": {
+    "kd": 0.057999999999999996,
+    "ke": 11.674999999999999,
+    "wd": 0.43636363636363634,
+    "we": 0.5636363636363636,
+    "wacc": 8.605181818181817,
+    "tax_rate": 0.2,
+    "company_ve": 620,
+    "debt_value": 480,
+    "growth_rate": 0.035,
+    "offer_price": 700
+   },
+   "components": [
+    {
+     "unit": "%",
+     "label": "Cost of equity (CAPM)",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.05
+     },
+     "component_id": "ke",
+     "working_steps": [
+      "Ke = Rf + βe × MRP = 4.20% + 1.15 × 6.50% = 11.67%"
+     ],
+     "expected_value": 11.674999999999999
+    },
+    {
+     "unit": "%",
+     "label": "WACC (MV-weighted)",
+     "recompute": "wacc_mv_weighted",
+     "tolerance": {
+      "kind": "absolute",
+      "value": 0.05
+     },
+     "depends_on": [
+      "ke"
+     ],
+     "component_id": "wacc",
+     "working_steps": [
+      "WACC = Ke×We + Kd(1−T)×Wd = Ke×0.564 + 5.80%×(1−0.2)×0.436"
+     ],
+     "expected_value": 8.605181818181817
+    },
+    {
+     "unit": "SARm",
+     "label": "Free cash flow to firm (FCFF)",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "component_id": "fcff",
+     "working_steps": [
+      "FCFF = PBIT×(1−t) + dep − capex − ΔWC = 115.0"
+     ],
+     "expected_value": 115
+    },
+    {
+     "unit": "SARm",
+     "label": "Enterprise (firm) value",
+     "recompute": "firm_value_perpetuity_growth",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "fcff",
+      "wacc"
+     ],
+     "component_id": "firm_value",
+     "working_steps": [
+      "Firm value = FCFF×(1+g)/(WACC−g)  [firm flow @ WACC]"
+     ],
+     "expected_value": 2331.4546717239173
+    },
+    {
+     "unit": "SARm",
+     "label": "Equity value",
+     "recompute": "equity_value_strip_debt",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "firm_value"
+     ],
+     "component_id": "equity_value",
+     "working_steps": [
+      "Equity = firm value − debt = 2331.5 − 480.0"
+     ],
+     "expected_value": 1851.4546717239173
+    },
+    {
+     "unit": "SARm",
+     "label": "Equity value vs offer (signed)",
+     "recompute": "equity_minus_offer",
+     "tolerance": {
+      "pct": 0.5,
+      "kind": "relative"
+     },
+     "depends_on": [
+      "equity_value"
+     ],
+     "component_id": "equity_vs_offer",
+     "working_steps": [
+      "Equity − offer = 1851.5 − 700.0"
+     ],
+     "expected_value": 1151.4546717239173
+    }
+   ]
+  },
+  "context_text": "Nakheel Medical Group (NMG) is a privately owned Saudi Arabian hospital and specialist-clinic operator with four facilities concentrated in the Riyadh metropolitan area; Al-Rawabi Capital is evaluating an acquisition and has received an indicative equity offer from the vendor. NMG derives approximately 80% of its revenue from two large corporate health-insurance contracts, creating material client-concentration risk that the board should weigh against the headline growth assumption. The vendor's financial advisers assert that NMG's current capital-expenditure programme reflects a genuinely sustainable reinvestment rate, but the board should challenge whether the elevated capex reflects a one-off bed-expansion cycle rather than a steady-state maintenance level, given that NMG opened its fourth facility only eighteen months ago.\n\nRaw inputs:\n  PBIT (maintainable operating profit): SAR 210 million\n  Corporate tax rate: 20% (0.20)\n  Depreciation / non-cash add-back: SAR 55 million\n  Capital expenditure (reinvestment): SAR 90 million\n  Increase in working capital: SAR 18 million\n  Market value of debt: SAR 480 million\n  Long-term perpetuity growth rate: 3.5% (0.035)\n  Risk-free rate (Saudi government sukuk yield): 4.2%\n  Equity / market risk premium: 6.5%\n  NMG's own (geared) equity beta: 1.15\n  Vendor's estimated equity value (used for WACC weighting — a stated simplification for a private target): SAR 620 million\n  Market value of debt (weight for WACC): SAR 480 million\n  Pre-tax cost of debt: 5.8%\n  Vendor's indicative equity offer: SAR 700 million"
+ }
+}

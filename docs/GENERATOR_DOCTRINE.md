@@ -29,6 +29,40 @@ Every quantitative drill passes ALL gates before it is persisted; a failing sche
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.
 
+## PROCESS RULES — DB writes to published content (ruled 2026-07-25)
+
+Banked after the FR3 boundary re-author, where five **published** `acca_drills` rows were
+rewritten on a feature branch that was then handed back unmerged "for review". The content was
+already live; only the code was gated. That gap is now closed by rule.
+
+**P-DB1 — A DB write is NOT branch-scoped.** There is one Supabase. Committing a write script to
+a branch, or holding the branch back from `main`, gates the CODE and gates NOTHING about the
+DATA. The moment the script runs, production content has changed — for every student, on every
+host, regardless of what `git status` says. Never describe a branch as "not merged, so nothing
+has shipped" when that branch's work included a DB write; say what landed and when. A sweep run
+after such a write measures **production**, not the branch.
+
+**P-DB2 — Show the write BEFORE it happens, not at review time.** Any generator or authoring run
+that writes to **`acca_case_requirements`** (and the same discipline for `acca_cases` /
+`acca_drills` rows that are already `published`) must be presented for approval **before the
+write executes** — the dry-run output, the old-vs-new figure table, the gate results, and the
+exact rows and fields to be touched. "Here is what I already wrote, please review" is the wrong
+order and is not acceptable for published content. A dry run that ends in a decision point is
+the deliverable; the write is a separate, approved step. This is stricter than GATE-P, which
+authorises Claude Code to execute a *publish flip* unattended once the standing guards hold —
+GATE-P governs a status change on already-reviewed content; **P-DB2 governs a CONTENT change to
+already-published rows, and it is not self-authorising.**
+
+**P-DB3 — A rollback snapshot is mandatory, and it must be COMMITTED.** Before any write to a
+published row, snapshot every field the write touches, for every affected id, and commit it to
+`docs/rollbacks/<TOPIC>_<YYYYMMDD>.json` **on the branch that made the change**. Never leave it
+untracked in the repo root or in the scratchpad: the scratchpad is outside the repo and
+machine-local, untracked files do not survive a `git clean` or a machine switch (this repo is
+cloned at different paths on two machines), and a rollback you cannot find is not a rollback.
+The file carries a `_README` first key naming what it snapshots, which rows, which fields, the
+date, and the restore procedure. Reference implementation:
+`docs/rollbacks/AFM_boundary_rounding_20260725.json`.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

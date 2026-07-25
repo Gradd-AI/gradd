@@ -12,7 +12,14 @@ import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 
 // ── Formatting / currency ──
 export const fmt1 = (n: number): string => fixedHalfUp(n, 1);
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
+// Rates that arrive ALREADY in percentage units (CapmFront.ke / .wacc are stored as 11.675,
+// not 0.11675). Boundary-aware for the same reason fmt1 is — see lib/acca/rounding.ts. This
+// was the one FR3 gap: capm.ts/npv.ts/apv.ts routed their rate display through fixedHalfUp,
+// valuation.ts still used a raw toFixed(2), which is what printed B4a's Ke as "11.67%" when
+// the exact value 11.675 is a tie a hand-working student rounds to 11.68%.
+const fmtR2 = (rPct: number): string => fixedHalfUp(rPct, 2);
+const fmt3 = (n: number): string => fixedHalfUp(n, 3);
 
 // Money display honouring the drill's currency: ISO codes read "AUD 179.0m"; bare symbols
 // read "$179.0m". Threads the model-set currency through instead of a hardcoded "$".
@@ -533,10 +540,10 @@ export function buildFcffComposedSchema(raw: FcffInputs, c: FcffComputed, capm: 
 
   const components: Component[] = [
     { component_id: 'ke', label: 'Cost of equity (CAPM)', expected_value: capm.ke, unit: '%', tolerance: abs(0.05),
-      working_steps: [`Ke = Rf + βe × MRP = ${pct2(asDecimalRate(capm.rf))} + ${capm.company_equity_beta} × ${pct2(asDecimalRate(capm.mrp))} = ${capm.ke.toFixed(2)}%`] },
+      working_steps: [`Ke = Rf + βe × MRP = ${pct2(asDecimalRate(capm.rf))} + ${capm.company_equity_beta} × ${pct2(asDecimalRate(capm.mrp))} = ${fmtR2(capm.ke)}%`] },
     { component_id: 'wacc', label: 'WACC (MV-weighted)', expected_value: capm.wacc, unit: '%', tolerance: abs(0.05),
       depends_on: ['ke'], recompute: (d) => d.ke * we + kdDec * (1 - taxDec) * 100 * wd,
-      working_steps: [`WACC = Ke×We + Kd(1−T)×Wd = Ke×${we.toFixed(3)} + ${pct2(kdDec)}×(1−${taxDec})×${wd.toFixed(3)}`] },
+      working_steps: [`WACC = Ke×We + Kd(1−T)×Wd = Ke×${fmt3(we)} + ${pct2(kdDec)}×(1−${taxDec})×${fmt3(wd)}`] },
     { component_id: 'fcff', label: 'Free cash flow to firm (FCFF)', expected_value: c.fcff, unit: moneyUnit, tolerance: rel(0.5),
       working_steps: [`FCFF = PBIT×(1−t) + dep − capex − ΔWC = ${fmt1(c.fcff)}`] },
     { component_id: 'firm_value', label: 'Enterprise (firm) value', expected_value: c.firm_value, unit: moneyUnit, tolerance: rel(0.5),
@@ -639,28 +646,28 @@ export function buildFcffComposedModelAnswer(raw: FcffInputs, c: FcffComputed, c
   // gap is reconciled. This is a code-owned figure-vs-figure comparison (per the code-owns-verdicts
   // doctrine), not prose. `divergentEquity()` mirrors the generator lint that enforces it.
   const diverges = divergentEquity(c.equity_value, capm.company_ve);
-  const ratio = c.equity_value / capm.company_ve;
+  const ratio = equityDivergenceRatio(c.equity_value, capm.company_ve);
   const reconBlock = diverges ? [
     '**Step 5 — Reconcile the equity divergence (before any bargain claim)**', '',
-    `The model's equity value of ${m(c.equity_value)} is roughly ${ratio.toFixed(1)}× the ${m(capm.company_ve)} estimated equity figure used to weight the WACC. Before treating the offer as a bargain the board must reconcile that gap — through the perpetuity growth-versus-WACC spread, the maintainable capex assumption, or a stale/understated equity estimate. *(Weight circularity: re-weighting the WACC at the model's own equity value would raise the equity weight, lift the WACC and lower the valuation; using the estimated equity for the weights is the standard exam simplification for a private target.)*`, '',
+    `The model's equity value of ${m(c.equity_value)} is roughly ${fixedHalfUp(ratio, 1)}× the ${m(capm.company_ve)} estimated equity figure used to weight the WACC. Before treating the offer as a bargain the board must reconcile that gap — through the perpetuity growth-versus-WACC spread, the maintainable capex assumption, or a stale/understated equity estimate. *(Weight circularity: re-weighting the WACC at the model's own equity value would raise the equity weight, lift the WACC and lower the valuation; using the estimated equity for the weights is the standard exam simplification for a private target.)*`, '',
   ] : [];
   const adviceNo = diverges ? 6 : 5;
   return [
     '**Firm and equity valuation (FCFF, with the cost of capital derived)**', '',
     `**Step 0 — Cost of capital (CAPM → WACC)**`, '',
-    `Ke = Rf + βe × MRP = ${pct2(asDecimalRate(capm.rf))} + ${capm.company_equity_beta} × ${pct2(asDecimalRate(capm.mrp))} = **${capm.ke.toFixed(2)}%**`,
-    `WACC = Ke×We + Kd(1−T)×Wd = ${capm.ke.toFixed(2)}%×${we.toFixed(3)} + ${pct2(asDecimalRate(capm.kd))}×(1−${asDecimalRate(capm.tax_rate)})×${wd.toFixed(3)} = **${capm.wacc.toFixed(2)}%**  *(the firm-level discount rate)*`, '',
+    `Ke = Rf + βe × MRP = ${pct2(asDecimalRate(capm.rf))} + ${capm.company_equity_beta} × ${pct2(asDecimalRate(capm.mrp))} = **${fmtR2(capm.ke)}%**`,
+    `WACC = Ke×We + Kd(1−T)×Wd = ${fmtR2(capm.ke)}%×${fmt3(we)} + ${pct2(asDecimalRate(capm.kd))}×(1−${asDecimalRate(capm.tax_rate)})×${fmt3(wd)} = **${fmtR2(capm.wacc)}%**  *(the firm-level discount rate)*`, '',
     '**Step 1 — Free cash flow to firm (FCFF)**', '',
     `FCFF = PBIT×(1−t) + depreciation − capex − ΔWC = ${fmt1(raw.pbit)}×(1−${tax}) + ${fmt1(raw.depreciation)} − ${fmt1(raw.capex)} − ${fmt1(raw.delta_working_capital)} = **${m(c.fcff)}**  *(interest is NOT deducted — the return to debt is in the WACC)*`, '',
     '**Step 2 — Enterprise (firm) value**', '',
-    `Firm value = FCFF×(1+g)/(WACC−g) = ${fmt1(c.fcff)}×(1+${g})/(${capm.wacc.toFixed(2)}% − ${pct2(g)}) = **${m(c.firm_value)}**  *(a firm flow is discounted at WACC)*`, '',
+    `Firm value = FCFF×(1+g)/(WACC−g) = ${fmt1(c.fcff)}×(1+${g})/(${fmtR2(capm.wacc)}% − ${pct2(g)}) = **${m(c.firm_value)}**  *(a firm flow is discounted at WACC)*`, '',
     '**Step 3 — Equity value (fair value of the equity)**', '',
     `Equity value = firm value − market value of debt = ${fmt1(c.firm_value)} − ${fmt1(raw.debt_value)} = **${m(c.equity_value)}**  *(strip the debt — this is the fair value of the equity)*`, '',
     '**Step 4 — Offer test (base case)**', '',
     `The vendor's equity offer of ${m(c.offer_price)} ${verdict}.`, '',
     ...reconBlock,
     `**Step ${adviceNo} — Advice to the board**`, '', prose, '',
-    `*Reconciliation: WACC ${capm.wacc.toFixed(2)}% → firm ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
+    `*Reconciliation: WACC ${fmtR2(capm.wacc)}% → firm ${m(c.firm_value)} − debt ${m(raw.debt_value)} = equity ${m(c.equity_value)} ✓*`,
   ].join('\n');
 }
 
@@ -670,6 +677,15 @@ export function buildFcffComposedModelAnswer(raw: FcffInputs, c: FcffComputed, c
 export const VALUATION_DIVERGENCE_THRESHOLD = 0.5;
 export function divergentEquity(dcfEquity: number, equityWeight: number): boolean {
   return equityWeight > 0 && Math.abs(dcfEquity - equityWeight) / equityWeight > VALUATION_DIVERGENCE_THRESHOLD;
+}
+/** The "roughly N×" multiple the reconciliation block quotes. Exported for the same
+ *  FR3/GATE 27 reason as capm.ts's `kd_after_tax`: a derived figure asserted in prose needs a
+ *  code-owned value the derived-figure-integrity gate can match against, and it lives here
+ *  rather than on FcffComputed because it spans two objects — the DCF equity and the
+ *  ESTIMATED equity used for the WACC weights, which computeFcff never sees. The model-answer
+ *  builder and any authoring caller must read it from HERE, not recompute it inline. */
+export function equityDivergenceRatio(dcfEquity: number, equityWeight: number): number {
+  return equityWeight > 0 ? dcfEquity / equityWeight : NaN;
 }
 
 // K2 FCFE — equity via FCFE @ Ke (no bridge), then the FCFF-route cross-check that reconciles.
@@ -702,7 +718,7 @@ export function buildDividendModelAnswer(raw: DividendInputs, c: DividendCompute
   const verdict = c.sustainable
     ? `capacity **exceeds** the proposed dividend by **${m(Math.abs(c.capacity_surplus))}**, so the dividend is **covered by this year's cash generation** and is sustainable on the base case`
     : `capacity **falls short** of the proposed dividend by **${m(Math.abs(c.capacity_surplus))}**, so the proposed dividend is **NOT covered by cash generated** and would have to be funded from reserves or new finance — a red flag on sustainability`;
-  const perShare = c.capacity_per_share !== null ? `\n\nDividend capacity per share = ${fmt1(c.dividend_capacity)} / ${fmt1(raw.shares!)} shares = **${c.capacity_per_share!.toFixed(3)}** per share.` : '';
+  const perShare = c.capacity_per_share !== null ? `\n\nDividend capacity per share = ${fmt1(c.dividend_capacity)} / ${fmt1(raw.shares!)} shares = **${fmt3(c.capacity_per_share!)}** per share.` : '';
   return [
     '**Dividend capacity and dividend policy**', '',
     `**Assumptions:** dividend capacity is the CASH available to equity holders this year (free cash flow to equity), not accounting profit; debt is ${m(raw.debt_value)}; net new borrowing of ${m(nb)} is included as a source.`, '',
