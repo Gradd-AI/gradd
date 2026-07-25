@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { judgeCaseMarking, MARKING_MODEL } from '@/lib/acca/case-marking';
+import { judgeCaseMarking, judgeTechnicalMarking, MARKING_MODEL, type TechnicalMarkingResult } from '@/lib/acca/case-marking';
 import { resolvePaper } from '@/lib/acca/paper';
+import { caseMarkReady } from '@/lib/acca/case-sit';
 
 // ── APM professional-skills marking (terminal whole-case mark) ─────────────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs ONE holistic marking pass
@@ -44,9 +45,10 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const { case_id, paper: paperRaw } = body as { case_id?: unknown; paper?: unknown };
+  const { case_id, paper: paperRaw, sitting: sittingRaw } = body as { case_id?: unknown; paper?: unknown; sitting?: unknown };
   const caseId = typeof case_id === 'string' && case_id ? case_id : null;
   const paper = resolvePaper(paperRaw);
+  const sitting = sittingRaw === true;
   if (!caseId) {
     return NextResponse.json({ error: 'case_id required' }, { status: 400 });
   }
@@ -83,10 +85,15 @@ export async function POST(request: Request): Promise<Response> {
   const professionalSkillsMarks =
     typeof caseRow.professional_skills_marks === 'number' ? caseRow.professional_skills_marks : 0;
 
-  // ── 4. Load requirements (ordered) — NO sealed fields (no model_answer/hint/full_reveal) ──
+  // ── 4. Load requirements (ordered) ──
+  // question / model_answer / marks_guide are fetched for the SIT-mode TECHNICAL pass
+  // (which judges each answer against its own code-correct model_answer). They are
+  // consumed ONLY server-side by judgeTechnicalMarking and NEVER returned to the
+  // client — the response carries marks/bands only, never the model_answer. The PS
+  // pass still ignores them (PS is judged on the descriptors, not the answer).
   const { data: reqsRaw, error: reqErr } = await supabase
     .from('acca_case_requirements')
-    .select('id, requirement_order, label, professional_skill_tags')
+    .select('id, requirement_order, label, professional_skill_tags, question, model_answer, marks_guide')
     .eq('case_id', caseId)
     .order('requirement_order', { ascending: true });
 
@@ -98,6 +105,9 @@ export async function POST(request: Request): Promise<Response> {
     requirement_order: number;
     label: string | null;
     professional_skill_tags: string | null;
+    question: string | null;
+    model_answer: string | null;
+    marks_guide: number | null;
   }>;
 
   // ── 5. Load this user's progress for the case; require EVERY requirement passed ──
@@ -119,9 +129,19 @@ export async function POST(request: Request): Promise<Response> {
     });
   }
 
-  const allPassed = requirements.every((r) => progressByReq.get(r.id)?.passed === true);
-  if (!allPassed) {
-    return NextResponse.json({ error: 'case not complete' }, { status: 409 });
+  // ── 5b. Completion gate — mode-aware (lib/acca/case-sit.ts) ──
+  // PRACTICE: every requirement judged correct (passed===true) — unchanged.
+  // SIT: every requirement has a RECORDED final_answer (blank '' counts) — a timed
+  // paper is marked as it stands, wrong/blank requirements included.
+  const gate = caseMarkReady(
+    sitting,
+    requirements.map((r) => {
+      const p = progressByReq.get(r.id);
+      return { final_answer: p?.final_answer ?? null, passed: p?.passed ?? false };
+    }),
+  );
+  if (!gate.ready) {
+    return NextResponse.json({ error: gate.reason ?? 'case not complete' }, { status: 409 });
   }
 
   // ── 6. Build the whole-answer input (final_answer per requirement, in order) ──
@@ -184,6 +204,32 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: msg }, { status: 502 });
   }
 
+  // ── 9b. Technical marking pass — SIT MODE ONLY ──
+  // Judges each requirement's final_answer against its OWN code-correct model_answer,
+  // band→apportion to that requirement's marks_guide ceiling (blank → 'nothing' with
+  // no model call). Practice mode is UNCHANGED — it never computes technical marks
+  // (its per-requirement pass/fail already came from the teach loop).
+  let technical: TechnicalMarkingResult | null = null;
+  if (sitting) {
+    try {
+      technical = await judgeTechnicalMarking({
+        paper,
+        context,
+        requirements: requirements.map((r) => ({
+          requirement_id: r.id,
+          label: (r.label ?? '').trim() || `Requirement ${r.requirement_order}`,
+          question: r.question ?? '',
+          model_answer: r.model_answer ?? '',
+          marks_guide: typeof r.marks_guide === 'number' ? r.marks_guide : 0,
+          final_answer: progressByReq.get(r.id)?.final_answer ?? '',
+        })),
+      });
+    } catch (e) {
+      const msg = (e as Error)?.message === 'parse' ? 'technical marking parse failed' : 'technical marking call failed';
+      return NextResponse.json({ error: msg }, { status: 502 });
+    }
+  }
+
   // ── 10. Persist (best-effort upsert — never 500 on the write) ──
   try {
     await supabase
@@ -197,9 +243,32 @@ export async function POST(request: Request): Promise<Response> {
           per_skill: result.per_skill,
           model: MARKING_MODEL,
           marked_at: new Date().toISOString(),
+          ...(technical
+            ? {
+                technical_marks_awarded: technical.technical_marks_awarded,
+                technical_marks_available: technical.technical_marks_available,
+              }
+            : {}),
         },
         { onConflict: 'user_id,case_id' },
       );
+    // Per-requirement technical band + marks land on the existing per-requirement
+    // progress row (sit mode only). Never touches `passed` (a sit leaves it unset).
+    if (technical) {
+      for (const pr of technical.per_requirement) {
+        await supabase
+          .from('acca_case_progress')
+          .update({
+            band: pr.band,
+            technical_marks_awarded: pr.mark_awarded,
+            technical_marks_available: pr.marks_available,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', user.id)
+          .eq('case_id', caseId)
+          .eq('requirement_id', pr.requirement_id);
+      }
+    }
   } catch {
     // non-fatal: persistence is best-effort, never blocks the response
   }
@@ -209,5 +278,12 @@ export async function POST(request: Request): Promise<Response> {
     professional_marks_awarded: result.professional_marks_awarded,
     professional_marks_available: result.professional_marks_available,
     per_skill: result.per_skill,
+    ...(technical
+      ? {
+          technical_marks_awarded: technical.technical_marks_awarded,
+          technical_marks_available: technical.technical_marks_available,
+          per_requirement: technical.per_requirement,
+        }
+      : {}),
   });
 }

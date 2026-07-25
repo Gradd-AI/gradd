@@ -1,0 +1,59 @@
+-- =============================================================================
+-- 20260725120000_acca_case_requirements_answer_schema.sql
+-- Add answer_schema to acca_case_requirements — mock-engine Phase 2b, Piece 1
+-- (code-generated + gated model_answer content parity with drills). Additive
+-- only — no destructive change, no existing behaviour change, no content
+-- inserted here.
+-- =============================================================================
+-- WHY: acca_case_requirements has no code-owned figure schema today — a numeric
+-- requirement's model_answer is a hand-typed SQL literal with no deterministic
+-- verification ever run against it (traced end-to-end in the mock-engine
+-- diagnostic, 2026-07-25: case-marking.ts only ever scores the professional-skills
+-- pool; the per-requirement pass/fail decision in case/turn/route.ts is a pure
+-- LLM comparison via teach-engine.ts, which imports no calculator module and no
+-- numeric-verifier). RULED (Grant, 2026-07-25): close that gap by requiring a
+-- numeric requirement's model_answer to be built by an EXISTING calculator's
+-- build*ModelAnswer()/build*Schema() function (Piece 1) — this column is where
+-- that function's code-owned schema is stored, mirroring acca_drills.answer_schema
+-- exactly (jsonb, nullable, no default — see 20260708130000_afm_drill_schema_
+-- extensions.sql, which added the drill-side column this mirrors).
+--
+-- SHAPE (authored per requirement, by requirement kind — enforced by the
+-- authoring script's gates, NOT by a DB constraint, matching how acca_drills
+-- validates answer_schema shape in code rather than in SQL):
+--   * calc requirement   → the calculator's AnswerSchema (lib/acca/numeric-
+--     verifier.ts: { components: [{ component_id, expected_value, tolerance,
+--     unit, working_steps, depends_on, ... }] }) — the SAME shape a drill of
+--     that calculator family stores, output by the SAME build*Schema() function.
+--   * narrative requirement → the authored NarrativeRubric (lib/acca/narrative-
+--     marker.ts: { criteria[], scenario_facts[], disqualifiers[], ... }) — the
+--     SAME shape a narrative drill's rubric takes.
+--   * NULL is valid (mirrors acca_drills: NULL for APM rows / discursive rows
+--     with no numeric schema) — every requirement inserted before this migration
+--     stays NULL; nothing is backfilled.
+--
+-- marking_kind (which of the two shapes above applies) is DELIBERATELY NOT a
+-- column here — ruled code-config in the case-authoring script, not persisted,
+-- matching lib/acca/case-gates.ts's blueprint-only GateRequirement.marking_kind
+-- (Phase 2a). This migration adds ONLY the schema payload column.
+--
+-- IDEMPOTENT: ADD COLUMN IF NOT EXISTS; safe to re-run, safe to run against the
+-- live DB. NOT APPLIED by this commit — file only, per the standing rule
+-- (migrations: file AND manual apply, shown before applying).
+-- =============================================================================
+
+alter table public.acca_case_requirements
+  add column if not exists answer_schema jsonb;
+
+-- =============================================================================
+-- VERIFICATION (run after applying):
+--   select column_name, data_type, is_nullable, column_default
+--     from information_schema.columns
+--    where table_name = 'acca_case_requirements' and column_name = 'answer_schema';
+--   -- expect 1 row: data_type='jsonb', is_nullable='YES', column_default=null.
+--
+--   select count(*) as non_null_schema_rows
+--     from public.acca_case_requirements
+--    where answer_schema is not null;
+--   -- expect 0 immediately after applying — no content authored by this migration.
+-- =============================================================================

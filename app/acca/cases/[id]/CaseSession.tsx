@@ -97,13 +97,22 @@ function completedOpening(): Message {
 // suppresses inline professional-skills marking (the mock marks every case together
 // on the results screen). `onComplete` fires once the whole case is complete
 // (every requirement passed) so the mock can offer "Next case".
+//
+// `sitting` (mock-engine Phase 2b) threads the SIT flag through to the case/turn +
+// case (GET) routes so a timed sit records single answers instead of teaching. It
+// defaults false — this component's UI is still the teach surface; the LEAN sit UI
+// (one answer box per requirement, submit-and-move-on, driven off answers-recorded
+// rather than requirements-passed) is a following step. Until then the flag is
+// plumbed but the mock keeps passing false, so behaviour is unchanged.
 export default function CaseSession({
   caseId,
   embedded = false,
+  sitting = false,
   onComplete,
 }: {
   caseId: string;
   embedded?: boolean;
+  sitting?: boolean;
   onComplete?: () => void;
 }) {
   const router = useRouter();
@@ -145,7 +154,7 @@ export default function CaseSession({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}`);
+        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}${sitting ? '&sitting=true' : ''}`);
         // 404 = flag off OR case not servable → nothing useful to show.
         if (res.status === 404) {
           router.replace('/acca');
@@ -200,7 +209,7 @@ export default function CaseSession({
       }
     })();
     return () => { cancelled = true; };
-  }, [caseId, router]);
+  }, [caseId, router, sitting]);
 
   const activeReq = useMemo(
     () => requirements.find((r) => r.id === activeReqId) ?? null,
@@ -274,6 +283,7 @@ export default function CaseSession({
           session_state:     sessionByReq[activeReqId] ?? null,   // null on first turn of each requirement
           student_message:   trimmed,
           last_ezra_message: lastEzra,
+          sitting,                                                // false today; the lean sit UI (later) flips it
         }),
       });
       // 402 = subscription lapsed mid-session → roll the optimistic bubble back and

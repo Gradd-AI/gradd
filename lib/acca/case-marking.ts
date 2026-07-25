@@ -105,14 +105,27 @@ export function getSkillDescriptors(paper: AccaPaper): Record<string, string> {
   return SKILL_DESCRIPTORS_BY_PAPER[paper];
 }
 
+// Professional-skills bands — the 4-value quality lexicon the PS prompt offers.
 const BANDS = ['exemplary', 'strong', 'competent', 'weak'] as const;
 export type SkillBand = (typeof BANDS)[number];
-const BAND_MULTIPLIER: Record<SkillBand, number> = {
-  exemplary: 1, strong: 0.75, competent: 0.5, weak: 0.25,
-};
 function isBand(v: string): v is SkillBand {
   return (BANDS as readonly string[]).includes(v);
 }
+
+// Technical bands = the 4 PS bands PLUS 'nothing' — the zero-credit floor a timed
+// SIT needs (a blank or entirely-wrong requirement). 'weak' is NOT that floor; it
+// still credits a recognisable attempt at 25%. PS marking never produces 'nothing'.
+const TECHNICAL_BANDS = ['exemplary', 'strong', 'competent', 'weak', 'nothing'] as const;
+export type TechnicalBand = (typeof TECHNICAL_BANDS)[number];
+function isTechnicalBand(v: string): v is TechnicalBand {
+  return (TECHNICAL_BANDS as readonly string[]).includes(v);
+}
+
+// ONE multiplier table serves both passes: SkillBand ⊂ TechnicalBand, so PS marking
+// (which only ever yields the 4 quality bands) indexes it safely, and 'nothing' → 0.
+const BAND_MULTIPLIER: Record<TechnicalBand, number> = {
+  exemplary: 1, strong: 0.75, competent: 0.5, weak: 0.25, nothing: 0,
+};
 
 interface SkillJudgement {
   skill: string;
@@ -124,7 +137,17 @@ export interface PerSkillMark {
   skill: string;
   mark_awarded: number;
   feedback: string;
-  band: SkillBand;
+  band: TechnicalBand;   // a model-judged PS answer yields a SkillBand; a blank answer short-circuits to 'nothing'
+}
+
+// A submission earns nothing WITHOUT a model call when it is empty or trivially
+// short — a blank, whitespace, or a stray character or two is not a markable
+// attempt. Threshold: fewer than 3 alphanumeric characters. An on-its-face attempt
+// (≥3 alphanumerics) is model-judged and MAY still be scored 'nothing' by the model
+// if it earns no credit. Shared by the technical pass (per requirement) and the PS
+// pass (the whole answer), so a fully-blank sit scores 0/100 with zero model spend.
+export function isBlankAnswer(s: string): boolean {
+  return (s ?? '').replace(/[^a-z0-9]/gi, '').length < 3;
 }
 
 export interface CaseMarkingResult {
@@ -181,6 +204,19 @@ function apportion(raw: number[], target: number): number[] {
 // failure so the caller can preserve the distinct 502 messages.
 export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<CaseMarkingResult> {
   const { paper, context, wholeAnswer, examinedSkills, professionalSkillsMarks } = input;
+
+  // ── Blank whole-answer → 0, no model call ──
+  // A blank or trivially-short whole answer demonstrates zero professional skill, so
+  // it scores 0 across the pool deterministically (a fully-blank timed sit costs no
+  // model spend and honestly scores 0/100). Never reached in practice mode, where
+  // marking only runs once every requirement has been judged correct.
+  if (isBlankAnswer(wholeAnswer)) {
+    return {
+      professional_marks_awarded: 0,
+      professional_marks_available: professionalSkillsMarks,
+      per_skill: examinedSkills.map((s) => ({ skill: s, mark_awarded: 0, feedback: 'No answer submitted.', band: 'nothing' as TechnicalBand })),
+    };
+  }
 
   // ── Marking call (Sonnet) — the model judges a BAND per skill, no marks ──
   // The prompt asks ONLY for a quality band per examined skill against that paper's
@@ -291,4 +327,172 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
     professional_marks_available: professionalSkillsMarks,
     per_skill: perSkill,
   };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TECHNICAL band-marking (mock /100). The SAME band→apportion mechanism as PS,
+// judged PER REQUIREMENT against that requirement's OWN code-correct model_answer
+// (Piece 1), apportioned to that requirement's own marks_guide ceiling. Blank /
+// near-blank answers short-circuit to 'nothing' (0) with NO model call. Claim
+// ceiling: "answer-locked, model-graded" — code owns the band→marks conversion,
+// the model owns the band, judged against a code-generated + gated reference. This
+// is NOT the deferred exact-figure numeric-verifier (that parses the student's own
+// figures); it is a quality-of-match judgement against the correct answer.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+export interface TechnicalRequirementInput {
+  requirement_id: string;
+  label: string;
+  question: string;
+  model_answer: string;   // the code-correct (Piece-1) reference to judge against
+  marks_guide: number;    // this requirement's technical ceiling
+  final_answer: string;   // the student's submitted answer ('' = blank)
+}
+
+export interface PerRequirementMark {
+  requirement_id: string;
+  band: TechnicalBand;
+  mark_awarded: number;
+  marks_available: number;   // = marks_guide
+  feedback: string;
+}
+
+export interface TechnicalMarkingResult {
+  technical_marks_awarded: number;
+  technical_marks_available: number;
+  per_requirement: PerRequirementMark[];
+}
+
+export interface JudgeTechnicalMarkingInput {
+  paper: AccaPaper;
+  context: string;
+  requirements: TechnicalRequirementInput[];
+}
+
+// PURE arithmetic (no model, no I/O): given a band per requirement, convert to
+// /technical-pool marks. ceiling_i = marks_guide_i; rawMark_i = ceiling_i ×
+// BAND_MULTIPLIER[band_i]; total = min(round(Σraw), Σceiling); apportion() (reused
+// VERBATIM) makes the per-requirement integers sum EXACTLY to total. A 'nothing'
+// band (raw 0) can never receive an apportionment surplus: its fractional part is 0
+// (sorted last), and the surplus never exceeds the count of positive-fraction items.
+export function apportionTechnicalMarks(
+  judged: Array<{ requirement_id: string; marks_guide: number; band: TechnicalBand; feedback: string }>,
+): TechnicalMarkingResult {
+  const available = judged.reduce((a, r) => a + r.marks_guide, 0);
+  const rawMarks = judged.map((r) => r.marks_guide * BAND_MULTIPLIER[r.band]);
+  const rawTotal = rawMarks.reduce((a, m) => a + m, 0);
+  const total = Math.min(Math.round(rawTotal), available);
+  const marks = apportion(rawMarks, total);
+  const per_requirement: PerRequirementMark[] = judged.map((r, i) => ({
+    requirement_id: r.requirement_id,
+    band: r.band,
+    mark_awarded: marks[i],
+    marks_available: r.marks_guide,
+    feedback: r.feedback,
+  }));
+  return { technical_marks_awarded: total, technical_marks_available: available, per_requirement };
+}
+
+interface TechnicalJudgement { requirement_id: string; band: TechnicalBand; feedback: string }
+
+// ONE batched model call judging every ATTEMPTED requirement against its own
+// model_answer. Throws Error('call')/Error('parse') like judgeCaseMarking so the
+// route preserves the distinct 502 messages.
+async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[]): Promise<TechnicalJudgement[]> {
+  const contextLine = context ? `Case scenario and exhibits (shared by every requirement):\n${context}\n\n` : '';
+  const blocks = reqs
+    .map((r, i) =>
+      `Requirement ${i + 1} (requirement_id: ${r.requirement_id}) — ${r.label}\n` +
+      `Question: ${r.question}\n` +
+      `Correct answer (the marking standard — a full-marks response):\n${r.model_answer}\n\n` +
+      `Candidate's answer:\n${r.final_answer}`,
+    )
+    .join('\n\n---\n\n');
+
+  const systemPrompt =
+    `You are an experienced ACCA ${paper} marker awarding TECHNICAL marks. For each requirement you are ` +
+    "given the correct answer (the marking standard) and the candidate's answer. Judge HOW WELL the " +
+    "candidate's answer matches the correct answer on the technical substance — the right method, the " +
+    'right figures and conclusions, the right reasoning. Assign exactly one band per requirement:\n' +
+    '- "exemplary": matches the correct answer in full; nothing material missing or wrong.\n' +
+    '- "strong": substantially correct, with only minor or immaterial gaps or slips.\n' +
+    '- "competent": the right approach but a material error, omission, or an incomplete answer.\n' +
+    '- "weak": a recognisable attempt in the right general area but largely incorrect or superficial.\n' +
+    '- "nothing": earns no credit — irrelevant, absent, or entirely wrong.\n' +
+    'Judge each requirement on its ABSOLUTE technical correctness against ITS OWN correct answer. Do not ' +
+    'grade on a curve, and do not assume the candidate is right. ' +
+    'DISCIPLINE: cite the specific point that decided the band. No band without a named reason. ' +
+    'Return ONLY a JSON array, no prose, no code fences: ' +
+    '[{ "requirement_id": "...", "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — ' +
+    'one object per requirement, using the requirement_id given.';
+
+  const userContent =
+    contextLine + `Requirements to mark:\n\n${blocks}\n\n` +
+    'Judge each requirement against its own correct answer and assign its band. Return ONLY the JSON array.';
+
+  let raw: string;
+  try {
+    const res = await anthropic.messages.create({
+      model: MARKING_MODEL,
+      max_tokens: 2000,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userContent }],
+    });
+    raw = extractText(res);
+  } catch {
+    throw new Error('call');
+  }
+  try {
+    let cleaned = raw.trim();
+    if (cleaned.startsWith('```')) {
+      cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
+    }
+    const arr = JSON.parse(cleaned);
+    if (!Array.isArray(arr)) throw new Error('not an array');
+    const validIds = new Set(reqs.map((r) => r.requirement_id));
+    const out: TechnicalJudgement[] = arr.map((o) => {
+      const requirement_id = typeof o?.requirement_id === 'string' ? o.requirement_id : '';
+      const band = typeof o?.band === 'string' ? o.band.trim().toLowerCase() : '';
+      const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
+      if (!validIds.has(requirement_id) || !isTechnicalBand(band)) throw new Error('malformed entry');
+      return { requirement_id, band, feedback };
+    });
+    if (out.length === 0) throw new Error('empty');
+    return out;
+  } catch {
+    throw new Error('parse');
+  }
+}
+
+// Run the technical marking pass over one case's requirements. Blanks → 'nothing'
+// deterministically (no model call); attempted requirements are model-judged in ONE
+// batched call against their own model_answer; then the pure apportionment converts
+// bands → /technical-pool marks. Paper-keyed like PS (the prompt names the paper).
+export async function judgeTechnicalMarking(input: JudgeTechnicalMarkingInput): Promise<TechnicalMarkingResult> {
+  const { paper, context, requirements } = input;
+
+  const bandById = new Map<string, { band: TechnicalBand; feedback: string }>();
+
+  // Deterministic blanks — no model call.
+  const attempted = requirements.filter((r) => {
+    if (isBlankAnswer(r.final_answer)) {
+      bandById.set(r.requirement_id, { band: 'nothing', feedback: 'No answer submitted.' });
+      return false;
+    }
+    return true;
+  });
+
+  if (attempted.length > 0) {
+    const judged = await judgeTechnicalOnce(paper, context, attempted);
+    for (const j of judged) bandById.set(j.requirement_id, { band: j.band, feedback: j.feedback });
+  }
+
+  // Assemble in original requirement order; any requirement the model somehow omitted
+  // defaults to 'nothing' (never silently credited).
+  const judged = requirements.map((r) => {
+    const b = bandById.get(r.requirement_id) ?? { band: 'nothing' as TechnicalBand, feedback: 'Not marked — treated as no credit.' };
+    return { requirement_id: r.requirement_id, marks_guide: r.marks_guide, band: b.band, feedback: b.feedback };
+  });
+
+  return apportionTechnicalMarks(judged);
 }

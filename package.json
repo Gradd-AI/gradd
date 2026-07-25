@@ -34,6 +34,8 @@
     "test:area-entry": "tsx scripts/test-area-entry.ts",
     "test:case-gates": "tsx scripts/test-case-gates.ts",
     "test:case-marking-descriptors": "tsx scripts/test-case-marking-descriptors.ts",
+    "test:case-marking-technical": "tsx scripts/test-case-marking-technical.ts",
+    "test:case-sit": "tsx scripts/test-case-sit.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts",

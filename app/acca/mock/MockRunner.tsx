@@ -34,6 +34,14 @@ interface CaseResult {
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
+// Mock-engine Phase 2b: the `sitting` flag is plumbed MockRunner → CaseSession →
+// case/turn + case (GET). It stays FALSE until the lean sit UI ships (one answer box
+// per requirement, submit-and-move-on, completion driven off answers-recorded not
+// requirements-passed) — flipping this to true without that UI would break the teach
+// surface CaseSession still renders. The backend sit branches + technical marking
+// are already live; this flag is the last switch the sit-UI step flips.
+const MOCK_SIT_MODE = false;
+
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 // Outcome of marking one case. `marked` carries the award. `incomplete` means the
@@ -442,6 +450,7 @@ export default function MockRunner() {
               key={currentCaseId}
               caseId={currentCaseId}
               embedded
+              sitting={MOCK_SIT_MODE}
               onComplete={() => handleCaseComplete(currentCaseId)}
             />
           )}

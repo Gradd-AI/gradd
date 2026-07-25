@@ -9,6 +9,7 @@ import {
 } from '@/lib/acca/teach-engine';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
+import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -22,6 +23,13 @@ import { resolvePaper } from '@/lib/acca/paper';
 //
 // v1 scope: each requirement is completed in turn on the shared scenario. NO synthesis
 // across requirements (that is v2). final_answer is POPULATED on pass but not consumed.
+//
+// SIT MODE (`sitting: true`, mock-engine Phase 2b): records the student's SINGLE
+// submitted answer as final_answer and returns — NO runTeachTurn (no hint/diagnose/
+// miss churn), `passed` left UNSET (a sit is graded later by the technical band pass,
+// not by turn-time correctness). A blank submission ('' — an unanswered requirement
+// at move-on or timeout) is a valid, final, zero-credit answer, recorded as ''.
+// PRACTICE mode (sitting=false, the default) is entirely unchanged.
 //
 // PAPER SCOPING: `paper` (body field, resolvePaper, default 'APM') is checked when
 // the case is fetched, so a cross-paper case_id/requirement_id pairing 404s. Once
@@ -51,24 +59,31 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { case_id, requirement_id, session_state, student_message, last_ezra_message, paper: paperRaw } = body as {
+  const { case_id, requirement_id, session_state, student_message, last_ezra_message, paper: paperRaw, sitting: sittingRaw } = body as {
     case_id?: unknown;
     requirement_id?: unknown;
     session_state?: unknown;
     student_message?: unknown;
     last_ezra_message?: unknown;
     paper?: unknown;
+    sitting?: unknown;
   };
 
   const caseId        = typeof case_id === 'string' && case_id ? case_id : null;
   const requirementId = typeof requirement_id === 'string' && requirement_id ? requirement_id : null;
   const lastEzraMessage = typeof last_ezra_message === 'string' ? last_ezra_message : '';
   const paper = resolvePaper(paperRaw);
+  const sitting = sittingRaw === true;
 
   if (!caseId || !requirementId) {
     return NextResponse.json({ error: 'case_id and requirement_id required' }, { status: 400 });
   }
-  if (typeof student_message !== 'string' || !student_message.trim()) {
+  // A sit may record a BLANK answer (an unanswered requirement at move-on/timeout);
+  // practice needs a real turn to teach against, so it still requires non-empty text.
+  if (typeof student_message !== 'string') {
+    return NextResponse.json({ error: 'student_message required' }, { status: 400 });
+  }
+  if (!sitting && !student_message.trim()) {
     return NextResponse.json({ error: 'student_message required' }, { status: 400 });
   }
 
@@ -85,6 +100,78 @@ export async function POST(request: Request): Promise<Response> {
 
   if (!hasActiveAPMAccess(profile ?? {})) {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
+  }
+
+  // ── SIT MODE — record the single submitted answer, no teach loop ──
+  // Skips the engine entirely: no model call, no seal, no hint/diagnose/miss churn.
+  // Records final_answer (blank '' allowed) and leaves `passed` UNSET — a sit is
+  // graded by the technical band pass at case/mark, not by turn-time correctness.
+  if (!shouldRunTeachLoop(sitting)) {
+    // Validate the requirement belongs to this (subscription-gated) case, and that
+    // the case is servable + paper-scoped — same serving gate as the practice path.
+    const { data: sitCase } = await supabase
+      .from('acca_cases')
+      .select('id')
+      .eq('id', caseId)
+      .eq('paper_code', paper)
+      .eq('status', 'approved')
+      .eq('published', true)
+      .single();
+    if (!sitCase) {
+      return NextResponse.json({ error: 'Case not found' }, { status: 404 });
+    }
+    const { data: sitReq } = await supabase
+      .from('acca_case_requirements')
+      .select('id')
+      .eq('id', requirementId)
+      .eq('case_id', caseId)
+      .single();
+    if (!sitReq) {
+      return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
+    }
+
+    const finalAnswer = typeof student_message === 'string' ? student_message : '';
+
+    try {
+      await supabase.from('acca_case_progress').upsert(
+        {
+          user_id: user.id,
+          case_id: caseId,
+          requirement_id: requirementId,
+          final_answer: finalAnswer,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id,case_id,requirement_id' },
+      );
+    } catch {
+      return NextResponse.json({ error: 'Failed to record answer' }, { status: 500 });
+    }
+
+    // Advance metadata (same ordering the practice path computes at step 11).
+    let isLastRequirement = false;
+    let nextRequirement: { id: string; requirement_order: number } | null = null;
+    try {
+      const { data: allReqs } = await supabase
+        .from('acca_case_requirements')
+        .select('id, requirement_order')
+        .eq('case_id', caseId)
+        .order('requirement_order', { ascending: true });
+      const ordered = (allReqs ?? []) as Array<{ id: string; requirement_order: number }>;
+      const idx = ordered.findIndex((r) => r.id === requirementId);
+      isLastRequirement = idx >= 0 && idx === ordered.length - 1;
+      nextRequirement = idx >= 0 && idx < ordered.length - 1 ? ordered[idx + 1] : null;
+    } catch {
+      // advance metadata best-effort — omit rather than 500
+    }
+
+    return NextResponse.json({
+      recorded: true,
+      sitting: true,
+      requirement_passed: false,   // a sit never judges correctness at turn time
+      is_last_requirement: isLastRequirement,
+      next_requirement: nextRequirement,
+      case_complete: false,        // completion is decided by the mark gate, not here
+    });
   }
 
   // ── 3. Fetch the case (gated) + its exhibits → the shared scenario context ──

@@ -33,6 +33,11 @@ export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const caseId = searchParams.get('case_id');
   const paper = resolvePaper(searchParams.get('paper'));
+  // SIT mode rehydrates the student's own typed final_answer per requirement so a
+  // refresh mid-sit restores what they wrote (practice mode never needs it, and its
+  // payload stays byte-identical — final_answer is the student's own writing, not
+  // sealed content). Deferred sit UI will read this; the flag is plumbed now.
+  const sitting = searchParams.get('sitting') === 'true';
   if (!caseId) {
     return NextResponse.json({ error: 'case_id required' }, { status: 400 });
   }
@@ -101,12 +106,17 @@ export async function GET(request: Request): Promise<Response> {
     .order('requirement_order', { ascending: true });
 
   // ── Progress (this user, this case) — resume support ──
-  // Only the flags the client needs to rebuild stepper state on reload: passed /
-  // resolved / miss_count. Deliberately NOT final_answer or any diagnosis text —
-  // chat history is not restored, and no sealed/authored content leaks here.
+  // Practice: the flags the client needs to rebuild stepper state — passed / resolved
+  // / miss_count; NOT final_answer or diagnosis (chat history isn't restored, no
+  // sealed/authored content leaks). SIT: additionally includes the student's OWN
+  // typed final_answer so a mid-sit refresh restores what they wrote (their own
+  // writing, never sealed content).
+  // final_answer is fetched unconditionally (it is the student's OWN writing, never
+  // sealed content) but only RETURNED in sit mode, so the practice payload stays
+  // byte-identical. A static select string keeps supabase's typed-select parser happy.
   const { data: progress } = await supabase
     .from('acca_case_progress')
-    .select('requirement_id, passed, resolved, miss_count')
+    .select('requirement_id, passed, resolved, miss_count, final_answer')
     .eq('user_id', user.id)
     .eq('case_id', caseId);
 
@@ -126,6 +136,7 @@ export async function GET(request: Request): Promise<Response> {
       passed:         p.passed === true,
       resolved:       p.resolved === true,
       miss_count:     typeof p.miss_count === 'number' ? p.miss_count : 0,
+      ...(sitting ? { final_answer: p.final_answer ?? null } : {}),
     })),
   });
 }
