@@ -4,6 +4,28 @@
 
 *Last refreshed: 2026-07-25 (mock-engine Phase-1 preconditions; FR3 rounding + Piece-2 dependency).*
 
+## 🟡 OPEN (INERT) — GATE 27 published-corpus coverage gap
+
+**Logged 2026-07-25 on wiring GATE 27 (DERIVED_FIGURE_INTEGRITY).** State it exactly this way
+and do not soften it:
+
+> **the published corpus is UNMEASURED, not clean — the 259 unmatchable tokens were a
+> measurement artefact proven by control experiment, not verified content.**
+
+GATE 27 is now LOUD in the authoring barrier, but it only ENGAGES when a caller supplies the
+calculator result object (`lib/acca/derived-figure-integrity.ts`, ENGAGEMENT RULE). Published
+`acca_drills` rows store only the serialized schema — the result object is gone — so the
+report-only sweep over them could not see derived intermediates and reported 259 "orphans"
+that are overwhelmingly working-table cells, not defects. The control experiment: the SAME 8
+gate-green mock requirements yield **2** orphans WITH result objects and **29** WITHOUT — a
+14.5× inflation on identical, correct content. That measures the instrument, not the corpus.
+
+**INERT** because the gate is authoring-time only and touches no serving path; published rows
+are unaffected today. To actually MEASURE the published corpus, each drill must be re-run
+through its calculator (the same re-derivation that FR3 found impossible from stored params —
+see the Piece-2 blocker below). Until then no claim may be made in either direction about
+derived figures in published drills.
+
 ## ⛔ BLOCKER ON PIECE 2 (exact-figure parsing) — HALFWAY_ROUNDING_RISK must be green first
 
 **Ruled 2026-07-25 (FR3).** Piece 2 — live parsing of the student's OWN figures and verdicting

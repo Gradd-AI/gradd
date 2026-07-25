@@ -1,3 +1,15 @@
+-- WARNING: this file inserts into acca_case_requirements via raw SQL and
+-- BYPASSES the authoring gate barrier. It predates that infrastructure and
+-- is retained as shipped APM content only. DO NOT use it as a template for
+-- new content. All new case/mock requirements must go through
+-- lib/acca/case-authoring-gates.ts -> runRequirementGateBarrier().
+--
+-- Ruled INERT as content (2026-07-25): this is a fixed, already-shipped APM set,
+-- not regenerated and not extended. The risk it carries is as a TEMPLATE — a new
+-- paper's content copied from this shape would inherit zero gate coverage (no
+-- GATE 1/2/3, no P4-P9, no GATE 26, no TAX_RATE_ASSIGNMENT, no HALFWAY_ROUNDING_RISK,
+-- no GATE 27).
+
 -- =============================================================================
 -- APM Section B case #4 — C-anchored (Performance reporting: misleading data) — LIVE
 -- Orlen Cinemas | 25 marks (20 technical + 5 professional skills)

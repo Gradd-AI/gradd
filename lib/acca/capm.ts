@@ -96,6 +96,12 @@ export interface CapmInputs {
 export interface CapmComputed {
   kind: CapmKind;
   rf: number; mrp: number; tax: number; debt_beta: number;
+  /** Kd(1−T), the POST-TAX cost of debt, as a percentage. Exposed as a named field
+   *  (FR3/GATE 27 ruling) because the WACC line quotes it ("… + 4.13% × 0.300"). Computed
+   *  inline inside waccPct it was an ORPHAN: a derived figure in prose with no code-owned
+   *  value for the derived-figure-integrity gate to match against. Undefined for kinds that
+   *  compute no WACC (keu_for_apv). */
+  kd_after_tax?: number;
 
   asset_beta?:    number;   // ungeared peer/sector beta
   regeared_beta?: number;   // regeared to the appraising firm
@@ -153,6 +159,7 @@ export function computeCapm(raw: CapmInputs, kind: CapmKind): CapmComputed {
     const ve = req(raw.company_ve, 'company_ve'), vd = req(raw.company_vd, 'company_vd');
     const kd = asDec(req(raw.kd, 'kd'));
     out.ke = capmKe(rf, beta, mrp) * 100;
+    out.kd_after_tax = kd * (1 - tax) * 100;
     out.wacc = waccPct(out.ke, kd, ve, vd, tax);
     return out;
   }
@@ -174,6 +181,7 @@ export function computeCapm(raw: CapmInputs, kind: CapmKind): CapmComputed {
     out.asset_beta = ungearBeta(betaE, pve, pvd, ptax, betaD);        // peer's (host) rate
     out.regeared_beta = regearBeta(out.asset_beta, ove, ovd, tax, betaD); // investor's (home) rate
     out.ke = capmKe(rf, out.regeared_beta, mrp) * 100;
+    out.kd_after_tax = kd * (1 - tax) * 100;
     out.wacc = waccPct(out.ke, kd, ove, ovd, tax);
     out.peer_equity_beta = betaE;
     out.beta_direction = out.regeared_beta > betaE + EPS ? 'higher' : out.regeared_beta < betaE - EPS ? 'lower' : 'equal';
@@ -186,6 +194,7 @@ export function computeCapm(raw: CapmInputs, kind: CapmKind): CapmComputed {
   const cve = req(raw.company_ve, 'company_ve'), cvd = req(raw.company_vd, 'company_vd');
   const kd = asDec(req(raw.kd, 'kd'));
   out.company_ke = capmKe(rf, cBeta, mrp) * 100;
+  out.kd_after_tax = kd * (1 - tax) * 100;
   out.company_wacc = waccPct(out.company_ke, kd, cve, cvd, tax);
 
   const pBetaE = req(raw.peer_equity_beta, 'peer_equity_beta');

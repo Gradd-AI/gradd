@@ -22,6 +22,7 @@
 
 import type { AnswerSchema, Verdict, StudentSubmission } from './numeric-verifier';
 import { fixedHalfUp } from './rounding';
+import { runDerivedFigureIntegrity } from './derived-figure-integrity';
 import { verifyNumericAnswer } from './numeric-verifier';
 import {
   validateSchemaSelfConsistency,
@@ -106,6 +107,10 @@ export interface RequirementProseFields {
   hasLoss: boolean;
   zeroAddlTax?: boolean;
   compare?: { selected: string; all: string[] };
+  /** The calculator's own input/result objects for this requirement. Supplying them ENGAGES
+   *  GATE 27 (derived-figure integrity); omitting them makes it a silent no-op. See the
+   *  ENGAGEMENT RULE in lib/acca/derived-figure-integrity.ts for why. */
+  computed?: unknown[];
 }
 
 // GATE1–3 + P4–P9 + GATE 26 — the part of the barrier that applies to EVERY numeric
@@ -180,6 +185,24 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
   // answer-locked marking must not be able to mark a correct student wrong.
   const gHalf = validateHalfwayRounding(schema, f.model_answer);
   g.push({ name: 'HALFWAY_ROUNDING_RISK boundary figures', ok: gHalf.ok, detail: gHalf.issues.map((i) => i.component_id + ': ' + i.message).join(' | ') });
+
+  // GATE 27 DERIVED_FIGURE_INTEGRITY — the reverse of GATE 2. GATE 2 asks "is every code
+  // figure in the prose?"; this asks "does every figure in the prose trace back to code?".
+  // Derived intermediates (a comparison margin, a Σ, a post-tax Kd) are the exposed class.
+  // LOUD, but engaged ONLY when the caller supplies the calculator result object.
+  const g27 = runDerivedFigureIntegrity(
+    { model_answer: f.model_answer, hint: f.hint, full_reveal: f.full_reveal },
+    schema.components.map((c) => c.expected_value),
+    `${f.context}\n${f.question}`,
+    f.computed,
+  );
+  g.push({
+    name: 'GATE 27 derived-figure integrity' + (g27.engaged ? '' : ' (no-op)'),
+    ok: g27.orphans.length === 0,
+    detail: g27.engaged
+      ? g27.orphans.map((o) => `${o.field} "${o.token}" ${o.excerpt}`).join(' | ')
+      : g27.reason,
+  });
 
   return g;
 }

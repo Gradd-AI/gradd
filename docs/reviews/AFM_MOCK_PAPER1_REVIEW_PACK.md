@@ -42,7 +42,7 @@ All five numeric requirements are **confirmed correct by two independent recompu
 | Figure | Before (home 25% both steps) | After (ALT-B: peer 34% ungears) |
 |---|---|---|
 | Peer equity beta (given) | 1.350 | 1.350 |
-| **Asset beta** (ungeared) | 0.900 | **0.9375** *(now displays **0.938** — FR3)* |
+| **Asset beta** (ungeared) | 0.900 | **0.9375** *(displays 0.937 at 3 dp)* |
 | **Regeared beta** | 1.189 | **1.239** |
 | **Project Ke** | 11.64% | **11.93%** |
 | **Project WACC** | 9.38% | **9.59%** |

@@ -139,6 +139,12 @@ export interface IntlNpvComputed {
   base_fcff_foreign: number;
   base_pbit_foreign: number;
   npv: number; accept: boolean;
+  /** Σ years[].pv — the present value of the future cash flows, BEFORE the initial outlay.
+   *  Exposed as a named field (FR3/GATE 27 ruling) because the model answer quotes it in the
+   *  reconciliation line ("Σ present values EUR 101.3m − home outlay …"). Computed inline it
+   *  was an ORPHAN: a derived figure in prose with no code-owned value for the
+   *  derived-figure-integrity gate to match it against. */
+  sum_pv: number;
   has_additional_home_tax: boolean;  // false when foreign corporate rate ≥ home rate (K1 NIL case)
   add_tax_rate_effective: number;    // max(0, home − foreign_corp) — for display/teaching (0 = nil)
 }
@@ -177,7 +183,8 @@ export function computeIntlNpv(raw: IntlNpvInputs): IntlNpvComputed {
     years.push({ year: t, fx, foreign_cf, taxable_profit, wht: tax.wht, foreign_corp_tax: tax.foreign_corp_tax, home_liability: tax.home_liability, additional_home_tax_foreign: tax.additional_home_tax_foreign, additional_home_tax_home, foreign_remit_net: tax.net_remit_foreign, home_cf, df: d, pv });
   }
   const has_additional_home_tax = years.some((y) => y.additional_home_tax_foreign > EPS);
-  return { years, fx_curve, home_outlay, base_fcff_foreign: baseFcff, base_pbit_foreign: basePbit, npv, accept: npv > 0, has_additional_home_tax, add_tax_rate_effective: Math.max(0, h - fc) };
+  const sum_pv = years.reduce((s, y) => s + y.pv, 0);
+  return { years, fx_curve, home_outlay, base_fcff_foreign: baseFcff, base_pbit_foreign: basePbit, npv, accept: npv > 0, sum_pv, has_additional_home_tax, add_tax_rate_effective: Math.max(0, h - fc) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
