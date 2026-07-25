@@ -1,6 +1,21 @@
 # AFM APV batch — blind adversarial review pack
 
-**Calculator #4: Adjusted Present Value (`lib/acca/apv.ts`). 4 drills, `status=candidate`, `published=false`, `paper_code=AFM`. CURRENT STATE — regenerated after every fix round (through round 2).**
+**Calculator #4: Adjusted Present Value (`lib/acca/apv.ts`). 4 drills, `paper_code=AFM`, all four now `status=approved`, `published=true`. CURRENT STATE — bodies regenerated from the live DB after every fix round (through the 2026-07-25 boundary re-author).**
+
+> ### ⚠ READ FIRST — Drill 4 (`B3k dedca530`) CHANGED on 2026-07-25. Do not review it against an earlier copy of this pack.
+>
+> **Why:** `debt_issue_costs` was 65 × 3.0% = **−1.95 exactly**, which is a half-way rounding tie at the 1 dp the answer displays. Code printed `-1.9`; a hand-working student gets `-2.0`; the component's 0.5% relative tolerance (±0.0098) does **not** absorb the 0.1 step — so answer-locked marking could mark a correct student wrong. Rendering through `fixedHalfUp` fixes the print, but gate `HALFWAY_ROUNDING_RISK` still fails closed because the string `1.9` also appears in this answer as the year-4 tax charge (`PLN 1.9m`) and the gate cannot attribute the two from text alone. So the **input was re-picked** to move the figure off the boundary entirely.
+>
+> | | before | after |
+> |---|---|---|
+> | scenario bullet — debt issue / arrangement costs | `3.0% of gross proceeds` | **`2.0% of gross proceeds`** |
+> | `debt_issue_costs` | −1.95 (printed `PLN -1.9m`) | **−1.30** (prints `PLN -1.3m`) |
+> | `apv_debt` | 6.3213 (printed `PLN 6.3m`) | **6.9713** (prints `PLN 7.0m`) |
+> | `answer_schema` working step | `−(gross debt principal × f) at 3.00%` | **`… at 2.00%`** |
+>
+> **Unchanged and NOT up for re-review:** the base case (`base_npv` 5.5346), the tax shield (2.7367), `equity_issue_costs` (−3.0628), `apv_equity` (2.4718), and the code-owned financing verdict — **debt still wins** (7.0 vs 2.5), so `financing_choice` did not flip. The pedagogical target is untouched: the gross-vs-net issue-cost convention (loan principal is GROSS → cost = gross × f; the rights issue is stated NET → gross up) and the debt-vs-equity APV ranking. 12 of the other 14 components are byte-identical to the previously-reviewed figures.
+>
+> **Also on 2026-07-25 — Drill 2 (`B3j 34f9e897`), cosmetic only:** `ncf_1` = 449.35 and year-1 taxable = 99.35 are also 1 dp ties; they now print `BRL 449.4m` / `BRL 99.4m` (were `449.3` / `99.3`). No input changed, no stored value changed, tolerance absorbed it either way. Nothing else in this pack moved.
 
 Doctrine: deterministic code owns every figure AND every figure-vs-figure verdict; the model authored PROSE only. Base case = the all-equity project at STATED Keu; financing side-effects: debt tax shield at pre-tax Kd (relief at interest-year+lag), **debt issue costs = gross principal × f**, subsidised-loan saving (pre-tax in-year less its tax at year+lag), and — rights-issue package only — equity issue costs grossed up from NET proceeds. **6 gates** pass on all four: schema self-consistency + tolerance + OFR-wiring; answer↔schema figure integrity; seeded-OFR carry-through; P4 jurisdiction; P5 completeness; **P6 loss-relief** (a negative-taxable year requires a stated relief line).
 
@@ -483,7 +498,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 
 | Year | Operating cash flow | WDA | Taxable | Tax |
 |------|------|------|------|------|
-| 1 | BRL 449.3m | BRL 350.0m | BRL 99.3m | BRL 33.8m |
+| 1 | BRL 449.4m | BRL 350.0m | BRL 99.4m | BRL 33.8m |
 | 2 | BRL 546.0m | BRL 262.5m | BRL 283.5m | BRL 96.4m |
 | 3 | BRL 650.5m | BRL 196.9m | BRL 453.6m | BRL 154.2m |
 | 4 | BRL 739.4m | BRL 410.6m | BRL 328.7m | BRL 111.8m |
@@ -493,7 +508,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 | Period | Net cash flow | DF @ Keu 16.00% | Present value |
 |--------|------|------|------|
 | 0 | BRL -1400.0m | 1.000 | BRL -1400.0m |
-| 1 | BRL 449.3m | 0.862 | BRL 387.4m |
+| 1 | BRL 449.4m | 0.862 | BRL 387.4m |
 | 2 | BRL 512.2m | 0.743 | BRL 380.7m |
 | 3 | BRL 554.1m | 0.641 | BRL 355.0m |
 | 4 | BRL 765.1m | 0.552 | BRL 422.6m |
@@ -1198,7 +1213,7 @@ Package A — Secured Term Loan (Debt)
 - Term loan amount:                 PLN 65m
 - Pre-tax market cost of debt, Kd:         7.0% p.a.
 - Loan term:                     4 years (matches project life)
-- Debt issue / arrangement costs:          3.0% of gross proceeds
+- Debt issue / arrangement costs:          2.0% of gross proceeds
 
 Package B — Rights Issue (Equity)
 - Net proceeds of rights issue (after underwriting): PLN 65m
@@ -1268,16 +1283,16 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 |------|------|------|
 | Base-case NPV | PLN 5.5m | PLN 5.5m |
 | Tax shield | PLN 2.7m | — |
-| Issue costs | PLN -1.9m | PLN -3.1m |
-| **APV** | **PLN 6.3m** | **PLN 2.5m** |
+| Issue costs | PLN -1.3m | PLN -3.1m |
+| **APV** | **PLN 7.0m** | **PLN 2.5m** |
 
-*Debt issue costs = 3.00% of the PLN 65.0m gross principal; the rights issue is stated net, so its 4.50% cost is grossed up.*
+*Debt issue costs = 2.00% of the PLN 65.0m gross principal; the rights issue is stated net, so its 4.50% cost is grossed up.*
 
 *Reported-position overlay:* the debt package lifts gearing (D/(D+E), market values) to **43.36%** and adds PLN 4.6m of annual interest (reducing interest cover), whereas the rights issue lowers gearing to **31.86%** but dilutes existing shareholders.
 
 **Step 6 — Decision**
 
-Both packages fund the same base case, so the ranking turns on the financing side-effects. The **debt** package is **preferred** — it gives the higher APV (PLN 6.3m vs PLN 2.5m), so on these assumptions the board should **fund the project using debt finance**; the project adds value and the debt route captures more of it.
+Both packages fund the same base case, so the ranking turns on the financing side-effects. The **debt** package is **preferred** — it gives the higher APV (PLN 7.0m vs PLN 2.5m), so on these assumptions the board should **fund the project using debt finance**; the project adds value and the debt route captures more of it.
 
 **Step 7 — Advice to the board**
 
@@ -1285,7 +1300,7 @@ On these assumptions the APV is positive; a positive result is a floor, not a ma
 
 The board should first scrutinise whether the finance director's peer-benchmarked Keu of 13.5% is genuinely appropriate for this project: listed European logistics peers may operate predominantly in leased, lighter-weight assets, whereas the Łódź Regional Hub is a purpose-built, temperature-controlled warehousing property — an inherently less liquid, longer-duration asset class that may warrant a higher ungeared rate; if Keu is understated, the base-case NPV is overstated and the project may appear more attractive than it truly is. Turning to the financing side-effects, the board must satisfy itself that the PLN 65m term loan under Package A will remain fully outstanding for the entire four-year term, since any early repayment or covenant-triggered accelerated repayment would reduce the interest tax shield and erode Package A's advantage; PKO Bank Polski's minimum interest-cover covenant of 2.5× on a consolidated basis is a real constraint, and if operating cash flows disappoint — a plausible risk given the finance director's own caveat that near-shoring demand may not persist — VFP could breach this threshold, triggering renegotiation costs or forced early repayment. Under Package B, shareholder dilution is the primary concern: a rights issue of PLN 65m against a current equity market value of PLN 320m represents a material enlargement of the share register, and if the rights are not fully taken up, the underwriting cost embedded in the 4.5% issue-cost rate will be incurred in full while the project's revenue assumptions remain unproven. The qualitative trade-off is therefore between the discipline and tax efficiency of geared financing under Package A — which materially increases VFP's consolidated leverage and tightens interest-cover headroom — and the balance-sheet resilience of Package B, which preserves debt capacity for future acquisitions but dilutes existing shareholders and signals to the market that VFP's free cash flow cannot fund growth organically; the board should weigh both outcomes against any intention VFP may have to expand the hub network further across Central Europe, since a heavily geared structure today may foreclose the next transaction.
 
-*Reconciliation: base-case NPV PLN 5.5m; debt APV PLN 6.3m vs equity APV PLN 2.5m — higher is debt. ✓*
+*Reconciliation: base-case NPV PLN 5.5m; debt APV PLN 7.0m vs equity APV PLN 2.5m — higher is debt. ✓*
 
 ### hint
 
@@ -1506,9 +1521,9 @@ The dominant misconception in APV drills is VALUATION PLUMBING combined with FEN
       },
       "component_id": "debt_issue_costs",
       "working_steps": [
-        "−(gross debt principal × f) at 3.00%"
+        "−(gross debt principal × f) at 2.00%"
       ],
-      "expected_value": -1.95
+      "expected_value": -1.3
     },
     {
       "unit": "PLNm",
@@ -1540,7 +1555,7 @@ The dominant misconception in APV drills is VALUATION PLUMBING combined with FEN
       "working_steps": [
         "= base-case NPV + tax shield + debt issue costs"
       ],
-      "expected_value": 6.321291658814606
+      "expected_value": 6.971291658814606
     },
     {
       "unit": "PLNm",

@@ -1,6 +1,14 @@
 # AFM — Batch 2 (IRR / MIRR, syllabus B1c) — Adversarial Review Pack
 
-**4 drills, all `status = candidate`, `paper_code = AFM`, `lo_code = B1c`, intellectual level 3, 15 marks, command verb "advise".** One IRR/MIRR calculator family (calculator #2, after the NPV batch), four kinds: **standard IRR** (UK offshore wind, GBP), **MIRR reinvestment critique** (Australian lithium processing, AUD), **non-conventional / multiple-IRR** (South African gold mine with a mid-life pit-cutback outflow, ZAR), **IRR-vs-NPV ranking conflict** (US mutually-exclusive two-plant choice, USD).
+> ### ⚠ Bodies refreshed from the live DB on 2026-07-25 — three DRILL 1 fields had drifted, only one because of that day's work.
+>
+> - **`model_answer` (2026-07-25, cosmetic):** `ncf_1` = 47.15 is a half-way rounding tie at 1 dp, so it now prints `GBP 47.2m` (was `47.1`). No input changed, no stored value changed, the 0.5% relative tolerance absorbed it either way.
+> - **`context_text` (PRE-EXISTING staleness, not from 2026-07-25):** the loss-relief assumption added by the APV batch's **FIX 1 retrospective** — see `APV_REVIEW_PACK_R2.md`, which records `796651c2` (Y4 taxable −7.7) as one of three IRR drills that gained a relief line — was never back-copied into this pack. It is in the DB and is now here.
+> - **`hint` (PRE-EXISTING staleness):** amended by round-2 **FIX 5** (sensitivity-margin question removed). `AFM_IRR_BATCH2_REVIEW_PACK_R2.md` carried the new wording; this round-1 pack still had the old one.
+>
+> Every other declared body in this pack was verified byte-identical to the live row. DRILL 2/3/4 are untouched.
+
+**4 drills, `paper_code = AFM`, `lo_code = B1c`, intellectual level 3, 15 marks, command verb "advise".** *(The `status = candidate` this pack was written against is historical — all four are now `approved`/`published`.)* One IRR/MIRR calculator family (calculator #2, after the NPV batch), four kinds: **standard IRR** (UK offshore wind, GBP), **MIRR reinvestment critique** (Australian lithium processing, AUD), **non-conventional / multiple-IRR** (South African gold mine with a mid-life pit-cutback outflow, ZAR), **IRR-vs-NPV ranking conflict** (US mutually-exclusive two-plant choice, USD).
 
 Same doctrine as batch 1: **code owns every figure and the accept/reject verdict; the model authored prose only.** Graded numeric chain per drill: `ncf_p` (net after-tax cash flow, same as NPV) → `npv_lo`, `npv_hi` (NPV at two trial rates — GRADED, so the classic wrong-trial-NPV error carries) → `irr` (linear interpolation). The MIRR kind adds `tv_inflows` → `mirr`. `pv_outflows` is the t0 outlay param for these conventional flows.
 
@@ -39,6 +47,7 @@ Per issue: name the drill, the field, quote the exact text, state the defect, an
 Advise the board of Brecon Offshore Renewables plc whether it should proceed with the Meridian Array offshore wind expansion, supporting your recommendation with an internal rate of return (IRR) appraisal and a comparison of the IRR against the company’s cost of capital.
 
 ### Context (`context_text`)
+
 Brecon Offshore Renewables plc develops and operates offshore wind capacity off the coast of the United Kingdom, selling generation into the wholesale market under a mix of fixed-price and merchant arrangements. The board is evaluating the Meridian Array — an expansion adding turbines and a shared export cable to an existing site.
 
 Raw inputs (all monetary figures in GBP millions):
@@ -49,9 +58,12 @@ Raw inputs (all monetary figures in GBP millions):
 
 Challengeable textures. (1) The operating cash flows assume a load factor and a wholesale price that the commercial team has set at the upper end of its own range; neither is contracted for the full horizon, and a softer merchant price would erode the later years most. (2) The 10.0% cost of capital predates the current rate environment and has not been re-derived for a project whose merchant exposure is higher than the existing fleet's.
 
+Assume the company has sufficient taxable profits from other operations to use any project tax loss immediately, with the tax effect timed on the same basis as the tax charge.
+
 For the purposes of this appraisal, ignore any jurisdiction-specific half-year rule and apply tax-allowable depreciation exactly as stated.
 
 ### Model answer (`model_answer`)
+
 **Investment appraisal — internal rate of return**
 
 **Assumptions:** cash flows are in money (nominal) terms; operating cash flows are inflated at 2.50% a year; tax at 25.00% is charged on operating cash flow less tax-allowable depreciation and paid one year in arrears; tax-allowable depreciation is 18.00% reducing balance with a balancing allowance/charge on disposal in year 4; the cost of capital is 10.00%.
@@ -69,7 +81,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 
 | Year | Operating cash flow | WDA | Taxable | Tax |
 |------|------|------|------|------|
-| 1 | GBP 47.1m | GBP 30.6m | GBP 16.6m | GBP 4.1m |
+| 1 | GBP 47.2m | GBP 30.6m | GBP 16.6m | GBP 4.1m |
 | 2 | GBP 63.0m | GBP 25.1m | GBP 37.9m | GBP 9.5m |
 | 3 | GBP 68.9m | GBP 20.6m | GBP 48.3m | GBP 12.1m |
 | 4 | GBP 64.0m | GBP 71.7m | GBP -7.7m | GBP -1.9m |
@@ -79,7 +91,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 | Period | Net cash flow |
 |--------|------|
 | 0 | GBP -180.0m |
-| 1 | GBP 47.1m |
+| 1 | GBP 47.2m |
 | 2 | GBP 58.9m |
 | 3 | GBP 59.4m |
 | 4 | GBP 73.9m |
@@ -104,7 +116,8 @@ The single most fragile input is the operating cash-flow forecast: it rests on a
 *Reconciliation: NPV at 10.00% GBP 7.9m and at 15.00% GBP -12.2m bracket the IRR 11.97%.*
 
 ### Hint (`hint`)
-A return above the hurdle is the start of the advice, not the end — have you asked how far the operating cash flows could fall before the IRR drops through the 10% cost of capital, and challenged whether that 10% still reflects this project's merchant risk, before you sign off?
+
+A return above the hurdle is the start of the advice, not the end — have you challenged whether the operating cash-flow assumptions and the 10% cost of capital are reliable enough before treating the 11.97% IRR as a safe accept signal?
 
 ### Full reveal (`full_reveal`)
 The dominant misconception is treating IRR mechanically: candidates interpolate a rate, note it beats the cost of capital, and stop — as if clearing the hurdle were the recommendation. It is the floor. The correct mental model is that the IRR is only as reliable as the cash flows that generate it, so the board needs to know which assumption, if wrong, pulls the return back below the hurdle — here the top-of-range load factor and merchant price, uncontracted for the full horizon. On the mechanics, IRR is found by linear interpolation between two trial rates that bracket a zero NPV: pick a lower rate giving a positive NPV and a higher rate giving a negative one, then interpolate. If your net cash flows differ from the model, carry your own figures consistently into both trial-rate NPVs and the interpolation — where the method is right the marks still score, and the error is charged once at its source. Comparing IRR to the cost of capital only decides acceptance if that cost of capital genuinely reflects the project's risk; an outdated or too-low hurdle flatters every marginal project.
