@@ -38,6 +38,52 @@ exported helper), not exempted. **The remaining 44 stay UNMEASURED, and the 14.5
 artefact caveat above still governs any sweep run without result objects.** The method is now
 proven, though: re-derive from `context_text`, not from `answer_schema.params`.
 
+## 🟢 PARAM-DRIFT SWEEP (2026-07-25, REPORT-ONLY) — CLEAN in the P-DB4 classes; one inert observation
+
+Ordered after P-DB4 to answer: **did earlier writes leave param drift nobody has looked for?**
+Scope: **365 params across all 49 published AFM drills.** Result:
+
+| class | count |
+|---|---|
+| null / non-numeric | **0** |
+| zero disagreeing with a same-kind sibling (the B3d shape) | **0** |
+| float-drift not explained by `x/100` normalisation (the B4a shape) | **0** |
+| param not locatable in its own `context_text` | **0** |
+| key absent vs same-kind siblings | **0** |
+
+**APM is structurally out of scope, not "checked and clean":** all 91 published APM drills carry
+**no `answer_schema` at all** (APM numeric content lives in `acca_case_requirements`). State it
+that way — an empty result there measures the schema, not the data.
+
+**What the sweep can and cannot prove.** Full re-derivation of every drill is a per-drill hand job
+(5 took a session). This ran the mechanical check that *would* have caught both P-DB4 defects: for
+every param mirroring a stated input, is the stored value exactly the clean decimal, and does that
+figure appear in the drill's own scenario? `own_ve: 0` fails it; `kd: 0.057999999999999996` fails
+it. So CLEAN here is real evidence against that specific drift class — **it is not proof every
+param is correct**, because a param that is wrong but plausible (a figure transcribed off the
+wrong scenario line) is invisible to it. Same discipline as GATE 27's "unmeasured, not clean": do
+not upgrade this to a correctness claim.
+
+**Three detector corrections made before trusting the output** — the first pass reported 36
+findings and every one was false:
+- A bare **zero is not drift**. Every family serialises ONE param block across all its kinds with
+  `?? 0`, so a kind that doesn't use a key stores 0 — verified by inspection (the `org_wacc` drill
+  has no peer in its scenario at all; the `keu_for_apv` drill has no company Ve/Vd). The sharp test
+  is a zero disagreeing with a **same-kind** sibling.
+- **"Same kind" must be fingerprinted by COMPONENT IDs, not param keys.** Because `?? 0` makes every
+  kind serialise the same keys, a param-key signature groups `org_wacc` with `wrong_hurdle` and then
+  reports `org_wacc`'s legitimately-unused `peer_ve` as drift.
+- A rate stated as a percentage and normalised by `asDecimalRate` (`5.8/100` →
+  0.057999999999999996) is the **correct** value, not drift — flagging it would have condemned the
+  very figure restored under P-DB4. And `yield_shift 0.03` is stated as "300 basis points", so the
+  scenario matcher needs a ×10000 form.
+
+**🔹 INERT observation — the `?? 0` serialiser default is LOSSY.** 32 params across the corpus are
+zero purely because their kind does not use them. Harmless today (nothing reads them; GATE 27 just
+loses a few allowed-set entries), but it is the same mechanism that hid the B3d defect: a zero is
+indistinguishable from "not applicable". If it ever matters, the fix is to OMIT an unused key
+rather than serialise it as 0. **No code change made — log only.**
+
 ## ✅ RESOLVED — HALFWAY_ROUNDING_RISK is GREEN; PIECE 2 (exact-figure parsing) IS UNBLOCKED
 
 **Closed 2026-07-25 (FR3 follow-up). Branch `fix/afm-boundary-rounding-reauthor` — NOT merged,
