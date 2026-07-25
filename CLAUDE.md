@@ -293,6 +293,29 @@ wait for it, or say plainly that it was still building.
   `npx tsx --env-file=.env.local scripts/redteam-tutor.ts --target local --probes PH1,PH2,PH3,PH4,PH5,PH6,PH7`.
   **Claim discipline:** an LLM-prompted behavioural fix, NOT a deterministic code gate like the numeric
   moat — PH4/PH6 observed ~80-90% clean across repeated sampling, not a hard 100% guarantee.
+- **AFM MOCK PAPER 1 — LEAN SIT SURFACE (preview-gated, 2026-07-25):** `lib/acca/sit-preview.ts`
+  (pure: allowlist `canPreviewSit` + paper config `AFM_MOCK_PAPER_1` + `nextUnsubmittedIndex` /
+  `isPaperComplete` / `fmtElapsed`) · route `app/api/acca/sit/route.ts` · UI
+  `app/acca/afm/mock/{page,SitRunner}.tsx` · fixtures `scripts/test-sit-preview.ts`
+  (`npm run test:sit-preview`, 35 checks). **NEW MECHANISM — the INVERTED SERVING GATE.** Every
+  other case/drill route gates on `status='approved' AND published=true`; this one gates on the
+  OPPOSITE (`paper_code='AFM' AND mock_only=true AND published=false AND status='candidate'`), so
+  the two servable sets are **disjoint by construction** — this surface cannot serve live content
+  and the live routes cannot serve the mock. **No live route was modified to reach unpublished
+  content.** Access = auth + a one-entry email allowlist (`erasmoose@outlook.ie`, Grant-ruled
+  2026-07-25), rejecting with **404 not 403** so the path is invisible rather than merely forbidden;
+  there is deliberately NO entitlement check (the allowlist IS the gate; an entitlement check could
+  only lock the test account out). Withholds MORE than the live case route: never selects
+  `model_answer`/`hint`/`full_reveal`/`answer_schema`, and additionally withholds `marks_guide` (a
+  mark scheme = feedback) and `professional_skill_tags`/`intellectual_level` (a steer no real exam
+  gives). **Submissions are IMMUTABLE server-side** (a recorded `final_answer` → 409), which is the
+  real guarantee behind "no back navigation" — not merely a hidden button; `passed` stays UNSET per
+  `case-sit.ts`. Answers land in `acca_case_progress.final_answer`, which the existing `case/mark`
+  path already reads, so marking wires in later with no data migration. Clock counts UP from
+  `acca_mock_attempts.started_at` (mock_id `'afm-paper-1'` — unknown to `getMockPaper`, so the APM
+  runner ignores it); `ends_at` is written only because the column is NOT NULL and **nothing reads
+  it** — no countdown, no auto-submit. **MARKING AND DEBRIEF ARE OUT OF THIS BUILD.**
+  `MOCK_SIT_MODE` in `app/acca/mock/MockRunner.tsx` stays FALSE — that flag belongs to the APM paper.
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR
