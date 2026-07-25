@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { judgeCaseMarking, MARKING_MODEL } from '@/lib/acca/case-marking';
+import { resolvePaper } from '@/lib/acca/paper';
 
 // ── APM professional-skills marking (terminal whole-case mark) ─────────────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs ONE holistic marking pass
@@ -21,6 +22,9 @@ import { judgeCaseMarking, MARKING_MODEL } from '@/lib/acca/case-marking';
 // The judging + bands→marks logic lives in lib/acca/case-marking.ts so the weekly
 // calibration script exercises the exact same code path — this route owns only the
 // auth, gating, whole-answer assembly and persistence around that shared core.
+//
+// PAPER SCOPING: `paper` (body field, resolvePaper, default 'APM') is checked when
+// the case is fetched, consistent with the other case routes.
 const CASES_ENABLED = process.env.APM_CASES === '1';
 
 export async function POST(request: Request): Promise<Response> {
@@ -40,8 +44,9 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const { case_id } = body as { case_id?: unknown };
+  const { case_id, paper: paperRaw } = body as { case_id?: unknown; paper?: unknown };
   const caseId = typeof case_id === 'string' && case_id ? case_id : null;
+  const paper = resolvePaper(paperRaw);
   if (!caseId) {
     return NextResponse.json({ error: 'case_id required' }, { status: 400 });
   }
@@ -66,6 +71,7 @@ export async function POST(request: Request): Promise<Response> {
     .from('acca_cases')
     .select('id, scenario_intro, professional_skills_marks, status, published')
     .eq('id', caseId)
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .single();

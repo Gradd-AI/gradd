@@ -8,6 +8,7 @@ import {
   type ClientSessionState,
 } from '@/lib/acca/teach-engine';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { resolvePaper } from '@/lib/acca/paper';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -21,6 +22,12 @@ import { hasActiveAPMAccess } from '@/lib/acca/access';
 //
 // v1 scope: each requirement is completed in turn on the shared scenario. NO synthesis
 // across requirements (that is v2). final_answer is POPULATED on pass but not consumed.
+//
+// PAPER SCOPING: `paper` (body field, resolvePaper, default 'APM') is checked when
+// the case is fetched, so a cross-paper case_id/requirement_id pairing 404s. Once
+// the case fetch is correctly paper-scoped, the requirement fetch (scoped by both
+// requirement_id AND case_id below) is transitively correct — no separate filter
+// needed on acca_case_requirements.
 const CASES_ENABLED = process.env.APM_CASES === '1';
 
 export async function POST(request: Request): Promise<Response> {
@@ -44,17 +51,19 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const { case_id, requirement_id, session_state, student_message, last_ezra_message } = body as {
+  const { case_id, requirement_id, session_state, student_message, last_ezra_message, paper: paperRaw } = body as {
     case_id?: unknown;
     requirement_id?: unknown;
     session_state?: unknown;
     student_message?: unknown;
     last_ezra_message?: unknown;
+    paper?: unknown;
   };
 
   const caseId        = typeof case_id === 'string' && case_id ? case_id : null;
   const requirementId = typeof requirement_id === 'string' && requirement_id ? requirement_id : null;
   const lastEzraMessage = typeof last_ezra_message === 'string' ? last_ezra_message : '';
+  const paper = resolvePaper(paperRaw);
 
   if (!caseId || !requirementId) {
     return NextResponse.json({ error: 'case_id and requirement_id required' }, { status: 400 });
@@ -85,6 +94,7 @@ export async function POST(request: Request): Promise<Response> {
     .from('acca_cases')
     .select('id, scenario_intro, status, published')
     .eq('id', caseId)
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .single();

@@ -1,0 +1,44 @@
+-- =============================================================================
+-- 20260703140000_acca_cases_mock_only.sql
+-- Backfill: acca_cases.mock_only — applied by hand in the Supabase dashboard,
+-- never had a tracked migration file. 5th untracked-migration-debt instance
+-- (see memory/project_migration_hygiene for the first 4, a different set on
+-- the `questions` table — this is a separate occurrence on `acca_cases`).
+-- =============================================================================
+-- WHY: 20260701120000_acca_cases.sql created acca_cases WITHOUT a mock_only
+-- column. The mock feature (lib/acca/mocks.ts, commit 7db8cb5, 2026-07-03)
+-- needs to reserve certain cases for the timed mock only (never surfaced in the
+-- free-standing case list — app/api/acca/case/list/route.ts filters
+-- .eq('mock_only', false)); by 20260708120000_reconcile_apm_case_publish_state.sql
+-- (2026-07-08) the column is already assumed present (referenced in its header
+-- comment and its verification SELECT). It was added directly in the Supabase
+-- SQL Editor sometime in that window with no corresponding file — this file
+-- closes that gap retroactively so a fresh environment / re-seed reproduces the
+-- live schema exactly. NOT applied to prod by this session (prod already has
+-- the column; running this against prod is a verified no-op — see below). The
+-- point is fresh-env parity, not a prod change.
+--
+-- Column definition confirmed against the LIVE production schema
+-- (information_schema.columns, 2026-07-25): mock_only boolean NOT NULL DEFAULT
+-- false. No CHECK constraint, no dedicated index exists on it in prod — this
+-- file adds only the column, matching reality exactly (no invented index).
+--
+-- IDEMPOTENT: ADD COLUMN IF NOT EXISTS; safe to re-run, safe to run against the
+-- live DB where the column already exists (no-op).
+-- =============================================================================
+
+alter table if exists public.acca_cases
+  add column if not exists mock_only boolean not null default false;
+
+-- =============================================================================
+-- VERIFICATION (run after applying):
+--   select column_name, data_type, is_nullable, column_default
+--     from information_schema.columns
+--    where table_name = 'acca_cases' and column_name = 'mock_only';
+--   -- expect 1 row: data_type='boolean', is_nullable='NO', column_default='false'.
+--
+--   select count(*) as mismatched_from_live_snapshot
+--     from public.acca_cases
+--    where mock_only is null;
+--   -- expect 0 (NOT NULL holds).
+-- =============================================================================

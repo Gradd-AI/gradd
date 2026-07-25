@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { resolvePaper } from '@/lib/acca/paper';
 
 // ── APM case-load endpoint (redesign P0 item 1 — case-scope construct) ─────────
 // Behind APM_CASES (default OFF). Flag off → 404 (endpoint is inert; the proven
@@ -12,6 +13,12 @@ import { hasActiveAPMAccess } from '@/lib/acca/access';
 // those stay server-side and are only ever sealed (per-requirement) by the case-turn
 // handler, exactly as a drill's model_answer is. Same serving gate as the three
 // existing drill routes: status='approved' AND published=true.
+//
+// PAPER SCOPING: case_id is a globally-unique PK, so an id-addressed fetch can't
+// accidentally return a wrong-paper row — but `paper` (resolvePaper, default
+// 'APM') is still checked so a cross-paper deep link 404s instead of silently
+// serving an AFM case into an APM-styled shell (or vice versa), consistent with
+// the paper_code check on every other case route.
 const CASES_ENABLED = process.env.APM_CASES === '1';
 
 export async function GET(request: Request): Promise<Response> {
@@ -25,6 +32,7 @@ export async function GET(request: Request): Promise<Response> {
 
   const { searchParams } = new URL(request.url);
   const caseId = searchParams.get('case_id');
+  const paper = resolvePaper(searchParams.get('paper'));
   if (!caseId) {
     return NextResponse.json({ error: 'case_id required' }, { status: 400 });
   }
@@ -47,6 +55,7 @@ export async function GET(request: Request): Promise<Response> {
       .from('acca_cases')
       .select('title')
       .eq('id', caseId)
+      .eq('paper_code', paper)
       .eq('status', 'approved')
       .eq('published', true)
       .single();
@@ -62,6 +71,7 @@ export async function GET(request: Request): Promise<Response> {
     .from('acca_cases')
     .select('id, title, scenario_intro, response_format, total_marks, professional_skills_marks, status, published')
     .eq('id', caseId)
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .single();

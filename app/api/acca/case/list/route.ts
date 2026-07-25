@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { resolvePaper } from '@/lib/acca/paper';
 
 // ── APM case-list endpoint (case UI — list view) ──────────────────────────────
 // Behind APM_CASES (default OFF). Flag off → 404 (inert; the case UI's list page
@@ -10,12 +11,21 @@ import { hasActiveAPMAccess } from '@/lib/acca/access';
 // published=true — same gate as the other case/drill routes), ordered section
 // desc then title. Deliberately NO exhibits, NO requirements, NO sealed fields:
 // the list only needs enough to render a card and link into /acca/cases/[id].
+//
+// PAPER SCOPING: `paper` query param, resolved via the shared resolvePaper
+// (absent/unrecognised → 'APM' — no existing APM entry point changes behaviour).
+// This is the actual leak point: an unscoped SELECT on acca_cases mixes every
+// paper's rows into one list, same failure class the original AFM-drill go-live
+// found and fixed for acca_drills.
 const CASES_ENABLED = process.env.APM_CASES === '1';
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   if (!CASES_ENABLED) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
+
+  const { searchParams } = new URL(request.url);
+  const paper = resolvePaper(searchParams.get('paper'));
 
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
@@ -41,6 +51,7 @@ export async function GET(): Promise<Response> {
   const { data: cases, error } = await supabase
     .from('acca_cases')
     .select('id, title, section, anchor_area, total_marks, professional_skills_marks, response_format')
+    .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
     .eq('mock_only', false)

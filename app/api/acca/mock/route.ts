@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { MOCK_PAPERS, getMockPaper } from '@/lib/acca/mocks';
+import { getMockPaper, getMockPapers } from '@/lib/acca/mocks';
+import { resolvePaper } from '@/lib/acca/paper';
 
 // ── APM timed-mock endpoint ────────────────────────────────────────────────────
 // Behind APM_CASES (default OFF). Flag off → 404 (inert; the mock page treats a
@@ -16,6 +17,12 @@ import { MOCK_PAPERS, getMockPaper } from '@/lib/acca/mocks';
 //
 // The clock is server-authoritative: ends_at is the source of truth, the client
 // only ticks the display. This route NEVER touches Stripe/webhook/engine code.
+//
+// PAPER SCOPING: GET's paper listing is scoped by `paper` (query param,
+// resolvePaper, default 'APM') via getMockPapers — the same class of leak as the
+// unscoped acca_cases list, in code config instead of a table. POST/PATCH are
+// id-addressed via getMockPaper(mock_id); mock_id strings are unique by
+// construction, so no cross-paper collision risk exists there.
 const CASES_ENABLED = process.env.APM_CASES === '1';
 
 interface AttemptRow {
@@ -62,11 +69,14 @@ async function latestAttempt(supabase: SupabaseClient, userId: string): Promise<
   return (data as AttemptRow | null) ?? null;
 }
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const g = await gate();
   if ('error' in g) return g.error;
 
-  const papers = MOCK_PAPERS.map((p) => ({
+  const { searchParams } = new URL(request.url);
+  const paper = resolvePaper(searchParams.get('paper'));
+
+  const papers = getMockPapers(paper).map((p) => ({
     id: p.id,
     title: p.title,
     duration_minutes: p.duration_minutes,
