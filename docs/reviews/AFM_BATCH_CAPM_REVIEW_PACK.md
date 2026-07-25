@@ -453,9 +453,9 @@ Project:
 
 **Step 1 — The company's own WACC (the tempting but WRONG hurdle here)**
 
-Company Ke = Rf + β_company × MRP = 3.80% + 1.150 × 6.50% = 11.27%.
+Company Ke = Rf + β_company × MRP = 3.80% + 1.150 × 6.50% = 11.28%.
 
-Company WACC = 11.27% × 0.793 + 5.76% × 0.207 = **10.13%**.
+Company WACC = 11.28% × 0.793 + 5.76% × 0.207 = **10.13%**.
 
 **Step 2 — The project-specific rate (ungear the peer, regear to your gearing)**
 

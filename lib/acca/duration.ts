@@ -205,7 +205,7 @@ export function buildDurationSchema(raw: DurationInputs, c: DurationComputed, cu
 // ── Model answer: code owns every figure + the ranking / zero-vs-coupon verdicts ──
 function bondTable(m: (n: number) => string, bm: BondMetrics): string[] {
   const lines = [`| Year | Cash flow | DF @ ${pct2(bm.ytm / bm.freq)} | PV | t·PV |`, `|------|------|------|------|------|`];
-  for (const r of bm.rows) lines.push(`| ${r.year} | ${m(r.cash_flow)} | ${r.df.toFixed(3)} | ${m(r.pv)} | ${m(r.t_pv)} |`);
+  for (const r of bm.rows) lines.push(`| ${r.year} | ${m(r.cash_flow)} | ${fixedHalfUp(r.df, 3)} | ${m(r.pv)} | ${m(r.t_pv)} |`);
   lines.push(`| **Totals** | | | **${m(bm.price)}** | **${m(bm.weighted_sum)}** |`);
   return lines;
 }
@@ -252,7 +252,7 @@ export function buildDurationModelAnswer(raw: DurationInputs, c: DurationCompute
     lines.push(`**Modified duration = Macaulay ÷ (1 + ${pct2(p.ytm)}) = ${fmtY(p.modified)} years.**`, '');
     lines.push(`**Step ${S()} — Interest-rate sensitivity**`, '');
     const dy = c.yield_shift ?? 0;
-    lines.push(`For a ${dy >= 0 ? '+' : ''}${pct2(dy)} (${Math.round(dy * 10000)} bp) shift in the yield, the first-order estimate is ΔP/P ≈ −modified × Δy = **${c.price_sensitivity!.toFixed(2)}%** (a fall of about ${m(Math.abs(p.price * c.price_sensitivity! / 100))} on this ${m(p.price)} position).`, '');
+    lines.push(`For a ${dy >= 0 ? '+' : ''}${pct2(dy)} (${Math.round(dy * 10000)} bp) shift in the yield, the first-order estimate is ΔP/P ≈ −modified × Δy = **${fixedHalfUp(c.price_sensitivity!, 2)}%** (a fall of about ${m(Math.abs(p.price * c.price_sensitivity! / 100))} on this ${m(p.price)} position).`, '');
     if (kind === 'limitations') {
       lines.push(`**Step ${S()} — Limitations: why this is only an approximation (convexity)**`, '');
       lines.push(`Modified duration is a **linear (first-order)** estimate: it assumes price moves in a straight line with yield. Because the true price–yield relationship is **curved (convex)**, over a shift this large the linear estimate **overstates the price fall when yields rise and understates the gain when yields fall** — the second-order convexity term corrects for that curvature. Duration alone is reliable only for small, parallel yield moves; a full assessment adds convexity (and, for non-parallel shifts, the term structure).`, '');
@@ -268,7 +268,7 @@ export function buildDurationModelAnswer(raw: DurationInputs, c: DurationCompute
   // Reconciliation
   if (kind === 'compare') lines.push(`*Reconciliation: ${cap(p.label)} modified ${fmtY(p.modified)}y vs ${cap(c.bond_b!.label)} modified ${fmtY(c.bond_b!.modified)}y — more exposed = ${c.more_exposed === 'primary' ? p.label : c.more_exposed === 'bond_b' ? c.bond_b!.label : 'equal'}. ✓*`);
   else if (kind === 'zero_coupon') lines.push(`*Reconciliation: zero Macaulay ${fmtY(p.macaulay)}y = ${p.maturity}y maturity; coupon-bond Macaulay ${fmtY(c.coupon_ref!.macaulay)}y < maturity. ✓*`);
-  else lines.push(`*Reconciliation: price ${m(p.price)}, Σ t·PV ${m(p.weighted_sum)} → Macaulay ${fmtY(p.macaulay)}y → modified ${fmtY(p.modified)}y → ΔP/P ${c.price_sensitivity!.toFixed(2)}% ✓*`);
+  else lines.push(`*Reconciliation: price ${m(p.price)}, Σ t·PV ${m(p.weighted_sum)} → Macaulay ${fmtY(p.macaulay)}y → modified ${fmtY(p.modified)}y → ΔP/P ${fixedHalfUp(c.price_sensitivity!, 2)}% ✓*`);
 
   return lines.join('\n');
 }

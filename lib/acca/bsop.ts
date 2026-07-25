@@ -28,7 +28,7 @@ const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const D = (pct: number): number => pct / 100;               // percent → decimal
 const pct2 = (p: number): string => `${fixedHalfUp(p, 2)}%`;     // p is a PERCENT number
-const d4 = (x: number): string => x.toFixed(4);             // d1/d2 and N(d) at 4 dp (table convention)
+const d4 = (x: number): string => fixedHalfUp(x, 4);             // d1/d2 and N(d) at 4 dp (table convention)
 
 // Exact cumulative standard normal via Abramowitz-Stegun 7.1.26 erf (max error ~1.5e-7 — far finer
 // than the 4-dp tables). N(x) = ½(1 + erf(x/√2)).
@@ -197,7 +197,7 @@ export function buildBsopModelAnswer(raw: BsopInputs, c: BsopComputed, prose: st
     `| Exercise, Pₑ | ${eLbl} | ${m(c.Pe)} |`,
     `| Volatility, s | annual volatility | ${pct2(c.s)} |`,
     `| Risk-free, r | risk-free rate | ${pct2(c.r)} |`,
-    `| Time, t | time to expiry | ${c.t.toFixed(1)} years |`,
+    `| Time, t | time to expiry | ${fixedHalfUp(c.t, 1)} years |`,
     '');
 
   // The illustrative table-read pair for THIS drill's own d-values: N at d rounded to 2 dp (what
@@ -207,7 +207,7 @@ export function buildBsopModelAnswer(raw: BsopInputs, c: BsopComputed, prose: st
   const nd1Table = normCdf(d1r), nd2Table = normCdf(d2r);
   lines.push(`**Step ${S()} — d1, d2 and the cumulative normals**`, '',
     `d1 = [ln(Pₐ/Pₑ) + (r + s²/2)·t] / (s·√t) = **${d4(c.d1)}**; d2 = d1 − s·√t = **${d4(c.d2)}**.`, '',
-    `**N(d1) = ${d4(c.Nd1)}**, **N(d2) = ${d4(c.Nd2)}** (computed exactly; a normal-table read at d1 = ${d1r.toFixed(2)} / d2 = ${d2r.toFixed(2)} gives ${d4(nd1Table)} / ${d4(nd2Table)} — either scores in full).`, '');
+    `**N(d1) = ${d4(c.Nd1)}**, **N(d2) = ${d4(c.Nd2)}** (computed exactly; a normal-table read at d1 = ${fixedHalfUp(d1r, 2)} / d2 = ${fixedHalfUp(d2r, 2)} gives ${d4(nd1Table)} / ${d4(nd2Table)} — either scores in full).`, '');
 
   lines.push(`**Step ${S()} — Option value**`, '',
     `c = Pₐ·N(d1) − Pₑ·e^(−rt)·N(d2) = ${m(c.Pa)}×${d4(c.Nd1)} − ${m(c.pv_exercise)}×${d4(c.Nd2)} = **${m(c.call)}**.`, '');

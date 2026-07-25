@@ -1,6 +1,14 @@
 # AFM APV batch — review pack R2 (delta of round-1 amendments)
 
-**Round-1 verdict: all 5 findings ACCEPTED and applied cross-field.** All four drills re-gated — now **6 gates** (added **P6 loss-relief**: a negative-taxable year requires a stated loss-relief assumption). This pack shows ONLY the amended fields; unchanged fields are in `AFM_BATCH_APV_REVIEW_PACK.md` (round 1).
+**Round-1 verdict: all 5 findings ACCEPTED and applied cross-field.** All four drills re-gated — now **6 gates** (added **P6 loss-relief**: a negative-taxable year requires a stated loss-relief assumption). This pack shows ONLY the amended fields; unchanged fields are in `AFM_BATCH_APV_REVIEW_PACK.md`.
+
+> ### ⚠ READ FIRST — this is a ROUND-2 DELTA pack, and its bodies have since been REFRESHED past round 2.
+>
+> The section bodies below are the **current live DB state (verified 2026-07-25)**, not a frozen round-2 artefact. Two later changes have been absorbed into them, and one round-2 amendment that this pack documents no longer appears as a delta because the field moved again afterwards. Read the headings for *what round 2 changed*; read the bodies for *what the row says now*.
+>
+> **Drill 4 (`B3k dedca530`) CHANGED MATERIALLY on 2026-07-25** — its scenario bullet, arrangement fee, `debt_issue_costs` and `apv_debt` all moved. This pack only ever quoted `dedca530`'s `full_reveal`, which is **unchanged**, so nothing below shows it. The full before/after table is at the top of `AFM_BATCH_APV_REVIEW_PACK.md` — **read that before reviewing Drill 4 anywhere.** Summary: debt arrangement fee 3.0% → 2.0%, `debt_issue_costs` −1.95 → −1.30, `apv_debt` 6.3213 → 6.9713, because −1.95 is a half-way rounding tie its tolerance could not absorb. Debt still wins (7.0 vs 2.5); the verdict did not flip.
+>
+> **Drill 2 (`B3j 34f9e897`) `model_answer` — cosmetic, same date:** `ncf_1` 449.35 and year-1 taxable 99.35 are 1 dp ties, now printing `BRL 449.4m` / `BRL 99.4m`. No stored value changed.
 
 ## Pattern-level outcomes
 
@@ -27,7 +35,7 @@ SCENARIO NARRATIVE
 
 Via Planalto Concessões S.A. ("Via Planalto") is a Brazilian transport-infrastructure group that operates four highway concessions across the Centro-Oeste region under regulatory oversight from ANTT (Agência Nacional de Transportes Terrestres). The company currently carries modest financial leverage, and its existing WACC is relatively stable. The board is evaluating a material expansion — the Corredor Norte project — which would widen and resurface a 180 km stretch of federal highway BR-163 between Sinop (Mato Grosso) and Sorriso, adding two express-toll lanes and four new toll plazas.
 
-The project changes Via Planalto's financing structure substantially: a BRL 520 million development loan, tied exclusively to this project, has been offered by the Banco Nacional de Desenvolvimento Econômico e Social (BNDES) at a below-market subsidised coupon. Because the quantum of new debt is large relative to the firm's existing capital base, and because the debt level is expected to decline as the loan is repaid, the conventional WACC-based NPV — which assumes a constant debt ratio — is an unreliable appraisal tool. APV, which values the financing side-effects explicitly and separately from the project's operating cash flows, is therefore the appropriate methodology.
+The project changes Via Planalto's financing structure substantially: a BRL 520 million development loan, tied exclusively to this project, has been offered by the Banco Nacional de Desenvolvimento Econômico e Social (BNDES) at a below-market subsidised coupon. Because the project-specific debt is large, temporary, and extinguished at the end of the concession horizon, the conventional WACC-based NPV — which assumes a constant debt ratio — is an unreliable appraisal tool. APV, which values the financing side-effects explicitly and separately from the project's operating cash flows, is therefore the appropriate methodology.
 
 The Corredor Norte concession runs for four years from the date of first toll collection (the appraisal horizon); the BNDES facility is drawn at project inception and outstanding in full until a single bullet repayment at the end of Year 4. The ungeared (all-equity) cost of equity, Keu, has been assessed by the finance team at 16.0% per annum, reflecting the systematic operating risk of a regulated toll-road in the Brazilian market at the current stage of the concession cycle.
 
@@ -76,7 +84,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 
 | Year | Operating cash flow | WDA | Taxable | Tax |
 |------|------|------|------|------|
-| 1 | BRL 449.3m | BRL 350.0m | BRL 99.3m | BRL 33.8m |
+| 1 | BRL 449.4m | BRL 350.0m | BRL 99.4m | BRL 33.8m |
 | 2 | BRL 546.0m | BRL 262.5m | BRL 283.5m | BRL 96.4m |
 | 3 | BRL 650.5m | BRL 196.9m | BRL 453.6m | BRL 154.2m |
 | 4 | BRL 739.4m | BRL 410.6m | BRL 328.7m | BRL 111.8m |
@@ -86,7 +94,7 @@ For the purposes of this appraisal, ignore any jurisdiction-specific half-year r
 | Period | Net cash flow | DF @ Keu 16.00% | Present value |
 |--------|------|------|------|
 | 0 | BRL -1400.0m | 1.000 | BRL -1400.0m |
-| 1 | BRL 449.3m | 0.862 | BRL 387.4m |
+| 1 | BRL 449.4m | 0.862 | BRL 387.4m |
 | 2 | BRL 512.2m | 0.743 | BRL 380.7m |
 | 3 | BRL 554.1m | 0.641 | BRL 355.0m |
 | 4 | BRL 765.1m | 0.552 | BRL 422.6m |

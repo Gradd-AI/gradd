@@ -103,11 +103,50 @@ production, not of the branch. `status`/`published` were NOT touched (all still
 `model_answer` / `answer_schema` / `context_text` for all 5 rows:
 `ClaudeSend_boundary_rollback.json` (repo root, untracked).
 
-**⚠️ OPEN — review packs are now STALE for these 5 drills** (they are hand-maintained DB
-snapshots and were not regenerated): `AFM_BATCH_APV_REVIEW_PACK.md`,
-`AFM_BATCH_CAPM_REVIEW_PACK.md`, `AFM_BATCH_VALUATION_REVIEW_PACK.md`,
-`AFM_IRR_BATCH2_REVIEW_PACK.md`, `AFM_IRR_BATCH2_REVIEW_PACK_R2.md`, `APV_REVIEW_PACK_R2.md`.
-`B3k`'s drift is the material one (a param + 4 figures); the other four are a single digit each.
+**✅ CLOSED — review packs regenerated and AUDITED (2026-07-25).** All 34 declared per-drill
+section bodies across the six packs now match the live DB byte-for-byte (verified by a
+section-level audit, not by eye). Two things the audit changed about the story:
+
+- **One of the six was never stale.** `AFM_IRR_BATCH2_REVIEW_PACK_R2.md` came out **0/1
+  diverging** — the "six stale packs" claim came from a grep for drill ids, which proves a pack
+  MENTIONS a row, not that it quotes a body that moved. That pack quotes only `796651c2`'s
+  `hint`, which this work never touched. **Standing lesson: audit the bodies, never infer
+  staleness from an id grep.**
+- **Two divergences PREDATED this work**, in `AFM_IRR_BATCH2_REVIEW_PACK.md` DRILL 1: its
+  `context_text` was missing the loss-relief line added by the APV batch's own FIX 1
+  retrospective, and its `hint` still had the pre-FIX-5 wording. Both were amendments made in
+  earlier rounds and never back-copied into the round-1 pack. Now current, and flagged in-pack.
+
+`B3k dedca530`'s delta (scenario bullet, arrangement fee, `debt_issue_costs`, `apv_debt`) carries
+a before/after banner at the TOP of both APV packs so a cold reviewer sees it without diffing.
+The two R2 delta packs carry a banner saying their bodies are current-state, not frozen-at-round-2.
+
+**🔻 FOUND BY THE PACK AUDIT — my own re-author silently drifted two `answer_schema.params`
+(now corrected).** The first write reported "all components as stored" and that was true, but it
+checked COMPONENTS ONLY: `B3d 2a145f7d` had `own_ve`/`own_vd` rewritten 48200/12600 **→ 0** (the
+`wrong_hurdle` maths never reads them, so `buildCapmSchema`'s `?? 0` default silently won when the
+re-author omitted them), and `B4a 0dc970a8` had `kd` rewritten 0.057999999999999996 **→ 0.058**
+(the scenario states 5.8%, and the original generator passed `5.8` for `asDecimalRate` to
+normalise). Neither moved a component enough to trip the drift check. Both restored to the
+originally-published values in a second write; `model_answer` diff was 0 lines, all gates
+re-passed. **The re-author script now checks params with EXACT equality alongside components** —
+that gap is the reason a downstream audit, not the write's own verification, caught this.
+
+**✅ toFixed AUDIT — the FR3 sweep WAS incomplete; the invariant is now total, not judged.**
+FR3 claimed 24 formatters converted; `valuation.ts` and `irr.ts` were missed, which is what
+shipped `B4a`'s `11.67%`. Rather than re-judge site by site (the method that failed), **59
+further call sites across 9 calculator modules** were converted so that *every figure a student
+sees* renders through `fixedHalfUp` — discount factors, credit spreads in bp, computed
+percentages, profitability indices, betas, probabilities, BSOP d1/d2 + N(d), stated fractions
+rendered as whole percentages, contract counts and the pre-rounding contract quotient. **27 raw
+`toFixed` code-line sites remain and every one is intentional:** 10 are THE DETECTORS (the naive
+rendering is the thing being detected — `validate-schema.ts`, `derived-figure-integrity.ts`,
+GATE 2's dual-form check, and `fixedHalfUp`'s own final render) and 17 are author-facing
+diagnostics (`throw` text, validator `reason:` strings, a lookup key). The invariant and the
+exact two permitted classes are written into the header of `lib/acca/rounding.ts`, so the audit
+is a one-line grep: `grep -rn "toFixed(" lib/acca/*.ts | grep -v fixedHalfUp`. Behaviour-neutral
+by construction and proven so — all 18 calculator fixture suites pass unchanged, `tsc --noEmit`
+clean, `next build` green.
 
 **🔹 INERT / GATE-HARDENING — HALFWAY_ROUNDING_RISK cannot attribute a shared artefact string.**
 The `B3k` case above is the general form: when the naive rendering of component A's value also

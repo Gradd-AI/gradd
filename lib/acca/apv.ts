@@ -293,7 +293,7 @@ export function buildApvSchema(raw: ApvInputs, c: ApvComputed, currency: string,
       expected_value: per.pv, unit: moneyUnit, tolerance: rel(0.5),
       depends_on: [`ncf_${per.period}`],
       recompute: (dep) => dep[`ncf_${per.period}`] * d,
-      working_steps: [`= ncf_${per.period} × ${d.toFixed(3)} (discount factor at Keu ${pct2(keu)})`],
+      working_steps: [`= ncf_${per.period} × ${fixedHalfUp(d, 3)} (discount factor at Keu ${pct2(keu)})`],
     });
   }
   const pvIds = c.base.periods.map((p) => `pv_${p.period}`);
@@ -431,7 +431,7 @@ export function buildApvModelAnswer(raw: ApvInputs, c: ApvComputed, prose: strin
   // Step 3 — base case at Keu
   lines.push('**Step 3 — Base-case NPV (all-equity, discounted at Keu)**', '', `| Period | Net cash flow | DF @ Keu ${pct2(keu)} | Present value |`, `|--------|------|------|------|`);
   lines.push(`| 0 | ${m(-raw.initial_outlay)} | 1.000 | ${m(-raw.initial_outlay)} |`);
-  for (const p of c.base.periods) lines.push(`| ${p.period} | ${m(p.ncf)} | ${p.df.toFixed(3)} | ${m(p.pv)} |`);
+  for (const p of c.base.periods) lines.push(`| ${p.period} | ${m(p.ncf)} | ${fixedHalfUp(p.df, 3)} | ${m(p.pv)} |`);
   lines.push('');
   lines.push(`**Base-case NPV = present value of the operating flows ${m(c.base.pv_inflows)} − initial outlay ${m(raw.initial_outlay)} = ${m(c.base_npv)}.**`, '');
 
@@ -446,14 +446,14 @@ export function buildApvModelAnswer(raw: ApvInputs, c: ApvComputed, prose: strin
   if (c.shield_rows && c.tax_shield !== undefined) {
     lines.push(`*Debt tax shield* — interest is tax-deductible, so ${m(debt)} of debt at ${pct2(coupon)} gives annual tax relief of ${m(debt * coupon * taxRate)}, **received ${lag === 0 ? 'in the year the interest is charged' : 'one year in arrears (the same lag as trading tax)'}** and discounted at the pre-tax cost of debt Kd ${pct2(kd)}:`, '');
     lines.push(`| Interest year | Interest | Tax relief | Received (period) | DF @ ${pct2(kd)} | PV |`, `|------|------|------|------|------|------|`);
-    for (const r of c.shield_rows) lines.push(`| ${r.interest_year} | ${m(r.interest)} | ${m(r.shield)} | ${r.receipt_period} | ${r.df.toFixed(3)} | ${m(r.pv)} |`);
+    for (const r of c.shield_rows) lines.push(`| ${r.interest_year} | ${m(r.interest)} | ${m(r.shield)} | ${r.receipt_period} | ${fixedHalfUp(r.df, 3)} | ${m(r.pv)} |`);
     lines.push('', `**PV of the tax shield = ${m(c.tax_shield)}.**`, '');
   }
 
   if (c.subsidy_rows && c.subsidy_benefit !== undefined) {
     lines.push(`*Subsidised-loan benefit* — the loan is priced below the market rate, so the firm saves ${pct2(c.subsidy_spread ?? kd - coupon)} of ${m(debt)} = ${m(debt * (kd - coupon))} of interest each year (a pre-tax cash saving in the interest year); the smaller interest deduction then adds tax of ${m(debt * (kd - coupon) * taxRate)} **${lag === 0 ? 'in the same year' : 'one year later — the same lag as the shield'}**. Both legs are discounted at the market Kd ${pct2(kd)}:`, '');
     lines.push(`| Interest year | Pre-tax saving (period ${lag === 0 ? 'y' : 'y'}) | Extra tax (period y+${lag}) | Net PV |`, `|------|------|------|------|`);
-    for (const r of c.subsidy_rows) lines.push(`| ${r.year} | +${m(r.saving)} @ ${r.saving_df.toFixed(3)} | −${m(r.tax)} @ ${r.tax_df.toFixed(3)} (period ${r.tax_period}) | ${m(r.pv)} |`);
+    for (const r of c.subsidy_rows) lines.push(`| ${r.year} | +${m(r.saving)} @ ${fixedHalfUp(r.saving_df, 3)} | −${m(r.tax)} @ ${fixedHalfUp(r.tax_df, 3)} (period ${r.tax_period}) | ${m(r.pv)} |`);
     lines.push('', `**PV of the subsidised-loan benefit = ${m(c.subsidy_benefit)}.**`, '');
   }
 

@@ -55,12 +55,13 @@ Raw inputs:
 ```
 
 ### Model answer
+
 **Firm and equity valuation (FCFF, with the cost of capital derived)**
 
 **Step 0 — Cost of capital (CAPM → WACC)**
 
-Ke = Rf + βe × MRP = 4.20% + 1.15 × 6.50% = **11.67%**
-WACC = Ke×We + Kd(1−T)×Wd = 11.67%×0.564 + 5.80%×(1−0.2)×0.436 = **8.61%**  *(the firm-level discount rate)*
+Ke = Rf + βe × MRP = 4.20% + 1.15 × 6.50% = **11.68%**
+WACC = Ke×We + Kd(1−T)×Wd = 11.68%×0.564 + 5.80%×(1−0.2)×0.436 = **8.61%**  *(the firm-level discount rate)*
 
 **Step 1 — Free cash flow to firm (FCFF)**
 
@@ -95,6 +96,7 @@ Before you can compare anything to the vendor's offer price, check whether what 
 The classic misconception here is VALUATION PLUMBING: candidates either deduct interest before arriving at FCFF, or they discount the firm flow at the cost of equity rather than WACC, or — having reached a firm value — they forget to strip the debt before comparing to the vendor's equity offer price. Each error matters for a different structural reason: deducting interest double-counts the cost of debt (because the return to debt providers is already embedded in the WACC as the weighted cost of the debt tranche), while mismatching the discount rate produces a mismatch between what the rate prices and what the flow represents — FCFF belongs to all capital providers, so it must be discounted at the blended, market-value-weighted rate that reflects all of them, not just equity holders. If your FCFF or WACC figure is wrong but your downstream method is structurally correct — debt stripped, perpetuity growth applied, offer compared to equity value — carry your own figure forward consistently, because those method marks still score where the logic holds; OFR credit is conditional on correct subsequent use, not automatic. At the boardroom bar, the calculation is the floor: the board needs to know whether the vendor's indicative price is supportable, and that verdict must engage the scenario's specific scepticism points — the concentration of NMG's revenue in two corporate insurance contracts and the sustainability of the perpetuity growth assumption — not merely note that assumptions exist.
 
 ### answer_schema (serialized)
+
 ```json
 {
  "params": {
@@ -119,7 +121,7 @@ The classic misconception here is VALUATION PLUMBING: candidates either deduct i
    },
    "component_id": "ke",
    "working_steps": [
-    "Ke = Rf + βe × MRP = 4.20% + 1.15 × 6.50% = 11.67%"
+    "Ke = Rf + βe × MRP = 4.20% + 1.15 × 6.50% = 11.68%"
    ],
    "expected_value": 11.674999999999999
   },
