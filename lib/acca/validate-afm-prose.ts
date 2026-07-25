@@ -467,6 +467,59 @@ export function lintZeroAdditionalTaxPhrasing(zeroAdditionalTax: boolean, fields
   return issues;
 }
 
+// P9-SCENARIO (FR3 ruling, 2026-07-25). P9 proper deliberately scans only the requirement's
+// OWN prose, because a scenario may legitimately state that a treaty gives relief — that is
+// standard exam framing (ACCA's own Penn/Zanadia question states both rates plainly). But
+// that left one hole: on the nil-additional-tax branch, the SCENARIO could assert a RESOLVED
+// OUTCOME ("no further tax is due", "fully relieved") — teaching the very idea P9 exists to
+// stop, in the one field P9 does not watch, and in the field students read first and trust most.
+//
+// This variant is deliberately NARROW. It fires only on the nil branch, and only on language
+// asserting that the home charge is RESOLVED/EXTINGUISHED. A general statement of the
+// MECHANISM — including capped-relief wording such as "relief is given for the overseas tax
+// suffered, credited against the home charge and capped at that charge" — must PASS, because
+// stating the rule is what lets the candidate derive the branch themselves. Stating the
+// outcome hands over the answer AND misteaches when the outcome is nil.
+//
+// The settled resolved-outcome set (each with near neighbours): a claim that no further/
+// additional home tax arises or is payable; that the profits/charge are fully or wholly
+// relieved/covered/eliminated/extinguished/offset; that the credit extinguishes, eliminates,
+// wipes out or cancels the home charge; that there is no residual home liability; or that the
+// home charge is reduced to nil/zero. Bare "credited against" and bare "capped at" are NOT in
+// the set — they are mechanism, not outcome.
+const RESOLVED_OUTCOME_PATTERNS: { re: RegExp; what: string }[] = [
+  { re: /\bno\s+(?:further|additional|extra|residual|remaining)\s+(?:\w+\s+){0,3}?tax\b/i, what: '"no further/additional tax"' },
+  { re: /\bno\s+(?:further|additional|extra|residual|remaining)\s+(?:\w+\s+){0,3}?(?:charge|liability)\b/i, what: '"no further/residual charge or liability"' },
+  { re: /\b(?:fully|wholly|entirely|completely)\s+(?:relieved|covered|offset|eliminated|extinguished|credited)\b/i, what: '"fully relieved/covered/offset"' },
+  { re: /\b(?:extinguish(?:es|ed|ing)?|eliminat(?:es|ed|ing)|wipes?\s+out|cancels?(?:\s+out)?|negates?)\b[^.]{0,50}\b(?:charge|liability|tax)\b/i, what: '"extinguishes/eliminates/cancels the charge"' },
+  { re: /\b(?:charge|liability|tax)\b[^.]{0,40}\b(?:is|are)\s+(?:reduced\s+to\s+)?(?:nil|zero)\b/i, what: '"the charge is nil/zero"' },
+  { re: /\bnil\s+(?:further|additional|residual)\b/i, what: '"nil further/additional"' },
+];
+
+/** P9-SCENARIO — resolved-outcome assertions in the SHARED scenario/exhibits on the
+ *  nil-additional-tax branch. `scenario` is context_text + exhibits (+ question). */
+export function lintZeroAdditionalTaxScenario(zeroAdditionalTax: boolean, scenario: string): ProseIssue[] {
+  if (!zeroAdditionalTax) return [];
+  if (!scenario) return [];
+  const issues: ProseIssue[] = [];
+  for (const p of RESOLVED_OUTCOME_PATTERNS) {
+    const m = p.re.exec(scenario);
+    if (!m) continue;
+    issues.push({
+      gate: 'zero-additional-tax-phrasing',
+      field: 'context_text',
+      code: 'resolved-outcome-in-scenario',
+      message:
+        `the scenario asserts a RESOLVED tax outcome — ${p.what} ("…${m[0].trim()}…") — on a requirement whose computation yields ZERO ` +
+        `additional home tax. That hands the candidate the branch instead of letting them derive it, and it is the same misteaching P9 ` +
+        `blocks in the requirement's own prose (which does not scan the shared scenario). State the MECHANISM instead and let the ` +
+        `candidate resolve it: relief is given for the overseas tax suffered, credited against the home charge and CAPPED at that charge.`,
+    });
+    break; // one issue is enough; the fix is the same sentence
+  }
+  return issues;
+}
+
 /** Run both prose gates over whatever fields are present. */
 export function lintAfmProse(fields: {
   question: string;

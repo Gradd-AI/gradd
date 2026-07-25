@@ -92,6 +92,7 @@
 //     1% without undertaking the swap and this is reduced by 0.5% if the swap is undertaken" (a 0.5%
 //     bank fee per party). Thinnest-evidenced kind of the four — flagged, mirroring fxhedge's swap.
 
+import { fixedHalfUp } from './rounding';
 import { normaliseCurrency, type SerializedSchema } from './valuation';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 
@@ -102,10 +103,10 @@ import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 export { normaliseCurrency };
 
 // ── formatting / tolerances (LOCAL — not shared with fxhedge) ──
-export const fmt1 = (n: number): string => n.toFixed(1);
-export const fmt2 = (n: number): string => n.toFixed(2);
-export const fmt4 = (n: number): string => n.toFixed(4);
-const pctStr = (p: number): string => `${p.toFixed(2)}%`;
+export const fmt1 = (n: number): string => fixedHalfUp(n, 1);
+export const fmt2 = (n: number): string => fixedHalfUp(n, 2);
+export const fmt4 = (n: number): string => fixedHalfUp(n, 4);
+const pctStr = (p: number): string => `${fixedHalfUp(p, 2)}%`;
 // Money display helper — prints the RAW figure (absolute units, exact source reproduction) at 1dp
 // with thousands separators. Kept at 1dp so the generator's figure-integrity check (which matches
 // expected_value.toFixed(1)) always finds every money figure; commas are stripped by that check

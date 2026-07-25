@@ -21,6 +21,7 @@
 // unless every line is ok. scripts/_author_mock_paper1.ts is the reference caller.
 
 import type { AnswerSchema, Verdict, StudentSubmission } from './numeric-verifier';
+import { fixedHalfUp } from './rounding';
 import { verifyNumericAnswer } from './numeric-verifier';
 import {
   validateSchemaSelfConsistency,
@@ -35,6 +36,7 @@ import {
   validateContractCount,
   validateEffectiveRateReconciliation,
   validateBasisDecayAndScepticism,
+  validateHalfwayRounding,
   type ValidationResult,
 } from './validate-schema';
 import {
@@ -47,6 +49,7 @@ import {
   lintZeroAdditionalTaxPhrasing,
   lintRecommendationConsistency,
   lintTaxRateAssignment,
+  lintZeroAdditionalTaxScenario,
 } from './validate-afm-prose';
 import type { IntlNpvInputs, IntlNpvComputed } from './international';
 import type { ForwardMmhCompareInputs, ForwardMmhCompareComputed } from './fxhedge';
@@ -115,7 +118,13 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
   g.push({ name: 'GATE1 self-consistency', ok: v1.ok, detail: v1.issues.map((i) => `${i.gate}/${i.code} ${i.component_id}`).join(' | ') });
 
   const norm = f.model_answer.replace(/,/g, '');
-  const present = (n: number) => [1, 2, 3, 4].some((d) => norm.includes(n.toFixed(d)) || norm.includes(Math.abs(n).toFixed(d)));
+  // Accept EITHER rendering of a figure: plain toFixed OR the boundary-aware
+  // `fixedHalfUp` the calculators now display with (lib/acca/rounding.ts). Without the
+  // second form, GATE 2 would fail every value sitting on a half-way boundary — the prose
+  // legitimately shows "0.938" while toFixed(3) of the float yields "0.937".
+  const present = (n: number) => [1, 2, 3, 4].some((d) =>
+    norm.includes(n.toFixed(d)) || norm.includes(Math.abs(n).toFixed(d)) ||
+    norm.includes(fixedHalfUp(n, d)) || norm.includes(fixedHalfUp(Math.abs(n), d)));
   const missing = schema.components.filter((c) => !present(c.expected_value)).map((c) => `${c.component_id}=${fmt1(c.expected_value)}`);
   g.push({ name: 'GATE2 answer↔schema figures', ok: missing.length === 0, detail: missing.join(', ') });
 
@@ -155,11 +164,22 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
     g.push({ name: 'GATE 26 recommendation-consistency', ok: g26.length === 0, detail: g26.map((i) => i.code + ': ' + i.message).join(' | ') });
   }
 
+  // P9-SCENARIO — the nil-branch resolved-outcome check on the SHARED scenario/exhibits,
+  // the one field P9 proper deliberately does not scan (FR3).
+  const p9s = lintZeroAdditionalTaxScenario(f.zeroAddlTax === true, `${f.context}\n${f.question}`);
+  g.push({ name: 'P9-SCENARIO resolved-outcome in scenario', ok: p9s.length === 0, detail: p9s.map((i) => i.code + ': ' + i.message).join(' | ') });
+
   // TAX_RATE_ASSIGNMENT — runs on the SCENARIO the candidate sees (context/exhibits +
   // question), not the worked answer. Structural no-op unless ≥2 distinct corporate tax
   // rates are in scope, so single-jurisdiction requirements are unaffected.
   const gTax = lintTaxRateAssignment(`${f.context}\n${f.question}`);
   g.push({ name: 'TAX_RATE_ASSIGNMENT multi-rate purposes', ok: gTax.length === 0, detail: gTax.map((i) => i.code + ': ' + i.message).join(' | ') });
+
+  // HALFWAY_ROUNDING_RISK — a code-owned figure rendered at a precision where code and a
+  // hand-working student can legitimately disagree on the last digit. ASSESSMENT hazard:
+  // answer-locked marking must not be able to mark a correct student wrong.
+  const gHalf = validateHalfwayRounding(schema, f.model_answer);
+  g.push({ name: 'HALFWAY_ROUNDING_RISK boundary figures', ok: gHalf.ok, detail: gHalf.issues.map((i) => i.component_id + ': ' + i.message).join(' | ') });
 
   return g;
 }

@@ -15,6 +15,7 @@
 // tolerance ±0.05); price/weighted_sum are money (relative ±0.5%); the % price sensitivity
 // uses abs ±0.1 pp.
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
@@ -23,8 +24,8 @@ export { normaliseCurrency };
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
-const fmtY = (y: number): string => y.toFixed(3);       // duration in years, 3 dp
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
+const fmtY = (y: number): string => fixedHalfUp(y, 3);       // duration in years, 3 dp
 const df = (r: number, p: number): number => 1 / Math.pow(1 + r, p);
 const EPS = 1e-9;
 

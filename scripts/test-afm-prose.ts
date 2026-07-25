@@ -1,7 +1,7 @@
 // scripts/test-afm-prose.ts
 // Fixtures for the rescoped AFM prose lints (lib/acca/validate-afm-prose.ts). Pure — no
 // env/DB/model. Exit 1 on any mismatch.
-import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead, lintZeroAdditionalTaxPhrasing, lintRecommendationConsistency, lintTaxRateAssignment, findCorporateTaxRates } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead, lintZeroAdditionalTaxPhrasing, lintRecommendationConsistency, lintTaxRateAssignment, findCorporateTaxRates, lintZeroAdditionalTaxScenario } from '../lib/acca/validate-afm-prose';
 
 let failures = 0;
 function check(name: string, got: number, want: number, codes: string[] = []) {
@@ -136,6 +136,31 @@ check('findCorporateTaxRates: detects both corporate rates',
   findCorporateTaxRates('The Brazilian corporate tax rate is 34% and the French corporate tax rate is 25%.').length, 2);
 check('findCorporateTaxRates: ignores withholding / inflation / risk-free percentages',
   findCorporateTaxRates('Withholding tax of 15% applies. Inflation is 4.5%. The risk-free rate is 3.8%.').length, 0);
+
+// (14) P9-SCENARIO (FR3) — nil-branch RESOLVED-OUTCOME assertions in the shared
+// scenario/exhibits, the field P9 proper deliberately does not scan. Mechanism statements
+// (including the approved capped-relief Exhibit 1 wording) must PASS; outcome assertions fail.
+const EXHIBIT1_APPROVED =
+  'The France–Brazil treaty provides relief from double taxation: relief is given for the Brazilian corporate tax of 34% ' +
+  'suffered on those profits, credited against the French corporate tax of 25% that would otherwise be due on the same ' +
+  'profits and capped at that French charge; the 15% Brazilian withholding tax is deducted separately as the profits are remitted.';
+
+check('P9-SCENARIO: the APPROVED capped-relief Exhibit 1 wording PASSES (mechanism, not outcome)',
+  lintZeroAdditionalTaxScenario(true, EXHIBIT1_APPROVED).length, 0);
+check('P9-SCENARIO: "no further French tax is due" FAILS',
+  lintZeroAdditionalTaxScenario(true, EXHIBIT1_APPROVED + ' Accordingly no further French tax is due on the remitted profits.').length, 1, ['resolved-outcome-in-scenario']);
+check('P9-SCENARIO: "the profits are fully relieved" FAILS',
+  lintZeroAdditionalTaxScenario(true, 'The treaty applies and the profits are fully relieved from French tax.').length, 1, ['resolved-outcome-in-scenario']);
+check('P9-SCENARIO: "the credit extinguishes the French charge" FAILS',
+  lintZeroAdditionalTaxScenario(true, 'The Brazilian credit extinguishes the French charge on those profits.').length, 1, ['resolved-outcome-in-scenario']);
+check('P9-SCENARIO: "no residual French liability" FAILS',
+  lintZeroAdditionalTaxScenario(true, 'There is no residual French liability once the credit is applied.').length, 1, ['resolved-outcome-in-scenario']);
+check('P9-SCENARIO: "the French charge is reduced to nil" FAILS',
+  lintZeroAdditionalTaxScenario(true, 'The French charge is reduced to nil after relief.').length, 1, ['resolved-outcome-in-scenario']);
+check('P9-SCENARIO: bare "credited against" alone is MECHANISM and passes',
+  lintZeroAdditionalTaxScenario(true, 'Overseas tax suffered is credited against the home charge.').length, 0);
+check('P9-SCENARIO: gate is OFF on the non-nil branch (outcome language allowed there)',
+  lintZeroAdditionalTaxScenario(false, 'Accordingly no further French tax is due on the remitted profits.').length, 0);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL AFM-PROSE FIXTURES PASS' : `${failures} AFM-PROSE FIXTURE(S) FAILED`);

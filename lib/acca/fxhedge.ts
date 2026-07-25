@@ -128,6 +128,7 @@
 // a STATED FRACTION of the exposure at the swap rate; the residual is hedged on the forward. This
 // is the ONLY local citation for the swap kind — flagged as the thinnest-evidenced of the four.
 
+import { fixedHalfUp } from './rounding';
 import { parityDifferential } from './international';
 import { money, normaliseCurrency, type SerializedSchema } from './valuation';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
@@ -135,7 +136,7 @@ import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 export { normaliseCurrency };
 
 // ── formatting / rates ──
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 // PLAIN relative tolerance for every money-shaped figure in this family — never a floor. The
@@ -161,8 +162,8 @@ const rateTol: Tolerance = { kind: 'absolute', value: 0.01 };
 // swallow a genuine error in a premium figure that is naturally sub-1 in millions.
 const premiumTol: Tolerance = { kind: 'relative', pct: 1 };
 const EPS = 1e-9;
-export const fmt1 = (n: number): string => n.toFixed(1);
-export const fmt4 = (n: number): string => n.toFixed(4);
+export const fmt1 = (n: number): string => fixedHalfUp(n, 1);
+export const fmt4 = (n: number): string => fixedHalfUp(n, 4);
 
 export type QuoteDirection = 'foreign_per_home' | 'home_per_foreign';
 export type ExposureDirection = 'receipt' | 'payment';
@@ -706,7 +707,7 @@ export interface OptionsDrillInputs extends OptionsInputs { currency_home: strin
 // stray "%"-formatted premium is part of the patch's own gate (see the _patch script). The
 // underlying number is UNCHANGED (0.0048 = 0.48%, purely a labelling fix); source-backed by S8/T2/
 // T3 in docs/evidence/sources.json, which all state and work the premium the same per-unit way.
-function fmtPremiumRate(n: number): string { return n.toFixed(4); }
+function fmtPremiumRate(n: number): string { return fixedHalfUp(n, 4); }
 export function buildOptionsSchema(raw: OptionsDrillInputs, c: OptionsComputed): { schema: AnswerSchema; serialized: SerializedSchema } {
   const home = raw.currency_home, foreign = raw.currency_foreign, homeUnit = `${home}m`;
   const premiumCcy = raw.premium_currency === 'home' ? home : foreign;

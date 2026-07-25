@@ -11,6 +11,7 @@
 //          conventional project pv_outflows = the t0 outlay PARAM (design answer ii); it is
 //          promoted to a graded component only when a drill has multi-period outflows.
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 import { computeNpv, type NpvInputs, type NpvComputed } from './npv';
@@ -19,7 +20,7 @@ export { normaliseCurrency };
 
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const df = (r: number, p: number): number => 1 / Math.pow(1 + r, p);
 

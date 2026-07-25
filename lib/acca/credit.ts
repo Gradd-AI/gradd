@@ -28,6 +28,7 @@
 //    spread formed by subtracting two toleranced figures inherits) abs ±0.05 pp; prices/fair
 //    values rel ±0.5%; the fair-value-vs-market verdict is strict, code-owned, no tolerance.
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
@@ -36,7 +37,7 @@ export { normaliseCurrency };
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const D = (pct: number): number => pct / 100;                        // percent number → decimal
-const pct2 = (p: number): string => `${p.toFixed(2)}%`;             // p is ALREADY a percent number
+const pct2 = (p: number): string => `${fixedHalfUp(p, 2)}%`;             // p is ALREADY a percent number
 const df = (rDec: number, t: number): number => 1 / Math.pow(1 + rDec, t);
 const FACE_SCALE_CEILING = 1e6; // faces render with an "m" suffix — reject an unscaled full-nominal face
 

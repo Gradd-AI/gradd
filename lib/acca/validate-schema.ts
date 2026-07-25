@@ -24,6 +24,7 @@
 //       the depends_on graph must be acyclic with no dangling references.
 
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
+import { fixedHalfUp, isOnRoundingBoundary, rendersAsWholeNumber } from './rounding';
 import { checkSpreadMonotonicity, type SpreadRow } from './credit';
 import { checkOptionBounds, type BsopComputed } from './bsop';
 import {
@@ -78,7 +79,7 @@ import {
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence' | 'direction-lock' | 'contract-count' | 'premium-separation' | 'ir-basis-scepticism' | 'convention-sentence' | 'effective-rate-reconciliation';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence' | 'direction-lock' | 'contract-count' | 'premium-separation' | 'ir-basis-scepticism' | 'convention-sentence' | 'effective-rate-reconciliation' | 'halfway-rounding-risk';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
@@ -86,6 +87,99 @@ export interface ValidationIssue {
 export interface ValidationResult {
   ok: boolean;
   issues: ValidationIssue[];
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// HALFWAY_ROUNDING_RISK (AFM mock FR3, 2026-07-25).
+//
+// THIS IS NOT A FLOATING-POINT BUG — IT IS AN ASSESSMENT HAZARD. Answer-locked marking
+// means the student's rounding and OURS must not be able to differ. When a code-owned
+// value sits exactly on a half-way boundary at the precision the prose renders it, code
+// and a hand-working student can BOTH be right and still disagree on the last digit.
+//
+// The instance that produced this gate: the A(i) asset beta is mathematically 81/86.4 =
+// 0.9375 exactly, but the nearest double is 0.9374999999999999 — genuinely BELOW the tie —
+// so `toFixed(3)` correctly renders "0.937", while every student who works it by hand gets
+// 0.9375 and rounds (half-up OR half-to-even, both agree here) to "0.938". Note this means
+// a plain half-away-from-zero formatter does NOT fix it: the float really is below .5. Any
+// fix must treat a value within EPS of a boundary AS the boundary — the same predicate this
+// gate uses to detect it.
+//
+// Detection: for each precision the model answer ACTUALLY renders the value at, scale the
+// full-precision value and test whether its fractional part is within HALFWAY_EPS of 0.5.
+// Reporting names both candidate renderings and the component's tolerance, because a
+// boundary hit that tolerance comfortably absorbs is a different severity from one that
+// tolerance does not — the author needs both facts to judge it.
+const MAX_DP = 4;
+
+export interface HalfwayHit {
+  component_id: string;
+  value: number;
+  dp: number;
+  rendersAs: string;    // what the code prints
+  handWorking: string;  // what a hand-working student prints
+  tolerance: Tolerance;
+  toleranceAbsorbs: boolean; // does the tolerance cover the one-ulp-of-display disagreement?
+}
+
+/**
+ * HALFWAY_ROUNDING_RISK. Scans `modelAnswer` to find which precision each component's value
+ * is actually rendered at (a value never shown in prose cannot create a student-facing
+ * disagreement, so it is not flagged).
+ *
+ * REFINEMENT (FR3 wiring): presence is detected via EITHER rendering — plain `toFixed` or the
+ * boundary-aware `fixedHalfUp` the calculators now display with — and the gate flags only when
+ * the rendering ACTUALLY USED disagrees with the hand-working one. So a drill whose prose
+ * already shows the snapped digit ("0.938") PASSES, while one still showing the float artefact
+ * ("0.937") FAILS. Without this the gate would silently stop checking the moment the formatter
+ * fix landed, because it would no longer find its own `toFixed` string in the prose.
+ */
+export function validateHalfwayRounding(schema: AnswerSchema, modelAnswer: string): ValidationResult {
+  const issues: ValidationIssue[] = [];
+  const norm = (modelAnswer ?? '').replace(/,/g, '');
+  for (const c of schema.components) {
+    const v = c.expected_value;
+    if (!Number.isFinite(v)) continue;
+    for (let dp = 0; dp <= MAX_DP; dp++) {
+      if (!isOnRoundingBoundary(v, dp)) continue;
+      const naive = v.toFixed(dp);                  // the float-artefact rendering
+      const hand = fixedHalfUp(v, dp);              // what a hand-working student gets
+      if (naive === hand) continue;                 // both roundings agree — no divergence
+      // Which one does the prose ACTUALLY use? Whole-number match only: a substring test
+      // reports "96.5" present when the prose in fact prints "96.55" at 2 dp, where there is
+      // no ambiguity — that false positive manufactured a phantom "live drills are
+      // mismarking students" alarm during FR3.
+      const showsHand = rendersAsWholeNumber(norm, hand) || rendersAsWholeNumber(norm, fixedHalfUp(Math.abs(v), dp));
+      const showsNaive = rendersAsWholeNumber(norm, naive) || rendersAsWholeNumber(norm, Math.abs(v).toFixed(dp));
+      if (!showsNaive) {
+        // Not rendered as the artefact anywhere: either it is not shown at this precision
+        // at all, or it is already shown as the hand-working digit. Either way, clean.
+        continue;
+      }
+      // The artefact IS in the prose. Note we do NOT skip merely because `hand` also appears
+      // somewhere — a match on the hand string can be an UNRELATED figure that happens to
+      // render the same (this is not hypothetical: it silently cleared a real tolerance-
+      // exceeding hit during FR3). When both forms appear we cannot attribute them from text
+      // alone, so we FAIL CLOSED and report.
+      void showsHand;
+      const step = Math.pow(10, -dp);
+      const absorbs = within(Number(hand), v, c.tolerance);
+      issues.push({
+        component_id: c.component_id,
+        gate: 'halfway-rounding-risk',
+        code: 'value-on-rounding-boundary',
+        message:
+          `${c.component_id} = ${v} sits on a half-way rounding boundary at the ${dp}-dp precision the model answer renders it at: ` +
+          `the prose prints "${naive}" (the IEEE-754 artefact) but a hand-working student gets "${hand}" (the exact value is a tie). ` +
+          `Answer-locked marking must not be able to disagree with a correct student on the last digit. Component tolerance is ` +
+          `${JSON.stringify(c.tolerance)}, which ${absorbs ? 'DOES absorb' : 'does NOT absorb'} the ${step} display difference` +
+          `${absorbs ? ' (so the verifier still accepts the student — a presentation/credibility issue, not a mismarking one)' : ' — A STUDENT WHO IS CORRECT WILL BE MARKED WRONG'}. ` +
+          `Render this figure through fixedHalfUp (lib/acca/rounding.ts) so code and student agree, or re-pick the inputs so the ` +
+          `value does not land on a boundary.`,
+      });
+    }
+  }
+  return { ok: issues.length === 0, issues };
 }
 
 // ── Tolerance comparison — mirrors numeric-verifier.within() (not exported there) ──

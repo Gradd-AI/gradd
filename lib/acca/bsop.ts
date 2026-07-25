@@ -18,6 +18,7 @@
 // exercise (investment cost / salvage floor); delay & expand = CALLS, withdraw/abandon = a PUT via
 // put-call parity (redeploy = the switch-texture within the put family, not a calculated kind).
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
@@ -26,7 +27,7 @@ export { normaliseCurrency };
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const D = (pct: number): number => pct / 100;               // percent → decimal
-const pct2 = (p: number): string => `${p.toFixed(2)}%`;     // p is a PERCENT number
+const pct2 = (p: number): string => `${fixedHalfUp(p, 2)}%`;     // p is a PERCENT number
 const d4 = (x: number): string => x.toFixed(4);             // d1/d2 and N(d) at 4 dp (table convention)
 
 // Exact cumulative standard normal via Abramowitz-Stegun 7.1.26 erf (max error ~1.5e-7 — far finer

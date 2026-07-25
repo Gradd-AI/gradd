@@ -11,13 +11,14 @@
 // (code-owned advice, not marked steps — see AFM_NUMERIC_VERIFICATION_DESIGN.md §9), so
 // they are injected into the model answer but are NOT schema components.
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 
 export { normaliseCurrency };
 
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 // The single discounting primitive the appraisal calculators share — reused one-way by
 // lib/acca/international.ts so there is ONE present-value implementation (composition ruling).

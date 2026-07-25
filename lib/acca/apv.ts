@@ -30,6 +30,7 @@
 // apv_equity); the code owns which financing package is preferred. Gearing/interest-cover
 // effects are code-owned ENRICHMENT (like NPV's PI/sensitivity), not graded steps.
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fmt1, money, normaliseCurrency, type SerializedSchema } from './valuation';
 import { computeNpv, type NpvInputs, type NpvComputed } from './npv';
@@ -37,7 +38,7 @@ import { computeNpv, type NpvInputs, type NpvComputed } from './npv';
 export { normaliseCurrency };
 
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const df = (r: number, p: number): number => 1 / Math.pow(1 + r, p);
 const EPS = 1e-9;

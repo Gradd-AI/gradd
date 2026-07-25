@@ -30,6 +30,7 @@
 // So the fraction of a foreign remittance that reaches the parent, net of BOTH taxes, is
 //   remitNetFactor(w, h) = (1 − w) − max(0, h − w)  =  min(1 − w, 1 − h).
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { fcffFromBuild, computeDividendCapacity, money, signedSurplus, fmt1, normaliseCurrency, type FcffBuild } from './valuation';
 import { discountFactor } from './npv';
@@ -37,7 +38,7 @@ import { discountFactor } from './npv';
 export { normaliseCurrency };
 
 // ── formatting / rates ──
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 // Money components carry a FLOOR tolerance: a 0.5% relative band with a 0.2 (display-currency m)
@@ -46,7 +47,7 @@ const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 const moneyTol: Tolerance = { kind: 'floor', pct: 0.5, floor: 0.2 };
 const EPS = 1e-9;
 // Forecast spots display at 4 dp so GATE2 figure-integrity always finds them (present() checks 1–4 dp).
-export const fmt4 = (n: number): string => n.toFixed(4);
+export const fmt4 = (n: number): string => fixedHalfUp(n, 4);
 // FX unit "MXN/USD" — foreign per home. Contains a 3-letter code, so validate-schema classifies
 // it as MONEY and (correctly) wants a relative tolerance; a relative band is right for an FX rate.
 function fxUnit(foreign: string, home: string): string { return `${foreign}/${home}`; }

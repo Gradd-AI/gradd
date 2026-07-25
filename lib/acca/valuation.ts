@@ -7,10 +7,11 @@
 // fixes 1 & 2). Shared by the generator (scripts/generate-afm-drills.ts) and any patch/
 // serve-time caller so there is one source of truth for the arithmetic and the advice glue.
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 
 // ── Formatting / currency ──
-export const fmt1 = (n: number): string => n.toFixed(1);
+export const fmt1 = (n: number): string => fixedHalfUp(n, 1);
 const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
 
 // Money display honouring the drill's currency: ISO codes read "AUD 179.0m"; bare symbols

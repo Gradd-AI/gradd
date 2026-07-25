@@ -16,6 +16,7 @@
 // 2-dp beta rounding through the chain). No cash flows: purely a rates family (P6 loss-relief
 // is a structural no-op; the issue-cost convention has no analogue).
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import type { SerializedSchema } from './valuation';
 
@@ -23,9 +24,9 @@ const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
 const BETA_TOL = () => absTol(0.02);   // unitless beta
 const RATE_TOL = () => absTol(0.1);    // percentage points
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);     // rates only, NEVER betas
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
-const fmtB = (b: number): string => b.toFixed(3);               // beta, 3 dp
-const fmtR = (rPct: number): string => `${rPct.toFixed(2)}%`;   // rate already in %, 2 dp
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
+const fmtB = (b: number): string => fixedHalfUp(b, 3);               // beta, 3 dp
+const fmtR = (rPct: number): string => `${fixedHalfUp(rPct, 2)}%`;   // rate already in %, 2 dp
 const EPS = 1e-9;
 
 export type CapmKind = 'project_specific' | 'org_wacc' | 'keu_for_apv' | 'wrong_hurdle';

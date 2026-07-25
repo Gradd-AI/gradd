@@ -25,6 +25,7 @@
 //   K4 risk_measures  — project duration = Σ(t × PVₜ) ÷ ΣPVₜ, COMPARATIVE across two projects [S1, S2];
 //                       project VaR = z × σ × √N, z one-tail (1.65 @95% / 2.33 @99%) [technical article].
 
+import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { discountFactor } from './npv';
 import { computeCapm } from './capm';
@@ -34,7 +35,7 @@ export { normaliseCurrency };
 
 // ── formatting / rates ──
 const asDec = (v: number): number => (v > 1 ? v / 100 : v);
-const pct2 = (frac: number): string => `${(frac * 100).toFixed(2)}%`;
+const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 // rate/% and years figures take a TIGHT ABSOLUTE tolerance (validate-schema requires it for rate units;
 // capm RATE_TOL = 0.1pp and duration.ts year-tol = 0.05 are the precedents).
 const absTol = (value: number): Tolerance => ({ kind: 'absolute', value });
@@ -344,8 +345,8 @@ function toSerialized(components: Component[], recomputeIds: Record<string, stri
     params,
   };
 }
-const fmtPct = (v: number): string => `${v.toFixed(2)}%`;   // v already a percentage number
-const fmtY = (v: number): string => `${v.toFixed(2)} years`;
+const fmtPct = (v: number): string => `${fixedHalfUp(v, 2)}%`;   // v already a percentage number
+const fmtY = (v: number): string => `${fixedHalfUp(v, 2)} years`;
 
 export const RISK_HEADINGS: Record<RiskKind, string> = {
   enpv: '**Risk & uncertainty — expected net present value (ENPV)**',

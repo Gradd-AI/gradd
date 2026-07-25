@@ -40,7 +40,8 @@
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts",
     "redteam": "tsx scripts/redteam-tutor.ts",
-    "redteam:judge": "tsx scripts/redteam-judge.ts"
+    "redteam:judge": "tsx scripts/redteam-judge.ts",
+    "test:rounding": "tsx scripts/test-rounding.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

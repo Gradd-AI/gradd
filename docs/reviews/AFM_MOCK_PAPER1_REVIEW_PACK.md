@@ -42,7 +42,7 @@ All five numeric requirements are **confirmed correct by two independent recompu
 | Figure | Before (home 25% both steps) | After (ALT-B: peer 34% ungears) |
 |---|---|---|
 | Peer equity beta (given) | 1.350 | 1.350 |
-| **Asset beta** (ungeared) | 0.900 | **0.9375** *(displays 0.937 at 3 dp)* |
+| **Asset beta** (ungeared) | 0.900 | **0.9375** *(now displays **0.938** — FR3)* |
 | **Regeared beta** | 1.189 | **1.239** |
 | **Project Ke** | 11.64% | **11.93%** |
 | **Project WACC** | 9.38% | **9.59%** |
@@ -59,6 +59,22 @@ All five numeric requirements are **confirmed correct by two independent recompu
 - **`lintTaxRateAssignment`** (`lib/acca/validate-afm-prose.ts`), wired into the durable barrier `runBaseRequirementGates` in **`lib/acca/case-authoring-gates.ts`** alongside GATE 26 and P9 — so it survives to mocks #2/#3 and to FM, not just this script.
 - **Trigger:** ≥2 distinct **corporate** tax rates in the scenario/exhibits (withholding, inflation and risk-free percentages deliberately do not count). **Rule:** the scenario must explicitly assign a rate to every purpose the requirement puts in play — **ungearing the proxy beta · regearing to the investor's structure · constructing the discount rate · taxing operating cash flows · remittance/withholding**. Absent an assignment: LOUD FAIL naming the rates found and the unassigned purposes. Single-rate scenarios are a structural no-op. Checks the SCENARIO the candidate sees, never the worked answer — finding the assignment only in the solution is the failure being fenced.
 - **Proven both ways:** with the FR2 sentences stripped it fails loudly naming 34% and 25% and the unassigned purposes; with them present it passes; a single-rate scenario is a no-op. Regression fixtures in `scripts/test-afm-prose.ts` (`npm run test:afm-prose`), including the "cost of debt is 5.5%" false-positive found while building it.
+
+## ✅ FR3 (half-way rounding divergence) — APPLIED 2026-07-25. DISPLAY-ONLY; zero figure movement.
+
+**The instance.** A(i)'s asset beta is 81/86.4, which in ARITHMETIC is exactly **0.9375**; the nearest IEEE-754 double is **0.9374999999999999** — genuinely below the tie — so `toFixed(3)` correctly returned **"0.937"** while every student who works it by hand gets **"0.938"**. Answer-locked marking must not be able to disagree with a correct student on the last digit.
+
+**Tolerance carry-through (measured, not argued).** A student carrying 0.938 and re-rounding at EVERY step survives the whole chain with large headroom, so the verifier never mismarked them: asset β 0.938 (97.5% headroom) → regeared 1.24 (94.2%) → Ke 11.94% (93.0%) → WACC 9.60% (90.6%), all **CORRECT**. Two further facts bound the severity: `verifyNumericAnswer` is **not wired into any live route** (`grep` over `app/` returns nothing — mock marking is `case-marking.ts`, explicitly model-graded), and case marking judges quality-of-match against the model answer rather than parsing figures. So this was a **presentation/credibility** defect, not live mismarking.
+
+**Ruling (Grant, 25/07/2026):** boundary-aware formatter APPROVED; re-picking the peer inputs and widening tolerance both REJECTED.
+
+**Fix.** New `lib/acca/rounding.ts` — `fixedHalfUp(value, dp)` epsilon-snaps a value within 1e-9 of a half-way boundary TO the boundary, then rounds half-AWAY-FROM-ZERO. Note a plain half-up formatter does **not** fix this: the float really is below .5, so any correct rounder returns 0.937 — the snap is the necessary part. Every display formatter across the 12 calculator modules now routes through it (24 call sites). **DISPLAY ONLY** — no `expected_value`, tolerance or marking decision is touched. Proven: `answer_schema` diffed before/after across the re-author, **all 8 requirements BYTE-IDENTICAL** (A(i) included — only its rendered prose moved, 0.937 → 0.938). All 16 calculator/gate fixture suites green.
+
+**GATE HALFWAY_ROUNDING_RISK** (`validateHalfwayRounding`, `lib/acca/validate-schema.ts`), wired into the durable barrier `runBaseRequirementGates` alongside GATE 26, P9 and TAX_RATE_ASSIGNMENT. Flags a code-owned figure rendered at a precision where the exact value is a tie, naming both candidate renderings and whether the component's tolerance absorbs the difference (a tolerance-absorbed hit is a presentation issue; one that is not is a genuine mismarking risk). Detector and fix share the same boundary predicate so they cannot drift. Two self-inflicted bugs were caught and regression-locked while building it: a substring match reported "96.5" present when the prose actually prints "96.55" (which manufactured a phantom "live drills are mismarking" alarm on two irhedge drills), and skipping on the hand-working string alone let an UNRELATED figure mask a real hit — the gate now **fails closed** when both renderings appear. Fixtures: `scripts/test-rounding.ts`.
+
+**⛔ 5 published drills still carry rendered boundary hits and were NOT patched** — the ruled method (re-derive from stored `answer_schema.params`) is **not possible for any of them**: params carry rates and capital structure but not the per-year operating cash-flow build (APV/NPV/valuation) nor the betas + `project_return` (CAPM). Per the ruling's own STOP clause, hand-editing prose was refused. `B3k dedca530` `debt_issue_costs` = −1.95 is the only one whose tolerance does NOT absorb the step (a true mismarking risk once figures are parsed); the other four are cosmetic. **Piece 2 (exact-figure parsing) is now formally BLOCKED on this sweep being green** — recorded in `docs/AFM_SURFACED.md`.
+
+**P9-SCENARIO** (`lintZeroAdditionalTaxScenario`) — P9 proper deliberately scans only the requirement's own prose, which left the shared scenario free to assert a RESOLVED tax outcome on the nil branch, in the one field P9 does not watch and the field students trust most. The variant fires only on the nil branch and only on resolved-outcome language: *no further/additional/residual tax*, *no further charge or liability*, *fully/wholly relieved, covered, offset*, *extinguishes / eliminates / wipes out / cancels the charge*, *the charge is reduced to nil/zero*, *nil further/additional*. Bare "credited against" and bare "capped at" are deliberately NOT in the set — they are mechanism, not outcome. Exhibit 1 was rewritten to the approved capped-relief wording, which the gate passes while a resolved-outcome variant of the same sentence fails loudly.
 
 ## ⛓ SECTION A INTEGRATED DEPENDENCY CHAIN (the load-bearing "real case" proof)
 
@@ -90,7 +106,7 @@ Solenne Industries SA (Solenne) manufactures specialty chemicals from four Europ
 
 **Exhibit 1 — Rio Verde project data (in BRL)**
 
-The Rio Verde plant requires an upfront capital outlay of BRL 480 million, paid at the start of the project, and would operate for four years. In a normal year it is expected to generate profit before interest and tax (PBIT) of BRL 320 million, with depreciation of BRL 80 million, capital reinvestment of BRL 60 million and an increase in working capital of BRL 20 million. The BRL-denominated cash flows are expected to grow by 3% a year. The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. The France–Brazil treaty provides relief from double taxation: the Brazilian corporate tax of 34% borne on those profits is credited against the French corporate tax of 25% that would otherwise fall due on them when remitted, and the 15% Brazilian withholding tax is deducted as the profits are remitted. The current spot exchange rate is BRL 5.60 per EUR 1. Brazilian inflation is expected to run at 4.5% and eurozone inflation at 2.0% over the horizon.
+The Rio Verde plant requires an upfront capital outlay of BRL 480 million, paid at the start of the project, and would operate for four years. In a normal year it is expected to generate profit before interest and tax (PBIT) of BRL 320 million, with depreciation of BRL 80 million, capital reinvestment of BRL 60 million and an increase in working capital of BRL 20 million. The BRL-denominated cash flows are expected to grow by 3% a year. The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. The France–Brazil treaty provides relief from double taxation: relief is given for the Brazilian corporate tax of 34% suffered on those profits, credited against the French corporate tax of 25% that would otherwise be due on the same profits and capped at that French charge; the 15% Brazilian withholding tax is deducted separately as the profits are remitted. The current spot exchange rate is BRL 5.60 per EUR 1. Brazilian inflation is expected to run at 4.5% and eurozone inflation at 2.0% over the horizon.
 
 **Exhibit 2 — Cost of capital data**
 
@@ -109,7 +125,7 @@ Solenne has never operated a central treasury. Each of its four European subsidi
 
 #### (i) B3e — 10 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + P9-SCENARIO + HALFWAY_ROUNDING_RISK ALL PASS
 
 **Question:**
 
@@ -126,11 +142,11 @@ Solenne has never operated a central treasury. Each of its four European subsidi
 
 **Step 1 — Ungear the peer's equity beta (strip out the peer's financial risk)**
 
-β_a = β_e × Ve/(Ve + Vd(1−T)) = 1.350 × 60/(60 + 40×(1−0.34)) = **0.937**  *(T = the peer's 34.00%)*
+β_a = β_e × Ve/(Ve + Vd(1−T)) = 1.350 × 60/(60 + 40×(1−0.34)) = **0.938**  *(T = the peer's 34.00%)*
 
 **Step 2 — Regear to YOUR capital structure**
 
-β_e' = β_a × (Ve + Vd(1−T))/Ve = 0.937 × (70 + 30×(1−0.25))/70 = **1.239**  *(T = the appraising company's 25.00%)*
+β_e' = β_a × (Ve + Vd(1−T))/Ve = 0.938 × (70 + 30×(1−0.25))/70 = **1.239**  *(T = the appraising company's 25.00%)*
 
 The ungearing uses the **peer's** 34.00% because the debt tax shield being stripped out is the peer's own; the regearing uses the appraising company's 25.00% because the shield being added back is the one its own capital structure creates.
 
@@ -150,7 +166,7 @@ This project rate reflects the **business risk of the peer's activity**, not you
 
 The board should discount the Rio Verde cash flows at this project-specific rate, which reflects the business risk of Brazilian bioethanol production; using Solenne's group cost of capital would misprice a venture whose business risk differs from the group's existing chemicals operations.
 
-*Reconciliation: asset β 0.937 → regeared β 1.239 → Ke 11.93% → WACC 9.59% ✓*
+*Reconciliation: asset β 0.938 → regeared β 1.239 → Ke 11.93% → WACC 9.59% ✓*
 
 **hint:**
 
@@ -165,7 +181,7 @@ The fix is the ungear-regear route: strip the peer's financial risk to an asset 
 
 #### (ii) B5b — 16 marks — calc (code-owned figures) — PS: communication,analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + INTL-12/13/14/14b family gates ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + P9-SCENARIO + HALFWAY_ROUNDING_RISK + INTL-12/13/14/14b family gates ALL PASS
 
 **Question:**
 
@@ -236,7 +252,7 @@ The fix is consistency: translate each year's remittance at the PPP-implied forw
 
 #### (iii) E2b — 8 marks — calc (code-owned figures) — PS: scepticism
 
-**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + GATE 26 recommendation-consistency + FXH-19 best-method-verdict ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + P9-SCENARIO + HALFWAY_ROUNDING_RISK + GATE 26 recommendation-consistency + FXH-19 best-method-verdict ALL PASS
 
 **Question:**
 
@@ -350,7 +366,7 @@ Separately, the advisers ran a Monte Carlo simulation of the same Firth Array pr
 
 #### (i) B1a — 12 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + RISK-Ga/Gb family gates ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + P9-SCENARIO + HALFWAY_ROUNDING_RISK + RISK-Ga/Gb family gates ALL PASS
 
 **Question:**
 
@@ -470,7 +486,7 @@ Aldebrino invoices its US customers in US dollars and its UK customers in pounds
 
 #### (i) E3a — 12 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + IRH-20/21/23/25 family gates ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + P9-SCENARIO + HALFWAY_ROUNDING_RISK + IRH-20/21/23/25 family gates ALL PASS
 
 **Question:**
 

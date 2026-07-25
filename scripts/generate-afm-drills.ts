@@ -38,6 +38,7 @@
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
  */
 
+import { fixedHalfUp } from '../lib/acca/rounding';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import {
@@ -2382,7 +2383,12 @@ function runQuantitativeGates(drill: DrillOutput): GateReport {
   // 1/2/3 dp for money/rates/betas; 4 dp for BSOP N(d)/d1/d2 which display at the table convention.
   // A value is present at 1/2/3/4 dp; a SIGNED difference (equity − offer) is commonly displayed as
   // its magnitude next to a direction word ("above/below by X"), so its absolute value counts too.
-  const present = (n: number) => [1, 2, 3, 4].some((d) => normalized.includes(n.toFixed(d)) || normalized.includes(Math.abs(n).toFixed(d)));
+  // Accept EITHER rendering: plain toFixed OR the boundary-aware `fixedHalfUp` the
+  // calculators now display with (lib/acca/rounding.ts, FR3). Without the second form GATE 2
+  // fails any value on a half-way boundary, where the prose legitimately shows the snapped digit.
+  const present = (n: number) => [1, 2, 3, 4].some((d) =>
+    normalized.includes(n.toFixed(d)) || normalized.includes(Math.abs(n).toFixed(d)) ||
+    normalized.includes(fixedHalfUp(n, d)) || normalized.includes(fixedHalfUp(Math.abs(n), d)));
   const missing: string[] = [];
   for (const c of schema.components) {
     if (!present(c.expected_value)) missing.push(`${c.component_id}=${fmt1(c.expected_value)}`);
