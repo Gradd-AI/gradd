@@ -53,6 +53,26 @@ authorises Claude Code to execute a *publish flip* unattended once the standing 
 GATE-P governs a status change on already-reviewed content; **P-DB2 governs a CONTENT change to
 already-published rows, and it is not self-authorising.**
 
+**P-DB4 — Verifying a write to a published row means a FULL-FIELD DIFF, not a component match.**
+Components matching their `expected_value` proves the MATHS. It does not prove the ROW IS INTACT.
+Proven the hard way on the FR3 boundary re-author: `answer_schema.params` drifted silently on
+two published drills while **every component matched and every gate passed** — `B3d 2a145f7d`
+had `own_ve`/`own_vd` rewritten 48200/12600 → **0** (masked by a `?? 0` serialiser default for
+inputs the `wrong_hurdle` calc path never reads, so nothing downstream could notice), and
+`B4a 0dc970a8` had `kd` rewritten 0.057999999999999996 → 0.058 (the scenario states 5.8%; the
+original generator passed `5.8` for `asDecimalRate` to normalise, and the re-author passed the
+decimal directly). Neither moved a component far enough to trip a tolerance. Both were caught
+downstream by a review-pack audit — i.e. by accident, days later, not by the write's own
+verification.
+
+So: **read the row back after the write and compare EVERY field to the intended value with
+EXACT equality** (`Object.is`, not a tolerance) — `question`, `context_text`, `model_answer`,
+`hint`, `full_reveal`, and every key of `answer_schema` including `params`, not just
+`components`. Anything that changed and was not declared in advance as an intended change is a
+defect, however inert it looks. A field the calculator never reads is exactly the field nothing
+else will catch. `scripts/_reauthor_boundary_drills.ts` is the reference implementation: it
+declares expected component AND param drift up front and refuses to write on anything else.
+
 **P-DB3 — A rollback snapshot is mandatory, and it must be COMMITTED.** Before any write to a
 published row, snapshot every field the write touches, for every affected id, and commit it to
 `docs/rollbacks/<TOPIC>_<YYYYMMDD>.json` **on the branch that made the change**. Never leave it
