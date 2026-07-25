@@ -27,6 +27,7 @@ const asDec = (v: number): number => (v > 1 ? v / 100 : v);     // rates only, N
 const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
 const fmtB = (b: number): string => fixedHalfUp(b, 3);               // beta, 3 dp
 const fmtR = (rPct: number): string => `${fixedHalfUp(rPct, 2)}%`;   // rate already in %, 2 dp
+const fmtW = (w: number): string => fixedHalfUp(w, 3);               // MV weight, 3 dp
 const EPS = 1e-9;
 
 export type CapmKind = 'project_specific' | 'org_wacc' | 'keu_for_apv' | 'wrong_hurdle';
@@ -103,6 +104,13 @@ export interface CapmComputed {
    *  compute no WACC (keu_for_apv). */
   kd_after_tax?: number;
 
+  /** The MARKET-VALUE WEIGHTS the WACC line quotes ("… × 0.793 + … × 0.207"). Named fields
+   *  for the same FR3/GATE 27 reason as `kd_after_tax`: computed inline they were ORPHANS —
+   *  derived figures the prose asserts with no code-owned value for the derived-figure-
+   *  integrity gate to match. Undefined for `keu_for_apv`, which computes no WACC. */
+  weight_equity?: number;
+  weight_debt?:   number;
+
   asset_beta?:    number;   // ungeared peer/sector beta
   regeared_beta?: number;   // regeared to the appraising firm
   peer_equity_beta?: number;
@@ -160,6 +168,8 @@ export function computeCapm(raw: CapmInputs, kind: CapmKind): CapmComputed {
     const kd = asDec(req(raw.kd, 'kd'));
     out.ke = capmKe(rf, beta, mrp) * 100;
     out.kd_after_tax = kd * (1 - tax) * 100;
+    out.weight_equity = ve / (ve + vd);
+    out.weight_debt = vd / (ve + vd);
     out.wacc = waccPct(out.ke, kd, ve, vd, tax);
     return out;
   }
@@ -182,6 +192,8 @@ export function computeCapm(raw: CapmInputs, kind: CapmKind): CapmComputed {
     out.regeared_beta = regearBeta(out.asset_beta, ove, ovd, tax, betaD); // investor's (home) rate
     out.ke = capmKe(rf, out.regeared_beta, mrp) * 100;
     out.kd_after_tax = kd * (1 - tax) * 100;
+    out.weight_equity = ove / (ove + ovd);
+    out.weight_debt = ovd / (ove + ovd);
     out.wacc = waccPct(out.ke, kd, ove, ovd, tax);
     out.peer_equity_beta = betaE;
     out.beta_direction = out.regeared_beta > betaE + EPS ? 'higher' : out.regeared_beta < betaE - EPS ? 'lower' : 'equal';
@@ -195,6 +207,8 @@ export function computeCapm(raw: CapmInputs, kind: CapmKind): CapmComputed {
   const kd = asDec(req(raw.kd, 'kd'));
   out.company_ke = capmKe(rf, cBeta, mrp) * 100;
   out.kd_after_tax = kd * (1 - tax) * 100;
+  out.weight_equity = cve / (cve + cvd);
+  out.weight_debt = cvd / (cve + cvd);
   out.company_wacc = waccPct(out.company_ke, kd, cve, cvd, tax);
 
   const pBetaE = req(raw.peer_equity_beta, 'peer_equity_beta');
@@ -348,8 +362,8 @@ export function buildCapmModelAnswer(raw: CapmInputs, c: CapmComputed, prose: st
     lines.push(`Ke = Rf + β_e × MRP = ${pct2(rf)} + ${fmtB(raw.company_equity_beta!)} × ${pct2(mrp)} = **${fmtR(c.ke!)}**`, '');
     lines.push(`**Step ${S()} — Weighted average cost of capital (market-value weights)**`, '');
     lines.push(`| Source | Market value | Weight | Cost | Weighted |`, `|------|------|------|------|------|`);
-    lines.push(`| Equity | ${ve} | ${(ve / tot).toFixed(3)} | ${fmtR(c.ke!)} | ${(c.ke! * ve / tot).toFixed(2)}% |`);
-    lines.push(`| Debt (post-tax) | ${vd} | ${(vd / tot).toFixed(3)} | ${pct2(kd * (1 - tax))} | ${(kd * (1 - tax) * 100 * vd / tot).toFixed(2)}% |`);
+    lines.push(`| Equity | ${ve} | ${fmtW(c.weight_equity!)} | ${fmtR(c.ke!)} | ${fmtR(c.ke! * c.weight_equity!)} |`);
+    lines.push(`| Debt (post-tax) | ${vd} | ${fmtW(c.weight_debt!)} | ${pct2(kd * (1 - tax))} | ${fmtR(c.kd_after_tax! * c.weight_debt!)} |`);
     lines.push(`| **WACC** | ${tot} | 1.000 | | **${fmtR(c.wacc!)}** |`, '');
     lines.push(`The cost of equity (${fmtR(c.ke!)}) exceeds the post-tax cost of debt (${pct2(kd * (1 - tax))}), as expected — equity holders bear the residual risk and price it higher.`, '');
   } else if (kind === 'project_specific') {
@@ -363,14 +377,14 @@ export function buildCapmModelAnswer(raw: CapmInputs, c: CapmComputed, prose: st
     lines.push(`**Step ${S()} — Project cost of equity (CAPM)**`, '');
     lines.push(`Ke = Rf + β_e' × MRP = ${pct2(rf)} + ${fmtB(c.regeared_beta!)} × ${pct2(mrp)} = **${fmtR(c.ke!)}**`, '');
     lines.push(`**Step ${S()} — Project-specific WACC (market-value weights)**`, '');
-    lines.push(`WACC = Ke × We + Kd(1−T) × Wd = ${fmtR(c.ke!)} × ${(ov / tot).toFixed(3)} + ${pct2(kd * (1 - tax))} × ${(od / tot).toFixed(3)} = **${fmtR(c.wacc!)}**`, '');
+    lines.push(`WACC = Ke × We + Kd(1−T) × Wd = ${fmtR(c.ke!)} × ${fmtW(c.weight_equity!)} + ${pct2(kd * (1 - tax))} × ${fmtW(c.weight_debt!)} = **${fmtR(c.wacc!)}**`, '');
     lines.push(`This project rate reflects the **business risk of the peer's activity**, not your firm's own line of business — using your own company WACC would misprice a project of different risk.`, '');
   } else {
     // wrong_hurdle
     const ve = raw.company_ve!, vd = raw.company_vd!, tot = ve + vd, pv = raw.peer_ve!, pd = raw.peer_vd!;
     lines.push(`**Step ${S()} — The company's own WACC (the tempting but WRONG hurdle here)**`, '');
     lines.push(`Company Ke = Rf + β_company × MRP = ${pct2(rf)} + ${fmtB(raw.company_equity_beta!)} × ${pct2(mrp)} = ${fmtR(c.company_ke!)}.`, '');
-    lines.push(`Company WACC = ${fmtR(c.company_ke!)} × ${(ve / tot).toFixed(3)} + ${pct2(kd * (1 - tax))} × ${(vd / tot).toFixed(3)} = **${fmtR(c.company_wacc!)}**.`, '');
+    lines.push(`Company WACC = ${fmtR(c.company_ke!)} × ${fmtW(c.weight_equity!)} + ${pct2(kd * (1 - tax))} × ${fmtW(c.weight_debt!)} = **${fmtR(c.company_wacc!)}**.`, '');
     lines.push(`**Step ${S()} — The project-specific rate (ungear the peer, regear to your gearing)**`, '');
     lines.push(`β_a = ${fmtB(raw.peer_equity_beta!)} × ${pv}/(${pv} + ${pd}×(1−${ptax})) = ${fmtB(c.project_asset_beta!)}${twoRate ? ` *(T = the peer's ${pct2(ptax)})*` : ''}; β_e' = ${fmtB(c.project_beta!)}${twoRate ? ` *(regeared at ${pct2(tax)})*` : ''}.`, '');
     lines.push(`Project Ke = ${pct2(rf)} + ${fmtB(c.project_beta!)} × ${pct2(mrp)} = ${fmtR(c.project_ke!)}; Project WACC = **${fmtR(c.project_wacc!)}**.`, '');
