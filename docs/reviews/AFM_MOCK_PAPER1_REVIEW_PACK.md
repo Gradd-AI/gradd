@@ -15,6 +15,20 @@
 - **Technical marking is model-graded against the code-correct answer** — the standard is code-generated + gated (Piece 1); live student-figure parsing is Piece 2, deferred platform-wide. The zero-credit `nothing` band handles blank/wrong requirements.
 - **The IR-futures basis (0.45 → unexpired 0.15) is sized to clear the seeded-OFR absolute rate tolerance** (±0.01) — a smaller residual basis verdicts "correct" under perturbation and fails GATE3; this is the known small-rate × absolute-tolerance interaction, not a figure error.
 
+## ✅ FR1 (adjudicated blockers) — APPLIED 2026-07-25, ZERO figure movement
+
+All five numeric requirements are **confirmed correct by two independent recomputes**; FR1 is prose-only. Proven: `answer_schema` (the canonical figure store) is **byte-identical** on all 5 requirements before/after — no computed figure moved.
+- **FIX 1 (hard blocker) — A(iii) recommendation contradicted the comparison.** The Step-4 advice recommended the money-market hedge while the code selected the forward (a `=== 'forward'` ternary that never matched the actual `selected_method` label `"the forward"`). Rewritten to recommend the **forward contract** explicitly, stating the modest margin (EUR 0.4m on ~EUR 31.7m) and weighing operational simplicity, counterparty exposure and balance-sheet effect. Swept all fields; the only occurrence was Step 4 (the code-generated Step 3 already said "forward … recommended").
+- **FIX 2 (blocker) — A(ii) tax-credit wording.** Hint + reveal + Exhibit 1 said the withholding was "credited against" the French charge. Because Brazil 34% > France 25%, there is **no** additional French tax; reworded to the three-branch rule (home > host → additional tax on the differential; home ≤ host → no additional tax, excess credit unusable; withholding a net cost regardless) and states plainly the 15% WHT is a **net remittance cost**. (The code-generated model_answer already carried the correct branch-a nil template.)
+- **FIX 3 — A Exhibit 1:** "Real cash flows … grow by 3%" → "The BRL-denominated cash flows … grow by 3%".
+- **FIX 4 — B1(ii) VaR:** "below the expected level" → the risk-family downside-loss-threshold register ("the one-tail downside … a 5% chance the downside loss will exceed GBP 52m … a threshold, not a ceiling on the maximum possible loss"), matched to the published risk drill `f28c2b4c`.
+- **FIX 5 (polish) — A(iv):** "no capability in real management" → "no capability in group risk management".
+
+## 🆕 NEW AUTHORING GATES (both compounding-class, fenced this session)
+
+- **GATE 26 — recommendation-consistency** (`lib/acca/validate-afm-prose.ts` `lintRecommendationConsistency`; the calculator exposes the winner via `ComparisonComputed.selected_method` in `lib/acca/fxhedge.ts`). Where code computes a comparison verdict, the authored advice MUST name that method in a recommendation-position sentence (should/recommend/advise/opt for) and MUST NOT name a losing method in one. Wired into the mock authoring insert path (`scripts/_author_mock_paper1.ts`, per-requirement gate loop that runs immediately before insert, the same barrier as C1–C4) for any requirement carrying a `compare` payload. LOUD FAIL. Proven: on the original A(iii) advice it fires with 2 issues (losing-method-in-recommendation + selected-method-not-recommended).
+- **GATE P9 — zero-additional-tax phrasing** (`lib/acca/validate-afm-prose.ts` `lintZeroAdditionalTaxPhrasing`, alongside P7). Fires only when the computed additional home tax == 0; fails on credit/offset/set-off-against language in the requirement's own prose (model_answer / hint / full_reveal — NOT the shared scenario). Self-contained regex, zero coupling to the tutor path. LOUD FAIL. Proven: on the original A(ii) "credit the Brazilian withholding against the French charge" it fires with 1 issue.
+
 ## ⛓ SECTION A INTEGRATED DEPENDENCY CHAIN (the load-bearing "real case" proof)
 
 Section A is ONE company (Solenne Industries SA), ONE shared exhibit set, with a REAL cross-requirement chain — not four independent drills:
@@ -45,7 +59,7 @@ Solenne Industries SA (Solenne) manufactures specialty chemicals from four Europ
 
 **Exhibit 1 — Rio Verde project data (in BRL)**
 
-The Rio Verde plant requires an upfront capital outlay of BRL 480 million, paid at the start of the project, and would operate for four years. In a normal year it is expected to generate profit before interest and tax (PBIT) of BRL 320 million, with depreciation of BRL 80 million, capital reinvestment of BRL 60 million and an increase in working capital of BRL 20 million. Real cash flows are expected to grow by 3% a year. The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%; under the France–Brazil treaty this withholding tax is creditable against French tax. The French corporate tax rate is 25%. The current spot exchange rate is BRL 5.60 per EUR 1. Brazilian inflation is expected to run at 4.5% and eurozone inflation at 2.0% over the horizon.
+The Rio Verde plant requires an upfront capital outlay of BRL 480 million, paid at the start of the project, and would operate for four years. In a normal year it is expected to generate profit before interest and tax (PBIT) of BRL 320 million, with depreciation of BRL 80 million, capital reinvestment of BRL 60 million and an increase in working capital of BRL 20 million. The BRL-denominated cash flows are expected to grow by 3% a year. The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. The France–Brazil treaty provides relief from double taxation, and the French corporate tax rate is 25%. The current spot exchange rate is BRL 5.60 per EUR 1. Brazilian inflation is expected to run at 4.5% and eurozone inflation at 2.0% over the horizon.
 
 **Exhibit 2 — Cost of capital data**
 
@@ -64,7 +78,7 @@ Solenne has never operated a central treasury. Each of its four European subsidi
 
 #### (i) B3e — 10 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P8 ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 ALL PASS
 
 **Question:**
 
@@ -118,7 +132,7 @@ The fix is the ungear-regear route: strip the peer's financial risk to an asset 
 
 #### (ii) B5b — 16 marks — calc (code-owned figures) — PS: communication,analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P8 ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + INTL-12/13/14/14b family gates ALL PASS
 
 **Question:**
 
@@ -178,18 +192,18 @@ On the project-specific discount rate of 9.38%, the appraisal returns a positive
 
 **hint:**
 
-Work in reais first, then convert. Build the project's free cash flow, apply Brazilian tax and the additional French tax after crediting the withholding, translate each year at the forward rate implied by the inflation differential, and discount at the project rate from (i) — don't discount reais at a euro rate.
+Work in reais first, then convert. Build the project's free cash flow and apply Brazilian corporate tax; then get the double-tax rule right — because Brazil's 34% corporate rate is above France's 25%, the foreign-tax credit already covers the whole home liability, so no additional French tax arises and the 15% withholding is simply a net cost of remitting. Translate each year at the forward rate implied by the inflation differential, and discount at the project rate from (i) — don't discount reais at a euro rate.
 
 **full_reveal:**
 
 The classic misconception here is discounting foreign-currency cash flows at the home-currency rate: candidates leave the reais cash flows undiscounted-for-currency, or convert at today's spot for every year, mismatching the cash flows and the discount rate.
 
-The fix is consistency: translate each year's remittance at the PPP-implied forward rate so the euro cash flows and the euro discount rate are on the same basis, credit the Brazilian withholding against the French charge, and only then discount. The resulting NPV is positive, so proceed on financial grounds.
+The fix is consistency: translate each year's remittance at the PPP-implied forward rate so the euro cash flows and the euro discount rate are on the same basis, and get the tax branch right. The double-tax rule has three cases: where the home rate exceeds the host rate, additional home tax is due on the differential; where the home rate is at or below the host rate — as here, France 25% against Brazil 34% — no additional home tax arises and the excess foreign credit is simply unusable; and the withholding tax on the remittance is a net cost regardless. So here the 15% withholding is a net remittance cost, not a recoverable credit. Only then discount. The resulting NPV is positive, so proceed on financial grounds.
 
 
 #### (iii) E2b — 8 marks — calc (code-owned figures) — PS: scepticism
 
-**Gate results:** GATE1/2/3 + P4–P8 ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + GATE 26 recommendation-consistency + FXH-19 best-method-verdict ALL PASS
 
 **Question:**
 
@@ -222,7 +236,7 @@ The forward gives the higher outcome, by **EUR 0.4m**, and is **recommended**.
 
 **Step 4 — Advice to the board**
 
-Solenne should hedge the first remittance with the money-market hedge, which secures the higher guaranteed euro receipt; the margin over the alternative is modest, so the treasury should also weigh operational simplicity and any balance-sheet effect before dealing.
+The forward contract secures the higher guaranteed euro receipt, EUR 31.7m against EUR 31.3m — a modest margin of about EUR 0.4m on roughly EUR 31.7m. Solenne should therefore opt for the forward contract: on so slim a margin the qualitative factors decide it, and the forward wins on operational simplicity — a single dealt rate, with none of the borrow-and-deposit legs the alternative requires — while the board should weigh the counterparty credit exposure a forward carries and confirm the balance-sheet treatment before dealing.
 
 *Reconciliation: forward EUR 31.7m vs MMH EUR 31.3m; margin EUR 0.4m to the forward ✓*
 
@@ -251,7 +265,7 @@ The fix is to convert both routes to a guaranteed euro receipt and compare those
 
 Establishing a group treasury at Lyon is worth doing, but only if it is designed to add control without smothering the subsidiaries.
 
-The case for it is strongest precisely because of the Brazilian exposure. A central treasury pools scarce expertise and scale: it can raise group funding more cheaply than four desks bidding separately, net intra-group balances rather than each subsidiary hedging in isolation, and impose one consistent FX and risk policy. Solenne has never operated a central treasury, so the local desks have built no capability in real management — and none of the four European subsidiaries has ever handled a Brazilian exposure. Concentrating that judgement in one place is the point.
+The case for it is strongest precisely because of the Brazilian exposure. A central treasury pools scarce expertise and scale: it can raise group funding more cheaply than four desks bidding separately, net intra-group balances rather than each subsidiary hedging in isolation, and impose one consistent FX and risk policy. Solenne has never operated a central treasury, so the local desks have built no capability in group risk management — and none of the four European subsidiaries has ever handled a Brazilian exposure. Concentrating that judgement in one place is the point.
 
 But the cost and disruption are real and should not be waved away. A treasury at Lyon needs systems, dealing lines and skilled staff, and it strips the four European subsidiaries of decisions they currently make locally. The non-executive director's warning that it "slows the subsidiaries down" has genuine substance: a badly-configured central function that insists on approving every local payment would indeed add a head-office layer without adding value.
 
@@ -267,7 +281,7 @@ The dominant misconception here is substituting a generic "centralisation is goo
 
 Establishing a group treasury at Lyon is worth doing, but only if it is designed to add control without smothering the subsidiaries.
 
-The case for it is strongest precisely because of the Brazilian exposure. A central treasury pools scarce expertise and scale: it can raise group funding more cheaply than four desks bidding separately, net intra-group balances rather than each subsidiary hedging in isolation, and impose one consistent FX and risk policy. Solenne has never operated a central treasury, so the local desks have built no capability in real management — and none of the four European subsidiaries has ever handled a Brazilian exposure. Concentrating that judgement in one place is the point.
+The case for it is strongest precisely because of the Brazilian exposure. A central treasury pools scarce expertise and scale: it can raise group funding more cheaply than four desks bidding separately, net intra-group balances rather than each subsidiary hedging in isolation, and impose one consistent FX and risk policy. Solenne has never operated a central treasury, so the local desks have built no capability in group risk management — and none of the four European subsidiaries has ever handled a Brazilian exposure. Concentrating that judgement in one place is the point.
 
 But the cost and disruption are real and should not be waved away. A treasury at Lyon needs systems, dealing lines and skilled staff, and it strips the four European subsidiaries of decisions they currently make locally. The non-executive director's warning that it "slows the subsidiaries down" has genuine substance: a badly-configured central function that insists on approving every local payment would indeed add a head-office layer without adding value.
 
@@ -303,7 +317,7 @@ Separately, the advisers ran a Monte Carlo simulation of the same Firth Array pr
 
 #### (i) B1a — 12 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P8 ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + RISK-Ga/Gb family gates ALL PASS
 
 **Question:**
 
@@ -371,7 +385,7 @@ On the central outcome, the expected NPV of GBP 44 million is positive, so the t
 
 The risk profile is dominated by dispersion. The standard deviation of GBP 60 million is actually larger than the mean of GBP 44 million — a coefficient of variation above one — so the range of possible outcomes is very wide and the project is highly uncertain. Reporting the positive mean without that context would badly mislead the board.
 
-The Value-at-Risk figure sharpens the downside. A project VaR of GBP 52 million at the 95% confidence level means there is only a 5% chance of an NPV outcome more than GBP 52 million below the expected level; it measures the tail, and is explicitly not the worst case that could ever occur. Set against the GBP 500 million Brecon must commit, the board should treat that GBP 52 million as the tail loss the balance sheet has to be able to absorb.
+The Value-at-Risk figure sharpens the downside. A project VaR of GBP 52 million at the 95% confidence level is the one-tail downside on the project over the period: there is a 5% chance that the downside loss will exceed GBP 52 million. It is a threshold, not a ceiling on the maximum possible loss — it measures the tail, not the worst case that could ever occur. Set against the GBP 500 million Brecon must commit, the board should treat that GBP 52 million as the tail loss the balance sheet has to be able to absorb.
 
 On balance, Brecon should approve Firth Array only if it can withstand that tail loss without distress, or should first require mitigations — phased construction, or contracted revenue floors — that pull the 22% probability of a negative NPV down to a level the board is willing to accept. A positive mean is a reason to consider the project, not a reason to commit GBP 500 million to it unconditionally.
 
@@ -389,7 +403,7 @@ On the central outcome, the expected NPV of GBP 44 million is positive, so the t
 
 The risk profile is dominated by dispersion. The standard deviation of GBP 60 million is actually larger than the mean of GBP 44 million — a coefficient of variation above one — so the range of possible outcomes is very wide and the project is highly uncertain. Reporting the positive mean without that context would badly mislead the board.
 
-The Value-at-Risk figure sharpens the downside. A project VaR of GBP 52 million at the 95% confidence level means there is only a 5% chance of an NPV outcome more than GBP 52 million below the expected level; it measures the tail, and is explicitly not the worst case that could ever occur. Set against the GBP 500 million Brecon must commit, the board should treat that GBP 52 million as the tail loss the balance sheet has to be able to absorb.
+The Value-at-Risk figure sharpens the downside. A project VaR of GBP 52 million at the 95% confidence level is the one-tail downside on the project over the period: there is a 5% chance that the downside loss will exceed GBP 52 million. It is a threshold, not a ceiling on the maximum possible loss — it measures the tail, not the worst case that could ever occur. Set against the GBP 500 million Brecon must commit, the board should treat that GBP 52 million as the tail loss the balance sheet has to be able to absorb.
 
 On balance, Brecon should approve Firth Array only if it can withstand that tail loss without distress, or should first require mitigations — phased construction, or contracted revenue floors — that pull the 22% probability of a negative NPV down to a level the board is willing to accept. A positive mean is a reason to consider the project, not a reason to commit GBP 500 million to it unconditionally.
 
@@ -423,7 +437,7 @@ Aldebrino invoices its US customers in US dollars and its UK customers in pounds
 
 #### (i) E3a — 12 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P8 ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + IRH-20/21/23/25 family gates ALL PASS
 
 **Question:**
 

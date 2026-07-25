@@ -21,10 +21,60 @@
 import { ratingInfo } from './credit';
 
 export interface ProseIssue {
-  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol' | 'misconception-lead';
+  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol' | 'misconception-lead' | 'zero-additional-tax-phrasing' | 'recommendation-consistency';
   field: string;
   code: string;
   message: string;
+}
+
+// GATE 26 recommendation-consistency (AFM mock FR1, 2026-07-25). Where a requirement's
+// CODE computes a comparison verdict (a winning method — e.g. fxhedge's compareHedgeMethods
+// exposes `selected_method`), the authored advice must NAME that same method in a
+// recommendation-position sentence, and must NOT name a losing method in one. A
+// recommendation-position sentence is any sentence containing should / recommend / advise /
+// opt for. Method labels are matched on their core (leading "the " stripped). Self-contained
+// regex — zero coupling to any live path. LOUD FAIL at authoring time.
+const RECOMMEND_CUE = /\b(?:should|recommend(?:ed|s)?|advise[ds]?|opt(?:s|ed)?\s+for)\b/i;
+// Split on NEWLINES first, then sentence terminators within each line — so a markdown
+// table row or a heading (e.g. "| Money-market hedge | EUR 31.3m |") is its OWN unit and
+// is never merged into a following recommendation sentence just because the block lacks
+// interior punctuation. Without the newline split, the whole "comparison + recommendation"
+// block reads as one sentence and a losing method named in the comparison TABLE would
+// falsely trip the losing-method-in-recommendation check.
+function splitSentences(text: string): string[] {
+  return text.split(/\n+/).flatMap((line) => line.split(/(?<=[.!?])\s+/)).map((s) => s.trim()).filter(Boolean);
+}
+function methodCore(label: string): string {
+  return label.replace(/^the\s+/i, '').trim().toLowerCase();
+}
+export function lintRecommendationConsistency(selectedMethod: string, allMethods: string[], fields: { model_answer?: string; full_reveal?: string }): ProseIssue[] {
+  const issues: ProseIssue[] = [];
+  const selected = methodCore(selectedMethod);
+  const losers = Array.from(new Set(allMethods.map(methodCore))).filter((m) => m && m !== selected);
+  let selectedNamedInRecPosition = false;
+  for (const [field, text] of Object.entries(fields)) {
+    if (typeof text !== 'string') continue;
+    for (const sentence of splitSentences(text)) {
+      if (!RECOMMEND_CUE.test(sentence)) continue;
+      const low = sentence.toLowerCase();
+      if (low.includes(selected)) selectedNamedInRecPosition = true;
+      for (const loser of losers) {
+        if (low.includes(loser)) {
+          issues.push({
+            gate: 'recommendation-consistency', field, code: 'losing-method-in-recommendation',
+            message: `${field} names the LOSING method "${loser}" in a recommendation-position sentence, but the calculator selected "${selectedMethod}": "${sentence.slice(0, 220)}"`,
+          });
+        }
+      }
+    }
+  }
+  if (!selectedNamedInRecPosition) {
+    issues.push({
+      gate: 'recommendation-consistency', field: 'model_answer+full_reveal', code: 'selected-method-not-recommended',
+      message: `the calculator selected "${selectedMethod}" as the winning method, but no recommendation-position sentence (should/recommend/advise/opt for) in the model answer or reveal names it.`,
+    });
+  }
+  return issues;
 }
 
 // P8 rating-symbol realism (credit-risk batch, calculator #7, 2026-07-15). Rating symbols named
@@ -260,6 +310,37 @@ export function lintMisconceptionLead(fullReveal: string): ProseIssue[] {
       'tutor leg on this drill. Add an explicit sentence naming the drill\'s designed misconception, e.g. ' +
       '"The classic misconception here is X: ..." or "The dominant misconception is Y: ...".',
   }];
+}
+
+// P9 zero-additional-tax phrasing (AFM mock FR1, 2026-07-25; same wording family as the
+// batch #10 double-tax MAJOR). When a requirement's tax computation yields ZERO additional
+// home-country tax (host corporate rate ≥ home rate, so the foreign-tax credit already
+// covers the whole home liability), the withholding tax on the remittance is a NET COST —
+// it is NOT credited/offset against anything, because there is no residual home charge to
+// set it against. Prose that describes the WHT as "credited against" / "offset against" the
+// home charge is therefore wrong on the branch and misteaches the rule. This gate fires
+// ONLY on the zero-additional-tax branch (the caller passes that boolean) and flags the
+// credit-against language in the requirement's OWN prose (model_answer / hint / full_reveal
+// — NOT the shared scenario, which may legitimately state the treaty's creditability).
+//
+// The regex is a self-contained copy — zero coupling to any live grounding/tutor path.
+// "credit(ed/able) … against" is matched across an intervening noun phrase (bounded to
+// ≤40 non-period chars so it never crosses a sentence) — the real misteaching is
+// "credit the withholding against the home charge", not only the bare "credit against".
+const CREDIT_AGAINST_PATTERN = /credit(?:ed|able)?[^.]{0,40}\bagainst\b|offset\s+against|set\s+off\s+against/i;
+
+export function lintZeroAdditionalTaxPhrasing(zeroAdditionalTax: boolean, fields: { model_answer?: string; hint?: string; full_reveal?: string }): ProseIssue[] {
+  if (!zeroAdditionalTax) return []; // only the nil-additional-tax branch is at risk of this misteaching
+  const issues: ProseIssue[] = [];
+  for (const [field, text] of Object.entries(fields)) {
+    if (typeof text === 'string' && CREDIT_AGAINST_PATTERN.test(text)) {
+      issues.push({
+        gate: 'zero-additional-tax-phrasing', field, code: 'credit-against-on-nil-branch',
+        message: `${field} uses "credit/offset ... against" language for the withholding tax, but this requirement's tax computation yields ZERO additional home-country tax (host corporate rate ≥ home rate). With no residual home charge, the withholding is a NET REMITTANCE COST, not a credit that is set against anything. Reword to the three-branch rule: home > host → additional tax on the differential; home ≤ host → no additional tax and the excess credit is unusable; the withholding is a net cost regardless.`,
+      });
+    }
+  }
+  return issues;
 }
 
 /** Run both prose gates over whatever fields are present. */

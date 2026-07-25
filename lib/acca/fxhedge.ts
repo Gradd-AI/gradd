@@ -431,6 +431,7 @@ export interface ComparisonComputed {
   results: HedgeMethodResult[];
   best: HedgeMethodResult;
   margin: number; // best.home_settlement − second-best (always ≥ 0)
+  selected_method: string; // code-owned winner label — the authored advice MUST name this (GATE 26)
 }
 // A RECEIPT wants the HIGHEST guaranteed home amount; a PAYMENT wants the LOWEST home cost.
 export function compareHedgeMethods(direction: ExposureDirection, results: HedgeMethodResult[]): ComparisonComputed {
@@ -438,7 +439,7 @@ export function compareHedgeMethods(direction: ExposureDirection, results: Hedge
   const sorted = [...results].sort((a, b) => direction === 'receipt' ? b.home_settlement - a.home_settlement : a.home_settlement - b.home_settlement);
   const best = sorted[0];
   const margin = Math.abs(best.home_settlement - sorted[1].home_settlement);
-  return { results, best, margin };
+  return { results, best, margin, selected_method: best.method };
 }
 
 function finiteGuard(raw: Record<string, unknown>, ctx: string): void {

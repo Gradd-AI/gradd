@@ -1,7 +1,7 @@
 // scripts/test-afm-prose.ts
 // Fixtures for the rescoped AFM prose lints (lib/acca/validate-afm-prose.ts). Pure — no
 // env/DB/model. Exit 1 on any mismatch.
-import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead, lintZeroAdditionalTaxPhrasing, lintRecommendationConsistency } from '../lib/acca/validate-afm-prose';
 
 let failures = 0;
 function check(name: string, got: number, want: number, codes: string[] = []) {
@@ -76,6 +76,28 @@ check('P7: scaffolding prose with no misconception sentence FAILS (fallback)',
   lintMisconceptionLead('A collar answer earns its marks by following the sequence and then reading the trade-off. The most common stall is stopping at the net premium.').length, 1, ['fallback-not-real-match']);
 check('P7: empty full_reveal is out of scope (no issue raised)',
   lintMisconceptionLead('').length, 0);
+
+// (11) P9 zero-additional-tax phrasing (AFM mock FR1) — credit/offset-against language for the WHT
+// on the nil-additional-tax branch FAILS; net-cost wording and the non-nil branch pass.
+check('P9: "credit the withholding against the home charge" on nil branch FAILS',
+  lintZeroAdditionalTaxPhrasing(true, { full_reveal: 'translate at the parity rate, credit the withholding against the French charge, then discount.' }).length, 1, ['credit-against-on-nil-branch']);
+check('P9: "offset against" on nil branch FAILS',
+  lintZeroAdditionalTaxPhrasing(true, { hint: 'the withholding is offset against the residual home tax.' }).length, 1, ['credit-against-on-nil-branch']);
+check('P9: net-cost wording on nil branch passes',
+  lintZeroAdditionalTaxPhrasing(true, { full_reveal: 'no additional home tax arises and the 15% withholding is a net remittance cost, not a recoverable credit.' }).length, 0);
+check('P9: does NOT fire when additional tax is non-zero (gate off)',
+  lintZeroAdditionalTaxPhrasing(false, { full_reveal: 'the withholding is credited against the home charge on the differential.' }).length, 0);
+
+// (12) GATE 26 recommendation-consistency (AFM mock FR1) — advice must name the code-selected method
+// in a recommendation-position sentence and must not name a losing method in one.
+check('GATE 26: advice recommends the LOSING method FAILS',
+  lintRecommendationConsistency('the forward', ['the forward', 'the money-market hedge'], { model_answer: 'Solenne should opt for the money-market hedge, which is cheaper.' }).length, 2, ['losing-method-in-recommendation', 'selected-method-not-recommended']);
+check('GATE 26: advice recommends the SELECTED method passes',
+  lintRecommendationConsistency('the forward', ['the forward', 'the money-market hedge'], { model_answer: 'The forward is recommended as the higher-value hedge.' }).length, 0);
+check('GATE 26: a losing method in a NON-recommendation (table/data) line does not trip',
+  lintRecommendationConsistency('the forward', ['the forward', 'the money-market hedge'], { model_answer: '| Money-market hedge | EUR 31.3m |\nThe forward gives the higher outcome and is recommended.' }).length, 0);
+check('GATE 26: selected method never named in a recommendation sentence FAILS',
+  lintRecommendationConsistency('the forward', ['the forward', 'the money-market hedge'], { model_answer: 'The forward gives EUR 31.7m. The board should decide in due course.' }).length, 1, ['selected-method-not-recommended']);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL AFM-PROSE FIXTURES PASS' : `${failures} AFM-PROSE FIXTURE(S) FAILED`);
