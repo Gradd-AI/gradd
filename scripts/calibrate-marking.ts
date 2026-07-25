@@ -239,6 +239,7 @@ async function runFixture(f: Fixture): Promise<{ pass: boolean; scores: number[]
     let r: CaseMarkingResult;
     try {
       r = await judgeCaseMarking({
+        paper: 'APM',
         context: CONTEXT,
         wholeAnswer: f.wholeAnswer,
         examinedSkills: EXAMINED_SKILLS,

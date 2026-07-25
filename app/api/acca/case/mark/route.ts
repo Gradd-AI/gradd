@@ -173,6 +173,7 @@ export async function POST(request: Request): Promise<Response> {
   let result;
   try {
     result = await judgeCaseMarking({
+      paper,
       context,
       wholeAnswer,
       examinedSkills,

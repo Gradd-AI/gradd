@@ -32,6 +32,8 @@
     "test:irhedge": "tsx scripts/test-irhedge.ts",
     "test:narrative-marker": "tsx scripts/test-narrative-marker.ts",
     "test:area-entry": "tsx scripts/test-area-entry.ts",
+    "test:case-gates": "tsx scripts/test-case-gates.ts",
+    "test:case-marking-descriptors": "tsx scripts/test-case-marking-descriptors.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts",

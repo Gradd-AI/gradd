@@ -16,14 +16,25 @@
 // the model entirely — same lesson as the withhold engine.
 
 import Anthropic from '@anthropic-ai/sdk';
+import type { AccaPaper } from './paper';
 
 export const MARKING_MODEL = 'claude-sonnet-4-6';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
-// ── ACCA section-E professional-skills descriptors (S26–J27 syllabus §E) ──────
-// Verbatim authored standards. Each examined skill is marked against its descriptor.
-export const SKILL_DESCRIPTORS: Record<string, string> = {
+// ── Professional-skills descriptors, PAPER-KEYED ──────────────────────────────
+// Each examined skill is marked against its paper's OWN syllabus descriptor. The
+// two papers' descriptors are MATERIALLY different, not paraphrase drift: APM's
+// commercial-acumen names "measurement and management of objectives" and
+// "behavioural, process and system-related issues" (APM subject matter, absent
+// from AFM's syllabus), and AFM's analysis-and-evaluation carries a 4th sub-point
+// (d) with no APM analogue. So the descriptor set is selected by paper, never
+// shared. Select via getSkillDescriptors(paper); the DB professional_skill_tags
+// keys (communication / analysis_and_evaluation / scepticism / commercial_acumen)
+// are common to both.
+
+// APM — UNTOUCHED. Sourced APM S26–J27 syllabus §E (the original authored set).
+const APM_SKILL_DESCRIPTORS: Record<string, string> = {
   communication:
     'inform concisely, objectively and unambiguously in a suitable style and format; ' +
     'advise using compelling, logical, counter-arguable arguments; clarify and simplify ' +
@@ -44,6 +55,55 @@ export const SKILL_DESCRIPTORS: Record<string, string> = {
     'commercially viable solutions; show insight into behavioural, process and system-related ' +
     'issues.',
 };
+
+// AFM — VERBATIM from the AFM S26–J27 Syllabus & Study Guide, §F "Professional
+// skills" (p.13), page-verified 2026-07-25 (docs/evidence/sources.json E6, two
+// independent pdftotext passes to defeat the two-column layout). Each descriptor
+// concatenates that skill's own sub-points in order (Communication a/b/c;
+// Analysis and evaluation a/b/c/d — all four; Scepticism a/b/c; Commercial acumen
+// lead-in + a/b). The bracketed intellectual-level markers ([3]) are omitted as
+// PDF metadata, not descriptor prose; every sentence otherwise is verbatim.
+const AFM_SKILL_DESCRIPTORS: Record<string, string> = {
+  communication:
+    'Inform concisely, objectively and unambiguously, adopting a suitable style and format, ' +
+    'using appropriate technology. Persuade using compelling and logical arguments, ' +
+    'demonstrating the ability to counter argue where appropriate. Clarify and simplify ' +
+    'complex issues to convey relevant information in a way that adopts an appropriate tone ' +
+    'and is easily understood by and reflects the requirements of the intended audience.',
+  analysis_and_evaluation:
+    'Investigate relevant information from a range of sources, using appropriate analytical ' +
+    'techniques to estimate outcomes, assist in decision-making and to identify opportunities ' +
+    'or solutions. Consider information, evidence and findings carefully, reflecting on their ' +
+    'implications and how they can be used in the interests of the wider organisational goals. ' +
+    'Assess and apply appropriate judgement when considering organisational issues, problems ' +
+    'or when making financial management decisions; taking into account the implications of ' +
+    'such decisions on the organisation and those affected. Appraise information objectively ' +
+    'with a view to balancing the costs, risks, benefits and opportunities, before ' +
+    'recommending appropriate solutions or decisions.',
+  scepticism:
+    'Explore the underlying reasons for a given situation, applying the attitude of an ' +
+    'enquiring mind, beyond what is immediately apparent. Question opinions, assertions and ' +
+    'assumptions, by seeking justifications and obtaining sufficient evidence for either their ' +
+    'support and acceptance or rejection. Challenge and critically assess the information ' +
+    'presented or decisions made, where this is clearly justified, in the wider professional, ' +
+    'ethical, organisational, or public interest.',
+  commercial_acumen:
+    'Demonstrate awareness of organisational and external factors, which will affect the ' +
+    'financial management decisions of an organisation. Recognise key issues in a given ' +
+    'scenario and use judgement in proposing and recommending commercially viable solutions. ' +
+    'Show insight and perception in understanding financial issues and wider organisational ' +
+    'matters, demonstrating acumen in arriving at appropriate recommendations.',
+};
+
+// Paper → descriptor set. Selected per marking pass; never merged.
+export const SKILL_DESCRIPTORS_BY_PAPER: Record<AccaPaper, Record<string, string>> = {
+  APM: APM_SKILL_DESCRIPTORS,
+  AFM: AFM_SKILL_DESCRIPTORS,
+};
+
+export function getSkillDescriptors(paper: AccaPaper): Record<string, string> {
+  return SKILL_DESCRIPTORS_BY_PAPER[paper];
+}
 
 const BANDS = ['exemplary', 'strong', 'competent', 'weak'] as const;
 export type SkillBand = (typeof BANDS)[number];
@@ -74,6 +134,7 @@ export interface CaseMarkingResult {
 }
 
 export interface JudgeCaseMarkingInput {
+  paper: AccaPaper;                // selects the paper's OWN PS descriptors — never shared across papers
   context: string;                 // scenario_intro + exhibits (NOT sealed) — same shape as case/turn
   wholeAnswer: string;             // final_answer per requirement, labelled, joined in order
   examinedSkills: string[];        // union of professional_skill_tags across requirements
@@ -119,16 +180,17 @@ function apportion(raw: number[], target: number): number[] {
 // Throws Error('call') on API/extract failure and Error('parse') on parse/shape
 // failure so the caller can preserve the distinct 502 messages.
 export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<CaseMarkingResult> {
-  const { context, wholeAnswer, examinedSkills, professionalSkillsMarks } = input;
+  const { paper, context, wholeAnswer, examinedSkills, professionalSkillsMarks } = input;
 
   // ── Marking call (Sonnet) — the model judges a BAND per skill, no marks ──
-  // The prompt asks ONLY for a quality band per examined skill against the section-E
-  // descriptor; it never mentions marks, the pool size, or allocation. Bands are
-  // converted to marks deterministically in code below, so the model never decides a
-  // number and cannot default the whole pool onto a weak answer.
+  // The prompt asks ONLY for a quality band per examined skill against that paper's
+  // OWN professional-skills descriptor; it never mentions marks, the pool size, or
+  // allocation. Bands are converted to marks deterministically in code below, so the
+  // model never decides a number and cannot default the whole pool onto a weak answer.
+  const descriptors = getSkillDescriptors(paper);
   const rubric = examinedSkills
     .map((s) => {
-      const descriptor = SKILL_DESCRIPTORS[s] ?? '(no authored descriptor on file for this skill)';
+      const descriptor = descriptors[s] ?? '(no authored descriptor on file for this skill)';
       return `- ${s}: ${descriptor}`;
     })
     .join('\n');
@@ -136,10 +198,10 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
   const contextLine = context ? `Case scenario and exhibits:\n${context}\n\n` : '';
 
   const systemPrompt =
-    'You are an experienced ACCA APM marker judging the professional skills demonstrated in a ' +
+    `You are an experienced ACCA ${paper} marker judging the professional skills demonstrated in a ` +
     'whole exam question. You judge HOW the candidate wrote — their reasoning, judgement and ' +
-    'communication across the whole answer — against the official ACCA section-E descriptor for ' +
-    'each examined skill. Each descriptor IS the standard; judge against it, not against a model ' +
+    'communication across the whole answer — against the official ACCA professional-skills descriptor ' +
+    'for each examined skill. Each descriptor IS the standard; judge against it, not against a model ' +
     'answer. ' +
     'For each examined skill, assign exactly one band describing how well the whole answer meets ' +
     'that skill\'s descriptor:\n' +
@@ -160,7 +222,7 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
 
   const baseUserContent =
     contextLine +
-    `Examined professional skills and their ACCA section-E descriptors (the standard):\n${rubric}\n\n` +
+    `Examined professional skills and their ACCA ${paper} descriptors (the standard):\n${rubric}\n\n` +
     `Candidate's whole answer (all requirements, in order):\n${wholeAnswer}\n\n` +
     'Judge the whole answer against each examined skill\'s descriptor and assign its band. ' +
     'Return ONLY the JSON array.';
