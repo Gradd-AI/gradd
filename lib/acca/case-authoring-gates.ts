@@ -46,6 +46,7 @@ import {
   lintMisconceptionLead,
   lintZeroAdditionalTaxPhrasing,
   lintRecommendationConsistency,
+  lintTaxRateAssignment,
 } from './validate-afm-prose';
 import type { IntlNpvInputs, IntlNpvComputed } from './international';
 import type { ForwardMmhCompareInputs, ForwardMmhCompareComputed } from './fxhedge';
@@ -153,6 +154,12 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
     const g26 = lintRecommendationConsistency(f.compare.selected, f.compare.all, { model_answer: f.model_answer, full_reveal: f.full_reveal });
     g.push({ name: 'GATE 26 recommendation-consistency', ok: g26.length === 0, detail: g26.map((i) => i.code + ': ' + i.message).join(' | ') });
   }
+
+  // TAX_RATE_ASSIGNMENT — runs on the SCENARIO the candidate sees (context/exhibits +
+  // question), not the worked answer. Structural no-op unless ≥2 distinct corporate tax
+  // rates are in scope, so single-jurisdiction requirements are unaffected.
+  const gTax = lintTaxRateAssignment(`${f.context}\n${f.question}`);
+  g.push({ name: 'TAX_RATE_ASSIGNMENT multi-rate purposes', ok: gTax.length === 0, detail: gTax.map((i) => i.code + ': ' + i.message).join(' | ') });
 
   return g;
 }

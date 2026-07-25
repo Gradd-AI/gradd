@@ -1,7 +1,7 @@
 // scripts/test-afm-prose.ts
 // Fixtures for the rescoped AFM prose lints (lib/acca/validate-afm-prose.ts). Pure — no
 // env/DB/model. Exit 1 on any mismatch.
-import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead, lintZeroAdditionalTaxPhrasing, lintRecommendationConsistency } from '../lib/acca/validate-afm-prose';
+import { lintJurisdiction, lintCompleteness, lintFrozenMarketFacts, lintMisconceptionLead, lintZeroAdditionalTaxPhrasing, lintRecommendationConsistency, lintTaxRateAssignment, findCorporateTaxRates } from '../lib/acca/validate-afm-prose';
 
 let failures = 0;
 function check(name: string, got: number, want: number, codes: string[] = []) {
@@ -98,6 +98,44 @@ check('GATE 26: a losing method in a NON-recommendation (table/data) line does n
   lintRecommendationConsistency('the forward', ['the forward', 'the money-market hedge'], { model_answer: '| Money-market hedge | EUR 31.3m |\nThe forward gives the higher outcome and is recommended.' }).length, 0);
 check('GATE 26: selected method never named in a recommendation sentence FAILS',
   lintRecommendationConsistency('the forward', ['the forward', 'the money-market hedge'], { model_answer: 'The forward gives EUR 31.7m. The board should decide in due course.' }).length, 1, ['selected-method-not-recommended']);
+
+// (13) TAX_RATE_ASSIGNMENT (AFM mock FR2) — a scenario stating ≥2 distinct CORPORATE tax
+// rates must assign a rate to every purpose it puts in play. Regression-locks the exact
+// Mock Paper 1 hole: Brazil 34% + France 25% stated, nothing saying which does what.
+const MOCK_MULTIRATE_UNASSIGNED =
+  'The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. ' +
+  'The France–Brazil treaty provides relief from double taxation, and the French corporate tax rate is 25%. ' +
+  'Solenne intends to appraise Rio Verde at a project-specific discount rate. ' +
+  'In a normal year it generates profit before interest and tax (PBIT) of BRL 320 million. ' +
+  "The peer's equity beta is ungeared to an asset beta and regeared to Solenne's structure.";
+const MOCK_MULTIRATE_ASSIGNED =
+  'The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. ' +
+  'The France–Brazil treaty provides relief from double taxation: the Brazilian corporate tax of 34% borne on those ' +
+  'profits is credited against the French corporate tax of 25% that would otherwise fall due on them when remitted, ' +
+  'and the 15% Brazilian withholding tax is deducted as the profits are remitted. ' +
+  "The Brazilian producer's own corporate tax rate of 34% is carried into the ungearing of that company's equity beta; " +
+  "the French corporate tax rate of 25% is applied when regearing the asset beta to Solenne's own structure and when " +
+  'weighting its post-tax cost of debt for the discount rate. ' +
+  "Rio Verde's operating cash flows and its profit before interest and tax (PBIT) are taxed in Brazil at 34%.";
+
+check('TAX_RATE_ASSIGNMENT: two corporate rates with NO purpose assignment FAILS',
+  lintTaxRateAssignment(MOCK_MULTIRATE_UNASSIGNED).length, 1, ['multi-rate-purpose-unassigned']);
+check('TAX_RATE_ASSIGNMENT: same scenario WITH explicit assignments passes',
+  lintTaxRateAssignment(MOCK_MULTIRATE_ASSIGNED).length, 0);
+check('TAX_RATE_ASSIGNMENT: single corporate rate is a structural no-op',
+  lintTaxRateAssignment('The company pays corporation tax at 25%. It ungears the proxy beta and regears to its own structure to discount the operating cash flows.').length, 0);
+check('TAX_RATE_ASSIGNMENT: no corporate rate at all is a no-op',
+  lintTaxRateAssignment('The risk-free rate is 4.5% and the market risk premium is 6.0%.').length, 0);
+// A non-corporate percentage must never be read as an assignment (the "cost of debt is 5.5%"
+// false-positive found while building this gate).
+check('TAX_RATE_ASSIGNMENT: a non-tax percentage does not count as assigning a rate',
+  lintTaxRateAssignment('The Brazilian corporate tax rate is 34%. The French corporate tax rate is 25%. ' +
+    "Solenne's pre-tax cost of debt is 5.5% and it appraises at a project-specific discount rate.").length, 1, ['multi-rate-purpose-unassigned']);
+// rate DETECTION must pick up corporate rates only — not withholding/inflation/discount rates.
+check('findCorporateTaxRates: detects both corporate rates',
+  findCorporateTaxRates('The Brazilian corporate tax rate is 34% and the French corporate tax rate is 25%.').length, 2);
+check('findCorporateTaxRates: ignores withholding / inflation / risk-free percentages',
+  findCorporateTaxRates('Withholding tax of 15% applies. Inflation is 4.5%. The risk-free rate is 3.8%.').length, 0);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL AFM-PROSE FIXTURES PASS' : `${failures} AFM-PROSE FIXTURE(S) FAILED`);

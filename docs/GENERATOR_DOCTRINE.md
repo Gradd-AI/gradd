@@ -31,6 +31,33 @@ A correction that touches one claim must be applied across **all five drill fiel
 
 ## Standing rulings
 
+### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
+
+Everything else in this section is settled by a fetched ACCA quote (the Step-0 gate immediately
+below). The rulings in **this** subsection are different in kind: the corpus was searched and
+found **SILENT**, so Grant ruled and we recorded the choice. They are binding on our content and
+must **never** be presented to a student, a reviewer, or a review pack as "ACCA says". Where a
+house convention is encoded in code it carries a `HOUSE CONVENTION` comment naming the ruling
+date and stating that no source disambiguates it. Examiner-sourced constants live in
+`docs/evidence/sources.json` + the Rule-22 in-file evidence comments; these do not.
+
+**HC1 — Which tax rate ungears a foreign proxy's beta (Grant ruling 25/07/2026).**
+The `(1−T)` in **ungearing** prices the **proxy's** debt tax shield, so it takes the **proxy's own
+(host) tax rate**; **regearing** applies the **investing company's (home) rate** to its own capital
+structure. Encoded as the optional `peer_tax_rate` input in `lib/acca/capm.ts` (defaults to
+`tax_rate`, so every single-jurisdiction drill is byte-identical — proven over 20,736 input
+combinations).
+*Evidence position:* **NO ACCA SOURCE DISAMBIGUATES THIS.** The corpus never poses a two-rate
+ungear — every worked ungear/regear ACCA publishes legislates one rate for all companies (P4
+SD2016 Morada at 20%; AFM MJ2019 Talam/Honua *"Both Honua Co and Talam Co pay corporation tax at
+an annual rate of 20%"*, which also hands over the finished 11%; the CAPM-part-2 worked example at
+25% throughout), and every cross-border AFM question (McKeever/Erat, Drimpton/Edricer,
+Washi/Airone, Penn/Zanadia) **gives** the discount rate and applies its two tax rates to cash flows
+only. The formula sheet prints `Vd(1 – T)` with `T` undefined. **Directional support only:** ACCA
+*"The capital asset pricing model – part 2"* method statement gathers proxy *"gearings and tax
+rates"* (plural, per proxy) as an input to the ungearing step. That is a wording lean, not a
+worked determination — do not upgrade it to a citation.
+
 ### CONVENTIONS ARE FETCHED, NOT REMEMBERED (Step-0 gate, PATTERN — batch #10 lesson, 2026-07-18)
 Any new calculator family with a **convention layer** — tax treatment, marking convention, regulatory
 mechanics, an accounting-standard rule, anything where the "right" behaviour is an external convention

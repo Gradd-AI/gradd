@@ -21,10 +21,134 @@
 import { ratingInfo } from './credit';
 
 export interface ProseIssue {
-  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol' | 'misconception-lead' | 'zero-additional-tax-phrasing' | 'recommendation-consistency';
+  gate: 'jurisdiction' | 'completeness' | 'loss-relief' | 'frozen-facts' | 'rating-symbol' | 'misconception-lead' | 'zero-additional-tax-phrasing' | 'recommendation-consistency' | 'tax-rate-assignment';
   field: string;
   code: string;
   message: string;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────────────
+// TAX_RATE_ASSIGNMENT (AFM mock FR2, 2026-07-25). THE CLASS THIS FENCES: a scenario that
+// puts TWO OR MORE distinct corporate tax rates in scope but never says WHICH rate serves
+// WHICH purpose. Mock Paper 1 shipped exactly that hole — Brazil 34% and France 25% both
+// stated, with nothing telling the candidate that one ungears the proxy's beta, the other
+// regears to the investor's structure, and the host rate taxes operating cash flows. The
+// ambiguity is invisible to every other gate because each individual figure is correct.
+//
+// RULE: where ≥2 distinct corporate tax rates appear in the scenario/exhibits, the
+// scenario/exhibits must EXPLICITLY assign a rate to each purpose that is in play. Absent
+// an explicit assignment, LOUD FAIL naming the rates found and the purposes left unassigned.
+// Single-rate scenarios are a structural no-op (nothing to disambiguate).
+//
+// Deliberately checks the SCENARIO (context/exhibits + question) — not the model answer.
+// The assignment is information the candidate must have BEFORE answering; finding it only
+// in the worked solution is precisely the failure being fenced.
+// Self-contained regex; zero coupling to the tutor/serving path (same discipline as P7/P9).
+
+// A stated corporate tax rate. Deliberately narrow: it must be a CORPORATE/PROFITS tax
+// cue, so a withholding rate, an inflation rate or a discount rate never counts as one of
+// the "two rates" that trigger the gate.
+const CORP_TAX_RATE_RE =
+  /(?:corporate|corporation|company|profits?|business)\s+tax(?:ed)?\s+(?:rate\s+)?(?:of\s+|is\s+|at\s+)?(\d+(?:\.\d+)?)\s*%|(?:taxed|tax)\s+at\s+(?:a\s+)?(?:rate\s+of\s+)?(\d+(?:\.\d+)?)\s*%|(\d+(?:\.\d+)?)\s*%\s+(?:corporate|corporation|company|profits?)\s+tax/gi;
+
+// The purposes a multi-rate AFM scenario can put in play. `inPlay` decides whether this
+// requirement actually engages the purpose; `cue` marks a sentence as ASSIGNING a rate to
+// it. A purpose counts as assigned when SOME SINGLE SENTENCE contains both a cue and an
+// explicit percentage — sentence-scoped rather than regex-windowed, because windowing on
+// `[^.]` breaks on decimals ("4.5%") and a trailing \b after "%" never matches.
+interface TaxPurpose { id: string; label: string; inPlay: RegExp; cue: RegExp }
+const TAX_PURPOSES: TaxPurpose[] = [
+  {
+    id: 'ungearing',
+    label: "ungearing the proxy/peer beta (whose rate strips the peer's debt shield)",
+    inPlay: /\b(?:ungear\w*|un-gear\w*|asset beta)\b/i,
+    cue: /\b(?:ungear\w*|un-gear\w*|asset beta)\b/i,
+  },
+  {
+    id: 'regearing',
+    label: "regearing to the investing company's capital structure",
+    inPlay: /\b(?:regear\w*|re-gear\w*)\b/i,
+    cue: /\b(?:regear\w*|re-gear\w*)\b/i,
+  },
+  {
+    id: 'discount_rate',
+    label: 'constructing the discount rate',
+    // The discount rate is "assigned" by any sentence tying a rate to the discount rate
+    // itself OR to one of its constituents (the regearing, or the post-tax cost of debt).
+    inPlay: /\b(?:discount rate|cost of capital|WACC|project-specific rate)\b/i,
+    cue: /\b(?:discount rate|cost of capital|WACC|cost of debt|regear\w*|ungear\w*)\b/i,
+  },
+  {
+    id: 'operating_cash_flows',
+    label: "taxing the project's operating cash flows",
+    inPlay: /\b(?:operating cash flows?|profit before interest and tax|PBIT|taxable profits?|operating profits?)\b/i,
+    cue: /\b(?:operating cash flows?|PBIT|taxable profits?|operating profits?|operations? (?:are|is) taxed|taxed in)\b/i,
+  },
+  {
+    id: 'remittance',
+    label: 'the remittance / withholding and double-tax treatment',
+    inPlay: /\b(?:withholding|remit\w*|dividends? (?:remitted|paid) to)\b/i,
+    cue: /\b(?:withholding|remit\w*)\b/i,
+  },
+];
+
+// Sentence split that does NOT break on a decimal point: a terminator is . ! ? or a
+// newline, but only when NOT immediately followed by a digit ("4.5%" stays intact).
+function splitScenarioSentences(text: string): string[] {
+  return text
+    .split(/(?<=[.!?])(?!\d)\s+|\n+/)
+    .map((x) => x.trim())
+    .filter(Boolean);
+}
+
+// A sentence assigns a rate to a purpose only if it names one of the CORPORATE TAX RATES
+// actually in scope — not merely "some percentage". Without this, a sentence like
+// "Solenne's pre-tax cost of debt is 5.5%" would be read as assigning a tax rate to the
+// discount rate, and the gate would pass content that never made the assignment.
+function mentionsOneOf(sentence: string, rates: number[]): boolean {
+  return rates.some((r) => {
+    const body = String(r).replace('.', '\\.');
+    return new RegExp(`(?<!\\d)${body}\\s*%`).test(sentence);
+  });
+}
+
+/** Distinct corporate tax rates stated in the given text, as percentage numbers. */
+export function findCorporateTaxRates(text: string): number[] {
+  const found = new Set<number>();
+  if (!text) return [];
+  CORP_TAX_RATE_RE.lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = CORP_TAX_RATE_RE.exec(text))) {
+    const v = Number(m[1] ?? m[2] ?? m[3]);
+    if (Number.isFinite(v)) found.add(v);
+  }
+  return [...found].sort((a, b) => a - b);
+}
+
+/** TAX_RATE_ASSIGNMENT gate. `scenario` = context_text/exhibits + question (what the
+ *  candidate can see before answering). No-op when fewer than two distinct corporate
+ *  tax rates are in scope. */
+export function lintTaxRateAssignment(scenario: string): ProseIssue[] {
+  const rates = findCorporateTaxRates(scenario ?? '');
+  if (rates.length < 2) return [];   // nothing to disambiguate
+  const sentences = splitScenarioSentences(scenario ?? '');
+  const assigns = (p: TaxPurpose) => sentences.some((sn) => p.cue.test(sn) && mentionsOneOf(sn, rates));
+  const unassigned = TAX_PURPOSES.filter((p) => p.inPlay.test(scenario) && !assigns(p));
+  if (unassigned.length === 0) return [];
+  return [{
+    gate: 'tax-rate-assignment',
+    field: 'context_text',
+    code: 'multi-rate-purpose-unassigned',
+    message:
+      `the scenario states ${rates.length} distinct corporate tax rates (${rates.map((r) => r + '%').join(', ')}) ` +
+      `but never assigns a rate to ${unassigned.length} purpose(s) that this requirement puts in play: ` +
+      unassigned.map((p) => `[${p.id}] ${p.label}`).join('; ') +
+      `. With two rates in scope the candidate cannot know which applies where, and every other gate is blind to it ` +
+      `(each individual figure is still correct). State the assignment in the scenario/exhibits as a COMPANY FACT ` +
+      `(not an instruction), e.g. "<Company>'s treasury applies the <home> rate of X% when regearing to its own ` +
+      `structure, while the proxy's beta is ungeared at the <host> rate of Y%; the project's operating cash flows ` +
+      `are taxed at Y%."`,
+  }];
 }
 
 // GATE 26 recommendation-consistency (AFM mock FR1, 2026-07-25). Where a requirement's

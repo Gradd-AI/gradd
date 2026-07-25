@@ -29,12 +29,43 @@ All five numeric requirements are **confirmed correct by two independent recompu
 - **GATE 26 — recommendation-consistency** (`lib/acca/validate-afm-prose.ts` `lintRecommendationConsistency`; the calculator exposes the winner via `ComparisonComputed.selected_method` in `lib/acca/fxhedge.ts`). Where code computes a comparison verdict, the authored advice MUST name that method in a recommendation-position sentence (should/recommend/advise/opt for) and MUST NOT name a losing method in one. Wired into the mock authoring insert path (`scripts/_author_mock_paper1.ts`, per-requirement gate loop that runs immediately before insert, the same barrier as C1–C4) for any requirement carrying a `compare` payload. LOUD FAIL. Proven: on the original A(iii) advice it fires with 2 issues (losing-method-in-recommendation + selected-method-not-recommended).
 - **GATE P9 — zero-additional-tax phrasing** (`lib/acca/validate-afm-prose.ts` `lintZeroAdditionalTaxPhrasing`, alongside P7). Fires only when the computed additional home tax == 0; fails on credit/offset/set-off-against language in the requirement's own prose (model_answer / hint / full_reveal — NOT the shared scenario). Self-contained regex, zero coupling to the tutor path. LOUD FAIL. Proven: on the original A(ii) "credit the Brazilian withholding against the French charge" it fires with 1 issue.
 
+## ✅ FR2 (tax-rate ambiguity) — APPLIED 2026-07-25. FIGURES MOVED in A(i)/A(ii) only.
+
+**RULING (Grant/co-founder, 25/07/2026) — ALT-B:** when a FOREIGN proxy's equity beta is ungeared, the `(1−T)` takes the **proxy's own (host) tax rate** — the debt tax shield being stripped is the proxy's; **regearing** to the investing company's structure takes the **investing company's (home) rate**, as does the post-tax cost of debt in its WACC.
+
+**⚠ CAVEAT — HOUSE CONVENTION, NOT EXAMINER-SOURCED.** A full corpus search (AFM syllabus + all five registered AFM examiner reports D23/J24/SD24/MJ25/SD25 + the ACCA technical articles) found **NO source that disambiguates this**. Every worked ungear/regear ACCA publishes legislates ONE tax rate for all companies (P4 SD2016 Morada at 20%; AFM MJ2019 *"Both Honua Co and Talam Co pay corporation tax at an annual rate of 20%"*, which also hands over the finished 11%; CAPM-part-2's example at 25% throughout), and every cross-border AFM question (McKeever/Erat, Drimpton/Edricer, Washi/Airone, Penn/Zanadia) **gives** the discount rate and applies its two rates to cash flows only. The formula sheet prints `Vd(1 – T)` with `T` undefined. **Directional support only:** ACCA "The capital asset pricing model – part 2" gathers proxy *"gearings and tax rates"* (plural, per proxy) as an input to the ungearing step — a wording lean, not a worked determination. **Do not cite this as ACCA-sourced.** Recorded at `docs/GENERATOR_DOCTRINE.md` → Standing rulings → HOUSE CONVENTIONS → **HC1**.
+
+**Engine:** `lib/acca/capm.ts` gains an optional `peer_tax_rate` (ungear uses it; regear keeps `tax_rate`). It **defaults to `tax_rate`**, so every single-jurisdiction caller is byte-identical — proven over **20,736 input combinations** across all four CAPM kinds (identical MD5 before/after), plus `test:capm`/`test:apv`/`test:risk` and all other calculator suites green.
+
+**Old → new (A(i) B3e chain, and A(ii) which consumes its WACC):**
+
+| Figure | Before (home 25% both steps) | After (ALT-B: peer 34% ungears) |
+|---|---|---|
+| Peer equity beta (given) | 1.350 | 1.350 |
+| **Asset beta** (ungeared) | 0.900 | **0.9375** *(displays 0.937 at 3 dp)* |
+| **Regeared beta** | 1.189 | **1.239** |
+| **Project Ke** | 11.64% | **11.93%** |
+| **Project WACC** | 9.38% | **9.59%** |
+| Kd(1−T) in the WACC | 4.13% | 4.13% *(unchanged — Solenne's OWN debt, at Solenne's own 25%)* |
+| **A(ii) NPV** | +EUR 15.6m ACCEPT | **+EUR 15.1m ACCEPT** *(decision unchanged)* |
+| A(iii) FX exposure | BRL 179.5m | BRL 179.5m *(unchanged — a year-1 PRE-discounting remittance)* |
+
+**Scope of movement — proven at the figure level, not argued.** `answer_schema` diffed before/after for all 8 requirements: **A(i) B3e and A(ii) B5b CHANGED; A(iii) E2b, A(iv) E1a, B1(i) B1a, B1(ii) B1b, B2(i) E3a, B2(ii) E2a all BYTE-IDENTICAL.** A(iii) is insulated because its exposure is the NPV's year-1 net remittance, which is computed before discounting.
+
+**Exhibit changes (stated as company/treaty FACT, never as an instruction):** Exhibit 2 now records that the Brazilian producer's own 34% is carried into the ungearing of its equity beta (the shield removed is the producer's), that Solenne's French 25% applies when regearing to its 70:30 structure and when weighting its post-tax cost of debt, and that Rio Verde's operating cash flows are taxed in Brazil at 34%. Exhibit 1's double-tax sentence now names the comparison itself — Brazilian corporate tax of 34% credited against the French corporate tax of 25% on remitted profits, with the 15% withholding deducted on remittance — which is what the new TAX_RATE_ASSIGNMENT gate requires for the remittance purpose. The A(i) model answer and reveal now SHOW each rate at its own step and carry one sentence saying why.
+
+## 🆕 GATE TAX_RATE_ASSIGNMENT (FR2 — the durable fence for this class)
+
+- **`lintTaxRateAssignment`** (`lib/acca/validate-afm-prose.ts`), wired into the durable barrier `runBaseRequirementGates` in **`lib/acca/case-authoring-gates.ts`** alongside GATE 26 and P9 — so it survives to mocks #2/#3 and to FM, not just this script.
+- **Trigger:** ≥2 distinct **corporate** tax rates in the scenario/exhibits (withholding, inflation and risk-free percentages deliberately do not count). **Rule:** the scenario must explicitly assign a rate to every purpose the requirement puts in play — **ungearing the proxy beta · regearing to the investor's structure · constructing the discount rate · taxing operating cash flows · remittance/withholding**. Absent an assignment: LOUD FAIL naming the rates found and the unassigned purposes. Single-rate scenarios are a structural no-op. Checks the SCENARIO the candidate sees, never the worked answer — finding the assignment only in the solution is the failure being fenced.
+- **Proven both ways:** with the FR2 sentences stripped it fails loudly naming 34% and 25% and the unassigned purposes; with them present it passes; a single-rate scenario is a no-op. Regression fixtures in `scripts/test-afm-prose.ts` (`npm run test:afm-prose`), including the "cost of debt is 5.5%" false-positive found while building it.
+
 ## ⛓ SECTION A INTEGRATED DEPENDENCY CHAIN (the load-bearing "real case" proof)
 
 Section A is ONE company (Solenne Industries SA), ONE shared exhibit set, with a REAL cross-requirement chain — not four independent drills:
 
-1. **A(i) CAPM (B3e)** ungears the Brazilian peer beta (1.35) → asset β **0.900** → regears to Solenne's 70:30 → equity β **1.189** → Ke **11.64%** → **project WACC 9.38%**.
-2. **A(ii) NPV (B5b)** discounts the Rio Verde reais cash flows at **that exact 9.38%** (the CAPM output is fed straight into `discount_rate`) → **NPV +EUR 15.6m → ACCEPT**.
+1. **A(i) CAPM (B3e)** ungears the Brazilian peer beta (1.35) **at the peer's own 34%** → asset β **0.9375** → regears to Solenne's 70:30 **at Solenne's 25%** → equity β **1.239** → Ke **11.93%** → **project WACC 9.59%** (FR2 / HC1).
+2. **A(ii) NPV (B5b)** discounts the Rio Verde reais cash flows at **that exact 9.59%** (the CAPM output is fed straight into `discount_rate`) → **NPV +EUR 15.1m → ACCEPT**.
 3. **A(iii) FX hedge (E2b)** hedges the **year-1 net remittance of BRL 179.5m** produced by A(ii) (the NPV's own `years[0].foreign_remit_net`) — forward vs money-market → the **forward** secures the higher guaranteed euro receipt.
 4. **A(iv) Treasury (E1a, narrative)** advises on the group treasury for **this** expansion — the Brazilian exposure the appraisal + hedge concern.
 
@@ -59,11 +90,11 @@ Solenne Industries SA (Solenne) manufactures specialty chemicals from four Europ
 
 **Exhibit 1 — Rio Verde project data (in BRL)**
 
-The Rio Verde plant requires an upfront capital outlay of BRL 480 million, paid at the start of the project, and would operate for four years. In a normal year it is expected to generate profit before interest and tax (PBIT) of BRL 320 million, with depreciation of BRL 80 million, capital reinvestment of BRL 60 million and an increase in working capital of BRL 20 million. The BRL-denominated cash flows are expected to grow by 3% a year. The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. The France–Brazil treaty provides relief from double taxation, and the French corporate tax rate is 25%. The current spot exchange rate is BRL 5.60 per EUR 1. Brazilian inflation is expected to run at 4.5% and eurozone inflation at 2.0% over the horizon.
+The Rio Verde plant requires an upfront capital outlay of BRL 480 million, paid at the start of the project, and would operate for four years. In a normal year it is expected to generate profit before interest and tax (PBIT) of BRL 320 million, with depreciation of BRL 80 million, capital reinvestment of BRL 60 million and an increase in working capital of BRL 20 million. The BRL-denominated cash flows are expected to grow by 3% a year. The Brazilian corporate tax rate is 34%. Dividends remitted to France suffer Brazilian withholding tax of 15%. The France–Brazil treaty provides relief from double taxation: the Brazilian corporate tax of 34% borne on those profits is credited against the French corporate tax of 25% that would otherwise fall due on them when remitted, and the 15% Brazilian withholding tax is deducted as the profits are remitted. The current spot exchange rate is BRL 5.60 per EUR 1. Brazilian inflation is expected to run at 4.5% and eurozone inflation at 2.0% over the horizon.
 
 **Exhibit 2 — Cost of capital data**
 
-Solenne intends to appraise Rio Verde at a project-specific discount rate. A listed Brazilian bioethanol producer of comparable business risk has an equity beta of 1.35 and a capital structure of 60% equity and 40% debt by market value. Solenne's own capital structure is 70% equity and 30% debt by market value. The risk-free rate is 4.5%, the market risk premium is 6.0%, and Solenne's pre-tax cost of debt is 5.5%. Debt is assumed to carry a beta of zero.
+Solenne intends to appraise Rio Verde at a project-specific discount rate. A listed Brazilian bioethanol producer of comparable business risk has an equity beta of 1.35 and a capital structure of 60% equity and 40% debt by market value. Solenne's own capital structure is 70% equity and 30% debt by market value. The risk-free rate is 4.5%, the market risk premium is 6.0%, and Solenne's pre-tax cost of debt is 5.5%. Debt is assumed to carry a beta of zero. Solenne's treasury manual records that the Brazilian producer's own corporate tax rate of 34% is the rate carried into the ungearing of that company's equity beta, since the debt tax shield being removed is the Brazilian producer's; the French corporate tax rate of 25% is the rate Solenne applies when regearing the resulting asset beta to its own 70:30 structure and when weighting its post-tax cost of debt. Rio Verde's own operating cash flows are taxed in Brazil at the Brazilian corporate tax rate of 34%.
 
 **Exhibit 3 — Managing the first remittance**
 
@@ -78,38 +109,40 @@ Solenne has never operated a central treasury. Each of its four European subsidi
 
 #### (i) B3e — 10 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT ALL PASS
 
 **Question:**
 
 (i) Calculate the project-specific discount rate the board should use to appraise the Rio Verde project, and explain why this rate — rather than Solenne's own group cost of capital — is appropriate. (10 marks)
 
-**answer_schema:** numeric AnswerSchema — 4 components: `asset_beta`=0.9, `regeared_beta`=1.1892857142857143, `ke_project`=11.635714285714286, `wacc_project`=9.3825
+**answer_schema:** numeric AnswerSchema — 4 components: `asset_beta`=0.9374999999999999, `regeared_beta`=1.2388392857142856, `ke_project`=11.933035714285714, `wacc_project`=9.590625
 
 **model_answer:**
 
 **Cost of capital — CAPM / weighted average cost of capital**
 
-**Assumptions:** a peer's equity beta is **ungeared** to an asset beta and **regeared** to the appraising firm's capital structure using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **0 (debt assumed risk-free)**; the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 4.50% and MRP = 6.00%; the corporate tax rate is 25.00%.
+**Assumptions:** a peer's equity beta is **ungeared** to an asset beta and **regeared** to the appraising firm's capital structure using the **Modigliani–Miller with-tax** relationship β_a = β_e × Ve/(Ve+Vd(1−T)), with the debt beta taken as **0 (debt assumed risk-free)**; the WACC weights the cost of equity and the **post-tax** cost of debt (Kd×(1−T)) by **market values**; the cost of equity is priced by CAPM (Ke = Rf + β × market risk premium) with Rf = 4.50% and MRP = 6.00%; the peer is taxed at 34.00% and the appraising company at 25.00%.
 
 
 **Step 1 — Ungear the peer's equity beta (strip out the peer's financial risk)**
 
-β_a = β_e × Ve/(Ve + Vd(1−T)) = 1.350 × 60/(60 + 40×(1−0.25)) = **0.900**
+β_a = β_e × Ve/(Ve + Vd(1−T)) = 1.350 × 60/(60 + 40×(1−0.34)) = **0.937**  *(T = the peer's 34.00%)*
 
 **Step 2 — Regear to YOUR capital structure**
 
-β_e' = β_a × (Ve + Vd(1−T))/Ve = 0.900 × (70 + 30×(1−0.25))/70 = **1.189**
+β_e' = β_a × (Ve + Vd(1−T))/Ve = 0.937 × (70 + 30×(1−0.25))/70 = **1.239**  *(T = the appraising company's 25.00%)*
 
-The regeared equity beta (**1.189**) is **lower** than the peer's equity beta (1.350) because your gearing is below the peer's — the asset (business) risk is the same, only the financial risk differs.
+The ungearing uses the **peer's** 34.00% because the debt tax shield being stripped out is the peer's own; the regearing uses the appraising company's 25.00% because the shield being added back is the one its own capital structure creates.
+
+The regeared equity beta (**1.239**) is **lower** than the peer's equity beta (1.350) because your gearing is below the peer's — the asset (business) risk is the same, only the financial risk differs.
 
 **Step 3 — Project cost of equity (CAPM)**
 
-Ke = Rf + β_e' × MRP = 4.50% + 1.189 × 6.00% = **11.64%**
+Ke = Rf + β_e' × MRP = 4.50% + 1.239 × 6.00% = **11.93%**
 
 **Step 4 — Project-specific WACC (market-value weights)**
 
-WACC = Ke × We + Kd(1−T) × Wd = 11.64% × 0.700 + 4.13% × 0.300 = **9.38%**
+WACC = Ke × We + Kd(1−T) × Wd = 11.93% × 0.700 + 4.13% × 0.300 = **9.59%**
 
 This project rate reflects the **business risk of the peer's activity**, not your firm's own line of business — using your own company WACC would misprice a project of different risk.
 
@@ -117,7 +150,7 @@ This project rate reflects the **business risk of the peer's activity**, not you
 
 The board should discount the Rio Verde cash flows at this project-specific rate, which reflects the business risk of Brazilian bioethanol production; using Solenne's group cost of capital would misprice a venture whose business risk differs from the group's existing chemicals operations.
 
-*Reconciliation: asset β 0.900 → regeared β 1.189 → Ke 11.64% → WACC 9.38% ✓*
+*Reconciliation: asset β 0.937 → regeared β 1.239 → Ke 11.93% → WACC 9.59% ✓*
 
 **hint:**
 
@@ -132,19 +165,19 @@ The fix is the ungear-regear route: strip the peer's financial risk to an asset 
 
 #### (ii) B5b — 16 marks — calc (code-owned figures) — PS: communication,analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + INTL-12/13/14/14b family gates ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + INTL-12/13/14/14b family gates ALL PASS
 
 **Question:**
 
 (ii) Using the project-specific discount rate from requirement (i), calculate the net present value of the Rio Verde project in euros and advise the board whether, on financial grounds, the project should proceed. (16 marks)
 
-**answer_schema:** numeric AnswerSchema — 9 components: `fx_1`=5.7372549019607835, `fx_2`=5.877873894655901, `fx_3`=6.021939431289623, `fx_4`=6.169535985978094, `home_cf_1`=31.290225563909775, `home_cf_2`=31.457905241572835, `home_cf_3`=31.626483489757344, `home_cf_4`=31.795965123769445, `npv`=15.562378658751907
+**answer_schema:** numeric AnswerSchema — 9 components: `fx_1`=5.7372549019607835, `fx_2`=5.877873894655901, `fx_3`=6.021939431289623, `fx_4`=6.169535985978094, `home_cf_1`=31.290225563909775, `home_cf_2`=31.457905241572835, `home_cf_3`=31.626483489757344, `home_cf_4`=31.795965123769445, `npv`=15.102610562423546
 
 **model_answer:**
 
 **International investment appraisal — net present value to the parent**
 
-**Assumptions:** project cash flows arise in BRL; the maintainable base-year foreign free cash flow is BRL 211.2m growing at 3.00% a year on a taxable profit (PBIT) base of BRL 320.0m; forecast spot rates are derived by PPP parity from the stated base spot 5.6000 BRL/EUR; converted cash flows are discounted at the parent's 9.38% money cost of capital. The foreign corporate tax rate 34.00% is **at or above** the parent's 25.00% home rate, so the credit for foreign corporate tax already covers the whole home liability and there is **no additional home tax** (max(0, 25.00% − 34.00%) = 0). The 15.00% withholding on remittances is therefore a **net cost** — with no residual home liability, the treaty's creditability gives it no relief.
+**Assumptions:** project cash flows arise in BRL; the maintainable base-year foreign free cash flow is BRL 211.2m growing at 3.00% a year on a taxable profit (PBIT) base of BRL 320.0m; forecast spot rates are derived by PPP parity from the stated base spot 5.6000 BRL/EUR; converted cash flows are discounted at the parent's 9.59% money cost of capital. The foreign corporate tax rate 34.00% is **at or above** the parent's 25.00% home rate, so the credit for foreign corporate tax already covers the whole home liability and there is **no additional home tax** (max(0, 25.00% − 34.00%) = 0). The 15.00% withholding on remittances is therefore a **net cost** — with no residual home liability, the treaty's creditability gives it no relief.
 
 **Step 1 — Forecast exchange rates (parity, never assumed)**
 
@@ -170,25 +203,25 @@ The fix is the ungear-regear route: strip the peer's financial risk to an asset 
 
 **Step 3 — Present values and NPV**
 
-| Year | Home cash flow | DF @ 9.38% | Present value |
+| Year | Home cash flow | DF @ 9.59% | Present value |
 |------|------|------|------|
 | 0 | EUR -85.7m | 1.000 | EUR -85.7m | *(foreign outlay BRL 480.0m ÷ 5.6000)*
-| 1 | EUR 31.3m | 0.914 | EUR 28.6m |
-| 2 | EUR 31.5m | 0.836 | EUR 26.3m |
-| 3 | EUR 31.6m | 0.764 | EUR 24.2m |
-| 4 | EUR 31.8m | 0.699 | EUR 22.2m |
+| 1 | EUR 31.3m | 0.912 | EUR 28.6m |
+| 2 | EUR 31.5m | 0.833 | EUR 26.2m |
+| 3 | EUR 31.6m | 0.760 | EUR 24.0m |
+| 4 | EUR 31.8m | 0.693 | EUR 22.0m |
 
-**NPV to the parent = EUR 15.6m.**
+**NPV to the parent = EUR 15.1m.**
 
 **Step 4 — Decision**
 
-The NPV of EUR 15.6m is **positive**, so on these exchange-rate and fiscal assumptions the project **adds value to the parent and should be accepted**.
+The NPV of EUR 15.1m is **positive**, so on these exchange-rate and fiscal assumptions the project **adds value to the parent and should be accepted**.
 
 **Step 5 — Advice to the board**
 
-On the project-specific discount rate of 9.38%, the appraisal returns a positive net present value, so on financial grounds Rio Verde should proceed; the board should nonetheless stress-test the assumed BRL depreciation path and the remittance timing, since both materially affect the euro value.
+On the project-specific discount rate of 9.59%, the appraisal returns a positive net present value, so on financial grounds Rio Verde should proceed; the board should nonetheless stress-test the assumed BRL depreciation path and the remittance timing, since both materially affect the euro value.
 
-*Reconciliation: Σ present values EUR 101.3m − home outlay EUR 85.7m = NPV EUR 15.6m ✓*
+*Reconciliation: Σ present values EUR 100.8m − home outlay EUR 85.7m = NPV EUR 15.1m ✓*
 
 **hint:**
 
@@ -203,7 +236,7 @@ The fix is consistency: translate each year's remittance at the PPP-implied forw
 
 #### (iii) E2b — 8 marks — calc (code-owned figures) — PS: scepticism
 
-**Gate results:** GATE1/2/3 + P4–P9 + GATE 26 recommendation-consistency + FXH-19 best-method-verdict ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + GATE 26 recommendation-consistency + FXH-19 best-method-verdict ALL PASS
 
 **Question:**
 
@@ -317,7 +350,7 @@ Separately, the advisers ran a Monte Carlo simulation of the same Firth Array pr
 
 #### (i) B1a — 12 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + RISK-Ga/Gb family gates ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + RISK-Ga/Gb family gates ALL PASS
 
 **Question:**
 
@@ -437,7 +470,7 @@ Aldebrino invoices its US customers in US dollars and its UK customers in pounds
 
 #### (i) E3a — 12 marks — calc (code-owned figures) — PS: analysis_and_evaluation
 
-**Gate results:** GATE1/2/3 + P4–P9 + IRH-20/21/23/25 family gates ALL PASS
+**Gate results:** GATE1/2/3 + P4–P9 + TAX_RATE_ASSIGNMENT + IRH-20/21/23/25 family gates ALL PASS
 
 **Question:**
 
