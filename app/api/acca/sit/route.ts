@@ -3,6 +3,7 @@ import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import {
   AFM_MOCK_PAPER_1,
   canPreviewSit,
+  sitDisplayLabel,
 } from '@/lib/acca/sit-preview';
 
 // ── AFM Mock Paper 1 — SIT endpoint (preview-gated, unpublished content) ───────
@@ -31,8 +32,13 @@ import {
 //   • professional_skill_tags / intellectual_level
 //                          — tells the candidate which PS skill is being examined,
 //                            which is a steer no real exam gives.
-// `label` IS served: it carries the mark allocation ("(i) B3e — 10 marks"), and a real
-// paper does state marks per requirement.
+// `label` IS served, but only in its CANDIDATE-FACING form. The stored label carries the
+// internal syllabus code — "(i) B3e — 10 marks" — which no real paper prints, so
+// sitDisplayLabel() derives "(i) — 10 marks" here at the serve boundary. Marks per
+// requirement ARE authentic and stay. The `lo_code` column is read to make that removal
+// exact and is then DISCARDED — it is never part of the response, so the code never
+// reaches the browser at all. Nothing stored is modified: marking and debrief read
+// `lo_code` and the raw `label` off the row exactly as before.
 //
 //   GET                                   → the whole paper + which requirements are
 //                                           already submitted + the open attempt
@@ -140,9 +146,11 @@ export async function GET(): Promise<Response> {
 
   // WITHHELD: model_answer, hint, full_reveal, answer_schema, marks_guide,
   // professional_skill_tags, intellectual_level. See the header note.
+  // `lo_code` is READ but never SERVED — it only feeds sitDisplayLabel's exact removal
+  // of the code from the stored label. Selecting it is not serving it.
   const { data: requirements } = await supabase
     .from('acca_case_requirements')
-    .select('id, case_id, requirement_order, label, question')
+    .select('id, case_id, requirement_order, label, lo_code, question')
     .in('case_id', PAPER.case_ids)
     .order('requirement_order', { ascending: true });
 
@@ -170,7 +178,8 @@ export async function GET(): Promise<Response> {
         case_title:       (c.title as string | null) ?? null,
         case_section:     (c.section as string | null) ?? null,
         requirement_order: r.requirement_order as number,
-        label:            (r.label as string | null) ?? null,
+        // Candidate-facing form only — the syllabus code is stripped here, not in the UI.
+        label:            sitDisplayLabel(r.label as string | null, r.lo_code as string | null),
         question:         (r.question as string | null) ?? '',
       }));
   });

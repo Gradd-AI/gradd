@@ -2366,3 +2366,59 @@ re-narrating settled history.
 E-narrative entry, stale pointers collapsed), `docs/APM_BUILD_CONTRACT.md` (this entry). DB: 3 rows
 in `acca_drills` (`status`/`published` only — zero content bytes touched by this flip; the FR1
 prose fix that touched content was a separate, already-journaled prior-session change).
+
+---
+
+## 2026-07-26 — SIT SURFACE: CANDIDATE-FACING ARTEFACT AUDIT + LO-CODE STRIP (`/acca/afm/mock`)
+
+**Task:** strip internal LO codes from the sit UI requirement labels; audit the same surface for any
+other internal artefact a candidate would never see in a real paper; re-confirm the paper is virgin.
+
+**1. LO-code strip (the fix).** Stored requirement labels are `"(i) B3e — 10 marks"` and were being
+rendered verbatim — the internal syllabus code in front of a candidate. Now derived to
+`"(i) — 10 marks"` by a new pure `sitDisplayLabel(label, loCode)` in `lib/acca/sit-preview.ts`.
+
+**Placement ruling — SERVE BOUNDARY, not the component.** Applied in `app/api/acca/sit/route.ts`,
+so the code never reaches the browser at all. Stripping in `SitRunner.tsx` would have satisfied the
+letter of "display layer only" while still shipping the code in the JSON payload — the same
+disclosure with an extra step. The route now READS `lo_code` (to make the removal exact by matching
+the row's own code) and DISCARDS it: selecting a column is not serving it. A generic
+`\b[A-E][0-9]{1,2}[a-z]?\b` sweep backstops a row whose code is absent or disagrees with its label.
+Marks per requirement are exam-authentic and are kept. A `Slot.label` comment in `SitRunner.tsx`
+records that the label arrives pre-stripped, so nobody adds a second, divergent stripper there.
+
+**NOTHING STORED CHANGED — zero DB writes this session.** `label` and `lo_code` are untouched, so
+(a) marking and debrief still read the code straight off the row, and (b)
+`docs/reviews/AFM_MOCK_PAPER1_REVIEW_PACK.md`, which quotes the stored labels, remains accurate and
+was deliberately not touched (per the task, and because no content write occurred to make it stale).
+
+**2. Audit of the same surface — bodies CLEAN, two report-only payload items.** Swept all 3
+`scenario_intro`s, 11 exhibit titles/bodies and 8 question bodies for syllabus codes, mode words
+(quantitative/mixed/discursive), gate names, PS tags, status strings (`candidate`/`mock_only`) and
+UUIDs: **zero hits**. Confirmed never selected by the route: `marks_guide`,
+`professional_skill_tags`, `intellectual_level`, `command_verb`, `model_answer`, `hint`,
+`full_reveal`, `answer_schema`; `mock_only`/`status` appear only as filter predicates. Rendered
+`section` ("Section A"/"Section B") and case titles are exam-authentic and stay. **Two items shipped
+in the payload but rendered by nothing — REPORT-ONLY, no change made, awaiting Grant:**
+`professional_skills_marks` (internal per-case PS split; `scenario_intro` already states PS marks
+are awarded, which is what a real paper does) and `attempt.ends_at` (nominal 3h15m stamp, written
+only for the NOT NULL column, read by nothing — implies a countdown this surface deliberately lacks).
+Case/requirement UUIDs stay: the submit POST addresses a requirement by id. Logged in
+`AFM_SURFACED.md`.
+
+**3. Paper re-confirmed VIRGIN after the change.** `acca_case_progress` rows across all users for
+the 3 mock case ids = **0**; `acca_mock_attempts` rows for `mock_id='afm-paper-1'` = **0** (so
+`started_at` was never written — the clock has never run). The write path was NOT exercised: every
+check this session was a read, per `memory/project_afm_mock1_sit` (exercising it as `erasmoose`
+would burn Grant's real test sit, which is irreversible by design).
+
+**Gates:** `npm run test:sit-preview` 35 → **60 checks, all PASS** — the 8 real stored labels pinned
+verbatim with their `lo_code`s, plus a property-level assertion that no candidate-facing label
+matches the syllabus-code shape, plus the no-`lo_code` / disagreeing-`lo_code` / dangling-separator /
+code-only-label / roman-numeral / mark-number edge cases. `next build` **compiled successfully**.
+
+**Files touched:** `lib/acca/sit-preview.ts` (`sitDisplayLabel`), `app/api/acca/sit/route.ts`
+(serve-boundary derivation + withhold-discipline note), `app/acca/afm/mock/SitRunner.tsx` (comment
+only), `scripts/test-sit-preview.ts` (25 new fixtures), `CLAUDE.md` (code-map entry),
+`docs/AFM_SURFACED.md` (audit entry + 2 open items), `docs/APM_BUILD_CONTRACT.md` (this entry).
+**DB: zero writes.**

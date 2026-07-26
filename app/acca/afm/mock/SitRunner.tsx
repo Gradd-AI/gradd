@@ -43,6 +43,9 @@ interface Slot {
   case_title: string | null;
   case_section: string | null;
   requirement_order: number;
+  // Already candidate-facing: the API strips the internal syllabus code before sending
+  // ("(i) B3e — 10 marks" → "(i) — 10 marks"). Render it as-is; do NOT re-derive it
+  // here, or the two strippers can disagree and the API's is the one that matters.
   label: string | null;
   question: string;
 }
