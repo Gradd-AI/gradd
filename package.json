@@ -44,6 +44,7 @@
     "redteam": "tsx scripts/redteam-tutor.ts",
     "redteam:judge": "tsx scripts/redteam-judge.ts",
     "test:rounding": "tsx scripts/test-rounding.ts",
+    "scan:halfway": "tsx --env-file=.env.local scripts/scan-halfway-rounding.ts",
     "test:derived-figures": "tsx scripts/test-derived-figure-integrity.ts"
   },
   "dependencies": {

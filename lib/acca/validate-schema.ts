@@ -122,17 +122,37 @@ export interface HalfwayHit {
   toleranceAbsorbs: boolean; // does the tolerance cover the one-ulp-of-display disagreement?
 }
 
+/** Blocking: neither candidate rendering survives the component's own tolerance, so a student
+ *  who rounds correctly is marked WRONG. This is the only severity that fails the gate. */
+export const HALFWAY_CODE_BLOCKING = 'value-on-rounding-boundary';
+/** Advisory: at least one rendering is absorbed by the tolerance, so no correct student is
+ *  mismarked. Reported, never blocking — see the either-rendering rule below. */
+export const HALFWAY_CODE_ABSORBED = 'value-on-rounding-boundary-absorbed';
+
 /**
  * HALFWAY_ROUNDING_RISK. Scans `modelAnswer` to find which precision each component's value
  * is actually rendered at (a value never shown in prose cannot create a student-facing
  * disagreement, so it is not flagged).
  *
- * REFINEMENT (FR3 wiring): presence is detected via EITHER rendering — plain `toFixed` or the
+ * REFINEMENT 1 (FR3 wiring): presence is detected via EITHER rendering — plain `toFixed` or the
  * boundary-aware `fixedHalfUp` the calculators now display with — and the gate flags only when
  * the rendering ACTUALLY USED disagrees with the hand-working one. So a drill whose prose
  * already shows the snapped digit ("0.938") PASSES, while one still showing the float artefact
  * ("0.937") FAILS. Without this the gate would silently stop checking the moment the formatter
  * fix landed, because it would no longer find its own `toFixed` string in the prose.
+ *
+ * REFINEMENT 2 — EITHER-RENDERING ABSORPTION (FR3-CORRECTED, 2026-07-26). A boundary hit is
+ * only a MARKING defect when the marker can reject a correct student. Both renderings are
+ * plausible submissions from a correct candidate, so the test is against the component's own
+ * tolerance: if EITHER `naive` or `hand` is within tolerance of the exact value, no correct
+ * student is mismarked and the hit is ADVISORY (a presentation issue). It blocks only when
+ * NEITHER survives.
+ *
+ * This is why the gate previously over-reported: `absorbs` was computed but only ever changed
+ * the message text, so a hit the tolerance comfortably covered still failed the barrier
+ * identically to a real mismarking. Four live AFM components (47.15 @0.5%rel, 11.275 @0.1abs,
+ * 449.35 @0.5%rel, 11.675 @0.05abs) are exactly that shape — each sits half a display step from
+ * its rendering, against tolerances 4x-47x larger.
  */
 export function validateHalfwayRounding(schema: AnswerSchema, modelAnswer: string): ValidationResult {
   const issues: ValidationIssue[] = [];
@@ -163,23 +183,36 @@ export function validateHalfwayRounding(schema: AnswerSchema, modelAnswer: strin
       // alone, so we FAIL CLOSED and report.
       void showsHand;
       const step = Math.pow(10, -dp);
-      const absorbs = within(Number(hand), v, c.tolerance);
+      // EITHER-RENDERING ABSORPTION. Both strings are plausible submissions from a candidate
+      // who rounded correctly, so each is tested against the exact value under the component's
+      // own tolerance. Absorbed by EITHER → no correct student can be rejected → advisory.
+      const absorbsNaive = within(Number(naive), v, c.tolerance);
+      const absorbsHand = within(Number(hand), v, c.tolerance);
+      const absorbs = absorbsNaive || absorbsHand;
       issues.push({
         component_id: c.component_id,
         gate: 'halfway-rounding-risk',
-        code: 'value-on-rounding-boundary',
+        code: absorbs ? HALFWAY_CODE_ABSORBED : HALFWAY_CODE_BLOCKING,
         message:
           `${c.component_id} = ${v} sits on a half-way rounding boundary at the ${dp}-dp precision the model answer renders it at: ` +
           `the prose prints "${naive}" (the IEEE-754 artefact) but a hand-working student gets "${hand}" (the exact value is a tie). ` +
           `Answer-locked marking must not be able to disagree with a correct student on the last digit. Component tolerance is ` +
-          `${JSON.stringify(c.tolerance)}, which ${absorbs ? 'DOES absorb' : 'does NOT absorb'} the ${step} display difference` +
-          `${absorbs ? ' (so the verifier still accepts the student — a presentation/credibility issue, not a mismarking one)' : ' — A STUDENT WHO IS CORRECT WILL BE MARKED WRONG'}. ` +
+          `${JSON.stringify(c.tolerance)}, which ${absorbs ? 'DOES absorb' : 'does NOT absorb'} the ${step} display difference ` +
+          `(naive ${absorbsNaive ? 'within' : 'outside'} tolerance, hand-working ${absorbsHand ? 'within' : 'outside'})` +
+          `${absorbs ? ' — ADVISORY: the verifier still accepts the student, so this is a presentation/credibility issue, not a mismarking one. It does NOT block.' : ' — BLOCKING: A STUDENT WHO IS CORRECT WILL BE MARKED WRONG.'} ` +
           `Render this figure through fixedHalfUp (lib/acca/rounding.ts) so code and student agree, or re-pick the inputs so the ` +
           `value does not land on a boundary.`,
       });
     }
   }
-  return { ok: issues.length === 0, issues };
+  // `ok` counts BLOCKING hits only. Advisory hits stay in `issues` so the author still sees
+  // them — suppressing them entirely would lose the FR3 audit trail.
+  return { ok: !issues.some((i) => i.code === HALFWAY_CODE_BLOCKING), issues };
+}
+
+/** Blocking subset of a halfway result — what the authoring barrier actually gates on. */
+export function halfwayBlockingIssues(r: ValidationResult): ValidationIssue[] {
+  return r.issues.filter((i) => i.code === HALFWAY_CODE_BLOCKING);
 }
 
 // ── Tolerance comparison — mirrors numeric-verifier.within() (not exported there) ──
