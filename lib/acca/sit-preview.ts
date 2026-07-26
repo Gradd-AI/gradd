@@ -60,6 +60,50 @@ export const AFM_MOCK_PAPER_1: SitPaper = {
   ],
 };
 
+// ── Requirement label — candidate-facing form ────────────────────────────────
+// Stored labels carry the internal syllabus code: "(i) B3e — 10 marks". A real ACCA
+// paper never prints that — it states the part and its marks and nothing else. So the
+// candidate must see "(i) — 10 marks".
+//
+// DISPLAY-DERIVATION ONLY. The stored `label` and `lo_code` columns are untouched, so
+// marking and debrief still read the code straight off the row. This function is applied
+// at the SERVE boundary (app/api/acca/sit/route.ts), not in the component, so the code
+// never reaches the browser at all — stripping it in the UI would still ship it in the
+// JSON payload, which is the same disclosure with an extra step.
+//
+// Removal is precise where possible: the row's own `lo_code` is removed by exact match.
+// The generic sweep is a backstop for a row whose code is absent or disagrees with the
+// label — an AFM syllabus code is `<A-E><digit(s)><optional letter>`, a shape nothing
+// else in a label ("(i)", "10 marks") can take.
+const LO_CODE_SHAPE = /\b[A-E][0-9]{1,2}[a-z]?\b/g;
+
+function escapeForRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+export function sitDisplayLabel(
+  label: string | null | undefined,
+  loCode?: string | null,
+): string | null {
+  if (typeof label !== 'string') return null;
+
+  let out = label;
+  if (typeof loCode === 'string' && loCode.trim()) {
+    out = out.replace(new RegExp(`\\b${escapeForRegExp(loCode.trim())}\\b`, 'gi'), '');
+  }
+  out = out.replace(LO_CODE_SHAPE, '');
+
+  // Tidy what the removal left behind: doubled spaces, and a separator now dangling at
+  // either end (a label of "B3e — 10 marks" would otherwise render as "— 10 marks").
+  out = out.replace(/\s+/g, ' ').trim();
+  out = out.replace(/^[—–\-·:|]+\s*/, '').trim();
+  out = out.replace(/\s*[—–\-·:|]+$/, '').trim();
+
+  // A label that was ONLY a code has nothing candidate-facing left to say — return null
+  // so the UI renders no chip at all rather than an empty one.
+  return out === '' ? null : out;
+}
+
 // ── Resume ───────────────────────────────────────────────────────────────────
 // The sit is strictly forward-only, so "where am I?" is fully determined by which
 // requirements already have a recorded answer. Returns the index of the first slot
