@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-26 (sit-surface candidate-facing artefact audit — LO codes stripped from `/acca/afm/mock` labels at the serve boundary; 2 report-only payload items logged. Prior: mock-engine Phase-1 preconditions; FR3 rounding blocker CLEARED — Piece 2 unblocked; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+*Last refreshed: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
 ## 🟡 OPEN (INERT) — the param-drift sweep was AFM-ONLY; APM is UNMEASURED, not clean
 
@@ -133,10 +133,73 @@ as 0. **No code change made — log only. → tracked as its own OPEN item at th
 ("the `?? 0` serialiser default is LOSSY"), which carries the binding scope ruling: FORWARD-ONLY,
 no backfill of published rows, folded into the next authoring batch rather than done standalone.
 
+## ⛔ CLOSED RULING — B3k `dedca530` VALUES ARE CORRECT; THE RE-AUTHOR WAS UNNECESSARY. DO NOT RE-LITIGATE, DO NOT ROLL BACK.
+
+**Ruled 2026-07-26. This entry exists so nobody re-opens it in either direction.**
+
+**The current live values are CORRECT.** `dedca530` B3k was re-authored on 2026-07-25 to fix a
+boundary defect that **did not exist**. Re-read from the live row on 2026-07-26:
+`debt_issue_costs` = **-1.3** (gross debt principal 65 × 2.00% = 1.3 exactly), tolerance
+`{relative, 0.5%}` — on **no rounding boundary at any precision**, and the row has **zero**
+boundary occurrences across all 16 components. The reported `-1.95` **never existed in the
+database**. The `-1.9` the detector matched in the prose belongs to **`ncf_5 = -1.878919424`**,
+a clean non-boundary value that legitimately renders `-1.9` at 1 dp; the `-1.95` `expected_value`
+was back-inferred from that misattributed string. See `GENERATOR_DOCTRINE.md` **P-DB5** — this is
+the third string-misattribution false positive in this workstream and the only one that reached
+published content.
+
+**A rollback snapshot exists and is DELIBERATELY NOT APPLIED:**
+`docs/rollbacks/AFM_boundary_rounding_20260725.json`.
+
+**Why it is not applied — the reasoning, so this is not re-argued:** the re-author was
+*unnecessary*, not *wrong*. Every rebuilt component matched its stored `expected_value` exactly,
+the full authoring barrier passed, and the prose now renders the hand-working digit, which is the
+state the display invariant wants regardless. Rolling back would be a **second** unjustified write
+to published rows — same class of risk as the first, with no defect to fix at the end of it, and
+it would re-introduce the `answer_schema.params` drift that P-DB4 was written to catch. The
+snapshot is retained solely as the P-DB3 audit artefact. **Leave the rows alone. Do not
+re-derive, do not touch `answer_schema`, do not change `created_at`.**
+
+The cost was real and is recorded as such: published content was changed on a detector's first
+pass, with no reconciliation step. That is what P-DB5 now prohibits, and what
+`npm run scan:halfway` now enforces structurally.
+
+## ⛔ PUBLISH-FLIP TRAP — FLIPPING THE 3 AFM MOCK CASES BREAKS `/acca/afm/mock`. DO NOT FLIP.
+
+**Recorded 2026-07-26. Read this BEFORE any `published=true` flip on the mock paper.**
+
+The three AFM Mock Paper 1 cases — `aa000000-…-a001` Solenne Industries SA (A, 50),
+`aa000000-…-b101` Brecon Renewables plc (B, 25), `aa000000-…-b201` Aldebrino SpA (B, 25) — are
+currently `status='candidate'`, `published=false`, `mock_only=true`.
+
+**The sit surface's gate is INVERTED.** `app/api/acca/sit/route.ts` serves a case only while it
+is `paper_code='AFM' AND mock_only=true AND published=false AND status='candidate'`. Being
+**unpublished is what makes these rows servable there** — the inversion is deliberate, so the sit
+surface and every live route have disjoint servable sets by construction (see
+`lib/acca/sit-preview.ts`).
+
+**Therefore a normal publish flip does not "go live" — it BREAKS the sit page.** The moment these
+rows flip to `approved`/`published=true` they stop matching the inverted gate, and
+`/acca/afm/mock` starts returning 404 "Paper not available" (the route requires all three cases to
+resolve). This is the opposite of the usual flip risk: the danger is not that unpublished content
+leaks, it is that **publishing silently removes the only surface that serves it**.
+
+**The flip is therefore not a status change — it is a change-set.** It must, in the SAME
+change-set, either (a) retire the sit surface in favour of the standard case routes, or (b) change
+the sit gate to match the new publish state. Deciding which is Grant's call and has not been made.
+**GATE-P does NOT authorise this flip**: GATE-P covers a status change on already-reviewed content
+whose serving behaviour is unaffected, which is precisely not the case here. Do not flip.
+
 ## ✅ RESOLVED — HALFWAY_ROUNDING_RISK is GREEN; PIECE 2 (exact-figure parsing) IS UNBLOCKED
 
 **Closed 2026-07-25 (FR3 follow-up). Branch `fix/afm-boundary-rounding-reauthor` — NOT merged,
 awaiting Grant's review; the DB rows are already written (see the write-vs-merge note below).**
+
+> **⚠ SUPERSEDED IN PART (2026-07-26).** The re-author described below was driven by a detector
+> finding that did not reconcile against live data — see the B3k CLOSED RULING above. The work
+> itself was sound and the resulting rows are correct; the *justification* for doing it was not.
+> The gate has since been corrected (`absorbs` now classifies advisory vs blocking rather than
+> only changing the message text), so a tolerance-absorbed hit no longer fails the barrier.
 
 The gate that blocked Piece 2 — `validateHalfwayRounding` (GATE HALFWAY_ROUNDING_RISK,
 `lib/acca/validate-schema.ts`) — now reports **0 rendered boundary hits across all 49 published

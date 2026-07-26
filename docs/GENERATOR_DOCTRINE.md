@@ -83,6 +83,51 @@ The file carries a `_README` first key naming what it snapshots, which rows, whi
 date, and the restore procedure. Reference implementation:
 `docs/rollbacks/AFM_boundary_rounding_20260725.json`.
 
+**P-DB5 — A DETECTOR FINDING IS NOT A DEFECT UNTIL ITS OWNING COMPONENT IS CONFIRMED BY
+RE-DERIVATION FROM THE ROW.** A detector that matches a *string in prose* has not identified a
+*component*. Prose is a shared namespace: many components render to the same digits, so a
+matched token proves only that SOME figure renders that way — never WHICH one, and never what
+that component's stored `expected_value` actually is. Before a finding may be called a defect,
+re-read the owning component from the live row and confirm, by re-derivation, that its stored
+value genuinely exhibits the reported property. A finding that cannot be reconciled that way is
+a **detector bug** and must be reported as one — never as a content defect.
+
+**This has now produced THREE false positives in one workstream, all the same shape — a string
+matched to the wrong owner:**
+1. **`96.5` / `96.55`** — a naive substring test reported `96.5` present in prose that prints
+   `96.55` at 2 dp, where the value is unambiguous. Manufactured a phantom "live drills are
+   mismarking students today" alarm across two published irhedge drills.
+2. **The 259 unmatchable tokens** — bulk token-level matching that could not attribute what it
+   found to any owning component.
+3. **B3k `dedca530` — the expensive one, because it reached published content.** FR3 reported
+   `debt_issue_costs = -1.95`, outside tolerance, and five published drills were re-authored on
+   the strength of it. Re-read from the live row (2026-07-26), `debt_issue_costs` is **-1.3**
+   (gross debt principal 65 × 2.00% = 1.3 exactly), tolerance `{relative, 0.5%}` — sitting on
+   **no rounding boundary at any precision**, and that row has **zero** boundary occurrences
+   across all 16 of its components. The `-1.9` the detector matched in the prose is
+   **`ncf_5 = -1.878919424`**, a clean non-boundary value that legitimately renders `-1.9` at
+   1 dp. The `-1.95` `expected_value` was **back-inferred from the misattributed string** — it
+   never existed in the database. Published content was changed to fix a phantom.
+
+**Therefore: NEVER approve a write to published rows on a detector's FIRST PASS.** A first pass
+is a hypothesis. The write is authorised only after each hit has been reconciled against live
+data, component by component, and survived. This composes with P-DB2 (show the write before it
+happens) and P-DB4 (verify with a full-field diff): P-DB5 governs whether there is anything to
+write **at all**.
+
+**Reconciliation must be STRUCTURAL, not remembered.** A rule that depends on a future session
+recalling to double-check is the rule that failed three times. Build the reconcile step into the
+detector's own sweep so an unreconciled hit cannot be emitted as a defect. Reference
+implementation: `scripts/scan-halfway-rounding.ts` (`npm run scan:halfway`) — it re-derives every
+reported hit from the raw row JSON (component exists · stored value equals the reported value ·
+the boundary claim holds · the artefact is present as a COMPLETE number) and emits anything that
+fails as a **DETECTOR BUG** in a separate section from content defects.
+
+**Claim discipline.** Green gates prove internal consistency, never correctness against the
+world; a detector's output is evidence, not a verdict. State findings as "the detector reports
+X — reconciled/unreconciled against live row Y", never as "drill Z is defective", until the
+reconciliation has actually been run.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

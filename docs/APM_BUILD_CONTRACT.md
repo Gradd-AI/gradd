@@ -2422,3 +2422,81 @@ code-only-label / roman-numeral / mark-number edge cases. `next build` **compile
 only), `scripts/test-sit-preview.ts` (25 new fixtures), `CLAUDE.md` (code-map entry),
 `docs/AFM_SURFACED.md` (audit entry + 2 open items), `docs/APM_BUILD_CONTRACT.md` (this entry).
 **DB: zero writes.**
+
+---
+
+## 2026-07-26 (second session) — FR3-CORRECTED: the rounding gate over-blocked, and it cost published content
+
+**Merged:** `fix/afm-rounding-gate-fr3-corrected` → `main`.
+
+**1. The repair.** `validateHalfwayRounding` computed `absorbs` — whether the component's own
+tolerance covers the display step — and then used it **only to change the message text**. Pass/fail
+ignored it entirely, so a boundary hit a tolerance covered 40× over failed the authoring barrier
+identically to a real mismarking. That over-blocking is what made clean drills look defective.
+
+**Either-rendering absorption:** both `naive` and `hand` are plausible submissions from a candidate
+who rounded correctly, so each is now tested against the exact value under the component's
+tolerance. Absorbed by EITHER → `value-on-rounding-boundary-absorbed` (ADVISORY, reported,
+non-blocking). Blocks only when NEITHER survives. Advisory hits stay in `issues` so the audit trail
+survives; `ok` counts blocking only. `halfwayBlockingIssues()` exported; the barrier in
+`case-authoring-gates.ts` prefixes detail lines BLOCKING/ADVISORY.
+
+**2. Items 2 and 4 of the brief were already built — reported, not rebuilt.** The epsilon-snap
+formatter (`fixedHalfUp`, `lib/acca/rounding.ts`) already did snap-then-round, and
+HALFWAY_ROUNDING_RISK was already wired into `runBaseRequirementGates`. The genuine gap was the
+`absorbs` classification above.
+
+**3. FR3 step 2 WITHDRAWN — the finding was a phantom, and the root cause is now known.** B3k
+`dedca530` `debt_issue_costs` is **-1.3** (65 × 2.00% = 1.3 exactly), tolerance `{relative, 0.5%}`,
+on no boundary at any precision; the row has **zero** boundary occurrences across all 16 components
+and no component equals -1.95. The `-1.9` in the prose is **`ncf_5 = -1.878919424`** — a clean
+non-boundary value that legitimately renders `-1.9` at 1 dp. The `-1.95` `expected_value` was
+**back-inferred from the misattributed string**. Five published drills were re-authored on the
+strength of it. Zero drill values changed this session; zero DB writes.
+
+**4. Scan — 0 blocking · 0 advisory · 0 detector bugs, and PROVEN not inert.** 54 scannable rows
+(58 AFM drills + 8 mock requirements). A zero result from a detector that has been wrong three
+times is not evidence, so it was checked against the opposite hypothesis: there ARE **9 divergent
+boundary values** in live AFM data, including all four named (47.15 B1c, 11.275 B3d, 449.35 B3j,
+11.675 B4a). Every one reports `proseShowsNaive=false` — the prose already renders the
+hand-working digit, which is the correct post-fix state. `dedca530` appears nowhere in that list,
+independently confirming item 3.
+
+**5. Reconciliation is now STRUCTURAL.** New `scripts/scan-halfway-rounding.ts`
+(`npm run scan:halfway`, read-only): re-derives every reported hit from the raw row JSON —
+component exists · stored value equals the reported value · boundary claim holds · artefact present
+as a COMPLETE number — and emits anything that fails as a **DETECTOR BUG** in a separate section
+from content defects. A rule that depends on a future session remembering to double-check is the
+rule that failed three times.
+
+**6. Fixtures 29 → 65, all pass.** All four required classes. Two subtleties worth recording:
+(a) the literal `0.9375` is EXACTLY representable (15/16), so `toFixed(3)` already returns "0.938"
+and there is nothing to flag — the hazard exists only for the artefact `81/86.4 =
+0.9374999999999999`; both are pinned. (b) One pre-existing assertion was CHANGED: it demanded the
+BLOCKING code for a hit `±0.02 absolute` absorbs 40× over. That assertion encoded the over-blocking
+behaviour itself, so it could not survive the fix; the blocking path is asserted separately at
+0.01% relative.
+
+**7. Doctrine — P-DB5 added** (`GENERATOR_DOCTRINE.md`): a detector finding is not a defect until
+its owning component is confirmed by RE-DERIVATION FROM THE ROW, not by string match against prose.
+Prose is a shared namespace — a matched token proves some figure renders that way, never which one.
+Three false positives of this exact shape are catalogued (96.5/96.55, the 259 unmatchable tokens,
+B3k). **Never approve a write to published rows on a detector's first pass.**
+
+**8. B3k rollback deliberately NOT applied** (`AFM_SURFACED.md`, CLOSED RULING). The re-author was
+*unnecessary*, not *wrong*: every component matched exactly, the barrier passed, and the prose now
+renders the hand-working digit — the state the display invariant wants anyway. Rolling back would
+be a SECOND unjustified write to published rows with no defect to fix, and would re-introduce the
+`answer_schema.params` drift P-DB4 exists to catch. `docs/rollbacks/AFM_boundary_rounding_20260725.json`
+is retained as the P-DB3 audit artefact only.
+
+**9. PUBLISH-FLIP TRAP recorded** (`AFM_SURFACED.md`). `lib/acca/mocks.ts` `paper-1` is the **APM**
+paper (Halworth/Rivenor/Bexley) — it does NOT map to the three AFM case UUIDs, which live in
+`AFM_MOCK_PAPER_1` (`lib/acca/sit-preview.ts`, id `afm-paper-1`). The sit route's gate is INVERTED:
+being unpublished is what makes those rows servable. So flipping them to `approved`/`published=true`
+does not publish the paper — it **breaks `/acca/afm/mock`** (404 "Paper not available"). The flip
+must retire the sit surface or change its gate IN THE SAME CHANGE-SET. GATE-P does not authorise
+it. **Not flipped.**
+
+**Gates:** `test:rounding` 65/65 PASS · `test:case-gates` PASS · `tsc --noEmit` clean ·
+`next build` compiled successfully. **DB: zero writes.**
