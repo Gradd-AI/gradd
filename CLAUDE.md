@@ -308,7 +308,15 @@ wait for it, or say plainly that it was still building.
   only lock the test account out). Withholds MORE than the live case route: never selects
   `model_answer`/`hint`/`full_reveal`/`answer_schema`, and additionally withholds `marks_guide` (a
   mark scheme = feedback) and `professional_skill_tags`/`intellectual_level` (a steer no real exam
-  gives). **Submissions are IMMUTABLE server-side** (a recorded `final_answer` → 409), which is the
+  gives). **Requirement labels are DERIVED, not served raw** (2026-07-26): the stored label carries
+  the internal syllabus code (`"(i) B3e — 10 marks"`), which no real paper prints, so
+  `sitDisplayLabel(label, lo_code)` strips it to `"(i) — 10 marks"` **at the serve boundary** — not
+  in the component, so the code never reaches the browser at all (UI-only stripping would still ship
+  it in the JSON payload). `lo_code` is READ to make the removal exact, then discarded — selecting
+  is not serving. Marks per requirement ARE authentic and stay. **Nothing stored changes**: marking
+  and debrief read `label`/`lo_code` off the row unchanged, and the review pack (which quotes the
+  stored labels) stays accurate. Scenario/exhibit/question bodies separately swept clean of codes,
+  mode labels, gate names, PS tags, status strings and UUIDs. **Submissions are IMMUTABLE server-side** (a recorded `final_answer` → 409), which is the
   real guarantee behind "no back navigation" — not merely a hidden button; `passed` stays UNSET per
   `case-sit.ts`. Answers land in `acca_case_progress.final_answer`, which the existing `case/mark`
   path already reads, so marking wires in later with no data migration. Clock counts UP from
