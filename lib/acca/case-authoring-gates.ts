@@ -38,6 +38,8 @@ import {
   validateEffectiveRateReconciliation,
   validateBasisDecayAndScepticism,
   validateHalfwayRounding,
+  halfwayBlockingIssues,
+  HALFWAY_CODE_BLOCKING,
   validateValuationBridge,
   type ValidationResult,
 } from './validate-schema';
@@ -185,8 +187,22 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
   // HALFWAY_ROUNDING_RISK — a code-owned figure rendered at a precision where code and a
   // hand-working student can legitimately disagree on the last digit. ASSESSMENT hazard:
   // answer-locked marking must not be able to mark a correct student wrong.
+  // EITHER-RENDERING RULE (FR3-CORRECTED): `gHalf.ok` is false only when NEITHER candidate
+  // rendering survives the component's own tolerance. A hit the tolerance absorbs is real but
+  // cosmetic — it is surfaced in `detail` (prefixed ADVISORY) and does not fail the barrier.
+  // Without this the gate blocked on figures no student could ever be mismarked on, which is
+  // what pushed the previous round toward re-authoring drills that were never defective.
   const gHalf = validateHalfwayRounding(schema, f.model_answer);
-  g.push({ name: 'HALFWAY_ROUNDING_RISK boundary figures', ok: gHalf.ok, detail: gHalf.issues.map((i) => i.component_id + ': ' + i.message).join(' | ') });
+  const halfBlocking = halfwayBlockingIssues(gHalf);
+  const halfAdvisory = gHalf.issues.filter((i) => i.code !== HALFWAY_CODE_BLOCKING);
+  g.push({
+    name: 'HALFWAY_ROUNDING_RISK boundary figures',
+    ok: gHalf.ok,
+    detail: [
+      ...halfBlocking.map((i) => 'BLOCKING ' + i.component_id + ': ' + i.message),
+      ...halfAdvisory.map((i) => 'ADVISORY ' + i.component_id + ': ' + i.message),
+    ].join(' | '),
+  });
 
   // GATE 27 DERIVED_FIGURE_INTEGRITY — the reverse of GATE 2. GATE 2 asks "is every code
   // figure in the prose?"; this asks "does every figure in the prose trace back to code?".

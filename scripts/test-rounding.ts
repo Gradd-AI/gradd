@@ -6,7 +6,7 @@
 // The class under test is an ASSESSMENT hazard, not a numerics nicety: answer-locked
 // marking means our rounding and a hand-working student's must not be able to differ.
 import { fixedHalfUp, isOnRoundingBoundary, rendersAsWholeNumber } from '../lib/acca/rounding';
-import { validateHalfwayRounding } from '../lib/acca/validate-schema';
+import { validateHalfwayRounding, halfwayBlockingIssues } from '../lib/acca/validate-schema';
 import type { AnswerSchema, Tolerance } from '../lib/acca/numeric-verifier';
 
 let failures = 0;
@@ -54,8 +54,15 @@ const tol: Tolerance = { kind: 'absolute', value: 0.02 };
 const schema = (value: number): AnswerSchema =>
   ({ components: [{ component_id: 'asset_beta', label: 'Ungeared (asset) beta', expected_value: value, unit: 'beta', tolerance: tol }] } as AnswerSchema);
 
-check('FAILS when the prose shows the float artefact ("0.937")',
-  validateHalfwayRounding(schema(ASSET_BETA), 'the asset beta is **0.937** and so').issues.map((i) => i.code), ['value-on-rounding-boundary']);
+// FR3-CORRECTED (2026-07-26): this assertion previously demanded the BLOCKING code here.
+// That was the over-blocking behaviour itself: `tol` is ±0.02 absolute and the display step
+// is 0.0005, so the tolerance absorbs it ~40x over and no correct student can be mismarked.
+// The hit is real and still reported — as ADVISORY. The blocking path is asserted separately
+// below (TRUE POSITIVE, tolerance 0.01% relative, which genuinely cannot absorb it).
+check('REPORTS when the prose shows the float artefact ("0.937")',
+  validateHalfwayRounding(schema(ASSET_BETA), 'the asset beta is **0.937** and so').issues.map((i) => i.code), ['value-on-rounding-boundary-absorbed']);
+check('...but does NOT block, because ±0.02 absorbs a 0.0005 step',
+  validateHalfwayRounding(schema(ASSET_BETA), 'the asset beta is **0.937** and so').ok, true);
 check('PASSES when the prose shows the hand-working digit ("0.938")',
   validateHalfwayRounding(schema(ASSET_BETA), 'the asset beta is **0.938** and so').issues.length, 0);
 check('PASSES when the value is not rendered at the ambiguous precision at all',
@@ -76,6 +83,87 @@ check('flags a tolerance-absorbed hit as presentation-only', /presentation\/cred
 // masked debt_issue_costs still printing "-1.9"). Never skip on the hand string alone.
 check('fails closed when the artefact AND an unrelated hand-string both appear',
   validateHalfwayRounding(schema(ASSET_BETA), 'some other figure is 0.938 but the asset beta prints 0.937').issues.length, 1);
+
+// ══════════════════════════════════════════════════════════════════════════════════════
+// (5) FR3-CORRECTED (2026-07-26) — the four classes the gate must separate.
+//
+// WHY THESE EXIST: the detector produced TWO false positives that each nearly caused live
+// published drills to be re-authored. (i) a substring match reporting "96.5" present in
+// prose that prints "96.55"; (ii) a reported `debt_issue_costs = -1.95` that on re-reading
+// the live row is -1.3 — a clean value with no boundary at any precision. Every class below
+// is pinned so neither shape can return, and so a tolerance-absorbed hit can never again be
+// escalated to a blocking one.
+// ══════════════════════════════════════════════════════════════════════════════════════
+
+const one = (value: number, tolerance: Tolerance, id = 'c1'): AnswerSchema =>
+  ({ components: [{ component_id: id, label: id, expected_value: value, unit: 'x', tolerance }] } as AnswerSchema);
+
+// ── TRUE POSITIVE: 0.9375 at 3 dp snaps to 0.938 AND flags ──
+// NOTE the distinction that matters: the literal 0.9375 is EXACTLY representable (15/16), so
+// toFixed(3) already returns "0.938" and there is no divergence to flag. The hazard only
+// exists for the float artefact — 81/86.4 = 0.9374999999999999 — which is the real live value.
+check('TRUE POSITIVE: snaps to 0.938', fixedHalfUp(ASSET_BETA, 3), '0.938');
+const truePos = validateHalfwayRounding(one(ASSET_BETA, { kind: 'relative', pct: 0.01 }), 'the asset beta is 0.937');
+check('TRUE POSITIVE: flags', truePos.issues.length, 1);
+check('TRUE POSITIVE: BLOCKS (tolerance 0.01% cannot absorb)', truePos.ok, false);
+check('TRUE POSITIVE: blocking code', truePos.issues[0]?.code, 'value-on-rounding-boundary');
+// The exactly-representable literal: formatter still correct, detector correctly silent.
+check('exact literal 0.9375 also renders 0.938', fixedHalfUp(0.9375, 3), '0.938');
+check('exact literal 0.9375 does NOT flag (no divergence exists)',
+  validateHalfwayRounding(one(0.9375, { kind: 'relative', pct: 0.01 }), 'the beta is 0.938').issues.length, 0);
+
+// ── FALSE ALARM 1: prose printing 96.55 at 2 dp must NOT flag on a "96.5" substring ──
+check('FALSE ALARM 1: 96.55 in prose does not flag a 96.5 boundary',
+  validateHalfwayRounding(one(96.55, { kind: 'relative', pct: 0.5 }), 'the closing price is 96.55 at settlement').issues.length, 0);
+check('FALSE ALARM 1: still catches a genuine standalone 96.5',
+  validateHalfwayRounding(one(96.55, { kind: 'relative', pct: 0.001 }), 'the closing price is 96.5 at settlement').issues.length, 1);
+
+// ── FALSE ALARM 2: -1.3 at 1 dp must NOT flag. THE dedca530 debt_issue_costs value. ──
+// 65 x 2.00% = 1.3 exactly; -1.3 x 10 = -13, fractional part 0. No boundary at any precision.
+check('FALSE ALARM 2: -1.3 is on NO boundary at 1 dp', isOnRoundingBoundary(-1.3, 1), false);
+check('FALSE ALARM 2: -1.3 renders -1.3', fixedHalfUp(-1.3, 1), '-1.3');
+check('FALSE ALARM 2: -1.3 does not flag',
+  validateHalfwayRounding(one(-1.3, { kind: 'relative', pct: 0.5 }, 'debt_issue_costs'), 'issue costs of -1.3m are deducted').issues.length, 0);
+check('FALSE ALARM 2: clean at every scanned precision',
+  [0, 1, 2, 3, 4].map((d) => isOnRoundingBoundary(-1.3, d)), [false, false, false, false, false]);
+
+// ── ABSORBED: real boundary hits whose own tolerance covers the display step. ──
+// These are the four LIVE AFM component values (B1c 796651c2, B3d 2a145f7d, B3j 34f9e897,
+// B4a 0dc970a8), read from the DB on 2026-07-26. Each MUST classify as pass, not fail.
+const ABSORBED: Array<[string, number, number, Tolerance]> = [
+  ['B1c 47.15 @ 0.5% relative',    47.15,              1, { kind: 'relative', pct: 0.5 }],
+  ['B3d 11.275 @ 0.1 absolute',    11.274999999999999, 2, { kind: 'absolute', value: 0.1 }],
+  ['B3j 449.35 @ 0.5% relative',   449.34999999999997, 1, { kind: 'relative', pct: 0.5 }],
+  ['B4a 11.675 @ 0.05 absolute',   11.674999999999999, 2, { kind: 'absolute', value: 0.05 }],
+];
+for (const [name, v, dp, tolerance] of ABSORBED) {
+  const naive = v.toFixed(dp);
+  const r = validateHalfwayRounding(one(v, tolerance), `the figure is ${naive} as shown`);
+  check(`ABSORBED ${name}: is a genuine boundary (not a phantom)`, isOnRoundingBoundary(v, dp), true);
+  check(`ABSORBED ${name}: PASSES the gate`, r.ok, true);
+  check(`ABSORBED ${name}: reported as advisory, not dropped`,
+    r.issues.map((i) => i.code), ['value-on-rounding-boundary-absorbed']);
+  check(`ABSORBED ${name}: message says it does not block`,
+    /ADVISORY: the verifier still accepts the student/.test(r.issues[0]?.message ?? ''), true);
+}
+
+// The either-rendering rule must NOT swallow a real mismarking: same shape, tolerance too tight.
+const tight = validateHalfwayRounding(one(47.15, { kind: 'absolute', value: 0.001 }), 'the figure is 47.1 as shown');
+check('either-rendering rule still BLOCKS when neither rendering is absorbed', tight.ok, false);
+check('...and reports the blocking code', tight.issues[0]?.code, 'value-on-rounding-boundary');
+check('...and names the mismarking consequence',
+  /A STUDENT WHO IS CORRECT WILL BE MARKED WRONG/.test(tight.issues[0]?.message ?? ''), true);
+
+// A mixed schema: one absorbed + one blocking must FAIL overall (blocking dominates).
+const mixed: AnswerSchema = { components: [
+  { component_id: 'absorbed', label: 'a', expected_value: 47.15, unit: 'x', tolerance: { kind: 'relative', pct: 0.5 } },
+  { component_id: 'blocking', label: 'b', expected_value: ASSET_BETA, unit: 'x', tolerance: { kind: 'relative', pct: 0.01 } },
+] } as AnswerSchema;
+const mixedRes = validateHalfwayRounding(mixed, 'first 47.1 and then 0.937');
+check('mixed schema: blocking dominates advisory', mixedRes.ok, false);
+check('mixed schema: both hits reported', mixedRes.issues.length, 2);
+check('mixed schema: blockingIssues isolates the real one',
+  halfwayBlockingIssues(mixedRes).map((i) => i.component_id), ['blocking']);
 
 console.log(`\n${'─'.repeat(56)}`);
 console.log(failures === 0 ? 'ALL ROUNDING FIXTURES PASS' : `${failures} ROUNDING FIXTURE(S) FAILED`);
