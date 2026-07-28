@@ -85,52 +85,52 @@ throws('hydrate throws on an unresolvable component', () => hydrateAnswerSchema(
 console.log('\n── 4. Missing discriminants throw rather than defaulting ──');
 throws('irh_futures_profit without params.side', () =>
   RECOMPUTE_REGISTRY.irh_futures_profit({ contracts: 96, closing_price: 94.85 },
-    { futures0: 95.55, contract_size: 1e6, contract_months: 3 }), 'params.side');
+    { futures0: 95.55, contract_size: 1e6, contract_months: 3 }, ['contracts', 'closing_price']), 'params.side');
 throws('irh_net without params.direction', () =>
-  RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1, futures_profit: 1 }, {}), 'params.direction');
+  RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1, futures_profit: 1 }, {}, ['mm_interest', 'futures_profit']), 'params.direction');
 throws('fxh_mmh_convert_spot without params.quote_direction', () =>
-  RECOMPUTE_REGISTRY.fxh_mmh_convert_spot({ mmh_foreign_now: 174.27 }, { spot: 5.6 }), 'params.quote_direction');
+  RECOMPUTE_REGISTRY.fxh_mmh_convert_spot({ mmh_foreign_now: 174.27 }, { spot: 5.6 }, ['mmh_foreign_now']), 'params.quote_direction');
 throws('wacc_mv_weighted without params.gearing_basis', () =>
-  RECOMPUTE_REGISTRY.wacc_mv_weighted({ ke_project: 11.9 }, { kd: 0.055, tax_rate: 0.25 }), 'params.gearing_basis');
+  RECOMPUTE_REGISTRY.wacc_mv_weighted({ ke_project: 11.9 }, { kd: 0.055, tax_rate: 0.25 }, ['ke_project']), 'params.gearing_basis');
 throws('enpv_prob_weighted without the prob_ vector', () =>
-  RECOMPUTE_REGISTRY.enpv_prob_weighted({ npv_1: 10, npv_2: 20 }, {}), 'params.prob_1');
+  RECOMPUTE_REGISTRY.enpv_prob_weighted({ npv_1: 10, npv_2: 20 }, {}, ['npv_1', 'npv_2']), 'params.prob_1');
 throws('a bad discriminant VALUE throws (not silently treated as the other branch)', () =>
-  RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1, futures_profit: 1 }, { direction: 'lender' }), 'unknown direction');
+  RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1, futures_profit: 1 }, { direction: 'lender' }, ['mm_interest', 'futures_profit']), 'unknown direction');
 throws('home_cf_convert on the out-of-scope TAXED branch throws', () =>
-  RECOMPUTE_REGISTRY.home_cf_convert_y1({ fx_1: 5.7, add_tax_1: 2 }, { remit_net_1: 179 }), 'only the UNTAXED branch is in scope');
+  RECOMPUTE_REGISTRY.home_cf_convert_y1({ fx_1: 5.7, add_tax_1: 2 }, { remit_net_1: 179 }, ['fx_1', 'add_tax_1']), 'only the UNTAXED branch is in scope');
 
 console.log('\n── 5. Each scoped function reproduces its family module ──');
 // b201 (i) — irhedge futures, the authored (correct) figures.
 const irhP = { base_rate: 5, futures0: 95.55, contract_size: 1e6, contract_months: 3,
                notional: 48e6, hedge_months: 6, side: 'sell', direction: 'borrower' };
 ok('irh_closing_price → 94.85',
-  Math.abs(RECOMPUTE_REGISTRY.irh_closing_price({ unexpired_basis: 0.15 }, irhP) - 94.85) < 1e-9);
+  Math.abs(RECOMPUTE_REGISTRY.irh_closing_price({ unexpired_basis: 0.15 }, irhP, ['unexpired_basis']) - 94.85) < 1e-9);
 ok('irh_futures_profit → 168,000',
-  Math.abs(RECOMPUTE_REGISTRY.irh_futures_profit({ contracts: 96, closing_price: 94.85 }, irhP) - 168000) < 1e-6);
+  Math.abs(RECOMPUTE_REGISTRY.irh_futures_profit({ contracts: 96, closing_price: 94.85 }, irhP, ['contracts', 'closing_price']) - 168000) < 1e-6);
 ok('irh_net (borrower) → 1,152,000',
-  Math.abs(RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1320000, futures_profit: 168000 }, irhP) - 1152000) < 1e-6);
+  Math.abs(RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1320000, futures_profit: 168000 }, irhP, ['mm_interest', 'futures_profit']) - 1152000) < 1e-6);
 ok('irh_net (depositor) ADDS instead',
-  Math.abs(RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1320000, futures_profit: 168000 }, { ...irhP, direction: 'depositor' }) - 1488000) < 1e-6);
+  Math.abs(RECOMPUTE_REGISTRY.irh_net({ mm_interest: 1320000, futures_profit: 168000 }, { ...irhP, direction: 'depositor' }, ['mm_interest', 'futures_profit']) - 1488000) < 1e-6);
 ok('irh_effective → 4.80%',
-  Math.abs(RECOMPUTE_REGISTRY.irh_effective({ net_outcome: 1152000 }, irhP) - 4.8) < 1e-9);
+  Math.abs(RECOMPUTE_REGISTRY.irh_effective({ net_outcome: 1152000 }, irhP, ['net_outcome']) - 4.8) < 1e-9);
 ok('irh_futures_profit flips sign on side=buy',
-  RECOMPUTE_REGISTRY.irh_futures_profit({ contracts: 96, closing_price: 94.85 }, { ...irhP, side: 'buy' }) === -168000.0000000007);
+  RECOMPUTE_REGISTRY.irh_futures_profit({ contracts: 96, closing_price: 94.85 }, { ...irhP, side: 'buy' }, ['contracts', 'closing_price']) === -168000.0000000007);
 
 // a001 (iii) — fxhedge money-market hedge.
 const fxP = { spot: 5.6, months: 3, rate_home_deposit: 2, rate_home_borrow: 3.5,
               quote_direction: 'foreign_per_home', direction: 'receipt' };
-const mmhNow = RECOMPUTE_REGISTRY.fxh_mmh_convert_spot({ mmh_foreign_now: 174.27184466019418 }, fxP);
+const mmhNow = RECOMPUTE_REGISTRY.fxh_mmh_convert_spot({ mmh_foreign_now: 174.27184466019418 }, fxP, ['mmh_foreign_now']);
 ok('fxh_mmh_convert_spot → EUR 31.1200m', Math.abs(mmhNow - 31.119972260748963) < 1e-9);
 ok('fxh_mmh_grow_home → EUR 31.2756m',
-  Math.abs(RECOMPUTE_REGISTRY.fxh_mmh_grow_home({ mmh_home_now: mmhNow }, fxP) - 31.275572122052704) < 1e-9);
+  Math.abs(RECOMPUTE_REGISTRY.fxh_mmh_grow_home({ mmh_home_now: mmhNow }, fxP, ['mmh_home_now']) - 31.275572122052704) < 1e-9);
 ok('fxh_mmh_grow_home uses the BORROW leg for a payment',
-  RECOMPUTE_REGISTRY.fxh_mmh_grow_home({ mmh_home_now: mmhNow }, { ...fxP, direction: 'payment' })
-    > RECOMPUTE_REGISTRY.fxh_mmh_grow_home({ mmh_home_now: mmhNow }, fxP));
+  RECOMPUTE_REGISTRY.fxh_mmh_grow_home({ mmh_home_now: mmhNow }, { ...fxP, direction: 'payment' }, ['mmh_home_now'])
+    > RECOMPUTE_REGISTRY.fxh_mmh_grow_home({ mmh_home_now: mmhNow }, fxP, ['mmh_home_now']));
 
 // b101 (i) — risk ENPV.
 const enpv = RECOMPUTE_REGISTRY.enpv_prob_weighted(
   { npv_1: 253.23406871115344, npv_2: 19.26097944129492, npv_3: -208.67085581585968 },
-  { prob_1: 0.3, prob_2: 0.5, prob_3: 0.2 });
+  { prob_1: 0.3, prob_2: 0.5, prob_3: 0.2 }, ['npv_1', 'npv_2', 'npv_3']);
 ok('enpv_prob_weighted → GBP 43.8665m', Math.abs(enpv - 43.866539170821554) < 1e-9);
 
 // a001 (ii) — international K1.
@@ -138,27 +138,28 @@ const intlP = { discount_rate: 0.09590625, rate_home: 0.02, rate_foreign: 0.045,
                 home_outlay: 85.71428571428572,
                 remit_net_1: 179.52, remit_net_2: 184.9056, remit_net_3: 190.452768, remit_net_4: 196.16635104 };
 const fx1 = 5.7372549019607835;
-const fx2 = RECOMPUTE_REGISTRY.parity_step_y2({ fx_1: fx1 }, intlP);
+const fx2 = RECOMPUTE_REGISTRY.parity_step_y2({ fx_1: fx1 }, intlP, ['fx_1']);
 ok('parity_step_y2 → 5.877874', Math.abs(fx2 - 5.877873894655901) < 1e-9);
 ok('home_cf_convert_y1 → EUR 31.2902m',
-  Math.abs(RECOMPUTE_REGISTRY.home_cf_convert_y1({ fx_1: fx1 }, intlP) - 31.290225563909775) < 1e-6);
+  Math.abs(RECOMPUTE_REGISTRY.home_cf_convert_y1({ fx_1: fx1 }, intlP, ['fx_1']) - 31.290225563909775) < 1e-6);
 ok('intl_npv_sum_less_outlay → EUR 15.1026m',
   Math.abs(RECOMPUTE_REGISTRY.intl_npv_sum_less_outlay(
     { home_cf_1: 31.290225563909775, home_cf_2: 31.457905241572835,
-      home_cf_3: 31.626483489757344, home_cf_4: 31.795965123769445 }, intlP) - 15.102610562423546) < 1e-6);
+      home_cf_3: 31.626483489757344, home_cf_4: 31.795965123769445 }, intlP,
+    ['home_cf_1', 'home_cf_2', 'home_cf_3', 'home_cf_4']) - 15.102610562423546) < 1e-6);
 
 // a001 (i) — capm project-specific.
 const capmP = { rf: 0.045, mrp: 0.06, tax_rate: 0.25, debt_beta: 0, kd: 0.055,
                 own_ve: 70, own_vd: 30, company_ve: 0, company_vd: 0, gearing_basis: 'own' };
-const regeared = RECOMPUTE_REGISTRY.mm_regear({ asset_beta: 0.9375 }, capmP);
+const regeared = RECOMPUTE_REGISTRY.mm_regear({ asset_beta: 0.9375 }, capmP, ['asset_beta']);
 ok('mm_regear → 1.238839', Math.abs(regeared - 1.2388392857142856) < 1e-9);
-const keProj = RECOMPUTE_REGISTRY.capm_ke({ regeared_beta: regeared }, capmP);
+const keProj = RECOMPUTE_REGISTRY.capm_ke({ regeared_beta: regeared }, capmP, ['regeared_beta']);
 ok('capm_ke → 11.9330%', Math.abs(keProj - 11.933035714285714) < 1e-9);
 ok('wacc_mv_weighted → 9.5906%',
-  Math.abs(RECOMPUTE_REGISTRY.wacc_mv_weighted({ ke_project: keProj }, capmP) - 9.590625) < 1e-9);
+  Math.abs(RECOMPUTE_REGISTRY.wacc_mv_weighted({ ke_project: keProj }, capmP, ['ke_project']) - 9.590625) < 1e-9);
 ok('wacc_mv_weighted on gearing_basis=company uses the OTHER pair',
   Math.abs(RECOMPUTE_REGISTRY.wacc_mv_weighted({ ke_project: keProj },
-    { ...capmP, gearing_basis: 'company', company_ve: 50, company_vd: 50 }) - (keProj * 0.5 + 0.055 * 0.75 * 100 * 0.5)) < 1e-9);
+    { ...capmP, gearing_basis: 'company', company_ve: 50, company_vd: 50 }, ['ke_project']) - (keProj * 0.5 + 0.055 * 0.75 * 100 * 0.5)) < 1e-9);
 
 console.log(`\n${fail === 0 ? '✅' : '❌'} recompute-registry: ${pass} passed, ${fail} failed\n`);
 process.exit(fail === 0 ? 0 : 1);

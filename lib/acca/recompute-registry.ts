@@ -39,8 +39,20 @@ import { discountFactor } from './npv';
 import type { ParamValue } from './valuation';
 
 export type RecomputeParams = Record<string, ParamValue>;
-/** A resolved recompute: the student's own upstream figures + the drill's stored params. */
-export type RecomputeFn = (deps: Record<string, number>, params: RecomputeParams) => number;
+/**
+ * A resolved recompute: the student's own upstream figures, the drill's stored params, and the
+ * component's DECLARED `depends_on` ids.
+ *
+ * `declared` is not a convenience — it is load-bearing twice over. (1) Correctness: the function
+ * must read exactly the edges the schema declares, not whatever keys happen to be present in
+ * `deps`. (2) GATE 1's ofr-wiring check (`accessedDeps`, validate-schema.ts:246) introspects a
+ * recompute by calling it with a PROXY that records property READS. `Object.values(deps)` and
+ * `Object.entries(deps)` trigger `ownKeys`, not `get`, so a helper written that way is invisible
+ * to the proxy and the gate correctly reports `declared-dependency-unused`. Indexing `deps` by a
+ * declared id is a named `get`, which the proxy sees — so the wiring check stays meaningful on a
+ * registry-hydrated schema.
+ */
+export type RecomputeFn = (deps: Record<string, number>, params: RecomputeParams, declared: string[]) => number;
 
 // ── Param accessors. Absent or wrong-typed is an ERROR, never a default. ──
 function num(params: RecomputeParams, key: string, id: string): number {
@@ -57,11 +69,11 @@ function str(params: RecomputeParams, key: string, id: string): string {
   }
   return v;
 }
-/** The single upstream figure of a one-dependency component (the dep id varies by kind). */
-function soleDep(deps: Record<string, number>, id: string): number {
-  const vals = Object.values(deps);
-  if (vals.length !== 1) throw new Error(`recompute "${id}": expected exactly 1 dependency, got ${vals.length}`);
-  return vals[0];
+/** The single upstream figure of a one-dependency component (the dep id varies by kind).
+ *  Indexes by the DECLARED id — a named read, so GATE 1's proxy sees it. */
+function soleDep(deps: Record<string, number>, declared: string[], id: string): number {
+  if (declared.length !== 1) throw new Error(`recompute "${id}": expected exactly 1 declared dependency, got ${declared.length} [${declared.join(', ')}]`);
+  return deps[declared[0]];
 }
 /** Trailing integer of a component id (`home_cf_3` → 3, `fx_2` → 2, `npv_1` → 1). */
 function idIndex(componentId: string, id: string): number {
@@ -83,18 +95,18 @@ function gearingPair(params: RecomputeParams, id: string): { ve: number; vd: num
 export const RECOMPUTE_REGISTRY: Readonly<Record<string, RecomputeFn>> = Object.freeze({
   // ── capm.ts (calculator #5) ──
   // capm.ts:268 — regearBeta(d.asset_beta, raw.own_ve, raw.own_vd, tax, betaD)
-  mm_regear: (d, p) => {
+  mm_regear: (d, p, dcl) => {
     const { ve, vd } = gearingPair(p, 'mm_regear');
-    return regearBeta(soleDep(d, 'mm_regear'), ve, vd, num(p, 'tax_rate', 'mm_regear'), num(p, 'debt_beta', 'mm_regear'));
+    return regearBeta(soleDep(d, dcl, 'mm_regear'), ve, vd, num(p, 'tax_rate', 'mm_regear'), num(p, 'debt_beta', 'mm_regear'));
   },
   // capm.ts:271 — (rf + d.regeared_beta * mrp) * 100
-  capm_ke: (d, p) => (num(p, 'rf', 'capm_ke') + soleDep(d, 'capm_ke') * num(p, 'mrp', 'capm_ke')) * 100,
+  capm_ke: (d, p, dcl) => (num(p, 'rf', 'capm_ke') + soleDep(d, dcl, 'capm_ke') * num(p, 'mrp', 'capm_ke')) * 100,
   // capm.ts:273 — d.ke * (Ve/(Ve+Vd)) + kd(1−T)×100 × (Vd/(Ve+Vd))
-  wacc_mv_weighted: (d, p) => {
+  wacc_mv_weighted: (d, p, dcl) => {
     const { ve, vd } = gearingPair(p, 'wacc_mv_weighted');
     const total = ve + vd;
     if (total === 0) throw new Error('recompute "wacc_mv_weighted": Ve+Vd is zero — the gearing_basis names an empty pair');
-    return soleDep(d, 'wacc_mv_weighted') * (ve / total)
+    return soleDep(d, dcl, 'wacc_mv_weighted') * (ve / total)
       + num(p, 'kd', 'wacc_mv_weighted') * (1 - num(p, 'tax_rate', 'wacc_mv_weighted')) * 100 * (vd / total);
   },
 
@@ -110,39 +122,39 @@ export const RECOMPUTE_REGISTRY: Readonly<Record<string, RecomputeFn>> = Object.
   home_cf_convert_y4: homeCfConvert('home_cf_convert_y4', 4),
   // international.ts:497 — Σ (d[home_cf_t] × df_t) − home_outlay, df_t = discountFactor(r, t)
   // (international.ts:180 sets y.df = discountFactor(r, t), so no stored factors are needed.)
-  intl_npv_sum_less_outlay: (d, p) => {
+  intl_npv_sum_less_outlay: (d, p, dcl) => {
     const id = 'intl_npv_sum_less_outlay';
     const r = num(p, 'discount_rate', id);
     let sum = 0;
-    for (const [cid, v] of Object.entries(d)) sum += v * discountFactor(r, idIndex(cid, id));
+    for (const cid of dcl) sum += d[cid] * discountFactor(r, idIndex(cid, id));
     return sum - num(p, 'home_outlay', id);
   },
 
   // ── fxhedge.ts (calculator #11, K1 forward-vs-MMH) ──
   // fxhedge.ts:620 — toHome(d.mmh_foreign_now, raw.spot, raw.quote_direction)
-  fxh_mmh_convert_spot: (d, p) => toHome(soleDep(d, 'fxh_mmh_convert_spot'), num(p, 'spot', 'fxh_mmh_convert_spot'), str(p, 'quote_direction', 'fxh_mmh_convert_spot') as QuoteDirection),
+  fxh_mmh_convert_spot: (d, p, dcl) => toHome(soleDep(d, dcl, 'fxh_mmh_convert_spot'), num(p, 'spot', 'fxh_mmh_convert_spot'), str(p, 'quote_direction', 'fxh_mmh_convert_spot') as QuoteDirection),
   // fxhedge.ts:623 — d.mmh_home_now * (1 + asDec(growLeg) * t); growLeg picked by direction
-  fxh_mmh_grow_home: (d, p) => {
+  fxh_mmh_grow_home: (d, p, dcl) => {
     const id = 'fxh_mmh_grow_home';
     const dir = str(p, 'direction', id);
     if (dir !== 'receipt' && dir !== 'payment') throw new Error(`recompute "${id}": unknown direction "${dir}" (expected "receipt" or "payment")`);
     const growLeg = dir === 'receipt' ? num(p, 'rate_home_deposit', id) : num(p, 'rate_home_borrow', id);
-    return soleDep(d, id) * (1 + fxAsDec(growLeg) * fxT2({ months: num(p, 'months', id) }));
+    return soleDep(d, dcl, id) * (1 + fxAsDec(growLeg) * fxT2({ months: num(p, 'months', id) }));
   },
 
   // ── risk.ts (calculator #3, K1 ENPV) ──
   // risk.ts:369 — ids.reduce((s, id, i) => s + probs[i] * d[id], 0)
   // The probability vector is flattened to prob_1..prob_n, indexed to npv_1..npv_n.
-  enpv_prob_weighted: (d, p) => {
+  enpv_prob_weighted: (d, p, dcl) => {
     const id = 'enpv_prob_weighted';
     let sum = 0;
-    for (const [cid, v] of Object.entries(d)) sum += num(p, `prob_${idIndex(cid, id)}`, id) * v;
+    for (const cid of dcl) sum += num(p, `prob_${idIndex(cid, id)}`, id) * d[cid];
     return sum;
   },
 
   // ── irhedge.ts (calculator #12, K1 futures) ──
   // irhedge.ts:549 — 100 − s0.base_rate − d.unexpired_basis
-  irh_closing_price: (d, p) => 100 - num(p, 'base_rate', 'irh_closing_price') - soleDep(d, 'irh_closing_price'),
+  irh_closing_price: (d, p, dcl) => 100 - num(p, 'base_rate', 'irh_closing_price') - soleDep(d, dcl, 'irh_closing_price'),
   // irhedge.ts:555 — ((side==='buy' ? closing−opening : opening−closing)/100) × size × months/12 × contracts
   irh_futures_profit: (d, p) => {
     const id = 'irh_futures_profit';
@@ -160,18 +172,18 @@ export const RECOMPUTE_REGISTRY: Readonly<Record<string, RecomputeFn>> = Object.
     return dir === 'depositor' ? d.mm_interest + d.futures_profit : d.mm_interest - d.futures_profit;
   },
   // irhedge.ts:562 — (d.net_outcome / raw.notional) × (12 / raw.hedge_months) × 100
-  irh_effective: (d, p) => (soleDep(d, 'irh_effective') / num(p, 'notional', 'irh_effective')) * (12 / num(p, 'hedge_months', 'irh_effective')) * 100,
+  irh_effective: (d, p, dcl) => (soleDep(d, dcl, 'irh_effective') / num(p, 'notional', 'irh_effective')) * (12 / num(p, 'hedge_months', 'irh_effective')) * 100,
 });
 
 function parityStep(id: string): RecomputeFn {
-  return (d, p) => soleDep(d, id) * parityDifferential(str(p, 'parity_basis', id) as ParityBasis, num(p, 'rate_home', id), num(p, 'rate_foreign', id));
+  return (d, p, dcl) => soleDep(d, dcl, id) * parityDifferential(str(p, 'parity_basis', id) as ParityBasis, num(p, 'rate_home', id), num(p, 'rate_foreign', id));
 }
 function homeCfConvert(id: string, year: number): RecomputeFn {
-  return (d, p) => {
+  return (d, p, dcl) => {
     // The TAXED branch of the same id (international.ts:479) uses a different numerator
     // (remittance-pre-additional-tax, net of an `add_tax_t` dependency) and is NOT in scope.
     // depends_on tells the two apart: untaxed depends on fx_t alone.
-    const cids = Object.keys(d);
+    const cids = dcl;
     if (cids.length !== 1 || !/^fx_\d+$/.test(cids[0])) {
       throw new Error(`recompute "${id}": only the UNTAXED branch is in scope (depends_on must be exactly [fx_${year}]); this row has [${cids.join(', ')}] — the additional-home-tax branch is unresolved, see UNRESOLVED_RECOMPUTE_IDS`);
     }
@@ -275,7 +287,7 @@ export function hydrateAnswerSchema(stored: StoredSchema): AnswerSchema {
     };
     if (sc.recompute) {
       const fn = resolveRecompute(sc.recompute);          // throws loudly; no fallback
-      c.recompute = (deps) => fn(deps, params);
+      c.recompute = (deps) => fn(deps, params, sc.depends_on ?? []);
     }
     return c;
   });
