@@ -45,7 +45,9 @@
     "redteam:judge": "tsx scripts/redteam-judge.ts",
     "test:rounding": "tsx scripts/test-rounding.ts",
     "scan:halfway": "tsx --env-file=.env.local scripts/scan-halfway-rounding.ts",
-    "test:derived-figures": "tsx scripts/test-derived-figure-integrity.ts"
+    "test:derived-figures": "tsx scripts/test-derived-figure-integrity.ts",
+    "test:recompute-registry": "tsx scripts/test-recompute-registry.ts",
+    "test:mock1-acceptance": "tsx scripts/test-mock1-acceptance.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
