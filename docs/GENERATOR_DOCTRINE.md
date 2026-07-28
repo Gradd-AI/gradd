@@ -70,6 +70,42 @@ actual callers — rely on a **runtime guard** that throws with an actionable me
 describe this fix as "the compiler makes it impossible"; it does not, for the code that matters
 most. Closing it properly means bringing `scripts/` into a typecheck.
 
+## P-G2 — A DETECTOR'S SCOPE MUST BE PROVEN, NOT ASSUMED (ruled 2026-07-28)
+
+**Before reporting a count, prove the DENOMINATOR.** State what the detector scanned, what it
+could not reach, and why. **A count without a stated denominator is not a measurement** — it is
+an assertion with a number attached, and it reads as coverage it does not have.
+
+Three instances in a single session, all mine, all caught only because something downstream
+disagreed:
+
+1. **The capm drill filter missed a real drill.** The capm-family filter matched on component
+   ids, but the `org_wacc` kind emits exactly `ke, wacc` and neither was in the id list. It
+   reported **3** capm drills; there are **4**. `810b3893` was silently outside the denominator.
+2. **The blast-radius query flagged a published APM row.** A post-write check queried *every*
+   `acca_case_requirements` row instead of the three AFM mock cases, and also failed to select
+   `id`, so its self-exclusion was a no-op. It reported a "stale" hit on Bexley Grocers — a
+   published APM case entirely outside the change-set.
+3. **The P7 harness undercounted by 6.** It tallied gate lines per drill, but 6 rows **threw
+   before emitting any line**, so their P7 result was never counted. It reported **6** failures;
+   there were **8** — and the 8 exactly matched the set measured when the gate was introduced.
+
+**The operational rule.** Every sweep, gate run and post-verify must report, alongside its
+result: the population it drew from, the filter it applied, the rows it could not evaluate, and
+the reason for each. Rows that **error** are part of the denominator — a row that throws is
+`not_evaluated`, never absent. Prefer widening a filter and tolerating noise over narrowing it
+and reporting a clean number.
+
+**These are the same family as P-DB5 and P-G1** — in every case **the instrument reported
+success while measuring less than it claimed**:
+- **P-DB5** — a detector *finding* is not a defect until re-derived from the row (a matched
+  string proves some figure renders that way, never which one).
+- **P-G1** — a gate that cannot evaluate must say so distinguishably (silent absence reads green).
+- **P-G2** — a detector's *scope* must be proven (an unstated denominator reads as full coverage).
+
+P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
+individual result. A report that satisfies one and not the others is still misleading.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.
