@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the mock-params DB write is DRY-RUN ONLY, not applied; the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+*Last refreshed: 2026-07-28 (recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
@@ -74,13 +74,15 @@ measured 92 with no overlap, so a new id nobody registered fails the suite.
   stays zero, and `subsumed` is excluded from `all_correct`. Blast radius nil — `buildOfrProof`
   fills every component, so `absent` never fired in GATE 3, and the verdict appeared nowhere
   else in `lib/` or `scripts/`.
-- **🟠 NOT YET WRITTEN — the 5 mock numeric requirements are DRY-RUN ONLY.** P-DB2: the write
-  has been shown and is awaiting Grant's go. `scripts/_reserialise_mock_params.ts` (gitignored)
-  refuses to execute without `--apply`; all 5 rows pass every guard but **the DB is unchanged**,
-  so the stored schemas still lack their discriminants and `hydrateAnswerSchema` would throw on
-  four of the five. The acceptance fixture carries the params as literals for exactly this
-  reason. Rows are candidate / `published=false` /
-  `mock_only=true`. Every added value is **round-trip proven**: the
+- **✅ WRITTEN 2026-07-28 — the 5 mock numeric requirements now carry their discriminants.**
+  P-DB2 satisfied (shown as a dry run, then Grant authorised `--apply`). Rows are candidate /
+  `published=false` / `mock_only=true`; **no published row was touched**. Post-write verified
+  independently (`scripts/_verify_mock_params.ts`): params key set exact on all 5, **no
+  pre-existing param value moved**, component counts unchanged, **every `expected_value`
+  byte-identical to pre-write**, prose intact, and all 5 hydrate with every recompute
+  round-tripping to its stored figure. Added: `gearing_basis` · `parity_basis` +
+  `remit_net_1..4` · `quote_direction` + `direction` · `prob_1..3` · `side` + `direction`.
+  Every added value is **round-trip proven**: the
   registry recomputes each dependent from its authored upstream figures and reproduces the
   stored `expected_value` exactly, so a wrong discriminant fails the write. `parity_basis` is
   the one exception — `parityDifferential` uses the same formula for `ppp` and `irp`, so the
@@ -95,6 +97,24 @@ measured 92 with no overlap, so a new id nobody registered fails the suite.
 - **Still nothing wired into `app/`.** The marking route and its inverse publish gate are
   untouched, and free-text → `StudentSubmission` extraction remains unbuilt — the acceptance
   fixture transcribes by hand for exactly that reason.
+
+**🔻 TWO VERIFICATION LESSONS from this write — both cost a false alarm, both are reusable.**
+
+1. **A `JSON.stringify` equality check is NOT a valid P-DB4 post-verify.** The apply script's
+   own read-back compared stringified jsonb and reported `stored-matches-intent=false` on all
+   5 rows. **Postgres `jsonb` does not preserve key order** — it normalises — so a byte
+   comparison cannot tell a reordering from a real change. It reported a mismatch on 5 rows
+   that were in fact correct. A P-DB4 check must compare **key sets and values**, not
+   serialised bytes.
+2. **P-DB5 again, and it caught me.** The order-insensitive re-check then flagged
+   `asset_beta 0.9375 → 0.9374999999999999` and `forward_home …92 → …913` as drift. Both were
+   **FALSE**: neither figure was in the pre-write dump, and I had typed the baseline from hand
+   arithmetic rather than reading the row. Reconciled by recomputing from the stored inputs —
+   `ungearBeta(1.35, 60, 40, 0.34, 0)` **is** `0.9374999999999999` and `179.5/5.66` **is**
+   `31.713780918727913`, so the stored values were the authored values all along and the write
+   changed neither. **A baseline you did not read is not a baseline.** This is the fourth
+   false positive of this shape in the workstream; P-DB5's rule — reconcile against real data
+   before calling a detector hit a defect — is what stopped it being reported as drift.
 
 ## 🟠 OPEN (PENDING WRITE) — two Mock 1 content edits, HELD for the next Mock 1 content write
 
