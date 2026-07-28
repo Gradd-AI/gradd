@@ -25,6 +25,51 @@ Every quantitative drill passes ALL gates before it is persisted; a failing sche
 5. **Seeded-OFR proof** — a seeded wrong-upstream submission yields `carried` verdicts on dependents (carry-through actually fires).
 6. **P4 jurisdiction** and **P5 completeness** (see rulings below).
 
+## P-G1 — A GATE THAT CANNOT EVALUATE MUST SAY SO DISTINGUISHABLY (ruled 2026-07-28)
+
+**A gate result is `pass` | `fail` | `not_evaluated` — never a silent absence, never a vacuous
+pass.** A gate that cannot evaluate its condition (missing input, absent sub-object, empty
+collection, unresolved id, wrong shape) MUST emit a `not_evaluated` line carrying a `blocking`
+flag. Blocking is the DEFAULT; non-blocking is reserved for exemptions that are **structurally**
+N/A, and each must name its reason in code. `lib/acca/case-authoring-gates.ts` holds the model
+(`GateStatus`, `barrierPasses`, `barrierBlockers`).
+
+**Why this is a rule and not a preference.** A skipped gate used to be invisible in two ways —
+an early `return []` that read as a clean pass, or *no line at all* — and both are green under a
+`.every(ok)` roll-up. A 2026-07-28 re-gate of AFM Mock Paper 1 reported **"ALL GATES GREEN"
+while 13 calc-family gate lines never executed**, GATE 26 emitted nothing, P6 was disabled by a
+caller-supplied `hasLoss: false`, and GATE 27 printed `ok: true` behind a `(no-op)` suffix.
+
+**This is the SAME SHAPE as two failures already in this doctrine**, and that is the point:
+- the **N4 skip** — `checkRule23` was skipped on three narrative requirements because one caller
+  read `rubric.golden_bad` while the rubric stores `_authoring.golden_bad`; it printed a skip
+  line nobody counted;
+- the **empty-sweep artefacts** — a detector run whose result set is empty because the *harness*
+  filtered everything out, reported as a clean corpus (see P-DB5 and the 14.5× GATE-27
+  measurement artefact).
+
+In all three the instrument reported success while measuring nothing. **Silence is not
+evidence.** A sweep, a gate and a post-verify must each be able to say "I did not run".
+
+**Structural consequences, all shipped 2026-07-28:**
+- `family` is a **REQUIRED** parameter on `runRequirementGateBarrier` — omission was the single
+  largest hole. `runFamilyGates` gains a `default:` that **THROWS** on an unregistered `lo_code`;
+  "this requirement has no family gates" must be said explicitly via
+  `{ lo: 'NO_FAMILY_GATES', forLo, reason }`.
+- `deriveHasLoss` replaces the caller-supplied `hasLoss`, which is REMOVED from
+  `RequirementProseFields`. A gate's engagement condition must be **derived from the artefact**,
+  never taken on trust from the caller — a wrong `false` is an invisible no-op.
+- `runNarrativeGateBarrier` is the **single committed N1–N5 orchestration**. Ad-hoc wiring in two
+  scripts is how the N4 skip happened. A missing golden BAD or empty `designed_bad_flags` now
+  BLOCKS: N4 is the verifier-of-the-verifier and cannot be skipped quietly.
+
+**KNOWN LIMITATION — compile-enforcement does not reach the authoring scripts.**
+`tsconfig.json` excludes `scripts/`, and `tsx` transpiles without type-checking, so the required
+`family` parameter is compiler-enforced only for `lib/` and `app/`. The authoring scripts — the
+actual callers — rely on a **runtime guard** that throws with an actionable message. Do not
+describe this fix as "the compiler makes it impossible"; it does not, for the code that matters
+most. Closing it properly means bringing `scripts/` into a typecheck.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.

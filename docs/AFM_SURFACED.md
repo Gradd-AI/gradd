@@ -2,11 +2,98 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+*Last refreshed: 2026-07-28 (gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⛔ OPEN BLOCKER — AFM MOCK PAPER 1 BARRIER IS **RED**: `A(i) B3e · P6 loss-relief` not_evaluated
+
+**Logged 2026-07-28. The paper does NOT pass its own barrier. Do not describe Mock 1 as gated.**
+
+Under the pass/fail/not_evaluated model the full matrix is **106 lines · 86 pass · 0 fail · 20
+not_evaluated (1 BLOCKING, 19 named exemptions)**. The single blocker:
+
+```
+A (i) B3e · P6 loss-relief — no family result object for lo "B3e";
+            the loss-year fact cannot be derived, so P6 cannot be evaluated
+```
+
+**Root cause: `capm` (calculator #5) has NO registered calc-family gate branch.** It is the only
+family in the paper without one, so `familyFor('B3e')` must pass `NO_FAMILY_GATES`, and
+`deriveHasLoss` then has no result object to read the loss-year fact from. The matrix also
+surfaces this directly as `family gates (B3e) → named exemption`.
+
+**Two separable fixes — do not conflate them:**
+1. **Narrow (unblocks the paper):** give `deriveHasLoss` a `B3e` case returning
+   `determined:true, value:false` with the reason capm is a rates-only family with no
+   taxable-profit stream — the same treatment E2b/E3a/B1a/B4a already have. One case, and P6
+   becomes a named exemption rather than a blocker.
+2. **Full (closes the real gap):** register a capm family-gate branch. Spec drafted 2026-07-28
+   (CAPM-1…CAPM-9, report-only, nothing built) — the HC1 two-rate ungearing convention is the
+   highest-value target because it is **house-authored, not examiner-sourced**, and decides the
+   entire Section-A chain.
+
+Everything else in the paper now runs and passes, including every previously-invisible family
+line (INTL-12/13/14/14b · FXH-19 · RISK-Ga/Gb · IRH-20/21/23/25) and all N1–N5 on the real
+grader with N4 included. C1–C4 pass.
+
+## ✅ SHIPPED 2026-07-28 — gate result model: pass / fail / not_evaluated
+
+Canonical rule: **`GENERATOR_DOCTRINE.md` → P-G1**. Summary of what changed in code:
+
+- `GateStatus = 'pass' | 'fail' | 'not_evaluated'` + a `blocking` flag, with `barrierPasses` /
+  `barrierBlockers` (`lib/acca/case-authoring-gates.ts`). A blocking `not_evaluated` is as fatal
+  as a `fail`.
+- **`family` is REQUIRED** on `runRequirementGateBarrier`; `runFamilyGates` has a `default:` that
+  **throws** on an unregistered `lo_code`; "no family gates" must be declared explicitly as
+  `{ lo: 'NO_FAMILY_GATES', forLo, reason }`.
+- **`deriveHasLoss` replaces caller-supplied `hasLoss`**, which is removed from
+  `RequirementProseFields`.
+- **`runNarrativeGateBarrier`** is the single committed N1–N5 orchestration; a missing golden BAD
+  or empty `designed_bad_flags` BLOCKS.
+- BLOCKING when unevaluable: missing `family` · unregistered `lo_code` · GATE 26 where the family
+  declares a comparison but no `f.compare` · GATE 27 without `computed` · GATE 2 on empty
+  components · HALFWAY on empty components or empty `model_answer` · P6 when the loss fact is
+  underivable.
+- NAMED, NON-BLOCKING exemptions (reason in code): TAX_RATE_ASSIGNMENT (<2 corporate rates) ·
+  P6 (no loss year) · P7 (no `full_reveal`) · P9 + P9-SCENARIO (not the nil-tax branch) ·
+  GATE 26 (family declares no comparison) · N5 (no verdict wanted) · VAL-11b (non-divergent) ·
+  NO_FAMILY_GATES.
+
+**⚠ The compile-enforcement claim is bounded.** `tsconfig.json` excludes `scripts/` and `tsx`
+does not typecheck, so the required `family` param is compiler-enforced only for `lib/` and
+`app/`. The authoring scripts rely on a **runtime guard**. State it that way; do not say the
+compiler makes omission impossible.
+
+## 🟡 OPEN (INERT, MEASURED) — the 49-drill matrix: 43 cannot hydrate, so GATE1/GATE3 cannot run
+
+**Measured 2026-07-28 (not assumed).** Running the barrier over the 49 published AFM numeric
+drills produces **221 blocking `not_evaluated` lines**:
+
+| gate | pass | fail | BLOCKING | exempt |
+|---|---|---|---|---|
+| GATE1 self-consistency | 0 | 43\* | **43** | 0 |
+| GATE3 seeded-OFR | 0 | 43\* | **43** | 0 |
+| GATE2 · P4 · P5 · P8 · P4-reveal · HALFWAY | 43 | 0 | 0 | 0 |
+| P6 loss-relief | 0 | 0 | **43** | 0 |
+| GATE 27 derived-figure integrity | 0 | 0 | **43** | 0 |
+| family gates | 0 | 0 | **43** | 0 |
+| P9 · P9-SCENARIO · GATE 26 · TAX_RATE | 0 | 0 | 0 | 43 each |
+| barrier threw outright | — | — | **6** | — |
+
+\*GATE1/GATE3's `fail` on an unhydrated schema is a MEASUREMENT ARTEFACT, not a content verdict.
+
+**Cause: only 6 of 49 schemas hydrate.** 43 hit one of the 74 deliberately-unresolved recompute
+ids, so GATE1/GATE3 have no live recompute to exercise. 6 rows threw outright — including
+`51163dac` (`fxh_mmh_convert_spot`: no `params.quote_direction`) and `56989d69`
+(`irh_futures_profit`: no `params.side`) — because only the mock rows were re-serialised with
+discriminants.
+
+**STATUS QUO, not a regression.** None of this was evaluable before either; it was simply
+reported green. Fixed **per-family at next authoring**, exactly as the unresolved-id item below
+prescribes. **No backfill of published rows.**
 
 ## ✅ SHIPPED 2026-07-28 — P7 misconception-lead: 8 published AFM drills fixed, corpus now 0/57
 
