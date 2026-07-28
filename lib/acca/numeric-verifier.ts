@@ -12,6 +12,9 @@
 // wrong input verdicts `carried` (full credit). The source error is charged once, at
 // the erring step, never again downstream. A wrong-looking figure with NO workings
 // verdicts `no_workings` (zero) — OFR cannot be applied when the method is invisible.
+// The same charge-once rule runs UPSTREAM too: an omitted intermediate whose error is
+// already charged at a dependent verdicts `subsumed` (full credit) rather than `absent`
+// — see the post-pass in verifyNumericAnswer for why and for its limits.
 //
 // PERSISTED-SCHEMA STATUS (corrected 2026-07-28 — the previous note here claimed "no
 // persisted schema exists yet", which has been false since the drills went live).
@@ -90,7 +93,8 @@ export type Verdict =
   | 'carried'      // wrong-looking, but matches the carry-through expected with workings — full credit
   | 'incorrect'    // method diverges at this step (workings shown) — zero
   | 'no_workings'  // wrong-looking with no workings — OFR inapplicable — zero
-  | 'absent';      // not attempted
+  | 'subsumed'     // not stated, but its error is already charged at a dependent — full credit
+  | 'absent';      // not attempted, and nothing downstream charges it — zero
 
 export interface ComponentVerdict {
   component_id: string;
@@ -231,6 +235,41 @@ export function verifyNumericAnswer(
       carried_from: carriedFrom.length ? carriedFrom : undefined,
       awarded_weight: credited ? weight : 0,
       gap,
+    });
+  }
+
+  // ── ONE ERROR, ONE CHARGE (§6b, extended to omitted intermediates — Grant ruling 2026-07-28) ──
+  // An intermediate the student never states is `absent`, and the step that DEPENDS on it is
+  // then judged against the AUTHORED expected (carry-through needs every dep present), so it
+  // verdicts `incorrect`. Both score zero — the same single conceptual error charged TWICE.
+  //
+  // Worked case that forced this: AFM Mock Paper 1 b201 (i). A candidate who ignores basis
+  // never writes `unexpired_basis` and prices `closing_price` at 100 − rate. `closing_price`
+  // is `incorrect` (correctly — the error surfaces there, and it is charged there). Charging
+  // `absent` on `unexpired_basis` as well makes one omission cost two marks.
+  //
+  // So: an `absent` component becomes `subsumed` — CREDITED — when a component that depends on
+  // it directly is `incorrect`, i.e. the omission has already been paid for downstream. It is
+  // NOT a blanket amnesty: an `absent` whose dependents are all fine (or which has no
+  // dependents at all) stays `absent` and stays zero, because nothing else charged it.
+  //
+  // `subsumed` is its own verdict rather than folded into `carried` so a marker can still see
+  // the figure was never shown, and it is excluded from `all_correct` (a script with an
+  // omitted step is not a fully correct script).
+  for (const c of comps) {
+    const v = verdicts.get(c.component_id)!;
+    if (v.verdict !== 'absent') continue;
+    const chargedDependents = comps
+      .filter((other) => (other.depends_on ?? []).includes(c.component_id))
+      .filter((other) => verdicts.get(other.component_id)!.verdict === 'incorrect')
+      .map((other) => other.component_id);
+    if (chargedDependents.length === 0) continue;
+    verdicts.set(c.component_id, {
+      ...v,
+      verdict: 'subsumed',
+      awarded_weight: c.weight ?? 1,
+      carried_from: chargedDependents,
+      gap: `${c.component_id}: not stated, but the omission is already charged at ${chargedDependents.join(', ')} — not penalised twice`,
     });
   }
 
