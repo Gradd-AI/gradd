@@ -1,0 +1,109 @@
+{
+  "taken": "2026-07-28",
+  "topic": "AFM Mock 1 wording edits (VaR disclosure + guaranteed->locked in)",
+  "note": "Rows are candidate/published=false/mock_only=true. P-DB3 mandates a snapshot for PUBLISHED rows; taken here anyway because the two exhibit bodies are stored literals not regenerable from code.",
+  "exhibits": [
+    {
+      "id": "b9ee227a-e6da-45ed-b9f4-bd7068bc045c",
+      "case_id": "aa000000-0000-4000-8000-00000000b101",
+      "exhibit_order": 3,
+      "title": "Exhibit 2 — Monte Carlo simulation output",
+      "body": "Separately, the advisers ran a Monte Carlo simulation of the same Firth Array project with 10,000 iterations, allowing electricity price, turbine availability and construction cost to vary continuously. The simulation produced a mean (expected) NPV of GBP 44 million, a standard deviation of NPV of GBP 60 million, a probability of a negative NPV of 22%, and a project Value-at-Risk of GBP 52 million at the 95% confidence level. The board must decide whether Firth Array's risk profile is acceptable before committing the GBP 500 million."
+    },
+    {
+      "id": "2a168b1d-36a3-4769-a269-2de55a8c31c6",
+      "case_id": "aa000000-0000-4000-8000-00000000a001",
+      "exhibit_order": 4,
+      "title": "Exhibit 3 — Managing the first remittance",
+      "body": "Rio Verde's first net remittance to France, expected to be BRL 179.5 million, is due in three months. The treasury team must decide how to fix the euro value of that receipt. The current spot rate is BRL 5.60 per EUR 1 and the three-month forward rate is BRL 5.66 per EUR 1. Annual money-market rates are: BRL deposit 10.0% and BRL borrowing 12.0%; EUR deposit 2.0% and EUR borrowing 3.5%. The board has asked which hedge secures the better guaranteed euro receipt."
+    }
+  ],
+  "requirements": [
+    {
+      "id": "c3dc709a-ed91-4aab-8ac1-d54b5d5c23a6",
+      "case_id": "aa000000-0000-4000-8000-00000000a001",
+      "requirement_order": 3,
+      "label": "(iii) E2b — 8 marks",
+      "question": "(iii) Evaluate whether a forward contract or a money-market hedge secures the better guaranteed euro value for the first BRL 179.5 million remittance, and recommend which Solenne should use. (8 marks)",
+      "hint": "Price both hedges to a guaranteed euro figure and compare like with like. For the money-market hedge on a receipt, borrow reais now against the future receipt, convert at spot, and deposit euros — then set the two guaranteed euro amounts side by side and pick the higher.",
+      "full_reveal": "The common misconception here is judging the hedge on the headline forward rate rather than the guaranteed euro outcome: candidates compare the forward rate to spot instead of computing the euro amount each hedge actually locks.\n\nThe fix is to convert both routes to a guaranteed euro receipt and compare those figures directly; the forward secures the higher euro amount here, so it is preferred, though the margin is modest.",
+      "model_answer": "**FX hedging — forward vs money-market hedge**\n\n**Assumptions:** a BRL 179.5 receipt is due in 3 months, quoted BRL per 1 EUR. The forward rate for the period is stated at 5.6600. The money-market hedge would borrow the foreign currency now and deposit the home proceeds, using today's spot of 5.6000.\n\n**Step 1 — Forward hedge**\n\nBRL 179.5 converted at the forward rate 5.6600 = **EUR 31.7m**, guaranteed.\n\n**Step 2 — Money-market hedge**\n\nBorrow the foreign currency now and deposit the home proceeds: BRL 174.3m today, converted at spot to EUR 31.1m, then grown to **EUR 31.3m** by the settlement date.\n\n**Step 3 — All-methods comparison and recommendation**\n\n| Method | Guaranteed EUR outcome |\n|------|------|\n| Forward | EUR 31.7m |\n| Money-market hedge | EUR 31.3m |\n\nThe forward gives the higher outcome, by **EUR 0.4m**, and is **recommended**.\n\n**Step 4 — Advice to the board**\n\nThe forward contract secures the higher guaranteed euro receipt, EUR 31.7m against EUR 31.3m — a modest margin of about EUR 0.4m on roughly EUR 31.7m. Solenne should therefore opt for the forward contract: on so slim a margin the qualitative factors decide it, and the forward wins on operational simplicity — a single dealt rate, with none of the borrow-and-deposit legs the alternative requires — while the board should weigh the counterparty credit exposure a forward carries and confirm the balance-sheet treatment before dealing.\n\n*Reconciliation: forward EUR 31.7m vs MMH EUR 31.3m; margin EUR 0.4m to the forward ✓*",
+      "answer_schema": {
+        "params": {
+          "spot": 5.6,
+          "months": 3,
+          "exposure": 179.5,
+          "direction": "receipt",
+          "forward_rate": 5.66,
+          "quote_direction": "foreign_per_home",
+          "rate_home_borrow": 3.5,
+          "rate_home_deposit": 2,
+          "rate_foreign_borrow": 12,
+          "rate_foreign_deposit": 10
+        },
+        "components": [
+          {
+            "unit": "EURm",
+            "label": "Guaranteed EUR outcome under the forward hedge",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "forward_home",
+            "working_steps": [
+              "= BRL 179.5 converted at the forward rate 5.6600"
+            ],
+            "expected_value": 31.713780918727913
+          },
+          {
+            "unit": "BRLm",
+            "label": "Foreign currency borrowed today (money-market hedge)",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "mmh_foreign_now",
+            "working_steps": [
+              "= BRL 179.5 ÷ (1 + 12% × 3/12)"
+            ],
+            "expected_value": 174.27184466019418
+          },
+          {
+            "unit": "EURm",
+            "label": "EUR equivalent today",
+            "recompute": "fxh_mmh_convert_spot",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "mmh_foreign_now"
+            ],
+            "component_id": "mmh_home_now",
+            "working_steps": [
+              "= foreign amount converted at today's spot 5.6000"
+            ],
+            "expected_value": 31.119972260748963
+          },
+          {
+            "unit": "EURm",
+            "label": "Guaranteed EUR outcome under the money-market hedge",
+            "recompute": "fxh_mmh_grow_home",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "mmh_home_now"
+            ],
+            "component_id": "mmh_home_settlement",
+            "working_steps": [
+              "= EUR deposited/borrowed at 2% for 3 months"
+            ],
+            "expected_value": 31.275572122052704
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -612,14 +612,14 @@ export function buildForwardMmhCompareSchema(raw: ForwardMmhCompareInputs, c: Fo
   const borrowLeg = raw.direction === 'receipt' ? 'rate_foreign_borrow' : 'rate_foreign_deposit';
   const growLeg = raw.direction === 'receipt' ? raw.rate_home_deposit : raw.rate_home_borrow;
   const comps: Component[] = [
-    { component_id: 'forward_home', label: `Guaranteed ${home} outcome under the forward hedge`, expected_value: c.forward.home_settlement, unit: homeUnit, tolerance: moneyTol,
+    { component_id: 'forward_home', label: `Locked-in  outcome under the forward hedge`, expected_value: c.forward.home_settlement, unit: homeUnit, tolerance: moneyTol,
       working_steps: [`= ${foreign} ${fmt1(raw.exposure)} converted at the forward rate ${fmt4(raw.forward_rate)}`] },
     { component_id: 'mmh_foreign_now', label: `Foreign currency ${raw.direction === 'receipt' ? 'borrowed' : 'bought'} today (money-market hedge)`, expected_value: c.mmh.foreign_now, unit: foreignUnit, tolerance: moneyTol,
       working_steps: [`= ${foreign} ${fmt1(raw.exposure)} ÷ (1 + ${(raw as unknown as Record<string, number>)[borrowLeg]}% × ${raw.months}/12)`] },
     { component_id: 'mmh_home_now', label: `${home} equivalent today`, expected_value: c.mmh.home_now, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['mmh_foreign_now'], recompute: (d) => toHome(d.mmh_foreign_now, raw.spot, raw.quote_direction),
       working_steps: [`= foreign amount converted at today's spot ${fmt4(raw.spot)}`] },
-    { component_id: 'mmh_home_settlement', label: `Guaranteed ${home} outcome under the money-market hedge`, expected_value: c.mmh.home_settlement, unit: homeUnit, tolerance: moneyTol,
+    { component_id: 'mmh_home_settlement', label: `Locked-in  outcome under the money-market hedge`, expected_value: c.mmh.home_settlement, unit: homeUnit, tolerance: moneyTol,
       depends_on: ['mmh_home_now'], recompute: (d) => d.mmh_home_now * (1 + asDec(growLeg) * t),
       working_steps: [`= ${home} deposited/borrowed at ${growLeg}% for ${raw.months} months`] },
   ];
@@ -637,11 +637,11 @@ export function buildForwardMmhCompareModelAnswer(raw: ForwardMmhCompareInputs, 
   return [
     '**FX hedging — forward vs money-market hedge**', '',
     `**Assumptions:** a ${foreign} ${fmt1(raw.exposure)} ${noun} is due in ${raw.months} months, quoted ${raw.quote_direction === 'foreign_per_home' ? `${foreign} per 1 ${home}` : `${home} per 1 ${foreign}`}. The forward rate for the period is stated at ${fmt4(raw.forward_rate)}. The money-market hedge would ${legWord}, using today's spot of ${fmt4(raw.spot)}.`, '',
-    '**Step 1 — Forward hedge**', '', `${foreign} ${fmt1(raw.exposure)} converted at the forward rate ${fmt4(raw.forward_rate)} = **${mH(c.forward.home_settlement)}**, guaranteed.`, '',
+    '**Step 1 — Forward hedge**', '', `${foreign} ${fmt1(raw.exposure)} converted at the forward rate ${fmt4(raw.forward_rate)} = **${mH(c.forward.home_settlement)}**, locked in.`, '',
     '**Step 2 — Money-market hedge**', '',
     `${legWord[0].toUpperCase()}${legWord.slice(1)}: ${mF(c.mmh.foreign_now)} today, converted at spot to ${mH(c.mmh.home_now)}, then grown to **${mH(c.mmh.home_settlement)}** by the settlement date.`, '',
     '**Step 3 — All-methods comparison and recommendation**', '',
-    `| Method | Guaranteed ${home} outcome |`, `|------|------|`,
+    `| Method | Locked-in ${home} outcome |`, `|------|------|`,
     `| Forward | ${mH(c.forward.home_settlement)} |`, `| Money-market hedge | ${mH(c.mmh.home_settlement)} |`, '',
     `${c.comparison.best.method === 'the forward' ? 'The forward' : 'The money-market hedge'} gives the ${raw.direction === 'receipt' ? 'higher' : 'lower-cost'} outcome, by **${mH(c.comparison.margin)}**, and is **recommended**.`, '',
     '**Step 4 — Advice to the board**', '', prose, '',
