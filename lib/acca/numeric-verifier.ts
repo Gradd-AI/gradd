@@ -13,11 +13,38 @@
 // the erring step, never again downstream. A wrong-looking figure with NO workings
 // verdicts `no_workings` (zero) — OFR cannot be applied when the method is invisible.
 //
-// DESIGN REFINEMENT (reported, not a live conflict — no persisted schema exists yet):
-// the design sketched `recompute?: string` (a named rule reference). This engine takes
-// the concrete deterministic form `recompute?: (deps) => number` — "authored
-// deterministic code" per §6. When schemas are persisted (Phase 2B-later, jsonb), the
-// string would resolve to one of these functions via a registry.
+// PERSISTED-SCHEMA STATUS (corrected 2026-07-28 — the previous note here claimed "no
+// persisted schema exists yet", which has been false since the drills went live).
+//
+// Schemas ARE persisted: 49 published AFM `acca_drills` rows (356 components) and the 5
+// numeric `acca_case_requirements` of AFM Mock Paper 1 all store `answer_schema` jsonb
+// carrying `depends_on` AND a `recompute` STRING id — 92 distinct ids corpus-wide.
+//
+// This engine still takes `recompute?: (deps) => number`, so it can only consume an
+// IN-MEMORY schema built by a family module (`lib/acca/<family>.ts`), where the lambda is
+// live. That is why authoring works: `case-authoring-gates.ts` GATE 3 runs this verifier
+// against the freshly-built schema, never against a stored one.
+//
+// THE REGISTRY THAT WOULD RESOLVE id → function IS NOT BUILT, and the ids are WRITE-ONLY
+// today — each family declares a local `recomputeIds` map at serialisation time and
+// nothing ever reads one back. Two structural facts block a naive registry, both measured
+// 2026-07-28 (see docs/AFM_SURFACED.md):
+//
+//   1. The lambdas are CLOSURES over per-drill inputs, not pure functions of `deps` — e.g.
+//      irhedge's `irh_effective` closes over `raw.notional`/`raw.hedge_months`. So a
+//      registry entry cannot have signature `(deps) => number`; it needs the drill's
+//      params too.
+//   2. `SerializedSchema.params` is typed `Record<string, number>` (valuation.ts), so it
+//      structurally CANNOT carry the non-numeric discriminants a large share of the maths
+//      branches on — irhedge `side` (buy/sell) and `direction` (borrower/depositor),
+//      fxhedge `quote_direction` / `residual_policy` / `premium_currency`. Nor can it
+//      carry the array/map state several ids need (risk's probability vector, apv/npv's
+//      pv-id list and outlay, international's per-component discount-factor map).
+//
+// Consequence: ids in that class cannot be resolved from stored data at all without
+// widening the serialiser AND re-serialising published rows. Until that is ruled on, a
+// stored schema must NOT be silently treated as verifiable — falling back to the authored
+// expected value would quietly disable carry-through and mismark a correct method.
 
 // ── Tolerance (§4): absolute + relative + floor, authored in the schema, never inferred ──
 export type Tolerance =
