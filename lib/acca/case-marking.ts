@@ -167,6 +167,74 @@ export interface JudgeCaseMarkingInput {
 interface TextBlock { type: 'text'; text: string }
 interface AnthropicMessage { content: Array<{ type: string } | TextBlock> }
 
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// PARSE-FAILURE CAPTURE + RETRY (2026-07-28)
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// A single malformed model response used to become a hard 502 on a SUBMITTED PAPER: both
+// judging cores threw Error('parse') on the first bad response with no retry, and the route
+// turns that into a 502 the student cannot recover from.
+//
+// It is not hypothetical. The FIRST EVER production-shape invocation of judgeTechnicalMarking
+// (2026-07-28, offline harness against the blind candidate script) threw 'parse' on the
+// Section A case. The identical call replayed cleanly — stop_reason `end_turn`, 720 output
+// tokens against a 2000 ceiling, JSON parsed with all 4 entries. So it was NOT truncation and
+// NOT deterministic, and we could say nothing more than that because the failing text had
+// already been discarded inside the catch.
+//
+// CAPTURE IS THE POINT AS MUCH AS THE RETRY. Every parse failure is recorded — raw text,
+// stop_reason, token counts, ceiling — before the retry, so the next occurrence is diagnosable
+// instead of merely survivable. Retrying a fault we still cannot see would just hide it better.
+export interface MarkingParseFailure {
+  fn: 'judgeCaseMarking' | 'judgeTechnicalOnce';
+  attempt: number;             // 1-based; attempt 1 is the initial call
+  stop_reason: string | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  max_tokens: number;
+  raw: string;                 // the full response text, uncut
+  reason: string;              // the parse error that rejected it
+  at: string;
+}
+
+/** In-process ring of captured parse failures. Read by harnesses; never persisted, never
+ *  returned to a client. Bounded so a pathological loop cannot grow it without limit. */
+export const MARKING_PARSE_FAILURES: MarkingParseFailure[] = [];
+const MAX_CAPTURED = 50;
+
+function captureParseFailure(f: MarkingParseFailure): void {
+  if (MARKING_PARSE_FAILURES.length >= MAX_CAPTURED) MARKING_PARSE_FAILURES.shift();
+  MARKING_PARSE_FAILURES.push(f);
+  // Structured server log — this is what makes the NEXT occurrence diagnosable.
+  console.error('[marking:parse-failure]', JSON.stringify({
+    fn: f.fn, attempt: f.attempt, stop_reason: f.stop_reason,
+    input_tokens: f.input_tokens, output_tokens: f.output_tokens, max_tokens: f.max_tokens,
+    reason: f.reason, raw_len: f.raw.length, raw: f.raw,
+  }));
+}
+
+// 1 initial attempt + up to 3 retries = 4 calls maximum, with exponential backoff.
+// RETRIES PARSE FAILURES ONLY. An Error('call') is an API/transport fault with its own
+// distinct 502 message and its own retry semantics upstream; swallowing it here would blur
+// two failure modes the route deliberately keeps apart.
+const MARKING_MAX_ATTEMPTS = 4;
+const MARKING_BACKOFF_MS = [400, 900, 2000];
+
+async function withParseRetry<T>(fn: 'judgeCaseMarking' | 'judgeTechnicalOnce', once: (attempt: number) => Promise<T>): Promise<T> {
+  let last: unknown;
+  for (let attempt = 1; attempt <= MARKING_MAX_ATTEMPTS; attempt++) {
+    try {
+      return await once(attempt);
+    } catch (e) {
+      last = e;
+      if ((e as Error)?.message !== 'parse') throw e;      // call faults propagate immediately
+      if (attempt === MARKING_MAX_ATTEMPTS) break;
+      await new Promise((r) => setTimeout(r, MARKING_BACKOFF_MS[attempt - 1] ?? 2000));
+    }
+  }
+  console.error(`[marking:parse-failure] ${fn} exhausted ${MARKING_MAX_ATTEMPTS} attempts — throwing`);
+  throw last;
+}
+
 function extractText(res: unknown): string {
   const msg = res as AnthropicMessage;
   const block = msg.content.find((b): b is TextBlock => b.type === 'text');
@@ -265,8 +333,10 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
 
   // One judging round-trip: call + defensive parse (strip code fences). Throws
   // Error('call') on API/extract failure and Error('parse') on parse/shape failure.
-  async function judgeOnce(): Promise<SkillJudgement[]> {
+  async function judgeOnce(attempt = 1): Promise<SkillJudgement[]> {
     let rawJudging: string;
+    let meta: { stop_reason: string | null; input_tokens: number | null; output_tokens: number | null } =
+      { stop_reason: null, input_tokens: null, output_tokens: null };
     try {
       const res = await anthropic.messages.create({
         model: MARKING_MODEL,
@@ -274,6 +344,8 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
         system: systemPrompt,
         messages: [{ role: 'user', content: baseUserContent }],
       });
+      const r = res as unknown as { stop_reason?: string | null; usage?: { input_tokens?: number; output_tokens?: number } };
+      meta = { stop_reason: r.stop_reason ?? null, input_tokens: r.usage?.input_tokens ?? null, output_tokens: r.usage?.output_tokens ?? null };
       rawJudging = extractText(res);
     } catch {
       throw new Error('call');
@@ -294,12 +366,13 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
       });
       if (out.length === 0) throw new Error('empty');
       return out;
-    } catch {
+    } catch (e) {
+      captureParseFailure({ fn: 'judgeCaseMarking', attempt, stop_reason: meta.stop_reason, input_tokens: meta.input_tokens, output_tokens: meta.output_tokens, max_tokens: 1500, raw: rawJudging, reason: (e as Error)?.message ?? 'unknown', at: new Date().toISOString() });
       throw new Error('parse');
     }
   }
 
-  const judgements = await judgeOnce();
+  const judgements = await withParseRetry('judgeCaseMarking', judgeOnce);
 
   // ── Bands → marks (deterministic; the code owns every number) ──
   // Per-skill ceiling is an equal share of the case pool; each skill earns a
@@ -398,7 +471,7 @@ interface TechnicalJudgement { requirement_id: string; band: TechnicalBand; feed
 // ONE batched model call judging every ATTEMPTED requirement against its own
 // model_answer. Throws Error('call')/Error('parse') like judgeCaseMarking so the
 // route preserves the distinct 502 messages.
-async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[]): Promise<TechnicalJudgement[]> {
+async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[], attempt = 1): Promise<TechnicalJudgement[]> {
   const contextLine = context ? `Case scenario and exhibits (shared by every requirement):\n${context}\n\n` : '';
   const blocks = reqs
     .map((r, i) =>
@@ -431,6 +504,7 @@ async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: Techn
     'Judge each requirement against its own correct answer and assign its band. Return ONLY the JSON array.';
 
   let raw: string;
+  let meta: { stop_reason: string | null; input_tokens: number | null; output_tokens: number | null } = { stop_reason: null, input_tokens: null, output_tokens: null };
   try {
     const res = await anthropic.messages.create({
       model: MARKING_MODEL,
@@ -438,6 +512,8 @@ async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: Techn
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
     });
+    const rr = res as unknown as { stop_reason?: string | null; usage?: { input_tokens?: number; output_tokens?: number } };
+    meta = { stop_reason: rr.stop_reason ?? null, input_tokens: rr.usage?.input_tokens ?? null, output_tokens: rr.usage?.output_tokens ?? null };
     raw = extractText(res);
   } catch {
     throw new Error('call');
@@ -459,7 +535,8 @@ async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: Techn
     });
     if (out.length === 0) throw new Error('empty');
     return out;
-  } catch {
+  } catch (e) {
+    captureParseFailure({ fn: 'judgeTechnicalOnce', attempt, stop_reason: meta.stop_reason, input_tokens: meta.input_tokens, output_tokens: meta.output_tokens, max_tokens: 2000, raw, reason: (e as Error)?.message ?? 'unknown', at: new Date().toISOString() });
     throw new Error('parse');
   }
 }
@@ -483,7 +560,7 @@ export async function judgeTechnicalMarking(input: JudgeTechnicalMarkingInput): 
   });
 
   if (attempted.length > 0) {
-    const judged = await judgeTechnicalOnce(paper, context, attempted);
+    const judged = await withParseRetry('judgeTechnicalOnce', (attempt) => judgeTechnicalOnce(paper, context, attempted, attempt));
     for (const j of judged) bandById.set(j.requirement_id, { band: j.band, feedback: j.feedback });
   }
 
