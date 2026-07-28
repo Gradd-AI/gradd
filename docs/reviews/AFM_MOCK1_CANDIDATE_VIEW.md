@@ -1,12 +1,8 @@
-# AFM Mock Paper 1 — candidate view
+# AFM MOCK PAPER 1 — CANDIDATE VIEW
 
-Exactly what a candidate sees at the sit surface, and nothing else: the three
-scenarios, all eleven exhibits in order, and the eight requirements in paper
-order with their marks. The answer side of every requirement is withheld in
-full — this pack is for blind content QA, so anyone reading it should be able
-to attempt the paper cold.
+**This is exactly what the sit surface serves a candidate — nothing more.** Read-only export of the LIVE `acca_case_*` rows, regenerated 2026-07-28. The answer side is withheld in full: no `model_answer`, no `hint`, no `full_reveal`, no `answer_schema`, no mark scheme, no professional-skill tags, no syllabus codes, no ids. Requirement labels are stripped at the serve boundary exactly as `sitDisplayLabel` strips them, so the internal `lo_code` never reaches a candidate.
 
-Generated read-only from the database. No content was modified to produce it.
+**Regenerate with `scripts/_export_candidate_view.ts` after ANY Mock Paper 1 content write** — this file is a DB snapshot and goes stale silently otherwise.
 
 Total: 100 marks. Three hours 15 minutes.
 
@@ -34,7 +30,7 @@ Solenne intends to appraise Rio Verde at a project-specific discount rate. A lis
 
 ### Exhibit 3 — Managing the first remittance
 
-Rio Verde's first net remittance to France, expected to be BRL 179.5 million, is due in three months. The treasury team must decide how to fix the euro value of that receipt. The current spot rate is BRL 5.60 per EUR 1 and the three-month forward rate is BRL 5.66 per EUR 1. Annual money-market rates are: BRL deposit 10.0% and BRL borrowing 12.0%; EUR deposit 2.0% and EUR borrowing 3.5%. The board has asked which hedge secures the better guaranteed euro receipt.
+Rio Verde's first net remittance to France, expected to be BRL 179.5 million, is due in three months. The treasury team must decide how to fix the euro value of that receipt. The current spot rate is BRL 5.60 per EUR 1 and the three-month forward rate is BRL 5.66 per EUR 1. Annual money-market rates are: BRL deposit 10.0% and BRL borrowing 12.0%; EUR deposit 2.0% and EUR borrowing 3.5%. The board has asked which hedge secures the better locked-in euro receipt.
 
 ### Exhibit 4 — Treasury organisation
 
@@ -56,7 +52,7 @@ Using the project-specific discount rate from requirement (i), calculate the net
 
 **(iii)**
 
-Evaluate whether a forward contract or a money-market hedge secures the better guaranteed euro value for the first BRL 179.5 million remittance, and recommend which Solenne should use.
+Evaluate whether a forward contract or a money-market hedge secures the better locked-in euro value for the first BRL 179.5 million remittance, and recommend which Solenne should use.
 
 **(8 marks)**
 
@@ -86,7 +82,7 @@ Brecon's advisers built three demand scenarios for Firth Array, each with its ow
 
 ### Exhibit 2 — Monte Carlo simulation output
 
-Separately, the advisers ran a Monte Carlo simulation of the same Firth Array project with 10,000 iterations, allowing electricity price, turbine availability and construction cost to vary continuously. The simulation produced a mean (expected) NPV of GBP 44 million, a standard deviation of NPV of GBP 60 million, a probability of a negative NPV of 22%, and a project Value-at-Risk of GBP 52 million at the 95% confidence level. The board must decide whether Firth Array's risk profile is acceptable before committing the GBP 500 million.
+Separately, the advisers ran a Monte Carlo simulation of the same Firth Array project with 10,000 iterations, allowing electricity price, turbine availability and construction cost to vary continuously. The simulation produced a mean (expected) NPV of GBP 44 million, a standard deviation of NPV of GBP 60 million, a probability of a negative NPV of 22%, and a project Value-at-Risk of GBP 52 million at the 95% confidence level (expressed as a loss against a zero NPV, not as a shortfall below the mean NPV). The board must decide whether Firth Array's risk profile is acceptable before committing the GBP 500 million.
 
 ### Required
 

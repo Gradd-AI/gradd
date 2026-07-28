@@ -1,6 +1,8 @@
 # AFM MOCK PAPER 1 — REVIEW PACK
 
-**Status: candidate / unpublished / mock_only=true. DB snapshot regenerated from the LIVE `acca_case_*` rows on 2026-07-25 (bodies below are the rows verbatim, not a transcription). Authored via `scripts/_author_mock_paper1.ts` through the live calculators + narrative rubric engine. FOR BLIND GPT DELTA-CONFIRM.**
+**Status: candidate / unpublished / mock_only=true. DB snapshot regenerated from the LIVE `acca_case_*` rows on 2026-07-28 (bodies below are the rows verbatim, not a transcription). Authored via `scripts/_author_mock_paper1.ts` through the live calculators + narrative rubric engine. FOR BLIND GPT DELTA-CONFIRM.**
+
+**WARNING — CHANGED 2026-07-28, wording-only, ZERO figures moved.** (1) b101 Exhibit 2 now discloses the VaR reference point (expressed as a loss against a zero NPV, not as a shortfall below the mean NPV) — the blind-candidate sit proved the paper did not state it and the candidate had to guess. (2) The irhedge FR1 register ruling applied to fxhedge content: 11 guaranteed hits became locked in across a001 Exhibit 3 and A(iii) — 7 stored literals plus 4 code-owned in lib/acca/fxhedge.ts, landed by rebuilding A(iii) through its calculator. Post-verified under the amended P-DB4 (key-order-insensitive, baseline read pre-write): every expected_value byte-identical, params untouched, component counts unchanged. b101 (ii) revenue guarantees is an ordinary commercial noun and was deliberately NOT swept; published fxhedge K1 51163dac was NOT touched. Full gate suite + N1-N5 on the REAL grader re-run green across all three cases.
 
 ## ▶ READ FIRST — what a cold reviewer is being asked to confirm
 
@@ -93,7 +95,7 @@ Section A is ONE company (Solenne Industries SA), ONE shared exhibit set, with a
 
 1. **A(i) CAPM (B3e)** ungears the Brazilian peer beta (1.35) **at the peer's own 34%** → asset β **0.9375** → regears to Solenne's 70:30 **at Solenne's 25%** → equity β **1.239** → Ke **11.93%** → **project WACC 9.59%** (FR2 / HC1).
 2. **A(ii) NPV (B5b)** discounts the Rio Verde reais cash flows at **that exact 9.59%** (the CAPM output is fed straight into `discount_rate`) → **NPV +EUR 15.1m → ACCEPT**.
-3. **A(iii) FX hedge (E2b)** hedges the **year-1 net remittance of BRL 179.5m** produced by A(ii) (the NPV's own `years[0].foreign_remit_net`) — forward vs money-market → the **forward** secures the higher guaranteed euro receipt.
+3. **A(iii) FX hedge (E2b)** hedges the **year-1 net remittance of BRL 179.5m** produced by A(ii) (the NPV's own `years[0].foreign_remit_net`) — forward vs money-market → the **forward** secures the higher locked-in euro receipt.
 4. **A(iv) Treasury (E1a, narrative)** advises on the group treasury for **this** expansion — the Brazilian exposure the appraisal + hedge concern.
 
 The chain is verified in code: CAPM `c.wacc` is the literal argument to the NPV `discount_rate`; the NPV `years[0].foreign_remit_net` is the literal argument to the FX `exposure`. Change one input and all three move together.
@@ -125,7 +127,7 @@ Solenne intends to appraise Rio Verde at a project-specific discount rate. A lis
 
 **Exhibit 3 — Managing the first remittance**
 
-Rio Verde's first net remittance to France, expected to be BRL 179.5 million, is due in three months. The treasury team must decide how to fix the euro value of that receipt. The current spot rate is BRL 5.60 per EUR 1 and the three-month forward rate is BRL 5.66 per EUR 1. Annual money-market rates are: BRL deposit 10.0% and BRL borrowing 12.0%; EUR deposit 2.0% and EUR borrowing 3.5%. The board has asked which hedge secures the better guaranteed euro receipt.
+Rio Verde's first net remittance to France, expected to be BRL 179.5 million, is due in three months. The treasury team must decide how to fix the euro value of that receipt. The current spot rate is BRL 5.60 per EUR 1 and the three-month forward rate is BRL 5.66 per EUR 1. Annual money-market rates are: BRL deposit 10.0% and BRL borrowing 12.0%; EUR deposit 2.0% and EUR borrowing 3.5%. The board has asked which hedge secures the better locked-in euro receipt.
 
 **Exhibit 4 — Treasury organisation**
 
@@ -267,7 +269,7 @@ The fix is consistency: translate each year's remittance at the PPP-implied forw
 
 **Question:**
 
-(iii) Evaluate whether a forward contract or a money-market hedge secures the better guaranteed euro value for the first BRL 179.5 million remittance, and recommend which Solenne should use. (8 marks)
+(iii) Evaluate whether a forward contract or a money-market hedge secures the better locked-in euro value for the first BRL 179.5 million remittance, and recommend which Solenne should use. (8 marks)
 
 **answer_schema:** numeric AnswerSchema — 4 components: `forward_home`=31.713780918727913, `mmh_foreign_now`=174.27184466019418, `mmh_home_now`=31.119972260748963, `mmh_home_settlement`=31.275572122052704
 
@@ -279,7 +281,7 @@ The fix is consistency: translate each year's remittance at the PPP-implied forw
 
 **Step 1 — Forward hedge**
 
-BRL 179.5 converted at the forward rate 5.6600 = **EUR 31.7m**, guaranteed.
+BRL 179.5 converted at the forward rate 5.6600 = **EUR 31.7m**, locked in.
 
 **Step 2 — Money-market hedge**
 
@@ -287,7 +289,7 @@ Borrow the foreign currency now and deposit the home proceeds: BRL 174.3m today,
 
 **Step 3 — All-methods comparison and recommendation**
 
-| Method | Guaranteed EUR outcome |
+| Method | Locked-in EUR outcome |
 |------|------|
 | Forward | EUR 31.7m |
 | Money-market hedge | EUR 31.3m |
@@ -296,19 +298,19 @@ The forward gives the higher outcome, by **EUR 0.4m**, and is **recommended**.
 
 **Step 4 — Advice to the board**
 
-The forward contract secures the higher guaranteed euro receipt, EUR 31.7m against EUR 31.3m — a modest margin of about EUR 0.4m on roughly EUR 31.7m. Solenne should therefore opt for the forward contract: on so slim a margin the qualitative factors decide it, and the forward wins on operational simplicity — a single dealt rate, with none of the borrow-and-deposit legs the alternative requires — while the board should weigh the counterparty credit exposure a forward carries and confirm the balance-sheet treatment before dealing.
+The forward contract secures the higher locked-in euro receipt, EUR 31.7m against EUR 31.3m — a modest margin of about EUR 0.4m on roughly EUR 31.7m. Solenne should therefore opt for the forward contract: on so slim a margin the qualitative factors decide it, and the forward wins on operational simplicity — a single dealt rate, with none of the borrow-and-deposit legs the alternative requires — while the board should weigh the counterparty credit exposure a forward carries and confirm the balance-sheet treatment before dealing.
 
 *Reconciliation: forward EUR 31.7m vs MMH EUR 31.3m; margin EUR 0.4m to the forward ✓*
 
 **hint:**
 
-Price both hedges to a guaranteed euro figure and compare like with like. For the money-market hedge on a receipt, borrow reais now against the future receipt, convert at spot, and deposit euros — then set the two guaranteed euro amounts side by side and pick the higher.
+Price both hedges to a locked-in euro figure and compare like with like. For the money-market hedge on a receipt, borrow reais now against the future receipt, convert at spot, and deposit euros — then set the two locked-in euro amounts side by side and pick the higher.
 
 **full_reveal:**
 
-The common misconception here is judging the hedge on the headline forward rate rather than the guaranteed euro outcome: candidates compare the forward rate to spot instead of computing the euro amount each hedge actually locks.
+The common misconception here is judging the hedge on the headline forward rate rather than the locked-in euro outcome: candidates compare the forward rate to spot instead of computing the euro amount each hedge actually locks.
 
-The fix is to convert both routes to a guaranteed euro receipt and compare those figures directly; the forward secures the higher euro amount here, so it is preferred, though the margin is modest.
+The fix is to convert both routes to a locked-in euro receipt and compare those figures directly; the forward secures the higher euro amount here, so it is preferred, though the margin is modest.
 
 
 #### (iv) E1a — 6 marks — narrative (rubric-graded) — PS: commercial_acumen
@@ -370,7 +372,7 @@ Brecon's advisers built three demand scenarios for Firth Array, each with its ow
 
 **Exhibit 2 — Monte Carlo simulation output**
 
-Separately, the advisers ran a Monte Carlo simulation of the same Firth Array project with 10,000 iterations, allowing electricity price, turbine availability and construction cost to vary continuously. The simulation produced a mean (expected) NPV of GBP 44 million, a standard deviation of NPV of GBP 60 million, a probability of a negative NPV of 22%, and a project Value-at-Risk of GBP 52 million at the 95% confidence level. The board must decide whether Firth Array's risk profile is acceptable before committing the GBP 500 million.
+Separately, the advisers ran a Monte Carlo simulation of the same Firth Array project with 10,000 iterations, allowing electricity price, turbine availability and construction cost to vary continuously. The simulation produced a mean (expected) NPV of GBP 44 million, a standard deviation of NPV of GBP 60 million, a probability of a negative NPV of 22%, and a project Value-at-Risk of GBP 52 million at the 95% confidence level (expressed as a loss against a zero NPV, not as a shortfall below the mean NPV). The board must decide whether Firth Array's risk profile is acceptable before committing the GBP 500 million.
 
 ### Requirements
 
