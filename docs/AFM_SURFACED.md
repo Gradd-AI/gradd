@@ -14,6 +14,16 @@ content write. **P-DB2 applies — the exact statements below are shown before a
 Nothing has been written. Field values verified against the LIVE rows on 2026-07-28, not read off
 the review pack (packs are snapshots).
 
+**Source evidence for both edits:** `docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md` — the
+authentic blind-candidate script, banked 2026-07-28 as a **marking test fixture** (script body
+verbatim and frozen; hand-maintained framing preamble above it). It is also the standing fixture
+for the heavy-partial-credit marking case: Q3(i) carries ONE conceptual error (unexpired basis
+ignored → 4.95% vs a code-owned 4.80%) that fails **5 of 7** components on tolerance while the
+contract count, hedge direction, scenario reconciliation and committed advice are all correct.
+**The requirement's own self-check does not discriminate** — the candidate got 4.95% under BOTH
+rate scenarios and read the consistency as confirmation, because the omitted 0.15 basis applies
+identically to both legs. Marking must catch it; the candidate's internal check never will.
+
 ### EDIT 1 — b101 Exhibit 2: the VaR reference point is not stated
 
 **Evidence (not a hypothesis):** the blind candidate stated outright that the paper does not say
