@@ -73,6 +73,38 @@ defect, however inert it looks. A field the calculator never reads is exactly th
 else will catch. `scripts/_reauthor_boundary_drills.ts` is the reference implementation: it
 declares expected component AND param drift up front and refuses to write on anything else.
 
+**P-DB4(a) — the comparison must be KEY-ORDER-INSENSITIVE. `JSON.stringify` equality is an
+INVALID post-verify.** PostgreSQL `jsonb` does not preserve key order — it normalises on
+storage — so a byte comparison of serialised JSON cannot distinguish a reordering from a real
+change, and reports a mismatch on rows that are perfectly correct. Compare **key sets and
+values**: assert the key set is exactly what was intended (no missing, no extra) and compare
+each value with `Object.is`. Never diff serialised bytes.
+*Evidence (2026-07-28, mock-params re-serialisation):* the apply script's own read-back used
+`JSON.stringify` and reported `stored-matches-intent=false` on **all 5** rows. Every one was
+correct; the only difference was jsonb key order. A verifier that cries wolf on a clean write
+is worse than none — the next real defect gets waved through as "probably the ordering thing".
+
+**P-DB4(b) — the baseline must be READ FROM THE ROW pre-write. A transcribed figure is not a
+baseline.** Never take an expected value from a document, a review pack, a candidate script, a
+model answer's rendered prose, or hand arithmetic. Snapshot the row itself before the write and
+diff against that snapshot. A pack is a stale copy, rendered prose is rounded, and hand
+arithmetic silently disagrees with IEEE-754 in the last bits — each produces a **false** drift
+report indistinguishable from a real one.
+*Evidence (same write):* the corrected order-insensitive check then flagged two figures as
+drift — `asset_beta 0.9375 → 0.9374999999999999` and `forward_home …872792 → …8727913`. **Both
+were FALSE.** Neither figure had been in the pre-write dump; the baseline was typed from the
+candidate script's exact-rational hand arithmetic. Reconciled by recomputing from the stored
+inputs: `ungearBeta(1.35, 60, 40, 0.34, 0)` **is** `0.9374999999999999` (float: `40×0.66 =
+26.400000000000002`) and `179.5 / 5.66` **is** `31.713780918727913`. Those were the authored
+values all along; the write changed neither.
+
+**This is the FOURTH false positive of the bad-baseline / string-misattribution shape** in this
+workstream — after the `96.5`/`96.55` hit, the 259 unmatchable GATE-27 tokens, and the B3k
+`dedca530` re-author (the only one that reached published content). The common mechanism every
+time: **a figure was compared against something other than the row it came from.** P-DB5 is the
+general rule (reconcile a detector hit against real data before calling it a defect); P-DB4(a)
+and (b) are the two concrete ways a *post-verify* manufactures the same false positive.
+
 **P-DB3 — A rollback snapshot is mandatory, and it must be COMMITTED.** Before any write to a
 published row, snapshot every field the write touches, for every affected id, and commit it to
 `docs/rollbacks/<TOPIC>_<YYYYMMDD>.json` **on the branch that made the change**. Never leave it
