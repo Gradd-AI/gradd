@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+*Last refreshed: 2026-07-28 (recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the mock-params DB write is DRY-RUN ONLY, not applied; the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
@@ -62,7 +62,7 @@ a missing `recompute`. A silent drop would fall back to the authored expected va
 `incorrect`. `scripts/test-recompute-registry.ts` asserts registry ∪ unresolved covers the
 measured 92 with no overlap, so a new id nobody registered fails the suite.
 
-## ✅ SHIPPED 2026-07-28 — recompute registry, `subsumed` verdict, mock params re-serialised
+## ✅ SHIPPED 2026-07-28 — recompute registry + `subsumed` verdict (the mock-params WRITE is still PENDING)
 
 - **`lib/acca/recompute-registry.ts`** — 18 scoped ids, `(deps, params)`, each transcribed from
   the family module that writes it and calling that family's own exported helpers
@@ -74,8 +74,13 @@ measured 92 with no overlap, so a new id nobody registered fails the suite.
   stays zero, and `subsumed` is excluded from `all_correct`. Blast radius nil — `buildOfrProof`
   fills every component, so `absent` never fired in GATE 3, and the verdict appeared nowhere
   else in `lib/` or `scripts/`.
-- **The 5 mock numeric requirements re-serialised** (candidate / `published=false` /
-  `mock_only=true`) to add their discriminants. Every added value is **round-trip proven**: the
+- **🟠 NOT YET WRITTEN — the 5 mock numeric requirements are DRY-RUN ONLY.** P-DB2: the write
+  has been shown and is awaiting Grant's go. `scripts/_reserialise_mock_params.ts` (gitignored)
+  refuses to execute without `--apply`; all 5 rows pass every guard but **the DB is unchanged**,
+  so the stored schemas still lack their discriminants and `hydrateAnswerSchema` would throw on
+  four of the five. The acceptance fixture carries the params as literals for exactly this
+  reason. Rows are candidate / `published=false` /
+  `mock_only=true`. Every added value is **round-trip proven**: the
   registry recomputes each dependent from its authored upstream figures and reproduces the
   stored `expected_value` exactly, so a wrong discriminant fails the write. `parity_basis` is
   the one exception — `parityDifferential` uses the same formula for `ppp` and `irp`, so the
