@@ -1,0 +1,1025 @@
+{
+  "taken": "2026-07-28",
+  "topic": "AFM P7 misconception-lead fixes (8 published drills) + 51163dac register fix",
+  "doctrine": "P-DB3 — snapshot of every field this write touches, for every affected id, committed on the branch that made the change.",
+  "rows": [
+    {
+      "id": "f088daa5-5107-4d5b-b105-fc4a10a51ad1",
+      "lo_code": "E3a",
+      "model_answer": "**Interest-rate hedging — collar**\n\n**Assumptions:** a $ 40,000,000 deposit for 3 months. As a depositor's collar, the company **BUYS CALL options (strike 96.00) and SELLS PUT options (strike 95.50)**.\n\n**Step 1 — Options needed**\n\nBuy call (the protection) and sell put (to fund it) — the collar confines the outcome to a range.\n\n**Step 2 — Number of contracts**\n\nround(40,000,000 ÷ 500,000 × 3/3) = **80 contracts** (80.0).\n\n**Step 3 — Net premium**\n\nPremium paid $ 25,000.0 − premium received $ 10,000.0 = **$ 15,000.0** (each prorated by the 3/12 contract period).\n\n**Step 4 — Basis and expected price**\n\nBasis₀ = (100 − 4.00) − 95.90 = 0.10. With 3 months remaining of the contract's 6-month life, the unexpired basis = basis₀ 0.1000 × 3/6 months remaining = 0.0500. Expected closing price = 100 − base rate − unexpired basis. Basis is assumed to fall to zero at a constant (linear) rate by expiry — a simplifying assumption that may not hold in practice, so the outcome is exposed to basis risk.\n\n**Step 5 — Exercise decision per leg, and Step 6 — net effect**\n\n| Scenario | Closing price | Bought exercised | Sold exercised | Net | Effective |\n|---|---|---|---|---|---|\n| the base rate falls to 3.40% (base 3.40%) | 96.55 | yes | no | $ 360,000.0 | 3.60% |\n| the base rate rises to 4.80% (base 4.80%) | 95.15 | no | yes | $ 410,000.0 | 4.10% |\n\n**Step 7 — Advice to the board**\n\nThe collar confines the effective deposit return to a band between 3.60% (if the base rate falls to 3.40%, when the bought call protects the floor) and 4.10% (if it rises to 4.80%, when the sold put caps the gain). Its appeal over a plain purchased call is cost: selling the put brings the net premium down from 25,000 to 15,000, a saving of 10,000. But the treasurer's \"free hedge\" claim is wrong on two counts: the net premium is a real 15,000 cost, not zero, and the premium received is not free money — it is paid for by surrendering the upside above the cap. A plain call would let the return rise to 4.35% in the rising-rate scenario, where the collar is held to 4.10%, while flooring at 3.50% rather than 3.60%. The board is therefore trading a certain premium saving for forgone upside in the favourable scenario, and should also understand that writing the put is an obligation — the company can be exercised against if rates rise. Where the board is comfortable capping the upside to reduce the hedge cost, the collar is recommended; where full upside retention matters, the plain call is preferable.\n\n*Reconciliation: net premium $ 25,000.0 − $ 10,000.0 = $ 15,000.0 ✓*",
+      "full_reveal": "A collar answer earns its marks by following the sequence and then reading the trade-off. The sequence is: identify the two legs (a depositor buys a call for protection and sells a put to fund it), count the contracts, compute the net premium as the premium PAID less the premium RECEIVED, work the basis and the expected closing price, decide which leg (if any) is exercised in each rate scenario, and net the effect on the deposit return. The most common stall is stopping at the net premium; the next is mis-reading the sold leg as pure income rather than an obligation that can be exercised against you. The judgement the examiner wants is the comparison with a plain purchased call: the collar is cheaper because the sold put reduces the net premium, but that saving is bought by surrendering the upside above the cap — so the honest verdict weighs the certain premium saved against the forgone upside in the favourable scenario, and rejects the 'free hedge' framing. Carry your own contract count and net premium forward into both scenarios and into the comparison; a clear conditional recommendation, naming when the collar beats the plain call and when it does not, is what separates a top answer from a mechanically correct one.",
+      "answer_schema": {
+        "params": {
+          "notional": 40000000,
+          "base_rate": 3.4,
+          "buy_strike": 96,
+          "sell_strike": 95.5,
+          "hedge_months": 3,
+          "contract_size": 500000,
+          "buy_premium_pct": 0.25,
+          "contract_months": 3,
+          "sell_premium_pct": 0.1
+        },
+        "components": [
+          {
+            "unit": "contracts",
+            "label": "Number of option contracts (whole)",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.5
+            },
+            "component_id": "contracts",
+            "working_steps": [
+              "= round(40,000,000 ÷ 500,000 × 3/3)"
+            ],
+            "expected_value": 80
+          },
+          {
+            "unit": "$",
+            "label": "Premium PAID on the call bought",
+            "recompute": "irh_col_buyprem",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "contracts"
+            ],
+            "component_id": "buy_premium",
+            "working_steps": [
+              "= 0.25% × contracts × 500,000 × 3/12"
+            ],
+            "expected_value": 25000
+          },
+          {
+            "unit": "$",
+            "label": "Premium RECEIVED on the put sold",
+            "recompute": "irh_col_sellprem",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "contracts"
+            ],
+            "component_id": "sell_premium",
+            "working_steps": [
+              "= 0.10% × contracts × 500,000 × 3/12"
+            ],
+            "expected_value": 10000
+          },
+          {
+            "unit": "$",
+            "label": "Net premium (bought − received)",
+            "recompute": "irh_col_netprem",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "buy_premium",
+              "sell_premium"
+            ],
+            "component_id": "net_premium",
+            "working_steps": [
+              "= premium bought − premium received"
+            ],
+            "expected_value": 15000
+          },
+          {
+            "unit": "price",
+            "label": "Expected closing futures price (the base rate falls to 3.40%)",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.01
+            },
+            "component_id": "closing_price",
+            "working_steps": [
+              "= 100 − 3.40 − unexpired basis 0.0500"
+            ],
+            "expected_value": 96.55
+          },
+          {
+            "unit": "$",
+            "label": "Net return (the base rate falls to 3.40%)",
+            "recompute": "irh_col_net",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "net_premium",
+              "closing_price"
+            ],
+            "component_id": "net_outcome",
+            "working_steps": [
+              "= money-market interest + bought gain − sold payout − net premium"
+            ],
+            "expected_value": 359999.9999999997
+          }
+        ]
+      }
+    },
+    {
+      "id": "26a4167b-0167-4be5-aa57-ac64d09c208f",
+      "lo_code": "E3a",
+      "model_answer": "**Interest-rate hedging — swap (comparative advantage)**\n\n**Assumptions:** Aldbrook Resources plc can borrow fixed at 6.00% or floating at LIBOR + 0.40%; Corvale Manufacturing Ltd fixed at 7.50% or floating at LIBOR + 0.90%. Aldbrook Resources plc wants floating, Corvale Manufacturing Ltd wants the other. A bank intermediates for 0.20%.\n\n**Step 1 — The differentials**\n\nFixed differential = 1.50%; floating differential = 0.50%.\n\n**Step 2 — The saving to share**\n\nTotal gain = 1.50% − 0.50% = **1.00%**; after the bank's 0.20% fee, net gain = **0.80%**.\n\n**Step 3 — Each party's benefit and effective rate**\n\nAldbrook Resources plc: 0.40% → effective **LIBOR + 0.00%**. Corvale Manufacturing Ltd: 0.40% → effective **7.10%**.\n\n**Step 4 — Advice to the board**\n\nThe swap delivers a net saving of 0.80% after the bank's 0.20% fee, split so that Aldbrook Resources plc borrows at an effective LIBOR + 0.00% (against LIBOR + 0.40% standalone) and Corvale Manufacturing Ltd at an effective 7.10% fixed (against 7.50% standalone) — a 0.40% improvement for each party. The arrangement is only as sound as the counterparty rates it rests on: the whole 1.00% comparative-advantage gain assumes Corvale can genuinely borrow fixed at 7.50% and floating at LIBOR + 0.90%, and Aldbrook at 6.00% and LIBOR + 0.40%. If any of those quotes is merely indicative rather than a firm, arm's-length market rate — or if either party's credit standing shifts before the loans are drawn — the gross differential can shrink or vanish, and with it the saving. The board should require firm, dated quotations for all four rates and should assess the counterparty credit risk it takes on the swap itself over its five-year life. Subject to those confirmations, the swap is recommended for both parties.\n\n*Reconciliation: 1.50% − 0.50% − 0.20% = 0.80%, split 50/50 ✓*",
+      "full_reveal": "The comparative-advantage calculation is the easy part: the total gain available is the fixed-rate differential minus the floating-rate differential, and after the bank's fee it is split between the parties, each ending below its own standalone rate for the debt it actually wants. Where answers fall down is treating the quoted rates as gospel. The entire saving rests on the assumption that BOTH parties can genuinely borrow at all four quoted rates in the market at arm's length; if the weaker credit's fixed and floating quotes are merely indicative, or if either party's credit standing moves before the debt is drawn, the differential — and therefore the saving — can shrink or disappear. A strong answer states the split, shows each party's effective rate, and then interrogates the inputs: it asks for firm, dated quotations, flags the counterparty credit risk taken on the swap over its life, and only then recommends. The scepticism is not decoration; it is the difference between arithmetic and advice.",
+      "answer_schema": {
+        "params": {
+          "a_fixed": 6,
+          "b_fixed": 7.5,
+          "savings_split": 0.5,
+          "bank_fee_total": 0.2,
+          "a_floating_margin": 0.4,
+          "b_floating_margin": 0.9
+        },
+        "components": [
+          {
+            "unit": "%",
+            "label": "Fixed-rate differential",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "component_id": "fixed_diff",
+            "working_steps": [
+              "= |6.00 − 7.50|"
+            ],
+            "expected_value": 1.5
+          },
+          {
+            "unit": "%",
+            "label": "Floating-rate differential",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "component_id": "floating_diff",
+            "working_steps": [
+              "= |0.40 − 0.90|"
+            ],
+            "expected_value": 0.5
+          },
+          {
+            "unit": "%",
+            "label": "Total comparative-advantage gain",
+            "recompute": "irh_swap_gain",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "fixed_diff",
+              "floating_diff"
+            ],
+            "component_id": "total_gain",
+            "working_steps": [
+              "= fixed differential − floating differential"
+            ],
+            "expected_value": 1
+          },
+          {
+            "unit": "%",
+            "label": "Net gain after the bank fee",
+            "recompute": "irh_swap_netgain",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "total_gain"
+            ],
+            "component_id": "net_gain",
+            "working_steps": [
+              "= total gain − bank fee 0.20%"
+            ],
+            "expected_value": 0.8
+          },
+          {
+            "unit": "%",
+            "label": "Aldbrook Resources plc's benefit",
+            "recompute": "irh_swap_abenefit",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "net_gain"
+            ],
+            "component_id": "a_benefit",
+            "working_steps": [
+              "= net gain × 50%"
+            ],
+            "expected_value": 0.4
+          },
+          {
+            "unit": "%",
+            "label": "Corvale Manufacturing Ltd's benefit",
+            "recompute": "irh_swap_bbenefit",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "net_gain"
+            ],
+            "component_id": "b_benefit",
+            "working_steps": [
+              "= net gain × 50%"
+            ],
+            "expected_value": 0.4
+          }
+        ]
+      }
+    },
+    {
+      "id": "56989d69-bc4d-4768-b00f-8f533de2df35",
+      "lo_code": "E3a",
+      "model_answer": "**Interest-rate hedging — futures**\n\n**Assumptions:** a £ 24,000,000 loan runs for 4 months from a start date 3 months away; 3-month futures of size 500,000 expire in 6 months, base rate today 5.00%, futures price 94.60. A borrower must **SELL** the futures.\n\n**Step 1 — Number of contracts (amount AND period)**\n\n24,000,000 ÷ 500,000 × 4/3 = **64 contracts** (64.0, sell).\n\n**Step 2 — Basis and the expected closing price**\n\nBasis₀ = (100 − 5.00) − 94.60 = 0.40. With 3 months remaining of the contract's 6-month life, the unexpired basis = basis₀ 0.4000 × 3/6 months remaining = 0.2000. Expected closing futures price = 100 − expected rate − unexpired basis. Basis is assumed to fall to zero at a constant (linear) rate by expiry — a simplifying assumption that may not hold in practice, so the outcome is exposed to basis risk.\n\n**Step 3 — Outcome under each scenario**\n\n| Scenario | Actual rate | MM interest | Closing price | Futures P/(L) | Net | Effective |\n|---|---|---|---|---|---|---|\n| the base rate rises to 5.90% (base 5.90%) | 6.40% | £ 512,000.0 | 93.90 | £ 56,000.0 | £ 456,000.0 | 5.70% |\n| the base rate falls to 4.40% (base 4.40%) | 4.90% | £ 392,000.0 | 95.40 | £ -64,000.0 | £ 456,000.0 | 5.70% |\n\nThe hedge **locks an effective annual cost of 5.70%** — the same under every scenario.\n\n**Step 4 — Advice to the board**\n\nThe futures hedge locks an effective borrowing cost of 5.70% whether the base rate rises to 5.90% or falls to 4.40%, giving the board complete certainty over the four-month funding cost — its central merit for a company that needs a predictable cash outflow. That certainty has an opportunity cost: if the base rate fell, the company would forgo the cheaper unhedged cost of 4.90%, and the operations director's preference to stay unhedged is really a preference to keep that upside while bearing the risk of the 6.40% cost if rates rise. Before proceeding the board should confirm the futures' expiry aligns with the loan drawdown date, since any timing mismatch reintroduces the basis risk noted above, and should check that the margin and administrative costs of running the position do not erode the locked rate. Where predictability of the funding cost is the priority, the futures hedge is recommended.\n\n*Reconciliation: 64 contracts; effective rate 5.70% reconciles across all 2 scenario(s) ✓*",
+      "full_reveal": "Two failure modes dominate interest-rate futures answers. The first is mechanical: getting the number of contracts wrong by using the wrong period — the count must scale BOTH the amount hedged AND the ratio of the loan period to the contract period (here 4 months over a 3-month contract), and candidates who take the loan period as three months, or drop the period ratio entirely, mis-size the hedge and every downstream figure. The second is judgemental: producing the locked cost and stopping. The examiner is asking you to EVALUATE and RECOMMEND, so the calculation is only the floor — the marks above it come from explaining what the futures actually buy (certainty of the funding cost regardless of which way the base rate moves), what they cost (the flexibility to benefit if rates fall), and the conditions the board should attach (expiry alignment with the drawdown date, the margin and administrative cost, and the residual basis risk if basis does not decay linearly as assumed). If your contract count or basis is slightly off, carry your own figure forward consistently into the effective rate and the recommendation — own-figure credit is conditional on correct subsequent use, not automatic. Land on a clear verdict rather than leaving the board with arithmetic.",
+      "answer_schema": {
+        "params": {
+          "futures0": 94.6,
+          "notional": 24000000,
+          "base_rate": 5.9,
+          "spot_rate0": 5,
+          "hedge_months": 4,
+          "contract_size": 500000,
+          "company_spread": 0.5,
+          "contract_months": 3,
+          "months_to_expiry": 6,
+          "months_to_transaction": 3
+        },
+        "components": [
+          {
+            "unit": "contracts",
+            "label": "Number of futures contracts (whole)",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.5
+            },
+            "component_id": "contracts",
+            "working_steps": [
+              "= round(24,000,000 ÷ 500,000 × 4/3 months) — amount AND period"
+            ],
+            "expected_value": 64
+          },
+          {
+            "unit": "price",
+            "label": "Unexpired basis at the transaction date",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.01
+            },
+            "component_id": "unexpired_basis",
+            "working_steps": [
+              "basis₀ = (100 − 5.00) − 94.60 = 0.40; unexpired = basis₀ × 3/6"
+            ],
+            "expected_value": 0.20000000000000284
+          },
+          {
+            "unit": "price",
+            "label": "Expected closing futures price (the base rate rises to 5.90%)",
+            "recompute": "irh_closing_price",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.01
+            },
+            "depends_on": [
+              "unexpired_basis"
+            ],
+            "component_id": "closing_price",
+            "working_steps": [
+              "= 100 − 5.90 − unexpired basis"
+            ],
+            "expected_value": 93.89999999999999
+          },
+          {
+            "unit": "£",
+            "label": "Money-market interest (the base rate rises to 5.90%)",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "mm_interest",
+            "working_steps": [
+              "= 6.40% × 4/12 × 24,000,000"
+            ],
+            "expected_value": 512000
+          },
+          {
+            "unit": "£",
+            "label": "Futures profit/(loss) (the base rate rises to 5.90%)",
+            "recompute": "irh_futures_profit",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "contracts",
+              "closing_price"
+            ],
+            "component_id": "futures_profit",
+            "working_steps": [
+              "= (opening − closing)/100 × 500,000 × 3/12 × contracts"
+            ],
+            "expected_value": 56000.00000000023
+          },
+          {
+            "unit": "£",
+            "label": "Net cost (the base rate rises to 5.90%)",
+            "recompute": "irh_net",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "mm_interest",
+              "futures_profit"
+            ],
+            "component_id": "net_outcome",
+            "working_steps": [
+              "= money-market interest − futures profit"
+            ],
+            "expected_value": 455999.99999999977
+          },
+          {
+            "unit": "%",
+            "label": "Effective annual cost rate (locked)",
+            "recompute": "irh_effective",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "net_outcome"
+            ],
+            "component_id": "effective_rate",
+            "working_steps": [
+              "= net ÷ 24,000,000 × 12/4 × 100"
+            ],
+            "expected_value": 5.699999999999997
+          }
+        ]
+      }
+    },
+    {
+      "id": "f2817d06-8500-41c0-89ed-6e910f6b0d83",
+      "lo_code": "B1a",
+      "model_answer": "**Investment appraisal — net present value**\n\n**Assumptions:** cash flows are in money (nominal) terms; operating cash flows are inflated at 3.00% a year; tax at 26.50% is charged on operating cash flow less tax-allowable depreciation and is paid one year in arrears; tax-allowable depreciation is 30.00% reducing balance with a balancing allowance/charge on disposal in year 4; flows are discounted at a risk-adjusted rate of 11.00%.\n\n**Step 1 — Tax-allowable depreciation (reducing balance)**\n\n| Year | WDA |\n|------|-----|\n| 1 | CAD 15.6m |\n| 2 | CAD 10.9m |\n| 3 | CAD 7.6m |\n| 4 | CAD 13.3m |\n\n**Step 2 — Taxable profit and tax**\n\n| Year | Operating cash flow | WDA | Taxable | Tax |\n|------|------|------|------|------|\n| 1 | CAD 10.5m | CAD 15.6m | CAD -5.1m | CAD -1.3m |\n| 2 | CAD 15.7m | CAD 10.9m | CAD 4.8m | CAD 1.3m |\n| 3 | CAD 19.1m | CAD 7.6m | CAD 11.5m | CAD 3.0m |\n| 4 | CAD 18.0m | CAD 13.3m | CAD 4.7m | CAD 1.2m |\n\n**Step 3 — Net cash flows and present values**\n\n| Period | Net cash flow | DF @ 11.00% | Present value |\n|--------|------|------|------|\n| 0 | CAD -52.0m | 1.000 | CAD -52.0m |\n| 1 | CAD 10.5m | 0.901 | CAD 9.5m |\n| 2 | CAD 17.1m | 0.812 | CAD 13.8m |\n| 3 | CAD 17.9m | 0.731 | CAD 13.1m |\n| 4 | CAD 19.5m | 0.659 | CAD 12.8m |\n| 5 | CAD -1.2m | 0.593 | CAD -0.7m |\n\n**Present value of future cash flows CAD 48.4m; less initial outlay CAD 52.0m; NPV CAD -3.6m.**\n\n**Step 4 — Decision**\n\nThe NPV of CAD -3.6m is **negative**, so on these assumptions the project **destroys value and should be rejected** as it stands.\n\n**Step 5 — Advice to the board**\n\nOn these assumptions the NPV is negative, so the base-case recommendation is to **reject** the project as it stands; the board should treat rejection as the default unless the assumptions below prove materially conservative.\n\nThe operating cash flows embed revenue from supply contracts that remain unsigned at the appraisal date; if even one is delayed or lost the Year 2–3 inflows could fall well below forecast, so the board should require either a probability-weighted scenario set or a base case that excludes unsigned-contract revenue before reconsidering. The discount rate is drawn from a broad North American peer-group beta, yet the company operates only in domestic provincial markets with distinct reimbursement and regulatory risks such a peer set may underweight; the board should require confirmation of whether any jurisdiction-specific premium has been added and, if not, model the decision at a modestly higher rate. The residual value assumes a functioning secondary market for specialised equipment at the end of the horizon; the board should obtain at least one independent valuation before relying on it, as a lower realisation would further weaken the terminal-year inflow. The strategic value of securing in-house manufacturing after the current supply agreement lapses is a genuine consideration, but it does not offset a negative NPV on its own and cannot substitute for contract-by-contract revenue validation before any commitment.\n\n*Reconciliation: present value of future cash flows CAD 48.4m − initial outlay CAD 52.0m = NPV CAD -3.6m ✓*",
+      "full_reveal": "The classic failure here is FENCE-SITTING fused with UNDEVELOPED-ASSUMPTION: candidates compute the NPV, note it is negative, write \"reject,\" and stop — as if the arithmetic were the advice. A board committing CAD 52m needs to know which assumptions are fragile and what action to take on each, not merely what the central case implies. The second trap is listing assumptions — unsigned contracts, the discount rate, the residual value — without developing why each is structurally uncertain here: unsigned contracts mean the revenue base is not contractually locked in, a broad North American peer-group beta may not price the domestic regulatory and reimbursement risk, and a quoted residual value is only as reliable as an independent secondary-market valuation. The correct mental model treats every major assumption as a decision gate: for each, tell the board what evidence it must require before the assumption can be relied upon, because an assumption that cannot be verified before commitment is a risk the NPV silently absorbs. Finally, if your depreciation schedule or your inflation of the cash flows went wrong, carry your own figures forward consistently into the NPV and the recommendation — where your downstream method is sound those marks remain available, and the error is charged once at its source.",
+      "answer_schema": {
+        "params": {
+          "tax_lag": 1,
+          "tax_rate": 0.265,
+          "wda_rate": 0.3,
+          "scrap_value": 4.5,
+          "discount_rate": 0.11,
+          "inflation_rate": 0.03,
+          "initial_outlay": 52,
+          "capital_for_wda": 52
+        },
+        "components": [
+          {
+            "unit": "CADm",
+            "label": "Net after-tax cash flow, year 1",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_1",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 1"
+            ],
+            "expected_value": 10.506
+          },
+          {
+            "unit": "CADm",
+            "label": "Net after-tax cash flow, year 2",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_2",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 2"
+            ],
+            "expected_value": 17.05123
+          },
+          {
+            "unit": "CADm",
+            "label": "Net after-tax cash flow, year 3",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_3",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 3"
+            ],
+            "expected_value": 17.855672700000003
+          },
+          {
+            "unit": "CADm",
+            "label": "Net after-tax cash flow, year 4",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_4",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) + scrap for year 4"
+            ],
+            "expected_value": 19.4662794975
+          },
+          {
+            "unit": "CADm",
+            "label": "Net after-tax cash flow, year 5",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_5",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 5"
+            ],
+            "expected_value": -1.238117354400001
+          },
+          {
+            "unit": "CADm",
+            "label": "Present value, year 1",
+            "recompute": "pv_discount_y1",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_1"
+            ],
+            "component_id": "pv_1",
+            "working_steps": [
+              "= ncf_1 × 0.901 (discount factor at 11.00%)"
+            ],
+            "expected_value": 9.464864864864865
+          },
+          {
+            "unit": "CADm",
+            "label": "Present value, year 2",
+            "recompute": "pv_discount_y2",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_2"
+            ],
+            "component_id": "pv_2",
+            "working_steps": [
+              "= ncf_2 × 0.812 (discount factor at 11.00%)"
+            ],
+            "expected_value": 13.839160782404024
+          },
+          {
+            "unit": "CADm",
+            "label": "Present value, year 3",
+            "recompute": "pv_discount_y3",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_3"
+            ],
+            "component_id": "pv_3",
+            "working_steps": [
+              "= ncf_3 × 0.731 (discount factor at 11.00%)"
+            ],
+            "expected_value": 13.055913985570669
+          },
+          {
+            "unit": "CADm",
+            "label": "Present value, year 4",
+            "recompute": "pv_discount_y4",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_4"
+            ],
+            "component_id": "pv_4",
+            "working_steps": [
+              "= ncf_4 × 0.659 (discount factor at 11.00%)"
+            ],
+            "expected_value": 12.82304125636702
+          },
+          {
+            "unit": "CADm",
+            "label": "Present value, year 5",
+            "recompute": "pv_discount_y5",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_5"
+            ],
+            "component_id": "pv_5",
+            "working_steps": [
+              "= ncf_5 × 0.593 (discount factor at 11.00%)"
+            ],
+            "expected_value": -0.7347623882610297
+          },
+          {
+            "unit": "CADm",
+            "label": "Net present value",
+            "recompute": "npv_sum_less_outlay",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "pv_1",
+              "pv_2",
+              "pv_3",
+              "pv_4",
+              "pv_5"
+            ],
+            "component_id": "npv",
+            "working_steps": [
+              "= Σ present values − initial outlay 52.0"
+            ],
+            "expected_value": -3.5517814990544565
+          }
+        ]
+      }
+    },
+    {
+      "id": "7db140ed-eaf5-417e-8683-62769370753c",
+      "lo_code": "B3f",
+      "model_answer": "**Bond duration — interest-rate exposure**\n\n**Assumptions:** each bond is priced at its stated flat yield to maturity; coupons are annual; the modified duration is Macaulay ÷ (1 + y). Duration measures interest-rate exposure — the modified duration is the approximate % change in price for a 1% (100 bp) change in yield: ΔP/P ≈ −modified × Δy.\n\n**Step 1 — Facility A — Short-Haul Fleet Bond: price, Σ t·PV and duration**\n\n| Year | Cash flow | DF @ 7.00% | PV | t·PV |\n|------|------|------|------|------|\n| 1 | USD 6.0m | 0.935 | USD 5.6m | USD 5.6m |\n| 2 | USD 6.0m | 0.873 | USD 5.2m | USD 10.5m |\n| 3 | USD 6.0m | 0.816 | USD 4.9m | USD 14.7m |\n| 4 | USD 106.0m | 0.763 | USD 80.9m | USD 323.5m |\n| **Totals** | | | **USD 96.6m** | **USD 354.2m** |\n\nMacaulay = USD 354.2m ÷ USD 96.6m = **3.667 years**; modified = 3.667 ÷ (1 + 7.00%) = **3.427 years**.\n\n**Step 2 — Facility B — Long-Haul Fleet Bond: price, Σ t·PV and duration**\n\n| Year | Cash flow | DF @ 7.00% | PV | t·PV |\n|------|------|------|------|------|\n| 1 | USD 5.0m | 0.935 | USD 4.7m | USD 4.7m |\n| 2 | USD 5.0m | 0.873 | USD 4.4m | USD 8.7m |\n| 3 | USD 5.0m | 0.816 | USD 4.1m | USD 12.2m |\n| 4 | USD 5.0m | 0.763 | USD 3.8m | USD 15.3m |\n| 5 | USD 5.0m | 0.713 | USD 3.6m | USD 17.8m |\n| 6 | USD 5.0m | 0.666 | USD 3.3m | USD 20.0m |\n| 7 | USD 5.0m | 0.623 | USD 3.1m | USD 21.8m |\n| 8 | USD 5.0m | 0.582 | USD 2.9m | USD 23.3m |\n| 9 | USD 105.0m | 0.544 | USD 57.1m | USD 514.0m |\n| **Totals** | | | **USD 87.0m** | **USD 637.8m** |\n\nMacaulay = USD 637.8m ÷ USD 87.0m = **7.334 years**; modified = **6.854 years**.\n\n**Step 3 — Ranking interest-rate exposure (code-owned)**\n\nFacility B — Long-Haul Fleet Bond has the **higher modified duration** (6.854 vs 3.427 years), so it is the **more exposed** to a rise in yields — a 1% rate rise moves its fair value by roughly 6.854%, versus 3.427% for the other. Hedge or shorten that exposure first.\n\n**Step 4 — Evaluation / advice to the board**\n\nTürkiye Kanatları A.Ş. has deliberately denominated both facilities in USD to sidestep the acute financing costs that accompany Turkish lira debt in the current high-rate domestic environment, anchoring debt service to the airline's hard-currency revenue stream. The longer tenor of Facility B reflects the extended economic life of the longer-lived fleet assets it finances — a structurally sound match between asset life and liability maturity, yet one that carries a material duration consequence the board must weigh before committing to any swap. The coupon on Facility B is set below that of Facility A, which compounds the duration differential: lower periodic cash flows push the centre of gravity of repayment further into the future, amplifying sensitivity to any movement in USD yields. The board should recognise that the single flat-yield assumption is a snapshot — if the USD yield curve steepens rather than shifts in parallel, the sensitivity estimate for the longer facility will differ from the linear approximation, because duration cannot capture the curvature (convexity) of the price-yield relationship; for a large upward shift, the true fair-value decline of the longer-dated facility will be less severe than the modified-duration estimate implies, since positive convexity causes the price-yield curve to bow favourably. The board should also weigh the trade-off inherent in the hedge itself: a receive-fixed/pay-floating swap neutralises the fair-value interest-rate risk on a fixed-rate facility but replaces it with floating-rate cash-flow risk, so the board must first decide which of the two — fair-value volatility or cash-flow certainty — it is actually managing. Before authorising an interest-rate swap on either facility, the board should confirm whether IFRS 9 hedge-effectiveness requirements can be met given TK's cross-currency exposure and the basis risk between the USD swap curve and the specific syndicated-loan pricing grid.\n\n*(Modified duration is a linear, small-yield-change approximation; for a large shift the convex price–yield curve makes the true move differ — see the limitations of duration.)*\n\n*Reconciliation: Facility A — Short-Haul Fleet Bond modified 3.427y vs Facility B — Long-Haul Fleet Bond modified 6.854y — more exposed = Facility B — Long-Haul Fleet Bond. ✓*",
+      "full_reveal": "The dominant failure here is ABANDONED-AFTER-CALC: candidates complete the duration tables and produce two modified-duration figures, then stop — leaving the board with numbers but no verdict and no strategic direction. That is the wrong mental model because duration is not an end in itself; modified duration is a sensitivity coefficient, and its value lies entirely in the comparison it enables and the hedging or refinancing decision it should drive. A second, related trap is UNDEVELOPED-ASSUMPTION: candidates state that \"lower coupons increase duration\" or \"longer tenor increases duration\" as bare assertions, without explaining the causal mechanism — that lower periodic cash flows shift the present-value centre of gravity toward the terminal principal repayment, stretching the weighted-average time to receipt and amplifying price sensitivity to any yield movement. If your duration figures contain an arithmetic slip, carry them forward consistently into the modified-duration step and the ranking — where the downstream method is correct, those marks are still available, but only if your own figure is used correctly and coherently throughout. The boardroom move this drill is testing is the pivot from calculation to recommendation: once you have ranked the two facilities by modified duration, you must tell the board which exposure to hedge or shorten first, and flag that the linear duration approximation may understate or overstate the true price move for a large yield shift because it cannot capture the curvature of the price-yield relationship.",
+      "answer_schema": {
+        "params": {
+          "ytm": 0.07,
+          "freq": 1,
+          "maturity": 4,
+          "face_value": 100,
+          "coupon_rate": 0.06,
+          "yield_shift": 0
+        },
+        "components": [
+          {
+            "unit": "USDm",
+            "label": "Facility A — Short-Haul Fleet Bond — price (Σ PV)",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "a_price",
+            "working_steps": [
+              "Σ of each cash flow discounted at the YTM"
+            ],
+            "expected_value": 96.61278874353604
+          },
+          {
+            "unit": "USDm·yr",
+            "label": "Facility A — Short-Haul Fleet Bond — Σ t·PV",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "a_weighted_sum",
+            "working_steps": [
+              "Σ (year × discounted cash flow)"
+            ],
+            "expected_value": 354.2496730669785
+          },
+          {
+            "unit": "years",
+            "label": "Facility A — Short-Haul Fleet Bond — Macaulay duration",
+            "recompute": "macaulay_ratio",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "a_weighted_sum",
+              "a_price"
+            ],
+            "component_id": "a_macaulay",
+            "working_steps": [
+              "= Σ t·PV ÷ price"
+            ],
+            "expected_value": 3.666695451751773
+          },
+          {
+            "unit": "years",
+            "label": "Facility A — Short-Haul Fleet Bond — modified duration",
+            "recompute": "modified_from_macaulay",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "a_macaulay"
+            ],
+            "component_id": "a_modified",
+            "working_steps": [
+              "= Macaulay ÷ (1 + y)"
+            ],
+            "expected_value": 3.4268181792072645
+          },
+          {
+            "unit": "USDm",
+            "label": "Facility B — Long-Haul Fleet Bond — price (Σ PV)",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "b_price",
+            "working_steps": [
+              "Σ of each cash flow discounted at the YTM"
+            ],
+            "expected_value": 86.9695355024042
+          },
+          {
+            "unit": "USDm·yr",
+            "label": "Facility B — Long-Haul Fleet Bond — Σ t·PV",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "b_weighted_sum",
+            "working_steps": [
+              "Σ (year × discounted cash flow)"
+            ],
+            "expected_value": 637.8185699654762
+          },
+          {
+            "unit": "years",
+            "label": "Facility B — Long-Haul Fleet Bond — Macaulay duration",
+            "recompute": "macaulay_ratio",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "b_weighted_sum",
+              "b_price"
+            ],
+            "component_id": "b_macaulay",
+            "working_steps": [
+              "= Σ t·PV ÷ price"
+            ],
+            "expected_value": 7.333815988333573
+          },
+          {
+            "unit": "years",
+            "label": "Facility B — Long-Haul Fleet Bond — modified duration",
+            "recompute": "modified_from_macaulay",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.05
+            },
+            "depends_on": [
+              "b_macaulay"
+            ],
+            "component_id": "b_modified",
+            "working_steps": [
+              "= Macaulay ÷ (1 + y)"
+            ],
+            "expected_value": 6.854033633956609
+          }
+        ]
+      }
+    },
+    {
+      "id": "1c133573-44b3-4c78-b38e-5d0e0646e0cf",
+      "lo_code": "E3a",
+      "model_answer": "**Interest-rate hedging — options on futures**\n\n**Assumptions:** a € 60,000,000 deposit for 3 months; 3-month options of size 500,000 at strike 96.75, premium 0.20%. A depositor **BUYS CALL options** — never sells/writes options.\n\n**Step 1 — Contracts and premium**\n\nBuy **120 call options** (120.0). Premium = 0.20% × 120 × 500,000 × 3/12 = **€ 30,000.0** (prorated by the contract period — an option premium, unlike a currency-option premium, carries the contract-period fraction).\n\n**Step 2 — Basis and exercise decision per scenario**\n\nBasis₀ = (100 − 3.00) − 96.80 = 0.20. With 3 months remaining of the contract's 6-month life, the unexpired basis = basis₀ 0.2000 × 3/6 months remaining = 0.1000. Each scenario's expected closing price = 100 − expected rate − unexpired basis; a call is exercised when the price is ABOVE the strike 96.75. Basis is assumed to fall to zero at a constant (linear) rate by expiry — a simplifying assumption that may not hold in practice, so the outcome is exposed to basis risk.\n\n| Scenario | Closing price | Decision | Option gain | Net | Effective |\n|---|---|---|---|---|---|\n| the base rate falls to 2.40% (base 2.40%) | 97.50 | exercise | € 112,500.0 | € 405,000.0 | 2.70% |\n| the base rate rises to 3.60% (base 3.60%) | 96.30 | lapse | € 0.0 | € 472,500.0 | 3.15% |\n\nUnlike a futures lock, the option leaves a **range** of outcomes — it caps the downside while preserving the upside if rates move favourably. Basis is assumed to fall to zero at a constant (linear) rate by expiry — a simplifying assumption that may not hold in practice, so the outcome is exposed to basis risk.\n\n**Step 3 — Advice to the board**\n\nUnlike a futures lock, the call option leaves the effective return free to vary between 2.70% if the base rate falls to 2.40% — the floor the option guarantees — and 3.15% if it rises to 3.60%, when the option lapses and the company keeps the higher deposit return net of the premium. The option's value therefore lies in preserving the upside: the board pays the premium for the right, not the obligation, to protect the return, and that asymmetry is worth more the more volatile the base rate is expected to be — so the board member's blanket claim that options are \"always too expensive\" is not supported once the floor and the retained upside are priced against the premium. The board should confirm the option's expiry matches the deposit date and that exchange margin requirements are acceptable. Where the board expects rate volatility and values flexibility over certainty, the option is recommended; where certainty of return is paramount, a futures hedge would lock the rate without a premium.\n\n*Reconciliation: premium € 30,000.0 = 0.20% × 120 × 500,000 × 3/12 ✓*",
+      "full_reveal": "The defining feature of an options hedge — and the thing weak answers miss — is that it does NOT lock a single rate the way futures do: it sets a floor (for a depositor) while leaving the upside open, so the effective return is a RANGE, not a point. Candidates who treat the option like a futures contract and quote one outcome have misunderstood the instrument. The two common plumbing slips are selling the option rather than buying it (a hedge BUYS the option — a depositor buys a call), and prorating or not prorating the premium wrongly: an interest-rate option premium is the quoted rate times the contracts times the contract size times the contract-period fraction (three-twelfths here), which is a genuinely different convention from a currency option's all-in premium, so importing the wrong one distorts the cost. Above the arithmetic, the board is asking whether the premium is worth paying, which means comparing the cost of the premium against the value of the retained upside given expected volatility — a blanket 'options are too expensive' assertion is exactly the claim the evaluation is meant to test, not accept. Carry your own contract count and premium forward consistently, and end on a conditional recommendation that names what would change the answer (the volatility the board expects, expiry alignment, margin terms).",
+      "answer_schema": {
+        "params": {
+          "notional": 60000000,
+          "base_rate": 2.4,
+          "premium_pct": 0.2,
+          "hedge_months": 3,
+          "strike_price": 96.75,
+          "contract_size": 500000,
+          "contract_months": 3
+        },
+        "components": [
+          {
+            "unit": "contracts",
+            "label": "Number of option contracts (whole)",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.5
+            },
+            "component_id": "contracts",
+            "working_steps": [
+              "= round(60,000,000 ÷ 500,000 × 3/3)"
+            ],
+            "expected_value": 120
+          },
+          {
+            "unit": "€",
+            "label": "Total premium (call options bought)",
+            "recompute": "irh_opt_premium",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "contracts"
+            ],
+            "component_id": "premium",
+            "working_steps": [
+              "= 0.20% × contracts × 500,000 × 3/12 (prorated by the contract period)"
+            ],
+            "expected_value": 30000
+          },
+          {
+            "unit": "price",
+            "label": "Expected closing futures price (the base rate falls to 2.40%)",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.01
+            },
+            "component_id": "closing_price",
+            "working_steps": [
+              "= 100 − 2.40 − unexpired basis 0.1000"
+            ],
+            "expected_value": 97.5
+          },
+          {
+            "unit": "€",
+            "label": "Option gain if exercised (the base rate falls to 2.40%)",
+            "recompute": "irh_opt_payoff",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "contracts",
+              "closing_price"
+            ],
+            "component_id": "option_payoff",
+            "working_steps": [
+              "call exercised iff price > strike 96.75; gain = |price − strike|/100 × size × 3/12 × contracts"
+            ],
+            "expected_value": 112500
+          },
+          {
+            "unit": "€",
+            "label": "Net return (the base rate falls to 2.40%)",
+            "recompute": "irh_opt_net",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "option_payoff",
+              "premium"
+            ],
+            "component_id": "net_outcome",
+            "working_steps": [
+              "= money-market interest + option gain − premium"
+            ],
+            "expected_value": 405000
+          }
+        ]
+      }
+    },
+    {
+      "id": "003ab45c-a529-4ec4-b28a-651b5ea8b525",
+      "lo_code": "B1c",
+      "model_answer": "**Investment appraisal — internal rate of return**\n\n**Assumptions:** cash flows are in money (nominal) terms; operating cash flows are inflated at 5.00% a year; tax at 27.00% is charged on operating cash flow less tax-allowable depreciation and paid one year in arrears; tax-allowable depreciation is 20.00% reducing balance with a balancing allowance/charge on disposal in year 4; the cost of capital is 14.00%.\n\n**Step 1 — Tax-allowable depreciation (reducing balance)**\n\n| Year | WDA |\n|------|-----|\n| 1 | ZAR 76.0m |\n| 2 | ZAR 60.8m |\n| 3 | ZAR 48.6m |\n| 4 | ZAR 164.6m |\n\n**Step 2 — Taxable profit and tax**\n\n| Year | Operating cash flow | WDA | Taxable | Tax |\n|------|------|------|------|------|\n| 1 | ZAR 199.5m | ZAR 76.0m | ZAR 123.5m | ZAR 33.3m |\n| 2 | ZAR 242.6m | ZAR 60.8m | ZAR 181.8m | ZAR 49.1m |\n| 3 | ZAR -150.5m | ZAR 48.6m | ZAR -199.1m | ZAR -53.8m |\n| 4 | ZAR 206.6m | ZAR 164.6m | ZAR 42.1m | ZAR 11.4m |\n\n**Step 3 — Net cash flows**\n\n| Period | Net cash flow |\n|--------|------|\n| 0 | ZAR -400.0m |\n| 1 | ZAR 199.5m |\n| 2 | ZAR 209.2m |\n| 3 | ZAR -199.6m |\n| 4 | ZAR 290.4m |\n| 5 | ZAR -11.4m |\n\n**Step 4 — Internal rate of return (linear interpolation)**\n\nNPV at 5.00% = ZAR 37.4m; NPV at 10.00% = ZAR -4.4m.\n\n**IRR ≈ 5.00% + ZAR 37.4m/(ZAR 37.4m − ZAR -4.4m) × (10.00% − 5.00%) = 9.48%.**\n\nBecause the net cash flows change sign more than once, this project can have **multiple IRRs** (or none), so a single interpolated IRR is unreliable here. The NPV at the 14.00% cost of capital is ZAR -32.7m — **NPV governs the decision**, not IRR.\n\n**Step 5 — Decision**\n\nThe NPV of ZAR -32.7m is negative, so on these assumptions the project **destroys value and should be rejected** as it stands.\n\n**Step 6 — Advice to the board**\n\nOn these assumptions the return is below the hurdle, so the base-case recommendation is to **reject**; the board should treat rejection as the default unless the assumptions below prove materially conservative.\n\nThe board should treat the internal rate of return with caution here, not as the headline it usually is: because the net cash flows change sign more than once — outflow now, inflows, a mid-life outflow for the pit-cutback, then inflows again — the project can have more than one internal rate of return (or none), so a single quoted rate is unreliable and the net present value at the cost of capital should govern the decision. On the inputs, the Year 3 cutback cost is an engineering estimate that has overrun before, and a larger overrun pushes that year further negative and reshapes the whole profile, so the board should require a sensitivity on the cutback cost and a downside gold-price case before committing. The residual value is a management figure that should be independently valued. Before treating the depreciation timing as settled, the board should confirm the correct tax classification of the mining assets.\n\n*Reconciliation: NPV at 5.00% ZAR 37.4m and at 10.00% ZAR -4.4m bracket the IRR 9.48%.*",
+      "full_reveal": "The dominant misconception is quoting one internal rate of return for a project whose cash flows change sign more than once. An internal rate of return is a root of the net-present-value equation; when the sign of the net cash flows flips more than once — here an initial outflow, inflows, a mid-life cutback outflow, then inflows — that equation can have several roots or none, so a single interpolated rate is not a reliable decision signal. The correct mental model is that net present value at the cost of capital is well-behaved regardless of sign changes and should govern the decision; the modified internal rate of return, which collapses the flows to one terminal value and one present value, is the sounder single rate if a rate is wanted. The second trap is taking the Year 3 cutback cost as fixed when it is an engineering estimate with a history of overruns — the board should see a sensitivity on it. On the mechanics, if your net cash flows differ from the model, carry your own figures consistently into the net present value and any interpolation — the method still scores, and the error is charged once at its source.",
+      "answer_schema": {
+        "params": {
+          "r_hi": 0.1,
+          "r_lo": 0.05,
+          "tax_lag": 1,
+          "tax_rate": 0.27,
+          "wda_rate": 0.2,
+          "scrap_value": 30,
+          "reinvest_rate": 0.14,
+          "inflation_rate": 0.05,
+          "initial_outlay": 400,
+          "capital_for_wda": 380,
+          "cost_of_capital": 0.14
+        },
+        "components": [
+          {
+            "unit": "ZARm",
+            "label": "Net after-tax cash flow, year 1",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_1",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 1"
+            ],
+            "expected_value": 199.5
+          },
+          {
+            "unit": "ZARm",
+            "label": "Net after-tax cash flow, year 2",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_2",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 2"
+            ],
+            "expected_value": 209.205
+          },
+          {
+            "unit": "ZARm",
+            "label": "Net after-tax cash flow, year 3",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_3",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 3"
+            ],
+            "expected_value": -199.56375000000003
+          },
+          {
+            "unit": "ZARm",
+            "label": "Net after-tax cash flow, year 4",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_4",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) + scrap for year 4"
+            ],
+            "expected_value": 290.40150000000006
+          },
+          {
+            "unit": "ZARm",
+            "label": "Net after-tax cash flow, year 5",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "ncf_5",
+            "working_steps": [
+              "Operating cash flow (inflated) − tax (timed) for year 5"
+            ],
+            "expected_value": -11.36053687500001
+          },
+          {
+            "unit": "ZARm",
+            "label": "NPV at 5.00%",
+            "recompute": "npv_at_rate",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_1",
+              "ncf_2",
+              "ncf_3",
+              "ncf_4",
+              "ncf_5"
+            ],
+            "component_id": "npv_lo",
+            "working_steps": [
+              "Σ ncf_p × discount factor at 5.00% − outlay 400.0"
+            ],
+            "expected_value": 37.37718631346286
+          },
+          {
+            "unit": "ZARm",
+            "label": "NPV at 10.00%",
+            "recompute": "npv_at_rate",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "ncf_1",
+              "ncf_2",
+              "ncf_3",
+              "ncf_4",
+              "ncf_5"
+            ],
+            "component_id": "npv_hi",
+            "working_steps": [
+              "Σ ncf_p × discount factor at 10.00% − outlay 400.0"
+            ],
+            "expected_value": -4.3807361487976095
+          },
+          {
+            "unit": "%",
+            "label": "Internal rate of return",
+            "recompute": "irr_interpolate",
+            "tolerance": {
+              "kind": "absolute",
+              "value": 0.2
+            },
+            "depends_on": [
+              "npv_lo",
+              "npv_hi"
+            ],
+            "component_id": "irr",
+            "working_steps": [
+              "= 5.00% + npv_lo/(npv_lo − npv_hi) × (10.00% − 5.00%)"
+            ],
+            "expected_value": 9.475460476660832
+          }
+        ]
+      }
+    },
+    {
+      "id": "51163dac-3b7b-4c5c-bd43-b2e362279a23",
+      "lo_code": "E2b",
+      "model_answer": "**FX hedging — forward vs money-market hedge**\n\n**Assumptions:** a USD 8.5 receipt is due in 5 months, quoted PEN per 1 USD. The forward rate for the period is stated at 3.7400. The money-market hedge would borrow the foreign currency now and deposit the home proceeds, using today's spot of 3.8200.\n\n**Step 1 — Forward hedge**\n\nUSD 8.5 converted at the forward rate 3.7400 = **PEN 31.8m**, guaranteed.\n\n**Step 2 — Money-market hedge**\n\nBorrow the foreign currency now and deposit the home proceeds: USD 8.3m today, converted at spot to PEN 31.7m, then grown to **PEN 32.7m** by the settlement date.\n\n**Step 3 — All-methods comparison and recommendation**\n\n| Method | Guaranteed PEN outcome |\n|------|------|\n| Forward | PEN 31.8m |\n| Money-market hedge | PEN 32.7m |\n\nThe money-market hedge gives the higher outcome, by **PEN 0.9m**, and is **recommended**.\n\n**Step 4 — Advice to the board**\n\nThe most fragile assumption in this analysis is that the stated five-month forward rate of PEN 3.74 per USD 1 remains available and binding at the point of execution — in practice, the bank is an OTC counterparty and the quoted rate is indicative until a formal ISDA or equivalent master agreement is signed, so the board must confirm the rate in writing before regarding it as locked. Under the money-market hedge, the key vulnerability is the USD borrowing rate: if Campiña Andina S.A. cannot actually access USD credit at the assumed rate — because its credit standing with a US correspondent bank is unverified — the PEN proceeds from the hedge will be lower than computed. The interest-rate differential between Peru and the United States is the mechanical driver of any gap between the two hedge outcomes, and since Peruvian rates are materially higher, the board should verify that the deposit rates assumed here are achievable on a five-month PEN term deposit with a creditworthy institution, rather than a promotional rate. Before committing, the board should also confirm that no covenant or working-capital restriction prevents Campiña Andina S.A. from borrowing in USD for the hedging period, and that the AgriSource LLC payment will arrive on the assumed date, since any delay would leave the money-market structure partially unhedged.\n\n*Reconciliation: forward PEN 31.8m vs MMH PEN 32.7m; margin PEN 0.9m to the money-market hedge ✓*",
+      "full_reveal": "The classic failure here is FENCE-SITTING combined with UNDEVELOPED-ASSUMPTION: candidates compare the two hedge outcomes in the table, note which figure is larger, and then stop — as if the higher number self-evidently settles the matter. That is the floor of the answer, not the ceiling. A board memo must cross the threshold from \"here are the numbers\" to \"here is what we recommend, and here is why the assumptions behind those numbers deserve scrutiny before you sign.\" The undeveloped-assumption trap bites hardest in the advisory layer: stating that the forward rate is \"indicative\" or that the USD borrowing rate is \"assumed\" adds zero value unless you explain what would happen to the conclusion if those assumptions broke — for instance, that if Campiña Andina S.A. cannot access USD credit at the assumed rate, the money-market proceeds narrow, potentially reversing the ranking. The correct mental model is that a hedge evaluation has three layers — mechanical calculation, assumption stress-test, and a clear recommendation — and the marks for the third layer are only reachable once you have committed to a view and defended it against the scenario's specific vulnerabilities. If your numbers went wrong earlier, carry them forward consistently into the comparison and recommendation; where your method is correct downstream, those marks remain available, with the error charged once at its source.",
+      "answer_schema": {
+        "params": {
+          "spot": 3.82,
+          "months": 5,
+          "exposure": 8.5,
+          "forward_rate": 3.74,
+          "rate_home_borrow": 9.5,
+          "rate_home_deposit": 7.5,
+          "rate_foreign_borrow": 5.5,
+          "rate_foreign_deposit": 4
+        },
+        "components": [
+          {
+            "unit": "PENm",
+            "label": "Guaranteed PEN outcome under the forward hedge",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "forward_home",
+            "working_steps": [
+              "= USD 8.5 converted at the forward rate 3.7400"
+            ],
+            "expected_value": 31.790000000000003
+          },
+          {
+            "unit": "USDm",
+            "label": "Foreign currency borrowed today (money-market hedge)",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "component_id": "mmh_foreign_now",
+            "working_steps": [
+              "= USD 8.5 ÷ (1 + 5.5% × 5/12)"
+            ],
+            "expected_value": 8.309572301425662
+          },
+          {
+            "unit": "PENm",
+            "label": "PEN equivalent today",
+            "recompute": "fxh_mmh_convert_spot",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "mmh_foreign_now"
+            ],
+            "component_id": "mmh_home_now",
+            "working_steps": [
+              "= foreign amount converted at today's spot 3.8200"
+            ],
+            "expected_value": 31.74256619144603
+          },
+          {
+            "unit": "PENm",
+            "label": "Guaranteed PEN outcome under the money-market hedge",
+            "recompute": "fxh_mmh_grow_home",
+            "tolerance": {
+              "pct": 0.5,
+              "kind": "relative"
+            },
+            "depends_on": [
+              "mmh_home_now"
+            ],
+            "component_id": "mmh_home_settlement",
+            "working_steps": [
+              "= PEN deposited/borrowed at 7.5% for 5 months"
+            ],
+            "expected_value": 32.73452138492872
+          }
+        ]
+      }
+    }
+  ]
+}
