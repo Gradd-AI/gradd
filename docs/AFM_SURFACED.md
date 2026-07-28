@@ -2,13 +2,74 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+*Last refreshed: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
-## ⛔ OPEN BLOCKER — AFM MOCK PAPER 1 BARRIER IS **RED**: `A(i) B3e · P6 loss-relief` not_evaluated
+## ✅ CLOSED 2026-07-28 — Mock 1 barrier is GREEN; capm registered; CAPM-1/2/4/9 built
+
+**The B3e blocker below is CLOSED.** `deriveHasLoss` gained a `B3e` case (capm is a RATES-ONLY
+family — betas, Ke, Kd, WACC — modelling no cash flows, so no taxable-profit stream and no loss
+year can exist), shipped as its own atomic commit ahead of any gate work. Mock 1 now reads
+**106 lines · 86 pass · 0 fail · 20 not_evaluated (BLOCKING 0, named exemption 20) — GREEN.**
+
+**`lib/acca/validate-capm.ts`** then added CAPM-1/2/4/9 at the authoring-time bar (the same bar
+every other family gate runs at — input+result objects, never a stored row). Fixtures:
+`npm run test:capm-gates`, 15 checks, each gate with a passing case AND a deliberately-broken
+case that must fail; CAPM-2's break is the swapped peer/own tax rate.
+
+**False-positive run: 0 hits on known-good content** (4 published capm drills + mock A(i)).
+
+### ⛔ PARKED — CAPM-3 / 5 / 6 / 7 / 8, full spec so they are recoverable without re-deriving
+
+- **CAPM-3 — regear-target lock.** `project_specific` regears onto `own_ve`/`own_vd`;
+  `wrong_hurdle`'s `project_beta` onto `company_ve`/`company_vd`. Assert the beta matches the
+  declared basis **and not** the other pair. *Catches:* regearing onto the peer's own structure —
+  a silent no-op that hands back the peer beta. *Blocked by:* `gearing_basis` exists only on rows
+  serialised since 2026-07-28; at authoring time it is fully runnable.
+- **CAPM-5 — post-tax Kd consistency.** `kd_after_tax == kd(1−T)×100`. *Catches:* the Kd quoted
+  in prose diverging from the one used in the blend. *Note:* `kd_after_tax` is a result field,
+  not a component or param, so this is authoring-time only.
+- **CAPM-6 — `beta_direction` verdict integrity.** `beta_direction` must agree with
+  `regeared_beta` vs `peer_equity_beta` at the same EPS capm.ts uses. *Catches:* prose asserting
+  the project beta is higher/lower than the peer's when it is not — a figure-vs-figure verdict
+  doctrine says code owns. Same shape as FXH-19. *Needs:* `peer_equity_beta` (not persisted).
+- **CAPM-7 — wrong-hurdle FLIP integrity.** `accept == (project_return > project_wacc)`,
+  `would_accept_on_company == (project_return > company_wacc)`,
+  `flips == (accept !== would_accept_on_company)`; and when `flips` is true the model answer must
+  SAY so. *Catches:* a drill whose entire teaching point is the flip where the figures do not
+  flip, or where they do and the prose never names it.
+  **⚠ CAPM-7 HAS A REAL CLAIM ON THE NEXT CAPM AUTHORING BATCH: published drill `B3d 2a145f7d`
+  uses `wrong_hurdle`** (components `company_ke, company_wacc, project_asset_beta, project_beta,
+  project_ke, project_wacc`), so this is live content with no verdict gate over it today.
+  *Needs:* `project_return` and the kind — neither persisted.
+- **CAPM-8 — rate-ordering sanity.** `ke > rf`; `regeared_beta > asset_beta` when Vd>0;
+  `kd_after_tax < ke`; `wacc` strictly between `kd_after_tax` and `ke`. *Catches:* sign
+  inversions and transpositions that survive tolerance but are financially impossible. Same shape
+  as RISK's `validateRadrOrdering`. Partially runnable from stored components.
+
+### 🟡 What the false-positive run also measured (published capm coverage)
+
+| drill | kind | CAPM-1 | CAPM-2 | CAPM-4 | CAPM-9 |
+|---|---|---|---|---|---|
+| `2a145f7d` B3d | wrong_hurdle | not runnable | exempt | **not runnable** | exempt |
+| `810b3893` B3d | org_wacc | not runnable | exempt | **PASS** | exempt |
+| `de8eb7b9` B3e | project_specific | not runnable | exempt | **PASS** | exempt |
+| `11c308e5` B3e | keu_for_apv | not runnable | exempt | exempt | exempt |
+| mock `A(i)` B3e | project_specific (two-rate) | **PASS** | **PASS** | **PASS** | **PASS** |
+
+Two findings worth carrying:
+1. **No published capm drill is a two-rate drill** — none carries `peer_tax_rate`. HC1 exposure is
+   confined to mock A(i), so CAPM-2 and CAPM-9 have **zero published surface** today.
+2. **`2a145f7d`'s gearing pair is ambiguous from the row**: `own_ve/own_vd` and
+   `company_ve/company_vd` are both `48200/12600`, so the run cannot tell which pair weights the
+   WACC without `gearing_basis`. It reports NOT RUNNABLE rather than guessing. (For
+   `wrong_hurdle` both are in fact the company pair, so the check would be safe — but the row
+   does not say that, and inferring it is the habit this whole workstream exists to break.)
+
+## ~~⛔ OPEN BLOCKER~~ — CLOSED, see above: `A(i) B3e · P6 loss-relief`
 
 **Logged 2026-07-28. The paper does NOT pass its own barrier. Do not describe Mock 1 as gated.**
 
