@@ -2,9 +2,94 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
+*Last refreshed: 2026-07-28 (recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+
+*Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## 🟡 OPEN (INERT, STATUS QUO) — the 49 published drills' recompute ids are UNRESOLVED and WRITE-ONLY
+
+**Logged 2026-07-28, on building `lib/acca/recompute-registry.ts`. State it this way and do not
+soften it:**
+
+> **74 of the corpus's 92 recompute ids cannot be resolved from stored data. This is the
+> UNCHANGED STATUS QUO, not a new defect — they were write-only before the registry existed
+> too. No published row's behaviour changed. Nothing regressed.**
+
+### The measurement (the gap map, banked — `numeric-verifier.ts` cites this section)
+
+| fact | value |
+|---|---|
+| OFR carry-through engine | `lib/acca/numeric-verifier.ts` → `verifyNumericAnswer` — pure, paper-agnostic, **not APM/`acca_case_requirements`-specific** |
+| Live wiring | **NONE.** Zero `verifyNumericAnswer` call sites in `app/`. Its only non-test caller is `case-authoring-gates.ts:141` (GATE 3) |
+| Published AFM drills with a numeric schema | **49** (356 components) — all 49 carry `depends_on` AND a `recompute` id |
+| Mock numeric case requirements | **5** — likewise. Every APM case requirement has **no `answer_schema` at all** |
+| Distinct recompute ids corpus-wide | **92** |
+| Resolvable today | **18** (the 5 mock requirements' ids) |
+| Unresolved | **74**, listed by name in `UNRESOLVED_RECOMPUTE_IDS` |
+
+**Why they cannot be resolved — two structural facts, not an oversight:**
+
+1. **The family lambdas are CLOSURES over per-drill inputs**, not pure functions of `deps`
+   (`irhedge.ts:562` closes over `raw.notional`/`raw.hedge_months`; `risk.ts:369` over a
+   `probs` array). So a registry entry can never be `(deps) => number` — the signature is
+   `(deps, params)`.
+2. **`SerializedSchema.params` was typed `Record<string, number>`**, so it could not carry the
+   non-numeric discriminants the maths branches on — irhedge `side`/`direction`, fxhedge
+   `quote_direction`/`residual_policy`/`premium_currency`, capm `gearing_basis` — nor the
+   array/map state `risk`, `apv`/`npv` and `international` need. **Now widened to
+   `number | string`** (`ParamValue`, valuation.ts), flat scalars only: collections flatten to
+   indexed numeric keys (`prob_1`, `remit_net_3`), component-id lists are read from
+   `depends_on` and never duplicated into params, so P-DB4's drift sweep stays a flat
+   exact-equality check.
+
+**Why INERT:** nothing parses a stored schema at serve time. The verifier runs only in the
+authoring barrier, against the freshly-built IN-MEMORY schema where the lambda is live — which
+is why GATE 3 has always worked and still does.
+
+**The fix path, per family:** a family becomes resolvable when it is **next authored** — add
+its discriminants to its `params` block and register its ids. **No backfill of the 49
+published rows** (a DB write to live rows, P-DB1..3, to remove an ambiguity that is inert
+today — the same reasoning as the `?? 0` serialiser item above). Ordering is whatever the next
+batch happens to need.
+
+**Do NOT let an unresolved id degrade silently.** `resolveRecompute` throws
+`UnresolvedRecomputeError` for a known-but-unresolved id and a distinct error for an unknown
+one; `hydrateAnswerSchema` throws on the first one it hits rather than returning a schema with
+a missing `recompute`. A silent drop would fall back to the authored expected value, which
+**disables carry-through** — a correct method on an own wrong input would be marked
+`incorrect`. `scripts/test-recompute-registry.ts` asserts registry ∪ unresolved covers the
+measured 92 with no overlap, so a new id nobody registered fails the suite.
+
+## ✅ SHIPPED 2026-07-28 — recompute registry, `subsumed` verdict, mock params re-serialised
+
+- **`lib/acca/recompute-registry.ts`** — 18 scoped ids, `(deps, params)`, each transcribed from
+  the family module that writes it and calling that family's own exported helpers
+  (`regearBeta`, `parityDifferential`, `toHome`, `discountFactor`, `asDec`, `t2`). Maths is not
+  re-derived. Resolution happens at LOAD (`hydrateAnswerSchema`), not at call.
+- **`subsumed` verdict** (`numeric-verifier.ts`) — **Grant ruling 2026-07-28**: an omitted
+  intermediate whose error is already charged at a dependent `incorrect` is CREDITED, not
+  charged twice. Bounded deliberately: an `absent` with no charged dependent stays `absent` and
+  stays zero, and `subsumed` is excluded from `all_correct`. Blast radius nil — `buildOfrProof`
+  fills every component, so `absent` never fired in GATE 3, and the verdict appeared nowhere
+  else in `lib/` or `scripts/`.
+- **The 5 mock numeric requirements re-serialised** (candidate / `published=false` /
+  `mock_only=true`) to add their discriminants. Every added value is **round-trip proven**: the
+  registry recomputes each dependent from its authored upstream figures and reproduces the
+  stored `expected_value` exactly, so a wrong discriminant fails the write. `parity_basis` is
+  the one exception — `parityDifferential` uses the same formula for `ppp` and `irp`, so the
+  round trip cannot discriminate it; it is asserted from the exhibit text instead (the scenario
+  states INFLATION differentials), guarded in the script.
+- **Acceptance:** `npm run test:mock1-acceptance` — b201 (i) × the blind-candidate script
+  (`docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md`), hand-transcribed figures, real
+  registry: `contracts` correct, `mm_interest` correct, `closing_price` **incorrect**,
+  `futures_profit`/`net_outcome`/`effective_rate` **carried**, `unexpired_basis` **subsumed**,
+  **awarded 6/7**, `gap_label` names `closing_price`. Tolerance-only marking scores that script
+  2/7; one conceptual error now costs one mark.
+- **Still nothing wired into `app/`.** The marking route and its inverse publish gate are
+  untouched, and free-text → `StudentSubmission` extraction remains unbuilt — the acceptance
+  fixture transcribes by hand for exactly that reason.
 
 ## 🟠 OPEN (PENDING WRITE) — two Mock 1 content edits, HELD for the next Mock 1 content write
 
