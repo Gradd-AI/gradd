@@ -2,11 +2,63 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+*Last refreshed: 2026-07-28 (P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ✅ SHIPPED 2026-07-28 — P7 misconception-lead: 8 published AFM drills fixed, corpus now 0/57
+
+**Live-content write (P-DB1: it shipped the moment it ran). P-DB2 satisfied — dry run shown,
+Grant authorised `--apply`. P-DB3 snapshot committed BEFORE the write:
+`docs/rollbacks/AFM_p7_misconception_leads_20260728.json`.**
+
+`extractMisconceptionLead` (`tutor-grounding.ts`) only returns a real fact when `full_reveal`
+carries a literal `…misconception…:` sentence; otherwise it silently falls back to the first
+sentence, and that fallback is injected into the HINT leg (`route.ts:372`, the only call site)
+as *"MISCONCEPTION (this drill's designed failure pattern)"*. 8 of 57 published AFM drills were
+on the fallback path — **the exact set measured when P7 was introduced (AFM 8/54, 2026-07-24)**,
+grandfathered because the gate landed at 12:04 that day, ~3½h after the four E3a rows were
+created. Not a leak; the fix-on-touch set, now touched.
+
+| drill | class | lead before → after |
+|---|---|---|
+| `f088daa5` E3a collar | MISDIRECTED | *"A collar answer earns its marks…"* → **"…is that a collar is a free hedge:"** |
+| `26a4167b` E3a swap | MISDIRECTED + **leaked method detail into a hint** | *"The comparative-advantage calculation is the easy part: the total gain available is the fixed-rate differential minus…"* → **"…is treating the quoted borrowing rates as gospel:"** |
+| `56989d69` E3a futures | VACUOUS | *"Two failure modes dominate…"* (names none) → **"…is the contract count:"** |
+| `f2817d06` B1a · `7db140ed` B3f · `51163dac` E2b | minimal | `failure` → `misconception`, one word each |
+| `1c133573` E3a options | minimal | reframed as a named misconception, same point |
+| `003ab45c` B1c | **gate FALSE POSITIVE** | lead **byte-identical before and after** — the row always led correctly at runtime; only the regex's colon requirement failed it |
+
+**`51163dac` also carries the parked `guaranteed` → `locked in` register fix**, folded so the
+row is touched once. Those 4 strings are CODE-OWNED (`fxhedge.ts` :615/:622 labels, :637 Step-1,
+:641 header); the library was already corrected, so patching the row **converges** it with the
+code rather than drifting — a regeneration now emits exactly these strings.
+
+**`MISCONCEPTION_PATTERN` and `extractMisconceptionLead` were NOT touched** — the byte-identical
+gate/runtime split is deliberate and stays.
+
+**Post-verified under the corrected P-DB4** (baseline read from the pre-write snapshot,
+key-order-insensitive): all 8 still `approved`/`published`; P7 passes on all 8 with a real regex
+match; **every `expected_value` byte-identical (`Object.is`)**; component counts, ids and order
+unchanged; **params untouched** on all 8; `model_answer` untouched on 7, changed only on
+`51163dac`; exactly 2 labels changed, both to `Locked-in`. **Real post-write sweep: 57 drills,
+P7 failures = 0.**
+
+**Review packs re-audited by BODY, not by id-grep** (the standing rule). Three carried a stale
+quoted opening and were corrected to match the DB: `AFM_BATCH1_NPV_ROUND2_REVIEW_PACK.md`,
+`AFM_BATCH_DURATION_REVIEW_PACK.md`, `AFM_IRR_BATCH2_REVIEW_PACK.md`. The irhedge pack quotes
+none of the four changed E3a bodies — 0 stale.
+
+### 🟠 OPEN — fxhedge pack register drift (NOT stale-by-quote, so left alone deliberately)
+
+`docs/reviews/AFM_BATCH_FXHEDGE_REVIEW_PACK.md` carries 3 `guarantee*` hits (L221, L346, L364).
+**None of them quote a changed string** — the changed `model_answer` strings appear 0 times — so
+the pack is not stale in the quoted-body sense. But L221/L364 describe the K1 outcome as "the
+guaranteed outcome" while the live row now says "locked in", and **L346 is the unrelated verb
+"structurally guarantees"**, which must NOT be swept. Deciding which line describes which of
+K1–K4 needs a proper audit against each drill's own question; not done, not guessed.
 
 ## 🟡 OPEN (INERT, STATUS QUO) — the 49 published drills' recompute ids are UNRESOLVED and WRITE-ONLY
 
