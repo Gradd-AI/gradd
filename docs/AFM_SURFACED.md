@@ -2,7 +2,91 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+*Last refreshed: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
+
+*Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## 🟠 OPEN (PENDING WRITE) — two Mock 1 content edits, HELD for the next Mock 1 content write
+
+**Logged 2026-07-28, from the blind-candidate QA sit against `AFM_MOCK1_CANDIDATE_VIEW.md`.**
+Both are **deliberately NOT standalone changes** (Grant's ruling): they ride the next Mock 1
+content write. **P-DB2 applies — the exact statements below are shown before anything executes.**
+Nothing has been written. Field values verified against the LIVE rows on 2026-07-28, not read off
+the review pack (packs are snapshots).
+
+### EDIT 1 — b101 Exhibit 2: the VaR reference point is not stated
+
+**Evidence (not a hypothesis):** the blind candidate stated outright that the paper does not say
+whether the GBP 52m VaR is a loss against a zero NPV or a shortfall below the GBP 44m mean, and
+had to **guess**. It guessed the intended reading. That is luck, not design — the same script
+under the other reading would have been marked wrong for a defect in the exhibit.
+
+Target: `acca_case_exhibits`, `case_id = aa000000-0000-4000-8000-00000000b101`,
+`exhibit_order = 3` ("Exhibit 2 — Monte Carlo simulation output"), column `body`.
+
+- **FROM:** `…and a project Value-at-Risk of GBP 52 million at the 95% confidence level.`
+- **TO:** `…and a project Value-at-Risk of GBP 52 million at the 95% confidence level (expressed
+  as a loss against a zero NPV, not as a shortfall below the mean NPV).`
+
+**Which convention, and why it is not a free choice.** The absolute-loss reading is the one the
+paper's own figures already imply, so this edit makes the exhibit say what the rubric already
+assumes — it does not change the intended answer:
+- The stored model answer reads it that way: *"a 5% chance that the downside loss will exceed GBP
+  52 million"*, *"the tail loss the balance sheet has to be able to absorb."*
+- Internal consistency confirms it: mean 44, σ 60 ⇒ the 5th percentile is ≈ **−54.7m** (against a
+  stated VaR of 52m, close), and P(NPV<0) ≈ **23.2%** (against a stated 22%, close). Under the
+  mean-shortfall reading the 5th percentile would be 44 − 52 = **−8m**, which is flatly
+  inconsistent with both stated statistics.
+
+**Rubric impact: none required.** All 7 `scenario_facts` key on bare figures (`"GBP 52 million"`,
+`"95%"`), so the added clause breaks no fact key. **N1–N5 must still be re-run on the REAL grader
+after the edit** (E-narrative FR1 precedent), not assumed.
+
+### EDIT 2 — paper-wide register: apply the irhedge FR1 ruling to fxhedge content
+
+**Evidence it matters:** "guaranteed" propagated out of the exhibit into the blind candidate's own
+answer **twice**. The leak reaches student output, which is exactly what the irhedge FR1 ruling
+("guaranteed" overstates a hedge outcome; T4's register is "locked in") was written to stop.
+
+**The sweep found 11 hits on `a001`, not 2** — the requirement and exhibit Grant named are 2 of
+them. Full sweep of all 3 mock cases × every text field + `answer_schema`:
+
+| location | field | hits | owner |
+|---|---|---|---|
+| `a001` exhibit_order **4** ("Exhibit 3 — Managing the first remittance") | `body` | 1 | stored literal |
+| `a001` req (iii) E2b | `question` | 1 | stored literal |
+| `a001` req (iii) E2b | `hint` | 2 | stored literal |
+| `a001` req (iii) E2b | `full_reveal` | 2 | stored literal |
+| `a001` req (iii) E2b | `model_answer` Step-4 advice `prose` | 1 | stored literal |
+| `a001` req (iii) E2b | `model_answer` Step-1 + Step-3 table header | 2 | **CODE** `fxhedge.ts:637,641` |
+| `a001` req (iii) E2b | `answer_schema` component labels ×2 | 2 | **CODE** `fxhedge.ts:615,622` |
+
+**⚠ TRAP 1 — "Exhibit 3" is `exhibit_order = 4`.** The "Company background" row occupies
+`exhibit_order = 1`, so every printed exhibit number is offset by one. Keying the update on
+`exhibit_order = 3` would patch **Exhibit 2 (Cost of capital data)** — the wrong row.
+
+**⚠ TRAP 2 — `b101` contains "guarantees" and it MUST NOT be swept.** `b101` req (ii)
+`answer_schema` `required_point` reads *"…mitigations (phased build, revenue **guarantees**) that
+cut the 22% downside probability…"* — an ordinary commercial noun, unrelated to hedging register.
+A blind `guarantee*` replace corrupts it. Match on the hedging sense only.
+
+**⚠ TRAP 3 — PROSE OWNERSHIP: 4 of the 11 hits are CODE-OWNED and a DB patch would drift.**
+`lib/acca/fxhedge.ts` generates them:
+- `:615` `` label: `Guaranteed ${home} outcome under the forward hedge` ``
+- `:622` `` label: `Guaranteed ${home} outcome under the money-market hedge` ``
+- `:637` `` `… = **${mH(...)}**, guaranteed.` ``
+- `:641` `` `| Method | Guaranteed ${home} outcome |` ``
+
+Per the PROSE OWNERSHIP RULE these need a **library change + rebuild through the calculator**, not
+a row patch — patching only the row re-drifts on the next regeneration. Step-4's sentence is the
+model-authored `prose` arg and IS a row patch. Wording-only throughout: **zero figures change.**
+
+**🔻 KNOWN SIDE EFFECT of the library change — surfaced, not hidden.** `buildForwardMmhCompare*`
+also serves the **LIVE published** fxhedge K1 drill `51163dac`. Changing the code does **not**
+touch that row (stored rows are what serve, so this is inert today), but it leaves live K1's
+stored prose saying "guaranteed" while the code says "locked in" — a divergence that would
+materialise if K1 were ever regenerated. **Sweeping live K1 is a write to a published row
+(P-DB1..3) and is therefore OUT of this scope and Grant's call**, not folded in silently.
 
 ## 🟡 OPEN (INERT) — the param-drift sweep was AFM-ONLY; APM is UNMEASURED, not clean
 
