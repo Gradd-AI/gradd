@@ -44,6 +44,7 @@ import {
   type ValidationResult,
 } from './validate-schema';
 import {
+  findCorporateTaxRates,
   lintJurisdiction,
   lintFrozenMarketFacts,
   lintCompleteness,
@@ -60,8 +61,51 @@ import type { ForwardMmhCompareInputs, ForwardMmhCompareComputed } from './fxhed
 import type { EnpvInputs, EnpvComputed } from './risk';
 import type { IrFuturesInputs, IrFuturesComputed } from './irhedge';
 import { divergentEquity, type FcffComputed } from './valuation';
+import {
+  checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
+  type NarrativeRubric, type CriterionGrader, type NarrativeCheck, type FailureMode,
+} from './narrative-marker';
 
-export interface GateLine { name: string; ok: boolean; detail?: string }
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// GATE RESULT MODEL — pass / fail / not_evaluated (2026-07-28)
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// A gate that CANNOT evaluate its condition must never report `pass`. Before this, a missing
+// input produced either a vacuous pass (empty loop, early `return []`) or NO LINE AT ALL, and
+// both read as green in a `.every(ok)` roll-up. The audit that prompted this found a re-gate
+// run reporting "ALL GATES GREEN" while 13 family-gate lines never executed.
+//
+//   pass          — condition evaluated, held.
+//   fail          — condition evaluated, violated.
+//   not_evaluated — condition NOT evaluated. `blocking` decides whether that stops the
+//                   barrier. Blocking is the DEFAULT for anything caused by a missing input;
+//                   non-blocking is reserved for the named exemptions below, each of which
+//                   must carry an `exemption` string saying why it is structurally N/A.
+export type GateStatus = 'pass' | 'fail' | 'not_evaluated';
+export interface GateLine {
+  name: string;
+  status: GateStatus;
+  /** Only meaningful for not_evaluated: does this stop the barrier? */
+  blocking: boolean;
+  detail?: string;
+  /** Required on a NON-blocking not_evaluated: the named reason it is structurally N/A. */
+  exemption?: string;
+}
+
+const pass = (name: string, detail = ''): GateLine => ({ name, status: 'pass', blocking: false, detail });
+const verdict = (name: string, ok: boolean, detail = ''): GateLine =>
+  ok ? pass(name, detail) : { name, status: 'fail', blocking: true, detail };
+/** Cannot evaluate, and that is a COVERAGE HOLE — stops the barrier. */
+const unevaluated = (name: string, detail: string): GateLine => ({ name, status: 'not_evaluated', blocking: true, detail });
+/** Cannot evaluate, and that is STRUCTURALLY EXPECTED — visible, named, does not stop the barrier. */
+const exempt = (name: string, reason: string): GateLine => ({ name, status: 'not_evaluated', blocking: false, exemption: reason });
+
+/** The barrier verdict. A blocking not_evaluated is as fatal as a fail — that is the point. */
+export function barrierPasses(lines: GateLine[]): boolean {
+  return !lines.some((l) => l.status === 'fail' || (l.status === 'not_evaluated' && l.blocking));
+}
+export function barrierBlockers(lines: GateLine[]): GateLine[] {
+  return lines.filter((l) => l.status === 'fail' || (l.status === 'not_evaluated' && l.blocking));
+}
 
 const fmt1 = (n: number) => n.toFixed(1);
 
@@ -108,23 +152,49 @@ export interface RequirementProseFields {
   model_answer: string;
   hint: string;
   full_reveal: string;
-  hasLoss: boolean;
+  // NOTE `hasLoss` was REMOVED 2026-07-28. It was caller-supplied, so a caller passing a
+  // hardcoded `false` silently disabled P6 — which is exactly what happened in the first
+  // mock re-gate. It is now DERIVED from the family input by `deriveHasLoss`, and where it
+  // cannot be derived P6 reports not_evaluated + BLOCKING rather than passing vacuously.
   zeroAddlTax?: boolean;
   compare?: { selected: string; all: string[] };
-  /** The calculator's own input/result objects for this requirement. Supplying them ENGAGES
-   *  GATE 27 (derived-figure integrity); omitting them makes it a silent no-op. See the
-   *  ENGAGEMENT RULE in lib/acca/derived-figure-integrity.ts for why. */
+  /** The calculator's own input/result objects for this requirement. REQUIRED: omitting them
+   *  makes GATE 27 report not_evaluated + BLOCKING (it used to report a silent pass). See the
+   *  ENGAGEMENT RULE in lib/acca/derived-figure-integrity.ts. */
   computed?: unknown[];
+}
+
+// ── P6's loss-year fact, DERIVED from the calculator result, never caller-supplied ──
+// lintLossRelief early-returns [] when hasLossYear is false, so a wrong `false` is an
+// invisible no-op. Only the family result object knows whether a taxable loss year exists.
+function deriveHasLoss(family: FamilyGateInput): { determined: true; value: boolean; why: string } | { determined: false; why: string } {
+  switch (family.lo) {
+    case 'B5b':
+      return { determined: true, value: family.npvC.years.some((y) => y.taxable_profit < 0), why: 'derived from npvC.years[].taxable_profit' };
+    // These families model no taxable-profit period stream at all, so a tax loss year is
+    // structurally impossible — not "assumed absent", genuinely not representable.
+    case 'E2b': return { determined: true, value: false, why: 'fxhedge models a single-period hedge, no taxable-profit stream exists' };
+    case 'E3a': return { determined: true, value: false, why: 'irhedge models interest cash flows only, no taxable-profit stream exists' };
+    case 'B1a': return { determined: true, value: false, why: 'risk/ENPV models scenario NPVs, not taxable profits — a negative NPV is not a tax loss' };
+    case 'B4a': return { determined: true, value: false, why: 'valuation models a perpetuity flow, no taxable-profit period stream exists' };
+    case 'NO_FAMILY_GATES':
+      return { determined: false, why: `no family result object for lo "${family.forLo}" — the loss-year fact cannot be derived, so P6 cannot be evaluated` };
+  }
+}
+
+/** Which families REQUIRE `f.compare`. A comparison family without it cannot run GATE 26. */
+function familyDeclaresComparison(family: FamilyGateInput): boolean {
+  return family.lo === 'E2b'; // forward vs money-market hedge — the recommendation IS the answer
 }
 
 // GATE1–3 + P4–P9 + GATE 26 — the part of the barrier that applies to EVERY numeric
 // requirement regardless of calc kind. Verbatim port of gateNumeric() from
 // scripts/_author_mock_paper1.ts (2f494f5) — behaviour-preserving extraction, not a rewrite.
-export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementProseFields): GateLine[] {
+export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementProseFields, family: FamilyGateInput): GateLine[] {
   const g: GateLine[] = [];
 
   const v1 = validateSchemaSelfConsistency(schema);
-  g.push({ name: 'GATE1 self-consistency', ok: v1.ok, detail: v1.issues.map((i) => `${i.gate}/${i.code} ${i.component_id}`).join(' | ') });
+  g.push(verdict('GATE1 self-consistency', v1.ok, v1.issues.map((i) => `${i.gate}/${i.code} ${i.component_id}`).join(' | ')));
 
   const norm = f.model_answer.replace(/,/g, '');
   // Accept EITHER rendering of a figure: plain toFixed OR the boundary-aware
@@ -135,7 +205,9 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
     norm.includes(n.toFixed(d)) || norm.includes(Math.abs(n).toFixed(d)) ||
     norm.includes(fixedHalfUp(n, d)) || norm.includes(fixedHalfUp(Math.abs(n), d)));
   const missing = schema.components.filter((c) => !present(c.expected_value)).map((c) => `${c.component_id}=${fmt1(c.expected_value)}`);
-  g.push({ name: 'GATE2 answer↔schema figures', ok: missing.length === 0, detail: missing.join(', ') });
+  g.push(schema.components.length === 0
+    ? unevaluated('GATE2 answer↔schema figures', 'schema has NO components — there are no code-owned figures to look for, so a green here would be vacuous (GATE1 also fails, but GATE2 must not print PASS)')
+    : verdict('GATE2 answer↔schema figures', missing.length === 0, missing.join(', ')));
 
   const { submission, expected } = buildOfrProof(schema);
   const res = verifyNumericAnswer(schema, submission);
@@ -143,46 +215,70 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
   const bad: string[] = [];
   for (const pc of res.per_component) if (pc.verdict !== expected[pc.component_id]) { ofrOk = false; bad.push(`${pc.component_id}:${pc.verdict}≠${expected[pc.component_id]}`); }
   const anyCarried = res.per_component.some((p) => p.verdict === 'carried');
-  g.push({ name: 'GATE3 seeded-OFR', ok: ofrOk && anyCarried, detail: bad.join(' | ') || (anyCarried ? '' : 'no carried') });
+  g.push(verdict('GATE3 seeded-OFR', ofrOk && anyCarried, bad.join(' | ') || (anyCarried ? '' : 'no carried')));
 
   const p4 = [...lintJurisdiction({ question: f.question, context_text: f.context, model_answer: f.model_answer }), ...lintFrozenMarketFacts({ question: f.question, context_text: f.context, model_answer: f.model_answer })];
-  g.push({ name: 'P4 jurisdiction/frozen', ok: p4.length === 0, detail: p4.map((i) => i.code + ':' + i.message).join(' | ') });
+  g.push(verdict('P4 jurisdiction/frozen', p4.length === 0, p4.map((i) => i.code + ':' + i.message).join(' | ')));
 
   const p5 = lintCompleteness(f.question, f.model_answer);
-  g.push({ name: 'P5 completeness', ok: p5.length === 0, detail: p5.map((i) => i.code + ':' + i.message).join(' | ') });
+  g.push(verdict('P5 completeness', p5.length === 0, p5.map((i) => i.code + ':' + i.message).join(' | ')));
 
-  const p6 = lintLossRelief(f.hasLoss, f.context);
-  g.push({ name: 'P6 loss-relief', ok: p6.length === 0, detail: p6.map((i) => i.code).join(', ') });
+  // P6 — the loss-year fact is DERIVED (deriveHasLoss), never taken from the caller.
+  const loss = deriveHasLoss(family);
+  if (!loss.determined) {
+    g.push(unevaluated('P6 loss-relief', loss.why));
+  } else if (!loss.value) {
+    g.push(exempt('P6 loss-relief', `no loss year — ${loss.why}`));
+  } else {
+    const p6 = lintLossRelief(true, f.context);
+    g.push(verdict('P6 loss-relief', p6.length === 0, p6.map((i) => i.code).join(', ')));
+  }
 
   const p8 = lintRatingSymbols({ question: f.question, context_text: f.context, model_answer: f.model_answer });
-  g.push({ name: 'P8 rating-symbols', ok: p8.length === 0, detail: p8.map((i) => i.code).join(', ') });
+  g.push(verdict('P8 rating-symbols', p8.length === 0, p8.map((i) => i.code).join(', ')));
 
   const p4r = [...lintJurisdiction({ hint: f.hint, full_reveal: f.full_reveal }, { context: f.context }), ...lintFrozenMarketFacts({ hint: f.hint, full_reveal: f.full_reveal })];
-  g.push({ name: 'P4 reveal jur/frozen', ok: p4r.length === 0, detail: p4r.map((i) => i.code + ':' + i.message).join(' | ') });
+  g.push(verdict('P4 reveal jur/frozen', p4r.length === 0, p4r.map((i) => i.code + ':' + i.message).join(' | ')));
 
   const p7 = lintMisconceptionLead(f.full_reveal);
-  g.push({ name: 'P7 misconception-lead', ok: p7.length === 0, detail: p7.map((i) => i.code).join(', ') });
+  g.push(!f.full_reveal
+    ? exempt('P7 misconception-lead', 'no full_reveal on this requirement — the lint has nothing to read (a pre-existing content gap tracked separately, not a coverage hole in the gate)')
+    : verdict('P7 misconception-lead', p7.length === 0, p7.map((i) => i.code).join(', ')));
 
   // P9 zero-additional-tax phrasing (requirement's own prose only — NOT the shared scenario)
   const p9 = lintZeroAdditionalTaxPhrasing(f.zeroAddlTax === true, { model_answer: f.model_answer, hint: f.hint, full_reveal: f.full_reveal });
-  g.push({ name: 'P9 zero-additional-tax phrasing', ok: p9.length === 0, detail: p9.map((i) => i.field + ': ' + i.code).join(' | ') });
+  g.push(f.zeroAddlTax !== true
+    ? exempt('P9 zero-additional-tax phrasing', 'this requirement is not on the nil-additional-tax branch — the misteaching P9 guards against is not reachable here')
+    : verdict('P9 zero-additional-tax phrasing', p9.length === 0, p9.map((i) => i.field + ': ' + i.code).join(' | ')));
 
   // GATE 26 recommendation-consistency (only for comparison requirements)
   if (f.compare) {
     const g26 = lintRecommendationConsistency(f.compare.selected, f.compare.all, { model_answer: f.model_answer, full_reveal: f.full_reveal });
-    g.push({ name: 'GATE 26 recommendation-consistency', ok: g26.length === 0, detail: g26.map((i) => i.code + ': ' + i.message).join(' | ') });
+    g.push(verdict('GATE 26 recommendation-consistency', g26.length === 0, g26.map((i) => i.code + ': ' + i.message).join(' | ')));
+  } else if (familyDeclaresComparison(family)) {
+    // A comparison family with no `compare` block CANNOT have its recommendation checked.
+    // Previously this emitted no line at all — the skip was invisible.
+    g.push(unevaluated('GATE 26 recommendation-consistency', `family ${family.lo} declares a comparison but no f.compare was supplied — the selected-method-vs-prose check cannot run`));
+  } else {
+    g.push(exempt('GATE 26 recommendation-consistency', `family ${family.lo} declares no comparison — there is no selected-method claim to check`));
   }
 
   // P9-SCENARIO — the nil-branch resolved-outcome check on the SHARED scenario/exhibits,
   // the one field P9 proper deliberately does not scan (FR3).
   const p9s = lintZeroAdditionalTaxScenario(f.zeroAddlTax === true, `${f.context}\n${f.question}`);
-  g.push({ name: 'P9-SCENARIO resolved-outcome in scenario', ok: p9s.length === 0, detail: p9s.map((i) => i.code + ': ' + i.message).join(' | ') });
+  g.push(f.zeroAddlTax !== true
+    ? exempt('P9-SCENARIO resolved-outcome in scenario', 'not on the nil-additional-tax branch — the resolved-outcome phrasing P9-SCENARIO guards against is not reachable here')
+    : verdict('P9-SCENARIO resolved-outcome in scenario', p9s.length === 0, p9s.map((i) => i.code + ': ' + i.message).join(' | ')));
 
   // TAX_RATE_ASSIGNMENT — runs on the SCENARIO the candidate sees (context/exhibits +
   // question), not the worked answer. Structural no-op unless ≥2 distinct corporate tax
   // rates are in scope, so single-jurisdiction requirements are unaffected.
   const gTax = lintTaxRateAssignment(`${f.context}\n${f.question}`);
-  g.push({ name: 'TAX_RATE_ASSIGNMENT multi-rate purposes', ok: gTax.length === 0, detail: gTax.map((i) => i.code + ': ' + i.message).join(' | ') });
+  const taxRates = findCorporateTaxRates(`${f.context}
+${f.question}`);
+  g.push(taxRates.length < 2
+    ? exempt('TAX_RATE_ASSIGNMENT multi-rate purposes', `only ${taxRates.length} corporate tax rate(s) in scope — there is nothing to mis-assign between`)
+    : verdict('TAX_RATE_ASSIGNMENT multi-rate purposes', gTax.length === 0, gTax.map((i) => i.code + ': ' + i.message).join(' | ')));
 
   // HALFWAY_ROUNDING_RISK — a code-owned figure rendered at a precision where code and a
   // hand-working student can legitimately disagree on the last digit. ASSESSMENT hazard:
@@ -195,14 +291,18 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
   const gHalf = validateHalfwayRounding(schema, f.model_answer);
   const halfBlocking = halfwayBlockingIssues(gHalf);
   const halfAdvisory = gHalf.issues.filter((i) => i.code !== HALFWAY_CODE_BLOCKING);
-  g.push({
-    name: 'HALFWAY_ROUNDING_RISK boundary figures',
-    ok: gHalf.ok,
-    detail: [
-      ...halfBlocking.map((i) => 'BLOCKING ' + i.component_id + ': ' + i.message),
-      ...halfAdvisory.map((i) => 'ADVISORY ' + i.component_id + ': ' + i.message),
-    ].join(' | '),
-  });
+  // The gate reads the PROSE to decide which rendering is shown; with no prose (or no
+  // components) every hit short-circuits and it returns a vacuous ok. That is a coverage hole,
+  // not a pass. (Beyond the enumerated brief — same shape as the GATE 2 empty-components case.)
+  g.push(schema.components.length === 0 || !f.model_answer.trim()
+    ? unevaluated('HALFWAY_ROUNDING_RISK boundary figures',
+        schema.components.length === 0
+          ? 'schema has NO components — no code-owned figure to test for a boundary rendering'
+          : 'model_answer is empty — the gate decides on which rendering the PROSE shows, so with no prose every hit short-circuits and the green is vacuous')
+    : verdict('HALFWAY_ROUNDING_RISK boundary figures', gHalf.ok, [
+        ...halfBlocking.map((i) => 'BLOCKING ' + i.component_id + ': ' + i.message),
+        ...halfAdvisory.map((i) => 'ADVISORY ' + i.component_id + ': ' + i.message),
+      ].join(' | ')));
 
   // GATE 27 DERIVED_FIGURE_INTEGRITY — the reverse of GATE 2. GATE 2 asks "is every code
   // figure in the prose?"; this asks "does every figure in the prose trace back to code?".
@@ -214,13 +314,13 @@ export function runBaseRequirementGates(schema: AnswerSchema, f: RequirementPros
     `${f.context}\n${f.question}`,
     f.computed,
   );
-  g.push({
-    name: 'GATE 27 derived-figure integrity' + (g27.engaged ? '' : ' (no-op)'),
-    ok: g27.orphans.length === 0,
-    detail: g27.engaged
-      ? g27.orphans.map((o) => `${o.field} "${o.token}" ${o.excerpt}`).join(' | ')
-      : g27.reason,
-  });
+  // Not engaged = NOT EVALUATED, and blocking. It used to emit `ok: true` with a "(no-op)"
+  // suffix, which is green in any boolean roll-up — the single most-reported false green in
+  // the corpus. Supplying `computed` is now the caller's obligation.
+  g.push(!g27.engaged
+    ? unevaluated('GATE 27 derived-figure integrity', `${g27.reason} — supply f.computed (the calculator's input/result objects) or the prose is unchecked against code`)
+    : verdict('GATE 27 derived-figure integrity', g27.orphans.length === 0,
+        g27.orphans.map((o) => `${o.field} "${o.token}" ${o.excerpt}`).join(' | ')));
 
   return g;
 }
@@ -237,11 +337,16 @@ export type FamilyGateInput =
   | { lo: 'E2b'; fxIn: ForwardMmhCompareInputs; fxC: ForwardMmhCompareComputed }
   | { lo: 'B1a'; enpvIn: EnpvInputs; enpvC: EnpvComputed }
   | { lo: 'E3a'; irIn: IrFuturesInputs; irC: IrFuturesComputed; modelAnswer: string }
-  | { lo: 'B4a'; fcffC: FcffComputed; debtValue: number; equityWeight: number; modelAnswer: string };
+  | { lo: 'B4a'; fcffC: FcffComputed; debtValue: number; equityWeight: number; modelAnswer: string }
+  // The ONLY way to say "this requirement has no calc-family gates" — explicit, named, and
+  // it still forces the caller to state the loss-year fact's derivability. Omitting the
+  // family argument entirely is now a COMPILE ERROR, which is the primary fix: the previous
+  // optional parameter let a caller drop all 13 family-gate lines with no diagnostic.
+  | { lo: 'NO_FAMILY_GATES'; forLo: string; reason: string };
 
 export function runFamilyGates(input: FamilyGateInput): GateLine[] {
   const g: GateLine[] = [];
-  const add = (name: string, r: ValidationResult) => g.push({ name, ok: r.ok, detail: r.issues.map((i) => i.message).join(' | ') });
+  const add = (name: string, r: ValidationResult) => g.push(verdict(name, r.ok, r.issues.map((i) => i.message).join(' | ')));
 
   switch (input.lo) {
     case 'B5b': {
@@ -282,14 +387,89 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
       add('VAL-11 flow/rate/bridge', validateValuationBridge('fcff_enterprise', fcffC, { debt_value: debtValue }));
       const diverges = divergentEquity(fcffC.equity_value, equityWeight);
       const hasRecon = /Reconcile the equity divergence/.test(modelAnswer);
-      g.push({
-        name: 'VAL-11b equity-divergence reconciliation',
-        ok: !diverges || hasRecon,
-        detail: !diverges || hasRecon ? '' : 'DCF equity diverges >50% from the estimated equity weight but the model answer omits the reconciliation point',
-      });
+      g.push(!diverges
+        ? exempt('VAL-11b equity-divergence reconciliation', 'DCF equity does not diverge >50% from the estimated equity weight — the reconciliation point this gate requires is not owed')
+        : verdict('VAL-11b equity-divergence reconciliation', hasRecon, hasRecon ? '' : 'DCF equity diverges >50% from the estimated equity weight but the model answer omits the reconciliation point'));
       break;
     }
+    case 'NO_FAMILY_GATES': {
+      // Explicit, named, VISIBLE. The requirement genuinely has no calc-family gates — but it
+      // says so on the record with a reason, instead of the previous silent empty array.
+      g.push(exempt(`family gates (${input.forLo})`, input.reason));
+      break;
+    }
+    default: {
+      // Unreachable at type level; a runtime backstop for an lo_code arriving via a cast.
+      // THROWS rather than returning [] — an unregistered family used to mean "no gates ran",
+      // reported as green. If you are adding a calc family, add its branch above; if it truly
+      // has none, pass { lo: 'NO_FAMILY_GATES', forLo, reason }.
+      const unreachable: never = input;
+      throw new Error(`runFamilyGates: unregistered lo_code — no family-gate branch and no explicit NO_FAMILY_GATES exemption: ${JSON.stringify(unreachable)}`);
+    }
   }
+  return g;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// N1–N5 NARRATIVE BARRIER — the single committed orchestration
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// Previously N1–N5 were wired ad hoc in TWO scripts (_author_mock_paper1.ts and
+// generate-afm-drills.ts). That is precisely how N4 skipped three narrative requirements
+// undetected: one caller looked for `rubric.golden_bad` while the rubric stores it at
+// `_authoring.golden_bad`, found nothing, and printed a skip line nobody counted.
+//
+// A missing golden BAD is now not_evaluated + BLOCKING: N4 is the verifier-of-the-verifier,
+// the one gate that tests whether the marker can tell a good answer from a bad one. Running
+// without it is not "mostly gated".
+export interface NarrativeGateInput {
+  rubric: NarrativeRubric;
+  scenario: string;
+  /** The golden GOOD answer — the stored model_answer. */
+  reveal: string;
+  /** `answer_schema._authoring.golden_bad`. Absent → N4 blocks. */
+  goldenBad?: string;
+  /** `answer_schema._authoring.designed_bad_flags`. Absent/empty → N4 blocks. */
+  designedBadFlags?: FailureMode[];
+  grader: CriterionGrader;
+}
+
+export async function runNarrativeGateBarrier(input: NarrativeGateInput): Promise<GateLine[]> {
+  const { rubric, scenario, reveal, goldenBad, designedBadFlags, grader } = input;
+  const g: GateLine[] = [];
+
+  // A rubric with no criteria makes N1/N2/N4 vacuous — every loop is empty and every
+  // aggregate trivially satisfied. Block before spending a single model call.
+  if (!rubric.criteria?.length) {
+    return [unevaluated('N1–N5 narrative barrier', 'rubric has NO criteria — every narrative gate would iterate an empty set and pass vacuously')];
+  }
+  if (!rubric.requirement_parts?.length) {
+    g.push(unevaluated('N1 rubric-coverage', 'rubric has NO requirement_parts — the part→criterion coverage check has nothing to iterate'));
+  }
+  if (!rubric.scenario_facts?.length) {
+    g.push(unevaluated('N2 scenario-anchor', 'rubric has NO scenario_facts — the anchor check has nothing to iterate, so a green would be vacuous'));
+  }
+
+  const toLine = (name: string, r: NarrativeCheck) => verdict(name, r.ok, r.reason ?? '');
+
+  if (rubric.requirement_parts?.length) g.push(toLine('N1 rubric-coverage', await checkRubricCoverage(rubric, reveal, scenario, grader)));
+  if (rubric.scenario_facts?.length) g.push(toLine('N2 scenario-anchor', checkScenarioAnchor(rubric, scenario, reveal)));
+  g.push(toLine('N3 generic/copy', checkGenericCopy(reveal, scenario)));
+
+  if (!goldenBad) {
+    g.push(unevaluated('N4 Rule-23 GOOD/BAD', 'no golden BAD answer supplied (answer_schema._authoring.golden_bad) — N4 is the verifier-of-the-verifier and CANNOT be skipped quietly'));
+  } else if (!designedBadFlags?.length) {
+    g.push(unevaluated('N4 Rule-23 GOOD/BAD', 'no designed_bad_flags supplied — the raised-failure-mode half of N4 would compare against an empty set and pass vacuously'));
+  } else {
+    g.push(toLine('N4 Rule-23 GOOD/BAD', await checkRule23(rubric, scenario, reveal, goldenBad, designedBadFlags, grader)));
+  }
+
+  // N5 is conditional BY DESIGN: it only bites where the requirement asks for a verdict.
+  const wantsVerdict = rubric.requirement_parts.some((p) => /recommend|advise|conclude|evaluate|assess|should/i.test(p))
+    || rubric.criteria.some((c) => /recommend|verdict|conclusion/i.test(c.required_point));
+  g.push(wantsVerdict
+    ? toLine('N5 committed-verdict', checkCommittedVerdict(rubric, reveal))
+    : exempt('N5 committed-verdict', 'no requirement part or criterion asks for a recommendation/conclusion — there is no verdict to commit to'));
+
   return g;
 }
 
@@ -299,6 +479,19 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
 // this stage with zero extra lines (same behaviour as the pre-extraction familyGates()
 // returning [] for an unrecognised lo) — narrative requirements are marked entirely by the
 // separate N1–N5 narrative-marker gates (lib/acca/narrative-marker.ts), not by this function.
-export function runRequirementGateBarrier(schema: AnswerSchema, f: RequirementProseFields, family?: FamilyGateInput): GateLine[] {
-  return [...runBaseRequirementGates(schema, f), ...(family ? runFamilyGates(family) : [])];
+export function runRequirementGateBarrier(schema: AnswerSchema, f: RequirementProseFields, family: FamilyGateInput): GateLine[] {
+  // The type makes omission a COMPILE error — but `scripts/` is excluded from tsconfig
+  // (tsconfig.json "exclude": ["node_modules","scripts"]) and tsx transpiles without
+  // type-checking, so the authoring scripts that actually call this are NOT compile-checked.
+  // This runtime guard is the real backstop for them: throw with an actionable message rather
+  // than dying on `undefined.lo` three frames down.
+  if (!family) {
+    throw new Error(
+      'runRequirementGateBarrier: `family` is REQUIRED. Omitting it used to silently drop every ' +
+      'calc-family gate line (13 of them on AFM Mock Paper 1) with no diagnostic. Pass the ' +
+      "family gate input for this requirement's lo_code, or, if it genuinely has no family " +
+      "gates, pass { lo: 'NO_FAMILY_GATES', forLo: '<lo_code>', reason: '<why>' }.",
+    );
+  }
+  return [...runBaseRequirementGates(schema, f, family), ...runFamilyGates(family)];
 }
