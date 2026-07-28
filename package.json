@@ -47,7 +47,8 @@
     "scan:halfway": "tsx --env-file=.env.local scripts/scan-halfway-rounding.ts",
     "test:derived-figures": "tsx scripts/test-derived-figure-integrity.ts",
     "test:recompute-registry": "tsx scripts/test-recompute-registry.ts",
-    "test:mock1-acceptance": "tsx scripts/test-mock1-acceptance.ts"
+    "test:mock1-acceptance": "tsx scripts/test-mock1-acceptance.ts",
+    "test:capm-gates": "tsx scripts/test-capm-gates.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

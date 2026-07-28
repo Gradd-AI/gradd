@@ -63,6 +63,11 @@ import type { IrFuturesInputs, IrFuturesComputed } from './irhedge';
 import { divergentEquity, type FcffComputed } from './valuation';
 import type { CapmInputs, CapmComputed, CapmKind } from './capm';
 import {
+  validateCapmBetaRoundTrip, validateCapmTwoRateAssignment, validateCapmWaccBlend, validateCapmHc1Disclosure,
+} from './validate-capm';
+// capm.ts stores rates as decimals internally but accepts percentages; mirror its own asDec.
+const asDecRate = (v: number): number => (v > 1 ? v / 100 : v);
+import {
   checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
   type NarrativeRubric, type CriterionGrader, type NarrativeCheck, type FailureMode,
 } from './narrative-marker';
@@ -396,11 +401,63 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
       break;
     }
     case 'B3e': {
-      // capm (calculator #5). REGISTERED so the family is known to the barrier — which is what
-      // lets deriveHasLoss state the loss-year fact instead of blocking P6. The gate CHECKS
-      // themselves (CAPM-1/2/4/9) land in the following commit; until then this says so out
-      // loud rather than implying capm is gated when it is not.
-      g.push(exempt('family gates (B3e capm)', 'capm is registered but carries NO checks yet — CAPM-1/2/4/9 are specced and land next. Do NOT read this line as "capm is gated".'));
+      // capm (calculator #5). CAPM-1/2/4/9 at the authoring-time bar; CAPM-3/5/6/7/8 parked in
+      // docs/AFM_SURFACED.md. Each gate is SKIPPED as a named exemption where it is structurally
+      // N/A, never run-and-passed vacuously — see P-G1.
+      const { capmIn, capmC, capmKind, modelAnswer: capmMa } = input;
+      const ptax = capmIn.peer_tax_rate !== undefined ? asDecRate(capmIn.peer_tax_rate) : asDecRate(capmIn.tax_rate);
+      const otax = asDecRate(capmIn.tax_rate);
+      const twoRate = Math.abs(ptax - otax) > 1e-12;
+      const betaD = capmIn.debt_beta ?? 0;
+      // The peer chain exists on every kind EXCEPT org_wacc, which uses the company's own listed
+      // beta directly and performs no ungear/regear at all.
+      const hasPeerChain = capmKind !== 'org_wacc';
+      const assetBeta = capmC.asset_beta ?? capmC.project_asset_beta;
+
+      // ── CAPM-1 round-trip ──
+      if (!hasPeerChain || assetBeta === undefined || capmC.peer_equity_beta === undefined) {
+        g.push(exempt('CAPM-1 ungear/regear round-trip',
+          capmKind === 'org_wacc'
+            ? 'org_wacc uses the company\'s own listed equity beta directly — there is no ungear/regear pair to invert'
+            : 'no peer equity beta / asset beta on this result object — nothing to round-trip'));
+      } else {
+        add('CAPM-1 ungear/regear round-trip', validateCapmBetaRoundTrip(
+          capmC.peer_equity_beta, capmIn.peer_ve!, capmIn.peer_vd!, ptax, betaD, assetBeta));
+      }
+
+      // ── CAPM-2 HC1 two-rate lock ──
+      if (!twoRate) {
+        g.push(exempt('CAPM-2 HC1 two-rate assignment', `single-jurisdiction drill: the peer and the appraising company are both taxed at ${(otax * 100).toFixed(2)}%, so there are no two rates to swap`));
+      } else if (!hasPeerChain || assetBeta === undefined || capmC.peer_equity_beta === undefined) {
+        g.push(exempt('CAPM-2 HC1 two-rate assignment', 'org_wacc performs no ungearing, so HC1 does not apply'));
+      } else {
+        const regearBase = capmC.regeared_beta ?? capmC.project_beta;
+        const ownVe = capmKind === 'project_specific' ? capmIn.own_ve! : capmIn.company_ve!;
+        const ownVd = capmKind === 'project_specific' ? capmIn.own_vd! : capmIn.company_vd!;
+        add('CAPM-2 HC1 two-rate assignment', validateCapmTwoRateAssignment(
+          capmC.peer_equity_beta, capmIn.peer_ve!, capmIn.peer_vd!, ownVe, ownVd,
+          ptax, otax, betaD, assetBeta, regearBase));
+      }
+
+      // ── CAPM-4 WACC weight + blend ──
+      if (capmC.wacc === undefined && capmC.project_wacc === undefined) {
+        g.push(exempt('CAPM-4 WACC weight + blend', 'keu_for_apv computes no WACC — the deliverable is the ungeared Keu'));
+      } else {
+        const ve = capmKind === 'project_specific' ? capmIn.own_ve! : capmIn.company_ve!;
+        const vd = capmKind === 'project_specific' ? capmIn.own_vd! : capmIn.company_vd!;
+        const keUsed = capmKind === 'wrong_hurdle' ? capmC.project_ke! : capmC.ke!;
+        const waccUsed = capmKind === 'wrong_hurdle' ? capmC.project_wacc! : capmC.wacc!;
+        add('CAPM-4 WACC weight + blend', validateCapmWaccBlend(
+          keUsed, capmC.kd_after_tax!, capmC.weight_equity!, capmC.weight_debt!, ve, vd, waccUsed));
+      }
+
+      // ── CAPM-9 HC1 disclosure ──
+      if (!twoRate) {
+        g.push(exempt('CAPM-9 HC1 disclosure', 'single-rate drill: there is no house convention to disclose'));
+      } else {
+        add('CAPM-9 HC1 disclosure', validateCapmHc1Disclosure(
+          `${(ptax * 100).toFixed(2)}%`, `${(otax * 100).toFixed(2)}%`, capmKind, capmMa));
+      }
       break;
     }
     case 'NO_FAMILY_GATES': {

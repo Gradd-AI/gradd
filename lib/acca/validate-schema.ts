@@ -79,7 +79,7 @@ import {
 
 export interface ValidationIssue {
   component_id: string;   // '(schema)' for whole-graph issues (cycles)
-  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence' | 'direction-lock' | 'contract-count' | 'premium-separation' | 'ir-basis-scepticism' | 'convention-sentence' | 'effective-rate-reconciliation' | 'halfway-rounding-risk';
+  gate: 'self-consistency' | 'tolerance' | 'ofr-wiring' | 'spread-monotonicity' | 'option-bounds' | 'valuation-bridge' | 'parity-consistency' | 'currency-scale' | 'double-tax-cap' | 'probability-sum' | 'enpv-consistency' | 'sensitivity-reconciliation' | 'radr-ordering' | 'var-duration' | 'whole-contract' | 'basis-decay' | 'currency-direction' | 'premium-currency' | 'best-method-verdict' | 'quote-sentence' | 'direction-lock' | 'contract-count' | 'premium-separation' | 'ir-basis-scepticism' | 'convention-sentence' | 'effective-rate-reconciliation' | 'halfway-rounding-risk' | 'capm-1-round-trip' | 'capm-2-hc1' | 'capm-4-wacc' | 'capm-9-hc1-disclosure';
   code: string;           // stable machine label, e.g. 'depends_on-without-recompute'
   message: string;        // human-readable detail
 }
