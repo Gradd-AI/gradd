@@ -61,6 +61,7 @@ import type { ForwardMmhCompareInputs, ForwardMmhCompareComputed } from './fxhed
 import type { EnpvInputs, EnpvComputed } from './risk';
 import type { IrFuturesInputs, IrFuturesComputed } from './irhedge';
 import { divergentEquity, type FcffComputed } from './valuation';
+import type { CapmInputs, CapmComputed, CapmKind } from './capm';
 import {
   checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
   type NarrativeRubric, type CriterionGrader, type NarrativeCheck, type FailureMode,
@@ -177,6 +178,7 @@ function deriveHasLoss(family: FamilyGateInput): { determined: true; value: bool
     case 'E3a': return { determined: true, value: false, why: 'irhedge models interest cash flows only, no taxable-profit stream exists' };
     case 'B1a': return { determined: true, value: false, why: 'risk/ENPV models scenario NPVs, not taxable profits — a negative NPV is not a tax loss' };
     case 'B4a': return { determined: true, value: false, why: 'valuation models a perpetuity flow, no taxable-profit period stream exists' };
+    case 'B3e': return { determined: true, value: false, why: 'capm is a RATES-ONLY family — betas, Ke, Kd and WACC; it models no cash flows at all, so no taxable-profit stream and no loss year can exist' };
     case 'NO_FAMILY_GATES':
       return { determined: false, why: `no family result object for lo "${family.forLo}" — the loss-year fact cannot be derived, so P6 cannot be evaluated` };
   }
@@ -338,6 +340,7 @@ export type FamilyGateInput =
   | { lo: 'B1a'; enpvIn: EnpvInputs; enpvC: EnpvComputed }
   | { lo: 'E3a'; irIn: IrFuturesInputs; irC: IrFuturesComputed; modelAnswer: string }
   | { lo: 'B4a'; fcffC: FcffComputed; debtValue: number; equityWeight: number; modelAnswer: string }
+  | { lo: 'B3e'; capmIn: CapmInputs; capmC: CapmComputed; capmKind: CapmKind; modelAnswer: string }
   // The ONLY way to say "this requirement has no calc-family gates" — explicit, named, and
   // it still forces the caller to state the loss-year fact's derivability. Omitting the
   // family argument entirely is now a COMPILE ERROR, which is the primary fix: the previous
@@ -390,6 +393,14 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
       g.push(!diverges
         ? exempt('VAL-11b equity-divergence reconciliation', 'DCF equity does not diverge >50% from the estimated equity weight — the reconciliation point this gate requires is not owed')
         : verdict('VAL-11b equity-divergence reconciliation', hasRecon, hasRecon ? '' : 'DCF equity diverges >50% from the estimated equity weight but the model answer omits the reconciliation point'));
+      break;
+    }
+    case 'B3e': {
+      // capm (calculator #5). REGISTERED so the family is known to the barrier — which is what
+      // lets deriveHasLoss state the loss-year fact instead of blocking P6. The gate CHECKS
+      // themselves (CAPM-1/2/4/9) land in the following commit; until then this says so out
+      // loud rather than implying capm is gated when it is not.
+      g.push(exempt('family gates (B3e capm)', 'capm is registered but carries NO checks yet — CAPM-1/2/4/9 are specced and land next. Do NOT read this line as "capm is gated".'));
       break;
     }
     case 'NO_FAMILY_GATES': {
