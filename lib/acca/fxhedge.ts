@@ -130,14 +130,14 @@
 
 import { fixedHalfUp } from './rounding';
 import { parityDifferential } from './international';
-import { money, normaliseCurrency, type SerializedSchema } from './valuation';
+import { money, normaliseCurrency, type SerializedSchema, type ParamValue } from './valuation';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 
 export { normaliseCurrency };
 
 // ── formatting / rates ──
 const pct2 = (frac: number): string => `${fixedHalfUp(frac * 100, 2)}%`;
-const asDec = (v: number): number => (v > 1 ? v / 100 : v);
+export const asDec = (v: number): number => (v > 1 ? v / 100 : v);
 const rel = (pct: number): Tolerance => ({ kind: 'relative', pct });
 // PLAIN relative tolerance for every money-shaped figure in this family — never a floor. The
 // floor-tolerance kind exists (international.ts) specifically to protect a figure that can be
@@ -566,7 +566,7 @@ export function checkQuoteSentencePresence(context_text: string, dir: QuoteDirec
 // SERIALIZATION — mirrors valuation.ts's private toSerialized (same SerializedSchema shape,
 // duplicated locally per the established per-family convention, e.g. apv.ts/bsop.ts/credit.ts).
 // ═══════════════════════════════════════════════════════════════════════════════════════
-function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): SerializedSchema {
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, ParamValue>): SerializedSchema {
   return {
     components: components.map((comp) => {
       const s: SerializedSchema['components'][number] = {
@@ -582,7 +582,7 @@ function toSerialized(components: Component[], recomputeIds: Record<string, stri
   };
 }
 const intTol: Tolerance = { kind: 'absolute', value: 0.5 };
-const t2 = (raw: { months: number }): number => raw.months / 12;
+export const t2 = (raw: { months: number }): number => raw.months / 12;
 
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // K1 — forward_mmh_compare drill (forward, stated rate, vs the money-market hedge)
@@ -624,7 +624,10 @@ export function buildForwardMmhCompareSchema(raw: ForwardMmhCompareInputs, c: Fo
       working_steps: [`= ${home} deposited/borrowed at ${growLeg}% for ${raw.months} months`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { mmh_home_now: 'fxh_mmh_convert_spot', mmh_home_settlement: 'fxh_mmh_grow_home' };
-  const params = { exposure: raw.exposure, forward_rate: raw.forward_rate, spot: raw.spot, months: raw.months, rate_foreign_borrow: raw.rate_foreign_borrow, rate_foreign_deposit: raw.rate_foreign_deposit, rate_home_borrow: raw.rate_home_borrow, rate_home_deposit: raw.rate_home_deposit };
+  // DISCRIMINANTS: `fxh_mmh_convert_spot` divides or multiplies by the spot depending on
+  // `quote_direction`, and `fxh_mmh_grow_home` picks the home deposit vs borrow leg from
+  // `direction`. Both are stored so a persisted schema stays verifiable.
+  const params = { exposure: raw.exposure, forward_rate: raw.forward_rate, spot: raw.spot, months: raw.months, rate_foreign_borrow: raw.rate_foreign_borrow, rate_foreign_deposit: raw.rate_foreign_deposit, rate_home_borrow: raw.rate_home_borrow, rate_home_deposit: raw.rate_home_deposit, quote_direction: raw.quote_direction, direction: raw.direction };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 export function buildForwardMmhCompareModelAnswer(raw: ForwardMmhCompareInputs, c: ForwardMmhCompareComputed, prose: string): string {

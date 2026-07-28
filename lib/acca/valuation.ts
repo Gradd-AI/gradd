@@ -137,9 +137,20 @@ interface SerializedComponent {
   recompute?:     string;   // rule-id, resolved via registry at serve time (design §16)
   weight?:        number;
 }
+// A stored schema param. WIDENED 2026-07-28 from `number` to `number | string` so a schema
+// can carry the NON-NUMERIC DISCRIMINANTS its own recompute maths branches on (irhedge
+// `side`/`direction`, fxhedge `quote_direction`, capm `gearing_basis`, …). Without them a
+// persisted schema is unverifiable: `lib/acca/recompute-registry.ts` cannot resolve a
+// `recompute` id whose formula depends on a branch the row never recorded.
+//
+// FLAT AND SCALAR ONLY — never an object or an array. Collections are flattened to indexed
+// numeric keys (`prob_1`, `prob_2`, `remit_net_1`, …) so P-DB4's param-drift sweep stays a
+// flat exact-equality check over primitives. Where a formula needs a COMPONENT-ID LIST, the
+// registry reads `depends_on`; the list is never duplicated into params.
+export type ParamValue = number | string;
 export interface SerializedSchema {
   components: SerializedComponent[];
-  params:     Record<string, number>;
+  params:     Record<string, ParamValue>;
 }
 
 export function buildFcffSchema(raw: FcffInputs, c: FcffComputed, currency: string): { schema: AnswerSchema; serialized: SerializedSchema } {
@@ -513,7 +524,7 @@ export function checkValuationBridge(
 
 // ── Schema helpers ──
 const abs = (value: number): Tolerance => ({ kind: 'absolute', value });   // rate/% tolerance (CAPM precedent ±0.05)
-function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): SerializedSchema {
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, ParamValue>): SerializedSchema {
   return {
     components: components.map((comp) => {
       const s: SerializedComponent = {

@@ -51,7 +51,7 @@ function ungearBeta(betaE: number, ve: number, vd: number, tax: number, betaD: n
   const geared = vd * (1 - tax);
   return (betaE * ve + betaD * geared) / (ve + geared);
 }
-function regearBeta(betaA: number, ve: number, vd: number, tax: number, betaD: number): number {
+export function regearBeta(betaA: number, ve: number, vd: number, tax: number, betaD: number): number {
   return betaA + (betaA - betaD) * (vd * (1 - tax)) / ve;
 }
 const capmKe = (rf: number, beta: number, mrp: number): number => rf + beta * mrp;                 // decimal
@@ -311,6 +311,11 @@ export function buildCapmSchema(raw: CapmInputs, c: CapmComputed, kind: CapmKind
       rf, mrp, tax_rate: tax, debt_beta: betaD, kd,
       company_ve: raw.company_ve ?? 0, company_vd: raw.company_vd ?? 0,
       peer_ve: raw.peer_ve ?? 0, peer_vd: raw.peer_vd ?? 0, own_ve: raw.own_ve ?? 0, own_vd: raw.own_vd ?? 0,
+      // DISCRIMINANT: `wacc_mv_weighted` is written by THREE kinds that weight on DIFFERENT
+      // gearing — project_specific uses own_ve/own_vd, org_wacc and wrong_hurdle use
+      // company_ve/company_vd. The id alone cannot say which, and inferring it from whichever
+      // pair is non-zero would be a guess. Recorded explicitly instead.
+      gearing_basis: kind === 'project_specific' ? 'own' : 'company',
       ...(twoRate ? { peer_tax_rate: ptax } : {}),
     },
   };

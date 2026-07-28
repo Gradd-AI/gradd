@@ -32,7 +32,7 @@
 
 import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
-import { fcffFromBuild, computeDividendCapacity, money, signedSurplus, fmt1, normaliseCurrency, type FcffBuild } from './valuation';
+import { fcffFromBuild, computeDividendCapacity, money, signedSurplus, fmt1, normaliseCurrency, type FcffBuild, type ParamValue } from './valuation';
 import { discountFactor } from './npv';
 
 export { normaliseCurrency };
@@ -414,8 +414,8 @@ export interface SerializedComponent {
   component_id: string; label?: string; expected_value: number; unit?: string; tolerance: Tolerance;
   working_steps?: string[]; depends_on?: string[]; recompute?: string; weight?: number;
 }
-export interface SerializedSchema { components: SerializedComponent[]; params: Record<string, number>; }
-function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): SerializedSchema {
+export interface SerializedSchema { components: SerializedComponent[]; params: Record<string, ParamValue>; }
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, ParamValue>): SerializedSchema {
   return {
     components: components.map((comp) => {
       const s: SerializedComponent = {
@@ -501,7 +501,14 @@ export function buildIntlNpvSchema(raw: IntlNpvInputs, c: IntlNpvComputed): { sc
   const recomputeIds: Record<string, string | undefined> = { npv: 'intl_npv_sum_less_outlay' };
   for (const y of c.years) { recomputeIds[`home_cf_${y.year}`] = `home_cf_convert_y${y.year}`; if (taxed) recomputeIds[`add_tax_${y.year}`] = `add_tax_convert_y${y.year}`; }
   for (let t = 2; t <= c.years.length; t++) recomputeIds[`fx_${t}`] = `parity_step_y${t}`;
-  const params = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), home_outlay: c.home_outlay, add_tax_rate_effective: c.add_tax_rate_effective };
+  // `parity_basis` is the family's own ppp/irp discriminant, carried for provenance so the
+  // registry can call parityDifferential() with the same argument the builder used.
+  // `remit_net_t` flattens the per-year foreign remittance `home_cf_convert_yN` divides by —
+  // a genuine per-year INPUT that lives nowhere else in the stored row. The npv step needs no
+  // stored discount factors: `y.df` is `discountFactor(r, t)`, recomputed from `discount_rate`
+  // and the year parsed off the component id.
+  const params: Record<string, ParamValue> = { discount_rate: r, base_spot: raw.base_spot, rate_home: asDec(raw.rate_home), rate_foreign: asDec(raw.rate_foreign), home_outlay: c.home_outlay, add_tax_rate_effective: c.add_tax_rate_effective, parity_basis: raw.basis };
+  for (const y of c.years) params[`remit_net_${y.year}`] = y.foreign_remit_net;
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 

@@ -93,7 +93,7 @@
 //     bank fee per party). Thinnest-evidenced kind of the four — flagged, mirroring fxhedge's swap.
 
 import { fixedHalfUp } from './rounding';
-import { normaliseCurrency, type SerializedSchema } from './valuation';
+import { normaliseCurrency, type SerializedSchema, type ParamValue } from './valuation';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 
 // NOTE: this module imports NOTHING from ./fxhedge — the FX family's premium, basis and lock-in
@@ -518,7 +518,7 @@ export function checkEffectiveRateReconciliation(effectiveRates: number[]): IrCh
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // SERIALIZATION — local copy of the per-family toSerialized (same SerializedSchema shape).
 // ═══════════════════════════════════════════════════════════════════════════════════════
-function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): SerializedSchema {
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, ParamValue>): SerializedSchema {
   return {
     components: components.map((comp) => {
       const s: SerializedSchema['components'][number] = {
@@ -563,7 +563,10 @@ export function buildIrFuturesSchema(raw: IrFuturesInputs, c: IrFuturesComputed)
       working_steps: [`= net ÷ ${qty(raw.notional)} × 12/${raw.hedge_months} × 100`] },
   ];
   const recomputeIds: Record<string, string | undefined> = { closing_price: 'irh_closing_price', futures_profit: 'irh_futures_profit', net_outcome: 'irh_net', effective_rate: 'irh_effective' };
-  const params = { notional: raw.notional, contract_size: raw.contract_size, hedge_months: raw.hedge_months, contract_months: raw.contract_months, spot_rate0: raw.spot_rate0, futures0: raw.futures0, months_to_expiry: raw.months_to_expiry, months_to_transaction: raw.months_to_transaction, company_spread: raw.company_spread, base_rate: s0.base_rate };
+  // `side` and `direction` are DISCRIMINANTS, not decoration: `irh_futures_profit` inverts its
+  // price difference on `side`, and `irh_net` flips sign on `direction`. Without them a stored
+  // schema cannot be verified (recompute-registry.ts throws rather than guessing a side).
+  const params = { notional: raw.notional, contract_size: raw.contract_size, hedge_months: raw.hedge_months, contract_months: raw.contract_months, spot_rate0: raw.spot_rate0, futures0: raw.futures0, months_to_expiry: raw.months_to_expiry, months_to_transaction: raw.months_to_transaction, company_spread: raw.company_spread, base_rate: s0.base_rate, side: c.side, direction: raw.direction };
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 export function buildIrFuturesModelAnswer(raw: IrFuturesInputs, c: IrFuturesComputed, prose: string): string {

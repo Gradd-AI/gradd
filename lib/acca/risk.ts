@@ -29,7 +29,7 @@ import { fixedHalfUp } from './rounding';
 import type { AnswerSchema, Component, Tolerance } from './numeric-verifier';
 import { discountFactor } from './npv';
 import { computeCapm } from './capm';
-import { money, fmt1, normaliseCurrency, type SerializedSchema } from './valuation';
+import { money, fmt1, normaliseCurrency, type SerializedSchema, type ParamValue } from './valuation';
 
 export { normaliseCurrency };
 
@@ -333,8 +333,8 @@ export interface SerializedComponent {
   component_id: string; label?: string; expected_value: number; unit?: string; tolerance: Tolerance;
   working_steps?: string[]; depends_on?: string[]; recompute?: string; weight?: number;
 }
-export interface RiskSerializedSchema { components: SerializedComponent[]; params: Record<string, number>; }
-function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, number>): RiskSerializedSchema {
+export interface RiskSerializedSchema { components: SerializedComponent[]; params: Record<string, ParamValue>; }
+function toSerialized(components: Component[], recomputeIds: Record<string, string | undefined>, params: Record<string, ParamValue>): RiskSerializedSchema {
   return {
     components: components.map((comp) => {
       const s: SerializedComponent = { component_id: comp.component_id, label: comp.label, expected_value: comp.expected_value, unit: comp.unit, tolerance: comp.tolerance, working_steps: comp.working_steps, depends_on: comp.depends_on, weight: comp.weight };
@@ -370,7 +370,11 @@ export function buildEnpvSchema(raw: EnpvInputs, c: EnpvComputed): { schema: Ans
     working_steps: [`ENPV = Σ(pᵢ × NPVᵢ) = ${c.scenarios.map((s) => `${s.probability}×${fmt1(s.npv)}`).join(' + ')}`],
   });
   const recomputeIds: Record<string, string | undefined> = { enpv: 'enpv_prob_weighted' };
-  const params = { discount_rate: c.discount_rate, outlay: raw.outlay, hurdle: c.hurdle, p_negative: c.p_negative };
+  // The scenario probability VECTOR flattened to indexed scalar keys (`prob_1` ↔ `npv_1`, …) —
+  // `enpv_prob_weighted` needs it and params may hold no arrays (see ParamValue in valuation.ts).
+  // The component-id list is NOT duplicated here; the registry reads it from `depends_on`.
+  const params: Record<string, ParamValue> = { discount_rate: c.discount_rate, outlay: raw.outlay, hurdle: c.hurdle, p_negative: c.p_negative };
+  probs.forEach((p, i) => { params[`prob_${i + 1}`] = p; });
   return { schema: { components: comps }, serialized: toSerialized(comps, recomputeIds, params) };
 }
 export function buildEnpvModelAnswer(raw: EnpvInputs, c: EnpvComputed, prose: string): string {
