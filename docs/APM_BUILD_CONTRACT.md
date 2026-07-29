@@ -3023,3 +3023,45 @@ case's full technical allocation, which is what `CaseSession:488` renders as the
 other eight fields remain absent, the cross-paper block, the completed-attempt re-lock, the AFM sit
 write path (200 → persisted → 409 replay) and the sit route's 8 stripped slots all still pass. AFM
 paper re-verified **VIRGIN: 0 progress, 0 attempts**.
+
+### 2026-07-29 (sixth) — AFM LABEL-MARKS FENCE (fixture only, no behaviour change)
+
+**The risk being fenced.** `/api/acca/sit` does not serve `marks_guide`; AFM candidates see marks
+per requirement ONLY because the stored labels carry them in prose. Nothing enforced that, so
+tidying a label to a cleaner `"(i)"` would have silently removed marks-per-requirement from a LIVE
+sit — no gate, no failing test, and a paper that stops telling the candidate how to pace 3h15m.
+The structural fix is deferred to the SitRunner change-set; this holds the line until then.
+
+**`npm run test:afm-label-marks`** (`scripts/test-afm-label-marks.ts`) reads the LIVE rows and
+asserts for all 8 AFM Mock 1 requirements: stored label states its marks · **SERVED** label still
+states them after `sitDisplayLabel` (a label could carry marks the strip then removes) · the
+label's number equals `marks_guide` (drift is worse than absence — a wrong number is believed and
+paced to) · label total reconciles to the column total and to the paper's 80.
+
+**It has to read the DB, and that is the point.** `test-sit-preview.ts` already pins label
+behaviour — against LITERAL strings. It tests `sitDisplayLabel`'s logic and stays green whatever
+the rows say. The fragility is a CONTENT edit, so only a check against live rows catches it.
+
+**Two things worth carrying forward:**
+1. **`process.exit()` corrupted the fence's own verdict.** The first version called `process.exit()`
+   on completion; exiting abruptly while the Supabase client still held a handle tripped a libuv
+   assertion on Windows and REPLACED the exit code with a crash code (`-1073740791`) — on a run
+   where all 27 checks passed. A gate reading that exit code learns nothing. Now sets
+   `process.exitCode` and lets the process end naturally. **Any DB-touching check in this repo
+   should do the same.**
+2. **`--selftest` proves the failure path instead of asserting it.** The assertion logic is a PURE
+   function; the self-test runs it over synthetic rows across seven break modes — label tidied to
+   `"(i) B3e"`, marks removed, marks disagreeing with the column, empty label, null label, short
+   read, empty result set — plus the real label set passing. No DB, no writes. A fence that claims
+   it would fail loudly, without ever having failed, is an untested branch.
+
+**Results:** live **8/8 rows, 0 not_evaluated, exit 0**; selftest **8/8 cases behaved, exit 0**.
+
+**Retirement is scheduled, not assumed.** `AFM_SURFACED.md` tags the deferred item **FENCED**,
+names this fixture as what holds it, and lists deleting it in the SitRunner change-set alongside
+serving `marks_guide` and reducing the label to the part — so the fence goes when its reason goes
+rather than lingering as a rule that has been replaced. The same entry also now lists making the
+mock-content guard unconditional once APM stops using the case routes.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:afm-label-marks` 0 · selftest 0.
+**DB: zero writes** (read-only).

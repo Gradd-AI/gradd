@@ -35,7 +35,23 @@ branch, so nothing there was withheld to restore. The sit route's rationale bloc
 had called `marks_guide` "the authored criteria that earn marks: a mark scheme", which is wrong
 about the column, and each withheld field now carries its own real reason.
 
-### 🔸 OPEN — should `/api/acca/sit` serve `marks_guide` too? (my view, no change made)
+### 🔸 OPEN — should `/api/acca/sit` serve `marks_guide` too? · **FENCED 29/07/2026**
+
+> **🚧 FENCED by `npm run test:afm-label-marks`** (`scripts/test-afm-label-marks.ts`) — the risk
+> below is held while the fix is deferred. The fixture reads the LIVE rows (it must: the fragility
+> is a CONTENT edit, and `test-sit-preview.ts` pins label behaviour against literal strings, so it
+> would stay green through a re-author) and asserts, for all 8 AFM Mock 1 requirements: the stored
+> label states its marks · the **served** label still states them after `sitDisplayLabel` · the
+> label's number equals `marks_guide` · the totals reconcile to 80. A short read or an empty result
+> set is a FAILURE, never a silent pass. `--selftest` proves the failure path fires on all seven
+> break modes (label tidied to `"(i) B3e"`, marks removed, marks disagreeing with the column, empty
+> label, null label, short read, empty set) without touching the DB.
+>
+> **⚠ THE SITRUNNER CHANGE-SET MUST RETIRE THIS FIXTURE.** Once `/api/acca/sit` serves
+> `marks_guide` and the runner composes the label from `label` + the column, the prose marks stop
+> being load-bearing and this fixture is asserting a rule that has been replaced — **delete
+> `scripts/test-afm-label-marks.ts` and its npm script in that change-set**, do not leave it
+> passing for a reason that no longer exists.
 
 **Recommendation: YES, serve it — but the real fix is structural, and it is bigger than one line.**
 
@@ -85,6 +101,13 @@ server's gate — which is exactly how the two predicates above came to be wrong
   paper configs of the same shape. Merging them belongs to that step.
 - `CaseSession`'s `sitting` prop becomes dead once the mock stops embedding it, and should be
   removed rather than left as a plumbed-but-unused mode.
+- **Serve `marks_guide` from `/api/acca/sit` and reduce the label to the part** (`sitDisplayLabel`
+  strips the marks text as well as the syllabus code; the runner composes `(i) — 10 marks` from
+  `label` + the column). Then **DELETE `scripts/test-afm-label-marks.ts`** and its npm script — it
+  fences the prose-marks dependency this step removes.
+- **Make the mock-content guard UNCONDITIONAL** (`lib/acca/mocks.ts` / `mock-access.ts`): once APM
+  stops loading and turning through the case routes, the open-attempt carve-out has no reason to
+  exist and should become an outright refusal of `mock_only` on both routes.
 
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
 
