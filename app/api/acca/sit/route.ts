@@ -29,13 +29,35 @@ import { AFM_MOCK_PAPER_1, SIT_CASE_GATE, sitDisplayLabel } from '@/lib/acca/sit
 // reachable by any entitled student and gated like the rest of the product.
 //
 // ── WITHHOLD DISCIPLINE (stricter than the live case route) ──────────────────
-// Never selects model_answer / hint / full_reveal / answer_schema — the same rule the
-// live case route follows. It ALSO withholds two fields the live route does serve:
-//   • marks_guide          — the authored criteria that earn marks: a mark scheme, and
-//                            therefore feedback. "No hints of any kind during the sit."
-//   • professional_skill_tags / intellectual_level
-//                          — tells the candidate which PS skill is being examined,
-//                            which is a steer no real exam gives.
+// Never selects model_answer / hint / full_reveal / answer_schema — the same rule the live
+// case route follows. Those are the ANSWER; serving any of them during a sit is feedback.
+//
+// It ALSO withholds fields the live case route does serve, each for its own reason:
+//   • professional_skill_tags — names which professional skill the requirement examines.
+//                               A steer no real exam gives: it tells the candidate which
+//                               behaviour to perform rather than leaving them to judge it.
+//   • intellectual_level      — the authored difficulty tier. Internal calibration data;
+//                               knowing a requirement is "level 3" changes how it is read.
+//   • command_verb            — the authored verb classification. Internal; the real verb
+//                               is already in the question text where the candidate reads it.
+//   • lo_code                 — the internal syllabus code. No real paper prints it, and it
+//                               identifies the exact area being tested. Also removed from
+//                               the LABEL by sitDisplayLabel (see below) — withholding the
+//                               column alone would leak it through the label anyway.
+//
+// CORRECTED 2026-07-29 — this block previously justified withholding `marks_guide` as "the
+// authored criteria that earn marks: a mark scheme, and therefore feedback". That is WRONG
+// ABOUT THE COLUMN: `marks_guide` is an INTEGER mark allocation (16, 13, 7…), not criteria.
+// Marks per requirement are authentic exam information — every real paper prints them, and a
+// candidate needs them to pace a 3h15m sit.
+//
+// This route does not currently SELECT marks_guide, and today nothing is lost by that: AFM's
+// stored labels carry the marks in prose ("(i) B3e — 10 marks" → "(i) — 10 marks"), so the
+// candidate still sees them. That parity is an accident of label formatting rather than a
+// rule, and it is fragile — re-authoring a label without its marks would silently remove
+// them. Flagged for a decision; see docs/AFM_SURFACED.md. The sibling carve-out on
+// app/api/acca/case DOES serve marks_guide for mock content (lib/acca/mock-access.ts),
+// because APM labels carry no marks and withholding it blanked the APM mock's marks display.
 // `label` IS served, but only in its CANDIDATE-FACING form. The stored label carries the
 // internal syllabus code — "(i) B3e — 10 marks" — which no real paper prints, so
 // sitDisplayLabel() derives "(i) — 10 marks" here at the serve boundary. Marks per

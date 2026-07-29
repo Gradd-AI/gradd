@@ -36,18 +36,26 @@ export async function mockAttemptUnlocksCase(
 }
 
 // ── Withheld fields for mock content, even inside the carve-out ──────────────
-// An open attempt is a key to SIT the paper, never a key to the mark scheme. So a
-// mock_only case served through the practice route withholds everything
-// app/api/acca/sit withholds:
+// An open attempt is a key to SIT the paper, never a key to the mark scheme.
 //
 //   never selected anywhere on this path (same as the live case route):
-//     model_answer · hint · full_reveal · answer_schema
-//   additionally withheld BECAUSE it is mock content:
-//     marks_guide · professional_skill_tags · intellectual_level · command_verb · lo_code
+//     model_answer · hint · full_reveal · answer_schema     — the answer itself
+//   withheld BECAUSE it is mock content:
+//     professional_skill_tags — names which PS skill the requirement examines: a steer no
+//                               real exam gives, and it tells the candidate what to perform
+//     intellectual_level      — the authored difficulty tier; internal calibration data
+//     command_verb            — the authored verb classification; internal
+//     lo_code                 — the internal syllabus code, which no real paper prints
 //
-// The requirement select is therefore a DIFFERENT, NARROWER static string for mock_only
-// cases — the fields are never fetched rather than fetched and stripped, so there is no
-// object for a later edit to accidentally spread into a response.
-export const MOCK_REQUIREMENT_SELECT = 'id, requirement_order, label, question';
+// **`marks_guide` IS SERVED** (restored 2026-07-29, Grant-ruled). It is an INTEGER mark
+// ALLOCATION, not a mark scheme — a real paper always prints marks per requirement, and a
+// candidate needs them to pace a 3h15m sit. Withholding it cost the APM mock its
+// marks-per-requirement display (`CaseSession.tsx` renders it), for no security gain: the
+// number tells a candidate how long to spend, not how to earn the marks.
+//
+// The requirement select is a DIFFERENT static string for mock_only cases — the withheld
+// fields are never fetched rather than fetched and stripped, so there is no object for a
+// later edit to accidentally spread into a response.
+export const MOCK_REQUIREMENT_SELECT = 'id, requirement_order, label, question, marks_guide';
 export const STANDARD_REQUIREMENT_SELECT =
   'id, requirement_order, label, question, marks_guide, command_verb, intellectual_level, lo_code, professional_skill_tags';
