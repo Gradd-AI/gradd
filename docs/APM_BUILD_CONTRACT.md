@@ -2975,3 +2975,51 @@ consumed) and deleted.
 
 **Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:mock-access` 40/40 · `test:sit-preview`
 0 · **DB: zero writes** beyond the synthetic user, fully reverted.
+
+### 2026-07-29 (fifth, follow-up) — `marks_guide` RESTORED to mock content; withhold rationale corrected
+
+**1. Restored.** `marks_guide` is served again to mock content on `GET /api/acca/case`
+(`MOCK_REQUIREMENT_SELECT` is now `id, requirement_order, label, question, marks_guide`). Grant's
+reasoning, recorded: it is an **integer mark ALLOCATION**, not a mark scheme; every real paper
+prints marks per requirement, and a candidate needs them to pace a 3h15m sit. The number says how
+long to spend, never how to earn the marks. The other eight fields stay withheld.
+
+**`POST /api/acca/case/turn` needed no change, and none was made.** Checked before acting rather
+than assumed: the route never returned `marks_guide` in either branch. The sit branch returns
+`recorded / sitting / requirement_passed / is_last_requirement / next_requirement / case_complete`;
+the practice branch returns `ezra_response / session_state / message_kind / requirement_passed /
+is_last_requirement / next_requirement / case_complete`. No requirement fields either way, and
+`next_requirement` carries only `id` and `requirement_order`. Nothing there was withheld, so
+nothing there could be restored — reported rather than manufacturing a change to match the brief.
+
+**2. The sit route's withhold block corrected.** It justified withholding `marks_guide` as "the
+authored criteria that earn marks: a mark scheme, and therefore feedback" — **wrong about the
+column**, which holds integers (16, 13, 7…). Each withheld field now states its own real reason:
+`professional_skill_tags` is a steer no real exam gives (it names the behaviour to perform);
+`intellectual_level` is internal difficulty calibration; `command_verb` is an internal
+classification whose real verb is already in the question text the candidate reads; `lo_code` is
+the internal syllabus code, and withholding the column alone would leak it through the label, which
+is why `sitDisplayLabel` strips it too. `model_answer / hint / full_reveal / answer_schema` are the
+answer itself.
+
+**3. Should `/api/acca/sit` serve `marks_guide` too? — VIEW REPORTED, NO CHANGE MADE.**
+**Yes, eventually, and the real fix is structural.** Today AFM loses nothing because its labels
+carry the marks in prose, but that is **parity by accident of label formatting, not by rule** —
+nothing enforces it, and re-authoring a label to a cleaner `"(i)"` would silently strip
+marks-per-requirement from a live sit with no gate and no visible failure. However, adding the
+field alone would show AFM's marks **twice** once `SitRunner` renders it. The coherent end state is
+marks from the COLUMN on both surfaces with the label reduced to the part (`sitDisplayLabel`
+stripping the marks text as well as the code, runner composing `(i) — 10 marks`), which touches
+`sitDisplayLabel`, its ~25 label fixtures and the runner's slot rendering. **Recommended: fold into
+the SitRunner-serves-both-papers change-set**, which is already rewriting that rendering. Not
+urgent; do NOT add the field without the label change.
+
+**4/5. Fixtures + live.** `marks_guide` is now pinned **POSITIVELY** in `test:mock-access` (a future
+tightening that sweeps it out with the withheld fields fails there rather than silently blanking the
+APM mock), plus a column-count check so the select cannot quietly widen. Live guard run re-executed
+in full: **all checks PASS**, with the new assertions confirming the unlocked mock payload carries
+`marks_guide` on every requirement as a positive integer — Halworth **16 / 14 / 10 = 40**, the
+case's full technical allocation, which is what `CaseSession:488` renders as the marks chip. The
+other eight fields remain absent, the cross-paper block, the completed-attempt re-lock, the AFM sit
+write path (200 → persisted → 409 replay) and the sit route's 8 stripped slots all still pass. AFM
+paper re-verified **VIRGIN: 0 progress, 0 attempts**.

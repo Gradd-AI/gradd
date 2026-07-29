@@ -357,14 +357,19 @@ wait for it, or say plainly that it was still building.
   THAT CASE'S OWN PAPER** (`attemptUnlocksCase` — an open APM attempt must not unlock the AFM mock;
   a completed attempt unlocks nothing; a failed lookup DENIES). Refusal is the routes' existing 404,
   so it leaks no existence. Even inside the carve-out the payload gets the **sit route's
-  withholding** — `marks_guide`/`professional_skill_tags`/`intellectual_level`/`command_verb`/
-  `lo_code` NOT SELECTED (`MOCK_REQUIREMENT_SELECT`), label code stripped via `sitDisplayLabel`.
-  Fixtures `scripts/test-mock-access.ts` (`npm run test:mock-access`, 40, pure). **TRANSITIONAL:**
-  the carve-out exists only because the APM mock still loads/turns through these routes
-  (`MockRunner:258` → `CaseSession:161/:281`, `sitting=false`); when `SitRunner` serves both papers
-  this becomes an unconditional block. **Open decision:** `marks_guide` is the one withheld field a
-  client renders (`CaseSession:488`) — the APM mock now shows no marks per requirement (AFM's labels
-  carry them, APM's don't). See `docs/AFM_SURFACED.md`.
+  withholding** — `professional_skill_tags`/`intellectual_level`/`command_verb`/`lo_code` NOT
+  SELECTED (`MOCK_REQUIREMENT_SELECT`), label code stripped via `sitDisplayLabel`. **`marks_guide`
+  IS SERVED** (Grant-ruled 2026-07-29): an integer mark ALLOCATION, not a mark scheme — a real paper
+  prints marks per requirement and a candidate needs them to pace the sit. Fixtures
+  `scripts/test-mock-access.ts` (`npm run test:mock-access`, pure) pin it POSITIVELY, so a future
+  tightening that sweeps it out with the withheld fields fails there rather than silently blanking
+  the APM mock's marks chip. `case/turn` never returned `marks_guide` in either branch — nothing to
+  withhold or restore there. **TRANSITIONAL:** the carve-out exists only because the APM mock still
+  loads/turns through these routes (`MockRunner:258` → `CaseSession:161/:281`, `sitting=false`);
+  when `SitRunner` serves both papers this becomes an unconditional block. **Open:** `/api/acca/sit`
+  does NOT serve `marks_guide` — AFM's labels carry the marks in prose, which is parity by
+  formatting rather than by rule; recommended fix (marks from the column, label reduced to the part)
+  is banked for the SitRunner change-set. See `docs/AFM_SURFACED.md`.
 - **MARKING CORE — `lib/acca/case-marking.ts`** (shared by `app/api/acca/case/mark/route.ts` and
   `scripts/calibrate-marking.ts`, so calibration can never drift from production). Two passes, same
   mechanism: the MODEL assigns a quality BAND, deterministic CODE converts bands → marks

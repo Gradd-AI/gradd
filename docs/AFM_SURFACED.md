@@ -27,16 +27,38 @@ APM. **An unconditional block would have taken `/acca/mock` offline for entitled
 guard becomes an unconditional refusal.** Fold that into that change-set; do not leave the carve-out
 standing once its reason is gone.
 
-**⚠ ONE DECISION OWED — `marks_guide` on the APM mock.** It is withheld as ruled, and it is the one
-withheld field a client actually renders (`CaseSession.tsx:488`, the per-requirement marks chip).
-It degrades rather than breaks — the guard is a null check, so the chip disappears. But **the APM
-mock now shows no marks per requirement**, with no other source: AFM labels carry the marks
-(`"(i) — 10 marks"`), APM labels do not (`"(i) The benchmarking exercise"`). A real paper always
-prints them. It is an integer ALLOCATION, not a mark scheme. **Grant's call:** restore it for mock
-content, or accept the loss until the sit UI prints marks itself.
-*Related:* the sit route's own comment justifies withholding `marks_guide` as "the authored criteria
-that earn marks: a mark scheme" — **that description is wrong**, the column is an integer. The
-withholding still stands for AFM (its labels carry marks); the stated reason does not.
+**✅ RESOLVED — `marks_guide` is SERVED to mock content** (Grant-ruled 2026-07-29). It is an integer
+mark ALLOCATION, not a mark scheme: every real paper prints marks per requirement and a candidate
+needs them to pace a 3h15m sit. Restored on `GET /api/acca/case`; the other eight fields stay
+withheld. `POST /api/acca/case/turn` needed no change — it never returned `marks_guide` in either
+branch, so nothing there was withheld to restore. The sit route's rationale block is corrected: it
+had called `marks_guide` "the authored criteria that earn marks: a mark scheme", which is wrong
+about the column, and each withheld field now carries its own real reason.
+
+### 🔸 OPEN — should `/api/acca/sit` serve `marks_guide` too? (my view, no change made)
+
+**Recommendation: YES, serve it — but the real fix is structural, and it is bigger than one line.**
+
+*The case for.* Today AFM loses nothing, because its stored labels carry the marks in prose
+(`"(i) B3e — 10 marks"` → `"(i) — 10 marks"`). But that is **parity by accident of label
+formatting, not by rule**. Nothing enforces it: re-authoring a label to a cleaner `"(i)"` — exactly
+the kind of tidy-up the LO-code strip already invites — would silently remove marks-per-requirement
+from a live sit, with no gate, no fixture and no visible failure. The two surfaces should withhold
+on the same rule, as you say, and right now one serves the marks as a structured integer while the
+other serves them as a substring of a display string.
+
+*Why it is not a one-liner.* Adding `marks_guide` to the sit select alone gives AFM the marks
+**twice** — once in the label prose, once as a field — the moment `SitRunner` renders it. The
+coherent end state is: **marks come from the column on both surfaces, and the label carries only the
+part**, i.e. `sitDisplayLabel` strips the marks text as well as the syllabus code, `"(i) B3e — 10
+marks"` → `"(i)"`, and the runner renders `(i) — 10 marks` from `label` + `marks_guide`. That is a
+change to `sitDisplayLabel`, its ~25 label fixtures, and `SitRunner`'s slot rendering.
+
+*Recommended sequencing.* Fold it into the **SitRunner-serves-both-papers change-set**, which is
+already rewriting that runner's rendering — doing it there costs almost nothing extra and avoids
+touching a live sit surface twice. **Not urgent:** the AFM labels do carry the marks today, so no
+candidate is currently short of information. **Do not** add the field without the label change, or
+the paper shows its marks twice.
 
 ## 🔷 NEXT CHANGE-SET (Grant-ruled 2026-07-29) — generalise SitRunner to serve BOTH papers
 
