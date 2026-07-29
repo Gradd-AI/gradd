@@ -1255,3 +1255,30 @@ Triggered by the 13/07 00:26 signup (maphosaan@gmail.com, profile `dd786100`) th
 - **ENV-MANIFEST / dark-feature self-announce (PATTERN, spec only — build next idle session; Grant-ruled 2026-07-14).** Two silent env-flag failures in one week — (1) `NOTIFY_EMAIL`/signup-alert scoping, (2) `APM_EARNED_REVEAL` dark in prod → the earned reveal fell through to `call_warm` and served a truncated persona refusal instead of the verbatim answer, undiagnosable from the surface (looked like a leg-selection bug; only the message-log `call_type=answer` vs never-`reveal` exposed it). **Spec:** a lightweight env-manifest — a required-flags/keys list (e.g. `APM_EARNED_REVEAL`, `APM_INTENT_LAYER`, `APM_COMPLETENESS_GATE`, `NOTIFY_EMAIL`, `TUTOR_SESSION_SECRET`, Supabase/Stripe/Anthropic keys) asserted at boot AND/OR exposed via a `/api/health` (or `/api/_env-manifest`) endpoint returning each flag's set/unset + intended-state, so a dark feature ANNOUNCES itself instead of failing as persona prose. Small build. Do NOT leak secret VALUES — presence + intended-state only.
 - **Reveal wrapper reads STALE diagnosis state (SPEC-ONLY, surfaced 2026-07-14 student-walk; build next idle).** `call4_reveal`'s AFM wrapper (`REVEAL_AFM_WRAPPER_SYSTEM`) is passed the `diagnosis` (the last gap) and told to "name and correct the misconception" — but on the **success path** (a student who SOLVED the drill, now `resolved=true`, then clicks "View the model answer") that diagnosis is stale (from an earlier miss, or absent), so the wrapper can assert a figures-slip the student didn't make. **Fix:** thread the confirm/resolved state into the wrapper prompt — when the reveal is reached from a solved state, credit the student and frame it as comparison ("here's the full layout for comparison / how a full-marks version is laid out"), not correction. When reached from the struggle path (miss ≥ 2), keep the current name-and-correct framing. Small prompt-shape change + a `reachedFrom: 'solved' | 'struggle'` param to `call4_reveal`.
 - **PROMPT CACHING cost-note follow-up — PENDING (mechanism shipped 2026-07-23, cost note owed once a day of traffic accrues).** `cache_control` breakpoints wired across the tutor route (all legs), the narrative `CriterionGrader`, `generate-afm-drills.ts`, and `redteam-judge.ts` (see `lib/acca/prompt-cache.ts` + the 2026-07-23 journal entry) — content byte-identical, live-fire verified. **Next session with a day of post-deploy traffic:** pull the Anthropic console's before/after spend and append the comparison to that journal entry (task's own step 5). Also flagged there, out of scope for that task: **X6·APM (typo'd reveal, `REVEAL_SYSTEM`) reproduced invented illustrative figures/percentages twice across independent live-fire redteam runs** — a genuine, pre-existing content-quality gap in the APM reveal wrapper (not caused by caching — proven via a byte-equality check that cache_control never alters prompt bytes), worth a NO_INVENTED_NUMBERS-style tightening pass on `REVEAL_SYSTEM`/`REVEAL_SYSTEM_SOLVED` when convenient.
+
+## 🔸 OPEN 2026-07-29 — debrief built and unwired; two things owed before it can be shown
+
+**Built:** `lib/acca/debrief.ts` (pure, unwired) + `npm run test:debrief`. It joins marking
+output to the pacing report, quotes the marker's reasoning verbatim as the "why", derives one
+next action per requirement from the band definition, and leads with a single headline —
+collapse first, else the largest single mark loss.
+
+**⚠ SURFACED WHILE BUILDING IT — the collapse headline names ordinals, not labels.**
+`computePacing`'s collapse statement is built from `paper_order`, so it reads *"Between
+submitting requirement 6 and finishing…"* where the rest of the debrief says *"B1(ii)"*. The
+debrief reuses that statement VERBATIM (deliberately — re-wording it would let the headline
+drift out of the language constraints the pacing fixtures enforce), so the infelicity is
+inherited, not introduced. **Not fixed here:** `pacing.ts` is shipped and fixture-locked, and
+changing its statement text touches those fixtures. Fix by passing labels into the collapse
+statement when the debrief is wired, and update `test-pacing.ts`'s expected strings in the
+same change.
+
+**⚠ NOT PROVEN END TO END.** Every fixture uses SYNTHETIC marker feedback shaped like real
+output. The real `judgeTechnicalMarking` feedback has never been fed through `buildDebrief`,
+because no sit has been marked — `acca_case_marking` carries **0 rows with technical marks**.
+The verbatim-quote guarantee is proven; the READABILITY of real marker prose in a
+student-facing debrief is not. Do that with the first real sit before any wiring is designed.
+
+**Wiring is NOT started** and remains Grant's call. The marketing block stands: the rehearsal
+loop is not student-reachable, and `docs/APM_MARKETING_POSITIONING.md`'s inventory needs
+re-dating when it moves.
