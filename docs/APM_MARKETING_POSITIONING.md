@@ -58,3 +58,71 @@ method page, and re-date this entry.
 - The paid wall (replacing the email-capture line): lead with the insight, not "73 drills".
 - Blog angle: "where candidates lose marks in APM (per the examiner reports)" — same two-gate process as the IB blog, drives ACCA search traffic.
 - Eventual acca.gradd.ai landing page headline.
+
+## SURFACED FROM BUILD — 29/07/2026
+
+A build-state inventory for copy decisions. Its only job is to stop a line being written that
+the product cannot yet stand behind. **Re-date it whenever the loop moves** — an inventory that
+goes stale becomes permission to overclaim rather than a brake on it.
+
+### ✅ CLAIMABLE NOW (verified live)
+- **The mock comparison** and **the adjudicated AI line**, both already recorded above
+  (see COMPETITOR CLAIMS). Nothing new is unlocked by this session's build.
+
+### ⛔ BLOCKED — DO NOT PUBLISH UNTIL WIRED
+**The full rehearsal loop (sit → instant mark → pacing → coached debrief) is NOT
+student-reachable today.** No copy, blog, or landing-page line may imply the loop works until
+a student can complete it end to end. **This is the flagship claim and the highest-value thing
+to get wrong** — it is the one promise a disappointed student can disprove in a single session.
+
+Component state, verified against the build on 29/07/2026:
+
+| piece | state | student-reachable? |
+|---|---|---|
+| AFM sit surface | records answers and stops — the route never marks, never scores, never returns a verdict | sit: **yes** · marking: **no** |
+| APM timed mock | `MOCK_SIT_MODE` is **false**; flipping it alone breaks the runner | **no** |
+| Technical marking | live route, gated behind `sitting:true`, which nothing student-facing sends | **no** |
+| Pacing | **built 29/07** — `lib/acca/pacing.ts`, pure, fixtures green — and **wired to nothing** | **no** |
+| Coached debrief | does not exist | **no** |
+
+**Two corrections to the inventory as first drafted, made so the record is exact in both
+directions:**
+
+1. **Pacing is no longer "unbuilt".** The computation shipped on 29/07: intervals, budget at
+   1.95 min/mark, ±25% flags, an end-of-paper collapse detector, marks reported side by side.
+   It is pure, unit-tested and **deliberately wired into no route or UI**. **The block is
+   unchanged** — "built" and "reachable" are different claims, and only the second one earns
+   copy. Recorded because an inventory that is wrong in the *conservative* direction still
+   erodes trust in the inventory.
+2. **"Marking is proven in harness, not in a student's hands" is right about the SIT, and needs
+   splitting.** Measured against `acca_case_marking` on 29/07: **21 rows — 9 demo-seed, 12 from
+   the real model path, and 0 carrying technical marks.** So the **professional-skills** pass
+   has produced real output through the live path; the **technical** pass has never persisted a
+   row outside a harness, and every harness row was deleted. Copy may not lean on either yet:
+   the PS pass is reachable only at the end of an APM *practice* case, which is not the
+   rehearsal loop being claimed.
+
+### 📝 BLOG SEEDS — publishable now, examiner-grounded, no product claim needed
+These make the examiner-report argument without touching the blocked loop. Each goes through
+the existing adversarial-reviewer process before publish.
+
+1. **Unexpired basis in AFM interest-rate futures hedges.** Frame: a candidate can get the
+   contract count, the direction and both scenarios right and *still* lose half the marks.
+2. **Why "the same answer under both scenarios" is not self-verification.** An omission that
+   applies equally to both legs reconciles just as cleanly as the correct method — so the
+   candidate's own check confirms the error instead of catching it.
+3. **Studying APM: theory vs application**, anchored to the examining team's own words that
+   few, if any, marks are available for stating theory (see THE CORE INSIGHT above).
+
+**⚠ GROUNDING CAVEAT — applies to seeds 1 and 2 before either is drafted.** Their *origin* is
+internal: the blind-candidate script sat against AFM Mock 1, where one conceptual error (the
+unexpired basis ignored) failed most components of a requirement while the candidate's own
+cross-check reconciled perfectly. **That is our finding, not an examiner quote.** The
+precision rules above require the primary source, so the examiner grounding must be **located
+and quoted from the accaglobal.com PDF, not inherited from our notes**. Registered anchors to
+start from are in `docs/evidence/sources.json` — the Abertafol and Sohbet examiner reports
+(basis-risk discussion marks) and ACCA's own technical article stating that basis "is often
+assumed to diminish at a constant rate" and flagging it as a simplifying assumption that "may
+not hold true in practice". If a quote for the specific marks-lost claim cannot be found,
+**reframe the seed around what the source does say** rather than publishing the internal
+finding as though an examiner said it. Seed 3 already carries its verbatim quote.
