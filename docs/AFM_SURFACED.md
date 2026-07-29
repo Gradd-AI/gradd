@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-29 (second exercise: PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
+*Last refreshed: 2026-07-29 (third change-set, branch `feat/sit-marking-and-gate` UNMERGED: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
 
 *Earlier: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
@@ -10,7 +10,40 @@
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## 🔷 NEXT CHANGE-SET (Grant-ruled 2026-07-29) — generalise SitRunner to serve BOTH papers
+
+**Ruled:** the lean sit UI is NOT built into `CaseSession`. `app/acca/afm/mock/SitRunner.tsx` is
+generalised to be paper-config driven and serves the APM mock as well, replacing the
+inverted-gate-era scoping with normal case-route scoping. `MOCK_SIT_MODE` flips in THAT
+change-set, not before.
+
+**THE FINDING THAT FORCED THIS, recorded verbatim.** Flipping `MOCK_SIT_MODE` alone breaks the
+APM mock, because sit mode never sets `passed`, so `allPassed` (`CaseSession:231`) and
+`passed === total` (`MockRunner.aggregateCase:257`) never fire, `onComplete` never runs,
+`markCase` is never called, and the sit turn response carries no `ezra_response` so the chat
+surface renders dead.
+
+**`caseMarkReady(sitting, states)` is the replacement completion predicate for both call sites.**
+It is already pure and already shared by `case`, `case/turn` and `case/mark` (`lib/acca/case-sit.ts`),
+so using it in the client is what stops the client's notion of "complete" drifting from the
+server's gate — which is exactly how the two predicates above came to be wrong for sit mode.
+
+**Carried into that change-set as known work:**
+- `SitRunner` has no countdown, no auto-submit and no results screen; the APM mock has all three.
+  They move into the generalised runner.
+- `AFM_MOCK_PAPER_1` (`lib/acca/sit-preview.ts`) and `MOCK_PAPERS` (`lib/acca/mocks.ts`) are two
+  paper configs of the same shape. Merging them belongs to that step.
+- `CaseSession`'s `sitting` prop becomes dead once the mock stops embedding it, and should be
+  removed rather than left as a plumbed-but-unused mode.
+
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
+
+> **PARTLY ADDRESSED 2026-07-29** (branch `feat/sit-marking-and-gate`, unmerged): the field is no
+> longer RETURNED to the client — `app/api/acca/case/mark` sends band + feedback per skill plus the
+> case total, and `CaseSession` renders the band. The apportionment is unchanged and still persisted
+> in full to `acca_case_marking.per_skill`, verified in the synthetic-user walk. What remains open is
+> only whether the internal apportionment should change at all (option 2 below); the client-facing
+> exposure that made it urgent is closed.
 
 **Surfaced by the 10-run PS harness; deliberately NOT fixed** (the brief was report-don't-fix, and this
 is marking semantics, not plumbing). `apportion()` is largest-remainder over a **case-level rounded
@@ -635,9 +668,33 @@ The cost was real and is recorded as such: published content was changed on a de
 pass, with no reconciliation step. That is what P-DB5 now prohibits, and what
 `npm run scan:halfway` now enforces structurally.
 
-## ⛔ PUBLISH-FLIP TRAP — FLIPPING THE 3 AFM MOCK CASES BREAKS `/acca/afm/mock`. DO NOT FLIP.
+## ✅ PUBLISH-FLIP TRAP — RESOLVED IN CODE 2026-07-29 (branch `feat/sit-marking-and-gate`, unmerged)
 
-**Recorded 2026-07-26. Read this BEFORE any `published=true` flip on the mock paper.**
+> **STATUS: the trap below is CLOSED as a code problem and OPEN as a content step.** The inverted
+> gate is retired — `app/api/acca/sit/route.ts` now gates on `mock_only=true AND status='approved'
+> AND published=true`, the same gate as `app/api/acca/case/*`, behind the same `APM_CASES` flag and
+> `hasActiveACCAAccess` entitlement. The email allowlist is deleted. Answer writes moved to
+> `app/api/acca/case/turn` with `sitting:true`, taking the immutability rule with them (409
+> `already_submitted`). Option (a) of the two below was taken, in the form Grant ruled.
+>
+> **The flip is now a normal P-DB2 content step, and is still NOT DONE.** Nothing in that branch
+> writes to the DB. **Until the flip, `/acca/afm/mock` serves nothing** — the standard gate finds no
+> approved+published row and the route returns 404 "Paper not available". That is the intended
+> intermediate state, not a regression: the surface is dark until the content it serves is live.
+>
+> **PRE-FLIP CHECKLIST (all must hold before the three rows are flipped):**
+> 1. `feat/sit-marking-and-gate` is **merged and deployed** — flipping first would publish a paper
+>    whose only surface still runs the inverted gate, i.e. the original trap.
+> 2. `APM_CASES=1` is confirmed set in **production** Vercel env. It is NOT in `.env.local`, so it
+>    has never been verified from this repo; the sit route, the turn route and the mark route are
+>    all behind it, so an unset flag 404s the whole surface after the flip.
+> 3. The flip is by **EXPLICIT id** for the three cases, reconciled against the journal first, per
+>    the standing publish-flip rule. Marking is live from the moment they publish: `case/mark` with
+>    `sitting:true` will serve them.
+> 4. The three cases stay `mock_only=true` — the practice library lists `mock_only=false`, so this
+>    is what keeps a mock case out of the practice catalogue once published.
+
+**Original entry, recorded 2026-07-26. Retained verbatim as the record of what the trap was.**
 
 The three AFM Mock Paper 1 cases — `aa000000-…-a001` Solenne Industries SA (A, 50),
 `aa000000-…-b101` Brecon Renewables plc (B, 25), `aa000000-…-b201` Aldebrino SpA (B, 25) — are
