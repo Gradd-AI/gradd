@@ -326,10 +326,14 @@ export default function CaseSession({
     setMarkingError(false);
     setMarkingIncomplete(false);
     try {
+      // `sitting` MUST be sent: the mark route defaults it to false and on that default
+      // skips the TECHNICAL pass entirely, so a sit marked without it silently loses
+      // every technical mark and reports professional skills alone. Threaded from the
+      // same prop the turn + load calls use, so one component can never send two modes.
       const res = await fetch('/api/acca/case/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_id: caseId }),
+        body: JSON.stringify({ case_id: caseId, sitting }),
       });
       if (res.status === 402) { setSessionLapsed(true); return; }
       if (res.status === 409) { setMarkingIncomplete(true); return; }
