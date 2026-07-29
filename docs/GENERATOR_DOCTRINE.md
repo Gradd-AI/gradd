@@ -102,9 +102,57 @@ success while measuring less than it claimed**:
   string proves some figure renders that way, never which one).
 - **P-G1** — a gate that cannot evaluate must say so distinguishably (silent absence reads green).
 - **P-G2** — a detector's *scope* must be proven (an unstated denominator reads as full coverage).
+- **P-G3** — a check's *failure path* must be proven (a branch that has never run is untested).
 
 P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
 individual result. A report that satisfies one and not the others is still misleading.
+
+## P-G3 — A CHECK THAT HAS NEVER FAILED IS AN UNTESTED BRANCH (ruled 2026-07-29)
+
+**Observing a gate pass on real data proves the PASS path. It proves nothing about the FAIL path**
+— and the fail path is the only reason the gate exists. A check whose failure branch has never
+executed is untested code that everyone downstream is trusting.
+
+**The operational rule.** Every gate, fence and scan must prove its own failure path:
+1. **The assertion logic is a PURE function** over the rows/values, separated from the I/O that
+   fetches them. A check that can only run against the live DB cannot be shown to fail without
+   corrupting live data — which is why the separation is the rule and not a style preference.
+2. **A `--selftest` mode** feeds that pure function SYNTHETIC break modes and asserts each one
+   produces a failure, plus the known-good set producing none. No DB, no writes.
+3. **Enumerate the break modes deliberately**, including the boring ones: absent value, null,
+   empty string, short read, **empty result set** (an empty set must never read as "all fine" —
+   that is the P-G1 failure with a different mask), and *drift* (a present-but-wrong value, which
+   is worse than an absent one because it is believed).
+
+**Reference implementation: `scripts/test-afm-label-marks.ts`.** Pure `evaluate(rows, …)`; live path
+and `--selftest` share it; **7 break modes** — label tidied to `"(i) B3e"`, marks removed, marks
+disagreeing with the column, empty label, null label, short read, empty result set — plus the real
+label set passing. Written that way because the fence guards a CONTENT edit: it could not otherwise
+be shown to fire without re-authoring a live requirement label to break it.
+
+**This is the same family as P-G1 and P-G2** — all three are ways an instrument reports success
+while proving less than it claims. P-G1: it cannot evaluate and says nothing. P-G2: it evaluated
+less than the population and did not say so. **P-G3: its failure branch has never run at all.**
+
+## P-G4 — NEVER `process.exit()` IN A DB-TOUCHING SCRIPT (ruled 2026-07-29)
+
+**Set `process.exitCode` and let the process end naturally.** Calling `process.exit()` while a
+Supabase client still holds an open handle trips a libuv assertion on Windows
+(`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c`) and **replaces the
+script's exit code with a crash code**.
+
+**Measured 2026-07-29.** The first version of `scripts/test-afm-label-marks.ts` ended with
+`process.exit(0)` on a run where **all 27 checks passed** — and the shell saw **`-1073740791`**. A
+gate, CI step or wrapper reading that exit code would have acted on a **false red**: the check
+succeeded and reported catastrophic failure.
+
+**Why this is doctrine and not a footnote.** It inverts the meaning of the one signal an automated
+caller reads. It fires only on the *success* path (a failing run often exits before the client is
+idle), so it is exactly the shape that survives testing and breaks in the pipeline. And the fix is
+free: `main().then((failures) => { process.exitCode = failures === 0 ? 0 : 1 })`.
+
+Applies to every `scripts/*.ts` that constructs a Supabase client — checks, scans, patches and
+one-off authoring scripts alike.
 
 ## P-M1 — A RELIABILITY FIX TO A MARKING CALL MUST BE RE-CALIBRATED, NOT MERELY RE-RUN (ruled 2026-07-29)
 
