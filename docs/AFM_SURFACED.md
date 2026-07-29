@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-29 (third change-set, branch `feat/sit-marking-and-gate` UNMERGED: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
+*Last refreshed: 2026-07-29 (third change-set, `feat/sit-marking-and-gate` **MERGED to main**; `APM_CASES=1` confirmed set in production; walk re-run with a deliberate band spread — 7/7 bands hit target, 6 non-`nothing` bands all scored >0, paper 60/100; the `passed`-is-unset docs claim corrected; allowlist coverage recovered as 17 serving-gate fixtures. **The 3 AFM cases are still NOT flipped — P-DB2, Grant's, and `/acca/afm/mock` is dark until then.** Change-set contents: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
 
 *Earlier: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
@@ -683,11 +683,18 @@ pass, with no reconciliation step. That is what P-DB5 now prohibits, and what
 > intermediate state, not a regression: the surface is dark until the content it serves is live.
 >
 > **PRE-FLIP CHECKLIST (all must hold before the three rows are flipped):**
-> 1. `feat/sit-marking-and-gate` is **merged and deployed** — flipping first would publish a paper
->    whose only surface still runs the inverted gate, i.e. the original trap.
-> 2. `APM_CASES=1` is confirmed set in **production** Vercel env. It is NOT in `.env.local`, so it
->    has never been verified from this repo; the sit route, the turn route and the mark route are
->    all behind it, so an unset flag 404s the whole surface after the flip.
+> 1. ~~`feat/sit-marking-and-gate` is **merged and deployed**~~ — **DONE 2026-07-29, merged to
+>    `main`.** Flipping before this would have published a paper whose only surface still ran the
+>    inverted gate, i.e. the original trap. Verified pre-merge: band→marks mapping exercised with a
+>    real denominator (6 non-`nothing` bands, none scoring 0) and the retired inverted combination
+>    pinned as a must-fail fixture, so the trap cannot silently return.
+> 2. ~~`APM_CASES=1` is confirmed set in **production**.~~ **DONE 2026-07-29 — CONFIRMED SET.**
+>    Measured behaviourally (no Vercel CLI; the MCP project payload carries no env): the flag check
+>    is the FIRST statement in all five flagged routes and 404s *before* auth, so unauthenticated
+>    404 = off and 401 = on. Production returned **401 on all five**; the control
+>    `GET /api/acca/sit` returned **404** (current prod still runs the allowlist gate), proving the
+>    probe separates the two rather than a blanket auth wall answering 401. The literal dashboard
+>    value was not read — `vercel env ls production` if that is ever wanted on the record.
 > 3. The flip is by **EXPLICIT id** for the three cases, reconciled against the journal first, per
 >    the standing publish-flip rule. Marking is live from the moment they publish: `case/mark` with
 >    `sitting:true` will serve them.

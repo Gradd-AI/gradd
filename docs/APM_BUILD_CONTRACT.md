@@ -2766,3 +2766,64 @@ that is wrong, not a bug. Left for its own touch rather than widened into this c
 DELETED with the predicate they tested — recorded as a reduction in pure coverage, no replacement)
 · `test:case-marking-descriptors` PASS. **DB: zero writes** beyond the synthetic walk, which was
 fully reverted.
+
+### 2026-07-29 — PRE-MERGE VERIFICATION of `feat/sit-marking-and-gate` (then MERGED)
+
+**`APM_CASES` in production — SET. Merge unblocked.** No Vercel CLI and the MCP project
+payload carries no env, so the literal string could not be printed. Measured instead, which is
+the operative fact: in all five flagged routes the flag check is the FIRST statement and returns
+404 **before** auth (`case:25`, `case/list:23`, `case/mark:32`, `case/turn:42`, `mock:41`), so an
+unauthenticated request distinguishes them exactly. Production (`www.gradd.ie`) returned **401 on
+all five** → `process.env.APM_CASES === '1'` is TRUE in the production runtime. Control:
+`GET /api/acca/sit` returned **404**, which is current prod still running the allowlist gate — it
+proves the probe genuinely separates 404 from 401 rather than a blanket auth wall answering 401
+everywhere. `case/turn`'s 401 also confirms `TUTOR_SESSION_SECRET` is set (its 500 branch sits
+between the flag and auth). **Not proven: the literal characters in the Vercel dashboard.**
+
+**THE WALK, RE-RUN WITH A DELIBERATE BAND SPREAD.** The first run posted the same generic
+paragraph seven times, banded `nothing` seven times, and so left the denominator for "does a band
+ABOVE nothing map to marks?" at **zero** — reporting that as a mapping pass would have been the
+unstated-denominator failure P-G2 exists for. Seven answers were rewritten to different standards
+against each requirement's own model answer, one deliberately off-topic to keep the `nothing → 0`
+evidence inside the same run.
+
+| requirement | target | ACTUAL band | marks |
+|---|---|---|---|
+| Halworth (i) The benchmarking exercise | exemplary | **EXEMPLARY** | 16/16 |
+| Halworth (ii) The head-office measurement proposal | strong | **STRONG** | 11/14 |
+| Halworth (iii) The budgeting proposal | competent | **COMPETENT** | 5/10 |
+| Rivenor (i) The current board report | weak | **WEAK** | 4/13 |
+| Rivenor (ii) The proposed dashboard | strong | **STRONG** | 5/7 |
+| Bexley (i) The big data proposal | competent | **COMPETENT** | 7/13 |
+| Bexley (ii) Ethical issues | nothing | **NOTHING** | 0/7 |
+
+**7/7 bands matched their target** — the marker is discriminating between deliberately different
+standards of answer, not returning a house band. **PAPER: technical 48/80 + professional 12/20 =
+60/100.**
+
+**BAND → MARKS MAPPING CHECK — PASS, with a real denominator.** 6/7 requirements banded above
+`nothing` (exemplary, strong ×2, competent ×2, weak); **0 of them produced 0 marks**. The single
+`nothing` produced 0. Ratios track the multipliers: 16/16 = 1.00 · 11/14 = 0.79 · 5/7 = 0.71 ·
+5/10 = 0.50 · 7/13 = 0.54 · 4/13 = 0.31 · 0/7 = 0 (exemplary 1 / strong 0.75 / competent 0.5 /
+weak 0.25, then largest-remainder rounding to the requirement's ceiling). Persistence again clean:
+3/3 marking rows, technical non-null 3/3, 7/7 progress rows, band on 7/7, per-requirement marks
+summing to each case total. **Teardown re-queried: 0 / 0 / 0 / 0.**
+
+**Item 3 — the `passed` claim corrected** in five comments across four files. It is a docs error,
+not a bug (`passed` is never written; the column's NOT NULL DEFAULT FALSE makes it read back
+false), and it is corrected precisely because of how it would mislead: a future session trusting
+"unset" would probe with a null check and conclude the sit write was broken.
+
+**Item 4 — coverage recovered, and the gate made testable to do it.** The gate stopped being four
+inline `.eq()` calls: it is declared once as `SIT_CASE_GATE` and the route builds its filters by
+iterating that object, so the fixtures test what the route applies rather than a parallel copy. 13
+deleted allowlist checks → **17 serving-gate checks**: the live combination passes; each of the
+four conditions failing individually blocks; the **retired inverted combination is pinned as a
+must-fail**, which is the regression lock against the publish-flip trap returning; null / empty /
+missing-column rows block; truthiness is refused (`'true'`, `1`); and the gate's shape is pinned so
+dropping a column fails a fixture instead of silently widening the query. Still uncovered and said
+plainly: the ACCESS half (flag + auth + entitlement) has no pure form and is covered by being the
+same gate every other case route applies.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:sit-preview` 0 · `test:case-marking-technical` 0
+· `test:marking-json-extract` 0. **DB: zero writes** beyond the synthetic walk, fully reverted.
