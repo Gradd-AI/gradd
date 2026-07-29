@@ -235,6 +235,55 @@ async function withParseRetry<T>(fn: 'judgeCaseMarking' | 'judgeTechnicalOnce', 
   throw last;
 }
 
+/**
+ * Pull the first BALANCED JSON block out of a model response.
+ *
+ * The strict `JSON.parse(trimmed)` this replaces required the response to BEGIN with the JSON.
+ * Measured 2026-07-28: on a per-requirement shape the model prefaced the JSON with its own
+ * reasoning ("The candidate correctly identifies…") on 20 of ~50 calls — the JSON was present,
+ * valid and correct every time, and the parse threw anyway. A marker that discards a correct
+ * judgement because of a preamble is failing on presentation, not substance.
+ *
+ * Handles, in order: code fences (anywhere, not just at position 0), leading prose, and
+ * trailing commentary after the block. Brace/bracket matching is STRING-AWARE — a `}` inside
+ * a feedback string must not close the object, and this is the whole reason for a scanner
+ * rather than a lastIndexOf.
+ *
+ * Returns null when there is no balanced block, so a genuinely malformed response STILL FAILS.
+ * This is deliberately not a "best effort repair": it finds well-formed JSON that happens to be
+ * surrounded by text; it never invents structure.
+ */
+export function extractJsonBlock(raw: string): string | null {
+  let s = (raw ?? '').trim();
+  const fenced = s.match(/```[a-zA-Z]*\s*([\s\S]*?)```/);
+  if (fenced) s = fenced[1].trim();
+
+  const a = s.indexOf('[');
+  const o = s.indexOf('{');
+  const start = a < 0 ? o : o < 0 ? a : Math.min(a, o);
+  if (start < 0) return null;
+
+  const open = s[start];
+  const close = open === '[' ? ']' : '}';
+  let depth = 0, inString = false, escaped = false;
+  for (let i = start; i < s.length; i++) {
+    const ch = s[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (ch === '\\') escaped = true;
+      else if (ch === '"') inString = false;
+      continue;
+    }
+    if (ch === '"') { inString = true; continue; }
+    if (ch === open) depth++;
+    else if (ch === close) {
+      depth--;
+      if (depth === 0) return s.slice(start, i + 1);
+    }
+  }
+  return null;   // unbalanced (e.g. a max_tokens truncation) — the caller must fail
+}
+
 function extractText(res: unknown): string {
   const msg = res as AnthropicMessage;
   const block = msg.content.find((b): b is TextBlock => b.type === 'text');
@@ -292,10 +341,13 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
   // allocation. Bands are converted to marks deterministically in code below, so the
   // model never decides a number and cannot default the whole pool onto a weak answer.
   const descriptors = getSkillDescriptors(paper);
+  // ORDINAL CONTRACT (2026-07-28): the list is NUMBERED and the model echoes the number, never
+  // the skill name. Same reasoning as the technical path — any string the model must reproduce
+  // verbatim is a transcription risk, and one slip discarded the entire response.
   const rubric = examinedSkills
-    .map((s) => {
+    .map((s, i) => {
       const descriptor = descriptors[s] ?? '(no authored descriptor on file for this skill)';
-      return `- ${s}: ${descriptor}`;
+      return `${i + 1}. ${s}: ${descriptor}`;
     })
     .join('\n');
 
@@ -321,8 +373,9 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
     'DISCIPLINE: for every skill you must cite specific evidence from the candidate\'s answer that ' +
     'justifies the band — quote or name the exact passage. No band without a named reason. ' +
     'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
-    '[{ "skill": "...", "band": "exemplary|strong|competent|weak", "feedback": "..." }] — one ' +
-    'object per examined skill.';
+    '[{ "index": 1, "band": "exemplary|strong|competent|weak", "feedback": "..." }] — one ' +
+    'object per examined skill, where index is the NUMBER of the skill in the list above. ' +
+    'Use the numbers, never the skill names.';
 
   const baseUserContent =
     contextLine +
@@ -351,18 +404,18 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
       throw new Error('call');
     }
     try {
-      let cleaned = rawJudging.trim();
-      if (cleaned.startsWith('```')) {
-        cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
-      }
-      const arr = JSON.parse(cleaned);
+      const block = extractJsonBlock(rawJudging);
+      if (!block) throw new Error('no balanced JSON block in the response');
+      const arr = JSON.parse(block);
       if (!Array.isArray(arr)) throw new Error('not an array');
+      // ordinal -> skill name is owned HERE, in code. The model never names a skill.
       const out: SkillJudgement[] = arr.map((o) => {
-        const skill = typeof o?.skill === 'string' ? o.skill : '';
+        const idx = typeof o?.index === 'number' ? o.index : Number(o?.index);
         const band = typeof o?.band === 'string' ? o.band.trim().toLowerCase() : '';
         const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
-        if (!skill || !isBand(band)) throw new Error('malformed entry');
-        return { skill, band, feedback };
+        if (!Number.isInteger(idx) || idx < 1 || idx > examinedSkills.length) throw new Error();
+        if (!isBand(band)) throw new Error();
+        return { skill: examinedSkills[idx - 1], band, feedback };
       });
       if (out.length === 0) throw new Error('empty');
       return out;
@@ -466,16 +519,30 @@ export function apportionTechnicalMarks(
   return { technical_marks_awarded: total, technical_marks_available: available, per_requirement };
 }
 
-interface TechnicalJudgement { requirement_id: string; band: TechnicalBand; feedback: string }
+// ONE BATCHED model call judging every ATTEMPTED requirement of a case against its own
+// model_answer. Throws Error('call')/Error('parse') like judgeCaseMarking so the route
+// preserves the distinct 502 messages.
+//
+// BATCHED, AND THAT IS A MARKING DECISION, NOT A COST ONE — see judgeTechnicalMarking.
+//
+// NO UUID IN THE MODEL CONTRACT. This call used to ask the model to echo back a 36-character
+// requirement_id, and the dominant parse failure was a ONE-CHARACTER transcription slip
+// (c3dc709a → c3dc409a, observed), which the validator correctly rejected and which then binned
+// the whole case. The model now sees no id at all: it echoes a SHORT ORDINAL, and code owns the
+// ordinal → requirement_id mapping. Measured over 50 calls, that removed the slip class outright.
+//
+// max_tokens 3000 (was 2000): a 4-requirement batch that also cites its evidence per band runs
+// ~700–1400 output tokens, and a truncated response is unbalanced JSON the extractor must (and
+// does) reject. The ceiling is headroom against that, not a target.
+const TECHNICAL_MAX_TOKENS = 3000;
 
-// ONE batched model call judging every ATTEMPTED requirement against its own
-// model_answer. Throws Error('call')/Error('parse') like judgeCaseMarking so the
-// route preserves the distinct 502 messages.
-async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[], attempt = 1): Promise<TechnicalJudgement[]> {
+async function judgeTechnicalOnce(
+  paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[], attempt = 1,
+): Promise<{ index: number; band: TechnicalBand; feedback: string }[]> {
   const contextLine = context ? `Case scenario and exhibits (shared by every requirement):\n${context}\n\n` : '';
   const blocks = reqs
     .map((r, i) =>
-      `Requirement ${i + 1} (requirement_id: ${r.requirement_id}) — ${r.label}\n` +
+      `Requirement ${i + 1} — ${r.label}\n` +
       `Question: ${r.question}\n` +
       `Correct answer (the marking standard — a full-marks response):\n${r.model_answer}\n\n` +
       `Candidate's answer:\n${r.final_answer}`,
@@ -496,8 +563,8 @@ async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: Techn
     'grade on a curve, and do not assume the candidate is right. ' +
     'DISCIPLINE: cite the specific point that decided the band. No band without a named reason. ' +
     'Return ONLY a JSON array, no prose, no code fences: ' +
-    '[{ "requirement_id": "...", "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — ' +
-    'one object per requirement, using the requirement_id given.';
+    '[{ "index": 1, "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — one ' +
+    'object per requirement, where index is the REQUIREMENT NUMBER shown above. Use the numbers.';
 
   const userContent =
     contextLine + `Requirements to mark:\n\n${blocks}\n\n` +
@@ -508,7 +575,7 @@ async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: Techn
   try {
     const res = await anthropic.messages.create({
       model: MARKING_MODEL,
-      max_tokens: 2000,
+      max_tokens: TECHNICAL_MAX_TOKENS,
       system: systemPrompt,
       messages: [{ role: 'user', content: userContent }],
     });
@@ -519,32 +586,39 @@ async function judgeTechnicalOnce(paper: AccaPaper, context: string, reqs: Techn
     throw new Error('call');
   }
   try {
-    let cleaned = raw.trim();
-    if (cleaned.startsWith('```')) {
-      cleaned = cleaned.replace(/^```[a-zA-Z]*\s*/, '').replace(/```\s*$/, '').trim();
-    }
-    const arr = JSON.parse(cleaned);
+    const block = extractJsonBlock(raw);
+    if (!block) throw new Error('no balanced JSON block in the response');
+    const arr = JSON.parse(block);
     if (!Array.isArray(arr)) throw new Error('not an array');
-    const validIds = new Set(reqs.map((r) => r.requirement_id));
-    const out: TechnicalJudgement[] = arr.map((o) => {
-      const requirement_id = typeof o?.requirement_id === 'string' ? o.requirement_id : '';
+    const out = arr.map((o) => {
+      const idx = typeof o?.index === 'number' ? o.index : Number(o?.index);
       const band = typeof o?.band === 'string' ? o.band.trim().toLowerCase() : '';
       const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
-      if (!validIds.has(requirement_id) || !isTechnicalBand(band)) throw new Error('malformed entry');
-      return { requirement_id, band, feedback };
+      if (!Number.isInteger(idx) || idx < 1 || idx > reqs.length) throw new Error(`index out of range: ${String(o?.index)}`);
+      if (!isTechnicalBand(band)) throw new Error(`invalid band "${band}"`);
+      return { index: idx, band, feedback };
     });
     if (out.length === 0) throw new Error('empty');
     return out;
   } catch (e) {
-    captureParseFailure({ fn: 'judgeTechnicalOnce', attempt, stop_reason: meta.stop_reason, input_tokens: meta.input_tokens, output_tokens: meta.output_tokens, max_tokens: 2000, raw, reason: (e as Error)?.message ?? 'unknown', at: new Date().toISOString() });
+    captureParseFailure({ fn: 'judgeTechnicalOnce', attempt, stop_reason: meta.stop_reason, input_tokens: meta.input_tokens, output_tokens: meta.output_tokens, max_tokens: TECHNICAL_MAX_TOKENS, raw, reason: (e as Error)?.message ?? 'unknown', at: new Date().toISOString() });
     throw new Error('parse');
   }
 }
 
 // Run the technical marking pass over one case's requirements. Blanks → 'nothing'
-// deterministically (no model call); attempted requirements are model-judged in ONE
-// batched call against their own model_answer; then the pure apportionment converts
-// bands → /technical-pool marks. Paper-keyed like PS (the prompt names the paper).
+// deterministically (no model call); every attempted requirement is judged in ONE BATCHED call
+// against its own model_answer; then the pure apportionment converts bands → /technical-pool
+// marks. Paper-keyed like PS (the prompt names the paper).
+//
+// BLAST RADIUS is real and accepted: a malformed response costs the whole case's batch, not one
+// requirement. That is the price of the sibling context (below), and it is now paid down by the
+// extractor + retry rather than by splitting the call.
+//
+// ON EXHAUSTION the error still propagates (route → 502), deliberately: silently banding an
+// unjudgeable requirement 'nothing' would zero a possibly-correct answer, and there is no
+// per-requirement not_evaluated state in TechnicalMarkingResult to put it in. Introducing one
+// is a marking-semantics decision, not a plumbing fix — see docs/AFM_SURFACED.md.
 export async function judgeTechnicalMarking(input: JudgeTechnicalMarkingInput): Promise<TechnicalMarkingResult> {
   const { paper, context, requirements } = input;
 
@@ -559,9 +633,18 @@ export async function judgeTechnicalMarking(input: JudgeTechnicalMarkingInput): 
     return true;
   });
 
+  // BATCHED, deliberately. A per-requirement split was tried 2026-07-28 and REVERTED: the
+  // sibling context is load-bearing. Judged alone, A(iv) inflated strong → exemplary in 5/5
+  // runs, because without the other answers in view the marker has nothing to calibrate
+  // "less analytically sharp than the standard" against. Isolation also made the hardest
+  // requirement MORE likely to think aloud before answering, not less.
   if (attempted.length > 0) {
     const judged = await withParseRetry('judgeTechnicalOnce', (attempt) => judgeTechnicalOnce(paper, context, attempted, attempt));
-    for (const j of judged) bandById.set(j.requirement_id, { band: j.band, feedback: j.feedback });
+    // ordinal → requirement_id is owned HERE, in code. The model never sees an id.
+    for (const j of judged) {
+      const r = attempted[j.index - 1];
+      if (r) bandById.set(r.requirement_id, { band: j.band, feedback: j.feedback });
+    }
   }
 
   // Assemble in original requirement order; any requirement the model somehow omitted
