@@ -49,7 +49,8 @@
     "test:recompute-registry": "tsx scripts/test-recompute-registry.ts",
     "test:mock1-acceptance": "tsx scripts/test-mock1-acceptance.ts",
     "test:capm-gates": "tsx scripts/test-capm-gates.ts",
-    "test:marking-json-extract": "tsx scripts/test-marking-json-extract.ts"
+    "test:marking-json-extract": "tsx scripts/test-marking-json-extract.ts",
+    "test:mock-access": "tsx scripts/test-mock-access.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
