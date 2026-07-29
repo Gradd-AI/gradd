@@ -152,14 +152,20 @@ export default function SitRunner() {
     setSubmitting(true);
     setSubmitError(false);
     try {
-      const res = await fetch('/api/acca/sit', {
+      // Recording an answer goes through the STANDARD case-turn route in sit mode — the
+      // same write path the APM sit uses — not through a bespoke sit endpoint. `sitting`
+      // makes it skip the teach engine, record `final_answer` and leave `passed` unset;
+      // `paper` must be sent because the route defaults to APM and would 404 an AFM case.
+      // The answer is `student_message`, which is what the route reads in either mode.
+      const res = await fetch('/api/acca/case/turn', {
         method: 'POST',
         headers: JSON_HEADERS,
         body: JSON.stringify({
-          action: 'submit',
           case_id: slot.case_id,
           requirement_id: slot.requirement_id,
-          answer: text,
+          student_message: text,
+          sitting: true,
+          paper: 'AFM',
         }),
       });
       // 409 = already recorded (a double-submit or a replayed request). The answer IS

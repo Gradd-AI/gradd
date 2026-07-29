@@ -1,19 +1,24 @@
 // scripts/test-sit-preview.ts
-// Fixtures for the AFM sit preview gate + paper config (lib/acca/sit-preview.ts).
-// Pure — no env/DB/model. Proves: the allowlist admits ONLY the ruled test account
-// (and is not fooled by case/whitespace, nor by empty/null); resume lands on the
-// first UNANSWERED requirement rather than counting submissions; the elapsed clock
-// counts up and never renders negative; and the paper config cannot collide with the
-// APM mock papers in lib/acca/mocks.ts.
+// Fixtures for the AFM sit paper config + display/resume helpers (lib/acca/sit-preview.ts).
+// Pure — no env/DB/model. Proves: resume lands on the first UNANSWERED requirement rather
+// than counting submissions; the elapsed clock counts up and never renders negative; the
+// candidate-facing label carries no syllabus code; and the paper config cannot collide with
+// the APM mock papers in lib/acca/mocks.ts.
+//
+// THE ALLOWLIST FIXTURES ARE GONE (2026-07-29), with the allowlist itself. `canPreviewSit`
+// and `SIT_PREVIEW_EMAILS` no longer exist: access is now the standard APM_CASES flag +
+// auth + `hasActiveAPMAccess` entitlement, applied in app/api/acca/sit/route.ts. That is a
+// route-level gate against live DB state, so it is not testable in this pure suite — it is
+// covered by the same gate every other case route uses rather than by a bespoke predicate.
+// Deleting the fixtures is therefore a REDUCTION IN PURE COVERAGE and is recorded as such:
+// 13 checks removed, no equivalent pure replacement added.
 
 import {
-  canPreviewSit,
   nextUnsubmittedIndex,
   isPaperComplete,
   fmtElapsed,
   sitDisplayLabel,
   AFM_MOCK_PAPER_1,
-  SIT_PREVIEW_EMAILS,
 } from '../lib/acca/sit-preview';
 import { MOCK_PAPERS, getMockPaper } from '../lib/acca/mocks';
 
@@ -22,23 +27,6 @@ function ok(name: string, cond: boolean) {
   if (!cond) failures++;
   console.log(`${cond ? 'PASS' : 'FAIL'} :: ${name}`);
 }
-
-// ── Allowlist: exactly one account, and nothing else ──
-ok('the ruled test account is admitted', canPreviewSit('erasmoose@outlook.ie') === true);
-ok('allowlist is exactly one entry', SIT_PREVIEW_EMAILS.length === 1);
-ok('uppercase form is admitted (case-insensitive)', canPreviewSit('Erasmoose@Outlook.ie') === true);
-ok('surrounding whitespace is tolerated', canPreviewSit('  erasmoose@outlook.ie  ') === true);
-
-ok('a different real user is REFUSED', canPreviewSit('grant@live.ie') === false);
-ok('the admin account is REFUSED (not on this allowlist)', canPreviewSit('testbundle@gradd.ai') === false);
-ok('a paying student is REFUSED', canPreviewSit('maphosaan@gmail.com') === false);
-ok('null is refused', canPreviewSit(null) === false);
-ok('undefined is refused', canPreviewSit(undefined) === false);
-ok('empty string is refused', canPreviewSit('') === false);
-ok('whitespace-only is refused', canPreviewSit('   ') === false);
-// A substring/prefix must never satisfy the gate.
-ok('a lookalike domain is refused', canPreviewSit('erasmoose@outlook.ie.evil.com') === false);
-ok('a lookalike local-part is refused', canPreviewSit('xerasmoose@outlook.ie') === false);
 
 // ── Paper config ──
 ok('paper is AFM', AFM_MOCK_PAPER_1.paper === 'AFM');

@@ -132,6 +132,28 @@ export async function POST(request: Request): Promise<Response> {
 
     const finalAnswer = typeof student_message === 'string' ? student_message : '';
 
+    // ── A SUBMITTED SIT ANSWER IS IMMUTABLE ──
+    // Enforced SERVER-SIDE, not by hiding a back button: once a requirement has a
+    // recorded answer it can never be rewritten, so a replayed or hand-crafted POST
+    // cannot overwrite submitted work either. This guarantee previously lived in
+    // app/api/acca/sit/route.ts; it moved HERE when the AFM sit stopped using its own
+    // endpoint and started writing through this route, and it must not be weakened —
+    // the upsert below would otherwise silently overwrite a committed answer.
+    //
+    // Note `final_answer != null` is the test, not truthiness: a BLANK answer ('') is a
+    // valid, final, zero-credit submission (a requirement moved past on purpose) and is
+    // just as immutable as a written one.
+    const { data: recorded } = await supabase
+      .from('acca_case_progress')
+      .select('final_answer')
+      .eq('user_id', user.id)
+      .eq('case_id', caseId)
+      .eq('requirement_id', requirementId)
+      .maybeSingle();
+    if (recorded && recorded.final_answer != null) {
+      return NextResponse.json({ error: 'already_submitted' }, { status: 409 });
+    }
+
     try {
       await supabase.from('acca_case_progress').upsert(
         {

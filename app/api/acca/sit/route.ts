@@ -1,28 +1,32 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import {
-  AFM_MOCK_PAPER_1,
-  canPreviewSit,
-  sitDisplayLabel,
-} from '@/lib/acca/sit-preview';
+import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { AFM_MOCK_PAPER_1, sitDisplayLabel } from '@/lib/acca/sit-preview';
 
-// ── AFM Mock Paper 1 — SIT endpoint (preview-gated, unpublished content) ───────
+// ── AFM Mock Paper 1 — SIT read endpoint (standard gate, real product surface) ─
 // Serves the lean sit surface at /acca/afm/mock. Authentic exam conditions: the
 // scenario, the exhibits and the requirement text — nothing else.
 //
-// ── SERVING GATE IS INVERTED ON PURPOSE ──────────────────────────────────────
-// Every other case/drill route gates on `status='approved' AND published=true`. This
-// one gates on the OPPOSITE — `paper_code='AFM' AND mock_only=true AND published=false
-// AND status='candidate'` — so it can only ever serve the unadjudicated mock, never a
-// live published case. Combined with the live routes' own gate, the two servable sets
-// are disjoint by construction. No live route was modified to reach this content.
+// ── SERVING GATE IS NOW THE STANDARD ONE (inverted gate retired 2026-07-29) ───
+// This route used to gate on the OPPOSITE of every other case route — `published=false
+// AND status='candidate'` — so that it could serve the unadjudicated mock and nothing
+// else. That was right for pre-release content and had a fatal end-state: publishing the
+// paper would have stopped the gate matching and 404'd the surface. The publish-flip trap.
+//
+// It now gates on `paper_code='AFM' AND mock_only=true AND status='approved' AND
+// published=true`, identical in kind to app/api/acca/case/*. `mock_only` is retained (it
+// was never the inverted part) so the paper's cases stay out of the practice library and
+// a non-paper case cannot be addressed through this surface.
+//
+// CONSEQUENCE, deliberate: until the three cases are flipped to approved/published this
+// endpoint serves nothing (404 "Paper not available"). The flip is a separate,
+// P-DB2-governed step taken after the end-to-end walk — this code never performs it.
 //
 // ── ACCESS ────────────────────────────────────────────────────────────────────
-// Auth + a one-entry email allowlist (lib/acca/sit-preview.ts). Anyone else gets 404,
-// never 403 — a 403 would confirm an unpublished AFM paper exists at this path.
-// There is deliberately NO subscription/entitlement check: this is unpublished
-// pre-release content reachable by one test account, so the allowlist IS the gate.
-// Adding an entitlement check could only ever lock the test account OUT.
+// The email allowlist is DELETED. Access is now exactly what every other case route
+// requires: the APM_CASES flag, auth, and an active ACCA entitlement
+// (hasActiveAPMAccess → 402). The sit surface is the real product surface, so it is
+// reachable by any entitled student and gated like the rest of the product.
 //
 // ── WITHHOLD DISCIPLINE (stricter than the live case route) ──────────────────
 // Never selects model_answer / hint / full_reveal / answer_schema — the same rule the
@@ -43,27 +47,51 @@ import {
 //   GET                                   → the whole paper + which requirements are
 //                                           already submitted + the open attempt
 //   POST {action:'start'}                 → start (or resume) the elapsed clock
-//   POST {action:'submit', …}             → record ONE requirement's answer (immutable)
 //   POST {action:'finish'}                → mark the attempt completed
 //
-// MARKING AND DEBRIEF ARE OUT OF SCOPE. This route never marks, never scores, and
-// never returns a verdict. Answers land in acca_case_progress.final_answer, which is
-// what the existing case/mark path already reads when marking is built.
+// ── ANSWER WRITES ARE NOT HERE ANY MORE ──────────────────────────────────────
+// `action:'submit'` is REMOVED. One requirement's answer is now recorded by the
+// standard app/api/acca/case/turn route with `sitting:true` — the same write path the
+// APM sit uses — so there is one sit write path, one serving gate and one immutability
+// rule instead of two implementations that could drift. The immutable-submission
+// guarantee moved with it (case/turn returns 409 `already_submitted` on a recorded
+// answer). What is left here is the paper-level READ and the attempt clock, neither of
+// which the per-case routes model.
+//
+// MARKING AND DEBRIEF ARE STILL OUT OF SCOPE FOR THIS ROUTE. It never marks, never
+// scores and never returns a verdict. Answers land in acca_case_progress.final_answer,
+// which app/api/acca/case/mark reads when marking runs.
+
+const CASES_ENABLED = process.env.APM_CASES === '1';
 
 interface GateOk {
   userId: string;
   supabase: ReturnType<typeof createServiceClient>;
 }
 
-// Flag → n/a. Auth → 404. Allowlist → 404. Deliberately uniform: every rejection is
-// indistinguishable from "this path does not exist".
+// Flag → 404. Unauthenticated → 401. No entitlement → 402. The uniform-404 posture is
+// deliberately GONE with the allowlist: it existed to hide unpublished content, and
+// this surface no longer serves any. It now answers like every other case route, so a
+// lapsed student sees the upsell instead of a surface that appears not to exist.
 async function gate(): Promise<{ error: Response } | GateOk> {
-  const authClient = await createServerClient();
-  const { data: { user } } = await authClient.auth.getUser();
-  if (!user || !canPreviewSit(user.email)) {
+  if (!CASES_ENABLED) {
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
-  return { userId: user.id, supabase: createServiceClient() };
+  const authClient = await createServerClient();
+  const { data: { user } } = await authClient.auth.getUser();
+  if (!user) {
+    return { error: NextResponse.json({ error: 'Unauthorised' }, { status: 401 }) };
+  }
+  const supabase = createServiceClient();
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('apm_subscription_status, apm_pass_expires_at')
+    .eq('id', user.id)
+    .single();
+  if (!hasActiveAPMAccess(profile ?? {})) {
+    return { error: NextResponse.json({ error: 'subscription_required' }, { status: 402 }) };
+  }
+  return { userId: user.id, supabase };
 }
 
 const PAPER = AFM_MOCK_PAPER_1;
@@ -96,40 +124,20 @@ async function openAttempt(
   return (data as AttemptRow | null) ?? null;
 }
 
-// Verify a case id belongs to this paper AND passes the inverted (unpublished) gate.
-// Every write path calls this, so a caller can never post an answer against a live
-// published case by supplying its id.
-async function assertSittableCase(
-  supabase: GateOk['supabase'],
-  caseId: string,
-): Promise<boolean> {
-  if (!PAPER.case_ids.includes(caseId)) return false;
-  const { data } = await supabase
-    .from('acca_cases')
-    .select('id')
-    .eq('id', caseId)
-    .eq('paper_code', PAPER.paper)
-    .eq('mock_only', true)
-    .eq('published', false)
-    .eq('status', 'candidate')
-    .maybeSingle();
-  return !!data;
-}
-
 export async function GET(): Promise<Response> {
   const g = await gate();
   if ('error' in g) return g.error;
   const { supabase, userId } = g;
 
-  // ── Cases (inverted gate) ──
+  // ── Cases (STANDARD gate — approved + published, same as every case route) ──
   const { data: caseRows } = await supabase
     .from('acca_cases')
     .select('id, title, section, scenario_intro, total_marks, professional_skills_marks')
     .in('id', PAPER.case_ids)
     .eq('paper_code', PAPER.paper)
     .eq('mock_only', true)
-    .eq('published', false)
-    .eq('status', 'candidate');
+    .eq('status', 'approved')
+    .eq('published', true);
 
   const byId = new Map((caseRows ?? []).map((c) => [c.id as string, c]));
   // Order by the paper's own sequence, not by whatever order the DB returned.
@@ -218,9 +226,7 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const { action, case_id, requirement_id, answer } = body as {
-    action?: unknown; case_id?: unknown; requirement_id?: unknown; answer?: unknown;
-  };
+  const { action } = body as { action?: unknown };
 
   // ── start / resume the elapsed clock ──
   if (action === 'start') {
@@ -248,62 +254,11 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ attempt: data as AttemptRow, resumed: false });
   }
 
-  // ── submit ONE requirement — final, immutable ──
-  if (action === 'submit') {
-    const caseId = typeof case_id === 'string' && case_id ? case_id : null;
-    const reqId  = typeof requirement_id === 'string' && requirement_id ? requirement_id : null;
-    // A blank answer is valid and final (an unanswered requirement moved past on
-    // purpose) — so only the TYPE is checked, never the length.
-    if (!caseId || !reqId || typeof answer !== 'string') {
-      return NextResponse.json({ error: 'case_id, requirement_id and answer required' }, { status: 400 });
-    }
-    if (!(await assertSittableCase(supabase, caseId))) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-    const { data: reqRow } = await supabase
-      .from('acca_case_requirements')
-      .select('id')
-      .eq('id', reqId)
-      .eq('case_id', caseId)
-      .maybeSingle();
-    if (!reqRow) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 });
-    }
-
-    // IMMUTABILITY IS ENFORCED SERVER-SIDE, not merely by hiding a back button: once a
-    // requirement has a recorded answer it can never be rewritten. This is the real
-    // guarantee behind "no back navigation, no editing a submitted requirement" — a
-    // replayed or hand-crafted POST cannot overwrite submitted work either.
-    const { data: existingProgress } = await supabase
-      .from('acca_case_progress')
-      .select('final_answer')
-      .eq('user_id', userId)
-      .eq('case_id', caseId)
-      .eq('requirement_id', reqId)
-      .maybeSingle();
-    if (existingProgress && existingProgress.final_answer != null) {
-      return NextResponse.json({ error: 'already_submitted' }, { status: 409 });
-    }
-
-    const { error } = await supabase.from('acca_case_progress').upsert(
-      {
-        user_id:        userId,
-        case_id:        caseId,
-        requirement_id: reqId,
-        final_answer:   answer,
-        updated_at:     new Date().toISOString(),
-      },
-      { onConflict: 'user_id,case_id,requirement_id' },
-    );
-    if (error) {
-      // Surfaced honestly so the client can offer a retry — an answer the student
-      // believes is saved but is not would be the worst failure this surface has.
-      return NextResponse.json({ error: 'Failed to record answer' }, { status: 500 });
-    }
-    // `passed` is left UNSET, exactly as the practice-vs-sit rule in lib/acca/case-sit.ts
-    // requires: a sit is never judged at turn time.
-    return NextResponse.json({ recorded: true });
-  }
+  // `action:'submit'` is intentionally absent — recording an answer moved to
+  // app/api/acca/case/turn with `sitting:true`, which owns the immutability rule. A
+  // client still posting 'submit' here falls through to the 400 below rather than
+  // silently succeeding, which is the honest failure for a caller writing to a path
+  // that no longer records anything.
 
   // ── finish ──
   if (action === 'finish') {
