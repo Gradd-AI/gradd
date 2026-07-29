@@ -1,0 +1,71 @@
+{
+  "what": "P-DB3 pre-write snapshot — AFM Mock Paper 1 publish flip",
+  "when": "2026-07-29T13:16:39.575Z",
+  "write": {
+    "table": "acca_cases",
+    "ids": [
+      "aa000000-0000-4000-8000-00000000a001",
+      "aa000000-0000-4000-8000-00000000b101",
+      "aa000000-0000-4000-8000-00000000b201"
+    ],
+    "fields": {
+      "status": "approved",
+      "published": true
+    },
+    "by": "explicit id"
+  },
+  "rollback": "restore status/published per row below; no other column is written",
+  "rows": {
+    "aa000000-0000-4000-8000-00000000a001": {
+      "id": "aa000000-0000-4000-8000-00000000a001",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "syllabus_cycle": "S26-J27",
+      "section": "A",
+      "anchor_area": null,
+      "title": "Solenne Industries SA",
+      "scenario_intro": "It is now 1 September 20X5. You are a financial adviser engaged by Solenne Industries SA (\"Solenne\"), a France-based specialty-chemicals group that reports in euros (EUR). Write a report to the board of Solenne responding to its instructions in the requirements below, using the information in the exhibits provided. Professional marks will be awarded for the demonstration of skill in communication, analysis and evaluation, scepticism and commercial acumen in your answer.",
+      "response_format": "report",
+      "total_marks": 50,
+      "professional_skills_marks": 10,
+      "status": "candidate",
+      "published": false,
+      "created_at": "2026-07-25T13:46:23.98026+00:00",
+      "mock_only": true
+    },
+    "aa000000-0000-4000-8000-00000000b101": {
+      "id": "aa000000-0000-4000-8000-00000000b101",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "syllabus_cycle": "S26-J27",
+      "section": "B",
+      "anchor_area": "B1",
+      "title": "Brecon Renewables plc",
+      "scenario_intro": "It is now 1 September 20X5. You are a financial adviser to Brecon Renewables plc (\"Brecon\"), a UK renewable-energy developer reporting in pounds sterling (GBP). Write a briefing note to the board responding to the requirements below, using the information in the exhibits. Professional marks will be awarded for the demonstration of skill in analysis and evaluation and scepticism in your answer.",
+      "response_format": "briefing note",
+      "total_marks": 25,
+      "professional_skills_marks": 5,
+      "status": "candidate",
+      "published": false,
+      "created_at": "2026-07-25T13:46:24.430678+00:00",
+      "mock_only": true
+    },
+    "aa000000-0000-4000-8000-00000000b201": {
+      "id": "aa000000-0000-4000-8000-00000000b201",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "syllabus_cycle": "S26-J27",
+      "section": "B",
+      "anchor_area": "E3",
+      "title": "Aldebrino SpA",
+      "scenario_intro": "It is now 1 September 20X5. You are a financial adviser to Aldebrino SpA (\"Aldebrino\"), an Italy-based industrial exporter reporting in euros (EUR). Write a report to the board responding to the requirements below, using the information in the exhibits. Professional marks will be awarded for the demonstration of skill in analysis and evaluation, scepticism and commercial acumen in your answer.",
+      "response_format": "report",
+      "total_marks": 25,
+      "professional_skills_marks": 5,
+      "status": "candidate",
+      "published": false,
+      "created_at": "2026-07-25T13:46:24.613181+00:00",
+      "mock_only": true
+    }
+  }
+}
