@@ -274,10 +274,30 @@ export async function POST(request: Request): Promise<Response> {
   }
 
   // ── 11. Return ──
+  // PER-SKILL MARKS ARE NOT RETURNED. `per_skill[].mark_awarded` is an artefact of
+  // largest-remainder apportionment over a case-level ROUNDED total, not a score for
+  // that skill. Measured over 30 chains on 2026-07-29: two skills with the SAME band
+  // scored 3 and 2 in the same run (case A, both at ceiling 2.5 — the rounding surplus
+  // simply runs out); a skill's mark moved when a DIFFERENT skill's band moved (case B1
+  // analysis_and_evaluation is exemplary in 10/10 runs and scores 2 or 3 depending on
+  // what scepticism did); and a band change was invisible in the mark (case A
+  // commercial_acumen scores 2 whether strong or exemplary). Shipping that number to a
+  // student reads as a per-skill score it is not, and would be indefensible if queried.
+  //
+  // The BAND is the real per-skill judgement and is returned. The case-level total is
+  // sound (the apportionment is arithmetically correct in aggregate) and is returned.
+  // The apportionment itself is UNCHANGED and still persisted in full at step 10 — this
+  // narrows what is surfaced, it does not change how anything is marked.
+  const perSkillPublic = result.per_skill.map((s) => ({
+    skill: s.skill,
+    band: s.band,
+    feedback: s.feedback,
+  }));
+
   return NextResponse.json({
     professional_marks_awarded: result.professional_marks_awarded,
     professional_marks_available: result.professional_marks_available,
-    per_skill: result.per_skill,
+    per_skill: perSkillPublic,
     ...(technical
       ? {
           technical_marks_awarded: technical.technical_marks_awarded,
