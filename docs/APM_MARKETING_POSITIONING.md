@@ -126,3 +126,38 @@ assumed to diminish at a constant rate" and flagging it as a simplifying assumpt
 not hold true in practice". If a quote for the specific marks-lost claim cannot be found,
 **reframe the seed around what the source does say** rather than publishing the internal
 finding as though an examiner said it. Seed 3 already carries its verbatim quote.
+
+## ⛔ OPEN — PS COACHING DOES NOT EXIST (29/07/2026)
+
+**No copy may imply that Gradd teaches, trains, coaches or improves the professional skills.**
+It MARKS them. Those are different products and the difference is checkable by any student who
+buys expecting the first.
+
+**What exists.** `judgeCaseMarking` (`lib/acca/case-marking.ts`) awards a band per examined skill
+against the paper's own descriptor set — `AFM_SKILL_DESCRIPTORS` / `APM_SKILL_DESCRIPTORS`,
+page-verified from the syllabus — and returns reasoning citing evidence from the student's own
+answer. That is real, it is live for APM practice cases, and it is defensible copy.
+
+**What does not exist.**
+- **No PS teaching leg.** `lib/acca/teach-engine.ts` and `lib/acca/tutor-personas.ts` contain no
+  reference to professional skills at all. The teach loop coaches the TECHNICAL requirement.
+- **No route from a weak PS band to practice.** Nothing consumes a PS band. `next-drill` steers on
+  `lo_code`/area; a `weak` in scepticism leads nowhere.
+- **No PS practice surface.** Nothing lets a student attempt, be judged on, and re-attempt a
+  professional skill as such.
+
+**⚠ ONE CORRECTION TO THE OBVIOUS PHRASING — "there is no PS drill corpus" is not accurate, and
+the inaccuracy would cost a rebuild.** Every published drill DOES carry a `professional_skill_tag`
+(measured 29/07: 140 of 148 published drills tagged — APM analysis_and_evaluation 36, scepticism
+21, communication 17, commercial_acumen 17; AFM analysis_and_evaluation 48, communication 1, 8
+untagged). But the column is **written by the authoring generators and read by NOTHING** — zero
+consumers in `app/`, `lib/` or `components/`. It is an authoring-time steer that shapes the
+`model_answer`, inert at serve time. So the corpus is TAGGED but the routing is absent: whoever
+builds PS practice should wire the existing tag, not author a second corpus.
+
+**The permitted formulation** is the one already on the landing page and in the site metadata:
+Gradd **marks** professional skills against ACCA's published descriptors and **names the
+evidence**. Coaching claims attach to the technical teach-through, which is real.
+
+**Re-check this item before any copy change touching professional skills**, and strike it only
+when a student can attempt → be judged → be routed to practice on a named skill.
