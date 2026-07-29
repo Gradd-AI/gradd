@@ -80,7 +80,9 @@ ok('completed=null is treated as OPEN (only completed===true closes)',
   attemptUnlocksCase([{ mock_id: APM.id, completed: null }], APM_CASE) === true);
 
 console.log('\n-- field withholding for mock content --');
-const WITHHELD = ['marks_guide', 'professional_skill_tags', 'intellectual_level', 'command_verb', 'lo_code'];
+// The EIGHT fields a mock payload must never carry. `marks_guide` is deliberately NOT in
+// this list — see below.
+const WITHHELD = ['professional_skill_tags', 'intellectual_level', 'command_verb', 'lo_code'];
 for (const f of WITHHELD) {
   ok(`mock select does NOT fetch "${f}"`, !MOCK_REQUIREMENT_SELECT.includes(f));
   ok(`standard select still fetches "${f}"`, STANDARD_REQUIREMENT_SELECT.includes(f));
@@ -89,8 +91,22 @@ for (const f of ['model_answer', 'hint', 'full_reveal', 'answer_schema']) {
   ok(`neither select ever fetches "${f}"`,
     !MOCK_REQUIREMENT_SELECT.includes(f) && !STANDARD_REQUIREMENT_SELECT.includes(f));
 }
-ok('mock select still carries what a candidate must see (id, order, label, question)',
-  ['id', 'requirement_order', 'label', 'question'].every((f) => MOCK_REQUIREMENT_SELECT.includes(f)));
+
+// marks_guide IS SERVED for mock content (restored 2026-07-29). It is an integer mark
+// ALLOCATION, not a mark scheme: a real paper prints marks per requirement and a candidate
+// needs them to pace the sit. Pinned POSITIVELY so a future tightening that sweeps it back
+// out with the genuinely-withheld fields fails here rather than silently blanking the APM
+// mock's marks display (CaseSession renders it).
+ok('mock select DOES fetch "marks_guide" (integer allocation, not a mark scheme)',
+  MOCK_REQUIREMENT_SELECT.includes('marks_guide'));
+ok('standard select still fetches "marks_guide"', STANDARD_REQUIREMENT_SELECT.includes('marks_guide'));
+
+ok('mock select still carries what a candidate must see (id, order, label, question, marks)',
+  ['id', 'requirement_order', 'label', 'question', 'marks_guide'].every((f) => MOCK_REQUIREMENT_SELECT.includes(f)));
+// Exactly five columns — a guard against the select quietly widening.
+ok('mock select is exactly 5 columns',
+  MOCK_REQUIREMENT_SELECT.split(',').map((s) => s.trim()).filter(Boolean).length === 5,
+  MOCK_REQUIREMENT_SELECT);
 
 console.log(`\n${failures === 0 ? 'ALL MOCK-ACCESS FIXTURES PASS' : `${failures} FIXTURE(S) FAILED`}\n`);
 process.exit(failures === 0 ? 0 : 1);
