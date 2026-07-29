@@ -370,8 +370,24 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
     'professional standard.\n' +
     'Judge each skill on its ABSOLUTE quality against the descriptor. Do not grade on a curve, and ' +
     'do not assume the answer is good. ' +
-    'DISCIPLINE: for every skill you must cite specific evidence from the candidate\'s answer that ' +
-    'justifies the band — quote or name the exact passage. No band without a named reason. ' +
+    // ── FEEDBACK CONTRACT — same rules as the technical pass, same reason ──
+    // Four skills at 800–1,500 characters each ran longer than the entire technical section and
+    // was almost all praise.
+    'THE `feedback` STRING IS SHOWN TO THE CANDIDATE. It is not a note to a moderator. Write it to ' +
+    'these rules:\n' +
+    '1. SECOND PERSON, addressed to them — "You structure the answer as a report…", never "The ' +
+    'candidate…".\n' +
+    '2. NEVER mention the descriptor, the marking standard, a model answer or any document they ' +
+    'cannot see. Say what their writing DID and, where the band is below exemplary, what would have ' +
+    'raised it.\n' +
+    '3. LENGTH IS SET BY THE BAND:\n' +
+    '   • "exemplary" or "strong": ONE or TWO sentences. Name the behaviour that earned it and stop. ' +
+    'Do not inventory everything they did well.\n' +
+    '   • "competent" or "weak": THREE to FIVE sentences. Name the specific shortfall, point to where ' +
+    'in their answer it shows, and state the one thing that would raise the band.\n' +
+    '4. Point to their OWN writing when you name evidence — quote a short phrase or name the section. ' +
+    'No band without a named reason.\n' +
+    '5. No praise for its own sake, no encouragement, no grade prediction. ' +
     'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
     '[{ "index": 1, "band": "exemplary|strong|competent|weak", "feedback": "..." }] — one ' +
     'object per examined skill, where index is the NUMBER of the skill in the list above. ' +
@@ -540,11 +556,19 @@ async function judgeTechnicalOnce(
   paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[], attempt = 1,
 ): Promise<{ index: number; band: TechnicalBand; feedback: string }[]> {
   const contextLine = context ? `Case scenario and exhibits (shared by every requirement):\n${context}\n\n` : '';
+  // STRUCTURAL, not instructed (docs/TEACHING_ARCHITECTURE.md): the reference is labelled as
+  // something the candidate cannot see and must never be named, rather than merely asking the
+  // model not to mention it afterwards. Calling this block "the marking standard" is what
+  // produced feedback like "matching the model answer exactly" and "vs model's €31.3m" —
+  // sentences that assume a document the student has never been shown.
   const blocks = reqs
     .map((r, i) =>
       `Requirement ${i + 1} — ${r.label}\n` +
       `Question: ${r.question}\n` +
-      `Correct answer (the marking standard — a full-marks response):\n${r.model_answer}\n\n` +
+      `Correct treatment — FOR YOUR JUDGEMENT ONLY. The candidate has never seen this text and ` +
+      `never will. Never quote it, cite it, or refer to it as a model answer, marking standard ` +
+      `or correct answer. Use it to decide the band, then state the correct treatment as plain ` +
+      `fact in your own words:\n${r.model_answer}\n\n` +
       `Candidate's answer:\n${r.final_answer}`,
     )
     .join('\n\n---\n\n');
@@ -559,9 +583,28 @@ async function judgeTechnicalOnce(
     '- "competent": the right approach but a material error, omission, or an incomplete answer.\n' +
     '- "weak": a recognisable attempt in the right general area but largely incorrect or superficial.\n' +
     '- "nothing": earns no credit — irrelevant, absent, or entirely wrong.\n' +
-    'Judge each requirement on its ABSOLUTE technical correctness against ITS OWN correct answer. Do not ' +
-    'grade on a curve, and do not assume the candidate is right. ' +
-    'DISCIPLINE: cite the specific point that decided the band. No band without a named reason. ' +
+    'Judge each requirement on its ABSOLUTE technical correctness against ITS OWN correct treatment. Do ' +
+    'not grade on a curve, and do not assume the candidate is right. ' +
+    // ── FEEDBACK CONTRACT — the `feedback` string is READ BY THE CANDIDATE ──
+    // It is not a note to a moderator. Before this contract it was written in the third person,
+    // cited an invisible model answer, and ran to 1,006 characters on requirements where nothing
+    // needed to change.
+    'THE `feedback` STRING IS SHOWN TO THE CANDIDATE. It is not a note to a moderator. Write it to ' +
+    'these rules:\n' +
+    '1. SECOND PERSON, addressed to them. "You ungear the peer beta correctly…" — never "The ' +
+    'candidate…", never "the answer shows…".\n' +
+    '2. NEVER mention a model answer, marking standard, correct answer, or any document they cannot ' +
+    'see. State the correct treatment as plain fact: "the closing futures price is 94.85, not the ' +
+    '95.00 you used" — NEVER "the model gives 94.85" or "this matches the marking standard".\n' +
+    '3. LENGTH IS SET BY THE BAND:\n' +
+    '   • "exemplary" or "strong": ONE or TWO sentences. Name what worked, name any immaterial gap, ' +
+    'and stop. Do not justify the band at length and do not list everything they got right.\n' +
+    '   • "competent", "weak" or "nothing": FULL DIAGNOSIS. Name the specific omission or error, give ' +
+    'the figure THEIR working produced AND the correct figure, and state what it changed downstream ' +
+    '(the wrong rate, the wrong decision, the wrong total).\n' +
+    '4. NEVER refer to another requirement, earlier or later — each one is read on its own.\n' +
+    '5. No praise for its own sake, no encouragement, no grade prediction.\n' +
+    'DISCIPLINE: name the specific point that decided the band. No band without a named reason. ' +
     'Return ONLY a JSON array, no prose, no code fences: ' +
     '[{ "index": 1, "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — one ' +
     'object per requirement, where index is the REQUIREMENT NUMBER shown above. Use the numbers.';
