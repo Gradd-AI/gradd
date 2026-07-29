@@ -50,7 +50,8 @@
     "test:mock1-acceptance": "tsx scripts/test-mock1-acceptance.ts",
     "test:capm-gates": "tsx scripts/test-capm-gates.ts",
     "test:marking-json-extract": "tsx scripts/test-marking-json-extract.ts",
-    "test:mock-access": "tsx scripts/test-mock-access.ts"
+    "test:mock-access": "tsx scripts/test-mock-access.ts",
+    "test:afm-label-marks": "tsx --env-file=.env.local scripts/test-afm-label-marks.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
