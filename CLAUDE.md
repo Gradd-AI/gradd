@@ -314,12 +314,7 @@ wait for it, or say plainly that it was still building.
   3 cases were flipped to `approved`/`published=true` (P-DB2, Grant-approved 2026-07-29;
   `mock_only` stays true; snapshot `docs/rollbacks/AFM_mock1_publish_flip_20260729.json`), and the
   serve was proven end-to-end through the deployed route with a real session: 200, 8 requirements
-  in paper order, LO codes stripped, withheld fields absent. **KNOWN EXPOSURE (pre-existing
-  design, not new):** `mock_only` keeps these cases out of `case/list`, but the ID-ADDRESSED
-  `GET /api/acca/case` has no `mock_only` filter, so any entitled user holding a case id can fetch
-  the mock's requirements WITH `marks_guide` / `professional_skill_tags` / `lo_code`, and practice
-  mode would teach on them. Verified identical on the long-published APM mock cases — it is how
-  `mock_only` has always worked, not a consequence of this flip. Withholds MORE than the live case route: never selects
+  in paper order, LO codes stripped, withheld fields absent. Withholds MORE than the live case route: never selects
   `model_answer`/`hint`/`full_reveal`/`answer_schema`, and additionally withholds `marks_guide` (a
   mark scheme = feedback) and `professional_skill_tags`/`intellectual_level` (a steer no real exam
   gives). **Requirement labels are DERIVED, not served raw** (2026-07-26): the stored label carries
@@ -354,6 +349,22 @@ wait for it, or say plainly that it was still building.
   largest-remainder artefact (same band → different marks in one run; a skill's mark moves when a
   DIFFERENT skill's band moves). Band + case total are returned; the apportionment is unchanged and
   still persisted in full to `acca_case_marking.per_skill`.
+- **MOCK-CONTENT ACCESS — `lib/acca/mocks.ts` (pure rule) + `lib/acca/mock-access.ts` (query +
+  select strings).** A `mock_only` case is reserved exam content: `case/list` already excluded it,
+  but the ID-ADDRESSED `GET /api/acca/case` and `POST /api/acca/case/turn` did not — a case id alone
+  fetched the paper WITH `marks_guide`/`professional_skill_tags`/`lo_code` and could teach on it.
+  Both now refuse unless the requester holds an **OPEN, UNCOMPLETED `acca_mock_attempts` row for
+  THAT CASE'S OWN PAPER** (`attemptUnlocksCase` — an open APM attempt must not unlock the AFM mock;
+  a completed attempt unlocks nothing; a failed lookup DENIES). Refusal is the routes' existing 404,
+  so it leaks no existence. Even inside the carve-out the payload gets the **sit route's
+  withholding** — `marks_guide`/`professional_skill_tags`/`intellectual_level`/`command_verb`/
+  `lo_code` NOT SELECTED (`MOCK_REQUIREMENT_SELECT`), label code stripped via `sitDisplayLabel`.
+  Fixtures `scripts/test-mock-access.ts` (`npm run test:mock-access`, 40, pure). **TRANSITIONAL:**
+  the carve-out exists only because the APM mock still loads/turns through these routes
+  (`MockRunner:258` → `CaseSession:161/:281`, `sitting=false`); when `SitRunner` serves both papers
+  this becomes an unconditional block. **Open decision:** `marks_guide` is the one withheld field a
+  client renders (`CaseSession:488`) — the APM mock now shows no marks per requirement (AFM's labels
+  carry them, APM's don't). See `docs/AFM_SURFACED.md`.
 - **MARKING CORE — `lib/acca/case-marking.ts`** (shared by `app/api/acca/case/mark/route.ts` and
   `scripts/calibrate-marking.ts`, so calibration can never drift from production). Two passes, same
   mechanism: the MODEL assigns a quality BAND, deterministic CODE converts bands → marks

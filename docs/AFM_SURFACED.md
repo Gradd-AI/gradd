@@ -10,6 +10,34 @@
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## 🔸 OPEN 2026-07-29 — the mock-content carve-out is TRANSITIONAL, and one decision is owed
+
+**Shipped:** `GET /api/acca/case` and `POST /api/acca/case/turn` refuse a `mock_only` case unless
+the requester has an OPEN, UNCOMPLETED `acca_mock_attempts` row **for that case's own paper**, and
+even then serve it with the sit route's withholding (`marks_guide`, `professional_skill_tags`,
+`intellectual_level`, `command_verb`, `lo_code` not selected; label code derived away). Fixtures:
+`npm run test:mock-access` (40, pure). Live-verified 31/31.
+
+**WHY A CARVE-OUT AND NOT A BLOCK — this is the transitional part.** The APM timed mock serves its
+content *through those exact routes*: `MockRunner.tsx:258` loads each case via `GET /api/acca/case`,
+and the embedded `CaseSession` loads via the same route (`:161`) and turns via `/api/acca/case/turn`
+(`:281`) with `sitting=false`. `/api/acca/sit` is bound to `AFM_MOCK_PAPER_1`, so it cannot serve
+APM. **An unconditional block would have taken `/acca/mock` offline for entitled students.**
+→ **Once SitRunner serves both papers, APM stops using the case routes for mock content and this
+guard becomes an unconditional refusal.** Fold that into that change-set; do not leave the carve-out
+standing once its reason is gone.
+
+**⚠ ONE DECISION OWED — `marks_guide` on the APM mock.** It is withheld as ruled, and it is the one
+withheld field a client actually renders (`CaseSession.tsx:488`, the per-requirement marks chip).
+It degrades rather than breaks — the guard is a null check, so the chip disappears. But **the APM
+mock now shows no marks per requirement**, with no other source: AFM labels carry the marks
+(`"(i) — 10 marks"`), APM labels do not (`"(i) The benchmarking exercise"`). A real paper always
+prints them. It is an integer ALLOCATION, not a mark scheme. **Grant's call:** restore it for mock
+content, or accept the loss until the sit UI prints marks itself.
+*Related:* the sit route's own comment justifies withholding `marks_guide` as "the authored criteria
+that earn marks: a mark scheme" — **that description is wrong**, the column is an integer. The
+withholding still stands for AFM (its labels carry marks); the stated reason does not.
+
 ## 🔷 NEXT CHANGE-SET (Grant-ruled 2026-07-29) — generalise SitRunner to serve BOTH papers
 
 **Ruled:** the lean sit UI is NOT built into `CaseSession`. `app/acca/afm/mock/SitRunner.tsx` is
@@ -693,6 +721,11 @@ pass, with no reconciliation step. That is what P-DB5 now prohibits, and what
 > cases for ALL users — verified before AND after the synthetic user was deleted. The proof used
 > GETs only; the sit GET writes nothing, so **the clock has never started**. The paper has not
 > been sat.
+>
+> **✅ THE EXPOSURE BELOW IS CLOSED (same day).** Both id-addressed routes now refuse `mock_only`
+> unless the requester holds an OPEN, UNCOMPLETED attempt **for that case's own paper**, and serve
+> it with the sit route's full withholding even then. See the section immediately below for the
+> transitional carve-out and the one open decision (`marks_guide`).
 >
 > **⚠ KNOWN EXPOSURE, pre-existing and NOT introduced by this flip.** `mock_only=true` keeps the
 > three cases out of `case/list` (verified live: AFM list 0 cases, APM list 5, zero mock ids in

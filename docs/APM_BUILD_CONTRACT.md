@@ -2892,3 +2892,86 @@ it since ids are not discoverable); not a blocker, not a regression.
 
 **Gates:** `tsc --noEmit` clean · `next build` GREEN · fixtures unchanged and green.
 **DB writes: 3 rows, 2 fields each, exactly as approved.**
+
+## 2026-07-29 (fifth) — MOCK CONTENT IS ATTEMPT-SCOPED ON THE ID-ADDRESSED ROUTES (both papers)
+
+**The exposure, closed.** A published `mock_only` case was fetchable AND teachable by anyone
+holding its id. `case/list` filters `mock_only=false`, but the id-addressed `GET /api/acca/case`
+never had that filter and neither did `POST /api/acca/case/turn` — so a case id alone pulled a
+reserved exam paper's requirements **with `marks_guide`, `professional_skill_tags` and `lo_code`**,
+and ran the teach loop over them. True of the 3 APM mock cases for months; true of the 3 AFM cases
+from the moment they published.
+
+**⚠ THE GUARD AS FIRST SPECIFIED WOULD HAVE TAKEN THE APM MOCK OFFLINE — found before writing any
+code.** The APM timed mock serves its content *through the two routes being closed*:
+`MockRunner.tsx:258` loads each mock case via `GET /api/acca/case`, and the embedded `CaseSession`
+loads via the same route (`:161`) and posts turns to `/api/acca/case/turn` (`:281`) with
+`sitting={MOCK_SIT_MODE}` = **false**. `/api/acca/sit` is bound to `AFM_MOCK_PAPER_1` (`:97`), so
+"mock content only through the sit route" is unreachable for APM today. An outright block would
+have dark-ed `/acca/mock` for entitled students.
+
+**RULED (Grant, 2026-07-29): attempt-scoped carve-out, with two tightenings.**
+- Both routes refuse `mock_only` unless the requester has an **OPEN, UNCOMPLETED**
+  `acca_mock_attempts` row. No attempt → the routes' existing 404, identical to unpublished or
+  wrong-paper, so nothing distinguishes "reserved" from "does not exist".
+- **Scoped to the attempt's OWN paper.** The check resolves the attempt's `mock_id` to *its* case
+  list and asks whether this case is in it — never "is any mock open". An open APM attempt does not
+  unlock the AFM mock, and vice versa.
+- **An open attempt is not a key to the mark scheme.** Even inside the carve-out, a mock case is
+  served with the sit route's withholding: `marks_guide`, `professional_skill_tags`,
+  `intellectual_level`, `command_verb`, `lo_code` are **NOT SELECTED** (never fetched rather than
+  fetched and stripped), and the stored label's syllabus code is derived away with the sit route's
+  own `sitDisplayLabel` — a no-op on APM labels, load-bearing on AFM's.
+
+A completed attempt unlocks nothing (sitting once is not a permanent key); a failed attempts
+lookup DENIES rather than opening the door; `completed=null` counts as OPEN, because a nullable
+column must not read as "closed by omission" in one place and "open" in another. The turn check
+sits BEFORE the sit/practice branch, so one rule covers both paths.
+
+**⚠ STOP-AND-REPORT TRIGGERED — `marks_guide` IS rendered by a client.** `CaseSession.tsx:488`
+renders it as the per-requirement marks chip (`{r.marks_guide != null && …}`). Per the ruling it
+was **withheld, not served**, and this is the report. Consequences, precisely:
+- It **degrades, it does not break** — the guard is a null check, so the chip simply disappears.
+- **The APM mock loses marks-per-requirement**, with no other source in the payload. AFM does not:
+  its labels carry the marks (`"(i) — 10 marks"`). APM labels are `"(i) The benchmarking
+  exercise"` — no marks. A real paper always prints marks per requirement, so this is a genuine
+  fidelity loss on the APM mock specifically. **Grant's call whether to restore it for mock
+  content** (it is a mark ALLOCATION, an integer, not a mark scheme).
+- Related: the sit route's own comment justifies withholding `marks_guide` as "the authored
+  criteria that earn marks: a mark scheme". **That description is wrong** — the column is an
+  integer. The withholding is still defensible for AFM (the label carries the marks); the stated
+  reason is not. Logged rather than silently corrected.
+- Verified NOT client-rendered, so withheld with no consequence: `professional_skill_tags` (the
+  marking panel humanises the tag off the marking RESPONSE, not the requirements payload),
+  `lo_code`, `intellectual_level`, `command_verb`.
+
+**FIXTURES — `npm run test:mock-access`, 40 checks, pure.** The decision is pure
+(`attemptUnlocksCase`, `lib/acca/mocks.ts`); `lib/acca/mock-access.ts` supplies only the query and
+the two select strings. Pins: no attempt blocks on both papers · an open attempt unlocks every case
+of its own paper · cross-paper blocked both directions · completed blocked · open-among-completed
+allowed · a case in no paper never unlocked · unknown `mock_id` unlocks nothing · empty case id
+blocked · `completed=null` is OPEN · and the two select strings, so the withholding cannot be
+widened by an edit.
+
+**LIVE CONFIRMATION — 31/31 against a local build of the new code** (the guard was not yet
+deployed), real authenticated session, synthetic user:
+1. no attempt → APM mock 404, AFM mock 404, APM practice turn 404;
+2. practice library untouched — APM list still 5 cases, a non-mock case still serves **with**
+   `marks_guide` and `professional_skill_tags`;
+3. open APM attempt → APM mock case **200** (the timed mock still works), AFM mock case **still
+   404** (cross-paper tightening holds);
+4. the unlocked payload carries **none** of the nine withheld fields, and still carries all 3
+   requirements with their questions;
+5. a practice turn on the mock returns **200** mid-attempt — `/acca/mock` is not broken;
+6. `/api/acca/sit` still 200, 8 slots, LO codes still stripped;
+7. **the AFM sit write path**: attempt started, `turn` with `sitting:true` **writes** (200,
+   persisted), `passed` reads back **false**, and a replayed submit is refused **409
+   already_submitted** — immutability intact;
+8. completing the attempt **re-locks** the case (404 again).
+
+**AFM paper re-verified VIRGIN after teardown: 0 progress, 0 attempts.** The one synthetic sit
+answer was written as the synthetic user (immutability is per-user, so no real account was
+consumed) and deleted.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:mock-access` 40/40 · `test:sit-preview`
+0 · **DB: zero writes** beyond the synthetic user, fully reverted.
