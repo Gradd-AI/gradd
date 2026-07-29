@@ -2827,3 +2827,68 @@ same gate every other case route applies.
 
 **Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:sit-preview` 0 · `test:case-marking-technical` 0
 · `test:marking-json-extract` 0. **DB: zero writes** beyond the synthetic walk, fully reverted.
+
+## 2026-07-29 (fourth) — P-DB2 PUBLISH FLIP EXECUTED: AFM MOCK PAPER 1 IS LIVE
+
+**Grant-approved P-DB2 write.** Three cases, `status: candidate → approved`, `published: false →
+true`, **by EXPLICIT ID**. `mock_only` untouched and still `true`. This is a LIVE CONTENT WRITE —
+it shipped the moment it ran (P-DB1), independent of git.
+
+**Order of operations, as the doctrine requires.**
+1. **Dry run first** — full rows read, every field's old→new printed, nothing written.
+2. **Reconcile before the flip** — the AFM approved-set was **0 rows**. No un-reviewed AFM case was
+   sitting `approved`, so there was nothing to demote in the same transaction and no pipeline leak.
+   (APM's 8 approved rows are pre-existing and out of scope.)
+3. **P-DB3 snapshot committed BEFORE the write** —
+   `docs/rollbacks/AFM_mock1_publish_flip_20260729.json`, all 15 columns × 3 rows, verified by
+   read-back. The apply path **refuses to run** unless that committed snapshot exists AND still
+   reconciles byte-for-byte with the live rows: a snapshot that no longer describes the DB cannot
+   roll anything back.
+4. **The write**, three explicit-id UPDATEs — never a bare `WHERE status=…`.
+
+**P-DB4 POST-VERIFY — PASS.** 15 columns × 3 rows = **45 fields** compared against the committed
+snapshot with a **recursive key-sorted canonicaliser**, so jsonb key-order normalisation cannot
+produce a false alarm (the mistake that cost a false alarm on 2026-07-25). Key sets identical on
+all three rows. **Fields that moved: `status`, `published` — and nothing else, on any row.**
+`mock_only` unchanged. No content, no schema, no params moved.
+
+| case | status | published | mock_only | gate after |
+|---|---|---|---|---|
+| Solenne `…a001` | candidate → **approved** | false → **true** | true (untouched) | `isSittableCaseRow = true` |
+| Brecon `…b101` | candidate → **approved** | false → **true** | true (untouched) | `isSittableCaseRow = true` |
+| Aldebrino `…b201` | candidate → **approved** | false → **true** | true (untouched) | `isSittableCaseRow = true` |
+
+**END-TO-END SERVE PROOF — the real deployed route, a real session.** Not a replication: a
+synthetic user was created, entitled, signed in for a genuine Supabase session, and that session
+encoded the way `@supabase/ssr` 0.10.x encodes its cookie (`sb-<ref>-auth-token`, `base64-` +
+base64(JSON), chunked at 3180) and sent to **production over HTTPS**.
+
+`GET https://www.gradd.ie/api/acca/sit` → **HTTP 200** (it was 404 before the flip — that transition
+IS the publish-flip trap being resolved rather than sprung). Verified on the response body:
+- paper `afm-paper-1`; **3 cases in the paper's own order**, Section A first;
+- **8 requirement slots**, grouped by case in paper order, `requirement_order` ascending within each:
+  A (i) 10 · (ii) 16 · (iii) 8 · (iv) 6 → B Brecon (i) 12 · (ii) 8 → B Aldebrino (i) 12 · (ii) 8;
+- **every LO code stripped at the serve boundary**, shown against the stored form for all 8 —
+  `(i) B3e — 10 marks` → `(i) — 10 marks`, and the stored labels were confirmed to still carry the
+  codes, so the strip is doing real work rather than matching nothing;
+- every label still states its part and its marks;
+- **absent from the entire payload**: `marks_guide`, `professional_skill_tags`,
+  `intellectual_level`, `model_answer`, `hint`, `full_reveal`, `answer_schema`, `lo_code`,
+  `command_verb`.
+
+**THE PAPER IS VIRGIN.** 0 progress rows, 0 attempt rows, 0 marking rows across the three cases
+**for ALL users**, checked before AND after teardown. The proof issued **GETs only** and the sit GET
+writes nothing (`openAttempt` reads), so **the clock has never started**. The paper has not been
+sat, by anyone, including this verification. Synthetic users deleted; residue re-queried at zero.
+
+**⚠ EXPOSURE NOTE — pre-existing, not caused by this flip.** `mock_only=true` keeps the three cases
+out of the practice library (verified live: AFM `case/list` 0 cases, APM 5, zero mock ids in
+either). But the **id-addressed `GET /api/acca/case` has no `mock_only` filter**, so an entitled
+user holding a case id can fetch the mock's requirements *including* `marks_guide`,
+`professional_skill_tags` and `lo_code`, and practice mode would teach on them. Confirmed
+**identical** on the APM mock cases, published for months — this is how `mock_only` has always
+behaved. Logged in `AFM_SURFACED.md` as a decision to take some time (guard the id route, or accept
+it since ids are not discoverable); not a blocker, not a regression.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · fixtures unchanged and green.
+**DB writes: 3 rows, 2 fields each, exactly as approved.**

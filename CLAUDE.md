@@ -310,9 +310,16 @@ wait for it, or say plainly that it was still building.
   `action:'submit'` is gone from the sit route — SitRunner records each answer through
   `app/api/acca/case/turn` with `sitting:true` + `paper:'AFM'`, and the immutable-submission rule
   moved there (409 `already_submitted`, tested `!= null` so a BLANK answer is equally final). The
-  sit route now owns only the paper-level READ and the attempt clock. **Until the 3 cases are
-  flipped to approved/published this surface serves nothing (404)** — intended; the flip is a
-  separate P-DB2 step with a pre-flip checklist in `docs/AFM_SURFACED.md`. Withholds MORE than the live case route: never selects
+  sit route now owns only the paper-level READ and the attempt clock. **THE PAPER IS LIVE** — the
+  3 cases were flipped to `approved`/`published=true` (P-DB2, Grant-approved 2026-07-29;
+  `mock_only` stays true; snapshot `docs/rollbacks/AFM_mock1_publish_flip_20260729.json`), and the
+  serve was proven end-to-end through the deployed route with a real session: 200, 8 requirements
+  in paper order, LO codes stripped, withheld fields absent. **KNOWN EXPOSURE (pre-existing
+  design, not new):** `mock_only` keeps these cases out of `case/list`, but the ID-ADDRESSED
+  `GET /api/acca/case` has no `mock_only` filter, so any entitled user holding a case id can fetch
+  the mock's requirements WITH `marks_guide` / `professional_skill_tags` / `lo_code`, and practice
+  mode would teach on them. Verified identical on the long-published APM mock cases — it is how
+  `mock_only` has always worked, not a consequence of this flip. Withholds MORE than the live case route: never selects
   `model_answer`/`hint`/`full_reveal`/`answer_schema`, and additionally withholds `marks_guide` (a
   mark scheme = feedback) and `professional_skill_tags`/`intellectual_level` (a steer no real exam
   gives). **Requirement labels are DERIVED, not served raw** (2026-07-26): the stored label carries

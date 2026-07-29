@@ -670,7 +670,43 @@ pass, with no reconciliation step. That is what P-DB5 now prohibits, and what
 
 ## ✅ PUBLISH-FLIP TRAP — RESOLVED IN CODE 2026-07-29 (branch `feat/sit-marking-and-gate`, unmerged)
 
-> **STATUS: the trap below is CLOSED as a code problem and OPEN as a content step.** The inverted
+> ## ✅✅ FULLY CLOSED 2026-07-29 — THE FLIP IS DONE AND THE PAPER IS LIVE
+>
+> **P-DB2 write executed on Grant's explicit approval.** All three cases flipped
+> `status: candidate → approved`, `published: false → true`, by EXPLICIT ID, `mock_only`
+> untouched. **P-DB4 post-verify PASS:** 15 columns × 3 rows = 45 fields compared with a
+> recursive key-sorted canonicaliser (jsonb key order cannot cause a false alarm); key sets
+> identical; **the only fields that moved were `status` and `published`, on all 3 rows.**
+> Pre-flip reconcile: the AFM approved-set was **0** — nothing un-reviewed to demote.
+> Snapshot: `docs/rollbacks/AFM_mock1_publish_flip_20260729.json`, committed BEFORE the write,
+> and the write refused to run until it reconciled byte-for-byte with the live rows.
+>
+> **Serve proven END-TO-END** through the deployed production route with a real authenticated
+> session (not a replication): `GET /api/acca/sit` → **200** (was 404 pre-flip), 3 cases in
+> paper order, **8 requirement slots** grouped by case with ascending order within each,
+> **every LO code stripped** at the serve boundary (`(i) B3e — 10 marks` → `(i) — 10 marks`,
+> all 8 shown against their stored form), and `marks_guide` / `professional_skill_tags` /
+> `intellectual_level` / `model_answer` / `hint` / `full_reveal` / `answer_schema` / `lo_code` /
+> `command_verb` **absent from the whole payload**.
+>
+> **THE PAPER IS VIRGIN.** 0 progress rows, 0 attempt rows, 0 marking rows across the three
+> cases for ALL users — verified before AND after the synthetic user was deleted. The proof used
+> GETs only; the sit GET writes nothing, so **the clock has never started**. The paper has not
+> been sat.
+>
+> **⚠ KNOWN EXPOSURE, pre-existing and NOT introduced by this flip.** `mock_only=true` keeps the
+> three cases out of `case/list` (verified live: AFM list 0 cases, APM list 5, zero mock ids in
+> either). But the **id-addressed `GET /api/acca/case` has no `mock_only` filter**, so an entitled
+> user holding a case id can fetch the mock's requirements *with* `marks_guide`,
+> `professional_skill_tags` and `lo_code`, and practice mode would teach on them. Verified
+> identical on the APM mock cases, published for months — this is how `mock_only` has always
+> worked. Worth a decision at some point (a `mock_only` guard on the id-addressed route, or
+> accepting it since ids are not discoverable from the list); **not** a blocker and **not** a
+> regression from this change-set.
+>
+> ---
+>
+> **Historic status line, retained:** the trap below was CLOSED as a code problem and OPEN as a content step. The inverted
 > gate is retired — `app/api/acca/sit/route.ts` now gates on `mock_only=true AND status='approved'
 > AND published=true`, the same gate as `app/api/acca/case/*`, behind the same `APM_CASES` flag and
 > `hasActiveACCAAccess` entitlement. The email allowlist is deleted. Answer writes moved to
