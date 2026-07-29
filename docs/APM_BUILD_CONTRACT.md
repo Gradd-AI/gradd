@@ -2577,3 +2577,98 @@ a decisive move off 22.9%, on the same reference script that produced that figur
 
 **Gates:** `test:marking-json-extract` 16/16 PASS · `tsc --noEmit` clean · `next build` GREEN.
 **DB: zero writes.** No route change, no client change, no content change.
+
+## 2026-07-29 (second exercise) — PS PASS on the ordinal contract: 0/30 parse, contract holds, apportionment artefact surfaced
+
+**Harness only.** `scripts/_run10_ps_marking.ts` (gitignored, read-only, persists nothing). No route,
+client, DB or lib change — it imports the pure core. Sibling of `_run10_technical_marking.ts`.
+
+**SHAPE FIDELITY — mirrors `app/api/acca/case/mark/route.ts` exactly:** `context` = scenario_intro +
+exhibits (`title\nbody`, exhibit_order) · `wholeAnswer` = `${label}\n${final_answer}` per requirement
+in requirement_order joined by a blank line, using the **STORED** label (LO code and all —
+`sitDisplayLabel` is a serve-side strip the marking path deliberately does not apply) · `examinedSkills`
+= ordered union of comma-split `professional_skill_tags` · pool = `acca_cases.professional_skills_marks`.
+One PS chain per CASE, because the pool and the per-skill ceiling are case-level.
+
+**POPULATION (P-G2).** 10 runs × 3 cases = **30 chains**, **90 skill-cells**, PS pool Σ20 (A 10 · B1 5 ·
+B2 5, read from the DB, not assumed). Examined skills as the model sees them, in ordinal order:
+A = 1 analysis_and_evaluation / 2 communication / 3 scepticism / 4 commercial_acumen (ceiling 2.5) ·
+B1 = 1 analysis_and_evaluation / 2 scepticism (ceiling 2.5) · B2 = 1 analysis_and_evaluation /
+2 scepticism / 3 commercial_acumen (ceiling 1.6667).
+
+**CASE A (pool 10)** — cell = band + marks awarded
+
+| skill | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | distribution |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| analysis_and_evaluation | EXE3 | EXE2 | STR2 | EXE3 | EXE2 | EXE2 | EXE2 | EXE2 | EXE3 | EXE2 | exemplary 9, strong 1 |
+| communication | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | strong 10 |
+| scepticism | STR2 | STR2 | CMP1 | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | STR2 | strong 9, competent 1 |
+| commercial_acumen | EXE2 | STR2 | STR2 | EXE2 | STR2 | STR2 | STR2 | STR2 | EXE2 | STR2 | strong 7, exemplary 3 |
+| **CASE PS** | 9/10 | 8/10 | 7/10 | 9/10 | 8/10 | 8/10 | 8/10 | 8/10 | 9/10 | 8/10 | min 7 max 9 |
+
+**CASE B1 (pool 5)**
+
+| skill | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | distribution |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| analysis_and_evaluation | EXE2 | EXE3 | EXE3 | EXE2 | EXE3 | EXE2 | EXE2 | EXE3 | EXE3 | EXE3 | exemplary 10 |
+| scepticism | STR2 | EXE2 | EXE2 | STR2 | EXE2 | STR2 | STR2 | EXE2 | EXE2 | EXE2 | exemplary 6, strong 4 |
+| **CASE PS** | 4/5 | 5/5 | 5/5 | 4/5 | 5/5 | 4/5 | 4/5 | 5/5 | 5/5 | 5/5 | min 4 max 5 |
+
+**CASE B2 (pool 5)**
+
+| skill | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | distribution |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| analysis_and_evaluation | EXE2 | EXE2 | EXE2 | EXE2 | EXE2 | EXE2 | EXE2 | EXE2 | EXE2 | EXE2 | exemplary 10 |
+| scepticism | STR1 | STR1 | STR1 | STR1 | STR1 | STR1 | STR1 | STR1 | STR1 | STR1 | strong 10 |
+| commercial_acumen | STR1 | EXE2 | EXE2 | STR1 | STR1 | EXE2 | EXE2 | EXE2 | EXE2 | STR1 | exemplary 6, strong 4 |
+| **CASE PS** | 4/5 | 5/5 | 5/5 | 4/5 | 4/5 | 5/5 | 5/5 | 5/5 | 5/5 | 4/5 | min 4 max 5 |
+
+**PAPER PS TOTAL:** 17 ×6, 18 ×2, 19 ×1, 17 — **min 17 · max 19 · range 2 marks on a 20-mark pool.**
+
+**PARSE-FAILURE RATE — 0/30 model attempts = 0.0%.** 30 chains attempted, **30 returned**, 0 parse-
+exhausted, 0 API/transport faults, **90/90 skill-cells evaluated**. Same honesty as the technical run:
+zero in 30 bounds the true rate near **≤10% at 95%**, it does not establish 0%. Denominator scope: one
+blind candidate script, 3 cases, 9 skill-cells per run, `claude-sonnet-4-6`.
+
+**ORDINAL CONTRACT — HOLDS, 0 violations / 30 chains** on every deterministic check: entry count ==
+examined-skill count · skill set identical to `examinedSkills` (nothing unknown, nothing missing) ·
+no duplicate skill (a repeated ordinal would surface here) · band ∈ the 4 PS bands · Σ per-skill marks
+== `professional_marks_awarded` · `professional_marks_available` == the case pool (10 / 5 / 5, verified
+against the DB) · awarded never exceeds the pool.
+
+**OBSERVABILITY LIMIT, stated rather than glossed.** `judgeCaseMarking` returns MAPPED skill NAMES, so
+the harness cannot read the raw `index` the model emitted. An out-of-range or non-integer index is
+unobservable from outside BY CONSTRUCTION — the core rejects it and throws `parse`, so it would appear
+as a capture in the parse count, never as a bad row. What the harness proves is the *set* and *arithmetic*
+integrity, not the raw ordinal. A vocabulary-alignment signal (own-descriptor vocabulary present in
+90/90 feedbacks) is reported alongside but is explicitly NOT a verdict — per P-DB5 a keyword match
+proves some vocabulary is present, never that the mapping is right.
+
+**VARIANCE.** Moved: A analysis_and_evaluation (exemplary 9/10, one strong) · A scepticism (strong 9/10,
+one competent) · A commercial_acumen (strong 7 / exemplary 3 — the widest) · B1 scepticism (exemplary 6 /
+strong 4) · B2 commercial_acumen (exemplary 6 / strong 4). Stable across all 10: A communication (strong
+10/10), B1 analysis_and_evaluation, B2 analysis_and_evaluation, B2 scepticism. Every movement is **one
+band step**; nothing moved two. Run 3 was a correlated whole-case low on A (AE and scepticism both
+dropped together, 7/10) — the same case-level co-drift shape as run 8 in the technical harness, not
+independent per-skill noise.
+
+**⚠ SURFACED, NOT FIXED — the per-skill mark is an apportionment artefact, not a per-skill score.**
+Reported per the brief's "report rather than fix". `apportion()` is largest-remainder over a
+case-level rounded total, so a per-skill `mark_awarded` is not a function of that skill's own band:
+- **Same band, different marks, in the SAME run.** Case A run 1: `analysis_and_evaluation` exemplary
+  → **3**, `commercial_acumen` exemplary → **2**. Both at ceiling 2.5; the rounding surplus is handed
+  out by fractional part and simply runs out.
+- **Same band, different marks, ACROSS runs.** B1 `analysis_and_evaluation` is exemplary in 10/10 and
+  scores 2 or 3 depending on what SCEPTICISM did — run 1 (scep strong) AE=2, run 2 (scep exemplary)
+  AE=3. A skill's displayed mark moves when a *different* skill's band moves.
+- **Different band, same mark.** A `commercial_acumen` scores 2 whether it is judged strong or exemplary.
+- **A case can award the FULL pool with a non-exemplary band present.** B2 run 2: exemplary 1.6667 +
+  strong 1.25 + exemplary 1.6667 = 4.583 → `Math.round` → **5/5**. Any B2 combination reaching 4.5
+  awards the whole pool.
+This is inherent to apportioning a rounded case total and is arithmetically correct at case level — the
+totals are right. It matters because `per_skill[].mark_awarded` is **returned to the client**, where it
+reads as a per-skill score it is not. Whether to show bands only, or show a fractional/unrounded
+per-skill figure, is a marking-semantics decision for Grant, not a plumbing fix. Logged in
+`AFM_SURFACED.md`.
+
+**Gates:** harness-only session; `tsc --noEmit` clean · `next build` GREEN. **DB: zero writes.**

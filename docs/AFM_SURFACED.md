@@ -2,13 +2,45 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-29 (marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
+*Last refreshed: 2026-07-29 (second exercise: PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
 
 *Earlier: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
+
+**Surfaced by the 10-run PS harness; deliberately NOT fixed** (the brief was report-don't-fix, and this
+is marking semantics, not plumbing). `apportion()` is largest-remainder over a **case-level rounded
+total**, so a per-skill mark is not a function of that skill's own band:
+
+- **Same band, different marks, in the SAME run.** Case A run 1: `analysis_and_evaluation` exemplary →
+  **3**, `commercial_acumen` exemplary → **2**. Both sit at ceiling 2.5; the rounding surplus is handed
+  out by fractional part and runs out.
+- **Same band, different marks, ACROSS runs.** B1 `analysis_and_evaluation` is exemplary in 10/10 and
+  scores 2 or 3 **depending on what SCEPTICISM did** — a skill's displayed mark moves when a *different*
+  skill's band moves.
+- **Different band, same mark.** A `commercial_acumen` scores 2 whether judged strong or exemplary.
+- **Full pool with a non-exemplary band present.** B2 run 2: 1.6667 + 1.25 + 1.6667 = 4.583 → `round` →
+  **5/5**. Any B2 combination reaching 4.5 takes the whole pool.
+
+Arithmetically correct at case level — **the case totals are right and every integrity check passes.**
+It matters only because `per_skill[].mark_awarded` is **returned to the client**, where it reads as a
+per-skill score it is not. **Grant's call**, three options: show bands only and drop the per-skill
+number; show the unrounded per-skill figure; or leave it and document it. No code change made.
+
+## ✅ CLOSED 2026-07-29 — PS pass exercised on the ordinal contract (harness only)
+
+10 runs × 3 cases = **30 chains**, 90 skill-cells, PS pool Σ20 (A 10 · B1 5 · B2 5). **0/30 parse
+failures**, 30/30 chains returned, 90/90 cells evaluated. **Ordinal contract HOLDS — 0 violations /
+30 chains** across entry count, skill-set identity, duplicates, band legality, Σ per-skill == awarded,
+available == pool, and the pool cap. PS paper total **17–19 on 20** (range 2). Every band movement is a
+single step; A `communication`, B1/B2 `analysis_and_evaluation` and B2 `scepticism` never moved at all.
+**Observability limit recorded rather than glossed:** the core returns MAPPED skill names, so the raw
+`index` is unreadable from outside — a bad index is rejected in-core and surfaces as a *parse capture*,
+never as a bad row. Harness `scripts/_run10_ps_marking.ts` (gitignored). Full matrices in the journal.
 
 ## ✅ CLOSED 2026-07-29 — technical-marking parse failures: split reverted, parser fixed, 0/30
 
