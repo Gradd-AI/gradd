@@ -3065,3 +3065,79 @@ mock-content guard unconditional once APM stops using the case routes.
 
 **Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:afm-label-marks` 0 · selftest 0.
 **DB: zero writes** (read-only).
+
+## 2026-07-29 (seventh) — SIT TIMING COLUMNS APPLIED + PACING COMPUTATION (unwired)
+
+**P-DB2 write, Grant-approved and APPLIED.** `acca_case_progress.submitted_at` and
+`acca_mock_attempts.completed_at`, both `timestamptz NULL`, no defaults, **no backfill**.
+Migration file `supabase/migrations/20260729120000_sit_timing_columns.sql` (idempotent,
+transactional). **Verification after apply, all four as predicted:** V1 both columns
+timestamptz/nullable/no default · V2 29 progress rows and 10 attempts with **0 backfilled** ·
+V3 column counts 15→16 and 5→6 · **V4 AFM Mock 1 still virgin, 0 progress / 0 attempts /
+0 marking.**
+
+**Order enforced: DDL first, then merge.** The code names a column PostgREST would reject if
+absent, so deploying ahead of the migration would have 500'd every sit submission on a live
+paper. The branch was held unmerged until the apply verified.
+
+**Timing is now explicit, not inferred.** `submitted_at` is written by the sit branch of
+`case/turn`; `completed_at` by BOTH writers of `completed` (the sit route's finish and the APM
+mock route's) — an end instant that depends on which surface finished the attempt is exactly
+what makes a timing column untrustworthy. Nothing reads `created_at` for timing.
+
+**`scripts/test-sit-timing.ts`** (P-G3): pure `evaluate` + `deriveIntervals`, `--selftest` over
+11 break modes, **13/13 PASS**. Its centrepiece is the COLUMN-SOURCE PIN — the practice-turn
+case (created_at 40 min before submission) must pass and yield the same intervals as a clean
+sit, `[35, 45, 25, 35]`, where a created_at-based derivation gives `[35, 5, 65, 35]` and
+misreports two requirements. Live arm now reports **NOT EVALUATED** distinguishably (the paper
+is unsat) rather than passing.
+
+### The pacing computation — `lib/acca/pacing.ts`, PURE, NOT WIRED
+
+Per requirement: interval (submission-to-submission), budget at **1.95 min/mark**, ratio, ±25%
+flag. Plus tail, total elapsed, and coverage split **three** ways — answered / blank /
+not_reached, because a blank is a deliberate move-on and a not_reached is never having got
+there, and collapsing them loses the distinction. Requirement 1 carries **no ratio**; the tail
+is **never** folded into the last requirement.
+
+**Recorded because it surprised me:** per-requirement budgets sum to **156 minutes, not 195** —
+Σ`marks_guide` is 80, and the other 20 marks are professional, earned across the whole answer
+rather than in a slot. Ratios are measured against 156; early/wire findings against the
+195-minute clock.
+
+**END-OF-PAPER COLLAPSE — the rule, and why.** Two independent triggers; the finding names which
+fired. **TIME:** shortest suffix (excluding req 1) whose combined budget ≥ **20%** of the
+requirement budget; collapse if its actual combined interval is < **50%** of that budget. The
+window is by BUDGET SHARE not a fixed count — "the last three" is arbitrary on eight
+requirements and meaningless on two. 50% because the per-requirement flag is already ±25%, so a
+structural finding must be stronger than one requirement's variation or it fires on noise and
+gets ignored. Req 1 excluded so a slow start cannot mask a fast finish. **NO-CREDIT TAIL:** the
+final k requirements all blank/not_reached, contiguous to the end — in a forward-only sit a
+blank still records a submission, so an end-run is a running-out signal. The same requirements
+mid-paper are a SKIPPING pattern and are reported separately as `unanswered_not_at_end`.
+
+**Marks side by side, never merged.** Every row carries `band` + `marks_awarded` +
+`marks_available` alongside the interval, and a fixture asserts **no combined score field
+exists** — rushed-and-lost-marks and rushed-and-fine are different findings.
+
+**Language constraints ENFORCED, not merely intended.** Every statement is phrased "Between
+submitting X and submitting Y"; a fixture lints all **37** generated statements against banned
+patterns for time-on-task claims, causal claims, cross-candidate comparison and unsupported
+instructions.
+
+**`npm run test:pacing` — 11 walks, expected verdicts in BOTH directions.** Even pacing (no
+collapse) · 55 min on a 25-mark requirement (ratio 1.13, **expected on_budget** — pins that
+±25% is not a hair-trigger) · 4 min on a 16-mark requirement (0.13, under) · time collapse with
+everything answered · unanswered tail · blank tail · mid-paper gap that must NOT collapse ·
+open attempt · marks side-by-side · degenerate inputs refused · and a mutation proof flipping
+the detector on the same paper.
+
+**A fixture caught its own author.** The first mid-paper walk closed on 18 minutes against a
+39-minute budget — a real collapse — and the detector flagged it. The fixture was wrong, not
+the rule; it now closes 40 against 39 so it tests one thing. That is P-G3 paying for itself on
+the day it was written.
+
+**NOT WIRED.** No route, no UI, by instruction.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:pacing` 0 · `test:sit-timing`
+selftest 0 · `test:afm-label-marks` 0 · `test:mock-access` 0. **DB: the two columns, nothing else.**
