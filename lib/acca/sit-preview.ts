@@ -53,6 +53,34 @@ export const AFM_MOCK_PAPER_1: SitPaper = {
   ],
 };
 
+// ── The serving gate, as DATA ────────────────────────────────────────────────
+// The gate used to be four inline `.eq()` calls in the route, which is exactly the shape
+// that cannot be unit-tested: a fixture would have to re-state the conditions and would
+// then be testing its own copy, not the route's. So the gate is declared ONCE here and
+// the route builds its filters BY ITERATING THIS OBJECT. Editing it changes both the
+// query and the fixtures together — there is no second copy to drift.
+//
+// This is the standard gate, not the retired inverted one. `published: true` and
+// `status: 'approved'` are the two values whose inversion was the publish-flip trap; a
+// fixture below pins the retired combination as one that must NOT pass.
+export const SIT_CASE_GATE = {
+  paper_code: AFM_MOCK_PAPER_1.paper,   // 'AFM' — one source, never re-typed
+  mock_only:  true,                     // keeps these cases out of the practice library
+  status:     'approved',
+  published:  true,
+} as const;
+
+export type SitCaseGateRow = Partial<Record<keyof typeof SIT_CASE_GATE, unknown>>;
+
+/** True only when a case row satisfies EVERY gate column. Same conditions the route's
+ *  query applies, from the same object — this is a predicate over an already-fetched row,
+ *  used by the fixtures and available to any caller that has the row in hand. */
+export function isSittableCaseRow(row: SitCaseGateRow | null | undefined): boolean {
+  if (!row) return false;
+  return (Object.keys(SIT_CASE_GATE) as Array<keyof typeof SIT_CASE_GATE>)
+    .every((k) => row[k] === SIT_CASE_GATE[k]);
+}
+
 // ── Requirement label — candidate-facing form ────────────────────────────────
 // Stored labels carry the internal syllabus code: "(i) B3e — 10 marks". A real ACCA
 // paper never prints that — it states the part and its marks and nothing else. So the

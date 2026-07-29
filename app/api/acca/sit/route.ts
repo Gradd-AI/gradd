@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { AFM_MOCK_PAPER_1, sitDisplayLabel } from '@/lib/acca/sit-preview';
+import { AFM_MOCK_PAPER_1, SIT_CASE_GATE, sitDisplayLabel } from '@/lib/acca/sit-preview';
 
 // ── AFM Mock Paper 1 — SIT read endpoint (standard gate, real product surface) ─
 // Serves the lean sit surface at /acca/afm/mock. Authentic exam conditions: the
@@ -130,14 +130,17 @@ export async function GET(): Promise<Response> {
   const { supabase, userId } = g;
 
   // ── Cases (STANDARD gate — approved + published, same as every case route) ──
-  const { data: caseRows } = await supabase
+  // Filters are built BY ITERATING SIT_CASE_GATE rather than written inline, so the query
+  // and the fixtures in scripts/test-sit-preview.ts read the same object. Adding or
+  // removing a gate column changes both at once; there is no second copy to drift.
+  let caseQuery = supabase
     .from('acca_cases')
     .select('id, title, section, scenario_intro, total_marks, professional_skills_marks')
-    .in('id', PAPER.case_ids)
-    .eq('paper_code', PAPER.paper)
-    .eq('mock_only', true)
-    .eq('status', 'approved')
-    .eq('published', true);
+    .in('id', PAPER.case_ids);
+  for (const [column, value] of Object.entries(SIT_CASE_GATE)) {
+    caseQuery = caseQuery.eq(column, value as never);
+  }
+  const { data: caseRows } = await caseQuery;
 
   const byId = new Map((caseRows ?? []).map((c) => [c.id as string, c]));
   // Order by the paper's own sequence, not by whatever order the DB returned.

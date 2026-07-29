@@ -7,11 +7,15 @@
 //
 // THE ALLOWLIST FIXTURES ARE GONE (2026-07-29), with the allowlist itself. `canPreviewSit`
 // and `SIT_PREVIEW_EMAILS` no longer exist: access is now the standard APM_CASES flag +
-// auth + `hasActiveAPMAccess` entitlement, applied in app/api/acca/sit/route.ts. That is a
-// route-level gate against live DB state, so it is not testable in this pure suite — it is
-// covered by the same gate every other case route uses rather than by a bespoke predicate.
-// Deleting the fixtures is therefore a REDUCTION IN PURE COVERAGE and is recorded as such:
-// 13 checks removed, no equivalent pure replacement added.
+// auth + `hasActiveACCAAccess` entitlement, applied in app/api/acca/sit/route.ts.
+//
+// COVERAGE RECOVERED, not merely written off. The 13 deleted allowlist checks are replaced
+// by checks over the SERVING gate, which is the thing the allowlist was standing in front
+// of. That is only meaningful because the gate is now declared as DATA (`SIT_CASE_GATE`)
+// and the route builds its query filters by iterating that same object — so these fixtures
+// test what the route actually applies, not a restatement of it. What remains untestable
+// here is the ACCESS half (flag + auth + entitlement), which reads request and DB state; it
+// is covered by being the identical gate every other case route uses.
 
 import {
   nextUnsubmittedIndex,
@@ -19,6 +23,8 @@ import {
   fmtElapsed,
   sitDisplayLabel,
   AFM_MOCK_PAPER_1,
+  SIT_CASE_GATE,
+  isSittableCaseRow,
 } from '../lib/acca/sit-preview';
 import { MOCK_PAPERS, getMockPaper } from '../lib/acca/mocks';
 
@@ -27,6 +33,47 @@ function ok(name: string, cond: boolean) {
   if (!cond) failures++;
   console.log(`${cond ? 'PASS' : 'FAIL'} :: ${name}`);
 }
+
+// ── Serving gate: the STANDARD one, and every condition load-bearing ──
+// A live, servable row: all four gate columns correct.
+const LIVE = { paper_code: 'AFM', mock_only: true, status: 'approved', published: true };
+
+ok('a published+approved+mock_only AFM case PASSES the gate', isSittableCaseRow(LIVE) === true);
+
+// Each condition failing INDIVIDUALLY must block — one at a time, everything else correct,
+// so a fixture cannot pass because some other column happened to be wrong too.
+ok('published=false alone BLOCKS',        isSittableCaseRow({ ...LIVE, published: false }) === false);
+ok("status='candidate' alone BLOCKS",     isSittableCaseRow({ ...LIVE, status: 'candidate' }) === false);
+ok('mock_only=false alone BLOCKS',        isSittableCaseRow({ ...LIVE, mock_only: false }) === false);
+ok("paper_code='APM' alone BLOCKS",       isSittableCaseRow({ ...LIVE, paper_code: 'APM' }) === false);
+
+// The RETIRED inverted gate: the exact combination the surface used to serve. If this ever
+// passes again, the publish-flip trap is back.
+ok('the retired INVERTED combination (candidate + unpublished) BLOCKS',
+  isSittableCaseRow({ paper_code: 'AFM', mock_only: true, status: 'candidate', published: false }) === false);
+
+// Absent / malformed rows are refusals, never accidental passes.
+ok('null row BLOCKS',      isSittableCaseRow(null) === false);
+ok('undefined row BLOCKS', isSittableCaseRow(undefined) === false);
+ok('empty row BLOCKS',     isSittableCaseRow({}) === false);
+ok('a row missing ONE gate column BLOCKS',
+  isSittableCaseRow({ paper_code: 'AFM', mock_only: true, status: 'approved' }) === false);
+// Truthiness must not stand in for the value: 'true'/1 are not `true`.
+ok('published="true" (string) BLOCKS — exact match, not truthiness',
+  isSittableCaseRow({ ...LIVE, published: 'true' }) === false);
+ok('mock_only=1 (number) BLOCKS — exact match, not truthiness',
+  isSittableCaseRow({ ...LIVE, mock_only: 1 }) === false);
+
+// Pin the gate's SHAPE. The route iterates these keys to build its .eq() filters, so
+// dropping one here would silently widen what the route serves — this check fails first.
+ok('gate has exactly the 4 expected columns',
+  JSON.stringify(Object.keys(SIT_CASE_GATE).sort()) ===
+  JSON.stringify(['mock_only', 'paper_code', 'published', 'status']));
+ok('gate demands published=true',           SIT_CASE_GATE.published === true);
+ok("gate demands status='approved'",        SIT_CASE_GATE.status === 'approved');
+ok('gate demands mock_only=true',           SIT_CASE_GATE.mock_only === true);
+ok('gate paper_code is the paper config\'s own value (not re-typed)',
+  SIT_CASE_GATE.paper_code === AFM_MOCK_PAPER_1.paper);
 
 // ── Paper config ──
 ok('paper is AFM', AFM_MOCK_PAPER_1.paper === 'AFM');
