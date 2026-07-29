@@ -26,7 +26,11 @@ interface CaseHeader {
 interface Message { role: 'student' | 'ezra'; content: string; kind?: string }
 interface ProgressRow { requirement_id: string; passed: boolean; resolved: boolean; miss_count: number }
 
-interface PerSkillMark { skill: string; mark_awarded: number; feedback: string }
+// No per-skill MARK. The route deliberately stopped returning `mark_awarded`: it is a
+// largest-remainder apportionment artefact, not a score for that skill (same band →
+// different marks in one run; a skill's mark moves when a DIFFERENT skill's band moves).
+// The band is the actual per-skill judgement; the case total carries the number.
+interface PerSkillMark { skill: string; band: string; feedback: string }
 interface Marking {
   professional_marks_awarded: number;
   professional_marks_available: number;
@@ -326,10 +330,14 @@ export default function CaseSession({
     setMarkingError(false);
     setMarkingIncomplete(false);
     try {
+      // `sitting` MUST be sent: the mark route defaults it to false and on that default
+      // skips the TECHNICAL pass entirely, so a sit marked without it silently loses
+      // every technical mark and reports professional skills alone. Threaded from the
+      // same prop the turn + load calls use, so one component can never send two modes.
       const res = await fetch('/api/acca/case/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_id: caseId }),
+        body: JSON.stringify({ case_id: caseId, sitting }),
       });
       if (res.status === 402) { setSessionLapsed(true); return; }
       if (res.status === 409) { setMarkingIncomplete(true); return; }
@@ -590,7 +598,7 @@ export default function CaseSession({
                           <div key={i} className="ec-skill-card">
                             <div className="ec-skill-top">
                               <span className="ec-skill-name">{humaniseSkill(s.skill)}</span>
-                              <span className="ec-skill-mark">{s.mark_awarded}</span>
+                              <span className="ec-skill-band">{s.band}</span>
                             </div>
                             <p className="ec-skill-feedback">{s.feedback}</p>
                           </div>
@@ -885,10 +893,12 @@ const CSS = `
 .ec-skill-card { background: var(--surface-2); border: 1px solid var(--border-light); border-radius: 10px; padding: 14px 16px; }
 .ec-skill-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
 .ec-skill-name { font-size: 13px; font-weight: 700; color: var(--text); }
-.ec-skill-mark {
-  font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--rust);
-  background: rgba(192,94,60,0.1); border: 1px solid rgba(192,94,60,0.2);
-  min-width: 30px; text-align: center; padding: 1px 8px; border-radius: 6px;
+/* The band is a WORD, not a digit — so no fixed min-width/centring (which was sized for
+   a single numeral) and no display face. Reads as a qualitative chip, which is what it is. */
+.ec-skill-band {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--rust); background: rgba(192,94,60,0.1); border: 1px solid rgba(192,94,60,0.2);
+  padding: 3px 9px; border-radius: 6px; white-space: nowrap;
 }
 .ec-skill-feedback { font-size: 13px; line-height: 1.55; color: var(--text); margin: 0; }
 .ec-marking-done { font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; width: fit-content; }

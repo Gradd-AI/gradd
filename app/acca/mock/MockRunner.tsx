@@ -35,11 +35,23 @@ interface CaseResult {
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 // Mock-engine Phase 2b: the `sitting` flag is plumbed MockRunner → CaseSession →
-// case/turn + case (GET). It stays FALSE until the lean sit UI ships (one answer box
-// per requirement, submit-and-move-on, completion driven off answers-recorded not
-// requirements-passed) — flipping this to true without that UI would break the teach
-// surface CaseSession still renders. The backend sit branches + technical marking
-// are already live; this flag is the last switch the sit-UI step flips.
+// case/turn + case (GET) + case/mark. It stays FALSE until the lean sit UI ships.
+//
+// MEASURED 2026-07-29 — FLIPPING THIS ALONE BREAKS THE MOCK, it does not merely leave
+// it teaching. Sit mode never sets `passed` TRUE (deliberately — see lib/acca/case-sit.ts;
+// the column defaults to false, so it reads back false rather than null),
+// and BOTH completion predicates in this flow test exactly that: `allPassed` in
+// CaseSession (:231) and `passed === total` in aggregateCase below. Neither can ever
+// fire in sit mode, so `onComplete` never runs, the runner never advances to results,
+// and markCase is never called — no marks at all, technical or professional. The sit
+// turn response also carries no `ezra_response`, so the chat surface CaseSession
+// renders would sit dead. The replacement completion predicate for both call sites is
+// the pure `caseMarkReady(sitting, states)` already in lib/acca/case-sit.ts, which the
+// three routes use — sharing it is what stops client and server drifting apart.
+//
+// RULED (Grant, 2026-07-29): the sit UI is NOT built into CaseSession. The next
+// change-set generalises the AFM lean runner (app/acca/afm/mock/SitRunner.tsx) to
+// serve BOTH papers. This flag flips there, not here. See docs/AFM_SURFACED.md.
 const MOCK_SIT_MODE = false;
 
 const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -69,13 +81,18 @@ type MarkOutcome =
 //   • transient error (network / 5xx / 502 / 504 gateway timeout / 120s abort) on an
 //     already-complete case: retry ONCE after 1.5s. If it persists → `failed`
 //     (a marking failure on a completed case — never "not completed").
-async function markCase(caseId: string): Promise<MarkOutcome> {
+// `sitting` MUST be sent. The mark route defaults it to false, and on that default it
+// SKIPS the technical pass entirely — so a timed mock that omits the flag is marked on
+// professional skills alone and silently loses 80 of its 100 marks. It is threaded from
+// MOCK_SIT_MODE, the same single source the embedded CaseSession is given, so the two
+// can never disagree about which mode the paper is being sat in.
+async function markCase(caseId: string, sitting: boolean): Promise<MarkOutcome> {
   const attempt = async (): Promise<'conflict' | 'error' | 'locked' | { awarded: number }> => {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 120_000);
     try {
       const res = await fetch('/api/acca/case/mark', {
-        method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ case_id: caseId }),
+        method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ case_id: caseId, sitting }),
         signal: controller.signal,
       });
       if (res.ok) {
@@ -261,7 +278,7 @@ export default function MockRunner() {
         return;
       }
 
-      const outcome = await markCase(cid);
+      const outcome = await markCase(cid, MOCK_SIT_MODE);
       if (outcome.kind === 'marked') {
         patchCase(cid, { profAwarded: outcome.awarded, marking: false, markFailed: false });
       } else if (outcome.kind === 'incomplete') {

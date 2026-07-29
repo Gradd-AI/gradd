@@ -26,7 +26,7 @@ import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 //
 // SIT MODE (`sitting: true`, mock-engine Phase 2b): records the student's SINGLE
 // submitted answer as final_answer and returns — NO runTeachTurn (no hint/diagnose/
-// miss churn), `passed` left UNSET (a sit is graded later by the technical band pass,
+// miss churn), `passed` never written (a sit is graded later by the technical band pass,
 // not by turn-time correctness). A blank submission ('' — an unanswered requirement
 // at move-on or timeout) is a valid, final, zero-credit answer, recorded as ''.
 // PRACTICE mode (sitting=false, the default) is entirely unchanged.
@@ -104,8 +104,10 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── SIT MODE — record the single submitted answer, no teach loop ──
   // Skips the engine entirely: no model call, no seal, no hint/diagnose/miss churn.
-  // Records final_answer (blank '' allowed) and leaves `passed` UNSET — a sit is
-  // graded by the technical band pass at case/mark, not by turn-time correctness.
+  // Records final_answer (blank '' allowed) and NEVER WRITES `passed`. The column carries
+  // a NOT NULL DEFAULT FALSE, so the row reads back `passed = false`, not null (measured
+  // 2026-07-29, 7/7 sit rows) — never probe this path with a null check. A sit is graded
+  // by the technical band pass at case/mark, not by turn-time correctness.
   if (!shouldRunTeachLoop(sitting)) {
     // Validate the requirement belongs to this (subscription-gated) case, and that
     // the case is servable + paper-scoped — same serving gate as the practice path.
@@ -131,6 +133,28 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     const finalAnswer = typeof student_message === 'string' ? student_message : '';
+
+    // ── A SUBMITTED SIT ANSWER IS IMMUTABLE ──
+    // Enforced SERVER-SIDE, not by hiding a back button: once a requirement has a
+    // recorded answer it can never be rewritten, so a replayed or hand-crafted POST
+    // cannot overwrite submitted work either. This guarantee previously lived in
+    // app/api/acca/sit/route.ts; it moved HERE when the AFM sit stopped using its own
+    // endpoint and started writing through this route, and it must not be weakened —
+    // the upsert below would otherwise silently overwrite a committed answer.
+    //
+    // Note `final_answer != null` is the test, not truthiness: a BLANK answer ('') is a
+    // valid, final, zero-credit submission (a requirement moved past on purpose) and is
+    // just as immutable as a written one.
+    const { data: recorded } = await supabase
+      .from('acca_case_progress')
+      .select('final_answer')
+      .eq('user_id', user.id)
+      .eq('case_id', caseId)
+      .eq('requirement_id', requirementId)
+      .maybeSingle();
+    if (recorded && recorded.final_answer != null) {
+      return NextResponse.json({ error: 'already_submitted' }, { status: 409 });
+    }
 
     try {
       await supabase.from('acca_case_progress').upsert(

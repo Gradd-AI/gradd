@@ -1,17 +1,19 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
-import { canPreviewSit } from '@/lib/acca/sit-preview';
 import SitRunner from './SitRunner';
 
-// ── AFM Mock Paper 1 — lean sit surface (preview-gated) ────────────────────────
-// The paper is candidate / published=false / mock_only=true, so no live route can
-// serve it (see lib/acca/sit-preview.ts for the inverted-gate rationale). This page
-// is reachable ONLY by the allowlisted test account; everyone else gets a plain 404,
-// so the path is invisible rather than merely forbidden.
+// ── AFM Mock Paper 1 — lean sit surface (real product surface) ─────────────────
+// The email allowlist that used to guard this page is GONE (2026-07-29), along with
+// the inverted serving gate it existed to protect. Access is now decided in ONE place,
+// app/api/acca/sit/route.ts, which applies the same APM_CASES flag + entitlement gate
+// as every other case route; the page only needs the sign-in redirect. Putting the
+// entitlement check here as well would just be a second copy that could drift — the
+// runner renders its own error state when the API refuses.
 //
-// noindex/nofollow as well as the 404: unpublished exam content must never be indexed
-// even if the path is guessed or leaks into a referrer.
+// noindex/nofollow is KEPT. A sat exam paper should never be indexed regardless of
+// publication status: search results quoting requirement text would leak the paper to
+// candidates who have not sat it.
 export const metadata: Metadata = {
   title: 'AFM Mock Paper 1',
   robots: { index: false, follow: false },
@@ -24,10 +26,6 @@ export default async function AFMMockSitPage() {
   // Not signed in → the normal ACCA auth flow, returning here afterwards.
   if (!user) {
     redirect('/acca/auth?next=/acca/afm/mock');
-  }
-  // Signed in but not allowlisted → 404, identical to a path that does not exist.
-  if (!canPreviewSit(user.email)) {
-    notFound();
   }
 
   return <SitRunner />;

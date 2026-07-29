@@ -1,42 +1,31 @@
 // lib/acca/sit-preview.ts
-// Pure preview-gate + paper config for the AFM Mock Paper 1 SIT surface. No DB, no
-// model, no I/O — the server page and the API route both import these, so the gate
-// decision is testable in isolation and provably identical in both places.
+// Pure paper config + display/resume helpers for the AFM Mock Paper 1 SIT surface. No
+// DB, no model, no I/O — the server page and the API route both import these, so the
+// behaviour is testable in isolation and provably identical in both places.
 //
-// ── WHY THIS IS A SEPARATE SURFACE (not the APM mock runner) ──────────────────
-// Every live serving route gates on `status='approved' AND published=true`. AFM Mock
-// Paper 1 is `candidate` / `published=false` / `mock_only=true` by design — it has not
-// been adjudicated — so NO live route can serve it, and none was modified to try.
+// ── THE INVERTED GATE IS RETIRED (2026-07-29) ────────────────────────────────
+// This module used to define the INVERSE of every other serving gate: a case was
+// sit-servable only while it was UNPUBLISHED (`published=false AND status='candidate'`),
+// and access was a one-entry email allowlist. That was correct while the paper was
+// unadjudicated pre-release content, and it had a fatal end-state: flipping the three
+// cases to `approved`/`published=true` would have made the gate stop matching and 404
+// the surface. Publishing the paper would have BROKEN it. That was the publish-flip trap.
 //
-// This module defines the INVERSE gate: a case is sit-servable only while it is
-// UNPUBLISHED. The two sets are therefore disjoint by construction —
-//   • this surface structurally cannot serve live published content;
-//   • the live routes structurally cannot serve this mock.
-// That is the whole reason the sit does not reuse app/api/acca/case/*: making those
-// routes serve candidate rows would have put unpublished-content access into the code
-// path that serves every paying student. Nothing here touches that path.
+// Both halves are now gone. `app/api/acca/sit/route.ts` gates on the STANDARD
+// `status='approved' AND published=true` like every other case route, behind the same
+// APM_CASES flag and the same `hasActiveAPMAccess` entitlement, and the allowlist is
+// deleted — the sit surface is the real product surface, reachable by any entitled
+// student. Answer writes go through `app/api/acca/case/turn` (sitting:true), the same
+// route the APM sit uses, so there is ONE write path and one immutability rule.
 //
-// The APM timed-mock runner is also deliberately untouched: it renders a COUNTDOWN,
-// a results screen and per-case marking, all three of which this sit excludes by spec
-// (elapsed timer only, no auto-submit, no marks, no feedback). `MOCK_SIT_MODE` in
-// app/acca/mock/MockRunner.tsx stays FALSE — that flag belongs to the APM paper.
-
-// ── Preview allowlist ────────────────────────────────────────────────────────
-// Ruled by Grant 2026-07-25: the AFM sit preview is reachable by the student test
-// account ONLY. Matches the repo's established gate idiom (the ADMIN_EMAIL constant
-// in app/api/admin/questions/route.ts) rather than inventing an env var that would
-// have to be set on Vercel before the surface could be reached at all.
+// CONSEQUENCE, deliberate and load-bearing: until the three cases are flipped to
+// approved/published the surface serves NOTHING (404 "Paper not available"). The gate
+// change and the content flip are separate steps by design — P-DB2 governs the flip and
+// it is Grant's, taken after the end-to-end walk, not something this code performs.
 //
-// A non-allowlisted user gets 404, never 403: the surface is INVISIBLE, not merely
-// forbidden. A 403 would confirm that an unpublished AFM paper exists at this path.
-export const SIT_PREVIEW_EMAILS: readonly string[] = ['erasmoose@outlook.ie'];
-
-export function canPreviewSit(email: string | null | undefined): boolean {
-  if (typeof email !== 'string') return false;
-  const normalised = email.trim().toLowerCase();
-  if (!normalised) return false;
-  return SIT_PREVIEW_EMAILS.some((allowed) => allowed.toLowerCase() === normalised);
-}
+// `mock_only=true` is still asserted. That was never the inverted part: it keeps the
+// paper's cases out of the practice library (which lists `mock_only=false`) and keeps a
+// non-paper case from being posted into the sit by id.
 
 // ── Paper config (code config, not a table — same pattern as lib/acca/mocks.ts) ──
 export interface SitPaper {
@@ -49,6 +38,10 @@ export interface SitPaper {
 // `id` is deliberately NOT 'paper-1' (which lib/acca/mocks.ts already uses for the APM
 // paper). getMockPaper('afm-paper-1') returns null, so an attempt row written by this
 // sit is ignored by the APM runner instead of being mistaken for an APM attempt.
+//
+// This stays a SEPARATE config from MOCK_PAPERS while the two runners are separate. The
+// next change-set generalises SitRunner to serve both papers (Grant-ruled 2026-07-29);
+// merging the two configs belongs to that step, not this one.
 export const AFM_MOCK_PAPER_1: SitPaper = {
   id: 'afm-paper-1',
   paper: 'AFM',
@@ -59,6 +52,34 @@ export const AFM_MOCK_PAPER_1: SitPaper = {
     'aa000000-0000-4000-8000-00000000b201', // Aldebrino SpA         — Section B (25 marks)
   ],
 };
+
+// ── The serving gate, as DATA ────────────────────────────────────────────────
+// The gate used to be four inline `.eq()` calls in the route, which is exactly the shape
+// that cannot be unit-tested: a fixture would have to re-state the conditions and would
+// then be testing its own copy, not the route's. So the gate is declared ONCE here and
+// the route builds its filters BY ITERATING THIS OBJECT. Editing it changes both the
+// query and the fixtures together — there is no second copy to drift.
+//
+// This is the standard gate, not the retired inverted one. `published: true` and
+// `status: 'approved'` are the two values whose inversion was the publish-flip trap; a
+// fixture below pins the retired combination as one that must NOT pass.
+export const SIT_CASE_GATE = {
+  paper_code: AFM_MOCK_PAPER_1.paper,   // 'AFM' — one source, never re-typed
+  mock_only:  true,                     // keeps these cases out of the practice library
+  status:     'approved',
+  published:  true,
+} as const;
+
+export type SitCaseGateRow = Partial<Record<keyof typeof SIT_CASE_GATE, unknown>>;
+
+/** True only when a case row satisfies EVERY gate column. Same conditions the route's
+ *  query applies, from the same object — this is a predicate over an already-fetched row,
+ *  used by the fixtures and available to any caller that has the row in hand. */
+export function isSittableCaseRow(row: SitCaseGateRow | null | undefined): boolean {
+  if (!row) return false;
+  return (Object.keys(SIT_CASE_GATE) as Array<keyof typeof SIT_CASE_GATE>)
+    .every((k) => row[k] === SIT_CASE_GATE[k]);
+}
 
 // ── Requirement label — candidate-facing form ────────────────────────────────
 // Stored labels carry the internal syllabus code: "(i) B3e — 10 marks". A real ACCA

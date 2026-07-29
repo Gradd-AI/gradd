@@ -297,15 +297,22 @@ wait for it, or say plainly that it was still building.
   (pure: allowlist `canPreviewSit` + paper config `AFM_MOCK_PAPER_1` + `nextUnsubmittedIndex` /
   `isPaperComplete` / `fmtElapsed`) · route `app/api/acca/sit/route.ts` · UI
   `app/acca/afm/mock/{page,SitRunner}.tsx` · fixtures `scripts/test-sit-preview.ts`
-  (`npm run test:sit-preview`, 35 checks). **NEW MECHANISM — the INVERTED SERVING GATE.** Every
-  other case/drill route gates on `status='approved' AND published=true`; this one gates on the
-  OPPOSITE (`paper_code='AFM' AND mock_only=true AND published=false AND status='candidate'`), so
-  the two servable sets are **disjoint by construction** — this surface cannot serve live content
-  and the live routes cannot serve the mock. **No live route was modified to reach unpublished
-  content.** Access = auth + a one-entry email allowlist (`erasmoose@outlook.ie`, Grant-ruled
-  2026-07-25), rejecting with **404 not 403** so the path is invisible rather than merely forbidden;
-  there is deliberately NO entitlement check (the allowlist IS the gate; an entitlement check could
-  only lock the test account out). Withholds MORE than the live case route: never selects
+  (`npm run test:sit-preview`). **THE INVERTED SERVING GATE IS RETIRED** (2026-07-29, branch
+  `feat/sit-marking-and-gate`). It formerly gated on the OPPOSITE of every other route
+  (`published=false AND status='candidate'`) behind a one-entry email allowlist — correct while the
+  paper was unadjudicated, and fatal at the end: publishing it would have stopped the gate matching
+  and 404'd the surface (**the publish-flip trap**). It now gates on the STANDARD `mock_only=true
+  AND status='approved' AND published=true`, behind the same `APM_CASES` flag and
+  `hasActiveACCAAccess` entitlement as `app/api/acca/case/*`; **`canPreviewSit` / the allowlist are
+  deleted**, and the uniform-404 posture with them (a lapsed student gets 402, not a surface that
+  appears not to exist). `mock_only` is RETAINED — it was never the inverted part; it keeps these
+  cases out of the practice library, which lists `mock_only=false`. **ONE SIT WRITE PATH:**
+  `action:'submit'` is gone from the sit route — SitRunner records each answer through
+  `app/api/acca/case/turn` with `sitting:true` + `paper:'AFM'`, and the immutable-submission rule
+  moved there (409 `already_submitted`, tested `!= null` so a BLANK answer is equally final). The
+  sit route now owns only the paper-level READ and the attempt clock. **Until the 3 cases are
+  flipped to approved/published this surface serves nothing (404)** — intended; the flip is a
+  separate P-DB2 step with a pre-flip checklist in `docs/AFM_SURFACED.md`. Withholds MORE than the live case route: never selects
   `model_answer`/`hint`/`full_reveal`/`answer_schema`, and additionally withholds `marks_guide` (a
   mark scheme = feedback) and `professional_skill_tags`/`intellectual_level` (a steer no real exam
   gives). **Requirement labels are DERIVED, not served raw** (2026-07-26): the stored label carries
@@ -322,8 +329,24 @@ wait for it, or say plainly that it was still building.
   path already reads, so marking wires in later with no data migration. Clock counts UP from
   `acca_mock_attempts.started_at` (mock_id `'afm-paper-1'` — unknown to `getMockPaper`, so the APM
   runner ignores it); `ends_at` is written only because the column is NOT NULL and **nothing reads
-  it** — no countdown, no auto-submit. **MARKING AND DEBRIEF ARE OUT OF THIS BUILD.**
-  `MOCK_SIT_MODE` in `app/acca/mock/MockRunner.tsx` stays FALSE — that flag belongs to the APM paper.
+  it** — no countdown, no auto-submit. **MARKING AND DEBRIEF ARE OUT OF THIS ROUTE** — but
+  `case/mark` with `sitting:true` will serve these cases the moment they publish, since they now
+  pass the standard gate.
+  `MOCK_SIT_MODE` in `app/acca/mock/MockRunner.tsx` stays FALSE. **Flipping it alone BREAKS the APM
+  mock** (measured 2026-07-29): sit mode never sets `passed`, so `allPassed` (`CaseSession:231`) and
+  `passed === total` (`MockRunner.aggregateCase:257`) never fire → `onComplete` never runs →
+  `markCase` is never called; and the sit turn response carries no `ezra_response`, so the chat
+  surface renders dead. The replacement completion predicate for both call sites is the pure
+  `caseMarkReady(sitting, states)` already shared by the three routes. Grant-ruled 2026-07-29: the
+  flag flips in the NEXT change-set, which generalises `SitRunner` to serve BOTH papers rather than
+  building a sit mode into `CaseSession`.
+- **`sitting` MUST be sent on the mark POST.** `app/api/acca/case/mark` defaults it false and on that
+  default skips the TECHNICAL pass entirely — a sit marked without it scores PS only and silently
+  loses 80 of 100 marks. Now threaded from both call sites (`MockRunner.markCase`,
+  `CaseSession.runMarking`). **`per_skill[].mark_awarded` is NOT returned to the client** — it is a
+  largest-remainder artefact (same band → different marks in one run; a skill's mark moves when a
+  DIFFERENT skill's band moves). Band + case total are returned; the apportionment is unchanged and
+  still persisted in full to `acca_case_marking.per_skill`.
 - **MARKING CORE — `lib/acca/case-marking.ts`** (shared by `app/api/acca/case/mark/route.ts` and
   `scripts/calibrate-marking.ts`, so calibration can never drift from production). Two passes, same
   mechanism: the MODEL assigns a quality BAND, deterministic CODE converts bands → marks

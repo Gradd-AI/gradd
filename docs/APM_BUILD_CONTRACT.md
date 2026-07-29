@@ -2672,3 +2672,158 @@ per-skill figure, is a marking-semantics decision for Grant, not a plumbing fix.
 `AFM_SURFACED.md`.
 
 **Gates:** harness-only session; `tsc --noEmit` clean · `next build` GREEN. **DB: zero writes.**
+
+## 2026-07-29 (third change-set) — SIT MARKING WIRED + INVERTED GATE RETIRED (branch `feat/sit-marking-and-gate`, UNMERGED, shown before merge)
+
+**One change-set, feature branch, no DB write.** Four items shipped; the fifth (`MOCK_SIT_MODE`)
+was HELD on Grant's ruling after a measurement changed what it costs.
+
+**1 — `sitting` threaded into the mark POST, both call sites.** `MockRunner.tsx:78` and
+`CaseSession.tsx:332` sent `{ case_id }` only. The route defaults `sitting=false` (`:51`) and on
+that default **skips the technical pass entirely** (`:213`) — a timed sit marked without the flag
+scores professional skills alone and silently loses **80 of its 100 marks**. Both now send it,
+threaded from the same source each component already uses for its load and turn calls.
+
+**2 — HELD. `MOCK_SIT_MODE` stays FALSE, and the reason is a measurement, not caution.** Flipping
+it alone does not leave the mock teaching — it BREAKS it. Sit mode never sets `passed`
+(deliberately, `lib/acca/case-sit.ts`), and both completion predicates test exactly that:
+`allPassed` (`CaseSession:231`) and `passed === total` (`MockRunner.aggregateCase:257`). Neither
+can fire in sit mode, so `onComplete` never runs, the runner never reaches results, and `markCase`
+is never called. No marks at all, technical or professional. The sit turn response also carries no
+`ezra_response`, so the chat surface `CaseSession` renders would sit dead. **Grant's ruling
+(2026-07-29):** do not build a sit mode into `CaseSession`; the NEXT change-set generalises
+`SitRunner` to serve both papers and the flag flips there. `caseMarkReady(sitting, states)` — pure,
+already shared by the three routes — is the replacement completion predicate for both call sites.
+
+**3 — per-skill marks no longer returned to the client.** `per_skill[].mark_awarded` is a
+largest-remainder artefact over a case-level ROUNDED total, not a score for that skill. The
+synthetic-user walk below reproduced it head-on: Halworth, four skills, **ALL banded `weak`, marks
+1 / 1 / 1 / 0**. The response now carries band + feedback per skill plus the case PS total. The
+apportionment is UNCHANGED and still persisted in full — verified in the walk's read-back.
+`CaseSession` renders the band; `ec-skill-mark` becomes `ec-skill-band`, restyled from a numeral chip.
+
+**4 — the inverted gate is RETIRED; the publish-flip trap is closed in code.** `app/api/acca/sit`
+gated on the OPPOSITE of every other route (`published=false AND status='candidate'`) behind a
+one-entry email allowlist. Correct for unadjudicated content, fatal at the end: publishing the
+paper would have stopped the gate matching and 404'd the surface. It now gates on the STANDARD
+`mock_only=true AND status='approved' AND published=true`, behind the same `APM_CASES` flag and
+`hasActiveACCAAccess` entitlement as `app/api/acca/case/*`. `canPreviewSit`/`SIT_PREVIEW_EMAILS`
+are **deleted**, and the uniform-404 posture with them (it existed to hide unpublished content; a
+lapsed student now gets 402 and the upsell). `noindex` is KEPT. `mock_only` is RETAINED — never the
+inverted part, and it is what keeps these cases out of the practice library (`mock_only=false`).
+**ONE SIT WRITE PATH:** `action:'submit'` removed; `SitRunner` records through
+`app/api/acca/case/turn` with `sitting:true` + `paper:'AFM'`, and the immutable-submission rule
+moved with it (409 `already_submitted`, tested `!= null` so a BLANK answer is equally final —
+without that move the turn route's upsert would have silently overwritten committed work).
+
+**DELIBERATE INTERMEDIATE STATE:** until the three AFM cases are flipped, `/acca/afm/mock` serves
+nothing (404 "Paper not available"). **No DB write in this branch.** P-DB2 governs the flip; it is
+Grant's, after the walk. Pre-flip checklist in `AFM_SURFACED.md` — merge+deploy FIRST (flipping
+first re-creates the original trap), and **confirm `APM_CASES=1` in production**, which is NOT in
+`.env.local` and has never been verified from this repo while three routes now depend on it.
+
+**5 — THE WALK: APM Mock Paper 1, synthetic user, `sitting:true`, then deleted.**
+`scripts/_walk_sit_marking.ts` (gitignored). APM because its three cases are already
+approved+published+`mock_only` — the AFM three cannot be walked until the flip, by construction.
+
+*Fidelity, stated (P-G2).* Exercised against live rows and the real model: the entitlement
+predicate on a real `profiles` row · the standard serving gate · the SIT completion gate ·
+whole-answer + context assembly verbatim from the route · both judging cores · both persistence
+writes, byte-identical in shape to route step 10. **NOT exercised: the HTTP layer and cookie auth**
+— a script cannot mint a Supabase SSR session cookie, so `user.id` is supplied directly. Everything
+downstream of auth is the route's own sequence.
+
+Gate proof, per case: `caseMarkReady(true, …)` returns ready true and `caseMarkReady(false, …)`
+returns ready false ("case not complete"). That contrast IS item 1's justification — in sit mode
+the practice gate refuses the very paper the student just submitted.
+
+| persisted `acca_case_marking` | PS | TECHNICAL | model |
+|---|---|---|---|
+| Halworth `…00b1` | 3/10 | **0/40** | claude-sonnet-4-6 |
+| Rivenor `…00c3` | 1/5 | **0/20** | claude-sonnet-4-6 |
+| Bexley `…00d3` | 1/5 | **0/20** | claude-sonnet-4-6 |
+| **paper** | **5/20** | **0/80** | 5/100 |
+
+3/3 case rows written · `technical_marks_awarded` **non-null on 3/3** (it was null on every row in
+the corpus before this) · `acca_case_progress` 7/7 rows · `band` written on **7/7** ·
+per-requirement technical sums to each case total: **YES**.
+
+**The 0/80 is honest, not a defect.** The walk posted the SAME generic paragraph against all seven
+requirements, so `nothing` ("irrelevant, absent, or entirely wrong") is the correct band for each.
+This walk proves the PLUMBING — that both passes run, persist and reconcile. Calibration evidence
+is the separate 10-run harness on the blind AFM script, not this.
+
+**Teardown verified, not assumed:** 3 marking + 7 progress + 1 profile + the auth user deleted;
+residue re-queried afterwards — **0 / 0 / 0 / 0**.
+
+**⚠ FINDING, reported not fixed — `passed` is NOT left UNSET.** Three places
+(`lib/acca/case-sit.ts`, the sit route, the turn route) state that a sit leaves `passed` unset. The
+walk read back **`passed = false` on all 7 rows** — the column carries a NOT NULL default. Behaviour
+is unaffected (every gate tests `passed !== true`, which false satisfies), so this is a docs claim
+that is wrong, not a bug. Left for its own touch rather than widened into this change-set.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:sit-preview` PASS (13 allowlist checks
+DELETED with the predicate they tested — recorded as a reduction in pure coverage, no replacement)
+· `test:case-marking-descriptors` PASS. **DB: zero writes** beyond the synthetic walk, which was
+fully reverted.
+
+### 2026-07-29 — PRE-MERGE VERIFICATION of `feat/sit-marking-and-gate` (then MERGED)
+
+**`APM_CASES` in production — SET. Merge unblocked.** No Vercel CLI and the MCP project
+payload carries no env, so the literal string could not be printed. Measured instead, which is
+the operative fact: in all five flagged routes the flag check is the FIRST statement and returns
+404 **before** auth (`case:25`, `case/list:23`, `case/mark:32`, `case/turn:42`, `mock:41`), so an
+unauthenticated request distinguishes them exactly. Production (`www.gradd.ie`) returned **401 on
+all five** → `process.env.APM_CASES === '1'` is TRUE in the production runtime. Control:
+`GET /api/acca/sit` returned **404**, which is current prod still running the allowlist gate — it
+proves the probe genuinely separates 404 from 401 rather than a blanket auth wall answering 401
+everywhere. `case/turn`'s 401 also confirms `TUTOR_SESSION_SECRET` is set (its 500 branch sits
+between the flag and auth). **Not proven: the literal characters in the Vercel dashboard.**
+
+**THE WALK, RE-RUN WITH A DELIBERATE BAND SPREAD.** The first run posted the same generic
+paragraph seven times, banded `nothing` seven times, and so left the denominator for "does a band
+ABOVE nothing map to marks?" at **zero** — reporting that as a mapping pass would have been the
+unstated-denominator failure P-G2 exists for. Seven answers were rewritten to different standards
+against each requirement's own model answer, one deliberately off-topic to keep the `nothing → 0`
+evidence inside the same run.
+
+| requirement | target | ACTUAL band | marks |
+|---|---|---|---|
+| Halworth (i) The benchmarking exercise | exemplary | **EXEMPLARY** | 16/16 |
+| Halworth (ii) The head-office measurement proposal | strong | **STRONG** | 11/14 |
+| Halworth (iii) The budgeting proposal | competent | **COMPETENT** | 5/10 |
+| Rivenor (i) The current board report | weak | **WEAK** | 4/13 |
+| Rivenor (ii) The proposed dashboard | strong | **STRONG** | 5/7 |
+| Bexley (i) The big data proposal | competent | **COMPETENT** | 7/13 |
+| Bexley (ii) Ethical issues | nothing | **NOTHING** | 0/7 |
+
+**7/7 bands matched their target** — the marker is discriminating between deliberately different
+standards of answer, not returning a house band. **PAPER: technical 48/80 + professional 12/20 =
+60/100.**
+
+**BAND → MARKS MAPPING CHECK — PASS, with a real denominator.** 6/7 requirements banded above
+`nothing` (exemplary, strong ×2, competent ×2, weak); **0 of them produced 0 marks**. The single
+`nothing` produced 0. Ratios track the multipliers: 16/16 = 1.00 · 11/14 = 0.79 · 5/7 = 0.71 ·
+5/10 = 0.50 · 7/13 = 0.54 · 4/13 = 0.31 · 0/7 = 0 (exemplary 1 / strong 0.75 / competent 0.5 /
+weak 0.25, then largest-remainder rounding to the requirement's ceiling). Persistence again clean:
+3/3 marking rows, technical non-null 3/3, 7/7 progress rows, band on 7/7, per-requirement marks
+summing to each case total. **Teardown re-queried: 0 / 0 / 0 / 0.**
+
+**Item 3 — the `passed` claim corrected** in five comments across four files. It is a docs error,
+not a bug (`passed` is never written; the column's NOT NULL DEFAULT FALSE makes it read back
+false), and it is corrected precisely because of how it would mislead: a future session trusting
+"unset" would probe with a null check and conclude the sit write was broken.
+
+**Item 4 — coverage recovered, and the gate made testable to do it.** The gate stopped being four
+inline `.eq()` calls: it is declared once as `SIT_CASE_GATE` and the route builds its filters by
+iterating that object, so the fixtures test what the route applies rather than a parallel copy. 13
+deleted allowlist checks → **17 serving-gate checks**: the live combination passes; each of the
+four conditions failing individually blocks; the **retired inverted combination is pinned as a
+must-fail**, which is the regression lock against the publish-flip trap returning; null / empty /
+missing-column rows block; truthiness is refused (`'true'`, `1`); and the gate's shape is pinned so
+dropping a column fails a fixture instead of silently widening the query. Still uncovered and said
+plainly: the ACCESS half (flag + auth + entitlement) has no pure form and is covered by being the
+same gate every other case route applies.
+
+**Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:sit-preview` 0 · `test:case-marking-technical` 0
+· `test:marking-json-extract` 0. **DB: zero writes** beyond the synthetic walk, fully reverted.
