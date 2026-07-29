@@ -154,7 +154,7 @@ export default function SitRunner() {
     try {
       // Recording an answer goes through the STANDARD case-turn route in sit mode — the
       // same write path the APM sit uses — not through a bespoke sit endpoint. `sitting`
-      // makes it skip the teach engine, record `final_answer` and leave `passed` unset;
+      // makes it skip the teach engine, record `final_answer` and never write `passed`;
       // `paper` must be sent because the route defaults to APM and would 404 an AFM case.
       // The answer is `student_message`, which is what the route reads in either mode.
       const res = await fetch('/api/acca/case/turn', {

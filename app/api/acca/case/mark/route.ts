@@ -253,7 +253,8 @@ export async function POST(request: Request): Promise<Response> {
         { onConflict: 'user_id,case_id' },
       );
     // Per-requirement technical band + marks land on the existing per-requirement
-    // progress row (sit mode only). Never touches `passed` (a sit leaves it unset).
+    // progress row (sit mode only). Never writes `passed` — which means the column keeps
+    // its NOT NULL DEFAULT FALSE and reads back `false`, NOT null (measured 2026-07-29).
     if (technical) {
       for (const pr of technical.per_requirement) {
         await supabase

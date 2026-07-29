@@ -38,7 +38,8 @@ const JSON_HEADERS = { 'Content-Type': 'application/json' };
 // case/turn + case (GET) + case/mark. It stays FALSE until the lean sit UI ships.
 //
 // MEASURED 2026-07-29 — FLIPPING THIS ALONE BREAKS THE MOCK, it does not merely leave
-// it teaching. Sit mode never sets `passed` (deliberately — see lib/acca/case-sit.ts),
+// it teaching. Sit mode never sets `passed` TRUE (deliberately — see lib/acca/case-sit.ts;
+// the column defaults to false, so it reads back false rather than null),
 // and BOTH completion predicates in this flow test exactly that: `allPassed` in
 // CaseSession (:231) and `passed === total` in aggregateCase below. Neither can ever
 // fire in sit mode, so `onComplete` never runs, the runner never advances to results,

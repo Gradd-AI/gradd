@@ -26,7 +26,7 @@ import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 //
 // SIT MODE (`sitting: true`, mock-engine Phase 2b): records the student's SINGLE
 // submitted answer as final_answer and returns — NO runTeachTurn (no hint/diagnose/
-// miss churn), `passed` left UNSET (a sit is graded later by the technical band pass,
+// miss churn), `passed` never written (a sit is graded later by the technical band pass,
 // not by turn-time correctness). A blank submission ('' — an unanswered requirement
 // at move-on or timeout) is a valid, final, zero-credit answer, recorded as ''.
 // PRACTICE mode (sitting=false, the default) is entirely unchanged.
@@ -104,8 +104,10 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── SIT MODE — record the single submitted answer, no teach loop ──
   // Skips the engine entirely: no model call, no seal, no hint/diagnose/miss churn.
-  // Records final_answer (blank '' allowed) and leaves `passed` UNSET — a sit is
-  // graded by the technical band pass at case/mark, not by turn-time correctness.
+  // Records final_answer (blank '' allowed) and NEVER WRITES `passed`. The column carries
+  // a NOT NULL DEFAULT FALSE, so the row reads back `passed = false`, not null (measured
+  // 2026-07-29, 7/7 sit rows) — never probe this path with a null check. A sit is graded
+  // by the technical band pass at case/mark, not by turn-time correctness.
   if (!shouldRunTeachLoop(sitting)) {
     // Validate the requirement belongs to this (subscription-gated) case, and that
     // the case is servable + paper-scoped — same serving gate as the practice path.

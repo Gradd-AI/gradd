@@ -11,8 +11,15 @@
 //     a SIT gates on every requirement having a RECORDED final_answer (blank '' is a
 //     valid, final, zero-credit answer), then marks whatever was written.
 //
-// `passed` is NEVER overloaded: it keeps meaning "judged correct" and stays UNSET in
-// a sit (a sit is graded by the technical band pass, not by turn-time correctness).
+// `passed` is NEVER overloaded: it keeps meaning "judged correct" and is NEVER SET TO
+// TRUE in a sit (a sit is graded by the technical band pass, not by turn-time
+// correctness).
+//
+// PRECISELY, because the looser wording misled: the sit write path never mentions the
+// column, but `acca_case_progress.passed` carries a NOT NULL DEFAULT FALSE, so the row
+// READS BACK `false`, not null. Measured 2026-07-29 — 7/7 sit rows came back false.
+// Every gate below therefore tests `passed !== true` rather than "is it null", and must
+// keep doing so: a null check would be wrong against the actual column.
 
 // PRACTICE (sitting=false) runs the teach loop; a SIT (sitting=true) does not.
 export function shouldRunTeachLoop(sitting: boolean): boolean {
