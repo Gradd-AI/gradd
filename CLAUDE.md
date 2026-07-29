@@ -324,6 +324,21 @@ wait for it, or say plainly that it was still building.
   runner ignores it); `ends_at` is written only because the column is NOT NULL and **nothing reads
   it** — no countdown, no auto-submit. **MARKING AND DEBRIEF ARE OUT OF THIS BUILD.**
   `MOCK_SIT_MODE` in `app/acca/mock/MockRunner.tsx` stays FALSE — that flag belongs to the APM paper.
+- **MARKING CORE — `lib/acca/case-marking.ts`** (shared by `app/api/acca/case/mark/route.ts` and
+  `scripts/calibrate-marking.ts`, so calibration can never drift from production). Two passes, same
+  mechanism: the MODEL assigns a quality BAND, deterministic CODE converts bands → marks
+  (`apportion`, largest-remainder). **PS pass** `judgeCaseMarking` — whole answer, paper-keyed
+  descriptors (`SKILL_DESCRIPTORS_BY_PAPER`, APM and AFM materially different, never merged), 4 bands.
+  **Technical pass** `judgeTechnicalMarking` — per requirement against its code-correct
+  `model_answer`, 5 bands (adds `nothing`). **BATCHED PER CASE, deliberately** — the sibling context
+  is load-bearing and a per-requirement split moved the mark (doctrine **P-M1**). **ORDINAL CONTRACT
+  on both cores:** the model echoes a NUMBER, never a skill name or a `requirement_id`; code owns the
+  ordinal → id mapping (a one-char UUID slip used to bin a whole case). **`extractJsonBlock`** pulls
+  the first BALANCED JSON block out of a response (fences, leading prose, trailing commentary;
+  string-aware) and returns `null` on a truncated/malformed body so those still fail.
+  **`withParseRetry`** = 1 + 3 attempts, parse failures ONLY (`Error('call')` propagates); every
+  failure is CAPTURED to `MARKING_PARSE_FAILURES` + a structured log before the retry. Fixtures
+  `scripts/test-marking-json-extract.ts` (`npm run test:marking-json-extract`, 16 checks, pure).
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR

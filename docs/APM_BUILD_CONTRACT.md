@@ -2500,3 +2500,80 @@ it. **Not flipped.**
 
 **Gates:** `test:rounding` 65/65 PASS · `test:case-gates` PASS · `tsc --noEmit` clean ·
 `next build` compiled successfully. **DB: zero writes.**
+
+## 2026-07-29 — MARKING PARSE FAILURES: the per-requirement split REVERTED, the parser fixed instead — 0/30 on the 10-run harness
+
+**The problem, restated.** `judgeTechnicalOnce` (`lib/acca/case-marking.ts`) was throwing
+`Error('parse')` often enough to matter — measured **22.9% of calls** — and each failure binned a
+whole case's judgements, reaching the student as an unrecoverable 502 on a SUBMITTED PAPER.
+
+**What the previous session changed, and what was wrong with it.** Two fixes shipped together: (1)
+the model contract moved from echoing a 36-character `requirement_id` to echoing a **short ordinal**,
+code owning the ordinal → id mapping; (2) the batched per-case call was **split into one call per
+requirement**. (1) is sound and stays. (2) is **reverted this session**: judged in isolation, mock
+**A(iv) inflated `strong` → `exemplary` in 5/5 runs** — with no sibling answers in view the marker has
+nothing to calibrate "less analytically sharp than the standard" against. A reliability fix that moves
+the mark is a marking change. Banked as doctrine **P-M1**.
+
+**The actual root cause was the PARSER, not the batch.** The captured raw text (the capture ring
+added in `41d5db7` is what made this diagnosable at all) showed valid, correct, complete JSON sitting
+behind the model's own prose preamble — *"The candidate correctly identifies…"* — on **20 of ~50
+calls**. `JSON.parse(trimmed)` required the response to BEGIN with the JSON, so every one was
+discarded. The judgement was sound; only its presentation was not.
+
+**Shipped.**
+1. **Batching restored** in `judgeTechnicalMarking` — one call per case, sibling context intact.
+   Blast radius (a bad response costs the case's batch) is now paid down by the extractor + retry
+   rather than by splitting the call. Both stale comment blocks from the split attempt were rewritten;
+   the orphaned `TechnicalJudgement` interface removed.
+2. **Ordinal contract KEPT**, on both cores — technical *and* `judgeCaseMarking`, which now numbers
+   the skill rubric and takes an `index` rather than a `skill` string. `max_tokens` 3000 kept.
+3. **`extractJsonBlock()`** — pulls the first BALANCED `{…}` / `[…]` out of a response: code fences
+   anywhere (not only at position 0), leading prose, trailing commentary. Brace matching is
+   **string-aware**, so a `}` inside a feedback string cannot close the object early — the reason it
+   is a scanner and not a `lastIndexOf`. Returns `null` on an unbalanced body, so a truncation or a
+   genuinely malformed response **still fails**; it finds well-formed JSON surrounded by text, it
+   never invents structure.
+4. **Fixtures — `scripts/test-marking-json-extract.ts` (`npm run test:marking-json-extract`), 16
+   checks, PURE.** Leading prose · fenced · fenced-with-prose · prose + trailing commentary · brace
+   inside a string · escaped quote · nested objects. And the must-still-fail half: no JSON · empty ·
+   truncated/unbalanced · prose-then-truncated · balanced-but-malformed (extractor returns it,
+   `JSON.parse` rejects it).
+
+**THE 10-RUN HARNESS — `scripts/_run10_technical_marking.ts` (gitignored, read-only, persists
+nothing).** Denominators declared up front per **P-G2**: 10 runs × 3 cases = **30 chains** (production
+calls `judgeTechnicalMarking` once per case, because `apportionTechnicalMarks` normalises to that
+case's own ceiling), 8 requirements, Σ`marks_guide` 80, **80 matrix cells**. Attempt accounting is
+exact without per-chain attribution: `modelAttempts = chainsReturned + capturedFailures`.
+
+| requirement | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | modal |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| A (i) B3e — 10 | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | exemplary/10 · 10/10 |
+| A (ii) B5b — 16 | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | exemplary/16 · 10/10 |
+| A (iii) E2b — 8 | EXE | STR | STR | STR | STR | STR | STR | EXE | EXE | STR | strong/6 · 7/10 |
+| A (iv) E1a — 6 | STR | STR | STR | STR | STR | STR | STR | EXE | STR | STR | **strong/5 · 9/10** |
+| B1 (i) B1a — 12 | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | exemplary/12 · 10/10 |
+| B1 (ii) B1b — 8 | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | exemplary/8 · 10/10 |
+| B2 (i) E3a — 12 | CMP | CMP | CMP | CMP | CMP | CMP | CMP | CMP | CMP | CMP | **competent/6 · 10/10** |
+| B2 (ii) E2a — 8 | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | EXE | exemplary/8 · 10/10 |
+
+Paper technical total: **71/80 in 7 runs**, 73 in 2, 74 in 1 — a 3-mark spread on 80.
+
+**PARSE-FAILURE RATE — 0/30 model attempts = 0.0%.** 30 chains attempted, **30 returned**, 0 exhausted
+on parse, 0 API/transport faults, **80/80 cells evaluated**. Stated honestly: zero failures in 30
+attempts bounds the true rate at roughly **≤10% at 95% confidence** — it does not establish 0%. It is
+a decisive move off 22.9%, on the same reference script that produced that figure, and no more.
+**Scope of the denominator:** one blind candidate script, 3 cases, 8 requirements, one model
+(`claude-sonnet-4-6`). It is not a general parse rate over arbitrary candidate work.
+
+**THE TWO TARGETED CHECKS.**
+- **B2(i) — competent/6 in 10/10 runs**, band *and* marks. The heavy-partial-credit case (the ONE
+  conceptual error the candidate's own internal check cannot catch) is held exactly.
+- **A(iv) — strong/5 in 9/10 runs**, one `exemplary/6` (run 8, itself a whole-case outlier: A(iii)
+  also read EXE and that run totalled 40/40). **Reported as the honest result, not as a clean
+  return:** batching restores `strong` as the dominant band against the split's 5/5 `exemplary`, but
+  it is a 9/10 tendency, not determinism. A(iii) is the least stable cell in the matrix at strong 7/10
+  · exemplary 3/10 — banked as the calibration item to watch, not fixed here.
+
+**Gates:** `test:marking-json-extract` 16/16 PASS · `tsc --noEmit` clean · `next build` GREEN.
+**DB: zero writes.** No route change, no client change, no content change.

@@ -106,6 +106,40 @@ success while measuring less than it claimed**:
 P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
 individual result. A report that satisfies one and not the others is still misleading.
 
+## P-M1 — A RELIABILITY FIX TO A MARKING CALL MUST BE RE-CALIBRATED, NOT MERELY RE-RUN (ruled 2026-07-29)
+
+**Changing the SHAPE of a marking call changes the MARK.** Reliability and calibration are not
+independent axes, and a fix that makes the marker fail less often is not thereby a safe fix.
+
+The instance. `judgeTechnicalOnce` was throwing `parse` on ~22.9% of calls, each failure binning a
+whole case's judgements. Two changes were made together: the model contract moved from echoing a
+36-character `requirement_id` to echoing a **short ordinal** (killing a one-character transcription
+slip class), and the batched per-case call was **split into one call per requirement** (shrinking the
+blast radius of any remaining failure). Both are sound-sounding reliability moves. The split also
+**moved the marks**: judged alone, mock A(iv) inflated `strong → exemplary` in **5/5** runs, because
+with no sibling answers in view the marker has nothing to calibrate "less analytically sharp than the
+standard" against. Isolation also made the hardest requirement *more* likely to think aloud before
+answering — so it did not even buy the reliability it was for.
+
+**The rule.** Any change to a marking call's shape — batching, isolation, prompt contract, token
+ceiling, model — is re-measured on a **fixed reference script** over **N repeated runs**, and the
+BAND MATRIX is reported per requirement, not just the pass rate. A change that alters a band
+distribution is a **marking change** and needs the same scrutiny as a content edit, whatever
+engineering problem it was aimed at.
+
+**Corollaries.**
+- **Sibling context is load-bearing; batching is a marking decision, not a cost one.** Splitting a
+  batched marker is never "just plumbing".
+- **Separate the two fixes and keep the one that stands alone.** The ordinal contract survives on its
+  own evidence (the slip class went to zero across 50 calls, no band moved). The split does not.
+- **Fix the parse at the PARSER when the judgement was sound.** The measured failure was a valid,
+  correct JSON body behind a prose preamble — discarding it was failing on presentation, not
+  substance. Widening the extractor keeps the batch AND the judgement (`extractJsonBlock`, string-aware
+  brace matching, `scripts/test-marking-json-extract.ts`). It must still reject a genuinely malformed
+  or truncated body — a "repair anything" extractor is worse than the bug it fixes.
+- **Report the rate against a declared denominator** (P-G2), and never state a zero-failure run as a
+  zero rate: 0/30 bounds the true rate near ≤10% at 95%, it does not establish 0%.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.

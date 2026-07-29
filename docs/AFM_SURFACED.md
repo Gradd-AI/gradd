@@ -2,11 +2,46 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
+*Last refreshed: 2026-07-29 (marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
+
+*Earlier: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ✅ CLOSED 2026-07-29 — technical-marking parse failures: split reverted, parser fixed, 0/30
+
+**22.9% → 0/30.** The root cause was never the batch: the captured raw text showed **valid, correct,
+complete JSON behind the model's own prose preamble** on 20 of ~50 calls, and `JSON.parse(trimmed)`
+required the response to BEGIN with the JSON. Fixed at the parser — `extractJsonBlock()` pulls the
+first BALANCED block out of a response (fences anywhere, leading prose, trailing commentary;
+string-aware brace matching so a `}` inside feedback cannot close the object early), and still
+returns `null` on a truncated or malformed body so those keep failing. 16 fixtures,
+`npm run test:marking-json-extract`.
+
+**The per-requirement split is REVERTED** — it moved the mark (A(iv) `strong`→`exemplary` in 5/5
+runs judged alone). **The ordinal contract and `max_tokens` 3000 are KEPT** — they stand on their own
+evidence and the ordinal is now on BOTH cores, PS included. Doctrine **P-M1** banked: a reliability
+fix to a marking call must be re-calibrated on a fixed reference script over N runs, band matrix
+reported, not merely re-run.
+
+**10-run harness** (`scripts/_run10_technical_marking.ts`, gitignored, read-only): 30 chains, 30
+returned, **0 parse failures / 30 model attempts**, 80/80 cells evaluated. **B2(i) competent/6 in
+10/10** · **A(iv) strong/5 in 9/10**. Rate stated against its denominator per P-G2 — 0/30 bounds the
+true rate near ≤10% at 95%, it does not establish 0%.
+
+### 🔸 OPEN (calibration, non-blocking) — two soft cells in the band matrix
+
+- **A(iii) E2b (8 marks) is the least stable cell: `strong` 7/10, `exemplary` 3/10.** Not a defect —
+  the candidate answer genuinely sits on that boundary — but it is the widest spread in the paper and
+  the first place to look if mock totals start wobbling.
+- **A(iv) E1a (6 marks) reads `exemplary` in 1/10 runs** (run 8, itself a whole-case outlier that
+  totalled 40/40). Batching restores `strong` as the dominant band; it is a tendency, not determinism.
+- Both are **marking-calibration** items, not plumbing. Neither blocks the sit surface (marking and
+  debrief remain out of the `/acca/afm/mock` build). Revisit alongside the PS pass, which has **not**
+  been put through an equivalent repeated-run matrix yet — the ordinal contract landed on
+  `judgeCaseMarking` this session on the technical pass's evidence, not on its own.
 
 ## ✅ CLOSED 2026-07-28 — Mock 1 barrier is GREEN; capm registered; CAPM-1/2/4/9 built
 
