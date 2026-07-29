@@ -289,9 +289,13 @@ export async function POST(request: Request): Promise<Response> {
   if (action === 'finish') {
     const existing = await openAttempt(supabase, userId);
     if (existing && !existing.completed) {
+      // `completed_at` closes the FINAL requirement's interval. `started_at` opens the first
+      // and each submission closes the one before it, but the time after the last submission
+      // had no end until this column existed. Written only on the flip, so it stays NULL
+      // while an attempt is open and is never moved afterwards.
       await supabase
         .from('acca_mock_attempts')
-        .update({ completed: true })
+        .update({ completed: true, completed_at: new Date().toISOString() })
         .eq('user_id', userId)
         .eq('mock_id', PAPER.id)
         .eq('started_at', existing.started_at);

@@ -181,13 +181,25 @@ export async function POST(request: Request): Promise<Response> {
     }
 
     try {
+      // `submitted_at` is the SIT TIMING RECORD and is written here, once, explicitly.
+      //
+      // NOT created_at: that is a DB default, so it lands whenever the ROW was first inserted
+      // — and a practice turn on this requirement inserts it early with a NULL final_answer,
+      // which the immutability check then lets this submit update. created_at would point at
+      // the practice turn, not the submission.
+      // NOT updated_at: the marking pass rewrites it on every requirement, so after marking it
+      // is the marking time.
+      // Nothing else writes submitted_at, and submissions are immutable (a recorded
+      // final_answer 409s above), so this value is written once and never moves.
+      const submittedAt = new Date().toISOString();
       await supabase.from('acca_case_progress').upsert(
         {
           user_id: user.id,
           case_id: caseId,
           requirement_id: requirementId,
           final_answer: finalAnswer,
-          updated_at: new Date().toISOString(),
+          submitted_at: submittedAt,
+          updated_at: submittedAt,
         },
         { onConflict: 'user_id,case_id,requirement_id' },
       );
