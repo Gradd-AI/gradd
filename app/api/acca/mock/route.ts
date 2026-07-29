@@ -158,9 +158,12 @@ export async function PATCH(request: Request): Promise<Response> {
   // the results screen owns display, so a failed flag never blocks the response.
   const existing = await latestAttempt(g.supabase, g.userId);
   if (existing && existing.mock_id === mockId && !existing.completed) {
+    // completed_at written alongside the flip, same as the sit route's finish. Both writers
+    // of `completed` must set it or an attempt's end instant depends on which surface
+    // finished it — the exact inconsistency that makes a timing column untrustworthy.
     await g.supabase
       .from('acca_mock_attempts')
-      .update({ completed: true })
+      .update({ completed: true, completed_at: new Date().toISOString() })
       .eq('user_id', g.userId)
       .eq('mock_id', mockId)
       .eq('started_at', existing.started_at);
