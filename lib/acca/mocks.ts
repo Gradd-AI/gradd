@@ -13,6 +13,11 @@
 // mock_id) can filter MOCK_PAPERS to the requesting paper — the same class of leak
 // as the unscoped acca_cases list, just in code config instead of a table.
 import type { AccaPaper } from '@/lib/acca/paper';
+// The AFM sit paper is a separate config from MOCK_PAPERS while the two runners are
+// separate (merging them belongs to the SitRunner-for-both-papers change-set). It is
+// imported here so mock-content ACCESS is decided in one place across both papers.
+// sit-preview imports nothing from this module, so there is no cycle.
+import { AFM_MOCK_PAPER_1 } from '@/lib/acca/sit-preview';
 
 export interface MockPaper {
   id: string;              // stable paper identifier, e.g. 'paper-1'
@@ -46,4 +51,48 @@ export function getMockPaper(id: string): MockPaper | null {
 
 export function getMockPapers(paper: AccaPaper): MockPaper[] {
   return MOCK_PAPERS.filter((p) => p.paper === paper);
+}
+
+// ── MOCK-CONTENT ACCESS (ruled 2026-07-29) ───────────────────────────────────
+// A `mock_only` case is reserved exam content. It must NOT be reachable through the
+// id-addressed practice routes just because it is published — that made the paper
+// fetchable, and teachable, by anyone holding a case id.
+//
+// The guard is ATTEMPT-SCOPED: mock content is served through app/api/acca/case and
+// app/api/acca/case/turn ONLY while the requester has an OPEN, UNCOMPLETED attempt for
+// the paper THAT CASE BELONGS TO. No attempt → the case does not exist as far as those
+// routes are concerned.
+//
+// SCOPED TO THE ATTEMPT'S OWN CASES, deliberately: an open APM attempt must not unlock
+// the AFM mock, and vice versa. The check resolves the attempt's `mock_id` to ITS paper's
+// case list and asks whether this case is in it — never "is any mock open".
+//
+// TRANSITIONAL. The APM timed mock currently loads and turns through the practice routes
+// (MockRunner → CaseSession → case GET + case/turn), which is why the carve-out exists at
+// all rather than an outright block. Once SitRunner serves both papers, APM stops using
+// those routes for mock content and this becomes an unconditional refusal — see
+// docs/AFM_SURFACED.md.
+
+/** Case ids for a mock paper id, across BOTH paper configs (APM MOCK_PAPERS and the AFM
+ *  sit paper). Returns null for an unrecognised mock_id — an attempt row carrying one
+ *  unlocks nothing, which is the safe direction. */
+export function mockPaperCaseIds(mockId: string): readonly string[] | null {
+  const apm = getMockPaper(mockId);
+  if (apm) return apm.case_ids;
+  if (mockId === AFM_MOCK_PAPER_1.id) return AFM_MOCK_PAPER_1.case_ids;
+  return null;
+}
+
+export interface AttemptRef {
+  mock_id: string;
+  completed: boolean | null;
+}
+
+/** PURE. Does one of these attempts unlock this case? True only when an attempt is
+ *  UNCOMPLETED and the case belongs to that attempt's OWN paper. */
+export function attemptUnlocksCase(attempts: readonly AttemptRef[], caseId: string): boolean {
+  if (!caseId) return false;
+  return attempts.some(
+    (a) => a?.completed !== true && (mockPaperCaseIds(a?.mock_id ?? '') ?? []).includes(caseId),
+  );
 }

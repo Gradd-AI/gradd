@@ -10,6 +10,7 @@ import {
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
+import { mockAttemptUnlocksCase } from '@/lib/acca/mock-access';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -100,6 +101,29 @@ export async function POST(request: Request): Promise<Response> {
 
   if (!hasActiveAPMAccess(profile ?? {})) {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
+  }
+
+  // ── MOCK CONTENT: attempt-scoped, or it does not exist here ──
+  // Checked ONCE, before the sit/practice branch, so both paths are covered by the same
+  // rule and neither can be tightened without the other. Teaching on a mock requirement is
+  // the same leak as fetching one, through a different door: without this, a case id was
+  // enough to run the teach loop over reserved exam content — hints, diagnosis and all.
+  //
+  // The case is fetched here purely for `mock_only`; each branch below still performs its
+  // own gated fetch, unchanged. Refusal is the same 404 both branches already return for an
+  // unservable case, so nothing distinguishes "reserved" from "does not exist".
+  {
+    const { data: mockCheck } = await supabase
+      .from('acca_cases')
+      .select('mock_only')
+      .eq('id', caseId)
+      .eq('paper_code', paper)
+      .eq('status', 'approved')
+      .eq('published', true)
+      .maybeSingle();
+    if (mockCheck?.mock_only === true && !(await mockAttemptUnlocksCase(supabase, user.id, caseId))) {
+      return NextResponse.json({ error: 'Case not found' }, { status: 404 });
+    }
   }
 
   // ── SIT MODE — record the single submitted answer, no teach loop ──
