@@ -6,7 +6,9 @@
 //
 // P-G3: the computation is pure and separated from I/O by construction, and every walk carries
 // a KNOWN EXPECTED DEBRIEF — including the shapes where the headline must CHANGE. A headline
-// selector only ever observed picking one branch is untested.
+// selector only ever observed picking one branch is untested. W7 and W8 exist specifically to
+// drive the collapse selector's REJECT path: a collapse that fires but costs nothing must be
+// demoted to `secondary`, and a selector never observed demoting is an untested branch.
 
 import { computePacing, type PacingInputRequirement, type PacingInputAttempt } from '../lib/acca/pacing';
 import { buildDebrief, type DebriefRequirementInput, type DebriefCaseInput, type DebriefReport } from '../lib/acca/debrief';
@@ -19,6 +21,11 @@ function ok(name: string, cond: boolean, detail = '') {
 
 const MARKS = [10, 16, 8, 6, 12, 8, 12, 8];
 const LABELS = ['A(i)', 'A(ii)', 'A(iii)', 'A(iv)', 'B1(i)', 'B1(ii)', 'B2(i)', 'B2(ii)'];
+// Three cases, in paper order — the real Mock 1 shape (4 + 2 + 2).
+const CASE_OF = ['a001', 'a001', 'a001', 'a001', 'b101', 'b101', 'b201', 'b201'];
+const CASE_TITLE: Record<string, string> = {
+  a001: 'Solenne Industries SA', b101: 'Brecon Renewables plc', b201: 'Aldebrino SpA',
+};
 const T = (m: number) => new Date(Date.UTC(2026, 6, 30, 9, 0, 0) + m * 60000).toISOString();
 
 // Real-shaped marker reasoning: names the figure and the diverging step, as the technical
@@ -52,38 +59,54 @@ function build(opts: {
   const pacing = computePacing(pacingReqs, att);
 
   const reqs: DebriefRequirementInput[] = opts.cumulative.map((_, i) => ({
-    requirement_id: `r${i + 1}`, paper_order: i + 1, label: LABELS[i],
+    requirement_id: `r${i + 1}`, case_id: CASE_OF[i], paper_order: i + 1, label: LABELS[i],
     marks_available: MARKS[i], marks_awarded: opts.awarded[i], band: opts.bands[i],
     marker_feedback: opts.feedback[i],
   }));
-  const cases: DebriefCaseInput[] = [{
-    case_id: 'a001', title: 'Solenne Industries SA',
-    professional_marks_awarded: opts.ps === null ? null : (opts.ps?.awarded ?? 8),
-    professional_marks_available: opts.ps === null ? null : (opts.ps?.available ?? 10),
-    per_skill: opts.ps === null ? [] : [
+  const cases: DebriefCaseInput[] = ['a001', 'b101', 'b201'].map((id) => ({
+    case_id: id, title: CASE_TITLE[id],
+    professional_marks_awarded: opts.ps === null || id !== 'a001' ? null : (opts.ps?.awarded ?? 8),
+    professional_marks_available: opts.ps === null || id !== 'a001' ? null : (opts.ps?.available ?? 10),
+    per_skill: opts.ps === null || id !== 'a001' ? [] : [
       { skill: 'analysis_and_evaluation', band: 'strong', feedback: 'Balances the costs and risks of the hedge before recommending it.' },
       { skill: 'communication', band: 'competent', feedback: 'The report format is right but the recommendation is buried in the third paragraph.' },
     ],
-  }];
+  }));
   return buildDebrief(reqs, cases, pacing);
 }
 
 const line = (d: DebriefReport, order: number) => d.requirements.find((r) => r.paper_order === order)!;
 
+const W1 = () => build({
+  cumulative: [20, 51, 67, 79, 102, 118, 141, 157],
+  bands:    ['exemplary', 'exemplary', 'strong', 'strong', 'exemplary', 'strong', 'competent', 'strong'],
+  awarded:  [10, 16, 6, 5, 12, 6, 6, 6],
+  feedback: [FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.competent, FB.exemplary],
+  completedAt: 165,
+});
+const W2 = () => build({
+  cumulative: [25, 70, 95, 115, 150, 172, 176, 178],
+  bands:    ['strong', 'competent', 'competent', 'strong', 'competent', 'weak', 'weak', 'nothing'],
+  awarded:  [8, 8, 4, 5, 6, 2, 3, 0],
+  feedback: [FB.exemplary, FB.competent, FB.competent, FB.exemplary, FB.competent, FB.weak, FB.weak, FB.nothing],
+  completedAt: 180,
+});
+const W3 = () => build({
+  cumulative: [25, 70, 95, 120, 150, 170, null, null],
+  bands:    ['strong', 'competent', 'competent', 'strong', 'competent', 'weak', 'nothing', 'nothing'],
+  awarded:  [8, 8, 4, 5, 6, 2, 0, 0],
+  feedback: [FB.exemplary, FB.competent, FB.competent, FB.exemplary, FB.competent, FB.weak, null, null],
+  completedAt: 195,
+});
+
 // ── W1 — a STRONG paper with ONE error ───────────────────────────────────────
 console.log('\n-- W1: strong paper, one error --');
 {
-  const d = build({
-    cumulative: [20, 51, 67, 79, 102, 118, 141, 157],
-    bands:    ['exemplary', 'exemplary', 'strong', 'strong', 'exemplary', 'strong', 'competent', 'strong'],
-    awarded:  [10, 16, 6, 5, 12, 6, 6, 6],
-    feedback: [FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.competent, FB.exemplary],
-    completedAt: 165,
-  });
+  const d = W1();
   ok('not_evaluated is null', d.not_evaluated === null);
   ok('EXPECTED headline: largest single loss (no collapse in this paper)', d.headline.code === 'largest_single_loss');
-  ok('the headline names B2(i) and 6 of 12 marks',
-    /6 of 12 marks on B2\(i\)/.test(d.headline.statement), d.headline.statement);
+  ok('the headline names the requirement by DISPLAY name and 6 of 12 marks',
+    /6 of 12 marks on Q3 \(i\)/.test(d.headline.statement), d.headline.statement);
   ok('there is exactly ONE headline', typeof d.headline.statement === 'string' && d.headline.statement.length > 0);
   ok('the error requirement is verdict=partial', line(d, 7).verdict === 'partial');
   ok('its WHY is the marker\'s words VERBATIM', line(d, 7).why === FB.competent);
@@ -102,44 +125,36 @@ console.log('\n-- W1: strong paper, one error --');
     d.professional[0].skills[1].why === 'The report format is right but the recommendation is buried in the third paragraph.');
 }
 
-// ── W2 — a COLLAPSE paper ────────────────────────────────────────────────────
-console.log('\n-- W2: collapse paper --');
+// ── W2 — a COLLAPSE paper that COSTS marks ───────────────────────────────────
+console.log('\n-- W2: collapse paper (window costs marks) --');
 {
-  const d = build({
-    cumulative: [25, 70, 95, 115, 150, 172, 176, 178],
-    bands:    ['strong', 'competent', 'competent', 'strong', 'competent', 'weak', 'weak', 'nothing'],
-    awarded:  [8, 8, 4, 5, 6, 2, 3, 0],
-    feedback: [FB.exemplary, FB.competent, FB.competent, FB.exemplary, FB.competent, FB.weak, FB.weak, FB.nothing],
-    completedAt: 180,
-  });
+  const d = W2();
   ok('EXPECTED headline: the collapse, NOT the largest single loss', d.headline.code === 'end_of_paper_collapse');
-  ok('the headline is the pacing finding reused VERBATIM', /^End-of-paper collapse\./.test(d.headline.statement));
+  ok('the headline opens with the collapse sentence', /^End-of-paper collapse\./.test(d.headline.statement));
   ok('the headline is sourced to the pacing finding', d.headline.source === 'pacing_finding');
-  // Losses here are 2,8,4,1,6,6,9,8 — the largest is 9 on B2(i). The collapse still outranks
-  // it, which is the whole point of rule 2: the paper-level pattern leads.
+  ok('the selector recorded WHY it led', d.headline.evidence.window_costs_marks === true);
+  ok('nothing was demoted to secondary', d.secondary.length === 0);
+  // Losses here are 2,8,4,1,6,6,9,8 — the largest is 9 on Q3 (i). The collapse still outranks
+  // it, which is the whole point of rule 2: a CONSEQUENTIAL paper-level pattern leads.
   const biggest = d.requirements.reduce((a, b) => ((b.marks_lost ?? 0) > (a.marks_lost ?? 0) ? b : a));
   ok('a larger single loss exists and is deliberately NOT the headline',
     (biggest.marks_lost ?? 0) === 9 && d.headline.code !== 'largest_single_loss', String(biggest.marks_lost));
   ok('the nothing-band requirement is verdict=lost', line(d, 8).verdict === 'lost');
   ok('its action is re-work from the method up', /from the method up/.test(line(d, 8).next_action));
   ok('pacing note is SEPARATE from the marks line', line(d, 7).pacing_note !== null && line(d, 7).what_was_lost.indexOf('minutes') === -1);
-  ok('the pacing note names both ends of the interval',
-    /between submitting B1\(ii\) and submitting B2\(i\)/.test(line(d, 7).pacing_note!), line(d, 7).pacing_note!);
+  ok('the pacing note names both ends by DISPLAY name',
+    /between submitting Q2 \(ii\) and submitting Q3 \(i\)/.test(line(d, 7).pacing_note!), line(d, 7).pacing_note!);
 }
 
 // ── W3 — an UNANSWERED-TAIL paper ────────────────────────────────────────────
 console.log('\n-- W3: unanswered tail --');
 {
-  const d = build({
-    cumulative: [25, 70, 95, 120, 150, 170, null, null],
-    bands:    ['strong', 'competent', 'competent', 'strong', 'competent', 'weak', 'nothing', 'nothing'],
-    awarded:  [8, 8, 4, 5, 6, 2, 0, 0],
-    feedback: [FB.exemplary, FB.competent, FB.competent, FB.exemplary, FB.competent, FB.weak, null, null],
-    completedAt: 195,
-  });
+  const d = W3();
   ok('EXPECTED headline: the collapse', d.headline.code === 'end_of_paper_collapse');
   ok('the headline names the closing run',
     /recorded no answer that could earn marks/.test(d.headline.statement), d.headline.statement);
+  ok('the closing run is named by DISPLAY name, not raw ordinals',
+    /\(Q3 \(i\), Q3 \(ii\)\)/.test(d.headline.statement), d.headline.statement);
   ok('an unreached requirement is verdict=not_reached', line(d, 7).verdict === 'not_reached');
   ok('what_was_lost states all marks were unavailable',
     /All 12 marks were unavailable/.test(line(d, 7).what_was_lost), line(d, 7).what_was_lost);
@@ -183,6 +198,7 @@ console.log('\n-- W5: not yet marked --');
     /Not yet marked/.test(line(d, 3).next_action));
   ok('pacing notes are still produced', line(d, 3).pacing_note !== null);
   ok('totals report null rather than zero', d.totals.technical_awarded === null);
+  ok('per-case subtotals report null rather than zero', d.cases.every((c) => c.technical_awarded === null));
 }
 
 // ── W6 — degenerate input ────────────────────────────────────────────────────
@@ -191,16 +207,143 @@ console.log('\n-- W6: degenerate input --');
   const pacing = computePacing([], { started_at: null, completed_at: null });
   const d = buildDebrief([], [], pacing);
   ok('no requirements → not_evaluated', d.not_evaluated !== null);
+  ok('degenerate report still carries the new fields', Array.isArray(d.cases) && Array.isArray(d.secondary));
+}
+
+// ── W7 — a collapse that COSTS NOTHING must be DEMOTED (selector reject path) ─
+console.log('\n-- W7: harmless collapse, nothing lost anywhere --');
+{
+  const d = build({
+    cumulative: [25, 70, 95, 115, 150, 172, 176, 178],   // same fast tail as W2
+    bands:    Array(8).fill('exemplary'),
+    awarded:  [...MARKS],
+    feedback: Array(8).fill(FB.exemplary),
+    completedAt: 180,
+  });
+  ok('the collapse DID fire in pacing (precondition for this walk)',
+    d.secondary.some((s) => s.code === 'end_of_paper_collapse') || d.headline.code === 'end_of_paper_collapse');
+  ok('EXPECTED headline: NOT the collapse — its window cost nothing', d.headline.code === 'no_marks_lost', d.headline.code);
+  ok('the collapse is reported SECONDARY, not dropped',
+    d.secondary.length === 1 && d.secondary[0].code === 'end_of_paper_collapse');
+  ok('the demoted finding records that its window cost nothing',
+    d.secondary[0].evidence.window_costs_marks === false);
+  ok('the demoted statement is still the full compliant sentence',
+    /^End-of-paper collapse\./.test(d.secondary[0].statement), d.secondary[0].statement);
+}
+
+// ── W8 — collapse harmless, but marks lost EARLIER in the paper ──────────────
+console.log('\n-- W8: harmless collapse, marks lost outside its window --');
+{
+  const d = build({
+    cumulative: [25, 70, 95, 115, 150, 172, 176, 178],
+    bands:    ['competent', 'competent', 'exemplary', 'exemplary', 'exemplary', 'exemplary', 'exemplary', 'exemplary'],
+    awarded:  [4, 7, 8, 6, 12, 8, 12, 8],
+    feedback: [FB.competent, FB.competent, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary, FB.exemplary],
+    completedAt: 180,
+  });
+  ok('EXPECTED headline: the largest single loss, NOT the collapse',
+    d.headline.code === 'largest_single_loss', d.headline.code);
+  ok('the headline names the earlier loss by display name',
+    /9 of 16 marks on Q1 \(ii\)/.test(d.headline.statement), d.headline.statement);
+  ok('the collapse is still reported, as secondary',
+    d.secondary.length === 1 && d.secondary[0].code === 'end_of_paper_collapse');
+}
+
+// ── NAMING — no internal code, no marks, reaches every student-facing string ──
+console.log('\n-- naming: no LO code and no marks count in any student-facing reference --');
+{
+  const walks = [W1(), W2(), W3()];
+  const names = walks.flatMap((d) => d.requirements.map((r) => r.display_name));
+  ok('every display_name is the "Q<n> (part)" shape',
+    names.every((n) => /^Q\d+ \((?:i|ii|iii|iv|v|vi)\)$/.test(n)), names.find((n) => !/^Q\d+ \((?:i|ii|iii|iv|v|vi)\)$/.test(n)) ?? '');
+  ok('the eight requirements map onto three questions, in paper order',
+    walks[0].requirements.map((r) => r.display_name).join(' ') ===
+    'Q1 (i) Q1 (ii) Q1 (iii) Q1 (iv) Q2 (i) Q2 (ii) Q3 (i) Q3 (ii)',
+    walks[0].requirements.map((r) => r.display_name).join(' '));
+
+  // The stored label is "(i) B3e — 10 marks". Neither half may reach the student.
+  const facing = walks.flatMap((d) => [
+    d.headline.statement,
+    ...d.secondary.map((s) => s.statement),
+    ...d.requirements.flatMap((r) => [r.display_name, r.what_was_lost, r.next_action, r.pacing_note ?? '']),
+  ]).filter((s) => s.length > 0);
+  const LO_CODE = /\b[ABCDE]\d[a-z]\b/;
+  const hitCode = facing.find((s) => LO_CODE.test(s));
+  ok('NO student-facing string contains an LO code', hitCode === undefined, hitCode ?? '');
+  const hitLabelMarks = facing.find((s) => /\((?:i|ii|iii|iv)\)\s*[A-E]\d[a-z]?\s*—\s*\d+ marks/.test(s));
+  ok('NO student-facing string reproduces the stored label', hitLabelMarks === undefined, hitLabelMarks ?? '');
+  // Every requirement the headline or a pacing note names must be findable in the document.
+  const known = new Set(walks[0].requirements.map((r) => r.display_name));
+  const referenced = [...walks[0].headline.statement.matchAll(/Q\d+ \([ivx]+\)/g)].map((m) => m[0]);
+  ok('every requirement the headline names exists in the body',
+    referenced.length > 0 && referenced.every((n) => known.has(n)), referenced.join(','));
+  const w3refs = [...W3().headline.statement.matchAll(/Q\d+ \([ivx]+\)/g)].map((m) => m[0]);
+  ok('the collapse headline names requirements that exist in the body',
+    w3refs.length > 0 && w3refs.every((n) => known.has(n)), w3refs.join(','));
+}
+
+// ── CASE GROUPING + SUBTOTALS ────────────────────────────────────────────────
+console.log('\n-- case grouping and per-case subtotals --');
+{
+  const d = W1();
+  ok('three case groups, in paper order', d.cases.length === 3 && d.cases.map((c) => c.display_name).join(' ') === 'Q1 Q2 Q3');
+  ok('groups carry their titles', d.cases[0].title === 'Solenne Industries SA' && d.cases[2].title === 'Aldebrino SpA');
+  ok('the 4/2/2 split is preserved', d.cases.map((c) => c.requirements.length).join('') === '422');
+  // Q1 10+16+6+5 = 37/40 · Q2 12+6 = 18/20 · Q3 6+6 = 12/20
+  ok('Q1 subtotal', d.cases[0].technical_awarded === 37 && d.cases[0].technical_available === 40,
+    `${d.cases[0].technical_awarded}/${d.cases[0].technical_available}`);
+  ok('Q2 subtotal', d.cases[1].technical_awarded === 18 && d.cases[1].technical_available === 20);
+  ok('Q3 subtotal', d.cases[2].technical_awarded === 12 && d.cases[2].technical_available === 20);
+  ok('subtotals sum to the paper total',
+    d.cases.reduce((a, c) => a + (c.technical_awarded ?? 0), 0) === d.totals.technical_awarded &&
+    d.cases.reduce((a, c) => a + c.technical_available, 0) === d.totals.technical_available);
+  ok('every requirement appears in exactly one group',
+    d.cases.flatMap((c) => c.requirements).length === d.requirements.length);
+}
+
+// ── LENGTH — collapse the justification, never truncate it ───────────────────
+console.log('\n-- length: strong bands collapse the justification, losses stay open --');
+{
+  const d = W1();
+  ok('a strong band that lost nothing is COLLAPSED', line(d, 1).why_display === 'collapsed');
+  ok('a competent band that lost marks is EXPANDED', line(d, 7).why_display === 'expanded');
+  // W1 line 3 is band=strong but lost 2 of 8 — there IS something to act on, so it stays open.
+  ok('a strong band that STILL lost marks is EXPANDED', line(d, 3).band === 'strong' && (line(d, 3).marks_lost ?? 0) > 0 && line(d, 3).why_display === 'expanded');
+  ok('collapsing NEVER shortens the text — why is byte-identical to the marker output',
+    line(d, 1).why === FB.exemplary && line(d, 7).why === FB.competent);
+  const all = [W1(), W2(), W3()].flatMap((x) => x.requirements);
+  ok('every line with a why carries a display state',
+    all.every((r) => (r.why === null ? true : r.why_display === 'expanded' || r.why_display === 'collapsed')));
+  ok('a line with no why is never marked collapsed',
+    all.every((r) => r.why !== null || r.why_display === 'expanded'));
+}
+
+// ── NO FORWARD REFERENCE ─────────────────────────────────────────────────────
+console.log('\n-- no forward reference in any action --');
+{
+  const actions = [W1(), W2(), W3(), build({
+    cumulative: [20, 51, 67, 79, 102, 118, 141, 157], bands: Array(8).fill('exemplary'),
+    awarded: [...MARKS], feedback: Array(8).fill(FB.exemplary), completedAt: 165,
+  })].flatMap((d) => d.requirements.map((r) => r.next_action));
+  // What must not appear is a reference to ANOTHER REQUIREMENT by position — "the requirements
+  // below" is false on the last one and false in any non-paper-order view. An intra-block
+  // reference ("close that one point, named above") points at the diagnosis printed on the SAME
+  // line, which is always there when the band is competent or worse, so it is not this defect.
+  const FORWARD = /(requirements?|questions?|parts?)\s+(below|above|that follow|coming up|ahead)|(later|earlier|remaining|subsequent|following|next)\s+(requirements?|questions?|parts?)/i;
+  const hit = actions.find((a) => FORWARD.test(a));
+  ok('no action refers to another requirement by position', hit === undefined, hit ?? '');
+  ok('the retired forward reference is gone for good',
+    !actions.some((a) => /carry this approach into the requirements below/i.test(a)));
+  ok('the exemplary action still says what to do',
+    actions.some((a) => /this is the approach to repeat/i.test(a)));
+  ok('an intra-block reference to the diagnosis is still allowed and still present',
+    actions.some((a) => /named above/i.test(a)));
 }
 
 // ── TRACEABILITY (rule 3) ────────────────────────────────────────────────────
 console.log('\n-- traceability: every statement sourced, no invented diagnosis --');
 {
-  const walks = [
-    build({ cumulative: [20, 51, 67, 79, 102, 118, 141, 157], bands: ['exemplary','exemplary','strong','strong','exemplary','strong','competent','strong'], awarded: [10,16,6,5,12,6,6,6], feedback: [FB.exemplary,FB.exemplary,FB.exemplary,FB.exemplary,FB.exemplary,FB.exemplary,FB.competent,FB.exemplary], completedAt: 165 }),
-    build({ cumulative: [25, 70, 95, 115, 150, 172, 176, 178], bands: ['strong','competent','competent','strong','competent','weak','weak','nothing'], awarded: [8,8,4,5,6,2,3,0], feedback: [FB.exemplary,FB.competent,FB.competent,FB.exemplary,FB.competent,FB.weak,FB.weak,FB.nothing], completedAt: 180 }),
-    build({ cumulative: [25, 70, 95, 120, 150, 170, null, null], bands: ['strong','competent','competent','strong','competent','weak','nothing','nothing'], awarded: [8,8,4,5,6,2,0,0], feedback: [FB.exemplary,FB.competent,FB.competent,FB.exemplary,FB.competent,FB.weak,null,null], completedAt: 195 }),
-  ];
+  const walks = [W1(), W2(), W3()];
   const allWhy = walks.flatMap((d) => d.requirements.map((r) => r.why).filter((x): x is string => x !== null));
   const known = Object.values(FB);
   ok('EVERY "why" is verbatim marker output — no paraphrase anywhere',
@@ -211,6 +354,8 @@ console.log('\n-- traceability: every statement sourced, no invented diagnosis -
     walks.every((d) => d.requirements.every((r) => ['band_definition', 'computed_interval', 'computed_marks'].includes(r.next_action_source))));
   ok('every headline carries a source',
     walks.every((d) => ['marker_verdict', 'computed_marks', 'computed_interval', 'band_definition', 'pacing_finding'].includes(d.headline.source)));
+  ok('every SECONDARY finding carries a source too',
+    walks.every((d) => d.secondary.every((s) => s.source === 'pacing_finding')));
 
   // No combined score field anywhere on a line.
   const keys = Object.keys(walks[0].requirements[0]);
@@ -223,15 +368,12 @@ console.log('\n-- traceability: every statement sourced, no invented diagnosis -
 // ── LANGUAGE CONSTRAINTS (rules 3 + 4, binding) ──────────────────────────────
 console.log('\n-- language constraints --');
 {
-  const walks = [
-    build({ cumulative: [20, 51, 67, 79, 102, 118, 141, 157], bands: ['exemplary','exemplary','strong','strong','exemplary','strong','competent','strong'], awarded: [10,16,6,5,12,6,6,6], feedback: [FB.exemplary,FB.exemplary,FB.exemplary,FB.exemplary,FB.exemplary,FB.exemplary,FB.competent,FB.exemplary], completedAt: 165 }),
-    build({ cumulative: [25, 70, 95, 115, 150, 172, 176, 178], bands: ['strong','competent','competent','strong','competent','weak','weak','nothing'], awarded: [8,8,4,5,6,2,3,0], feedback: [FB.exemplary,FB.competent,FB.competent,FB.exemplary,FB.competent,FB.weak,FB.weak,FB.nothing], completedAt: 180 }),
-    build({ cumulative: [25, 70, 95, 120, 150, 170, null, null], bands: ['strong','competent','competent','strong','competent','weak','nothing','nothing'], awarded: [8,8,4,5,6,2,0,0], feedback: [FB.exemplary,FB.competent,FB.competent,FB.exemplary,FB.competent,FB.weak,null,null], completedAt: 195 }),
-  ];
+  const walks = [W1(), W2(), W3()];
   // MODULE-GENERATED prose only. Marker feedback is quoted third-party text and is not linted
   // here — rewriting it to satisfy a lint would break the verbatim guarantee above.
   const generated = walks.flatMap((d) => [
     d.headline.statement,
+    ...d.secondary.map((s) => s.statement),
     ...d.requirements.flatMap((r) => [r.what_was_lost, r.next_action, r.pacing_note ?? '']),
     ...d.limitations,
   ]).filter((s) => s.length > 0);
