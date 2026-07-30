@@ -6,8 +6,14 @@ import {
   nextUnsubmittedIndex,
   isPaperComplete,
 } from '@/lib/acca/sit-preview';
+import type { AccaPaper } from '@/lib/acca/paper';
 
-// ── AFM Mock Paper 1 — lean sit runner ────────────────────────────────────────
+// ── Lean sit runner — BOTH PAPERS (generalised 2026-07-30) ────────────────────
+// Was AFM-only, with 'AFM' written into the case/turn body. It now takes the paper as a
+// prop and threads it through every call; the server resolves which mock paper that maps
+// to. /acca/mock (APM) and /acca/afm/mock (AFM) both render this one component, so the
+// two papers cannot drift into two sit behaviours — which is what the old split gave us
+// (CaseSession's teach surface for APM, this one for AFM).
 // Authentic exam conditions, and deliberately nothing more:
 //   • one answer box per requirement, in paper order
 //   • "Submit and move on" ONLY — no back navigation, no editing a submitted answer
@@ -43,15 +49,19 @@ interface Slot {
   case_title: string | null;
   case_section: string | null;
   requirement_order: number;
-  // Already candidate-facing: the API strips the internal syllabus code before sending
-  // ("(i) B3e — 10 marks" → "(i) — 10 marks"). Render it as-is; do NOT re-derive it
-  // here, or the two strippers can disagree and the API's is the one that matters.
+  // Already candidate-facing: the API reduces the stored label to the PART alone
+  // ("(i) B3e — 10 marks" → "(i)"). Render it as-is; do NOT re-derive it here, or the two
+  // strippers can disagree and the API's is the one that matters.
   label: string | null;
+  // Marks per requirement, from the `marks_guide` COLUMN. The label no longer carries them
+  // — AFM's used to spell them in prose and APM's never did, so taking them from the
+  // column is what makes both papers show marks for the same reason.
+  marks: number | null;
   question: string;
 }
 interface Attempt { mock_id: string; started_at: string; ends_at: string; completed: boolean }
 interface PaperData {
-  paper: { id: string; title: string };
+  paper: { id: string; paper: AccaPaper; title: string; duration_minutes: number };
   cases: SitCase[];
   slots: Slot[];
   submitted: string[];
@@ -60,7 +70,7 @@ interface PaperData {
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-export default function SitRunner() {
+export default function SitRunner({ paper }: { paper: AccaPaper }) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [data, setData] = useState<PaperData | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -79,7 +89,7 @@ export default function SitRunner() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/acca/sit');
+        const res = await fetch(`/api/acca/sit?paper=${encodeURIComponent(paper)}`);
         if (!res.ok) { if (!cancelled) setPhase('error'); return; }
         const json = (await res.json()) as PaperData;
         if (cancelled) return;
@@ -103,7 +113,7 @@ export default function SitRunner() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [paper]);
 
   // ── Elapsed clock: display tick only. started_at is the server-side authority,
   // so a refresh resumes the same elapsed time rather than restarting it. ──
@@ -120,7 +130,7 @@ export default function SitRunner() {
     setStarting(true);
     try {
       const res = await fetch('/api/acca/sit', {
-        method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'start' }),
+        method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'start', paper }),
       });
       if (!res.ok) { setPhase('error'); return; }
       const json = await res.json();
@@ -134,7 +144,7 @@ export default function SitRunner() {
     } finally {
       setStarting(false);
     }
-  }, [slotIds, data]);
+  }, [slotIds, data, paper]);
 
   // Submit the current requirement. IRREVERSIBLE by design — the server refuses to
   // overwrite a recorded answer, so this is confirmed before it fires.
@@ -153,10 +163,13 @@ export default function SitRunner() {
     setSubmitError(false);
     try {
       // Recording an answer goes through the STANDARD case-turn route in sit mode — the
-      // same write path the APM sit uses — not through a bespoke sit endpoint. `sitting`
-      // makes it skip the teach engine, record `final_answer` and never write `passed`;
+      // ONE sit write path for both papers, not a bespoke sit endpoint. `sitting` makes it
+      // skip the teach engine, record `final_answer` and never write `passed`. It is also
+      // what makes the turn route serve mock content at all: the mock guard refuses
+      // reserved cases in practice mode and allows them in sit mode.
       // `paper` must be sent because the route defaults to APM and would 404 an AFM case.
-      // The answer is `student_message`, which is what the route reads in either mode.
+      // It comes from the SERVED config, never a literal — hardcoding 'AFM' here is
+      // exactly what would have 404'd every APM submission.
       const res = await fetch('/api/acca/case/turn', {
         method: 'POST',
         headers: JSON_HEADERS,
@@ -165,7 +178,7 @@ export default function SitRunner() {
           requirement_id: slot.requirement_id,
           student_message: text,
           sitting: true,
-          paper: 'AFM',
+          paper: data?.paper.paper ?? paper,
         }),
       });
       // 409 = already recorded (a double-submit or a replayed request). The answer IS
@@ -174,7 +187,7 @@ export default function SitRunner() {
 
       if (last) {
         await fetch('/api/acca/sit', {
-          method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish' }),
+          method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish', paper }),
         }).catch(() => {});
         setPhase('done');
         return;
@@ -186,7 +199,7 @@ export default function SitRunner() {
     } finally {
       setSubmitting(false);
     }
-  }, [slots, index, text, submitting]);
+  }, [slots, index, text, submitting, data, paper]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
   const shell = (inner: React.ReactNode) => (
@@ -274,7 +287,11 @@ export default function SitRunner() {
           {/* Answer pane */}
           <section className="sit-answer" aria-label="Requirement and answer">
             <div className="sit-req">
-              {slot.label && <span className="sit-req-label">{slot.label}</span>}
+              {(slot.label || slot.marks != null) && (
+                <span className="sit-req-label">
+                  {[slot.label, slot.marks != null ? `${slot.marks} marks` : null].filter(Boolean).join(' — ')}
+                </span>
+              )}
               <div className="sit-req-question">{slot.question}</div>
             </div>
 

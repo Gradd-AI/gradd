@@ -10,7 +10,7 @@ import {
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
-import { mockAttemptUnlocksCase } from '@/lib/acca/mock-access';
+import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -103,11 +103,21 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
   }
 
-  // ── MOCK CONTENT: attempt-scoped, or it does not exist here ──
-  // Checked ONCE, before the sit/practice branch, so both paths are covered by the same
-  // rule and neither can be tightened without the other. Teaching on a mock requirement is
-  // the same leak as fetching one, through a different door: without this, a case id was
-  // enough to run the teach loop over reserved exam content — hints, diagnosis and all.
+  // ── MOCK CONTENT: MODE-KEYED, not attempt-scoped (2026-07-30) ──
+  // This route is BOTH the practice teach loop and the sit's single write path, so the
+  // rule here cannot be the flat refusal app/api/acca/case now applies.
+  //
+  //   • PRACTICE (sitting=false) — refused. Teaching on a mock requirement is the same
+  //     leak as fetching one, through a different door: without this, a case id was enough
+  //     to run the teach loop over reserved exam content — hints, diagnosis and all.
+  //   • SIT (sitting=true) — allowed. This is how a sit records an answer. The previous
+  //     change-set deliberately collapsed the two sit write implementations into this one
+  //     route so there is a single immutability rule; refusing here would break the sit
+  //     this route exists to record.
+  //
+  // The attempt-scoped carve-out that used to gate BOTH modes is gone: it existed because
+  // the APM mock loaded through app/api/acca/case, which no longer happens. Note the
+  // asymmetry is deliberate and is the whole rule — `sitting` decides, nothing else.
   //
   // The case is fetched here purely for `mock_only`; each branch below still performs its
   // own gated fetch, unchanged. Refusal is the same 404 both branches already return for an
@@ -121,7 +131,8 @@ export async function POST(request: Request): Promise<Response> {
       .eq('status', 'approved')
       .eq('published', true)
       .maybeSingle();
-    if (mockCheck?.mock_only === true && !(await mockAttemptUnlocksCase(supabase, user.id, caseId))) {
+    const reserved = caseIsReserved(caseId, mockCheck?.mock_only as boolean | null | undefined);
+    if (!mockContentAllowed(reserved, sitting ? 'sit' : 'practice')) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
   }

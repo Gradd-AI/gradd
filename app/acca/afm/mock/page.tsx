@@ -28,5 +28,5 @@ export default async function AFMMockSitPage() {
     redirect('/acca/auth?next=/acca/afm/mock');
   }
 
-  return <SitRunner />;
+  return <SitRunner paper="AFM" />;
 }

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
-import { mockAttemptUnlocksCase, MOCK_REQUIREMENT_SELECT, STANDARD_REQUIREMENT_SELECT } from '@/lib/acca/mock-access';
+import { mockContentAllowed, caseIsReserved, STANDARD_REQUIREMENT_SELECT } from '@/lib/acca/mock-access';
 import { sitDisplayLabel } from '@/lib/acca/sit-preview';
 
 // ── APM case-load endpoint (redesign P0 item 1 — case-scope construct) ─────────
@@ -87,18 +87,17 @@ export async function GET(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'Case not found' }, { status: 404 });
   }
 
-  // ── MOCK CONTENT: attempt-scoped, or it does not exist here ──
-  // `mock_only` cases are reserved exam papers. Publishing them made them fetchable by
-  // anyone holding a case id (they are excluded from case/list by the mock_only filter,
-  // but this route is id-addressed and had no such filter). They are now reachable ONLY
-  // while the requester has an OPEN attempt for the paper THIS case belongs to — an open
-  // APM attempt does not unlock the AFM mock, and vice versa.
+  // ── MOCK CONTENT: it does not exist here. Unconditionally. ──
+  // `mock_only` cases are reserved exam papers. This route used to serve them under an
+  // attempt-scoped carve-out, which existed for exactly one caller: the APM timed mock
+  // loaded its cases through here. SitRunner serves both papers through /api/acca/sit
+  // now, so that caller is gone and the carve-out with it — no open attempt, no paper
+  // match, no mode makes a reserved case fetchable through the practice route.
   //
   // Refusal is the route's EXISTING 404 shape, identical to a case that is not published
-  // or belongs to another paper. Nothing distinguishes "exists but you are not sitting it"
-  // from "does not exist", so the response leaks no existence.
-  const isMock = caseRow.mock_only === true;
-  if (isMock && !(await mockAttemptUnlocksCase(supabase, user.id, caseId))) {
+  // or belongs to another paper. Nothing distinguishes "reserved" from "does not exist",
+  // so the response leaks no existence.
+  if (!mockContentAllowed(caseIsReserved(caseId, caseRow.mock_only as boolean | null), 'practice')) {
     return NextResponse.json({ error: 'Case not found' }, { status: 404 });
   }
 
@@ -117,18 +116,15 @@ export async function GET(request: Request): Promise<Response> {
   // student only via the per-requirement AES seal in the case-turn handler, same
   // discipline as drills. Everything selected here is safe to render client-side.
   //
-  // MOCK CONTENT WITHHOLDS MORE, matching app/api/acca/sit exactly: an open attempt is a
-  // key to SIT the paper, never a key to the mark scheme. So marks_guide,
-  // professional_skill_tags, intellectual_level, command_verb and lo_code are NOT SELECTED
-  // for a mock_only case — never fetched rather than fetched and stripped, so no later
-  // edit can spread them into the response by accident.
-  // The select string is CHOSEN from the two shared constants rather than written inline,
-  // so scripts/test-mock-access.ts pins the exact strings this route uses. Supabase's
-  // typed-select parser cannot infer a row type from a non-literal select, so the rows are
-  // typed here explicitly — the runtime shape is exactly the columns named in the constant.
+  // There is no mock branch here any more: reserved cases are refused above, so this route
+  // only ever serves library content and only ever needs the one select. It is still taken
+  // from the shared constant rather than written inline, so scripts/test-mock-access.ts
+  // pins the exact string this route uses. Supabase's typed-select parser cannot infer a
+  // row type from a non-literal select, so the rows are typed here explicitly — the runtime
+  // shape is exactly the columns named in the constant.
   const reqQuery = await supabase
     .from('acca_case_requirements')
-    .select(isMock ? MOCK_REQUIREMENT_SELECT : STANDARD_REQUIREMENT_SELECT)
+    .select(STANDARD_REQUIREMENT_SELECT)
     .eq('case_id', caseId)
     .order('requirement_order', { ascending: true });
   const requirements = (reqQuery.data ?? []) as unknown as Array<Record<string, unknown>>;
@@ -137,9 +133,10 @@ export async function GET(request: Request): Promise<Response> {
   // prints. Derived away at the SERVE boundary for mock content, exactly as the sit route
   // does — same helper, so the two cannot disagree. A no-op on APM labels, which carry no
   // code; load-bearing on AFM's.
-  const servedRequirements = isMock
-    ? requirements.map((r) => ({ ...r, label: sitDisplayLabel((r.label as string | null) ?? null) }))
-    : requirements;
+  // No label derivation either: `sitDisplayLabel` was applied here only for mock content,
+  // which this route no longer serves. Library labels are authored candidate-facing and go
+  // through untouched, exactly as they did before the mock carve-out existed.
+  const servedRequirements = requirements;
 
   // ── Progress (this user, this case) — resume support ──
   // Practice: the flags the client needs to rebuild stepper state — passed / resolved

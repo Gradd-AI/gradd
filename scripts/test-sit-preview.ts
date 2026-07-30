@@ -22,11 +22,14 @@ import {
   isPaperComplete,
   fmtElapsed,
   sitDisplayLabel,
-  AFM_MOCK_PAPER_1,
-  SIT_CASE_GATE,
+  sitCaseGate,
   isSittableCaseRow,
 } from '../lib/acca/sit-preview';
 import { MOCK_PAPERS, getMockPaper } from '../lib/acca/mocks';
+
+// The AFM paper now lives in the merged MOCK_PAPERS registry, not in its own config.
+const AFM_MOCK_PAPER_1 = getMockPaper('afm-paper-1')!;
+const SIT_CASE_GATE = sitCaseGate('AFM');
 
 let failures = 0;
 function ok(name: string, cond: boolean) {
@@ -38,31 +41,31 @@ function ok(name: string, cond: boolean) {
 // A live, servable row: all four gate columns correct.
 const LIVE = { paper_code: 'AFM', mock_only: true, status: 'approved', published: true };
 
-ok('a published+approved+mock_only AFM case PASSES the gate', isSittableCaseRow(LIVE) === true);
+ok('a published+approved+mock_only AFM case PASSES the gate', isSittableCaseRow(LIVE, 'AFM') === true);
 
 // Each condition failing INDIVIDUALLY must block — one at a time, everything else correct,
 // so a fixture cannot pass because some other column happened to be wrong too.
-ok('published=false alone BLOCKS',        isSittableCaseRow({ ...LIVE, published: false }) === false);
-ok("status='candidate' alone BLOCKS",     isSittableCaseRow({ ...LIVE, status: 'candidate' }) === false);
-ok('mock_only=false alone BLOCKS',        isSittableCaseRow({ ...LIVE, mock_only: false }) === false);
-ok("paper_code='APM' alone BLOCKS",       isSittableCaseRow({ ...LIVE, paper_code: 'APM' }) === false);
+ok('published=false alone BLOCKS',        isSittableCaseRow({ ...LIVE, published: false }, 'AFM') === false);
+ok("status='candidate' alone BLOCKS",     isSittableCaseRow({ ...LIVE, status: 'candidate' }, 'AFM') === false);
+ok('mock_only=false alone BLOCKS',        isSittableCaseRow({ ...LIVE, mock_only: false }, 'AFM') === false);
+ok("paper_code='APM' alone BLOCKS",       isSittableCaseRow({ ...LIVE, paper_code: 'APM' }, 'AFM') === false);
 
 // The RETIRED inverted gate: the exact combination the surface used to serve. If this ever
 // passes again, the publish-flip trap is back.
 ok('the retired INVERTED combination (candidate + unpublished) BLOCKS',
-  isSittableCaseRow({ paper_code: 'AFM', mock_only: true, status: 'candidate', published: false }) === false);
+  isSittableCaseRow({ paper_code: 'AFM', mock_only: true, status: 'candidate', published: false }, 'AFM') === false);
 
 // Absent / malformed rows are refusals, never accidental passes.
-ok('null row BLOCKS',      isSittableCaseRow(null) === false);
-ok('undefined row BLOCKS', isSittableCaseRow(undefined) === false);
-ok('empty row BLOCKS',     isSittableCaseRow({}) === false);
+ok('null row BLOCKS',      isSittableCaseRow(null, 'AFM') === false);
+ok('undefined row BLOCKS', isSittableCaseRow(undefined, 'AFM') === false);
+ok('empty row BLOCKS',     isSittableCaseRow({}, 'AFM') === false);
 ok('a row missing ONE gate column BLOCKS',
-  isSittableCaseRow({ paper_code: 'AFM', mock_only: true, status: 'approved' }) === false);
+  isSittableCaseRow({ paper_code: 'AFM', mock_only: true, status: 'approved' }, 'AFM') === false);
 // Truthiness must not stand in for the value: 'true'/1 are not `true`.
 ok('published="true" (string) BLOCKS — exact match, not truthiness',
-  isSittableCaseRow({ ...LIVE, published: 'true' }) === false);
+  isSittableCaseRow({ ...LIVE, published: 'true' }, 'AFM') === false);
 ok('mock_only=1 (number) BLOCKS — exact match, not truthiness',
-  isSittableCaseRow({ ...LIVE, mock_only: 1 }) === false);
+  isSittableCaseRow({ ...LIVE, mock_only: 1 }, 'AFM') === false);
 
 // Pin the gate's SHAPE. The route iterates these keys to build its .eq() filters, so
 // dropping one here would silently widen what the route serves — this check fails first.
@@ -75,17 +78,23 @@ ok('gate demands mock_only=true',           SIT_CASE_GATE.mock_only === true);
 ok('gate paper_code is the paper config\'s own value (not re-typed)',
   SIT_CASE_GATE.paper_code === AFM_MOCK_PAPER_1.paper);
 
-// ── Paper config ──
+// ── Paper config (now the merged registry, not a second copy) ──
 ok('paper is AFM', AFM_MOCK_PAPER_1.paper === 'AFM');
 ok('paper has the 3 authored cases', AFM_MOCK_PAPER_1.case_ids.length === 3);
 ok('case ids are unique', new Set(AFM_MOCK_PAPER_1.case_ids).size === 3);
 ok('Section A case is sat FIRST', AFM_MOCK_PAPER_1.case_ids[0] === 'aa000000-0000-4000-8000-00000000a001');
-// The sit id must not be addressable as an APM mock, or an attempt row written by the
-// sit would be picked up by app/acca/mock/MockRunner.tsx as an APM attempt.
-ok('sit paper id is NOT an APM mock id', getMockPaper(AFM_MOCK_PAPER_1.id) === null);
-ok('sit paper id collides with no MOCK_PAPERS id', MOCK_PAPERS.every((p) => p.id !== AFM_MOCK_PAPER_1.id));
-ok('sit case ids overlap NO APM mock case ids',
-  MOCK_PAPERS.every((p) => p.case_ids.every((c) => !AFM_MOCK_PAPER_1.case_ids.includes(c))));
+// MERGED 2026-07-30. These used to assert the AFM paper was NOT in MOCK_PAPERS — the two
+// configs were separate and a collision would have made the APM runner adopt an AFM
+// attempt. There is one registry now, so the property that matters inverts: it must BE in
+// there, exactly once, and still share no id or case id with the APM paper.
+ok('the AFM paper IS in the one registry', getMockPaper('afm-paper-1') !== null);
+ok('it appears exactly once', MOCK_PAPERS.filter((p) => p.id === AFM_MOCK_PAPER_1.id).length === 1);
+ok('paper ids are unique across the registry',
+  new Set(MOCK_PAPERS.map((p) => p.id)).size === MOCK_PAPERS.length);
+ok('AFM case ids overlap NO APM mock case ids',
+  MOCK_PAPERS.filter((p) => p.paper !== 'AFM')
+    .every((p) => p.case_ids.every((c) => !AFM_MOCK_PAPER_1.case_ids.includes(c))));
+ok('every paper carries a clock', MOCK_PAPERS.every((p) => p.duration_minutes > 0));
 
 // ── Resume: first UNANSWERED requirement, not a submission count ──
 const ids = ['r1', 'r2', 'r3', 'r4'];
@@ -110,51 +119,63 @@ ok('1h 5m 9s renders 1:05:09', fmtElapsed((3600 + 5 * 60 + 9) * 1000) === '1:05:
 ok('past the nominal 3h15m it keeps counting (no expiry)', fmtElapsed(200 * 60_000) === '3:20:00');
 ok('negative (clock skew) clamps to 0:00:00', fmtElapsed(-5_000) === '0:00:00');
 
-// ── Requirement label: the candidate sees the part and the marks, never the code ──
-// The 8 REAL stored labels of AFM Mock Paper 1, verbatim, each with its row's lo_code.
-// If an authored label ever changes shape, these are the fixtures that catch it.
+// ── Requirement label: the candidate sees the PART, and nothing else ─────────
+// CHANGED 2026-07-30. These fixtures used to pin "(i) B3e — 10 marks" → "(i) — 10 marks",
+// i.e. the code out, the marks left in the label. Marks now come from the `marks_guide`
+// COLUMN and the runner composes the display, so the label reduces to the part alone.
+//
+// Why the old shape was wrong even though it showed the right thing: AFM's authored labels
+// happen to spell the marks in prose and APM's do not, so the same route showed marks for
+// one paper and not the other. That was parity by formatting accident, and it would have
+// broken silently the first time a label was re-authored without its marks.
 const LIVE_LABELS: Array<[string, string, string]> = [
-  ['(i) B3e — 10 marks',   'B3e', '(i) — 10 marks'],
-  ['(ii) B5b — 16 marks',  'B5b', '(ii) — 16 marks'],
-  ['(iii) E2b — 8 marks',  'E2b', '(iii) — 8 marks'],
-  ['(iv) E1a — 6 marks',   'E1a', '(iv) — 6 marks'],
-  ['(i) B1a — 12 marks',   'B1a', '(i) — 12 marks'],
-  ['(ii) B1b — 8 marks',   'B1b', '(ii) — 8 marks'],
-  ['(i) E3a — 12 marks',   'E3a', '(i) — 12 marks'],
-  ['(ii) E2a — 8 marks',   'E2a', '(ii) — 8 marks'],
+  ['(i) B3e — 10 marks',   'B3e', '(i)'],
+  ['(ii) B5b — 16 marks',  'B5b', '(ii)'],
+  ['(iii) E2b — 8 marks',  'E2b', '(iii)'],
+  ['(iv) E1a — 6 marks',   'E1a', '(iv)'],
+  ['(i) B1a — 12 marks',   'B1a', '(i)'],
+  ['(ii) B1b — 8 marks',   'B1b', '(ii)'],
+  ['(i) E3a — 12 marks',   'E3a', '(i)'],
+  ['(ii) E2a — 8 marks',   'E2a', '(ii)'],
 ];
 for (const [stored, lo, want] of LIVE_LABELS) {
-  ok(`live label "${stored}" renders as "${want}"`, sitDisplayLabel(stored, lo) === want);
+  ok(`live label "${stored}" reduces to "${want}"`, sitDisplayLabel(stored, lo) === want);
 }
-// The property that actually matters, asserted independently of the exact wording:
-// nothing syllabus-code-shaped survives into ANY candidate-facing label.
+// The two properties that actually matter, asserted independently of exact wording.
 ok('no live label leaks a syllabus code',
   LIVE_LABELS.every(([stored, lo]) => !/\b[A-E][0-9]{1,2}[a-z]?\b/.test(sitDisplayLabel(stored, lo) ?? '')));
-ok('the mark allocation is always kept',
-  LIVE_LABELS.every(([stored, lo]) => (sitDisplayLabel(stored, lo) ?? '').includes('marks')));
+ok('no live label carries a marks phrase any more',
+  LIVE_LABELS.every(([stored, lo]) => !/marks?/i.test(sitDisplayLabel(stored, lo) ?? '')));
 
-// Backstop: the code is stripped even when the row's lo_code is missing or disagrees.
-ok('code stripped with NO lo_code supplied', sitDisplayLabel('(i) B3e — 10 marks') === '(i) — 10 marks');
-ok('code stripped when lo_code is null', sitDisplayLabel('(i) B3e — 10 marks', null) === '(i) — 10 marks');
+// Backstop: the code goes even when the row's lo_code is missing or disagrees.
+ok('code stripped with NO lo_code supplied', sitDisplayLabel('(i) B3e — 10 marks') === '(i)');
+ok('code stripped when lo_code is null', sitDisplayLabel('(i) B3e — 10 marks', null) === '(i)');
 ok('code stripped when lo_code DISAGREES with the label',
-  sitDisplayLabel('(i) B3e — 10 marks', 'C2a') === '(i) — 10 marks');
-ok('a two-digit area code is stripped', sitDisplayLabel('(i) B12c — 10 marks', 'B12c') === '(i) — 10 marks');
-ok('a code with no trailing letter is stripped', sitDisplayLabel('(i) E3 — 8 marks', 'E3') === '(i) — 8 marks');
+  sitDisplayLabel('(i) B3e — 10 marks', 'C2a') === '(i)');
+ok('a two-digit area code is stripped', sitDisplayLabel('(i) B12c — 10 marks', 'B12c') === '(i)');
+ok('a code with no trailing letter is stripped', sitDisplayLabel('(i) E3 — 8 marks', 'E3') === '(i)');
+
+// APM labels carry no code and no marks — they must pass through as the part.
+ok('an APM-shaped label is unchanged', sitDisplayLabel('(a)') === '(a)');
+ok('an APM label with prose keeps the prose', sitDisplayLabel('(b) Performance report') === '(b) Performance report');
+
+// Marks phrasing, in every authored form seen in the corpus.
+ok('an em-dash marks phrase is removed', sitDisplayLabel('(i) — 10 marks') === '(i)');
+ok('a bracketed marks phrase is removed', sitDisplayLabel('(i) (10 marks)') === '(i)');
+ok('a singular "1 mark" is removed', sitDisplayLabel('(i) — 1 mark') === '(i)');
+ok('a hyphen marks phrase is removed', sitDisplayLabel('(i) - 8 marks') === '(i)');
 
 // A dangling separator left by the removal must not reach the candidate.
-ok('a leading dash left behind is tidied', sitDisplayLabel('B3e — 10 marks', 'B3e') === '10 marks');
+ok('a leading dash left behind is tidied', sitDisplayLabel('B3e — 10 marks', 'B3e') === null);
 ok('a trailing dash left behind is tidied', sitDisplayLabel('(i) — B3e', 'B3e') === '(i)');
 ok('a code-only label renders NOTHING rather than an empty chip',
   sitDisplayLabel('B3e', 'B3e') === null);
 ok('an all-separator remnant renders nothing', sitDisplayLabel('— B3e —', 'B3e') === null);
+ok('a marks-only label renders nothing', sitDisplayLabel('10 marks') === null);
 
 // Everything else in a label is preserved untouched.
-ok('a label with no code is returned unchanged', sitDisplayLabel('(i) — 10 marks') === '(i) — 10 marks');
-ok('roman numerals are never mistaken for a code', sitDisplayLabel('(iii) — 8 marks') === '(iii) — 8 marks');
-ok('the mark number is never mistaken for a code', sitDisplayLabel('(i) — 10 marks', 'B3e') === '(i) — 10 marks');
-ok('prose in a label survives', sitDisplayLabel('(i) Part one — 10 marks') === '(i) Part one — 10 marks');
+ok('roman numerals are never mistaken for a code', sitDisplayLabel('(iii) — 8 marks') === '(iii)');
+ok('the mark number is never mistaken for a code', sitDisplayLabel('(i) — 10 marks', 'B3e') === '(i)');
+ok('prose in a label survives', sitDisplayLabel('(i) Part one — 10 marks') === '(i) Part one');
 ok('null label stays null', sitDisplayLabel(null) === null);
 ok('undefined label stays null', sitDisplayLabel(undefined) === null);
-
-console.log(failures === 0 ? '\nALL SIT-PREVIEW FIXTURES PASS' : `\n${failures} FAILURE(S)`);
-process.exit(failures === 0 ? 0 : 1);

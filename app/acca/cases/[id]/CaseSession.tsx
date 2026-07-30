@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { caseMarkReady } from '@/lib/acca/case-sit';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 
@@ -102,21 +103,19 @@ function completedOpening(): Message {
 // on the results screen). `onComplete` fires once the whole case is complete
 // (every requirement passed) so the mock can offer "Next case".
 //
-// `sitting` (mock-engine Phase 2b) threads the SIT flag through to the case/turn +
-// case (GET) routes so a timed sit records single answers instead of teaching. It
-// defaults false — this component's UI is still the teach surface; the LEAN sit UI
-// (one answer box per requirement, submit-and-move-on, driven off answers-recorded
-// rather than requirements-passed) is a following step. Until then the flag is
-// plumbed but the mock keeps passing false, so behaviour is unchanged.
+// THE `sitting` PROP IS GONE (2026-07-30). It was plumbed for a timed sit this component
+// never ended up driving: SitRunner serves both papers now, and every remaining caller of
+// CaseSession is PRACTICE. The prop carried the same value (false) at every call site, and
+// a mode switch that nothing switches is a trap — it reads as though a sit could arrive
+// here and be handled correctly, which was never true. Sit mode lives in SitRunner +
+// /api/acca/sit, and this component is unambiguously the teach surface again.
 export default function CaseSession({
   caseId,
   embedded = false,
-  sitting = false,
   onComplete,
 }: {
   caseId: string;
   embedded?: boolean;
-  sitting?: boolean;
   onComplete?: () => void;
 }) {
   const router = useRouter();
@@ -158,7 +157,7 @@ export default function CaseSession({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}${sitting ? '&sitting=true' : ''}`);
+        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}`);
         // 404 = flag off OR case not servable → nothing useful to show.
         if (res.status === 404) {
           router.replace('/acca');
@@ -213,7 +212,7 @@ export default function CaseSession({
       }
     })();
     return () => { cancelled = true; };
-  }, [caseId, router, sitting]);
+  }, [caseId, router]);
 
   const activeReq = useMemo(
     () => requirements.find((r) => r.id === activeReqId) ?? null,
@@ -232,7 +231,17 @@ export default function CaseSession({
     [activeReqId, messagesByReq],
   );
   const passedCount = requirements.filter((r) => passedByReq[r.id]).length;
-  const allPassed = requirements.length > 0 && passedCount === requirements.length;
+  // COMPLETION IS THE SHARED PURE PREDICATE, not a local count (2026-07-30).
+  // `caseMarkReady` is what app/api/acca/case/mark uses to decide whether it will mark at
+  // all, so computing readiness any other way here is how the client and the server drift
+  // into disagreeing — the client offering to mark a case the server then 409s, or (the
+  // shape that actually bit) a predicate that can never fire and silently skips marking.
+  // This surface is always practice, so `sitting` is false and the rule is "every
+  // requirement judged correct"; `final_answer` is not consulted on that branch.
+  const allPassed = caseMarkReady(
+    false,
+    requirements.map((r) => ({ final_answer: null, passed: passedByReq[r.id] === true })),
+  ).ready;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -287,7 +296,6 @@ export default function CaseSession({
           session_state:     sessionByReq[activeReqId] ?? null,   // null on first turn of each requirement
           student_message:   trimmed,
           last_ezra_message: lastEzra,
-          sitting,                                                // false today; the lean sit UI (later) flips it
         }),
       });
       // 402 = subscription lapsed mid-session → roll the optimistic bubble back and
@@ -330,14 +338,14 @@ export default function CaseSession({
     setMarkingError(false);
     setMarkingIncomplete(false);
     try {
-      // `sitting` MUST be sent: the mark route defaults it to false and on that default
-      // skips the TECHNICAL pass entirely, so a sit marked without it silently loses
-      // every technical mark and reports professional skills alone. Threaded from the
-      // same prop the turn + load calls use, so one component can never send two modes.
+      // PRACTICE marking. `sitting` is OMITTED deliberately, not forgotten: this surface
+      // is only ever practice now, and the mark route's default (false) is the correct
+      // mode for it. A sit is marked from the sit flow, which sends sitting:true itself —
+      // and must, because on the default the route skips the TECHNICAL pass entirely.
       const res = await fetch('/api/acca/case/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_id: caseId, sitting }),
+        body: JSON.stringify({ case_id: caseId }),
       });
       if (res.status === 402) { setSessionLapsed(true); return; }
       if (res.status === 409) { setMarkingIncomplete(true); return; }

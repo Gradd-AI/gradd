@@ -51,7 +51,6 @@
     "test:capm-gates": "tsx scripts/test-capm-gates.ts",
     "test:marking-json-extract": "tsx scripts/test-marking-json-extract.ts",
     "test:mock-access": "tsx scripts/test-mock-access.ts",
-    "test:afm-label-marks": "tsx --env-file=.env.local scripts/test-afm-label-marks.ts",
     "test:sit-timing": "tsx --env-file=.env.local scripts/test-sit-timing.ts",
     "test:pacing": "tsx scripts/test-pacing.ts",
     "test:debrief": "tsx scripts/test-debrief.ts"

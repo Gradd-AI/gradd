@@ -12,14 +12,8 @@
 // and the same had been true of the three APM mock cases for months. The route-level guard
 // is thin on purpose — the DECISION is pure and lives here, where it can be pinned.
 
-import {
-  attemptUnlocksCase,
-  mockPaperCaseIds,
-  MOCK_PAPERS,
-  type AttemptRef,
-} from '../lib/acca/mocks';
-import { MOCK_REQUIREMENT_SELECT, STANDARD_REQUIREMENT_SELECT } from '../lib/acca/mock-access';
-import { AFM_MOCK_PAPER_1 } from '../lib/acca/sit-preview';
+import { mockPaperCaseIds, isMockCase, MOCK_PAPERS, getMockPaper } from '../lib/acca/mocks';
+import { mockContentAllowed, caseIsReserved, STANDARD_REQUIREMENT_SELECT } from '../lib/acca/mock-access';
 
 let failures = 0;
 function ok(name: string, cond: boolean, detail = '') {
@@ -27,86 +21,63 @@ function ok(name: string, cond: boolean, detail = '') {
   console.log(`${cond ? 'PASS' : 'FAIL'} :: ${name}${detail ? `  — ${detail}` : ''}`);
 }
 
-const APM = MOCK_PAPERS[0];
+const APM = getMockPaper('paper-1')!;
+const AFM = getMockPaper('afm-paper-1')!;
 const APM_CASE = APM.case_ids[0];              // Halworth, APM mock
-const AFM_CASE = AFM_MOCK_PAPER_1.case_ids[0]; // Solenne, AFM mock
+const AFM_CASE = AFM.case_ids[0];              // Solenne, AFM mock
 const NOT_A_MOCK_CASE = 'a6000000-0000-4000-8000-00000000ffff';
 
-const open = (mock_id: string): AttemptRef => ({ mock_id, completed: false });
-const done = (mock_id: string): AttemptRef => ({ mock_id, completed: true });
+// ── The merged registry ──────────────────────────────────────────────────────
+console.log('\n-- one registry, both papers --');
+ok('both papers are in MOCK_PAPERS', MOCK_PAPERS.length >= 2);
+ok('the APM paper resolves', APM.paper === 'APM' && APM.case_ids.length === 3);
+ok('the AFM paper resolves', AFM.paper === 'AFM' && AFM.case_ids.length === 3);
+ok('paper ids are unique', new Set(MOCK_PAPERS.map((p) => p.id)).size === MOCK_PAPERS.length);
+ok('no case id appears in two papers',
+  new Set(MOCK_PAPERS.flatMap((p) => p.case_ids)).size === MOCK_PAPERS.flatMap((p) => p.case_ids).length);
+ok('mockPaperCaseIds resolves the APM paper', (mockPaperCaseIds('paper-1') ?? []).includes(APM_CASE));
+ok('mockPaperCaseIds resolves the AFM paper', (mockPaperCaseIds('afm-paper-1') ?? []).includes(AFM_CASE));
+ok('an unknown mock_id resolves to NULL, never to a case list', mockPaperCaseIds('nope') === null);
 
-console.log('\n-- paper resolution across BOTH configs --');
-ok('APM mock id resolves to its case list', (mockPaperCaseIds(APM.id) ?? []).length === 3);
-ok('AFM sit paper id resolves to its case list', (mockPaperCaseIds(AFM_MOCK_PAPER_1.id) ?? []).length === 3);
-ok('an unknown mock_id resolves to null (unlocks nothing)', mockPaperCaseIds('paper-does-not-exist') === null);
-ok('an empty mock_id resolves to null', mockPaperCaseIds('') === null);
-ok('the two papers share NO case ids',
-  APM.case_ids.every((id) => !AFM_MOCK_PAPER_1.case_ids.includes(id)));
+// ── isMockCase ───────────────────────────────────────────────────────────────
+console.log('\n-- reserved-content membership --');
+ok('an APM mock case is reserved', isMockCase(APM_CASE) === true);
+ok('an AFM mock case is reserved', isMockCase(AFM_CASE) === true);
+ok('a library case is NOT reserved', isMockCase(NOT_A_MOCK_CASE) === false);
+ok('the empty string is not reserved', isMockCase('') === false);
 
-console.log('\n-- the access rule --');
-// NO ATTEMPT → blocked. This is the leak being closed.
-ok('no attempt at all → BLOCKED (APM case)', attemptUnlocksCase([], APM_CASE) === false);
-ok('no attempt at all → BLOCKED (AFM case)', attemptUnlocksCase([], AFM_CASE) === false);
+// ── THE RULE (unconditional on practice, open on sit) ────────────────────────
+// This is the change: there is no attempt, no paper match and no entitlement that makes
+// reserved content reachable in practice mode. The only key is the MODE.
+console.log('\n-- mock content: practice REFUSED, sit ALLOWED --');
+ok('reserved content is REFUSED in practice mode', mockContentAllowed(true, 'practice') === false);
+ok('reserved content is ALLOWED in sit mode',      mockContentAllowed(true, 'sit') === true);
+ok('library content is allowed in practice',        mockContentAllowed(false, 'practice') === true);
+ok('library content is allowed in a sit',           mockContentAllowed(false, 'sit') === true);
 
-// OPEN ATTEMPT, OWN CASE → allowed.
-ok('open APM attempt unlocks its OWN case', attemptUnlocksCase([open(APM.id)], APM_CASE) === true);
-ok('open AFM attempt unlocks its OWN case', attemptUnlocksCase([open(AFM_MOCK_PAPER_1.id)], AFM_CASE) === true);
-ok('open attempt unlocks EVERY case of its own paper',
-  APM.case_ids.every((id) => attemptUnlocksCase([open(APM.id)], id)));
+console.log('\n-- caseIsReserved: either signal is enough --');
+ok('the mock_only column alone marks it reserved', caseIsReserved(NOT_A_MOCK_CASE, true) === true);
+ok('registry membership alone marks it reserved',  caseIsReserved(APM_CASE, false) === true);
+ok('registry membership with a null column',       caseIsReserved(AFM_CASE, null) === true);
+ok('neither signal → not reserved',                caseIsReserved(NOT_A_MOCK_CASE, false) === false);
+ok('a library case with an undefined column',      caseIsReserved(NOT_A_MOCK_CASE, undefined) === false);
 
-// CROSS-PAPER — the tightening: an open attempt on one paper must not unlock the other's.
-ok('open APM attempt does NOT unlock an AFM mock case',
-  attemptUnlocksCase([open(APM.id)], AFM_CASE) === false);
-ok('open AFM attempt does NOT unlock an APM mock case',
-  attemptUnlocksCase([open(AFM_MOCK_PAPER_1.id)], APM_CASE) === false);
+// The two signals disagreeing must land on the REFUSING side, not the serving side.
+console.log('\n-- disagreement fails closed --');
+ok('in-registry but column=false is still refused in practice',
+  mockContentAllowed(caseIsReserved(APM_CASE, false), 'practice') === false);
+ok('column=true but not in registry is still refused in practice',
+  mockContentAllowed(caseIsReserved(NOT_A_MOCK_CASE, true), 'practice') === false);
 
-// COMPLETED ATTEMPT → blocked. Sitting it once is not a permanent key.
-ok('completed APM attempt → BLOCKED', attemptUnlocksCase([done(APM.id)], APM_CASE) === false);
-ok('completed AFM attempt → BLOCKED', attemptUnlocksCase([done(AFM_MOCK_PAPER_1.id)], AFM_CASE) === false);
-ok('completed attempt alongside an open one for the OTHER paper → still BLOCKED',
-  attemptUnlocksCase([done(APM.id), open(AFM_MOCK_PAPER_1.id)], APM_CASE) === false);
-ok('an open attempt among several completed ones DOES unlock its own case',
-  attemptUnlocksCase([done(AFM_MOCK_PAPER_1.id), done(APM.id), open(APM.id)], APM_CASE) === true);
-
-// A case that belongs to no paper is never unlocked, whatever is open.
-ok('a case in NO mock paper is never unlocked',
-  attemptUnlocksCase([open(APM.id), open(AFM_MOCK_PAPER_1.id)], NOT_A_MOCK_CASE) === false);
-ok('an attempt with an unknown mock_id unlocks nothing',
-  attemptUnlocksCase([open('paper-does-not-exist')], APM_CASE) === false);
-
-// Malformed / nullable input must DENY, never open the door by omission.
-ok('empty case id → BLOCKED', attemptUnlocksCase([open(APM.id)], '') === false);
-ok('completed=null is treated as OPEN (only completed===true closes)',
-  attemptUnlocksCase([{ mock_id: APM.id, completed: null }], APM_CASE) === true);
-
-console.log('\n-- field withholding for mock content --');
-// The EIGHT fields a mock payload must never carry. `marks_guide` is deliberately NOT in
-// this list — see below.
-const WITHHELD = ['professional_skill_tags', 'intellectual_level', 'command_verb', 'lo_code'];
-for (const f of WITHHELD) {
-  ok(`mock select does NOT fetch "${f}"`, !MOCK_REQUIREMENT_SELECT.includes(f));
-  ok(`standard select still fetches "${f}"`, STANDARD_REQUIREMENT_SELECT.includes(f));
-}
-for (const f of ['model_answer', 'hint', 'full_reveal', 'answer_schema']) {
-  ok(`neither select ever fetches "${f}"`,
-    !MOCK_REQUIREMENT_SELECT.includes(f) && !STANDARD_REQUIREMENT_SELECT.includes(f));
-}
-
-// marks_guide IS SERVED for mock content (restored 2026-07-29). It is an integer mark
-// ALLOCATION, not a mark scheme: a real paper prints marks per requirement and a candidate
-// needs them to pace the sit. Pinned POSITIVELY so a future tightening that sweeps it back
-// out with the genuinely-withheld fields fails here rather than silently blanking the APM
-// mock's marks display (CaseSession renders it).
-ok('mock select DOES fetch "marks_guide" (integer allocation, not a mark scheme)',
-  MOCK_REQUIREMENT_SELECT.includes('marks_guide'));
-ok('standard select still fetches "marks_guide"', STANDARD_REQUIREMENT_SELECT.includes('marks_guide'));
-
-ok('mock select still carries what a candidate must see (id, order, label, question, marks)',
-  ['id', 'requirement_order', 'label', 'question', 'marks_guide'].every((f) => MOCK_REQUIREMENT_SELECT.includes(f)));
-// Exactly five columns — a guard against the select quietly widening.
-ok('mock select is exactly 5 columns',
-  MOCK_REQUIREMENT_SELECT.split(',').map((s) => s.trim()).filter(Boolean).length === 5,
-  MOCK_REQUIREMENT_SELECT);
+// ── Select strings ───────────────────────────────────────────────────────────
+// MOCK_REQUIREMENT_SELECT is RETIRED: app/api/acca/case serves no mock content in any
+// mode, so there is no reduced payload left to pin. What must stay pinned is that the
+// standard select still carries marks_guide — the APM marks chip renders from it.
+console.log('\n-- the standard select --');
+ok('standard select carries marks_guide', STANDARD_REQUIREMENT_SELECT.includes('marks_guide'));
+ok('standard select carries lo_code',     STANDARD_REQUIREMENT_SELECT.includes('lo_code'));
+ok('standard select never carries model_answer', !STANDARD_REQUIREMENT_SELECT.includes('model_answer'));
+ok('standard select never carries answer_schema', !STANDARD_REQUIREMENT_SELECT.includes('answer_schema'));
 
 console.log(`\n${failures === 0 ? 'ALL MOCK-ACCESS FIXTURES PASS' : `${failures} FIXTURE(S) FAILED`}\n`);
-process.exit(failures === 0 ? 0 : 1);
+process.exitCode = failures === 0 ? 0 : 1;
