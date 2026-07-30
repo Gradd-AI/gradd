@@ -76,11 +76,25 @@ wait for it, or say plainly that it was still building.
 - **Structural beats instructed.** To make a teaching model withhold the answer (or any
   behaviour), ARCHITECT its absence — never instruct it; the helpfulness prior overrides
   "do not reveal". Canonical: `docs/TEACHING_ARCHITECTURE.md`.
-- **Code owns every number.** In numeric drills (AFM) and marking, deterministic code owns
-  every figure AND every figure-vs-figure verdict (allocation, ranking, sensitivity,
-  accept/reject, band→marks); the model authors PROSE only, and never re-checks a number.
+- **Code owns every number — IN DRILL GENERATION.** In numeric drills (AFM), deterministic
+  code owns every figure AND every figure-vs-figure verdict (allocation, ranking, sensitivity,
+  accept/reject); the model supplies raw inputs + prose, and never states or re-checks a number.
   Canonical: `docs/AFM_NUMERIC_VERIFICATION_DESIGN.md` + `lib/acca/{npv,numeric-verifier,
   validate-schema,validate-afm-prose}.ts`.
+- **MARKING DOES NOT EARN THAT CLAIM — corrected 2026-07-30.** In `lib/acca/case-marking.ts`
+  code owns **band→marks only** (`apportion` / `apportionTechnicalMarks`). The MODEL owns the
+  band, and **the feedback prose is model-authored and un-code-verified**: it asserts figures no
+  schema component owns — **114 of 1,518 asserted figures** (20 runs × 8 requirements), **96.5%
+  of them in STRONG-band feedback**. Mechanism: it COMPUTES where the `model_answer` rounds or
+  omits an intermediate (E2b renders "EUR 0.4m" → marker supplies 0.438m; B1a shows NPVs but no
+  discount factors → marker supplies them). `judgeTechnicalMarking` receives `model_answer` PROSE
+  ONLY — `answer_schema` is NOT a field of `TechnicalRequirementInput`, so it cannot cite a
+  component; `judgeCaseMarking` (PS) receives no code-owned reference at all, by design. **N1–N5
+  (`narrative-marker.ts`) are AUTHORING gates, not marking** — the mark route does not import
+  them; every requirement, numeric or narrative, is marked by the two model passes. Opened by a
+  sighting: a fall-scenario futures loss stated as €216,000 against the code-owned €264,000, a
+  figure with no owning component. State the claim the way `docs/NARRATIVE_MARKING_DESIGN.md:11`
+  states its own: structured and consistency-checked, NEVER "code owns the marks".
 
 ## Doc map — which file is canonical for what
 - **Build/incident rules (LC + IB):** `docs/GRADD_BUILD_HARDENING.md` — TOP PREVENTION
