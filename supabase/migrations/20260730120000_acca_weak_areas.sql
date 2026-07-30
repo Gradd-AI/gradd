@@ -134,6 +134,33 @@ CREATE TRIGGER acca_weak_areas_touch
   BEFORE UPDATE ON public.acca_weak_areas
   FOR EACH ROW EXECUTE FUNCTION public.acca_weak_areas_touch_updated_at();
 
+-- ── acca_case_progress.technical_feedback ────────────────────────────────────
+-- SECOND CONCERN IN THIS MIGRATION, added 2026-07-30 while wiring the debrief.
+--
+-- The debrief's central field is `why`: the technical marker's OWN reasoning for a
+-- requirement, carried through VERBATIM (lib/acca/debrief.ts is built around never
+-- paraphrasing it). It has nothing to read. app/api/acca/case/mark persists the
+-- per-requirement `band`, `technical_marks_awarded` and `technical_marks_available`
+-- onto acca_case_progress — but NOT `feedback`, which is returned to the caller and
+-- then dropped. PS feedback survives (acca_case_marking.per_skill jsonb); the
+-- technical half does not.
+--
+-- Without this column the results screen can only show `why` on the SAME request that
+-- did the marking. A refresh would re-mark (a paid model call per case, and marks that
+-- measurably move run to run) or show a debrief with every `why` null. Neither is
+-- acceptable for a screen a student returns to.
+--
+-- Nullable with no default and no backfill: rows marked before this lands keep NULL,
+-- and the debrief already treats a null `why` as "no reasoning shown for this one"
+-- rather than inventing one. That is the correct reading of an un-backfilled row.
+ALTER TABLE public.acca_case_progress
+  ADD COLUMN IF NOT EXISTS technical_feedback text NULL;
+
+COMMENT ON COLUMN public.acca_case_progress.technical_feedback IS
+  'Verbatim per-requirement reasoning from the technical marking pass. Read by the '
+  'debrief as its `why`. Never paraphrased, never generated — null means the marker '
+  'produced none, which the debrief states rather than fills in.';
+
 -- ── RLS: service-role only ───────────────────────────────────────────────────
 -- RLS ON with NO permissive policy. Every reader and writer is a server route using
 -- the service client, exactly like acca_drill_attempts. This is deliberate: a
@@ -215,6 +242,22 @@ WHERE tgrelid = 'public.acca_weak_areas'::regclass AND NOT tgisinternal;
 --     INSERT INTO public.acca_weak_areas (user_id, paper_code, lo_code, band, source)
 --       VALUES ('00000000-0000-4000-8000-000000000002', 'AFM', 'E3a', 'weak', 'sit');
 --   ROLLBACK;                                                              -- EXPECT: BOTH succeed
+
+-- V6b — the technical_feedback column landed, nullable, with no default.
+-- EXPECT: 1 row — data_type 'text', is_nullable 'YES', column_default NULL.
+SELECT column_name, data_type, is_nullable, column_default
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'acca_case_progress'
+  AND column_name = 'technical_feedback';
+
+-- V6c — adding it did NOT disturb the existing columns.
+-- EXPECT: all four present (band, technical_marks_awarded, technical_marks_available,
+--         submitted_at) — i.e. count = 4.
+SELECT count(*) AS preexisting_columns_intact
+FROM information_schema.columns
+WHERE table_schema = 'public' AND table_name = 'acca_case_progress'
+  AND column_name IN ('band', 'technical_marks_awarded', 'technical_marks_available', 'submitted_at');
 
 -- V7 — the LC table is untouched. This migration must not have altered it.
 -- EXPECT: the pre-existing weak_areas column list, unchanged; NO paper_code/lo_code/
