@@ -2,13 +2,100 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-29 (third change-set, `feat/sit-marking-and-gate` **MERGED to main**; `APM_CASES=1` confirmed set in production; walk re-run with a deliberate band spread — 7/7 bands hit target, 6 non-`nothing` bands all scored >0, paper 60/100; the `passed`-is-unset docs claim corrected; allowlist coverage recovered as 17 serving-gate fixtures. **The 3 AFM cases are still NOT flipped — P-DB2, Grant's, and `/acca/afm/mock` is dark until then.** Change-set contents: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
+*Last refreshed: 2026-07-30 (measurement + debrief presentation. Marker feedback prose measured: 114 of 1,518 asserted figures are owned by no component, 96.5% of them in STRONG-band feedback — the "code owns every figure" claim CORRECTED in `CLAUDE.md`, `AFM_COVERAGE_CONTRACT.md` and `PRODUCT_STRENGTH_STANDARD.md`, and N1–N5 corrected from "marking" to AUTHORING gates. Schema widening STOPPED — see the ⛔ block below: `irhedge` one-leg schema DEFERRED to the next authoring batch, omitted intermediates CLOSED permanently, B5b logged only. NO published row was written. Debrief presentation fixed: LO-code/marks leak closed with a `Q1 (i)` display name used everywhere including the headline, case grouping + per-case subtotals, collapse-headline selection rule, forward-reference removed, strong-band justification collapsed behind an expand with the verbatim guarantee intact.)*
+
+*Earlier: 2026-07-29 (third change-set, `feat/sit-marking-and-gate` **MERGED to main**; `APM_CASES=1` confirmed set in production; walk re-run with a deliberate band spread — 7/7 bands hit target, 6 non-`nothing` bands all scored >0, paper 60/100; the `passed`-is-unset docs claim corrected; allowlist coverage recovered as 17 serving-gate fixtures. **The 3 AFM cases are still NOT flipped — P-DB2, Grant's, and `/acca/afm/mock` is dark until then.** Change-set contents: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
 
 *Earlier: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⛔ CLOSED-BY-RULING 2026-07-30 — schema widening STOPS HERE; only ONE real defect shape exists
+
+Measurement session (read-only). The marker's feedback prose asserts figures no schema component
+owns — that finding is banked in `CLAUDE.md` ("MARKING DOES NOT EARN THAT CLAIM"). Investigating
+it surfaced three separate questions about schema coverage. **Two are closed permanently. One is
+deferred with a named trigger. NOTHING was written to a published row.**
+
+### 🟠 DEFERRED (named trigger) — E3a one-leg schema: `irhedge.ts` is the sole outlier
+
+`buildIrFuturesSchema` (`irhedge.ts:542`), `buildIrOptionsSchema` (`:595`) and
+`buildIrCollarSchema` (`:648`) each take `c.scenarios[0]` for their components while
+`build*ModelAnswer` maps over **every** scenario — so the model answer renders two legs and the
+schema owns one. Checked all **28 `build*Schema` functions across 12 family modules**: these three
+are the ONLY instances. `buildIrSwapSchema` has no scenarios and is unaffected.
+
+**Affects 4 rows** — published drills `56989d69` (futures), `1c133573` (options), `f088daa5`
+(collar), plus the Mock Paper 1 `(i) E3a` requirement. This is the hole the sighted €216,000
+fell through: the fall-scenario loss has no `expected_value`, so nothing downstream can check a
+restatement of it.
+
+**NOT FIXED, deliberately.** The cost is not "add components":
+- `scripts/_author_irhedge_batch.ts` was gitignored (`scripts/_*`) and **has been deleted**. There
+  is no `--irhedge-batch` generator wiring either. No supported re-authoring path exists today.
+- **Stored `params` carry only leg 0's rate** — `1c133573 base_rate:2.4` · `f088daa5 base_rate:3.4`
+  · `56989d69 base_rate:5.9`. The second leg's rate survives ONLY as prose in the rendered
+  `model_answer` table. Re-authoring means recovering it by parsing rendered prose, and a wrong
+  recovery **moves figures that are currently correct** — on 4 rows, on a paper no student has sat.
+- 3 of the 4 `irh_*` recompute fns cannot reach a second leg: `irh_closing_price` is bound to a
+  single `params.base_rate`; `irh_futures_profit` and `irh_net` read `d.closing_price` /
+  `d.mm_interest` / `d.futures_profit` **by literal component_id**. Only `irh_effective` (which
+  resolves through `depends_on` via `soleDep`) generalises. And all seven `irh_opt_*` / `irh_col_*`
+  ids sit in `UNRESOLVED_RECOMPUTE_IDS` — unresolvable today, so options/collar need those built
+  first.
+
+**Trigger to revisit: the next `irhedge` authoring batch**, when the generator is being touched
+anyway and proper `draft*Drill` / `SUBMIT_*_TOOL` wiring is being added. Doing it then costs the
+schema change only; doing it now costs a prose-parse recovery with a figure-movement risk.
+
+**CONFORMANCE PATTERN — `risk.ts buildEnpvSchema:361`.** `comps = c.scenarios.map(...)` — one
+component per scenario. That is the shape `irhedge` departed from and the shape it must return to.
+Every other multi-leg family already conforms and was hand-verified: `buildRadrSchema`
+(`npv_at_company` + `npv_at_radr`), `buildRiskMeasuresSchema` (`*_a` + `*_b`), `buildCompareSchema`
+(`equity_dcf` + `equity_multiple`), `buildApvSchema` financing_compare (`apv_debt` + `apv_equity`),
+`buildIntlSensitivitySchema` (`addChain('')` + `addChain('alt_')`), `buildDurationSchema`
+(`a_`/`b_`, `''`/`ref_`), `buildForwardMmhCompareSchema` (both methods).
+
+### ⛔ CLOSED PERMANENTLY — omitted intermediates are OUT OF SCOPE, and 43% is NOT a defect count
+
+A scan of the 49 published numeric AFM drills found **869 of 2,022 rendered figures (43.0%) match
+no component `expected_value`**, with 48 of 49 rows carrying at least one.
+
+**READ THAT NUMBER CORRECTLY. It is a measure of how much working the model answers SHOW, not a
+count of defects.** The overwhelming majority are **presentational intermediates** — per-year
+discount factors, per-year present values, restated input rates — which are displayed so a student
+can follow the derivation and which **need no component and never did**. A model answer that
+renders its working will always score "high" on this metric; a terser one would score lower while
+teaching less. **Nobody should read 43% as a corpus failure, a quality regression, or a backlog.**
+It is not any of those, and no work is owed against it.
+
+The scan's own limits, for anyone tempted to re-run it: it sees RENDERED figures only, so a figure
+omitted from the model answer *and* absent from `components[]` is invisible to it (Mock `(i) B1a`
+scores 0 unowned yet the marker still invented four discount factors from the prose phrase
+"discounted at 10.00%"); it counts a `params` match as owned; and it carries an unquantified
+false-positive rate (B3e's `0.700`/`0.300` are `own_ve`/`own_vd` 70/30 rendered as fractions).
+
+**The ONLY in-scope defect shape is a whole missing LEG** — a rendered outcome the schema models
+zero times, not a step it models once and displays twice.
+
+### 📋 LOGGED, NOT ACTIONED — B5b's unmodelled columns are a DIFFERENT defect shape
+
+Mock `(ii) B5b` renders four columns with no component. Adjudicated:
+- **foreign free cash flow** (BRL 211.2m → 230.8m) — **CHAIN STEP.** The student derives it
+  (PBIT×(1−t) + depreciation − capex − ΔWC, grown at 3%); it carries its own marks and its own
+  error modes, and nothing upstream of it is owned. Would merit modelling.
+- **withholding tax** (BRL 31.7m → 34.6m) — **CHAIN STEP.** An independent decision, not glue:
+  the marks turn on applying 15% to the right base. Would merit modelling.
+- **discount factors** (1.000, 0.912, 0.833, 0.760, 0.693) — **presentational.** No mark attaches
+  to the factor itself. Out of scope per the ruling above.
+- **present values** (EUR 28.6m, 26.2m, 24.0m, 22.0m) — **presentational.** Sits between two owned
+  components (`home_cf_t`, `npv`); the assessed quantity is the NPV. Out of scope.
+
+**This is NOT the `irhedge` fix.** `buildFcffComposedSchema` has no leg array to drop — it never
+modelled those columns at all, so it needs its own scoping pass rather than the `scenarios[0]`
+conformance change. **Logged. No action authorised.**
 
 ## 🔸 OPEN 2026-07-29 — the mock-content carve-out is TRANSITIONAL, and one decision is owed
 
