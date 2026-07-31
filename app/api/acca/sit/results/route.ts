@@ -45,14 +45,14 @@ import {
 // Either every requirement carries a recorded answer, OR the attempt is CLOSED —
 // `attemptIsClosed` (lib/acca/sit-preview.ts): finished, or past its `ends_at`.
 //
-// The second arm arrived with the countdown and is not a loosening for convenience. When the
-// clock expires, the auto-submit records the requirement being written and nothing else, so
-// everything after it has no progress row at all. That is the truth of what happened, and
-// `not_reached` is a materially different finding from `blank` — pacing and the debrief both
-// distinguish them, and the debrief's next action for an unreached requirement is about
-// REACHING it, not about its method. Back-filling empty strings across the tail to satisfy a
-// stricter gate would have destroyed that distinction to work around a gate, so the gate
-// moved instead.
+// The second arm arrived with the countdown (2026-07-31) and is not a loosening for
+// convenience. When the clock expires, the auto-submit records the requirement being written
+// and nothing else, so everything after it has no progress row at all. That is the truth of
+// what happened, and `not_reached` is a materially different finding from `blank` — pacing
+// and the debrief both distinguish them, and the debrief's next action for an unreached
+// requirement is about REACHING it, not about its method. Back-filling empty strings across
+// the tail to satisfy a stricter gate would have destroyed that distinction to work around a
+// gate, so the gate moved instead.
 //
 // Marking a half-sat paper that is still RUNNING remains refused (409 `paper_not_finished`):
 // it would score work in progress as missing work, and those marks are then persisted.
@@ -262,6 +262,7 @@ export async function POST(request: Request): Promise<Response> {
   const pending = casesNeedingMarking(PAPER.case_ids, loaded.marking);
   const marked: string[] = [];
   let weaknessRows = 0;
+  let resolvedRows = 0;
   for (const caseId of pending) {
     const run = await runCaseMarking({
       supabase, userId, caseId, paper: PAPER.paper, sitting: true, attemptClosed: closed,
@@ -277,6 +278,7 @@ export async function POST(request: Request): Promise<Response> {
     }
     marked.push(caseId);
     weaknessRows += run.weakness_rows;
+    resolvedRows += run.resolved_rows;
   }
 
   // Re-read: the marking just written is what the debrief is built from.
@@ -289,5 +291,6 @@ export async function POST(request: Request): Promise<Response> {
     marked: true,
     marked_now: marked.length,
     weakness_rows: weaknessRows,
+    resolved_rows: resolvedRows,
   });
 }

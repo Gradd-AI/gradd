@@ -32,7 +32,7 @@ import {
   type TechnicalMarkingResult,
 } from '@/lib/acca/case-marking';
 import { caseMarkReady } from '@/lib/acca/case-sit';
-import { weaknessWritesFor, type WeaknessWrite } from '@/lib/acca/weak-areas';
+import { ledgerActionsFor, type WeaknessWrite, type WeaknessClose } from '@/lib/acca/weak-areas';
 
 // Structural typing so this module never imports a server-only Supabase factory; the
 // caller passes its own service client.
@@ -58,6 +58,8 @@ export interface CaseMarkRunOk {
   technical: TechnicalMarkingResult | null;
   /** How many acca_weak_areas rows this run opened or incremented. Sit only; 0 otherwise. */
   weakness_rows: number;
+  /** How many previously-open rows this run RESOLVED. Sit only; 0 otherwise. */
+  resolved_rows: number;
 }
 
 export interface CaseMarkRunErr {
@@ -271,18 +273,22 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
     // non-fatal
   }
 
-  // ── The weakness ledger — sit only ──
+  // ── The weakness ledger — sit only. Opens AND closes. ──
   let weaknessRows = 0;
+  let resolvedRows = 0;
   if (technical) {
     const loById = new Map(requirements.map((r) => [r.id, r.lo_code]));
-    const writes = weaknessWritesFor(
+    const actions = ledgerActionsFor(
       technical.per_requirement.map((pr) => ({
         requirement_id: pr.requirement_id,
         lo_code: loById.get(pr.requirement_id) ?? null,
         band: pr.band,
       })),
-    ).map((w) => ({ ...w, case_id: caseId }));
-    weaknessRows = await recordWeaknesses(supabase, userId, paper, writes);
+    );
+    weaknessRows = await recordWeaknesses(
+      supabase, userId, paper, actions.opens.map((w) => ({ ...w, case_id: caseId })),
+    );
+    resolvedRows = await resolveWeaknesses(supabase, userId, paper, actions.closes);
   }
 
   return {
@@ -292,6 +298,7 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
     per_skill: result.per_skill,
     technical,
     weakness_rows: weaknessRows,
+    resolved_rows: resolvedRows,
   };
 }
 
@@ -326,6 +333,45 @@ async function recordWeaknesses(
     }
   }
   return written;
+}
+
+/**
+ * Close the open row for each resolved area — the `resolved_at` writer.
+ *
+ * A single scoped UPDATE, and no read first: `resolved_at IS NULL` in the WHERE means the
+ * statement is a no-op when there is nothing open, which is the common case (most strong
+ * bands were never weak). Nothing is deleted — the closed row stays as history, and the
+ * partial unique index is what then lets a later weak finding open a FRESH row for the same
+ * area rather than incrementing a resolved one.
+ *
+ * `case_id`/`requirement_id` are deliberately NOT rewritten here: they are the provenance of
+ * the finding that OPENED the row, and overwriting them with the requirement that closed it
+ * would lose where the weakness came from.
+ */
+async function resolveWeaknesses(
+  supabase: Queryable,
+  userId: string,
+  paper: AccaPaper,
+  closes: readonly WeaknessClose[],
+): Promise<number> {
+  let resolved = 0;
+  for (const c of closes) {
+    try {
+      const { data } = await supabase
+        .from('acca_weak_areas')
+        .update({ resolved_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('paper_code', paper)
+        .eq('lo_code', c.lo_code)
+        .eq('source', 'sit')
+        .is('resolved_at', null)
+        .select('id');
+      resolved += (data as unknown[] | null)?.length ?? 0;
+    } catch {
+      // one bad close must not stop the rest, and must never fail a marked paper
+    }
+  }
+  return resolved;
 }
 
 async function writeOne(
