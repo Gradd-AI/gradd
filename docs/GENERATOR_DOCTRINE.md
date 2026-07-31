@@ -323,6 +323,46 @@ world; a detector's output is evidence, not a verdict. State findings as "the de
 X — reconciled/unreconciled against live row Y", never as "drill Z is defective", until the
 reconciliation has actually been run.
 
+**P-DB6 — AN AUTHORING PATH THAT EXISTS ONLY AS AN UNTRACKED SCRIPT IS ONE MACHINE FAILURE FROM
+GONE (ruled 2026-07-31).** `scripts/_*` is gitignored. That is right for a throwaway and wrong
+for anything the project depends on, and the distinction is not "how it was written" — every
+one of these started as a throwaway — but **what it is the only copy of**.
+
+**The rule.** Any script that (a) **WRITES CONTENT** — authors, patches or rebuilds a
+`acca_drills` / `acca_cases` / `acca_case_requirements` row through a calculator or rubric
+engine — or (b) is the **SOLE CALLER of a gate barrier**, gets **COMMITTED**, out of
+`scripts/_*`, under `scripts/authoring/`. Not because it is clean; because losing it costs
+content that cannot be rebuilt. Commit it with a header stating plainly that it is a one-off
+with hardcoded inputs, so nobody mistakes retention for endorsement.
+
+**This is not hypothetical. It has cost us twice, and the second loss is still open.**
+
+1. **`scripts/_author_irhedge_batch.ts` — LOST.** It authored the four live E3a
+   interest-rate-hedging drills (`56989d69` / `1c133573` / `f088daa5` / `26a4167b`), was never
+   committed, and has been deleted. Consequence, recorded in `docs/AFM_SURFACED.md` and still
+   open: the E3a one-leg schema defect **cannot be fixed**, because "no supported re-authoring
+   path exists today". Stored `params` carry only leg 0's rate; the second leg's rate survives
+   ONLY as prose in the rendered `model_answer`, so recovery means parsing rendered prose on
+   four published rows — with a wrong recovery moving figures that are currently correct. **A
+   published defect is un-fixable because a script was untracked.**
+2. **`scripts/_author_mock_paper1.ts` — CAUGHT, and committed 2026-07-31** as
+   `scripts/authoring/author-afm-mock-paper-1.ts`. It was the ONLY working AFM case-authoring
+   path in existence, untracked, on a project cloned at two different paths on two machines.
+
+**The corollary that matters more than the rule.** A committed authoring script is not the same
+as a reproducible one. `author-afm-mock-paper-1.ts` **does not reproduce the live rows**: the
+recompute DISCRIMINANT params (`gearing_basis`, `parity_basis`, `quote_direction`, `direction`,
+`side`) were added afterwards by a SECOND untracked script, and the `build*Schema` functions do
+not emit them. Re-running the author script today would produce schemas that
+`lib/acca/recompute-registry.ts` cannot resolve, silently. **So when committing an authoring
+path, commit every post-authoring mutation that the live rows depend on — or fold them into the
+authoring script — and say which is which.** A path that reproduces 90% of a row is a trap,
+because it looks like a recovery route and is not one.
+
+This composes with **P-DB3** (a rollback snapshot must be COMMITTED, for the same reason: the
+scratchpad is outside the repo, and untracked files do not survive a `git clean` or a machine
+switch). P-DB3 protects the ability to undo a write; P-DB6 protects the ability to make it again.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
