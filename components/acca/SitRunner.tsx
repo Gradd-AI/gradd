@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   fmtElapsed,
   nextUnsubmittedIndex,
@@ -14,6 +14,11 @@ import type { AccaPaper } from '@/lib/acca/paper';
 // to. /acca/mock (APM) and /acca/afm/mock (AFM) both render this one component, so the
 // two papers cannot drift into two sit behaviours — which is what the old split gave us
 // (CaseSession's teach surface for APM, this one for AFM).
+//
+// It LIVES HERE, not under app/acca/afm/mock/, as of 2026-07-31. That was its authoring
+// home and the generalisation left it there, so the APM route was importing a component
+// out of the AFM route's folder — a path that asserted an ownership the component no
+// longer has. Nothing about the move is behavioural.
 // Authentic exam conditions, and deliberately nothing more:
 //   • one answer box per requirement, in paper order
 //   • "Submit and move on" ONLY — no back navigation, no editing a submitted answer
@@ -21,10 +26,24 @@ import type { AccaPaper } from '@/lib/acca/paper';
 //   • a visible ELAPSED timer — no countdown, no auto-submit
 //   • each answer is persisted as it is submitted, so a dropped connection loses at
 //     most the requirement being typed, never the paper
-//   • on finish: a plain "paper submitted" screen and nothing else
 //
-// Marking and debrief are OUT of this build. Nothing here scores, ranks or reacts to
-// what the candidate wrote — the only response to a submission is advancing the page.
+// ── AFTER THE PAPER: THE DEBRIEF (added 2026-07-31) ──────────────────────────
+// Finishing used to land on a bare "Paper submitted." screen, because marking did not
+// exist yet. It now posts once to /api/acca/sit/results — which marks any unmarked case,
+// then returns the coached debrief — and renders it.
+//
+// NOTHING DURING THE SIT CHANGES. No marks, no bands, no feedback, no reaction of any
+// kind reaches the candidate before the last submission; the only response to a submission
+// is still advancing the page. The results request is fired strictly AFTER the paper is
+// finished, and the fetch cannot be triggered from any other phase.
+//
+// The render follows the debrief's own structure and adds nothing to it: the report's
+// `headline` leads, cases group their own requirements with a subtotal, and each
+// requirement prints its marks, its band, the marker's verbatim reasoning and one next
+// action. PACING SITS ADJACENT AND IS NEVER MERGED — it is a separate labelled line under
+// the marks line, exactly as lib/acca/pacing.ts and lib/acca/debrief.ts require. Nothing
+// here computes, rewords, ranks or combines anything: every string on the screen comes
+// from the report as-authored.
 //
 // There is intentionally NO draft autosave: persistence is per-requirement AS
 // SUBMITTED, which is what protects the paper. Autosaving keystrokes would mean the
@@ -32,6 +51,59 @@ import type { AccaPaper } from '@/lib/acca/paper';
 // submission rule below then could not cleanly reconcile.
 
 type Phase = 'loading' | 'error' | 'intro' | 'sitting' | 'done';
+
+// ── Debrief payload (mirrors lib/acca/debrief.ts's DebriefReport) ─────────────
+// Typed here rather than imported so the client bundle never pulls a server module in
+// behind it. The field names are the contract; if they drift, this stops compiling.
+interface DebriefLine {
+  paper_order: number;
+  requirement_id: string;
+  case_id: string;
+  display_name: string;
+  verdict: 'strong' | 'partial' | 'lost' | 'not_reached';
+  marks_awarded: number | null;
+  marks_available: number;
+  marks_lost: number | null;
+  band: string | null;
+  what_was_lost: string;
+  why: string | null;
+  why_display: 'expanded' | 'collapsed';
+  next_action: string;
+  pacing_note: string | null;
+  pacing_flag: string | null;
+  answer_state: string | null;
+}
+interface DebriefCaseGroup {
+  case_id: string;
+  title: string | null;
+  position: number;
+  display_name: string;
+  requirements: DebriefLine[];
+  technical_awarded: number | null;
+  technical_available: number;
+}
+interface DebriefHeadline { code: string; statement: string }
+interface DebriefSkillLine { skill: string; band: string; why: string }
+interface DebriefReport {
+  not_evaluated: string | null;
+  headline: DebriefHeadline;
+  secondary: DebriefHeadline[];
+  requirements: DebriefLine[];
+  cases: DebriefCaseGroup[];
+  professional: Array<{ case_id: string; title: string | null; awarded: number | null; available: number | null; skills: DebriefSkillLine[] }>;
+  totals: {
+    technical_awarded: number | null;
+    technical_available: number;
+    professional_awarded: number | null;
+    professional_available: number | null;
+  };
+  limitations: string[];
+}
+interface ResultsData {
+  paper: { id: string; paper: AccaPaper; title: string; duration_minutes: number };
+  debrief: DebriefReport;
+  pacing: { total_elapsed_minutes: number | null; tail_minutes: number | null };
+}
 
 interface Exhibit { exhibit_order: number; title: string | null; body: string | null }
 interface SitCase {
@@ -80,6 +152,13 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   const [submitError, setSubmitError] = useState(false);
   const [starting, setStarting] = useState(false);
   const [nowTs, setNowTs] = useState<number>(() => Date.now());
+  // ── Results state. Only ever touched in the 'done' phase. ──
+  // `requestedRef` is a REF, not state, on purpose: it guards the effect from firing twice
+  // (Strict Mode's double-invoke, and any re-render while the request is in flight) and a
+  // guard that itself triggers a render would be the thing it is guarding against.
+  const [results, setResults] = useState<ResultsData | null>(null);
+  const [resultsError, setResultsError] = useState<string | null>(null);
+  const requestedRef = useRef(false);
 
   const slots = useMemo(() => data?.slots ?? [], [data]);
   const slotIds = useMemo(() => slots.map((s) => s.requirement_id), [slots]);
@@ -125,6 +204,45 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
 
   const startedMs = attempt ? new Date(attempt.started_at).getTime() : 0;
   const elapsedMs = attempt ? nowTs - startedMs : 0;
+
+  // ── Results: marked once, then reported ─────────────────────────────────────
+  // POST is the marking verb. It is IDEMPOTENT in practice — the endpoint marks only the
+  // cases that are not marked yet, so a revisit does no model work and returns the same
+  // debrief from what was persisted. That is what makes it safe to fire on every arrival
+  // at the done screen rather than tracking "have I marked this" on the client, where a
+  // cleared browser would get it wrong.
+  //
+  // `requestedRef` guards the STRICT MODE double-invoke and a re-render loop, not the
+  // idempotency — the server owns that.
+  const fetchResults = useCallback(async () => {
+    setResultsError(null);
+    try {
+      const res = await fetch('/api/acca/sit/results', {
+        method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ paper }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok) {
+        setResultsError(
+          json?.error === 'paper_not_finished'
+            ? 'This paper is not finished yet, so it has not been marked.'
+            : 'Marking did not complete. Your answers are saved — try again.',
+        );
+        return;
+      }
+      setResults(json as ResultsData);
+    } catch {
+      setResultsError('Marking did not complete. Your answers are saved — try again.');
+    }
+  }, [paper]);
+
+  // Scheduled rather than called inline: this effect's job is to kick off an external
+  // request when the terminal screen is reached, not to synchronise state.
+  useEffect(() => {
+    if (phase !== 'done' || requestedRef.current) return;
+    requestedRef.current = true;
+    const id = setTimeout(() => { void fetchResults(); }, 0);
+    return () => clearTimeout(id);
+  }, [phase, fetchResults]);
 
   const start = useCallback(async () => {
     setStarting(true);
@@ -220,13 +338,26 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   }
 
   if (phase === 'done') {
-    // Deliberately bare: no score, no breakdown, no next step. Marking and debrief
-    // are a separate build, and showing anything here would be feedback.
-    return shell(
-      <div className="sit-done">
-        <h1 className="sit-done-title">Paper submitted.</h1>
-      </div>,
-    );
+    if (resultsError) {
+      return shell(
+        <div className="sit-done">
+          <h1 className="sit-done-title">Paper submitted.</h1>
+          <p className="sit-done-note" role="alert">{resultsError}</p>
+          <button className="sit-btn" onClick={() => { void fetchResults(); }}>
+            Try marking again
+          </button>
+        </div>,
+      );
+    }
+    if (!results) {
+      return shell(
+        <div className="sit-done">
+          <h1 className="sit-done-title">Paper submitted.</h1>
+          <p className="sit-done-note">Marking your paper — this takes a minute.</p>
+        </div>,
+      );
+    }
+    return shell(<Debrief data={results} />);
   }
 
   if (phase === 'intro' && data) {
@@ -325,6 +456,173 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   }
 
   return shell(<div className="sit-state">Loading…</div>);
+}
+
+// ── The debrief ────────────────────────────────────────────────────────────────
+// A RENDERER, not a second author. Every sentence on this screen is a string the report
+// already contains: the headline, `what_was_lost`, the marker's verbatim `why`, the
+// band-derived `next_action`, and the pacing note. This component decides layout and
+// nothing else — it never composes a sentence, never rounds a number, never combines marks
+// with pacing, and never turns a band into a grade.
+//
+// Two rules from lib/acca/debrief.ts are load-bearing in the markup:
+//   1. PACING IS ADJACENT, NEVER MERGED. It is its own labelled line under the marks line.
+//      "You rushed it and lost marks" is a causal claim the debrief refuses to make, and a
+//      layout that ran the two together would make it visually anyway.
+//   2. `display_name` IS THE ONLY SAFE REFERENCE. The stored `label` carries the syllabus
+//      code the sit route strips at the serve boundary; printing it here would re-leak it
+//      one screen later. `label` is present on the line for traceability and is not read.
+
+function bandLabel(band: string | null): string | null {
+  if (!band) return null;
+  return band.charAt(0).toUpperCase() + band.slice(1);
+}
+
+function DebriefRequirement({ line }: { line: DebriefLine }) {
+  return (
+    <li className={`db-req db-req--${line.verdict}`}>
+      <div className="db-req-head">
+        <span className="db-req-name">{line.display_name}</span>
+        {line.band && <span className={`db-band db-band--${line.band}`}>{bandLabel(line.band)}</span>}
+      </div>
+
+      {/* MARKS — arithmetic, from the report. */}
+      <p className="db-line db-line--marks"><span className="db-key">Marks:</span> {line.what_was_lost}</p>
+
+      {/* PACING — its own line, its own label, never folded into the marks sentence. */}
+      {line.pacing_note && (
+        <p className="db-line db-line--pacing"><span className="db-key">Pacing:</span> {line.pacing_note}</p>
+      )}
+
+      {/* WHY — the marker's own words. Collapsed only where the report says the short
+          action already carries the whole message (a strong band that lost nothing); the
+          string itself is COMPLETE in both states and is never truncated or rewritten. */}
+      {line.why && (
+        line.why_display === 'collapsed' ? (
+          <details className="db-why db-why--collapsed">
+            <summary>Why this scored as it did</summary>
+            <p className="db-why-body">{line.why}</p>
+          </details>
+        ) : (
+          <div className="db-why">
+            <p className="db-why-label">Why</p>
+            <p className="db-why-body">{line.why}</p>
+          </div>
+        )
+      )}
+
+      <p className="db-line db-line--action"><span className="db-key">Next:</span> {line.next_action}</p>
+    </li>
+  );
+}
+
+function Debrief({ data }: { data: ResultsData }) {
+  const { debrief } = data;
+  const t = debrief.totals;
+
+  if (debrief.not_evaluated) {
+    return (
+      <main className="db">
+        <h1 className="db-title">Paper submitted.</h1>
+        <p className="db-note">{debrief.not_evaluated}</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="db">
+      <header className="db-head">
+        <h1 className="db-title">{data.paper.title} — your paper</h1>
+
+        {/* TOTALS ARE FACTS, NOT A GRADE. The debrief deliberately predicts no pass mark
+            and this screen adds none. */}
+        <div className="db-totals">
+          <div className="db-total">
+            <span className="db-total-num">
+              {t.technical_awarded ?? '—'}<span className="db-total-of">/{t.technical_available}</span>
+            </span>
+            <span className="db-total-cap">Technical</span>
+          </div>
+          {t.professional_available != null && (
+            <div className="db-total">
+              <span className="db-total-num">
+                {t.professional_awarded ?? '—'}<span className="db-total-of">/{t.professional_available}</span>
+              </span>
+              <span className="db-total-cap">Professional skills</span>
+            </div>
+          )}
+          {data.pacing.total_elapsed_minutes != null && (
+            <div className="db-total">
+              <span className="db-total-num">{data.pacing.total_elapsed_minutes}<span className="db-total-of"> min</span></span>
+              <span className="db-total-cap">Elapsed</span>
+            </div>
+          )}
+        </div>
+
+        {/* THE HEADLINE — one, not eight. Selected by the report, printed as written. */}
+        <p className="db-headline">{debrief.headline.statement}</p>
+        {debrief.secondary.map((s, i) => (
+          <p key={i} className="db-secondary">{s.statement}</p>
+        ))}
+      </header>
+
+      {/* CASE GROUPING + PER-CASE SUBTOTALS. Eight requirements printed flat put three
+          lines beginning "(i)" next to each other with nothing to tell them apart. */}
+      {debrief.cases.map((c) => (
+        <section key={c.case_id} className="db-case" aria-label={`${c.display_name}${c.title ? ` — ${c.title}` : ''}`}>
+          <div className="db-case-head">
+            <h2 className="db-case-title">
+              <span className="db-case-q">{c.display_name}</span>
+              {c.title && <span className="db-case-name">{c.title}</span>}
+            </h2>
+            <span className="db-case-sub">
+              {c.technical_awarded ?? '—'}/{c.technical_available}
+            </span>
+          </div>
+          <ul className="db-reqs">
+            {c.requirements.map((r) => <DebriefRequirement key={r.requirement_id} line={r} />)}
+          </ul>
+        </section>
+      ))}
+
+      {/* PROFESSIONAL SKILLS — the PS marker's own words, verbatim. Bands only; the
+          per-skill apportioned MARK is never surfaced (it is a largest-remainder artefact,
+          not a score for that skill) and the endpoint does not return it. */}
+      {debrief.professional.some((p) => p.skills.length > 0) && (
+        <section className="db-ps" aria-label="Professional skills">
+          <h2 className="db-ps-title">Professional skills</h2>
+          {debrief.professional.filter((p) => p.skills.length > 0).map((p) => (
+            <div key={p.case_id} className="db-ps-case">
+              <div className="db-ps-case-head">
+                <span className="db-ps-case-name">{p.title ?? 'Case'}</span>
+                {p.available != null && (
+                  <span className="db-case-sub">{p.awarded ?? '—'}/{p.available}</span>
+                )}
+              </div>
+              <ul className="db-ps-list">
+                {p.skills.map((s) => (
+                  <li key={s.skill} className="db-ps-item">
+                    <div className="db-req-head">
+                      <span className="db-req-name">{s.skill.replace(/_/g, ' ')}</span>
+                      <span className={`db-band db-band--${s.band}`}>{bandLabel(s.band)}</span>
+                    </div>
+                    {s.why && <p className="db-why-body">{s.why}</p>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+
+      {/* LIMITATIONS — what this debrief could NOT establish, stated rather than hidden. */}
+      {debrief.limitations.length > 0 && (
+        <section className="db-limits" aria-label="Limitations">
+          <ul>{debrief.limitations.map((l, i) => <li key={i}>{l}</li>)}</ul>
+        </section>
+      )}
+    </main>
+  );
 }
 
 // ── Scoped CSS ─────────────────────────────────────────────────────────────────
@@ -447,13 +745,125 @@ const CSS = `
 
 /* ── Done ── */
 .sit-done {
-  min-height: 100vh; display: flex; align-items: center; justify-content: center;
-  padding: 48px 24px;
+  min-height: 100vh; display: flex; flex-direction: column; gap: 14px;
+  align-items: center; justify-content: center; padding: 48px 24px; text-align: center;
 }
 .sit-done-title {
   font-family: var(--font-display); font-size: clamp(24px, 4vw, 32px);
   font-weight: 700; color: var(--text); margin: 0; letter-spacing: -0.4px;
 }
+.sit-done-note { font-size: 15px; color: var(--text-muted); margin: 0; max-width: 44ch; line-height: 1.55; }
+
+/* ── Debrief ── */
+.db { max-width: 780px; margin: 0 auto; padding: clamp(28px, 5vw, 56px) clamp(16px, 4vw, 32px) 96px; }
+.db-head { display: flex; flex-direction: column; gap: 18px; margin-bottom: 34px; }
+.db-title {
+  font-family: var(--font-display); font-size: clamp(24px, 4vw, 32px); font-weight: 700;
+  letter-spacing: -0.5px; margin: 0; color: var(--text);
+}
+.db-note { font-size: 15px; color: var(--text-muted); margin: 0; }
+
+.db-totals { display: flex; flex-wrap: wrap; gap: 10px; }
+.db-total {
+  display: flex; flex-direction: column; gap: 3px; flex: 1 1 140px;
+  padding: 12px 16px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.db-total-num {
+  font-family: var(--font-display); font-variant-numeric: tabular-nums;
+  font-size: 26px; font-weight: 700; line-height: 1; color: var(--text);
+}
+.db-total-of { font-size: 15px; font-weight: 600; color: var(--text-muted); }
+.db-total-cap {
+  font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
+}
+
+.db-headline {
+  margin: 0; font-size: 16.5px; line-height: 1.6; font-weight: 600; color: var(--text);
+  border-left: 3px solid var(--brand); padding-left: 14px;
+}
+.db-secondary {
+  margin: 0; font-size: 14px; line-height: 1.6; color: var(--text-muted); padding-left: 17px;
+}
+
+.db-case { margin-bottom: 30px; }
+.db-case-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 14px;
+}
+.db-case-title { display: flex; align-items: baseline; gap: 10px; margin: 0; min-width: 0; }
+.db-case-q {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text);
+}
+.db-case-name {
+  font-size: 14px; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.db-case-sub {
+  font-variant-numeric: tabular-nums; font-size: 14px; font-weight: 700;
+  color: var(--text); flex-shrink: 0;
+}
+
+.db-reqs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.db-req {
+  display: flex; flex-direction: column; gap: 7px;
+  padding: 14px 16px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.db-req--not_reached { opacity: 0.9; border-style: dashed; }
+.db-req-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.db-req-name { font-size: 15px; font-weight: 700; color: var(--text); }
+
+.db-band {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted);
+}
+.db-band--exemplary, .db-band--strong { border-color: #2f855a; color: #2f855a; }
+.db-band--competent { border-color: #b7791f; color: #b7791f; }
+.db-band--weak, .db-band--nothing { border-color: #c0392b; color: #c0392b; }
+
+.db-line { margin: 0; font-size: 14px; line-height: 1.6; color: var(--text); }
+.db-line--pacing { color: var(--text-muted); }
+.db-key {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-muted); margin-right: 6px;
+}
+
+.db-why { margin-top: 2px; }
+.db-why-label {
+  margin: 0 0 2px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--text-muted);
+}
+.db-why-body { margin: 0; font-size: 14px; line-height: 1.65; color: var(--text); white-space: pre-wrap; }
+.db-why--collapsed > summary {
+  cursor: pointer; font-size: 12.5px; font-weight: 600; color: var(--text-muted);
+  list-style: revert;
+}
+.db-why--collapsed[open] > summary { margin-bottom: 6px; }
+
+.db-ps { margin-top: 40px; }
+.db-ps-title {
+  font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--text);
+  margin: 0 0 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+}
+.db-ps-case { margin-bottom: 18px; }
+.db-ps-case-head {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 8px;
+}
+.db-ps-case-name { font-size: 14px; font-weight: 700; color: var(--text); }
+.db-ps-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.db-ps-item {
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 12px 14px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+}
+.db-ps-item .db-req-name { text-transform: capitalize; }
+
+.db-limits {
+  margin-top: 34px; padding-top: 14px; border-top: 1px solid var(--border);
+}
+.db-limits ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.db-limits li { font-size: 12.5px; line-height: 1.55; color: var(--text-muted); }
 
 @media (max-width: 900px) {
   .sit-run { height: auto; min-height: 100vh; overflow: visible; }
