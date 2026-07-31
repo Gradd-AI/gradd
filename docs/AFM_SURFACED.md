@@ -135,30 +135,77 @@ control `lo=B4a` suppressed the untagged B4d **9/40 → 0/40**.
 
 **NOT deployed and NOT merged** — Grant's review first.
 
-## 🔸 OPEN 2026-07-31 — three things this change-set surfaced and did not fix
+## ✅ CLOSED 2026-07-31 (same day) — the countdown regression and the missing `resolved_at` writer
 
-1. **`MOCK_SIT_MODE`'s countdown and auto-submit did not come across.** `SitRunner` counts UP, has no
-   countdown and never auto-submits, by spec. The APM mock had all three, so APM candidates lose a
-   countdown they used to have. Deliberate (the sit spec is elapsed-only) but it IS a behaviour
-   change for APM, not just a refactor — flagging it rather than letting it read as a like-for-like
-   port.
-2. **PS-tag steering barely discriminates on the AFM corpus — but it is fine on APM.** Counted
-   2026-07-31 over published drills:
+Both were surfaced by the block below and **fixed before merge, on Grant's instruction**:
+
+**1. The countdown and auto-submit are RESTORED, for both papers.** Ruled a regression, not a port:
+a 3h15m paper without a visible countdown is not a rehearsal, because the skill being rehearsed is
+finishing inside the time. `acca_mock_attempts.ends_at` stops being a NOT-NULL placeholder and
+becomes the deadline — set once at start, never moved. `lib/acca/sit-preview.ts` gains the pure
+`remainingMs` / `isExpired` / `clockState` / `attemptIsClosed` (+ a 15-minute warning state, a house
+choice, flagged by TEXT as well as colour).
+
+At zero the runner records **the requirement being written** — whatever is in the box — and finishes.
+It does **not** back-fill the tail: those requirements keep no row, so they are `not_reached` and not
+`blank`, which pacing and the debrief report differently (the next action for an unreached
+requirement is about REACHING it). Making the tail blank to satisfy a stricter gate would have
+destroyed that distinction to work around a gate, so **the gate moved instead** —
+`caseMarkReady(sitting, reqs, attemptClosed)` gains an expiry arm, defaulted false so every existing
+caller is unchanged.
+
+Enforcement is split on purpose and the split is the interesting part: the BROWSER runs the clock and
+fires the auto-submit (sub-second, and it is the act of submitting); the SERVER decides a paper is
+over (`attemptIsClosed` — finished, or past `ends_at`) and `case/turn` refuses further sit writes once
+the attempt is **`completed`**. Keyed on `completed` and NOT on `now > ends_at`, deliberately: the
+auto-submit's own POST lands milliseconds after the deadline, and refusing on the timestamp would
+throw away the answer it exists to rescue. Recording happens first, finishing second — no race.
+Closing the tab still buys nothing: the next load sees an expired attempt, closes it, and goes to the
+results.
+
+**2. `resolved_at` has a writer.** A subsequent **strong or exemplary** band on the same
+`(user, paper, lo_code, source)` closes the open row — the same instrument that opened it, so no
+second mastery signal to keep in step. `competent` deliberately does NOT close: its own published
+next action says a material point was missed, and a material point still missing is not a resolved
+weakness. **OPEN BEATS CLOSE within one marking run** — a paper examining one LO twice can come back
+weak on one and strong on the other, and resolving on the strength of the good half would erase the
+finding the same paper just produced. Nothing is deleted; the closed row stays as history and the
+partial unique index lets a later weak band open a fresh one.
+
+Fixtures: `test-weak-areas` 52 → **76** (close/reopen across three sittings, the open-beats-close
+precedence in both arrival orders, the competent boundary), `test-sit-preview` **+26** (the clamp at
+zero, a null `ends_at` NOT reading as expiry, the warning boundary, `attemptIsClosed`'s two arms),
+`test-case-sit` **+7**. DB-level, against the live partial index: close → reopen → both rows survive
+→ the selector sees exactly one open row → a second open row for the same key still 23505s.
+
+## 🔸 OPEN 2026-07-31 — the AFM professional-skill corpus is skewed (authoring, not routing)
+
+**Logged on Grant's instruction 2026-07-31. Rides the next AFM authoring batch.**
+
+**PS-tag steering is effectively a no-op on AFM while working properly on APM.** This is an
+**authoring gap, not a routing defect** — the selection code is correct and paper-agnostic; AFM
+simply has almost nothing to steer between. Counted 2026-07-31 over published drills:
    - **AFM (57):** `analysis_and_evaluation` **48** · null **8** · `communication` **1** ·
      `scepticism` **0** · `commercial_acumen` **0**.
    - **APM (91):** `analysis_and_evaluation` 36 · `scepticism` 21 · `commercial_acumen` 17 ·
      `communication` 17 · null 0.
 
-   So on APM the PS term genuinely steers toward a named weak skill. On AFM it mostly separates
-   "tagged" from "untagged" — which is exactly what the measurement showed (B4d, the sub-area's only
-   untagged drill, 9/40 → 0/40): a real effect, but not the one the term is for. The mechanism is
-   right and the AFM corpus is thin. **Nothing to fix in code** — it is an authoring gap, and worth
-   knowing before anyone reads the AFM PS term as doing more than it can.
-3. **`resolved_at` is never set by anything.** The ledger opens rows and increments them; nothing
-   closes one. A student who fixes an area carries its row forever and keeps being steered at it.
-   The column and the partial index are built for it (a resolved row does not block a fresh finding),
-   but no writer exists. Needs a rule — a resit scoring strong/exemplary on that LO is the obvious
-   candidate — and that rule is Grant's, not a default.
+On APM the PS term genuinely steers toward a named weak skill: all four skills are represented and
+none is dominant. On AFM, **84% of the corpus carries one tag and two of the four skills do not
+appear at all**, so the term can only separate "tagged" from "untagged" — which is exactly what the
+live measurement showed (`lo=B4a`: B4d, the sub-area's only untagged drill, 9/40 → **0/40**). A real
+effect, but not the one the term is for.
+
+**Consequence to state plainly:** a student marked weak on scepticism or commercial acumen in an AFM
+sit gets **no AFM drill that specifically exercises it**, because none is tagged. The LO term still
+steers them (that half works on both papers, measured 27/40 → 40/40); only the professional-skill
+half is inert on AFM.
+
+**Fix is authoring, not code.** Tag AFM drills across the four skills as the corpus grows —
+particularly `scepticism` and `commercial_acumen`, which have zero coverage. The generator already
+has `deriveSkillTag` and writes the column; the AFM batches have simply landed on one tag.
+**Rides the next AFM authoring batch.** No code change is owed, and none should be made: nothing in
+the selector is wrong.
 
 
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score

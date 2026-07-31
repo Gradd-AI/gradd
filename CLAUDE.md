@@ -377,10 +377,26 @@ wait for it, or say plainly that it was still building.
   real guarantee behind "no back navigation" — not merely a hidden button; `passed` stays UNSET per
   `case-sit.ts`. Answers land in `acca_case_progress.final_answer`, which the existing `case/mark`
   path already reads, so marking wires in later with no data migration. Clock counts UP from
-  `acca_mock_attempts.started_at`; `ends_at` is written only because the column is NOT NULL and
-  **nothing reads it** — no countdown, no auto-submit. `marks_guide` IS now served (an integer
-  ALLOCATION, not a mark scheme) and the label is reduced to the PART alone, so both papers show
-  marks for the same reason instead of AFM's labels happening to spell them in prose.
+  `acca_mock_attempts.started_at`. `marks_guide` IS now served (an integer ALLOCATION, not a mark
+  scheme) and the label is reduced to the PART alone, so both papers show marks for the same reason
+  instead of AFM's labels happening to spell them in prose.
+  **THE CLOCK IS A COUNTDOWN AND `ends_at` IS LOAD-BEARING (restored 2026-07-31, BOTH papers).** It
+  was a NOT-NULL placeholder nothing read; the surface shipped counting UP with no expiry, which was
+  a REGRESSION against `MockRunner`, not a port — a 3h15m paper without a countdown cannot rehearse
+  finishing inside the time. Set once at start, never moved. Pure helpers in `sit-preview.ts`:
+  `remainingMs` / `isExpired` / `clockState` (15-min warning, a house choice, flagged by TEXT as well
+  as colour) / `attemptIsClosed`. **At zero the runner records the requirement BEING WRITTEN and
+  finishes — it does NOT back-fill the tail**, so unreached requirements stay `not_reached` rather
+  than `blank` (different findings; the debrief's next action for one is about REACHING it). The gate
+  moved to suit the data instead: `caseMarkReady(sitting, reqs, attemptClosed)` gains an expiry arm,
+  **defaulted false** so every existing caller is unchanged. **ENFORCEMENT IS SPLIT ON PURPOSE:**
+  the BROWSER runs the clock and fires the auto-submit; the SERVER owns "this paper is over"
+  (`attemptIsClosed` — finished, or past `ends_at`) and `case/turn` refuses further sit writes once
+  the attempt is **`completed`** (409 `attempt_closed`). Keyed on `completed`, **NOT** on
+  `now > ends_at` — the auto-submit's own POST lands milliseconds after the deadline and refusing on
+  the timestamp would discard the answer it exists to rescue; it records first, finishes second, so
+  there is no race. Closing the tab buys nothing: the next load sees an expired attempt, closes it,
+  and goes to the results.
   `MockRunner.tsx` and `MOCK_SIT_MODE` are **DELETED** (2026-07-30) — the APM "mock" used to drive
   the paper through `CaseSession`, the PRACTICE teach surface, under a countdown, which is why it
   coached the candidate through every requirement until each was judged correct. Both papers render
@@ -403,13 +419,24 @@ wait for it, or say plainly that it was still building.
   `20260730120000` — SEPARATE from LC/IB `weak_areas`, which `app/dashboard/page.tsx:141` and
   `app/api/cron/weekly-email/route.ts:159` both read WITHOUT a product filter, so ACCA rows there
   would surface in LC dashboards and weekly emails.
-  **WRITE:** `runCaseMarking` (sit only), per requirement, on a **weak or competent** band, keyed on
+  **OPEN:** `runCaseMarking` (sit only), per requirement, on a **weak or competent** band, keyed on
   the OPEN-row key `(user_id, paper_code, lo_code, source='sit') WHERE resolved_at IS NULL`.
   **`nothing` deliberately writes NOTHING** — it is what a BLANK answer scores with no model call,
   and a requirement never attempted is a PACING finding (the debrief reports it as one), not evidence
   about the syllabus area. Read-then-write, NOT `.upsert()`: the unique index is PARTIAL and
   PostgREST's `on_conflict=` cannot express its `WHERE`, so an upsert ERRORS rather than degrading;
   a lost race hits 23505 and is caught into an increment.
+  **CLOSE (`resolved_at`, added 2026-07-31):** a subsequent **strong or exemplary** band on the same
+  key resolves the open row — the SAME instrument that opened it, so there is no second mastery
+  signal to keep in step. **`competent` does NOT close**: its own published next action says a
+  material point was missed, and a material point still missing is not a resolved weakness — the
+  open/close boundary sits exactly where the marker stops naming something to fix. **OPEN BEATS CLOSE
+  within one marking run** (`ledgerActionsFor`, both arrival orders fixtured): a paper examining one
+  LO twice can come back weak on one requirement and strong on another, and resolving on the strength
+  of the good half would erase the finding the same paper just produced. Nothing is deleted — the
+  closed row is history, and the PARTIAL index is what lets a later weak band open a fresh row rather
+  than increment a resolved one. Proved against the live index in the walk: close → reopen → both
+  rows survive → the selector sees exactly one open row → a second open row for the same key 23505s.
   **READ:** `app/api/acca/next-drill/route.ts`. `W_WEAK = 0` is **CLOSED** — and the steering is
   applied on the LIVE `area=` and `lo=` paths as well as the `APM_INTERLEAVE`-gated scorer, because
   that flag is NOT set in production and steering only there would have shipped a ledger no student's
