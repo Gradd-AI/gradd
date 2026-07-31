@@ -307,10 +307,44 @@ wait for it, or say plainly that it was still building.
   `npx tsx --env-file=.env.local scripts/redteam-tutor.ts --target local --probes PH1,PH2,PH3,PH4,PH5,PH6,PH7`.
   **Claim discipline:** an LLM-prompted behavioural fix, NOT a deterministic code gate like the numeric
   moat — PH4/PH6 observed ~80-90% clean across repeated sampling, not a hard 100% guarantee.
+- **THE SIT LOOP — sit → mark → debrief → steer (closed end to end 2026-07-31, branch
+  `feat/sit-loop-end-to-end`).** One surface, both papers, one write path per stage.
+  **UI** `components/acca/SitRunner.tsx` (MOVED out of `app/acca/afm/mock/` — it is shared UI, and an
+  APM route importing a component from the AFM route folder asserted an ownership it no longer had);
+  `app/acca/mock/page.tsx` and `app/acca/afm/mock/page.tsx` differ ONLY in the `paper` prop.
+  **READ + CLOCK** `app/api/acca/sit/route.ts`. **WRITE** `app/api/acca/case/turn` (`sitting:true`) —
+  the ONE sit write path, which owns the 409 immutability rule. **PAPER RESOLUTION**
+  `lib/acca/sit-attempt.ts` (`resolvePaperConfig` — explicit `mock_id` → open attempt → `paper=`;
+  the pure precedence rule is `resolveOrder`), shared by the sit and results routes so a student who
+  sat AFM can never be handed the APM debrief. **RESULTS** `app/api/acca/sit/results/route.ts` —
+  **POST marks, GET reports.** Marking is a paid model call whose output moves run to run, so a
+  refresh must never re-mark; POST marks only `casesNeedingMarking` (empty on a revisit → 0 model
+  calls, same debrief), GET never marks at all. Both require every requirement to have a recorded
+  answer (blank `''` counts) and 409 `paper_not_finished` otherwise; **neither ever writes
+  `completed_at`** — opening results an hour later must not record that hour as time on the paper.
+  A per-case marking failure returns the cases that DID mark rather than 502-ing the lot.
+  **ASSEMBLY** `lib/acca/sit-results.ts` (pure) — `orderPaper` is the load-bearing piece:
+  `requirement_order` is scoped to its OWN case so all three cases start at 1, and sorting the eight
+  rows by that column alone INTERLEAVES the paper and computes every pacing interval between
+  requirements never sat consecutively. `MOCK_PAPERS`' case sequence is the authority.
+  **PACING** `lib/acca/pacing.ts` · **DEBRIEF** `lib/acca/debrief.ts` — both pre-existing, both pure,
+  now wired. Fixtures: `npm run test:sit-results` (61) + `test-pacing` + `test-debrief` +
+  `test-sit-preview`.
+  **`acca_case_progress.technical_feedback` IS THE THING THAT MADE THIS POSSIBLE** (migration
+  `20260730120000`). The technical marker's per-requirement reasoning used to be returned and
+  DROPPED, so the debrief's `why` — carried VERBATIM, never paraphrased — had nothing to read on any
+  request that did not itself mark. Now persisted by `runCaseMarking`; a null reads as "no reasoning
+  for this one", never as an invented one.
+  **MEASURED END TO END 2026-07-31** (local dev, real routes, real session, synthetic user, then
+  scoped-deleted and AFM Mock 1 re-proved virgin): 8 submissions → band spread
+  exemplary/competent/weak/nothing → 3 cases marked in 60s → 8/8 `technical_feedback` persisted →
+  pacing computed → collapse headline selected → second POST re-marked 0 → GET served the persisted
+  `why` on 8/8.
 - **AFM MOCK PAPER 1 — LEAN SIT SURFACE (preview-gated, 2026-07-25):** `lib/acca/sit-preview.ts`
-  (pure: allowlist `canPreviewSit` + paper config `AFM_MOCK_PAPER_1` + `nextUnsubmittedIndex` /
-  `isPaperComplete` / `fmtElapsed`) · route `app/api/acca/sit/route.ts` · UI
-  `app/acca/afm/mock/{page,SitRunner}.tsx` · fixtures `scripts/test-sit-preview.ts`
+  (pure: the paper-scoped serving gate `sitCaseGate` + `sitDisplayLabel` + `nextUnsubmittedIndex` /
+  `isPaperComplete` / `fmtElapsed`; `canPreviewSit` and `AFM_MOCK_PAPER_1` are DELETED — the paper
+  config lives in `lib/acca/mocks.ts`) · route `app/api/acca/sit/route.ts` · fixtures
+  `scripts/test-sit-preview.ts`
   (`npm run test:sit-preview`). **THE INVERTED SERVING GATE IS RETIRED** (2026-07-29, branch
   `feat/sit-marking-and-gate`). It formerly gated on the OPPOSITE of every other route
   (`published=false AND status='candidate'`) behind a one-entry email allowlist — correct while the
@@ -343,47 +377,79 @@ wait for it, or say plainly that it was still building.
   real guarantee behind "no back navigation" — not merely a hidden button; `passed` stays UNSET per
   `case-sit.ts`. Answers land in `acca_case_progress.final_answer`, which the existing `case/mark`
   path already reads, so marking wires in later with no data migration. Clock counts UP from
-  `acca_mock_attempts.started_at` (mock_id `'afm-paper-1'` — unknown to `getMockPaper`, so the APM
-  runner ignores it); `ends_at` is written only because the column is NOT NULL and **nothing reads
-  it** — no countdown, no auto-submit. **MARKING AND DEBRIEF ARE OUT OF THIS ROUTE** — but
-  `case/mark` with `sitting:true` will serve these cases the moment they publish, since they now
-  pass the standard gate.
-  `MOCK_SIT_MODE` in `app/acca/mock/MockRunner.tsx` stays FALSE. **Flipping it alone BREAKS the APM
-  mock** (measured 2026-07-29): sit mode never sets `passed`, so `allPassed` (`CaseSession:231`) and
-  `passed === total` (`MockRunner.aggregateCase:257`) never fire → `onComplete` never runs →
-  `markCase` is never called; and the sit turn response carries no `ezra_response`, so the chat
-  surface renders dead. The replacement completion predicate for both call sites is the pure
-  `caseMarkReady(sitting, states)` already shared by the three routes. Grant-ruled 2026-07-29: the
-  flag flips in the NEXT change-set, which generalises `SitRunner` to serve BOTH papers rather than
-  building a sit mode into `CaseSession`.
+  `acca_mock_attempts.started_at`. `marks_guide` IS now served (an integer ALLOCATION, not a mark
+  scheme) and the label is reduced to the PART alone, so both papers show marks for the same reason
+  instead of AFM's labels happening to spell them in prose.
+  **THE CLOCK IS A COUNTDOWN AND `ends_at` IS LOAD-BEARING (restored 2026-07-31, BOTH papers).** It
+  was a NOT-NULL placeholder nothing read; the surface shipped counting UP with no expiry, which was
+  a REGRESSION against `MockRunner`, not a port — a 3h15m paper without a countdown cannot rehearse
+  finishing inside the time. Set once at start, never moved. Pure helpers in `sit-preview.ts`:
+  `remainingMs` / `isExpired` / `clockState` (15-min warning, a house choice, flagged by TEXT as well
+  as colour) / `attemptIsClosed`. **At zero the runner records the requirement BEING WRITTEN and
+  finishes — it does NOT back-fill the tail**, so unreached requirements stay `not_reached` rather
+  than `blank` (different findings; the debrief's next action for one is about REACHING it). The gate
+  moved to suit the data instead: `caseMarkReady(sitting, reqs, attemptClosed)` gains an expiry arm,
+  **defaulted false** so every existing caller is unchanged. **ENFORCEMENT IS SPLIT ON PURPOSE:**
+  the BROWSER runs the clock and fires the auto-submit; the SERVER owns "this paper is over"
+  (`attemptIsClosed` — finished, or past `ends_at`) and `case/turn` refuses further sit writes once
+  the attempt is **`completed`** (409 `attempt_closed`). Keyed on `completed`, **NOT** on
+  `now > ends_at` — the auto-submit's own POST lands milliseconds after the deadline and refusing on
+  the timestamp would discard the answer it exists to rescue; it records first, finishes second, so
+  there is no race. Closing the tab buys nothing: the next load sees an expired attempt, closes it,
+  and goes to the results.
+  `MockRunner.tsx` and `MOCK_SIT_MODE` are **DELETED** (2026-07-30) — the APM "mock" used to drive
+  the paper through `CaseSession`, the PRACTICE teach surface, under a countdown, which is why it
+  coached the candidate through every requirement until each was judged correct. Both papers render
+  `SitRunner`.
 - **`sitting` MUST be sent on the mark POST.** `app/api/acca/case/mark` defaults it false and on that
   default skips the TECHNICAL pass entirely — a sit marked without it scores PS only and silently
-  loses 80 of 100 marks. Now threaded from both call sites (`MockRunner.markCase`,
-  `CaseSession.runMarking`). **`per_skill[].mark_awarded` is NOT returned to the client** — it is a
+  loses 80 of 100 marks. **`per_skill[].mark_awarded` is NOT returned to the client** — it is a
   largest-remainder artefact (same band → different marks in one run; a skill's mark moves when a
   DIFFERENT skill's band moves). Band + case total are returned; the apportionment is unchanged and
   still persisted in full to `acca_case_marking.per_skill`.
 - **MOCK-CONTENT ACCESS — `lib/acca/mocks.ts` (pure rule) + `lib/acca/mock-access.ts` (query +
-  select strings).** A `mock_only` case is reserved exam content: `case/list` already excluded it,
-  but the ID-ADDRESSED `GET /api/acca/case` and `POST /api/acca/case/turn` did not — a case id alone
-  fetched the paper WITH `marks_guide`/`professional_skill_tags`/`lo_code` and could teach on it.
-  Both now refuse unless the requester holds an **OPEN, UNCOMPLETED `acca_mock_attempts` row for
-  THAT CASE'S OWN PAPER** (`attemptUnlocksCase` — an open APM attempt must not unlock the AFM mock;
-  a completed attempt unlocks nothing; a failed lookup DENIES). Refusal is the routes' existing 404,
-  so it leaks no existence. Even inside the carve-out the payload gets the **sit route's
-  withholding** — `professional_skill_tags`/`intellectual_level`/`command_verb`/`lo_code` NOT
-  SELECTED (`MOCK_REQUIREMENT_SELECT`), label code stripped via `sitDisplayLabel`. **`marks_guide`
-  IS SERVED** (Grant-ruled 2026-07-29): an integer mark ALLOCATION, not a mark scheme — a real paper
-  prints marks per requirement and a candidate needs them to pace the sit. Fixtures
-  `scripts/test-mock-access.ts` (`npm run test:mock-access`, pure) pin it POSITIVELY, so a future
-  tightening that sweeps it out with the withheld fields fails there rather than silently blanking
-  the APM mock's marks chip. `case/turn` never returned `marks_guide` in either branch — nothing to
-  withhold or restore there. **TRANSITIONAL:** the carve-out exists only because the APM mock still
-  loads/turns through these routes (`MockRunner:258` → `CaseSession:161/:281`, `sitting=false`);
-  when `SitRunner` serves both papers this becomes an unconditional block. **Open:** `/api/acca/sit`
-  does NOT serve `marks_guide` — AFM's labels carry the marks in prose, which is parity by
-  formatting rather than by rule; recommended fix (marks from the column, label reduced to the part)
-  is banked for the SitRunner change-set. See `docs/AFM_SURFACED.md`.
+  select strings).** A `mock_only` case is reserved exam content. `case/list` excludes it; the
+  ID-ADDRESSED `GET /api/acca/case` refuses it **UNCONDITIONALLY**, and `POST /api/acca/case/turn`
+  refuses it in PRACTICE mode and allows it in SIT mode — `sitting` decides, nothing else, because
+  that route is the sit's single write path. The attempt-scoped carve-out (`attemptUnlocksCase`) is
+  **RETIRED**: it existed only because the APM mock loaded through the practice routes, which no
+  longer happens. Refusal is the routes' existing 404, so it leaks no existence. Fixtures
+  `scripts/test-mock-access.ts` (`npm run test:mock-access`, pure).
+- **THE WEAKNESS LEDGER — `acca_weak_areas` + `lib/acca/weak-areas.ts` (pure).** Table per migration
+  `20260730120000` — SEPARATE from LC/IB `weak_areas`, which `app/dashboard/page.tsx:141` and
+  `app/api/cron/weekly-email/route.ts:159` both read WITHOUT a product filter, so ACCA rows there
+  would surface in LC dashboards and weekly emails.
+  **OPEN:** `runCaseMarking` (sit only), per requirement, on a **weak or competent** band, keyed on
+  the OPEN-row key `(user_id, paper_code, lo_code, source='sit') WHERE resolved_at IS NULL`.
+  **`nothing` deliberately writes NOTHING** — it is what a BLANK answer scores with no model call,
+  and a requirement never attempted is a PACING finding (the debrief reports it as one), not evidence
+  about the syllabus area. Read-then-write, NOT `.upsert()`: the unique index is PARTIAL and
+  PostgREST's `on_conflict=` cannot express its `WHERE`, so an upsert ERRORS rather than degrading;
+  a lost race hits 23505 and is caught into an increment.
+  **CLOSE (`resolved_at`, added 2026-07-31):** a subsequent **strong or exemplary** band on the same
+  key resolves the open row — the SAME instrument that opened it, so there is no second mastery
+  signal to keep in step. **`competent` does NOT close**: its own published next action says a
+  material point was missed, and a material point still missing is not a resolved weakness — the
+  open/close boundary sits exactly where the marker stops naming something to fix. **OPEN BEATS CLOSE
+  within one marking run** (`ledgerActionsFor`, both arrival orders fixtured): a paper examining one
+  LO twice can come back weak on one requirement and strong on another, and resolving on the strength
+  of the good half would erase the finding the same paper just produced. Nothing is deleted — the
+  closed row is history, and the PARTIAL index is what lets a later weak band open a fresh row rather
+  than increment a resolved one. Proved against the live index in the walk: close → reopen → both
+  rows survive → the selector sees exactly one open row → a second open row for the same key 23505s.
+  **READ:** `app/api/acca/next-drill/route.ts`. `W_WEAK = 0` is **CLOSED** — and the steering is
+  applied on the LIVE `area=` and `lo=` paths as well as the `APM_INTERLEAVE`-gated scorer, because
+  that flag is NOT set in production and steering only there would have shipped a ledger no student's
+  serve reads. **PS steering ships with it:** `acca_drills.professional_skill_tag` existed since the
+  generator wrote it and NOTHING read it at serve time; the signal comes from
+  `acca_case_marking.per_skill`, NOT from `acca_weak_areas` (that table is keyed by lo_code and a
+  professional skill is not an LO). Both terms are paper-scoped — AFM/APM LO codes collide exactly.
+  **ROLLBACK PROPERTY, fixtured:** with no ledger every candidate scores 0 and `pickWeighted`
+  degrades to the uniform random pick these paths already made, so a student who never sat a mock
+  sees identical behaviour. The zero-attempt ENTRY drill still wins outright — arriving in a new area
+  on the hardest drill because a mock went badly is the opposite of the point. Fixtures
+  `npm run test:weak-areas` (52). **MEASURED LIVE 2026-07-31:** `lo=B5a` 27/40 → **40/40** on the
+  weak B5b; PS-only control `lo=B4a` suppressed the untagged B4d **9/40 → 0/40**.
 - **MARKING CORE — `lib/acca/case-marking.ts`** (shared by `app/api/acca/case/mark/route.ts` and
   `scripts/calibrate-marking.ts`, so calibration can never drift from production). Two passes, same
   mechanism: the MODEL assigns a quality BAND, deterministic CODE converts bands → marks

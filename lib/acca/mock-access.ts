@@ -1,61 +1,58 @@
 // lib/acca/mock-access.ts
-// The ONE server-side answer to "may this user reach this mock_only case right now?".
+// The ONE server-side answer to "may this request reach this mock_only case?".
 // app/api/acca/case (GET) and app/api/acca/case/turn (POST) both call it, so the two
-// routes cannot drift into different views of who is mid-mock.
+// routes cannot drift into different views of what mock content is for.
 //
-// The decision itself is PURE and lives in lib/acca/mocks.ts (`attemptUnlocksCase`) —
-// this module only supplies the query. Keeping the rule pure is what makes it testable
-// without a DB (scripts/test-mock-access.ts).
+// ── THE CARVE-OUT IS RETIRED (2026-07-30) ────────────────────────────────────
+// This used to be ATTEMPT-SCOPED: mock content was served through the id-addressed
+// practice routes while the requester held an open, uncompleted attempt for that case's
+// own paper. That existed for exactly one reason — the APM timed mock LOADED and TURNED
+// through those routes (MockRunner → CaseSession → case GET + case/turn) and would have
+// 404'd without it. It was documented as transitional from the day it shipped.
 //
-// See lib/acca/mocks.ts for the rule and why it is attempt-scoped and transitional.
+// SitRunner now serves BOTH papers through /api/acca/sit, so nothing loads mock content
+// through app/api/acca/case any more and the carve-out has no remaining caller. The rule
+// is now the simple one it always wanted to be:
+//
+//   • app/api/acca/case (GET)        — mock content is REFUSED, unconditionally.
+//   • app/api/acca/case/turn (POST)  — refused in PRACTICE mode, allowed in SIT mode.
+//
+// Turn keeps a mode-keyed door because it IS the sit's write path: the previous
+// change-set deliberately collapsed the two sit write implementations into this one route
+// so there is a single immutability rule. Refusing mock content here outright would break
+// the sit it exists to record. What must never happen is the TEACH LOOP running over
+// reserved exam content — that is the leak, and `sitting === false` is exactly it.
+//
+// `attemptUnlocksCase` / `AttemptRef` are DELETED from lib/acca/mocks.ts with the
+// carve-out. A question whose answer is now constant does not need a predicate, and
+// leaving one exported invites a future caller to re-open the door by accident.
 
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { attemptUnlocksCase, type AttemptRef } from '@/lib/acca/mocks';
+import { isMockCase } from '@/lib/acca/mocks';
 
 /**
- * True when the user has an OPEN attempt for the paper this case belongs to.
+ * PURE. May this request reach this case?
  *
- * Selects only uncompleted attempts and then re-checks `completed` in the pure predicate —
- * belt and braces, because `completed` is nullable and a null must never read as "open by
- * omission" in one place and "closed" in the other.
+ * `caseIsMock` is the row's own `mock_only` column OR registry membership — callers pass
+ * whichever they hold. The two agree today; taking either keeps a case that is in a paper
+ * but missing the flag (or vice versa) on the refusing side rather than the serving side.
  */
-export async function mockAttemptUnlocksCase(
-  supabase: SupabaseClient,
-  userId: string,
-  caseId: string,
-): Promise<boolean> {
-  const { data, error } = await supabase
-    .from('acca_mock_attempts')
-    .select('mock_id, completed')
-    .eq('user_id', userId)
-    .neq('completed', true);
-  // A failed lookup must DENY, never open the door. Serving mock content because a query
-  // errored is the exact failure this guard exists to prevent.
-  if (error) return false;
-  return attemptUnlocksCase((data ?? []) as AttemptRef[], caseId);
+export function mockContentAllowed(
+  caseIsMock: boolean,
+  mode: 'practice' | 'sit',
+): boolean {
+  if (!caseIsMock) return true;      // ordinary library content — nothing to decide
+  return mode === 'sit';             // reserved exam content: only a sit may touch it
 }
 
-// ── Withheld fields for mock content, even inside the carve-out ──────────────
-// An open attempt is a key to SIT the paper, never a key to the mark scheme.
-//
-//   never selected anywhere on this path (same as the live case route):
-//     model_answer · hint · full_reveal · answer_schema     — the answer itself
-//   withheld BECAUSE it is mock content:
-//     professional_skill_tags — names which PS skill the requirement examines: a steer no
-//                               real exam gives, and it tells the candidate what to perform
-//     intellectual_level      — the authored difficulty tier; internal calibration data
-//     command_verb            — the authored verb classification; internal
-//     lo_code                 — the internal syllabus code, which no real paper prints
-//
-// **`marks_guide` IS SERVED** (restored 2026-07-29, Grant-ruled). It is an INTEGER mark
-// ALLOCATION, not a mark scheme — a real paper always prints marks per requirement, and a
-// candidate needs them to pace a 3h15m sit. Withholding it cost the APM mock its
-// marks-per-requirement display (`CaseSession.tsx` renders it), for no security gain: the
-// number tells a candidate how long to spend, not how to earn the marks.
-//
-// The requirement select is a DIFFERENT static string for mock_only cases — the withheld
-// fields are never fetched rather than fetched and stripped, so there is no object for a
-// later edit to accidentally spread into a response.
-export const MOCK_REQUIREMENT_SELECT = 'id, requirement_order, label, question, marks_guide';
+/** Convenience for the routes, which hold a case id and a `mock_only` flag. */
+export function caseIsReserved(caseId: string, mockOnlyColumn: boolean | null | undefined): boolean {
+  return mockOnlyColumn === true || isMockCase(caseId);
+}
+
+// ── Withheld fields for mock content ─────────────────────────────────────────
+// MOCK_REQUIREMENT_SELECT is RETIRED with the carve-out: app/api/acca/case no longer
+// serves mock requirements in any mode, so there is no payload left to withhold from.
+// The sit's own withholding lives at its serve boundary (app/api/acca/sit/route.ts),
+// which is now the only place mock requirements are read for display.
 export const STANDARD_REQUIREMENT_SELECT =
   'id, requirement_order, label, question, marks_guide, command_verb, intellectual_level, lo_code, professional_skill_tags';

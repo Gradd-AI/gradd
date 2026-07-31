@@ -10,7 +10,8 @@ import {
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
-import { mockAttemptUnlocksCase } from '@/lib/acca/mock-access';
+import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
+import { paperForCase } from '@/lib/acca/mocks';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -103,11 +104,21 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
   }
 
-  // ── MOCK CONTENT: attempt-scoped, or it does not exist here ──
-  // Checked ONCE, before the sit/practice branch, so both paths are covered by the same
-  // rule and neither can be tightened without the other. Teaching on a mock requirement is
-  // the same leak as fetching one, through a different door: without this, a case id was
-  // enough to run the teach loop over reserved exam content — hints, diagnosis and all.
+  // ── MOCK CONTENT: MODE-KEYED, not attempt-scoped (2026-07-30) ──
+  // This route is BOTH the practice teach loop and the sit's single write path, so the
+  // rule here cannot be the flat refusal app/api/acca/case now applies.
+  //
+  //   • PRACTICE (sitting=false) — refused. Teaching on a mock requirement is the same
+  //     leak as fetching one, through a different door: without this, a case id was enough
+  //     to run the teach loop over reserved exam content — hints, diagnosis and all.
+  //   • SIT (sitting=true) — allowed. This is how a sit records an answer. The previous
+  //     change-set deliberately collapsed the two sit write implementations into this one
+  //     route so there is a single immutability rule; refusing here would break the sit
+  //     this route exists to record.
+  //
+  // The attempt-scoped carve-out that used to gate BOTH modes is gone: it existed because
+  // the APM mock loaded through app/api/acca/case, which no longer happens. Note the
+  // asymmetry is deliberate and is the whole rule — `sitting` decides, nothing else.
   //
   // The case is fetched here purely for `mock_only`; each branch below still performs its
   // own gated fetch, unchanged. Refusal is the same 404 both branches already return for an
@@ -121,7 +132,8 @@ export async function POST(request: Request): Promise<Response> {
       .eq('status', 'approved')
       .eq('published', true)
       .maybeSingle();
-    if (mockCheck?.mock_only === true && !(await mockAttemptUnlocksCase(supabase, user.id, caseId))) {
+    const reserved = caseIsReserved(caseId, mockCheck?.mock_only as boolean | null | undefined);
+    if (!mockContentAllowed(reserved, sitting ? 'sit' : 'practice')) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
   }
@@ -154,6 +166,36 @@ export async function POST(request: Request): Promise<Response> {
       .single();
     if (!sitReq) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
+    }
+
+    // ── A FINISHED PAPER TAKES NO MORE ANSWERS (added 2026-07-31 with the countdown) ──
+    // The clock is enforced in two places for two different reasons. The BROWSER runs the
+    // countdown and fires the auto-submit — that needs sub-second resolution and is the act of
+    // submitting, so it belongs there. This is the SERVER half: once the attempt for this
+    // case's own paper is `completed`, no further answer is accepted, so closing the tab and
+    // posting later cannot add work to a finished paper.
+    //
+    // KEYED ON `completed`, NOT ON `now > ends_at`, and that is deliberate. The auto-submit's
+    // own POST lands milliseconds AFTER the deadline; refusing on the timestamp would throw
+    // away the answer the candidate had just written, which is a worse failure than the one it
+    // prevents. The auto-submit records first and finishes second, so there is no race to lose.
+    //
+    // Scoped to the case's OWN paper via `paperForCase`: a finished APM attempt must not block
+    // an AFM sit. A case that belongs to no mock paper has no attempt to be closed and is
+    // unaffected.
+    const ownPaper = paperForCase(caseId);
+    if (ownPaper) {
+      const { data: attempt } = await supabase
+        .from('acca_mock_attempts')
+        .select('completed')
+        .eq('user_id', user.id)
+        .eq('mock_id', ownPaper.id)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (attempt?.completed === true) {
+        return NextResponse.json({ error: 'attempt_closed' }, { status: 409 });
+      }
     }
 
     const finalAnswer = typeof student_message === 'string' ? student_message : '';
