@@ -178,6 +178,25 @@ zero, a null `ends_at` NOT reading as expiry, the warning boundary, `attemptIsCl
 `test-case-sit` **+7**. DB-level, against the live partial index: close → reopen → both rows survive
 → the selector sees exactly one open row → a second open row for the same key still 23505s.
 
+## 🔸 OPEN 2026-07-31 — THREE COPY DEFECTS ARE LIVE ON THE AFM LANDING PAGE
+
+All three in `components/landing/product-landing-config.ts`, verified 2026-07-31, **not yet
+fixed**. Full reasoning and the permitted replacements are in
+`docs/APM_MARKETING_POSITIONING.md` → REQUIRED COPY FIXES; recorded here because this file is
+the one place open items live, and these are shipped-to-students defects rather than notes.
+
+1. **`:40` — the code-owned-marking overclaim.** *"Every figure and every accept/reject verdict is
+   computed and verified deterministically, so the marking is exact."* True of DRILL GENERATION,
+   false of MARKING — the same claim already corrected in `CLAUDE.md`,
+   `AFM_COVERAGE_CONTRACT.md` and `PRODUCT_STRENGTH_STANDARD.md`. Marking is answer-locked and
+   **model-graded**. **Highest risk of the three**: falsifiable by one student noticing a figure
+   in their feedback that no schema component owns (measured: 114 of 1,518).
+2. **`:44` — drill count says 16; actual published AFM is 57.** Wrong in our own disfavour.
+3. **`:49` — "One ACCA pass covers every paper you sit" vs the APM-named Stripe SKUs**
+   (`STRIPE_APM_PASS_90D`, `STRIPE_APM_MONTHLY`). The claim is FUNCTIONALLY TRUE —
+   `hasActiveACCAAccess` is bundle-wide — so **the fix is renaming the Stripe objects, not
+   retracting the copy**. Retracting would understate a real entitlement.
+
 ## 🔸 OPEN 2026-07-31 — the AFM professional-skill corpus is skewed (authoring, not routing)
 
 **Logged on Grant's instruction 2026-07-31. Rides the next AFM authoring batch.**
