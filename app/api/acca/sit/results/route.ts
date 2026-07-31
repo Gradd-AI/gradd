@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { sitCaseGate } from '@/lib/acca/sit-preview';
+import { sitCaseGate, attemptIsClosed } from '@/lib/acca/sit-preview';
 import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-attempt';
 import type { AccaPaper } from '@/lib/acca/paper';
 import type { MockPaper } from '@/lib/acca/mocks';
@@ -41,18 +41,25 @@ import {
 // acca_case_progress.technical_feedback was added for. Without that column this endpoint
 // could only show the `why` on the same request that produced it.
 //
-// ── COMPLETION IS REQUIRED, AND IT IS THE PAPER'S, NOT THE ATTEMPT'S ─────────
-// A debrief needs every requirement to have a recorded answer — `caseMarkReady` in sit mode
-// says the same thing per case, and marking a half-sat paper would score the unsat half as
-// missing work rather than as work in progress. A BLANK answer ('') completes a requirement;
-// only a genuinely absent row blocks. The ATTEMPT's `completed` flag is deliberately NOT the
-// gate: the flag is set by a best-effort `finish` POST that the runner fires and swallows,
-// so a dropped connection at the very end must not make the results unreachable. What the
-// missing flag costs is pacing's tail and total (both null, and pacing states that itself),
-// not the debrief.
+// ── WHEN IS A PAPER MARKABLE? ────────────────────────────────────────────────
+// Either every requirement carries a recorded answer, OR the attempt is CLOSED —
+// `attemptIsClosed` (lib/acca/sit-preview.ts): finished, or past its `ends_at`.
+//
+// The second arm arrived with the countdown and is not a loosening for convenience. When the
+// clock expires, the auto-submit records the requirement being written and nothing else, so
+// everything after it has no progress row at all. That is the truth of what happened, and
+// `not_reached` is a materially different finding from `blank` — pacing and the debrief both
+// distinguish them, and the debrief's next action for an unreached requirement is about
+// REACHING it, not about its method. Back-filling empty strings across the tail to satisfy a
+// stricter gate would have destroyed that distinction to work around a gate, so the gate
+// moved instead.
+//
+// Marking a half-sat paper that is still RUNNING remains refused (409 `paper_not_finished`):
+// it would score work in progress as missing work, and those marks are then persisted.
 //
 // This route NEVER writes completed_at. A student opening their results an hour later must
-// not have that hour recorded as time spent finishing the paper.
+// not have that hour recorded as time spent finishing the paper — which is also why
+// `attemptIsClosed` reads the expiry rather than inferring one.
 //
 // ── WITHHOLD DISCIPLINE ──────────────────────────────────────────────────────
 // The paper is over, so the answer side is no longer sealed — but only what the DEBRIEF
@@ -207,7 +214,7 @@ export async function GET(request: Request): Promise<Response> {
   if (loaded.cases.length !== PAPER.case_ids.length) {
     return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   }
-  if (!paperFullySubmitted(loaded.rows)) {
+  if (!paperFullySubmitted(loaded.rows) && !attemptIsClosed(resolved.attempt, Date.now())) {
     return NextResponse.json({ error: 'paper_not_finished' }, { status: 409 });
   }
 
@@ -239,9 +246,11 @@ export async function POST(request: Request): Promise<Response> {
   if (loaded.cases.length !== PAPER.case_ids.length) {
     return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   }
-  // Refuse to mark a paper that is not finished. Marking a half-sat paper would score the
-  // unsat half as missing work, and those marks are then persisted and immutable-in-effect.
-  if (!paperFullySubmitted(loaded.rows)) {
+  // Refuse to mark a paper that is still running and not fully submitted: it would score work
+  // in progress as missing work, and those marks are then persisted and immutable-in-effect.
+  // A CLOSED attempt (finished, or past ends_at) is markable as it stands — see the header.
+  const closed = attemptIsClosed(resolved.attempt, Date.now());
+  if (!paperFullySubmitted(loaded.rows) && !closed) {
     return NextResponse.json({ error: 'paper_not_finished' }, { status: 409 });
   }
 
@@ -255,7 +264,7 @@ export async function POST(request: Request): Promise<Response> {
   let weaknessRows = 0;
   for (const caseId of pending) {
     const run = await runCaseMarking({
-      supabase, userId, caseId, paper: PAPER.paper, sitting: true,
+      supabase, userId, caseId, paper: PAPER.paper, sitting: true, attemptClosed: closed,
     });
     if (!run.ok) {
       // Report the failure with the cases that DID mark, rather than 502-ing the lot: a

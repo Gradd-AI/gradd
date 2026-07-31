@@ -20,7 +20,12 @@
 import {
   nextUnsubmittedIndex,
   isPaperComplete,
-  fmtElapsed,
+  fmtDuration,
+  remainingMs,
+  isExpired,
+  clockState,
+  attemptIsClosed,
+  COUNTDOWN_WARNING_MINUTES,
   sitDisplayLabel,
   sitCaseGate,
   isSittableCaseRow,
@@ -111,13 +116,61 @@ ok('complete only when every requirement is recorded', isPaperComplete(ids, new 
 ok('a gap means NOT complete', isPaperComplete(ids, new Set(['r1', 'r2', 'r4'])) === false);
 ok('an empty paper is never "complete"', isPaperComplete([], new Set()) === false);
 
-// ── Elapsed clock: counts UP, never negative, H:MM:SS ──
-ok('zero renders 0:00:00', fmtElapsed(0) === '0:00:00');
-ok('59s renders 0:00:59', fmtElapsed(59_000) === '0:00:59');
-ok('1m renders 0:01:00', fmtElapsed(60_000) === '0:01:00');
-ok('1h 5m 9s renders 1:05:09', fmtElapsed((3600 + 5 * 60 + 9) * 1000) === '1:05:09');
-ok('past the nominal 3h15m it keeps counting (no expiry)', fmtElapsed(200 * 60_000) === '3:20:00');
-ok('negative (clock skew) clamps to 0:00:00', fmtElapsed(-5_000) === '0:00:00');
+// ── Duration formatter: H:MM:SS, never negative ──
+// Renamed from fmtElapsed 2026-07-31 with the countdown: it renders a DURATION, and the
+// clock now runs the other way.
+ok('zero renders 0:00:00', fmtDuration(0) === '0:00:00');
+ok('59s renders 0:00:59', fmtDuration(59_000) === '0:00:59');
+ok('1m renders 0:01:00', fmtDuration(60_000) === '0:01:00');
+ok('1h 5m 9s renders 1:05:09', fmtDuration((3600 + 5 * 60 + 9) * 1000) === '1:05:09');
+ok('3h20m renders 3:20:00', fmtDuration(200 * 60_000) === '3:20:00');
+ok('negative (clock skew) clamps to 0:00:00', fmtDuration(-5_000) === '0:00:00');
+
+// ── THE COUNTDOWN (restored 2026-07-31 for BOTH papers) ─────────────────────
+// `ends_at` stops being a NOT NULL placeholder and becomes the deadline. These fixtures pin
+// the three things a wrong implementation would get wrong: counting past zero, treating a
+// missing deadline as expiry, and warning at the wrong moment.
+const T0 = Date.UTC(2026, 6, 31, 9, 0, 0);
+const at = (min: number) => new Date(T0 + min * 60_000).toISOString();
+const ENDS = at(195);   // a full ACCA paper from T0
+
+ok('195 minutes left at the start', remainingMs(ENDS, T0) === 195 * 60_000);
+ok('halfway through, half is left', remainingMs(ENDS, T0 + 97.5 * 60_000) === 97.5 * 60_000);
+ok('remaining CLAMPS at zero — it never counts negative', remainingMs(ENDS, T0 + 300 * 60_000) === 0);
+ok('a null ends_at has no remaining time to report', remainingMs(null, T0) === null);
+ok('an unparseable ends_at reports null, not NaN', remainingMs('not-a-date', T0) === null);
+
+ok('not expired before the deadline', isExpired(ENDS, T0 + 194.9 * 60_000) === false);
+ok('expired exactly AT the deadline (the bell counts as time up)', isExpired(ENDS, T0 + 195 * 60_000) === true);
+ok('expired after the deadline', isExpired(ENDS, T0 + 196 * 60_000) === true);
+// THE LOAD-BEARING NEGATIVE: an unknown deadline must never read as expiry, or a missing
+// column would end a paper that is still running.
+ok('a null ends_at is NOT expiry', isExpired(null, T0 + 999 * 60_000) === false);
+ok('an unparseable ends_at is NOT expiry', isExpired('', T0 + 999 * 60_000) === false);
+
+ok('running with plenty left', clockState(remainingMs(ENDS, T0)) === 'running');
+ok(`running just outside the final ${COUNTDOWN_WARNING_MINUTES}`,
+  clockState(remainingMs(ENDS, T0 + (195 - COUNTDOWN_WARNING_MINUTES - 1) * 60_000)) === 'running');
+ok(`warning exactly at the final ${COUNTDOWN_WARNING_MINUTES}`,
+  clockState(remainingMs(ENDS, T0 + (195 - COUNTDOWN_WARNING_MINUTES) * 60_000)) === 'warning');
+ok('warning with a minute left', clockState(remainingMs(ENDS, T0 + 194 * 60_000)) === 'warning');
+ok('expired at zero', clockState(0) === 'expired');
+ok('an unknown deadline never alarms', clockState(null) === 'running');
+
+// ── attemptIsClosed — the SERVER's view of "this paper is over" ─────────────
+// Two independent ways to be closed, and `completed` is checked first and alone so a
+// finished attempt is closed even with a broken ends_at.
+ok('an open attempt inside its clock is NOT closed',
+  attemptIsClosed({ completed: false, ends_at: ENDS }, T0 + 10 * 60_000) === false);
+ok('a finished attempt is closed', attemptIsClosed({ completed: true, ends_at: ENDS }, T0) === true);
+ok('a finished attempt is closed even with an unusable ends_at',
+  attemptIsClosed({ completed: true, ends_at: null }, T0) === true);
+ok('an unfinished attempt past its deadline is closed (closing the tab buys no time)',
+  attemptIsClosed({ completed: false, ends_at: ENDS }, T0 + 196 * 60_000) === true);
+ok('an unfinished attempt with no deadline is NOT closed',
+  attemptIsClosed({ completed: false, ends_at: null }, T0 + 999 * 60_000) === false);
+ok('no attempt at all is not "closed"', attemptIsClosed(null, T0) === false);
+ok('undefined attempt is not "closed"', attemptIsClosed(undefined, T0) === false);
 
 // ── Requirement label: the candidate sees the PART, and nothing else ─────────
 // CHANGED 2026-07-30. These fixtures used to pin "(i) B3e — 10 marks" → "(i) — 10 marks",

@@ -2,9 +2,12 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
-  fmtElapsed,
+  fmtDuration,
   nextUnsubmittedIndex,
   isPaperComplete,
+  remainingMs,
+  isExpired,
+  clockState,
 } from '@/lib/acca/sit-preview';
 import type { AccaPaper } from '@/lib/acca/paper';
 
@@ -23,9 +26,23 @@ import type { AccaPaper } from '@/lib/acca/paper';
 //   • one answer box per requirement, in paper order
 //   • "Submit and move on" ONLY — no back navigation, no editing a submitted answer
 //   • no Ezra, no hints, no marks, no feedback of any kind during the sit
-//   • a visible ELAPSED timer — no countdown, no auto-submit
+//   • a visible COUNTDOWN, flagged in its last 15 minutes, and an AUTO-SUBMIT at zero
 //   • each answer is persisted as it is submitted, so a dropped connection loses at
 //     most the requirement being typed, never the paper
+//
+// ── THE COUNTDOWN IS BACK (restored 2026-07-31, for BOTH papers) ─────────────
+// This runner shipped counting UP with no expiry, and `MockRunner` — which it replaced —
+// had a countdown and an auto-submit. That was a REGRESSION for APM candidates, not a port:
+// the skill a timed mock rehearses is finishing inside the time, and a stopwatch that never
+// runs out cannot rehearse it.
+//
+// AT ZERO the auto-submit records the requirement CURRENTLY BEING WRITTEN — whatever is in
+// the box, including nothing — and then finishes the paper. It does NOT back-fill the
+// requirements after it. Those stay with no row at all, which is the truth of what happened
+// and is a materially different finding from a blank the candidate chose to submit:
+// `not_reached` vs `blank`, which pacing and the debrief report differently. Immutability is
+// untouched — the auto-submit posts through the same case/turn path and gets the same 409 if
+// the requirement was already recorded.
 //
 // ── AFTER THE PAPER: THE DEBRIEF (added 2026-07-31) ──────────────────────────
 // Finishing used to land on a bare "Paper submitted." screen, because marking did not
@@ -159,6 +176,10 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   const [results, setResults] = useState<ResultsData | null>(null);
   const [resultsError, setResultsError] = useState<string | null>(null);
   const requestedRef = useRef(false);
+  // The paper ended because the clock ran out rather than because the candidate finished it.
+  // Purely for what the done screen SAYS — it changes nothing about what was recorded.
+  const [expiredOut, setExpiredOut] = useState(false);
+  const autoSubmitRef = useRef(false);
 
   const slots = useMemo(() => data?.slots ?? [], [data]);
   const slotIds = useMemo(() => slots.map((s) => s.requirement_id), [slots]);
@@ -180,10 +201,23 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
         if (isPaperComplete(ids, done)) {
           setPhase('done');
         } else if (json.attempt && !json.attempt.completed) {
-          // Resume mid-sit: the clock never restarted, and the paper picks up at the
-          // first requirement with no recorded answer.
-          setIndex(nextUnsubmittedIndex(ids, done));
-          setPhase('sitting');
+          if (isExpired(json.attempt.ends_at, Date.now())) {
+            // EXPIRED WHILE AWAY. Closing the tab must not buy time, so a return visit does
+            // not resume into a paper whose clock ran out — it closes the attempt and goes
+            // to the results. Nothing is submitted here: whatever was in the box when the tab
+            // closed was never sent, so those requirements are genuinely unreached.
+            await fetch('/api/acca/sit', {
+              method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish', paper }),
+            }).catch(() => {});
+            if (cancelled) return;
+            setExpiredOut(true);
+            setPhase('done');
+          } else {
+            // Resume mid-sit: the clock never restarted, and the paper picks up at the
+            // first requirement with no recorded answer.
+            setIndex(nextUnsubmittedIndex(ids, done));
+            setPhase('sitting');
+          }
         } else {
           setPhase('intro');
         }
@@ -194,16 +228,16 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     return () => { cancelled = true; };
   }, [paper]);
 
-  // ── Elapsed clock: display tick only. started_at is the server-side authority,
-  // so a refresh resumes the same elapsed time rather than restarting it. ──
+  // ── Countdown tick: display only. `ends_at` is the server-side authority, so a refresh
+  // resumes the same remaining time rather than restarting it. ──
   useEffect(() => {
     if (phase !== 'sitting') return;
     const t = setInterval(() => setNowTs(Date.now()), 1000);
     return () => clearInterval(t);
   }, [phase]);
 
-  const startedMs = attempt ? new Date(attempt.started_at).getTime() : 0;
-  const elapsedMs = attempt ? nowTs - startedMs : 0;
+  const remaining = attempt ? remainingMs(attempt.ends_at, nowTs) : null;
+  const clock = clockState(remaining);
 
   // ── Results: marked once, then reported ─────────────────────────────────────
   // POST is the marking verb. It is IDEMPOTENT in practice — the endpoint marks only the
@@ -264,6 +298,70 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     }
   }, [slotIds, data, paper]);
 
+  /** Record ONE requirement through the standard sit write path. Returns false only on a real
+   *  failure — a 409 is success from the candidate's point of view, because it means the
+   *  answer is already recorded (a double-submit, a replay, or the auto-submit racing a manual
+   *  one). Shared by the manual submit and the auto-submit so there is one write shape. */
+  const recordAnswer = useCallback(async (slot: Slot, body: string): Promise<boolean> => {
+    // `sitting` makes the turn route skip the teach engine, record `final_answer` and never
+    // write `passed`. It is also what makes that route serve mock content at all: the mock
+    // guard refuses reserved cases in practice mode and allows them in sit mode.
+    // `paper` must be sent because the route defaults to APM and would 404 an AFM case. It
+    // comes from the SERVED config, never a literal — hardcoding 'AFM' here is exactly what
+    // would have 404'd every APM submission.
+    const res = await fetch('/api/acca/case/turn', {
+      method: 'POST',
+      headers: JSON_HEADERS,
+      body: JSON.stringify({
+        case_id: slot.case_id,
+        requirement_id: slot.requirement_id,
+        student_message: body,
+        sitting: true,
+        paper: data?.paper.paper ?? paper,
+      }),
+    });
+    return res.ok || res.status === 409;
+  }, [data, paper]);
+
+  const finishPaper = useCallback(async () => {
+    await fetch('/api/acca/sit', {
+      method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish', paper }),
+    }).catch(() => {});
+  }, [paper]);
+
+  // ── AUTO-SUBMIT AT ZERO ─────────────────────────────────────────────────────
+  // Records the requirement being written — whatever is in the box, including nothing — and
+  // then finishes the paper. NO CONFIRM DIALOG: the deadline is not a decision, and a modal
+  // waiting for a click would let the candidate keep the paper open past the bell, which is
+  // the exact thing this exists to stop.
+  //
+  // It does NOT touch the requirements after this one. They keep no progress row, so they are
+  // `not_reached` rather than `blank` — a different finding, reported differently by pacing
+  // and the debrief, and back-filling empty strings would have thrown that away.
+  //
+  // Records BEFORE finishing, in that order: the turn route refuses a sit write once the
+  // attempt is completed, so finishing first would discard the answer this is trying to save.
+  const autoSubmit = useCallback(async () => {
+    const slot = slots[index];
+    setSubmitting(true);
+    try {
+      if (slot) await recordAnswer(slot, text);
+    } catch {
+      // Nothing to retry against — the clock has run out either way, and the paper must close.
+    }
+    await finishPaper();
+    setExpiredOut(true);
+    setPhase('done');
+  }, [slots, index, text, recordAnswer, finishPaper]);
+
+  useEffect(() => {
+    if (phase !== 'sitting' || !attempt || autoSubmitRef.current) return;
+    if (!isExpired(attempt.ends_at, nowTs)) return;
+    autoSubmitRef.current = true;
+    const id = setTimeout(() => { void autoSubmit(); }, 0);
+    return () => clearTimeout(id);
+  }, [phase, attempt, nowTs, autoSubmit]);
+
   // Submit the current requirement. IRREVERSIBLE by design — the server refuses to
   // overwrite a recorded answer, so this is confirmed before it fires.
   const submitCurrent = useCallback(async () => {
@@ -280,33 +378,11 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     setSubmitting(true);
     setSubmitError(false);
     try {
-      // Recording an answer goes through the STANDARD case-turn route in sit mode — the
-      // ONE sit write path for both papers, not a bespoke sit endpoint. `sitting` makes it
-      // skip the teach engine, record `final_answer` and never write `passed`. It is also
-      // what makes the turn route serve mock content at all: the mock guard refuses
-      // reserved cases in practice mode and allows them in sit mode.
-      // `paper` must be sent because the route defaults to APM and would 404 an AFM case.
-      // It comes from the SERVED config, never a literal — hardcoding 'AFM' here is
-      // exactly what would have 404'd every APM submission.
-      const res = await fetch('/api/acca/case/turn', {
-        method: 'POST',
-        headers: JSON_HEADERS,
-        body: JSON.stringify({
-          case_id: slot.case_id,
-          requirement_id: slot.requirement_id,
-          student_message: text,
-          sitting: true,
-          paper: data?.paper.paper ?? paper,
-        }),
-      });
-      // 409 = already recorded (a double-submit or a replayed request). The answer IS
-      // saved, so advancing is correct — this is not an error the candidate caused.
-      if (!res.ok && res.status !== 409) { setSubmitError(true); return; }
+      // The ONE sit write path for both papers — see recordAnswer. A 409 counts as saved.
+      if (!(await recordAnswer(slot, text))) { setSubmitError(true); return; }
 
       if (last) {
-        await fetch('/api/acca/sit', {
-          method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish', paper }),
-        }).catch(() => {});
+        await finishPaper();
         setPhase('done');
         return;
       }
@@ -317,7 +393,7 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     } finally {
       setSubmitting(false);
     }
-  }, [slots, index, text, submitting, data, paper]);
+  }, [slots, index, text, submitting, recordAnswer, finishPaper]);
 
   // ── Render ──────────────────────────────────────────────────────────────────
   const shell = (inner: React.ReactNode) => (
@@ -341,7 +417,7 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     if (resultsError) {
       return shell(
         <div className="sit-done">
-          <h1 className="sit-done-title">Paper submitted.</h1>
+          <h1 className="sit-done-title">{expiredOut ? 'Time’s up.' : 'Paper submitted.'}</h1>
           <p className="sit-done-note" role="alert">{resultsError}</p>
           <button className="sit-btn" onClick={() => { void fetchResults(); }}>
             Try marking again
@@ -352,7 +428,14 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     if (!results) {
       return shell(
         <div className="sit-done">
-          <h1 className="sit-done-title">Paper submitted.</h1>
+          <h1 className="sit-done-title">{expiredOut ? 'Time’s up.' : 'Paper submitted.'}</h1>
+          {/* States what the clock did, and nothing about how it went — that is the debrief's
+              job, and a verdict here would be feedback arriving before the marking. */}
+          {expiredOut && (
+            <p className="sit-done-note">
+              The paper ended on the clock. What you had written was submitted.
+            </p>
+          )}
           <p className="sit-done-note">Marking your paper — this takes a minute.</p>
         </div>,
       );
@@ -368,7 +451,8 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
         <ul className="sit-intro-facts">
           <li><strong>{data.cases.length} questions · {slots.length} requirements · {totalMarks} marks.</strong></li>
           <li>Answer each requirement in order. <strong>Submitting is final</strong> — you cannot go back to a requirement or edit it.</li>
-          <li>The timer counts <strong>up</strong>. Nothing submits automatically, and the paper does not end on its own.</li>
+          <li>You have <strong>{Math.floor(data.paper.duration_minutes / 60)}h {data.paper.duration_minutes % 60}m</strong>. The clock counts <strong>down</strong> and does not pause.</li>
+          <li>When it reaches zero the requirement you are writing is <strong>submitted as it stands</strong> and the paper ends. Anything you never reached stays unanswered.</li>
           <li>Each answer is saved as you submit it, so a dropped connection won’t lose submitted work.</li>
         </ul>
         <button className="sit-btn" onClick={start} disabled={starting}>
@@ -394,9 +478,16 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
             </span>
             <span className="sit-bar-progress">Requirement {index + 1} of {slots.length}</span>
           </div>
-          <div className="sit-bar-clock">
-            <span className="sit-bar-digits" aria-label="Time elapsed">{fmtElapsed(elapsedMs)}</span>
-            <span className="sit-bar-caption">elapsed</span>
+          {/* The countdown. `aria-live="polite"` on the WARNING caption only — announcing every
+              tick would make a screen reader unusable, but the moment the paper enters its
+              last 15 minutes is worth saying once. */}
+          <div className={`sit-bar-clock sit-bar-clock--${clock}`}>
+            <span className="sit-bar-digits" aria-label="Time remaining">
+              {remaining === null ? '—' : fmtDuration(remaining)}
+            </span>
+            <span className="sit-bar-caption" aria-live="polite">
+              {clock === 'warning' ? 'remaining — final 15 minutes' : 'remaining'}
+            </span>
           </div>
         </header>
 
@@ -675,7 +766,10 @@ const CSS = `
   font-size: 11px; font-weight: 600; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--text-muted);
 }
-.sit-bar-clock { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.sit-bar-clock {
+  display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0;
+  padding: 2px 10px; border-radius: 8px; border: 1px solid transparent;
+}
 .sit-bar-digits {
   font-family: var(--font-display); font-variant-numeric: tabular-nums;
   font-size: clamp(20px, 3vw, 26px); font-weight: 700; line-height: 1; color: var(--text);
@@ -683,6 +777,14 @@ const CSS = `
 .sit-bar-caption {
   font-size: 10px; letter-spacing: 0.09em; text-transform: uppercase; color: var(--text-muted);
 }
+/* The final-15 state. Colour ALONE is never the signal — the caption changes text too, so
+   the warning survives a colour-blind reader and a monochrome screen. */
+.sit-bar-clock--warning { border-color: #c0392b; background: #fff5f4; }
+.sit-bar-clock--warning .sit-bar-digits,
+.sit-bar-clock--warning .sit-bar-caption { color: #c0392b; }
+.sit-bar-clock--expired { border-color: #c0392b; background: #c0392b; }
+.sit-bar-clock--expired .sit-bar-digits,
+.sit-bar-clock--expired .sit-bar-caption { color: #fff; }
 
 .sit-panes { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 1fr; }
 

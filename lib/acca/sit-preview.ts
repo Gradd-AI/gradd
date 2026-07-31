@@ -159,11 +159,86 @@ export function isPaperComplete(
   );
 }
 
-// ── Elapsed clock ────────────────────────────────────────────────────────────
-// H:MM:SS, counting UP from the recorded start. There is no countdown and no
-// auto-submit by spec, so this never needs a remaining-time or expiry branch.
-// Clamped at zero so clock skew can never render a negative elapsed time.
-export function fmtElapsed(ms: number): string {
+// ── The clock — a COUNTDOWN, and `ends_at` is what it counts to ──────────────
+// RESTORED 2026-07-31, for BOTH papers. This surface shipped with an elapsed-only clock and
+// no expiry, and the comment here used to read "there is no countdown and no auto-submit by
+// spec". That was right for a preview surface and WRONG as a product: the APM mock had a
+// countdown and an auto-submit under `MockRunner`, and replacing that runner without them
+// removed a rehearsal property rather than porting it. A 3h15m paper whose clock only counts
+// up is not a rehearsal of a 3h15m paper — the whole skill being practised is finishing
+// inside the time, and you cannot practise that against a stopwatch that never runs out.
+//
+// So `acca_mock_attempts.ends_at` STOPS being a column written only because it is NOT NULL
+// and becomes load-bearing. It is set once at start (`started_at + duration_minutes`) and is
+// never moved, so a refresh or a resume counts to the same instant rather than restarting —
+// the same server-authority argument that already governed `started_at`.
+//
+// WHERE EXPIRY IS ENFORCED, precisely, because "the clock is client-side" would be a fair
+// criticism of a countdown that only lived in the browser:
+//   • The BROWSER runs the countdown and fires the auto-submit. That is presentation and the
+//     act of submitting, and it needs sub-second resolution, so it belongs there.
+//   • The SERVER decides a paper is OVER (`attemptIsClosed` below, used by the results
+//     endpoint) and refuses further sit writes once the attempt is completed. Closing the tab
+//     and returning later therefore does not buy time: the next load sees an expired attempt,
+//     finishes it, and goes to the results.
+// What is deliberately NOT done is rejecting a write merely because `now > ends_at`: the
+// auto-submit's own POST lands milliseconds after the deadline, and refusing it would throw
+// away the answer the candidate had just written. The rule is keyed on `completed`, which the
+// auto-submit sets AFTER recording, so there is no race to lose.
+
+/** House choice, not an ACCA rule: the last 15 minutes are visually flagged. Long enough to
+ *  act on (finish a requirement, or move on and bank the marks) and short enough that it does
+ *  not sit lit for a third of the paper. */
+export const COUNTDOWN_WARNING_MINUTES = 15;
+
+export type ClockState = 'running' | 'warning' | 'expired';
+
+/** Milliseconds left on the paper, or null when there is no usable deadline. Never negative —
+ *  past the deadline it is 0, which `clockState` reads as expired. */
+export function remainingMs(endsAt: string | null | undefined, nowMs: number): number | null {
+  if (!endsAt) return null;
+  const ends = Date.parse(endsAt);
+  if (!Number.isFinite(ends)) return null;
+  return Math.max(0, ends - nowMs);
+}
+
+/** True once the deadline has passed. A missing or unparseable `ends_at` is NOT expiry —
+ *  it is an unknown deadline, and guessing "expired" would end a paper that is still running. */
+export function isExpired(endsAt: string | null | undefined, nowMs: number): boolean {
+  if (!endsAt) return false;
+  const ends = Date.parse(endsAt);
+  return Number.isFinite(ends) && nowMs >= ends;
+}
+
+export function clockState(remaining: number | null): ClockState {
+  if (remaining === null) return 'running';          // unknown deadline → never alarm
+  if (remaining <= 0) return 'expired';
+  return remaining <= COUNTDOWN_WARNING_MINUTES * 60_000 ? 'warning' : 'running';
+}
+
+/**
+ * Is this attempt over, as far as the SERVER is concerned?
+ *
+ * Two ways: the candidate (or the auto-submit) finished it, or its deadline has passed. The
+ * second is what stops "close the tab and come back tomorrow" from being extra time, and it
+ * is why the results endpoint can mark a paper whose last requirements were never reached.
+ *
+ * `completed` is checked FIRST and on its own, so a finished attempt is closed even if
+ * `ends_at` is missing or malformed.
+ */
+export function attemptIsClosed(
+  attempt: { completed?: boolean | null; ends_at?: string | null } | null | undefined,
+  nowMs: number,
+): boolean {
+  if (!attempt) return false;
+  if (attempt.completed === true) return true;
+  return isExpired(attempt.ends_at, nowMs);
+}
+
+// H:MM:SS. A DURATION formatter — it renders both directions (time remaining on the running
+// clock, and any elapsed figure) because a duration is a duration. Clamped at zero so clock
+// skew can never render a negative time.
+export function fmtDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);

@@ -44,6 +44,10 @@ export interface CaseMarkRunInput {
   caseId: string;
   paper: AccaPaper;
   sitting: boolean;
+  /** The attempt has expired or been finished, so every requirement is final whether it was
+   *  reached or not. Only the sit results endpoint passes this; see lib/acca/case-sit.ts for
+   *  why an unreached requirement must stay unreached rather than being back-filled blank. */
+  attemptClosed?: boolean;
 }
 
 export interface CaseMarkRunOk {
@@ -83,7 +87,7 @@ interface RequirementRow {
  * preserved in the `error` string exactly as the route used to emit it.
  */
 export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkRunResult> {
-  const { supabase, userId, caseId, paper, sitting } = input;
+  const { supabase, userId, caseId, paper, sitting, attemptClosed = false } = input;
 
   // ── Gate the case (same serving gate as drills/turns) ──
   const { data: caseRow, error: caseErr } = await supabase
@@ -140,6 +144,7 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
       const p = progressByReq.get(r.id);
       return { final_answer: p?.final_answer ?? null, passed: p?.passed ?? false };
     }),
+    attemptClosed,
   );
   if (!gate.ready) return { ok: false, status: 409, error: gate.reason ?? 'case not complete' };
 

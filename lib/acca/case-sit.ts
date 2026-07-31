@@ -38,12 +38,32 @@ export interface CaseGateResult {
 
 // Can this case be marked yet?
 //   • SIT: ready when EVERY requirement has a recorded final_answer (blank '' counts;
-//     only a genuinely absent row — never submitted, never skipped — blocks).
+//     only a genuinely absent row — never submitted, never skipped — blocks) — OR when the
+//     ATTEMPT IS CLOSED, see below.
 //   • PRACTICE: ready when EVERY requirement is judged correct (unchanged from the
-//     original inline `allPassed` gate).
-export function caseMarkReady(sitting: boolean, reqs: ReqGateState[]): CaseGateResult {
+//     original inline `allPassed` gate). `attemptClosed` is ignored in practice — there is
+//     no attempt and no clock, so nothing can close one.
+//
+// ── WHY `attemptClosed` EXISTS (added 2026-07-31 with the countdown) ─────────
+// Before auto-submit, a sit could only end by the candidate submitting all eight
+// requirements, so "every requirement recorded" and "the paper is over" were the same
+// statement. They are not any more. When the clock expires, the auto-submit records the
+// requirement being written and NOTHING ELSE — every requirement after it has no row at all,
+// which is exactly right: `not_reached` is a different fact from `blank`, and pacing and the
+// debrief both say so ("No answer was recorded", and a next action about reaching it rather
+// than about the method). Writing empty strings across the tail to satisfy this gate would
+// have destroyed that distinction to work around a gate.
+//
+// So the gate takes the OTHER honest route: an expired or finished attempt is markable as it
+// stands. Defaulted false, so app/api/acca/case/mark and the client call sites are unchanged.
+export function caseMarkReady(
+  sitting: boolean,
+  reqs: ReqGateState[],
+  attemptClosed = false,
+): CaseGateResult {
   if (reqs.length === 0) return { ready: false, reason: 'case not complete' };
   if (sitting) {
+    if (attemptClosed) return { ready: true };
     const missing = reqs.filter((r) => r.final_answer == null).length;
     return missing === 0
       ? { ready: true }

@@ -11,6 +11,7 @@ import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
+import { paperForCase } from '@/lib/acca/mocks';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -165,6 +166,36 @@ export async function POST(request: Request): Promise<Response> {
       .single();
     if (!sitReq) {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
+    }
+
+    // ── A FINISHED PAPER TAKES NO MORE ANSWERS (added 2026-07-31 with the countdown) ──
+    // The clock is enforced in two places for two different reasons. The BROWSER runs the
+    // countdown and fires the auto-submit — that needs sub-second resolution and is the act of
+    // submitting, so it belongs there. This is the SERVER half: once the attempt for this
+    // case's own paper is `completed`, no further answer is accepted, so closing the tab and
+    // posting later cannot add work to a finished paper.
+    //
+    // KEYED ON `completed`, NOT ON `now > ends_at`, and that is deliberate. The auto-submit's
+    // own POST lands milliseconds AFTER the deadline; refusing on the timestamp would throw
+    // away the answer the candidate had just written, which is a worse failure than the one it
+    // prevents. The auto-submit records first and finishes second, so there is no race to lose.
+    //
+    // Scoped to the case's OWN paper via `paperForCase`: a finished APM attempt must not block
+    // an AFM sit. A case that belongs to no mock paper has no attempt to be closed and is
+    // unaffected.
+    const ownPaper = paperForCase(caseId);
+    if (ownPaper) {
+      const { data: attempt } = await supabase
+        .from('acca_mock_attempts')
+        .select('completed')
+        .eq('user_id', user.id)
+        .eq('mock_id', ownPaper.id)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (attempt?.completed === true) {
+        return NextResponse.json({ error: 'attempt_closed' }, { status: 409 });
+      }
     }
 
     const finalAnswer = typeof student_message === 'string' ? student_message : '';

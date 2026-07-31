@@ -75,8 +75,9 @@ import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-att
 //
 //   GET                                   → the whole paper + which requirements are
 //                                           already submitted + the open attempt
-//   POST {action:'start'}                 → start (or resume) the elapsed clock
-//   POST {action:'finish'}                → mark the attempt completed
+//   POST {action:'start'}                 → start (or resume) the clock
+//   POST {action:'finish'}                → mark the attempt completed (also what the
+//                                           auto-submit calls when the clock expires)
 //
 // ── ANSWER WRITES ARE NOT HERE ANY MORE ──────────────────────────────────────
 // `action:'submit'` is REMOVED. One requirement's answer is now recorded by the
@@ -254,11 +255,13 @@ export async function POST(request: Request): Promise<Response> {
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
 
-  // The nominal ACCA clock. Written ONLY because acca_mock_attempts.ends_at is NOT NULL,
-  // so the column has to hold something honest. NOTHING reads it on this surface: there is
-  // no countdown, no expiry branch and no auto-submit by spec. The sit's clock counts UP
-  // from started_at. Taken from the paper config so a paper with a different duration
-  // records its own, rather than a constant that happens to match both today.
+  // The ACCA clock. `ends_at` USED to be written only because the column is NOT NULL, with
+  // nothing reading it — this surface shipped with an elapsed-only clock and no expiry. It is
+  // now LOAD-BEARING (2026-07-31): the runner counts DOWN to it and auto-submits at it, and
+  // `attemptIsClosed` (lib/acca/sit-preview.ts) reads it server-side so a paper left open past
+  // its deadline is over rather than resumable. Set ONCE at start and never moved, so a
+  // refresh or a resume counts to the same instant. Taken from the paper config so a paper
+  // with a different duration records its own, rather than a constant that matches both today.
   const NOMINAL_MINUTES = PAPER.duration_minutes;
 
   // ── start / resume the elapsed clock ──
