@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { sitCaseGate, sitDisplayLabel } from '@/lib/acca/sit-preview';
-import { getMockPaper, getMockPapers, type MockPaper } from '@/lib/acca/mocks';
-import { resolvePaper } from '@/lib/acca/paper';
+import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-attempt';
 
 // ── SIT read endpoint — BOTH PAPERS (generalised 2026-07-30) ──────────────────
 // Serves the lean sit surface for any mock paper in lib/acca/mocks.ts. Authentic exam
@@ -124,76 +123,10 @@ async function gate(): Promise<{ error: Response } | GateOk> {
   return { userId: user.id, supabase };
 }
 
-interface AttemptRow {
-  mock_id: string;
-  started_at: string;
-  ends_at: string;
-  completed: boolean;
-}
-
-/** The caller's latest attempt for ONE paper. Scoped by mock_id, so an open APM attempt
- *  is never mistaken for an AFM one — the ids are unique across the merged registry. */
-async function attemptFor(
-  supabase: GateOk['supabase'],
-  userId: string,
-  mockId: string,
-): Promise<AttemptRow | null> {
-  const { data } = await supabase
-    .from('acca_mock_attempts')
-    .select('mock_id, started_at, ends_at, completed')
-    .eq('user_id', userId)
-    .eq('mock_id', mockId)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data as AttemptRow | null) ?? null;
-}
-
-/** The caller's most recent UNCOMPLETED attempt across every paper, if any. Used to
- *  resolve which paper a bare GET should serve: an open sit outranks a query hint, so a
- *  refresh mid-paper always returns to the paper being sat. */
-async function openAttemptAnyPaper(
-  supabase: GateOk['supabase'],
-  userId: string,
-): Promise<AttemptRow | null> {
-  const { data } = await supabase
-    .from('acca_mock_attempts')
-    .select('mock_id, started_at, ends_at, completed')
-    .eq('user_id', userId)
-    .eq('completed', false)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const row = (data as AttemptRow | null) ?? null;
-  // An attempt whose mock_id is not in the registry unlocks nothing and resolves nothing.
-  return row && getMockPaper(row.mock_id) ? row : null;
-}
-
-/**
- * Which paper is this request about?
- *   1. explicit `mock_id`  — must exist in the registry
- *   2. the caller's open attempt — so a refresh mid-sit never switches paper
- *   3. `paper=` (APM default via resolvePaper) — the first paper for that paper code
- * Returns null when the hint names nothing servable, which the caller turns into a 404.
- */
-async function resolvePaperConfig(
-  supabase: GateOk['supabase'],
-  userId: string,
-  url: URL,
-): Promise<{ config: MockPaper; attempt: AttemptRow | null } | null> {
-  const mockId = url.searchParams.get('mock_id');
-  if (mockId) {
-    const config = getMockPaper(mockId);
-    return config ? { config, attempt: await attemptFor(supabase, userId, config.id) } : null;
-  }
-  const open = await openAttemptAnyPaper(supabase, userId);
-  if (open) {
-    const config = getMockPaper(open.mock_id)!;
-    return { config, attempt: open };
-  }
-  const config = getMockPapers(resolvePaper(url.searchParams.get('paper')))[0];
-  return config ? { config, attempt: await attemptFor(supabase, userId, config.id) } : null;
-}
+// The paper/attempt resolution used to live here as three private helpers. It moved to
+// lib/acca/sit-attempt.ts (2026-07-31) because the results endpoint must resolve the SAME
+// paper from the SAME hints — a second copy is how a student who sat AFM gets handed the
+// APM debrief.
 
 export async function GET(request: Request): Promise<Response> {
   const g = await gate();
@@ -317,10 +250,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // Same resolution order as GET, expressed through the same helper so the two verbs can
   // never disagree about which paper is being sat.
-  const hint = new URL(request.url);
-  if (typeof mockIdRaw === 'string' && mockIdRaw) hint.searchParams.set('mock_id', mockIdRaw);
-  if (typeof paperRaw === 'string' && paperRaw) hint.searchParams.set('paper', paperRaw);
-  const resolved = await resolvePaperConfig(supabase, userId, hint);
+  const resolved = await resolvePaperConfig(supabase, userId, hintUrl(request.url, mockIdRaw, paperRaw));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
 
