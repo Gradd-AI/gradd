@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
-import SitRunner from './SitRunner';
+import SitRunner from '@/components/acca/SitRunner';
 
 // ── AFM Mock Paper 1 — lean sit surface (real product surface) ─────────────────
 // The email allowlist that used to guard this page is GONE (2026-07-29), along with
