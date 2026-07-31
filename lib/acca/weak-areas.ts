@@ -178,14 +178,43 @@ export function pickWeighted<T>(
   return top[Math.floor(rnd() * top.length)] ?? top[0];
 }
 
+// ── Closing a row ────────────────────────────────────────────────────────────
+// THE SAME INSTRUMENT THAT OPENS A ROW CLOSES IT (Grant-ruled 2026-07-31). A later STRONG or
+// EXEMPLARY band on the same (user, paper, lo_code, source) resolves the open row. No new
+// machinery, no separate "mastery" signal to keep in step with this one, and no judgement
+// this ledger is not already making — the marker already grades that area on that scale.
+//
+// WHY 'competent' DOES NOT CLOSE, even though it is the better half of the open set: it is
+// the band whose own published next action reads "the approach was right and a material point
+// was missed". A material point still missing is not a resolved weakness. The open/close
+// boundary sits between competent and strong precisely because that is where the marker stops
+// naming something to fix.
+//
+// A closed row is NOT deleted: it stays as history, and the partial unique index
+// (`WHERE resolved_at IS NULL`) is what lets a later weak finding open a FRESH row for the
+// same area rather than incrementing a resolved one. Students regress; the ledger has to be
+// able to say so without pretending the earlier recovery never happened.
+export const RESOLVING_BANDS = ['strong', 'exemplary'] as const;
+
+export function shouldResolveWeakness(band: string | null | undefined): boolean {
+  return typeof band === 'string' && (RESOLVING_BANDS as readonly string[]).includes(band);
+}
+
 // ── What the writer emits ────────────────────────────────────────────────────
-/** One ledger row a marked sit wants written. Emitted PURELY from marking output so the
- *  "which requirements produce a row" decision is fixtured, not buried in a route. */
+/** One ledger row a marked sit wants OPENED (or incremented). Emitted PURELY from marking
+ *  output so the "which requirements produce a row" decision is fixtured, not buried in a
+ *  route. */
 export interface WeaknessWrite {
   lo_code: string;
   band: WeaknessBand;
   case_id: string;
   requirement_id: string;
+}
+
+/** One area a marked sit wants CLOSED. Carries no band — closing is not a grade, it is the
+ *  removal of an open finding. */
+export interface WeaknessClose {
+  lo_code: string;
 }
 
 export interface MarkedRequirement {
@@ -194,31 +223,56 @@ export interface MarkedRequirement {
   band: TechnicalBand | string | null;
 }
 
+export interface LedgerActions {
+  opens: WeaknessWrite[];
+  closes: WeaknessClose[];
+}
+
 /**
- * Which requirements of a marked case become ledger rows.
+ * What a marked case does to the ledger.
  *
  * DE-DUPLICATED BY LO within the call: the open-row unique key is
- * (user, paper, lo_code, source), so two requirements on the same LO are ONE finding, not
- * two increments of the same row. When they disagree, the WORSE band wins — a student who
- * was weak on one E3a requirement and competent on another is carrying the weak one.
- * A requirement with no lo_code produces nothing: the ledger is keyed by LO and a row
- * without one could never be matched by the selector.
+ * (user, paper, lo_code, source), so two requirements on the same LO are ONE finding, not two
+ * increments of the same row. When they disagree, the WORSE band wins — a student who was
+ * weak on one E3a requirement and competent on another is carrying the weak one.
+ *
+ * OPEN BEATS CLOSE, and that is the load-bearing precedence rule. A paper that examines one
+ * LO twice can come back weak on one and strong on the other; resolving the area on the
+ * strength of the good half would erase the very finding the same paper just produced. So an
+ * LO that opens is never also closed, in either arrival order.
+ *
+ * A requirement with no lo_code contributes nothing to either list: the ledger is keyed by LO
+ * and a row without one could never be matched by the selector, or found to be closed.
  */
-export function weaknessWritesFor(reqs: readonly MarkedRequirement[]): WeaknessWrite[] {
-  const byLo = new Map<string, WeaknessWrite>();
+export function ledgerActionsFor(reqs: readonly MarkedRequirement[]): LedgerActions {
+  const opens = new Map<string, WeaknessWrite>();
+  const closes = new Set<string>();
+
   for (const r of reqs) {
     const lo = (r.lo_code ?? '').trim();
     if (!lo) continue;
-    if (!shouldRecordWeakness(r.band)) continue;
-    const existing = byLo.get(lo);
-    // 'weak' outranks 'competent'; anything else never reaches here.
-    if (existing && !(existing.band === 'competent' && r.band === 'weak')) continue;
-    byLo.set(lo, {
-      lo_code: lo,
-      band: r.band,
-      case_id: '',            // filled by the caller — provenance, not identity
-      requirement_id: r.requirement_id,
-    });
+
+    if (shouldRecordWeakness(r.band)) {
+      const existing = opens.get(lo);
+      // 'weak' outranks 'competent'; anything else never reaches here.
+      if (existing && !(existing.band === 'competent' && r.band === 'weak')) continue;
+      opens.set(lo, {
+        lo_code: lo,
+        band: r.band,
+        case_id: '',            // filled by the caller — provenance, not identity
+        requirement_id: r.requirement_id,
+      });
+    } else if (shouldResolveWeakness(r.band)) {
+      closes.add(lo);
+    }
+    // 'nothing' does neither: it opens no row (see the header) and it certainly resolves none.
   }
-  return [...byLo.values()];
+
+  // Precedence, applied after the whole case is read so arrival order cannot change it.
+  for (const lo of opens.keys()) closes.delete(lo);
+
+  return {
+    opens: [...opens.values()],
+    closes: [...closes].map((lo_code) => ({ lo_code })),
+  };
 }

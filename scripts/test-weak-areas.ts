@@ -12,7 +12,8 @@
 import {
   shouldRecordWeakness,
   weaknessScore,
-  weaknessWritesFor,
+  ledgerActionsFor,
+  shouldResolveWeakness,
   psScore,
   isWeakSkillBand,
   selectionBoost,
@@ -58,63 +59,150 @@ ok("'nothing' does NOT record (a blank is a pacing finding, not evidence)", !sho
 ok('null does not record', !shouldRecordWeakness(null));
 ok('an unknown band does not record', !shouldRecordWeakness('middling'));
 
-// ── 2. What the writer emits ─────────────────────────────────────────────────
-line('\n  2. WHAT A MARKED CASE WRITES');
-eq('a strong-only case writes nothing',
-  weaknessWritesFor([
+// ── 2. What a marked case does to the ledger ────────────────────────────────
+line('\n  2. WHAT A MARKED CASE OPENS');
+const opensOf = (reqs: Parameters<typeof ledgerActionsFor>[0]) => ledgerActionsFor(reqs).opens;
+const closesOf = (reqs: Parameters<typeof ledgerActionsFor>[0]) =>
+  ledgerActionsFor(reqs).closes.map((c) => c.lo_code);
+
+eq('a strong-only case opens nothing',
+  opensOf([
     { requirement_id: 'r1', lo_code: 'E3a', band: 'strong' },
     { requirement_id: 'r2', lo_code: 'B1a', band: 'exemplary' },
   ]), []);
 
-eq('a weak requirement writes one row',
-  weaknessWritesFor([{ requirement_id: 'r1', lo_code: 'E3a', band: 'weak' }]),
+eq('a weak requirement opens one row',
+  opensOf([{ requirement_id: 'r1', lo_code: 'E3a', band: 'weak' }]),
   [{ lo_code: 'E3a', band: 'weak', case_id: '', requirement_id: 'r1' }]);
 
-eq('a blank (nothing) requirement writes NO row',
-  weaknessWritesFor([{ requirement_id: 'r1', lo_code: 'E3a', band: 'nothing' }]), []);
+eq('a blank (nothing) requirement opens NO row',
+  opensOf([{ requirement_id: 'r1', lo_code: 'E3a', band: 'nothing' }]), []);
 
-eq('a requirement with no lo_code writes no row (the ledger is keyed by LO)',
-  weaknessWritesFor([{ requirement_id: 'r1', lo_code: null, band: 'weak' }]), []);
+eq('a requirement with no lo_code opens no row (the ledger is keyed by LO)',
+  opensOf([{ requirement_id: 'r1', lo_code: null, band: 'weak' }]), []);
 
-eq('an empty-string lo_code writes no row',
-  weaknessWritesFor([{ requirement_id: 'r1', lo_code: '   ', band: 'weak' }]), []);
+eq('an empty-string lo_code opens no row',
+  opensOf([{ requirement_id: 'r1', lo_code: '   ', band: 'weak' }]), []);
 
 // The open-row unique key is (user, paper, lo, source) — two requirements on ONE lo are one
 // finding, and the worse band must win regardless of which order they arrive in.
 eq('two requirements on the same LO collapse to one row, worse band wins (competent then weak)',
-  weaknessWritesFor([
+  opensOf([
     { requirement_id: 'r1', lo_code: 'E3a', band: 'competent' },
     { requirement_id: 'r2', lo_code: 'E3a', band: 'weak' },
   ]),
   [{ lo_code: 'E3a', band: 'weak', case_id: '', requirement_id: 'r2' }]);
 
 eq('...and in the other order too (weak then competent)',
-  weaknessWritesFor([
+  opensOf([
     { requirement_id: 'r1', lo_code: 'E3a', band: 'weak' },
     { requirement_id: 'r2', lo_code: 'E3a', band: 'competent' },
   ]),
   [{ lo_code: 'E3a', band: 'weak', case_id: '', requirement_id: 'r1' }]);
 
 eq('different LOs produce different rows',
-  weaknessWritesFor([
+  opensOf([
     { requirement_id: 'r1', lo_code: 'E3a', band: 'weak' },
     { requirement_id: 'r2', lo_code: 'B1a', band: 'competent' },
   ]).map((w) => `${w.lo_code}:${w.band}`),
   ['E3a:weak', 'B1a:competent']);
 
 // A realistic 8-requirement paper: mixed bands, one blank, two on the same LO.
-eq('an 8-requirement paper emits one row per distinct weak/competent LO',
-  weaknessWritesFor([
-    { requirement_id: 'a1', lo_code: 'B1a', band: 'strong' },
-    { requirement_id: 'a2', lo_code: 'B3e', band: 'competent' },
-    { requirement_id: 'a3', lo_code: 'E2b', band: 'weak' },
-    { requirement_id: 'a4', lo_code: 'B5b', band: 'nothing' },
-    { requirement_id: 'b1', lo_code: 'B3e', band: 'weak' },
-    { requirement_id: 'b2', lo_code: 'C1a', band: 'exemplary' },
-    { requirement_id: 'b3', lo_code: 'E3a', band: 'competent' },
-    { requirement_id: 'b4', lo_code: 'D2a', band: 'strong' },
-  ]).map((w) => `${w.lo_code}:${w.band}`),
+const PAPER = [
+  { requirement_id: 'a1', lo_code: 'B1a', band: 'strong' },
+  { requirement_id: 'a2', lo_code: 'B3e', band: 'competent' },
+  { requirement_id: 'a3', lo_code: 'E2b', band: 'weak' },
+  { requirement_id: 'a4', lo_code: 'B5b', band: 'nothing' },
+  { requirement_id: 'b1', lo_code: 'B3e', band: 'weak' },
+  { requirement_id: 'b2', lo_code: 'C1a', band: 'exemplary' },
+  { requirement_id: 'b3', lo_code: 'E3a', band: 'competent' },
+  { requirement_id: 'b4', lo_code: 'D2a', band: 'strong' },
+];
+eq('an 8-requirement paper opens one row per distinct weak/competent LO',
+  opensOf(PAPER).map((w) => `${w.lo_code}:${w.band}`),
   ['B3e:weak', 'E2b:weak', 'E3a:competent']);
+eq('...and closes every distinct strong/exemplary LO',
+  closesOf(PAPER).sort(), ['B1a', 'C1a', 'D2a']);
+
+// ── 2b. What a marked case CLOSES (the resolved_at writer) ──────────────────
+line('\n  2b. WHAT A MARKED CASE RESOLVES');
+ok("'strong' resolves", shouldResolveWeakness('strong'));
+ok("'exemplary' resolves", shouldResolveWeakness('exemplary'));
+// THE BOUNDARY. 'competent' is the band whose own next action says a material point was
+// missed — a material point still missing is not a resolved weakness.
+ok("'competent' does NOT resolve (its own next action names something still to fix)",
+  !shouldResolveWeakness('competent'));
+ok("'weak' does not resolve", !shouldResolveWeakness('weak'));
+// And 'nothing' resolves nothing either — it opens no row AND closes none.
+ok("'nothing' does not resolve", !shouldResolveWeakness('nothing'));
+ok('null does not resolve', !shouldResolveWeakness(null));
+ok('an unknown band does not resolve', !shouldResolveWeakness('mastered'));
+
+eq('a strong requirement closes its LO',
+  closesOf([{ requirement_id: 'r1', lo_code: 'E3a', band: 'strong' }]), ['E3a']);
+eq('an exemplary requirement closes its LO',
+  closesOf([{ requirement_id: 'r1', lo_code: 'E3a', band: 'exemplary' }]), ['E3a']);
+eq('a nothing-band requirement closes nothing',
+  closesOf([{ requirement_id: 'r1', lo_code: 'E3a', band: 'nothing' }]), []);
+eq('a strong requirement with no lo_code closes nothing',
+  closesOf([{ requirement_id: 'r1', lo_code: null, band: 'strong' }]), []);
+eq('two strong requirements on one LO close it once',
+  closesOf([
+    { requirement_id: 'r1', lo_code: 'E3a', band: 'strong' },
+    { requirement_id: 'r2', lo_code: 'E3a', band: 'exemplary' },
+  ]), ['E3a']);
+
+// OPEN BEATS CLOSE — the precedence rule, in BOTH arrival orders. A paper that examines one
+// LO twice can come back weak on one and strong on the other; resolving on the strength of
+// the good half would erase the finding the same paper just produced.
+const mixedA = ledgerActionsFor([
+  { requirement_id: 'r1', lo_code: 'E3a', band: 'strong' },
+  { requirement_id: 'r2', lo_code: 'E3a', band: 'weak' },
+]);
+eq('same LO weak+strong: the row OPENS (strong first)', mixedA.opens.map((o) => o.lo_code), ['E3a']);
+eq('same LO weak+strong: and is NOT closed (strong first)', mixedA.closes, []);
+const mixedB = ledgerActionsFor([
+  { requirement_id: 'r1', lo_code: 'E3a', band: 'weak' },
+  { requirement_id: 'r2', lo_code: 'E3a', band: 'strong' },
+]);
+eq('same LO weak+strong: the row OPENS (weak first)', mixedB.opens.map((o) => o.lo_code), ['E3a']);
+eq('same LO weak+strong: and is NOT closed (weak first)', mixedB.closes, []);
+// Competent + strong on one LO opens too — competent is an open band, and open beats close.
+const mixedC = ledgerActionsFor([
+  { requirement_id: 'r1', lo_code: 'E3a', band: 'competent' },
+  { requirement_id: 'r2', lo_code: 'E3a', band: 'strong' },
+]);
+eq('same LO competent+strong: opens, does not close',
+  [mixedC.opens.map((o) => o.lo_code), mixedC.closes], [['E3a'], []]);
+// A DIFFERENT LO going strong in the same paper is unaffected by the open elsewhere.
+const mixedD = ledgerActionsFor([
+  { requirement_id: 'r1', lo_code: 'E3a', band: 'weak' },
+  { requirement_id: 'r2', lo_code: 'B1a', band: 'strong' },
+]);
+eq('an open on one LO does not block a close on another',
+  [mixedD.opens.map((o) => o.lo_code), mixedD.closes.map((c) => c.lo_code)], [['E3a'], ['B1a']]);
+
+// ── 2c. CLOSE THEN REOPEN — the whole point of the partial unique index ─────
+// The sequence a real student produces across three sittings. Each call is one marked paper;
+// the DB behaviour that makes it work (a resolved row not blocking a fresh open one) is
+// exercised against the live index in scripts/_verify_afm_sit_serve.ts, because an index is
+// not something a pure fixture can prove.
+line('\n  2c. CLOSE THEN REOPEN');
+const sitting1 = ledgerActionsFor([{ requirement_id: 'r1', lo_code: 'E3a', band: 'weak' }]);
+const sitting2 = ledgerActionsFor([{ requirement_id: 'r2', lo_code: 'E3a', band: 'strong' }]);
+const sitting3 = ledgerActionsFor([{ requirement_id: 'r3', lo_code: 'E3a', band: 'weak' }]);
+eq('sitting 1 (weak) opens E3a and closes nothing',
+  [sitting1.opens.map((o) => o.lo_code), sitting1.closes], [['E3a'], []]);
+eq('sitting 2 (strong) closes E3a and opens nothing',
+  [sitting2.opens, sitting2.closes.map((c) => c.lo_code)], [[], ['E3a']]);
+eq('sitting 3 (regressed to weak) opens E3a AGAIN',
+  [sitting3.opens.map((o) => o.lo_code), sitting3.closes], [['E3a'], []]);
+// The steering consequence, end to end: a resolved row is not read (the selector queries
+// `resolved_at IS NULL`), so after sitting 2 the area stops pulling — and after sitting 3 it
+// pulls again at full strength.
+eq('a closed area no longer steers (the selector reads open rows only)',
+  weaknessScore('E3a', []), 0);
+eq('and the reopened row steers again', weaknessScore('E3a', [row('E3a', 'weak')]), 1);
 
 // ── 3. What a row is worth ───────────────────────────────────────────────────
 line('\n  3. WHAT AN OPEN ROW IS WORTH TO THE SELECTOR');
