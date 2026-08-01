@@ -1,0 +1,20 @@
+{
+  "reason": "GATE-P publish flip",
+  "row": {
+    "id": "ac000000-0000-4000-8000-00000000b501",
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "syllabus_cycle": "S26-J27",
+    "section": "B",
+    "anchor_area": "B5",
+    "title": "Kestrel Foods plc",
+    "scenario_intro": "It is now 1 September 20X5. You are a financial adviser engaged by Kestrel Foods plc (\"Kestrel\"), a UK-based chilled-foods group that reports in pounds sterling (GBP). Write a report to the board of Kestrel responding to its instructions in the requirements below, using the information in the exhibits provided. Professional marks will be awarded for the demonstration of skill in analysis and evaluation, scepticism and commercial acumen in your answer.",
+    "response_format": "report",
+    "total_marks": 25,
+    "professional_skills_marks": 5,
+    "status": "candidate",
+    "published": false,
+    "created_at": "2026-08-01T13:41:52.216695+00:00",
+    "mock_only": false
+  }
+}
