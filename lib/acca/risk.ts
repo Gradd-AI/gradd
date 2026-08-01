@@ -391,6 +391,19 @@ export function buildEnpvModelAnswer(raw: EnpvInputs, c: EnpvComputed, prose: st
     c.accept
       ? `On the expected-value criterion the ENPV of ${m(c.enpv)} is **positive**, so the project is **acceptable on EV terms** — subject to the one-shot caveat below.`
       : `On the expected-value criterion the ENPV of ${m(c.enpv)} is **not positive**, so the project is **not acceptable on EV terms** as it stands.`, '',
+    // INJECTED COUNT (ADVICE-vs-COMPUTED, primary defence). The builder stated the verdict and
+    // P(negative) but never HOW MANY scenarios destroy value, so an author writing the advice slot
+    // supplied that number from memory — and got it wrong on the Halvard case ("the delayed
+    // scenario is the only one that threatens the outlay", against two negative scenarios). Stating
+    // it here removes the vacuum instead of policing what fills it. The backstop in
+    // lib/acca/advice-checks.ts catches a contradicting count if one is written anyway.
+    (() => {
+      const neg = c.scenarios.filter((s) => s.npv < 0).length;
+      const tot = c.scenarios.length;
+      if (neg === 0) return `**${tot} of ${tot}** scenarios return a positive NPV: none of the stated outcomes destroys value.`;
+      if (neg === tot) return `**${neg} of ${tot}** scenarios return a negative NPV: every stated outcome destroys value.`;
+      return `**${neg} of ${tot}** scenarios return a negative NPV — so the expected value is carried by the remaining ${tot - neg}, and the count, not only the mean, is what the board is deciding on.`;
+    })(), '',
     '**Step 4 — Advice to the board**', '', prose, '',
     `*Reconciliation: Σ(p×NPV) = ${m(c.enpv)}; P(NPV<0) = ${fixedHalfUp(c.p_negative * 100, 0)}% ✓*`,
   ];
