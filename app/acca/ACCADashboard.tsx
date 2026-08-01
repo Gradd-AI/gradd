@@ -28,6 +28,9 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
   // First-run (F3): a zero-attempt user gets one unmissable primary action above the grid.
   const showFirstRun = areas.length > 0 && !hasAttempted && !!firstDrillArea;
   const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
+  // The timed mock is a per-paper SURFACE, not a query param: /acca/mock renders
+  // <SitRunner paper="APM" /> and /acca/afm/mock renders <SitRunner paper="AFM" />.
+  const mockHref = paper === 'AFM' ? '/acca/afm/mock' : '/acca/mock';
 
   function handleSelect(subArea: string) {
     setNavigating(true);
@@ -132,11 +135,19 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                 </div>
                 <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
               </Link>
-              <Link href="/acca/mock" className="apm-dash-cases-card">
+              {/* ROUTED BY THE ACTIVE PAPER (fixed 2026-08-01). This was hardcoded to
+                  /acca/mock — the APM surface — and gated only on `casesEnabled`, so an AFM
+                  student clicking "Timed mock" was served the APM paper: Halworth, Rivenor and
+                  Bexley scenarios, requirements and marks. A cross-paper content leak, not just
+                  a wrong screen.
+                  Entitlement is bundle-wide, so "if they hold both, they choose" is already
+                  answered by the APM/AFM switch above — this card simply follows the paper the
+                  student is looking at, like every other link on the page. */}
+              <Link href={mockHref} className="apm-dash-cases-card">
                 <div className="apm-dash-cases-text">
                   <span className="apm-dash-cases-title">Timed mock</span>
                   <span className="apm-dash-cases-sub">
-                    A full paper against the clock — three cases sat back to back, marked as one.
+                    A full {paper} paper against the clock — three cases sat back to back, marked as one.
                   </span>
                 </div>
                 <span className="apm-dash-cases-cta" aria-hidden="true">→</span>
