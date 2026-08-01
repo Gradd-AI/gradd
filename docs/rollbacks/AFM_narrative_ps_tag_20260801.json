@@ -1,0 +1,1494 @@
+{
+  "written_at_note": "pre-write snapshot for the professional_skill_tag write; timestamp is the commit date",
+  "reason": "P-DB2 write — tag the 8 published AFM narrative drills from their own rubrics",
+  "rows": [
+    {
+      "id": "d413fbe7-63f3-492a-af97-8532e0c376c8",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "B4d",
+      "topic": "Valuation and the use of free cash flows",
+      "command_verb": "explain",
+      "intellectual_level": 2,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 12,
+      "question": "Explain the role that an option pricing model, such as the Black-Scholes-Merton (BSOP) model, plays in assessing:\n(i) the value of NJT's equity and the value of its debt; and\n(ii) NJT's default risk and the limitations of this framework for the lending syndicate.",
+      "context_text": "PT Nusantara Jalan Tol (NJT) is an Indonesian toll-road concession company that operates a 35-year government-awarded concession expiring in 2057. The company is highly geared: its total asset value is currently estimated at IDR 18 trillion, while outstanding debt (a single-tranche bond) requires a bullet repayment of IDR 14 trillion at maturity in five years. NJT's asset-value volatility has been assessed by its financial advisers at 28% per annum. The lending syndicate, led by Bank Mandiri Internasional, is concerned that a prolonged traffic-volume decline could impair NJT's ability to service this debt. Because NJT's equity holders have limited liability, the equity stake can be modelled as a European call option on the firm's assets, struck at the IDR 14 trillion debt repayment, with the five-year horizon as the option's time to expiry.",
+      "model_answer": "**Option pricing models — role in valuing equity, debt and default risk**\n\n**Part (i) — Equity value and debt value**\n\nBecause NJT's shareholders benefit from limited liability, their economic position is asymmetric: if, at the end of the five-year bullet horizon, the firm's asset value exceeds the IDR 14 trillion repayment, equity holders capture the surplus; if assets fall short, they surrender the keys and bear no further loss. This asymmetric payoff — uncapped gain, floored loss — mirrors precisely the payoff of a European call option. The BSOP model therefore prices equity as a call on NJT's IDR 18 trillion asset base, struck at IDR 14 trillion. The current positive difference (IDR 4 trillion \"moneyness\") reflects both intrinsic value and time value arising from the five-year remaining horizon and the 28% asset-value volatility.\n\nDebt valuation follows from put-call parity applied at the firm level. Risky debt equals the present value of riskless debt minus the value of an equivalent put option on the assets. That put quantifies the credit loss Bank Mandiri Internasional's syndicate absorbs if NJT's assets are worth less than IDR 14 trillion at maturity; the model thus converts an otherwise qualitative credit concern into a priced quantity embedded directly in bond value.\n\n**Part (ii) — Default risk and limitations**\n\nThe BSOP model signals default risk through the risk-neutral probability N(−d2): the higher the 28% asset-value volatility, the more the asset-value distribution spreads over the five-year horizon, raising the probability that it finishes below IDR 14 trillion. This gives the lending syndicate a forward-looking default metric that responds dynamically to changes in leverage and volatility — unlike backward-looking credit-rating approaches.\n\nA material limitation is the model's log-normal, constant-volatility assumption. NJT's toll revenues are subject to Indonesian regulatory action on the 35-year concession, traffic-policy shifts, and macroeconomic shocks that can produce abrupt, discontinuous asset-value jumps the model cannot price. Standard BSOP will therefore under-price tail risk in precisely the stress scenarios the syndicate most needs to evaluate.\n\nA further limitation concerns input observability. The IDR 18 trillion asset value is itself an estimate, and the 28% figure is derived rather than market-observed. Using equity-volatility proxies introduces estimation error that can materially mis-state N(−d2), distorting the default probability signal on which credit decisions depend.\n\n**Conclusion:** Bank Mandiri Internasional should use the BSOP framework as a structured way to integrate leverage, volatility, and tenor into a single default-risk signal, but must complement it with scenario-based cash-flow stress tests that explicitly model concession-specific discontinuities. Relying on the model alone would be imprudent given its estimation limitations.",
+      "hint": "You've described the BSOP inputs — now push one level deeper: explain *why* the asymmetric payoff of limited liability maps onto a specific option structure, and then use that structure to tell the lending syndicate what N(−d2) actually signals about NJT's default risk and where the model's constant-volatility assumption is most likely to mislead them given the concession-specific risks in this scenario.",
+      "full_reveal": "The typical misconception here is UNDEVELOPED-ASSUMPTION: candidates list the BSOP inputs — asset value, strike, volatility, tenor — and confirm that equity \"looks like a call option,\" but never develop *why* that analogy holds or what it implies for the syndicate's credit decision. The failure is mechanical: naming the structure without explaining the causal logic means the answer stays at level 1 description when the command verb \"explain\" demands level 2 reasoning. The correct mental model is to trace the limited-liability payoff to its asymmetric consequence — shareholders gain from upside but are floored at zero on the downside — and then show how that asymmetry is *exactly* what an option prices, so BSOP converts a qualitative credit concern into a priced default-risk signal via N(−d2). Limitations must be anchored to the scenario's specific features — regulatory action on the 35-year concession and the derived rather than market-observed volatility figure — because a generic \"volatility may change\" observation does not survive a boardroom; the syndicate needs to know *which* discontinuities the model is blind to and *why* constant log-normal volatility is structurally unable to price them. The boardroom test here is not \"can you name the model?\" but \"can you tell the lending syndicate where to trust it, where to stress-test beyond it, and why relying on it alone would be imprudent?\"",
+      "published": true,
+      "created_at": "2026-07-21T08:44:11.075206+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "B4d",
+            "marks": 3,
+            "anchor_facts": [
+              "f_assets",
+              "f_debt"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "NJT's equity holders have limited liability, so they will walk away if the IDR 18 trillion asset value falls below the IDR 14 trillion repayment; this payoff structure — receive the upside, abandon the downside — is exactly that of a call option, so the BSOP model prices equity as a call on the firm's assets struck at the debt level.",
+            "requirement_part": "(i) equity value and debt value",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "B4d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_debt",
+              "f_entity"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "Debt value is derived from the same framework: risky debt equals riskless debt minus the value of a put option on the firm's assets (put-call parity applied to the firm); the put captures the loss bondholders suffer if NJT's assets are worth less than the IDR 14 trillion bullet at maturity, so the model gives Bank Mandiri Internasional a direct measure of the credit discount embedded in NJT's bonds.",
+            "requirement_part": "(i) equity value and debt value",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "B4d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_vol",
+              "f_tenor"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "Default risk is indicated by the model's risk-neutral probability that the asset value will be below the strike at expiry (N(−d2) in BSOP terms); a higher 28% asset-value volatility widens the distribution of possible asset values over the five-year horizon, increasing this probability and signalling greater risk of default to the lending syndicate.",
+            "requirement_part": "(ii) default risk and limitations",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "B4d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_concession"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "A key limitation is that BSOP assumes asset values follow a continuous log-normal process with constant volatility, yet NJT's toll revenues depend on Indonesian traffic policy, regulatory changes to the 35-year concession, and macroeconomic shocks — all of which can cause sudden discontinuous jumps in asset value that the standard model cannot capture.",
+            "requirement_part": "(ii) default risk and limitations",
+            "development_required": true
+          },
+          {
+            "id": "c5",
+            "lo": "B4d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_assets",
+              "f_vol"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "A further practical limitation is that the firm's asset value and its volatility are not directly observable inputs: NJT's IDR 18 trillion asset value is itself an estimate, and using implied or historical equity volatility as a proxy for 28% asset-value volatility introduces estimation error that could cause the model to mis-state default probability — a material concern for the lending syndicate's credit decisions.",
+            "requirement_part": "(ii) default risk and limitations",
+            "development_required": true
+          },
+          {
+            "id": "c6",
+            "lo": "B4d",
+            "marks": 1,
+            "anchor_facts": [
+              "f_entity"
+            ],
+            "disqualifiers": [
+              "F4"
+            ],
+            "required_point": "Overall, the BSOP framework is a useful conceptual lens for Bank Mandiri Internasional because it integrates leverage, volatility, and time to maturity into a single default-risk signal; however, given NJT's concession-driven cash flows and the estimation challenges, the syndicate should treat the model as a complement to scenario-based cash-flow analysis rather than a standalone credit-approval tool.",
+            "requirement_part": "(ii) default risk and limitations",
+            "development_required": false
+          }
+        ],
+        "_authoring": {
+          "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.",
+          "golden_bad": "PT Nusantara Jalan Tol is an Indonesian toll-road concession company. Its total asset value is currently estimated at IDR 18 trillion, while outstanding debt requires a bullet repayment of IDR 14 trillion at maturity in five years. The BSOP model can be used to value equity and debt.\n\nIn the BSOP model, equity is like a call option. If the asset value is high, equity holders benefit. If the asset value is low, debt holders suffer the loss. The model uses inputs such as asset value, exercise price, time, risk-free rate, and volatility to produce an option value.\n\nDebt can also be valued using option pricing. The value of risky debt is equal to riskless debt minus a put option. This is based on put-call parity. The put option represents the potential loss to bondholders.\n\nDefault risk is linked to the probability that the firm's assets fall below the debt repayment level. The model produces a probability measure that indicates how likely default is. When volatility is higher, the probability of default increases.\n\nThere are limitations to this approach. The model assumes that asset values follow a log-normal distribution and that volatility is constant. These assumptions may not always hold in practice. The firm's asset value may not be directly observable. Volatility estimates may be inaccurate. There could also be jumps or discontinuities in value that the model cannot capture.\n\nThe BSOP model is a useful tool but has limitations. It can be used alongside other methods. There are arguments on both sides as to whether it is the best approach for credit analysis. Different analysts may reach different conclusions depending on the inputs used.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 12,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_assets",
+            "key": "IDR 18 trillion",
+            "kind": "figure",
+            "text": "total asset value of IDR 18 trillion"
+          },
+          {
+            "id": "f_debt",
+            "key": "IDR 14 trillion",
+            "kind": "figure",
+            "text": "bullet debt repayment of IDR 14 trillion"
+          },
+          {
+            "id": "f_vol",
+            "key": "28%",
+            "kind": "figure",
+            "text": "asset-value volatility of 28% per annum"
+          },
+          {
+            "id": "f_tenor",
+            "key": "five-year",
+            "kind": "figure",
+            "text": "five-year horizon to debt maturity"
+          },
+          {
+            "id": "f_entity",
+            "key": "Bank Mandiri Internasional",
+            "kind": "entity",
+            "text": "NJT's lending syndicate led by Bank Mandiri Internasional"
+          },
+          {
+            "id": "f_concession",
+            "key": "35-year",
+            "kind": "constraint",
+            "text": "35-year government-awarded concession"
+          }
+        ],
+        "requirement_parts": [
+          "(i) equity value and debt value",
+          "(ii) default risk and limitations"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "32ef124c-350e-4fb9-a02f-dd4e8e7f529f",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "B5c",
+      "topic": "International investment and financing decisions",
+      "command_verb": "evaluate, assess and recommend",
+      "intellectual_level": 3,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 15,
+      "question": "You are the senior financial adviser to the board of Zephyr Consumer Goods plc.\n\n(i) Evaluate the significance of Nigeria's exchange controls for Zephyr's investment decision in ZNL, and assess the strategies available to deal with the restricted remittance of funds from ZNL to the parent.\n\n(ii) Assess the costs and benefits of the two international financing options — the Eurobond and the GDR issuance — and recommend which the board should prefer for funding the African distribution network expansion.",
+      "context_text": "Zephyr Consumer Goods plc (\"Zephyr\"), a multinational headquartered in the Netherlands, operates a wholly-owned subsidiary, Zephyr Nigeria Ltd (\"ZNL\"), which manufactures and distributes fast-moving consumer goods across West Africa. The Central Bank of Nigeria has imposed strict exchange controls: ZNL may only repatriate dividends equal to 50% of after-tax profits in any calendar year, and all remittances require prior CBN approval, which has averaged a 14-month processing delay in recent years. ZNL's most recent annual after-tax profit is NGN 18 billion, yet Zephyr's treasury estimates that the trapped cash balance — funds that cannot currently be remitted — has accumulated to NGN 42 billion. To fund a planned expansion of its African distribution network, Zephyr's board is considering two international financing options: (a) a Eurobond issuance of USD 300 million at a fixed coupon of 6.8% per annum, and (b) a Global Depository Receipt (GDR) equity issuance targeting institutional investors on the Luxembourg Stock Exchange, expected to raise USD 280 million but subject to disclosure and governance requirements aligned with EU prospectus rules. The board has asked its senior financial adviser to evaluate the significance of Nigeria's exchange controls for the investment decision and assess the two financing alternatives.",
+      "model_answer": "**Exchange controls and international sources of finance**\n\n**Part (i) — Significance of exchange controls and remittance strategies**\n\nNigeria's CBN restricts ZNL to repatriating only 50% of after-tax profits annually, meaning that even though ZNL earns NGN 18 billion per year, the parent's accessible cash yield is structurally capped at roughly half that figure. This is material for investment appraisal: Zephyr must discount only the genuinely repatriable cash flows, not the subsidiary's gross profit, otherwise it will systematically overstate the investment's value.\n\nThe 14-month average processing delay worsens this picture further. Even the permitted tranche of remittances arrives late, reducing its present value and creating a timing mismatch between ZNL's cash generation and Zephyr's ability to deploy it — this may force unnecessary external borrowing at the group level in the interim.\n\nThe accumulated NGN 42 billion trapped cash balance illustrates the long-run severity of these controls: a stock of value equivalent to more than two years of ZNL's profits is stranded in Nigeria. Inflation and naira depreciation could erode this balance in real, euro-equivalent terms over time, meaning political risk compounds currency risk. Zephyr should factor this erosion risk explicitly into its investment case.\n\nThe most practical remittance strategy is to redeploy the NGN 42 billion trapped funds within Nigeria — for instance, financing the local infrastructure of the distribution network expansion — thereby converting idle trapped cash into a productive asset without triggering CBN approval. Supplementary strategies such as intra-group management fees, royalties, or intercompany loan interest may reduce reliance on dividend remittances and may avoid the 50% dividend cap if validly documented, but they do not remove the wider exchange-control risk: they may still require CBN approval, face FX availability delays, withholding tax and transfer-pricing scrutiny. They are mitigation tools, not a clean bypass.\n\n**Part (ii) — Eurobond vs GDR: assessment and recommendation**\n\nThe Eurobond at a fixed coupon of 6.8% offers certainty of cost and protects existing shareholders from dilution. However, the coupon is an unconditional USD debt-service obligation: if Nigerian remittances stay delayed or trapped as they are today, that obligation cannot rely on ZNL's cash flows and must instead be serviced from Zephyr's other group cash flows — a financial-risk exposure despite the absence of dilution. For a group already holding NGN 42 billion of trapped equity-equivalent value in Nigeria that it cannot access, adding further equity via a GDR would deepen the disconnect between the group's book equity and its accessible capital — shareholders bear additional dilution for a problem that equity issuance does not solve.\n\nThe GDR on the Luxembourg Stock Exchange avoids fixed debt service, which is an advantage in principle, but the EU prospectus disclosure requirements would force Zephyr to publicly detail ZNL's remittance constraints and the trapped-cash balance, creating investor-relations risk and potentially triggering governance scrutiny precisely when the Nigerian situation is already sensitive.\n\n**Recommendation:** The board should proceed with the Eurobond. The 6.8% fixed coupon is serviceable if the distribution network expansion earns a return in excess of that rate, the no-dilution feature protects existing shareholders, and the absence of enhanced public disclosure avoids inflaming investor concern about the CBN restrictions. The GDR is unsuitable given the circumstances: it dilutes equity without addressing the trapped-cash problem and introduces disclosure obligations that heighten, rather than manage, the political-risk exposure.",
+      "hint": "Before you can recommend the Eurobond or GDR, check whether your Part (i) analysis has distinguished between ZNL's gross profit and the genuinely repatriable cash flows — because the remittance cap and the trapped-cash balance each affect a different part of the financing argument, and conflating them will leave the recommendation hanging in mid-air.",
+      "full_reveal": "The dominant misconception here is FENCE-SITTING combined with UNDEVELOPED-ASSUMPTION: candidates list the exchange-control features and the two financing instruments, but never weigh the scenario-specific facts against each other to arrive at a board-ready verdict. This is wrong not because lists are useless, but because a list of features carries zero decision weight — the board cannot act on \"the GDR avoids fixed debt service\" without knowing whether that benefit survives the disclosure obligation and the trapped-cash dynamic that equity issuance cannot resolve. The correct mental model is to treat each scenario fact as a constraint that either disqualifies or qualifies an option: the CBN repatriation cap is not background colour, it is a filter that changes the value of equity-based financing relative to debt-based financing in this specific situation. On the remittance strategies in Part (i), a further UNDEVELOPED-ASSUMPTION failure appears when candidates name \"transfer pricing mechanisms\" or \"management fees\" as if they cleanly bypass the exchange controls — CBN approval requirements, FX availability delays, withholding tax and arm's-length transfer-pricing scrutiny are the binding constraints that determine whether those strategies are genuinely viable mitigation tools rather than a clean workaround, and leaving them undeveloped converts a Level 3 analytical point into a Level 1 bullet. The boardroom test is simple: if your answer could apply to any multinational with any exchange control regime, you have not yet used the scenario — Zephyr's 14-month delay, the NGN 42 billion trapped balance, and the Luxembourg prospectus requirement are the facts that earn the marks, and only a recommendation that explicitly reconciles them survives the boardroom.",
+      "published": true,
+      "created_at": "2026-07-21T08:45:46.730328+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "B5c",
+            "marks": 2,
+            "anchor_facts": [
+              "f_remit_cap",
+              "f_profit"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The 50% remittance cap directly reduces the parent's accessible cash yield from ZNL in any year, meaning Zephyr cannot treat ZNL's full after-tax profit as a freely available return when appraising the investment — the effective return to the parent is structurally lower than the subsidiary's accounting profit suggests.",
+            "requirement_part": "(i) significance of exchange controls and strategies for restricted remittance",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "B5c",
+            "marks": 2,
+            "anchor_facts": [
+              "f_delay",
+              "f_remit_cap"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The 14-month processing delay compounds the remittance cap's impact because even the permitted 50% tranche is not available to Zephyr promptly; the time value of delayed cash flows erodes the investment's effective return and creates liquidity risk at the parent level, potentially forcing Zephyr to raise external finance unnecessarily.",
+            "requirement_part": "(i) significance of exchange controls and strategies for restricted remittance",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "B5c",
+            "marks": 2,
+            "anchor_facts": [
+              "f_trapped"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The NGN 42 billion trapped cash balance signals a structural blockage: Zephyr has already been unable to extract a large stock of value from ZNL, which inflates ZNL's balance sheet but is economically unavailable to the group — if the controls persist or tighten, this trapped value could be further eroded by Nigerian inflation or naira depreciation, adding currency risk on top of the political risk.",
+            "requirement_part": "(i) significance of exchange controls and strategies for restricted remittance",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "B5c",
+            "marks": 2,
+            "anchor_facts": [
+              "f_trapped"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F4"
+            ],
+            "required_point": "To deal with restricted remittance, Zephyr could deploy the NGN 42 billion trapped cash productively within Nigeria — for example by using it to fund the local leg of the African distribution expansion — thereby avoiding the controls rather than fighting them; this reinvestment strategy converts a liquidity trap into a productive asset without triggering CBN approval requirements.",
+            "requirement_part": "(i) significance of exchange controls and strategies for restricted remittance",
+            "development_required": true
+          },
+          {
+            "id": "c5",
+            "lo": "B5c",
+            "marks": 1,
+            "anchor_facts": [
+              "f_remit_cap"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5"
+            ],
+            "required_point": "Alternatively, Zephyr could use transfer pricing on intra-group management fees, royalties, or intercompany loan interest to move value from ZNL to the parent; this mitigates reliance on dividend remittances and may avoid the 50% dividend cap if validly documented, but it is NOT a clean bypass — the instruments remain subject to CBN approval, FX availability delays, withholding tax and arm's-length transfer-pricing scrutiny.",
+            "requirement_part": "(i) significance of exchange controls and strategies for restricted remittance",
+            "development_required": false
+          },
+          {
+            "id": "c6",
+            "lo": "B5d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_eurobond"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The Eurobond at 6.8% provides a fixed, predictable financing cost and preserves Zephyr's ownership and control structure — there is no dilution of equity — which is advantageous when the group already faces political risk from ZNL; however, the fixed coupon is an unconditional USD debt-service obligation that, if Nigerian remittances stay delayed or trapped, must be serviced from Zephyr's other group cash flows rather than ZNL's own, increasing Zephyr's financial risk despite the absence of dilution.",
+            "requirement_part": "(ii) assess Eurobond vs GDR and recommend",
+            "development_required": true
+          },
+          {
+            "id": "c7",
+            "lo": "B5d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_gdr",
+              "f_gdr_disclosure"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The GDR issuance on the Luxembourg Stock Exchange avoids fixed coupon obligations and thereby reduces financial risk, but it dilutes existing shareholders and subjects Zephyr to EU prospectus disclosure and governance requirements — ongoing compliance costs and greater scrutiny of the Nigerian operations could expose the group to investor pressure if ZNL's trapped-cash problem or CBN delays become publicly visible.",
+            "requirement_part": "(ii) assess Eurobond vs GDR and recommend",
+            "development_required": true
+          },
+          {
+            "id": "c8",
+            "lo": "B5d",
+            "marks": 2,
+            "anchor_facts": [
+              "f_trapped",
+              "f_eurobond"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F4",
+              "F5"
+            ],
+            "required_point": "On balance, the board should prefer the Eurobond: because the trapped NGN 42 billion means the group is already equity-rich in Nigeria and cannot access that value, issuing equity via GDR would further dilute shareholders without resolving the blockage; the 6.8% fixed coupon is a manageable cost if the expansion generates incremental returns above that rate, and the absence of additional public disclosure avoids unnecessarily highlighting the CBN restrictions to investors.",
+            "requirement_part": "(ii) assess Eurobond vs GDR and recommend",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.",
+          "golden_bad": "Exchange controls are restrictions imposed by a country's government on the ability of companies to transfer money in and out of the country. The Central Bank of Nigeria has imposed strict exchange controls, and ZNL may only repatriate dividends equal to 50% of after-tax profits in any calendar year. This limits the amount of money that Zephyr can receive from ZNL.\n\nExchange controls are significant for investment decisions because they affect cash flows. If a company cannot remit funds freely, it may not be able to recover its investment. There are several strategies available to deal with restricted remittance. One is to use transfer pricing. Another is to pay management fees. Another is to use royalties. These all allow funds to flow between companies in different countries.\n\nRegarding the two financing options, a Eurobond is a bond issued in a currency other than that of the country where it is issued. It offers a fixed rate of interest. A GDR is a certificate that represents shares in a foreign company. It can be listed on a stock exchange. The Eurobond has a fixed coupon and no dilution. The GDR does not have fixed coupon payments and can be listed on an exchange. Both options have advantages and disadvantages and different companies may prefer different options depending on their circumstances. There are many factors to consider when choosing between debt and equity financing in international markets.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 15,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_remit_cap",
+            "key": "50%",
+            "kind": "constraint",
+            "text": "50% of after-tax profits annual remittance cap imposed by CBN"
+          },
+          {
+            "id": "f_delay",
+            "key": "14-month",
+            "kind": "constraint",
+            "text": "14-month average CBN approval processing delay for remittances"
+          },
+          {
+            "id": "f_profit",
+            "key": "NGN 18 billion",
+            "kind": "figure",
+            "text": "ZNL annual after-tax profit of NGN 18 billion"
+          },
+          {
+            "id": "f_trapped",
+            "key": "NGN 42 billion",
+            "kind": "figure",
+            "text": "Accumulated trapped cash balance of NGN 42 billion"
+          },
+          {
+            "id": "f_eurobond",
+            "key": "6.8%",
+            "kind": "figure",
+            "text": "Eurobond issuance of USD 300 million at fixed coupon of 6.8% per annum"
+          },
+          {
+            "id": "f_gdr",
+            "key": "Luxembourg Stock Exchange",
+            "kind": "entity",
+            "text": "GDR equity issuance targeting institutional investors on the Luxembourg Stock Exchange expected to raise USD 280 million"
+          },
+          {
+            "id": "f_gdr_disclosure",
+            "key": "EU prospectus",
+            "kind": "constraint",
+            "text": "GDR subject to EU prospectus disclosure and governance requirements"
+          }
+        ],
+        "requirement_parts": [
+          "(i) significance of exchange controls and strategies for restricted remittance",
+          "(ii) assess Eurobond vs GDR and recommend"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "08044fb6-eecb-4498-9c16-56381f66dc92",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "B3a",
+      "topic": "Impact of financing on investment decisions and adjusted present values",
+      "command_verb": "assess and recommend",
+      "intellectual_level": 3,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 12,
+      "question": "Assess the appropriateness of each of the following four sources of finance for SSK's KES 26 billion requirement, and provide a justified recommendation identifying which source (or combination) the board should adopt:\n(i) A conventional investment-grade bond issue\n(ii) A green bond aligned to the ICMA Green Bond Principles\n(iii) An ijara sukuk structured over the Turkana project assets\n(iv) A new equity placing to external institutional investors\n\nYour answer should weigh each instrument against SSK's financial position, its gearing constraint, its green mandate, and its Shariah compliance requirement.",
+      "context_text": "Savanna Solar Kenya Ltd (\"SSK\") is a Nairobi-based renewable-energy developer seeking KES 26 billion to finance the construction of a 120 MW solar-plus-storage facility in Turkana County. SSK's board has adopted a formal green mandate, committing the company to instruments whose proceeds are ring-fenced for certified climate-positive assets. The company's current debt-to-equity ratio stands at 2.1×, measured on interest-bearing borrowings and excluding lease obligations, which the board regards as the maximum tolerable gearing level under its lending covenants; any new instrument that increases reported interest-bearing debt further is structurally ruled out. SSK's largest shareholders are a consortium of Gulf-based sovereign wealth funds that require all financing to comply with Shariah principles, prohibiting interest (riba) and speculative uncertainty (gharar). An independent credit assessment has rated SSK's long-term obligations BB+, reflecting the early-stage revenue profile of the Turkana project and the limited operating history of the company.",
+      "model_answer": "**Sources of finance — appropriateness for the organisation**\n\n**Conventional bond [(i)]** SSK's BB+ rating signals sub-investment-grade credit quality, reflecting its early-stage revenue profile, which means a conventional bond would carry punishing coupon costs. More critically, interest payments constitute riba, flatly contravening the Shariah principles demanded by the Gulf sovereign wealth fund investors. It would also count as interest-bearing debt under the board's covenant definition, pushing gearing beyond the 2.1× ceiling the board has set as an absolute limit. On all three axes — cost, Shariah, gearing — it fails.\n\n**Green bond [(ii)]** Aligning proceeds with the ICMA Green Bond Principles would satisfy the green mandate by ring-fencing funds to the certified climate-positive 120 MW Turkana facility. Yet the instrument still pays a coupon (riba), violating Shariah, and it is interest-bearing debt, risking a breach of the 2.1× constraint. It solves one problem while leaving the other two unresolved.\n\n**Ijara sukuk [(iii)]** This is the strongest fit. Structured as a lease over the Turkana project assets, it generates returns through rental income rather than interest, eliminating riba and gharar and achieving full Shariah compliance for the Gulf sovereign wealth fund shareholders. Labelling it a green sukuk under the ICMA framework ring-fences the KES 26 billion proceeds to the 120 MW project, satisfying the green mandate. Crucially, because the board's 2.1× covenant is measured on interest-bearing borrowings and excludes lease obligations, the sukuk's rental payments fall outside that measure entirely — the instrument preserves covenant headroom without breaching the gearing constraint. This is a narrower claim than off-balance-sheet treatment: IFRS 16 still requires SSK to recognise a right-of-use asset and a lease liability for the ijara, so the obligation remains fully visible on the balance sheet — it simply sits outside the borrowings-based ratio the covenant tests. The board should confirm this reading of the covenant definition with its lenders and auditors before relying on it.\n\n**Equity placing [(iv)]** Equity unambiguously protects the 2.1× ceiling by adding no debt of any kind. However, placing shares with external institutions dilutes the Gulf sovereign wealth fund shareholders and could generate opposition from the investors whose requirements drive the entire financing strategy; moreover, given the BB+ rating and early-stage revenue profile, a new equity raise of KES 26 billion faces a steep return hurdle.\n\n**Recommendation** The board should proceed with a green ijara sukuk as the primary financing instrument — it is the sole option that satisfies Shariah compliance, the green mandate, and the gearing covenant on its interest-bearing-borrowings definition, simultaneously. If a capital buffer beyond KES 26 billion is later required, a pre-emptive rights issue to the existing Gulf shareholders would preserve both Shariah alignment and investor control without adding interest-bearing debt.",
+      "hint": "Your answer lists what each instrument is — now check whether you have explicitly tested each one against all three of SSK's binding constraints (Shariah compliance, the 2.1× gearing ceiling, and the green mandate) and then closed with a single justified recommendation the board can act on.",
+      "full_reveal": "The misconception here is FENCE-SITTING combined with SCENARIO-FREE discussion: candidates describe each instrument in general terms — \"bonds pay coupons,\" \"equity avoids debt\" — without anchoring the assessment to SSK's three specific, non-negotiable constraints, and then decline to name a preferred course of action. This is the wrong mental model because the command verb \"assess and recommend\" requires a verdict, not a tour of the options; a board cannot act on a balanced description of trade-offs, only on a justified choice. The correct move is to use SSK's constraints as a filter applied sequentially to each instrument: an instrument that fails even one binding constraint (riba prohibition, the 2.1× ceiling, or the green mandate) is disqualified regardless of its other merits, and the recommendation names whichever instrument — or combination — clears all three filters simultaneously. Where two instruments each clear all filters, the recommendation must weigh them against each other using scenario evidence (cost, dilution risk, accounting treatment) and declare a primary choice, since \"either could work\" is still fence-sitting. The Shariah constraint is particularly fertile ground for undeveloped assumptions: stating that an ijara sukuk is \"Shariah-compliant\" without explaining the mechanism — rental income replacing riba, and the lease structure over identifiable project assets — leaves the assumption listed but not discussed, which is the UNDEVELOPED-ASSUMPTION failure that costs the interpretive marks.",
+      "published": true,
+      "created_at": "2026-07-21T08:38:35.968662+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "B3a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_gearing",
+              "f_rating",
+              "f_shariah"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "A conventional bond is unsuitable because it counts as interest-bearing debt under SSK's covenant definition, which would breach the 2.1× gearing ceiling, and the BB+ sub-investment-grade rating would impose prohibitively expensive coupon pricing; moreover, it pays fixed interest (riba), directly violating the Shariah compliance requirement of the Gulf sovereign wealth fund shareholders.",
+            "requirement_part": "(i) assess conventional bond",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "B3c",
+            "marks": 2,
+            "anchor_facts": [
+              "f_green",
+              "f_gearing",
+              "f_shariah",
+              "f_capacity"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "A green bond aligns with SSK's green mandate because proceeds must be ring-fenced for certified climate-positive assets — exactly matching the 120 MW solar-plus-storage project — and adherence to ICMA Green Bond Principles would enhance investor credibility; however, it still carries coupon obligations that breach the Shariah prohibition on riba and counts as interest-bearing debt, potentially breaching the 2.1× gearing constraint, so it satisfies only one of the three binding constraints.",
+            "requirement_part": "(ii) assess green bond",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "B3b",
+            "marks": 3,
+            "anchor_facts": [
+              "f_amount",
+              "f_shariah",
+              "f_green",
+              "f_gearing",
+              "f_capacity"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "An ijara sukuk is highly appropriate: it is structured as a lease over the Turkana project assets rather than as a loan, so it avoids riba and gharar and is fully Shariah-compliant, satisfying the Gulf sovereign wealth fund investors; by ring-fencing the KES 26 billion proceeds to the 120 MW facility, it can be labelled a green sukuk under the ICMA framework, thereby satisfying the green mandate; because the 2.1× covenant is measured on interest-bearing borrowings and excludes lease obligations, the sukuk's rental payments fall outside that measure — though IFRS 16 still requires the lease liability to be recognised on the balance sheet, so this is covenant relief on the borrowings ratio, not off-balance-sheet invisibility, and the reading should be confirmed with lenders/auditors.",
+            "requirement_part": "(iii) assess ijara sukuk",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "B3a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_gearing",
+              "f_shariah",
+              "f_amount",
+              "f_rating"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "A new equity placing avoids any increase in debt, definitively protecting the 2.1× gearing ceiling, and equity dilution may be acceptable in principle; however, issuing new shares to external institutional investors risks diluting the Gulf sovereign wealth fund shareholders' control, potentially triggering opposition from the very investors whose Shariah requirement drives the financing constraints; furthermore, given the BB+ rating and early-stage revenue profile, new investors will demand a high return premium, making equity an expensive source for the KES 26 billion needed.",
+            "requirement_part": "(iv) assess equity placing",
+            "development_required": true
+          },
+          {
+            "id": "c5",
+            "lo": "B3a",
+            "marks": 3,
+            "anchor_facts": [
+              "f_amount",
+              "f_gearing",
+              "f_green",
+              "f_shariah",
+              "f_capacity"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F4",
+              "F5"
+            ],
+            "required_point": "The board should adopt a green ijara sukuk as the primary instrument, because it is the only option that simultaneously satisfies all three binding constraints — Shariah compliance, the green mandate, and the interest-bearing-borrowings gearing covenant — and is sized to raise KES 26 billion against the tangible 120 MW asset base of the Turkana project; a secondary equity tranche could be offered to existing Gulf shareholders as a pre-emptive rights issue if additional capital buffer is needed, avoiding both dilution risk and the Shariah breach.",
+            "requirement_part": "justified recommendation (per the stem)",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.",
+          "golden_bad": "Savanna Solar Kenya Ltd is a Nairobi-based renewable-energy developer seeking KES 26 billion to finance the construction of a 120 MW solar-plus-storage facility in Turkana County. There are several sources of finance the company could consider.\n\nA conventional bond could be issued. Bonds are a common source of debt finance. They involve paying a coupon to investors. The credit rating of the company may affect the terms available. There are advantages and disadvantages to bond financing in general.\n\nA green bond could also be considered. Green bonds are used by companies that have environmental objectives. They require the proceeds to be used for green projects. SSK has a green mandate so this could be relevant.\n\nAn ijara sukuk is an Islamic finance instrument. Islamic finance prohibits interest. A sukuk is a certificate of ownership. It can be used to raise capital in compliance with Islamic principles. There are various types of sukuk available in the market.\n\nAn equity placing involves issuing new shares to investors. This would dilute existing shareholders. Equity does not require fixed interest payments. However, it may be expensive for the company.\n\nThere are therefore several options available to SSK, each with their own merits and drawbacks. The conventional bond and the green bond are debt instruments, whereas the equity placing is not. The ijara sukuk is an Islamic finance instrument. All four instruments could potentially be used depending on circumstances, and each has positive and negative features that the board would need to weigh up carefully before making any decision.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 12,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_amount",
+            "key": "KES 26 billion",
+            "kind": "figure",
+            "text": "the financing requirement of KES 26 billion"
+          },
+          {
+            "id": "f_gearing",
+            "key": "2.1×",
+            "kind": "constraint",
+            "text": "maximum tolerable debt-to-equity ratio of 2.1×, measured on interest-bearing borrowings and excluding lease obligations"
+          },
+          {
+            "id": "f_green",
+            "key": "green mandate",
+            "kind": "constraint",
+            "text": "formal green mandate requiring ring-fenced proceeds for climate-positive assets"
+          },
+          {
+            "id": "f_shariah",
+            "key": "Shariah",
+            "kind": "constraint",
+            "text": "Gulf-based sovereign wealth fund shareholders requiring Shariah compliance, prohibiting riba and gharar"
+          },
+          {
+            "id": "f_rating",
+            "key": "BB+",
+            "kind": "figure",
+            "text": "BB+ long-term credit rating reflecting early-stage revenue and limited operating history"
+          },
+          {
+            "id": "f_capacity",
+            "key": "120 MW",
+            "kind": "entity",
+            "text": "120 MW solar-plus-storage facility in Turkana County"
+          }
+        ],
+        "requirement_parts": [
+          "(i) assess conventional bond",
+          "(ii) assess green bond",
+          "(iii) assess ijara sukuk",
+          "(iv) assess equity placing",
+          "justified recommendation (per the stem)"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "fda46d99-5d57-4017-9945-2d0c3ca55498",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "B3i",
+      "topic": "Impact of financing on investment decisions and adjusted present values",
+      "command_verb": "assess",
+      "intellectual_level": 3,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 11,
+      "question": "ASSESS the impact of the proposed recapitalisation on CPSA's value and financial strategy, using capital-structure theory as your framework. Your answer should address:\n(i) The relevance of Modigliani and Miller propositions before and after tax to the CFO's argument.\n(ii) Whether static trade-off theory supports the move to a 95% debt-to-equity ratio.\n(iii) What pecking-order theory reveals about CPSA's historical financing behaviour and the proposed transaction.\n(iv) The agency effects that the recapitalisation is likely to trigger.",
+      "context_text": "Cobre Pacífico S.A. (\"CPSA\") is an established Chilean mining-and-metals group listed on the Santiago Stock Exchange. The board is evaluating a large recapitalisation under which CPSA would issue new bonds worth CLP 420 billion and use the proceeds to buy back equity, raising net debt-to-equity from the current 25% to a target of 95%. The corporate tax rate in Chile applicable to CPSA is 27%. The CFO argues that the additional tax shield will permanently enhance firm value, while the CEO cautions that the mining sector's highly volatile cash flows make the elevated leverage risky, and the finance director warns that mining covenants will restrict future capital expenditure if gearing rises above 80%. Historically, CPSA has funded growth primarily through retained earnings, accessing equity markets only twice in its 30-year existence.",
+      "model_answer": "**Capital structure — theory and practical impact**\n\n**Part (i) — MM before and after tax**\n\nIn a frictionless world, MM's pre-tax proposition asserts that firm value is independent of financing mix, implying that the CFO's enthusiasm for issuing CLP 420 billion of debt is theoretically groundless in perfect markets. Once the 27% Chilean corporate tax rate is introduced, however, MM's post-tax world generates a positive tax shield — so the CFO is partially correct that new debt raises value. The critical qualification is that MM's tax model abstracts away bankruptcy costs and market imperfections; in a mining business where volatile cash flows mean operating income can turn sharply negative, that abstraction is untenable. The CFO's argument is therefore theoretically valid only within an unrealistic framing.\n\n**Part (ii) — Static trade-off theory**\n\nStatic trade-off theory endorses leverage up to the point where marginal distress costs equal the marginal tax benefit. The 27% tax rate applied to CLP 420 billion of new bonds does generate a meaningful shield, but the proposed leap from 25% to 95% debt-to-equity overshoots any plausible optimum. Once gearing crosses the covenant trigger at 80%, bondholders impose capital-expenditure restrictions that directly damage future cash generation — a concrete distress cost visible before any formal default. The theory therefore contradicts, rather than supports, the proposed transaction at this scale.\n\n**Part (iii) — Pecking-order theory**\n\nCPSA's three-decade reliance on retained earnings to finance growth is textbook pecking-order behaviour: internal funding is cheapest because it avoids adverse-selection signalling. Issuing CLP 420 billion of new bonds purely to retire equity violates that hierarchy and signals to the market that management believes debt is cheaper than equity for reasons beyond a mere funding shortage — most plausibly a tax or control agenda.\n\n**Part (iv) — Agency effects**\n\nDebt does carry a genuine agency BENEFIT here: under Jensen's free-cash-flow hypothesis, a mature, cash-generative mining group is precisely the type of firm where higher leverage disciplines management by committing future cash flow to debt service, reducing the free cash flow otherwise available for value-destroying empire-building or low-return diversification. At a modest increase in gearing this disciplining effect could plausibly outweigh its costs. At the proposed 95% debt-to-equity, however, that benefit is dominated by the agency COSTS of high leverage: covenants at the 80% threshold reveal that lenders already anticipate monitoring costs, and once breached, restricted capex leaves equity holders with incentives to substitute riskier projects to extract value from debtholders (asset substitution) or to forgo positive-NPV investments (underinvestment). Whether the equity buyback meaningfully concentrates control is itself conditional on CPSA's free float and existing monitoring arrangements — a buyback does not automatically weaken dispersed-shareholder discipline. The clearer and better-evidenced agency issue at this scale is the lender–equity conflict crystallised by the 80% covenant trigger itself: once breached, bondholders actively restrict CPSA's investment choices, which is a sharper agency cost than any assumed loss of shareholder monitoring from the buyback. On balance, the FCF-discipline benefit is real but modest relative to the asset-substitution and underinvestment costs triggered well before 95%, so net agency costs still compound the distress costs identified under trade-off theory.\n\n**Overall assessment:** The proposed recapitalisation should be rejected in its current form. While the 27% tax rate provides a genuine, but limited, shield benefit, the crossing of the 80% covenant threshold, the amplification of agency conflicts, and the violation of CPSA's long-standing pecking-order behaviour all indicate that the costs outweigh the gains. The board should retain leverage well below 80% and pursue incremental debt financing if a tax shield is desired.",
+      "hint": "You've marshalled the theory correctly — now check whether each proposition is being applied to CPSA's specific conditions (volatile mining cash flows, the 80% covenant trigger, three decades of retained-earnings financing) or whether your answer could have been written about any firm in any industry.",
+      "full_reveal": "The dominant misconception here is SCENARIO-FREE discussion: candidates recite MM, trade-off, pecking-order and agency theory as a textbook list, but never anchor each proposition to the facts CPSA actually presents — the mining-sector cash-flow volatility, the concrete 80% covenant breach, and the firm's documented three-decade internal-funding history. That matters because theory only earns marks at Level 3 when it is used as a diagnostic lens on the scenario; a generic rehearsal of propositions produces a description of theory, not an assessment of CPSA. The correct mental model is to treat each theory as a hypothesis and then test it against the scenario's evidence: MM's tax abstraction is untenable *because* mining cash flows can turn sharply negative, static trade-off is contradicted *because* the covenant trigger is a visible, pre-default distress cost, and pecking-order is violated *because* the transaction retires equity rather than filling a funding gap. The second failure is FENCE-SITTING on the overall verdict: candidates who present \"on the one hand / on the other hand\" without closing with a board-level recommendation have described the tension but not resolved it — and the command verb \"assess\" demands a verdict. At the boardroom bar, the CFO needs to know whether to proceed, not a balanced summary of capital-structure literature.",
+      "published": true,
+      "created_at": "2026-07-21T08:40:22.489333+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "B3i",
+            "marks": 3,
+            "anchor_facts": [
+              "f_tax",
+              "f_sector"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "Under MM without tax, capital structure is irrelevant to firm value, which directly refutes the CFO's implicit premise; however, once the 27% Chilean corporate tax is introduced, MM with tax predicts a tax shield that does increase value — partially validating the CFO's argument, though the MM model assumes perfect markets with no distress costs, an assumption that is especially strained in a mining context with volatile cash flows.",
+            "requirement_part": "(i) MM before and after tax — relevance to the CFO's argument",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "B3i",
+            "marks": 3,
+            "anchor_facts": [
+              "f_de_current",
+              "f_de_target",
+              "f_tax",
+              "f_bonds",
+              "f_covenant"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "Static trade-off theory holds that an optimal capital structure balances the tax-shield benefit against financial-distress costs; although a 27% tax rate generates a meaningful shield on CLP 420 billion of new debt, the jump from 25% to 95% debt-to-equity pushes CPSA well past the covenant trigger of 80%, signalling that distress costs — including restricted capex — are likely to outweigh incremental tax benefits, so the theory does not support this magnitude of leverage increase.",
+            "requirement_part": "(ii) Static trade-off theory — support for 95% D/E",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "B3i",
+            "marks": 2,
+            "anchor_facts": [
+              "f_retained",
+              "f_bonds"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "Pecking-order theory predicts firms prefer internal financing first, then debt, then equity; CPSA's 30-year history of funding growth mainly through retained earnings is entirely consistent with this hierarchy, but the proposed recapitalisation — which deliberately issues CLP 420 billion of bonds to retire equity — inverts the pecking order by actively increasing external debt beyond operational need, suggesting the move is driven by a tax or control motive rather than a genuine funding gap.",
+            "requirement_part": "(iii) Pecking-order theory — historical behaviour and proposed transaction",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "B3i",
+            "marks": 3,
+            "anchor_facts": [
+              "f_de_target",
+              "f_covenant"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F4",
+              "F5"
+            ],
+            "required_point": "High leverage at 95% debt-to-equity intensifies debt-holder–equity-holder conflicts: the covenant breach threshold of 80% signals that bondholders are already pricing in restrictive monitoring, and once breached, restricted capex is the clearest agency cost at this scale — sharper than any assumed loss of dispersed-shareholder discipline from the equity buyback, which is itself conditional on CPSA's free float; equity holders may also be incentivised toward asset-substitution or underinvestment once leverage is this high. Overall, agency costs rise substantially and partially erode any tax-shield gain, and CPSA's board should therefore reject or materially scale back the recapitalisation.",
+            "requirement_part": "(iv) Agency effects of the recapitalisation",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.",
+          "golden_bad": "Cobre Pacífico S.A. (\"CPSA\") is an established Chilean mining-and-metals group listed on the Santiago Stock Exchange. The board is evaluating a large recapitalisation under which CPSA would issue new bonds and use the proceeds to buy back equity.\n\n**Part (i) — MM**\n\nModigliani and Miller showed that in a world without taxes, capital structure does not matter. However, when taxes exist, debt creates a tax shield which adds value to the firm. The CFO's argument relates to this tax shield. There are also costs of financial distress which must be considered. MM is a theoretical framework that makes many assumptions that do not hold in the real world.\n\n**Part (ii) — Static trade-off**\n\nStatic trade-off theory says that firms should balance the benefits of debt against the costs of financial distress. If a firm takes on too much debt, distress costs rise. If debt is too low, the firm does not benefit from the tax shield. There is an optimal point. CPSA needs to consider where this optimal point is. The theory may or may not support the proposed increase in leverage.\n\n**Part (iii) — Pecking order**\n\nPecking-order theory was developed by Myers and Majluf. It suggests that firms prefer internal financing first, then external debt, and finally equity. This is because of information asymmetry. Firms that have historically used internal finance are consistent with pecking-order theory. The proposed transaction involves issuing bonds. This may be consistent or inconsistent with pecking-order theory depending on circumstances.\n\n**Part (iv) — Agency effects**\n\nAgency theory identifies conflicts between principals and agents. In a levered firm, there can be conflicts between shareholders and bondholders. These include asset substitution and underinvestment problems. Covenants are often used to mitigate these problems. High leverage generally increases agency costs. There are various agency issues that could arise from a recapitalisation of this kind.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 11,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_de_current",
+            "key": "25%",
+            "kind": "figure",
+            "text": "Current net debt-to-equity ratio of 25%"
+          },
+          {
+            "id": "f_de_target",
+            "key": "95%",
+            "kind": "figure",
+            "text": "Target net debt-to-equity ratio of 95%"
+          },
+          {
+            "id": "f_tax",
+            "key": "27%",
+            "kind": "figure",
+            "text": "Chilean corporate tax rate of 27%"
+          },
+          {
+            "id": "f_bonds",
+            "key": "CLP 420 billion",
+            "kind": "figure",
+            "text": "New bonds worth CLP 420 billion"
+          },
+          {
+            "id": "f_covenant",
+            "key": "80%",
+            "kind": "constraint",
+            "text": "Mining covenants restricting capex if gearing exceeds 80%"
+          },
+          {
+            "id": "f_retained",
+            "key": "retained earnings",
+            "kind": "entity",
+            "text": "Historical reliance on retained earnings for growth funding"
+          },
+          {
+            "id": "f_sector",
+            "key": "volatile cash flows",
+            "kind": "constraint",
+            "text": "Mining sector with highly volatile cash flows"
+          }
+        ],
+        "requirement_parts": [
+          "(i) MM before and after tax — relevance to the CFO's argument",
+          "(ii) Static trade-off theory — support for 95% D/E",
+          "(iii) Pecking-order theory — historical behaviour and proposed transaction",
+          "(iv) Agency effects of the recapitalisation"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "cb9b411c-40b3-4739-b70c-3d5b8e65e578",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "B1b",
+      "topic": "Discounted cash flow techniques",
+      "command_verb": "interpret and explain",
+      "intellectual_level": 2,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 12,
+      "question": "Interpret the Monte Carlo simulation output for the Vũng Tàu terminal expansion project.\n\n(i) Explain what the simulation results indicate about the likelihood of project success and the overall risk profile of the project.\n\n(ii) Explain what the project Value-at-Risk figure means in this context and how the board of CSB should read it when assessing whether to commit capital.",
+      "context_text": "Cảng Sao Biển JSC (\"CSB\") is a Vietnamese state-linked port operator seeking board approval to expand its deep-water container terminal at Vũng Tàu. The expansion project requires an upfront capital commitment of USD 420 million. Because throughput demand, construction cost overruns and terminal-gate tariffs are all highly uncertain, CSB's financial advisers ran a Monte Carlo simulation with 10,000 iterations across those three key variables. The simulation produced the following output: a mean (expected) NPV of +USD 38 million, a standard deviation of NPV of USD 61 million, a probability of a negative NPV of 27%, and a project Value-at-Risk (VaR) of USD 55 million at the 95% confidence level. The board must decide at its next meeting whether the project's risk profile is acceptable before committing capital.",
+      "model_answer": "**Monte Carlo simulation — interpreting the simulation output**\n\nThe simulation's central finding for the Vũng Tàu expansion is a mean (expected) NPV of +USD 38 million, which confirms that, across 10,000 iterations, the project generates value on average for CSB. On the surface this endorses proceeding.\n\nHowever, the standard deviation of USD 61 million — which exceeds the mean of USD 38 million — reveals that the distribution of NPV outcomes is extremely wide. A coefficient of variation above 1.0 signals that the positive mean is, in isolation, a dangerously optimistic summary statistic; a sizeable share of outcomes cluster below zero. This is directly confirmed by the 27% probability of negative NPV: more than one in four simulated scenarios resulted in value destruction. Against a USD 420 million capital commitment, a failure rate of 27% is commercially significant — it is not a remote tail risk but a plausible central-scenario variant the board must price in.\n\nTurning to project VaR: the USD 55 million VaR at the 95% confidence level is a THRESHOLD, not a ceiling — it means there is a 5% probability that the project's NPV outcome is worse than a USD 55 million loss relative to the base. Critically, VaR is silent on HOW severe those worst-5% outcomes are; that depends on the shape of the full NPV distribution, so the figure must be read alongside the mean and standard deviation and never quoted in isolation as a \"we will not lose more than USD 55 million\" reassurance. Measured against the USD 420 million commitment, the USD 55 million threshold is roughly 13% of capital — a material downside marker the board must be satisfied CSB's balance sheet can absorb.\n\nIn conclusion, the board should not approve the USD 420 million commitment in its current form. The mean NPV is too narrowly positive relative to the dispersion and the 27% downside probability; CSB should first secure demand-side revenue guarantees or adopt phased construction to narrow the NPV distribution before sanctioning the project.",
+      "hint": "Your answer reports the simulation statistics correctly — but the board needs to know what those numbers mean for the capital commitment decision, so make sure you translate the probability of negative NPV and the VaR figure into an explicit recommendation on whether to proceed, and on what conditions.",
+      "full_reveal": "The classic misconception here is FENCE-SITTING: candidates recite the mean NPV, the standard deviation, and the VaR figure accurately, then stop — leaving the board with a table of numbers but no steer on the USD 420 million decision. That is not interpretation; it is transcription. The error matters because a positive mean NPV in isolation is a dangerously partial summary: when the standard deviation exceeds the mean, the distribution is so wide that the mean is likely to mislead — a large share of the probability mass may sit below zero, and the 27% downside probability confirms that this is not a remote tail event but a plausible outcome the board must price into its approval. On VaR specifically, candidates often treat it as a reassuring ceiling — \"we will not lose more than USD 55 million\" — when the correct reading is the opposite: VaR is only a THRESHOLD marking where the worst 5% of outcomes begin, and it is silent on HOW severe those outcomes are (that depends on the shape of the full distribution), which is why the figure must be read against the mean, the dispersion and total capital at risk rather than quoted in isolation as a ceiling. The boardroom bar demands that you close the loop: the simulation output is the floor of the argument, not the ceiling — the advice is whether to commit, defer, or restructure the project to narrow the NPV distribution, and that verdict must be stated explicitly.",
+      "published": true,
+      "created_at": "2026-07-20T15:37:59.669164+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "B1b",
+            "marks": 2,
+            "anchor_facts": [
+              "f_mean_npv",
+              "f_entity"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The mean NPV of +USD 38 million is positive, meaning the simulation's central outcome is value-creating for CSB, supporting a prima facie case for proceeding.",
+            "requirement_part": "(i) likelihood of project success and overall risk profile",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "B1b",
+            "marks": 2,
+            "anchor_facts": [
+              "f_mean_npv",
+              "f_sd_npv"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "However, the standard deviation of USD 61 million is very large relative to the mean of USD 38 million (the coefficient of variation exceeds 1), signalling that the distribution of outcomes is highly dispersed and that the project carries significant uncertainty — the mean alone is therefore a misleading guide to success.",
+            "requirement_part": "(i) likelihood of project success and overall risk profile",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "B1b",
+            "marks": 2,
+            "anchor_facts": [
+              "f_prob_neg",
+              "f_capex"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "A 27% probability of a negative NPV means more than one in four simulation runs ended in value destruction; this is a materially high failure rate for a USD 420 million capital commitment and should give the board serious pause.",
+            "requirement_part": "(i) likelihood of project success and overall risk profile",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "B1b",
+            "marks": 2,
+            "anchor_facts": [
+              "f_var",
+              "f_confidence"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "The project VaR of USD 55 million at the 95% confidence level means that, in 95% of simulated scenarios, the downside loss in NPV terms will not exceed USD 55 million below the mean (or equivalently, below zero depending on the VaR base); stated differently, there is a 5% chance of an NPV outcome worse than that threshold.",
+            "requirement_part": "(ii) interpretation of the project VaR figure and its use in the capital commitment decision",
+            "development_required": true
+          },
+          {
+            "id": "c5",
+            "lo": "B1b",
+            "marks": 2,
+            "anchor_facts": [
+              "f_var",
+              "f_capex",
+              "f_entity"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F6"
+            ],
+            "required_point": "Contextualised against the USD 420 million upfront commitment, a USD 55 million worst-case NPV loss (at 95% confidence) represents roughly 13% of capital at risk in tail scenarios; the board should assess whether CSB's balance sheet and liquidity can absorb that tail exposure before approving the project.",
+            "requirement_part": "(ii) interpretation of the project VaR figure and its use in the capital commitment decision",
+            "development_required": true
+          },
+          {
+            "id": "c6",
+            "lo": "B1b",
+            "marks": 2,
+            "anchor_facts": [
+              "f_prob_neg",
+              "f_capex"
+            ],
+            "disqualifiers": [
+              "F4",
+              "F5"
+            ],
+            "required_point": "Overall conclusion/recommendation: given the positive mean but high dispersion, material 27% downside probability, and the scale of the USD 420 million commitment, the board should only approve the project if it has sufficient financial resilience to withstand tail losses, or alternatively demand risk-mitigation measures (e.g. phased construction, revenue guarantees) to reduce the probability of negative NPV below an acceptable threshold before committing.",
+            "requirement_part": "(ii) interpretation of the project VaR figure and its use in the capital commitment decision",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.",
+          "golden_bad": "The Monte Carlo simulation ran 10,000 iterations across three key variables — throughput demand, construction cost overruns and terminal-gate tariffs. The simulation produced a mean (expected) NPV of +USD 38 million, a standard deviation of NPV of USD 61 million, a probability of a negative NPV of 27%, and a project Value-at-Risk (VaR) of USD 55 million at the 95% confidence level.\n\nMonte Carlo simulation is a technique used to model uncertainty in capital investment decisions. It runs many iterations using randomly drawn values for uncertain variables and produces a distribution of possible NPV outcomes. This is useful because it captures a range of scenarios rather than a single-point estimate.\n\nThe mean NPV is positive, which suggests the project may be worth pursuing. The standard deviation indicates there is variability around this mean. A higher standard deviation generally means greater uncertainty. The 27% probability of negative NPV indicates there is some chance the project could destroy value.\n\nValue-at-Risk is a widely used risk metric in financial analysis. It tells decision-makers about the potential downside in a given confidence interval. At the 95% confidence level, VaR indicates the loss that will not be exceeded in 95% of scenarios. This is a useful measure for understanding tail risk and comparing projects.\n\nThere are arguments on both sides of the decision. On one hand the mean NPV is positive and the project could deliver value. On the other hand, there is uncertainty and the probability of negative NPV is not negligible. The board will need to weigh these considerations carefully against the company's risk appetite and strategic objectives before making any final judgement.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 12,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_mean_npv",
+            "key": "USD 38 million",
+            "kind": "figure",
+            "text": "mean (expected) NPV of +USD 38 million from the simulation"
+          },
+          {
+            "id": "f_sd_npv",
+            "key": "USD 61 million",
+            "kind": "figure",
+            "text": "standard deviation of NPV of USD 61 million"
+          },
+          {
+            "id": "f_prob_neg",
+            "key": "27%",
+            "kind": "figure",
+            "text": "probability of a negative NPV of 27%"
+          },
+          {
+            "id": "f_var",
+            "key": "USD 55 million",
+            "kind": "figure",
+            "text": "project Value-at-Risk of USD 55 million at the 95% confidence level"
+          },
+          {
+            "id": "f_capex",
+            "key": "USD 420 million",
+            "kind": "figure",
+            "text": "upfront capital commitment of USD 420 million"
+          },
+          {
+            "id": "f_entity",
+            "key": "CSB",
+            "kind": "entity",
+            "text": "the port operator Cảng Sao Biển JSC / CSB"
+          },
+          {
+            "id": "f_confidence",
+            "key": "95%",
+            "kind": "figure",
+            "text": "95% confidence level for the VaR"
+          },
+          {
+            "id": "f_iterations",
+            "key": "10,000 iterations",
+            "kind": "figure",
+            "text": "10,000 iterations in the simulation"
+          }
+        ],
+        "requirement_parts": [
+          "(i) likelihood of project success and overall risk profile",
+          "(ii) interpretation of the project VaR figure and its use in the capital commitment decision"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "55181aa8-dcde-42cd-8c01-dbd0b392a734",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "E1a",
+      "topic": "The role of the treasury function in multinationals",
+      "command_verb": "discuss",
+      "intellectual_level": 3,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 8,
+      "question": "Discuss the issues affecting the establishment of the new group treasury function, and the impact this would have on the existing subsidiary treasury desks and on the Osaka head-office treasury. Note: this requirement asks about THIS group’s specific situation — a generic list of the advantages and disadvantages of centralising treasury is not what is being asked for.",
+      "context_text": "Kaisho Holdings, a Japanese industrial-equipment group headquartered in Osaka, has expanded over the past decade into South America, where it now operates four subsidiaries that each run their own local treasury desk. Most of the group’s currency and financing activity now originates in the region. The group finance director has proposed establishing a new centralised group treasury function in São Paulo, while retaining a smaller treasury presence in Osaka. No decision has yet been taken on the exact location within South America, nor on how much financial autonomy the four subsidiary desks would keep. The board wants to understand the issues involved in setting up the new function and the impact it would have on the existing subsidiary desks and on the Osaka head-office treasury before it commits.",
+      "model_answer": "**Treasury function — establishing a group treasury and its impact on existing functions**\n\nThe board should first weigh the location-and-control questions this proposal leaves open. Deciding the exact location within South America matters because a treasury centre needs deep local banking relationships, staff with the right skills and time-zone reach across the four markets, so a poorly chosen site would undercut the very efficiency the move is meant to deliver. Control is the harder question: the group must decide how much financial autonomy the local desks retain, because pulling every hedging and financing decision into the centre risks slow responses to local conditions, while leaving too much locally defeats the purpose of centralising. A second establishment issue is that the rationale for siting the centre in São Paulo is that most activity has migrated to the region, so the case rests on being close to where the exposures arise — but the group still has to build the staffing and treasury systems there, which takes time and investment before any benefit appears. Turning to the impact, the roles and responsibilities of the subsidiary desks would change materially: if they lose their financial autonomy over financing and hedging to the new centre, they shift from decision-makers to executors, which affects morale, retention and the local knowledge the group relies on. Finally, the Osaka head-office treasury’s relationship changes too — it would move from running much of the activity to overseeing and coordinating a regional centre, so the group must be clear where ultimate authority for group-wide policy and risk limits now sits. On balance the proposal is workable, but only once location, the autonomy split, and the Osaka–São Paulo reporting line are settled explicitly rather than left open.",
+      "hint": "The generic centralisation pros-and-cons essay is exactly what the requirement warns against — before you write, ask what THIS group must actually decide (where in South America, how much autonomy the local desks keep) and how the specific existing functions (the subsidiary desks, the Osaka treasury) change, and make sure your points land on those named facts rather than on centralisation in the abstract.",
+      "full_reveal": "The dominant misconception on a treasury-establishment requirement is that it is an invitation to write the standard \"advantages and disadvantages of centralising treasury\" essay: candidates reach for economies of scale, better control and loss of local responsiveness, and never touch what the scenario actually asks. The examiner is explicit that this is the wrong question — the marks are for the issues affecting THIS establishment (location and control) and the impact on THIS group’s existing functions. The diagnosis-led reframe is to treat every generic point as worth nothing until it is anchored: \"control\" earns credit only when it becomes \"how much financial autonomy the four South American desks keep versus the new São Paulo centre\"; \"impact\" earns credit only when it becomes \"the subsidiary desks move from deciding to executing\" and \"Osaka shifts from running activity to overseeing a regional centre.\" A strong answer also closes with a committed view — the proposal works once location, the autonomy split and the reporting line are settled — rather than trailing off after a list. Recognising which specific decisions and which specific functions are in play, and building each point on them, is what separates a scoring answer from a textbook essay that happens to mention treasury.",
+      "published": true,
+      "created_at": "2026-07-24T14:53:11.14252+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_location",
+              "f_autonomy"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F7"
+            ],
+            "required_point": "Discuss the location-and-control issues specific to setting this function up — WHERE within South America to site it and how much financial autonomy to leave with the local desks — rather than a generic list of centralisation advantages.",
+            "evidence_anchor": "SD24 p.4, Northney (i): \"relevant issues such as location and control were rarely discussed\"; the generic centralisation-advantages essay is the wrong question (F7).",
+            "requirement_part": "(i) issues affecting the establishment of the new group treasury function",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_saopaulo"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F2"
+            ],
+            "required_point": "Discuss a further establishment issue grounded in the group’s own position — e.g. that the shift of activity to the region is the rationale for siting the function in São Paulo, and the staffing/systems needed to run it there.",
+            "evidence_anchor": "SD24 p.4, Northney (i): scope is \"the issues affecting the establishment of a new group treasury function\", not generic centralisation pros/cons.",
+            "requirement_part": "(i) issues affecting the establishment of the new group treasury function",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_desks",
+              "f_autonomy"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5"
+            ],
+            "required_point": "Discuss how the roles and responsibilities of the existing subsidiary desks would change — e.g. losing autonomy over financing/hedging decisions to the new central function.",
+            "evidence_anchor": "SD24 p.4, Northney (i): \"how roles and responsibilities within the existing subsidiaries treasury functions would change because of the new group function\".",
+            "requirement_part": "(ii) impact on the existing subsidiary desks and the Osaka head-office treasury",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_osaka"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5"
+            ],
+            "required_point": "Discuss how the relationship with the Osaka head-office treasury would change — e.g. Osaka moving from running activity to overseeing/coordinating a regional centre.",
+            "evidence_anchor": "SD24 p.4, Northney (i): \"the relationship of the new group treasury function with the head office treasury ... and how this might change\".",
+            "requirement_part": "(ii) impact on the existing subsidiary desks and the Osaka head-office treasury",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Rule-23 golden BAD + designed F-modes. NOT served. Golden GOOD is model_answer. evidence_anchor per criterion carries the cited marking basis (this batch’s ruling; never served).",
+          "golden_bad": "The group finance director has proposed establishing a new centralised group treasury function. Centralising treasury has well-known advantages and disadvantages. The main advantages of centralisation are economies of scale, since one central team can negotiate better bank terms and pool cash more efficiently, and stronger control, since all decisions run through one place. Centralisation also allows netting of currency flows and standardised systems across the group. The disadvantages of centralisation are a loss of local responsiveness, higher fixed overheads for the central team, and possible resistance from local managers who prefer their own arrangements. A centralised treasury can be slower to react to local conditions. These are the general points about centralising a treasury department that any group would consider.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 8,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_location",
+            "key": "location within South America",
+            "kind": "constraint",
+            "text": "the exact location within South America for the new function"
+          },
+          {
+            "id": "f_autonomy",
+            "key": "financial autonomy",
+            "kind": "constraint",
+            "text": "how much financial autonomy the four subsidiary desks would keep"
+          },
+          {
+            "id": "f_saopaulo",
+            "key": "São Paulo",
+            "kind": "entity",
+            "text": "a new centralised group treasury function in São Paulo"
+          },
+          {
+            "id": "f_desks",
+            "key": "subsidiary desks",
+            "kind": "entity",
+            "text": "the four existing subsidiary treasury desks"
+          },
+          {
+            "id": "f_osaka",
+            "key": "Osaka head-office treasury",
+            "kind": "entity",
+            "text": "the Osaka head-office treasury"
+          }
+        ],
+        "requirement_parts": [
+          "(i) issues affecting the establishment of the new group treasury function",
+          "(ii) impact on the existing subsidiary desks and the Osaka head-office treasury"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "d0be009d-2625-4f2d-a489-a52d798dbaea",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "E1a",
+      "topic": "The role of the treasury function in multinationals",
+      "command_verb": "advise",
+      "intellectual_level": 3,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 8,
+      "question": "Advise on the specific ways in which a dedicated treasury department could make a positive financial contribution to Barzan Logistics. Note: the chief executive’s test is whether the department can maximise income or save costs; a discussion of the general advantages of a centralised treasury, or of the extra costs and procedures a department would add, is not what is being asked for.",
+      "context_text": "Barzan Logistics, a freight and warehousing group headquartered in Abu Dhabi, currently runs all treasury activity inside its central finance department. The finance director has proposed carving out a separate, dedicated treasury department as the group expands across the Gulf and into East Africa. The chief executive has been clear that the new department will be approved only if it can make a positive financial contribution — that is, if it can be shown to maximise income or save costs — rather than simply add another layer of cost and procedure to the group. The board has asked for advice on the specific ways a dedicated treasury department could make such a contribution at Barzan Logistics.",
+      "model_answer": "**Treasury function — how a dedicated treasury department makes a positive financial contribution**\n\nA dedicated treasury can make a positive financial contribution in several concrete ways. The first is better cash and liquidity management: as the group expands across the Gulf and into East Africa it will hold cash in scattered accounts and currencies, so a treasury that pools those balances and invests surpluses centrally can maximise income or save costs by earning better returns and cutting idle balances and overdraft charges. The second is financing and tax efficiency: a treasury that coordinates the group’s borrowing and structures intra-group flows can lower the overall financing and tax cost, and because that is a genuine saving it is exactly the kind of positive financial contribution the chief executive wants, rather than an extra overhead. The third is strategic financial advice: as the group weighs new sites across the Gulf and East Africa, a treasury team can advise the board on the financial implications of those expansion decisions — funding, currency and repatriation — so that capital is committed on a sound basis. Crucially, none of this is the generic \"should we centralise\" debate, and the extra costs and procedures a department creates are not the point. On balance I recommend approving the department, but justified explicitly on its ability to maximise income or save costs through cash management, cheaper financing and better-informed expansion decisions — the positive financial contribution the chief executive has set as the test.",
+      "hint": "The chief executive set a single test — can the department maximise income or save costs? — so your advice must name specific income-maximising or cost-saving activities (cash management, cheaper financing, strategic financial advice) and end with a committed recommendation against that test; a general centralisation essay, or a discussion of the extra costs and procedures a department adds, earns little here.",
+      "full_reveal": "The classic misconception on this kind of \"positive contribution\" requirement is that it is the standard centralised-treasury debate in disguise, so candidates default to advantages-versus-disadvantages of centralisation — and, worse, spend their time on the extra costs and procedures a new department would add, which the examiner explicitly says earns no credit here. The chief executive has framed a much narrower test: the department is worth having only if it can maximise income or save costs. The reframe is to treat the answer as a list of concrete money-making or money-saving activities — pooling and investing group cash, coordinating cheaper financing and tax-efficient intra-group flows, and advising the board on the financial implications of the expansion — each developed to show HOW it adds or saves money, not merely named. A scoring answer also commits: it recommends approval, but tied back to the income/cost test, rather than sitting on the fence. Recognising that the requirement is a positive-contribution test, not a structure debate, and refusing to spend marks on the non-creditable \"extra costs\" material, is what separates a strong answer from a generic one.",
+      "published": true,
+      "created_at": "2026-07-24T14:53:11.312516+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_maximise",
+              "f_expand"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F7"
+            ],
+            "required_point": "Advise a cash- and liquidity-management contribution — pooling and investing group cash more effectively to maximise income or save costs — applied to a group expanding across the Gulf and into East Africa.",
+            "evidence_anchor": "SD25 p.13, Passmore (b): \"better cash management\" as a way to maximise income or save costs; the generic centralisation essay is the wrong question (F7, SD25 pp.13-14).",
+            "requirement_part": "(i) ways a dedicated treasury department can make a positive financial contribution",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_positive"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5",
+              "F7"
+            ],
+            "required_point": "Advise a financing/tax-efficiency contribution — coordinating group borrowing and intra-group flows to lower the group’s overall financing and tax cost — a saving that makes a positive financial contribution.",
+            "evidence_anchor": "SD25 p.13, Passmore (b): \"tax planning\" as a listed contribution; \"additional costs and procedures ... would not be given credit\" (F7 boundary).",
+            "requirement_part": "(i) ways a dedicated treasury department can make a positive financial contribution",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_expand"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F5"
+            ],
+            "required_point": "Advise a strategic-advice contribution — advising the board on the financial implications of the expansion decisions — grounded in the group’s move into the Gulf and East Africa.",
+            "evidence_anchor": "SD25 p.13, Passmore (b): \"advising on financial implications of strategic decisions\".",
+            "requirement_part": "(i) ways a dedicated treasury department can make a positive financial contribution",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "E1a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_positive",
+              "f_maximise"
+            ],
+            "disqualifiers": [
+              "F4",
+              "F7"
+            ],
+            "required_point": "Commit to a clear recommendation that the department is justified on income-maximising/cost-saving grounds, not as an extra cost layer — tying the advice back to the chief executive’s positive-financial-contribution test.",
+            "evidence_anchor": "SD25 p.13, Passmore (b): the CEO’s income/cost test; \"additional costs and procedures ... not relevant\" boundary + F4 fence-sitting (SD25 p.13, \"failed to do this\").",
+            "requirement_part": "(i) ways a dedicated treasury department can make a positive financial contribution",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Rule-23 golden BAD + designed F-modes. NOT served. Golden GOOD is model_answer. evidence_anchor per criterion carries the cited marking basis (this batch’s ruling; never served).",
+          "golden_bad": "The finance director has proposed carving out a separate, dedicated treasury department. There are various advantages and disadvantages of having a centralised treasury department. A centralised treasury gives economies of scale and better control over group cash, and allows standardised systems and netting. However, setting up a separate department also creates additional costs and procedures: there will be extra staff salaries, new systems to buy and maintain, and more internal processes and reporting to manage. There are also disadvantages such as a loss of local flexibility and possible duplication of effort. A treasury department therefore has both benefits and drawbacks that the group would need to weigh up in the usual way when deciding on its structure.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 8,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_positive",
+            "key": "positive financial contribution",
+            "kind": "constraint",
+            "text": "the requirement to make a positive financial contribution"
+          },
+          {
+            "id": "f_maximise",
+            "key": "maximise income or save costs",
+            "kind": "constraint",
+            "text": "the test of whether it can maximise income or save costs"
+          },
+          {
+            "id": "f_expand",
+            "key": "Gulf and into East Africa",
+            "kind": "entity",
+            "text": "the group expanding across the Gulf and into East Africa"
+          }
+        ],
+        "requirement_parts": [
+          "(i) ways a dedicated treasury department can make a positive financial contribution"
+        ]
+      },
+      "mode": "discursive"
+    },
+    {
+      "id": "f9f4f3d4-ff4c-4d73-854c-9150db322c14",
+      "exam_board": "ACCA",
+      "paper_code": "AFM",
+      "lo_code": "E2a",
+      "topic": "Types of foreign-exchange exposure and their management",
+      "command_verb": "identify, distinguish and assess",
+      "intellectual_level": 3,
+      "professional_skill_tag": null,
+      "calculation_required": false,
+      "marks_guide": 10,
+      "question": "Identify and distinguish the different kinds of foreign-exchange exposure that Zandberg Foods faces, and assess how each of them can be managed. In distinguishing the exposures, be clear about which of them threaten the group’s cash flows and which affect only its reported figures.",
+      "context_text": "Zandberg Foods, a South African packaged-goods manufacturer based in Johannesburg, sells a large share of its output to European supermarket chains under contracts priced in euros, with payment falling due several months after each order is agreed. It also owns a wholly-owned manufacturing subsidiary in Kenya whose assets and results are consolidated into Zandberg’s rand financial statements. The finance director is concerned that recent movements in the euro and the Kenyan shilling are creating several distinct kinds of currency risk, and is unsure which of them actually threatens the group’s cash flows as opposed to only its reported figures. The board has asked for the different kinds of foreign-exchange exposure the group faces to be identified, distinguished and assessed, together with how each can be managed.",
+      "model_answer": "**Foreign-exchange exposure — identifying, distinguishing and managing the three exposure types**\n\nZandberg faces three distinct exposures that must be told apart. The first is transaction exposure: because the sales are priced in euros with payment months later, the rand value of each receipt changes between agreeing the contract and being paid, so a euro that weakens against the rand directly reduces the cash Zandberg collects — this is a real cash-flow risk. The second is translation exposure on the subsidiary in Kenya: when its shilling assets and results are consolidated, a weaker shilling lowers their carrying value in the rand accounts, but this changes only the reported figures and does not move the group’s day-to-day cash, so it matters far less than transaction risk and should not be confused with it. The third is economic exposure: if the rand strengthens against the euro over time, Zandberg’s goods become dearer for the European supermarket chains relative to local rivals, eroding its competitive position and future sales — a slower, structural threat that is the hardest to see. On management: the transaction exposure on the euro receipts is readily hedged — a forward locks the rate, a money-market hedge achieves the same by borrowing and converting now, and matching euro income against any euro costs reduces the net amount to hedge. Translation exposure is usually managed, if at all, by funding the Kenyan subsidiary with shilling or matching-currency borrowing so that a fall in asset values is offset by a fall in liabilities; economic exposure is managed strategically, by diversifying the markets Zandberg sells into and the locations it produces in, so no single currency move dictates competitiveness. On balance the group should actively hedge the transaction exposure first, because it is the one that hits cash; translation exposure is a lower priority because it doesn’t touch cash — though it still matters if a weaker shilling drags on reported gearing or trips a loan covenant — and economic exposure calls for a longer-term diversification response rather than a financial hedge.",
+      "hint": "Naming the three exposures earns almost nothing — the marks are for DESCRIBING each one as it arises here (the euro receipts, the Kenyan subsidiary, the sales to European chains) and, crucially, for distinguishing which hit cash flows and which touch only the reported figures; then match a management response to each rather than saying \"use hedging\" in general.",
+      "full_reveal": "The defining misconception on an exposure-types requirement is that identifying the three risks is the task, so candidates name transaction, translation and economic exposure and stop — the examiner’s own report notes that most candidates identify the three but far fewer can describe them, economic risk worst of all. Naming without describing earns little. The second, deeper error is conflating translation with transaction: treating the consolidation effect on the Kenyan subsidiary as though it drained cash, when it moves only the reported figures. The reframe is to anchor each risk to how it actually bites here — the euro receipts create a cash-flow transaction risk, the Kenyan subsidiary a reporting-only translation effect, the sales to European chains a slow competitive economic threat — and then to prioritise management by what threatens cash: hedge the euro transaction exposure (forward or money-market) first, treat translation as a lower priority — matching-currency funding is the usual response, but it still deserves attention if it would drag on reported gearing or trip a loan covenant — and answer economic exposure with diversification rather than a financial hedge. Recognising that description and the cash-versus-reported distinction are where the marks sit, and committing to a priority, is what lifts an answer above a list of three labels.",
+      "published": true,
+      "created_at": "2026-07-24T14:53:11.403496+00:00",
+      "status": "approved",
+      "answer_schema": {
+        "mode": "narrative",
+        "bands": [
+          {
+            "min": 0,
+            "label": "fail"
+          },
+          {
+            "min": 0.5,
+            "label": "pass"
+          },
+          {
+            "min": 0.7,
+            "label": "good"
+          },
+          {
+            "min": 0.85,
+            "label": "excellent"
+          }
+        ],
+        "criteria": [
+          {
+            "id": "c1",
+            "lo": "E2a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_euro"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F2",
+              "F5"
+            ],
+            "required_point": "Identify and DESCRIBE transaction exposure as it arises here — the euro receipts priced in euros whose rand value changes between agreeing the contract and receiving payment — not merely naming it.",
+            "evidence_anchor": "F9 J16 examiner report p.5, Q3b [tier=fundamentals (F9/FM) — level-agnostic failure mode (named-not-described), NOT AFM-examiner-specific]: \"fewer candidates were able to offer clear descriptions of these risks as the basis for discussion\" — naming without describing earns little (F2); T8 transaction-risk definition.",
+            "requirement_part": "(i) identify and distinguish the kinds of foreign-exchange exposure",
+            "development_required": true
+          },
+          {
+            "id": "c2",
+            "lo": "E2a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_kenya",
+              "f_reported"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F2",
+              "F5"
+            ],
+            "required_point": "Identify and describe translation exposure on the Kenyan subsidiary consolidated into rand, AND distinguish it as largely a reporting effect on the reported figures that does not threaten day-to-day cash flows.",
+            "evidence_anchor": "HOUSE-AUTHORED: the translation≠transaction confusion (treating a paper consolidation effect as a cash-flow threat) is caught by requiring the reporting-only recognition. Supported by T8 (\"little real importance ... does not affect its day-to-day cash flows\") + F9 J16 p.5 [tier=fundamentals (F9/FM), level-agnostic] (description beyond naming is the marked skill).",
+            "requirement_part": "(i) identify and distinguish the kinds of foreign-exchange exposure",
+            "development_required": true
+          },
+          {
+            "id": "c3",
+            "lo": "E2a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_european"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F2",
+              "F5"
+            ],
+            "required_point": "Identify and describe economic exposure — the longer-term threat to Zandberg’s competitive position selling to European supermarket chains if the rand strengthens against the euro — the risk the examiner notes is described worst.",
+            "evidence_anchor": "F9 J16 p.5, Q3b [tier=fundamentals (F9/FM) — level-agnostic failure mode (named-not-described), NOT AFM-examiner-specific]: economic risk \"particularly\" poorly described; T8: economic risk is \"the change in the competitive strength of imports and exports\".",
+            "requirement_part": "(i) identify and distinguish the kinds of foreign-exchange exposure",
+            "development_required": true
+          },
+          {
+            "id": "c4",
+            "lo": "E2a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_euro"
+            ],
+            "disqualifiers": [
+              "F1",
+              "F2",
+              "F5"
+            ],
+            "required_point": "Assess how the transaction exposure can be managed — e.g. a forward, a money-market hedge, matching or invoicing choices — applied to the euro receipts, not a generic hedging list.",
+            "evidence_anchor": "T8 (F9 forex article): the \"dealing with transaction risk\" methods (invoice, netting, matching, leading/lagging, forward, money-market). NEVER framed as \"internal vs external\" — not ACCA vocabulary (CLOSED RULING).",
+            "requirement_part": "(ii) assess how each exposure can be managed",
+            "development_required": true
+          },
+          {
+            "id": "c5",
+            "lo": "E2a",
+            "marks": 2,
+            "anchor_facts": [
+              "f_kenya",
+              "f_european"
+            ],
+            "disqualifiers": [
+              "F4",
+              "F5"
+            ],
+            "required_point": "Assess how translation and economic exposure can be managed — e.g. funding the Kenyan subsidiary with local/foreign borrowing for translation, diversifying markets or production location for economic — and COMMIT to which exposures most warrant active management, given they are the ones threatening cash flows.",
+            "evidence_anchor": "T8: translation managed by matching-currency borrowing, economic by diversification; F4 for the committed assess-verdict; the cash-flow-vs-reported distinction drives the priority.",
+            "requirement_part": "(ii) assess how each exposure can be managed",
+            "development_required": true
+          }
+        ],
+        "_authoring": {
+          "note": "Rule-23 golden BAD + designed F-modes. NOT served. Golden GOOD is model_answer. evidence_anchor per criterion carries the cited marking basis (this batch’s ruling; never served).",
+          "golden_bad": "The finance director is concerned that recent movements in the euro and the Kenyan shilling are creating several distinct kinds of currency risk. The three kinds of foreign-exchange exposure are transaction exposure, translation exposure and economic exposure. Transaction exposure is a type of currency risk. Translation exposure is another type of currency risk that companies can face. Economic exposure is a third type of currency risk. All three of these are important kinds of foreign-exchange risk that a company like this could be exposed to and would need to think about. Companies can use hedging to deal with foreign-exchange risk in general.",
+          "designed_bad_flags": [
+            "F1",
+            "F5",
+            "F4"
+          ]
+        },
+        "total_marks": 10,
+        "rubric_version": "narrative_v1",
+        "scenario_facts": [
+          {
+            "id": "f_euro",
+            "key": "priced in euros",
+            "kind": "constraint",
+            "text": "the sales contracts priced in euros with delayed payment"
+          },
+          {
+            "id": "f_kenya",
+            "key": "subsidiary in Kenya",
+            "kind": "entity",
+            "text": "the wholly-owned subsidiary in Kenya consolidated into rand accounts"
+          },
+          {
+            "id": "f_european",
+            "key": "European supermarket chains",
+            "kind": "entity",
+            "text": "the sales to European supermarket chains (the competitive position)"
+          },
+          {
+            "id": "f_reported",
+            "key": "reported figures",
+            "kind": "constraint",
+            "text": "the distinction between cash flows and only reported figures"
+          }
+        ],
+        "requirement_parts": [
+          "(i) identify and distinguish the kinds of foreign-exchange exposure",
+          "(ii) assess how each exposure can be managed"
+        ]
+      },
+      "mode": "discursive"
+    }
+  ]
+}
