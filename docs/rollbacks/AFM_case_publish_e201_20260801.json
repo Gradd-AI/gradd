@@ -1,0 +1,20 @@
+{
+  "reason": "GATE-P publish flip",
+  "row": {
+    "id": "ac000000-0000-4000-8000-00000000e201",
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "syllabus_cycle": "S26-J27",
+    "section": "B",
+    "anchor_area": "E2",
+    "title": "Lindqvist Instruments AB",
+    "scenario_intro": "It is now 1 November 20X5. You are a financial adviser to the board of Lindqvist Instruments AB (\"Lindqvist\"), a Swedish manufacturer of precision measurement equipment, which reports in Swedish kronor (SEK). Write a report to the board of Lindqvist responding to its instructions in the requirements below, using the information in the exhibits provided. Professional marks will be awarded for the demonstration of skill in analysis and evaluation and commercial acumen in your answer.",
+    "response_format": "report",
+    "total_marks": 25,
+    "professional_skills_marks": 5,
+    "status": "candidate",
+    "published": false,
+    "created_at": "2026-08-01T14:56:22.797538+00:00",
+    "mock_only": false
+  }
+}

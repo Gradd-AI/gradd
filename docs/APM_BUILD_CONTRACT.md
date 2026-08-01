@@ -3329,3 +3329,42 @@ to produce** — that pairing is the reason these tags are defensible.
 **Note carried forward:** this does NOT close the PS ROUTING gap (see the correction in the second
 entry above). Case PS tags generate the weak-skill signal; only `acca_drills` answers it. The
 measured drill gap remains 4.
+
+## 2026-08-01 (fourth) — THE AFM PRACTICE LIBRARY IS LIVE (5 cases) + ADVICE-vs-COMPUTED scoped
+
+### GATE-P — four flips, one at a time
+
+Halvard `ac:b101` · Lindqvist `ac:e201` · Tamesis `ac:b401` · Castlereagh `ac:a101`, each through
+`scripts/authoring/publish-afm-case.ts` with the reconcile re-run before each. **P-DB4 clean on all
+four: `status` and `published` the only fields that moved.** Practice library 1 → 5; **sit surface
+3 → 3 on every single flip**, asserted by the script rather than observed.
+
+**A REAL DEFECT IN THE FLIP SCRIPT, found BEFORE the flips, not after.** The reconcile keyed on
+`id.slice(-4)`. Mock papers live in the `aa…` range and practice cases in `ac…`, and they COLLIDE
+on that suffix: mock Brecon is `aa000000-…-b101`, practice Halvard is `ac000000-…-b101`. Two
+colliding ids collapse into one `Set` entry, so an approved row with no journal entry could have
+hidden behind a journalled one — the exact pipeline leak the reconcile exists to catch, defeated by
+its own key. Key is now range-qualified (`aa:b101` vs `ac:b101`), fixed in `b5dea41`.
+
+**Process note, recorded because it cost a verification:** `--apply` was run twice on Lindqvist. The
+second run short-circuits on "already live" and returns BEFORE printing P-DB4, so that case's
+in-script post-verify output was lost. Re-verified independently against the committed pre-write
+snapshot — status/published moved, every other field byte-identical. Run `--apply` once.
+
+### Live walk — 14/14
+
+Practice list returns **5** cases and no `mock_only` row · **all five** serve through the
+id-addressed route with `marks_guide` and `professional_skill_tags` on every requirement and
+`model_answer`/`full_reveal`/`answer_schema` absent · Ezra teaches on **Castlereagh (ii) E3a**, a
+case not walked before, and caught the seeded contract-count error (the #1 examiner-flagged error in
+this family) · sit surface returns exactly Solenne / Brecon / Aldebrino with no `ac000000` row.
+
+**TWO TUTOR SIGHTINGS, logged not fixed:**
+1. **FALSE-POSITIVE DIAGNOSIS (new, PH5 class).** The synthetic answer said Castlereagh "should
+   **buy** futures"; Ezra replied "You've correctly identified that a borrower hedges by
+   **selling** futures". It credited the candidate with the OPPOSITE of what they wrote. The
+   direction error is the one IRH-20 exists to gate at authoring time, and the tutor waved it
+   through as correct.
+2. **INTERNAL-TAXONOMY LEAK (second sighting).** "To hit ACCA intellectual level 3 on this
+   **calculate** verb…" — same class as the Kestrel walk's "At ACCA intellectual level 3, where
+   'calculate' sits". Two sightings on two different cases makes this a pattern, not a one-off.
