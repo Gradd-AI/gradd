@@ -3141,3 +3141,71 @@ the day it was written.
 
 **Gates:** `tsc --noEmit` clean · `next build` GREEN · `test:pacing` 0 · `test:sit-timing`
 selftest 0 · `test:afm-label-marks` 0 · `test:mock-access` 0. **DB: the two columns, nothing else.**
+
+## 2026-08-01 — PS TAGS WRITTEN (P-DB2), THE CORPUS GAP RE-MEASURED TO 4 DRILLS, KESTREL FOODS INSERTED
+
+**Three blocks, all closed. `main` green and deployed throughout.**
+
+### 1. The generator defect behind the PS gap — found, not guessed
+
+`runNarrativeBatch` hardcoded `professional_skill_tag: null`, which is where the 8 nulls came from.
+The instructed fix was to route it through `deriveSkillTag` "as the calculator batches do" — that
+would not have worked, and finding out why was the session's most useful result:
+`buildSpecsForList` declares `sectionIdx` **local to each call**, and every batch calls
+`buildSpecsForList([oneLo])[0]`, so the index is always 0 and the rotation always returns pool[0].
+**The rotation was never bypassed; it was defeated by the call shape.** That single fact explains the
+whole published distribution — 47 quantitative B/E drills tagged `analysis_and_evaluation` and the
+one section-A drill tagged `communication`.
+
+Hoisting `sectionIdx` to module scope was REJECTED: it makes the tag depend on generation ORDER, so
+re-running a batch would silently re-tag its drills. `NarrativePlan` now DECLARES `skill` per plan,
+and the same value both lands in the row and steers the Ezra reveal prompt (`86765ec`).
+
+### 2. P-DB2 write — the 8 published narrative rows are tagged
+
+Assessed from each drill's OWN rubric, printed in full before the write:
+**commercial_acumen ×4** (`08044fb6` B3a · `32ef124c` B5c · `55181aa8` E1a · `d0be009d` E1a) ·
+**scepticism ×2** (`fda46d99` B3i · `d413fbe7` B4d) · **analysis_and_evaluation ×2** (`cb9b411c`
+B1b · `f9f4f3d4` E2a — the honest tag, not the defect's default, recorded as such).
+`d413fbe7` flagged in-script as the one soft call (4–5 of 12 marks).
+
+P-DB3 snapshot committed BEFORE the write (`docs/rollbacks/AFM_narrative_ps_tag_20260801.json`).
+**P-DB4: 8/8 rows, `professional_skill_tag` the ONLY field that moved, every other field
+byte-identical.** Script committed at `scripts/authoring/tag-afm-narrative-skills.ts` under P-DB6,
+with guards that refuse any non-published/approved row and refuse to overwrite an existing tag.
+
+### 3. The re-measurement changed what the gap IS
+
+Corpus-wide counts were the wrong measure. Steering happens INSIDE an area, so the question is
+whether an AREA can serve a SKILL. Cross-referenced against the 10 (requirement × skill) demands
+AFM Mock 1 generates: **5 have no matching drill in that area**, and **24 marks sit on requirements
+where not one examined skill resolves**. The number is therefore **4 drills** — scepticism in B1,
+scepticism in E2, commercial_acumen in E2, communication in B5 — not a vague "author more
+scepticism". The every-area×every-skill figure (23 cells) is recorded as an unmotivated ceiling.
+
+### 4. Kestrel Foods plc — the first standalone AFM practice case, INSERTED
+
+`ac000000-…-b501` · Section B · 25 marks (20 technical + 5 PS) · 5 exhibits · 2 requirements
+((i) B5b 13m calculate, `analysis_and_evaluation`; (ii) E2a 7m evaluate,
+`scepticism,commercial_acumen`). **All gates green** — spec validation, C1/C2/C4, the corpus
+invariant, exhibit-recoverability (14/14 calculator inputs stated), 19/19 B5b barrier lines, 5/5
+E2a narrative lines. Written as **`candidate` / `published=false` / `mock_only=false`** exactly as
+scoped.
+
+**CONFIRMED, and one confirmation could not be made in the state that was asked for.** The practice
+list, the id-addressed case route and the teach route ALL gate on `status='approved' AND
+published=true`. Kestrel is deliberately neither, so **it does not serve and Ezra does not teach on
+it yet** — that needs a publish flip, which is a separate P-DB2/GATE-P decision and was not taken.
+What IS proved: every field the routes select is present and non-null on both requirements
+(`marks_guide`, `professional_skill_tags`, `question`, `model_answer`, `hint`, `full_reveal`,
+`answer_schema`); the practice list returns 0 rows and does not contain it; **the sit surface
+returns exactly the 3 mock cases and does not contain it** — `mock_only=false` cannot match the
+sit's `mock_only=true` predicate, so the AFM mock surface is untouched by its existence.
+
+### 5. Also this session — the marker-feedback register merged (round 3)
+
+`fix/marker-feedback-register` merged (`7601e28`): the `{ index, judgement, band, feedback }` split.
+Grant accepted the band drift on A(iii)/A(iv). Two standing rules banked in `GENERATOR_DOCTRINE.md`
+— **P-M2** (the marking baseline is a 10-run modal reading, never externally validated; a band
+matrix is evidence of CHANGE, never of error) and **P-M3** (the marker uses the comparison to DECIDE
+the band; fence it structurally rather than degrading the reference).
