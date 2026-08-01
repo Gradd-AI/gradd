@@ -164,10 +164,13 @@ const EZRA_SYSTEM =
   'Diagnostic frame: APM candidates know the models. They lose marks on APPLICATION ' +
   '(failing to deploy the model on the specific scenario facts) and EVALUATION ' +
   '(failing to give a supported professional judgement when the verb demands one), ' +
-  'and by stopping at intellectual level 2 when the verb demanded level 3. ' +
-  'Use the command verb and the ACCA intellectual level it demands (1, 2, or 3) to orient ' +
-  'the student on what the question is really asking — not to deliver a verdict on them. ' +
-  'ACCA APM uses intellectual levels 1/2/3 — never use IB AO framing ("AO1", "AO5", or similar). ' +
+  'and by stopping at description when the requirement demanded judgement. ' +
+  // The persona itself used to name the taxonomy. Removed 2026-08-01 with the rest of the fence —
+  // an instruction elsewhere not to say "intellectual level 3" loses to a persona that says the
+  // model should reason in those terms.
+  'Use what the requirement demands (supplied per turn) to orient the student on what the ' +
+  'question is really asking — not to deliver a verdict on them. Never name an internal grading ' +
+  'taxonomy to the student: no intellectual levels, no AO framing, no command-verb labels. ' +
   'Professional scepticism — questioning assumptions, naming commercial risks, ' +
   'identifying constraints the model surfaces — is a substantive analytical move ' +
   'you teach explicitly, not a soft add-on. ' +
@@ -277,8 +280,16 @@ async function call3_hint(
   attempt: string,
   diagnosis: string,
   verbLevel: string,
+  // THE FENCE BELONGS HERE TOO, and putting it only on the diagnose leg was a measured mistake:
+  // the rate went 4/20 → 12/20 with the fence on diagnose alone. call2_diagnose emits a 12–15
+  // word LABEL; this leg writes what the student actually reads, and with no access to the
+  // discriminant it was confabulating the rule ("borrowers do buy futures"). The statements are
+  // METHOD facts, not figures — the same trust tier as `conventions`, which this leg already
+  // sees — so they are safe here and the moat is untouched.
+  groundedFacts = '',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
   const vlLine = verbLevel
     // Was "Authored command verb + intellectual level (name these — do not infer)". The model
     // did name them, and students saw "At ACCA intellectual level 3, where 'calculate' sits…".
@@ -297,12 +308,26 @@ async function call3_hint(
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
+          gfLine +
           vlLine +
-          'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
-          'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
-          'move. Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
-          'structured breakdown. Work in the command verb and ACCA intellectual level from the ' +
-          "authored values above (do not infer them when given). Don't state the answer.",
+          // THE PRAISE INSTRUCTION IS NOW CONDITIONAL, and that is the other half of the fix.
+          // "Lead with the ONE specific thing they got right" COMPELS praise on every turn. Given
+          // an answer that is wrong on the side of the trade, the model manufactures one — which
+          // is where "you've correctly identified the direction — borrowers do buy futures" came
+          // from. It was not ignoring the fence; it was obeying a stronger instruction. Where code
+          // has established a contradiction there is no opening credit to give on that axis, so
+          // the prompt stops asking for it.
+          (groundedFacts.includes('CONTRADICTION FOUND')
+            ? 'First miss, and the answer is on the WRONG SIDE of a settled choice stated above. ' +
+              'Do NOT open by crediting them with that choice — they did not make it. Say plainly ' +
+              'which way round it actually goes and why, then give one next move. If something ' +
+              'else in their work is genuinely right you may say so, but never the thing the ' +
+              'contradiction names.'
+            : 'First miss. Lead with the ONE specific thing they got right — name the real move, ' +
+              'not vague praise — then name the single sharpest gap (just one, not a list) and ' +
+              'one next move.') +
+          ' Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
+          "structured breakdown. Don't state the answer.",
       },
     ],
   });
@@ -318,8 +343,10 @@ async function call3_teach(
   diagnosis: string,
   verbLevel: string,
   offerReveal: boolean,
+  groundedFacts = '',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
   const vlLine = verbLevel
     ? `What this requirement demands (diagnose against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
@@ -337,13 +364,18 @@ async function call3_teach(
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
           `Gap diagnosis: ${diagnosis}\n\n` +
+          gfLine +
           vlLine +
-          "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with " +
-          'the specific thing that IS working, then name the ONE gap that matters most (one, sharply ' +
-          '— not a list of four) and the single next move that unblocks it. Conversational prose, 3 ' +
-          'sentences, 4 at the most — no numbered points or structured breakdown, a sharp tutor ' +
-          'talking not a marked script. Use the authored command verb and ACCA intellectual level ' +
-          'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.' +
+          (groundedFacts.includes('CONTRADICTION FOUND')
+            ? "Second miss, and the answer is still on the WRONG SIDE of a settled choice stated " +
+              'above. Do NOT credit them with that choice. State plainly which way round it goes ' +
+              'and why, then the single next move.'
+            : "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead " +
+              'with the specific thing that IS working, then name the ONE gap that matters most ' +
+              '(one, sharply — not a list of four) and the single next move that unblocks it.') +
+          ' Conversational prose, 3 sentences, 4 at the most — no numbered points or structured ' +
+          'breakdown, a sharp tutor talking not a marked script. Use what the requirement demands ' +
+          'above to pin the gap accurately. Do not complete the answer or give the figures.' +
           offerLine,
       },
     ],
@@ -655,7 +687,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind = 'teaching';
     const contextAttempt = lastRealAttempt ?? studentMessage;
     const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2);
+    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts);
     teachThroughDelivered = true;
   } else {
     const classified: Intent = INTENT_LAYER_ENABLED
@@ -690,10 +722,10 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         newLastRealAttempt = studentMessage;
 
         if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel);
+          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts);
           messageKind = 'hint';
         } else {
-          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2);
+          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts);
           teachThroughDelivered = true;
           messageKind = 'teaching';
         }
