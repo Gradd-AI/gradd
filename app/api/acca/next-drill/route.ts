@@ -2,6 +2,107 @@ import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper, type AccaPaper } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
+import {
+  selectionBoost,
+  pickWeighted,
+  isWeakSkillBand,
+  NO_SIGNALS,
+  type SelectionSignals,
+  type WeakAreaRow,
+} from '@/lib/acca/weak-areas';
+
+// ── WEAKNESS STEERING IS LIVE (2026-07-31) ────────────────────────────────────
+// `W_WEAK = 0` with `weaknessWeight = () => 0` was the item-5 seam: the term was present in
+// the interleave scorer from v1 and weighted zero because no per-(user, LO) ledger existed.
+// `acca_weak_areas` is that ledger, and a marked sit now writes it, so the term is on.
+//
+// TWO THINGS ABOUT WHERE IT IS APPLIED, and the second is the one that matters:
+//
+//   1. The scorer's weakness term is now real, via lib/acca/weak-areas.ts.
+//   2. IT IS APPLIED ON THE LIVE `area=` AND `lo=` PATHS TOO, not only in the scorer. The
+//      scorer runs behind `APM_INTERLEAVE`, which is NOT set in production — steering only
+//      there would have shipped a ledger that no student's serve ever reads. The live paths
+//      are where "try another" actually resolves today, so that is where the steering has
+//      to be for any of this to reach a student.
+//
+// PROFESSIONAL-SKILL STEERING ships with it, on the same three paths. `acca_drills` has
+// carried `professional_skill_tag` since the generator wrote it and NOTHING read it at
+// serve time; the sit's PS pass is the first thing that produces a judgement about those
+// skills, so the loop closes here — a student marked weak on scepticism meets drills that
+// demand scepticism. That signal is read from `acca_case_marking.per_skill`, not from
+// `acca_weak_areas`: that table is keyed by lo_code and a professional skill is not an LO.
+//
+// ROLLBACK PROPERTY, deliberate and fixtured: with no ledger rows and no PS marking every
+// candidate scores 0, so `pickWeighted` degrades to the uniform random choice these paths
+// made before — a student who has never sat a mock sees exactly the previous behaviour.
+
+/** The serve payload. Built explicitly on EVERY path so a column added to the SELECT for
+ *  scoring — `professional_skill_tag` is one, `model_answer` was already another — can never
+ *  ride along into the response. */
+const serveDrill = (d: {
+  id: string; lo_code: string; topic: string; question: string; context_text: string | null;
+}) => ({
+  id: d.id, lo_code: d.lo_code, topic: d.topic, question: d.question, context_text: d.context_text,
+});
+
+/**
+ * Read this user's weakness signals for ONE paper.
+ *
+ * PAPER-SCOPED ON BOTH HALVES. AFM and APM LO codes collide exactly, so an unscoped ledger
+ * read would steer an APM student using an AFM sit's findings — the same failure the drill
+ * fetch has always guarded against with `paper_code`. The PS half is scoped by resolving the
+ * marking rows' cases and keeping only this paper's.
+ *
+ * Degrades to NO_SIGNALS on any read failure. Selection must never 500 because a steering
+ * lookup failed; the honest fallback is the unsteered pick.
+ */
+async function loadSelectionSignals(
+  supabase: ReturnType<typeof createServiceClient>,
+  userId: string,
+  paper: AccaPaper,
+): Promise<SelectionSignals> {
+  try {
+    const { data: weak } = await supabase
+      .from('acca_weak_areas')
+      .select('lo_code, band, occurrence_count, source')
+      .eq('user_id', userId)
+      .eq('paper_code', paper)
+      .is('resolved_at', null)
+      .limit(100);
+
+    // PS bands live in acca_case_marking.per_skill (jsonb). Two small queries rather than a
+    // join: fetch this user's marking rows, then keep only the ones whose case belongs to
+    // this paper.
+    const { data: marking } = await supabase
+      .from('acca_case_marking')
+      .select('case_id, per_skill')
+      .eq('user_id', userId)
+      .limit(50);
+
+    const weakSkills = new Set<string>();
+    const rows = (marking ?? []) as Array<{ case_id: string; per_skill: unknown }>;
+    if (rows.length > 0) {
+      const { data: paperCases } = await supabase
+        .from('acca_cases')
+        .select('id')
+        .in('id', rows.map((r) => r.case_id))
+        .eq('paper_code', paper);
+      const inPaper = new Set((paperCases ?? []).map((c: { id: string }) => c.id));
+      for (const r of rows) {
+        if (!inPaper.has(r.case_id) || !Array.isArray(r.per_skill)) continue;
+        for (const s of r.per_skill as Array<{ skill?: unknown; band?: unknown }>) {
+          if (typeof s?.skill === 'string' && isWeakSkillBand(s?.band as string)) {
+            weakSkills.add(s.skill);
+          }
+        }
+      }
+    }
+
+    return { openWeaknesses: (weak ?? []) as WeakAreaRow[], weakSkills };
+  } catch {
+    return NO_SIGNALS;
+  }
+}
 
 export async function GET(request: Request): Promise<Response> {
   const authClient = await createServerClient();
@@ -22,14 +123,16 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   const supabase = createServiceClient();
+  const signals = await loadSelectionSignals(supabase, user.id, paper);
 
   // area= mode: pick a drill from a sub-area (e.g. ?area=B1 → lo_code LIKE 'B1%'). A zero-attempt
   // FIRST serve in the area gets the deterministic ENTRY drill (foundational kind); any prior attempt
-  // in the area → random ("try another"). Entry keyed on the stable model_answer heading (regen-safe).
+  // in the area → weakness-steered pick ("try another"). Entry keyed on the stable model_answer
+  // heading (regen-safe).
   if (area && !lo) {
     const { data: areaData } = await supabase
       .from('acca_drills')
-      .select('id, lo_code, topic, question, context_text, model_answer')
+      .select('id, lo_code, topic, question, context_text, model_answer, professional_skill_tag')
       .eq('exam_board', 'ACCA')
       .eq('paper_code', paper)
       .eq('status', 'approved')
@@ -43,11 +146,15 @@ export async function GET(request: Request): Promise<Response> {
         .select('id', { count: 'exact', head: true })
         .eq('user_id', user.id)
         .like('lo_code', `${area}%`);
+      // THE ENTRY DRILL STILL WINS OUTRIGHT on a zero-attempt area, and steering does not get a
+      // vote there. A first serve in an area must be the foundational kind whatever a mock said
+      // about the student — arriving in a new area on the hardest drill because a sit went badly
+      // is the opposite of what the ledger is for.
       const entry = (count ?? 0) === 0 ? pickEntryDrill(areaData) : null;
-      const chosen = entry ?? areaData[Math.floor(Math.random() * areaData.length)];
-      // model_answer was fetched ONLY for entry ranking — return the serve fields explicitly so it
-      // never reaches the client (the serve payload is question/context only).
-      return NextResponse.json({ id: chosen.id, lo_code: chosen.lo_code, topic: chosen.topic, question: chosen.question, context_text: chosen.context_text });
+      const chosen = entry ?? pickWeighted(areaData, (d) => selectionBoost(d, signals))!;
+      // model_answer and professional_skill_tag were fetched ONLY for ranking — serveDrill returns
+      // the serve fields explicitly so neither reaches the client.
+      return NextResponse.json(serveDrill(chosen));
     }
     return NextResponse.json({ error: 'No drills found for this area' }, { status: 404 });
   }
@@ -55,18 +162,23 @@ export async function GET(request: Request): Promise<Response> {
   // ── Interleave mode (P3 / item 4) — section-anchored mixed pick. Gated; needs drill_id.
   // Flag off OR no drill_id → falls through to the legacy same-sub-area path below (exact rollback).
   if (INTERLEAVE_ENABLED && lo && drillId) {
-    const picked = await pickInterleaved(supabase, { lo, drillId, userId: user.id, paper });
+    const picked = await pickInterleaved(supabase, { lo, drillId, userId: user.id, paper, signals });
     if (picked) return NextResponse.json(picked);
     // null → nothing to serve at all; fall through to the legacy/terminal handling (404 contract)
   }
 
-  // lo= mode: prefer same sub-area, exclude current drill
+  // lo= mode: prefer same sub-area, exclude current drill. Each tier now picks by
+  // `selectionBoost` instead of `Math.random()` over the tier — and with no signal the two
+  // are the same thing, because every candidate scores 0 and the tiebreak is random.
   const subArea = lo!.slice(0, 2);
+  const SERVE_SEL = 'id, lo_code, topic, question, context_text, professional_skill_tag';
+  const steer = (d: { lo_code: string; professional_skill_tag?: string | null }) =>
+    selectionBoost(d, signals);
 
   // Prefer same sub-area (same syllabus section), exclude current drill
   const { data: sameArea } = await supabase
     .from('acca_drills')
-    .select('id, lo_code, topic, question, context_text')
+    .select(SERVE_SEL)
     .eq('exam_board', 'ACCA')
     .eq('paper_code', paper)
     .eq('status', 'approved')
@@ -76,14 +188,13 @@ export async function GET(request: Request): Promise<Response> {
     .limit(10);
 
   if (sameArea && sameArea.length > 0) {
-    const pick = sameArea[Math.floor(Math.random() * sameArea.length)];
-    return NextResponse.json(pick);
+    return NextResponse.json(serveDrill(pickWeighted(sameArea, steer)!));
   }
 
   // Fall back to any other approved drill
   const { data: anyDrill } = await supabase
     .from('acca_drills')
-    .select('id, lo_code, topic, question, context_text')
+    .select(SERVE_SEL)
     .eq('exam_board', 'ACCA')
     .eq('paper_code', paper)
     .eq('status', 'approved')
@@ -92,8 +203,7 @@ export async function GET(request: Request): Promise<Response> {
     .limit(20);
 
   if (anyDrill && anyDrill.length > 0) {
-    const pick = anyDrill[Math.floor(Math.random() * anyDrill.length)];
-    return NextResponse.json(pick);
+    return NextResponse.json(serveDrill(pickWeighted(anyDrill, steer)!));
   }
 
   // No other drills available — re-serve a drill from the current LO. MUST return a full
@@ -101,7 +211,7 @@ export async function GET(request: Request): Promise<Response> {
   // tutor POST send drill_id:null, silently killing §5b/§10 persistence + the earn gate.
   const { data: sameLo } = await supabase
     .from('acca_drills')
-    .select('id, lo_code, topic, question, context_text')
+    .select(SERVE_SEL)
     .eq('exam_board', 'ACCA')
     .eq('paper_code', paper)
     .eq('status', 'approved')
@@ -110,7 +220,7 @@ export async function GET(request: Request): Promise<Response> {
     .limit(20);
 
   if (sameLo && sameLo.length > 0) {
-    return NextResponse.json(sameLo[Math.floor(Math.random() * sameLo.length)]);
+    return NextResponse.json(serveDrill(pickWeighted(sameLo, steer)!));
   }
 
   // Truly nothing to serve — 404 so the client keeps the current drill (never blanks it).
@@ -118,23 +228,27 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 // ── Item 4: interleaved selection (behind APM_INTERLEAVE) ──────────────────────
-// Scorer weights — tunable. W_WEAK is the item-5 seam: term present, 0 until the
-// per-(user, LO) weakness ledger ships; item 5 supplies weaknessWeight + flips W_WEAK on.
-const W_DEMAND = 2, W_FRESH = 1, W_RESOLVED = 3, W_WEAK = 0;
-const weaknessWeight = (_lo: string): number => 0; // item-5 hook
+// Scorer weights — tunable. W_WEAK and W_PS are no longer local constants: they live in
+// lib/acca/weak-areas.ts with the scoring functions they weight, so the live area=/lo=
+// paths and this scorer cannot end up steering by different amounts. The item-5 seam is
+// CLOSED — the term reads a real ledger.
+const W_DEMAND = 2, W_FRESH = 1, W_RESOLVED = 3;
 
 interface Cand {
   id: string; lo_code: string; topic: string; question: string;
   context_text: string | null; intellectual_level: number | null; command_verb: string | null;
+  professional_skill_tag: string | null;
 }
 
 async function pickInterleaved(
   supabase: ReturnType<typeof createServiceClient>,
-  { lo, drillId, userId, paper }: { lo: string; drillId: string; userId: string; paper: AccaPaper },
-): Promise<(Cand & { section_changed?: boolean }) | null> {
+  { lo, drillId, userId, paper, signals }: {
+    lo: string; drillId: string; userId: string; paper: AccaPaper; signals: SelectionSignals;
+  },
+): Promise<(Omit<Cand, 'professional_skill_tag'> & { section_changed?: boolean }) | null> {
   const section = lo[0];
   const subArea = lo.slice(0, 2);
-  const SEL = 'id, lo_code, topic, question, context_text, intellectual_level, command_verb';
+  const SEL = 'id, lo_code, topic, question, context_text, intellectual_level, command_verb, professional_skill_tag';
 
   // One in-section fetch: current row gives demand context, the rest are candidates.
   const { data: sect } = await supabase.from('acca_drills').select(SEL)
@@ -169,14 +283,21 @@ async function pickInterleaved(
     if (!tier.length) return null;
   }
 
+  // `selectionBoost` carries BOTH steering terms (W_WEAK × weakness, W_PS × PS match) with
+  // the same weights the live paths use — one definition, two call sites.
   const score = (c: Cand) =>
       W_DEMAND   * (curLevel != null && (c.intellectual_level !== curLevel || c.command_verb !== curVerb) ? 1 : 0)
     + W_FRESH    * (c.lo_code !== lo ? 1 : 0)
     - W_RESOLVED * (resolved.has(c.id) ? 1 : 0)
-    + W_WEAK     * weaknessWeight(c.lo_code);
+    + selectionBoost(c, signals);
 
-  const max = Math.max(...tier.map(score));
-  const top = tier.filter(c => score(c) === max);     // random tiebreak within the top band
-  const pick = top[Math.floor(Math.random() * top.length)];
-  return sectionChanged ? { ...pick, section_changed: true } : pick;
+  const pick = pickWeighted(tier, score)!;            // max score, random tiebreak within it
+  // professional_skill_tag was fetched for scoring only — the serve payload is built
+  // explicitly so it does not ride along to the client.
+  const serve = {
+    id: pick.id, lo_code: pick.lo_code, topic: pick.topic, question: pick.question,
+    context_text: pick.context_text,
+    intellectual_level: pick.intellectual_level, command_verb: pick.command_verb,
+  };
+  return sectionChanged ? { ...serve, section_changed: true } : serve;
 }

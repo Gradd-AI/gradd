@@ -2,7 +2,11 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-29 (third change-set, `feat/sit-marking-and-gate` **MERGED to main**; `APM_CASES=1` confirmed set in production; walk re-run with a deliberate band spread — 7/7 bands hit target, 6 non-`nothing` bands all scored >0, paper 60/100; the `passed`-is-unset docs claim corrected; allowlist coverage recovered as 17 serving-gate fixtures. **The 3 AFM cases are still NOT flipped — P-DB2, Grant's, and `/acca/afm/mock` is dark until then.** Change-set contents: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
+*Last refreshed: 2026-07-31 (the SIT LOOP closed end to end on branch `feat/sit-loop-end-to-end`, NOT merged and NOT deployed — Grant's review first. `SitRunner` moved to `components/acca/`; a results endpoint that marks both passes, persists `technical_feedback`, computes pacing and returns the debrief; the debrief rendered with case grouping, per-case subtotals, one headline, and per-requirement band/marks/collapsed-why/next-action with pacing adjacent and never merged; `W_WEAK = 0` closed — `acca_weak_areas` written by a marked sit on weak|competent bands and read by `next-drill` on the LIVE `area=`/`lo=` paths as well as the gated scorer, with PS-tag steering alongside it. Proven on a synthetic user against the real routes, then scoped-deleted with AFM Mock 1 re-proved virgin. Three new open items — see the block below.)*
+
+*Earlier: 2026-07-30 (measurement + debrief presentation. Marker feedback prose measured: 114 of 1,518 asserted figures are owned by no component, 96.5% of them in STRONG-band feedback — the "code owns every figure" claim CORRECTED in `CLAUDE.md`, `AFM_COVERAGE_CONTRACT.md` and `PRODUCT_STRENGTH_STANDARD.md`, and N1–N5 corrected from "marking" to AUTHORING gates. Schema widening STOPPED — see the ⛔ block below: `irhedge` one-leg schema DEFERRED to the next authoring batch, omitted intermediates CLOSED permanently, B5b logged only. NO published row was written. Debrief presentation fixed: LO-code/marks leak closed with a `Q1 (i)` display name used everywhere including the headline, case grouping + per-case subtotals, collapse-headline selection rule, forward-reference removed, strong-band justification collapsed behind an expand with the verbatim guarantee intact.)*
+
+*Earlier: 2026-07-29 (third change-set, `feat/sit-marking-and-gate` **MERGED to main**; `APM_CASES=1` confirmed set in production; walk re-run with a deliberate band spread — 7/7 bands hit target, 6 non-`nothing` bands all scored >0, paper 60/100; the `passed`-is-unset docs claim corrected; allowlist coverage recovered as 17 serving-gate fixtures. **The 3 AFM cases are still NOT flipped — P-DB2, Grant's, and `/acca/afm/mock` is dark until then.** Change-set contents: `sitting` threaded into both mark call sites; per-skill `mark_awarded` no longer returned to the client; the inverted sit gate RETIRED + allowlist deleted + sit writes moved to `case/turn` — the publish-flip trap is closed in code and the flip itself is still owed under P-DB2; `MOCK_SIT_MODE` HELD false, SitRunner generalisation banked as the next change-set. Earlier same day: PS pass exercised — PS pass run on the ordinal contract — 0/30 parse failures, contract holds 0 violations/30 chains, PS spread 17–19 on a 20-mark pool; the per-skill `mark_awarded` apportionment artefact SURFACED, not fixed. Earlier same day: marking parse failures: the per-requirement split REVERTED, the ordinal contract and max_tokens 3000 KEPT, `extractJsonBlock` shipped with 16 fixtures; 10-run harness = 0/30 parse failures, B2(i) competent/6 in 10/10, A(iv) strong/5 in 9/10; doctrine P-M1 added).*
 
 *Earlier: 2026-07-28 (Mock 1 barrier GREEN — capm registered + CAPM-1/2/4/9 built, 0 false positives; gate result model pass/fail/not_evaluated banked + Mock 1 barrier RED on the B3e P6 blocker; P7 misconception-lead fixed across 8 published drills, corpus now 0/57, packs re-audited; earlier: recompute registry built + scoped to the 5 mock numeric requirements; `subsumed` verdict shipped; the 5 mock numeric requirements re-serialised with their discriminants (P-DB2 authorised, post-write verified clean); the 74 published-corpus ids recorded as unresolved status-quo. Earlier same day: blind-candidate QA findings banked as PENDING content edits).*
 
@@ -10,104 +14,321 @@
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
-## 🔸 OPEN 2026-07-29 — the mock-content carve-out is TRANSITIONAL, and one decision is owed
+## ⛔ CLOSED-BY-RULING 2026-07-30 — schema widening STOPS HERE; only ONE real defect shape exists
 
-**Shipped:** `GET /api/acca/case` and `POST /api/acca/case/turn` refuse a `mock_only` case unless
-the requester has an OPEN, UNCOMPLETED `acca_mock_attempts` row **for that case's own paper**, and
-even then serve it with the sit route's withholding (`marks_guide`, `professional_skill_tags`,
-`intellectual_level`, `command_verb`, `lo_code` not selected; label code derived away). Fixtures:
-`npm run test:mock-access` (40, pure). Live-verified 31/31.
+Measurement session (read-only). The marker's feedback prose asserts figures no schema component
+owns — that finding is banked in `CLAUDE.md` ("MARKING DOES NOT EARN THAT CLAIM"). Investigating
+it surfaced three separate questions about schema coverage. **Two are closed permanently. One is
+deferred with a named trigger. NOTHING was written to a published row.**
 
-**WHY A CARVE-OUT AND NOT A BLOCK — this is the transitional part.** The APM timed mock serves its
-content *through those exact routes*: `MockRunner.tsx:258` loads each case via `GET /api/acca/case`,
-and the embedded `CaseSession` loads via the same route (`:161`) and turns via `/api/acca/case/turn`
-(`:281`) with `sitting=false`. `/api/acca/sit` is bound to `AFM_MOCK_PAPER_1`, so it cannot serve
-APM. **An unconditional block would have taken `/acca/mock` offline for entitled students.**
-→ **Once SitRunner serves both papers, APM stops using the case routes for mock content and this
-guard becomes an unconditional refusal.** Fold that into that change-set; do not leave the carve-out
-standing once its reason is gone.
+### 🟠 DEFERRED (named trigger) — E3a one-leg schema: `irhedge.ts` is the sole outlier
 
-**✅ RESOLVED — `marks_guide` is SERVED to mock content** (Grant-ruled 2026-07-29). It is an integer
-mark ALLOCATION, not a mark scheme: every real paper prints marks per requirement and a candidate
-needs them to pace a 3h15m sit. Restored on `GET /api/acca/case`; the other eight fields stay
-withheld. `POST /api/acca/case/turn` needed no change — it never returned `marks_guide` in either
-branch, so nothing there was withheld to restore. The sit route's rationale block is corrected: it
-had called `marks_guide` "the authored criteria that earn marks: a mark scheme", which is wrong
-about the column, and each withheld field now carries its own real reason.
+`buildIrFuturesSchema` (`irhedge.ts:542`), `buildIrOptionsSchema` (`:595`) and
+`buildIrCollarSchema` (`:648`) each take `c.scenarios[0]` for their components while
+`build*ModelAnswer` maps over **every** scenario — so the model answer renders two legs and the
+schema owns one. Checked all **28 `build*Schema` functions across 12 family modules**: these three
+are the ONLY instances. `buildIrSwapSchema` has no scenarios and is unaffected.
 
-### 🔸 OPEN — should `/api/acca/sit` serve `marks_guide` too? · **FENCED 29/07/2026**
+**Affects 4 rows** — published drills `56989d69` (futures), `1c133573` (options), `f088daa5`
+(collar), plus the Mock Paper 1 `(i) E3a` requirement. This is the hole the sighted €216,000
+fell through: the fall-scenario loss has no `expected_value`, so nothing downstream can check a
+restatement of it.
 
-> **🚧 FENCED by `npm run test:afm-label-marks`** (`scripts/test-afm-label-marks.ts`) — the risk
-> below is held while the fix is deferred. The fixture reads the LIVE rows (it must: the fragility
-> is a CONTENT edit, and `test-sit-preview.ts` pins label behaviour against literal strings, so it
-> would stay green through a re-author) and asserts, for all 8 AFM Mock 1 requirements: the stored
-> label states its marks · the **served** label still states them after `sitDisplayLabel` · the
-> label's number equals `marks_guide` · the totals reconcile to 80. A short read or an empty result
-> set is a FAILURE, never a silent pass. `--selftest` proves the failure path fires on all seven
-> break modes (label tidied to `"(i) B3e"`, marks removed, marks disagreeing with the column, empty
-> label, null label, short read, empty set) without touching the DB.
->
-> **⚠ THE SITRUNNER CHANGE-SET MUST RETIRE THIS FIXTURE.** Once `/api/acca/sit` serves
-> `marks_guide` and the runner composes the label from `label` + the column, the prose marks stop
-> being load-bearing and this fixture is asserting a rule that has been replaced — **delete
-> `scripts/test-afm-label-marks.ts` and its npm script in that change-set**, do not leave it
-> passing for a reason that no longer exists.
+**NOT FIXED, deliberately.** The cost is not "add components":
+- `scripts/_author_irhedge_batch.ts` was gitignored (`scripts/_*`) and **has been deleted**. There
+  is no `--irhedge-batch` generator wiring either. No supported re-authoring path exists today.
+- **Stored `params` carry only leg 0's rate** — `1c133573 base_rate:2.4` · `f088daa5 base_rate:3.4`
+  · `56989d69 base_rate:5.9`. The second leg's rate survives ONLY as prose in the rendered
+  `model_answer` table. Re-authoring means recovering it by parsing rendered prose, and a wrong
+  recovery **moves figures that are currently correct** — on 4 rows, on a paper no student has sat.
+- 3 of the 4 `irh_*` recompute fns cannot reach a second leg: `irh_closing_price` is bound to a
+  single `params.base_rate`; `irh_futures_profit` and `irh_net` read `d.closing_price` /
+  `d.mm_interest` / `d.futures_profit` **by literal component_id**. Only `irh_effective` (which
+  resolves through `depends_on` via `soleDep`) generalises. And all seven `irh_opt_*` / `irh_col_*`
+  ids sit in `UNRESOLVED_RECOMPUTE_IDS` — unresolvable today, so options/collar need those built
+  first.
 
-**Recommendation: YES, serve it — but the real fix is structural, and it is bigger than one line.**
+**Trigger to revisit: the next `irhedge` authoring batch**, when the generator is being touched
+anyway and proper `draft*Drill` / `SUBMIT_*_TOOL` wiring is being added. Doing it then costs the
+schema change only; doing it now costs a prose-parse recovery with a figure-movement risk.
 
-*The case for.* Today AFM loses nothing, because its stored labels carry the marks in prose
-(`"(i) B3e — 10 marks"` → `"(i) — 10 marks"`). But that is **parity by accident of label
-formatting, not by rule**. Nothing enforces it: re-authoring a label to a cleaner `"(i)"` — exactly
-the kind of tidy-up the LO-code strip already invites — would silently remove marks-per-requirement
-from a live sit, with no gate, no fixture and no visible failure. The two surfaces should withhold
-on the same rule, as you say, and right now one serves the marks as a structured integer while the
-other serves them as a substring of a display string.
+**CONFORMANCE PATTERN — `risk.ts buildEnpvSchema:361`.** `comps = c.scenarios.map(...)` — one
+component per scenario. That is the shape `irhedge` departed from and the shape it must return to.
+Every other multi-leg family already conforms and was hand-verified: `buildRadrSchema`
+(`npv_at_company` + `npv_at_radr`), `buildRiskMeasuresSchema` (`*_a` + `*_b`), `buildCompareSchema`
+(`equity_dcf` + `equity_multiple`), `buildApvSchema` financing_compare (`apv_debt` + `apv_equity`),
+`buildIntlSensitivitySchema` (`addChain('')` + `addChain('alt_')`), `buildDurationSchema`
+(`a_`/`b_`, `''`/`ref_`), `buildForwardMmhCompareSchema` (both methods).
 
-*Why it is not a one-liner.* Adding `marks_guide` to the sit select alone gives AFM the marks
-**twice** — once in the label prose, once as a field — the moment `SitRunner` renders it. The
-coherent end state is: **marks come from the column on both surfaces, and the label carries only the
-part**, i.e. `sitDisplayLabel` strips the marks text as well as the syllabus code, `"(i) B3e — 10
-marks"` → `"(i)"`, and the runner renders `(i) — 10 marks` from `label` + `marks_guide`. That is a
-change to `sitDisplayLabel`, its ~25 label fixtures, and `SitRunner`'s slot rendering.
+### ⛔ CLOSED PERMANENTLY — omitted intermediates are OUT OF SCOPE, and 43% is NOT a defect count
 
-*Recommended sequencing.* Fold it into the **SitRunner-serves-both-papers change-set**, which is
-already rewriting that runner's rendering — doing it there costs almost nothing extra and avoids
-touching a live sit surface twice. **Not urgent:** the AFM labels do carry the marks today, so no
-candidate is currently short of information. **Do not** add the field without the label change, or
-the paper shows its marks twice.
+A scan of the 49 published numeric AFM drills found **869 of 2,022 rendered figures (43.0%) match
+no component `expected_value`**, with 48 of 49 rows carrying at least one.
 
-## 🔷 NEXT CHANGE-SET (Grant-ruled 2026-07-29) — generalise SitRunner to serve BOTH papers
+**READ THAT NUMBER CORRECTLY. It is a measure of how much working the model answers SHOW, not a
+count of defects.** The overwhelming majority are **presentational intermediates** — per-year
+discount factors, per-year present values, restated input rates — which are displayed so a student
+can follow the derivation and which **need no component and never did**. A model answer that
+renders its working will always score "high" on this metric; a terser one would score lower while
+teaching less. **Nobody should read 43% as a corpus failure, a quality regression, or a backlog.**
+It is not any of those, and no work is owed against it.
 
-**Ruled:** the lean sit UI is NOT built into `CaseSession`. `app/acca/afm/mock/SitRunner.tsx` is
-generalised to be paper-config driven and serves the APM mock as well, replacing the
-inverted-gate-era scoping with normal case-route scoping. `MOCK_SIT_MODE` flips in THAT
-change-set, not before.
+The scan's own limits, for anyone tempted to re-run it: it sees RENDERED figures only, so a figure
+omitted from the model answer *and* absent from `components[]` is invisible to it (Mock `(i) B1a`
+scores 0 unowned yet the marker still invented four discount factors from the prose phrase
+"discounted at 10.00%"); it counts a `params` match as owned; and it carries an unquantified
+false-positive rate (B3e's `0.700`/`0.300` are `own_ve`/`own_vd` 70/30 rendered as fractions).
 
-**THE FINDING THAT FORCED THIS, recorded verbatim.** Flipping `MOCK_SIT_MODE` alone breaks the
-APM mock, because sit mode never sets `passed`, so `allPassed` (`CaseSession:231`) and
-`passed === total` (`MockRunner.aggregateCase:257`) never fire, `onComplete` never runs,
-`markCase` is never called, and the sit turn response carries no `ezra_response` so the chat
-surface renders dead.
+**The ONLY in-scope defect shape is a whole missing LEG** — a rendered outcome the schema models
+zero times, not a step it models once and displays twice.
 
-**`caseMarkReady(sitting, states)` is the replacement completion predicate for both call sites.**
-It is already pure and already shared by `case`, `case/turn` and `case/mark` (`lib/acca/case-sit.ts`),
-so using it in the client is what stops the client's notion of "complete" drifting from the
-server's gate — which is exactly how the two predicates above came to be wrong for sit mode.
+### 📋 LOGGED, NOT ACTIONED — B5b's unmodelled columns are a DIFFERENT defect shape
 
-**Carried into that change-set as known work:**
-- `SitRunner` has no countdown, no auto-submit and no results screen; the APM mock has all three.
-  They move into the generalised runner.
-- `AFM_MOCK_PAPER_1` (`lib/acca/sit-preview.ts`) and `MOCK_PAPERS` (`lib/acca/mocks.ts`) are two
-  paper configs of the same shape. Merging them belongs to that step.
-- `CaseSession`'s `sitting` prop becomes dead once the mock stops embedding it, and should be
-  removed rather than left as a plumbed-but-unused mode.
-- **Serve `marks_guide` from `/api/acca/sit` and reduce the label to the part** (`sitDisplayLabel`
-  strips the marks text as well as the syllabus code; the runner composes `(i) — 10 marks` from
-  `label` + the column). Then **DELETE `scripts/test-afm-label-marks.ts`** and its npm script — it
-  fences the prose-marks dependency this step removes.
-- **Make the mock-content guard UNCONDITIONAL** (`lib/acca/mocks.ts` / `mock-access.ts`): once APM
-  stops loading and turning through the case routes, the open-attempt carve-out has no reason to
-  exist and should become an outright refusal of `mock_only` on both routes.
+Mock `(ii) B5b` renders four columns with no component. Adjudicated:
+- **foreign free cash flow** (BRL 211.2m → 230.8m) — **CHAIN STEP.** The student derives it
+  (PBIT×(1−t) + depreciation − capex − ΔWC, grown at 3%); it carries its own marks and its own
+  error modes, and nothing upstream of it is owned. Would merit modelling.
+- **withholding tax** (BRL 31.7m → 34.6m) — **CHAIN STEP.** An independent decision, not glue:
+  the marks turn on applying 15% to the right base. Would merit modelling.
+- **discount factors** (1.000, 0.912, 0.833, 0.760, 0.693) — **presentational.** No mark attaches
+  to the factor itself. Out of scope per the ruling above.
+- **present values** (EUR 28.6m, 26.2m, 24.0m, 22.0m) — **presentational.** Sits between two owned
+  components (`home_cf_t`, `npv`); the assessed quantity is the NPV. Out of scope.
+
+**This is NOT the `irhedge` fix.** `buildFcffComposedSchema` has no leg array to drop — it never
+modelled those columns at all, so it needs its own scoping pass rather than the `scenarios[0]`
+conformance change. **Logged. No action authorised.**
+
+## ✅ CLOSED 2026-07-31 — the sit loop runs end to end; the mock carve-out and the label fence are gone
+
+Branch `feat/sit-loop-end-to-end`. This closes, in one pass, everything the two blocks that used to
+sit here were waiting on. Recorded rather than deleted, because each was a named risk:
+
+- **The mock-content carve-out is RETIRED.** It existed only because the APM mock loaded and turned
+  through `GET /api/acca/case` + `case/turn`. `SitRunner` serves both papers, so `GET /api/acca/case`
+  now refuses `mock_only` UNCONDITIONALLY and `case/turn` refuses it in PRACTICE and allows it in SIT
+  — `sitting` decides, nothing else. `attemptUnlocksCase` is deleted.
+- **`/api/acca/sit` serves `marks_guide`, and the label is reduced to the PART alone.** Parity is now
+  by rule rather than by AFM's labels happening to spell their marks in prose.
+  `scripts/test-afm-label-marks.ts` and its npm script were **deleted** with the dependency they
+  fenced, as that block required.
+- **`MockRunner.tsx` and `MOCK_SIT_MODE` are deleted.** The APM "mock" drove the paper through
+  `CaseSession` — the PRACTICE teach surface — under a countdown, which is why it coached the
+  candidate through every requirement until each was judged correct. No exam does that.
+- **`AFM_MOCK_PAPER_1` merged into `MOCK_PAPERS`.** One registry, one place a case id can be wrong.
+- **`SitRunner` moved to `components/acca/SitRunner.tsx`.** It was still under `app/acca/afm/mock/`,
+  so the APM route imported a component out of the AFM route's folder.
+- **The results screen exists** (`app/api/acca/sit/results` + the debrief render). The APM mock's old
+  results screen is replaced by it rather than carried over.
+- **`acca_case_progress.technical_feedback` is written.** The technical marker's reasoning used to be
+  returned and dropped, so the debrief's verbatim `why` had nothing to read on any request that did
+  not itself mark.
+- **The weakness ledger is live.** `W_WEAK = 0` is closed; `acca_weak_areas` is written by a marked
+  sit and read by `next-drill` on the LIVE `area=`/`lo=` paths, not only the flag-gated scorer.
+
+**Proven on a synthetic user against the real routes** (local dev — this branch is not deployed),
+then scoped-deleted with AFM Mock 1 re-proved virgin for ALL users: 8 submissions → bands
+exemplary/competent/weak/nothing → 3 cases marked in 60s → 8/8 `technical_feedback` persisted →
+pacing computed from `submitted_at`/`completed_at` → collapse headline selected → a second results
+POST re-marked 0 → GET served the persisted `why` on 8/8 → `lo=B5a` steering 27/40 → **40/40**, PS-only
+control `lo=B4a` suppressed the untagged B4d **9/40 → 0/40**.
+
+**NOT deployed and NOT merged** — Grant's review first.
+
+## ✅ CLOSED 2026-07-31 (same day) — the countdown regression and the missing `resolved_at` writer
+
+Both were surfaced by the block below and **fixed before merge, on Grant's instruction**:
+
+**1. The countdown and auto-submit are RESTORED, for both papers.** Ruled a regression, not a port:
+a 3h15m paper without a visible countdown is not a rehearsal, because the skill being rehearsed is
+finishing inside the time. `acca_mock_attempts.ends_at` stops being a NOT-NULL placeholder and
+becomes the deadline — set once at start, never moved. `lib/acca/sit-preview.ts` gains the pure
+`remainingMs` / `isExpired` / `clockState` / `attemptIsClosed` (+ a 15-minute warning state, a house
+choice, flagged by TEXT as well as colour).
+
+At zero the runner records **the requirement being written** — whatever is in the box — and finishes.
+It does **not** back-fill the tail: those requirements keep no row, so they are `not_reached` and not
+`blank`, which pacing and the debrief report differently (the next action for an unreached
+requirement is about REACHING it). Making the tail blank to satisfy a stricter gate would have
+destroyed that distinction to work around a gate, so **the gate moved instead** —
+`caseMarkReady(sitting, reqs, attemptClosed)` gains an expiry arm, defaulted false so every existing
+caller is unchanged.
+
+Enforcement is split on purpose and the split is the interesting part: the BROWSER runs the clock and
+fires the auto-submit (sub-second, and it is the act of submitting); the SERVER decides a paper is
+over (`attemptIsClosed` — finished, or past `ends_at`) and `case/turn` refuses further sit writes once
+the attempt is **`completed`**. Keyed on `completed` and NOT on `now > ends_at`, deliberately: the
+auto-submit's own POST lands milliseconds after the deadline, and refusing on the timestamp would
+throw away the answer it exists to rescue. Recording happens first, finishing second — no race.
+Closing the tab still buys nothing: the next load sees an expired attempt, closes it, and goes to the
+results.
+
+**2. `resolved_at` has a writer.** A subsequent **strong or exemplary** band on the same
+`(user, paper, lo_code, source)` closes the open row — the same instrument that opened it, so no
+second mastery signal to keep in step. `competent` deliberately does NOT close: its own published
+next action says a material point was missed, and a material point still missing is not a resolved
+weakness. **OPEN BEATS CLOSE within one marking run** — a paper examining one LO twice can come back
+weak on one and strong on the other, and resolving on the strength of the good half would erase the
+finding the same paper just produced. Nothing is deleted; the closed row stays as history and the
+partial unique index lets a later weak band open a fresh one.
+
+Fixtures: `test-weak-areas` 52 → **76** (close/reopen across three sittings, the open-beats-close
+precedence in both arrival orders, the competent boundary), `test-sit-preview` **+26** (the clamp at
+zero, a null `ends_at` NOT reading as expiry, the warning boundary, `attemptIsClosed`'s two arms),
+`test-case-sit` **+7**. DB-level, against the live partial index: close → reopen → both rows survive
+→ the selector sees exactly one open row → a second open row for the same key still 23505s.
+
+## 🔸 OPEN 2026-08-01 — RE-SIT MARKING HAS NO ATTEMPT DIMENSION (submissions do)
+
+Surfaced by the live re-sit walk on `fix/sit-defect-block`, after migration
+`20260801120000` landed. **Half the re-sit path works and half does not**, and the half that
+does not is structural.
+
+**WORKS, proven live:** a second attempt produces its OWN 8 progress rows; 16 rows coexist,
+8 per attempt; **attempt 1's rows are byte-identical after the re-sit**; attempt 2's answers are
+its own. That is what the migration was for and it is done.
+
+**DOES NOT WORK:** attempt 2 is **never marked**. `acca_case_marking` has
+`PRIMARY KEY (user_id, case_id)` and **no attempt column**, so it cannot hold two markings for
+two sittings of one case. `casesNeedingMarking` sees attempt 1's marking row, reports the case
+as already marked, and the re-sit's `marked_now` is **0** — measured: 3 marking rows where 6
+would be needed, 0/8 attempt-2 rows banded.
+
+**What it does NOT do, and this is the part that matters:** attempt 2 does **not** inherit
+attempt 1's marks. Its debrief reports `technical_awarded: null` — honestly unmarked — rather
+than a false 80/80. So the failure mode is a missing debrief, not a wrong one.
+
+**NOT student-reachable today.** There is no "sit again" control: `SitRunner` goes to the
+results screen once the paper is complete and offers no way to start a second attempt. The gap
+is reachable only by POSTing `action:'start'` directly. **Do not add a re-sit control until this
+is fixed** — that is the one change that would turn a latent gap into a live defect.
+
+**Fix:** a second migration — `attempt_id` on `acca_case_marking`, PK widened the same way
+`acca_case_progress` just was (surrogate id + `UNIQUE NULLS NOT DISTINCT`), then scope
+`casesNeedingMarking`, `claimCase` and the marking upsert by attempt. Pinned in the harness
+(`scripts/_verify_afm_sit_serve.ts`, re-sit walk) as a KNOWN LIMITATION asserted against current
+behaviour, so it **fails the day someone fixes it** and prompts an update rather than sitting
+permanently red.
+
+## ⛔ RULING 2026-08-01 (Grant) — STANDALONE AFM CASES ARE **NUMERIC-HEAVY**, not a mirror of APM
+
+**The scope question is closed before the build starts.** AFM practice cases are built around
+CALCULATION requirements. **Narrative requirements are the EXCEPTION in an AFM case, not the main
+path.** Do not reproduce APM's discursive shape (all 18 APM case requirements are `evaluate` /
+`assess` / `advise` / `prepare`, 0 `calculate`, 0 `answer_schema`) — that shape is right for APM
+and wrong for AFM.
+
+**Rationale, in the order it decides the design:**
+
+1. **The calculator moat.** Numeric requirements get deterministic, code-owned figures and the
+   full 37-line gate barrier. That is the thing competitors cannot copy, and it is worth nothing
+   on a requirement that carries no figures.
+2. **The 6-LO family-gate union is the real ceiling.** `FamilyGateInput`
+   (`lib/acca/case-authoring-gates.ts:342`) is a CLOSED union over **`B5b, E2b, B1a, E3a, B4a,
+   B3e`**, plus an explicit `NO_FAMILY_GATES` escape that forces the author to NAME the omission.
+   A numeric requirement outside those six gets GATE1–3 and the prose lints but **no family
+   gates**. So case authoring should target the six first; extending the union is per-family work
+   and should be a deliberate decision, not a side effect of wanting a particular scenario.
+3. **The narrative leg's per-requirement cost does not amortise.** Every narrative requirement
+   needs a hand-authored `NarrativeRubric` (criteria with `required_point` / `anchor_facts` /
+   `disqualifiers` / `development_required`, plus `scenario_facts` and `requirement_parts`), a
+   golden GOOD *and* a golden BAD (the live ones run 1,200–1,800ch each), designed failure modes
+   the BAD must actually trigger, and **a live model grader** — N1 and N4 are the only gates in
+   the system that need an API key and are non-deterministic. None of that gets cheaper on the
+   tenth case. The numeric leg, by contrast, is inputs → calculator → gates, and the marginal
+   cost of the eleventh numeric requirement is close to the second.
+
+**What this does NOT license.** GATE **C2** still holds: an AFM Section B case must contain ≥1
+`calc`-kind requirement, and the syllabus rule it encodes ("there will not be any wholly
+narrative questions") is a floor, not a target. Numeric-heavy means numeric-led, not
+numeric-only — a case of pure calculation with no evaluation is not exam-faithful either.
+
+**Consequence for the corpus gap below:** numeric-heavy case authoring does **not** close the
+professional-skill gap. PS tags live on requirements and will pass C4, but the drill corpus that
+a weak PS band routes into is unchanged. That remains an authoring gap on `acca_drills`.
+
+## 🔸 OPEN 2026-07-31 — THREE COPY DEFECTS ARE LIVE ON THE AFM LANDING PAGE
+
+All three in `components/landing/product-landing-config.ts`, verified 2026-07-31, **not yet
+fixed**. Full reasoning and the permitted replacements are in
+`docs/APM_MARKETING_POSITIONING.md` → REQUIRED COPY FIXES; recorded here because this file is
+the one place open items live, and these are shipped-to-students defects rather than notes.
+
+1. **`:40` — the code-owned-marking overclaim.** *"Every figure and every accept/reject verdict is
+   computed and verified deterministically, so the marking is exact."* True of DRILL GENERATION,
+   false of MARKING — the same claim already corrected in `CLAUDE.md`,
+   `AFM_COVERAGE_CONTRACT.md` and `PRODUCT_STRENGTH_STANDARD.md`. Marking is answer-locked and
+   **model-graded**. **Highest risk of the three**: falsifiable by one student noticing a figure
+   in their feedback that no schema component owns (measured: 114 of 1,518).
+2. **`:44` — drill count says 16; actual published AFM is 57.** Wrong in our own disfavour.
+3. **`:49` — "One ACCA pass covers every paper you sit" vs the APM-named Stripe SKUs**
+   (`STRIPE_APM_PASS_90D`, `STRIPE_APM_MONTHLY`). The claim is FUNCTIONALLY TRUE —
+   `hasActiveACCAAccess` is bundle-wide — so **the fix is renaming the Stripe objects, not
+   retracting the copy**. Retracting would understate a real entitlement.
+
+## 🔸 OPEN 2026-07-31 — the AFM professional-skill corpus is skewed (authoring, not routing)
+
+**Logged on Grant's instruction 2026-07-31. Rides the next AFM authoring batch.**
+
+**PS-tag steering is effectively a no-op on AFM while working properly on APM.** This is an
+**authoring gap, not a routing defect** — the selection code is correct and paper-agnostic; AFM
+simply has almost nothing to steer between. Counted 2026-07-31 over published drills:
+   - **AFM (57):** `analysis_and_evaluation` **48** · null **8** · `communication` **1** ·
+     `scepticism` **0** · `commercial_acumen` **0**.
+   - **APM (91):** `analysis_and_evaluation` 36 · `scepticism` 21 · `commercial_acumen` 17 ·
+     `communication` 17 · null 0.
+
+On APM the PS term genuinely steers toward a named weak skill: all four skills are represented and
+none is dominant. On AFM, **84% of the corpus carries one tag and two of the four skills do not
+appear at all**, so the term can only separate "tagged" from "untagged" — which is exactly what the
+live measurement showed (`lo=B4a`: B4d, the sub-area's only untagged drill, 9/40 → **0/40**). A real
+effect, but not the one the term is for.
+
+**Consequence to state plainly:** a student marked weak on scepticism or commercial acumen in an AFM
+sit gets **no AFM drill that specifically exercises it**, because none is tagged. The LO term still
+steers them (that half works on both papers, measured 27/40 → 40/40); only the professional-skill
+half is inert on AFM.
+
+### ROOT CAUSE FOUND 2026-08-01 — it was NOT "the batches landed on one tag"
+
+The 2026-07-31 entry above said the fix was authoring-only and **no code change was owed**. That
+was wrong, and the correction matters because the same defect would have silently re-applied to
+every future batch.
+
+`buildSpecsForList` (`scripts/generate-afm-drills.ts`) declares `sectionIdx` **local to each
+call**, and every batch caller invokes `buildSpecsForList([oneLo])[0]` — **one LO at a time**. So
+the rotation index is always `0` and `deriveSkillTag` always returns `pool[0]`:
+`analysis_and_evaluation` for sections B and E, `communication` for section A. That single fact
+explains the whole distribution — 48 quantitative drills tagged `analysis_and_evaluation` and the
+one section-A drill tagged `communication`. **The rotation was never bypassed; it was defeated by
+the call shape.** Separately, `runNarrativeBatch` hardcoded `professional_skill_tag: null`, which
+is where all 8 nulls came from.
+
+**Fixed 2026-08-01 (`86765ec`), narrative path only.** `NarrativePlan` now carries a **declared**
+`skill`, set per plan from what its rubric demands, and the same value both lands in the row and
+steers the Ezra reveal prompt. Hoisting `sectionIdx` to module scope was **rejected**: it would
+make the tag depend on generation ORDER, so re-running a batch could silently re-tag its drills. A
+professional skill is a property of what a drill demands, not of when it ran.
+
+**Still owed, in order:**
+1. **The 8 published narrative rows are still `null`** — the generator fix is forward-only. Per-drill
+   assessment done 2026-08-01 from each rubric's own criteria: `08044fb6` B3a, `32ef124c` B5c,
+   `55181aa8` E1a, `d0be009d` E1a → **commercial_acumen**; `fda46d99` B3i → **scepticism**;
+   `d413fbe7` B4d → **scepticism** (borderline: only 4–5 of 12 marks are the limitations part);
+   `cb9b411c` B1b and `f9f4f3d4` E2a → stay **analysis_and_evaluation**, correctly. A DB write on
+   published rows (P-DB2, Grant's).
+2. **The 48 quantitative tags are unexamined, not verified.** They may each be right — a calculator
+   drill genuinely is appraisal — but nobody decided that; the defect defaulted them. Declaring a
+   skill per calculator family is the remaining generator work.
+3. **Nothing gates the tag.** No check verifies that a drill's declared skill matches what its
+   rubric demands. The case-authoring path has C4 for PS coverage; the drill path has no analogue.
+
+**Sharpest statement of the consequence:** AFM Mock 1 grades all four skills — `scepticism` on 3
+requirements (**28 marks**) and `commercial_acumen` on 2 (**14 marks**). `psScore` returns 0 unless
+a drill's tag matches, so a student marked weak on either gets a boost on **zero drills in the
+entire AFM corpus**. The PS half of the steering is inert for exactly the two skills the sit
+weights most heavily.
+
 
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
 

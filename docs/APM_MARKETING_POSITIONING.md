@@ -59,7 +59,7 @@ method page, and re-date this entry.
 - Blog angle: "where candidates lose marks in APM (per the examiner reports)" — same two-gate process as the IB blog, drives ACCA search traffic.
 - Eventual acca.gradd.ai landing page headline.
 
-## SURFACED FROM BUILD — 29/07/2026
+## SURFACED FROM BUILD — 31/07/2026
 
 A build-state inventory for copy decisions. Its only job is to stop a line being written that
 the product cannot yet stand behind. **Re-date it whenever the loop moves** — an inventory that
@@ -67,23 +67,135 @@ goes stale becomes permission to overclaim rather than a brake on it.
 
 ### ✅ CLAIMABLE NOW (verified live)
 - **The mock comparison** and **the adjudicated AI line**, both already recorded above
-  (see COMPETITOR CLAIMS). Nothing new is unlocked by this session's build.
+  (see COMPETITOR CLAIMS).
+- **THE REHEARSAL LOOP — unblocked 31/07/2026.** See the block immediately below.
 
-### ⛔ BLOCKED — DO NOT PUBLISH UNTIL WIRED
-**The full rehearsal loop (sit → instant mark → pacing → coached debrief) is NOT
-student-reachable today.** No copy, blog, or landing-page line may imply the loop works until
-a student can complete it end to end. **This is the flagship claim and the highest-value thing
-to get wrong** — it is the one promise a disappointed student can disprove in a single session.
+### ✅ THE REHEARSAL LOOP — CLAIMABLE (merged and deployed 31/07/2026)
 
-Component state, verified against the build on 29/07/2026:
+**The condition is met.** `feat/sit-loop-end-to-end` merged to `main` as `aefb03e` and the
+production deploy is `READY` on that SHA. The block below this one — which forbade any copy
+implying the loop worked — is **lifted**, and the superseded inventory is kept underneath it as
+history rather than deleted.
 
-| piece | state | student-reachable? |
-|---|---|---|
-| AFM sit surface | records answers and stops — the route never marks, never scores, never returns a verdict | sit: **yes** · marking: **no** |
-| APM timed mock | `MOCK_SIT_MODE` is **false**; flipping it alone breaks the runner | **no** |
-| Technical marking | live route, gated behind `sitting:true`, which nothing student-facing sends | **no** |
-| Pacing | **built 29/07** — `lib/acca/pacing.ts`, pure, fixtures green — and **wired to nothing** | **no** |
-| Coached debrief | does not exist | **no** |
+**LEAD LINE.** *At Strategic Professional level nobody marks your written answer.* ACCA's own
+Practice Platform supplies a model answer and the candidate self-grades. LearnSignal's mocks are
+**€29.99 each, two per paper, PDF, tutor-marked, three-day turnaround**. Everything else is a
+question bank.
+
+Ranked by defensibility — **most defensible first**, which is also the order to lead with:
+
+**1. PACING. Structurally impossible for a PDF competitor.** A tutor marking a PDF three days
+later cannot know when you wrote each answer; we do, because each requirement is submitted
+separately and timestamped. Verbatim from the 31/07 walk — this is the product's own output, not
+a paraphrase:
+
+> "End-of-paper collapse. Between submitting Q2 (ii) and finishing, 12 minutes elapsed across
+> Q3 (i)–Q3 (ii), against a combined budget of 39 minutes. The final 2 requirements recorded no
+> answer that could earn marks."
+
+**⚠ Use the real numbers or none.** An earlier draft of this line said "7 minutes across two
+requirements"; the measured figure is 12. If a shorter example is wanted, re-run and quote what
+comes back.
+
+**2. Marked in under a minute, unlimited attempts.** Three cases, both passes, measured **58s and
+60s** across two end-to-end runs. Against **€59.98 and a six-day wait** for LearnSignal's two
+mocks. The unlimited-attempts half is the structural point: our marginal cost per re-sit is a
+model call, theirs is a tutor's hour.
+
+**3. The marker names the figure AND the diverging step.** Verbatim from the same walk:
+
+> "The candidate correctly states all assumptions and derives the PPP spot rates for Year 1 and 2
+> (5.7373, 5.8779) but the answer is cut off before completing Years 3 and 4, the withholding tax
+> calculations, the euro conversions, the discounting table and the NPV conclusion."
+
+**4. The debrief ROUTES into practice — and as of 01/08/2026 that is literal, not a metaphor.**
+
+**UPGRADED.** This claim previously had to be phrased as "the next serve is steered", with an
+explicit warning not to imply a clickable button, because none existed. One does now: every
+requirement banded **weak or competent** carries a **"Practise this →"** action that lands on
+drills for that syllabus area, and the foot of the paper carries **"Practise my weak areas →"**.
+
+Two details that make it stronger than a button, and both are worth saying:
+
+- **The action appears ONLY where marks were lost.** Strong and exemplary requirements get no
+  practise action at all — the product does not manufacture work on an answer that scored. That
+  restraint is the claim: a competitor's "related content" block appears everywhere because it
+  is not driven by marking.
+- **The button and the steering are the same decision.** The two bands that show a practise
+  action are the same two that open a weakness-ledger row, so what the student clicks and what
+  the selector serves them next cannot disagree.
+
+Still measured, and still true underneath: a weak band on B5b moved that area's share of
+subsequent serves from **27/40 to 40/40** (31/07).
+
+**Nobody closes that loop — every competitor stops at feedback.** Sit → marked in under a minute
+→ told which figure and which step → routed into practice on that exact area, in one screen.
+That is the differentiator, and it is now demonstrable in a single session rather than described.
+
+**5. Marked as ONE PAPER.** Technical and professional skills, per requirement, per-case
+subtotals, one total — not eight disconnected question marks.
+
+**6. The AFM proof story.** A blind candidate got the contract count right, the direction right
+and both scenarios reconciling, and lost half the marks on unexpired basis — with the paper's own
+self-check confirming the wrong answer. **⚠ THE GROUNDING CAVEAT IN THE BLOG SEEDS BELOW APPLIES
+IN FULL.** This is OUR finding from an internal sit, not an examiner quote, and it must be
+presented as ours or grounded in a located accaglobal.com source before publication. It is ranked
+last precisely because it is the only one of the six that is not a fact about our own product.
+
+### ⛔ DO NOT CLAIM (31/07/2026)
+
+- **Error-carried-forward.** Built, unwired. Nothing student-facing carries a wrong figure
+  forward into a follow-on requirement's marking.
+- **AFM exam cases.** They do not exist. Verified against the DB on 31/07: **all 3 AFM cases are
+  `mock_only` reserved mock-paper content**; the practice library has **5 APM cases and zero AFM
+  cases**. "Sit an AFM mock" is true; "practise AFM cases" is not.
+- **PS coaching on AFM.** The corpus cannot support it — **48 of 57** published AFM drills are
+  tagged `analysis_and_evaluation`, **0** are `scepticism`, **0** are `commercial_acumen`. A
+  student marked weak on scepticism in an AFM sit has no AFM drill that exercises it. The same
+  claim IS supportable on APM (91 drills spread across all four skills). See
+  `docs/AFM_SURFACED.md`.
+
+### 🔧 REQUIRED COPY FIXES ON THE LIVE AFM PAGE (logged 31/07/2026, not yet made)
+
+All three verified in `components/landing/product-landing-config.ts`. **These are live now.**
+
+1. **THE CODE-OWNED-MARKING OVERCLAIM — line 40.** Currently: *"Every figure and every
+   accept/reject verdict is computed and verified deterministically, so the marking is exact."*
+   That is the exact claim already corrected in three internal docs (`CLAUDE.md`,
+   `AFM_COVERAGE_CONTRACT.md`, `PRODUCT_STRENGTH_STANDARD.md`). It is true of **drill
+   generation**; it is **not true of marking**. Marking is **answer-locked and model-graded** —
+   code owns band→marks, the MODEL owns the band, and the feedback prose is model-authored and
+   un-code-verified (measured: 114 of 1,518 asserted figures are owned by no schema component).
+   **This is the highest-risk line on the page**: it is falsifiable by a single student who
+   notices a figure in their feedback that no component owns.
+2. **DRILL COUNT — line 44 says 16; actual published is 57.** Understated by 41. Unusually, this
+   one is wrong in our own disfavour, and the surrounding copy ("no padding, no complete-syllabus
+   claim") is exactly the tone that makes an accurate larger number safe to state.
+3. **"One ACCA pass covers every paper you sit" — line 49 vs the Stripe objects.** The claim is
+   **functionally TRUE**: `hasActiveACCAAccess` is bundle-wide and an APM purchase does unlock
+   AFM. The contradiction is at **checkout**, where the SKUs are `STRIPE_APM_PASS_90D` and
+   `STRIPE_APM_MONTHLY` and the buyer is shown an **APM-named** product after reading that the
+   pass covers every paper. **So the fix is to rename the Stripe objects, not to retract the
+   copy.** Retracting it would make the page understate a real entitlement.
+
+### ⛔ SUPERSEDED 31/07/2026 — the loop block (kept as history)
+
+*The inventory below was correct on 29/07 and is now out of date in every row. It is retained
+because the block it imposed was the right call at the time, and because the record should show
+what changed rather than only the end state.*
+
+**As of 29/07/2026: the full rehearsal loop (sit → instant mark → pacing → coached debrief) is
+NOT student-reachable.** No copy, blog, or landing-page line may imply the loop works until a
+student can complete it end to end. **This is the flagship claim and the highest-value thing to
+get wrong** — it is the one promise a disappointed student can disprove in a single session.
+
+| piece | state 29/07 | reachable 29/07 | state 31/07 |
+|---|---|---|---|
+| AFM sit surface | records answers and stops — never marks, never scores | sit: **yes** · marking: **no** | marks + debriefs |
+| APM timed mock | `MOCK_SIT_MODE` **false**; flipping it alone breaks the runner | **no** | `MockRunner` deleted; APM renders the same sit surface |
+| Technical marking | live route behind `sitting:true`, which nothing student-facing sent | **no** | sent by the sit write path |
+| Pacing | built, pure, fixtures green, **wired to nothing** | **no** | wired into the results endpoint |
+| Coached debrief | does not exist | **no** | built, rendered, `why` persisted verbatim |
 
 **Two corrections to the inventory as first drafted, made so the record is exact in both
 directions:**
@@ -141,19 +253,34 @@ answer. That is real, it is live for APM practice cases, and it is defensible co
 **What does not exist.**
 - **No PS teaching leg.** `lib/acca/teach-engine.ts` and `lib/acca/tutor-personas.ts` contain no
   reference to professional skills at all. The teach loop coaches the TECHNICAL requirement.
-- **No route from a weak PS band to practice.** Nothing consumes a PS band. `next-drill` steers on
-  `lo_code`/area; a `weak` in scepticism leads nowhere.
 - **No PS practice surface.** Nothing lets a student attempt, be judged on, and re-attempt a
-  professional skill as such.
+  professional skill as such. **This is the load-bearing absence** — it is what separates marking
+  from coaching, and it is unchanged.
 
-**⚠ ONE CORRECTION TO THE OBVIOUS PHRASING — "there is no PS drill corpus" is not accurate, and
-the inaccuracy would cost a rebuild.** Every published drill DOES carry a `professional_skill_tag`
-(measured 29/07: 140 of 148 published drills tagged — APM analysis_and_evaluation 36, scepticism
-21, communication 17, commercial_acumen 17; AFM analysis_and_evaluation 48, communication 1, 8
-untagged). But the column is **written by the authoring generators and read by NOTHING** — zero
-consumers in `app/`, `lib/` or `components/`. It is an authoring-time steer that shapes the
-`model_answer`, inert at serve time. So the corpus is TAGGED but the routing is absent: whoever
-builds PS practice should wire the existing tag, not author a second corpus.
+**🔄 UPDATED 31/07/2026 — one bullet above was struck, because it is no longer true.** It read:
+*"No route from a weak PS band to practice. Nothing consumes a PS band. `next-drill` steers on
+`lo_code`/area; a `weak` in scepticism leads nowhere."* **A route now exists.**
+`app/api/acca/next-drill` reads weak/competent PS bands from `acca_case_marking.per_skill` and
+scores candidate drills by their `professional_skill_tag`, on the live `area=`/`lo=` paths as well
+as the gated interleave scorer.
+
+**This does NOT unblock PS coaching copy, and the distinction is the whole point of this section.**
+Routing means a student marked weak on a skill meets drills TAGGED with it. It does not mean the
+drill teaches that skill, names it, judges them on it again, or tells them they were routed there —
+the tag is not served to the client and the teach loop still coaches the technical requirement. The
+permitted formulation below is unchanged.
+
+**And it is measurably weaker on AFM than on APM.** Measured 31/07: APM's 91 published drills are
+spread across all four skills (analysis_and_evaluation 36, scepticism 21, commercial_acumen 17,
+communication 17, 0 untagged); AFM's 57 are **48 analysis_and_evaluation, 1 communication, 8
+untagged, 0 scepticism, 0 commercial_acumen**. So on AFM the routing can only distinguish tagged
+from untagged. Authoring gap, tracked in `docs/AFM_SURFACED.md`.
+
+**⚠ THE STANDING CORRECTION TO THE OBVIOUS PHRASING — "there is no PS drill corpus" is not
+accurate.** Every published drill DOES carry a `professional_skill_tag` (140 of 148 tagged). It
+used to be written by the generators and read by nothing; as of 31/07 it has exactly one consumer,
+the selector above. Whoever builds real PS practice should still wire the existing tag rather than
+author a second corpus.
 
 **The permitted formulation** is the one already on the landing page and in the site metadata:
 Gradd **marks** professional skills against ACCA's published descriptors and **names the

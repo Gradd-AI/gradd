@@ -23,10 +23,37 @@
 //
 // ── PACING LANGUAGE CONSTRAINTS ARE BINDING HERE TOO ─────────────────────────
 // Intervals are submission-to-submission, never "time spent writing". No causal claims, no
-// cross-candidate comparison. Statements sourced from pacing are reused verbatim rather than
-// re-worded, so they cannot drift out of compliance.
+// cross-candidate comparison. The approved interval VOCABULARY is reused exactly — "between
+// {submitting X | starting the paper} and {submitting Y | finishing}", "minutes elapsed",
+// "against a … budget" — so the statements cannot drift out of compliance.
+//
+// ── NAMING: THE STUDENT NEVER SEES AN INTERNAL CODE ──────────────────────────
+// A requirement's stored `label` is "(i) B3e — 10 marks": it carries the LO code the sit route
+// strips at the serve boundary, plus a marks count that duplicates the marks line. Printing it
+// here would re-leak exactly what `sitDisplayLabel` removes. Every student-facing reference goes
+// through `display_name` — "Q1 (i)": case position + part, no code, no marks. INCLUDING the
+// headline, which previously reused the pacing finding's own "requirements 7–8" ordinals — a
+// naming scheme used nowhere else in the document, so it referred to nothing the student could
+// find. The collapse headline is therefore COMPOSED HERE from the finding's `evidence`, in the
+// approved vocabulary, with display names. That is a re-render of the same finding, not a
+// re-wording of it: no number and no relation changes.
+//
+// ── THE COLLAPSE HEADLINE IS SELECTED, NOT MERGED ────────────────────────────
+// A collapse leads ONLY when its own window lost marks or contains a requirement that was never
+// reached. Finishing the last two requirements quickly and scoring full marks on them is a fact
+// about pacing, not the story of the paper — it is reported as `secondary`, never as the headline.
+// This is a SELECTION rule: it reads the marks to decide WHICH finding leads, and still prints
+// marks and pacing as separate statements. Nothing is combined into a score.
 
 import type { PacingReport, PacingFlag, AnswerState } from '@/lib/acca/pacing';
+// Durations reach the student through this module too, so they go through the SAME formatters
+// pacing.ts uses — whole minutes, rounded down, "under a minute" at zero. A second rounding
+// convention here would put two different renderings of the same interval on one screen.
+import { fmtMinutes, fmtMinuteBudget } from '@/lib/acca/pacing';
+
+/** Sentence-initial capitalisation. `fmtMinutes` returns lowercase because most of its call
+ *  sites are mid-sentence; the pacing note is the one that opens with it. */
+const sentenceCase = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export type DebriefVerdict = 'strong' | 'partial' | 'lost' | 'not_reached';
 
@@ -36,12 +63,14 @@ export type DebriefSource = 'marker_verdict' | 'computed_marks' | 'computed_inte
 
 export interface DebriefRequirementInput {
   requirement_id: string;
+  case_id: string;                // REQUIRED — drives case grouping and the "Q<n>" display name
   paper_order: number;
-  label: string | null;
+  label: string | null;           // the STORED label; never printed — see `display_name`
   marks_available: number;
   marks_awarded: number | null;
   band: string | null;            // the technical band; null = not marked
   marker_feedback: string | null; // the marker's OWN reasoning — carried verbatim, never rewritten
+  lo_code?: string | null;        // ROUTING ONLY — never printed. See `practise_area`.
 }
 
 export interface DebriefSkillInput {
@@ -61,7 +90,9 @@ export interface DebriefCaseInput {
 export interface DebriefRequirementLine {
   paper_order: number;
   requirement_id: string;
-  label: string | null;
+  case_id: string;
+  label: string | null;           // retained for traceability — NOT for display
+  display_name: string;           // "Q1 (i)" — the ONLY safe student-facing reference
   verdict: DebriefVerdict;
   // ── marks ──
   marks_awarded: number | null;
@@ -69,10 +100,30 @@ export interface DebriefRequirementLine {
   marks_lost: number | null;
   band: string | null;
   what_was_lost: string;
-  why: string | null;             // VERBATIM marker feedback, or null
+  why: string | null;             // VERBATIM marker feedback, or null — ALWAYS the full string
   why_source: DebriefSource | null;
+  /** Presentation only. 'collapsed' = render the justification behind an expand, because the band
+   *  is strong/exemplary AND no marks were lost, so the short action carries the whole message.
+   *  `why` is complete in BOTH states — this never truncates, elides or rewrites it. */
+  why_display: 'expanded' | 'collapsed';
   next_action: string;
   next_action_source: DebriefSource;
+  /**
+   * The syllabus sub-area to practise, or null. A ROUTING TARGET, never display text.
+   *
+   * Set ONLY where the band is weak or competent — the two bands the marker uses to say
+   * something was missed, and the same two that open a weakness-ledger row, so the button and
+   * the steering agree by construction. Strong and exemplary get null: the debrief already
+   * says "nothing to change here", and offering practice underneath would contradict it.
+   *
+   * This is the ONE place an internal code informs the client, and it is deliberate. The sit
+   * route strips syllabus codes because naming the area DURING a paper tells the candidate what
+   * is being tested; after marking, telling them what to work on IS the product. It is still
+   * never rendered as text — `display_name` remains the only student-facing reference — and it
+   * carries the 2-character sub-area (E3a → E3) rather than the full LO, because that is the
+   * bucket the drill selector actually serves.
+   */
+  practise_area: string | null;
   // ── pacing, side by side and never merged ──
   pacing_note: string | null;
   pacing_flag: PacingFlag | null;
@@ -93,10 +144,27 @@ export interface DebriefHeadline {
   evidence: Record<string, unknown>;
 }
 
+/** One case's requirements, grouped and subtotalled. Eight requirements printed flat put three
+ *  lines beginning "(i)" next to each other with nothing to tell them apart; the paper is sat as
+ *  three questions and is read back the same way. */
+export interface DebriefCaseGroup {
+  case_id: string;
+  title: string | null;
+  position: number;               // 1-based, in paper order
+  display_name: string;           // "Q1"
+  requirements: DebriefRequirementLine[];
+  technical_awarded: number | null;
+  technical_available: number;
+}
+
 export interface DebriefReport {
   not_evaluated: string | null;
   headline: DebriefHeadline;
+  /** Findings that were true but did NOT earn the headline. A collapse whose window cost nothing
+   *  lands here rather than leading. Same composer, same vocabulary — only the ranking differs. */
+  secondary: DebriefHeadline[];
   requirements: DebriefRequirementLine[];
+  cases: DebriefCaseGroup[];
   professional: Array<{ case_id: string; title: string | null; awarded: number | null; available: number | null; skills: DebriefSkillLine[] }>;
   totals: {
     technical_awarded: number | null;
@@ -110,8 +178,11 @@ export interface DebriefReport {
 // Band definitions, quoted from lib/acca/case-marking.ts's own marking prompt. The next action
 // is derived from these rather than from any reading of the answer — that is what makes it
 // traceable to `band_definition` instead of being an opinion about the work.
+// NO FORWARD REFERENCE. The exemplary action used to read "carry this approach into the
+// requirements below", which is false on the last requirement of the paper and false again in any
+// view that is not printed in paper order. The action must hold wherever the line is read.
 const ACTION_BY_BAND: Record<string, string> = {
-  exemplary: 'Nothing to change here — carry this approach into the requirements below.',
+  exemplary: 'Nothing to change here — this is the approach to repeat.',
   strong:    'Nothing to change here — the gaps the marker noted are immaterial.',
   competent: 'The approach was right and a material point was missed. Close that one point, named above, and re-attempt this requirement.',
   weak:      'Re-work this requirement from the method up, against the point named above, before re-attempting it.',
@@ -119,8 +190,63 @@ const ACTION_BY_BAND: Record<string, string> = {
 };
 
 const round1 = (n: number): number => Math.round(n * 10) / 10;
-const name = (r: { label: string | null; paper_order: number }): string =>
-  r.label && r.label.trim() ? r.label.trim() : `requirement ${r.paper_order}`;
+
+/** The bands that earn a practise action. Same two that open a weakness-ledger row
+ *  (lib/acca/weak-areas.ts), so the exit and the steering cannot disagree. */
+const PRACTISABLE_BANDS = new Set(['weak', 'competent']);
+
+/**
+ * "Q1 (i)" — case position plus the part, and nothing else.
+ *
+ * The part is read from the stored label's leading roman-numeral bracket. That is the ONLY thing
+ * taken from the label: the LO code and the "— N marks" suffix are discarded here rather than in
+ * a renderer, so no caller can print them by accident. A label with no recognisable part falls
+ * back to the paper ordinal, which is still code-free.
+ */
+function displayName(casePosition: number, label: string | null, paperOrder: number): string {
+  const part = /\(([ivx]+)\)/i.exec(label ?? '')?.[1]?.toLowerCase();
+  const q = casePosition > 0 ? `Q${casePosition}` : '';
+  if (part) return q ? `${q} (${part})` : `(${part})`;
+  return q ? `${q} requirement ${paperOrder}` : `requirement ${paperOrder}`;
+}
+
+/**
+ * Re-render the end-of-paper-collapse finding using display names.
+ *
+ * NOT a re-wording. Every number, every relation and every phrase from the approved interval
+ * vocabulary is preserved exactly as `pacing.ts` composes them — "between {…} and finishing",
+ * "minutes elapsed across", "against a combined budget of", "recorded no answer that could earn
+ * marks". The ONLY substitution is the requirement REFERENCE: pacing names the window by raw
+ * paper ordinal ("requirements 7–8"), which appears nowhere else in the debrief and so points at
+ * nothing the student can locate. Composing here from the same `evidence` is what lets the
+ * headline agree with the lines beneath it.
+ *
+ * One correction of a latent pacing wording bug: where the window opens at requirement 1 there is
+ * no previous requirement to have submitted, so the opening end is "starting the paper" — which is
+ * in the approved vocabulary — rather than "the previous requirement".
+ */
+function composeCollapse(ev: Record<string, unknown>, nameOf: (order: number) => string): string {
+  const triggers = Array.isArray(ev.triggers) ? (ev.triggers as string[]) : [];
+  const parts: string[] = [];
+  if (triggers.includes('time')) {
+    const from = Number(ev.suffix_from);
+    const to = Number(ev.suffix_to);
+    const opens = from > 1 ? `submitting ${nameOf(from - 1)}` : 'starting the paper';
+    const span = from === to ? nameOf(from) : `${nameOf(from)}–${nameOf(to)}`;
+    parts.push(
+      `Between ${opens} and finishing, ${fmtMinutes(Number(ev.suffix_actual_minutes))} elapsed across ` +
+      `${span}, against a combined budget of ${fmtMinutes(Number(ev.suffix_budget_minutes))}.`,
+    );
+  }
+  if (triggers.includes('no_credit_tail')) {
+    const orders = Array.isArray(ev.closing_run_orders) ? (ev.closing_run_orders as number[]) : [];
+    parts.push(
+      `The final ${orders.length} requirement${orders.length === 1 ? '' : 's'} ` +
+      `(${orders.map(nameOf).join(', ')}) recorded no answer that could earn marks.`,
+    );
+  }
+  return `End-of-paper collapse. ${parts.join(' ')}`;
+}
 
 function verdictFor(band: string | null, state: AnswerState | null, lost: number | null): DebriefVerdict {
   if (state === 'not_reached') return 'not_reached';
@@ -145,7 +271,8 @@ export function buildDebrief(
   const empty: DebriefReport = {
     not_evaluated: null,
     headline: { code: 'none', statement: '', source: 'computed_marks', evidence: {} },
-    requirements: [], professional: [],
+    secondary: [],
+    requirements: [], cases: [], professional: [],
     totals: { technical_awarded: null, technical_available: 0, professional_awarded: null, professional_available: null },
     limitations,
   };
@@ -157,6 +284,16 @@ export function buildDebrief(
 
   const ordered = [...requirements].sort((a, b) => a.paper_order - b.paper_order);
   const pacingByOrder = new Map(pacing.rows.map((r) => [r.paper_order, r]));
+
+  // Case position = order of FIRST APPEARANCE in paper order, not the index in `cases`. A caller
+  // may pass an incomplete `cases` array (it carries PS marks, which not every case has); the
+  // student-facing numbering must not depend on that.
+  const casePos = new Map<string, number>();
+  for (const r of ordered) if (!casePos.has(r.case_id)) casePos.set(r.case_id, casePos.size + 1);
+  const nameByOrder = new Map<number, string>(
+    ordered.map((r) => [r.paper_order, displayName(casePos.get(r.case_id) ?? 0, r.label, r.paper_order)]),
+  );
+  const nameOf = (order: number): string => nameByOrder.get(order) ?? `requirement ${order}`;
   const anyMarked = ordered.some((r) => r.band !== null || r.marks_awarded !== null);
   if (!anyMarked) limitations.push('This attempt has not been marked, so the debrief reports pacing only.');
 
@@ -189,7 +326,7 @@ export function buildDebrief(
     let actionSource: DebriefSource;
     if (state === 'not_reached') {
       const budget = p ? p.budget_minutes : round1(r.marks_available * 1.95);
-      action = `Reach this requirement next time: it carries ${r.marks_available} marks and a ${budget}-minute budget.`;
+      action = `Reach this requirement next time: it carries ${r.marks_available} marks and ${fmtMinuteBudget(budget)} budget.`;
       actionSource = 'computed_interval';
     } else if (r.band && ACTION_BY_BAND[r.band]) {
       action = ACTION_BY_BAND[r.band];
@@ -201,20 +338,29 @@ export function buildDebrief(
 
     // PACING — a separate, adjacent statement. Never causal, never "time spent writing".
     let pacingNote: string | null = null;
+    const self = nameOf(r.paper_order);
     if (p && p.interval_minutes !== null) {
       if (p.flag === 'no_ratio') {
-        pacingNote = `${p.interval_minutes} minutes elapsed between starting the paper and submitting ${name(r)}. This interval includes reading the scenario and exhibits, so it carries no budget comparison.`;
+        pacingNote = `${sentenceCase(fmtMinutes(p.interval_minutes))} elapsed between starting the paper and submitting ${self}. This interval includes reading the scenario and exhibits, so it carries no budget comparison.`;
       } else if (p.flag === 'over' || p.flag === 'under' || p.flag === 'on_budget') {
         const prev = ordered[ordered.findIndex((x) => x.paper_order === r.paper_order) - 1];
-        const from = prev ? `submitting ${name(prev)}` : 'starting the paper';
-        pacingNote = `${p.interval_minutes} minutes elapsed between ${from} and submitting ${name(r)}, against a ${p.budget_minutes}-minute budget.`;
+        const from = prev ? `submitting ${nameOf(prev.paper_order)}` : 'starting the paper';
+        pacingNote = `${sentenceCase(fmtMinutes(p.interval_minutes))} elapsed between ${from} and submitting ${self}, against ${fmtMinuteBudget(p.budget_minutes)} budget.`;
       }
     }
+
+    // Collapse the justification only where the short action already says everything: a
+    // strong/exemplary band that lost nothing. A strong band that still dropped marks keeps the
+    // full diagnosis open, because there is something in it to act on.
+    const strongBand = r.band === 'strong' || r.band === 'exemplary';
+    const whyDisplay: 'expanded' | 'collapsed' = why !== null && strongBand && lost === 0 ? 'collapsed' : 'expanded';
 
     return {
       paper_order: r.paper_order,
       requirement_id: r.requirement_id,
+      case_id: r.case_id,
       label: r.label,
+      display_name: self,
       verdict,
       marks_awarded: r.marks_awarded,
       marks_available: r.marks_available,
@@ -223,8 +369,12 @@ export function buildDebrief(
       what_was_lost: what,
       why,
       why_source: why ? 'marker_verdict' : null,
+      why_display: whyDisplay,
       next_action: action,
       next_action_source: actionSource,
+      practise_area: PRACTISABLE_BANDS.has(r.band ?? '')
+        ? ((r.lo_code ?? '').trim().slice(0, 2) || null)
+        : null,
       pacing_note: pacingNote,
       pacing_flag: p?.flag ?? null,
       answer_state: state,
@@ -243,31 +393,53 @@ export function buildDebrief(
   }));
 
   // ── THE HEADLINE — one, not eight ─────────────────────────────────────────
-  // Priority: the paper-level PATTERN outranks any single requirement, because a collapse
-  // explains a shape that eight separate ratios do not. Only when there is no such pattern
-  // does the largest single mark loss lead.
+  // A paper-level PATTERN outranks any single requirement — but only a CONSEQUENTIAL one. A
+  // collapse whose window neither lost marks nor left anything unanswered describes a finishing
+  // speed, not a problem, and it is demoted to `secondary` so the real story leads.
   const collapse = pacing.findings.find((f) => f.code === 'end_of_paper_collapse');
   const marked = lines.filter((l) => l.marks_lost !== null);
   const biggest = marked.length
     ? marked.reduce((a, b) => ((b.marks_lost ?? 0) > (a.marks_lost ?? 0) ? b : a))
     : null;
 
-  let headline: DebriefHeadline;
+  const secondary: DebriefHeadline[] = [];
+  let collapseHeadline: DebriefHeadline | null = null;
+  let collapseCosts = false;
   if (collapse) {
-    headline = {
+    const ev = collapse.evidence;
+    const from = Number(ev.suffix_from ?? 0);
+    const to = Number(ev.suffix_to ?? 0);
+    const runOrders = Array.isArray(ev.closing_run_orders) ? (ev.closing_run_orders as number[]) : [];
+    const window = new Set<number>(runOrders);
+    if (from > 0 && to >= from) for (let i = from; i <= to; i++) window.add(i);
+
+    // "Consequential" = inside the collapse's OWN window, marks were lost or an answer is missing.
+    // An unmarked paper cannot be shown to be harmless, so a collapse still leads there.
+    collapseCosts = lines.some((l) => window.has(l.paper_order) && (
+      (l.marks_lost ?? 0) > 0 || l.marks_lost === null || l.answer_state === 'not_reached' || l.answer_state === 'blank'
+    ));
+
+    collapseHeadline = {
       code: 'end_of_paper_collapse',
-      statement: collapse.statement,          // reused VERBATIM — cannot drift out of compliance
+      statement: composeCollapse(ev, nameOf),
       source: 'pacing_finding',
-      evidence: collapse.evidence,
+      evidence: { ...ev, window_costs_marks: collapseCosts },
     };
+  }
+
+  let headline: DebriefHeadline;
+  if (collapseHeadline && collapseCosts) {
+    headline = collapseHeadline;
   } else if (biggest && (biggest.marks_lost ?? 0) > 0) {
+    if (collapseHeadline) secondary.push(collapseHeadline);
     headline = {
       code: 'largest_single_loss',
-      statement: `The largest single loss was ${biggest.marks_lost} of ${biggest.marks_available} marks on ${name(biggest)}.`,
+      statement: `The largest single loss was ${biggest.marks_lost} of ${biggest.marks_available} marks on ${biggest.display_name}.`,
       source: 'computed_marks',
       evidence: { paper_order: biggest.paper_order, marks_lost: biggest.marks_lost, marks_available: biggest.marks_available, band: biggest.band },
     };
   } else if (marked.length > 0) {
+    if (collapseHeadline) secondary.push(collapseHeadline);
     headline = {
       code: 'no_marks_lost',
       statement: 'No technical marks were lost on any requirement.',
@@ -295,10 +467,32 @@ export function buildDebrief(
     limitations.push('One or more marked requirements carry no marker reasoning, so no "why" is shown for them.');
   }
 
+  // ── Case grouping + per-case subtotals ──
+  // A subtotal is null when NOTHING in that case was marked; a case with a partly-marked set
+  // subtotals what exists rather than reporting a total that silently counts unmarked work as 0.
+  const titleById = new Map(cases.map((c) => [c.case_id, c.title]));
+  const groups: DebriefCaseGroup[] = [...casePos.entries()]
+    .sort((a, b) => a[1] - b[1])
+    .map(([caseId, position]) => {
+      const rows = lines.filter((l) => l.case_id === caseId);
+      const scored = rows.filter((l) => l.marks_awarded !== null);
+      return {
+        case_id: caseId,
+        title: titleById.get(caseId) ?? null,
+        position,
+        display_name: `Q${position}`,
+        requirements: rows,
+        technical_awarded: scored.length ? scored.reduce((a, l) => a + (l.marks_awarded ?? 0), 0) : null,
+        technical_available: rows.reduce((a, l) => a + l.marks_available, 0),
+      };
+    });
+
   return {
     not_evaluated: null,
     headline,
+    secondary,
     requirements: lines,
+    cases: groups,
     professional,
     totals: {
       technical_awarded: technicalAwarded,

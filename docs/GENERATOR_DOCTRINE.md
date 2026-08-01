@@ -323,6 +323,64 @@ world; a detector's output is evidence, not a verdict. State findings as "the de
 X — reconciled/unreconciled against live row Y", never as "drill Z is defective", until the
 reconciliation has actually been run.
 
+**P-DB6 — AN AUTHORING PATH THAT EXISTS ONLY AS AN UNTRACKED SCRIPT IS ONE MACHINE FAILURE FROM
+GONE (ruled 2026-07-31).** `scripts/_*` is gitignored. That is right for a throwaway and wrong
+for anything the project depends on, and the distinction is not "how it was written" — every
+one of these started as a throwaway — but **what it is the only copy of**.
+
+**The rule.** Any script that (a) **WRITES CONTENT** — authors, patches or rebuilds a
+`acca_drills` / `acca_cases` / `acca_case_requirements` row through a calculator or rubric
+engine — or (b) is the **SOLE CALLER of a gate barrier**, gets **COMMITTED**, out of
+`scripts/_*`, under `scripts/authoring/`. Not because it is clean; because losing it costs
+content that cannot be rebuilt. Commit it with a header stating plainly that it is a one-off
+with hardcoded inputs, so nobody mistakes retention for endorsement.
+
+**This is not hypothetical. It has cost us twice, and the second loss is still open.**
+
+1. **`scripts/_author_irhedge_batch.ts` — LOST.** It authored the four live E3a
+   interest-rate-hedging drills (`56989d69` / `1c133573` / `f088daa5` / `26a4167b`), was never
+   committed, and has been deleted. Consequence, recorded in `docs/AFM_SURFACED.md` and still
+   open: the E3a one-leg schema defect **cannot be fixed**, because "no supported re-authoring
+   path exists today". Stored `params` carry only leg 0's rate; the second leg's rate survives
+   ONLY as prose in the rendered `model_answer`, so recovery means parsing rendered prose on
+   four published rows — with a wrong recovery moving figures that are currently correct. **A
+   published defect is un-fixable because a script was untracked.**
+2. **`scripts/_author_mock_paper1.ts` — CAUGHT, and committed 2026-07-31** as
+   `scripts/authoring/author-afm-mock-paper-1.ts`. It was the ONLY working AFM case-authoring
+   path in existence, untracked, on a project cloned at two different paths on two machines.
+
+**The corollary that matters more than the rule: committed is not the same as REPRODUCIBLE, and
+only a measurement can tell you which you have.** When committing an authoring path, prove it
+rebuilds the live rows — do not infer it from reading the code, in either direction.
+
+**Worked example, and a correction (2026-08-01).** The recompute DISCRIMINANT params
+(`gearing_basis`, `parity_basis`, `quote_direction`, `direction`, `side`) were added to the 5
+live numeric mock requirements by a SECOND untracked script, `_reserialise_mock_params.ts`.
+From that fact it was asserted here that the `build*Schema` functions must not emit them, and
+therefore that re-authoring would silently produce rows `lib/acca/recompute-registry.ts` could
+not resolve. **That assertion was WRONG.** `scripts/verify-schema-discriminants.ts` rebuilds
+every numeric schema from the authoring inputs and diffs it against the live rows: **48/48
+checks pass** — every discriminant is emitted by the current library (`capm.ts:318`,
+`international.ts:510`, `fxhedge.ts:630`, `irhedge.ts:569`), every param value and every
+`expected_value` is identical. The backfill script existed because the ROWS predated the
+library change, not because the library lacks it. Nothing was owed and nothing was folded in.
+
+**Two rules come out of that, and the second is the expensive one:**
+- **Prove reproducibility with a harness, and keep the harness.**
+  `scripts/verify-schema-discriminants.ts` is read-only and should be run before any
+  re-author, and after any library change to a `build*Schema`.
+- **A full-field diff MUST be key-order-insensitive, and P-DB4 says so for a reason.** The
+  first version of that harness compared with `JSON.stringify` and reported all 20 money
+  components as tolerance-drifted. They were not: Postgres `jsonb` does not preserve authoring
+  key order, so `{kind, pct, floor}` reads back as `{pct, kind, floor}`. A **detector bug**
+  presenting as 20 content defects on published rows — the exact P-DB5 shape, caught only
+  because the values were printed in full rather than the field names alone. **Print the
+  values. A diff that names fields without showing them cannot be adjudicated.**
+
+This composes with **P-DB3** (a rollback snapshot must be COMMITTED, for the same reason: the
+scratchpad is outside the repo, and untracked files do not survive a `git clean` or a machine
+switch). P-DB3 protects the ability to undo a write; P-DB6 protects the ability to make it again.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

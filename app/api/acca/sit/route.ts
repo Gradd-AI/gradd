@@ -1,11 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { AFM_MOCK_PAPER_1, SIT_CASE_GATE, sitDisplayLabel } from '@/lib/acca/sit-preview';
+import { sitCaseGate, sitDisplayLabel } from '@/lib/acca/sit-preview';
+import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-attempt';
 
-// ── AFM Mock Paper 1 — SIT read endpoint (standard gate, real product surface) ─
-// Serves the lean sit surface at /acca/afm/mock. Authentic exam conditions: the
-// scenario, the exhibits and the requirement text — nothing else.
+// ── SIT read endpoint — BOTH PAPERS (generalised 2026-07-30) ──────────────────
+// Serves the lean sit surface for any mock paper in lib/acca/mocks.ts. Authentic exam
+// conditions: the scenario, the exhibits, the requirement text and its marks — nothing
+// else.
+//
+// It used to bind `const PAPER = AFM_MOCK_PAPER_1` at module scope, which is what made
+// this an AFM-only surface. The paper is now RESOLVED PER REQUEST from `?mock_id=`, or
+// from the caller's open attempt, or from `?paper=` — and every query below is scoped to
+// the resolved paper, so serving APM can never apply AFM's filter.
 //
 // ── SERVING GATE IS NOW THE STANDARD ONE (inverted gate retired 2026-07-29) ───
 // This route used to gate on the OPPOSITE of every other case route — `published=false
@@ -68,8 +75,9 @@ import { AFM_MOCK_PAPER_1, SIT_CASE_GATE, sitDisplayLabel } from '@/lib/acca/sit
 //
 //   GET                                   → the whole paper + which requirements are
 //                                           already submitted + the open attempt
-//   POST {action:'start'}                 → start (or resume) the elapsed clock
-//   POST {action:'finish'}                → mark the attempt completed
+//   POST {action:'start'}                 → start (or resume) the clock
+//   POST {action:'finish'}                → mark the attempt completed (also what the
+//                                           auto-submit calls when the clock expires)
 //
 // ── ANSWER WRITES ARE NOT HERE ANY MORE ──────────────────────────────────────
 // `action:'submit'` is REMOVED. One requirement's answer is now recorded by the
@@ -116,50 +124,30 @@ async function gate(): Promise<{ error: Response } | GateOk> {
   return { userId: user.id, supabase };
 }
 
-const PAPER = AFM_MOCK_PAPER_1;
+// The paper/attempt resolution used to live here as three private helpers. It moved to
+// lib/acca/sit-attempt.ts (2026-07-31) because the results endpoint must resolve the SAME
+// paper from the SAME hints — a second copy is how a student who sat AFM gets handed the
+// APM debrief.
 
-// The nominal ACCA AFM clock (3h15m). Written ONLY because acca_mock_attempts.ends_at
-// is NOT NULL in the schema, so the column has to hold something honest. NOTHING reads
-// it on this surface: there is no countdown, no expiry branch and no auto-submit by
-// spec. The sit's clock counts UP from started_at.
-const NOMINAL_MINUTES = 195;
-
-interface AttemptRow {
-  mock_id: string;
-  started_at: string;
-  ends_at: string;
-  completed: boolean;
-}
-
-async function openAttempt(
-  supabase: GateOk['supabase'],
-  userId: string,
-): Promise<AttemptRow | null> {
-  const { data } = await supabase
-    .from('acca_mock_attempts')
-    .select('mock_id, started_at, ends_at, completed')
-    .eq('user_id', userId)
-    .eq('mock_id', PAPER.id)
-    .order('started_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  return (data as AttemptRow | null) ?? null;
-}
-
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const g = await gate();
   if ('error' in g) return g.error;
   const { supabase, userId } = g;
 
+  const resolved = await resolvePaperConfig(supabase, userId, new URL(request.url));
+  if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
+  const PAPER = resolved.config;
+
   // ── Cases (STANDARD gate — approved + published, same as every case route) ──
-  // Filters are built BY ITERATING SIT_CASE_GATE rather than written inline, so the query
-  // and the fixtures in scripts/test-sit-preview.ts read the same object. Adding or
-  // removing a gate column changes both at once; there is no second copy to drift.
+  // Filters are built BY ITERATING the gate rather than written inline, so the query and
+  // the fixtures in scripts/test-sit-preview.ts read the same object. Adding or removing a
+  // gate column changes both at once; there is no second copy to drift. The gate is now a
+  // FUNCTION of the paper, so an APM sit is filtered on paper_code='APM'.
   let caseQuery = supabase
     .from('acca_cases')
     .select('id, title, section, scenario_intro, total_marks, professional_skills_marks')
     .in('id', PAPER.case_ids);
-  for (const [column, value] of Object.entries(SIT_CASE_GATE)) {
+  for (const [column, value] of Object.entries(sitCaseGate(PAPER.paper))) {
     caseQuery = caseQuery.eq(column, value as never);
   }
   const { data: caseRows } = await caseQuery;
@@ -177,27 +165,40 @@ export async function GET(): Promise<Response> {
     .in('case_id', PAPER.case_ids)
     .order('exhibit_order', { ascending: true });
 
-  // WITHHELD: model_answer, hint, full_reveal, answer_schema, marks_guide,
-  // professional_skill_tags, intellectual_level. See the header note.
+  // WITHHELD: model_answer, hint, full_reveal, answer_schema, professional_skill_tags,
+  // intellectual_level, command_verb. See the header note.
   // `lo_code` is READ but never SERVED — it only feeds sitDisplayLabel's exact removal
   // of the code from the stored label. Selecting it is not serving it.
+  // `marks_guide` IS served (2026-07-30): an integer mark ALLOCATION, which every real
+  // paper prints and a candidate needs to pace a 3h15m sit. It replaces the marks that
+  // used to ride along inside AFM's label prose — a parity accident APM never had.
   const { data: requirements } = await supabase
     .from('acca_case_requirements')
-    .select('id, case_id, requirement_order, label, lo_code, question')
+    .select('id, case_id, requirement_order, label, lo_code, question, marks_guide')
     .in('case_id', PAPER.case_ids)
     .order('requirement_order', { ascending: true });
 
-  // Which requirements this user has already submitted. A recorded answer is FINAL —
-  // blank '' counts as submitted (a deliberately unanswered requirement).
-  const { data: progress } = await supabase
-    .from('acca_case_progress')
-    .select('requirement_id, final_answer')
-    .eq('user_id', userId)
-    .in('case_id', PAPER.case_ids);
-
-  const submitted = (progress ?? [])
-    .filter((p) => p.final_answer != null)
-    .map((p) => p.requirement_id as string);
+  // Which requirements this user has already submitted IN THIS SITTING. A recorded answer is
+  // FINAL — blank '' counts as submitted (a deliberately unanswered requirement).
+  //
+  // SCOPED TO THE ATTEMPT (2026-08-01). Unscoped, this counted PRACTICE work as submitted, so a
+  // student who had practised a case was skipped past it — or sent straight to the results on a
+  // paper they had never sat. Same root defect as the mark gate, one route further forward.
+  //
+  // NO ATTEMPT ⇒ NOTHING SUBMITTED, and the query is skipped rather than run against a sentinel:
+  // the paper has not been started, so there is nothing to look for.
+  const submitted: string[] = [];
+  if (resolved.attempt) {
+    const { data: progress } = await supabase
+      .from('acca_case_progress')
+      .select('requirement_id, final_answer')
+      .eq('user_id', userId)
+      .eq('attempt_id', resolved.attempt.id)
+      .in('case_id', PAPER.case_ids);
+    for (const p of progress ?? []) {
+      if (p.final_answer != null) submitted.push(p.requirement_id as string);
+    }
+  }
 
   // Flatten to the paper-ordered slot list the UI walks: Section A's requirements in
   // order, then each Section B case's, in case_ids order.
@@ -211,14 +212,17 @@ export async function GET(): Promise<Response> {
         case_title:       (c.title as string | null) ?? null,
         case_section:     (c.section as string | null) ?? null,
         requirement_order: r.requirement_order as number,
-        // Candidate-facing form only — the syllabus code is stripped here, not in the UI.
+        // Candidate-facing form only — the syllabus code AND the marks phrase are stripped
+        // here, not in the UI, so the label reduces to the part ("(i)"). The runner
+        // recomposes "(i) — 10 marks" from `marks` below, which comes from the column.
         label:            sitDisplayLabel(r.label as string | null, r.lo_code as string | null),
+        marks:            (r.marks_guide as number | null) ?? null,
         question:         (r.question as string | null) ?? '',
       }));
   });
 
   return NextResponse.json({
-    paper: { id: PAPER.id, title: PAPER.title },
+    paper: { id: PAPER.id, paper: PAPER.paper, title: PAPER.title, duration_minutes: PAPER.duration_minutes },
     cases: orderedCases.map((c) => ({
       id:                        c!.id,
       title:                     c!.title ?? null,
@@ -236,7 +240,7 @@ export async function GET(): Promise<Response> {
     })),
     slots,
     submitted,
-    attempt: await openAttempt(supabase, userId),
+    attempt: resolved.attempt,
   });
 }
 
@@ -251,11 +255,28 @@ export async function POST(request: Request): Promise<Response> {
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
-  const { action } = body as { action?: unknown };
+  const { action, mock_id: mockIdRaw, paper: paperRaw } = body as {
+    action?: unknown; mock_id?: unknown; paper?: unknown;
+  };
+
+  // Same resolution order as GET, expressed through the same helper so the two verbs can
+  // never disagree about which paper is being sat.
+  const resolved = await resolvePaperConfig(supabase, userId, hintUrl(request.url, mockIdRaw, paperRaw));
+  if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
+  const PAPER = resolved.config;
+
+  // The ACCA clock. `ends_at` USED to be written only because the column is NOT NULL, with
+  // nothing reading it — this surface shipped with an elapsed-only clock and no expiry. It is
+  // now LOAD-BEARING (2026-07-31): the runner counts DOWN to it and auto-submits at it, and
+  // `attemptIsClosed` (lib/acca/sit-preview.ts) reads it server-side so a paper left open past
+  // its deadline is over rather than resumable. Set ONCE at start and never moved, so a
+  // refresh or a resume counts to the same instant. Taken from the paper config so a paper
+  // with a different duration records its own, rather than a constant that matches both today.
+  const NOMINAL_MINUTES = PAPER.duration_minutes;
 
   // ── start / resume the elapsed clock ──
   if (action === 'start') {
-    const existing = await openAttempt(supabase, userId);
+    const existing = resolved.attempt;
     // Resume rather than restart: a refresh or a double-click must never reset the
     // clock. Only a COMPLETED attempt starts a fresh one.
     if (existing && !existing.completed) {
@@ -287,7 +308,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── finish ──
   if (action === 'finish') {
-    const existing = await openAttempt(supabase, userId);
+    const existing = resolved.attempt;
     if (existing && !existing.completed) {
       // `completed_at` closes the FINAL requirement's interval. `started_at` opens the first
       // and each submission closes the one before it, but the time after the last submission

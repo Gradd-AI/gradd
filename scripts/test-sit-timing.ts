@@ -22,7 +22,10 @@
 //       modes, so the failure branch is executed rather than assumed.
 
 import { createClient } from '@supabase/supabase-js';
-import { AFM_MOCK_PAPER_1 } from '../lib/acca/sit-preview';
+// The AFM paper moved into the merged MOCK_PAPERS registry (2026-07-30) — one list for
+// both papers, so there is no second config for a case id to be wrong in.
+import { getMockPaper } from '../lib/acca/mocks';
+const AFM_MOCK_PAPER_1 = getMockPaper('afm-paper-1')!;
 
 const PAPER = AFM_MOCK_PAPER_1;
 

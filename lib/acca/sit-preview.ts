@@ -27,58 +27,51 @@
 // paper's cases out of the practice library (which lists `mock_only=false`) and keeps a
 // non-paper case from being posted into the sit by id.
 
-// ── Paper config (code config, not a table — same pattern as lib/acca/mocks.ts) ──
-export interface SitPaper {
-  id: string;              // stable identifier, distinct from every MOCK_PAPERS id
-  paper: 'AFM';
-  title: string;
-  case_ids: string[];      // sat in this order: Section A first, then the two Section B
-}
-
-// `id` is deliberately NOT 'paper-1' (which lib/acca/mocks.ts already uses for the APM
-// paper). getMockPaper('afm-paper-1') returns null, so an attempt row written by this
-// sit is ignored by the APM runner instead of being mistaken for an APM attempt.
-//
-// This stays a SEPARATE config from MOCK_PAPERS while the two runners are separate. The
-// next change-set generalises SitRunner to serve both papers (Grant-ruled 2026-07-29);
-// merging the two configs belongs to that step, not this one.
-export const AFM_MOCK_PAPER_1: SitPaper = {
-  id: 'afm-paper-1',
-  paper: 'AFM',
-  title: 'AFM Mock Paper 1',
-  case_ids: [
-    'aa000000-0000-4000-8000-00000000a001', // Solenne Industries SA — Section A (50 marks)
-    'aa000000-0000-4000-8000-00000000b101', // Brecon Renewables plc — Section B (25 marks)
-    'aa000000-0000-4000-8000-00000000b201', // Aldebrino SpA         — Section B (25 marks)
-  ],
-};
+// ── Paper config lives in lib/acca/mocks.ts, not here (merged 2026-07-30) ────
+// `AFM_MOCK_PAPER_1` and its `SitPaper` type are DELETED. SitRunner serves both papers,
+// so a second registry would be a second place for a case id to be wrong. `MOCK_PAPERS`
+// is the one list; this module keeps only the paper-AGNOSTIC sit helpers (the gate, the
+// label derivation, resume, the clock). The import direction flipped with the merge —
+// mocks.ts no longer imports this module, so there is no cycle.
+import type { AccaPaper } from '@/lib/acca/paper';
+export { getMockPaper as getSitPaper, getMockPapers as getSitPapers, type MockPaper as SitPaper } from '@/lib/acca/mocks';
 
 // ── The serving gate, as DATA ────────────────────────────────────────────────
 // The gate used to be four inline `.eq()` calls in the route, which is exactly the shape
 // that cannot be unit-tested: a fixture would have to re-state the conditions and would
-// then be testing its own copy, not the route's. So the gate is declared ONCE here and
-// the route builds its filters BY ITERATING THIS OBJECT. Editing it changes both the
-// query and the fixtures together — there is no second copy to drift.
+// then be testing its own copy, not the route's. So the gate is built ONCE here and the
+// route builds its filters BY ITERATING IT. Editing this changes both the query and the
+// fixtures together — there is no second copy to drift.
+//
+// NOW PAPER-SCOPED (2026-07-30). It was a frozen object carrying `paper_code: 'AFM'`,
+// which is exactly the hardcoding that bound the sit route to one paper. It is a FUNCTION
+// of the paper being sat, so serving APM cannot silently apply AFM's filter.
 //
 // This is the standard gate, not the retired inverted one. `published: true` and
 // `status: 'approved'` are the two values whose inversion was the publish-flip trap; a
-// fixture below pins the retired combination as one that must NOT pass.
-export const SIT_CASE_GATE = {
-  paper_code: AFM_MOCK_PAPER_1.paper,   // 'AFM' — one source, never re-typed
-  mock_only:  true,                     // keeps these cases out of the practice library
-  status:     'approved',
-  published:  true,
-} as const;
+// fixture pins the retired combination as one that must NOT pass.
+export function sitCaseGate(paper: AccaPaper) {
+  return {
+    paper_code: paper,
+    mock_only:  true,                   // keeps these cases out of the practice library
+    status:     'approved',
+    published:  true,
+  } as const;
+}
 
-export type SitCaseGateRow = Partial<Record<keyof typeof SIT_CASE_GATE, unknown>>;
+export type SitCaseGate = ReturnType<typeof sitCaseGate>;
+export type SitCaseGateRow = Partial<Record<keyof SitCaseGate, unknown>>;
 
-/** True only when a case row satisfies EVERY gate column. Same conditions the route's
- *  query applies, from the same object — this is a predicate over an already-fetched row,
- *  used by the fixtures and available to any caller that has the row in hand. */
-export function isSittableCaseRow(row: SitCaseGateRow | null | undefined): boolean {
+/** True only when a case row satisfies EVERY gate column for that paper. Same conditions
+ *  the route's query applies, from the same object — a predicate over an already-fetched
+ *  row, used by the fixtures and available to any caller holding the row. */
+export function isSittableCaseRow(
+  row: SitCaseGateRow | null | undefined,
+  paper: AccaPaper,
+): boolean {
   if (!row) return false;
-  return (Object.keys(SIT_CASE_GATE) as Array<keyof typeof SIT_CASE_GATE>)
-    .every((k) => row[k] === SIT_CASE_GATE[k]);
+  const gate = sitCaseGate(paper);
+  return (Object.keys(gate) as Array<keyof SitCaseGate>).every((k) => row[k] === gate[k]);
 }
 
 // ── Requirement label — candidate-facing form ────────────────────────────────
@@ -94,9 +87,21 @@ export function isSittableCaseRow(row: SitCaseGateRow | null | undefined): boole
 //
 // Removal is precise where possible: the row's own `lo_code` is removed by exact match.
 // The generic sweep is a backstop for a row whose code is absent or disagrees with the
-// label — an AFM syllabus code is `<A-E><digit(s)><optional letter>`, a shape nothing
-// else in a label ("(i)", "10 marks") can take.
+// label — an ACCA syllabus code is `<A-E><digit(s)><optional letter>` in BOTH papers, a
+// shape nothing else in a label ("(i)", "10 marks") can take.
+//
+// ── THE MARKS COME OUT TOO NOW (2026-07-30) ──────────────────────────────────
+// The label is reduced to THE PART ALONE — "(i)". Marks are served separately from the
+// `marks_guide` COLUMN and the runner composes "(i) — 10 marks" for display.
+//
+// Why, given the marks are authentic and were already showing: they were showing only
+// because AFM's stored labels happen to spell them in prose. APM's labels do not, so the
+// same route served marks for one paper and not the other — parity by formatting accident,
+// which breaks the moment a label is re-authored without its marks. Taking marks from the
+// column makes both papers right for the same reason.
 const LO_CODE_SHAPE = /\b[A-E][0-9]{1,2}[a-z]?\b/g;
+// "— 10 marks", "- 1 mark", "(12 marks)" — the marks phrase in any authored form.
+const MARKS_PHRASE = /[([]?\s*\d+\s*marks?\s*[)\]]?/gi;
 
 function escapeForRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -113,6 +118,7 @@ export function sitDisplayLabel(
     out = out.replace(new RegExp(`\\b${escapeForRegExp(loCode.trim())}\\b`, 'gi'), '');
   }
   out = out.replace(LO_CODE_SHAPE, '');
+  out = out.replace(MARKS_PHRASE, '');
 
   // Tidy what the removal left behind: doubled spaces, and a separator now dangling at
   // either end (a label of "B3e — 10 marks" would otherwise render as "— 10 marks").
@@ -153,11 +159,86 @@ export function isPaperComplete(
   );
 }
 
-// ── Elapsed clock ────────────────────────────────────────────────────────────
-// H:MM:SS, counting UP from the recorded start. There is no countdown and no
-// auto-submit by spec, so this never needs a remaining-time or expiry branch.
-// Clamped at zero so clock skew can never render a negative elapsed time.
-export function fmtElapsed(ms: number): string {
+// ── The clock — a COUNTDOWN, and `ends_at` is what it counts to ──────────────
+// RESTORED 2026-07-31, for BOTH papers. This surface shipped with an elapsed-only clock and
+// no expiry, and the comment here used to read "there is no countdown and no auto-submit by
+// spec". That was right for a preview surface and WRONG as a product: the APM mock had a
+// countdown and an auto-submit under `MockRunner`, and replacing that runner without them
+// removed a rehearsal property rather than porting it. A 3h15m paper whose clock only counts
+// up is not a rehearsal of a 3h15m paper — the whole skill being practised is finishing
+// inside the time, and you cannot practise that against a stopwatch that never runs out.
+//
+// So `acca_mock_attempts.ends_at` STOPS being a column written only because it is NOT NULL
+// and becomes load-bearing. It is set once at start (`started_at + duration_minutes`) and is
+// never moved, so a refresh or a resume counts to the same instant rather than restarting —
+// the same server-authority argument that already governed `started_at`.
+//
+// WHERE EXPIRY IS ENFORCED, precisely, because "the clock is client-side" would be a fair
+// criticism of a countdown that only lived in the browser:
+//   • The BROWSER runs the countdown and fires the auto-submit. That is presentation and the
+//     act of submitting, and it needs sub-second resolution, so it belongs there.
+//   • The SERVER decides a paper is OVER (`attemptIsClosed` below, used by the results
+//     endpoint) and refuses further sit writes once the attempt is completed. Closing the tab
+//     and returning later therefore does not buy time: the next load sees an expired attempt,
+//     finishes it, and goes to the results.
+// What is deliberately NOT done is rejecting a write merely because `now > ends_at`: the
+// auto-submit's own POST lands milliseconds after the deadline, and refusing it would throw
+// away the answer the candidate had just written. The rule is keyed on `completed`, which the
+// auto-submit sets AFTER recording, so there is no race to lose.
+
+/** House choice, not an ACCA rule: the last 15 minutes are visually flagged. Long enough to
+ *  act on (finish a requirement, or move on and bank the marks) and short enough that it does
+ *  not sit lit for a third of the paper. */
+export const COUNTDOWN_WARNING_MINUTES = 15;
+
+export type ClockState = 'running' | 'warning' | 'expired';
+
+/** Milliseconds left on the paper, or null when there is no usable deadline. Never negative —
+ *  past the deadline it is 0, which `clockState` reads as expired. */
+export function remainingMs(endsAt: string | null | undefined, nowMs: number): number | null {
+  if (!endsAt) return null;
+  const ends = Date.parse(endsAt);
+  if (!Number.isFinite(ends)) return null;
+  return Math.max(0, ends - nowMs);
+}
+
+/** True once the deadline has passed. A missing or unparseable `ends_at` is NOT expiry —
+ *  it is an unknown deadline, and guessing "expired" would end a paper that is still running. */
+export function isExpired(endsAt: string | null | undefined, nowMs: number): boolean {
+  if (!endsAt) return false;
+  const ends = Date.parse(endsAt);
+  return Number.isFinite(ends) && nowMs >= ends;
+}
+
+export function clockState(remaining: number | null): ClockState {
+  if (remaining === null) return 'running';          // unknown deadline → never alarm
+  if (remaining <= 0) return 'expired';
+  return remaining <= COUNTDOWN_WARNING_MINUTES * 60_000 ? 'warning' : 'running';
+}
+
+/**
+ * Is this attempt over, as far as the SERVER is concerned?
+ *
+ * Two ways: the candidate (or the auto-submit) finished it, or its deadline has passed. The
+ * second is what stops "close the tab and come back tomorrow" from being extra time, and it
+ * is why the results endpoint can mark a paper whose last requirements were never reached.
+ *
+ * `completed` is checked FIRST and on its own, so a finished attempt is closed even if
+ * `ends_at` is missing or malformed.
+ */
+export function attemptIsClosed(
+  attempt: { completed?: boolean | null; ends_at?: string | null } | null | undefined,
+  nowMs: number,
+): boolean {
+  if (!attempt) return false;
+  if (attempt.completed === true) return true;
+  return isExpired(attempt.ends_at, nowMs);
+}
+
+// H:MM:SS. A DURATION formatter — it renders both directions (time remaining on the running
+// clock, and any elapsed figure) because a duration is a duration. Clamped at zero so clock
+// skew can never render a negative time.
+export function fmtDuration(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
   const h = Math.floor(total / 3600);
   const m = Math.floor((total % 3600) / 60);

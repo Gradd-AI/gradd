@@ -10,7 +10,8 @@ import {
 import { hasActiveAPMAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
-import { mockAttemptUnlocksCase } from '@/lib/acca/mock-access';
+import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
+import { paperForCase } from '@/lib/acca/mocks';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -103,11 +104,21 @@ export async function POST(request: Request): Promise<Response> {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
   }
 
-  // ── MOCK CONTENT: attempt-scoped, or it does not exist here ──
-  // Checked ONCE, before the sit/practice branch, so both paths are covered by the same
-  // rule and neither can be tightened without the other. Teaching on a mock requirement is
-  // the same leak as fetching one, through a different door: without this, a case id was
-  // enough to run the teach loop over reserved exam content — hints, diagnosis and all.
+  // ── MOCK CONTENT: MODE-KEYED, not attempt-scoped (2026-07-30) ──
+  // This route is BOTH the practice teach loop and the sit's single write path, so the
+  // rule here cannot be the flat refusal app/api/acca/case now applies.
+  //
+  //   • PRACTICE (sitting=false) — refused. Teaching on a mock requirement is the same
+  //     leak as fetching one, through a different door: without this, a case id was enough
+  //     to run the teach loop over reserved exam content — hints, diagnosis and all.
+  //   • SIT (sitting=true) — allowed. This is how a sit records an answer. The previous
+  //     change-set deliberately collapsed the two sit write implementations into this one
+  //     route so there is a single immutability rule; refusing here would break the sit
+  //     this route exists to record.
+  //
+  // The attempt-scoped carve-out that used to gate BOTH modes is gone: it existed because
+  // the APM mock loaded through app/api/acca/case, which no longer happens. Note the
+  // asymmetry is deliberate and is the whole rule — `sitting` decides, nothing else.
   //
   // The case is fetched here purely for `mock_only`; each branch below still performs its
   // own gated fetch, unchanged. Refusal is the same 404 both branches already return for an
@@ -121,7 +132,8 @@ export async function POST(request: Request): Promise<Response> {
       .eq('status', 'approved')
       .eq('published', true)
       .maybeSingle();
-    if (mockCheck?.mock_only === true && !(await mockAttemptUnlocksCase(supabase, user.id, caseId))) {
+    const reserved = caseIsReserved(caseId, mockCheck?.mock_only as boolean | null | undefined);
+    if (!mockContentAllowed(reserved, sitting ? 'sit' : 'practice')) {
       return NextResponse.json({ error: 'Case not found' }, { status: 404 });
     }
   }
@@ -156,6 +168,47 @@ export async function POST(request: Request): Promise<Response> {
       return NextResponse.json({ error: 'Requirement not found' }, { status: 404 });
     }
 
+    // ── A FINISHED PAPER TAKES NO MORE ANSWERS (added 2026-07-31 with the countdown) ──
+    // The clock is enforced in two places for two different reasons. The BROWSER runs the
+    // countdown and fires the auto-submit — that needs sub-second resolution and is the act of
+    // submitting, so it belongs there. This is the SERVER half: once the attempt for this
+    // case's own paper is `completed`, no further answer is accepted, so closing the tab and
+    // posting later cannot add work to a finished paper.
+    //
+    // KEYED ON `completed`, NOT ON `now > ends_at`, and that is deliberate. The auto-submit's
+    // own POST lands milliseconds AFTER the deadline; refusing on the timestamp would throw
+    // away the answer the candidate had just written, which is a worse failure than the one it
+    // prevents. The auto-submit records first and finishes second, so there is no race to lose.
+    //
+    // Scoped to the case's OWN paper via `paperForCase`: a finished APM attempt must not block
+    // an AFM sit. A case that belongs to no mock paper has no attempt to be closed and is
+    // unaffected.
+    // ── WHICH SITTING IS THIS? ──
+    // A sit answer belongs to an attempt, structurally — that is what makes it distinguishable
+    // from practice work on the same requirement. Resolved here once and used for both the
+    // closed check and the write.
+    const ownPaper = paperForCase(caseId);
+    let attemptId: string | null = null;
+    if (ownPaper) {
+      const { data: attempt } = await supabase
+        .from('acca_mock_attempts')
+        .select('id, completed')
+        .eq('user_id', user.id)
+        .eq('mock_id', ownPaper.id)
+        .order('started_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (attempt?.completed === true) {
+        return NextResponse.json({ error: 'attempt_closed' }, { status: 409 });
+      }
+      // No open attempt at all → this is not a sitting. Refusing is the honest answer: the
+      // alternative is writing an unattributable row, which is the ambiguity being removed.
+      if (!attempt) {
+        return NextResponse.json({ error: 'no_open_attempt' }, { status: 409 });
+      }
+      attemptId = (attempt as { id: string }).id;
+    }
+
     const finalAnswer = typeof student_message === 'string' ? student_message : '';
 
     // ── A SUBMITTED SIT ANSWER IS IMMUTABLE ──
@@ -169,12 +222,20 @@ export async function POST(request: Request): Promise<Response> {
     // Note `final_answer != null` is the test, not truthiness: a BLANK answer ('') is a
     // valid, final, zero-credit submission (a requirement moved past on purpose) and is
     // just as immutable as a written one.
+    //
+    // ── SCOPED TO THIS ATTEMPT (corrected 2026-08-01) ──
+    // It used to look up the row by (user, case, requirement) alone, which matched a PRACTICE
+    // row too — so a student who had practised a case could NEVER sit it: every submission
+    // 409'd against their own practice answer, permanently. Any user who met a mock case
+    // through the old MockRunner (which ran at sitting=false) was in exactly that position.
+    // "Already submitted" now means already submitted IN THIS SITTING.
     const { data: recorded } = await supabase
       .from('acca_case_progress')
       .select('final_answer')
       .eq('user_id', user.id)
       .eq('case_id', caseId)
       .eq('requirement_id', requirementId)
+      .eq('attempt_id', attemptId)
       .maybeSingle();
     if (recorded && recorded.final_answer != null) {
       return NextResponse.json({ error: 'already_submitted' }, { status: 409 });
@@ -197,11 +258,17 @@ export async function POST(request: Request): Promise<Response> {
           user_id: user.id,
           case_id: caseId,
           requirement_id: requirementId,
+          // The link that makes this row a SIT row rather than practice work. NULL would mean
+          // practice, so it is never omitted here.
+          attempt_id: attemptId,
           final_answer: finalAnswer,
           submitted_at: submittedAt,
           updated_at: submittedAt,
         },
-        { onConflict: 'user_id,case_id,requirement_id' },
+        // Targets the UNIQUE NULLS NOT DISTINCT constraint from migration 20260801120000.
+        // It is a real constraint rather than a partial index precisely so PostgREST can name
+        // it here and the upsert keeps working.
+        { onConflict: 'user_id,case_id,requirement_id,attempt_id' },
       );
     } catch {
       return NextResponse.json({ error: 'Failed to record answer' }, { status: 500 });
@@ -412,9 +479,14 @@ export async function POST(request: Request): Promise<Response> {
       updated_at:        new Date().toISOString(),
     };
     if (result.passed && finalAnswer != null) row.final_answer = finalAnswer;
+    // attempt_id stays NULL: this is the PRACTICE path. Stated explicitly rather than omitted,
+    // because the conflict target now includes the column and an absent key would be ambiguous
+    // to read. NULL is what makes this row practice work, and NULLS NOT DISTINCT is what keeps
+    // it to exactly one row per requirement.
+    row.attempt_id = null;
     await supabase
       .from('acca_case_progress')
-      .upsert(row, { onConflict: 'user_id,case_id,requirement_id' });
+      .upsert(row, { onConflict: 'user_id,case_id,requirement_id,attempt_id' });
   } catch {
     // non-fatal: per-requirement persistence is best-effort, never blocks the response
   }

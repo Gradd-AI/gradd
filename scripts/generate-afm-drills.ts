@@ -465,6 +465,25 @@ function deriveCalcRequired(mode: LoMode, scenarioSuppliesFigures = false): bool
   return scenarioSuppliesFigures;
 }
 
+/**
+ * KNOWN DEFECT — the skill rotation here is DEAD IN PRACTICE (diagnosed 2026-08-01).
+ *
+ * `sectionIdx` is local to each CALL. Every batch caller invokes `buildSpecsForList([oneLo])[0]`
+ * — one LO at a time — so `si` is always 0 and `deriveSkillTag` always returns pool[0]:
+ * `analysis_and_evaluation` for sections B and E, `communication` for section A. That is the
+ * whole explanation for the published AFM corpus being 47 quantitative drills tagged
+ * analysis_and_evaluation and one A6a tagged communication, with zero scepticism and zero
+ * commercial_acumen. Nothing bypassed the rotation; it was defeated by the call shape.
+ *
+ * NOT fixed by hoisting `sectionIdx` to module scope. That would make the tag depend on
+ * generation ORDER — the same LO would tag differently depending on which batch ran first,
+ * and re-running a batch would silently re-tag its drills. A professional skill is a property
+ * of what the drill DEMANDS, not of when it was generated.
+ *
+ * The narrative path now DECLARES its skill per plan (see `NarrativePlan.skill`). The
+ * calculator batches still carry the rotation's pool[0] output; declaring theirs per family is
+ * the open remediation (docs/AFM_SURFACED.md).
+ */
 function buildSpecsForList(loCodes: LoCode[]): AfmDrillSpec[] {
   const sectionIdx: Record<string, number> = {};
   return loCodes.map((lo_code) => {
@@ -2584,6 +2603,27 @@ interface NarrativePlan {
   sector: string;
   heading: string;             // STABLE model_answer first line — the area-entry rank key (lib/acca/area-entry.ts)
   brief: string;               // conceptual-only task description fed to the author prompt
+  /**
+   * The professional skill this drill is DESIGNED to demand — declared per plan, never derived.
+   *
+   * WHY NOT `deriveSkillTag` (fixed 2026-08-01). Routing this through the rotation looks right
+   * and does not work, for a reason worth writing down: every batch caller invokes
+   * `buildSpecsForList([oneLo])[0]`, and `sectionIdx` is LOCAL TO EACH CALL, so the index is
+   * always 0 and the rotation always returns pool[0]. For sections B and E that is
+   * `analysis_and_evaluation`; for section A it is `communication`. That single fact explains
+   * the entire published AFM distribution — 47 quantitative B/E drills tagged
+   * analysis_and_evaluation and the one section-A drill tagged communication. The rotation was
+   * never bypassed; it was defeated by being called one LO at a time.
+   *
+   * So routing the narrative batch through it would have replaced 8 NULLs with 8 more
+   * `analysis_and_evaluation` — the same gap in a different colour.
+   *
+   * Declared per plan instead, which is also the more honest mechanism: the plan already states
+   * what the drill demands, and the tag is fed to the author prompt as a STEER ("the
+   * model_answer should demonstrate it"). An author who knows D3 is built to refute the CFO's
+   * premise can say so; a rotation cannot know it.
+   */
+  skill: ProfessionalSkillTag;
 }
 
 // Code-owned default bands (fraction of total_marks). Narrative marking's band→verdict is code-owned.
@@ -2596,7 +2636,9 @@ const NARRATIVE_BANDS = [
 
 const NARRATIVE_PLAN: NarrativePlan[] = [
   {
-    id: 'D1', lo_code: 'B1b', covers: ['B1b'], level: 2, region: 'Vietnam',
+    // Interpreting a GIVEN simulation output: appraise the statistics and reach a conclusion.
+    // The dominant demand is appraisal, not challenge — a_and_e is the honest tag.
+    id: 'D1', lo_code: 'B1b', covers: ['B1b'], level: 2, skill: 'analysis_and_evaluation', region: 'Vietnam',
     sector: 'a deep-water port / container-terminal expansion project',
     heading: '**Monte Carlo simulation — interpreting the simulation output**',
     brief:
@@ -2609,7 +2651,9 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       'answer must USE the given figures in its interpretation (own-figure discipline, F9).',
   },
   {
-    id: 'D2', lo_code: 'B3a', covers: ['B3a', 'B3b', 'B3c'], level: 3, region: 'Kenya',
+    // Four instruments weighed against three BINDING constraints, ending in a committed
+    // recommendation. Proposing a commercially viable solution under real constraints.
+    id: 'D2', lo_code: 'B3a', covers: ['B3a', 'B3b', 'B3c'], level: 3, skill: 'commercial_acumen', region: 'Kenya',
     sector: 'a renewable-energy (solar-plus-storage) developer',
     heading: '**Sources of finance — appropriateness for the organisation**',
     brief:
@@ -2622,7 +2666,9 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       'CONCEPTUAL-ONLY — no computation; assess appropriateness, do not price anything.',
   },
   {
-    id: 'D3', lo_code: 'B3i', covers: ['B3i'], level: 3, region: 'Chile',
+    // Built to REFUTE a named person's stated premise (the CFO's) using capital-structure
+    // theory. Questioning an assertion is the definition of the scepticism skill.
+    id: 'D3', lo_code: 'B3i', covers: ['B3i'], level: 3, skill: 'scepticism', region: 'Chile',
     sector: 'an established mining-and-metals group considering a large recapitalisation',
     heading: '**Capital structure — theory and practical impact**',
     brief:
@@ -2634,7 +2680,10 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       'the lens. Do NOT drift into duration/convexity (that is a different LO).',
   },
   {
-    id: 'D4', lo_code: 'B4d', covers: ['B4d'], level: 2, region: 'Indonesia',
+    // Applies BSOP and then CHALLENGES ITS ASSUMPTIONS — constant volatility against
+    // concession-dependent toll revenue, unobservable asset value. Questioning a model's
+    // premises, not just using it.
+    id: 'D4', lo_code: 'B4d', covers: ['B4d'], level: 2, skill: 'scepticism', region: 'Indonesia',
     sector: 'a highly-geared toll-road concession company and its lending banks',
     heading: '**Option pricing models — role in valuing equity, debt and default risk**',
     brief:
@@ -2646,7 +2695,9 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       '(that is the calculator-owned skill); explain what the model contributes and its limitations.',
   },
   {
-    id: 'D5', lo_code: 'B5c', covers: ['B5c', 'B5d'], level: 3, region: 'Nigeria',
+    // Trapped cash and a financing choice: propose practical uses for blocked funds, weigh
+    // Eurobond against GDR, and commit. Business consequences and a viable recommendation.
+    id: 'D5', lo_code: 'B5c', covers: ['B5c', 'B5d'], level: 3, skill: 'commercial_acumen', region: 'Nigeria',
     sector: 'a multinational consumer-goods parent with a subsidiary facing capital controls',
     heading: '**Exchange controls and international sources of finance**',
     brief:
@@ -2944,6 +2995,10 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       ...buildSpecsForList([plan.lo_code])[0],
       intellectual_level: plan.level, region_hint: plan.region, sector_hint: plan.sector,
       command_verb: drill.command_verb, calculation_required: false,
+      // Override the rotation's tag with the plan's DECLARED one so the same skill that lands
+      // in the row also steers the Ezra reveal prompt (skillLine, ~line 504). Without this the
+      // stored tag and the prompt could disagree.
+      professional_skill_tag: plan.skill,
     };
     let reveal: { hint: string; full_reveal: string } | null = null;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -2981,7 +3036,10 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       topic:                  lo.topic,
       command_verb:           drill.command_verb,
       intellectual_level:     plan.level,
-      professional_skill_tag: null,
+      // DECLARED on the plan, not derived — see NarrativePlan.skill for why the rotation
+      // cannot be used here. Was hardcoded null until 2026-08-01, which is how the narrative
+      // batch contributed 8 untagged rows to the AFM corpus.
+      professional_skill_tag: plan.skill,
       calculation_required:   false,
       mode:                   'discursive',
       marks_guide:            drill.rubric.total_marks,
