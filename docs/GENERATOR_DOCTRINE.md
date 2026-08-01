@@ -188,6 +188,60 @@ engineering problem it was aimed at.
 - **Report the rate against a declared denominator** (P-G2), and never state a zero-failure run as a
   zero rate: 0/30 bounds the true rate near ≤10% at 95%, it does not establish 0%.
 
+## P-M2 — THE MARKING BASELINE IS NOT GROUND TRUTH (ruled 2026-08-01, Grant)
+
+**The recorded baseline is a 10-run MODAL READING of the pre-register marker. It has never been
+validated against a human marker, an ACCA published mark scheme, or any external standard.**
+
+P-M1 requires a band matrix against the baseline, and that requirement stands — it is how a marking
+change is *detected*. What P-M1 did not say, and what three rounds of `fix/marker-feedback-register`
+got wrong, is what the matrix **means**. All three rounds treated the baseline as the correct answer
+and tuned toward it. That is a method error, not merely a bad outcome: **a prompt change that moves
+a cell off an unvalidated baseline has not been shown to be wrong, only to be different.** The
+baseline could as easily have been under-marking.
+
+**The rule.** A band matrix against the baseline is EVIDENCE OF CHANGE, never evidence of error.
+**Do not re-litigate a marking change against the baseline without an external referee.** Any round
+that proposes to "restore" a baseline cell must first name the referee — a human marker, a published
+ACCA mark scheme, a worked example with a stated mark — that establishes the baseline cell was right.
+Absent a referee, the decision is a judgement call about product behaviour, and it is Grant's, not a
+measurement.
+
+**Corollary — what a matrix IS still good for.** Cells that hold across every round are the load-
+bearing ones: mock B2(i) `competent/6` held **10/10 in all three rounds**, which is what licensed
+shipping a change that moved two other cells. **Error detection holding is the bar; exact agreement
+with an unvalidated baseline is not.**
+
+## P-M3 — A MARKER'S COMPARISON DECIDES THE BAND; FENCE IT STRUCTURALLY (ruled 2026-08-01)
+
+**Measured finding, two independent degradations.** `judgeTechnicalOnce` is given the code-correct
+`model_answer` as a reference. Two attempts to stop the marker citing that reference in
+student-facing prose worked by DEGRADING it in the prompt — round 1 retitled it "Correct treatment",
+round 2 stripped its name entirely and forbade the word "matches". **Both cleaned up the prose and
+both moved bands in the same direction: more generous.** A(iv) `strong` 9/10 → `exemplary` 7/10;
+A(iii) `strong` 7/10 → `exemplary` 9/10.
+
+**So the marker uses the comparison to DECIDE the band, not merely to explain it.** "Matches the
+marking standard in full" is a harder claim to make than "this looks right", and taking the standard
+away removes the harder claim.
+
+**The rule.** Where a model both judges against a reference AND writes something a user reads, do
+not weaken the reference to protect the user — **separate the fields and drop the private one where
+model output becomes the result.** The marker now writes `judgement` first (private, names the
+standard, compares freely, decides the band), then `band`, then `feedback` (derived, class-banned).
+`judgement` is dropped in `judgeTechnicalMarking` at the single line where the model's array becomes
+`bandById`, and `PerRequirementMark` has no field it could travel in — so there is no path to
+`acca_case_progress.technical_feedback` for it to leak along. **Structural beats instructed**, the
+same discipline as the withhold engine (`docs/TEACHING_ARCHITECTURE.md`).
+
+**Corollary.** A missing `judgement` is a PARSE FAILURE, not a tolerated omission. A band reached
+without the comparison written down is exactly the ungrounded band the split exists to prevent.
+
+**Corollary — this did NOT restore the drifting cells.** Round 3 kept them where round 2 left them.
+Restoring the comparative words was necessary-looking and insufficient; the likeliest remaining cause
+is the "compare in full, quote both figures" instruction inviting a completeness check rather than a
+quality judgement. Recorded as open, not blocking, under P-M2 — it needs a referee, not another round.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.

@@ -402,14 +402,26 @@ true rate near ≤10% at 95%, it does not establish 0%.
   been put through an equivalent repeated-run matrix yet — the ordinal contract landed on
   `judgeCaseMarking` this session on the technical pass's evidence, not on its own.
 
-## 🔸 OPEN 2026-08-01 — the marker-feedback branch: 3 rounds, 3 P-M1 cycles, BANDS STILL MOVE
+## ✅ MERGED 2026-08-01 — the marker-feedback register: 3 rounds, 3 P-M1 cycles, the split ships
 
-**`fix/marker-feedback-register` is HELD UNMERGED (`3093ae3`), pushed. Grant's call.** The branch
-fixes a real defect — the student-facing `feedback` string was written to a moderator, in the third
-person, citing a document the student has never seen — and every round has cleaned the prose up.
-**Every round has also moved technical bands off the recorded baseline, and round 3 did not fix
-that.** The prose defect and the band stability are in tension, and the branch cannot ship until
-that is resolved.
+**`fix/marker-feedback-register` MERGED to main (`7601e28`).** The branch fixed a real defect — the
+student-facing `feedback` string was written to a moderator, in the third person, citing a document
+the student has never seen. Every round cleaned the prose up; every round also moved two technical
+bands off the recorded baseline, and round 3 did not stop that.
+
+**⛔ GRANT'S RULING (2026-08-01) — THE DRIFT IS ACCEPTED, AND THE BASELINE IS NOT GROUND TRUTH.**
+Both drifting cells were the softest in the baseline; the disagreement is **one band on two of eight
+requirements**; and **B2(i) holds `competent/6` in 10/10 across all three rounds**, so the paper's
+error-detection behaviour — the thing that makes a mark worth reading — is unaffected. Shipped.
+
+**⛔ THE BASELINE HAS NEVER BEEN VALIDATED. Do NOT re-litigate against it without an external
+referee.** The "recorded baseline" is a **10-run modal reading of the pre-register marker** and
+nothing more. It was never checked against a human marker, an ACCA published mark scheme, or any
+external standard. Three rounds of this work treated it as ground truth and tuned toward it — that
+was a mistake in method, not just in outcome, because a prompt change that moves a cell off an
+unvalidated baseline has not been shown to be wrong; it has only been shown to be *different*. Any
+future round that proposes to "restore" a baseline cell must first say what referee establishes that
+the baseline cell was right.
 
 | Cell | Baseline (main) | R1/R2 (nameless reference) | R3 (judgement split) |
 |---|---|---|---|
@@ -429,13 +441,25 @@ field emitted FIRST; `feedback` is derived from it afterwards and keeps the clas
 is dropped where model output becomes the result, so it has no path to
 `acca_case_progress.technical_feedback`; `PerRequirementMark` has no field it could travel in.
 
-**It did not work as intended.** A(iv) and A(iii) sit at the same inflated place as round 2. The
-honest reading is that restoring the comparative WORDS was not sufficient — something else in the
-rewritten prompt (most likely the explicit "compare in full, quote both figures" instruction, which
-invites a completeness check rather than a quality judgement) is doing the inflating. Both drifting
-cells are the two the baseline already recorded as SOFT (see the block above: A(iii) was 7/10 and
-A(iv) 9/10, never 10/10), so this is a nudge to already-unstable cells, not a collapse — but it is a
-consistent nudge in one direction across three rounds, which is a signal, not noise.
+**THE FINDING THAT STANDS, and it is the durable one:** the marker uses the comparison against the
+reference to **DECIDE** the band, not merely to explain it. Degrade the reference in the prompt and
+it grades **more generously** — measured across two independent degradations (retitle, then
+de-name). Round 3's fix is therefore **structural, not instructed**: the comparison lives in
+`judgement`, which is dropped where model output becomes the result and has no field on
+`PerRequirementMark` it could travel in. That is the same discipline as the withhold engine —
+architect the absence, never instruct it (`docs/TEACHING_ARCHITECTURE.md`).
+
+**Round 3 did not restore the drifting cells.** A(iv) and A(iii) sit at the same inflated place as
+round 2. Restoring the comparative WORDS was not sufficient; the likeliest remaining cause is the
+explicit "compare in full, quote both figures" instruction, which invites a completeness check
+rather than a quality judgement. Both drifting cells are the two the baseline already recorded as
+SOFT (block above: A(iii) 7/10 and A(iv) 9/10, never 10/10) — a nudge to already-unstable cells, not
+a collapse.
+
+**🔸 OPEN, NOT BLOCKING — A(iii) and A(iv) sit one band above baseline.** Nothing is owed against it
+now. **If a human marker ever calibrates this paper, that is the measurement that settles it** —
+and it settles it in whichever direction the evidence falls, including the possibility that the
+current marker is right and the baseline was under-marking.
 
 **Measured, 10 runs, denominators declared (P-G2):** 30/30 chains returned · **0/30 parse failures**
 · 80/80 matrix cells evaluated · paper total 72–74/80 (baseline 74). `max_tokens` 3000 → 8000 landed
@@ -448,12 +472,9 @@ The one hit's exact matched phrase was NOT captured — the harness printed the 
 characters, which is almost never where the match is. **Harness fixed** to print the matched phrase
 with surrounding context; a sweep that cannot show its own evidence cannot be adjudicated.
 
-**Decision owed:** (a) accept the drift on two already-soft cells as the price of feedback a student
-can actually read, (b) try a round 4 that keeps the split but softens the "compare in full" wording
-toward a quality judgement, or (c) abandon the prompt route and re-baseline instead — the current
-baseline is itself only a 10-run modal reading, not ground truth. **No option is free**; (c) in
-particular means accepting that "the recorded baseline" has never been validated against a human
-marker.
+**Decision taken (Grant, 2026-08-01): option (a) — accept the drift and ship.** Options (b) round 4
+on the "compare in full" wording and (c) re-baseline are both still available, but neither may be
+opened without the external referee named in the ruling above.
 
 
 ## ✅ CLOSED 2026-07-28 — Mock 1 barrier is GREEN; capm registered; CAPM-1/2/4/9 built
