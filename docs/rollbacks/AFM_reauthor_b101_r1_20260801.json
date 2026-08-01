@@ -1,0 +1,94 @@
+{
+  "reason": "P-DB2 re-author — injected count line",
+  "row": {
+    "id": "86b69952-ac0e-4cb5-8922-203b3c03eedb",
+    "case_id": "ac000000-0000-4000-8000-00000000b101",
+    "requirement_order": 1,
+    "label": "(i) — 13 marks",
+    "question": "(i) Calculate the expected net present value of the vessel investment and the probability that it returns a negative net present value, and advise the board what the appraisal shows. (13 marks)",
+    "lo_code": "B1a",
+    "command_verb": "calculate",
+    "intellectual_level": 3,
+    "marks_guide": 13,
+    "professional_skill_tags": "analysis_and_evaluation",
+    "model_answer": "**Risk & uncertainty — expected net present value (ENPV)**\n\n**Assumptions:** each economic state's cash flows are STATED; every scenario NPV is computed from its own stream discounted at 9.00% (outlay NOK 900.0m at t0); probabilities are exhaustive and sum to 1. ENPV is the probability-weighted mean NPV — a **repeated-game** figure. Because this project is undertaken **once**, the individual state NPVs and the probability of a negative NPV carry the decision alongside the mean.\n\n**Step 1 — Scenario NPVs (each from its own stated cash flows)**\n\n| Scenario | Probability | NPV |\n|------|------|------|\n| Strong build-out | 0.30 | NOK 331.1m |\n| Central case | 0.45 | NOK -2.7m |\n| Delayed build-out | 0.25 | NOK -320.0m |\n\n**Step 2 — Expected NPV**\n\nENPV = Σ(pᵢ × NPVᵢ) = **NOK 18.1m**. Probability of a negative NPV = **70%**.\n\n**Step 3 — Decision**\n\nOn the expected-value criterion the ENPV of NOK 18.1m is **positive**, so the project is **acceptable on EV terms** — subject to the one-shot caveat below.\n\n**Step 4 — Advice to the board**\n\nThe two outputs point in opposite directions, and that is the finding the board needs rather than either figure on its own. The expected value clears the acceptance rule, so on the criterion the board has set the vessel is acceptable. But it clears it only because one favourable scenario is large enough to outweigh the other two, and both of those destroy value — the central case, which the commercial director treats as the planning assumption, is itself marginally negative. The probability that this investment loses money is therefore substantially greater than the probability that it makes money, even though its expected value is positive. For a decision taken once, on a single vessel, that distinction is the whole decision: an expected value is what Halvard would earn on average if it took this bet repeatedly, and it will take it once. The board should not read the positive expected value as a recommendation to proceed without first satisfying itself about the central case, because it is the central case that carries most of the probability and it does not, on these numbers, pay for the vessel.\n\n*Reconciliation: Σ(p×NPV) = NOK 18.1m; P(NPV<0) = 70% ✓*",
+    "hint": "Do not average the cash flows first — the downside probability is a mark-earning output and averaging destroys it. Discount each scenario separately at the given rate to get three net present values, each after deducting the full outlay. Weight those three figures by their probabilities for the expected net present value, and separately add the probabilities of whichever scenarios came out negative.",
+    "full_reveal": "The classic misconception here is reading a positive expected net present value as though it were the project's outcome: candidates compute the expected value, compare it with zero, and recommend acceptance without ever computing or interpreting the downside probability.\n\nThe fix is to hold the two outputs together. Discount each scenario's cash flows in full and separately, so that each scenario has its own net present value; only then weight them. The expected value is the probability-weighted average of those figures and is an outcome that occurs in none of the scenarios. Alongside it, add the probabilities of the scenarios whose net present value is negative — that sum, not the average, is what tells the board how often this decision loses money. A candidate who weights the cash flows first and discounts the average afterwards will usually land on a similar expected value and will have destroyed the scenario detail the second output depends on.",
+    "created_at": "2026-08-01T14:49:44.418947+00:00",
+    "answer_schema": {
+      "params": {
+        "hurdle": 0,
+        "outlay": 900,
+        "prob_1": 0.3,
+        "prob_2": 0.45,
+        "prob_3": 0.25,
+        "p_negative": 0.7,
+        "discount_rate": 0.09
+      },
+      "components": [
+        {
+          "unit": "NOKm",
+          "label": "Scenario NPV — Strong build-out",
+          "tolerance": {
+            "pct": 0.5,
+            "kind": "floor",
+            "floor": 0.2
+          },
+          "component_id": "npv_1",
+          "working_steps": [
+            "= −outlay 900.0 + Σ (scenario Strong build-out cash flow × DF @ 9.00%)"
+          ],
+          "expected_value": 331.0927315070362
+        },
+        {
+          "unit": "NOKm",
+          "label": "Scenario NPV — Central case",
+          "tolerance": {
+            "pct": 0.5,
+            "kind": "floor",
+            "floor": 0.2
+          },
+          "component_id": "npv_2",
+          "working_steps": [
+            "= −outlay 900.0 + Σ (scenario Central case cash flow × DF @ 9.00%)"
+          ],
+          "expected_value": -2.7194311492909264
+        },
+        {
+          "unit": "NOKm",
+          "label": "Scenario NPV — Delayed build-out",
+          "tolerance": {
+            "pct": 0.5,
+            "kind": "floor",
+            "floor": 0.2
+          },
+          "component_id": "npv_3",
+          "working_steps": [
+            "= −outlay 900.0 + Σ (scenario Delayed build-out cash flow × DF @ 9.00%)"
+          ],
+          "expected_value": -319.95464931000356
+        },
+        {
+          "unit": "NOKm",
+          "label": "Expected net present value (ENPV)",
+          "recompute": "enpv_prob_weighted",
+          "tolerance": {
+            "pct": 0.5,
+            "kind": "floor",
+            "floor": 0.2
+          },
+          "depends_on": [
+            "npv_1",
+            "npv_2",
+            "npv_3"
+          ],
+          "component_id": "enpv",
+          "working_steps": [
+            "ENPV = Σ(pᵢ × NPVᵢ) = 0.3×331.1 + 0.45×-2.7 + 0.25×-320.0"
+          ],
+          "expected_value": 18.11541310742905
+        }
+      ]
+    }
+  }
+}
