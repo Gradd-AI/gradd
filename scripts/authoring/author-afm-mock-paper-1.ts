@@ -29,19 +29,27 @@
 // Standing rule, added to docs/GENERATOR_DOCTRINE.md with this commit: any script that WRITES
 // CONTENT, or is the SOLE CALLER of a gate barrier, gets committed.
 //
-// ── ⚠ RUNNING THIS AGAINST THE LIVE PAPER WILL TAKE IT DOWN ─────────────────
+// ── ⚠ THIS IS A DESTRUCTIVE RE-AUTHOR, AND THE GUARD IS STRUCTURAL ──────────
 // `insertAll` begins each case with `acca_cases.delete().eq('id', …)` — an IDEMPOTENT
-// re-author that CASCADES to exhibits and requirements — and re-inserts with
-// `status:'candidate', published:false`.
+// re-author that CASCADES to exhibits, requirements AND every student's acca_case_progress —
+// and re-inserts with `status:'candidate', published:false`.
 //
-// AFM Mock Paper 1 is LIVE (all 3 cases approved/published since 2026-07-29) and, as of
-// 2026-07-31, is served by the sit surface at /acca/afm/mock and /acca/mock. Running this with
-// `--insert` today would DELETE the published rows, re-create them unpublished, and 404 the sit
-// surface — and would destroy any student's acca_case_progress for those cases along with them.
+// AFM Mock Paper 1 is LIVE (all 3 cases approved/published since 2026-07-29) and is served by
+// the sit surface at /acca/afm/mock and /acca/mock. Re-authoring it today would 404 that
+// surface and destroy student progress.
 //
-// It is retained as the reference caller and as the recovery path, NOT as something to re-run.
-// Before any `--insert`, re-read docs/GENERATOR_DOCTRINE.md process rules P-DB1..3 and treat it
-// as a publish-flip-class change with a snapshot taken first.
+// A header warning is instructed, not structural, so it is NOT what protects this.
+// `assertSafeToOverwrite()` runs BEFORE any write and:
+//   • REFUSES OUTRIGHT if any target case is `published = true` — no override flag exists;
+//   • otherwise still requires `--i-will-delete-live-rows`, because the cascade destroys
+//     student progress whatever the publish state;
+//   • PRINTS exactly what would be deleted first — ids, titles, publish state, and the
+//     dependent-row counts including student progress.
+// So `--insert` alone cannot damage the live paper even if this header is never read.
+//
+// It is retained as the reference caller and as the recovery path. Before any re-author,
+// re-read docs/GENERATOR_DOCTRINE.md P-DB1..3 and P-DB6 and treat it as a publish-flip-class
+// change with a committed snapshot taken first.
 //
 // ── WHAT TO COPY FROM IT ─────────────────────────────────────────────────────
 // The pattern, not the content: every requirement is built by a calculator or the narrative
@@ -72,6 +80,9 @@ import { runCaseGates, type GatePaper, type MarkingKind } from '../../lib/acca/c
 
 const PHASE = process.env.PHASE ?? 'all';
 const DO_INSERT = process.argv.includes('--insert');
+// The destructive-write flag. Separate from --insert on purpose: --insert is "write the rows",
+// this is "and it is fine to delete what is already there, cascading to student progress".
+const DO_DESTRUCTIVE = process.argv.includes('--i-will-delete-live-rows');
 const DO_PACK = process.argv.includes('--pack');
 const NARRATIVE_BANDS = [{ min: 0, label: 'fail' }, { min: 0.5, label: 'pass' }, { min: 0.7, label: 'good' }, { min: 0.85, label: 'excellent' }];
 const DESIGNED_BAD: FailureMode[] = ['F1', 'F5', 'F4'];
@@ -346,10 +357,85 @@ function serialiseNarrative(n: NarrItem) {
   return { mode: 'narrative', rubric_version: 'narrative_v1', requirement_parts: n.rubric.requirement_parts, scenario_facts: n.rubric.scenario_facts, criteria: n.rubric.criteria, total_marks: n.rubric.total_marks, bands: n.rubric.bands, _authoring: { golden_bad: n.golden_bad, designed_bad_flags: DESIGNED_BAD, note: 'Rule-23 golden BAD + designed F-modes. NOT served. Golden GOOD is model_answer.' } };
 }
 
+/**
+ * ── THE DESTRUCTIVE-WRITE GUARD (structural, not instructed — added 2026-08-01) ──
+ *
+ * `insertAll` deletes each target case before re-inserting it, and that delete CASCADES to
+ * `acca_case_exhibits`, `acca_case_requirements` and every student's `acca_case_progress`
+ * for those requirements. When this script was written, the three cases were unpublished
+ * candidates and that was harmless. They are now LIVE and served by the sit surface.
+ *
+ * A header warning does not stop anything. This does:
+ *
+ *   1. It READS the live rows first and REFUSES outright if any target case is
+ *      `published = true`. There is no flag that overrides this — a published case must be
+ *      demoted deliberately, through the normal publish-flip discipline, before it can be
+ *      re-authored. That is the whole point: the failure mode is someone running `--insert`
+ *      without realising the paper went live, and a flag they can add is no protection.
+ *   2. Even for unpublished rows, the delete additionally requires `--i-will-delete-live-rows`,
+ *      because the cascade destroys student progress whatever the publish state.
+ *   3. It PRINTS exactly what will be deleted — case ids, titles, publish state, and the
+ *      counts of dependent rows including student progress — before doing anything.
+ *
+ * Ordered so the refusal happens BEFORE any write. P-DB2: show the write before it happens.
+ */
+async function assertSafeToOverwrite(
+  // Structurally typed, like lib/acca/case-mark-run.ts: the generated SupabaseClient generics
+  // do not unify across call sites and this guard needs none of them.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: { from: (t: string) => any },
+  caseIds: string[],
+): Promise<void> {
+  const { data: rows, error } = await supabase
+    .from('acca_cases')
+    .select('id, title, status, published')
+    .in('id', caseIds);
+  if (error) throw new Error(`destructive-write guard could not read acca_cases: ${error.message}`);
+
+  const existing = (rows ?? []) as Array<{ id: string; title: string | null; status: string; published: boolean }>;
+
+  console.log('\n── DESTRUCTIVE WRITE — what --insert would DELETE ──');
+  if (existing.length === 0) {
+    console.log('   (no existing rows for these ids — this is a first author, nothing is deleted)');
+    return;
+  }
+
+  let published = 0;
+  for (const c of existing) {
+    const [{ count: exhibits }, { count: reqs }] = await Promise.all([
+      supabase.from('acca_case_exhibits').select('id', { count: 'exact', head: true }).eq('case_id', c.id),
+      supabase.from('acca_case_requirements').select('id', { count: 'exact', head: true }).eq('case_id', c.id),
+    ]);
+    const { count: progress } = await supabase
+      .from('acca_case_progress').select('user_id', { count: 'exact', head: true }).eq('case_id', c.id);
+    if (c.published) published++;
+    console.log(
+      `   ${c.id}  ${String(c.title).padEnd(24)} status=${c.status} published=${c.published}` +
+      `  → cascades: ${exhibits ?? 0} exhibits, ${reqs ?? 0} requirements, ${progress ?? 0} student progress rows`,
+    );
+  }
+
+  if (published > 0) {
+    throw new Error(
+      `REFUSED: ${published} of ${existing.length} target case(s) are published=true. This script ` +
+      'deletes and re-inserts as candidate/unpublished, which would take the live sit surface ' +
+      'down and destroy student progress. Demote them deliberately first — there is no override flag.',
+    );
+  }
+  if (!DO_DESTRUCTIVE) {
+    throw new Error(
+      'REFUSED: re-authoring deletes existing rows and cascades to student progress. Re-run with ' +
+      '--i-will-delete-live-rows if that is genuinely intended.',
+    );
+  }
+  console.log('   guard passed: no target case is published, and --i-will-delete-live-rows was given.\n');
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function insertAll(x: any): Promise<void> {
   const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
   const { numeric, narratives } = x as { numeric: any[]; narratives: NarrItem[] };
+  await assertSafeToOverwrite(supabase, [CID.A, CID.B1, CID.B2]);
   const cases = [
     { id: CID.A, section: 'A', anchor_area: null, title: 'Solenne Industries SA', intro: A_INTRO, ex: A_EX, total: 50, ps: 10 },
     { id: CID.B1, section: 'B', anchor_area: 'B1', title: 'Brecon Renewables plc', intro: B1_INTRO, ex: B1_EX, total: 25, ps: 5 },
