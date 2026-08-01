@@ -266,7 +266,7 @@ the one place open items live, and these are shipped-to-students defects rather 
    `hasActiveACCAAccess` is bundle-wide — so **the fix is renaming the Stripe objects, not
    retracting the copy**. Retracting would understate a real entitlement.
 
-## 🔸 OPEN 2026-07-31 — the AFM professional-skill corpus is skewed (authoring, not routing)
+## 🟠 PARTLY CLOSED 2026-08-01 — the AFM PS corpus: tagged, re-measured, **4 drills owed**
 
 **Logged on Grant's instruction 2026-07-31. Rides the next AFM authoring batch.**
 
