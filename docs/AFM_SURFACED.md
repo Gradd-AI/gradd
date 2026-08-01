@@ -310,24 +310,84 @@ steers the Ezra reveal prompt. Hoisting `sectionIdx` to module scope was **rejec
 make the tag depend on generation ORDER, so re-running a batch could silently re-tag its drills. A
 professional skill is a property of what a drill demands, not of when it ran.
 
-**Still owed, in order:**
-1. **The 8 published narrative rows are still `null`** — the generator fix is forward-only. Per-drill
-   assessment done 2026-08-01 from each rubric's own criteria: `08044fb6` B3a, `32ef124c` B5c,
-   `55181aa8` E1a, `d0be009d` E1a → **commercial_acumen**; `fda46d99` B3i → **scepticism**;
-   `d413fbe7` B4d → **scepticism** (borderline: only 4–5 of 12 marks are the limitations part);
-   `cb9b411c` B1b and `f9f4f3d4` E2a → stay **analysis_and_evaluation**, correctly. A DB write on
-   published rows (P-DB2, Grant's).
-2. **The 48 quantitative tags are unexamined, not verified.** They may each be right — a calculator
-   drill genuinely is appraisal — but nobody decided that; the defect defaulted them. Declaring a
-   skill per calculator family is the remaining generator work.
-3. **Nothing gates the tag.** No check verifies that a drill's declared skill matches what its
-   rubric demands. The case-authoring path has C4 for PS coverage; the drill path has no analogue.
+### ✅ THE 8 NARRATIVE ROWS ARE TAGGED (P-DB2 write, Grant-approved, applied 2026-08-01)
 
-**Sharpest statement of the consequence:** AFM Mock 1 grades all four skills — `scepticism` on 3
-requirements (**28 marks**) and `commercial_acumen` on 2 (**14 marks**). `psScore` returns 0 unless
-a drill's tag matches, so a student marked weak on either gets a boost on **zero drills in the
-entire AFM corpus**. The PS half of the steering is inert for exactly the two skills the sit
-weights most heavily.
+Assessed from each drill's OWN rubric — criteria, marks, disqualifiers, required points — never by
+rotation. Script committed at `scripts/authoring/tag-afm-narrative-skills.ts` (P-DB6: it writes
+published content, so it is the record of what was written and why) and it PRINTS the full
+justification before applying. Snapshot `docs/rollbacks/AFM_narrative_ps_tag_20260801.json`,
+committed BEFORE the write.
+
+| Drill | LO | Marks | Tag | The line that decided it |
+|---|---|---|---|---|
+| `08044fb6` | B3a | 12 | **commercial_acumen** | c5 (3): adopt the green ijara sukuk — "the only option that simultaneously satisfies all three binding constraints" |
+| `32ef124c` | B5c | 15 | **commercial_acumen** | c8 (2): "on balance the board should prefer the Eurobond"; c4 deploys the trapped NGN 42bn productively |
+| `55181aa8` | E1a | 8 | **commercial_acumen** | c1 (2): WHERE to site the function and how much autonomy to leave — judgement, no technique |
+| `d0be009d` | E1a | 8 | **commercial_acumen** | c4 (2): justified on income-maximising grounds, "not as an extra cost layer" |
+| `fda46d99` | B3i | 11 | **scepticism** | c1 (3): "directly refutes the CFO's implicit premise" — built to challenge a named assertion |
+| `d413fbe7` | B4d | 12 | **scepticism** | c4/c5 (4): constant volatility untenable for concession toll revenue; asset value "is itself an estimate" |
+| `cb9b411c` | B1b | 12 | **analysis_and_evaluation** | appraises given simulation statistics; challenges nothing, proposes nothing |
+| `f9f4f3d4` | E2a | 10 | **analysis_and_evaluation** | identify/distinguish/manage; the F2 disqualifier tests depth of analysis, not credulity |
+
+**`d413fbe7` is the one soft call and is flagged as such in the script**: only 4–5 of its 12 marks
+are the assumption-challenging part, the other 7 are straight BSOP exposition. Tagged `scepticism`
+because the limitations are what discriminates a strong answer from a recited one, and because it
+is functionally the right drill to serve a student weak on scepticism. "analysis_and_evaluation with
+a scepticism component" is a defensible alternative reading.
+
+**P-DB4 post-verify: 8/8 rows, `professional_skill_tag` the ONLY field that moved, every other field
+byte-identical** under a key-order-insensitive canonicalisation (raw stringify reports phantom jsonb
+drift). 8/8 tags exactly as proposed.
+
+### 📊 RE-MEASURED 2026-08-01 — the number that decides the authoring, with denominators
+
+**AFM published+approved = 57.** `analysis_and_evaluation` **50** · `commercial_acumen` **4** ·
+`scepticism` **2** · `communication` **1** · null **0**. (APM, 91: 36 / 17 / 21 / 17, none null.)
+
+Corpus-wide counts are the WRONG measure and were misleading me. Steering happens **inside an
+area** (`next-drill`'s `area=` / `lo=` paths), so what matters is whether a given AREA can serve a
+given SKILL. Across the 9 areas that have published drills:
+
+| Skill | Areas covered | Where |
+|---|---|---|
+| analysis_and_evaluation | **7/9** | B1 B2 B3 B4 B5 E2 E3 |
+| commercial_acumen | **3/9** | B3 B5 E1 |
+| scepticism | **2/9** | B3 B4 |
+| communication | **1/9** | A6 |
+
+**Now cross-referenced against what AFM Mock 1 actually examines** — 10 (requirement × skill)
+demands across its 8 requirements. **5 of the 10 have no matching drill in that area:**
+
+| Requirement | Area | Skill examined | Drill available? |
+|---|---|---|---|
+| (ii) B1b — 8 | B1 | scepticism | **NONE** |
+| (iii) E2b — 8 | E2 | scepticism | **NONE** |
+| (ii) E2a — 8 | E2 | scepticism | **NONE** |
+| (ii) E2a — 8 | E2 | commercial_acumen | **NONE** |
+| (ii) B5b — 16 | B5 | communication | **NONE** |
+
+**24 marks sit on requirements where NOT ONE examined skill can be served in that area** (B1b 8 +
+E2b 8 + E2a 8). B5b's 16 are half-served — its `analysis_and_evaluation` half resolves, its
+`communication` half does not.
+
+**⇒ THE AUTHORING NUMBER IS 4 DRILLS, not "more scepticism drills":**
+1. **scepticism in B1** · 2. **scepticism in E2** · 3. **commercial_acumen in E2** ·
+4. **communication in B5**.
+
+That is the minimum that closes every measured demand the live sit can generate. A theoretical
+"every area × every skill" target would be 23 further cells — an **unmotivated ceiling** that should
+NOT drive authoring: most of those cells are never examined, and several would not be honest (not
+every syllabus area demands every skill, and a drill whose rubric does not demand a skill must not
+claim to teach it).
+
+**Still owed after this:**
+1. **The 47 quantitative tags are unexamined, not verified.** They may each be right — a calculator
+   drill genuinely is appraisal — but nobody decided that; the defect defaulted them. Declaring a
+   skill per calculator family is the remaining generator work, and it is where a real
+   `scepticism` calculator drill would come from (risk & uncertainty's "bare IRR−r is headroom,
+   never sensitivity" trap is sceptical work by nature).
+2. **Nothing gates the tag.** No check verifies that a drill's declared skill matches what its
+   rubric demands. The case-authoring path has C4 for PS coverage; the drill path has no analogue.
 
 
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
