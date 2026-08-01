@@ -178,17 +178,27 @@ export async function GET(request: Request): Promise<Response> {
     .in('case_id', PAPER.case_ids)
     .order('requirement_order', { ascending: true });
 
-  // Which requirements this user has already submitted. A recorded answer is FINAL —
-  // blank '' counts as submitted (a deliberately unanswered requirement).
-  const { data: progress } = await supabase
-    .from('acca_case_progress')
-    .select('requirement_id, final_answer')
-    .eq('user_id', userId)
-    .in('case_id', PAPER.case_ids);
-
-  const submitted = (progress ?? [])
-    .filter((p) => p.final_answer != null)
-    .map((p) => p.requirement_id as string);
+  // Which requirements this user has already submitted IN THIS SITTING. A recorded answer is
+  // FINAL — blank '' counts as submitted (a deliberately unanswered requirement).
+  //
+  // SCOPED TO THE ATTEMPT (2026-08-01). Unscoped, this counted PRACTICE work as submitted, so a
+  // student who had practised a case was skipped past it — or sent straight to the results on a
+  // paper they had never sat. Same root defect as the mark gate, one route further forward.
+  //
+  // NO ATTEMPT ⇒ NOTHING SUBMITTED, and the query is skipped rather than run against a sentinel:
+  // the paper has not been started, so there is nothing to look for.
+  const submitted: string[] = [];
+  if (resolved.attempt) {
+    const { data: progress } = await supabase
+      .from('acca_case_progress')
+      .select('requirement_id, final_answer')
+      .eq('user_id', userId)
+      .eq('attempt_id', resolved.attempt.id)
+      .in('case_id', PAPER.case_ids);
+    for (const p of progress ?? []) {
+      if (p.final_answer != null) submitted.push(p.requirement_id as string);
+    }
+  }
 
   // Flatten to the paper-ordered slot list the UI walks: Section A's requirements in
   // order, then each Section B case's, in case_ids order.

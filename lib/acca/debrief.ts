@@ -70,6 +70,7 @@ export interface DebriefRequirementInput {
   marks_awarded: number | null;
   band: string | null;            // the technical band; null = not marked
   marker_feedback: string | null; // the marker's OWN reasoning — carried verbatim, never rewritten
+  lo_code?: string | null;        // ROUTING ONLY — never printed. See `practise_area`.
 }
 
 export interface DebriefSkillInput {
@@ -107,6 +108,22 @@ export interface DebriefRequirementLine {
   why_display: 'expanded' | 'collapsed';
   next_action: string;
   next_action_source: DebriefSource;
+  /**
+   * The syllabus sub-area to practise, or null. A ROUTING TARGET, never display text.
+   *
+   * Set ONLY where the band is weak or competent — the two bands the marker uses to say
+   * something was missed, and the same two that open a weakness-ledger row, so the button and
+   * the steering agree by construction. Strong and exemplary get null: the debrief already
+   * says "nothing to change here", and offering practice underneath would contradict it.
+   *
+   * This is the ONE place an internal code informs the client, and it is deliberate. The sit
+   * route strips syllabus codes because naming the area DURING a paper tells the candidate what
+   * is being tested; after marking, telling them what to work on IS the product. It is still
+   * never rendered as text — `display_name` remains the only student-facing reference — and it
+   * carries the 2-character sub-area (E3a → E3) rather than the full LO, because that is the
+   * bucket the drill selector actually serves.
+   */
+  practise_area: string | null;
   // ── pacing, side by side and never merged ──
   pacing_note: string | null;
   pacing_flag: PacingFlag | null;
@@ -173,6 +190,10 @@ const ACTION_BY_BAND: Record<string, string> = {
 };
 
 const round1 = (n: number): number => Math.round(n * 10) / 10;
+
+/** The bands that earn a practise action. Same two that open a weakness-ledger row
+ *  (lib/acca/weak-areas.ts), so the exit and the steering cannot disagree. */
+const PRACTISABLE_BANDS = new Set(['weak', 'competent']);
 
 /**
  * "Q1 (i)" — case position plus the part, and nothing else.
@@ -351,6 +372,9 @@ export function buildDebrief(
       why_display: whyDisplay,
       next_action: action,
       next_action_source: actionSource,
+      practise_area: PRACTISABLE_BANDS.has(r.band ?? '')
+        ? ((r.lo_code ?? '').trim().slice(0, 2) || null)
+        : null,
       pacing_note: pacingNote,
       pacing_flag: p?.flag ?? null,
       answer_state: state,

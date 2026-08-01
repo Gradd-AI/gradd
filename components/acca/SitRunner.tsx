@@ -86,6 +86,8 @@ interface DebriefLine {
   why: string | null;
   why_display: 'expanded' | 'collapsed';
   next_action: string;
+  /** Routing target for the practise action; null on strong/exemplary. Never rendered as text. */
+  practise_area: string | null;
   pacing_note: string | null;
   pacing_flag: string | null;
   answer_state: string | null;
@@ -569,7 +571,8 @@ function bandLabel(band: string | null): string | null {
   return band.charAt(0).toUpperCase() + band.slice(1);
 }
 
-function DebriefRequirement({ line }: { line: DebriefLine }) {
+function DebriefRequirement({ line, paper }: { line: DebriefLine; paper: AccaPaper }) {
+  const href = line.practise_area ? practiseHref(line.practise_area, paper) : null;
   return (
     <li className={`db-req db-req--${line.verdict}`}>
       <div className="db-req-head">
@@ -603,13 +606,46 @@ function DebriefRequirement({ line }: { line: DebriefLine }) {
       )}
 
       <p className="db-line db-line--action"><span className="db-key">Next:</span> {line.next_action}</p>
+
+      {/* THE EXIT. Present only where the band is weak or competent — the server decides that
+          (practise_area is null otherwise), so the button cannot appear on a requirement that
+          scored even if this component is reused elsewhere. */}
+      {href && (
+        <a className="db-practise" href={href}>
+          Practise this →
+        </a>
+      )}
     </li>
   );
+}
+
+// ── WHERE A REQUIREMENT SENDS YOU NEXT ───────────────────────────────────────
+// A practise action appears ONLY on a weak or competent band. Those are the two bands the
+// marker uses to say something was missed, and they are the same two that open a row in the
+// weakness ledger — so the button and the steering agree by construction rather than by
+// coincidence.
+//
+// STRONG AND EXEMPLARY GET NOTHING, deliberately. Manufacturing work on a requirement that
+// scored is how a debrief turns into a chore list: it tells a student their good answer was
+// also a problem, and it dilutes the actions that matter. The debrief already says "nothing to
+// change here" on those bands; a button underneath would contradict it.
+const PRACTISABLE_BANDS = new Set(['weak', 'competent']);
+
+/** The drill surface for one syllabus area. `area=` is the 2-character sub-area (E3a → E3):
+ *  the LO itself is often a single drill, and the sub-area is what the selector treats as a
+ *  practisable bucket. Paper is carried because AFM and APM LO codes collide exactly. */
+function practiseHref(loCode: string | null, paper: AccaPaper): string | null {
+  const area = (loCode ?? '').trim().slice(0, 2);
+  if (!area) return null;
+  return `/acca/tutor?area=${encodeURIComponent(area)}${paper === 'APM' ? '' : `&paper=${encodeURIComponent(paper)}`}`;
 }
 
 function Debrief({ data }: { data: ResultsData }) {
   const { debrief } = data;
   const t = debrief.totals;
+  const paper = data.paper.paper;
+  const dashHref = paper === 'APM' ? '/acca' : `/acca?paper=${encodeURIComponent(paper)}`;
+  const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
 
   if (debrief.not_evaluated) {
     return (
@@ -622,6 +658,16 @@ function Debrief({ data }: { data: ResultsData }) {
 
   return (
     <main className="db">
+      {/* THE WAY OUT, at the TOP and sticky. The results screen was a cul-de-sac: no link to
+          the dashboard or anywhere else, so the only exit was the browser's back button into a
+          finished paper. Placed above the marks rather than under the last requirement, because
+          a student who wants to leave should not have to read their whole debrief to find the
+          door. */}
+      <nav className="db-nav">
+        <a className="db-nav-back" href={dashHref}>← Dashboard</a>
+        <span className="db-nav-paper">ACCA {paper}</span>
+      </nav>
+
       <header className="db-head">
         <h1 className="db-title">{data.paper.title} — your paper</h1>
 
@@ -674,7 +720,7 @@ function Debrief({ data }: { data: ResultsData }) {
             </span>
           </div>
           <ul className="db-reqs">
-            {c.requirements.map((r) => <DebriefRequirement key={r.requirement_id} line={r} />)}
+            {c.requirements.map((r) => <DebriefRequirement key={r.requirement_id} line={r} paper={paper} />)}
           </ul>
         </section>
       ))}
@@ -708,6 +754,15 @@ function Debrief({ data }: { data: ResultsData }) {
           ))}
         </section>
       )}
+
+      {/* THE FOOT OF THE PAPER — one action that follows the ledger rather than one
+          requirement. This sit has just written a weakness row for every weak/competent LO, and
+          /acca/progress is the surface that reads them, so "practise my weak areas" is the same
+          steering the selector already applies, reached deliberately instead of incidentally. */}
+      <section className="db-exit" aria-label="What next">
+        <a className="db-exit-primary" href={progressHref}>Practise my weak areas →</a>
+        <a className="db-exit-secondary" href={dashHref}>Back to dashboard</a>
+      </section>
 
       {/* LIMITATIONS — what this debrief could NOT establish, stated rather than hidden. */}
       {debrief.limitations.length > 0 && (
@@ -860,7 +915,47 @@ const CSS = `
 .sit-done-note { font-size: 15px; color: var(--text-muted); margin: 0; max-width: 44ch; line-height: 1.55; }
 
 /* ── Debrief ── */
-.db { max-width: 780px; margin: 0 auto; padding: clamp(28px, 5vw, 56px) clamp(16px, 4vw, 32px) 96px; }
+.db { max-width: 780px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px) 96px; }
+
+/* Sticky so the exit stays reachable on a long debrief — the cul-de-sac was as much about
+   having to scroll back to the top as about there being no link at all. */
+.db-nav {
+  position: sticky; top: 0; z-index: 20;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin: 0 calc(-1 * clamp(16px, 4vw, 32px)) clamp(20px, 4vw, 32px);
+  padding: 12px clamp(16px, 4vw, 32px);
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.db-nav-back {
+  font-size: 14px; font-weight: 700; color: var(--text); text-decoration: none;
+}
+.db-nav-back:hover { color: var(--brand); }
+.db-nav-paper {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.db-practise {
+  align-self: flex-start; margin-top: 4px;
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: 999px;
+  border: 1.5px solid var(--brand); color: var(--brand); background: transparent;
+  font-size: 13px; font-weight: 600; text-decoration: none; line-height: 1;
+}
+.db-practise:hover { background: var(--brand); color: #fff; }
+
+.db-exit {
+  margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--border);
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+}
+.db-exit-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 24px; border-radius: 999px;
+  background: var(--brand); color: #fff; border: 1.5px solid var(--brand);
+  font-size: 15px; font-weight: 600; text-decoration: none; line-height: 1;
+}
+.db-exit-secondary { font-size: 14px; color: var(--text-muted); text-decoration: none; }
+.db-exit-secondary:hover { color: var(--text); }
 .db-head { display: flex; flex-direction: column; gap: 18px; margin-bottom: 34px; }
 .db-title {
   font-family: var(--font-display); font-size: clamp(24px, 4vw, 32px); font-weight: 700;

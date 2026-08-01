@@ -29,6 +29,10 @@ export function shouldRunTeachLoop(sitting: boolean): boolean {
 export interface ReqGateState {
   final_answer: string | null;   // null = no progress row / never submitted
   passed: boolean;               // "judged correct" — only ever set in practice mode
+  /** The sit's own timing record, written ONLY by the sit write path. Present ⇒ this row was
+   *  submitted in a sitting. The caller must already have scoped its rows to one attempt; this
+   *  is the second, independent check that the row is sit-shaped. */
+  submitted_at?: string | null;
 }
 
 export interface CaseGateResult {
@@ -64,10 +68,19 @@ export function caseMarkReady(
   if (reqs.length === 0) return { ready: false, reason: 'case not complete' };
   if (sitting) {
     if (attemptClosed) return { ready: true };
-    const missing = reqs.filter((r) => r.final_answer == null).length;
+    // ── KEYS ON submitted_at, NOT final_answer (corrected 2026-08-01) ──
+    // `final_answer` is written by the practice teach loop as well as the sit, so testing it
+    // meant a case the student had merely PRACTISED read as a sat paper: it marked itself
+    // 80/80 on work done a month earlier, in a different mode, that was never submitted to a
+    // sitting. `submitted_at` is written only by the sit write path.
+    //
+    // The caller is ALSO expected to have scoped its rows to one attempt (see
+    // case-mark-run.ts). This is the second, independent check — belt and braces, because the
+    // cost of getting it wrong is marking work that was never sat.
+    const missing = reqs.filter((r) => r.submitted_at == null).length;
     return missing === 0
       ? { ready: true }
-      : { ready: false, reason: `${missing} requirement(s) have no recorded answer` };
+      : { ready: false, reason: `${missing} requirement(s) were not submitted in this sitting` };
   }
   const unpassed = reqs.filter((r) => r.passed !== true).length;
   return unpassed === 0 ? { ready: true } : { ready: false, reason: 'case not complete' };

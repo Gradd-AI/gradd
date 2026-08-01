@@ -183,11 +183,16 @@ export async function POST(request: Request): Promise<Response> {
     // Scoped to the case's OWN paper via `paperForCase`: a finished APM attempt must not block
     // an AFM sit. A case that belongs to no mock paper has no attempt to be closed and is
     // unaffected.
+    // ── WHICH SITTING IS THIS? ──
+    // A sit answer belongs to an attempt, structurally — that is what makes it distinguishable
+    // from practice work on the same requirement. Resolved here once and used for both the
+    // closed check and the write.
     const ownPaper = paperForCase(caseId);
+    let attemptId: string | null = null;
     if (ownPaper) {
       const { data: attempt } = await supabase
         .from('acca_mock_attempts')
-        .select('completed')
+        .select('id, completed')
         .eq('user_id', user.id)
         .eq('mock_id', ownPaper.id)
         .order('started_at', { ascending: false })
@@ -196,6 +201,12 @@ export async function POST(request: Request): Promise<Response> {
       if (attempt?.completed === true) {
         return NextResponse.json({ error: 'attempt_closed' }, { status: 409 });
       }
+      // No open attempt at all → this is not a sitting. Refusing is the honest answer: the
+      // alternative is writing an unattributable row, which is the ambiguity being removed.
+      if (!attempt) {
+        return NextResponse.json({ error: 'no_open_attempt' }, { status: 409 });
+      }
+      attemptId = (attempt as { id: string }).id;
     }
 
     const finalAnswer = typeof student_message === 'string' ? student_message : '';
@@ -211,12 +222,20 @@ export async function POST(request: Request): Promise<Response> {
     // Note `final_answer != null` is the test, not truthiness: a BLANK answer ('') is a
     // valid, final, zero-credit submission (a requirement moved past on purpose) and is
     // just as immutable as a written one.
+    //
+    // ── SCOPED TO THIS ATTEMPT (corrected 2026-08-01) ──
+    // It used to look up the row by (user, case, requirement) alone, which matched a PRACTICE
+    // row too — so a student who had practised a case could NEVER sit it: every submission
+    // 409'd against their own practice answer, permanently. Any user who met a mock case
+    // through the old MockRunner (which ran at sitting=false) was in exactly that position.
+    // "Already submitted" now means already submitted IN THIS SITTING.
     const { data: recorded } = await supabase
       .from('acca_case_progress')
       .select('final_answer')
       .eq('user_id', user.id)
       .eq('case_id', caseId)
       .eq('requirement_id', requirementId)
+      .eq('attempt_id', attemptId)
       .maybeSingle();
     if (recorded && recorded.final_answer != null) {
       return NextResponse.json({ error: 'already_submitted' }, { status: 409 });
@@ -239,11 +258,17 @@ export async function POST(request: Request): Promise<Response> {
           user_id: user.id,
           case_id: caseId,
           requirement_id: requirementId,
+          // The link that makes this row a SIT row rather than practice work. NULL would mean
+          // practice, so it is never omitted here.
+          attempt_id: attemptId,
           final_answer: finalAnswer,
           submitted_at: submittedAt,
           updated_at: submittedAt,
         },
-        { onConflict: 'user_id,case_id,requirement_id' },
+        // Targets the UNIQUE NULLS NOT DISTINCT constraint from migration 20260801120000.
+        // It is a real constraint rather than a partial index precisely so PostgREST can name
+        // it here and the upsert keeps working.
+        { onConflict: 'user_id,case_id,requirement_id,attempt_id' },
       );
     } catch {
       return NextResponse.json({ error: 'Failed to record answer' }, { status: 500 });
@@ -454,9 +479,14 @@ export async function POST(request: Request): Promise<Response> {
       updated_at:        new Date().toISOString(),
     };
     if (result.passed && finalAnswer != null) row.final_answer = finalAnswer;
+    // attempt_id stays NULL: this is the PRACTICE path. Stated explicitly rather than omitted,
+    // because the conflict target now includes the column and an absent key would be ambiguous
+    // to read. NULL is what makes this row practice work, and NULLS NOT DISTINCT is what keeps
+    // it to exactly one row per requirement.
+    row.attempt_id = null;
     await supabase
       .from('acca_case_progress')
-      .upsert(row, { onConflict: 'user_id,case_id,requirement_id' });
+      .upsert(row, { onConflict: 'user_id,case_id,requirement_id,attempt_id' });
   } catch {
     // non-fatal: per-requirement persistence is best-effort, never blocks the response
   }

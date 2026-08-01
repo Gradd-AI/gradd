@@ -249,9 +249,27 @@ ok('and it does not invent a mark anywhere',
 // ── 8. The paper-resolution precedence rule ──────────────────────────────────
 line('\n  8. PAPER RESOLUTION PRECEDENCE');
 eq('an explicit mock_id wins', resolveOrder('afm-paper-1', 'paper-1'), 'mock_id');
-eq('an open attempt outranks the query hint', resolveOrder(null, 'paper-1'), 'open_attempt');
+eq('an explicit mock_id wins even over an explicit paper', resolveOrder('afm-paper-1', 'paper-1', 'APM'), 'mock_id');
+eq('with no hint at all, an open attempt decides', resolveOrder(null, 'paper-1'), 'open_attempt');
 eq('with neither, the paper param decides', resolveOrder(null, null), 'paper_param');
 eq('an empty mock_id is not an explicit hint', resolveOrder('', 'paper-1'), 'open_attempt');
+
+// ── THE CROSS-PAPER LEAK (fixed 2026-08-01) ─────────────────────────────────
+// An EXPLICIT paper= must outrank an open attempt on another paper. /acca/afm/mock asks for
+// AFM by name; returning APM because an old APM attempt is still open serves the wrong paper's
+// scenarios, requirements and marks. Open-attempt precedence is right only for a BARE request,
+// where there is no hint to respect.
+eq('an EXPLICIT paper outranks an open attempt on the other paper',
+  resolveOrder(null, 'paper-1', 'AFM'), 'paper_param');
+eq('...and equally when the open attempt is on the SAME paper',
+  resolveOrder(null, 'afm-paper-1', 'AFM'), 'paper_param');
+eq('an empty paper string is not an explicit hint — the open attempt still wins',
+  resolveOrder(null, 'paper-1', ''), 'open_attempt');
+eq('a null paper is not an explicit hint either',
+  resolveOrder(null, 'paper-1', null), 'open_attempt');
+// The bare-GET behaviour that justified open-attempt precedence in the first place is intact.
+eq('a bare request with an open attempt still returns to the paper being sat',
+  resolveOrder(null, 'afm-paper-1'), 'open_attempt');
 
 rule();
 line(`  ${failures === 0 ? `ALL ${checks} CHECKS PASS` : `${failures} of ${checks} CHECKS FAILED`}`);

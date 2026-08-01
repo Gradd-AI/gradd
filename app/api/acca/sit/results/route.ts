@@ -106,6 +106,7 @@ async function loadPaper(
   userId: string,
   caseIds: readonly string[],
   paperCode: AccaPaper,
+  attemptId: string,
 ) {
   // The SAME serving gate as the sit route, built by iterating the shared gate object.
   // `title` is the only case field the debrief needs — it names the group ("Q1 — Solenne").
@@ -122,16 +123,24 @@ async function loadPaper(
   const { data: caseRows } = await caseQuery;
   const cases = (caseRows ?? []) as Array<{ id: string; title: string | null }>;
 
+  // `lo_code` IS selected here, unlike on the sit route. During a paper, naming the area tells
+  // the candidate what is being tested; after marking, telling them what to work on is the
+  // product. It reaches the client only as `practise_area` on a weak/competent line — a routing
+  // target for the practise button — and is never rendered as text.
   const { data: reqRows } = await supabase
     .from('acca_case_requirements')
-    .select('id, case_id, requirement_order, label, marks_guide')
+    .select('id, case_id, requirement_order, label, lo_code, marks_guide')
     .in('case_id', caseIds as string[])
     .order('requirement_order', { ascending: true });
 
+  // SCOPED TO THE SITTING. Practice work on these cases has attempt_id NULL and is invisible
+  // here — it is real work, but it is not this paper, and reading it is what produced a debrief
+  // reporting 80/80 on a paper that was never sat.
   const { data: progressRows } = await supabase
     .from('acca_case_progress')
     .select('requirement_id, case_id, final_answer, submitted_at, band, technical_marks_awarded, technical_feedback')
     .eq('user_id', userId)
+    .eq('attempt_id', attemptId)
     .in('case_id', caseIds as string[]);
 
   const { data: markingRows } = await supabase
@@ -151,7 +160,7 @@ async function loadPaper(
       case_id: r.case_id as string,
       requirement_order: r.requirement_order as number,
       label: (r.label as string | null) ?? null,
-      lo_code: null,                                    // deliberately not selected — see header
+      lo_code: (r.lo_code as string | null) ?? null,    // routing only — see the select above
       marks_guide: (r.marks_guide as number | null) ?? null,
       submitted_at: (p?.submitted_at as string | null) ?? null,
       final_answer: (p?.final_answer as string | null) ?? null,
@@ -200,6 +209,64 @@ function buildResponse(
   };
 }
 
+/** How long a marking claim may be held before another request may take it over. Marking a
+ *  case is two model calls — measured 15–25s — so a claim older than this is a crashed or
+ *  cancelled run, not one still working. */
+const CLAIM_STALE_MS = 5 * 60_000;
+
+/**
+ * Take a case for marking, atomically. Returns false if another request holds it.
+ *
+ * THE LOCK IS THE UNIQUE KEY. `acca_case_marking` is unique on (user_id, case_id), so an
+ * INSERT either wins or raises 23505 — one winner, decided by the database, with no lock table
+ * and no coordination. The claim row is written with `technical_marks_available` left NULL,
+ * which `casesNeedingMarking` already reads as "not marked", so a claim never masquerades as a
+ * result; `runCaseMarking`'s own upsert then fills it in.
+ *
+ * STALENESS ESCAPE, and it is not optional: without it a crashed run would leave a claim row
+ * that is neither a result nor releasable, so the case would report as needing marking forever
+ * while every attempt to mark it lost the race to a corpse. On a 23505 the existing row is
+ * read; a stale CLAIM (no technical marks, older than CLAIM_STALE_MS) is taken over, anything
+ * else — a real result, or a live claim — is left alone.
+ */
+async function claimCase(
+  supabase: GateOk['supabase'],
+  userId: string,
+  caseId: string,
+): Promise<boolean> {
+  const { error } = await supabase.from('acca_case_marking').insert({
+    user_id: userId,
+    case_id: caseId,
+    professional_marks_awarded: 0,
+    professional_marks_available: 0,
+    per_skill: [],
+    marked_at: new Date().toISOString(),
+  });
+  if (!error) return true;
+  if ((error as { code?: string }).code !== '23505') return false;
+
+  const { data: held } = await supabase
+    .from('acca_case_marking')
+    .select('marked_at, technical_marks_available')
+    .eq('user_id', userId).eq('case_id', caseId)
+    .maybeSingle();
+  if (!held) return false;
+  const isResult = (held as { technical_marks_available: number | null }).technical_marks_available != null;
+  if (isResult) return false;                       // already marked — nothing to do
+  const age = Date.now() - Date.parse((held as { marked_at: string }).marked_at);
+  if (!Number.isFinite(age) || age < CLAIM_STALE_MS) return false;   // someone is working on it
+
+  // Stale claim — take it over by re-stamping it, so a third request cannot also take it.
+  const { data: taken } = await supabase
+    .from('acca_case_marking')
+    .update({ marked_at: new Date().toISOString() })
+    .eq('user_id', userId).eq('case_id', caseId)
+    .is('technical_marks_available', null)
+    .lt('marked_at', new Date(Date.now() - CLAIM_STALE_MS).toISOString())
+    .select('case_id');
+  return (taken as unknown[] | null)?.length === 1;
+}
+
 // ── GET — report what is persisted. Never marks, never spends. ────────────────
 export async function GET(request: Request): Promise<Response> {
   const g = await gate();
@@ -209,8 +276,11 @@ export async function GET(request: Request): Promise<Response> {
   const resolved = await resolvePaperConfig(supabase, userId, new URL(request.url));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
+  // No attempt = no sitting = nothing to report. Previously this fell through and read every
+  // progress row for the paper's cases, which is how PRACTICE work became a debrief.
+  if (!resolved.attempt) return NextResponse.json({ error: 'no_attempt' }, { status: 409 });
 
-  const loaded = await loadPaper(supabase, userId, PAPER.case_ids, PAPER.paper);
+  const loaded = await loadPaper(supabase, userId, PAPER.case_ids, PAPER.paper, resolved.attempt.id);
   if (loaded.cases.length !== PAPER.case_ids.length) {
     return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   }
@@ -241,8 +311,10 @@ export async function POST(request: Request): Promise<Response> {
   const resolved = await resolvePaperConfig(supabase, userId, hintUrl(request.url, mockIdRaw, paperRaw));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
+  if (!resolved.attempt) return NextResponse.json({ error: 'no_attempt' }, { status: 409 });
+  const attemptId = resolved.attempt.id;
 
-  let loaded = await loadPaper(supabase, userId, PAPER.case_ids, PAPER.paper);
+  let loaded = await loadPaper(supabase, userId, PAPER.case_ids, PAPER.paper, attemptId);
   if (loaded.cases.length !== PAPER.case_ids.length) {
     return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   }
@@ -263,9 +335,17 @@ export async function POST(request: Request): Promise<Response> {
   const marked: string[] = [];
   let weaknessRows = 0;
   let resolvedRows = 0;
+  let skippedConcurrent = 0;
   for (const caseId of pending) {
+    // ── DOUBLE-MARK GUARD ──
+    // Two POSTs racing (a refresh mid-marking, a double-click, two tabs) both saw the case as
+    // unmarked, both called the model, and the second overwrote the first's bands — a wasted
+    // paid call and a mark that silently changed. `claimCase` takes the case atomically; a
+    // loser skips it rather than re-marking.
+    if (!(await claimCase(supabase, userId, caseId))) { skippedConcurrent++; continue; }
     const run = await runCaseMarking({
-      supabase, userId, caseId, paper: PAPER.paper, sitting: true, attemptClosed: closed,
+      supabase, userId, caseId, paper: PAPER.paper, sitting: true,
+      attemptClosed: closed, attemptId,
     });
     if (!run.ok) {
       // Report the failure with the cases that DID mark, rather than 502-ing the lot: a
@@ -283,13 +363,14 @@ export async function POST(request: Request): Promise<Response> {
 
   // Re-read: the marking just written is what the debrief is built from.
   if (pending.length > 0) {
-    loaded = await loadPaper(supabase, userId, PAPER.case_ids, PAPER.paper);
+    loaded = await loadPaper(supabase, userId, PAPER.case_ids, PAPER.paper, attemptId);
   }
 
   return NextResponse.json({
     ...buildResponse(PAPER, loaded, resolved.attempt ?? null),
-    marked: true,
+    marked: casesNeedingMarking(PAPER.case_ids, loaded.marking).length === 0,
     marked_now: marked.length,
+    skipped_concurrent: skippedConcurrent,
     weakness_rows: weaknessRows,
     resolved_rows: resolvedRows,
   });
