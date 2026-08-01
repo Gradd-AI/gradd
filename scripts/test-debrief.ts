@@ -23,6 +23,8 @@ const MARKS = [10, 16, 8, 6, 12, 8, 12, 8];
 const LABELS = ['A(i)', 'A(ii)', 'A(iii)', 'A(iv)', 'B1(i)', 'B1(ii)', 'B2(i)', 'B2(ii)'];
 // Three cases, in paper order — the real Mock 1 shape (4 + 2 + 2).
 const CASE_OF = ['a001', 'a001', 'a001', 'a001', 'b101', 'b101', 'b201', 'b201'];
+// Real AFM Mock 1 LO codes. Used ONLY to derive practise_area — never rendered.
+const LO_CODES = ['B3e', 'B5b', 'E2b', 'E1a', 'B1a', 'B1b', 'E3a', 'E2a'];
 const CASE_TITLE: Record<string, string> = {
   a001: 'Solenne Industries SA', b101: 'Brecon Renewables plc', b201: 'Aldebrino SpA',
 };
@@ -62,6 +64,8 @@ function build(opts: {
     requirement_id: `r${i + 1}`, case_id: CASE_OF[i], paper_order: i + 1, label: LABELS[i],
     marks_available: MARKS[i], marks_awarded: opts.awarded[i], band: opts.bands[i],
     marker_feedback: opts.feedback[i],
+    // Routing only — becomes `practise_area` on weak/competent lines, never printed.
+    lo_code: LO_CODES[i],
   }));
   const cases: DebriefCaseInput[] = ['a001', 'b101', 'b201'].map((id) => ({
     case_id: id, title: CASE_TITLE[id],
@@ -427,6 +431,48 @@ console.log('\n-- language constraints --');
   // "under a minute elapsed between …" mid-paragraph would read as a fragment.
   const lowerStart = generated.find((s) => /^(?:under a minute|\d+ minutes?) /.test(s) === false && /^under a minute/.test(s));
   ok('a sentence-initial duration is capitalised', lowerStart === undefined, lowerStart ?? '');
+}
+
+// ── PRACTISE ROUTING — the exit, and where it must NOT appear ────────────────
+// The debrief decides this, not the renderer: a practise action exists only where the marker
+// said something was missed. Same two bands that open a weakness-ledger row, so the exit and
+// the steering agree by construction.
+{
+  console.log('\n-- practise routing --');
+  const d = build({
+    cumulative: [25, 70, 95, 120, 150, 172, 185, 190],
+    bands:   ['exemplary', 'competent', 'weak', 'strong', 'exemplary', 'weak', 'competent', 'nothing'],
+    awarded: [10, 8, 2, 6, 12, 2, 6, 0],
+    feedback: Array(8).fill('The marker said something.'),
+  });
+  const areaOf = (order: number) => line(d, order).practise_area;
+
+  ok('a WEAK band gets a practise area', areaOf(3) === 'E2' && areaOf(6) === 'B1', `${areaOf(3)}/${areaOf(6)}`);
+  ok('a COMPETENT band gets a practise area', areaOf(2) === 'B5' && areaOf(7) === 'E3', `${areaOf(2)}/${areaOf(7)}`);
+  // The load-bearing negatives: do not manufacture work on a requirement that scored.
+  ok('an EXEMPLARY band gets NO practise area', areaOf(1) === null && areaOf(5) === null);
+  ok('a STRONG band gets NO practise area', areaOf(4) === null);
+  // 'nothing' is a blank/no-credit answer — a pacing finding, not evidence of a weak area, and
+  // the same reason it opens no ledger row.
+  ok("a 'nothing' band gets NO practise area", areaOf(8) === null, String(areaOf(8)));
+
+  ok('the practise area is the 2-character sub-area, not the full LO',
+    d.requirements.every((r) => r.practise_area === null || r.practise_area.length === 2),
+    d.requirements.map((r) => r.practise_area).join(','));
+  // It is a routing target, never display text — the whole point of display_name.
+  const LO_SHAPE = /\b[A-E][0-9]{1,2}[a-z]?\b/;
+  ok('no syllabus code leaks into any RENDERED debrief field',
+    d.requirements.every((r) =>
+      !LO_SHAPE.test(r.display_name) && !LO_SHAPE.test(r.what_was_lost) && !LO_SHAPE.test(r.next_action)),
+    d.requirements.map((r) => r.display_name).join(' | '));
+
+  // An unmarked requirement has no band, so it offers nothing to practise.
+  const unmarked = build({
+    cumulative: [25, 70, 95, 120, 150, 172, 185, 190],
+    bands: Array(8).fill(null), awarded: Array(8).fill(null), feedback: Array(8).fill(null),
+  });
+  ok('an UNMARKED requirement gets no practise area',
+    unmarked.requirements.every((r) => r.practise_area === null));
 }
 
 console.log(`\n${failures === 0 ? 'ALL DEBRIEF FIXTURES PASS' : `${failures} FIXTURE(S) FAILED`}\n`);
