@@ -57,6 +57,7 @@
     "test:weak-areas": "tsx scripts/test-weak-areas.ts",
     "test:sit-results": "tsx scripts/test-sit-results.ts",
     "test:teach-demand": "tsx scripts/test-teach-demand.ts",
+    "test:tutor-discriminants": "tsx scripts/test-tutor-discriminants.ts",
     "verify:schema-discriminants": "tsx --env-file=.env.local scripts/verify-schema-discriminants.ts",
     "test:case-authoring-spec": "tsx scripts/test-case-authoring-spec.ts"
   },

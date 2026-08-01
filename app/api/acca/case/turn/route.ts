@@ -13,6 +13,7 @@ import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
 import { paperForCase } from '@/lib/acca/mocks';
 import { describeDemand } from '@/lib/acca/teach-demand';
+import { extractDiscriminants, detectContradictions, renderDiscriminants } from '@/lib/acca/tutor-discriminants';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -340,7 +341,12 @@ export async function POST(request: Request): Promise<Response> {
   // ── 4. Fetch the ACTIVE requirement (server-side, includes withheld fields) ──
   const { data: req, error: reqErr } = await supabase
     .from('acca_case_requirements')
-    .select('id, requirement_order, question, model_answer, marks_guide, command_verb, intellectual_level')
+    // `answer_schema` added 2026-08-01. It was NEVER selected on this path, which is why the
+    // tutor had no access to `params.side` / `params.direction` and inferred the side of the
+    // trade from model_answer prose — measured at 4/20 affirming the inverse rule and ~10/20
+    // never adjudicating direction at all. Selecting is not serving: it is read here and only a
+    // derived statement of fact reaches the prompt.
+    .select('id, requirement_order, question, model_answer, marks_guide, command_verb, intellectual_level, answer_schema')
     .eq('id', requirementId)
     .eq('case_id', caseId)
     .single();
@@ -373,6 +379,15 @@ export async function POST(request: Request): Promise<Response> {
   // `marks_guide` on a CASE requirement is an INTEGER allocation (13), not a list of criteria.
   // The old label said "criteria that earn marks" and then printed a bare number, which told the
   // model to look for criteria that were never there. Describe it as what it is.
+  // ── DIRECTION FENCE (2026-08-01) ──
+  // The code-owned discriminants are surfaced as STATED FACTS, and any contradiction between the
+  // student's own words and a code-owned value is computed HERE, in code, and handed to the model
+  // as a finding. The tutor is never asked to notice it and never instructed to check it first —
+  // it simply arrives, first, as the largest fact in the block. Structural, not instructed.
+  const discriminants  = extractDiscriminants(req.answer_schema);
+  const contradictions = detectContradictions(student_message, discriminants);
+  const directionBlock = renderDiscriminants(discriminants, contradictions);
+
   const markScheme = [
     verbLevel,
     req.marks_guide ? `Marks available for this requirement: ${req.marks_guide as number} — use this to judge how much depth is expected, and do not state it to the candidate.` : '',
@@ -444,6 +459,7 @@ export async function POST(request: Request): Promise<Response> {
       modelAnswer,
       verbLevel,
       markScheme,
+      groundedFacts: directionBlock,
       studentMessage: student_message,
       lastEzraMessage,
       missCount,

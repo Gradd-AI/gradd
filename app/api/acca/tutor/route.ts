@@ -415,7 +415,7 @@ async function call3_teach(
   offerReveal: boolean,
   paper: string,
   distressed = false,
-  grounding: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [] },
+  grounding: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [], discriminants: [], contradictions: [] },
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -972,6 +972,9 @@ export async function POST(request: Request): Promise<Response> {
   const grounding: GroundingPack = buildGroundingPack(
     { model_answer: storedModelAnswer, full_reveal: fullReveal, answer_schema: drill.answer_schema },
     resolvableAreas,
+    // The student's message, so the contradiction against a code-owned discriminant is computed in
+    // code rather than inferred by the model. See lib/acca/tutor-discriminants.ts.
+    student_message,
   );
 
   // Authored mark-scheme metadata (redesign item 1 / Principle 5): feed Ezra the
@@ -993,6 +996,11 @@ export async function POST(request: Request): Promise<Response> {
     drill.intellectual_level as number | null,
   );
 
+  // DIRECTION FENCE: carried by the grounding pack itself (buildGroundingPack now reads
+  // `answer_schema.params`), so it reaches call2_diagnose through the existing grounding
+  // plumbing rather than through a second parallel channel. Same hole as the case path — this
+  // route DID fetch `answer_schema` and DID build a pack, but the pack only ever read
+  // `components[].working_steps` and labels, never `params`.
   const markScheme = [
     verbLevel,
     drill.marks_guide ? `Marks guidance (authored — criteria that earn marks):\n${drill.marks_guide as string}` : '',

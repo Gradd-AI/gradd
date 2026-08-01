@@ -1,4 +1,9 @@
 // lib/acca/tutor-grounding.ts
+import {
+  extractDiscriminants, detectContradictions, renderDiscriminants,
+  type DiscriminantFact, type ContradictionFact,
+} from './tutor-discriminants';
+
 // PERSONA-HARDENING (2026-07-21) — the "Rule 24 triangulation" grounding mechanism referenced (but
 // never built) in AFM_SURFACED.md's persona-hardening slot: "inject a rubric/key-facts-in-context
 // payload into ALL conversational legs... so the persona is grounded against the drill's OWN
@@ -36,9 +41,17 @@ export interface GroundingPack {
   conventions: string[];            // Tier B — method-only, safe for hint/teach/confirm/warm
   misconceptionLead: string | null; // Tier B — the drill's OWN named failure mode, one clause
   resolvableTopics: string[];       // Tier C — real published area labels, outro/close only
+  // ── DIRECTION FENCE (2026-08-01) ──
+  // fullTrust, and the reason this module was reopened. buildGroundingPack read only
+  // `components[].working_steps` and labels — it NEVER touched `answer_schema.params`, where the
+  // calculator's own `side` / `direction` / `quote_direction` discriminants live. So the drill
+  // tutor inferred the side of a trade from prose, exactly as the case tutor did, and affirmed
+  // the inverse rule in 4 of 20 measured turns.
+  discriminants: DiscriminantFact[];     // code-owned settled choices, stated as fact
+  contradictions: ContradictionFact[];   // computed in code, never inferred by the model
 }
 
-const EMPTY_PACK: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [] };
+const EMPTY_PACK: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [], discriminants: [], contradictions: [] };
 
 // Small, stable AFM area-label map (B1-B5; A6 is direct-link-only, never an outro target). Kept local
 // and minimal rather than depending on the APM-only AreaPicker.tsx map (scope-debt, see AFM_SURFACED).
@@ -107,13 +120,23 @@ function numericConventions(components: { working_steps?: string[] }[]): string[
 export function buildGroundingPack(
   drill: { model_answer: string | null; full_reveal: string | null; answer_schema: unknown },
   resolvableAreas: string[],
+  /** The student's current message. Optional so every pre-existing caller keeps working unchanged
+   *  — omit it and `contradictions` is simply empty, which is the behaviour before this change.
+   *  Supplied, the contradiction against a code-owned discriminant is computed HERE, in code. */
+  studentText = '',
 ): GroundingPack {
   const misconceptionLead = extractMisconceptionLead(drill.full_reveal ?? '');
   const resolvableTopics = resolvableAreas.map((a) => AFM_AREA_LABELS[a] ? `another ${AFM_AREA_LABELS[a]} drill` : `another drill in area ${a}`);
 
+  // Read from `params`, which is where the calculator puts its settled choices. Independent of
+  // the narrative/numeric branch below, because a discriminant is a property of the requirement,
+  // not of how it happens to be marked.
+  const discriminants  = extractDiscriminants(drill.answer_schema);
+  const contradictions = detectContradictions(studentText, discriminants);
+
   const schema = drill.answer_schema as { mode?: string; criteria?: unknown[]; scenario_facts?: unknown[]; components?: unknown[] } | null;
   if (!schema || typeof schema !== 'object') {
-    return { ...EMPTY_PACK, misconceptionLead, resolvableTopics };
+    return { ...EMPTY_PACK, misconceptionLead, resolvableTopics, discriminants, contradictions };
   }
 
   if (schema.mode === 'narrative') {
@@ -126,6 +149,8 @@ export function buildGroundingPack(
       conventions: narrativeConventions(criteria),
       misconceptionLead,
       resolvableTopics,
+      discriminants,
+      contradictions,
     };
   }
 
@@ -139,6 +164,8 @@ export function buildGroundingPack(
     conventions: numericConventions(components),
     misconceptionLead,
     resolvableTopics,
+    discriminants,
+    contradictions,
   };
 }
 
@@ -186,14 +213,19 @@ export const GROUNDING_INSTRUCTION_OUTRO =
 // (diagnose / completeness); every other renderer here is Tier B/C and safe broadcast-wide.
 
 export function renderChecklistAndFacts(pack: GroundingPack): string {
-  if (pack.checklist.length === 0 && pack.facts.length === 0) return '';
+  // THE DIRECTION BLOCK COMES FIRST, and comes even when there is no checklist. Ordering is the
+  // mechanism for the half of the measured defect where the tutor never adjudicated direction at
+  // all (~10/20) and went straight to the arithmetic: a contract count is worthless on the wrong
+  // side of the trade. Nothing instructs the model to lead with it — it simply arrives first.
+  const directionLines = renderDiscriminants(pack.discriminants, pack.contradictions);
+  if (pack.checklist.length === 0 && pack.facts.length === 0) return directionLines;
   const checklistLines = pack.checklist.length
     ? `CHECKLIST (every point/component a full answer covers):\n${pack.checklist.map((c) => `- ${c.label}`).join('\n')}\n\n`
     : '';
   const factsLines = pack.facts.length
     ? `FACTS (scenario facts a correct answer may reference):\n${pack.facts.map((f) => `- ${f.text}`).join('\n')}\n\n`
     : '';
-  return checklistLines + factsLines;
+  return directionLines + checklistLines + factsLines;
 }
 
 export function renderConventionsAndMisconception(pack: GroundingPack): string {
