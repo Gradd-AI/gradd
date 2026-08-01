@@ -3209,3 +3209,67 @@ Grant accepted the band drift on A(iii)/A(iv). Two standing rules banked in `GEN
 — **P-M2** (the marking baseline is a 10-run modal reading, never externally validated; a band
 matrix is evidence of CHANGE, never of error) and **P-M3** (the marker uses the comparison to DECIDE
 the band; fence it structurally rather than degrading the reference).
+
+## 2026-08-01 (second) — KESTREL FOODS IS LIVE (GATE-P) + the PS-routing premise CORRECTED
+
+### GATE-P flip — `ac000000-…-b501` Kestrel Foods plc
+
+**Reconcile FIRST (hard stop if it failed):** DB approved-set `{a001, b101, b201}` vs the journal's
+reviewed-set from the 2026-07-29 flip — **exact match**, no row approved without a review record,
+none journalled-but-missing. Script `scripts/authoring/publish-afm-case.ts` (committed, P-DB6,
+parameterised by case id because four more follow) enforces the reconcile, the explicit-id
+statement, pre/post counts, P-DB4 and a shape guard refusing any `mock_only` target.
+
+```
+UPDATE acca_cases SET status = 'approved', published = true
+ WHERE id = 'ac000000-0000-4000-8000-00000000b501' AND mock_only = false;
+```
+
+**P-DB4: `status` and `published` are the ONLY fields that changed**, every other field
+byte-identical. Counts: practice library **0 → 1**, sit surface **3 → 3** (asserted, not observed —
+the script fails if the sit count moves).
+
+### Live confirmation walk — 18/18 checks
+
+Real authenticated session, synthetic user, scoped teardown verified at 0 rows.
+Practice list serves it (1 case, 25 marks, section B, no `mock_only` leak) · id-addressed route
+serves both requirements **with `marks_guide` (13, 7) and `professional_skill_tags`
+(`analysis_and_evaluation`; `scepticism,commercial_acumen`)** · `model_answer`/`full_reveal`/
+`answer_schema` all withheld · **Ezra teaches on requirement (i)** — 669 chars, named the wrong
+discount rate and the missing withholding layer without revealing the answer, and every fact it
+cited (11.0%, the 10% withholding, Monterrey) was verified present in the exhibits · **sit surface
+unchanged**: exactly Solenne/Brecon/Aldebrino, 8 requirements, Kestrel absent.
+
+**Corpus invariant now reads from a PUBLISHED case:** 1 published AFM practice case, LOs B5b + E2a,
+letters **B, E** — PASS on published content rather than on the candidate row.
+
+**Two environment findings, neither a Kestrel defect:** the walk 401s against production because the
+synthetic-session cookie pattern was only ever proven against local dev, so it ran locally against
+the same production database; and `TUTOR_SESSION_SECRET` is production-only, so the teach loop 500s
+locally until a throwaway value is passed inline (never written to `.env.local`).
+
+**Surfaced, minor:** Ezra's reply opened "At ACCA intellectual level 3, where 'calculate' sits" —
+internal taxonomy language in student-facing prose. Not a withheld-field leak (the practice route
+serves `intellectual_level` by design) but not vocabulary a student recognises. Logged, not fixed.
+
+### ⛔ CORRECTION — case content CANNOT close the PS routing gap
+
+The batch scope asked for scepticism/commercial_acumen narrative requirements "to close the PS
+routing gap through case content rather than standalone drills". **That is inverted, and the
+mechanism is worth writing down.**
+
+- **Supply** — `next-drill` selects from **`acca_drills`** and scores `professional_skill_tag`
+  (`psScore`, `lib/acca/weak-areas.ts`). Case requirements are never selection candidates.
+- **Demand** — the weak-skill signal comes from **`acca_case_marking.per_skill`**, whose
+  `examinedSkills` is the union of a CASE's requirement PS tags (`case-mark-run.ts:199`), and
+  `next-drill` reads it with no sit filter, so PRACTICE case marking feeds it too.
+
+So a case tagged `scepticism` **generates** the weak-skill signal; only a DRILL can answer it.
+Authoring four more cases with scepticism/commercial-acumen narrative legs would **widen** the
+measured gap, not close it. The gap remains what the re-measure said: **4 drills** — scepticism in
+B1, scepticism in E2, commercial_acumen in E2, communication in B5 — and the vehicle is the
+narrative drill pipeline (`runNarrativeBatch`), which now carries a declared skill per plan.
+
+**Related C4 finding:** `gatePsSkillSet` forbids `communication` on ANY Section B case
+(Section-A-only). So the B5 communication gap could never be closed by a Section B case even in
+principle. A B5 *drill* tagged communication is unaffected — C4 is a case gate, not a drill gate.
