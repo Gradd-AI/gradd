@@ -3368,3 +3368,70 @@ this family) · sit surface returns exactly Solenne / Brecon / Aldebrino with no
 2. **INTERNAL-TAXONOMY LEAK (second sighting).** "To hit ACCA intellectual level 3 on this
    **calculate** verb…" — same class as the Kestrel walk's "At ACCA intellectual level 3, where
    'calculate' sits". Two sightings on two different cases makes this a pattern, not a one-off.
+
+## 2026-08-01 (fifth) — TUTOR DIAGNOSIS DIAGNOSED + MEASURED · TAXONOMY LEAK CLOSED
+
+### 1. Direction defect — DIAGNOSED AND MEASURED, NOT FIXED (per instruction)
+
+**What the case teach call actually receives** (`app/api/acca/case/turn/route.ts`, requirement
+select ~line 340): `question`, `model_answer`, `marks_guide`, `command_verb`,
+`intellectual_level`, plus the scenario + exhibits. **`answer_schema` IS NOT SELECTED, and
+`buildGroundingPack` is NOT WIRED TO THIS ROUTE AT ALL** — zero references. The Rule-24 grounding
+mechanism exists for the DRILL tutor (`app/api/acca/tutor/route.ts`), never for the case tutor.
+
+**So the answer to the question asked: the tutor does NOT see `side` or `direction`.** Those
+discriminants live in `answer_schema`, which this path never fetches. Direction is inferable only
+from `model_answer` PROSE — the calculator does write "a borrower SELLS" into it — and the model is
+doing free-text comparison against that prose and getting the polarity backwards.
+
+**MEASURED, 10 runs, fresh turn each (`session_state: null`, progress cleared between runs, so this
+is a rate and not a conversation).** Then re-measured 10 more after the taxonomy fix: **n = 20
+total**, 0 errors.
+
+**THE CLASSIFIER WAS NOT GOOD ENOUGH AND THE FIRST NUMBERS ARE CORRECTED HERE.** It bucketed as
+FALSE_CREDIT any praise cue in the same sentence as a direction word, which conflates two very
+different responses: "you correctly identified the direction — a borrower BUYS" (affirming the
+inverse rule) with "you've correctly identified this is a borrower hedge — but you've bought when a
+borrower shorts" (praising, then correcting, in one sentence). Read by hand:
+
+- **4/20 affirmatively taught the INVERSE RULE as correct** — e.g. "a borrower hedges rising rates
+  by **buying** futures (locking in a floor)"; "Castlereagh needs to *buy* futures to lock in a
+  floor". This is the defect, and it is the serious one: not a missed correction but active
+  misteaching of the #1 examiner-flagged error in this family.
+- **~6/20 corrected it**, several while opening with praise in the same sentence.
+- **~10/20 never adjudicated direction at all** — they went straight to the contract count.
+
+**Reported rate: ~20% actively teach the wrong direction; ~50% never mention it.** The seeded
+answer is wrong on direction AND on contract count, and the tutor reliably finds the second.
+
+**Not fixed this session, per instruction.** The obvious fix follows from the diagnosis: the case
+path should fetch `answer_schema` and thread a grounding pack, as the drill path already does — the
+schema owns `side`/`direction` as code-owned discriminants, and a deterministic comparison beats
+prose inference. That is a change to a live teaching path and is Grant's call.
+
+### 2. Taxonomy leak — CLOSED STRUCTURALLY, both paths, verified live
+
+The leak was **INSTRUCTED**: the prompt read `Authored command verb + intellectual level (name
+these — do not infer)`. The model did as it was told.
+
+`lib/acca/teach-demand.ts` (new, pure) translates (verb, level) into a plain-English demand; the
+raw labels never enter the prompt. **Structural, not instructed** — the third time this codebase
+has banked that lesson (withhold engine, marker reference block, now this). Fixed on the case path
+AND the drill path: the sighting was on cases, but the drill route built the identical string and
+fed it to the identical prompt line, so fixing only the sighted path would have left the larger
+surface (57 AFM + 91 APM drills) leaking. Also corrected: the case path labelled `marks_guide`
+"criteria that earn marks" and printed a bare integer.
+
+**Verified live, not just in source: 0 occurrences of "intellectual level"/"command verb" across
+10 fresh tutor responses, against 1 in the pre-fix walk.** Fixtures `npm run test:teach-demand`
+(16) assert the fence over EVERY registered verb × level, that an unregistered verb is not echoed
+through raw, and that levels 2 and 3 still demand different things — a quiet regression the leak
+test alone would miss.
+
+### 3. ADVICE-vs-COMPUTED — NOT BUILT THIS SESSION
+
+Scoped and approved but not started; the two items above consumed the session. No partial
+implementation was left behind. The approved design stands: `build*ModelAnswer` injects the
+computed verdict sentence, the advice slot makes no verdict or count claims, and tier-1
+labelled-verdict + count-claim checks are a backstop with registration discipline. **No phrase
+table as the primary defence.**
