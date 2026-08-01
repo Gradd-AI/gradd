@@ -46,6 +46,14 @@
 // marks and pacing as separate statements. Nothing is combined into a score.
 
 import type { PacingReport, PacingFlag, AnswerState } from '@/lib/acca/pacing';
+// Durations reach the student through this module too, so they go through the SAME formatters
+// pacing.ts uses — whole minutes, rounded down, "under a minute" at zero. A second rounding
+// convention here would put two different renderings of the same interval on one screen.
+import { fmtMinutes, fmtMinuteBudget } from '@/lib/acca/pacing';
+
+/** Sentence-initial capitalisation. `fmtMinutes` returns lowercase because most of its call
+ *  sites are mid-sentence; the pacing note is the one that opens with it. */
+const sentenceCase = (s: string): string => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 export type DebriefVerdict = 'strong' | 'partial' | 'lost' | 'not_reached';
 
@@ -205,8 +213,8 @@ function composeCollapse(ev: Record<string, unknown>, nameOf: (order: number) =>
     const opens = from > 1 ? `submitting ${nameOf(from - 1)}` : 'starting the paper';
     const span = from === to ? nameOf(from) : `${nameOf(from)}–${nameOf(to)}`;
     parts.push(
-      `Between ${opens} and finishing, ${ev.suffix_actual_minutes} minutes elapsed across ` +
-      `${span}, against a combined budget of ${ev.suffix_budget_minutes} minutes.`,
+      `Between ${opens} and finishing, ${fmtMinutes(Number(ev.suffix_actual_minutes))} elapsed across ` +
+      `${span}, against a combined budget of ${fmtMinutes(Number(ev.suffix_budget_minutes))}.`,
     );
   }
   if (triggers.includes('no_credit_tail')) {
@@ -297,7 +305,7 @@ export function buildDebrief(
     let actionSource: DebriefSource;
     if (state === 'not_reached') {
       const budget = p ? p.budget_minutes : round1(r.marks_available * 1.95);
-      action = `Reach this requirement next time: it carries ${r.marks_available} marks and a ${budget}-minute budget.`;
+      action = `Reach this requirement next time: it carries ${r.marks_available} marks and ${fmtMinuteBudget(budget)} budget.`;
       actionSource = 'computed_interval';
     } else if (r.band && ACTION_BY_BAND[r.band]) {
       action = ACTION_BY_BAND[r.band];
@@ -312,11 +320,11 @@ export function buildDebrief(
     const self = nameOf(r.paper_order);
     if (p && p.interval_minutes !== null) {
       if (p.flag === 'no_ratio') {
-        pacingNote = `${p.interval_minutes} minutes elapsed between starting the paper and submitting ${self}. This interval includes reading the scenario and exhibits, so it carries no budget comparison.`;
+        pacingNote = `${sentenceCase(fmtMinutes(p.interval_minutes))} elapsed between starting the paper and submitting ${self}. This interval includes reading the scenario and exhibits, so it carries no budget comparison.`;
       } else if (p.flag === 'over' || p.flag === 'under' || p.flag === 'on_budget') {
         const prev = ordered[ordered.findIndex((x) => x.paper_order === r.paper_order) - 1];
         const from = prev ? `submitting ${nameOf(prev.paper_order)}` : 'starting the paper';
-        pacingNote = `${p.interval_minutes} minutes elapsed between ${from} and submitting ${self}, against a ${p.budget_minutes}-minute budget.`;
+        pacingNote = `${sentenceCase(fmtMinutes(p.interval_minutes))} elapsed between ${from} and submitting ${self}, against ${fmtMinuteBudget(p.budget_minutes)} budget.`;
       }
     }
 

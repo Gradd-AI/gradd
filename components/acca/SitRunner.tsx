@@ -644,7 +644,10 @@ function Debrief({ data }: { data: ResultsData }) {
           )}
           {data.pacing.total_elapsed_minutes != null && (
             <div className="db-total">
-              <span className="db-total-num">{data.pacing.total_elapsed_minutes}<span className="db-total-of"> min</span></span>
+              {/* Whole minutes, rounded DOWN — the same convention pacing.ts uses in prose.
+                  A tile reading "176.4 min" next to a sentence reading "176 minutes" is the
+                  inconsistency this change exists to remove. */}
+              <span className="db-total-num">{Math.floor(Math.max(0, data.pacing.total_elapsed_minutes))}<span className="db-total-of"> min</span></span>
               <span className="db-total-cap">Elapsed</span>
             </div>
           )}

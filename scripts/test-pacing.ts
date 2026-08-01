@@ -11,6 +11,8 @@
 
 import {
   computePacing,
+  fmtMinutes,
+  fmtMinuteBudget,
   MINUTES_PER_MARK,
   PAPER_CLOCK_MINUTES,
   type PacingInputRequirement,
@@ -249,6 +251,89 @@ console.log('\n-- language constraints --');
   ok('interval statements are phrased "Between … and submitting …"',
     statements.filter((s) => /minutes elapsed/.test(s)).every((s) => /^Between /.test(s) || /Between submitting/.test(s)),
     statements.filter((s) => /minutes elapsed/.test(s)).join(' | '));
+
+  // ── WHOLE MINUTES IN EVERY STATEMENT (2026-08-01) ──
+  // The rendering rule, asserted over every statement the suite produces rather than on a
+  // hand-picked one: no duration anywhere may carry a decimal.
+  const decimal = statements.find((s) => /\d+\.\d+\s*-?\s*minute/.test(s));
+  ok('NO statement renders a decimal duration', decimal === undefined, decimal ?? '');
+  const badArticle = statements.find((s) => /\ba (?:8|11|18|8\d)-minute/.test(s));
+  ok('no statement reads "a 8-minute" where English needs "an"', badArticle === undefined, badArticle ?? '');
+  const zero = statements.find((s) => /\b0 minutes?\b/.test(s));
+  ok('no statement reads "0 minutes" — a sub-minute duration says so', zero === undefined, zero ?? '');
+}
+
+// ── THE FORMATTERS (presentation only) ───────────────────────────────────────
+{
+  console.log('\n-- duration rendering --');
+  // ROUND DOWN, never to nearest. 13.7 is 13, not 14: under-promising time is the safer error
+  // in an exam, and Σfloor ≤ Σexact keeps the per-requirement budgets summing under the clock.
+  ok('13.7 floors to 13 (NOT 14 — this is the whole rule)', fmtMinutes(13.7) === '13 minutes', fmtMinutes(13.7));
+  ok('23.4 floors to 23', fmtMinutes(23.4) === '23 minutes', fmtMinutes(23.4));
+  ok('an exact whole number is unchanged', fmtMinutes(16) === '16 minutes');
+  ok('1.0 is singular', fmtMinutes(1) === '1 minute', fmtMinutes(1));
+  ok('1.9 floors to the singular, not "1.9 minutes"', fmtMinutes(1.9) === '1 minute', fmtMinutes(1.9));
+  // A duration that floors to zero must NOT read "0 minutes" — the blank-paper walk produced
+  // exactly that, and it tells a student their answer took no time.
+  ok('0 reads "under a minute", never "0 minutes"', fmtMinutes(0) === 'under a minute', fmtMinutes(0));
+  ok('0.4 reads "under a minute"', fmtMinutes(0.4) === 'under a minute', fmtMinutes(0.4));
+  ok('a negative (clock skew) also reads "under a minute"', fmtMinutes(-3) === 'under a minute', fmtMinutes(-3));
+  ok('null is stated, not rendered as a number', fmtMinutes(null) === 'an unrecorded time', fmtMinutes(null));
+  ok('NaN is stated, not rendered as a number', fmtMinutes(NaN) === 'an unrecorded time', fmtMinutes(NaN));
+
+  // The adjective form carries its own article — "a 8-minute budget" is exactly the kind of
+  // thing this change exists to stop.
+  ok('"a 13-minute"', fmtMinuteBudget(13.7) === 'a 13-minute', fmtMinuteBudget(13.7));
+  ok('"an 8-minute" — vowel sound', fmtMinuteBudget(8) === 'an 8-minute', fmtMinuteBudget(8));
+  ok('"an 11-minute"', fmtMinuteBudget(11.7) === 'an 11-minute', fmtMinuteBudget(11.7));
+  ok('"an 18-minute"', fmtMinuteBudget(18.2) === 'an 18-minute', fmtMinuteBudget(18.2));
+  ok('"an 80-minute"', fmtMinuteBudget(80) === 'an 80-minute', fmtMinuteBudget(80));
+  ok('"a 15-minute" — consonant sound', fmtMinuteBudget(15.6) === 'a 15-minute', fmtMinuteBudget(15.6));
+  ok('"a 195-minute" — the paper clock', fmtMinuteBudget(195) === 'a 195-minute', fmtMinuteBudget(195));
+  ok('a sub-minute budget does not read "a 0-minute"', fmtMinuteBudget(0.5) === 'an under-a-minute', fmtMinuteBudget(0.5));
+}
+
+// ── PRESENTATION ONLY — THE DECISION SURFACE IS BYTE-IDENTICAL ───────────────
+// The rounding change touches STRINGS. Every number the module returns, and every decision it
+// makes, must be exactly what it was before. These literals were captured from the code as it
+// stood BEFORE the change and are pinned here: if a future edit lets a floored value leak back
+// into `ratio`, a flag threshold or the collapse detector's suffix arithmetic, this block fails
+// rather than the wording quietly changing meaning.
+//
+// `budget_minutes` and `interval_minutes` stay at round1 in the JSON on purpose — the API keeps
+// full precision and only the prose floors. 19.5 and 31.2 below are the proof of that.
+{
+  console.log('\n-- decision surface unchanged (presentation-only proof) --');
+  const surface = (r: PacingReport) => JSON.stringify({
+    flags: r.rows.map((x) => x.flag),
+    ratios: r.rows.map((x) => x.ratio),
+    budgets: r.rows.map((x) => x.budget_minutes),
+    intervals: r.rows.map((x) => x.interval_minutes),
+    findings: r.findings.map((f) => f.code),
+  });
+  const run = (cum: Array<number | null>, opts: Parameters<typeof walk>[1]) =>
+    surface(computePacing(...Object.values(walk(cum, opts)) as [PacingInputRequirement[], PacingInputAttempt]));
+
+  const EXPECTED: Array<[string, string, string]> = [
+    ['W1 even pacing',
+      run([20, 51, 67, 79, 102, 118, 141, 157], { completedAt: 165 }),
+      '{"flags":["no_ratio","on_budget","on_budget","on_budget","on_budget","on_budget","on_budget","on_budget"],"ratios":[null,0.99,1.03,1.03,0.98,1.03,0.98,1.03],"budgets":[19.5,31.2,15.6,11.7,23.4,15.6,23.4,15.6],"intervals":[20,31,16,12,23,16,23,16],"findings":["finished_early","not_marked_yet"]}'],
+    ['W4 collapse, all answered',
+      run([25, 70, 95, 115, 150, 172, 176, 178], { completedAt: 180 }),
+      '{"flags":["no_ratio","over","over","over","over","over","under","under"],"ratios":[null,1.44,1.6,1.71,1.5,1.41,0.17,0.13],"budgets":[19.5,31.2,15.6,11.7,23.4,15.6,23.4,15.6],"intervals":[25,45,25,20,35,22,4,2],"findings":["end_of_paper_collapse","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_under_budget","requirement_under_budget","finished_early","not_marked_yet"]}'],
+    ['W5 unreached tail',
+      run([25, 70, 95, 120, 150, 170, null, null], { completedAt: 195 }),
+      '{"flags":["no_ratio","over","over","over","over","over","not_reached","not_reached"],"ratios":[null,1.44,1.6,2.14,1.28,1.28,null,null],"budgets":[19.5,31.2,15.6,11.7,23.4,15.6,23.4,15.6],"intervals":[25,45,25,25,30,20,null,null],"findings":["end_of_paper_collapse","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_over_budget","ran_to_the_wire","not_marked_yet"]}'],
+    ['W6 blank tail',
+      run([25, 70, 95, 120, 150, 170, 178, 180], { blanks: [7, 8], completedAt: 185 }),
+      '{"flags":["no_ratio","over","over","over","over","over","under","under"],"ratios":[null,1.44,1.6,2.14,1.28,1.28,0.34,0.13],"budgets":[19.5,31.2,15.6,11.7,23.4,15.6,23.4,15.6],"intervals":[25,45,25,25,30,20,8,2],"findings":["end_of_paper_collapse","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_over_budget","requirement_under_budget","requirement_under_budget","finished_early","not_marked_yet"]}'],
+  ];
+  for (const [name, actual, expected] of EXPECTED) {
+    ok(`${name}: flags, ratios, budgets, intervals and findings all unchanged`, actual === expected,
+      actual === expected ? '' : `\n      got  ${actual}\n      want ${expected}`);
+  }
+  ok('budgets are still round1 in the JSON (19.5, not 19) — only prose floors',
+    EXPECTED.every(([, a]) => /"budgets":\[19\.5,31\.2/.test(a)));
 }
 
 console.log(`\n${failures === 0 ? 'ALL PACING FIXTURES PASS' : `${failures} FIXTURE(S) FAILED`}\n`);

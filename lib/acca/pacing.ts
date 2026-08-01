@@ -110,6 +110,59 @@ export interface PacingReport {
   findings: PacingFinding[];
 }
 
+// ── DURATIONS AS A STUDENT READS THEM ────────────────────────────────────────
+// WHOLE MINUTES, ROUNDED DOWN. "a 13.7-minute budget" is false precision — the 1.95
+// minutes-per-mark benchmark is a rule of thumb, not a stopwatch, and rendering it to a tenth
+// claims an accuracy the number does not have.
+//
+// DOWN, not to nearest, for two reasons. Under-promising time is the safer error in an exam:
+// a candidate who believes they have 13 minutes and takes 13.7 has borrowed from slack that
+// exists, where the reverse borrows from time that does not. And flooring keeps the
+// per-requirement budgets summing UNDER the paper clock rather than over it — Σfloor ≤ Σexact,
+// so the parts can never appear to demand more than the whole.
+//
+// PRESENTATION ONLY. These functions are used in STRINGS. Every numeric field on PacingRow /
+// PacingReport / PacingFinding.evidence keeps its full round1 precision, and every decision —
+// `ratio`, the ±25% flag, the collapse detector's suffix arithmetic — is computed from the
+// unrounded values exactly as before. Nothing here may be fed back into a comparison.
+const floorMin = (n: number): number => Math.floor(Math.max(0, n));
+
+/**
+ * A duration in a QUANTITY position: "13 minutes", "1 minute", "under a minute".
+ *
+ * A duration that floors to zero must never read "0 minutes" — the blank-paper walk produced
+ * exactly that, and "0 minutes elapsed" tells a student their answer took no time rather than
+ * that it took less than a minute. Returns lowercase; capitalise at sentence-initial sites.
+ */
+export function fmtMinutes(n: number | null | undefined): string {
+  if (n === null || n === undefined || !Number.isFinite(n)) return 'an unrecorded time';
+  const m = floorMin(n);
+  if (m === 0) return 'under a minute';
+  return m === 1 ? '1 minute' : `${m} minutes`;
+}
+
+/**
+ * A duration in an ADJECTIVE position, WITH ITS ARTICLE: "a 13-minute", "an 8-minute".
+ *
+ * The article has to come from the number, not be hardcoded. The old strings read
+ * "a ${x}-minute budget", which was harmless while x was a decimal ("a 13.7-minute") and is
+ * wrong the moment it is a whole number — "a 8-minute budget" is exactly the kind of thing this
+ * change exists to stop.
+ */
+export function fmtMinuteBudget(n: number): string {
+  const m = floorMin(n);
+  if (m === 0) return 'an under-a-minute';
+  return `${articleForMinutes(m)} ${m}-minute`;
+}
+
+/** English takes "an" before a vowel SOUND: eight, eleven, eighteen, eighty-something. */
+function articleForMinutes(m: number): string {
+  if (m === 8 || m === 11 || m === 18) return 'an';
+  const s = String(m);
+  if (s.length === 2 && s.startsWith('8')) return 'an';   // 80–89
+  return 'a';
+}
+
 const ms = (t: string | null | undefined): number | null => {
   if (!t) return null;
   const n = Date.parse(t);
@@ -194,8 +247,8 @@ function detectCollapse(rows: PacingRow[], requirementBudget: number): PacingFin
   if (triggers.includes('time')) {
     parts.push(
       `Between submitting ${evidence.suffix_from === 1 ? 'the previous requirement' : `requirement ${Number(evidence.suffix_from) - 1}`} and finishing, ` +
-      `${evidence.suffix_actual_minutes} minutes elapsed across requirements ${evidence.suffix_from}–${evidence.suffix_to}, ` +
-      `against a combined budget of ${evidence.suffix_budget_minutes} minutes.`,
+      `${fmtMinutes(Number(evidence.suffix_actual_minutes))} elapsed across requirements ${evidence.suffix_from}–${evidence.suffix_to}, ` +
+      `against a combined budget of ${fmtMinutes(Number(evidence.suffix_budget_minutes))}.`,
     );
   }
   if (triggers.includes('no_credit_tail')) {
@@ -323,8 +376,8 @@ export function computePacing(
       code: r.flag === 'over' ? 'requirement_over_budget' : 'requirement_under_budget',
       severity: 'medium',
       statement:
-        `Between ${from} and submitting ${name(r)}, ${r.interval_minutes} minutes elapsed, ` +
-        `against a ${r.budget_minutes}-minute budget for ${name(r)} (${r.marks_available} marks).`,
+        `Between ${from} and submitting ${name(r)}, ${fmtMinutes(r.interval_minutes)} elapsed, ` +
+        `against ${fmtMinuteBudget(r.budget_minutes)} budget for ${name(r)} (${r.marks_available} marks).`,
       evidence: { paper_order: r.paper_order, interval_minutes: r.interval_minutes, budget_minutes: r.budget_minutes, ratio: r.ratio },
     });
   }
@@ -333,13 +386,13 @@ export function computePacing(
     if (total >= PAPER_CLOCK_MINUTES) {
       findings.push({
         code: 'ran_to_the_wire', severity: 'info',
-        statement: `The attempt ran ${round1(total)} minutes against a ${PAPER_CLOCK_MINUTES}-minute clock.`,
+        statement: `The attempt ran ${fmtMinutes(total)} against ${fmtMinuteBudget(PAPER_CLOCK_MINUTES)} clock.`,
         evidence: { total_elapsed_minutes: total },
       });
     } else if (total <= PAPER_CLOCK_MINUTES - 10) {
       findings.push({
         code: 'finished_early', severity: 'info',
-        statement: `The attempt finished ${round1(PAPER_CLOCK_MINUTES - total)} minutes inside the ${PAPER_CLOCK_MINUTES}-minute clock.`,
+        statement: `The attempt finished ${fmtMinutes(PAPER_CLOCK_MINUTES - total)} inside ${fmtMinuteBudget(PAPER_CLOCK_MINUTES)} clock.`,
         evidence: { total_elapsed_minutes: total, minutes_remaining: round1(PAPER_CLOCK_MINUTES - total) },
       });
     }

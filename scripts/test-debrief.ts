@@ -160,7 +160,13 @@ console.log('\n-- W3: unanswered tail --');
     /All 12 marks were unavailable/.test(line(d, 7).what_was_lost), line(d, 7).what_was_lost);
   ok('its action is to REACH it, sourced from the interval data',
     /Reach this requirement/.test(line(d, 7).next_action) && line(d, 7).next_action_source === 'computed_interval');
-  ok('the action states the marks and the budget', /12 marks and a 23.4-minute budget/.test(line(d, 7).next_action));
+  // WHOLE MINUTES, ROUNDED DOWN (2026-08-01). Was "a 23.4-minute budget": 12 marks × 1.95 = 23.4,
+  // floored to 23. The decimal was false precision on a rule-of-thumb benchmark, and flooring
+  // keeps the per-requirement budgets summing under the paper clock rather than over it.
+  ok('the action states the marks and the budget in whole minutes',
+    /12 marks and a 23-minute budget/.test(line(d, 7).next_action), line(d, 7).next_action);
+  ok('...and no duration anywhere in the action carries a decimal',
+    !/\d+\.\d+\s*-?\s*minute/.test(line(d, 7).next_action), line(d, 7).next_action);
   ok('NO why is invented where the marker gave none', line(d, 7).why === null && line(d, 7).why_source === null);
   ok('an unreached requirement carries no pacing note', line(d, 7).pacing_note === null);
 }
@@ -405,6 +411,22 @@ console.log('\n-- language constraints --');
     intervalStatements.some((s) => /starting the paper and submitting/i.test(s)) &&
     intervalStatements.some((s) => /submitting .+ and submitting/i.test(s)) &&
     intervalStatements.some((s) => /and finishing/i.test(s)));
+
+  // ── WHOLE MINUTES (2026-08-01) ──
+  // Swept over every string the DEBRIEF composes, not just pacing's. composeCollapse and the
+  // pacing notes are debrief's OWN prose — a separate code path from pacing.ts's statements —
+  // so a rounding regression could land in one and not the other.
+  const decimal = generated.find((s) => /\d+\.\d+\s*-?\s*minute/.test(s));
+  ok('NO debrief string renders a decimal duration', decimal === undefined, decimal ?? '');
+  const badArticle = generated.find((s) => /\ba (?:8|11|18|8\d)-minute/.test(s));
+  ok('no debrief string reads "a 8-minute" where English needs "an"', badArticle === undefined, badArticle ?? '');
+  const zeroMin = generated.find((s) => /\b0 minutes?\b/.test(s));
+  ok('no debrief string reads "0 minutes" — a sub-minute interval says "under a minute"',
+    zeroMin === undefined, zeroMin ?? '');
+  // Sentence-initial durations are capitalised: the pacing note OPENS with the duration, and
+  // "under a minute elapsed between …" mid-paragraph would read as a fragment.
+  const lowerStart = generated.find((s) => /^(?:under a minute|\d+ minutes?) /.test(s) === false && /^under a minute/.test(s));
+  ok('a sentence-initial duration is capitalised', lowerStart === undefined, lowerStart ?? '');
 }
 
 console.log(`\n${failures === 0 ? 'ALL DEBRIEF FIXTURES PASS' : `${failures} FIXTURE(S) FAILED`}\n`);
