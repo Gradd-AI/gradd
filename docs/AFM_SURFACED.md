@@ -178,6 +178,38 @@ zero, a null `ends_at` NOT reading as expiry, the warning boundary, `attemptIsCl
 `test-case-sit` **+7**. DB-level, against the live partial index: close → reopen → both rows survive
 → the selector sees exactly one open row → a second open row for the same key still 23505s.
 
+## 🔸 OPEN 2026-08-01 — RE-SIT MARKING HAS NO ATTEMPT DIMENSION (submissions do)
+
+Surfaced by the live re-sit walk on `fix/sit-defect-block`, after migration
+`20260801120000` landed. **Half the re-sit path works and half does not**, and the half that
+does not is structural.
+
+**WORKS, proven live:** a second attempt produces its OWN 8 progress rows; 16 rows coexist,
+8 per attempt; **attempt 1's rows are byte-identical after the re-sit**; attempt 2's answers are
+its own. That is what the migration was for and it is done.
+
+**DOES NOT WORK:** attempt 2 is **never marked**. `acca_case_marking` has
+`PRIMARY KEY (user_id, case_id)` and **no attempt column**, so it cannot hold two markings for
+two sittings of one case. `casesNeedingMarking` sees attempt 1's marking row, reports the case
+as already marked, and the re-sit's `marked_now` is **0** — measured: 3 marking rows where 6
+would be needed, 0/8 attempt-2 rows banded.
+
+**What it does NOT do, and this is the part that matters:** attempt 2 does **not** inherit
+attempt 1's marks. Its debrief reports `technical_awarded: null` — honestly unmarked — rather
+than a false 80/80. So the failure mode is a missing debrief, not a wrong one.
+
+**NOT student-reachable today.** There is no "sit again" control: `SitRunner` goes to the
+results screen once the paper is complete and offers no way to start a second attempt. The gap
+is reachable only by POSTing `action:'start'` directly. **Do not add a re-sit control until this
+is fixed** — that is the one change that would turn a latent gap into a live defect.
+
+**Fix:** a second migration — `attempt_id` on `acca_case_marking`, PK widened the same way
+`acca_case_progress` just was (surrogate id + `UNIQUE NULLS NOT DISTINCT`), then scope
+`casesNeedingMarking`, `claimCase` and the marking upsert by attempt. Pinned in the harness
+(`scripts/_verify_afm_sit_serve.ts`, re-sit walk) as a KNOWN LIMITATION asserted against current
+behaviour, so it **fails the day someone fixes it** and prompts an update rather than sitting
+permanently red.
+
 ## ⛔ RULING 2026-08-01 (Grant) — STANDALONE AFM CASES ARE **NUMERIC-HEAVY**, not a mirror of APM
 
 **The scope question is closed before the build starts.** AFM practice cases are built around

@@ -108,11 +108,29 @@ model call, theirs is a tutor's hour.
 > (5.7373, 5.8779) but the answer is cut off before completing Years 3 and 4, the withholding tax
 > calculations, the euro conversions, the discounting table and the NPV conclusion."
 
-**4. The debrief ROUTES into drills on that exact LO.** A weak or competent band opens a row in
-the weakness ledger, and the next drill served is steered by it. Measured 31/07: a weak band on
-B5b moved that area's share of subsequent serves from **27/40 to 40/40**. Nobody closes that loop
-— every competitor stops at feedback. **Phrase it as what it is:** the debrief does not print
-drill links; the next serve is steered. Do not imply a clickable "practise this" button exists.
+**4. The debrief ROUTES into practice — and as of 01/08/2026 that is literal, not a metaphor.**
+
+**UPGRADED.** This claim previously had to be phrased as "the next serve is steered", with an
+explicit warning not to imply a clickable button, because none existed. One does now: every
+requirement banded **weak or competent** carries a **"Practise this →"** action that lands on
+drills for that syllabus area, and the foot of the paper carries **"Practise my weak areas →"**.
+
+Two details that make it stronger than a button, and both are worth saying:
+
+- **The action appears ONLY where marks were lost.** Strong and exemplary requirements get no
+  practise action at all — the product does not manufacture work on an answer that scored. That
+  restraint is the claim: a competitor's "related content" block appears everywhere because it
+  is not driven by marking.
+- **The button and the steering are the same decision.** The two bands that show a practise
+  action are the same two that open a weakness-ledger row, so what the student clicks and what
+  the selector serves them next cannot disagree.
+
+Still measured, and still true underneath: a weak band on B5b moved that area's share of
+subsequent serves from **27/40 to 40/40** (31/07).
+
+**Nobody closes that loop — every competitor stops at feedback.** Sit → marked in under a minute
+→ told which figure and which step → routed into practice on that exact area, in one screen.
+That is the differentiator, and it is now demonstrable in a single session rather than described.
 
 **5. Marked as ONE PAPER.** Technical and professional skills, per requirement, per-case
 subtotals, one total — not eight disconnected question marks.
