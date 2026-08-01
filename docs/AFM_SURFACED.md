@@ -468,9 +468,28 @@ failure.
 
 **Register sweep, the full 80 strings** (previous cycle managed only 16): **0/80 third-person** ·
 **80/80 second person** · **1/80 invisible-document** (B2(i), run 8) · length 499/1044/2063 chars.
-The one hit's exact matched phrase was NOT captured — the harness printed the string's first 130
-characters, which is almost never where the match is. **Harness fixed** to print the matched phrase
-with surrounding context; a sweep that cannot show its own evidence cannot be adjudicated.
+
+**The 1/80 hit was NOT identified, and cannot now be.** The harness printed the offending string's
+first 130 characters, which is almost never where the match is, and discarded the string itself. A
+15-run re-hunt on the merged code — **120 further strings, 15 of them B2(i) against the original
+10** — returned **0/120**, so the leak class did not reproduce and the original text is
+unrecoverable. Stated against its true denominator (P-G2): **1 invisible-document reference in 208
+student-facing strings**, one occurrence, unexamined. Not blocking; it is a wording slip in one
+string, not a band or a figure.
+
+**Two harness fixes, both shipped:**
+1. **Print the match, not the prefix** — the matched phrase with ±90 characters of context, so a
+   finding is adjudicable from the output alone.
+2. **Detector self-test** — the 0/120 above was produced by a printer path that had **never once
+   executed**, which is the real lesson. A clean sweep has two explanations (the prose is clean, or
+   the detector is broken) and the second one silently reports success. Synthetic known-bad strings
+   now run through the SAME regexes and the SAME printer every sweep, and the count is reported
+   alongside `2/2 probes caught`. Verified live: `The candidate` and `matches the model` both caught
+   and printed. **A clean sweep now means something.**
+
+**Corroboration from the 15-run hunt** (`0/45` parse failures, 120/120 cells): **B2(i) `competent/6`
+15/15** — now **25/25 across both round-3 runs** — and A(iv) `exemplary` 11/15, `strong` 4/15,
+consistent with the accepted drift rather than a further slide.
 
 **Decision taken (Grant, 2026-08-01): option (a) — accept the drift and ship.** Options (b) round 4
 on the "compare in full" wording and (c) re-baseline are both still available, but neither may be
