@@ -56,7 +56,8 @@
     "test:debrief": "tsx scripts/test-debrief.ts",
     "test:weak-areas": "tsx scripts/test-weak-areas.ts",
     "test:sit-results": "tsx scripts/test-sit-results.ts",
-    "verify:schema-discriminants": "tsx --env-file=.env.local scripts/verify-schema-discriminants.ts"
+    "verify:schema-discriminants": "tsx --env-file=.env.local scripts/verify-schema-discriminants.ts",
+    "test:case-authoring-spec": "tsx scripts/test-case-authoring-spec.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
