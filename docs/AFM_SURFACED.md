@@ -289,11 +289,45 @@ sit gets **no AFM drill that specifically exercises it**, because none is tagged
 steers them (that half works on both papers, measured 27/40 → 40/40); only the professional-skill
 half is inert on AFM.
 
-**Fix is authoring, not code.** Tag AFM drills across the four skills as the corpus grows —
-particularly `scepticism` and `commercial_acumen`, which have zero coverage. The generator already
-has `deriveSkillTag` and writes the column; the AFM batches have simply landed on one tag.
-**Rides the next AFM authoring batch.** No code change is owed, and none should be made: nothing in
-the selector is wrong.
+### ROOT CAUSE FOUND 2026-08-01 — it was NOT "the batches landed on one tag"
+
+The 2026-07-31 entry above said the fix was authoring-only and **no code change was owed**. That
+was wrong, and the correction matters because the same defect would have silently re-applied to
+every future batch.
+
+`buildSpecsForList` (`scripts/generate-afm-drills.ts`) declares `sectionIdx` **local to each
+call**, and every batch caller invokes `buildSpecsForList([oneLo])[0]` — **one LO at a time**. So
+the rotation index is always `0` and `deriveSkillTag` always returns `pool[0]`:
+`analysis_and_evaluation` for sections B and E, `communication` for section A. That single fact
+explains the whole distribution — 48 quantitative drills tagged `analysis_and_evaluation` and the
+one section-A drill tagged `communication`. **The rotation was never bypassed; it was defeated by
+the call shape.** Separately, `runNarrativeBatch` hardcoded `professional_skill_tag: null`, which
+is where all 8 nulls came from.
+
+**Fixed 2026-08-01 (`86765ec`), narrative path only.** `NarrativePlan` now carries a **declared**
+`skill`, set per plan from what its rubric demands, and the same value both lands in the row and
+steers the Ezra reveal prompt. Hoisting `sectionIdx` to module scope was **rejected**: it would
+make the tag depend on generation ORDER, so re-running a batch could silently re-tag its drills. A
+professional skill is a property of what a drill demands, not of when it ran.
+
+**Still owed, in order:**
+1. **The 8 published narrative rows are still `null`** — the generator fix is forward-only. Per-drill
+   assessment done 2026-08-01 from each rubric's own criteria: `08044fb6` B3a, `32ef124c` B5c,
+   `55181aa8` E1a, `d0be009d` E1a → **commercial_acumen**; `fda46d99` B3i → **scepticism**;
+   `d413fbe7` B4d → **scepticism** (borderline: only 4–5 of 12 marks are the limitations part);
+   `cb9b411c` B1b and `f9f4f3d4` E2a → stay **analysis_and_evaluation**, correctly. A DB write on
+   published rows (P-DB2, Grant's).
+2. **The 48 quantitative tags are unexamined, not verified.** They may each be right — a calculator
+   drill genuinely is appraisal — but nobody decided that; the defect defaulted them. Declaring a
+   skill per calculator family is the remaining generator work.
+3. **Nothing gates the tag.** No check verifies that a drill's declared skill matches what its
+   rubric demands. The case-authoring path has C4 for PS coverage; the drill path has no analogue.
+
+**Sharpest statement of the consequence:** AFM Mock 1 grades all four skills — `scepticism` on 3
+requirements (**28 marks**) and `commercial_acumen` on 2 (**14 marks**). `psScore` returns 0 unless
+a drill's tag matches, so a student marked weak on either gets a boost on **zero drills in the
+entire AFM corpus**. The PS half of the steering is inert for exactly the two skills the sit
+weights most heavily.
 
 
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
