@@ -3490,3 +3490,35 @@ accept that this one row lags the builder until it is next re-authored. **Record
 resolved**, because a library change quietly rewriting published content is exactly what the
 prose-ownership rule exists to prevent. No other published row is affected — no other case or drill
 uses the enpv builder.
+
+## 2026-08-01 (seventh) — HALVARD RE-AUTHORED (P-DB2); the regeneration drift is closed
+
+The drift recorded in the sixth entry is resolved. **Not** through `author-afm-case.ts --insert`:
+that path deletes and re-inserts as `candidate`/`published=false`, so running it against a
+published case would have taken it DARK — the practice library losing a case as a silent side
+effect of a content fix. New committed script `scripts/authoring/reauthor-afm-requirement.ts`
+re-authors the CONTENT through `buildNumericRequirement`, the identical function the authoring path
+calls, and writes only the fields that legitimately changed.
+
+**Shown before writing:** `model_answer` 2219 → 2386 chars, ONE line added — the injected
+`**2 of 3** scenarios return a negative NPV…`. `question`, `hint`, `full_reveal` and
+`answer_schema` all unchanged.
+
+**P-DB4, specific rather than generic** — the script asserts what must NOT move even though the
+whole schema was rebuilt, and REFUSES to write if any of it breaks: component **count** 4 → 4 ·
+component **ids** unchanged · **every `expected_value` byte-identical** · **`params` unchanged**.
+All held before and after. It also verifies the case is still `approved`/`published=true` — a
+re-author that took a live case dark would otherwise pass every content check.
+
+**Confirmed after:** full barrier re-run GREEN (17/17 B1a lines, 5/5 B1b narrative lines, C1/C2/C4
+and the corpus invariant) · all **5** practice cases still serve through the routes with
+`marks_guide` and `professional_skill_tags`, no withheld-field leaks · **B1b's five anchor keys all
+still appear in its golden GOOD** — that requirement was never touched, and the check confirms it
+rather than assuming it.
+
+**The finding recorded in `AFM_SURFACED.md`:** author prose contradicting a computed figure is a
+symptom of a BUILDER GAP, not only of author error. The computed object knew the count; the model
+answer never stated it; the prose went looking and guessed. Open item: when each
+`build*ModelAnswer` is next touched, ask what the computed object knows that the model answer never
+states — counts over a set, which member is extremal, which branch fired, margins stated for the
+winner but not the runner-up.

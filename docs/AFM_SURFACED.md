@@ -266,6 +266,46 @@ the one place open items live, and these are shipped-to-students defects rather 
    `hasActiveACCAAccess` is bundle-wide — so **the fix is renaming the Stripe objects, not
    retracting the copy**. Retracting would understate a real entitlement.
 
+## 🔸 OPEN 2026-08-01 — THE INJECTION FINDING: check every builder for the same vacuum
+
+**Author prose contradicting a computed figure is a symptom of a BUILDER GAP, not only of author
+error.** That is the finding, and it generalises past the two incidents that produced it.
+
+`buildEnpvModelAnswer` stated the verdict and P(negative NPV), but never **how many scenarios
+destroy value**. The advice slot sits directly under that block, so the author — me — filled the
+gap from memory and wrote "the delayed scenario is the only one that threatens the outlay" against
+a computed set with TWO negative scenarios. The computed object knew the count. The model answer
+never said it. The prose went looking for it and guessed.
+
+**The rule that follows: when each `build*ModelAnswer` is next touched, ask what the COMPUTED
+OBJECT KNOWS that the MODEL ANSWER NEVER STATES.** Anything on that list is a vacuum an author will
+eventually fill, and filling it wrongly costs a published row. Candidates worth checking for the
+same shape (not yet audited — this is the open item):
+- **counts over a computed set** — how many scenarios are negative, how many legs exercise, how
+  many contracts round down, how many methods beat the hurdle;
+- **which member of a set is extremal** — the worst case, the binding constraint, the tightest
+  covenant;
+- **branch identity** — which of several tax/exercise/direction branches actually fired (the
+  Kestrel tax-branch incident is exactly this shape);
+- **margins and gaps** — stated for the winner but not for the runner-up.
+
+**Fixed for enpv, both halves:** the builder now injects the count (primary), and
+`lib/acca/advice-checks.ts` is the backstop — the closed grammatical class of English quantifiers,
+never a phrase table, with registration discipline so an unregistered family returns an explicit
+`not_registered` rather than passing clean. 17 fixtures, test set = the two real failures.
+
+**Halvard re-authored under P-DB2 (2026-08-01), the drift closed.** Not through
+`author-afm-case.ts --insert` — that path deletes and re-inserts as `candidate`/`published=false`
+and would have taken a live case DARK as a side effect of a content fix. New committed script
+`scripts/authoring/reauthor-afm-requirement.ts` re-authors the CONTENT through
+`buildNumericRequirement` (the identical function the authoring path calls, so nothing is
+hand-typed) and writes only the changed fields. **Exactly one line changed; component count, ids,
+every `expected_value` and `params` all byte-identical; the case is still `approved`/`published`.**
+Post-verified, barrier re-run green (17/17 B1a + 5/5 B1b), all 5 practice cases still serve, and
+B1b's five anchor keys all still appear in its golden GOOD — that requirement was never touched,
+and the check confirms rather than assumes it.
+
+
 ## 🟠 PARTLY CLOSED 2026-08-01 — the AFM PS corpus: tagged, re-measured, **4 drills owed**
 
 **Logged on Grant's instruction 2026-07-31. Rides the next AFM authoring batch.**
