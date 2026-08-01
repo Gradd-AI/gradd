@@ -402,6 +402,60 @@ true rate near ≤10% at 95%, it does not establish 0%.
   been put through an equivalent repeated-run matrix yet — the ordinal contract landed on
   `judgeCaseMarking` this session on the technical pass's evidence, not on its own.
 
+## 🔸 OPEN 2026-08-01 — the marker-feedback branch: 3 rounds, 3 P-M1 cycles, BANDS STILL MOVE
+
+**`fix/marker-feedback-register` is HELD UNMERGED (`3093ae3`), pushed. Grant's call.** The branch
+fixes a real defect — the student-facing `feedback` string was written to a moderator, in the third
+person, citing a document the student has never seen — and every round has cleaned the prose up.
+**Every round has also moved technical bands off the recorded baseline, and round 3 did not fix
+that.** The prose defect and the band stability are in tension, and the branch cannot ship until
+that is resolved.
+
+| Cell | Baseline (main) | R1/R2 (nameless reference) | R3 (judgement split) |
+|---|---|---|---|
+| **B2(i) E3a** — the named bar | competent/6 **10/10** | competent/6 10/10 | **competent/6 10/10** ✅ |
+| **A(iv) E1a** | strong/5 **9/10** | exemplary 7/10 | **exemplary 8/10** ✗ |
+| **A(iii) E2b** | strong 7/10 | exemplary 9/10 | **exemplary 10/10** ✗ |
+| A(i)/A(ii)/B1(i)/B2(ii) | exemplary | exemplary | exemplary — stable |
+| B1(ii) B1b | exemplary | exemplary | exemplary 9/10, strong 1/10 |
+
+**What round 3 did.** Rounds 1 and 2 tried to protect the candidate by DEGRADING the reference in
+the prompt (retitle it, then strip its name and forbid "matches"). Both moved bands, which is the
+finding: the marker was not merely borrowing the label for its prose — **it was using the explicit
+comparison to decide the band**, and grades more generously without it. Round 3 therefore moved the
+fence instead of the frame: the reference keeps its full baseline framing ("the marking standard — a
+full-marks response") and the marker compares against it freely inside a new PRIVATE `judgement`
+field emitted FIRST; `feedback` is derived from it afterwards and keeps the class ban. `judgement`
+is dropped where model output becomes the result, so it has no path to
+`acca_case_progress.technical_feedback`; `PerRequirementMark` has no field it could travel in.
+
+**It did not work as intended.** A(iv) and A(iii) sit at the same inflated place as round 2. The
+honest reading is that restoring the comparative WORDS was not sufficient — something else in the
+rewritten prompt (most likely the explicit "compare in full, quote both figures" instruction, which
+invites a completeness check rather than a quality judgement) is doing the inflating. Both drifting
+cells are the two the baseline already recorded as SOFT (see the block above: A(iii) was 7/10 and
+A(iv) 9/10, never 10/10), so this is a nudge to already-unstable cells, not a collapse — but it is a
+consistent nudge in one direction across three rounds, which is a signal, not noise.
+
+**Measured, 10 runs, denominators declared (P-G2):** 30/30 chains returned · **0/30 parse failures**
+· 80/80 matrix cells evaluated · paper total 72–74/80 (baseline 74). `max_tokens` 3000 → 8000 landed
+with the split; **no truncation at any point**, so the band reading is not confounded by a parse
+failure.
+
+**Register sweep, the full 80 strings** (previous cycle managed only 16): **0/80 third-person** ·
+**80/80 second person** · **1/80 invisible-document** (B2(i), run 8) · length 499/1044/2063 chars.
+The one hit's exact matched phrase was NOT captured — the harness printed the string's first 130
+characters, which is almost never where the match is. **Harness fixed** to print the matched phrase
+with surrounding context; a sweep that cannot show its own evidence cannot be adjudicated.
+
+**Decision owed:** (a) accept the drift on two already-soft cells as the price of feedback a student
+can actually read, (b) try a round 4 that keeps the split but softens the "compare in full" wording
+toward a quality judgement, or (c) abandon the prompt route and re-baseline instead — the current
+baseline is itself only a 10-run modal reading, not ground truth. **No option is free**; (c) in
+particular means accepting that "the recorded baseline" has never been validated against a human
+marker.
+
+
 ## ✅ CLOSED 2026-07-28 — Mock 1 barrier is GREEN; capm registered; CAPM-1/2/4/9 built
 
 **The B3e blocker below is CLOSED.** `deriveHasLoss` gained a `B3e` case (capm is a RATES-ONLY
