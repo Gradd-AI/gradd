@@ -68,11 +68,32 @@ const argOf = (flag: string): string | null => {
 const SPEC_PATH = argOf('--spec');
 const DO_INSERT = process.argv.includes('--insert');
 const DO_DESTRUCTIVE = process.argv.includes('--i-will-delete-live-rows');
+// The corpus invariant is BLOCKING. This is its only override, and it REQUIRES a reason —
+// see the CORPUS INVARIANT block below for why an advisory line was the wrong design.
+const CORPUS_GAP_REASON = process.argv.includes('--allow-corpus-gap') ? (argOf('--allow-corpus-gap') ?? '') : null;
+const CORPUS_JOURNAL = 'docs/authoring/CORPUS_GAP_OVERRIDES.md';
+/** Print the built prose, model answers and schema components in full. */
+const PRINT_CONTENT = process.argv.includes('--print-content');
+
+const indent = (s: string, pad: string) => s.split('\n').map((l) => pad + l).join('\n');
+function wrap(s: string, n: number, pad: string): string {
+  const out: string[] = [];
+  for (const para of (s ?? '').split('\n')) {
+    let cur = '';
+    for (const w of para.split(/\s+/).filter(Boolean)) {
+      if ((cur + ' ' + w).trim().length > n) { out.push(pad + cur.trim()); cur = w; } else cur = (cur + ' ' + w).trim();
+    }
+    out.push(pad + cur.trim());
+  }
+  return out.filter((l) => l.trim()).join('\n');
+}
 
 /** Designed failure modes the golden BAD must trigger — the same backbone D1–D5 proved. */
 const DESIGNED_BAD: FailureMode[] = ['F1', 'F5', 'F4'];
 
 let blocked = false;
+/** Set when the corpus invariant is overridden; appended to the journal on insert. */
+let corpusJournalEntry: string | null = null;
 const line = (t = '') => console.log(t);
 const rule = (c = '=') => console.log(c.repeat(100));
 function report(name: string, ok: boolean, detail = ''): boolean {
@@ -137,11 +158,43 @@ async function main() {
   line(`     published AFM practice cases: ${libIds.length} · their LO letters: ` +
        `[${[...new Set(publishedLos.map((l) => l[0]))].sort().join(', ') || 'none'}]`);
   line(`     this case contributes: [${[...new Set(candidateLos.map((l) => l[0]))].sort().join(', ')}]`);
-  // Reported, NOT blocking on its own: a library that does not yet reach both letters is a
-  // statement about what to author next, not a defect in the case being added. It blocks only
-  // when this case is the LAST one that could have supplied the missing letter — which cannot
-  // be known here — so it is surfaced loudly and left to the author.
-  line(`     after add: [${corpus.afterAdd.join(', ')}]  ${corpus.pass ? '✓ B and E both represented' : `⚠ STILL MISSING: ${corpus.missing.join(', ')} — author a case covering ${corpus.missing.join('/')} next`}`);
+  line(`     after add: [${corpus.afterAdd.join(', ')}]`);
+
+  // ── WHY THIS BLOCKS (ruled 2026-08-01) ──
+  // Every AFM exam carries questions focused on sections B and E. That is not a nicety — it is
+  // load-bearing for the viable tier, because a library that cannot build one is not a library a
+  // candidate can rehearse against. An earlier version of this reported the gap and let the run
+  // pass, on the argument that add time cannot know whether a LATER case will supply the missing
+  // letter. That argument is sound and it argues for an OVERRIDE, not for silence: a warning line
+  // inside an otherwise-green run is a line nobody reads, and the gap would be discovered when
+  // someone went looking for an E case and found none.
+  //
+  // So it blocks, and `--allow-corpus-gap "<reason>"` is the way past it. The reason is REQUIRED,
+  // is printed here, and is appended to the journal on insert — so the decision leaves a trace
+  // that outlives the terminal session that made it.
+  if (!corpus.pass) {
+    const entry = `- ${new Date().toISOString().slice(0, 10)} · case \`${spec.frame.id}\` (${spec.frame.title}) · ` +
+                  `missing: ${corpus.missing.join(', ')} · letters after add: [${corpus.afterAdd.join(', ')}] · ` +
+                  `reason: ${CORPUS_GAP_REASON ?? '(none given)'}`;
+    if (CORPUS_GAP_REASON === null) {
+      report('corpus invariant: B and E represented across the published AFM library', false,
+        `MISSING ${corpus.missing.join(', ')}. Author a case covering ${corpus.missing.join('/')}, ` +
+        'or re-run with --allow-corpus-gap "<reason>" — the reason is required and is journalled.');
+    } else if (!CORPUS_GAP_REASON.trim()) {
+      report('corpus invariant override', false,
+        '--allow-corpus-gap was given with NO reason. An override without a stated reason is the ' +
+        'silence this gate exists to prevent; supply one.');
+    } else {
+      line(`  OVERRIDE :: corpus invariant — MISSING ${corpus.missing.join(', ')}`);
+      line(`             reason: ${CORPUS_GAP_REASON.trim()}`);
+      line(`             journal line (appended to ${CORPUS_JOURNAL} on --insert):`);
+      line(`               ${entry}`);
+      corpusJournalEntry = entry;
+    }
+  } else {
+    report('corpus invariant: B and E represented across the published AFM library', true,
+      `[${corpus.afterAdd.join(', ')}]`);
+  }
 
   // ── 4. EXHIBITS STATE EVERY CALCULATOR INPUT ──
   line('\n  4. EXHIBITS STATE EVERY CALCULATOR INPUT  (recoverability — P-DB6)');
@@ -219,6 +272,49 @@ async function main() {
          `model_answer ${n.model_answer.length}ch · hint ${n.hint.length}ch · reveal ${n.full_reveal.length}ch`);
   }
 
+  // ── THE BUILT CONTENT, IN FULL ──
+  // A dry run whose output is a list of PASS lines cannot be reviewed: the point of the dry run is
+  // that a human reads what would land, and that means the prose and the figures, not their
+  // lengths. Printed on request so the gate matrix stays readable by default.
+  if (PRINT_CONTENT) {
+    rule('─');
+    line('  BUILT CONTENT — exactly what would be written');
+    rule('─');
+    line(`\n  ══ CASE ══\n  ${spec.frame.title} · Section ${spec.frame.section} · anchor ${spec.frame.anchor_area}`);
+    line(`  ${spec.frame.total_marks} marks (${spec.frame.total_marks - spec.frame.professional_skills_marks} technical + ${spec.frame.professional_skills_marks} PS) · ${spec.frame.response_format}`);
+    line(`\n  SCENARIO INTRO\n${wrap(spec.frame.scenario_intro, 96, '    ')}`);
+    for (const [i, e] of spec.exhibits.entries()) {
+      line(`\n  EXHIBIT ${i + 1} — ${e.title}\n${wrap(e.body, 96, '    ')}`);
+    }
+    for (const b of built) {
+      line(`\n  ══ REQUIREMENT ${b.spec.requirement_order} · ${b.out.lo} · ${b.spec.marks} marks · CALC ══`);
+      line(`  PS: ${b.spec.ps_tags.join(', ')}`);
+      line(`\n  QUESTION\n${wrap(b.out.question, 96, '    ')}`);
+      line(`\n  MODEL ANSWER (built by the calculator — every figure code-owned)\n${indent(b.out.model_answer, '    ')}`);
+      line(`\n  ANSWER_SCHEMA — ${(b.out.schema.components ?? []).length} components`);
+      for (const c of (b.out.schema.components ?? [])) {
+        line(`    ${String(c.component_id).padEnd(22)} = ${JSON.stringify(c.expected_value).padEnd(14)} ${String(c.unit ?? '').padEnd(8)} tol=${JSON.stringify(c.tolerance)}`);
+      }
+      line(`\n  HINT\n${wrap(b.out.hint, 96, '    ')}`);
+      line(`\n  FULL_REVEAL\n${indent(b.out.full_reveal, '    ')}`);
+    }
+    for (const n of narrativeBuilt) {
+      const rub = n.spec.rubric as NarrativeRubric;
+      line(`\n  ══ REQUIREMENT ${n.spec.requirement_order} · ${n.spec.lo} · ${n.spec.marks} marks · NARRATIVE ══`);
+      line(`  PS: ${n.spec.ps_tags.join(', ')}`);
+      line(`\n  QUESTION\n${wrap(n.spec.question, 96, '    ')}`);
+      line(`\n  RUBRIC — ${rub.criteria.length} criteria, ${rub.scenario_facts.length} scenario facts, ${rub.total_marks} marks`);
+      for (const c of rub.criteria) {
+        line(`    ${c.id.padEnd(16)} ${c.marks}m  anchors=[${c.anchor_facts.join(', ')}]  disq=[${c.disqualifiers.join(', ')}]`);
+        line(`${wrap(c.required_point, 90, '        ')}`);
+      }
+      line(`\n  MODEL ANSWER (golden GOOD)\n${indent(n.model_answer, '    ')}`);
+      line(`\n  HINT\n${wrap(n.hint, 96, '    ')}`);
+      line(`\n  FULL_REVEAL\n${indent(n.full_reveal, '    ')}`);
+    }
+    rule('─');
+  }
+
   if (!DO_INSERT) {
     line('\n  DRY RUN — nothing written. Re-run with --insert to write.');
     return;
@@ -226,6 +322,24 @@ async function main() {
 
   await assertSafeToOverwrite(supabase, spec.frame.id);
   await insertCase(supabase, spec, built, narrativeBuilt);
+
+  // Journalled on INSERT, not on the dry run: the journal records what SHIPPED, and repeated dry
+  // runs must not fill it with decisions that were never acted on. The dry run prints the exact
+  // line it would append, so nothing about the record is a surprise.
+  if (corpusJournalEntry) {
+    const { appendFileSync, existsSync, mkdirSync, writeFileSync } = await import('fs');
+    const { dirname } = await import('path');
+    if (!existsSync(dirname(CORPUS_JOURNAL))) mkdirSync(dirname(CORPUS_JOURNAL), { recursive: true });
+    if (!existsSync(CORPUS_JOURNAL)) {
+      writeFileSync(CORPUS_JOURNAL,
+        '# Corpus-gap overrides — AFM case library\n\n' +
+        'Append-only. Each line records a case authored while the published AFM library did NOT yet\n' +
+        'represent both syllabus sections B and E, and the reason the author proceeded anyway.\n' +
+        'Written by `scripts/authoring/author-afm-case.ts --allow-corpus-gap "<reason>"` on insert.\n\n');
+    }
+    appendFileSync(CORPUS_JOURNAL, `${corpusJournalEntry}\n`);
+    line(`  corpus-gap override journalled → ${CORPUS_JOURNAL}`);
+  }
 }
 
 /**
