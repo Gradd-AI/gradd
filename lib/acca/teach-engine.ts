@@ -220,8 +220,14 @@ async function call2_diagnose(
   attempt: string,
   modelAnswer: string,
   markScheme: string,
+  // CODE-OWNED FINDINGS, threaded separately from the mark scheme ON PURPOSE. The mark-scheme
+  // block below is framed "do NOT quote it or state the answer", which is right for a mark scheme
+  // and exactly wrong for a direction contradiction — the one finding the student MUST be told.
+  // Carried in its own channel so the suppression does not apply to it.
+  groundedFacts = '',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
   const msLine = markScheme
     ? `Authored mark scheme (use to identify WHICH criterion/level the student missed; do NOT quote it or state the answer):\n${markScheme}\n\n`
     : '';
@@ -249,6 +255,11 @@ async function call2_diagnose(
         content:
           `${contextLine}Question: ${question}\n\n` +
           `Student answer: ${attempt}\n\n` +
+          // FIRST, and before the mark scheme. Where code has already established that the answer
+          // sits on the wrong side of a settled choice, that IS the gap — a contract count is
+          // worthless on the wrong side of the trade, and burying it under the component list is
+          // how ~10/20 baseline turns went straight to the arithmetic.
+          gfLine +
           msLine +
           `Model answer (reference only — do NOT restate or correct in output):\n${modelAnswer}\n\n` +
           'Output the gap label only. Name the error pattern. Do not state what is correct.',
@@ -584,6 +595,10 @@ export interface TeachTurnInput {
   modelAnswer: string;
   verbLevel: string;
   markScheme: string;
+  /** Code-owned findings from the direction fence (lib/acca/tutor-discriminants.ts). Rendered
+   *  FIRST in the diagnose prompt, and NOT inside markScheme — the mark-scheme block is framed
+   *  "do not quote it", which is exactly wrong for a contradiction the student must be told. */
+  groundedFacts?: string;
   studentMessage: string;
   lastEzraMessage: string;
   missCount: number;
@@ -607,7 +622,7 @@ export interface TeachTurnResult {
 
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
   const {
-    question, context, modelAnswer, verbLevel, markScheme,
+    question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '',
     studentMessage, lastEzraMessage,
     missCount, lastDiagnosis, lastRealAttempt, resolved,
   } = input;
@@ -654,7 +669,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
                   : classified === 'confusion' ? 'coaching' : 'chat';
     } else {
       // ── THE MOAT — existing withholding pipeline, unchanged ──
-      const diagnosis  = await call2_diagnose(question, context, studentMessage, modelAnswer, markScheme);
+      const diagnosis  = await call2_diagnose(question, context, studentMessage, modelAnswer, markScheme, groundedFacts);
 
       let completenessGap: string | null = null;
       if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
