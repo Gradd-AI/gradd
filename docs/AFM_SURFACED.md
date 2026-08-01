@@ -178,6 +178,43 @@ zero, a null `ends_at` NOT reading as expiry, the warning boundary, `attemptIsCl
 `test-case-sit` **+7**. DB-level, against the live partial index: close → reopen → both rows survive
 → the selector sees exactly one open row → a second open row for the same key still 23505s.
 
+## ⛔ RULING 2026-08-01 (Grant) — STANDALONE AFM CASES ARE **NUMERIC-HEAVY**, not a mirror of APM
+
+**The scope question is closed before the build starts.** AFM practice cases are built around
+CALCULATION requirements. **Narrative requirements are the EXCEPTION in an AFM case, not the main
+path.** Do not reproduce APM's discursive shape (all 18 APM case requirements are `evaluate` /
+`assess` / `advise` / `prepare`, 0 `calculate`, 0 `answer_schema`) — that shape is right for APM
+and wrong for AFM.
+
+**Rationale, in the order it decides the design:**
+
+1. **The calculator moat.** Numeric requirements get deterministic, code-owned figures and the
+   full 37-line gate barrier. That is the thing competitors cannot copy, and it is worth nothing
+   on a requirement that carries no figures.
+2. **The 6-LO family-gate union is the real ceiling.** `FamilyGateInput`
+   (`lib/acca/case-authoring-gates.ts:342`) is a CLOSED union over **`B5b, E2b, B1a, E3a, B4a,
+   B3e`**, plus an explicit `NO_FAMILY_GATES` escape that forces the author to NAME the omission.
+   A numeric requirement outside those six gets GATE1–3 and the prose lints but **no family
+   gates**. So case authoring should target the six first; extending the union is per-family work
+   and should be a deliberate decision, not a side effect of wanting a particular scenario.
+3. **The narrative leg's per-requirement cost does not amortise.** Every narrative requirement
+   needs a hand-authored `NarrativeRubric` (criteria with `required_point` / `anchor_facts` /
+   `disqualifiers` / `development_required`, plus `scenario_facts` and `requirement_parts`), a
+   golden GOOD *and* a golden BAD (the live ones run 1,200–1,800ch each), designed failure modes
+   the BAD must actually trigger, and **a live model grader** — N1 and N4 are the only gates in
+   the system that need an API key and are non-deterministic. None of that gets cheaper on the
+   tenth case. The numeric leg, by contrast, is inputs → calculator → gates, and the marginal
+   cost of the eleventh numeric requirement is close to the second.
+
+**What this does NOT license.** GATE **C2** still holds: an AFM Section B case must contain ≥1
+`calc`-kind requirement, and the syllabus rule it encodes ("there will not be any wholly
+narrative questions") is a floor, not a target. Numeric-heavy means numeric-led, not
+numeric-only — a case of pure calculation with no evaluation is not exam-faithful either.
+
+**Consequence for the corpus gap below:** numeric-heavy case authoring does **not** close the
+professional-skill gap. PS tags live on requirements and will pass C4, but the drill corpus that
+a weak PS band routes into is unchanged. That remains an authoring gap on `acca_drills`.
+
 ## 🔸 OPEN 2026-07-31 — THREE COPY DEFECTS ARE LIVE ON THE AFM LANDING PAGE
 
 All three in `components/landing/product-landing-config.ts`, verified 2026-07-31, **not yet

@@ -349,15 +349,33 @@ with hardcoded inputs, so nobody mistakes retention for endorsement.
    `scripts/authoring/author-afm-mock-paper-1.ts`. It was the ONLY working AFM case-authoring
    path in existence, untracked, on a project cloned at two different paths on two machines.
 
-**The corollary that matters more than the rule.** A committed authoring script is not the same
-as a reproducible one. `author-afm-mock-paper-1.ts` **does not reproduce the live rows**: the
-recompute DISCRIMINANT params (`gearing_basis`, `parity_basis`, `quote_direction`, `direction`,
-`side`) were added afterwards by a SECOND untracked script, and the `build*Schema` functions do
-not emit them. Re-running the author script today would produce schemas that
-`lib/acca/recompute-registry.ts` cannot resolve, silently. **So when committing an authoring
-path, commit every post-authoring mutation that the live rows depend on — or fold them into the
-authoring script — and say which is which.** A path that reproduces 90% of a row is a trap,
-because it looks like a recovery route and is not one.
+**The corollary that matters more than the rule: committed is not the same as REPRODUCIBLE, and
+only a measurement can tell you which you have.** When committing an authoring path, prove it
+rebuilds the live rows — do not infer it from reading the code, in either direction.
+
+**Worked example, and a correction (2026-08-01).** The recompute DISCRIMINANT params
+(`gearing_basis`, `parity_basis`, `quote_direction`, `direction`, `side`) were added to the 5
+live numeric mock requirements by a SECOND untracked script, `_reserialise_mock_params.ts`.
+From that fact it was asserted here that the `build*Schema` functions must not emit them, and
+therefore that re-authoring would silently produce rows `lib/acca/recompute-registry.ts` could
+not resolve. **That assertion was WRONG.** `scripts/verify-schema-discriminants.ts` rebuilds
+every numeric schema from the authoring inputs and diffs it against the live rows: **48/48
+checks pass** — every discriminant is emitted by the current library (`capm.ts:318`,
+`international.ts:510`, `fxhedge.ts:630`, `irhedge.ts:569`), every param value and every
+`expected_value` is identical. The backfill script existed because the ROWS predated the
+library change, not because the library lacks it. Nothing was owed and nothing was folded in.
+
+**Two rules come out of that, and the second is the expensive one:**
+- **Prove reproducibility with a harness, and keep the harness.**
+  `scripts/verify-schema-discriminants.ts` is read-only and should be run before any
+  re-author, and after any library change to a `build*Schema`.
+- **A full-field diff MUST be key-order-insensitive, and P-DB4 says so for a reason.** The
+  first version of that harness compared with `JSON.stringify` and reported all 20 money
+  components as tolerance-drifted. They were not: Postgres `jsonb` does not preserve authoring
+  key order, so `{kind, pct, floor}` reads back as `{pct, kind, floor}`. A **detector bug**
+  presenting as 20 content defects on published rows — the exact P-DB5 shape, caught only
+  because the values were printed in full rather than the field names alone. **Print the
+  values. A diff that names fields without showing them cannot be adjudicated.**
 
 This composes with **P-DB3** (a rollback snapshot must be COMMITTED, for the same reason: the
 scratchpad is outside the repo, and untracked files do not survive a `git clean` or a machine
