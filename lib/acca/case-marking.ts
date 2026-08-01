@@ -377,14 +377,12 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
     'these rules:\n' +
     '1. SECOND PERSON, addressed to them — "You structure the answer as a report…", never "The ' +
     'candidate…".\n' +
-    '2. NEVER mention the descriptor, the marking standard, a model answer or any document they ' +
-    'cannot see. Say what their writing DID and, where the band is below exemplary, what would have ' +
-    'raised it.\n' +
-    '3. LENGTH IS SET BY THE BAND:\n' +
-    '   • "exemplary" or "strong": ONE or TWO sentences. Name the behaviour that earned it and stop. ' +
-    'Do not inventory everything they did well.\n' +
-    '   • "competent" or "weak": THREE to FIVE sentences. Name the specific shortfall, point to where ' +
-    'in their answer it shows, and state the one thing that would raise the band.\n' +
+    '2. NEVER POINT AT ANYTHING THEY CANNOT SEE. This is a CLASS ban, not a list of banned words: ' +
+    'no descriptor, standard, document, reference, model, scheme or "provided" text may be ' +
+    'mentioned, HOWEVER NAMED. Say what their writing DID and, where the band is below exemplary, ' +
+    'what would have raised it.\n' +
+    '3. WRITE WHATEVER THE BAND NEEDS — no length target, floor or ceiling. Never pad, and never ' +
+    'truncate a reason to hit a length.\n' +
     '4. Point to their OWN writing when you name evidence — quote a short phrase or name the section. ' +
     'No band without a named reason.\n' +
     '5. No praise for its own sake, no encouragement, no grade prediction. ' +
@@ -556,19 +554,19 @@ async function judgeTechnicalOnce(
   paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[], attempt = 1,
 ): Promise<{ index: number; band: TechnicalBand; feedback: string }[]> {
   const contextLine = context ? `Case scenario and exhibits (shared by every requirement):\n${context}\n\n` : '';
-  // STRUCTURAL, not instructed (docs/TEACHING_ARCHITECTURE.md): the reference is labelled as
-  // something the candidate cannot see and must never be named, rather than merely asking the
-  // model not to mention it afterwards. Calling this block "the marking standard" is what
-  // produced feedback like "matching the model answer exactly" and "vs model's €31.3m" —
-  // sentences that assume a document the student has never been shown.
+  // STRUCTURAL, not instructed (docs/TEACHING_ARCHITECTURE.md). The block is given NO NAME the
+  // model can echo. Two rounds proved this matters: labelling it "the marking standard" produced
+  // "matching the model answer exactly" and "vs model's €31.3m"; renaming it "Correct treatment"
+  // produced "align with the correct treatment" — the model simply echoed whatever noun phrase it
+  // was handed. So it is delimited rather than titled, and told explicitly it has no usable name.
   const blocks = reqs
     .map((r, i) =>
       `Requirement ${i + 1} — ${r.label}\n` +
       `Question: ${r.question}\n` +
-      `Correct treatment — FOR YOUR JUDGEMENT ONLY. The candidate has never seen this text and ` +
-      `never will. Never quote it, cite it, or refer to it as a model answer, marking standard ` +
-      `or correct answer. Use it to decide the band, then state the correct treatment as plain ` +
-      `fact in your own words:\n${r.model_answer}\n\n` +
+      `<<<PRIVATE — NOT VISIBLE TO THE CANDIDATE. Judge against this, then discard it. It has no ` +
+      `name you may use: do not call it a treatment, an answer, a standard, a reference or a ` +
+      `model, and do not say anything "matches" it. Convert it into plain statements of fact about ` +
+      `the candidate's own work.>>>\n${r.model_answer}\n<<<END PRIVATE>>>\n\n` +
       `Candidate's answer:\n${r.final_answer}`,
     )
     .join('\n\n---\n\n');
@@ -593,15 +591,20 @@ async function judgeTechnicalOnce(
     'these rules:\n' +
     '1. SECOND PERSON, addressed to them. "You ungear the peer beta correctly…" — never "The ' +
     'candidate…", never "the answer shows…".\n' +
-    '2. NEVER mention a model answer, marking standard, correct answer, or any document they cannot ' +
-    'see. State the correct treatment as plain fact: "the closing futures price is 94.85, not the ' +
-    '95.00 you used" — NEVER "the model gives 94.85" or "this matches the marking standard".\n' +
-    '3. LENGTH IS SET BY THE BAND:\n' +
-    '   • "exemplary" or "strong": ONE or TWO sentences. Name what worked, name any immaterial gap, ' +
-    'and stop. Do not justify the band at length and do not list everything they got right.\n' +
-    '   • "competent", "weak" or "nothing": FULL DIAGNOSIS. Name the specific omission or error, give ' +
-    'the figure THEIR working produced AND the correct figure, and state what it changed downstream ' +
-    '(the wrong rate, the wrong decision, the wrong total).\n' +
+    '2. NEVER POINT AT ANYTHING THEY CANNOT SEE. This is a CLASS ban, not a list of banned words: ' +
+    'no document, standard, reference, model, scheme, source or "provided" text may be mentioned, ' +
+    'HOWEVER NAMED. Specifically forbidden, and anything like them: "the model answer", "the ' +
+    'marking standard", "the correct answer", "the correct treatment", "the reference", "the ' +
+    'solution", "the mark scheme", "as provided", "per the standard". Do not say a figure "matches" ' +
+    'or "aligns with" anything — there is nothing visible for it to match.\n' +
+    '   State correctness as PLAIN FACT about their own work: "your WACC of 9.59% is correct", ' +
+    '"the closing futures price is 94.85, not the 95.00 you used". NEVER "this matches the model" ' +
+    'or "all figures align with the correct treatment".\n' +
+    '3. WRITE WHATEVER THE BAND NEEDS — no length target, floor or ceiling. Where marks were lost, ' +
+    'give the full diagnosis: name the specific omission or error, give the figure THEIR working ' +
+    'produced AND the correct figure, and state what it changed downstream (the wrong rate, the ' +
+    'wrong decision, the wrong total). Where nothing was lost, say what was right. Never pad and ' +
+    'never truncate a diagnosis to hit a length.\n' +
     '4. NEVER refer to another requirement, earlier or later — each one is read on its own.\n' +
     '5. No praise for its own sake, no encouragement, no grade prediction.\n' +
     'DISCIPLINE: name the specific point that decided the band. No band without a named reason. ' +
