@@ -3273,3 +3273,59 @@ narrative drill pipeline (`runNarrativeBatch`), which now carries a declared ski
 **Related C4 finding:** `gatePsSkillSet` forbids `communication` on ANY Section B case
 (Section-A-only). So the B5 communication gap could never be closed by a Section B case even in
 principle. A B5 *drill* tagged communication is unaffected — C4 is a case gate, not a drill gate.
+
+## 2026-08-01 (third) — THE FOUR REMAINING AFM PRACTICE CASES AUTHORED (candidate, not published)
+
+**All four authored one at a time through `scripts/authoring/author-afm-case.ts`, full barrier per
+case, dry run and built output read before each insert. No bulk insert.** All land
+`candidate` / `published=false` / `mock_only=false`; publishing is a separate GATE-P decision.
+
+| Case | Section | Marks | Numeric (family arm) | Narrative | PS union |
+|---|---|---|---|---|---|
+| Kestrel Foods plc **(LIVE)** | B | 25 | B5b intl NPV | E2a FX exposures | a&e · scepticism · comm.acumen |
+| Halvard Marine ASA | B | 25 | **B1a** ENPV | B1b appraisal critique | a&e · scepticism |
+| Lindqvist Instruments AB | B | 25 | **E2b** K1 forward-vs-MMH | E1a treasury contribution | a&e · comm.acumen |
+| Tamesis Diagnostics plc | B | 25 | **B4a** FCFF valuation | B4d BSOP limitations | a&e · scepticism |
+| Castlereagh Utilities plc | A | 50 | **B3e** + **E3a** | B3i financing critique · A3a briefing | all four |
+
+**Batch assertion (`scripts/authoring/assert-batch-corpus.ts`, new): B closed by four cases, E by
+three, and all SIX family-gate arms exercised EXACTLY ONCE.** The per-case invariant could not have
+shown this — Kestrel is published carrying both letters, so every later case passes it trivially.
+
+### The gates earned their keep — 9 blocking failures across the four, every one real
+
+- **Halvard** — golden GOOD never used the `f_claim` anchor key verbatim (N2); golden BAD's "In
+  conclusion" and "the board should" tripped `hasConclusion`, so it could not raise its designed F4
+  (N4).
+- **Lindqvist** — GATE 26 blocked a losing method name sitting in a recommendation-position
+  sentence.
+- **Tamesis** — `equity_weight` passed as the fraction 0.75 where `divergentEquity` expects an
+  ABSOLUTE equity figure in GBPm (VAL-11b fired, correctly); three inputs unrecoverable because the
+  exhibits state percentages as a real paper does while `FcffInputs` takes decimals; an anchor key
+  reading "does not capture" where the exhibit says "do not capture".
+- **Castlereagh** — `contract_size` unrecoverable (exhibit states GBP 500,000, `IrFuturesInputs`
+  takes GBPm); B3i's GOOD said "advise the board", which is NOT one of `hasConclusion`'s markers, so
+  N5 saw no committed verdict; A3a's GOOD said "without a financial background" where the key is
+  "no financial background".
+
+### The one defect NO gate caught, and the reason the path prints before it inserts
+
+**Halvard's advice prose contradicted its own code-owned figures.** It said the delayed scenario was
+"the only one that threatens the outlay"; the calculator returned a CENTRAL case that is itself
+marginally negative and P(negative NPV) = **70%** against a positive ENPV. Advice is free prose —
+no gate reads it against the computed scenario NPVs — so this was caught only by reading the built
+output. **The figures were kept and the prose rewritten**: a positive expected value on a one-shot
+decision that loses money most of the time is the sharpest available statement of what an expected
+value is and is not, and it makes the B1b scepticism requirement land properly.
+
+### Scepticism and commercial acumen are earned, not labelled
+
+Every scepticism tag sits on a narrative requirement that challenges something the candidate has
+just built or been told: Halvard's B1b challenges the appraisal from (i); Tamesis's B4d challenges
+the perpetuity from (i); Castlereagh's B3i refutes two named CFO claims the exhibits contain the
+evidence against. **A candidate cannot honestly be sceptical about a forecast they were never made
+to produce** — that pairing is the reason these tags are defensible.
+
+**Note carried forward:** this does NOT close the PS ROUTING gap (see the correction in the second
+entry above). Case PS tags generate the weak-skill signal; only `acca_drills` answers it. The
+measured drill gap remains 4.
