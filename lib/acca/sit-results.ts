@@ -94,6 +94,8 @@ export function toDebriefRequirements(rows: readonly OrderedSitRow[]): DebriefRe
     marks_awarded: r.technical_marks_awarded,
     band: r.band,
     marker_feedback: r.technical_feedback,
+    // ROUTING ONLY — becomes `practise_area` on weak/competent lines and is never printed.
+    lo_code: r.lo_code,
   }));
 }
 
