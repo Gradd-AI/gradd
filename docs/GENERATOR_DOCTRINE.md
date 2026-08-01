@@ -242,6 +242,69 @@ Restoring the comparative words was necessary-looking and insufficient; the like
 is the "compare in full, quote both figures" instruction inviting a completeness check rather than a
 quality judgement. Recorded as open, not blocking, under P-M2 — it needs a referee, not another round.
 
+## P-T1 — A FACT THREADED TO A CALL THAT DOES NOT SPEAK IS NOT A FIX (ruled 2026-08-01)
+
+**The instance, measured.** The tutor was affirming the inverse rule on a seeded wrong-direction
+answer — "a borrower hedges rising rates by BUYING futures", when a borrower sells — in **4 of 20**
+fresh turns. The cause was found: `answer_schema.params` carries `side` and `direction` as
+code-owned discriminants and nothing read them. The fence was built and threaded into
+**`call2_diagnose`**. The rate went to **12/20. WORSE.**
+
+`call2_diagnose` emits a **12–15 word gap LABEL**. The legs that write what the student actually
+reads — `call3_hint`, `call3_teach` — never saw the discriminant, and with only a terse label to
+work from they **confabulated the rule**. The fence was present, correct, and inert.
+
+**The rule.** In a multi-call pipeline, identify the leg that PRODUCES THE USER-FACING TEXT and
+verify the fact reaches THAT leg. A fact delivered to a classifier, a labeller, a router or any
+call whose output is structurally content-neutral changes nothing a user will ever see. **Then
+measure.** "The fence is wired" is not a claim about behaviour; only a re-measured rate is.
+
+**Corollary.** A rate that moves the WRONG WAY after a fix is the most informative result available
+and must be reported as such, not re-run until it looks better. 4/20 → 12/20 is what located the
+real cause; a second opinion on the same wiring would have located nothing.
+
+## P-T2 — A PROMPT INSTRUCTION OUTRANKS A SUPPLIED FACT (ruled 2026-08-01)
+
+**The instance.** With the fence correctly reaching the speaking leg, the tutor STILL manufactured
+credit: "you've correctly identified the direction — borrowers do buy futures". It was not ignoring
+the fact. The same prompt said:
+
+> "Lead with the ONE specific thing they got right — name the real move, not vague praise"
+
+That **compels** an opening credit on every turn. Handed an answer wrong on the side of the trade,
+the model produced one — by inventing the only thing that would satisfy the instruction. It was
+obeying something stronger than the fact it had been given.
+
+**The rule.** When a supplied fact and a prompt instruction conflict, **CHANGE THE INSTRUCTION. Do
+not add a prohibition.** A prohibition is one more instruction competing with the one already
+winning, and the helpfulness prior breaks the tie against you. Here the praise instruction became
+CONDITIONAL: where code has established a contradiction, the prompt stops asking for an opening
+credit on that axis. Nothing was forbidden; the demand was removed.
+
+**Corollary — removing a leaked label does not close a leak when a PERSONA instructs the model to
+reason in the leaked terms.** The internal taxonomy fix (`lib/acca/teach-demand.ts`) replaced the
+raw `command_verb` / `intellectual_level` strings with a plain-English demand, and the labels stopped
+appearing. It was incomplete: two `call3_*` instruction lines still said "work in the command verb
+and ACCA intellectual level", and `EZRA_SYSTEM` itself told the model that candidates fail "by
+stopping at intellectual level 2 when the verb demanded level 3". **A persona built on a vocabulary
+will reach for that vocabulary** whatever a downstream line says. Sweep the persona and every
+instruction line, not just the data.
+
+### Recorded with them — the hole that made both necessary
+
+`buildGroundingPack` (`lib/acca/tutor-grounding.ts`) read **`components[].working_steps` and
+component labels ONLY**. It never touched **`answer_schema.params`**, which is precisely where the
+calculator puts its settled choices (`side`, `direction`, `quote_direction`). So the drill tutor
+inferred the side of a trade from `model_answer` prose across **57 published AFM drills and 91 APM
+drills**, and the case teach route did not select `answer_schema` at all. The defect was SIGHTED on
+one case; **both paths were fixed together**, because fixing only the sighted path would have left
+the far larger surface exposed and quietly passing.
+
+**Measured after, n=20 fresh turns, hand-read** (the classifier conflates "affirmed the inverse
+rule" with "praised then corrected in one sentence", and that distinction IS the measurement):
+inverse-rule affirmation **4/20 → 0/20** · direction corrected **~6/20 → 17/20** · never adjudicated
+**~10/20 → 3/20** · taxonomy leak **1 sighting → 0/20**.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.
