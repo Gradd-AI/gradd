@@ -269,7 +269,11 @@ async function call3_hint(
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
-    ? `Authored command verb + intellectual level (name these — do not infer):\n${verbLevel}\n\n`
+    // Was "Authored command verb + intellectual level (name these — do not infer)". The model
+    // did name them, and students saw "At ACCA intellectual level 3, where 'calculate' sits…".
+    // The caller now passes a plain-English demand (lib/acca/teach-demand.ts) with no taxonomy
+    // in it, so there is nothing to name; this line no longer asks it to.
+    ? `What this requirement demands (calibrate against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -306,7 +310,7 @@ async function call3_teach(
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
-    ? `Authored command verb + intellectual level (diagnose against these — do not infer):\n${verbLevel}\n\n`
+    ? `What this requirement demands (diagnose against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
   const offerLine = offerReveal
     ? ' As the alternative next move, tell them they can say "show me the full answer" to see exactly how a full-marks answer is built.'
@@ -346,7 +350,7 @@ async function call3_confirm(
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
-    ? `Authored command verb + intellectual level (name what the answer hit — do not infer):\n${verbLevel}\n\n`
+    ? `What this requirement demands (judge what the answer hit against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
@@ -383,7 +387,7 @@ async function completenessCheck(
   verbLevel: string,
 ): Promise<string | null> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
-  const vlLine = verbLevel ? `Command verb + intellectual level: ${verbLevel}\n\n` : '';
+  const vlLine = verbLevel ? `What this requirement demands: ${verbLevel}\n\n` : '';
   try {
     const res = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',

@@ -12,6 +12,7 @@ import { resolvePaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
 import { paperForCase } from '@/lib/acca/mocks';
+import { describeDemand } from '@/lib/acca/teach-demand';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
 // Behind APM_CASES (default OFF). Flag off → 404. Runs the EXISTING withhold engine
@@ -353,14 +354,28 @@ export async function POST(request: Request): Promise<Response> {
   const fullContext       = context;
   const storedModelAnswer = (req.model_answer as string | null) ?? '';
 
-  const verbLevel = [
-    req.command_verb       ? `Command verb (authored): ${req.command_verb as string}` : '',
-    req.intellectual_level ? `ACCA intellectual level demanded (authored): ${req.intellectual_level}` : '',
-  ].filter(Boolean).join('\n');
+  // TAXONOMY FENCE (2026-08-01). This used to build "Command verb (authored): calculate" +
+  // "ACCA intellectual level demanded (authored): 3" and hand them to the engine, whose prompt
+  // then told the model to NAME them. It did, and students were shown "At ACCA intellectual
+  // level 3, where 'calculate' sits…" — twice, on two different cases. The sit route already
+  // withholds both fields because a real exam gives no such steer; the teaching loop was
+  // speaking them aloud.
+  //
+  // The raw labels now never enter the prompt: describeDemand translates them into what the
+  // requirement DEMANDS, in plain words. Structural, not instructed — there is no code left to
+  // leak, so no instruction is needed to stop it leaking. The fields are still READ, because the
+  // demand is real calibration; reading is not serving.
+  const verbLevel = describeDemand(
+    req.command_verb as string | null,
+    req.intellectual_level as number | null,
+  );
 
+  // `marks_guide` on a CASE requirement is an INTEGER allocation (13), not a list of criteria.
+  // The old label said "criteria that earn marks" and then printed a bare number, which told the
+  // model to look for criteria that were never there. Describe it as what it is.
   const markScheme = [
     verbLevel,
-    req.marks_guide ? `Marks guidance (authored — criteria that earn marks):\n${req.marks_guide as string}` : '',
+    req.marks_guide ? `Marks available for this requirement: ${req.marks_guide as number} — use this to judge how much depth is expected, and do not state it to the candidate.` : '',
   ].filter(Boolean).join('\n');
 
   // ── 5. Establish model answer + seal continuity (per-requirement seal) ──

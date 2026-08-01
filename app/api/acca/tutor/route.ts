@@ -39,6 +39,7 @@ import {
   type GroundingPack,
 } from '@/lib/acca/tutor-grounding';
 import { cacheBlock, cachePrefix } from '@/lib/acca/prompt-cache';
+import { describeDemand } from '@/lib/acca/teach-demand';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -363,7 +364,7 @@ async function call3_hint(
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
-    ? `Authored command verb + intellectual level (name these — do not infer):\n${verbLevel}\n\n`
+    ? `What this requirement demands (calibrate against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
   // PERSONA-HARDENING (2026-07-21): fixes finding 4 (HINT-BASE-WOBBLE — a hint that hedges between
   // two possible conventions instead of declaring the drill's own stated one) and constraint (g)
@@ -418,7 +419,7 @@ async function call3_teach(
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
-    ? `Authored command verb + intellectual level (diagnose against these — do not infer):\n${verbLevel}\n\n`
+    ? `What this requirement demands (diagnose against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
   // PERSONA-HARDENING (2026-07-21): conventions only (Tier B) — a second-miss teach-through can
   // ALSO be the site of a convention-softening moment ("either form works"); misconceptionLead is
@@ -490,7 +491,7 @@ async function call3_confirm(
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
-    ? `Authored command verb + intellectual level (name what the answer hit — do not infer):\n${verbLevel}\n\n`
+    ? `What this requirement demands (judge what the answer hit against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
   // Post-success reveal nudge — the student has earned the model answer by solving; offer the
   // phrase that surfaces it for comparison (the reveal itself is still the ONLY place the
@@ -983,10 +984,14 @@ export async function POST(request: Request): Promise<Response> {
   //    from the student-facing prompts rather than guarded by a "don't leak" instruction.
   // Each line is omitted when its column is null → pre-metadata drills degrade to today's
   // inference behaviour rather than injecting an empty block.
-  const verbLevel = [
-    drill.command_verb       ? `Command verb (authored): ${drill.command_verb as string}` : '',
-    drill.intellectual_level ? `ACCA intellectual level demanded (authored): ${drill.intellectual_level}` : '',
-  ].filter(Boolean).join('\n');
+  // TAXONOMY FENCE — see lib/acca/teach-demand.ts. The leak was SIGHTED on the case tutor, but
+  // this drill path built the identical string and fed it to the identical prompt line, so it
+  // carried the identical defect; fixing only the sighted path would have left the larger surface
+  // (57 published AFM drills + 91 APM) leaking on the next sampling.
+  const verbLevel = describeDemand(
+    drill.command_verb as string | null,
+    drill.intellectual_level as number | null,
+  );
 
   const markScheme = [
     verbLevel,
