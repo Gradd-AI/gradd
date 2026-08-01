@@ -18,6 +18,10 @@ import { getMockPaper, getMockPapers, type MockPaper } from '@/lib/acca/mocks';
 import { resolvePaper } from '@/lib/acca/paper';
 
 export interface AttemptRow {
+  /** Surrogate key added by migration 20260801120000 so an attempt can be REFERENCED.
+   *  acca_case_progress.attempt_id points at this, which is what makes a sit row
+   *  distinguishable from practice work by construction. */
+  id: string;
   mock_id: string;
   started_at: string;
   ends_at: string;
@@ -31,16 +35,35 @@ type Queryable = {
   from: (table: string) => any;   // eslint-disable-line @typescript-eslint/no-explicit-any
 };
 
-/** Which hint wins, as a PURE rule — an explicit mock_id, then an open attempt, then the
- *  paper query param. An open sit outranks a query hint so a refresh mid-paper always
- *  returns to the paper being sat, never to whatever `?paper=` happens to say. */
-export type ResolutionSource = 'mock_id' | 'open_attempt' | 'paper_param';
+/**
+ * Which hint wins, as a PURE rule.
+ *
+ * ── CORRECTED 2026-08-01: AN EXPLICIT `paper=` OUTRANKS AN OPEN ATTEMPT ─────
+ * The order was mock_id → open attempt → paper param, justified as "an open sit outranks a
+ * query hint, so a refresh mid-paper always returns to the paper being sat". That reasoning
+ * holds for a BARE GET, where there is no hint to respect and the open attempt is the only
+ * thing that knows what the student is doing. It is wrong the moment the caller NAMES a paper:
+ * `/acca/afm/mock` asks for AFM explicitly, and returning APM because an old APM attempt is
+ * still open is a cross-paper content leak — the student is served the wrong paper's scenarios,
+ * requirements and marks.
+ *
+ * So the rule is now: an EXPLICIT hint of either kind wins, and the open attempt is the
+ * fallback for a bare request. `mock_id` still outranks `paper` because it is the more specific
+ * of the two explicit hints.
+ *
+ * `paperParam` must be the RAW query/body value, not the result of `resolvePaper()` — that
+ * function defaults absent input to 'APM', which would make every bare request look explicit
+ * and defeat the open-attempt fallback entirely.
+ */
+export type ResolutionSource = 'mock_id' | 'paper_param' | 'open_attempt';
 
 export function resolveOrder(
   mockId: string | null,
   openAttemptMockId: string | null,
+  paperParam?: string | null,
 ): ResolutionSource {
   if (mockId) return 'mock_id';
+  if (paperParam) return 'paper_param';
   if (openAttemptMockId) return 'open_attempt';
   return 'paper_param';
 }
@@ -54,7 +77,7 @@ export async function attemptFor(
 ): Promise<AttemptRow | null> {
   const { data } = await supabase
     .from('acca_mock_attempts')
-    .select('mock_id, started_at, ends_at, completed, completed_at')
+    .select('id, mock_id, started_at, ends_at, completed, completed_at')
     .eq('user_id', userId)
     .eq('mock_id', mockId)
     .order('started_at', { ascending: false })
@@ -70,7 +93,7 @@ export async function openAttemptAnyPaper(
 ): Promise<AttemptRow | null> {
   const { data } = await supabase
     .from('acca_mock_attempts')
-    .select('mock_id, started_at, ends_at, completed, completed_at')
+    .select('id, mock_id, started_at, ends_at, completed, completed_at')
     .eq('user_id', userId)
     .eq('completed', false)
     .order('started_at', { ascending: false })
@@ -89,10 +112,13 @@ export interface ResolvedPaper {
 
 /**
  * Which paper is this request about?
- *   1. explicit `mock_id`  — must exist in the registry
- *   2. the caller's open attempt — so a refresh mid-sit never switches paper
- *   3. `paper=` (APM default via resolvePaper) — the first paper for that paper code
+ *   1. explicit `mock_id`   — the most specific hint; must exist in the registry
+ *   2. explicit `paper=`    — the caller NAMED a paper; it wins over any open attempt
+ *   3. the caller's open attempt — the fallback for a BARE request, so a refresh with no
+ *                             hint still returns to the paper being sat
  * Returns null when the hint names nothing servable, which callers turn into a 404.
+ *
+ * Step 2 was previously step 3. See `resolveOrder` for why that was a cross-paper leak.
  */
 export async function resolvePaperConfig(
   supabase: Queryable,
@@ -106,11 +132,20 @@ export async function resolvePaperConfig(
       ? { config, attempt: await attemptFor(supabase, userId, config.id), source: 'mock_id' }
       : null;
   }
+  // RAW, not resolvePaper() — that defaults absent input to 'APM', which would make every
+  // bare request look explicit and permanently shadow the open-attempt fallback below.
+  const paperParam = url.searchParams.get('paper');
+  if (paperParam) {
+    const config = getMockPapers(resolvePaper(paperParam))[0];
+    return config
+      ? { config, attempt: await attemptFor(supabase, userId, config.id), source: 'paper_param' }
+      : null;
+  }
   const open = await openAttemptAnyPaper(supabase, userId);
   if (open) {
     return { config: getMockPaper(open.mock_id)!, attempt: open, source: 'open_attempt' };
   }
-  const config = getMockPapers(resolvePaper(url.searchParams.get('paper')))[0];
+  const config = getMockPapers(resolvePaper(null))[0];
   return config
     ? { config, attempt: await attemptFor(supabase, userId, config.id), source: 'paper_param' }
     : null;
