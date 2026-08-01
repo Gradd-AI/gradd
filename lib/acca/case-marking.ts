@@ -545,28 +545,33 @@ export function apportionTechnicalMarks(
 // the whole case. The model now sees no id at all: it echoes a SHORT ORDINAL, and code owns the
 // ordinal → requirement_id mapping. Measured over 50 calls, that removed the slip class outright.
 //
-// max_tokens 3000 (was 2000): a 4-requirement batch that also cites its evidence per band runs
-// ~700–1400 output tokens, and a truncated response is unbalanced JSON the extractor must (and
-// does) reject. The ceiling is headroom against that, not a target.
-const TECHNICAL_MAX_TOKENS = 3000;
+// max_tokens 8000 (was 3000, originally 2000). Raised WITH the judgement/feedback split, not
+// after it: each requirement now emits TWO prose fields instead of one, so a 4-requirement batch
+// that ran ~700–1400 output tokens runs roughly double. A truncated response is unbalanced JSON
+// the extractor must (and does) reject, which would surface during calibration as a parse failure
+// and confound the band reading — the one thing a calibration run must not have to explain. The
+// ceiling is headroom, not a target; billing follows tokens actually generated, not this number.
+const TECHNICAL_MAX_TOKENS = 8000;
 
 async function judgeTechnicalOnce(
   paper: AccaPaper, context: string, reqs: TechnicalRequirementInput[], attempt = 1,
-): Promise<{ index: number; band: TechnicalBand; feedback: string }[]> {
+): Promise<{ index: number; judgement: string; band: TechnicalBand; feedback: string }[]> {
   const contextLine = context ? `Case scenario and exhibits (shared by every requirement):\n${context}\n\n` : '';
-  // STRUCTURAL, not instructed (docs/TEACHING_ARCHITECTURE.md). The block is given NO NAME the
-  // model can echo. Two rounds proved this matters: labelling it "the marking standard" produced
-  // "matching the model answer exactly" and "vs model's €31.3m"; renaming it "Correct treatment"
-  // produced "align with the correct treatment" — the model simply echoed whatever noun phrase it
-  // was handed. So it is delimited rather than titled, and told explicitly it has no usable name.
+  // THE COMPARATIVE FRAME IS BACK, AND NAMED. Rounds 1 and 2 both tried to protect the candidate
+  // from the reference by degrading it in the prompt — round 1 retitled it, round 2 stripped its
+  // name entirely and forbade the word "matches". Both MOVED BANDS off the recorded baseline,
+  // which is the finding: the marker was not merely borrowing the label for its prose, it was
+  // using the comparison to decide the band. Take the comparison away and it grades differently.
+  //
+  // So the fence moved. The reference keeps its full baseline framing — "the marking standard — a
+  // full-marks response" — and the marker may compare against it as explicitly as it likes, but
+  // ONLY inside `judgement`, which the candidate never sees. `feedback` is derived from
+  // `judgement` afterwards and carries the class ban. Field separation, not prompt degradation.
   const blocks = reqs
     .map((r, i) =>
       `Requirement ${i + 1} — ${r.label}\n` +
       `Question: ${r.question}\n` +
-      `<<<PRIVATE — NOT VISIBLE TO THE CANDIDATE. Judge against this, then discard it. It has no ` +
-      `name you may use: do not call it a treatment, an answer, a standard, a reference or a ` +
-      `model, and do not say anything "matches" it. Convert it into plain statements of fact about ` +
-      `the candidate's own work.>>>\n${r.model_answer}\n<<<END PRIVATE>>>\n\n` +
+      `Correct answer (the marking standard — a full-marks response):\n${r.model_answer}\n\n` +
       `Candidate's answer:\n${r.final_answer}`,
     )
     .join('\n\n---\n\n');
@@ -581,22 +586,35 @@ async function judgeTechnicalOnce(
     '- "competent": the right approach but a material error, omission, or an incomplete answer.\n' +
     '- "weak": a recognisable attempt in the right general area but largely incorrect or superficial.\n' +
     '- "nothing": earns no credit — irrelevant, absent, or entirely wrong.\n' +
-    'Judge each requirement on its ABSOLUTE technical correctness against ITS OWN correct treatment. Do ' +
-    'not grade on a curve, and do not assume the candidate is right. ' +
-    // ── FEEDBACK CONTRACT — the `feedback` string is READ BY THE CANDIDATE ──
-    // It is not a note to a moderator. Before this contract it was written in the third person,
-    // cited an invisible model answer, and ran to 1,006 characters on requirements where nothing
-    // needed to change.
-    'THE `feedback` STRING IS SHOWN TO THE CANDIDATE. It is not a note to a moderator. Write it to ' +
-    'these rules:\n' +
+    'Judge each requirement on its ABSOLUTE technical correctness against ITS OWN marking standard. Do ' +
+    'not grade on a curve, and do not assume the candidate is right.\n\n' +
+    // ── THE SPLIT — two prose fields with different readers and opposite rules ──
+    // `judgement` is the marker's own note: private, comparative, free to name the standard.
+    // `feedback` is what the candidate reads: derived from the judgement, and it may not point at
+    // anything the candidate cannot see. Emitting judgement FIRST means the band is decided by an
+    // explicit comparison, and the candidate-facing string is a rewrite of a decision already made
+    // — not the thing doing the deciding.
+    'YOU WRITE TWO SEPARATE STRINGS PER REQUIREMENT. They have DIFFERENT READERS and OPPOSITE RULES. ' +
+    'Do not merge them and do not copy one into the other.\n\n' +
+    'FIELD 1 — `judgement`. PRIVATE. The candidate NEVER sees this; it is your own marking note. ' +
+    'Compare the candidate\'s answer against the marking standard EXPLICITLY and in full: name what ' +
+    'the standard requires, state what the candidate did and did not reproduce, and quote both ' +
+    'figures where they differ. You MAY name the marking standard, say a figure matches it, and ' +
+    'refer to it as much as you need. Decide the band HERE, and end with the specific point that ' +
+    'decided it. Write this FIRST, before you choose the band.\n\n' +
+    'FIELD 2 — `band`. Follows from your judgement. One value from the list above.\n\n' +
+    'FIELD 3 — `feedback`. SHOWN TO THE CANDIDATE. It is not a note to a moderator. Take the ' +
+    'findings you just made in `judgement` and re-express them as plain statements about the ' +
+    'candidate\'s own work. Same findings, same band, different reader. Write it to these rules:\n' +
     '1. SECOND PERSON, addressed to them. "You ungear the peer beta correctly…" — never "The ' +
     'candidate…", never "the answer shows…".\n' +
-    '2. NEVER POINT AT ANYTHING THEY CANNOT SEE. This is a CLASS ban, not a list of banned words: ' +
-    'no document, standard, reference, model, scheme, source or "provided" text may be mentioned, ' +
-    'HOWEVER NAMED. Specifically forbidden, and anything like them: "the model answer", "the ' +
-    'marking standard", "the correct answer", "the correct treatment", "the reference", "the ' +
-    'solution", "the mark scheme", "as provided", "per the standard". Do not say a figure "matches" ' +
-    'or "aligns with" anything — there is nothing visible for it to match.\n' +
+    '2. NEVER POINT AT ANYTHING THEY CANNOT SEE. The marking standard exists in your `judgement`; ' +
+    'it does NOT exist in `feedback`. This is a CLASS ban, not a list of banned words: no document, ' +
+    'standard, reference, model, scheme, source or "provided" text may be mentioned, HOWEVER NAMED. ' +
+    'Specifically forbidden, and anything like them: "the model answer", "the marking standard", ' +
+    '"the correct answer", "the correct treatment", "the reference", "the solution", "the mark ' +
+    'scheme", "as provided", "per the standard". Do not say a figure "matches" or "aligns with" ' +
+    'anything — from where the candidate sits there is nothing visible for it to match.\n' +
     '   State correctness as PLAIN FACT about their own work: "your WACC of 9.59% is correct", ' +
     '"the closing futures price is 94.85, not the 95.00 you used". NEVER "this matches the model" ' +
     'or "all figures align with the correct treatment".\n' +
@@ -606,15 +624,18 @@ async function judgeTechnicalOnce(
     'wrong decision, the wrong total). Where nothing was lost, say what was right. Never pad and ' +
     'never truncate a diagnosis to hit a length.\n' +
     '4. NEVER refer to another requirement, earlier or later — each one is read on its own.\n' +
-    '5. No praise for its own sake, no encouragement, no grade prediction.\n' +
-    'DISCIPLINE: name the specific point that decided the band. No band without a named reason. ' +
-    'Return ONLY a JSON array, no prose, no code fences: ' +
-    '[{ "index": 1, "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — one ' +
-    'object per requirement, where index is the REQUIREMENT NUMBER shown above. Use the numbers.';
+    '5. No praise for its own sake, no encouragement, no grade prediction.\n\n' +
+    'DISCIPLINE: no band without a named reason, stated in `judgement`. ' +
+    'Return ONLY a JSON array, no prose, no code fences, with the keys in THIS ORDER: ' +
+    '[{ "index": 1, "judgement": "...", "band": "exemplary|strong|competent|weak|nothing", ' +
+    '"feedback": "..." }] — one object per requirement, where index is the REQUIREMENT NUMBER ' +
+    'shown above. Use the numbers. Every object must carry all four keys, judgement first.';
 
   const userContent =
     contextLine + `Requirements to mark:\n\n${blocks}\n\n` +
-    'Judge each requirement against its own correct answer and assign its band. Return ONLY the JSON array.';
+    'For each requirement: write your private `judgement` comparing the answer against its marking ' +
+    'standard, assign the `band` that judgement supports, then write the candidate-facing ' +
+    '`feedback`. Return ONLY the JSON array.';
 
   let raw: string;
   let meta: { stop_reason: string | null; input_tokens: number | null; output_tokens: number | null } = { stop_reason: null, input_tokens: null, output_tokens: null };
@@ -638,11 +659,17 @@ async function judgeTechnicalOnce(
     if (!Array.isArray(arr)) throw new Error('not an array');
     const out = arr.map((o) => {
       const idx = typeof o?.index === 'number' ? o.index : Number(o?.index);
+      const judgement = typeof o?.judgement === 'string' ? o.judgement.trim() : '';
       const band = typeof o?.band === 'string' ? o.band.trim().toLowerCase() : '';
       const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
       if (!Number.isInteger(idx) || idx < 1 || idx > reqs.length) throw new Error(`index out of range: ${String(o?.index)}`);
       if (!isTechnicalBand(band)) throw new Error(`invalid band "${band}"`);
-      return { index: idx, band, feedback };
+      // A MISSING judgement IS A PARSE FAILURE, deliberately. The whole point of the split is that
+      // the band is decided by an explicit comparison written down first; a response that skipped
+      // straight to a band did not do that, and silently accepting it would hand back exactly the
+      // ungrounded band the split exists to prevent. Retried like any other parse failure.
+      if (!judgement) throw new Error('missing judgement');
+      return { index: idx, judgement, band, feedback };
     });
     if (out.length === 0) throw new Error('empty');
     return out;
@@ -687,6 +714,13 @@ export async function judgeTechnicalMarking(input: JudgeTechnicalMarkingInput): 
   if (attempted.length > 0) {
     const judged = await withParseRetry('judgeTechnicalOnce', (attempt) => judgeTechnicalOnce(paper, context, attempted, attempt));
     // ordinal → requirement_id is owned HERE, in code. The model never sees an id.
+    //
+    // `j.judgement` IS DROPPED ON THIS LINE, and that is the whole containment. It is the private
+    // marking note — it names the marking standard and quotes it freely — so it must not reach
+    // TechnicalMarkingResult, which is what gets persisted to acca_case_progress.technical_feedback
+    // and rendered in the debrief. Dropping it structurally, at the one place the model's output
+    // becomes the result, beats instructing the model not to leak: there is no path from here to
+    // the student for it to leak along.
     for (const j of judged) {
       const r = attempted[j.index - 1];
       if (r) bandById.set(r.requirement_id, { band: j.band, feedback: j.feedback });
