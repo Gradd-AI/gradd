@@ -63,10 +63,18 @@ async function main() {
     .from('acca_cases').select('id, title, status, published, mock_only').eq('paper_code', 'AFM');
   if (aErr) throw aErr;
   const approved = (all ?? []).filter((c) => c.status === 'approved');
-  const dbSet = new Set(approved.map((c) => String(c.id).slice(0, 4) === 'aa00' ? String(c.id).slice(-4) : String(c.id).slice(-4)));
+
+  // THE KEY MUST DISCRIMINATE THE RANGE, NOT JUST THE SUFFIX (fixed 2026-08-01, before the
+  // second flip). The first version keyed on `id.slice(-4)`. The mock papers live in the aa…
+  // range and the practice cases in ac…, and they COLLIDE on that suffix: mock Brecon is
+  // aa000000-…-b101 and practice Halvard is ac000000-…-b101. Two colliding ids collapse into one
+  // Set entry, so an approved row with no journal entry could hide behind a journalled one — the
+  // exact leak this reconcile exists to catch, defeated by the key it was keyed on.
+  const keyOf = (id: string) => `${id.slice(0, 2)}:${id.slice(-4)}`;
+  const dbSet = new Set(approved.map((c) => keyOf(String(c.id))));
 
   line('\n  1. RECONCILE — DB approved-set vs the journal reviewed-set');
-  for (const c of approved) line(`     DB approved: ${String(c.id).slice(-4)}  ${c.title}  (mock_only=${c.mock_only})`);
+  for (const c of approved) line(`     DB approved: ${keyOf(String(c.id))}  ${c.title}  (mock_only=${c.mock_only})`);
   line(`     journalled : ${JOURNALLED.join(', ') || '(none supplied)'}`);
   const unjournalled = [...dbSet].filter((k) => !JOURNALLED.includes(k));
   const missing = JOURNALLED.filter((k) => !dbSet.has(k));
