@@ -48,6 +48,10 @@ export interface CaseMarkRunInput {
    *  reached or not. Only the sit results endpoint passes this; see lib/acca/case-sit.ts for
    *  why an unreached requirement must stay unreached rather than being back-filled blank. */
   attemptClosed?: boolean;
+  /** WHICH SITTING is being marked. Required in sit mode: progress rows are scoped to it, so
+   *  practice work on the same case is invisible to marking and cannot be marked as a sit.
+   *  Ignored in practice mode, which has no attempt. */
+  attemptId?: string | null;
 }
 
 export interface CaseMarkRunOk {
@@ -89,7 +93,14 @@ interface RequirementRow {
  * preserved in the `error` string exactly as the route used to emit it.
  */
 export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkRunResult> {
-  const { supabase, userId, caseId, paper, sitting, attemptClosed = false } = input;
+  const { supabase, userId, caseId, paper, sitting, attemptClosed = false, attemptId = null } = input;
+
+  // A sit MUST name its sitting. Without it, progress rows cannot be scoped and marking would
+  // fall back to reading whatever rows exist for the case — which is exactly the defect this
+  // change closes: practice work marked as a sat paper.
+  if (sitting && !attemptId) {
+    return { ok: false, status: 409, error: 'sit marking requires an attempt_id' };
+  }
 
   // ── Gate the case (same serving gate as drills/turns) ──
   const { data: caseRow, error: caseErr } = await supabase
@@ -122,20 +133,27 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
   }
   const requirements = reqsRaw as RequirementRow[];
 
-  // ── This user's progress ──
-  const { data: progressRaw } = await supabase
+  // ── This user's progress, SCOPED TO THE SITTING ──
+  // In sit mode only the rows written during THIS attempt are visible. Practice work on the
+  // same case has attempt_id NULL and is invisible here, which is the whole point: it is real
+  // work but it is not this paper. In practice mode the scope is the practice rows (attempt_id
+  // IS NULL), so a sit's rows never leak into a practice completion check either.
+  let progressQuery = supabase
     .from('acca_case_progress')
-    .select('requirement_id, passed, final_answer')
+    .select('requirement_id, passed, final_answer, submitted_at')
     .eq('user_id', userId)
     .eq('case_id', caseId);
+  progressQuery = sitting ? progressQuery.eq('attempt_id', attemptId) : progressQuery.is('attempt_id', null);
+  const { data: progressRaw } = await progressQuery;
 
-  const progressByReq = new Map<string, { passed: boolean; final_answer: string | null }>();
+  const progressByReq = new Map<string, { passed: boolean; final_answer: string | null; submitted_at: string | null }>();
   for (const p of (progressRaw ?? []) as Array<{
-    requirement_id: string; passed: boolean | null; final_answer: string | null;
+    requirement_id: string; passed: boolean | null; final_answer: string | null; submitted_at: string | null;
   }>) {
     progressByReq.set(p.requirement_id, {
       passed: p.passed === true,
       final_answer: p.final_answer ?? null,
+      submitted_at: p.submitted_at ?? null,
     });
   }
 
@@ -144,7 +162,11 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
     sitting,
     requirements.map((r) => {
       const p = progressByReq.get(r.id);
-      return { final_answer: p?.final_answer ?? null, passed: p?.passed ?? false };
+      return {
+        final_answer: p?.final_answer ?? null,
+        passed: p?.passed ?? false,
+        submitted_at: p?.submitted_at ?? null,
+      };
     }),
     attemptClosed,
   );

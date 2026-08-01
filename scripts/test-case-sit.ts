@@ -12,7 +12,16 @@ function ok(name: string, cond: boolean) {
   console.log(`${cond ? 'PASS' : 'FAIL'} :: ${name}`);
 }
 
-const r = (final_answer: string | null, passed: boolean): ReqGateState => ({ final_answer, passed });
+// A SIT-submitted requirement: it carries the sit's own timestamp. `submitted_at` is written
+// ONLY by the sit write path, which is what makes it the discriminator.
+const r = (final_answer: string | null, passed: boolean): ReqGateState =>
+  ({ final_answer, passed, submitted_at: final_answer === null ? null : '2026-08-01T09:00:00Z' });
+
+// A PRACTICE requirement: real work, real final_answer, judged correct — and NO submitted_at,
+// because it was never submitted to a sitting. This is the row that used to satisfy the sit
+// gate and mark an unsat paper 80/80.
+const practice = (final_answer: string): ReqGateState =>
+  ({ final_answer, passed: true, submitted_at: null });
 
 // ── shouldRunTeachLoop — practice teaches, a sit does not ──
 ok('practice (sitting=false) runs the teach loop', shouldRunTeachLoop(false) === true);
@@ -25,8 +34,23 @@ ok('sit: an all-blank paper is still ready (marks as it stands, all zero)', case
 {
   const g = caseMarkReady(true, [r('answer', false), r(null, false)]);
   ok('sit: a requirement with NO recorded answer (null) blocks', g.ready === false);
-  ok('sit: the block reason names the missing count', /1 requirement\(s\) have no recorded answer/.test(g.reason ?? ''));
+  ok('sit: the block reason names the missing count', /1 requirement\(s\) were not submitted in this sitting/.test(g.reason ?? ''));
 }
+
+// ── THE ROOT DEFECT (fixed 2026-08-01) — PRACTICE WORK IS NOT A SAT PAPER ────
+// The gate used to test `final_answer != null`, which the practice teach loop satisfies: it
+// writes the accepted answer on a pass. A user who had practised the three APM mock cases in
+// July opened the mock and it marked itself 80/80 technical and 20/20 PS on a paper never sat.
+// These are the assertions that would have caught it.
+ok('sit: PRACTICE work (final_answer, passed, no submitted_at) does NOT satisfy the sit gate',
+  caseMarkReady(true, [practice('a real 2,674-character answer'), practice('another')]).ready === false);
+ok('sit: ONE practice requirement among submitted ones still blocks',
+  caseMarkReady(true, [r('answer', false), practice('practised earlier')]).ready === false);
+ok('sit: the reason says NOT SUBMITTED, not "no recorded answer" — the answer exists',
+  /were not submitted in this sitting/.test(
+    caseMarkReady(true, [r('a', false), practice('x')]).reason ?? ''));
+ok('sit: a blank SUBMISSION is still ready — it was submitted, it just says nothing',
+  caseMarkReady(true, [r('', false), r('', false)]).ready === true);
 ok('sit: `passed` is IRRELEVANT to the sit gate (unset everywhere, still ready)', caseMarkReady(true, [r('a', false), r('b', false)]).ready === true);
 
 // ── PRACTICE gate: UNCHANGED — every requirement must be judged correct ──
