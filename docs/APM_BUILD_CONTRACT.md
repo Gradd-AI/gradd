@@ -3435,3 +3435,58 @@ implementation was left behind. The approved design stands: `build*ModelAnswer` 
 computed verdict sentence, the advice slot makes no verdict or count claims, and tier-1
 labelled-verdict + count-claim checks are a backstop with registration discipline. **No phrase
 table as the primary defence.**
+
+## 2026-08-01 (sixth) — DIRECTION FENCE MERGED (P-T1/P-T2) + ADVICE-vs-COMPUTED BUILT
+
+### Direction fence — merged, measured, doctrine banked
+
+`fix/tutor-direction-fence` merged. Hand-read n=20: inverse-rule affirmation **4/20 → 0/20**,
+direction corrected **~6/20 → 17/20**, never adjudicated **~10/20 → 3/20**, taxonomy leak
+**1 → 0/20**. Two standing rules in `GENERATOR_DOCTRINE.md`:
+
+- **P-T1 — a fact threaded to a call that does not speak is not a fix.** The fence into
+  `call2_diagnose` alone took the rate 4/20 → **12/20, worse**: that call emits a 12–15 word label,
+  and the legs that write what the student reads confabulated the rule. Verify the fact reaches the
+  SPEAKING leg, then measure. A rate that moves the wrong way is the most informative result
+  available and is what located the real cause.
+- **P-T2 — a prompt instruction outranks a supplied fact.** "Lead with the ONE specific thing they
+  got right" COMPELLED manufactured credit. Change the instruction; do not add a prohibition — a
+  prohibition is one more instruction competing with the one already winning. Corollary: removing a
+  leaked label does not close a leak when a PERSONA instructs the model to reason in the leaked
+  terms (`EZRA_SYSTEM` still said candidates fail "by stopping at intellectual level 2").
+
+Recorded with them: `buildGroundingPack` read `components[].working_steps` and labels only, never
+`answer_schema.params`, so **57 AFM + 91 APM published drills** inferred direction from prose. Both
+paths fixed together.
+
+### ADVICE-vs-COMPUTED — built as approved
+
+**PRIMARY is injection.** `buildEnpvModelAnswer` stated the verdict and P(negative) but never HOW
+MANY scenarios destroy value — so an author filled the vacuum from memory and got it wrong on
+Halvard. The builder now states the count. Same discipline as fxhedge/irhedge's injected
+quote/convention sentences.
+
+**BACKSTOP is `lib/acca/advice-checks.ts`, and it is NOT a phrase table.** What is checked is the
+**closed grammatical class of English quantifiers** — "the only", "neither", "both", "all",
+"two of" — never the claim. "Threatens the outlay" and "loses money" are two phrasings of one claim
+and no table enumerates them; the quantifiers are finite. The check reads HOW MANY the prose
+asserts, never WHAT.
+
+**REGISTRATION DISCIPLINE:** a family declares its facts or calls `noAdviceChecks(reason)`, which
+REFUSES an empty reason. An unregistered family returns an explicit `not_registered` issue rather
+than passing clean — **uncovered looks uncovered instead of looking correct.**
+
+17 fixtures; the test set is the two REAL failures, not invented ones. The verbatim Halvard
+sentence is caught, the shipped correction passes, and a losing method named outside a
+recommendation sentence passes because explaining why it lost is legitimate teaching.
+
+### 🔸 OPEN — the injection creates a REGENERATION DRIFT on one published row
+
+`ac000000-…-b101` **Halvard Marine ASA is published**, and its stored `model_answer` predates the
+injected count line. The code now produces output the live row does not contain. **Nothing was
+written to the published row** — that is a P-DB2 decision, not a side effect of a library change.
+Two honest options: patch the row through the authoring path (P-DB2, explicit), or leave it and
+accept that this one row lags the builder until it is next re-authored. **Recorded rather than
+resolved**, because a library change quietly rewriting published content is exactly what the
+prose-ownership rule exists to prevent. No other published row is affected — no other case or drill
+uses the enpv builder.
