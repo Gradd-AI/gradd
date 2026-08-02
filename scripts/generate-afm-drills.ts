@@ -3371,11 +3371,28 @@ async function regateNarrativeDraft(anthropic: Anthropic, draftPath: string) {
   const { drill, skill } = draftToGateInput(parsed.row);
   console.log(`Re-gating ${parsed.plan_id ?? draftPath} — ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · declared skill: ${skill}`);
   const report = await runNarrativeGates(drill, makeAnthropicCriterionGrader(anthropic), skill);
-  report.lines.forEach((l) => console.log(`  ${l}`));
-  parsed.gate_lines = report.lines;
+  const lines = [...report.lines];
+
+  // P4 + P7 ON THE TEACHING LEG. runNarrativeGates covers N1–N6, which are all about the RUBRIC and
+  // the golden pair — none of them reads `hint` or `full_reveal`. Those two fields are linted in the
+  // authoring loop (P4 jurisdiction/frozen-facts, P7 misconception-lead) and were NOT re-run here,
+  // so a hand edit to a teaching field could previously be reported "re-gated GREEN" by a check that
+  // had never looked at the field that changed. Added 2026-08-02 when D9's full_reveal was rewritten.
+  const rev = { hint: String(parsed.row.hint ?? ''), full_reveal: String(parsed.row.full_reveal ?? '') };
+  const p4 = [
+    ...lintJurisdiction(rev, { context: drill.context_text }),
+    ...lintFrozenMarketFacts(rev),
+  ];
+  lines.push(`P4 jurisdiction / frozen-facts (hint + full_reveal): ${p4.length === 0 ? 'PASS' : 'FAIL — ' + p4.map((i) => `[${i.field}] ${i.message}`).join(' · ')}`);
+  const p7 = lintMisconceptionLead(rev.full_reveal);
+  lines.push(`P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): ${p7.length === 0 ? 'PASS' : 'FAIL — ' + p7.map((i) => i.message).join(' · ')}`);
+
+  const ok = report.ok && p4.length === 0 && p7.length === 0;
+  lines.forEach((l) => console.log(`  ${l}`));
+  parsed.gate_lines = lines;
   writeFileSync(draftPath, JSON.stringify(parsed, null, 2), 'utf8');
-  console.log(report.ok ? `\n✓ ${parsed.plan_id} re-gated GREEN — draft updated` : `\n✗ ${parsed.plan_id} re-gate FAILED:\n${report.feedback}`);
-  return report.ok;
+  console.log(ok ? `\n✓ ${parsed.plan_id} re-gated GREEN (N1–N6 + P4 + P7) — draft updated` : `\n✗ ${parsed.plan_id} re-gate FAILED`);
+  return ok;
 }
 
 /**
