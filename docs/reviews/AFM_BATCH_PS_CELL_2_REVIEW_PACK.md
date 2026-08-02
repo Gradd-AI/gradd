@@ -1,6 +1,26 @@
 # AFM PS-cell batch 2 — review pack (pipeline #2, discursive)
 
-**INSERTED 2026-08-02 as `candidate`/`published=false`. NOT PUBLISHED — the flip is a separate GATE-P call.** 3 discursive drills, `paper_code=AFM`, `mode=discursive`, `rubric_version=narrative_v1`. Gated on the REAL constrained grader: **N1–N6 green**, plus P4 jurisdiction/frozen-facts and P7 misconception-lead. Rows are byte-identical to `docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`.
+**✅ LIVE — published via GATE-P, 2026-08-02.** 3 discursive drills, `paper_code=AFM`, `mode=discursive`, `rubric_version=narrative_v1`, **`status=approved`/`published=true`**. Gated on the REAL constrained grader: **N1–N6 green**, plus P4 jurisdiction/frozen-facts and P7 misconception-lead. Rows byte-identical to `docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`.
+
+**The flip, with its guards.** Reconcile FIRST: 64 AFM rows, 60 approved+published, 4 candidates — the 3 targets plus `47c9d5ce`, **ALLOW-LISTED by registration rather than hard-stopped**, which is what the permanent-candidate disposition was written down for; an *unregistered* candidate still hard-stops. Zero approved-but-unpublished and zero published-but-unapproved. Snapshot before the write (`docs/rollbacks/AFM_ps_cell_2_publish_flip_20260802.json`). Flipped by **explicit id**, each guarded `.eq('status','candidate').eq('published',false)`. **P-DB4: 14/14 immutable fields byte-identical on all three.** Counts **60 → 63**, candidates **4 → 1**.
+
+**Confirmed live — all seven measured cells now serve, matched with `psScore` over the LIVE set only:**
+
+| cell | marks | server |
+|---|---|---|
+| E2 × scepticism | 23 | `1030689b` (E2a) |
+| B5 × communication | 16 | `36edda4f` (B5c) |
+| E2 × commercial_acumen | 15 | `68a297a3` (E2c) |
+| B1 × scepticism | 15 | `f6426c06` (B1b) |
+| E3 × scepticism | 12 | `de0c2676` (E3a) |
+| E1 × analysis_and_evaluation | 7 | `55181aa8` (E1a) — re-tag, not authoring |
+| A3 × communication | 6 | `d2b06649` (A3c) |
+
+**A3 × communication returns `d2b06649` and NOT `47c9d5ce`** — proven with a control: matched over ALL rows, both appear (`d2b06649/approved`, `47c9d5ce/candidate`), because the permanent candidate still carries the `communication` tag the rotation gave it. The serve predicate drops it. That is the disposition working, not luck.
+
+**Zero-attempt entries unmoved by the flip:** B5 → `499357f7` @50 · E3 → `56989d69` @74 · E2 → `51163dac` @70 · B1 → `4e6df0b6` @10 · E1 → `55181aa8` @80. A3 → `d2b06649` @67, the only A3 drill, so the entry by construction.
+
+Published tag distribution (63): a_and_e 51 · **scepticism 5** · commercial_acumen 4 · **communication 3** · null 0.
 
 | plan | id | cell | LO | skill | marks | criteria | F10 marks | rank |
 |---|---|---|---|---|---|---|---|---|
@@ -18,7 +38,11 @@
 
 **Also fixed:** `--narrative-regate-from` previously ran **N1–N6 only** — none of which reads `hint` or `full_reveal`. A hand edit to a teaching field could be reported "re-gated GREEN" by checks that had never looked at the field that changed. It now runs **P4 and P7 as well**.
 
-**🔸 STILL OPEN on D9 — the `hint` carries the same lean and was NOT changed** (out of the scope you set). It reads *"check whether you have moved to an explicit, conditional recommendation … because that is the advice the boardroom is waiting for"* — commitment again, not audience. Say the word and I will reframe it the same way.
+**✅ The `hint` was rewritten on the same basis (2026-08-02, Grant's ruling).** It had the identical lean — *"check whether you have moved to an explicit, conditional recommendation … that is the advice the boardroom is waiting for"*. It now leads on the reader and puts commitment second, matching `c6`'s own shape (F4 **and** F10):
+
+> *"Your answer explains the exchange-control mechanics correctly — now read it back as Ms Nguyen and Mr Pham would. Would two operational leaders with no treasury vocabulary learn from it that Warsaw was legally unable rather than unwilling, and what they themselves can do about it locally? Then check that your closing line names them and commits, rather than leaving the next step with someone they do not control."*
+
+Re-gated N1–N6 + P4 + P7 green after the edit, applied in place. **Banked as doctrine `P-N2`** — the teaching pair can coach a different skill from the one the rubric marks, and no gate catches it.
 
 **E1 × analysis_and_evaluation is deliberately NOT in this batch** — it may close without authoring depending on your ruling on `55181aa8` below. Authoring it now would risk a second server for a cell about to close for free.
 

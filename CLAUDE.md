@@ -310,18 +310,28 @@ wait for it, or say plainly that it was still building.
   gate record would keep asserting a stale green); `--narrative-update-from <draft> --drill-id <uuid>`
   applies it to an EXISTING candidate row (refuses anything published, and refuses an lo_code/skill
   mismatch) rather than re-inserting, which would mint a new id.
-  **BATCH 2 (2026-08-02) — INSERTED as `candidate`/`published=false`; the flip is a SEPARATE GATE-P
-  call.** D9 `36edda4f` B5c communication (rank 66) · D10 `de0c2676` E3a scepticism (85) · D11
-  `d2b06649` A3c communication (67). Pack `docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md`. **E1 ×
-  a_and_e was NOT authored** — it closed via the `55181aa8` re-tag instead.
+  **BATCH 2 — LIVE (GATE-P flip, 2026-08-02). AFM published 60 → 63; THE PS ROUTING GAP IS CLOSED —
+  all 7 measured (area × skill) cells now have a LIVE server, confirmed with `psScore` over the live
+  set.** D9 `36edda4f` B5c communication (rank 66) · D10 `de0c2676` E3a scepticism (85) · D11
+  `d2b06649` A3c communication (67). Reconcile clean, explicit-id flip, **P-DB4 14/14 immutable fields
+  byte-identical**, snapshot `docs/rollbacks/AFM_ps_cell_2_publish_flip_20260802.json`. Entries
+  unmoved. Pack `docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md`. **E1 × a_and_e was NOT authored** —
+  it closed via the `55181aa8` re-tag instead. **`47c9d5ce` was ALLOW-LISTED by registration in the
+  reconcile, not hard-stopped** — what the permanent-candidate disposition exists for; an
+  *unregistered* candidate still hard-stops. Proven with a control: matched over ALL rows, A3 ×
+  communication returns `d2b06649` AND `47c9d5ce`; over the LIVE set, only `d2b06649`.
   **✏️ D9's `full_reveal` was REWRITTEN because the TEACHING LEG COACHED A DIFFERENT SKILL FROM THE ONE
   THE RUBRIC MARKS.** It led on FENCE-SITTING — a commitment failure (F4) carried by ONE criterion
   worth 2 of 12 — while the drill's declared skill is `communication` and its four F10 criteria
   (8/12) are all about the READER. Reframed on the failure its own golden BAD exhibits: that BAD is
   technically accurate throughout and closes by tasking *"BalticPack's treasury team"*, handing the
-  only action item to a party the two named recipients do not control. **Generalise: check that the
-  `hint`/`full_reveal` pair teaches the skill the RUBRIC marks, not merely a real failure mode — the
-  authoring loop does not check this and neither does any gate.**
+  only action item to a party the two named recipients do not control. Its `hint` carried the identical
+  lean and was rewritten the same way. **Banked as doctrine `P-N2`: the teaching pair can coach a
+  different skill from the one the rubric marks, and NO GATE CATCHES IT — P7 checks that a
+  `"…misconception…: "` sentence EXISTS, never that it names the failure the criteria penalise. Check
+  the reveal's headline failure against the rubric's own arithmetic (which criteria carry the skill's
+  disqualifier, and what share of the marks they hold), and anchor the reframe on the drill's own
+  golden BAD.**
   **`--narrative-regate-from` now runs P4 + P7 as well as N1–N6.** N1–N6 read only the rubric and the
   golden pair — none of them touches `hint` or `full_reveal` — so a hand edit to a TEACHING field
   could be reported "re-gated GREEN" by checks that had never looked at the field that changed. **N6b CANNOT gate a `communication`

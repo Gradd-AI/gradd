@@ -4181,3 +4181,104 @@ communication drill) **and `47c9d5ce`**, purely because it carries a `communicat
 default gave it. Published, it would *appear* to serve a cell its content does not serve, and would be
 indistinguishable from a real server at the point of selection. The permanent-candidate disposition is
 doing real work.
+
+---
+
+# 2026-08-02 (seventh) — D9's hint reframed; P-N2 banked; batch 2 LIVE; **the PS routing gap is closed**
+
+## 1. D9's `hint` rewritten on the same basis as the reveal
+
+It carried the identical lean — *"check whether you have moved to an explicit, conditional
+recommendation … that is the advice the boardroom is waiting for"* — commitment first, audience
+incidental. It now leads on the reader and puts commitment second, mirroring `c6`'s own shape (that
+criterion carries **both** F4 and F10, so commitment belongs there, just not at the head of the
+teaching):
+
+> *"Your answer explains the exchange-control mechanics correctly — now read it back as Ms Nguyen and
+> Mr Pham would. Would two operational leaders with no treasury vocabulary learn from it that Warsaw
+> was legally unable rather than unwilling, and what they themselves can do about it locally? Then
+> check that your closing line names them and commits, rather than leaving the next step with someone
+> they do not control."*
+
+Re-gated **N1–N6 green + P4 PASS + P7 PASS**, applied in place. The three clauses map to `c1`
+(legally unable, not unwilling), `c5` (a route they can champion locally) and `c6` (names them,
+commits) — so the hint now points at 6 of the 8 F10 marks instead of at 2.
+
+## 2. P-N2 banked
+
+**The teaching pair can coach a different skill from the one the rubric marks, and no gate catches
+it.** `hint` and `full_reveal` are the only fields a student reads as teaching; N1–N6 never touch
+them, P4 checks only for invented facts, and **P7 checks that a `"…misconception…: "` sentence EXISTS,
+not that it names the failure the criteria penalise**.
+
+The rule: when a drill declares a skill, the teaching pair must lead on the failure mode the
+SKILL-CARRYING criteria penalise — checked against the rubric's own arithmetic (which criteria carry
+the skill's disqualifier, what share of the marks they hold). If the reveal's headline failure is
+carried by a minority of the marks, it is teaching the wrong thing however true it is. **Anchor the
+reframe on the drill's own golden BAD** — that artefact is already the authored answer to "what does
+failing THIS drill look like", so a reveal naming a different failure contradicts something in the
+row.
+
+**Claim ceiling recorded for P7:** its green means *"a misconception sentence is present, so
+`extractMisconceptionLead` finds a real fact rather than falling back"*. It has never meant *"the named
+misconception is the right one"*, and no automated check can — which failure a rubric principally
+penalises is a reading of the criteria, not a property of the text.
+
+**The related fix, same shape:** `--narrative-regate-from` ran N1–N6 only, none of which reads `hint`
+or `full_reveal`, so a hand edit to a teaching field could be reported GREEN by checks that never
+looked at it. P4 and P7 now run there too.
+
+## 3. Batch 2 LIVE via GATE-P — published 60 → 63
+
+D9 `36edda4f` (B5c, communication) · D10 `de0c2676` (E3a, scepticism) · D11 `d2b06649` (A3c,
+communication).
+
+**Reconcile first.** 64 rows, 60 approved+published, 4 candidates — the 3 targets plus `47c9d5ce`,
+**ALLOW-LISTED by registration rather than hard-stopped**. That allow-list is precisely what writing
+the permanent-candidate disposition down was for; the guard still hard-stops on an *unregistered*
+candidate, and says which. Zero approved-but-unpublished, zero published-but-unapproved.
+
+Snapshot before the write (`docs/rollbacks/AFM_ps_cell_2_publish_flip_20260802.json`). Flipped by
+**explicit id**, each guarded `.eq('status','candidate').eq('published',false)`. **P-DB4: 14/14
+immutable fields byte-identical on all three.** Counts 60 → 63, candidates 4 → 1, and the one
+remaining is the registered permanent candidate.
+
+## 4. ✅ THE PS ROUTING GAP IS CLOSED — all seven cells LIVE
+
+Confirmed with **`psScore` over the LIVE set only** — the serve predicate itself, not inspection:
+
+| cell | examined marks | LIVE server |
+|---|---|---|
+| E2 × scepticism | 23 | `1030689b` (E2a) |
+| B5 × communication | 16 | `36edda4f` (B5c) |
+| E2 × commercial_acumen | 15 | `68a297a3` (E2c) |
+| B1 × scepticism | 15 | `f6426c06` (B1b) |
+| E3 × scepticism | 12 | `de0c2676` (E3a) |
+| E1 × analysis_and_evaluation | 7 | `55181aa8` (E1a) — re-tag, not authoring |
+| A3 × communication | 6 | `d2b06649` (A3c) |
+
+AFM: 64 rows · **63 published+approved** · 1 candidate. Tags (63): a_and_e 51 · **scepticism 5** ·
+commercial_acumen 4 · **communication 3** · null 0. Compare the 2026-07-31 baseline: a_and_e 48 ·
+null 8 · communication 1 · scepticism **0** · commercial_acumen **0**.
+
+**Zero-attempt entries unmoved by the flip:** B5 → `499357f7` @50 · E3 → `56989d69` @74 · E2 →
+`51163dac` @70 · B1 → `4e6df0b6` @10 · E1 → `55181aa8` @80 · A3 → `d2b06649` @67 (the only A3 drill,
+so entry by construction).
+
+**The permanent-candidate disposition proven with a control.** Matched over ALL rows, A3 ×
+communication returns **both** `d2b06649/approved` and `47c9d5ce/candidate` — the latter purely
+because it still carries the `communication` tag the rotation gave it. Matched over the LIVE set it
+returns **only `d2b06649`**. Published, `47c9d5ce` would be indistinguishable from a real server for a
+cell its content does not serve.
+
+## What the closure does and does not mean
+
+**Does:** every (area × skill) demand the live sit and the five practice cases can generate now has a
+published drill that specifically exercises it. The PS half of `next-drill`'s steering, inert on AFM
+since it shipped, now has something to steer between in all seven examined cells.
+
+**Does not:** the corpus is still not well-tagged. **51 of 63 published drills carry
+`analysis_and_evaluation` because `buildSpecsForList` still declares `sectionIdx` locally and every
+batch caller still passes one LO**, so `deriveSkillTag` returns `pool[0]`. Those tags were never
+decided by anyone. Only the narrative path can author into a named cell; the next calculator batch
+will default the same way.
