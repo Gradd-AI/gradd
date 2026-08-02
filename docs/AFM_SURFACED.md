@@ -557,6 +557,30 @@ topic (no structural discriminator — both readings are grammatical, both refer
 carry F10); whether the golden BAD is competent-but-skill-free; and **which** of the two skills F10
 covers is demanded (one mode, two skills — N6a can never discriminate).
 
+#### 📐 MEASURED 2026-08-02 — N6a's LABELLING diverges from the rubric's actual DEMAND
+
+**The claim ceiling is not a theoretical hedge; here is the first measured instance.** D8
+`f6426c06` (B1b, scepticism, 12 marks, 5 criteria) labels F10 on **c2 and c3 only**, so N6a scores it
+**6/12 — exactly at the bar**. But three more criteria perform the act unlabelled:
+
+| criterion | marks | the act, in its own words |
+|---|---|---|
+| `c1` | 2 | "the output is therefore likely to **understate true downside risk**" |
+| `c4` | 2 | "Osprey **presents these figures as confirming safety rather than highlighting the breadth** of outcomes" |
+| `c5` | 2 | "**reject Osprey's characterisation** of the project as 'essentially safe'" |
+
+**Real act coverage 12/12 against a labelled 6/12.** N6a measured this drill at half its true
+coverage.
+
+**The direction here is conservative — it under-credits — but the divergence is two-directional in
+principle, and the other direction is the dangerous one.** A rubric can label F10 on every criterion
+while demanding only description; that is exactly what an author writing to this detector would
+produce. **This is the concrete reason the phrase-table ban and the claim ceiling are not
+negotiable**, and it is now recorded in `checkSkillDemand`'s own header so nobody re-derives it.
+
+**Operational rule: never report an N6a share as a coverage figure.** N6a measures labelling. Act
+coverage is a reader's finding and belongs in the pack, per drill.
+
 The original analysis is kept below for the reasoning, which is the part worth re-reading before
 anyone proposes widening the gate.
 

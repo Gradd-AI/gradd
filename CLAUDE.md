@@ -264,8 +264,15 @@ wait for it, or say plainly that it was still building.
   row to `docs/rollbacks/AFM_narrative_draft_<id>.json`; **`--narrative-insert-from <file>`** inserts
   those bytes verbatim (no model call, refuses anything not `candidate`/unpublished) — without it,
   reviewing a dry-run then running the real batch ships prose nobody reviewed, because the model does
-  not repeat itself. `buildNarrativeRow` is the ONE row definition both paths use. **Drills (all
-  `candidate`/`published=false`):** D6 `1030689b` E2a **scepticism** (testing a "fully hedged" claim) ·
+  not repeat itself. `buildNarrativeRow` is the ONE row definition both paths use.
+  **LIVE (GATE-P flip, 2026-08-02) — AFM published 57 → 60.** Reconcile clean (0 approved-but-
+  unpublished, 0 published-but-unapproved; candidate set exactly the 3 targets + the known A3a pilot),
+  flipped by EXPLICIT id with a guarded `.eq('status','candidate').eq('published',false)`, **P-DB4
+  14/14 immutable fields byte-identical** on all three, snapshot
+  `docs/rollbacks/AFM_ps_cell_publish_flip_20260802.json`. Confirmed live: all three cells report
+  **SERVABLE through `psScore`** (the live scorer, not inspection), and the zero-attempt entries are
+  UNMOVED — E2 → fxhedge K1 `51163dac` @70, B1 → NPV @10, against a live E-calculator span of 70–77.
+  **Drills:** D6 `1030689b` E2a **scepticism** (testing a "fully hedged" claim) ·
   D7 `68a297a3` E2c **commercial_acumen** (does a netting centre earn its cost) · D8 `f6426c06` B1b
   **scepticism** (challenging a simulation's assumptions — same LO as D1, deliberately the opposite act:
   D1 interprets the output, D8 challenges its credibility). area-entry ranks **83/84** for the E2 pair —
@@ -285,7 +292,14 @@ wait for it, or say plainly that it was still building.
   exercised (P-G3).** Measured over the corpus: **8/8 pre-fix rows FAIL, 3/3 new rows pass.**
   ⚠️ **CLAIM CEILING, verbatim:** a green N6 means *"the scenario admits the act and the rubric names
   the skill as the marking basis"* — **NEVER** *"the rubric demands the skill"*. That is a semantic
-  judgement with no structural discriminator and it stays with N1/N4 and a human reader. **NO PHRASE
+  judgement with no structural discriminator and it stays with N1/N4 and a human reader.
+  📐 **MEASURED 2026-08-02 — N6a's LABELLING and the actual DEMAND diverge.** D8 labels F10 on 2 of 5
+  criteria (**6/12**) while **all 12 marks perform the act** (`c1`/`c4`/`c5` challenge Osprey
+  unlabelled) — N6a measured it at HALF its true coverage. Conservative in this instance, but
+  two-directional in principle, and the other direction is the dangerous one: a rubric can label F10
+  everywhere while demanding only description, which is exactly what an author writing to the detector
+  would produce. **Never report an N6a share as a coverage figure** — it measures labelling; act
+  coverage is a reader's finding and belongs in the pack. **NO PHRASE
   TABLE** — gameable by an author writing to the detector, and a matched string proves only that some
   sentence renders that way (P-DB5). **F10 covers scepticism AND commercial_acumen in one mode, so
   N6a can never say WHICH skill.** ⚠️ **N6b is a SUFFICIENT-condition test**: it false-positives on a

@@ -3749,3 +3749,146 @@ are the exact bytes in the DB. Includes my read of whether each rubric DEMANDS i
 mentions it (D6 demands on 12/12; D8 demands on all five criteria though F10 labels only 2; D7
 demands on 11 of 12 marks, with `c3`'s single Uruguay mark flagged as describable rather than
 demanded).
+
+---
+
+# 2026-08-02 (third) — PS-cell batch LIVE via GATE-P; N6a labelling-vs-demand measured; five N6b hand-reads
+
+## 1. The flip — 57 → 60
+
+All three PS-cell drills `approved`/`published=true`: D6 `1030689b` (E2a, scepticism) · D7
+`68a297a3` (E2c, commercial_acumen) · D8 `f6426c06` (B1b, scepticism).
+
+**Reconcile FIRST, and it was clean.** 61 AFM rows, 57 approved+published, 4 candidates — exactly the
+3 targets plus the known unadjudicated A3a pilot `47c9d5ce`. **Zero approved-but-unpublished rows and
+zero published-but-unapproved rows**, so there was no pipeline leak to flip past and nothing to demote.
+Snapshot written BEFORE the write: `docs/rollbacks/AFM_ps_cell_publish_flip_20260802.json`.
+
+Flipped by **EXPLICIT id**, one statement each, each guarded
+`.eq('status','candidate').eq('published',false)` so a re-run is a no-op rather than a re-write.
+**P-DB4 post-verify: 14/14 immutable fields byte-identical** on all three under key-order-insensitive
+canonicalisation — `status` and `published` were the only fields that moved. Counts: published
+**57 → 60**, candidates **4 → 1**, the remainder being the A3a pilot as expected.
+
+**Confirmed live afterwards, through the live scorer rather than by inspection** — servability tested
+with `psScore` itself over the 2-char `lo_code` prefix:
+
+| check | result |
+|---|---|
+| E2 × scepticism | **SERVABLE** — `1030689b` (E2a) |
+| E2 × commercial_acumen | **SERVABLE** — `68a297a3` (E2c) |
+| B1 × scepticism | **SERVABLE** — `f6426c06` (B1b) |
+| still unservable | B5 × communication · E3 × scepticism · E1 × a_and_e · A3 × communication |
+| tag distribution (60) | a_and_e 50 · commercial_acumen 5 · scepticism 4 · communication 1 · null 0 |
+| E2 zero-attempt entry | **UNMOVED** — fxhedge K1 `51163dac` @70, with D6=83 and D7=84 in the bucket |
+| B1 zero-attempt entry | **UNMOVED** — NPV `4e6df0b6` @10, with D8=65 |
+| live E-calculator span | **70–77** — both 83 and 84 clear the whole span, not merely fxhedge |
+
+## 2. 📐 N6a's LABELLING and the rubric's actual DEMAND diverge — first measured instance
+
+**The claim ceiling is not a theoretical hedge.** D8 labels F10 on `c2` and `c3` only, so N6a scores
+it **6/12 — exactly at the bar**. Three further criteria perform the act unlabelled: `c1` ("the output
+is therefore likely to **understate true downside risk**"), `c4` ("Osprey **presents these figures as
+confirming safety rather than highlighting the breadth** of outcomes"), `c5` ("**reject Osprey's
+characterisation**"). **Real act coverage 12/12 against a labelled 6/12** — N6a measured the drill at
+half its true coverage.
+
+**The direction here is conservative, but the divergence is two-directional in principle and the other
+direction is the dangerous one.** A rubric can label F10 on every criterion while demanding only
+description — precisely what an author writing to this detector would produce. **This is the concrete
+reason the phrase-table ban and the claim ceiling are not negotiable**, and it is now in
+`checkSkillDemand`'s own header, the code map, `AFM_SURFACED.md` and the pack.
+
+**Operational rule banked: never report an N6a share as a coverage figure.** N6a measures LABELLING.
+Act coverage is a reader's finding and belongs in the pack, per drill.
+
+## 3. The five N6b hand-reads — reported, nothing re-authored or re-tagged
+
+**Bottom line: 4 of the 5 N6b failures are proxy false positives; 1 is substantive.** N6b encodes ONE
+object-shape per skill, and each miss is a legitimate act operating on a differently-shaped object.
+
+### fda46d99 · B3i · scepticism · 11m · LIVE — TAG HONEST, N6b a false positive on FORM
+
+**Sceptical object: the CFO's argument** — *"The CFO argues that the additional tax shield will
+permanently enhance firm value"*. That is a named party making a specific, contestable assertion. It
+fails N6b only because it is **reported speech, not quoted speech** — no quotation marks, so no span
+for the detector to find. The scenario also supplies two counter-voices (the CEO on volatile cash
+flows, the finance director on the 80% covenant) as material to challenge with.
+
+**The rubric DEMANDS challenge, on all 11 marks.** `c1` "**directly refutes the CFO's implicit
+premise**… partially validating… though [MM's] assumption is **especially strained** in a mining
+context"; `c2` "the theory **does not support** this magnitude of leverage"; `c3` "**inverts** the
+pecking order… **suggesting the move is driven by a tax or control motive rather than a genuine
+funding gap**" — inferring an undisclosed motive is scepticism in ACCA's own words ("explore the
+underlying reasons… beyond what is immediately apparent"); `c4` "the board **should therefore reject
+or materially scale back**". The golden BAD is the control: it recites all four theories accurately
+and ends every part with "may or may not" / "may be consistent or inconsistent".
+
+**Verdict: the scepticism tag is honest.** N6b's flag is a false positive of the quoted-speech proxy.
+
+### d413fbe7 · B4d · scepticism · 12m · LIVE — TAG DEFENSIBLE BUT MARGINAL; the existing soft-call flag is CONFIRMED, not overturned
+
+**Sceptical object: the BSOP model's own assumptions** — constant volatility / log-normality (`c4`)
+and unobservable inputs (`c5`). There is no assertion by any party, quoted or reported; the syndicate's
+"concern" is a worry, not a claim to test. N6b's mechanism is therefore wrong here, but its concern
+lands for a different reason.
+
+**The rubric is majority DESCRIPTION.** `c1` (3m, equity-as-call), `c2` (2m, debt = riskless − put),
+`c3` (2m, default risk via N(−d2)) are **pure exposition — 7 of 12 marks**. Challenge lives in `c4`
+(2m, "**yet** NJT's toll revenues… **sudden discontinuous jumps… the standard model cannot capture**")
+and `c5` (2m, "asset value **is itself an estimate**… **could cause the model to mis-state default
+probability**"), plus `c6` (1m) committing to "a complement… **rather than a standalone
+credit-approval tool**".
+
+**This exactly matches the flag the 2026-08-01 tagging script already recorded** ("only 4–5 of its 12
+marks are the assumption-challenging part, the other 7 are straight BSOP exposition"). My read
+**confirms** that flag rather than discovering anything new.
+
+**What still defends the tag:** the marks that DISCRIMINATE are the sceptical ones. The golden BAD
+covers `c1`–`c3` competently and fails precisely on `c4`/`c5`, listing limitations generically ("These
+assumptions may not always hold in practice") without applying one to NJT. So a student weak on
+scepticism does meet the right work — after 7 marks of exposition first.
+
+**Verdict: defensible, marginal, unchanged. Not dishonest.** Nothing re-tagged.
+
+### The other three N6b failures
+
+- **`55181aa8` · E1a · commercial_acumen · 8m — N6b's flag is SUBSTANTIVE, the only one of the five.**
+  Zero figure facts: no cost, no amount, no threshold. There is no priced decision. And all four
+  `required_point`s begin **"Discuss"** — discuss the location/autonomy issues, a further establishment
+  issue, how the desks' roles change, how the Osaka relationship changes. None demands a committed
+  choice against a cost. That is closer to analysis_and_evaluation than to commercial acumen's
+  "propose and recommend commercially viable solutions". The golden GOOD does close with a qualified
+  commitment ("workable, but only once location, the autonomy split and the reporting line are settled"),
+  so the tag is not baseless — but it is the weakest of the corpus's five commercial_acumen tags.
+- **`d0be009d` · E1a · commercial_acumen · 8m — partly substantive, tag defensible.** Also zero
+  figures, but the CEO's test IS a real commercial hurdle stated in the scenario ("approved only if it
+  can make a positive financial contribution — maximise income or save costs"), and `c4` demands
+  "**Commit** to a clear recommendation that the department is justified on income-maximising/
+  cost-saving grounds, not as an extra cost layer", with the F7 "additional costs and procedures… not
+  given credit" boundary as a genuine fence. **N6b's precondition (≥1 figure AND ≥1 constraint) is
+  stricter than the skill requires: a commercial decision can be genuinely constrained without a
+  number.**
+- **`f9f4f3d4` · E2a · analysis_and_evaluation · 10m — false positive.** Zero figure facts, so nothing
+  quantitative to weigh — but the weighing here is **conceptual**: `c2` demands distinguishing
+  translation as "largely a reporting effect… that does not threaten day-to-day cash flows", and `c5`
+  demands "**COMMIT** to which exposures most warrant active management, given they are the ones
+  threatening cash flows". That is prioritisation, which is the a_and_e act. `c1`/`c3` are
+  identify-and-describe, so the rubric is description-heavy, but the discriminating marks weigh.
+  **My N6b test (≥2 figure facts) encodes one shape of "material to weigh" — comparable quantities —
+  and a cash-vs-paper comparison is legitimate weighing with no figures at all.**
+
+### The pattern worth banking
+
+N6b encodes **one object-shape per skill**, and every false positive is a legitimate act on a
+differently-shaped object:
+
+| skill | N6b looks for | it misses |
+|---|---|---|
+| scepticism | a QUOTED claim | reported speech (`fda46d99`), a model's premises (`d413fbe7`) |
+| commercial_acumen | a FIGURE + a CONSTRAINT | a real but unpriced commercial hurdle (`d0be009d`) |
+| analysis_and_evaluation | ≥2 FIGURES | a conceptual comparison — cash-flow vs reported (`f9f4f3d4`) |
+
+**Not widened, per the standing ban** — every candidate widening needs a word list. The reading that
+matters: **N6a measures labelling, N6b measures the scenario's object-shape, and neither measures
+demand.** That is the claim ceiling, now confirmed against five live rows rather than asserted.

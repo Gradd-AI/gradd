@@ -1,6 +1,23 @@
 # AFM PS-cell narrative batch — review pack (pipeline #2, discursive)
 
-**READY FOR ADJUDICATION.** 3 discursive drills, `paper_code=AFM`, `mode=discursive`, `rubric_version=narrative_v1`, **`status=candidate`/`published=false`**. Gated 2026-08-02 on the REAL constrained grader: **N1–N6 all green**, plus P4 jurisdiction/frozen-facts and P7 misconception-lead. The THIRD narrative cluster, after B-section D1–D5 and E-section EN1–EN3.
+**✅ LIVE — adjudicated and published via GATE-P, 2026-08-02.** 3 discursive drills, `paper_code=AFM`, `mode=discursive`, `rubric_version=narrative_v1`, **`status=approved`/`published=true`**. Gated on the REAL constrained grader: **N1–N6 all green**, plus P4 jurisdiction/frozen-facts and P7 misconception-lead. The THIRD narrative cluster, after B-section D1–D5 and E-section EN1–EN3.
+
+**The flip, with its guards.** Reconcile FIRST: 61 AFM rows, 57 approved+published, 4 candidates — exactly the 3 targets plus the known A3a pilot; **zero approved-but-unpublished and zero published-but-unapproved rows**, so no pipeline leak to flip past. Snapshot written BEFORE the write (`docs/rollbacks/AFM_ps_cell_publish_flip_20260802.json`). Flipped by **explicit id**, one statement each, guarded `.eq('status','candidate').eq('published',false)`. **P-DB4 post-verify: 14/14 immutable fields byte-identical on all three** under key-order-insensitive canonicalisation — `status` and `published` were the only fields that moved. **Counts: published 57 → 60, candidates 4 → 1**, the remainder being the A3a pilot as expected.
+
+**Confirmed live after the flip:**
+
+| check | result |
+|---|---|
+| AFM published+approved | **57 → 60** |
+| tag distribution | a_and_e 50 · **commercial_acumen 5** · **scepticism 4** · communication 1 · null 0 |
+| E2 × scepticism | **✅ SERVABLE** — `1030689b` (E2a) |
+| E2 × commercial_acumen | **✅ SERVABLE** — `68a297a3` (E2c) |
+| B1 × scepticism | **✅ SERVABLE** — `f6426c06` (B1b) |
+| E2 zero-attempt entry | still fxhedge K1 `51163dac` @ **70** (D6=83, D7=84 in the same bucket) |
+| B1 zero-attempt entry | still NPV `4e6df0b6` @ **10** (D8=65) |
+| E-calculator span (live) | **70–77** — D6 (83) and D7 (84) both clear it |
+
+Servability was tested through `psScore` — the live scorer's own exact single-tag comparison — over the 2-char `lo_code` prefix, not by inspection.
 
 | id | cell | LO | skill | marks | criteria | F10 marks | rank |
 |---|---|---|---|---|---|---|---|
@@ -40,6 +57,8 @@ Whether a `required_point` demands the act or merely describes the topic is a se
 
 **F10 cannot distinguish the two skills it covers** — the mode is "no scepticism / commercial acumen", one mode for two skills. N6a proves a skill was named as the basis, never which one.
 
+**📐 MEASURED: N6a's LABELLING and the rubric's actual DEMAND diverge.** D8 labels F10 on 2 of 5 criteria (6/12) while **all 12 marks perform the act** — N6a measured it at half its true coverage. The direction here is conservative, but **the divergence is two-directional in principle and the other direction is the dangerous one**: a rubric can label F10 on every criterion while demanding only description, which is exactly what an author writing to this detector would produce. **That is the concrete reason the phrase-table ban and the claim ceiling are not negotiable. Never report an N6a share as a coverage figure** — N6a measures labelling; act coverage is a reader's finding and lives in this pack, per drill.
+
 **Run against the corpus, 2026-08-02:** 11 `narrative_v1` rows evaluated (1 outside — no criteria). **8/8 pre-fix rows FAIL**, all on N6a (0% F10). **3/3 new rows pass** (D7 partial — N6c is structurally N/A for commercial_acumen and says so rather than passing).
 
 **⚠️ N6b is a sufficient-condition test and false-positived on two live rows.** Five pre-fix rows also failed N6b. Two of them — `fda46d99` (B3i) and `d413fbe7` (B4d), both tagged `scepticism` — fail because their scenarios carry no quoted attributed claim. **`d413fbe7`'s sceptical object is the BSOP model's own assumptions, which need no quote; that is very likely a false positive of the proxy, not a defect in the drill.** It was not widened, because every widening needs a word list. A FAIL on N6b means *"no quoted assertion found — confirm by hand what this drill's sceptical object is"*, never *"this drill does not demand scepticism"*. **Open item, not a finding against those rows.**
@@ -70,7 +89,7 @@ Whether a `required_point` demands the act or merely describes the topic is a se
 ## MY READ — does each rubric DEMAND the declared skill, or merely mention it?
 
 - **D6 — DEMANDS.** All five `required_point`s turn on the treasurer's claim; `f_treasurer` anchored on all five; F10 on 12/12 marks. Weakest is `c1`, descriptive for most of its length, biting only at "not the full currency risk as claimed". The golden BAD is the proof: a fluent, accurate, textbook-correct account of all three exposure types that never once challenges her.
-- **D8 — DEMANDS.** All five perform the act, though F10 is labelled on only 2 of 5 (6/12 marks, exactly at the N6a bar). Informative: the **ACT** half of the new block was followed more completely than the F10-labelling half.
+- **D8 — DEMANDS, on all 12 marks.** F10 is labelled on only c2 and c3 (6/12, exactly at the N6a bar), but `c1` ("the output is therefore likely to **understate true downside risk**"), `c4` ("Osprey **presents these figures as confirming safety rather than highlighting the breadth** of outcomes") and `c5` ("**reject Osprey's characterisation**") all perform the act unlabelled. **Real act coverage 12/12 against a labelled 6/12** — the first measured instance of N6a's labelling diverging from actual demand, banked against the claim ceiling (see below).
 - **D7 — DEMANDS on 11 of 12 marks.** `c2` (as revised) requires commitment on a stated basis in either direction; `c5` links the headcount constraint to the financial case; `c6` commits to a condition. **`c3` (1 mark, Uruguay) mentions rather than demands** — it asks the candidate to link the jurisdiction's attributes to viability "rather than merely describe", but a good description would earn it. Flagged, not fixed: your call whether 1 mark is worth a re-author.
 
 ---
