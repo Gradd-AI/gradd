@@ -323,6 +323,28 @@ wait for it, or say plainly that it was still building.
   **✅ `--narrative-batch` no longer exits 0 when every drill fails (P-G1).** Found the hard way — a
   run that failed all 5 attempts and wrote no draft still exited 0. `runNarrativeBatch` returns its
   failure count and the caller sets `process.exitCode` (P-G4: never `process.exit()`).
+- **RE-TAGGING A PUBLISHED DRILL — `scripts/authoring/retag-afm-drill.ts` (COMMITTED, P-DB6).** It
+  writes PUBLISHED content, so the script carries the RULING as a literal and PRINTS it before
+  applying; a `--id` with no recorded ruling is refused. P-DB3 snapshots the whole row first; P-DB4
+  asserts `professional_skill_tag` is the ONLY field that moved. **First use 2026-08-02 (Grant's
+  ruling): `55181aa8` E1a `commercial_acumen` → `analysis_and_evaluation`** — 19/19 other fields
+  byte-identical, status/published untouched. **This CLOSED E1 × analysis_and_evaluation without
+  authoring**, and E1 × commercial_acumen stays servable via `d0be009d`. **The reasoning, because it
+  generalises: the VERB is the discriminator, not the arithmetic.** N5 did not engage, no criterion
+  carried F4, and all four `required_point`s opened with "Discuss" — so commercial acumen's defining
+  act (*"proposing and recommending commercially viable solutions"*) was never required. An earlier
+  "no priced decision — zero figure facts" reading was WRONG and its sibling `d0be009d` refuted it:
+  that row also has zero figures and is sound, because it demands "Advise · Advise · Advise ·
+  **Commit**" with F4. **A tag edit never moves an area's entry** — `pickEntryDrill` keys on the
+  `model_answer` heading, not the tag.
+- **⚠️ `47c9d5ce` (A3a) IS A PERMANENT CANDIDATE — the ONE row expected to stay `candidate`
+  indefinitely.** Every future GATE-P reconcile must ALLOW-LIST it rather than hard-stop on it. Never
+  publish it as tagged: its `communication` tag is the section-A rotation default, its content is a
+  SCEPTICISM drill (it refutes a named CFO's quoted ESG claim and commits against the project), and
+  its **`answer_schema` is NULL** so N1–N6 cannot gate it. Kept rather than deleted because drill
+  content lives in the DB only with no repo copy — deletion is irreversible, keeping costs nothing
+  (every serve path filters `approved`+`published`). Content snapshotted outside the DB at
+  `docs/rollbacks/AFM_permanent_candidate_47c9d5ce.json`.
   **⚠️ THE NARRATIVE PIPELINE HAS NO NUMERIC VERIFIER, AND IT COST A DRILL.** D7's first version passed
   ALL SIX GATES asserting the exact opposite of its own figures — a rubric requiring the candidate to
   conclude payback was "well within" an 18-month threshold on drivers giving an annual net benefit of

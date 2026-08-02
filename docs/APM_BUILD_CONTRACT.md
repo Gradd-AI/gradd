@@ -4003,3 +4003,95 @@ prevent, in the tool that enforces the other gates.
 
 Now returns its failure count; the caller sets `process.exitCode` (P-G4: never `process.exit()` in a
 DB-touching script). Failure line moved to stderr. Proven: an unknown `--narrative-only` id exits 1.
+
+---
+
+# 2026-08-02 (fifth) — `55181aa8` re-tagged on Grant's ruling; `47c9d5ce` disposed; zero cells owed
+
+## 1. `55181aa8` E1a: `commercial_acumen` → `analysis_and_evaluation` (Grant's ruling, applied)
+
+Written by a NEW committed script, `scripts/authoring/retag-afm-drill.ts`. It is committed rather
+than a throwaway because it writes PUBLISHED content (P-DB6): the RULING lives in the script as a
+literal and is PRINTED in full before the write, and a `--id` with no recorded ruling is refused
+outright. It also refuses an unknown target tag, a no-op, and a row whose current tag is not what the
+caller stated.
+
+**P-DB3** — snapshot of the whole row written BEFORE the update:
+`docs/rollbacks/AFM_retag_55181aa8_20260802.json`.
+**P-DB4** — post-verify: `professional_skill_tag` was the **ONLY** field that moved; **19/19 other
+fields byte-identical** under key-order-insensitive canonicalisation; `status`/`published` unchanged
+at `approved`/`true`.
+
+**Confirmed after, through `psScore` — the live scorer's own comparison, not inspection:**
+
+| cell | result |
+|---|---|
+| E1 × commercial_acumen | **✅ still SERVABLE** — `d0be009d` |
+| E1 × analysis_and_evaluation | **✅ now SERVABLE** — `55181aa8`, **closed without authoring** |
+| E1 zero-attempt entry | **unchanged** — `55181aa8` @80 |
+
+That last line is worth keeping: a tag edit can never move an area's entry, because `pickEntryDrill`
+keys on the `model_answer` heading, not on the tag. Checked rather than assumed.
+
+Tag distribution (60 published): analysis_and_evaluation **51** · scepticism 4 · commercial_acumen
+**4** · communication 1 · null 0.
+
+**The reasoning, banked because it generalises: THE VERB IS THE DISCRIMINATOR, NOT THE ARITHMETIC.**
+N5 did not engage on this rubric, no criterion carried F4, and all four `required_point`s opened with
+"Discuss" — so a candidate who discussed everything and committed to nothing scored 8/8, and
+commercial acumen's defining act ("proposing and recommending commercially viable solutions") was
+never required.
+
+**The correction that produced the rule.** The batch-1 pack and journal framed this row's problem as
+partly "no priced decision — zero figure facts". That was wrong, and the SIBLING refuted it:
+`d0be009d` also has zero figure facts and is a sound commercial_acumen drill, because it demands
+"Advise · Advise · Advise · **Commit**" with F4 on `c4` and the CEO's income-or-cost test as a stated
+hurdle. A commercial judgement can be genuinely constrained without a number. Recorded inside the
+script so the correction travels with the write.
+
+**What was NOT claimed.** N6 could not adjudicate this and did not — both rows fail it identically
+under either tag. The claim ceiling behaving as documented: N6 measures LABELLING and the scenario's
+OBJECT-SHAPE, neither of which distinguishes these two skills. The ruling is a reader's judgement
+about the rubric, not a measurement. The counter-case (descriptor 3's "wider organisational matters";
+the golden GOOD does commit; F7 is a commercial failure mode) is recorded in the script rather than
+suppressed.
+
+## 2. `47c9d5ce` disposed — PERMANENT CANDIDATE, kept not deleted
+
+**One-line reason: drill content lives in the DB only with no repo copy, so deletion is irreversible,
+while keeping costs nothing at serve time — every serve path filters `status='approved' AND
+published=true`.**
+
+Content snapshotted OUTSIDE the DB at `docs/rollbacks/AFM_permanent_candidate_47c9d5ce.json`, so the
+row is no longer the only copy of it. That snapshot carries the disposition, the reason and the four
+known defects.
+
+Never publishable as tagged: `communication` is the section-A rotation default (`pool[0]`); the
+content is a scepticism drill that refutes CFO Ms Dlamini's quoted ESG claim on two counts and commits
+to "should not proceed on current terms"; and `answer_schema` is **NULL**, so N1–N6 have nothing to
+run on and Rule-23 separation has never been shown. A3 × scepticism is not in the examined set, so
+publishing it would close nothing measured.
+
+**⚠️ Standing note carried into `CLAUDE.md` and `AFM_SURFACED.md`: this is the ONE row expected to
+remain `candidate` indefinitely, and every future GATE-P reconcile must ALLOW-LIST it rather than
+hard-stop on it.** If it is ever wanted, the route is a re-author through the narrative pipeline with
+a real rubric and a `scepticism` tag — its quoted-CFO scenario already satisfies N6b's scepticism
+precondition, which most pre-fix rows do not.
+
+## 3. Where the PS routing gap now stands
+
+**ZERO cells need authoring.** All seven measured-unservable cells are closed or drafted:
+
+| cell | examined marks | state |
+|---|---|---|
+| E2 × scepticism | 23 | **LIVE** `1030689b` |
+| B5 × communication | 16 | drafted D9 |
+| E2 × commercial_acumen | 15 | **LIVE** `68a297a3` |
+| B1 × scepticism | 15 | **LIVE** `f6426c06` |
+| E3 × scepticism | 12 | drafted D10 |
+| E1 × analysis_and_evaluation | 7 | **LIVE** `55181aa8` — closed by re-tag, not by authoring |
+| A3 × communication | 6 | drafted D11 |
+
+Batch 2 sent to Grant for adjudication. **Still open and deliberately human:** whether D9 and D11
+genuinely give the candidate an audience to write FOR — N6b abstains on a communication precondition
+because no structural test exists that is not a phrase table, and that abstention is by design.
