@@ -4095,3 +4095,89 @@ precondition, which most pre-fix rows do not.
 Batch 2 sent to Grant for adjudication. **Still open and deliberately human:** whether D9 and D11
 genuinely give the candidate an audience to write FOR — N6b abstains on a communication precondition
 because no structural test exists that is not a phrase table, and that abstention is by design.
+
+---
+
+# 2026-08-02 (sixth) — batch 2 inserted; D9's teaching leg was coaching the wrong skill
+
+## 1. Inserted — all three, `candidate`/`published=false`
+
+| plan | id | cell | LO | skill | marks |
+|---|---|---|---|---|---|
+| D9 | `36edda4f-a603-406d-82b0-6341dec38b11` | B5 × communication | B5c | communication | 12 |
+| D10 | `de0c2676-abe8-4037-9984-a24e8aef73ba` | E3 × scepticism | E3a | scepticism | 11 |
+| D11 | `d2b06649-f84c-4ed1-bd27-76069ac8a642` | A3 × communication | A3c | communication | 10 |
+
+Written through `--narrative-insert-from`, so the stored rows are byte-identical to the reviewed
+drafts. **Published set unchanged at 60** — the flip is a separate GATE-P call.
+
+## 2. D9's `full_reveal` rewritten (Grant's ruling) — the teaching leg taught a different skill
+
+**The defect.** The reveal led on **FENCE-SITTING**: *"The dominant misconception here is
+FENCE-SITTING: candidates … present both sides of the expansion argument without ever resolving them
+into a verdict … it fails the command verb 'advise' at level 3."* That is a **commitment** failure
+(F4), and this rubric carries F4 on exactly ONE criterion worth **2 of 12 marks** (`c6`). The drill's
+declared skill is **communication**, and its four F10 criteria — `c1`, `c3`, `c5`, `c6` = **8/12** —
+are every one of them about the READER: translate the mechanism into non-treasury language; address
+the trust breach constructively; name a route these two can champion locally; close with a
+recommendation addressed to them by name.
+
+**So the teaching leg coached a different skill from the one the rubric marks.** Nothing detects that.
+N1–N6 read the rubric and the golden pair and never touch `hint` or `full_reveal`; P4 checks for
+invented facts; P7 checks only that a `"...misconception...: "` sentence EXISTS, not that it names the
+right failure. The reveal was fluent, accurate about a real failure mode, and pointed at the wrong
+one.
+
+**The reframe** is anchored on what the drill's own golden BAD actually does wrong. That BAD is
+technically accurate throughout — correct on the cap, correct on the strategy menu — and closes with
+*"BalticPack's treasury team should engage with local counsel and continue to review available
+remittance strategies."* It hands the only action item to **a party the two recipients do not
+control**, in a treasury register, having never once named Ms Nguyen or Mr Pham. The rewritten reveal
+leads on **WRITING FOR THE WRONG READER**, names that closing line as the tell, and demotes the
+commitment point to where it belongs — the second half of `c6`, not the headline.
+
+Re-gated after the edit: **N1–N6 green + P4 PASS + P7 PASS**, then applied in place via
+`--narrative-update-from --drill-id` (the id was already minted; re-inserting would have minted
+another). Row still `candidate`/`published=false`.
+
+**🔸 Left open deliberately:** D9's `hint` carries the same lean — *"check whether you have moved to an
+explicit, conditional recommendation … that is the advice the boardroom is waiting for"* — and was NOT
+changed, because the instruction named `full_reveal`. Flagged for Grant rather than silently widened.
+
+**THE GENERALISABLE RULE, and it has no gate behind it:** check that the `hint`/`full_reveal` pair
+teaches the skill the RUBRIC MARKS, not merely a real failure mode. The authoring loop does not check
+it, P7 does not check it, and N1–N6 cannot see those fields at all.
+
+## 3. `--narrative-regate-from` now runs P4 + P7, not just N1–N6
+
+Found while doing the above. The re-gate path ran the narrative barrier only — and **none of N1–N6
+reads `hint` or `full_reveal`**. So a hand edit to a TEACHING field could be reported "re-gated GREEN"
+by a set of checks that had never looked at the field that changed. The same shape as every P-G1
+finding this project has logged: the instrument reports success while measuring something else.
+
+Now runs `lintJurisdiction` + `lintFrozenMarketFacts` (P4) and `lintMisconceptionLead` (P7) over the
+draft's teaching fields, prints both lines, and folds them into the pass/fail.
+
+## 4. Cell status — 4 LIVE · 3 CANDIDATE · 0 OPEN
+
+**Every measured cell has a named server. Three of them are not yet serving** — `next-drill` filters
+`status='approved' AND published=true`, so a candidate row serves nobody. Authored is not closed.
+
+| state | cell | marks | server |
+|---|---|---|---|
+| **LIVE** | E2 × scepticism | 23 | `1030689b` (E2a) |
+| CANDIDATE | B5 × communication | 16 | `36edda4f` (B5c) |
+| **LIVE** | E2 × commercial_acumen | 15 | `68a297a3` (E2c) |
+| **LIVE** | B1 × scepticism | 15 | `f6426c06` (B1b) |
+| CANDIDATE | E3 × scepticism | 12 | `de0c2676` (E3a) |
+| **LIVE** | E1 × analysis_and_evaluation | 7 | `55181aa8` (E1a) — re-tag, not authoring |
+| CANDIDATE | A3 × communication | 6 | `d2b06649` (A3c) |
+
+AFM: 64 rows · 60 published+approved · 4 candidates (the 3 above + the permanent `47c9d5ce`).
+
+**⚠️ The selector demonstrated why `47c9d5ce` must never be published.** Matching on tag exactly as
+`psScore` does, A3 × communication returns **TWO** candidates — `d2b06649` (D11, genuinely a
+communication drill) **and `47c9d5ce`**, purely because it carries a `communication` tag the rotation
+default gave it. Published, it would *appear* to serve a cell its content does not serve, and would be
+indistinguishable from a real server at the point of selection. The permanent-candidate disposition is
+doing real work.

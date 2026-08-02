@@ -310,11 +310,21 @@ wait for it, or say plainly that it was still building.
   gate record would keep asserting a stale green); `--narrative-update-from <draft> --drill-id <uuid>`
   applies it to an EXISTING candidate row (refuses anything published, and refuses an lo_code/skill
   mismatch) rather than re-inserting, which would mint a new id.
-  **BATCH 2 (2026-08-02) — DRAFTED, NOT INSERTED, awaiting Grant's read.** D9 `B5c` communication
-  (ranked 66) · D10 `E3a` scepticism (85) · D11 `A3c` communication (67). Pack
-  `docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md`; drafts
-  `docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`. **E1 × a_and_e deliberately NOT authored** —
-  it closes for free if `55181aa8` is re-tagged (ruling owed). **N6b CANNOT gate a `communication`
+  **BATCH 2 (2026-08-02) — INSERTED as `candidate`/`published=false`; the flip is a SEPARATE GATE-P
+  call.** D9 `36edda4f` B5c communication (rank 66) · D10 `de0c2676` E3a scepticism (85) · D11
+  `d2b06649` A3c communication (67). Pack `docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md`. **E1 ×
+  a_and_e was NOT authored** — it closed via the `55181aa8` re-tag instead.
+  **✏️ D9's `full_reveal` was REWRITTEN because the TEACHING LEG COACHED A DIFFERENT SKILL FROM THE ONE
+  THE RUBRIC MARKS.** It led on FENCE-SITTING — a commitment failure (F4) carried by ONE criterion
+  worth 2 of 12 — while the drill's declared skill is `communication` and its four F10 criteria
+  (8/12) are all about the READER. Reframed on the failure its own golden BAD exhibits: that BAD is
+  technically accurate throughout and closes by tasking *"BalticPack's treasury team"*, handing the
+  only action item to a party the two named recipients do not control. **Generalise: check that the
+  `hint`/`full_reveal` pair teaches the skill the RUBRIC marks, not merely a real failure mode — the
+  authoring loop does not check this and neither does any gate.**
+  **`--narrative-regate-from` now runs P4 + P7 as well as N1–N6.** N1–N6 read only the rubric and the
+  golden pair — none of them touches `hint` or `full_reveal` — so a hand edit to a TEACHING field
+  could be reported "re-gated GREEN" by checks that had never looked at the field that changed. **N6b CANNOT gate a `communication`
   drill's precondition** (it reports NOT EVALUATED — no test that is not a phrase table), so D9's and
   D11's audience precondition is a HUMAN check, stated as such in the pack. **📐 N6c SHAPED D10 rather
   than merely measuring it** — it failed 3 of that drill's 4 attempts (no fact key inside the quoted

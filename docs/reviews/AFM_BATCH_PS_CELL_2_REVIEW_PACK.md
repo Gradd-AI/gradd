@@ -1,12 +1,24 @@
 # AFM PS-cell batch 2 — review pack (pipeline #2, discursive)
 
-**NOT INSERTED. Drafts only, awaiting your read.** 3 discursive drills, `paper_code=AFM`, `mode=discursive`, `rubric_version=narrative_v1`. Gated 2026-08-02 on the REAL constrained grader: **N1–N6 green**, plus P4 jurisdiction/frozen-facts and P7 misconception-lead. Captured at `docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`; `--narrative-insert-from` will store those exact bytes.
+**INSERTED 2026-08-02 as `candidate`/`published=false`. NOT PUBLISHED — the flip is a separate GATE-P call.** 3 discursive drills, `paper_code=AFM`, `mode=discursive`, `rubric_version=narrative_v1`. Gated on the REAL constrained grader: **N1–N6 green**, plus P4 jurisdiction/frozen-facts and P7 misconception-lead. Rows are byte-identical to `docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`.
 
-| plan | cell | LO | skill | marks | criteria | F10 marks | rank | attempts |
+| plan | id | cell | LO | skill | marks | criteria | F10 marks | rank |
 |---|---|---|---|---|---|---|---|---|
-| **D9** | B5 × communication | B5c | communication | 12 | 6 | 8/12 | 66 | 1 |
-| **D10** | E3 × scepticism | E3a | scepticism | 11 | 5 | 9/11 | 85 | 4 |
-| **D11** | A3 × communication | A3c | communication | 10 | 5 | 10/10 | 67 | 2 |
+| **D9** | `36edda4f-a603-406d-82b0-6341dec38b11` | B5 × communication | B5c | communication | 12 | 6 | 8/12 | 66 |
+| **D10** | `de0c2676-abe8-4037-9984-a24e8aef73ba` | E3 × scepticism | E3a | scepticism | 11 | 5 | 9/11 | 85 |
+| **D11** | `d2b06649-f84c-4ed1-bd27-76069ac8a642` | A3 × communication | A3c | communication | 10 | 5 | 10/10 | 67 |
+
+## ✏️ D9's `full_reveal` REWRITTEN 2026-08-02 (Grant's ruling) — it taught the wrong skill
+
+**The defect:** the teaching leg led on **FENCE-SITTING** — *"The dominant misconception here is FENCE-SITTING: candidates … present both sides of the expansion argument without ever resolving them into a verdict … it fails the command verb 'advise' at level 3."* That is a **commitment** failure (F4), which this rubric carries on **one criterion worth 2 of 12 marks** (`c6`). The drill's declared skill is **communication**, and its four F10 criteria (`c1`, `c3`, `c5`, `c6` = 8/12) are all about the READER. **The teaching leg was coaching a different skill from the one the rubric marks.**
+
+**The reframe** is anchored on the failure the drill's own golden BAD actually exhibits. That BAD is technically accurate throughout — and closes by saying *"BalticPack's treasury team should engage with local counsel and continue to review available remittance strategies."* It hands the only action item to **a party the two recipients do not control**, in a treasury register, having never once named Ms Nguyen or Mr Pham. The rewritten `full_reveal` leads on **WRITING FOR THE WRONG READER**, names that closing line as the tell, and keeps the commitment point where it belongs — as the second half of `c6` rather than as the headline.
+
+**Re-gated after the edit: N1–N6 green + P4 + P7 PASS**, then applied in place via `--narrative-update-from --drill-id` (the id was already minted). Row still `candidate`/`published=false`.
+
+**Also fixed:** `--narrative-regate-from` previously ran **N1–N6 only** — none of which reads `hint` or `full_reveal`. A hand edit to a teaching field could be reported "re-gated GREEN" by checks that had never looked at the field that changed. It now runs **P4 and P7 as well**.
+
+**🔸 STILL OPEN on D9 — the `hint` carries the same lean and was NOT changed** (out of the scope you set). It reads *"check whether you have moved to an explicit, conditional recommendation … because that is the advice the boardroom is waiting for"* — commitment again, not audience. Say the word and I will reframe it the same way.
 
 **E1 × analysis_and_evaluation is deliberately NOT in this batch** — it may close without authoring depending on your ruling on `55181aa8` below. Authoring it now would risk a second server for a cell about to close for free.
 

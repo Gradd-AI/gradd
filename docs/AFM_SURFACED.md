@@ -726,6 +726,30 @@ first run failed all five attempts and wrote no draft, and because stdout was re
 reported success. `runNarrativeBatch` now returns its failure count and the caller sets
 `process.exitCode` (P-G4: never `process.exit()`). Proven: an unknown `--narrative-only` id now exits 1.
 
+### 📊 CELL STATUS 2026-08-02 (after inserting batch 2) — **4 LIVE · 3 CANDIDATE · 0 OPEN**
+
+**Every one of the seven measured cells now has a named server. Three of those servers are NOT YET
+SERVING** — `next-drill` filters `status='approved' AND published=true`, so a `candidate` row serves
+nobody. "Authored" is not "closed"; the flip is a separate GATE-P call.
+
+| state | cell | examined marks | server |
+|---|---|---|---|
+| **LIVE** | E2 × scepticism | 23 | `1030689b` (E2a) |
+| CANDIDATE | B5 × communication | 16 | `36edda4f` (B5c) |
+| **LIVE** | E2 × commercial_acumen | 15 | `68a297a3` (E2c) |
+| **LIVE** | B1 × scepticism | 15 | `f6426c06` (B1b) |
+| CANDIDATE | E3 × scepticism | 12 | `de0c2676` (E3a) |
+| **LIVE** | E1 × analysis_and_evaluation | 7 | `55181aa8` (E1a) — closed by re-tag, not authoring |
+| CANDIDATE | A3 × communication | 6 | `d2b06649` (A3c) |
+
+AFM: 64 rows · 60 published+approved · 4 candidates (the 3 above + the permanent `47c9d5ce`).
+
+**⚠️ A concrete demonstration of why `47c9d5ce` must never be published.** The cell selector, matching
+on tag exactly as `psScore` does, returns **TWO** candidates for A3 × communication — `d2b06649` (D11,
+genuinely a communication drill) **and `47c9d5ce`**, purely because it carries a `communication` tag
+the rotation default gave it. Publishing it would make it *appear* to serve a cell its content does
+not serve, and it would be indistinguishable from a real server at the selector.
+
 **Still owed:**
 - **ZERO cells need authoring.** All seven measured-unservable cells are now closed or drafted:
   4 LIVE (E2 × scepticism · E2 × commercial_acumen · B1 × scepticism · **E1 × analysis_and_evaluation**,
