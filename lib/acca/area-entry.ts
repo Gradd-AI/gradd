@@ -64,6 +64,15 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   // credibility, and challenging is the later demand. Both stay above every B-calculator (≤53), so
   // neither can take B1's entry from NPV (10).
   '**Monte Carlo simulation — challenging the assumptions behind the output**': 65,  // D8 · B1b
+  // D9 · B5c — PS-cell batch 2. B5's calculators are 50–53, so the B-narrative band clears them
+  // automatically; D9 ranks after D5 (64, also B5c/d) so the older, broader financing drill stays
+  // the lower-ranked narrative of the two.
+  '**Exchange controls — briefing a local operating board on restricted remittance**': 66,  // D9 · B5c
+  // D11 · A3c — PS-cell batch 2. A3 has NO calculator and no other drill of any kind, so this is
+  // the A3 entry by construction (the E1 situation, not the E2 one — there is nothing to protect an
+  // entry from). Ranked in the narrative band anyway for consistency; 67 also clears A6a (53), the
+  // only other section-A drill, in case A3 and A6 are ever pooled.
+  '**Stakeholder management — communicating a remediation commitment to an affected community**': 67,  // D11 · A3c
   // ── E2 — FX hedging (calculator #11). Own area (never overlaps a B-prefix), so these ranks only
   // order K1..K4 against each other: forward+MMH (the Step-0 entry) → futures → options → swap. ──
   '**FX hedging — forward vs money-market hedge**': 70,
@@ -99,6 +108,11 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   // because the entry is resolved across the whole 2-char E2 bucket, not per LO.
   '**Foreign-exchange exposure — testing a claim that the group is fully hedged**': 83,      // D6 · E2a
   '**Netting and matching — whether a group netting arrangement earns its cost**': 84,       // D7 · E2c
+  // D10 · E3a — PS-cell batch 2. E3's calculators are irhedge 74–77 and E3 is its own 2-char
+  // bucket, so strictly speaking 78 would do; ranked at 85 to keep every E-narrative drill in one
+  // band above the WHOLE E-calculator span (70–77), which is the rule the E2 pair had to satisfy
+  // and the one a future reader will apply by analogy.
+  '**Interest-rate hedging — testing a claim that the rate risk has been eliminated**': 85,  // D10 · E3a
 };
 
 const UNRANKED = Number.POSITIVE_INFINITY;

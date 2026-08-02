@@ -41,6 +41,11 @@ const H = {
   psNetting: '**Netting and matching — whether a group netting arrangement earns its cost**',
   psMonteCarloChallenge: '**Monte Carlo simulation — challenging the assumptions behind the output**',
   d1MonteCarlo: '**Monte Carlo simulation — interpreting the simulation output**',
+  // PS-cell batch 2 (2026-08-02) — D9 (B5c) · D10 (E3a) · D11 (A3c)
+  psB5Comm: '**Exchange controls — briefing a local operating board on restricted remittance**',
+  psE3Scep: '**Interest-rate hedging — testing a claim that the rate risk has been eliminated**',
+  psA3Comm: '**Stakeholder management — communicating a remediation commitment to an affected community**',
+  d5ExchangeControls: '**Exchange controls and international sources of finance**',
 };
 // build a drill with a heading + trailing body (heading is the FIRST line, as in the real model_answer)
 const drill = (id: string, lo_code: string, heading: string) => ({ id, lo_code, model_answer: `${heading}\n\nbody line\nmore` });
@@ -162,6 +167,45 @@ ok('D8 ranks below D1 (interpret the output before challenging it), both above e
 // The two B1b headings must be DISTINCT strings — a copy-paste collision would silently make one
 // drill inherit the other's rank and go unranked in effect.
 ok('D1 and D8 headings are distinct (no silent rank collision on the shared B1b LO)', H.d1MonteCarlo !== H.psMonteCarloChallenge && entryRank(H.d1MonteCarlo) !== entryRank(H.psMonteCarloChallenge));
+
+// ── PS-CELL BATCH 2 (2026-08-02) — D9 (B5c) · D10 (E3a) · D11 (A3c).
+// Each faces a DIFFERENT version of the hazard, which is why they are asserted separately rather
+// than as one "all new ranks are high enough" check. ──
+
+// D10 · E3a — E3's own bucket holds the irhedge calculators at 74–77. The E-band rule is "above the
+// WHOLE E-calculator span", not "above this area's calculators", so 78 would satisfy E3 alone and
+// still break the rule the E2 pair had to meet. Checked against both bars.
+const e3WithNarrative = [...e3, drill('d10', 'E3a', H.psE3Scep)];
+ok('E3 zero-attempt serve STILL = irhedge futures K1 with D10 mixed into the same area fetch', pickEntryDrill(e3WithNarrative)?.id === 'ir1');
+ok('E3+D10 entry is order-independent (D10 listed first)', pickEntryDrill([drill('d10', 'E3a', H.psE3Scep), ...e3])?.id === 'ir1');
+ok('D10 ranks above every irhedge kind K1–K4', [H.irFutures, H.irOptions, H.irCollar, H.irSwap].every((h) => entryRank(H.psE3Scep) > entryRank(h)));
+ok('D10 also clears the fxhedge span (the E-band rule is the WHOLE E-calculator span, not just its own area)', [H.fxForwardMmh, H.fxFutures, H.fxOptions, H.fxSwap].every((h) => entryRank(H.psE3Scep) > entryRank(h)));
+
+// D9 · B5c — B5's calculators are 50–53 (international family), so clearing them is automatic; what
+// must be proven is that a SECOND B5 narrative drill does not disturb the international NPV entry
+// and that it ranks after D5, the other B5c/d narrative.
+const b5WithBothNarratives = [
+  drill('intl1', 'B5a', H.intlNpv),
+  drill('intl3', 'B5c', H.intlRemit),
+  drill('d5', 'B5c', H.d5ExchangeControls),
+  drill('d9', 'B5c', H.psB5Comm),
+];
+ok('B5 zero-attempt serve = international NPV with BOTH B5 narrative drills (D5 + D9) present', pickEntryDrill(b5WithBothNarratives)?.id === 'intl1');
+ok('B5+D5+D9 entry is order-independent (both narrative drills listed first)', pickEntryDrill([drill('d9', 'B5c', H.psB5Comm), drill('d5', 'B5c', H.d5ExchangeControls), drill('intl1', 'B5a', H.intlNpv), drill('intl3', 'B5c', H.intlRemit)])?.id === 'intl1');
+ok('D9 ranks after D5 (the older, broader B5c/d financing narrative stays the lower-ranked of the two)', entryRank(H.d5ExchangeControls) < entryRank(H.psB5Comm));
+ok('D9 clears every B5 international calculator kind', [H.intlNpv, H.intlSens, H.intlRemit].every((h) => entryRank(H.psB5Comm) > entryRank(h)));
+
+// D11 · A3c — A3 has NO calculator and no other drill of any kind, so D11 is the A3 entry BY
+// CONSTRUCTION (the E1 situation, not the E2 one). The point to prove is that this is by absence of
+// a competitor, not by a rank that would have beaten one.
+const a3 = [drill('d11', 'A3c', H.psA3Comm)];
+ok('A3 zero-attempt serve = D11, the only A3 drill (entry by construction, no calculator to protect)', pickEntryDrill(a3)?.id === 'd11');
+ok('D11 would NOT have taken the entry from a calculator had one existed in A3', entryRank(H.psA3Comm) > entryRank(H.divcap) && entryRank(H.psA3Comm) > entryRank(H.npv));
+ok('D11 is ranked at all (an unranked heading silently falls back to the random pick)', Number.isFinite(entryRank(H.psA3Comm)));
+
+// All three new headings must be DISTINCT from each other and from every existing one — a
+// copy-paste collision would silently give one drill another's rank.
+ok('the three batch-2 headings are distinct and separately ranked', new Set([entryRank(H.psB5Comm), entryRank(H.psE3Scep), entryRank(H.psA3Comm)]).size === 3);
 
 // ── E1 — treasury narrative (EN1/EN2). NO calculator exists in E1 — narrative is the ONLY content,
 // so it is the E1 entry by construction (not a "narrative beats a calculator" case, unlike E2 above).
