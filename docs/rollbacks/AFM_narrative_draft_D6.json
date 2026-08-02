@@ -1,0 +1,191 @@
+{
+  "plan_id": "D6",
+  "lo_code": "E2a",
+  "skill": "scepticism",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "E2a",
+    "topic": "The use of financial derivatives to hedge against forex risk",
+    "command_verb": "assess and conclude",
+    "intellectual_level": 3,
+    "professional_skill_tag": "scepticism",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "Assess Ms. Ratanasuwan's claim that SAC is \"fully hedged against currency risk.\" In your answer:\n(i) Identify which type(s) of currency exposure her stated policy actually addresses, and evaluate how completely it does so.\n(ii) Identify and explain the currency exposures that her policy leaves unaddressed, drawing on the specific circumstances of SAC.\n(iii) Conclude on the extent to which the board should rely on her claim, and what additional risk-management actions, if any, are warranted.",
+    "context_text": "Siam Axle Components PCL (\"SAC\"), headquartered in Bangkok, Thailand, manufactures precision drivetrain parts for global automotive assemblers. SAC exports approximately 80% of its output, invoiced in US dollars, to assembly plants in North America and Europe. SAC's Group Treasurer, Ms. Pornpan Ratanasuwan, told the board last quarter: \"We are fully hedged against currency risk — our policy is to forward-cover 100% of contracted USD receivables for the next 90 days.\" SAC's German competitor, Dreifach GmbH, prices identical components in euros, meaning that when the euro strengthens against the USD, Dreifach can undercut SAC on euro-denominated bids without changing its euro price. SAC's manufacturing cost base is denominated entirely in Thai baht, while all revenue is in USD, so any sustained USD/THB depreciation structurally erodes operating margins over multi-year horizons. Finally, SAC holds a wholly-owned subsidiary in Vietnam (Siam Axle Vietnam Co. Ltd., \"SAV\"), whose net assets of VND 420 billion are consolidated into SAC's Thai-baht group accounts; at each reporting date, the THB/VND exchange rate determines how those assets translate into the group balance sheet.",
+    "model_answer": "**Foreign-exchange exposure — testing a claim that the group is fully hedged**\n\n**Part (i) — What the policy covers**\n\nMs. Ratanasuwan's forward programme targets transaction exposure: the risk that contracted USD receivables settle at a worse THB rate than when they were booked. Locking in 100% of contracted USD receivables for 90 days does eliminate that specific settlement risk on those specific flows. However, \"contracted\" is a material qualifier — anticipated orders beyond the 90-day window, and any revenue not yet under signed contract, receive zero protection. The policy therefore addresses a subset of transaction exposure, not the totality of SAC's currency risk, making the phrase \"fully hedged\" misleading from the outset.\n\n**Part (ii) — What the policy leaves open**\n\nThe most structurally significant gap is economic exposure. Because SAC's entire cost base is denominated in Thai baht while all revenue is in USD, a sustained USD/THB depreciation erodes operating margins permanently across multi-year horizons — a dynamic that no 90-day forward roll can cure. Ms. Ratanasuwan's claim is therefore demonstrably wrong: no short-dated transaction hedge addresses this long-run structural mismatch.\n\nA second dimension of economic exposure arises from competitive positioning. Dreifach GmbH prices its identical components in euros; when the euro strengthens against the USD, Dreifach can lower its USD-equivalent price without touching its euro margin, undercutting SAC on bids. SAC's 90-day USD forward does nothing to neutralise this relative-price effect — a risk entirely absent from the treasurer's framing.\n\nFinally, SAV's VND 420 billion net assets sit in the consolidated group accounts. At each reporting date, THB/VND movements feed directly into other comprehensive income, shifting reported equity and potentially breaching debt covenant ratios — yet the forward programme contains no balance-sheet hedge to offset this translation exposure.\n\n**Part (iii) — Board conclusion and recommended actions**\n\nThe board should reject the \"fully hedged\" characterisation as materially incomplete. SAC should extend its hedging horizon to cover anticipated (not merely contracted) USD revenues, investigate operational responses — USD-denominated input sourcing, baht-cost efficiencies, or invoicing flexibility — to address the Thai baht cost/USD revenue mismatch, and implement a translation hedge (VND borrowing within SAV or a cross-currency swap) against SAV's VND 420 billion net asset exposure. The 90-day forward programme is necessary but far from sufficient; the board must commission a comprehensive currency risk review before relying on the treasurer's assertion.",
+    "hint": "Your answer identifies what the forward programme covers, but ask yourself whether transaction exposure on contracted receivables is the only type of currency risk SAC faces — specifically, what does a 90-day forward do to a structural mismatch between a baht cost base and USD revenues, or to the VND net assets sitting on the consolidated balance sheet?",
+    "full_reveal": "The classic misconception here is SCENARIO-FREE discussion: candidates produce a generic list of \"types of currency exposure\" — transaction, translation, economic — without anchoring each one to SAC's specific circumstances, so the answer reads like a textbook glossary rather than a boardroom assessment. That thinking produces the wrong conclusion because naming the exposure types earns nothing on its own; the marks flow from showing why SAC's particular cost structure, competitive landscape, and consolidated subsidiary create gaps that the treasurer's 90-day forward programme cannot close. The correct mental model is prosecutorial: treat Ms. Ratanasuwan's claim as a proposition to be stress-tested against each exposure dimension in turn — what does the policy actually fix, what does it structurally leave open, and why does that matter to this board? The third part of the question is where FENCE-SITTING also tends to appear: candidates hedge their conclusion with \"the policy is partially effective,\" stopping short of the explicit verdict the command verb \"conclude\" demands — the board needs to hear whether the \"fully hedged\" characterisation should be accepted, qualified, or rejected, and what action follows.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) Exposure the policy addresses and how completely",
+        "(ii) Exposures the policy leaves unaddressed",
+        "(iii) Board reliance and recommended actions"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_treasurer",
+          "text": "Ms. Ratanasuwan's 'fully hedged' claim backed by the 90-day forward-cover policy",
+          "key": "fully hedged",
+          "kind": "entity"
+        },
+        {
+          "id": "f_policy",
+          "text": "Policy: forward-cover 100% of contracted USD receivables for 90 days",
+          "key": "100% of contracted USD receivables",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_competitor",
+          "text": "German competitor Dreifach GmbH pricing in euros",
+          "key": "Dreifach GmbH",
+          "kind": "entity"
+        },
+        {
+          "id": "f_costbase",
+          "text": "Manufacturing cost base entirely in Thai baht, all revenue in USD",
+          "key": "Thai baht",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_subsidiary",
+          "text": "SAV net assets of VND 420 billion consolidated into SAC's group accounts",
+          "key": "VND 420 billion",
+          "kind": "figure"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) Exposure the policy addresses and how completely",
+          "lo": "E2a",
+          "required_point": "The 90-day forward-cover programme addresses transaction exposure — the risk that already-contracted USD receivables lose baht value before settlement — but the word 'contracted' is itself a limitation: uncontracted or pipeline orders beyond 90 days receive no cover, so the policy protects only a narrow slice of SAC's total USD revenue stream, not the full currency risk as claimed.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_policy",
+            "f_treasurer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(ii) Exposures the policy leaves unaddressed",
+          "lo": "E2a",
+          "required_point": "The policy is entirely silent on economic (operating) exposure. Because SAC's cost base is entirely in Thai baht while all revenue is in USD, a sustained USD/THB depreciation permanently compresses operating margins in a way no short-dated forward programme can repair; Ms. Ratanasuwan's claim of being 'fully hedged' cannot survive this structural mismatch, which can only be addressed through operational responses such as THB-cost reduction, USD-denominated sourcing, or price renegotiation.",
+          "marks": 3,
+          "anchor_facts": [
+            "f_costbase",
+            "f_treasurer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(ii) Exposures the policy leaves unaddressed",
+          "lo": "E2a",
+          "required_point": "Economic exposure also encompasses competitive (strategic) exposure: Dreifach GmbH prices in euros, so EUR/USD movements alter relative competitiveness on euro-denominated bids independently of anything in SAC's forward programme; the treasurer's claim is therefore wrong on a second dimension — a 90-day USD forward hedge does nothing to protect SAC's market share when the euro moves against the dollar.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_competitor",
+            "f_treasurer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) Exposures the policy leaves unaddressed",
+          "lo": "E2a",
+          "required_point": "Translation exposure on SAV's VND 420 billion net assets is also entirely unaddressed: each time the THB/VND rate moves at a reporting date, the consolidated group balance sheet absorbs a gain or loss through other comprehensive income, affecting reported equity and potentially key financial ratios used by lenders or investors — yet the treasurer's 'fully hedged' assertion makes no reference to this balance-sheet risk.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_subsidiary",
+            "f_treasurer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(iii) Board reliance and recommended actions",
+          "lo": "E2a",
+          "required_point": "The board should not accept the 'fully hedged' claim at face value: the policy mitigates one narrow category of risk (near-term transaction exposure on contracted flows) while leaving economic and translation exposure entirely open. SAC should at minimum adopt a longer hedging horizon for anticipated (not just contracted) USD receipts, explore operational hedges for baht-cost/USD-revenue mismatch, and consider a balance-sheet hedge (e.g. VND borrowing in SAV or a cross-currency swap) to mitigate SAV's translation exposure — treating the 90-day forward programme as a necessary but far from sufficient element of a comprehensive currency risk framework.",
+          "marks": 3,
+          "anchor_facts": [
+            "f_treasurer",
+            "f_policy",
+            "f_subsidiary",
+            "f_costbase"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "Ms. Ratanasuwan has stated that SAC is \"fully hedged against currency risk,\" backed by a policy covering 100% of contracted USD receivables for the next 90 days. This type of hedging is forward cover, which is a common tool used by exporters to protect against adverse movements in exchange rates. Forward contracts lock in a rate today for a future settlement, thereby eliminating uncertainty on the covered cash flows.\n\nTransaction exposure arises when a company has receivables or payables in a foreign currency. By using forward contracts, companies can protect themselves against the risk that exchange rates will move adversely before the transaction settles. This is a well-understood technique in treasury management and is widely recommended as best practice for exporters.\n\nTranslation exposure occurs when a parent company consolidates foreign subsidiaries and the exchange rate affects reported figures. Companies with overseas subsidiaries face the risk that their balance sheet values change due to exchange rate movements. There are various ways to manage this exposure, including taking out loans in the foreign currency or using cross-currency swaps.\n\nEconomic exposure is the long-term impact of exchange rate movements on a firm's competitive position and future cash flows. It is sometimes called operating exposure and is more difficult to hedge using financial instruments. Operational hedges, such as matching revenues and costs in the same currency, are generally considered more effective for managing economic exposure.\n\nThere are therefore three main types of currency exposure: transaction, translation, and economic. Each has different characteristics and requires different management approaches. Whether a company is adequately hedged depends on the nature and extent of its currency risks across all three categories, and the extent to which its policies address each one.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

@@ -1,0 +1,211 @@
+{
+  "plan_id": "D8",
+  "lo_code": "B1b",
+  "skill": "scepticism",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "B1b",
+    "topic": "Discounted cash flow techniques",
+    "command_verb": "assess",
+    "intellectual_level": 2,
+    "professional_skill_tag": "scepticism",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "ASSESS how much reliance the board of Río Verde Hydro S.A. can place on (i) the simulation output as a whole, and (ii) the specific reading of the output given by Chief Development Officer Valentina Osprey, including her interpretation of the value-at-risk figure.",
+    "context_text": "Río Verde Hydro S.A. (\"RVH\") is a Colombian electricity utility evaluating a new 200 MW run-of-river hydroelectric project on the Magdalena River. The board has commissioned a Monte Carlo simulation of the project's NPV, and the following outputs are GIVEN: mean NPV = COP 480 billion, standard deviation of NPV = COP 320 billion, probability of a negative NPV = 8%, and project value-at-risk at the 95% confidence level (i.e., the 5th-percentile NPV) = COP −47 billion. The project sponsor, Chief Development Officer Valentina Osprey, told the board: \"These results prove the project is essentially safe — the probability of loss is only 8%, and a VaR of −47 billion means the very worst the project can suffer is a loss of COP 47 billion; the board should approve with confidence.\" However, the simulation's input distributions for capital cost and electricity price were derived exclusively from RVH's own management estimates and a single five-year historical period (2018–2022), which spanned no major drought or commodity price shock. Furthermore, the model treated annual river-flow volume and electricity spot price as statistically independent variables, despite the Colombian energy market's well-documented pattern that drought years suppress both hydroelectric output and — via reduced nationwide generation capacity — simultaneously push wholesale electricity prices upward, creating a strong positive co-movement between the two revenue drivers that the model ignores.",
+    "model_answer": "**Monte Carlo simulation — challenging the assumptions behind the output**\n\nThe simulation's reliability is fundamentally compromised by two defects. First, all input distributions were calibrated on management estimates and a narrow window spanning only 2018–2022 — a benign period that contained no severe drought or commodity price shock. Because extreme adverse conditions were never sampled, the model cannot generate the tail scenarios that matter most; consequently, the mean NPV of 480 billion and the stated 8% loss probability should be treated with scepticism, as they likely flatter the project's true risk profile.\n\nSecond, and more seriously, the model treated river-flow volume and electricity spot price as statistically independent, directly contradicting the positive co-movement well documented in the Colombian market, where drought simultaneously suppresses hydro output and — by reducing national generation capacity — drives wholesale prices upward. By ignoring this correlation, the simulation can only construct scenarios in which one variable is bad at a time; it cannot construct the compound adverse scenario (low flow and low price together) that would inflict the deepest losses. The 8% loss probability is therefore structurally optimistic.\n\nValentina Osprey's reading compounds this problem with a conceptual error. Her assertion that a VaR of −47 billion represents the very worst the project can suffer fundamentally mischaracterises what a 95% VaR measures: it is merely the threshold below which outcomes fall in 5% of simulations — it is silent on how severe those tail outcomes are. Given the defective input data from 2018–2022 and the ignored correlation, those tail losses could far exceed COP 47 billion. Furthermore, Osprey presents the 480 billion mean alongside a standard deviation of 320 billion as evidence of safety, when in fact the wide dispersion signals substantial uncertainty that a responsible board should interrogate rather than dismiss.\n\nOn balance, the board should place only limited reliance on this simulation and should firmly reject Osprey's characterisation of the project as essentially safe. The model should be re-run with distributions stress-tested to include drought-era data and with river flow and electricity price modelled as positively correlated before any approval decision is made.",
+    "hint": "Your answer describes what the simulation does, but the board needs you to challenge the two specific defects in how it was built — ask yourself what the 2018–2022 calibration window excludes and what happens to the loss probability when two bad variables are forced to move independently when the scenario tells you they should not.",
+    "full_reveal": "The dominant misconception here is UNDEVELOPED-ASSUMPTION: candidates identify that the simulation has limitations — short data window, management estimates, standard deviation is large — but then list those observations without explaining the causal mechanism that makes each one matter. Naming a flaw is level 1 thinking; the boardroom demands level 2 — why does that flaw corrupt this specific output? The 2018–2022 window is not merely \"short\"; because it excluded severe drought and commodity shocks, the tail of the distribution was never populated, which means the loss probability the model reports is structurally incapable of reflecting the compound adverse events the project actually faces. The correlation defect is even more damaging in its mechanism: treating river flow and electricity price as independent allows the simulation to place them in offsetting scenarios, but the scenario tells you they move together in the Colombian market — drought suppresses output and simultaneously reduces national generation capacity, pushing prices up — so the truly destructive scenario (low flow coinciding with low price) can never be constructed, and the stated loss probability is therefore optimistic by design, not by accident. Osprey's VaR error follows the same undeveloped pattern: she has read a threshold figure as a worst-case ceiling, when VaR is silent on the severity of outcomes beyond that threshold — and with both defects present in the underlying model, those tail outcomes could be materially worse than the figure she cites; a board-ready answer names that distinction and concludes with a clear recommendation on reliance.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) reliability of the simulation output",
+        "(ii) assessment of Osprey's reading of the output"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_mean_npv",
+          "text": "mean NPV of COP 480 billion from the simulation",
+          "key": "480 billion",
+          "kind": "figure"
+        },
+        {
+          "id": "f_sd",
+          "text": "standard deviation of NPV of COP 320 billion",
+          "key": "320 billion",
+          "kind": "figure"
+        },
+        {
+          "id": "f_prob_neg",
+          "text": "probability of a negative NPV of 8%",
+          "key": "8%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_var",
+          "text": "project VaR at 95% confidence of COP −47 billion",
+          "key": "−47 billion",
+          "kind": "figure"
+        },
+        {
+          "id": "f_input_source",
+          "text": "input distributions based on management estimates and a single five-year historical period (2018–2022)",
+          "key": "2018–2022",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_independence",
+          "text": "river-flow volume and electricity spot price modelled as statistically independent",
+          "key": "statistically independent",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_co_movement",
+          "text": "drought suppresses output and simultaneously pushes wholesale electricity prices upward — positive co-movement",
+          "key": "positive co-movement",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_osprey",
+          "text": "CDO Valentina Osprey's claim that VaR represents the worst possible loss",
+          "key": "Valentina Osprey",
+          "kind": "entity"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) reliability of the simulation output",
+          "lo": "B1b",
+          "required_point": "The input distributions were drawn from management estimates and the period 2018–2022 alone — a window that excluded major droughts and commodity shocks — so the simulation cannot generate the tail scenarios that would matter most to the board; the output is therefore likely to understate true downside risk.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_input_source"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) reliability of the simulation output",
+          "lo": "B1b",
+          "required_point": "Treating river-flow volume and electricity spot price as statistically independent when positive co-movement exists in the Colombian market is a critical modelling error: in a drought year the model randomly varies these inputs in isolation, but in reality both deteriorate simultaneously, meaning the simulation systematically underestimates the probability and severity of combined adverse outcomes — the stated 8% loss probability is therefore optimistically biased.",
+          "marks": 3,
+          "anchor_facts": [
+            "f_independence",
+            "f_co_movement",
+            "f_prob_neg"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(ii) assessment of Osprey's reading of the output",
+          "lo": "B1b",
+          "required_point": "Valentina Osprey's claim that VaR of −47 billion represents 'the very worst the project can suffer' is a fundamental misreading: a 95% VaR is simply the threshold the NPV will fall below in 5% of scenarios — it says nothing about how large the losses in that 5% tail could be; given the flawed input data from 2018–2022, extreme tail losses (potentially far exceeding COP 47 billion) are both plausible and unquantified by this output.",
+          "marks": 3,
+          "anchor_facts": [
+            "f_var",
+            "f_osprey",
+            "f_input_source"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F4",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) assessment of Osprey's reading of the output",
+          "lo": "B1b",
+          "required_point": "The mean NPV of 480 billion and standard deviation of 320 billion together indicate that the distribution has wide dispersion relative to its mean — the coefficient of variation implies substantial uncertainty — yet Osprey presents these figures as confirming safety rather than highlighting the breadth of outcomes; the board should treat the wide spread of results as a reason for caution, not comfort.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_mean_npv",
+            "f_sd",
+            "f_osprey"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(ii) assessment of Osprey's reading of the output",
+          "lo": "B1b",
+          "required_point": "On balance, the board should place only limited reliance on this simulation and should reject Osprey's characterisation of the project as 'essentially safe'; the board should require the model to be re-run with stress-tested input distributions covering drought years and with river flow and electricity price modelled as positively correlated before making an approval decision.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_osprey",
+            "f_independence",
+            "f_co_movement"
+          ],
+          "disqualifiers": [
+            "F4",
+            "F5",
+            "F11"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "Monte Carlo simulation is a useful technique for investment appraisal because it replaces single-point estimates with probability distributions for each input variable, generating a distribution of possible NPV outcomes rather than a single figure. The simulation outputs for the Río Verde Hydro project show a mean NPV of COP 480 billion and a probability of a negative NPV of 8%, which suggests the project has a high likelihood of generating a positive return.\n\nThe board has commissioned a Monte Carlo simulation of the project's NPV, and the following outputs are GIVEN: mean NPV = COP 480 billion, standard deviation of NPV = COP 320 billion, probability of a negative NPV = 8%, and project value-at-risk at the 95% confidence level = COP −47 billion. The VaR figure is an important risk measure that quantifies the downside at a given confidence level.\n\nIt is generally acknowledged in financial theory that correlation between input variables can affect the outcomes of a Monte Carlo simulation. When variables are modelled as independent, the results may differ from those obtained when correlation is incorporated. Similarly, the quality of input distributions is important in any simulation model — if inputs are derived from historical data, the reliability of those inputs depends on the representativeness of the historical period chosen.\n\nThere are also general limitations to the VaR measure. VaR has been criticised in financial risk management for not capturing tail risk beyond the confidence threshold. Expected Shortfall (also known as CVaR) is sometimes preferred as it captures the average loss in the tail.\n\nIt is possible that the simulation could understate or overstate the true risk, depending on the assumptions made. The board may wish to consider whether additional sensitivity analysis would be helpful in this situation. There are arguments on both sides of the debate about how much weight to place on simulation results.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

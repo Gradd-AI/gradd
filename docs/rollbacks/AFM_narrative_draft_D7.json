@@ -1,0 +1,209 @@
+{
+  "plan_id": "D7",
+  "lo_code": "E2c",
+  "skill": "commercial_acumen",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "E2c",
+    "topic": "The use of financial derivatives to hedge against forex risk",
+    "command_verb": "evaluate, explain, advise, assess",
+    "intellectual_level": 3,
+    "professional_skill_tag": "commercial_acumen",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "As senior financial adviser to the board of Mineros del Pacífico S.A., advise the board on the following:\n\n(i) Evaluate whether the netting centre should be approved, having regard to the given financial outputs and the board's stated payback threshold.\n\n(ii) Explain the implications of MdP-Morocco's exchange-control position and advise how the group should manage its Moroccan subsidiary's exposures in the absence of netting.\n\n(iii) Assess the commercial significance of the no-new-headcount constraint for the viability of the netting centre.",
+    "context_text": "Mineros del Pacífico S.A. (\"MdP\") is a Chilean mining-services group with five trading subsidiaries: MdP-Chile (CLP), MdP-Peru (PEN), MdP-Brazil (BRL), MdP-South Africa (ZAR), and MdP-Morocco (MAD). The group's treasury has completed an analysis of establishing a multilateral netting centre in Santiago. The analysis concludes that, after all running costs, the netting centre would generate an annual net saving of USD 2.1 million. The one-off set-up cost is estimated at USD 4.55 million, yielding a payback period of 26 months. The board has stated that any new treasury initiative must achieve payback within 24 months; that threshold was set by the CFO as the maximum acceptable recovery period in light of the current capital-expenditure cycle. MdP-Morocco operates under Moroccan exchange-control regulations (Office des Changes rules) that prohibit subsidiaries from pooling or netting foreign-currency receivables and payables through an offshore centre; MdP-Morocco cannot legally participate in the netting arrangement. The board has also imposed a no-new-headcount constraint, meaning the netting centre must be staffed entirely by redeploying existing treasury personnel.",
+    "model_answer": "**Netting and matching — whether a group netting arrangement earns its cost**\n\n**Part (i) — Approve or reject the netting centre?**\n\nThe treasury analysis delivers a payback period of 26 months, which overshoots the CFO's stated ceiling of 24 months by two months. On a mechanical application of the board's rule the proposal fails its own hurdle. However, rejecting it on that basis alone would be commercially short-sighted. The annual net saving of USD 2.1 million is a recurring benefit; over a five-year horizon the centre generates roughly USD 10.5 million of value against the USD 4.55 million set-up cost — a highly positive return. The two-month breach is material only if the 24-month threshold is treated as immovable. Given that the gap is narrow and the long-run benefit is substantial, I recommend that the board approve the centre on the basis of a formally documented exception to the payback threshold, with the CFO's sign-off. Alternatively, if any assumption in the analysis is conservative (for example, if four rather than five subsidiaries are actively modelled), revisiting the inputs may close the gap. The board should not simply defer the decision, because every month of inaction permanently forgoes USD 175,000 of the annual net saving.\n\n**Part (ii) — MdP-Morocco and the Office des Changes rules**\n\nThe Office des Changes regulations constitute a market barrier to the free movement of capital that categorically bars MdP-Morocco from routing MAD receivables or payables through the Santiago netting centre. The group must exclude MdP-Morocco from the multilateral matrix entirely; attempting to include it would violate Moroccan law and risk fines or loss of operating licences that would far exceed any notional saving. For MdP-Morocco's exposures, the group should apply bilateral matching first — netting all MAD inflows against MAD outflows within the Moroccan entity before any cross-border settlement — and then hedge residual net positions using onshore Moroccan forward contracts or hedging instruments explicitly permitted under Office des Changes rules. This approach respects the regulatory constraint while still reducing gross settlement volumes.\n\n**Part (iii) — The no-new-headcount constraint**\n\nThe no-new-headcount constraint carries direct financial significance because the USD 2.1 million net saving figure and the USD 4.55 million set-up cost both presumably assume that the centre is staffed by redeployment at no incremental salary cost. If existing treasury staff cannot absorb the netting centre's workload without reducing throughput or accuracy in their present roles, the true running cost will exceed the modelled figure, compressing the net saving below USD 2.1 million and pushing the payback period beyond 26 months — widening the already marginal breach of the 24-month threshold. The board must therefore obtain an independent capacity assessment confirming that redeployment is operationally feasible; if the assessment reveals a gap, the no-new-headcount constraint should be relaxed rather than the centre deferred, since the cost of one or two additional hires is likely to be recovered well within the saving's life.",
+    "hint": "Your answer identifies the payback breach and the Morocco problem, but check whether you have converted each financial output into a clear board-level verdict — approve, reject, or conditionally approve — with the specific reasoning that bridges the number to the recommendation, particularly for the no-new-headcount constraint where the capacity risk needs to be named and resolved, not merely flagged.",
+    "full_reveal": "The dominant misconception in advisory drills like this is FENCE-SITTING: the candidate lists the correct financial outputs — payback period, net saving, regulatory barrier — and then stops at the threshold of the room, presenting the numbers as if the board can draw its own conclusions. That is not advice; it is a spreadsheet commentary. The failure is structural: a number without a verdict leaves the board exactly where it started, and in an exam context the advice marks are attached to the recommendation, not the calculation. The correct mental model is to treat every financial output as evidence in an argument that must land on a directive: in part (i), the narrow payback breach does not automatically mean rejection — the size and durability of the recurring saving may justify a documented exception, and the candidate must say so explicitly. In part (iii), merely noting that the no-new-headcount constraint \"could affect\" the saving is an UNDEVELOPED-ASSUMPTION: the candidate must reason through the causal chain — if redeployment is not operationally feasible, the modelled running cost is understated, the net saving is overstated, and the payback period widens further — and then land on what the board should do about it. The boardroom standard is this: every paragraph should end with an instruction, not an observation.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) evaluate whether to approve the netting centre",
+        "(ii) implications of MdP-Morocco exchange controls and how to manage Moroccan exposures",
+        "(iii) commercial significance of the no-new-headcount constraint"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_saving",
+          "text": "annual net saving of USD 2.1 million after running costs",
+          "key": "USD 2.1 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_setup",
+          "text": "one-off set-up cost of USD 4.55 million",
+          "key": "USD 4.55 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_payback",
+          "text": "payback period of 26 months from the treasury analysis",
+          "key": "26 months",
+          "kind": "figure"
+        },
+        {
+          "id": "f_threshold",
+          "text": "board payback threshold of 24 months",
+          "key": "24 months",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_morocco",
+          "text": "MdP-Morocco subject to Office des Changes rules barring offshore netting participation",
+          "key": "Office des Changes",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_headcount",
+          "text": "no-new-headcount constraint requiring redeployment of existing treasury personnel",
+          "key": "no-new-headcount",
+          "kind": "constraint"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) evaluate whether to approve the netting centre",
+          "lo": "E2c",
+          "required_point": "The 26-month payback exceeds the board's 24-month threshold by two months, so on a strict reading of the CFO's rule the proposal fails the board's own hurdle — the candidate must name this gap explicitly and recognise it as the pivotal commercial tension, not a rounding artefact.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_payback",
+            "f_threshold"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) evaluate whether to approve the netting centre",
+          "lo": "E2c",
+          "required_point": "Despite failing the threshold, the board should seek a waiver or re-examine assumptions rather than reject outright, because the USD 2.1 million annual net saving is material and the two-month overrun is small relative to the saving's multi-year stream — the commercial cost of non-participation is the permanent forfeiture of a recurring USD 2.1 million benefit. The candidate must commit to a recommendation (proceed with a board-sanctioned exception or revisit the threshold) rather than deferring the decision.",
+          "marks": 3,
+          "anchor_facts": [
+            "f_saving",
+            "f_payback",
+            "f_threshold"
+          ],
+          "disqualifiers": [
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(ii) implications of MdP-Morocco exchange controls and how to manage Moroccan exposures",
+          "lo": "E2c",
+          "required_point": "The Office des Changes rules are a market barrier to the free movement of capital that legally prevents MdP-Morocco from pooling its MAD receivables and payables through Santiago; the group cannot aggregate or offset MdP-Morocco's positions within the netting matrix and must manage that subsidiary's exposures bilaterally.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_morocco"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) implications of MdP-Morocco exchange controls and how to manage Moroccan exposures",
+          "lo": "E2c",
+          "required_point": "For MdP-Morocco's residual exposures the group should use bilateral matching — netting MAD inflows against MAD outflows within MdP-Morocco itself before any cross-border settlement — and supplement with on-shore forward contracts or currency options available in Morocco, keeping all hedging instruments compliant with Office des Changes rules so as to avoid regulatory censure and fines that would erode the savings achieved by the wider netting centre.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_morocco"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(iii) commercial significance of the no-new-headcount constraint",
+          "lo": "E2c",
+          "required_point": "The no-new-headcount constraint means the USD 4.55 million set-up cost and the running cost savings embedded in the USD 2.1 million net saving figure already assume redeployment; if existing treasury staff cannot absorb the additional operational load without degrading their current duties, the real running costs will rise above those assumed, the net saving will fall below USD 2.1 million, and the 26-month payback will lengthen further beyond the 24-month threshold — making the constraint a direct threat to the financial case, not merely an HR policy matter.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_headcount",
+            "f_saving",
+            "f_setup"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c6",
+          "requirement_part": "(iii) commercial significance of the no-new-headcount constraint",
+          "lo": "E2c",
+          "required_point": "The board should require the CFO to confirm that existing personnel have sufficient capacity and that the redeployment plan will not create control weaknesses or increase operational risk in other treasury functions — if it cannot be confirmed, the no-new-headcount constraint should be relaxed or the proposal deferred, because launching a netting centre with an under-resourced team would expose MdP to settlement errors and compliance failures that negate the cost savings.",
+          "marks": 1,
+          "anchor_facts": [
+            "f_headcount"
+          ],
+          "disqualifiers": [
+            "F4",
+            "F10"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "Mineros del Pacífico S.A. is a Chilean mining-services group with five trading subsidiaries across three continents. The group is considering whether to establish a multilateral netting centre in Santiago.\n\nMultilateral netting is a technique used by multinational groups to reduce the number and value of intercompany foreign-currency settlements. Instead of each subsidiary settling gross amounts owed to every other subsidiary, all positions are consolidated and only net amounts are transferred. This significantly reduces transaction costs, bank charges, and administrative effort. Bilateral netting works in a similar way but involves only two parties.\n\nThe benefits of multilateral netting include reduced foreign exchange transaction costs, lower bank fees, improved cash flow visibility, and better currency risk management. The drawbacks include the cost of setting up and running the netting centre, the complexity of coordinating multiple entities across different time zones, and the potential for regulatory barriers in certain jurisdictions.\n\nExchange controls are a well-known barrier to the free movement of capital. Many emerging-market regulators impose restrictions on cross-border capital flows, which can prevent subsidiaries in those jurisdictions from participating in group netting arrangements. In such cases, groups typically manage exposures through bilateral arrangements or onshore hedging instruments.\n\nThe no-new-headcount constraint is a common board-level policy designed to manage costs. Running a netting centre requires treasury expertise, and if existing staff cannot absorb the additional workload it may affect the quality of treasury operations more broadly.\n\nThere are therefore a number of factors that the board of MdP should weigh carefully before making a decision. The financial outputs of the treasury analysis, the regulatory environment in each subsidiary's jurisdiction, and the operational capacity of the existing treasury team are all relevant considerations. The board may wish to seek further advice before proceeding.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}
