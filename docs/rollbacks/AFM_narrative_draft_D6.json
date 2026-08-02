@@ -8,7 +8,10 @@
     "N5 committed-verdict/structure: PASS",
     "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
     "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
-    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS"
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (scepticism): PASS",
+    "N6c claim-anchor link: PASS"
   ],
   "row": {
     "exam_board": "ACCA",

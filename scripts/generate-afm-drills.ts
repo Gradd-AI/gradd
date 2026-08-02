@@ -62,6 +62,7 @@ import { lintJurisdiction, lintCompleteness, lintLossRelief, lintFrozenMarketFac
 // Narrative pipeline (#2) — the discursive-drill marker + constrained model grader (authoring-time gate).
 import {
   checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
+  checkSkillDemand,
   scenarioCopyOverlap, hasConclusion, missingAnchors, longestVerbatimRun,
   type NarrativeRubric, type Criterion, type ScenarioFact, type FailureMode as NarrativeFailureMode,
 } from '../lib/acca/narrative-marker';
@@ -3084,6 +3085,7 @@ async function draftNarrativeDrill(anthropic: Anthropic, plan: NarrativePlan, fe
 async function runNarrativeGates(
   drill: NarrativeDrill,
   grader: ReturnType<typeof makeAnthropicCriterionGrader>,
+  skill?: ProfessionalSkillTag,
 ): Promise<{ ok: boolean; lines: string[]; feedback: string }> {
   const { rubric, reveal, context_text: scenario, golden_bad, designed_bad_flags } = drill;
   const lines: string[] = [];
@@ -3143,6 +3145,17 @@ async function runNarrativeGates(
   const n4 = await checkRule23(rubric, scenario, reveal, golden_bad, designed_bad_flags, grader);
   lines.push(`N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): ${n4.ok ? 'PASS' : 'FAIL — ' + n4.reason}`);
   if (!n4.ok) fails.push(`N4: ${n4.reason}`);
+
+  // N6 — skill-demand STRUCTURE. Runs LAST because the deterministic gates above are the cheap
+  // ones and N6 is only meaningful on a rubric that already coheres.
+  //
+  // CLAIM CEILING, verbatim: a green N6 means "the scenario admits the act and the rubric names
+  // the skill as the marking basis". NEVER "the rubric demands the skill".
+  const n6 = checkSkillDemand(rubric, scenario, skill);
+  for (const p of n6.parts) {
+    lines.push(`${p.name}: ${p.status === 'pass' ? 'PASS' : p.status === 'fail' ? 'FAIL — ' + p.detail : 'NOT EVALUATED — ' + p.detail}`);
+  }
+  if (!n6.ok) fails.push(`N6: ${n6.reason}`);
 
   return { ok: fails.length === 0, lines, feedback: fails.join('\n') };
 }
@@ -3210,6 +3223,91 @@ function buildNarrativeRow(
   };
 }
 
+/** Reconstruct the gate-input shape from a captured draft row. The draft stores the SERVED shape
+ *  (model_answer = heading + reveal, rubric under answer_schema), so the golden GOOD has to be
+ *  recovered by stripping the heading — done here once rather than at each call site. */
+function draftToGateInput(row: Record<string, unknown>): { drill: NarrativeDrill; skill: ProfessionalSkillTag } {
+  const schema = row.answer_schema as Record<string, unknown>;
+  const authoring = (schema._authoring ?? {}) as { golden_bad?: string; designed_bad_flags?: NarrativeFailureMode[] };
+  const modelAnswer = String(row.model_answer);
+  // The heading is the first line; the reveal is everything after the blank line that follows it.
+  const reveal = modelAnswer.split('\n').slice(1).join('\n').trim();
+  if (!reveal) throw new Error('draft model_answer has a heading but no reveal body');
+  return {
+    drill: {
+      question: String(row.question),
+      context_text: String(row.context_text),
+      command_verb: String(row.command_verb),
+      rubric: {
+        mode: 'narrative',
+        requirement_parts: schema.requirement_parts as string[],
+        scenario_facts: schema.scenario_facts as ScenarioFact[],
+        criteria: schema.criteria as Criterion[],
+        total_marks: schema.total_marks as number,
+        bands: schema.bands as { min: number; label: string }[],
+      },
+      reveal,
+      golden_bad: authoring.golden_bad ?? '',
+      designed_bad_flags: authoring.designed_bad_flags ?? [],
+    },
+    skill: row.professional_skill_tag as ProfessionalSkillTag,
+  };
+}
+
+/**
+ * Re-run the FULL N1–N6 barrier against a captured draft and rewrite its `gate_lines`.
+ *
+ * Exists because a hand edit to a captured rubric — rewording a criterion after review — is
+ * otherwise ungated: the gates ran against the draft as GENERATED, and the stored `gate_lines`
+ * would keep asserting a green that no longer describes the file. Re-gating in place keeps the
+ * draft's own record of its gating true to its current bytes.
+ */
+async function regateNarrativeDraft(anthropic: Anthropic, draftPath: string) {
+  const parsed = JSON.parse(readFileSync(draftPath, 'utf8')) as { plan_id?: string; row?: Record<string, unknown>; gate_lines?: string[] };
+  if (!parsed.row) throw new Error(`${draftPath}: no "row" key — not a narrative draft file`);
+  const { drill, skill } = draftToGateInput(parsed.row);
+  console.log(`Re-gating ${parsed.plan_id ?? draftPath} — ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · declared skill: ${skill}`);
+  const report = await runNarrativeGates(drill, makeAnthropicCriterionGrader(anthropic), skill);
+  report.lines.forEach((l) => console.log(`  ${l}`));
+  parsed.gate_lines = report.lines;
+  writeFileSync(draftPath, JSON.stringify(parsed, null, 2), 'utf8');
+  console.log(report.ok ? `\n✓ ${parsed.plan_id} re-gated GREEN — draft updated` : `\n✗ ${parsed.plan_id} re-gate FAILED:\n${report.feedback}`);
+  return report.ok;
+}
+
+/**
+ * Update an EXISTING candidate row from a captured draft. Used when a drill is already inserted
+ * and its content is edited after review — re-inserting would mint a new id, and the id is
+ * already cited in the pack, the journal and the code map.
+ *
+ * Refuses to touch anything published: this path edits candidates only.
+ */
+async function updateNarrativeDraft(supabase: ReturnType<typeof createClient>, draftPath: string, drillId: string) {
+  const parsed = JSON.parse(readFileSync(draftPath, 'utf8')) as { plan_id?: string; row?: Record<string, unknown> };
+  const row = parsed.row;
+  if (!row) throw new Error(`${draftPath}: no "row" key — not a narrative draft file`);
+
+  const { data: before, error: readErr } = await supabase.from('acca_drills')
+    .select('id, lo_code, status, published, professional_skill_tag, marks_guide').eq('id', drillId).single();
+  if (readErr || !before) throw new Error(`target drill ${drillId} not found: ${readErr?.message}`);
+  const b = before as unknown as Record<string, unknown>;
+  if (b.status !== 'candidate' || b.published !== false) {
+    throw new Error(`refusing to update ${drillId}: it is status=${String(b.status)} published=${String(b.published)} — this path edits CANDIDATES only`);
+  }
+  if (b.lo_code !== row.lo_code || b.professional_skill_tag !== row.professional_skill_tag) {
+    throw new Error(`refusing to update ${drillId}: draft is ${String(row.lo_code)}/${String(row.professional_skill_tag)} but the row is ${String(b.lo_code)}/${String(b.professional_skill_tag)} — wrong target`);
+  }
+
+  const { error } = await supabase.from('acca_drills').update({
+    question: row.question, context_text: row.context_text, model_answer: row.model_answer,
+    hint: row.hint, full_reveal: row.full_reveal, answer_schema: row.answer_schema,
+    command_verb: row.command_verb, marks_guide: row.marks_guide,
+  } as never).eq('id', drillId);
+  if (error) throw new Error(`update failed: ${error.message}`);
+  console.log(`✓ ${parsed.plan_id ?? '(draft)'} updated in place — ${drillId} (still candidate/unpublished)`);
+  return drillId;
+}
+
 /** Insert a captured dry-run draft verbatim. No model call, no regeneration — the point is that the
  *  bytes reviewed are the bytes stored. Refuses a draft that is not `candidate`/unpublished: this
  *  path must never be a way to write live content. */
@@ -3254,7 +3352,7 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       try { candidate = await draftNarrativeDrill(anthropic, plan, feedback); }
       catch (err) { console.warn(`  ↻ ${plan.id} attempt ${attempt} draft error: ${(err as Error).message}`); await sleep(2000); continue; }
 
-      const report = await runNarrativeGates(candidate, grader);
+      const report = await runNarrativeGates(candidate, grader, plan.skill);
       console.log(`\n  attempt ${attempt}:`);
       report.lines.forEach((l) => console.log(`    ${l}`));
       if (report.ok) { drill = candidate; lastLines = report.lines; break; }
@@ -3362,12 +3460,31 @@ async function main() {
   const narrativeBatch = flag('--narrative-batch');
 
   const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one (errors loudly on an unknown id).';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-insert-from']);
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-insert-from', '--narrative-regate-from', '--narrative-update-from', '--drill-id']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
   // Insert a captured dry-run draft VERBATIM (no model call). Separate from --narrative-batch so a
   // review→insert can never accidentally regenerate the content it was reviewing.
+  // Re-gate a hand-edited draft through the FULL N1–N6 barrier (real grader), rewriting its
+  // gate_lines so the draft's own record stays true to its bytes.
+  const regateFrom = arg('--narrative-regate-from');
+  if (regateFrom) {
+    const ok = await regateNarrativeDraft(new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! }), regateFrom);
+    process.exitCode = ok ? 0 : 1;
+    return;
+  }
+
+  // Apply a re-gated draft to an EXISTING candidate row (edit in place; the id is already cited).
+  const updateFrom = arg('--narrative-update-from');
+  if (updateFrom) {
+    const drillId = arg('--drill-id');
+    if (!drillId) { console.error('Error: --narrative-update-from requires --drill-id <uuid>'); process.exitCode = 1; return; }
+    const supabaseU = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+    await updateNarrativeDraft(supabaseU, updateFrom, drillId);
+    return;
+  }
+
   const insertFrom = arg('--narrative-insert-from');
   if (insertFrom) {
     const supabaseI = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });

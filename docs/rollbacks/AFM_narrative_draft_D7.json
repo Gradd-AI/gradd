@@ -8,7 +8,10 @@
     "N5 committed-verdict/structure: PASS",
     "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
     "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
-    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS"
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (commercial_acumen): PASS",
+    "N6c claim-anchor link: NOT EVALUATED — structurally N/A for commercial_acumen — only scepticism acts on a single identifiable asserted claim"
   ],
   "row": {
     "exam_board": "ACCA",
@@ -94,7 +97,7 @@
           "id": "c2",
           "requirement_part": "(i) evaluate whether to approve the netting centre",
           "lo": "E2c",
-          "required_point": "Despite failing the threshold, the board should seek a waiver or re-examine assumptions rather than reject outright, because the USD 2.1 million annual net saving is material and the two-month overrun is small relative to the saving's multi-year stream — the commercial cost of non-participation is the permanent forfeiture of a recurring USD 2.1 million benefit. The candidate must commit to a recommendation (proceed with a board-sanctioned exception or revisit the threshold) rather than deferring the decision.",
+          "required_point": "The candidate must COMMIT to a recommendation and state the basis it rests on. Either direction earns these marks when the basis is given and weighed: RECOMMEND PROCEEDING (via a board-sanctioned exception or a revisited threshold) on the basis that the USD 2.1 million annual net saving is recurring and material while the two-month overrun on the 24 months threshold is a one-off timing gap; or RECOMMEND REJECTING on the basis that the 24-month threshold is a deliberate discipline set against the current capital-expenditure cycle and a proposal that misses it should not be approved by exception. What is NOT creditable is naming the gap and then deferring, hedging, or leaving the decision to the board — the professional skill assessed here is committing on a stated basis, not arriving at a preferred verdict.",
           "marks": 3,
           "anchor_facts": [
             "f_saving",
