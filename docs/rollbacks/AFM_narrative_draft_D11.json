@@ -1,0 +1,201 @@
+{
+  "plan_id": "D11",
+  "lo_code": "A3c",
+  "skill": "communication",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (communication): NOT EVALUATED — no structural test exists for \"a named audience and a stated purpose\" that is not a phrase table (banned — see the header). A communication drill's precondition must be confirmed by a human reading the pack",
+    "N6c claim-anchor link: NOT EVALUATED — structurally N/A for communication — only scepticism acts on a single identifiable asserted claim"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "A3c",
+    "topic": "Corporate environmental, social, governance (ESG) and ethical issues",
+    "command_verb": "evaluate",
+    "intellectual_level": 3,
+    "professional_skill_tag": "communication",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 10,
+    "question": "As senior financial adviser to CVCG's board, evaluate how CVCG should communicate its remediation commitment to the Junta de Regantes del Tambo, addressing:\n(i) What the communication must contain and how it must be framed to address the Junta's specific concerns; and\n(ii) How the communication approach should be structured and delivered to make the commitment credible and actionable for the Junta given the breakdown in trust.",
+    "context_text": "Cerro Verde Copper Group (\"CVCG\"), a Peruvian copper-mining conglomerate, operates an open-pit mine in the Arequipa region. In March 2025, a tailings-pond breach released acid-mine drainage into the Tambo River catchment, contaminating irrigation water used by farming communities in three downstream valleys. CVCG's regional manager issued a public assurance in April 2025 that water quality would return to safe levels within 60 days; that assurance proved wrong, and water quality remained below regulatory standards four months later. CVCG's board has since committed a remediation spend of USD 28 million, funded from existing reserves, to install neutralisation infrastructure and restore aquifer quality. An independent environmental monitor will test water quality at 14 river stations every two weeks, and the programme is expected to reach the affected population of 6,400 farming households across the three valleys. The elected representatives of those farming communities — the Junta de Regantes del Tambo — are now deciding whether to accept the programme or to escalate to Peru's environmental regulator, OEFA, and they have explicitly cited the broken April assurance as the reason for their distrust. CVCG's senior management must address the Junta de Regantes in a formal written communication before a scheduled community assembly in four weeks.",
+    "model_answer": "**Stakeholder management — communicating a remediation commitment to an affected community**\n\nCVCG faces a communication task that is fundamentally about restoring decision-making trust, not simply transmitting technical facts. The following sets out what the written submission to the Junta de Regantes must contain and how it should be structured.\n\n**Part (i) — Content and framing**\n\nThe opening paragraph must name and own the broken April assurance. CVCG issued a specific, time-bound commitment that water quality would recover within 60 days; it did not. The Junta de Regantes has identified this failure as the root of their distrust, and any communication that moves directly to new commitments without addressing it will be received as a repetition of the same pattern. The document must therefore state explicitly what was promised in April, what happened instead, and why the new programme is structurally different — not merely better-funded.\n\nThe USD 28 million committed spend should be presented in terms of what it physically delivers — neutralisation infrastructure and aquifer restoration — rather than as a headline number. The Junta represents farming households, not investors; the monetary figure alone carries no actionable meaning unless it is connected to visible, scheduled works they can verify.\n\nThe monitoring regime must be reframed as a Junta entitlement. Independent testing at 14 river stations every two weeks is only credible to the 6,400 farming households if they can see the results through their own representatives. The communication should commit that plain-language summaries of each monitoring round will be delivered to the Junta before any community assembly — converting monitoring from an internal assurance tool into a shared accountability mechanism.\n\n**Part (ii) — Structure, delivery and credibility**\n\nBecause the Junta de Regantes must make a binary choice — accept the programme or escalate to OEFA — the document should lead with decision-relevant content: what CVCG commits to, the consequences if milestones are missed, and the remedies the Junta retains. Technical annexes should follow. This sequencing allows the Junta to present terms to their communities without depending on CVCG to explain them.\n\nTo structurally counter the credibility gap left by the broken April assurance, CVCG should propose in the document that the Junta nominate a technical observer to attend monitoring events at the 14 stations, and that CVCG commit in writing to halt construction activity if any station records a threshold breach. These provisions transform the programme from a unilateral corporate pledge into a jointly-enforced mechanism — giving the Junta a principled basis to defer escalation to OEFA while retaining the right to reactivate it if the written commitments are not met.\n\n**Conclusion:** CVCG should deliver a plain-language, decision-first written document that acknowledges the April failure by name, frames the USD 28 million spend in operational terms, converts the monitoring data into a Junta right, and embeds joint-enforcement provisions. This is the only communication design that addresses the Junta's stated reason for distrust and gives them a credible basis for accepting the programme rather than escalating to OEFA.",
+    "hint": "Your answer likely lists what the communication should contain, but ask yourself: have you addressed the Junta's specific reason for distrust — the broken April assurance — and explained how the new programme is structurally different rather than simply better-resourced?",
+    "full_reveal": "The misconception typical candidates bring here is SCENARIO-FREE discussion: they produce a generic stakeholder-communication checklist — \"be transparent, show commitment, provide data\" — without anchoring a single point to the Junta de Regantes' actual situation, the broken April assurance, the 6,400 farming households, the OEFA escalation binary, or the 14-station monitoring regime. This is wrong not because lists are useless, but because a generic list cannot resolve the specific credibility gap the scenario creates: the Junta's distrust is not about insufficient information, it is about a named, time-bound promise that failed, and only a communication that addresses that named failure structurally — not rhetorically — gives them a principled basis to defer escalation. The correct mental model is to treat each communication element as a response to a specific Junta concern: the April failure demands explicit acknowledgement and structural differentiation, the USD 28 million figure demands translation into verifiable physical works the Junta can schedule, and the monitoring regime demands reframing as a Junta entitlement rather than a corporate assurance tool. At the Boardroom Bar, the question is not \"what should the communication contain?\" but \"what must it do to shift the Junta's decision?\" — and that requires you to weigh and reconcile the competing pressures the scenario names (restoring trust vs. avoiding OEFA escalation vs. retaining programme control) and land on a communication design that resolves them, not one that lists them.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) content and framing of the communication",
+        "(ii) structure, delivery and credibility"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_broken_assurance",
+          "text": "the April 2025 assurance that water quality would return to safe levels within 60 days, which proved wrong",
+          "key": "broken April assurance",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_spend",
+          "text": "committed remediation spend of USD 28 million",
+          "key": "USD 28 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_monitoring",
+          "text": "independent environmental monitor testing at 14 river stations every two weeks",
+          "key": "every two weeks",
+          "kind": "figure"
+        },
+        {
+          "id": "f_households",
+          "text": "6,400 farming households across the three valleys",
+          "key": "6,400 farming households",
+          "kind": "figure"
+        },
+        {
+          "id": "f_audience",
+          "text": "the Junta de Regantes del Tambo — elected representatives deciding whether to accept the programme or escalate to OEFA",
+          "key": "Junta de Regantes",
+          "kind": "entity"
+        },
+        {
+          "id": "f_oefa",
+          "text": "Peru's environmental regulator OEFA, the escalation option available to the Junta",
+          "key": "OEFA",
+          "kind": "entity"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) content and framing of the communication",
+          "lo": "A3c",
+          "required_point": "The communication must open by explicitly acknowledging the broken April assurance — naming the failed 60-day commitment by date and outcome — because the Junta de Regantes cited this as the source of their distrust; without that acknowledgement, any statement of new commitments will be read as another unsubstantiated promise and the Junta will have no basis on which to distinguish this communication from the one that failed.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_broken_assurance",
+            "f_audience"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) content and framing of the communication",
+          "lo": "A3c",
+          "required_point": "The communication must present the USD 28 million committed spend not as a corporate expenditure figure but as a practical signal of locked-in financial obligation — framed around what it funds (neutralisation infrastructure and aquifer restoration) rather than its absolute size — because the Junta are farmers not financial analysts, and a large number without context conveys nothing about whether real change will follow.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_spend"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(i) content and framing of the communication",
+          "lo": "A3c",
+          "required_point": "The communication must translate the monitoring regime — independent testing at 14 river stations every two weeks — into a direct right for the Junta: specifying that results will be shared with the Junta in plain-language summaries before each community assembly, so that the 6,400 farming households can hold CVCG accountable through their representatives rather than relying on CVCG's self-reporting.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_monitoring",
+            "f_households",
+            "f_audience"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) structure, delivery and credibility",
+          "lo": "A3c",
+          "required_point": "Because the Junta are elected representatives facing a binary decision — accept the programme or escalate to OEFA — the written communication should be structured so the decision-relevant information (what CVCG commits to, what happens if milestones are missed, and what remedies the Junta retains) appears in the opening two pages, with supporting technical detail in annexes; this enables the Junta to present the key terms to their communities without relying on CVCG to interpret it for them.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_audience",
+            "f_oefa"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(ii) structure, delivery and credibility",
+          "lo": "A3c",
+          "required_point": "To counter the credibility gap left by the broken April assurance, the communication should propose that the Junta nominate their own technical observer to attend monitoring events, and that CVCG commit — in writing in this document — to halt construction activity if any of the 14 stations records a threshold breach; these commitments convert CVCG's self-declared programme into a jointly-enforced mechanism and give the Junta a concrete reason to defer escalation to OEFA.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_broken_assurance",
+            "f_monitoring",
+            "f_oefa"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 10,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "The management of stakeholder groups is a critical part of any mining company's social responsibilities. CVCG must communicate effectively with the communities affected by the tailings breach.\n\nCVCG's regional manager issued a public assurance in April 2025 that water quality would return to safe levels within 60 days; that assurance proved wrong, and water quality remained below regulatory standards four months later. This demonstrates the importance of accurate communications with stakeholders.\n\nThere are several things CVCG should include in its communication. First, it should outline the remediation programme and explain what it involves. Second, it should provide information about the monitoring arrangements. Third, it should address community concerns. Fourth, it should explain the regulatory position and what OEFA's role is.\n\nStakeholder communication in the mining sector is challenging because technical information must be conveyed to non-technical audiences. CVCG should use clear language, avoid jargon, and ensure the document is accessible. Visual aids such as maps or charts can be helpful. The company should also consider holding community meetings alongside written communications.\n\nTrust is important in stakeholder relationships. When trust has been broken, companies need to work harder to rebuild it. CVCG should demonstrate transparency and a genuine commitment to remediation. It should engage with the community regularly and provide updates on progress.\n\nESG considerations are increasingly important for mining companies. CVCG's approach to this incident will affect its reputation with investors, regulators and local communities. A well-managed communication strategy will help to mitigate reputational risk and maintain its social licence to operate.\n\nThere are various ways CVCG could structure its communication, and different approaches may be more or less suitable depending on the circumstances. The company should consider what format will work best for the Junta and what level of detail is appropriate.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

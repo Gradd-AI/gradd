@@ -625,9 +625,60 @@ deferring. Re-gated N1–N6 green on the real grader after the edit, then applie
 `--narrative-update-from --drill-id` (the id is already cited in the pack, journal and code map;
 re-inserting would have minted a new one). Row still `candidate`/`published=false`.
 
+### 🟡 BATCH 2 DRAFTED 2026-08-02 — 3 of the 4 remaining cells, NOT INSERTED, awaiting Grant's read
+
+`docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md`. Drafts captured at
+`docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`; nothing written to the DB.
+
+| plan | cell | LO | marks | F10 | rank | attempts |
+|---|---|---|---|---|---|---|
+| D9 | B5 × communication | B5c | 12 | 8/12 | 66 | 1 |
+| D10 | E3 × scepticism | E3a | 11 | 9/11 | 85 | 4 |
+| D11 | A3 × communication | A3c | 10 | 10/10 | 67 | 2 |
+
+**E1 × a_and_e deliberately NOT authored** — it may close without authoring depending on the
+`55181aa8` ruling below; a second server for a cell about to close for free is waste.
+
+**🔴 GRANT'S RULING OWED — `55181aa8` (E1a, `commercial_acumen`, LIVE).** Full rubric and both golden
+answers in the pack. **Recommendation: `analysis_and_evaluation`.** The decisive fact is the DEMAND:
+N5 does not engage (no requirement part or `required_point` carries verdict language), **no criterion
+carries F4**, and all four `required_point`s open with "Discuss" — so a candidate who discusses
+everything and commits to nothing scores 8/8. Commercial acumen's defining act ("proposing and
+recommending commercially viable solutions") is never required. Its sibling `d0be009d`, same LO and
+same tag, demands the opposite ("Advise · Advise · Advise · **Commit**", `c4` carrying F4).
+**Correction to my own earlier reasoning:** I framed this as "no priced decision — zero figures";
+`d0be009d` ALSO has zero figures and is sound, so the figures argument is not the discriminator and I
+should not have leaned on it. **N6 cannot adjudicate this** — both rows fail it identically under
+either tag, which is the claim ceiling behaving as documented. **Consequence:** if the tag moves, E1 ×
+commercial_acumen stays servable via `d0be009d` AND E1 × a_and_e closes without authoring → **zero
+cells owed** after batch 2. If it stays, E1 × a_and_e still needs authoring. A re-tag is a P-DB2 write
+to a published row and needs its own guarded write, snapshot and journal entry. **Nothing changed.**
+
+**✅ A3 ROUTE DECIDED — author, do not publish `47c9d5ce`.** The candidate's `communication` tag is the
+rotation default (`pool[0]` for section A), and its CONTENT is a scepticism drill: it refutes CFO Ms
+Dlamini's quoted ESG claim on two counts and commits to "should not proceed on current terms", with
+the `full_reveal` stating the method outright ("each dimension **stress-tests a specific scenario
+claim**"). Publishing it under `communication` would ship exactly the dishonest tag this workstream
+exists to remove. It also has **`answer_schema` = null** — no rubric at all, so N1–N6 have nothing to
+run on. The "cheap" route needs a re-tag decision, a rubric authored from scratch and a first-ever
+gating run, and still would not serve A3 × communication. **Separately owed:** `47c9d5ce` is a
+plausible A3 × *scepticism* drill that is mis-tagged, un-gateable and unadjudicated — but A3 ×
+scepticism is not in the examined set, so it closes nothing measured. Leave dormant or re-author
+through the pipeline; Grant's call.
+
+**📐 N6c SHAPED an artefact rather than just measuring one — first instance.** D10 needed 4 attempts
+and **N6c failed three of them**: attempt 1 because no `scenario_fact` key fell inside the quoted
+assertion, attempts 2 and 3 because F10 criteria did not anchor on the claim fact. The authored rubric
+changed in response. That is N6c's failure path running in production authoring, not in a fixture.
+
+**✅ FIXED — `--narrative-batch` exited 0 when every drill failed (P-G1).** Found the hard way: D11's
+first run failed all five attempts and wrote no draft, and because stdout was redirected the check
+reported success. `runNarrativeBatch` now returns its failure count and the caller sets
+`process.exitCode` (P-G4: never `process.exit()`). Proven: an unknown `--narrative-only` id now exits 1.
+
 **Still owed (unchanged, plus):**
-- **4 cells:** B5 × communication (16 marks) · E3 × scepticism (12) · E1 × analysis_and_evaluation (7)
-  · A3 × communication (6).
+- **1–2 cells depending on the ruling:** E1 × analysis_and_evaluation (7 marks) closes for free if
+  `55181aa8` is re-tagged; otherwise it needs authoring. The other three are drafted, pending read.
 - **`fda46d99` and `d413fbe7` need a human read** against N6b's false-positive above.
 - **D7 `c3` (1 mark, Uruguay) mentions rather than demands** its skill — flagged in the pack, not
   fixed; Grant's call whether one mark justifies a re-author.

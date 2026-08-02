@@ -1,0 +1,220 @@
+{
+  "plan_id": "D10",
+  "lo_code": "E3a",
+  "skill": "scepticism",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (scepticism): PASS",
+    "N6c claim-anchor link: PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "E3a",
+    "topic": "The use of financial derivatives to hedge against interest rate risk",
+    "command_verb": "assess and advise",
+    "intellectual_level": 3,
+    "professional_skill_tag": "scepticism",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 11,
+    "question": "Assess Mr Wiśniewski's claim that \"The futures hedge has fixed our borrowing rate and eliminated our interest-rate risk for the full duration of the loan,\" and advise the board on the residual interest-rate exposures that Chłodnia Polska S.A. still carries.\n\n(i) Assess the claim that the borrowing rate has been fixed.\n(ii) Assess the claim that interest-rate risk has been eliminated for the full duration of the loan.\n(iii) Advise the board on the residual interest-rate exposures and any further action it should consider.",
+    "context_text": "Chłodnia Polska S.A. (\"CP\"), a cold-chain logistics operator headquartered in Warsaw, is constructing a major distribution hub in Łódź and has arranged a PLN 120 million floating-rate syndicated loan for 18 months beginning 1 October 2025. To protect against rising short-term rates, CP's treasury team placed an interest-rate futures hedge in September 2025. An analysis already performed by CP's risk team shows that the futures hedge effectively covered a notional of PLN 100 million for a 12-month horizon, leaving PLN 20 million unhedged, and that the effective borrowing rate achieved on the hedged portion was 6.84% per annum — higher than the targeted rate of 6.60% because basis was non-zero when the hedge was closed. Group Treasurer Marek Wiśniewski told the board at its October 2025 meeting: \"The futures hedge has fixed our borrowing rate and eliminated our interest-rate risk for the full duration of the loan.\" The syndicated loan agreement also contains a financial covenant requiring CP to maintain an interest-cover ratio of at least 2.5 times; a deterioration in EBIT during the hub's construction phase could breach this covenant if floating rates rise further, yet Mr Wiśniewski's presentation made no mention of the covenant.",
+    "model_answer": "**Interest-rate hedging — testing a claim that the rate risk has been eliminated**\n\nMr Wiśniewski's assertion that the futures hedge has \"fixed our borrowing rate and eliminated our interest-rate risk\" for the full duration of the loan does not withstand scrutiny on Chłodnia Polska's own numbers, and the board should treat it with considerable caution.\n\n**Part (i) — Was the rate fixed?**\nA futures hedge does not deliver a mathematically certain rate, because the relationship between futures prices and cash market rates — the basis — is rarely zero at close-out. Here, the analysis confirms that basis was non-zero when the hedge was closed, causing the effective rate actually achieved to be 6.84%, not the 6.60% targeted. The rate was therefore not \"fixed\" in any precise sense; it was approximated, at a cost of 24 basis points above target. The treasurer's language overstates certainty.\n\n**Part (ii) — Was risk eliminated for the full term?**\nThe claim of full elimination collapses on two counts. First, the hedge operated over a 12-month horizon while the syndicated loan runs for 18 months: the final six months of borrowing are entirely uncovered, and CP faces full floating-rate exposure in that window. Second, the hedge was sized at only PLN 100 million against a PLN 120 million facility, leaving PLN 20 million unhedged throughout the whole 18-month term. Neither gap was disclosed to the board by Mr Wiśniewski — a material omission.\n\n**Part (iii) — Residual exposures and further action**\nThe most serious omission is the 2.5 times interest-cover covenant. If rising floating rates increase interest charges on the unhedged portions during the construction phase — when EBIT may be under pressure — CP could breach the covenant and face an event of default, a consequence far graver than a marginally higher rate. The board should on no account accept the treasurer's assurance that risk is \"eliminated.\"\n\nThe board is advised to close the coverage gaps immediately: an interest-rate cap or forward rate agreement should be arranged for the PLN 20 million unhedged principal across the 18-month term, and a separate FRA or cap should protect the final six months of the loan. The interest-cover covenant must be monitored against stressed rate scenarios throughout the construction phase. Overall, Mr Wiśniewski's claim significantly understates CP's residual exposure, and independent review of the hedge strategy is warranted.",
+    "hint": "Before you assess whether the hedge eliminates risk, check whether it actually covers the full principal and the full loan term — two dimensions of coverage that Mr Wiśniewski's claim implicitly assumes are complete.",
+    "full_reveal": "The misconception here is UNDEVELOPED-ASSUMPTION: candidates accept the treasurer's framing at face value — \"futures hedge = rate fixed = risk gone\" — and then assess the claim on basis risk alone, never pausing to challenge whether the hedge was sized correctly or whether its duration matches the loan's. That thinking produces the wrong conclusion because a hedge that is partial in both principal and tenor does not eliminate risk even in theory; it merely converts some exposure into a managed position while leaving the remainder fully floating. The correct mental model is to interrogate coverage across three dimensions before any quality assessment: (1) does the notional hedged match the facility drawn, (2) does the hedge horizon match the loan term, and (3) does residual basis risk prevent a precise rate lock even where coverage nominally exists — only then can you tell the board what risk actually remains. Critically, the board-level stakes here are not academic: unhedged floating exposure during the construction phase interacts with the interest-cover covenant, so the residual exposure is not merely a rate question but potentially a default-trigger question — and that is the advice the boardroom needs, not a verdict on futures mechanics alone.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) Assess the claim that the borrowing rate has been fixed.",
+        "(ii) Assess the claim that interest-rate risk has been eliminated for the full duration of the loan.",
+        "(iii) Advise the board on the residual interest-rate exposures and any further action it should consider."
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_claim",
+          "text": "Mr Wiśniewski's claim that the futures hedge has fixed the borrowing rate and eliminated interest-rate risk for the full duration of the loan",
+          "key": "fixed our borrowing rate and eliminated our interest-rate risk",
+          "kind": "entity"
+        },
+        {
+          "id": "f_notional",
+          "text": "The hedge covered a notional of PLN 100 million, not the full PLN 120 million loan",
+          "key": "PLN 100 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_horizon",
+          "text": "The hedge covered a 12-month horizon, not the full 18-month loan term",
+          "key": "12-month horizon",
+          "kind": "figure"
+        },
+        {
+          "id": "f_eff_rate",
+          "text": "The effective borrowing rate achieved on the hedged portion was 6.84% per annum",
+          "key": "6.84%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_target",
+          "text": "The targeted borrowing rate was 6.60% per annum",
+          "key": "6.60%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_basis",
+          "text": "Basis was non-zero when the hedge was closed, causing the rate to exceed the target",
+          "key": "non-zero when the hedge was closed",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_unhedged",
+          "text": "PLN 20 million of the loan principal is entirely unhedged",
+          "key": "PLN 20 million unhedged",
+          "kind": "figure"
+        },
+        {
+          "id": "f_covenant",
+          "text": "The loan carries an interest-cover covenant requiring at least 2.5 times cover",
+          "key": "2.5 times",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_loan_term",
+          "text": "The full loan term is 18 months",
+          "key": "18 months",
+          "kind": "figure"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) Assess the claim that the borrowing rate has been fixed.",
+          "lo": "E3a",
+          "required_point": "Mr Wiśniewski's claim that the rate is 'fixed' does not hold because basis was non-zero when the hedge was closed, meaning the effective rate of 6.84% exceeded the 6.60% target; futures hedges do not lock in a precise rate but rather deliver an approximate one, so the rate was not 'fixed' in any certain sense.",
+          "marks": 3,
+          "anchor_facts": [
+            "f_claim",
+            "f_eff_rate",
+            "f_target",
+            "f_basis"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(ii) Assess the claim that interest-rate risk has been eliminated for the full duration of the loan.",
+          "lo": "E3a",
+          "required_point": "The claim that risk is eliminated 'for the full duration' is directly contradicted by the 12-month horizon of the hedge against an 18-month loan: the final six months of the borrowing carry no futures protection at all, leaving CP fully exposed to whatever floating rates prevail in that period.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_claim",
+            "f_horizon",
+            "f_loan_term"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(ii) Assess the claim that interest-rate risk has been eliminated for the full duration of the loan.",
+          "lo": "E3a",
+          "required_point": "The claim of full elimination also fails because the hedge was sized at PLN 100 million, so the PLN 20 million unhedged slice of the loan principal is entirely exposed to floating-rate movements throughout the whole 18-month term — a deficiency Mr Wiśniewski did not disclose to the board, undermining trust in his analysis.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_claim",
+            "f_notional",
+            "f_unhedged"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(iii) Advise the board on the residual interest-rate exposures and any further action it should consider.",
+          "lo": "E3a",
+          "required_point": "Because Mr Wiśniewski did not mention the 2.5 times interest-cover covenant, the board faces a risk beyond the cost of unhedged interest: if floating rates rise further during the construction phase, the covenant could be breached, triggering an event of default — a consequence far more damaging than a higher effective rate, and one the treasurer's reassurance that risk is 'eliminated' actively obscures.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_claim",
+            "f_covenant"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(iii) Advise the board on the residual interest-rate exposures and any further action it should consider.",
+          "lo": "E3a",
+          "required_point": "The board should be advised to extend hedging coverage — for example by entering a forward rate agreement or interest-rate cap (or collar) for the residual PLN 20 million unhedged principal and separately for the unprotected final six months of the 18-month term — and to monitor the interest-cover ratio continuously given the covenant risk; on balance, the board cannot rely on Mr Wiśniewski's assertion and should seek independent confirmation of the hedge's true scope.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_unhedged",
+            "f_loan_term",
+            "f_covenant"
+          ],
+          "disqualifiers": [
+            "F4",
+            "F5"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 11,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "Interest-rate futures are exchange-traded contracts that allow a borrower to hedge against rising interest rates. They are standardised instruments and are traded in whole numbers of contracts, which means the hedge may not exactly match the borrowing amount. When a futures hedge is placed, the borrower sells futures contracts and buys them back when the loan is drawn down, with the profit or loss on the futures position offsetting the higher or lower cost of borrowing.\n\nThe futures hedge has fixed our borrowing rate and eliminated our interest-rate risk for the full duration of the loan. This was confirmed by the Group Treasurer at the October 2025 board meeting.\n\nBasis risk is a well-known limitation of interest-rate futures hedging. Basis is the difference between the futures price and the cash market rate. If basis is non-zero at the time the hedge is closed, the effective rate achieved will differ from the rate that was originally targeted. This is an inherent feature of futures contracts and means that the hedge may not be perfectly effective.\n\nAnother limitation is that futures contracts are standardised and traded in whole numbers, so it may not be possible to match the exact notional amount of the loan. This means there could be a portion of the borrowing that is not covered by the hedge.\n\nInterest-rate swaps are an alternative instrument. Under a swap, the borrower exchanges floating-rate payments for fixed-rate payments, giving certainty over interest costs for the full duration of the borrowing. An interest-rate cap is another option, which provides protection against rates rising above a specified level while allowing the borrower to benefit if rates fall. A collar combines a cap and a floor to reduce the premium cost of the cap.\n\nThere are various instruments available to manage interest-rate risk, and the appropriateness of each depends on the borrower's specific circumstances, risk appetite and the nature of the underlying exposure. The board may wish to consider whether the current hedging strategy remains suitable given the complexities involved.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

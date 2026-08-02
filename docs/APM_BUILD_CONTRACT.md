@@ -3892,3 +3892,114 @@ differently-shaped object:
 **Not widened, per the standing ban** — every candidate widening needs a word list. The reading that
 matters: **N6a measures labelling, N6b measures the scenario's object-shape, and neither measures
 demand.** That is the claim ceiling, now confirmed against five live rows rather than asserted.
+
+---
+
+# 2026-08-02 (fourth) — `55181aa8` adjudicated; A3 route decided; PS-cell batch 2 drafted
+
+## 1. `55181aa8` (E1a, commercial_acumen, LIVE) — recommendation: `analysis_and_evaluation`
+
+Full rubric, both golden answers and the reasoning are in
+`docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md` Part 1. **Grant rules; nothing changed.**
+
+**The decisive fact is the DEMAND, measured through the barrier's own engagement tests rather than
+read off the prose:**
+
+| | `55181aa8` | `d0be009d` (sibling: same LO, same tag) |
+|---|---|---|
+| Does the RUBRIC demand a verdict? | **NO — N5 EXEMPT** | YES |
+| Criteria penalising fence-sitting (F4) | **NONE** | `c4` |
+| `required_point` opening words | Discuss ×4 | Advise · Advise · Advise · **Commit** |
+| scenario_fact kinds | 2 constraint, 3 entity, 0 figure | 2 constraint, 1 entity, 0 figure |
+
+Commercial acumen's defining act — ACCA descriptor 2, *"use judgement in proposing and recommending
+commercially viable solutions"* — is never required. A candidate who discusses all four points and
+commits to nothing scores 8/8. What the rubric DOES demand (investigating organisational implications;
+reflecting on how roles, authority and retention change) is `analysis_and_evaluation` descriptors 2
+and 3 almost verbatim.
+
+**⚠️ A correction to my own earlier reasoning.** In the batch-1 pack and journal I framed this row's
+problem as partly *"no priced decision — zero figure facts"*. **The sibling refutes that:**
+`d0be009d` also has zero figures and is a sound commercial_acumen drill. A commercial judgement can be
+genuinely constrained without a number. The figures argument is not the discriminator and I should not
+have leaned on it.
+
+**The honest counter-case:** commercial_acumen descriptor 3 covers "wider organisational matters",
+which c3/c4 squarely are; the golden GOOD does commit; and F7 (generic-centralisation-substitution) is
+a commercial failure. Keeping the tag is defensible — just weaker, because the model answer's
+commitment is **uncredited by the rubric**.
+
+**N6 could not adjudicate it and did not.** Both rows fail N6 identically under either tag. That is
+the claim ceiling behaving exactly as documented: N6 measures labelling and object-shape, neither of
+which distinguishes these two skills.
+
+**Flagged against my own recommendation:** moving the tag is *convenient* — it closes a cell for free.
+That is a reason to weigh it on the rubric alone. **Consequence either way:** re-tagged → E1 ×
+commercial_acumen stays servable via `d0be009d` AND E1 × a_and_e closes without authoring (zero cells
+owed after batch 2); unchanged → E1 × a_and_e still needs authoring. A re-tag is a P-DB2 write to a
+PUBLISHED row and needs its own guarded write, snapshot and journal entry.
+
+## 2. A3 route — AUTHOR, do not publish `47c9d5ce`
+
+The candidate's `communication` tag is the rotation default (`pool[0]` for section A is
+`communication`) — nothing decided it. Its CONTENT is a scepticism drill: CFO Ms Dlamini asserts, in
+quotation marks, that the project is *"ESG-aligned because it cuts CO₂ emissions by 34% … and will
+retain all 1,200 existing jobs"*, and the model answer refutes both halves, flags greenwashing risk
+and commits to *"The board should not proceed on current terms."* Its `full_reveal` states the method
+outright: *"each dimension **stress-tests a specific scenario claim**"*. Publishing it under a
+communication tag would ship precisely the dishonest tag this workstream exists to remove.
+
+It also has **`answer_schema` = null** — no rubric, no criteria, no golden BAD — so N1–N6 have nothing
+to run on and Rule-23 separation has never been shown for it. The "cheap" route needs a re-tag
+decision, a rubric authored from scratch and a first-ever gating run, and STILL would not serve A3 ×
+communication. Authoring a purpose-built drill is both cheaper and honest.
+
+**Separately owed:** `47c9d5ce` is a plausible A3 × *scepticism* drill that is mis-tagged, un-gateable
+and unadjudicated. A3 × scepticism is not in the examined set, so it closes nothing measured. Leave
+dormant or re-author through the pipeline — Grant's call.
+
+## 3. Batch 2 drafted — 3 cells, NOT INSERTED
+
+| plan | cell | LO | marks | criteria | F10 | rank | attempts |
+|---|---|---|---|---|---|---|---|
+| D9 | B5 × communication | B5c | 12 | 6 | 8/12 | 66 | 1 |
+| D10 | E3 × scepticism | E3a | 11 | 5 | 9/11 | 85 | 4 |
+| D11 | A3 × communication | A3c | 10 | 5 | 10/10 | 67 | 2 |
+
+All N1–N6 green on the real grader, plus P4 and P7. Drafts captured; nothing written to the DB.
+
+**P-N1 held on all three.** Every figure is a stated analysis OUTPUT, no raw drivers, no arithmetic
+asked of the candidate. D9's three stated figures (undistributed balance, annual remittance cap, years
+to release) are mutually consistent by construction — one division, checked by hand. D10 states the
+effective rate achieved and the residual unhedged amount as given results, with no contract counts,
+tick values or basis decay.
+
+**Ranks.** D10 at 85 keeps every E-narrative drill in one band above the WHOLE E-calculator span
+(70–77), which is the rule the E2 pair had to satisfy and the one a future reader will apply by
+analogy — 78 would have satisfied E3 alone and still broken the rule. D9 at 66 sits after D5 (64), the
+other B5c/d narrative. D11 at 67: A3 has no calculator and no other drill, so it is the A3 entry BY
+CONSTRUCTION — the E1 situation, not the E2 one — and the fixture asserts it would not have taken an
+entry from a calculator had one existed. 12 new area-entry cases, 40 total, all pass.
+
+**N6b cannot gate a `communication` precondition** and says so (NOT EVALUATED — no test that is not a
+phrase table). D9's and D11's audience precondition is therefore a HUMAN check, stated as such in the
+pack rather than glossed.
+
+### 📐 N6c SHAPED an artefact rather than measuring one — first instance
+
+D10 needed 4 attempts and **N6c failed three of them**: attempt 1 because no `scenario_fact` key fell
+inside the quoted assertion (the claim was unreachable as an anchor), attempts 2 and 3 because F10
+criteria did not anchor on the claim fact. The authored rubric changed in response. Until now every
+N6 failure had been a fixture or a retrospective measurement; this is the failure path running in
+production authoring.
+
+## 4. ✅ FIXED — `--narrative-batch` exited 0 when every drill failed (P-G1)
+
+**Found the hard way.** D11's first run failed all five attempts and wrote no draft; because stdout was
+redirected to `/dev/null`, the `echo "exit=$?"` check reported success and the missing draft file was
+the only clue. `runNarrativeBatch` logged `Failed: …` to stdout and `main()` returned without setting
+an exit code, so a batch that produced nothing could say it succeeded — the exact shape P-G1 exists to
+prevent, in the tool that enforces the other gates.
+
+Now returns its failure count; the caller sets `process.exitCode` (P-G4: never `process.exit()` in a
+DB-touching script). Failure line moved to stderr. Proven: an unknown `--narrative-only` id exits 1.

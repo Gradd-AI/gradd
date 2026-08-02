@@ -310,6 +310,19 @@ wait for it, or say plainly that it was still building.
   gate record would keep asserting a stale green); `--narrative-update-from <draft> --drill-id <uuid>`
   applies it to an EXISTING candidate row (refuses anything published, and refuses an lo_code/skill
   mismatch) rather than re-inserting, which would mint a new id.
+  **BATCH 2 (2026-08-02) — DRAFTED, NOT INSERTED, awaiting Grant's read.** D9 `B5c` communication
+  (ranked 66) · D10 `E3a` scepticism (85) · D11 `A3c` communication (67). Pack
+  `docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md`; drafts
+  `docs/rollbacks/AFM_narrative_draft_D{9,10,11}.json`. **E1 × a_and_e deliberately NOT authored** —
+  it closes for free if `55181aa8` is re-tagged (ruling owed). **N6b CANNOT gate a `communication`
+  drill's precondition** (it reports NOT EVALUATED — no test that is not a phrase table), so D9's and
+  D11's audience precondition is a HUMAN check, stated as such in the pack. **📐 N6c SHAPED D10 rather
+  than merely measuring it** — it failed 3 of that drill's 4 attempts (no fact key inside the quoted
+  assertion; then F10 criteria not anchored on the claim), so the authored rubric changed in response:
+  the first time an N6 failure path ran in production authoring rather than a fixture.
+  **✅ `--narrative-batch` no longer exits 0 when every drill fails (P-G1).** Found the hard way — a
+  run that failed all 5 attempts and wrote no draft still exited 0. `runNarrativeBatch` returns its
+  failure count and the caller sets `process.exitCode` (P-G4: never `process.exit()`).
   **⚠️ THE NARRATIVE PIPELINE HAS NO NUMERIC VERIFIER, AND IT COST A DRILL.** D7's first version passed
   ALL SIX GATES asserting the exact opposite of its own figures — a rubric requiring the candidate to
   conclude payback was "well within" an 18-month threshold on drivers giving an annual net benefit of

@@ -1,0 +1,217 @@
+{
+  "plan_id": "D9",
+  "lo_code": "B5c",
+  "skill": "communication",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F1,F5,F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (communication): NOT EVALUATED — no structural test exists for \"a named audience and a stated purpose\" that is not a phrase table (banned — see the header). A communication drill's precondition must be confirmed by a human reading the pack",
+    "N6c claim-anchor link: NOT EVALUATED — structurally N/A for communication — only scepticism acts on a single identifiable asserted claim"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "B5c",
+    "topic": "International investment and financing decisions",
+    "command_verb": "explain, evaluate and advise",
+    "intellectual_level": 3,
+    "professional_skill_tag": "communication",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "Prepare the KEY CONTENT of a briefing note to VinaPack's Operations Director (Ms Nguyen Thi Lan) and Sales Director (Mr Pham Quoc Bao), setting out the exchange-control position and advising them on the capacity-expansion decision.\n\nYour answer should address:\n(i) Explain, in terms meaningful to operational leaders rather than treasury specialists, why the promised distribution did not arrive and what the current blocked-funds position means for VinaPack's local leadership.\n(ii) Evaluate the implication of the proposed capacity expansion for the exchange-control constraint, and advise Ms Nguyen and Mr Pham on whether they should commit to it.",
+    "context_text": "BalticPack Group SA (\"BalticPack\"), a European packaging conglomerate headquartered in Warsaw, Poland, owns a 100%-controlled Vietnamese manufacturing subsidiary, VinaPack JSC (\"VinaPack\"), which produces flexible packaging for fast-moving consumer goods clients across South-East Asia. Vietnam's State Bank imposes exchange controls that restrict the annual remittance of dividends and profit repatriations by foreign-owned subsidiaries to a central-bank-permitted annual cap of USD 4 million per entity. An analysis already completed by BalticPack's group treasury states the following three figures: VinaPack's accumulated undistributed profits stand at USD 28 million; the annual remittance cap is USD 4 million; and the resulting number of years required to release the full balance — on the assumption that all future profits are remitted immediately — is seven years. A distribution that VinaPack's local operating board had been promised for the current financial year did not arrive because the cap was triggered, and that failure has damaged trust between the Warsaw headquarters and VinaPack's local leadership. VinaPack's Operations Director, Ms Nguyen Thi Lan, and Sales Director, Mr Pham Quoc Bao, must now decide whether to commit capital to a proposed local capacity expansion that would further increase VinaPack's profitability — and therefore further increase the volume of profits that will be trapped under the exchange-control regime. BalticPack's CFO has asked the group's senior financial adviser to prepare the key content of a briefing note addressed directly to Ms Nguyen and Mr Pham.",
+    "model_answer": "**Exchange controls — briefing a local operating board on restricted remittance**\n\n**BRIEFING NOTE — EXCHANGE CONTROLS AND CAPACITY EXPANSION**\n*Addressed to: Ms Nguyen Thi Lan, Operations Director, and Mr Pham Quoc Bao, Sales Director, VinaPack JSC*\n\n---\n\n**(i) Why the distribution did not arrive — and what the numbers mean for you**\n\nThe missed distribution was not a Warsaw decision to withhold funds, and it was not caused by any shortfall in VinaPack's performance. Vietnam's State Bank imposes a hard legal ceiling — the annual remittance cap of USD 4 million — on the amount any foreign-owned subsidiary may send abroad in a single year. Once that ceiling is reached, no further transfer is legally permitted regardless of how much cash VinaPack holds. Warsaw was constrained, not unwilling.\n\nTo put the current position in plain terms: VinaPack's accumulated undistributed profits stand at USD 28 million. Because the cap limits outflows to USD 4 million per year, the group's own analysis concludes it will take seven years to release the full balance — even if every future year's profits are also remitted immediately and the cap is not exceeded by new earnings. Think of this as a queue at a regulated border crossing: the goods are real, the lorries are loaded, but only a fixed number can cross each year.\n\nThis was an information failure. Ms Nguyen and Mr Pham, this briefing exists precisely to give you that full picture so that any future planning between your team and Warsaw starts from shared facts rather than broken promises.\n\n---\n\n**(ii) The capacity expansion — evaluation and advice**\n\nThe capacity expansion will increase VinaPack's annual earnings, which is operationally positive. However, because the USD 4 million cap is set by the State Bank — not by the volume of profits — every additional dollar generated simply joins the queue behind the existing USD 28 million balance. Higher profits under a fixed cap extend the backlog horizon beyond the current seven years; they do not accelerate remittance. Ms Nguyen and Mr Pham should understand that backing the expansion without addressing the structural blockage would mean committing to years of further trapped funds with no guaranteed release date.\n\nHowever, there is a constructive path. The USD 28 million already sitting in Vietnam could legitimately fund the expansion itself — converting stranded earnings into productive local assets rather than leaving them idle behind the cap. Warsaw could also be asked to formalise permitted channels such as management-fee agreements or royalty arrangements, which — if compliant with Vietnamese transfer-pricing rules — can transfer value to the group outside the dividend cap.\n\n**Recommendation:** Ms Nguyen and Mr Pham are advised to support the capacity expansion, but only on the condition that Warsaw formally agrees to finance it from the trapped USD 28 million balance and simultaneously provides a transparent, year-by-year remittance schedule under the USD 4 million cap. If Warsaw instead expects fresh equity from the group while the backlog remains unresolved, the expansion should not proceed — it would deepen the blockage and further erode trust. The precondition protects VinaPack's leadership and gives the project a commercially honest foundation.",
+    "hint": "Your answer explains the exchange-control mechanics — now check whether you have moved to an explicit, conditional recommendation that tells Ms Nguyen and Mr Pham what to do about the expansion and under precisely what conditions, because that is the advice the boardroom is waiting for.",
+    "full_reveal": "The dominant misconception here is FENCE-SITTING: candidates explain the USD 4 million cap fluently, note that additional profits will extend the backlog, and then stop — presenting both sides of the expansion argument without ever resolving them into a verdict with conditions attached. That is analysis, not advice, and it fails the command verb \"advise\" at level 3. The mental-model correction is this: in a discursive AFM question addressed to named operational leaders, the explanation and evaluation are the floor — the ceiling is a recommendation specific enough to act on, with the conditions that make it acceptable stated explicitly. The reason fence-sitting produces the wrong answer is structural: a briefing note that leaves the Operations Director and Sales Director to weigh the trade-offs themselves has not done the adviser's job; it has merely restated the problem in cleaner language. The correct move is to identify the constructive path the scenario makes available — using the trapped balance to fund the expansion rather than deepening the backlog — and to state the precondition on which the recommendation stands, so that Ms Nguyen and Mr Pham know exactly what to demand from Warsaw before they commit.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) explain the exchange-control position in terms meaningful to operational leaders",
+        "(ii) evaluate the capacity-expansion implication and advise"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_balance",
+          "text": "accumulated undistributed profits of USD 28 million",
+          "key": "USD 28 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_cap",
+          "text": "annual central-bank-permitted remittance cap of USD 4 million",
+          "key": "USD 4 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_years",
+          "text": "seven years required to release the full balance",
+          "key": "seven years",
+          "kind": "figure"
+        },
+        {
+          "id": "f_audience",
+          "text": "the named operational audience: Ms Nguyen Thi Lan (Operations Director) and Mr Pham Quoc Bao (Sales Director)",
+          "key": "Ms Nguyen",
+          "kind": "entity"
+        },
+        {
+          "id": "f_trust",
+          "text": "trust has been damaged by the missed distribution",
+          "key": "trust",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_expansion",
+          "text": "proposed local capacity expansion that would increase profits and therefore the volume of trapped funds",
+          "key": "capacity expansion",
+          "kind": "constraint"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) explain the exchange-control position in terms meaningful to operational leaders",
+          "lo": "B5c",
+          "required_point": "Translates the exchange-control mechanism into non-treasury language specifically calibrated for Ms Nguyen and Mr Pham: the cap is not a liquidity shortfall or a management decision but a hard regulatory ceiling imposed by Vietnam's State Bank — meaning the Warsaw headquarters was legally unable, not unwilling, to send the distribution — and this distinction matters to the audience because it separates regulatory constraint from broken commercial promise.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_cap",
+            "f_audience",
+            "f_trust"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) explain the exchange-control position in terms meaningful to operational leaders",
+          "lo": "B5c",
+          "required_point": "Interprets the three given figures — USD 28 million accumulated, USD 4 million per year, seven years to clear — in a way an Operations or Sales director can act on: frames this as a structural queuing problem (earnings are real but access is rationed), and explains that even if VinaPack continues to perform well, the full accumulated balance cannot be released to Warsaw before seven years have elapsed, regardless of group profitability.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_balance",
+            "f_cap",
+            "f_years"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(i) explain the exchange-control position in terms meaningful to operational leaders",
+          "lo": "B5c",
+          "required_point": "Addresses the trust dimension explicitly and constructively for the audience: acknowledges the damage caused by the missed distribution, reframes it as an information failure rather than a governance failure (the operating board were not told in advance about the binding cap), and signals that the purpose of this briefing is to give Ms Nguyen and Mr Pham the full picture so they can plan and engage with Warsaw on an informed basis going forward.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_trust",
+            "f_audience"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) evaluate the capacity-expansion implication and advise",
+          "lo": "B5c",
+          "required_point": "Evaluates the expansion's specific effect on the exchange-control constraint for this audience: higher profits generated by the capacity expansion will increase the annual earnings available for remittance, but because the annual cap of USD 4 million is fixed by the State Bank and not by the level of profits, additional earnings simply accumulate behind the same ceiling — extending the queue of trapped funds beyond the current seven-year horizon and compounding the blockage rather than resolving it.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_cap",
+            "f_years",
+            "f_expansion"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(ii) evaluate the capacity-expansion implication and advise",
+          "lo": "B5c",
+          "required_point": "Identifies at least one viable strategy for dealing with restricted remittance that is relevant to the capacity-expansion context — such as reinvesting trapped profits locally (funding the expansion itself with the USD 28 million balance rather than seeking fresh capital from Warsaw), negotiating transfer-pricing arrangements for management fees or royalties within permitted limits, or structuring intra-group loans — and explains why that route partially mitigates the blockage in a way Ms Nguyen and Mr Pham can champion at the local level.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_balance",
+            "f_expansion"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c6",
+          "requirement_part": "(ii) evaluate the capacity-expansion implication and advise",
+          "lo": "B5c",
+          "required_point": "Delivers a clear, committed recommendation addressed by name to the audience — advising Ms Nguyen and Mr Pham whether to support or oppose the capacity expansion — with a justified reason that integrates the exchange-control constraint: e.g. that the expansion can be supported IF Warsaw agrees in advance to fund it from the trapped USD 28 million balance (thereby converting stranded funds into productive local assets) and commits to a transparent remittance schedule under the USD 4 million cap, but should not proceed if Warsaw expects fresh equity injections while the backlog remains unresolved.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_balance",
+            "f_cap",
+            "f_audience"
+          ],
+          "disqualifiers": [
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "**Exchange Controls and VinaPack**\n\nVietnam's State Bank imposes exchange controls that restrict the annual remittance of dividends and profit repatriations by foreign-owned subsidiaries to a central-bank-permitted annual cap of USD 4 million per entity. This is a well-known feature of operating in frontier and emerging markets and affects many multinational companies.\n\nExchange controls exist to protect a country's foreign currency reserves and to manage capital outflows. They are a standard tool used by central banks in developing economies. The restriction means that even when a subsidiary is profitable, the parent company cannot freely repatriate earnings above the permitted level.\n\nFor any multinational facing exchange controls, there are several strategies that can be considered. These include transfer pricing arrangements, management fee agreements, royalty payments, reinvestment of local profits, and intra-group loans. Each of these has its own regulatory and tax implications and would need to be considered carefully before implementation.\n\nThe capacity expansion is a significant strategic decision. On one hand, increasing capacity will improve VinaPack's revenue and profit generation. On the other hand, higher profits may increase the volume of funds subject to the exchange-control regime. There are arguments on both sides, and the appropriate course of action will depend on a range of factors including the regulatory environment, the group's overall capital allocation priorities, and VinaPack's local market position.\n\nThe exchange-control situation should be monitored closely. Any changes to Vietnam's regulatory framework may affect the cap in future periods. BalticPack's treasury team should engage with local counsel and continue to review available remittance strategies on a periodic basis.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}
