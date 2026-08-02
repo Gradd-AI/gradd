@@ -2,7 +2,9 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-07-31 (the SIT LOOP closed end to end on branch `feat/sit-loop-end-to-end`, NOT merged and NOT deployed — Grant's review first. `SitRunner` moved to `components/acca/`; a results endpoint that marks both passes, persists `technical_feedback`, computes pacing and returns the debrief; the debrief rendered with case grouping, per-case subtotals, one headline, and per-requirement band/marks/collapsed-why/next-action with pacing adjacent and never merged; `W_WEAK = 0` closed — `acca_weak_areas` written by a marked sit on weak|competent bands and read by `next-drill` on the LIVE `area=`/`lo=` paths as well as the gated scorer, with PS-tag steering alongside it. Proven on a synthetic user against the real routes, then scoped-deleted with AFM Mock 1 re-proved virgin. Three new open items — see the block below.)*
+*Last refreshed: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.)*
+
+*Earlier: 2026-07-31 (the SIT LOOP closed end to end on branch `feat/sit-loop-end-to-end`, NOT merged and NOT deployed — Grant's review first. `SitRunner` moved to `components/acca/`; a results endpoint that marks both passes, persists `technical_feedback`, computes pacing and returns the debrief; the debrief rendered with case grouping, per-case subtotals, one headline, and per-requirement band/marks/collapsed-why/next-action with pacing adjacent and never merged; `W_WEAK = 0` closed — `acca_weak_areas` written by a marked sit on weak|competent bands and read by `next-drill` on the LIVE `area=`/`lo=` paths as well as the gated scorer, with PS-tag steering alongside it. Proven on a synthetic user against the real routes, then scoped-deleted with AFM Mock 1 re-proved virgin. Three new open items — see the block below.)*
 
 *Earlier: 2026-07-30 (measurement + debrief presentation. Marker feedback prose measured: 114 of 1,518 asserted figures are owned by no component, 96.5% of them in STRONG-band feedback — the "code owns every figure" claim CORRECTED in `CLAUDE.md`, `AFM_COVERAGE_CONTRACT.md` and `PRODUCT_STRENGTH_STANDARD.md`, and N1–N5 corrected from "marking" to AUTHORING gates. Schema widening STOPPED — see the ⛔ block below: `irhedge` one-leg schema DEFERRED to the next authoring batch, omitted intermediates CLOSED permanently, B5b logged only. NO published row was written. Debrief presentation fixed: LO-code/marks leak closed with a `Q1 (i)` display name used everywhere including the headline, case grouping + per-case subtotals, collapse-headline selection rule, forward-reference removed, strong-band justification collapsed behind an expand with the verbatim guarantee intact.)*
 
@@ -13,6 +15,127 @@
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ ✅ SESSION CLOSE 2026-08-02 — **AFM CONTENT IS COMPLETE**
+
+**63 published drills · 5 published practice cases · Mock 1 live · all seven measured (area × skill)
+cells served by a LIVE drill.**
+
+Every cell below was measured against what AFM content actually EXAMINES — Mock 1's 8 requirements
+plus the five published practice cases' `professional_skill_tags`. Servers confirmed with **`psScore`
+over the LIVE set only** (the serve predicate `next-drill` itself applies), not by inspection:
+
+| cell | examined marks | LIVE server | route to closure |
+|---|---|---|---|
+| E2 × scepticism | **23** | `1030689b` (E2a) | authored — D6 |
+| B5 × communication | **16** | `36edda4f` (B5c) | authored — D9 |
+| E2 × commercial_acumen | **15** | `68a297a3` (E2c) | authored — D7 |
+| B1 × scepticism | **15** | `f6426c06` (B1b) | authored — D8 |
+| E3 × scepticism | **12** | `de0c2676` (E3a) | authored — D10 |
+| E1 × analysis_and_evaluation | **7** | `55181aa8` (E1a) | **re-tag, not authoring** |
+| A3 × communication | **6** | `d2b06649` (A3c) | authored — D11 |
+
+**94 examined marks** across seven cells that could serve none of them on 2026-07-31.
+
+Published tag distribution (63): `analysis_and_evaluation` 51 · **`scepticism` 5** ·
+`commercial_acumen` 4 · **`communication` 3** · null 0.
+Against the 2026-07-31 baseline: a_and_e 48 · null 8 · communication 1 · **scepticism 0** ·
+**commercial_acumen 0**.
+
+Packs: `docs/reviews/AFM_BATCH_PS_CELL_REVIEW_PACK.md` (D6/D7/D8) ·
+`docs/reviews/AFM_BATCH_PS_CELL_2_REVIEW_PACK.md` (D9/D10/D11 + the `55181aa8` adjudication).
+Flip snapshots: `AFM_ps_cell_publish_flip_20260802.json`, `AFM_ps_cell_2_publish_flip_20260802.json`,
+`AFM_retag_55181aa8_20260802.json`.
+
+One row remains a **registered permanent candidate**: `47c9d5ce` (A3a) — never publish as tagged, and
+allow-list it in every GATE-P reconcile. See the disposition block later in this file.
+
+---
+
+## ⭐ 🔴 STANDING OPEN — 51 of 63 AFM drills are tagged BY DEFAULT, NOT BY DECISION
+
+**RIDES THE NEXT CALCULATOR BATCH.** This is the un-fixed half of the defect diagnosed on 2026-08-01.
+
+`buildSpecsForList` (`scripts/generate-afm-drills.ts`) still declares `sectionIdx` **local to each
+call**, and every batch caller still invokes `buildSpecsForList([oneLo])[0]` — one LO at a time. So
+the rotation index is always `0` and `deriveSkillTag` always returns `pool[0]`:
+`analysis_and_evaluation` for sections B and E, `communication` for section A. **The rotation was
+never bypassed; it is defeated by the call shape**, and it is defeated exactly as it was before.
+
+**The narrative path is fixed** (`NarrativePlan.skill` is DECLARED per plan and now reaches the
+pass-1 author via `SKILL_DEMAND`). **The calculator path is not.** The next calculator batch will
+default the same way, silently, and add more `analysis_and_evaluation` rows nobody chose.
+
+### ⚠️ TWO DIFFERENT CLAIMS. ONLY THE FIRST IS PROVEN.
+
+1. **"Every measured (area × skill) cell is served by a live drill."** — **PROVEN**, cell by cell,
+   through `psScore` over the live set.
+2. **"The AFM corpus is well-tagged."** — **NOT PROVEN, and currently false.** 51 of 63 published
+   drills carry `analysis_and_evaluation` because a broken rotation returned `pool[0]`, not because
+   anyone decided a calculator drill demands appraisal. They may each be *right* — a calculator drill
+   plausibly is appraisal — but **nobody judged it**, and an unexamined default is not a judgement.
+
+**Do not let the first claim be reported as the second.** They are different statements about
+different populations: the first is about 7 cells, the second about 63 rows.
+
+**The remediation, and its measurement.** Declare a skill PER CALCULATOR FAMILY (as
+`NarrativePlan.skill` does per plan), not by rotation — a professional skill is a property of what a
+drill DEMANDS, not of when it was generated. Hoisting `sectionIdx` to module scope was already
+REJECTED for that reason: it would make the tag depend on generation ORDER, so re-running a batch
+could silently re-tag its drills. **After the change, re-run the same measurement**: the cell census
+against Mock 1 + the practice cases, and the corpus tag distribution with its denominator (P-G2).
+Risk & uncertainty's "bare IRR−r is headroom, never sensitivity" trap is where a genuine calculator
+`scepticism` drill would come from.
+
+---
+
+## ⭐ 🔴 STANDING OPEN — TWO DEFECT CLASSES WITH NO GATE BEHIND THEM
+
+**Both were found by a human READING the built output. Neither has any automated check, and for one
+of them no automated check is possible.** They are recorded together because they are the same
+shape: *the artefact is internally coherent, passes every gate, and is wrong about something only a
+reader can see.*
+
+### 1. P-N2 — the teaching pair can coach a different skill from the one the rubric marks
+
+`hint` and `full_reveal` are the only fields a student reads as teaching. **N1–N6 never touch
+them** (they read the rubric and the golden pair); P4 checks only for invented facts; and **P7 checks
+that a `"…misconception…: "` sentence EXISTS, never that it names the failure the criteria
+penalise.**
+
+**Measured instance.** D9 (`36edda4f`, declared skill `communication`) led its reveal with *"The
+dominant misconception here is FENCE-SITTING"* — a **commitment** failure carried by ONE criterion
+worth **2 of 12 marks** — while its four F10 criteria, **8 of 12**, were every one about the READER.
+Its `hint` carried the identical lean. Both fluent, both factually clean, both gate-green, both
+pointed at the wrong skill.
+
+**Why no gate can close it:** which failure a rubric principally penalises is a *reading of the
+criteria*, not a property of the text. The check is the rubric's own arithmetic — which criteria
+carry the skill's disqualifier and what share of the marks they hold — compared against what the
+reveal names. Full rule and its claim ceiling: **`GENERATOR_DOCTRINE.md` P-N2**.
+
+### 2. The advice-vs-computed class — author prose contradicting the figures
+
+Prose asserting something the computed artefact does not support. **Three instances, and the third
+is the harder shape:**
+
+| # | instance | cause |
+|---|---|---|
+| 1 | **Kestrel** — tax branch | builder gap: the computed object knew which branch fired; the model answer never stated it, so the prose guessed |
+| 2 | **Halvard** — scenario count | builder gap: `buildEnpvModelAnswer` knew how many scenarios destroy value and never said so; the advice slot beneath filled the vacuum and got it wrong |
+| 3 | **D7 v1** — payback | **no computed object at all.** The narrative pipeline has no numeric verifier, so a rubric asserted payback "well within" an 18-month threshold on figures giving **−USD 69,472 a year and no payback** — and passed all six gates |
+
+**1 and 2 have a partial remedy:** the builder-gap audit (ask what the computed object KNOWS that the
+model answer never STATES — counts over a set, which member is extremal, which branch fired, margins
+for the runner-up) plus `advice-checks.ts` as a backstop. **3 does not**, because there is nothing
+that knew the answer; its remedy is **P-N1** — do not create the derivation: state derived economics
+as GIVEN analysis outputs and leave at most one arithmetic step for a human.
+
+**The standing instruction for both classes: a numerically-loaded or skill-declared narrative artefact
+gets READ before it ships, and the report says which figures were checked and by whom.** Never
+describe the gate suite as covering either.
+
+---
 
 ## ⛔ CLOSED-BY-RULING 2026-07-30 — schema widening STOPS HERE; only ONE real defect shape exists
 
@@ -306,7 +429,12 @@ B1b's five anchor keys all still appear in its golden GOOD — that requirement 
 and the check confirms rather than assumes it.
 
 
-## 🟠 PARTLY CLOSED 2026-08-02 — the AFM PS corpus: seam fixed, **3 of 7 cells authored, 4 owed**
+## ✅ CLOSED 2026-08-02 — the AFM PS corpus: seam fixed, **all 7 cells served** (working record)
+
+> **This section is the WORKING RECORD of how the gap was found, measured and closed** — kept for the
+> reasoning and the corrections made along the way. The outcome is summarised in the ⭐ session-close
+> block at the top of this file; the un-fixed half (the calculator rotation) is the ⭐ standing open
+> item there. Read those first.
 
 > **UPDATE 2026-08-02 (this session).** The 2026-08-01 entry below concluded "the authoring number is
 > 4 drills". **Re-measured against the live corpus it is 7**, because the five published PRACTICE
