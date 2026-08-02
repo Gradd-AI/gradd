@@ -246,6 +246,43 @@ wait for it, or say plainly that it was still building.
   **FR1:** interpretation criteria `[F1,F5,F6]` (F6=state-the-figure); F9 OFF (carry-a-value-downstream only);
   no `evidence_anchor`; marks credit RECOGNITION not a number. area-entry ranks 60–64 (above every calculator).
   Design: `docs/NARRATIVE_MARKING_DESIGN.md`; evidence F1–F12: `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b.
+- **PS-CELL BATCH — pipeline #2's THIRD cluster (D6/D7/D8), authored into named (area × skill) cells
+  the corpus could not serve (2026-08-02).** **THE SEAM IT CLOSED:** `plan.skill` reached the DB column
+  and the pass-2 Ezra reveal and NOTHING ELSE — `buildNarrativeUserPrompt`, the call that writes the
+  criteria, disqualifiers and both golden answers, was never told the skill, so a declared tag and its
+  rubric were never connected. Fixed per **P-T2** (change the instruction, never add a prohibition):
+  **`SKILL_DEMAND`** (`scripts/generate-afm-drills.ts`) redefines what a `required_point` IS per skill —
+  ACCA sub-descriptors VERBATIM (from `PROFESSIONAL_SKILLS`) + a house-authored **ACT** + a **SCENARIO
+  PRECONDITION** (what `context_text` must CONTAIN for the act to be possible; without it the rubric
+  silently degrades to topic description). Measured discriminator, not asserted: F10 is instructed only
+  by the new block, and **0 of the 8 pre-fix narrative rows carry it on any criterion** — including the
+  two already tagged `scepticism` — vs 26/36 marks across the new three. **`NarrativePlan.id` is now a
+  free string** (the `'D1'|…|'D5'` union made a 6th plan a TYPE edit — a hard authoring ceiling for no
+  safety, `scripts/` being outside `tsconfig`), guarded at runtime by **`assertNarrativePlanIds`**:
+  duplicate ids throw and `--narrative-only <typo>` errors with the known-id list instead of filtering
+  to `[]` and reporting a clean "0/0 passed, 0 inserted" (P-G1). **DRY-RUN NOW CAPTURES** the complete
+  row to `docs/rollbacks/AFM_narrative_draft_<id>.json`; **`--narrative-insert-from <file>`** inserts
+  those bytes verbatim (no model call, refuses anything not `candidate`/unpublished) — without it,
+  reviewing a dry-run then running the real batch ships prose nobody reviewed, because the model does
+  not repeat itself. `buildNarrativeRow` is the ONE row definition both paths use. **Drills (all
+  `candidate`/`published=false`):** D6 `1030689b` E2a **scepticism** (testing a "fully hedged" claim) ·
+  D7 `68a297a3` E2c **commercial_acumen** (does a netting centre earn its cost) · D8 `f6426c06` B1b
+  **scepticism** (challenging a simulation's assumptions — same LO as D1, deliberately the opposite act:
+  D1 interprets the output, D8 challenges its credibility). area-entry ranks **83/84** for the E2 pair —
+  they share the E2 bucket with fxhedge and must clear the WHOLE E-calculator span (fxhedge 70–73 AND
+  irhedge 74–77; a rank of 75 passes a "beats fxhedge" check and is still wrong) — and **65** for D8,
+  below D1's 60-band sibling. Ranks verified against the drills' STORED headings, not fixture strings.
+  Fixtures: `scripts/test-area-entry.ts` (+11 cases). Pack:
+  `docs/reviews/AFM_BATCH_PS_CELL_REVIEW_PACK.md`.
+  **⚠️ THE NARRATIVE PIPELINE HAS NO NUMERIC VERIFIER, AND IT COST A DRILL.** D7's first version passed
+  ALL SIX GATES asserting the exact opposite of its own figures — a rubric requiring the candidate to
+  conclude payback was "well within" an 18-month threshold on drivers giving an annual net benefit of
+  **−USD 69,472 and no payback at all**. N1/N4 grade rubric coverage and GOOD-vs-BAD separation; the
+  prompt's COHERENCE rule covers only STATISTICAL shape claims; the numeric moat belongs to the
+  CALCULATOR families. Nothing was looking. Caught by hand pre-insert. Fix is structural — the brief now
+  states the economics as GIVEN outputs and forbids the raw drivers, leaving ONE division for a human to
+  check. **Any conceptual drill given a derivable multi-step chain has this hazard: state the outcome as
+  given, or recompute by hand before insert. Never describe the six gates as covering it.**
 - **E-NARRATIVE CLUSTER — pipeline #2's SECOND batch, E1a×2 + E2a×1 (EN1/EN2/EN3), first narrative content in
   Section E.** Same engine as D1–D5 (`narrative-marker.ts`/`narrative-grader.ts`), authored via a one-off
   gitignored script (`scripts/_author_enarrative_batch.ts`) rather than the generator's `runNarrativeBatch`

@@ -306,7 +306,15 @@ B1b's five anchor keys all still appear in its golden GOOD — that requirement 
 and the check confirms rather than assumes it.
 
 
-## 🟠 PARTLY CLOSED 2026-08-01 — the AFM PS corpus: tagged, re-measured, **4 drills owed**
+## 🟠 PARTLY CLOSED 2026-08-02 — the AFM PS corpus: seam fixed, **3 of 7 cells authored, 4 owed**
+
+> **UPDATE 2026-08-02 (this session).** The 2026-08-01 entry below concluded "the authoring number is
+> 4 drills". **Re-measured against the live corpus it is 7**, because the five published PRACTICE
+> CASES were never in the denominator — only Mock 1 was. Three of the seven are now authored (as
+> `candidate`, nothing published). The rest of this entry is the 08-01 record, preserved; the
+> re-measurement, the seam fix and what remains are in the three sections appended at its end.
+
+
 
 **Logged on Grant's instruction 2026-07-31. Rides the next AFM authoring batch.**
 
@@ -428,6 +436,141 @@ claim to teach it).
    never sensitivity" trap is sceptical work by nature).
 2. **Nothing gates the tag.** No check verifies that a drill's declared skill matches what its
    rubric demands. The case-authoring path has C4 for PS coverage; the drill path has no analogue.
+
+### 📊 RE-MEASURED 2026-08-02 — the practice cases were never in the denominator; **7 cells, not 4**
+
+**The 08-01 count cross-referenced Mock 1 only.** Five PRACTICE cases are also published and they
+also produce PS signal: `runCaseMarking` runs `judgeCaseMarking` (the PS pass) **unconditionally** —
+only `judgeTechnicalMarking` is gated on `sitting` (`case-mark-run.ts:215` vs `:227`) — and
+`CaseSession.tsx:345` posts to `/api/acca/case/mark`. So a practice case writes `per_skill`, which is
+exactly what `loadSelectionSignals` reads. (The LO half is sit-only, `source='sit'`; practice cases
+give PS signal but no ledger row.)
+
+**Denominator (P-G2).** 58 AFM `acca_drills` rows → **57** `approved`+`published` (the predicate
+`next-drill` serves from); 1 excluded, candidate `47c9d5ce` A3a. 8 AFM `acca_cases`, all published —
+3 `mock_only` (Mock 1) + 5 practice. 20 requirements, **20/20 with a non-null
+`professional_skill_tags`**, 0 not-evaluated. A cell is servable iff ≥1 published drill shares the
+2-char `lo_code` prefix AND carries that exact tag (`psScore` is an exact single-string match). A
+requirement carries a MULTI-tag list; a drill carries ONE tag — so a two-skill requirement makes two
+cells. The `lo=` path's corpus-wide tier-2 fallback is NOT counted as servable: being steered out of
+the area you were weak in is the failure, not the cure.
+
+**17 distinct cells over 28 (requirement × skill) demands. 10 servable, 7 not.**
+
+| unservable cell | examined marks | source |
+|---|---|---|
+| **E2 × scepticism** | 23 | Solenne (iii) ᴹ · Aldebrino (ii) ᴹ · Kestrel (ii) |
+| **B5 × communication** | 16 | Solenne (ii) ᴹ |
+| **E2 × commercial_acumen** | 15 | Aldebrino (ii) ᴹ · Kestrel (ii) |
+| **B1 × scepticism** | 15 | Brecon (ii) ᴹ · Halvard (ii) |
+| **E3 × scepticism** | 12 | Castlereagh (ii) — **NEW** |
+| **E1 × analysis_and_evaluation** | 7 | Lindqvist (ii) — **NEW** |
+| **A3 × communication** | 6 | Castlereagh (iv) — **NEW** |
+
+**All four cells measured on 08-01 are still unservable — none closed.** The drill corpus had not
+moved at all (57 published, distribution byte-identical); the gap grew because DEMAND grew.
+**37 technical marks of 200 sit on requirements where NOT ONE examined skill can be served in
+that area**; another 42 are half-served.
+
+**A3 is a different shape** — the area has no published drill of ANY skill. Candidate `47c9d5ce` A3a
+is tagged `communication`, but that is the section-A rotation default (`pool[0]` for section A *is*
+`communication`), i.e. the defect's output, not a decision. It predates the narrative pipeline and
+has no narrative rubric. Publishing it is a plausible route to close the cell, on review, not on the
+strength of that tag.
+
+### ✅ THE SEAM IS CLOSED 2026-08-02 — `plan.skill` now reaches the pass-1 author
+
+`plan.skill` reached the DB column and the pass-2 Ezra reveal and **nothing else**.
+`buildNarrativeUserPrompt` — the call that writes the criteria, the disqualifiers and both golden
+answers — was never told the skill. Declaring `skill: 'scepticism'` did not make the rubric demand
+scepticism; only `brief` did.
+
+Fixed per **P-T2**: the instruction already winning was `required_point` = *"the point a full-marks
+answer makes — applied to the scenario"*, which yields criteria ABOUT the topic, earnable without
+the act. So the demand itself was redefined per skill (`SKILL_DEMAND` in
+`scripts/generate-afm-drills.ts`): ACCA sub-descriptors verbatim + a house-authored **ACT** (what a
+`required_point` must require) + a **SCENARIO PRECONDITION** (what the scenario must contain for the
+act to be possible). Nothing forbidden.
+
+**Measured, not asserted:** F10 is instructed only by the new block. Of the **8** pre-fix narrative
+rows (the full `narrative_v1` population; the 9th discursive row has no `criteria`), **0 carry F10 on
+any criterion** — including the two already tagged `scepticism`. The three new drills carry it on
+26 of 36 marks.
+
+Also closed: `NarrativePlan.id` is a free string (a 6th plan was a TYPE edit — a hard authoring
+ceiling for no safety, since `scripts/` is outside `tsconfig`), with `assertNarrativePlanIds`
+replacing it — duplicate ids throw, and `--narrative-only <typo>` now errors with the known-id list
+instead of filtering to `[]` and reporting "0/0 passed, 0 inserted" (P-G1). Failure path proven.
+And **dry-run now CAPTURES** the full row to `docs/rollbacks/AFM_narrative_draft_<id>.json`, with
+`--narrative-insert-from` inserting those bytes: reviewing a dry-run then re-running the batch would
+otherwise ship prose nobody reviewed, because the model does not repeat itself.
+
+**Authored (all `candidate`/`published=false`; AFM published set unchanged at 57):** D6 `1030689b`
+E2a scepticism · D7 `68a297a3` E2c commercial_acumen · D8 `f6426c06` B1b scepticism. Pack:
+`docs/reviews/AFM_BATCH_PS_CELL_REVIEW_PACK.md`.
+
+### 🔴 OPEN 2026-08-02 — the narrative pipeline has NO numeric verifier, and it cost a drill
+
+**D7's first version passed all six gates asserting the exact opposite of its own figures.** Raw
+drivers (240 invoices × USD 180,000, 0.45% per settlement, 62% volume reduction, USD 190,000 running,
+USD 280,000 set-up, 18-month threshold) → rubric required concluding payback was *"achievable well
+within 18 months"* and the board *"should proceed"*. **True annual net benefit: −USD 69,472. Payback:
+never.** N1/N4 grade rubric coverage and GOOD-vs-BAD separation; the prompt's COHERENCE rule covers
+only STATISTICAL shape claims; the narrative pipeline has no numeric verifier (that moat is the
+calculator families'). Caught by hand pre-insert. Brief rewritten to state the economics as GIVEN
+outputs and forbid the raw drivers, leaving one division to check — re-run verified 4.55m ÷ 2.1m =
+26.00 months, stated 26, threshold 24.
+
+**Open item:** any conceptual drill given a derivable multi-step chain has this hazard. Either state
+the outcome as given, or accept that a human must recompute before insert. **Do not describe the six
+gates as covering it.**
+
+### 🔸 OPEN 2026-08-02 — can a skill-vs-rubric gate be deterministic? PARTLY. Scope it honestly.
+
+Now that skill and rubric CAN be connected, the question is whether the connection can be *checked*.
+Analysis only — nothing built.
+
+**Structurally checkable (a real gate, call it N6):**
+1. **F10 marks-share.** ≥ half the total marks on criteria whose `disqualifiers` include F10. Pure
+   arithmetic over the rubric. Proves the skill is NAMED as the marking basis. 0/8 pre-fix rows
+   would have failed it; all three new drills pass (12/12, 8/12, 6/12).
+2. **The scenario precondition — the highest-value check, because it catches the failure at its
+   root.** Per skill, a structural property of `context_text`: for `scepticism`, a quoted span of
+   ≥6 words attributed to a named party (D6's *"We are fully hedged…"*, D8's Osprey quote); for
+   `commercial_acumen`, ≥2 `constraint`/`figure` scenario_facts that a decision trades off; for
+   `communication`, a named audience. **Without the precondition the act is impossible and the rubric
+   silently degrades to topic description** — which is exactly what the pre-fix corpus is.
+3. **The claim-anchor link (scepticism).** Identify the scenario_fact whose `key` falls inside the
+   quoted span, then require every F10 criterion's `anchor_facts` to include it. D6 anchors
+   `f_treasurer` on all five criteria. This mechanically forces the skill-carrying criteria to be
+   ABOUT the claim, and it is the strongest available structural proxy for the act.
+
+**Irreducibly model-graded:**
+- **Whether a `required_point` demands the act or describes the topic.** *"Explains why translation
+  exposure matters"* vs *"shows the treasurer's claim does not survive the VND 420bn translation
+  exposure"* — both grammatical, both reference the fact, both can carry F10. No structural feature
+  separates them. A phrase table ("must contain 'does not hold'") is the tempting wrong answer: it is
+  gameable by the author and trains the model to write to the detector — the P-DB5 failure exactly
+  (a matched string proves some figure renders that way, never which one). The doctrine's own
+  precedent is `advice-checks.ts`, which uses a closed grammatical class, never a phrase table; no
+  such closed class exists for "this sentence demands challenge".
+- **Whether the golden BAD is topically competent but skill-free.** A quality judgement; N4's job.
+- **WHICH of the two skills is demanded.** F10 covers scepticism AND commercial_acumen in one mode,
+  so it can never discriminate between them.
+
+**Claim ceiling if N6 is built:** passing means *"the scenario admits the act and the rubric names the
+skill as the marking basis"* — **never** *"the rubric demands the skill"*. Same shape as the marking
+claim ceiling. A gate sold as the latter would be the third instrument in this project to report
+success while measuring less than it claims.
+
+**Still owed (unchanged, plus):**
+- **4 cells:** B5 × communication (16 marks) · E3 × scepticism (12) · E1 × analysis_and_evaluation (7)
+  · A3 × communication (6).
+- **The 47 quantitative tags remain rotation defaults.** `buildSpecsForList` still declares
+  `sectionIdx` locally and every batch caller still passes one LO, so `deriveSkillTag` still returns
+  `pool[0]`. **Only the narrative path was fixed** — no calculator batch can yet be authored into a
+  named cell.
+- **The three new drills need review + adjudication before any publish flip.**
 
 
 ## 🔸 OPEN 2026-07-29 — the per-skill PS `mark_awarded` is an apportionment artefact, not a per-skill score
