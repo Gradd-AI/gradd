@@ -2818,6 +2818,109 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       'simulation and does NOT compute VaR (that is calculator #3); every figure is GIVEN. The answer ' +
       'must USE the given figures in its challenge.',
   },
+
+  // ── PS-CELL BATCH 2 (2026-08-02) — the remaining measured-unservable cells, MINUS one.
+  // E1 × analysis_and_evaluation is deliberately NOT here: it may close without authoring if
+  // `55181aa8` is re-tagged (adjudication pending, Grant's ruling). Authoring it now would risk a
+  // duplicate server for a cell that is about to close for free.
+  {
+    // CELL: B5 × communication (16 examined marks — Solenne (ii) B5b, Mock 1). The LARGEST
+    // remaining cell and the one a CASE can never close: C4 forbids `communication` on any Section
+    // B case, so only a drill can serve it.
+    //
+    // B5c, not B5b: B5b is quantitative (calc #10 owns currency-NPV) and a conceptual drill there
+    // would sit on top of it. B5c is discursive and already carries D5 (`32ef124c`,
+    // commercial_acumen) — deliberately a DIFFERENT act on a different framing: D5 weighs financing
+    // options and commits; this one explains a settled decision to an audience that must act on it.
+    id: 'D9', lo_code: 'B5c', covers: ['B5c'], level: 3, skill: 'communication', region: 'Vietnam',
+    sector: 'a European packaging group and its Vietnamese manufacturing subsidiary',
+    heading: '**Exchange controls — briefing a local operating board on restricted remittance**',
+    brief:
+      'B5c (L3, discursive) — the significance of exchange controls for an investment decision and ' +
+      'strategies for dealing with restricted remittance. THE AUDIENCE IS THE POINT OF THIS DRILL. ' +
+      'The scenario names a group whose subsidiary sits under exchange controls, and a SPECIFIC ' +
+      'NON-FINANCIAL AUDIENCE that must be briefed and must act: the subsidiary\'s local operating ' +
+      'board (e.g. its operations and sales directors, named as such — not treasury people), who ' +
+      'were promised a distribution that did not arrive and are now deciding whether to commit to a ' +
+      'local capacity expansion. State the audience, what they must decide, and the fact that trust ' +
+      'has already been damaged. ' +
+      'FIGURES ARE GIVEN OUTPUTS ONLY (P-N1): state the accumulated undistributed profits, the ' +
+      'annual remittance cap the central bank permits, and the resulting number of years to release ' +
+      'the balance, all AS STATED figures of an analysis already done. Do NOT supply the raw drivers ' +
+      'those came from and do NOT require any arithmetic — the three stated figures must be ' +
+      'mutually consistent (balance ÷ annual cap = the stated number of years). ' +
+      'The requirement asks the candidate to set out the key content of a briefing to that local ' +
+      'board. CONCEPTUAL-ONLY — no computation of a blocked-funds NPV (calculator #10 K3) and no ' +
+      'hedge pricing; the skill assessed is making a technical constraint usable by the people who ' +
+      'must act on it.',
+  },
+  {
+    // CELL: E3 × scepticism (12 examined marks — Castlereagh (ii) E3a, practice). E3a is E3's ONLY
+    // LO. Conceptual-only: calculator #12 (irhedge) owns every futures/collar/swap computation, so
+    // this drill interprets a GIVEN hedge outcome and challenges what is claimed for it.
+    //
+    // The sceptical object is doctrinally apt rather than invented: irhedge FR1 (2026-07-24) swept
+    // the word "guaranteed" out of all four live E3a drills in favour of "effective borrowing cost
+    // locked in", because a futures hedge locks a rate approximately and does not eliminate risk.
+    // A drill whose whole job is refuting a treasurer who claims exactly that is the fenced
+    // misconception made into a teaching object.
+    id: 'D10', lo_code: 'E3a', covers: ['E3a'], level: 3, skill: 'scepticism', region: 'Poland',
+    sector: 'a cold-chain logistics operator financing a distribution-hub build',
+    heading: '**Interest-rate hedging — testing a claim that the rate risk has been eliminated**',
+    brief:
+      'E3a (L3, discursive) — the appropriateness of FRAs, interest-rate futures, swaps and options ' +
+      '(including collars) for a given hedging requirement. The scenario names a borrower that has ' +
+      'ALREADY placed an interest-rate futures hedge against a forthcoming loan, and a named GROUP ' +
+      'TREASURER who has told the board, in QUOTABLE WORDS INSIDE QUOTATION MARKS, that the ' +
+      'borrowing rate is now fixed and the interest-rate risk has been eliminated. ' +
+      'The scenario must also state the facts that claim does not survive: that the hedge covers a ' +
+      'stated notional and a stated period while the borrowing is for a larger amount or a longer ' +
+      'period; that contracts are whole-number instruments so the cover is approximate; that basis ' +
+      'was not zero when the hedge was closed; and that the loan is a floating-rate facility with a ' +
+      'covenant the treasurer has not mentioned. ' +
+      'FIGURES ARE GIVEN OUTPUTS ONLY (P-N1): state the effective rate the hedge actually achieved ' +
+      'and the residual unhedged amount AS STATED results of an analysis already performed. Do NOT ' +
+      'supply contract counts, tick values, opening/closing futures prices or a basis-decay ' +
+      'calculation, and require NO arithmetic of the candidate. ' +
+      'The requirement asks the candidate to ASSESS the treasurer\'s claim and advise the board what ' +
+      'residual interest-rate exposure it still carries. CONCEPTUAL-ONLY — the candidate does NOT ' +
+      'compute a hedge, a lock-in rate or a number of contracts (that is calculator #12).',
+  },
+  {
+    // CELL: A3 × communication (6 examined marks — Castlereagh (iv) A3a, practice). A3 has ZERO
+    // published drills of any skill, so this is an AREA gap, not merely a skill gap.
+    //
+    // WHY AUTHORED RATHER THAN CLOSED BY REVIEWING `47c9d5ce`: that candidate is A3a, tagged
+    // `communication` — but the tag is the section-A rotation default (`pool[0]` for section A IS
+    // communication), and its actual content is a SCEPTICISM drill: it refutes a named CFO's quoted
+    // ESG claim on two counts and commits to "should not proceed on current terms". Publishing it
+    // under a communication tag would ship exactly the dishonest tag this whole workstream exists to
+    // remove. It also predates the narrative pipeline and has NO `answer_schema` at all, so N1–N6
+    // cannot gate it. Full adjudication in the batch-2 review pack.
+    //
+    // A3c rather than A3a: stakeholder management is the natural home for a communication demand,
+    // A3c has zero drills so this adds LO coverage, and it leaves `47c9d5ce`'s A3a ground clear for
+    // whatever Grant rules about it.
+    id: 'D11', lo_code: 'A3c', covers: ['A3c'], level: 3, skill: 'communication', region: 'Peru',
+    sector: 'a copper-mining group and the farming communities along its tailings-water catchment',
+    heading: '**Stakeholder management — communicating a remediation commitment to an affected community**',
+    brief:
+      'A3c (L3, discursive) — how an organisation manages its stakeholder groups as part of its ' +
+      'social responsibilities. THE AUDIENCE IS THE POINT OF THIS DRILL. The scenario names a ' +
+      'mining group that has ALREADY decided and funded a water-remediation programme after a ' +
+      'discharge incident, and a SPECIFIC NON-TECHNICAL AUDIENCE that must be addressed: the elected ' +
+      'representatives of the affected farming communities, who received an earlier assurance that ' +
+      'proved wrong and are deciding whether to accept the programme or escalate to the regulator. ' +
+      'Name the audience, what they must decide, and the fact that a previous assurance failed. ' +
+      'FIGURES ARE GIVEN OUTPUTS ONLY (P-N1): state the committed remediation spend, the monitoring ' +
+      'frequency and the number of households affected AS STATED figures. No derivation, no ' +
+      'arithmetic required of the candidate. ' +
+      'The requirement asks the candidate to set out how the group should communicate the ' +
+      'commitment to that audience and what the communication must contain. CONCEPTUAL-ONLY — this ' +
+      'is not an ESG-appraisal drill and the candidate does NOT assess whether the programme is ' +
+      'adequate; the skill assessed is making a technical remediation commitment credible and ' +
+      'actionable for the people it affects, given that trust has already been broken.',
+  },
 ];
 
 /**
@@ -3432,7 +3535,9 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
 
   console.log(`\n${'─'.repeat(60)}`);
   console.log(dryRun ? `Narrative dry-run complete — ${plans.length - failed.length}/${plans.length} passed gates, 0 inserted.` : `Narrative batch done. ${plans.length - failed.length}/${plans.length} inserted.`);
-  if (failed.length) console.log(`Failed: ${failed.join(', ')}`);
+  if (failed.length) console.error(`Failed: ${failed.join(', ')}`);
+  // Returned so the caller can set a non-zero exit code — see the P-G1 note at the call site.
+  return failed.length;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3497,7 +3602,12 @@ async function main() {
     const only = arg('--narrative-only');
     const anthropicN = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
     const supabaseN = dryRun ? null : createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
-    await runNarrativeBatch(anthropicN, supabaseN, dryRun, only);
+    // P-G1 — the batch reported failures to STDOUT and exited 0. Measured 2026-08-02: a D11 run
+    // whose drill failed all 5 attempts and wrote NO draft still exited 0, and a caller reading only
+    // the exit code (or a run whose stdout was redirected, which is how this was found) saw success.
+    // A batch that produced nothing must not be able to say it succeeded.
+    const failed = await runNarrativeBatch(anthropicN, supabaseN, dryRun, only);
+    process.exitCode = failed === 0 ? 0 : 1;   // P-G4: set exitCode, never process.exit()
     return;
   }
 
