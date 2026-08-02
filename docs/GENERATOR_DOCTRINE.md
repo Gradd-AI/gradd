@@ -774,3 +774,61 @@ constrained model grader: `lib/acca/narrative-grader.ts`; generator wiring: `--n
 The conversational tutor (`/api/acca/tutor`, all papers) has an adversarial regression suite: `scripts/redteam-probes.ts` (45-probe matrix × 14 classes — concept/invented-figures, wrong-drill, partial, gibberish, answer-extraction incl. "verify this: <pasted answer>", prompt-injection, regurgitation, right/wrong-method, currency-scale, hint-fishing, emotional, persona-boundary, free-cap/burn edges, long-conversation drift), `scripts/redteam-tutor.ts` (driver — minted free/paid sessions, real route, machine auto-checks: figure-leak / invented-range / cutoff / CTA / call_type / unearned-reveal), `scripts/redteam-judge.ts` (reviewer-model pass → FLAGGED-ONLY). **STANDING RULES:** (1) **re-run the battery after ANY tutor prompt / persona / leg change** — it is a regression gate, not a one-off; (2) **run the judge's `--prod-sample` weekly over `acca_drill_messages`** — real student behaviour is the probe source no manufactured matrix invents (the matrix is the floor, production is the well). Prod firing is guarded (`--target prod --yes-production`); default target is local. Cost ≈ USD 2–6 per full prod run (haiku-heavy).
 
 **RULING — the DETERMINISTIC auto-scan is the authoritative regression signal; the LLM judge is an advisory candidate-surfacer, not a metric (2026-07-16).** The sonnet judge is nondeterministic run-to-run (the same transcripts + rubric flagged 16 then 15 with a shifted composition) and persistently miscodes legitimate GIVEN-driver restatement as a leak no matter how emphatic the rubric. So: read the auto-scan + the target transcripts directly to decide pass/fail; treat the judge's flag list as leads to verify, never a raw count to compare. **GIVEN-vs-COMPUTED is the load-bearing distinction:** a figure the scenario PRINTS for the student (drivers, and any aggregate it states as "supplied to the model") may be restated freely — the student already sees it — and is NEVER a leak; only a figure the CODE derives (intermediate / answer / verdict / intrinsic floor) is withheld, and confirming/validating a *guess* at one (even its magnitude — "right ballpark") leaks too. The auto-scan encodes this structurally: `computedLeakForms` reads COMPUTED = schema components with a `recompute` step (given = the rest), so it never flags a given driver. The judge is fed the seeded session-state (account + miss-count) so it stops flagging EARNED reveals (paid + ≥2 misses, or resolved) as unearned when the misses were seeded and not shown.
+
+## P-N1 — A NARRATIVE BRIEF THAT CARRIES RAW NUMERIC DRIVERS HAS NO GATE BEHIND IT (ruled 2026-08-02)
+
+**N1–N6 grade rubric coverage, GOOD-vs-BAD separation and skill-demand STRUCTURE. None of them
+reads a number. The narrative pipeline has no numeric verifier — that moat is the CALCULATOR
+families' (`numeric-verifier.ts`, `validate-schema.ts`, GATE1–3), and it does not extend here.**
+
+**The instance, measured.** D7 v1 (`--narrative-only D7`, E2c, commercial_acumen) passed **all six
+gates** with a rubric requiring the candidate to conclude that a netting centre's payback was
+*"achievable well within 18 months"* and that the board *"should proceed"*. Its scenario supplied the
+raw drivers: 240 intra-group invoices, USD 180,000 average value, a 0.45% per-settlement banking
+cost, a 62% volume reduction, USD 190,000 annual running cost, USD 280,000 set-up, an 18-month board
+threshold. Worked through: annual banking cost USD 194,400 → saving USD 120,528 → **annual net
+benefit −USD 69,472, and payback never occurs.** Every commercial verdict in that rubric was false on
+its own figures.
+
+**Why nothing caught it.** N1 asks whether the golden GOOD makes every required point; N4 asks
+whether the marker can separate GOOD from BAD; both are satisfied by an internally coherent rubric
+that happens to be arithmetically wrong. The pass-1 prompt's COHERENCE rule covers **statistical
+shape claims only** (fat tails, skew, VaR-as-a-threshold) — it was written for D1's simulation output
+and says nothing about a cost-benefit chain. The failure is structural, not an author lapse: a
+CONCEPTUAL-ONLY drill forbids the candidate from computing, so the derived figure exists nowhere the
+gates can compare it against.
+
+**The rule. State derived economics as GIVEN analysis outputs in the brief, and forbid the raw
+drivers they came from — leaving at most ONE arithmetic step for a human to check before insert.**
+This is the same device D1 and D8 already use for simulation output: the scenario PRINTS the mean,
+the standard deviation and the VaR as given, and nobody derives them. D7's rewritten brief requires
+the scenario to state the annual net saving, the set-up cost and the resulting payback, and bans
+invoice counts, per-transaction percentages and volume-reduction percentages. The one surviving step
+is `set-up ÷ annual net saving`, checked by hand: 4.55m ÷ 2.1m = 26.00 months against a stated 26 and
+a 24-month threshold.
+
+**Corollary — set the given figures so the judgement is real.** Removing the derivation must not
+remove the decision. Put the stated outcome CLOSE to the stated threshold (D7 misses by two months),
+or the recommendation collapses into an arithmetic formality and the commercial_acumen the drill
+exists to exercise never gets exercised.
+
+**Corollary — never describe the gate suite as covering this.** A pack, journal entry or commit
+message that says "all gates green" about a numerically-loaded narrative drill is making a claim the
+suite does not support. Say which figures were checked and by whom.
+
+### THIS IS THE THIRD INSTANCE OF AUTHOR-PROSE-VS-COMPUTED-FIGURES
+
+1. **Kestrel — tax branch.** Prose named a tax treatment the computed object had not taken; the
+   branch that actually fired was never stated in the model answer, so the prose guessed.
+2. **Halvard — scenario count.** `buildEnpvModelAnswer` stated the verdict and P(negative NPV) but
+   never how many scenarios destroy value; the advice slot beneath it asserted "the only one" against
+   a computed set containing two.
+3. **D7 — payback.** No computed object at all: the narrative pipeline has none, and the rubric's
+   asserted verdict contradicted figures nobody had worked through.
+
+The first two share a cause the third does not — a builder gap, where the computed object knew
+something the model answer never stated (see `AFM_SURFACED.md`, and `advice-checks.ts` for the
+backstop). **D7 is the harder version: there is no computed object to have known it.** So the fix
+cannot be "state more of what code knows"; it has to be "do not create the derivation in the first
+place". Both remedies are now standing — the builder-gap audit for calculator families, and this rule
+for narrative briefs.
