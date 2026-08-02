@@ -38,12 +38,15 @@
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
  */
 
+import { readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fixedHalfUp } from '../lib/acca/rounding';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import {
   SYLLABUS_MAP,
   COMMAND_VERBS,
+  PROFESSIONAL_SKILLS,
   type LoCode,
   type LoMode,
   type ProfessionalSkillTag,
@@ -2595,7 +2598,17 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 // ═════════════════════════════════════════════════════════════════════════════
 
 interface NarrativePlan {
-  id: 'D1' | 'D2' | 'D3' | 'D4' | 'D5';
+  /**
+   * Plan id — a free string, deliberately NOT a closed union.
+   *
+   * It was `'D1'|'D2'|'D3'|'D4'|'D5'`, which made adding a sixth plan a TYPE edit rather than a
+   * data edit — a hard ceiling on authoring for no safety gained (`scripts/` is outside
+   * `tsconfig.json`'s include, so the union was never compiler-enforced on this file anyway;
+   * it only ever constrained the author reading it). Uniqueness is asserted at runtime instead
+   * (`assertNarrativePlanIds`), which is the property that actually matters: two plans sharing
+   * an id would make `--narrative-only` ambiguous.
+   */
+  id: string;
   lo_code: LoCode;              // primary tag
   covers: string[];            // all LOs this drill exercises (per-criterion `lo`, for coverage journalling)
   level: 2 | 3;
@@ -2709,7 +2722,126 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       'strategies, and to assess international financing options. CONCEPTUAL-ONLY — the candidate does NOT ' +
       'compute a blocked-funds NPV (that is calculator #10 K3); evaluate strategy and significance in words.',
   },
+
+  // ── PS-CELL BATCH (2026-08-02) — three drills authored into NAMED (area × skill) cells that the
+  // live corpus could not serve. Measured against what AFM content actually EXAMINES: Mock 1's 8
+  // requirements + the 5 published practice cases' professional_skill_tags. These are the three
+  // highest-marks-at-stake unservable cells; four more remain (B5×communication, E1×a_and_e,
+  // E3×scepticism, A3×communication) and are deliberately NOT authored here — three first, to prove
+  // the seam fix produces rubrics that DEMAND the declared skill rather than mentioning it.
+  //
+  // These are the FIRST plans authored with `plan.skill` reaching the pass-1 author (SKILL_DEMAND).
+  // Every earlier plan's rubric was written by a call that did not know the drill's skill.
+  {
+    // CELL: E2 × scepticism (23 examined marks — Solenne (iii) E2b 8, Aldebrino (ii) E2a 8,
+    // Kestrel (ii) E2a 7). E2a, not E2b: E2b is the fxhedge calculator's LO and a conceptual drill
+    // there would sit on top of calc #11. The act is challenging a "we are fully hedged" claim —
+    // transaction cover bought, translation and ECONOMIC exposure left unmanaged.
+    id: 'D6', lo_code: 'E2a', covers: ['E2a'], level: 3, skill: 'scepticism', region: 'Thailand',
+    sector: 'an automotive-components exporter selling into three currency blocs',
+    heading: '**Foreign-exchange exposure — testing a claim that the group is fully hedged**',
+    brief:
+      'E2a (L3, discursive) — the impact on an organisation of translation, transaction and economic ' +
+      'exposure, and how each can be managed. The scenario names an exporter whose GROUP TREASURER has ' +
+      'stated to the board, in quotable words, that the group is "fully hedged" against currency risk — ' +
+      'backed by a stated policy that covers a named proportion of contracted receipts for a named ' +
+      'horizon. The scenario also supplies the facts that claim does not survive: a competitor pricing ' +
+      'in a different currency, a long-run cost base in one currency and revenue in another, and a ' +
+      'foreign subsidiary carried in the consolidated accounts. The requirement asks the candidate to ' +
+      'ASSESS the treasurer\'s claim — which exposures the policy actually covers, which it leaves ' +
+      'untouched, and what that means for the board\'s reliance on it. CONCEPTUAL-ONLY — the candidate ' +
+      'does NOT price or compute any hedge (that is calculator #11, E2b); the given policy is a driver.',
+  },
+  {
+    // CELL: E2 × commercial_acumen (15 examined marks — Aldebrino (ii) E2a 8, Kestrel (ii) E2a 7).
+    // E2c rather than a second E2a: E2c ("advise on netting and matching... minimising FOREX
+    // transaction costs and the management of market barriers") is commercial by construction, has
+    // ZERO published drills, and keeps this drill from duplicating D6's scenario. The cell is keyed
+    // on the 2-char area prefix, so any E2* satisfies it — E2c satisfies it AND adds LO coverage.
+    id: 'D7', lo_code: 'E2c', covers: ['E2c'], level: 3, skill: 'commercial_acumen', region: 'Chile',
+    sector: 'a mining-services group with five trading subsidiaries across three continents',
+    heading: '**Netting and matching — whether a group netting arrangement earns its cost**',
+    brief:
+      'E2c (L3, discursive) — bilateral and multilateral netting and matching as tools for minimising ' +
+      'FOREX transaction costs, and the management of market barriers to the free movement of capital ' +
+      'and other remittances. The scenario names a group weighing whether to establish a multilateral ' +
+      'netting centre. ' +
+      // ── WHY THE ECONOMICS ARE STATED, NOT DERIVABLE (fix, 2026-08-02) ──
+      // The first version of this brief supplied the RAW drivers (invoice count, average value, a
+      // %-of-value banking cost, a % volume reduction) and let the author characterise the result.
+      // It produced a rubric asserting payback "well within" an 18-month threshold and a committed
+      // "proceed" — on figures that actually give a NEGATIVE annual net benefit of USD 69,472 and no
+      // payback at all. All six gates passed: N1/N4 grade rubric coverage and GOOD-vs-BAD separation,
+      // the prompt's COHERENCE rule covers only STATISTICAL shape claims, and the narrative pipeline
+      // has no numeric verifier at all (that moat is the CALCULATOR families'). A multi-step derivable
+      // chain in a conceptual drill is therefore ungated by construction. The fix is to remove the
+      // chain: state the OUTCOME as a given treasury-analysis figure, exactly as D1/D8 state a
+      // simulation output as given, leaving one division for a human to check before insert.
+      'The scenario must STATE, as GIVEN outputs of a treasury analysis already performed, the ' +
+      'expected ANNUAL NET SAVING after running costs, the one-off SET-UP COST, and the RESULTING ' +
+      'PAYBACK PERIOD in months — and must NOT supply the raw drivers those were derived from (no ' +
+      'invoice counts, no average invoice values, no per-transaction %-of-value cost, no % volume ' +
+      'reduction). The three stated figures must be mutually consistent: set-up ÷ annual net saving, ' +
+      'expressed in months, must equal the stated payback. Set the payback CLOSE to the board\'s ' +
+      'stated threshold (either just inside or just outside it) so the recommendation is a genuine ' +
+      'commercial judgement rather than an arithmetic formality. ' +
+      'The scenario also names at least one subsidiary whose jurisdiction\'s exchange controls bar it ' +
+      'from participating, and one further board constraint (e.g. no new headcount). The requirement ' +
+      'asks the candidate to ADVISE the board whether to proceed, on what basis, and how to handle the ' +
+      'restricted subsidiary. CONCEPTUAL-ONLY — the candidate does NOT build a netting matrix, does ' +
+      'NOT compute a saving and does NOT compute a payback; every figure is GIVEN and the judgement is ' +
+      'commercial, not arithmetic. No criterion may credit a computed figure.',
+  },
+  {
+    // CELL: B1 × scepticism (15 examined marks — Brecon (ii) B1b 8, Halvard (ii) B1b 7). BOTH
+    // examined requirements are B1b, so B1b is the demand exactly. DISTINCT FROM D1, which is also
+    // B1b: D1 INTERPRETS a given simulation output (analysis_and_evaluation — appraise what it
+    // says). This one CHALLENGES the output's credibility — the input distributions, the
+    // independence assumption, and a VaR being read as a worst case. Same LO, different act; that
+    // is precisely the a_and_e / scepticism split the cell measures.
+    id: 'D8', lo_code: 'B1b', covers: ['B1b'], level: 2, skill: 'scepticism', region: 'Colombia',
+    sector: 'a hydroelectric generation project promoted to a utility board',
+    heading: '**Monte Carlo simulation — challenging the assumptions behind the output**',
+    brief:
+      'B1b (L2, discursive) — Monte Carlo simulation: the significance of the simulation output and the ' +
+      'assessment of the likelihood of project success, and the measurement and interpretation of ' +
+      'project value at risk. The scenario PRINTS a GIVEN simulation output (mean NPV, standard ' +
+      'deviation, probability of a negative NPV, a project value-at-risk at a named confidence level) ' +
+      'AND a named PROJECT SPONSOR who has told the board, in quotable words, what that output proves ' +
+      '— including reading the value-at-risk figure as the worst the project can do. The scenario also ' +
+      'states the facts that undermine the sponsor\'s reading: where the input distributions came from ' +
+      '(e.g. management\'s own estimates, or a single historical period), and that two of the key ' +
+      'variables were modelled as independent when the scenario shows they plainly move together. The ' +
+      'requirement asks the candidate to ASSESS how much reliance the board can place on the ' +
+      'simulation and on the sponsor\'s reading of it. CONCEPTUAL-ONLY — the candidate does NOT run a ' +
+      'simulation and does NOT compute VaR (that is calculator #3); every figure is GIVEN. The answer ' +
+      'must USE the given figures in its challenge.',
+  },
 ];
+
+/**
+ * P-G1 — the batch must be able to say "I did not run". Two silent no-ops closed:
+ *  1. Duplicate plan ids made `--narrative-only` ambiguous (it would run BOTH silently).
+ *  2. `--narrative-only <typo>` filtered to an EMPTY list and the batch reported
+ *     "0/0 passed gates, 0 inserted" — a clean-looking success that measured nothing.
+ * Now that `id` is a free string (no closed union to catch a typo at author time), these are the
+ * only things standing between a mistyped flag and a batch that appears to have run.
+ */
+function assertNarrativePlanIds(plans: NarrativePlan[], only?: string): NarrativePlan[] {
+  const seen = new Set<string>();
+  for (const p of plans) {
+    const id = (p.id ?? '').trim();
+    if (!id) throw new Error('NARRATIVE_PLAN: a plan has an empty id');
+    if (seen.has(id)) throw new Error(`NARRATIVE_PLAN: duplicate plan id "${id}" — ids must be unique for --narrative-only to be unambiguous`);
+    seen.add(id);
+  }
+  if (!only) return plans;
+  const selected = plans.filter((p) => p.id === only);
+  if (selected.length === 0) {
+    throw new Error(`--narrative-only "${only}" matched no plan. Known ids: ${plans.map((p) => p.id).join(', ')}`);
+  }
+  return selected;
+}
 
 const SUBMIT_NARRATIVE_DRILL_TOOL: Anthropic.Tool = {
   name: 'submit_narrative_drill',
@@ -2780,8 +2912,78 @@ const NARRATIVE_AUTHOR_PERSONA =
   'The golden GOOD is a full-marks answer that avoids every mode; the golden BAD deliberately commits its ' +
   'designed modes. DIVERSITY: scenarios are international, NEVER UK or Ireland.';
 
+/**
+ * WHAT EACH PROFESSIONAL SKILL MAKES THE CANDIDATE DO — the operational half of the tag.
+ *
+ * THE SEAM THIS CLOSES (measured 2026-08-02). `plan.skill` reached the DB column and the pass-2
+ * Ezra reveal, and NOTHING ELSE. `buildNarrativeUserPrompt` — the call that writes the criteria,
+ * the disqualifiers and both golden answers — was never told which skill the drill existed to
+ * exercise. So declaring `skill: 'scepticism'` did not make the rubric demand scepticism; only
+ * whatever the author happened to put in `brief` did. Declared tag and rubric were never connected.
+ *
+ * WHY THIS SHAPE AND NOT A PROHIBITION (P-T2). The instruction already winning is the tool
+ * schema's `required_point` = "the point a full-marks answer makes — specific, developed, applied
+ * to the scenario". That reliably yields criteria ABOUT the topic, correctly applied — and a
+ * criterion about the topic can be earned without ever performing the skill's act. Adding "the
+ * rubric must also demand scepticism" would be one more instruction competing with the one already
+ * winning. So the DEMAND ITSELF is redefined per skill: `act` restates what a required_point IS
+ * for the marks that carry the skill. Nothing is forbidden.
+ *
+ * `descriptor` is the ACCA sub-descriptor set VERBATIM (afm-framework.ts, guide p.13) — the
+ * authority. `act` and `scenario` are house-authored operationalisations of it, and are the two
+ * things a prompt can actually act on: what a criterion must require, and what the scenario must
+ * CONTAIN for that requirement to be satisfiable. The `scenario` half is load-bearing and easy to
+ * miss — a drill cannot demand that a candidate challenge an assertion if the scenario asserts
+ * nothing, and the rubric would then quietly degrade to the topic-description it always was.
+ */
+const SKILL_DEMAND: Record<ProfessionalSkillTag, { act: string; scenario: string }> = {
+  scepticism: {
+    act:
+      'CHALLENGE something the scenario asserts — a named person\'s claim, a stated assumption, or the ' +
+      'reliability of a given output — saying why it does not hold FOR THIS ORGANISATION and what follows ' +
+      'if it is wrong. Correctly describing the technique or the assertion is NOT the act; the act is ' +
+      'finding it wanting on the scenario\'s own facts.',
+    scenario:
+      'a named individual (a CFO, treasurer, director, board or external adviser) making a SPECIFIC, ' +
+      'quotable claim that the scenario\'s own facts do not fully support — plus enough stated detail ' +
+      'for the candidate to show exactly WHY it does not hold.',
+  },
+  commercial_acumen: {
+    act:
+      'reach a COMMITTED commercial judgement — which course, weighed against what it costs and what the ' +
+      'organisation\'s stated constraints permit, with the business consequence named. Listing advantages ' +
+      'and disadvantages, or explaining how the mechanism works, is NOT the act; the act is choosing, on ' +
+      'this organisation\'s facts, and owning what the choice costs.',
+    scenario:
+      'a real decision with a price on it — stated constraints (an amount, a cost, a regulatory or ' +
+      'ownership limit, a board mandate, a timescale) that make one course genuinely better than another ' +
+      'FOR THIS ORGANISATION rather than in general.',
+  },
+  analysis_and_evaluation: {
+    act:
+      'WEIGH the given material — compare it, prioritise within it, or reach a supported verdict on what ' +
+      'it means — rather than report it. Accurate restatement of what the scenario supplies is NOT the act.',
+    scenario:
+      'given material with enough substance to weigh: figures, a model output, or options that can be ' +
+      'ranked, compared, or found insufficient.',
+  },
+  communication: {
+    act:
+      'SHAPE the answer for its stated audience and purpose, so the reader who has to act can find the ' +
+      'recommendation and the reason for it. Correct content in an undifferentiated form is NOT the act.',
+    scenario:
+      'a named audience and a stated purpose — who is reading this, what they must decide, and any ' +
+      'constraint on how it must reach them.',
+  },
+};
+
 function buildNarrativeUserPrompt(plan: NarrativePlan, feedback?: string): string {
   const lo = SYLLABUS_MAP[plan.lo_code];
+  const skill = plan.skill;
+  const demand = SKILL_DEMAND[skill];
+  const skillLabel = PROFESSIONAL_SKILLS[skill].label;
+  const skillDescriptors = PROFESSIONAL_SKILLS[skill].sub_descriptors.map((d) => `    · ${d}`).join('\n');
+
   return `Write one original ACCA AFM DISCURSIVE drill + rubric + golden pair.
 
 TASK (${plan.id}):
@@ -2793,6 +2995,22 @@ Specification:
 - Covers LOs: ${plan.covers.join(', ')}
 - Intellectual level: L${plan.level} ${plan.level === 2 ? '(apply/explain a bounded concept)' : '(synthesise + evaluate — weigh, assess appropriateness, recommend with justified reasoning)'}
 - Setting: ${plan.region} — ${plan.sector} (do NOT set in the UK or Ireland)
+- PROFESSIONAL SKILL THIS DRILL EXISTS TO EXERCISE: ${skillLabel} (${skill})
+
+PROFESSIONAL SKILL — WHAT THE RUBRIC MUST MAKE THE CANDIDATE DO:
+The skill is not a label on the drill. It defines what a required_point IS here.
+- ACCA descriptor for ${skillLabel} (verbatim, S26–J27 guide):
+${skillDescriptors}
+- THE ACT: a full-marks answer must ${demand.act}
+- THE SCENARIO MUST CONTAIN what the act operates on: ${demand.scenario} Without it the act is
+  impossible and the rubric collapses back into topic description.
+- AT LEAST HALF the total marks must sit on criteria whose required_point CANNOT BE EARNED without
+  performing that act. Write those required_points AS THE ACT ITSELF — not as the topic the act is
+  about. "Explains why X matters" is the topic; "shows that the CFO's stated X does not hold because
+  <scenario fact>, and that the decision reverses if it does not" is the act.
+- Put F10 in the disqualifiers of every criterion that carries the act, so the marking basis names it.
+- The golden GOOD performs the act explicitly. The golden BAD covers the SAME TOPIC COMPETENTLY and
+  never performs it — a fluent, accurate, skill-free answer. That contrast is what this drill is for.
 
 HARD RULES:
 - CONCEPTUAL ONLY. The question must NOT ask for any calculation. The rubric must NOT credit any computed figure. Numbers in the scenario are GIVEN.
@@ -2948,9 +3166,76 @@ function serializeNarrativeSchema(drill: NarrativeDrill): Record<string, unknown
   };
 }
 
+// ── DRY-RUN CAPTURE → REVIEW → INSERT THE SAME BYTES ─────────────────────────
+// Drafts land in docs/rollbacks/ because that is already the directory for a pre-write record of
+// exactly what is about to hit the DB (P-DB6: the artefact is the record of what was written and
+// why). Committed, so the reviewed content is in git before the row exists.
+const NARRATIVE_DRAFT_DIR = join(__dirname, '..', 'docs', 'rollbacks');
+function narrativeDraftPath(planId: string): string {
+  return join(NARRATIVE_DRAFT_DIR, `AFM_narrative_draft_${planId}.json`);
+}
+
+/** The acca_drills row. ONE definition, used by both the live insert and the dry-run capture, so a
+ *  reviewed draft cannot differ from an inserted row by a field the capture forgot to include. */
+function buildNarrativeRow(
+  plan: NarrativePlan,
+  topic: string,
+  drill: NarrativeDrill,
+  model_answer: string,
+  answer_schema: Record<string, unknown>,
+  reveal: { hint: string; full_reveal: string },
+) {
+  return {
+    exam_board:             'ACCA',
+    paper_code:             'AFM',
+    lo_code:                plan.lo_code,
+    topic,
+    command_verb:           drill.command_verb,
+    intellectual_level:     plan.level,
+    // DECLARED on the plan, not derived — see NarrativePlan.skill for why the rotation
+    // cannot be used here. Was hardcoded null until 2026-08-01, which is how the narrative
+    // batch contributed 8 untagged rows to the AFM corpus.
+    professional_skill_tag: plan.skill,
+    calculation_required:   false,
+    mode:                   'discursive',
+    marks_guide:            drill.rubric.total_marks,
+    question:               drill.question,
+    context_text:           drill.context_text,
+    model_answer,
+    hint:                   reveal.hint,
+    full_reveal:            reveal.full_reveal,
+    answer_schema,
+    status:                 'candidate',
+    published:              false,
+  };
+}
+
+/** Insert a captured dry-run draft verbatim. No model call, no regeneration — the point is that the
+ *  bytes reviewed are the bytes stored. Refuses a draft that is not `candidate`/unpublished: this
+ *  path must never be a way to write live content. */
+async function insertNarrativeDraft(supabase: ReturnType<typeof createClient>, draftPath: string) {
+  const parsed = JSON.parse(readFileSync(draftPath, 'utf8')) as { plan_id?: string; row?: Record<string, unknown> };
+  const row = parsed.row;
+  if (!row) throw new Error(`${draftPath}: no "row" key — not a narrative draft file`);
+  if (row.status !== 'candidate' || row.published !== false) {
+    throw new Error(`${draftPath}: draft is status=${String(row.status)} published=${String(row.published)} — this path inserts candidates only`);
+  }
+  for (const f of ['question', 'context_text', 'model_answer', 'hint', 'full_reveal', 'answer_schema', 'lo_code', 'professional_skill_tag']) {
+    if (row[f] === undefined || row[f] === null || row[f] === '') throw new Error(`${draftPath}: draft field "${f}" is empty`);
+  }
+  const { data, error } = await supabase.from('acca_drills').insert(row as never).select('id').single();
+  if (error) throw new Error(`insert failed: ${error.message}`);
+  const id = (data as unknown as { id: string }).id;
+  console.log(`✓ ${parsed.plan_id ?? '(draft)'} inserted as candidate — id ${id}`);
+  console.log(`  lo_code=${String(row.lo_code)} · skill=${String(row.professional_skill_tag)} · marks=${String(row.marks_guide)}`);
+  return id;
+}
+
 async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string) {
   const grader = makeAnthropicCriterionGrader(anthropic);
-  const plans = NARRATIVE_PLAN.filter((p) => !only || p.id === only);
+  // THROWS on a duplicate id or an unmatched --narrative-only, rather than filtering to [] and
+  // reporting a clean "0/0" (P-G1: the batch must be able to say it did not run).
+  const plans = assertNarrativePlanIds(NARRATIVE_PLAN, only);
   const MAX_ATTEMPTS = 5;
   const failed: string[] = [];
 
@@ -3027,31 +3312,21 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
     console.log(`\n  HINT:\n${reveal.hint}`);
     console.log(`\n  FULL_REVEAL:\n${reveal.full_reveal}`);
 
-    if (dryRun) { console.log(`\n  (dry-run — not inserted)`); await sleep(200); continue; }
+    const row = buildNarrativeRow(plan, lo.topic, drill, model_answer, answer_schema, reveal);
 
-    const { error: insErr } = await supabase!.from('acca_drills').insert({
-      exam_board:             'ACCA',
-      paper_code:             'AFM',
-      lo_code:                plan.lo_code,
-      topic:                  lo.topic,
-      command_verb:           drill.command_verb,
-      intellectual_level:     plan.level,
-      // DECLARED on the plan, not derived — see NarrativePlan.skill for why the rotation
-      // cannot be used here. Was hardcoded null until 2026-08-01, which is how the narrative
-      // batch contributed 8 untagged rows to the AFM corpus.
-      professional_skill_tag: plan.skill,
-      calculation_required:   false,
-      mode:                   'discursive',
-      marks_guide:            drill.rubric.total_marks,
-      question:               drill.question,
-      context_text:           drill.context_text,
-      model_answer,
-      hint:                   reveal.hint,
-      full_reveal:            reveal.full_reveal,
-      answer_schema,
-      status:                 'candidate',
-      published:              false,
-    });
+    if (dryRun) {
+      // CAPTURE, don't just print. A dry-run whose artefact is only echoed to a terminal forces the
+      // real run to REGENERATE — and the model does not repeat itself, so what was reviewed is not
+      // what ships. The draft is written to a file and `--narrative-insert-from` inserts THAT
+      // BYTE-FOR-BYTE, so review and insert are the same artefact.
+      const path = narrativeDraftPath(plan.id);
+      writeFileSync(path, JSON.stringify({ plan_id: plan.id, lo_code: plan.lo_code, skill: plan.skill, gate_lines: lastLines, row }, null, 2), 'utf8');
+      console.log(`\n  (dry-run — NOT inserted; draft captured to ${path})`);
+      console.log(`  insert this exact draft with: npx tsx --env-file=.env.local scripts/generate-afm-drills.ts --narrative-insert-from ${path}`);
+      await sleep(200); continue;
+    }
+
+    const { error: insErr } = await supabase!.from('acca_drills').insert(row as never);
     if (insErr) { console.error(`  ✗ ${plan.id} INSERT failed: ${insErr.message}`); failed.push(plan.id); }
     else { console.log(`\n  ✓ ${plan.id} — inserted as candidate (mode=discursive, rubric_version=narrative_v1)`); }
     await sleep(300);
@@ -3086,10 +3361,19 @@ async function main() {
   const fxhedgeBatch = flag('--fxhedge-batch');
   const narrativeBatch = flag('--narrative-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] B narrative cluster (5 discursive drills D1–D5: MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls). --narrative-only D3 regenerates one.';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one (errors loudly on an unknown id).';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-insert-from']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
+
+  // Insert a captured dry-run draft VERBATIM (no model call). Separate from --narrative-batch so a
+  // review→insert can never accidentally regenerate the content it was reviewing.
+  const insertFrom = arg('--narrative-insert-from');
+  if (insertFrom) {
+    const supabaseI = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+    await insertNarrativeDraft(supabaseI, insertFrom);
+    return;
+  }
 
   // Narrative pipeline (#2) — dedicated path (rubric-graded discursive drills, N1–N5, real grader).
   if (narrativeBatch) {
