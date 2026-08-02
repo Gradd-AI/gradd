@@ -187,3 +187,222 @@ export function checkCommittedVerdict(rubric: NarrativeRubric, reveal: string): 
   if (wantsVerdict && !hasConclusion(reveal)) return { ok: false, reason: 'the requirement asks for a recommendation/conclusion but the reveal does not commit to one (F4/F11)' };
   return { ok: true };
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// N6 — SKILL-DEMAND STRUCTURE (ruled 2026-08-02)
+// ═══════════════════════════════════════════════════════════════════════════════════════
+//
+// ⚠️ THE CLAIM CEILING, VERBATIM AND NON-NEGOTIABLE. A green N6 means:
+//
+//     "the scenario admits the act and the rubric names the skill as the marking basis"
+//
+// It NEVER means "the rubric demands the skill". Do not restate it more strongly anywhere —
+// not in a pack, not in a commit message, not in a doc heading. Whether a `required_point`
+// DEMANDS the skill's act or merely DESCRIBES the topic it acts on is a semantic judgement
+// about English with no structural discriminator: "explains why translation exposure matters"
+// and "shows the treasurer's claim does not survive the VND 420bn translation exposure" are
+// both grammatical, both reference the fact, and both can carry F10. That half stays with the
+// grader (N1/N4) and with a human reading the pack.
+//
+// WHY THERE IS NO PHRASE TABLE HERE, and why one must never be added. The tempting version of
+// this gate greps `required_point` for challenge connectives ("does not hold", "is wrong",
+// "cannot survive"). It fails twice over: it is trivially gamed by an author writing to the
+// detector, and a matched string proves only that SOME sentence renders that way, never which
+// one or whether it is the load-bearing clause (P-DB5). The project's own precedent is
+// `advice-checks.ts`, which uses a CLOSED GRAMMATICAL CLASS (English quantifiers) rather than a
+// phrase table — and no closed class exists for "this sentence demands challenge". So N6 checks
+// only structure: arithmetic over the rubric, and the shape of the scenario.
+//
+// F10 CANNOT DISCRIMINATE BETWEEN THE TWO SKILLS IT COVERS. The mode is "no scepticism /
+// commercial acumen" — one mode, two skills. N6a proves a skill was named as the marking basis;
+// it can never prove WHICH. Any report built on N6 must say so.
+
+/** One part of N6. `not_evaluated` is a first-class outcome — a part that cannot run says so
+ *  rather than passing vacuously (P-G1). */
+export interface SkillDemandPart {
+  name: string;
+  status: 'pass' | 'fail' | 'not_evaluated';
+  detail: string;
+}
+export interface SkillDemandResult {
+  ok: boolean;                 // false iff any part FAILED. not_evaluated does NOT fail the gate...
+  evaluatedAll: boolean;       // ...but it does clear this, so a caller can never read a partial run as full coverage.
+  parts: SkillDemandPart[];
+  reason?: string;
+}
+
+/** Fraction of total_marks that must sit on criteria naming the skill as the marking basis. */
+export const N6_F10_MARKS_SHARE = 0.5;
+
+/** Quoted spans in the scenario, as word counts. Handles straight and curly pairs; a lone
+ *  quote character yields nothing rather than swallowing the rest of the text. */
+function quotedSpans(scenario: string): string[] {
+  const out: string[] = [];
+  for (const re of [/"([^"]+)"/g, /“([^”]+)”/g]) {
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(scenario)) !== null) out.push(m[1]);
+  }
+  return out;
+}
+
+/**
+ * N6 — is the rubric STRUCTURALLY capable of demanding its declared skill?
+ *
+ * Three parts, each independently reportable:
+ *   N6a  F10 marks-share      — ≥ half the marks on criteria listing F10 (the marking basis is named)
+ *   N6b  scenario precondition — the scenario CONTAINS what the act operates on
+ *   N6c  claim-anchor link     — (scepticism only) every F10 criterion anchors on the asserted claim
+ *
+ * N6b is the load-bearing one. Without the precondition the act is IMPOSSIBLE, and the rubric
+ * degrades silently into topic description — which is exactly what the pre-2026-08-02 AFM
+ * narrative corpus is (0 of 8 rows carried F10 on any criterion).
+ *
+ * `skill` is REQUIRED and has no default. A missing skill returns a single not_evaluated part:
+ * the whole point of this gate is the declared skill, and defaulting one would invent the fact
+ * being checked.
+ */
+export function checkSkillDemand(
+  rubric: NarrativeRubric,
+  scenario: string,
+  skill: string | null | undefined,
+): SkillDemandResult {
+  const parts: SkillDemandPart[] = [];
+  const finish = (): SkillDemandResult => ({
+    ok: !parts.some((p) => p.status === 'fail'),
+    evaluatedAll: !parts.some((p) => p.status === 'not_evaluated'),
+    parts,
+    reason: parts.filter((p) => p.status === 'fail').map((p) => `${p.name}: ${p.detail}`).join(' · ') || undefined,
+  });
+
+  if (!skill || !skill.trim()) {
+    parts.push({ name: 'N6 skill-demand', status: 'not_evaluated', detail: 'no declared professional skill supplied — N6 checks the rubric against a DECLARED skill and cannot invent one' });
+    return finish();
+  }
+  if (!rubric.criteria?.length) {
+    parts.push({ name: 'N6 skill-demand', status: 'not_evaluated', detail: 'rubric has NO criteria — every N6 part would iterate an empty set and pass vacuously' });
+    return finish();
+  }
+
+  // ── N6a — F10 marks-share ────────────────────────────────────────────────────────────
+  const f10 = rubric.criteria.filter((c) => (c.disqualifiers ?? []).includes('F10'));
+  const f10Marks = f10.reduce((a, c) => a + (c.marks ?? 0), 0);
+  // Sum the criteria rather than trusting `total_marks`: a rubric whose stated total disagrees
+  // with its criteria would otherwise move this ratio without any criterion changing.
+  const criteriaMarks = rubric.criteria.reduce((a, c) => a + (c.marks ?? 0), 0);
+  if (criteriaMarks <= 0) {
+    parts.push({ name: 'N6a F10 marks-share', status: 'not_evaluated', detail: 'criteria carry no marks — the share has a zero denominator' });
+  } else {
+    const share = f10Marks / criteriaMarks;
+    const ok = share >= N6_F10_MARKS_SHARE;
+    parts.push({
+      name: 'N6a F10 marks-share',
+      status: ok ? 'pass' : 'fail',
+      detail: `${f10Marks}/${criteriaMarks} marks (${(share * 100).toFixed(0)}%) on criteria listing F10 as a disqualifier; need ≥${N6_F10_MARKS_SHARE * 100}%`
+        + (ok ? '' : ` — criteria naming F10: [${f10.map((c) => c.id).join(', ') || 'none'}]`),
+    });
+  }
+
+  // ── N6b — scenario precondition ──────────────────────────────────────────────────────
+  const facts = rubric.scenario_facts ?? [];
+  const figures = facts.filter((f) => f.kind === 'figure');
+  const constraints = facts.filter((f) => f.kind === 'constraint');
+  const spans = quotedSpans(scenario);
+  const longSpans = spans.filter((s) => s.trim().split(/\s+/).filter(Boolean).length >= 6);
+
+  switch (skill) {
+    case 'scepticism': {
+      // The act is challenging something ASSERTED. An assertion the candidate can quote back is a
+      // quoted span of real length attributed in the scenario.
+      //
+      // ⚠️ KNOWN LIMITATION — THIS IS A SUFFICIENT-CONDITION TEST, NOT A NECESSARY ONE, and it
+      // can false-positive on legacy content. A quoted attributed claim is the shape SKILL_DEMAND
+      // now instructs authors to write, so for drills authored after 2026-08-02 a pass is a true
+      // precondition. But scepticism can legitimately act on an UNQUOTED object — a model's stated
+      // premise ("the model treats volatility as constant"), an unattributed assumption in an
+      // appendix. Measured 2026-08-02: of the 8 pre-fix published narrative rows, `fda46d99` (B3i)
+      // and `d413fbe7` (B4d) are both tagged scepticism and both fail here — and `d413fbe7`'s
+      // sceptical object is the BSOP model's own assumptions, not anyone's quoted claim. That is
+      // very likely a false positive of this proxy rather than a defect in the drill.
+      //
+      // It is NOT widened to cover the unquoted case, because every candidate widening ("does a
+      // constraint fact name an assumption?") requires a word list, and a phrase table is banned
+      // above for reasons that do not weaken just because this case is inconvenient. A FAIL here
+      // means "no quoted assertion found — confirm by hand what this drill's sceptical object is",
+      // never "this drill does not demand scepticism".
+      const ok = longSpans.length > 0;
+      parts.push({
+        name: 'N6b scenario precondition (scepticism)',
+        status: ok ? 'pass' : 'fail',
+        detail: ok
+          ? `scenario carries ${longSpans.length} quoted assertion(s) of ≥6 words — e.g. "${longSpans[0].slice(0, 70)}${longSpans[0].length > 70 ? '…' : ''}"`
+          : `scenario carries NO quoted assertion of ≥6 words (${spans.length} quoted span(s) found, none long enough). Scepticism acts on something asserted; with nothing asserted the rubric can only describe the topic`,
+      });
+      break;
+    }
+    case 'commercial_acumen': {
+      // The act is choosing under stated constraints and owning the cost. That needs a price and a limit.
+      const ok = figures.length >= 1 && constraints.length >= 1;
+      parts.push({
+        name: 'N6b scenario precondition (commercial_acumen)',
+        status: ok ? 'pass' : 'fail',
+        detail: `${figures.length} figure fact(s) + ${constraints.length} constraint fact(s); need ≥1 of each so the decision has both a price and a limit`,
+      });
+      break;
+    }
+    case 'analysis_and_evaluation': {
+      // The act is weighing given material — which needs at least two comparable quantities.
+      const ok = figures.length >= 2;
+      parts.push({
+        name: 'N6b scenario precondition (analysis_and_evaluation)',
+        status: ok ? 'pass' : 'fail',
+        detail: `${figures.length} figure fact(s); need ≥2 comparable quantities for there to be anything to weigh`,
+      });
+      break;
+    }
+    case 'communication': {
+      // DELIBERATELY NOT EVALUATED. The precondition is "a named audience and a stated purpose",
+      // and detecting one needs a word list of audience nouns — a phrase table by another name,
+      // banned above. Reported honestly rather than passed vacuously or faked with a regex.
+      parts.push({
+        name: 'N6b scenario precondition (communication)',
+        status: 'not_evaluated',
+        detail: 'no structural test exists for "a named audience and a stated purpose" that is not a phrase table (banned — see the header). A communication drill\'s precondition must be confirmed by a human reading the pack',
+      });
+      break;
+    }
+    default:
+      parts.push({ name: 'N6b scenario precondition', status: 'not_evaluated', detail: `unregistered skill "${skill}" — no precondition defined; add one rather than letting an unknown skill pass` });
+  }
+
+  // ── N6c — claim-anchor link (scepticism only) ────────────────────────────────────────
+  if (skill !== 'scepticism') {
+    parts.push({ name: 'N6c claim-anchor link', status: 'not_evaluated', detail: `structurally N/A for ${skill} — only scepticism acts on a single identifiable asserted claim` });
+  } else if (longSpans.length === 0) {
+    parts.push({ name: 'N6c claim-anchor link', status: 'not_evaluated', detail: 'no quoted assertion to anchor on — N6b already failed; reporting this as a second failure would double-count one defect' });
+  } else {
+    // The "claim fact" is a scenario_fact whose key appears INSIDE a quoted assertion.
+    const inQuote = facts.filter((f) => f.key && longSpans.some((s) => s.toLowerCase().includes(f.key!.toLowerCase())));
+    if (inQuote.length === 0) {
+      parts.push({
+        name: 'N6c claim-anchor link',
+        status: 'fail',
+        detail: 'the scenario quotes an assertion but NO scenario_fact key falls inside it — the claim is unreachable as an anchor, so no criterion can be required to bite on it',
+      });
+    } else {
+      const claimIds = new Set(inQuote.map((f) => f.id));
+      const missing = f10.filter((c) => !(c.anchor_facts ?? []).some((a) => claimIds.has(a)));
+      const ok = f10.length > 0 && missing.length === 0;
+      parts.push({
+        name: 'N6c claim-anchor link',
+        status: ok ? 'pass' : 'fail',
+        detail: ok
+          ? `all ${f10.length} F10 criteria anchor on the asserted claim (${[...claimIds].join(', ')})`
+          : f10.length === 0
+            ? 'no F10 criteria to link — N6a already failed'
+            : `F10 criteria not anchored on the asserted claim (${[...claimIds].join(', ')}): [${missing.map((c) => c.id).join(', ')}]`,
+      });
+    }
+  }
+
+  return finish();
+}

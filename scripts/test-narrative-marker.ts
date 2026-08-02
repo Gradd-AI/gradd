@@ -6,6 +6,7 @@
 import {
   scenarioCopyOverlap, factUsed, hasConclusion, aggregate,
   checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
+  checkSkillDemand,
   type NarrativeRubric, type CriterionGrader, type CriterionVerdict, type FailureMode, type ScenarioFact,
 } from '../lib/acca/narrative-marker';
 
@@ -105,6 +106,86 @@ ok('hasConclusion: GOOD commits, BAD does not', hasConclusion(good) && !hasConcl
 
   ok('N5 committed-verdict PASS (reveal recommends)', checkCommittedVerdict(rubric, good).ok);
   ok('N5 FAILS when the reveal never commits (F4)', !checkCommittedVerdict(rubric, bad).ok);
+
+  // ══════════════════════════════════════════════════════════════════════════════════════
+  // N6 — skill-demand structure. EVERY FAILURE PATH IS EXERCISED (P-G3: a check that has never
+  // failed is an untested branch, and the fail path is the only reason the gate exists).
+  // ══════════════════════════════════════════════════════════════════════════════════════
+  const scepScenario = 'Siam Axle PCL exports to three currency blocs. The Group Treasurer told the board: "We are fully hedged against currency risk under our rolling 90-day policy." Its cost base is entirely in Thai baht while all revenue is in USD.';
+  const scepFacts: ScenarioFact[] = [
+    { id: 'f_claim', text: 'the treasurer\'s claim', key: 'fully hedged', kind: 'entity' },
+    { id: 'f_costbase', text: 'baht cost base', key: 'Thai baht', kind: 'constraint' },
+    { id: 'f_blocs', text: 'three currency blocs', key: 'three currency blocs', kind: 'figure' },
+  ];
+  const scepCrit = (over: Partial<NarrativeRubric['criteria'][0]> = {}) => ({
+    id: 'c1', requirement_part: 'p1', lo: 'E2a', required_point: 'shows the claim does not hold',
+    marks: 6, anchor_facts: ['f_claim'], disqualifiers: ['F1', 'F10'] as FailureMode[], development_required: true, ...over,
+  });
+  const scepRubric = (crits: NarrativeRubric['criteria']): NarrativeRubric => ({
+    mode: 'narrative', requirement_parts: ['p1'], scenario_facts: scepFacts, criteria: crits,
+    total_marks: crits.reduce((a, c) => a + c.marks, 0), bands: [{ min: 0, label: 'fail' }, { min: 0.5, label: 'pass' }],
+  });
+
+  // ── the known-good set ──
+  const scepGood = checkSkillDemand(scepRubric([scepCrit()]), scepScenario, 'scepticism');
+  ok('N6 PASS on a well-formed scepticism rubric', scepGood.ok && scepGood.evaluatedAll);
+  ok('N6 all three parts evaluated on scepticism (a/b/c)', scepGood.parts.length === 3 && scepGood.parts.every((p) => p.status === 'pass'));
+
+  // ── N6a break modes ──
+  ok('N6a FAILS when F10 carries under half the marks',
+    !checkSkillDemand(scepRubric([scepCrit(), scepCrit({ id: 'c2', marks: 7, disqualifiers: ['F1'] })]), scepScenario, 'scepticism').ok);
+  ok('N6a FAILS when NO criterion names F10 (the pre-2026-08-02 corpus shape)',
+    !checkSkillDemand(scepRubric([scepCrit({ disqualifiers: ['F1', 'F5'] })]), scepScenario, 'scepticism').ok);
+  ok('N6a is exactly-half-inclusive (a 50/50 split passes, not fails)',
+    checkSkillDemand(scepRubric([scepCrit({ marks: 6 }), scepCrit({ id: 'c2', marks: 6, disqualifiers: ['F1'] })]), scepScenario, 'scepticism').parts[0].status === 'pass');
+  ok('N6a uses the SUMMED criteria marks, not a total_marks that disagrees with them', (() => {
+    const r = scepRubric([scepCrit({ marks: 6 }), scepCrit({ id: 'c2', marks: 6, disqualifiers: ['F1'] })]);
+    r.total_marks = 100;  // drifted stated total — must not move the ratio
+    return checkSkillDemand(r, scepScenario, 'scepticism').parts[0].status === 'pass';
+  })());
+
+  // ── N6b break modes ──
+  ok('N6b FAILS for scepticism when the scenario asserts nothing (no quoted span)',
+    !checkSkillDemand(scepRubric([scepCrit()]), 'Siam Axle PCL exports to three currency blocs and its cost base is in Thai baht.', 'scepticism').ok);
+  ok('N6b FAILS for scepticism on a short quote (under 6 words — not a real assertion)',
+    !checkSkillDemand(scepRubric([scepCrit()]), 'The treasurer said "fully hedged" last quarter.', 'scepticism').ok);
+  ok('N6b accepts CURLY quotes as well as straight',
+    checkSkillDemand(scepRubric([scepCrit()]), 'The Treasurer told the board: “We are fully hedged against currency risk here.”', 'scepticism').parts[1].status === 'pass');
+  ok('N6b does not swallow the text on an UNPAIRED quote character',
+    !checkSkillDemand(scepRubric([scepCrit()]), 'The treasurer said "we are fully hedged against all currency risk and more', 'scepticism').ok);
+  ok('N6b FAILS for commercial_acumen with a figure but NO constraint (a price with no limit)',
+    !checkSkillDemand({ ...scepRubric([scepCrit()]), scenario_facts: [{ id: 'f1', text: 'cost', key: 'USD 2.1m', kind: 'figure' }] }, scepScenario, 'commercial_acumen').ok);
+  ok('N6b PASSES for commercial_acumen with both a figure and a constraint',
+    checkSkillDemand({ ...scepRubric([scepCrit()]), scenario_facts: [{ id: 'f1', text: 'cost', key: 'USD 2.1m', kind: 'figure' }, { id: 'f2', text: 'threshold', key: '24 months', kind: 'constraint' }] }, scepScenario, 'commercial_acumen').ok);
+  ok('N6b FAILS for analysis_and_evaluation with only ONE figure (nothing to weigh against)',
+    !checkSkillDemand({ ...scepRubric([scepCrit()]), scenario_facts: [{ id: 'f1', text: 'mean', key: '480bn', kind: 'figure' }] }, scepScenario, 'analysis_and_evaluation').ok);
+
+  // ── the deliberate not_evaluated paths — these must NOT read as green ──
+  const commRes = checkSkillDemand(scepRubric([scepCrit()]), scepScenario, 'communication');
+  ok('N6b communication is NOT_EVALUATED, never a silent pass (no phrase table)',
+    commRes.parts[1].status === 'not_evaluated' && !commRes.evaluatedAll);
+  ok('N6 with a communication skill still reports ok=true but evaluatedAll=false', commRes.ok && !commRes.evaluatedAll);
+  const noSkill = checkSkillDemand(scepRubric([scepCrit()]), scepScenario, null);
+  ok('N6 with NO declared skill is not_evaluated, and does not invent one', !noSkill.evaluatedAll && noSkill.parts.length === 1 && noSkill.parts[0].status === 'not_evaluated');
+  ok('N6 with an EMPTY-STRING skill is also not_evaluated', !checkSkillDemand(scepRubric([scepCrit()]), scepScenario, '   ').evaluatedAll);
+  ok('N6 with an UNREGISTERED skill is not_evaluated, never a pass',
+    checkSkillDemand(scepRubric([scepCrit()]), scepScenario, 'time_management').parts[1].status === 'not_evaluated');
+  ok('N6 on an EMPTY rubric is not_evaluated, not a vacuous pass',
+    !checkSkillDemand(scepRubric([]), scepScenario, 'scepticism').evaluatedAll);
+  ok('N6c is not_evaluated (structurally N/A) for commercial_acumen',
+    checkSkillDemand({ ...scepRubric([scepCrit()]), scenario_facts: [{ id: 'f1', text: 'c', key: 'USD 2.1m', kind: 'figure' }, { id: 'f2', text: 't', key: '24 months', kind: 'constraint' }] }, scepScenario, 'commercial_acumen').parts[2].status === 'not_evaluated');
+
+  // ── N6c break modes ──
+  ok('N6c FAILS when an F10 criterion does not anchor on the asserted claim',
+    !checkSkillDemand(scepRubric([scepCrit({ anchor_facts: ['f_costbase'] })]), scepScenario, 'scepticism').ok);
+  ok('N6c FAILS when the quoted assertion contains NO scenario_fact key (claim unreachable as an anchor)',
+    !checkSkillDemand(scepRubric([scepCrit()]), 'The Treasurer told the board: "Our position is entirely satisfactory this year." Costs are in Thai baht.', 'scepticism').ok);
+  ok('N6c does NOT double-count: with no quoted assertion at all it is not_evaluated, not a second failure', (() => {
+    const r = checkSkillDemand(scepRubric([scepCrit()]), 'Siam Axle exports widely and its cost base is in Thai baht.', 'scepticism');
+    return r.parts[1].status === 'fail' && r.parts[2].status === 'not_evaluated';
+  })());
+  ok('N6c passes when EVERY F10 criterion anchors the claim, including a second one',
+    checkSkillDemand(scepRubric([scepCrit(), scepCrit({ id: 'c2', anchor_facts: ['f_claim', 'f_costbase'] })]), scepScenario, 'scepticism').ok);
 
   console.log(failures === 0 ? '\nALL NARRATIVE-MARKER FIXTURES PASS' : `\n${failures} FAILURE(S)`);
   process.exit(failures === 0 ? 0 : 1);

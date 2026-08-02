@@ -69,6 +69,7 @@ import {
 const asDecRate = (v: number): number => (v > 1 ? v / 100 : v);
 import {
   checkRubricCoverage, checkScenarioAnchor, checkGenericCopy, checkRule23, checkCommittedVerdict,
+  checkSkillDemand,
   type NarrativeRubric, type CriterionGrader, type NarrativeCheck, type FailureMode,
 } from './narrative-marker';
 
@@ -498,11 +499,15 @@ export interface NarrativeGateInput {
   goldenBad?: string;
   /** `answer_schema._authoring.designed_bad_flags`. Absent/empty → N4 blocks. */
   designedBadFlags?: FailureMode[];
+  /** The DECLARED professional skill (`acca_drills.professional_skill_tag`). Absent → N6 says so
+   *  rather than passing: the gate exists to check the rubric against a declared skill and must
+   *  not invent one. Non-blocking — most existing narrative rows predate the declaration. */
+  skill?: string | null;
   grader: CriterionGrader;
 }
 
 export async function runNarrativeGateBarrier(input: NarrativeGateInput): Promise<GateLine[]> {
-  const { rubric, scenario, reveal, goldenBad, designedBadFlags, grader } = input;
+  const { rubric, scenario, reveal, goldenBad, designedBadFlags, skill, grader } = input;
   const g: GateLine[] = [];
 
   // A rubric with no criteria makes N1/N2/N4 vacuous — every loop is empty and every
@@ -537,6 +542,23 @@ export async function runNarrativeGateBarrier(input: NarrativeGateInput): Promis
   g.push(wantsVerdict
     ? toLine('N5 committed-verdict', checkCommittedVerdict(rubric, reveal))
     : exempt('N5 committed-verdict', 'no requirement part or criterion asks for a recommendation/conclusion — there is no verdict to commit to'));
+
+  // N6 — skill-demand STRUCTURE. Each part reports independently so a part that cannot run is
+  // visibly not_evaluated rather than folded into a green.
+  //
+  // CLAIM CEILING, verbatim: a green N6 means "the scenario admits the act and the rubric names
+  // the skill as the marking basis". It NEVER means "the rubric demands the skill" — that is a
+  // semantic judgement with no structural discriminator and it stays with N1/N4 and a human
+  // reader. See the header of checkSkillDemand.
+  //
+  // NON-BLOCKING by design: every narrative row authored before 2026-08-02 predates the declared
+  // skill reaching the rubric author, so a blocking N6 would refuse to re-gate the existing
+  // corpus — which is the very thing you want to be able to measure.
+  for (const p of checkSkillDemand(rubric, scenario, skill).parts) {
+    g.push(p.status === 'not_evaluated'
+      ? exempt(p.name, p.detail)
+      : verdict(p.name, p.status === 'pass', p.detail));
+  }
 
   return g;
 }
