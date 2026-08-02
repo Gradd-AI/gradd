@@ -525,10 +525,40 @@ outputs and forbid the raw drivers, leaving one division to check — re-run ver
 the outcome as given, or accept that a human must recompute before insert. **Do not describe the six
 gates as covering it.**
 
-### 🔸 OPEN 2026-08-02 — can a skill-vs-rubric gate be deterministic? PARTLY. Scope it honestly.
+### ✅ BUILT 2026-08-02 — N6 skill-demand structure (`checkSkillDemand`), scoped to what is checkable
 
-Now that skill and rubric CAN be connected, the question is whether the connection can be *checked*.
-Analysis only — nothing built.
+> **CLAIM CEILING, verbatim and non-negotiable.** A green N6 means **"the scenario admits the act and
+> the rubric names the skill as the marking basis"**. It **NEVER** means **"the rubric demands the
+> skill"**. Do not restate it more strongly in a pack, a commit message or a doc heading.
+
+`lib/acca/narrative-marker.ts` · wired into the committed barrier (`runNarrativeGateBarrier`,
+non-blocking — the pre-2026-08-02 corpus predates the declared skill and a blocking N6 would refuse
+to re-gate the very rows you want to measure) and into the generator's `runNarrativeGates`.
+**24 fixtures, every failure path exercised (P-G3)**, in `npm run test:narrative-marker`.
+
+**Measured over the corpus 2026-08-02** — 11 `narrative_v1` rows (1 outside: candidate `47c9d5ce`
+A3a has no criteria). **8/8 pre-fix rows FAIL**, all on N6a at 0% F10. **3/3 new rows pass** (D7
+partial: N6c is structurally N/A for commercial_acumen and says so rather than passing).
+
+**⚠️ N6b IS A SUFFICIENT-CONDITION TEST AND FALSE-POSITIVED ON TWO LIVE ROWS — open, needs a human
+read.** Five pre-fix rows also fail N6b. Two are `scepticism`-tagged: `fda46d99` (B3i) and
+`d413fbe7` (B4d). **`d413fbe7`'s sceptical object is the BSOP model's own assumptions, which need no
+quoted claim — very likely a false positive of the proxy, not a defect in the drill.** Not widened:
+every candidate widening ("does a constraint fact name an assumption?") needs a word list, and the
+phrase-table ban does not weaken because this case is inconvenient. A FAIL on N6b means *"no quoted
+assertion found — confirm by hand what this drill's sceptical object is"*, never *"this drill does
+not demand scepticism"*. **Confirm both rows by hand before concluding anything about them.**
+
+**Deliberately NOT evaluated, and it says so rather than passing:** `communication`'s precondition
+("a named audience and a stated purpose") has no structural test that is not a phrase table.
+
+**Still model-graded, by design:** whether a `required_point` DEMANDS the act or merely DESCRIBES the
+topic (no structural discriminator — both readings are grammatical, both reference the fact, both can
+carry F10); whether the golden BAD is competent-but-skill-free; and **which** of the two skills F10
+covers is demanded (one mode, two skills — N6a can never discriminate).
+
+The original analysis is kept below for the reasoning, which is the part worth re-reading before
+anyone proposes widening the gate.
 
 **Structurally checkable (a real gate, call it N6):**
 1. **F10 marks-share.** ≥ half the total marks on criteria whose `disqualifiers` include F10. Pure
@@ -563,9 +593,20 @@ skill as the marking basis"* — **never** *"the rubric demands the skill"*. Sam
 claim ceiling. A gate sold as the latter would be the third instrument in this project to report
 success while measuring less than it claims.
 
+**D7 `c2` revised 2026-08-02 (Grant's ruling).** It steered toward "seek a waiver", which penalised a
+candidate rejecting on the strict 24-month rule — a defensible commercial judgement. **The skill
+assessed is committing on a stated basis, not reaching a preferred verdict**, so `c2` now credits
+EITHER direction when the basis is given and weighed, and credits neither for naming the gap and then
+deferring. Re-gated N1–N6 green on the real grader after the edit, then applied **in place** via
+`--narrative-update-from --drill-id` (the id is already cited in the pack, journal and code map;
+re-inserting would have minted a new one). Row still `candidate`/`published=false`.
+
 **Still owed (unchanged, plus):**
 - **4 cells:** B5 × communication (16 marks) · E3 × scepticism (12) · E1 × analysis_and_evaluation (7)
   · A3 × communication (6).
+- **`fda46d99` and `d413fbe7` need a human read** against N6b's false-positive above.
+- **D7 `c3` (1 mark, Uruguay) mentions rather than demands** its skill — flagged in the pack, not
+  fixed; Grant's call whether one mark justifies a re-author.
 - **The 47 quantitative tags remain rotation defaults.** `buildSpecsForList` still declares
   `sectionIdx` locally and every batch caller still passes one LO, so `deriveSkillTag` still returns
   `pool[0]`. **Only the narrative path was fixed** — no calculator batch can yet be authored into a

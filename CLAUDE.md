@@ -274,6 +274,28 @@ wait for it, or say plainly that it was still building.
   below D1's 60-band sibling. Ranks verified against the drills' STORED headings, not fixture strings.
   Fixtures: `scripts/test-area-entry.ts` (+11 cases). Pack:
   `docs/reviews/AFM_BATCH_PS_CELL_REVIEW_PACK.md`.
+  **GATE N6 — skill-demand STRUCTURE (`checkSkillDemand`, `narrative-marker.ts`).** Three parts:
+  **N6a** F10 marks-share ≥50% · **N6b** scenario precondition per skill (scepticism → a quoted
+  attributed assertion ≥6 words; commercial_acumen → ≥1 figure AND ≥1 constraint fact; a_and_e → ≥2
+  figure facts; **communication → NOT EVALUATED**, its precondition has no test that is not a phrase
+  table) · **N6c** claim-anchor link (scepticism only — every F10 criterion must anchor on the fact
+  whose key falls inside the quoted assertion). Wired into `runNarrativeGateBarrier` **non-blocking**
+  (the pre-fix corpus predates the declared skill; a blocking N6 would refuse to re-gate the rows you
+  want to measure) and into the generator's `runNarrativeGates`. **24 fixtures, every failure path
+  exercised (P-G3).** Measured over the corpus: **8/8 pre-fix rows FAIL, 3/3 new rows pass.**
+  ⚠️ **CLAIM CEILING, verbatim:** a green N6 means *"the scenario admits the act and the rubric names
+  the skill as the marking basis"* — **NEVER** *"the rubric demands the skill"*. That is a semantic
+  judgement with no structural discriminator and it stays with N1/N4 and a human reader. **NO PHRASE
+  TABLE** — gameable by an author writing to the detector, and a matched string proves only that some
+  sentence renders that way (P-DB5). **F10 covers scepticism AND commercial_acumen in one mode, so
+  N6a can never say WHICH skill.** ⚠️ **N6b is a SUFFICIENT-condition test**: it false-positives on a
+  drill whose sceptical object is an unquoted model assumption (`d413fbe7` B4d, live) — a FAIL means
+  "confirm by hand what the sceptical object is", never "this drill does not demand scepticism".
+  **Draft lifecycle flags:** `--narrative-regate-from <draft>` re-runs the full N1–N6 barrier on a
+  hand-edited draft and rewrites its `gate_lines` (a hand edit is otherwise ungated and the stored
+  gate record would keep asserting a stale green); `--narrative-update-from <draft> --drill-id <uuid>`
+  applies it to an EXISTING candidate row (refuses anything published, and refuses an lo_code/skill
+  mismatch) rather than re-inserting, which would mint a new id.
   **⚠️ THE NARRATIVE PIPELINE HAS NO NUMERIC VERIFIER, AND IT COST A DRILL.** D7's first version passed
   ALL SIX GATES asserting the exact opposite of its own figures — a rubric requiring the candidate to
   conclude payback was "well within" an 18-month threshold on drivers giving an annual net benefit of

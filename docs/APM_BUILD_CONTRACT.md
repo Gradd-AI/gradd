@@ -3653,3 +3653,99 @@ scepticism and commercial acumen in a single mode.
 
 **Claim ceiling if built:** passing means "the scenario admits the act and the rubric names the skill
 as the marking basis" — never "the rubric demands the skill". Full analysis in `AFM_SURFACED.md`.
+
+---
+
+# 2026-08-02 (second) — D7 c2 rebalanced; P-N1 banked; N6 built and measured
+
+## 1. D7 `c2` credits either committed direction
+
+`c2` previously required "seek a waiver or re-examine assumptions rather than reject outright". That
+penalised a candidate who rejects on the strict 24-month rule, which is a defensible commercial
+judgement — the CFO set that threshold deliberately against the capital-expenditure cycle. **The
+skill assessed is committing on a stated basis, not reaching a preferred verdict.** Rewritten to
+credit EITHER direction when the basis is given and weighed, and to credit neither for naming the gap
+and then deferring, hedging or leaving it to the board.
+
+Marks, anchors and disqualifiers unchanged (3 marks, `f_saving`/`f_payback`/`f_threshold`, [F4, F5,
+F10]). Re-gated **N1–N6 green on the real grader** after the edit, then applied **in place** via the
+new `--narrative-update-from --drill-id`: the id `68a297a3` is already cited in the pack, the journal
+and the code map, and re-inserting would have minted a new one. Row still `candidate`/`published=false`;
+AFM published set unchanged at 57.
+
+## 2. P-N1 banked in GENERATOR_DOCTRINE.md
+
+**A narrative brief that carries raw numeric drivers has no gate behind it.** N1–N6 grade rubric
+coverage, GOOD-vs-BAD separation and skill-demand structure; none of them reads a number, and the
+narrative pipeline has no numeric verifier — that moat is the calculator families'. D7 v1 passed all
+six gates asserting the exact opposite of its own figures (−USD 69,472 annual net benefit, payback
+never, against a rubric requiring "achievable well within 18 months" and "should proceed").
+
+Rule: state derived economics as GIVEN analysis outputs and forbid the raw drivers, leaving at most
+one arithmetic step for a human. Corollaries: set the given figures so the judgement stays real (D7
+misses its threshold by two months); and never describe the gate suite as covering this — say which
+figures were checked and by whom.
+
+Recorded as the **third instance of author-prose-vs-computed-figures**: Kestrel tax branch · Halvard
+scenario count · D7 payback. The first two share a cause the third does not — a builder gap, where
+the computed object knew something the model answer never stated. **D7 is the harder version: there
+is no computed object to have known it**, so the remedy cannot be "state more of what code knows",
+only "do not create the derivation".
+
+## 3. N6 built — scoped to the three structurally checkable parts
+
+`checkSkillDemand` in `lib/acca/narrative-marker.ts`, wired into `runNarrativeGateBarrier` (the
+committed barrier) and the generator's `runNarrativeGates`.
+
+- **N6a** F10 marks-share ≥50%, summed over the criteria rather than trusting a `total_marks` that
+  could disagree with them.
+- **N6b** scenario precondition per skill. Scepticism → a quoted attributed assertion of ≥6 words;
+  commercial_acumen → ≥1 figure AND ≥1 constraint fact (a price and a limit); analysis_and_evaluation
+  → ≥2 figure facts (something to weigh); **communication → NOT EVALUATED**, because "a named
+  audience and a stated purpose" has no test that is not a phrase table.
+- **N6c** claim-anchor link (scepticism only): every F10 criterion must anchor on the scenario_fact
+  whose key falls inside the quoted assertion.
+
+**Non-blocking by design** — every narrative row authored before today predates the declared skill
+reaching the rubric author, so a blocking N6 would refuse to re-gate the corpus you most want to
+measure.
+
+**CLAIM CEILING, written into the code header, the pack and the code map, verbatim:** a green N6
+means *"the scenario admits the act and the rubric names the skill as the marking basis"*. **NEVER**
+*"the rubric demands the skill"*. No phrase table was added and none may be: it is gameable by an
+author writing to the detector, and a matched string proves only that some sentence renders that way
+(P-DB5). The project's precedent is `advice-checks.ts` — a closed grammatical class, never a phrase
+table — and no closed class exists for "this sentence demands challenge". **F10 covers scepticism AND
+commercial_acumen in a single mode, so N6a can never say which.**
+
+**24 fixtures, every failure path exercised (P-G3)** — under-half F10, zero F10, the exactly-half
+boundary, a drifted `total_marks`, no quoted assertion, a too-short quote, curly quotes, an unpaired
+quote character, each skill's precondition, the not_evaluated paths (communication, no skill, empty
+skill, unregistered skill, empty rubric), an F10 criterion not anchored on the claim, a quote
+containing no fact key, and the no-double-count case.
+
+**Measured over the corpus:** 11 `narrative_v1` rows (candidate `47c9d5ce` A3a is outside — no
+criteria). **8/8 pre-fix rows FAIL, all on N6a at 0% F10. 3/3 new rows pass** (D7 partial: N6c is
+structurally N/A for commercial_acumen and says so).
+
+### ⚠️ N6b false-positived on two live rows — recorded as an open item, not a finding
+
+Five pre-fix rows also fail N6b, two of them `scepticism`-tagged: `fda46d99` (B3i) and `d413fbe7`
+(B4d). **`d413fbe7`'s sceptical object is the BSOP model's own assumptions, which need no quoted
+claim — that is very likely a false positive of the proxy rather than a defect in the drill.**
+
+N6b was NOT widened to cover the unquoted case. Every candidate widening needs a word list, and the
+phrase-table ban does not weaken because this instance is inconvenient. Instead the limitation is
+written into the check's own header and into the pack: **a FAIL on N6b means "no quoted assertion
+found — confirm by hand what this drill's sceptical object is", never "this drill does not demand
+scepticism".** Both rows need a human read before anything is concluded about them.
+
+## 4. Pack ready for adjudication
+
+`docs/reviews/AFM_BATCH_PS_CELL_REVIEW_PACK.md` — all three drills in full: `context_text`, every
+criterion with its marks/anchors/disqualifiers/`required_point`, both golden answers, hint and
+full_reveal, plus the N1–N6 gate lines per drill. Bodies generated from the captured drafts, which
+are the exact bytes in the DB. Includes my read of whether each rubric DEMANDS its skill or merely
+mentions it (D6 demands on 12/12; D8 demands on all five criteria though F10 labels only 2; D7
+demands on 11 of 12 marks, with `c3`'s single Uruguay mark flagged as describable rather than
+demanded).
