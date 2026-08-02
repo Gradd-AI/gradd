@@ -832,3 +832,52 @@ backstop). **D7 is the harder version: there is no computed object to have known
 cannot be "state more of what code knows"; it has to be "do not create the derivation in the first
 place". Both remedies are now standing — the builder-gap audit for calculator families, and this rule
 for narrative briefs.
+
+## P-N2 — THE TEACHING PAIR CAN COACH A DIFFERENT SKILL FROM THE ONE THE RUBRIC MARKS (ruled 2026-08-02)
+
+**`hint` and `full_reveal` are the only fields a student actually READS as teaching. No gate checks
+that they teach the skill the criteria PENALISE.** N1–N6 read the rubric and the golden pair and never
+touch either field. P4 checks for invented facts. **P7 checks that a `"…misconception…: "` sentence
+EXISTS — not that it names the failure the criteria actually mark.** So a teaching leg can be fluent,
+factually clean, gate-green, and pointed at the wrong skill.
+
+**The instance, measured.** D9 (`36edda4f`, B5c, declared skill **communication**) led its reveal with:
+
+> *"The dominant misconception here is FENCE-SITTING: candidates … present both sides of the expansion
+> argument without ever resolving them into a verdict … it fails the command verb 'advise' at level 3."*
+
+Fence-sitting is a **commitment** failure (F4). This rubric carries F4 on **ONE criterion worth 2 of
+12 marks**. Its **four F10 criteria — 8 of 12 marks — are every one of them about the READER**:
+translate the mechanism out of treasury language; address the trust breach constructively; name a
+route the audience can champion locally; close addressed to them by name. The teaching leg was
+coaching 2 marks' worth of a different skill as though it were the drill's point. Its `hint` carried
+the identical lean. **Both were found by READING, not by any gate.**
+
+**The rule. When a drill declares a skill, the teaching pair must lead on the failure mode that the
+SKILL-CARRYING criteria penalise — not merely on a real failure mode the answer might exhibit.**
+Check it against the rubric's own arithmetic: identify which criteria carry the skill's disqualifier
+and what share of the marks they hold, then read `hint` and `full_reveal` and ask which failure they
+name. If the reveal's headline failure is carried by a minority of the marks, it is teaching the wrong
+thing, however true it is.
+
+**Anchor the reframe on the drill's own golden BAD.** D9's BAD is technically accurate throughout and
+closes by tasking *"BalticPack's treasury team … engage with local counsel"* — handing the only action
+item to a party the two named recipients do not control, in a treasury register, never once naming
+them. That is the drill's designed failure made concrete, and it is what the reveal should have been
+built on. The golden BAD is the authored answer to "what does failing THIS drill look like"; a reveal
+that names a different failure is contradicting an artefact that is already in the row.
+
+**Corollary — a claim ceiling for P7.** P7's green means *"a misconception sentence is present, so
+`extractMisconceptionLead` will find a real fact rather than falling back"*. It has never meant *"the
+named misconception is the right one"*, and no automated check can mean that: which failure a rubric
+principally penalises is a reading of the criteria, not a property of the text. Do not describe P7 as
+covering it.
+
+### The related fix, recorded because the gap was the same shape
+
+**`--narrative-regate-from` ran N1–N6 ONLY — and none of N1–N6 reads `hint` or `full_reveal`.** So a
+hand edit to a TEACHING field could be reported "re-gated GREEN" by a set of checks that had never
+looked at the field that changed. That is the P-G1 family again: the instrument reports success while
+measuring something else. **It now runs `lintJurisdiction` + `lintFrozenMarketFacts` (P4) and
+`lintMisconceptionLead` (P7) over the draft's teaching fields**, prints both lines, and folds them into
+the pass/fail. Any future re-gate path that touches a field must run the checks that read it.
