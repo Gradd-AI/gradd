@@ -59,6 +59,11 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   '**Capital structure — theory and practical impact**': 62,                      // D3 · B3i
   '**Option pricing models — role in valuing equity, debt and default risk**': 63, // D4 · B4d (after credit 48)
   '**Exchange controls and international sources of finance**': 64,                // D5 · B5c/d (after international 53)
+  // D8 · B1b — the PS-cell batch's B1×scepticism drill. Same LO as D1 (60) and deliberately ranked
+  // BELOW it within the narrative band: D1 interprets the simulation output, D8 challenges its
+  // credibility, and challenging is the later demand. Both stay above every B-calculator (≤53), so
+  // neither can take B1's entry from NPV (10).
+  '**Monte Carlo simulation — challenging the assumptions behind the output**': 65,  // D8 · B1b
   // ── E2 — FX hedging (calculator #11). Own area (never overlaps a B-prefix), so these ranks only
   // order K1..K4 against each other: forward+MMH (the Step-0 entry) → futures → options → swap. ──
   '**FX hedging — forward vs money-market hedge**': 70,
@@ -84,6 +89,16 @@ export const AREA_ENTRY_RANK: Record<string, number> = {
   '**Treasury function — establishing a group treasury and its impact on existing functions**': 80,   // EN1 · E1a — the E1 entry (no calculator to protect against)
   '**Treasury function — how a dedicated treasury department makes a positive financial contribution**': 81, // EN2 · E1a
   '**Foreign-exchange exposure — identifying, distinguishing and managing the three exposure types**': 82,   // EN3 · E2a — ABOVE fxhedge's 70–73, so K1 (70) keeps the E2 entry
+  // ── PS-CELL BATCH (2026-08-02) — D6/D7, the two E2 drills authored into the unservable
+  // E2×scepticism and E2×commercial_acumen cells. Ranked in the SAME above-every-E-calculator band
+  // as EN1–EN3 and for the identical reason, which is worth restating because it is the one place
+  // the B-narrative intuition gets this wrong: E2 is shared by the fxhedge calculator (70–73) AND
+  // irhedge sits at 74–77, so a rank anywhere below 78 would let a narrative drill take E2's
+  // zero-attempt entry from fxhedge K1 (70). Both are ≥83, so K1 keeps the E2 entry.
+  // D7 is E2c — the first drill of any kind on that LO — and still must clear the same bar,
+  // because the entry is resolved across the whole 2-char E2 bucket, not per LO.
+  '**Foreign-exchange exposure — testing a claim that the group is fully hedged**': 83,      // D6 · E2a
+  '**Netting and matching — whether a group netting arrangement earns its cost**': 84,       // D7 · E2c
 };
 
 const UNRANKED = Number.POSITIVE_INFINITY;

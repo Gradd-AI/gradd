@@ -36,6 +36,11 @@ const H = {
   enTreasuryEstablish: '**Treasury function — establishing a group treasury and its impact on existing functions**',
   enTreasuryContribution: '**Treasury function — how a dedicated treasury department makes a positive financial contribution**',
   enForexExposure: '**Foreign-exchange exposure — identifying, distinguishing and managing the three exposure types**',
+  // PS-cell batch (2026-08-02) — D6/D7 (E2) + D8 (B1b)
+  psFxFullyHedged: '**Foreign-exchange exposure — testing a claim that the group is fully hedged**',
+  psNetting: '**Netting and matching — whether a group netting arrangement earns its cost**',
+  psMonteCarloChallenge: '**Monte Carlo simulation — challenging the assumptions behind the output**',
+  d1MonteCarlo: '**Monte Carlo simulation — interpreting the simulation output**',
 };
 // build a drill with a heading + trailing body (heading is the FIRST line, as in the real model_answer)
 const drill = (id: string, lo_code: string, heading: string) => ({ id, lo_code, model_answer: `${heading}\n\nbody line\nmore` });
@@ -119,6 +124,44 @@ ok('E2 zero-attempt serve STILL = fxhedge K1 (51163dac-shaped) when EN3 (E2a) is
 ok('EN3 (E2a) ranks strictly above every fxhedge kind (K1–K4), not merely above K1', entryRank(H.enForexExposure) > entryRank(H.fxForwardMmh) && entryRank(H.enForexExposure) > entryRank(H.fxFutures) && entryRank(H.enForexExposure) > entryRank(H.fxOptions) && entryRank(H.enForexExposure) > entryRank(H.fxSwap));
 // order-independence: EN3 first in the array, fxhedge K1 still wins
 ok('E2+EN3 entry is order-independent (EN3 listed first)', pickEntryDrill([drill('en3', 'E2a', H.enForexExposure), ...e2])?.id === 'fx1');
+
+// ── PS-CELL BATCH (2026-08-02) — D6 (E2a, scepticism) + D7 (E2c, commercial_acumen).
+// The SAME hazard EN3 proves, with one addition that is easy to get wrong: D7 is E2c, and E2c is an
+// lo_code the fxhedge CALCULATOR also lives under in the study guide. It is still resolved through the
+// 2-char E2 bucket, so being "the only drill on its LO" buys it nothing — it must clear the whole
+// fxhedge span exactly as EN3 does. Proven on REAL mixed data (K1–K4 + EN3 + D6 + D7 in one fetch). ──
+const e2WithPsCell = [
+  ...e2,
+  drill('en3', 'E2a', H.enForexExposure),
+  drill('d6', 'E2a', H.psFxFullyHedged),
+  drill('d7', 'E2c', H.psNetting),
+];
+ok('E2 zero-attempt serve STILL = fxhedge K1 with D6+D7+EN3 all mixed into the same area fetch', pickEntryDrill(e2WithPsCell)?.id === 'fx1');
+ok('E2+D6+D7 entry is order-independent (both new drills listed first)', pickEntryDrill([drill('d7', 'E2c', H.psNetting), drill('d6', 'E2a', H.psFxFullyHedged), ...e2])?.id === 'fx1');
+ok('D6 (E2a) ranks strictly above every fxhedge kind K1–K4', [H.fxForwardMmh, H.fxFutures, H.fxOptions, H.fxSwap].every((h) => entryRank(H.psFxFullyHedged) > entryRank(h)));
+ok('D7 (E2c) ranks strictly above every fxhedge kind K1–K4', [H.fxForwardMmh, H.fxFutures, H.fxOptions, H.fxSwap].every((h) => entryRank(H.psNetting) > entryRank(h)));
+// Both must also clear the irhedge span (74–77): the E-narrative band's stated bar is "above every
+// E-calculator", not merely "above fxhedge" — a rank of 75 would pass the fxhedge check and still be
+// wrong. Checked explicitly so the weaker test can never stand in for the real one.
+ok('D6 and D7 clear the irhedge span too (above every E-calculator, not just fxhedge)', entryRank(H.psFxFullyHedged) > entryRank(H.irSwap) && entryRank(H.psNetting) > entryRank(H.irSwap));
+ok('D6 and D7 rank above the existing E-narrative cluster (EN1–EN3), keeping the band ordered by arrival', entryRank(H.psFxFullyHedged) > entryRank(H.enForexExposure) && entryRank(H.psNetting) > entryRank(H.psFxFullyHedged));
+
+// ── D8 (B1b, scepticism) — same LO as D1 (B1b, analysis_and_evaluation). The B1 hazard is different
+// from E2's: every B-calculator is ≤53, so clearing them is automatic. What must be proven here is
+// that adding a SECOND B1b narrative drill does not disturb NPV as the B1 entry, and that D8 sits
+// below D1 within the narrative band (interpret before challenge). ──
+const b1WithBothNarratives = [
+  drill('npv1', 'B1a', H.npv),
+  drill('irr1', 'B1c', H.irr),
+  drill('d1', 'B1b', H.d1MonteCarlo),
+  drill('d8', 'B1b', H.psMonteCarloChallenge),
+];
+ok('B1 zero-attempt serve = NPV with BOTH B1b narrative drills (D1 + D8) in the same area fetch', pickEntryDrill(b1WithBothNarratives)?.id === 'npv1');
+ok('B1+D1+D8 entry is order-independent (both narrative drills listed first)', pickEntryDrill([drill('d8', 'B1b', H.psMonteCarloChallenge), drill('d1', 'B1b', H.d1MonteCarlo), drill('npv1', 'B1a', H.npv), drill('irr1', 'B1c', H.irr)])?.id === 'npv1');
+ok('D8 ranks below D1 (interpret the output before challenging it), both above every B-calculator', entryRank(H.d1MonteCarlo) < entryRank(H.psMonteCarloChallenge) && entryRank(H.d1MonteCarlo) > entryRank(H.irr));
+// The two B1b headings must be DISTINCT strings — a copy-paste collision would silently make one
+// drill inherit the other's rank and go unranked in effect.
+ok('D1 and D8 headings are distinct (no silent rank collision on the shared B1b LO)', H.d1MonteCarlo !== H.psMonteCarloChallenge && entryRank(H.d1MonteCarlo) !== entryRank(H.psMonteCarloChallenge));
 
 // ── E1 — treasury narrative (EN1/EN2). NO calculator exists in E1 — narrative is the ONLY content,
 // so it is the E1 entry by construction (not a "narrative beats a calculator" case, unlike E2 above).
