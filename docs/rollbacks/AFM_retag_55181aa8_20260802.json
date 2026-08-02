@@ -1,0 +1,164 @@
+{
+  "ruling": "RULING (Grant, 2026-08-02) — 55181aa8 E1a: commercial_acumen -> analysis_and_evaluation\n\nTHE VERB IS THE DISCRIMINATOR, NOT THE ARITHMETIC.\n\n  * N5 does not engage on this rubric: neither requirement part nor any required_point carries\n    verdict language, so the barrier itself classes it as having no verdict to commit to.\n  * NO criterion carries F4. Fence-sitting is not penalised anywhere.\n  * All four required_points open with the word \"Discuss\".\n  => A candidate who discusses all four points and commits to nothing scores 8/8.\n\nCommercial acumen's defining act — ACCA descriptor 2, \"use judgement in PROPOSING AND RECOMMENDING\ncommercially viable solutions\" — is therefore never required. What the rubric DOES demand\n(investigating organisational implications; reflecting on how roles, authority and retention change)\nis analysis_and_evaluation descriptors 2 and 3 almost verbatim.\n\nTHE SIBLING IS THE CONTROL. d0be009d is the same LO with the same tag and demands the opposite:\n\"Advise / Advise / Advise / COMMIT\", with c4 carrying F4 and the CEO's income-or-cost test as a\nstated hurdle. That is what a commercial_acumen rubric looks like on E1a.\n\nCORRECTION RECORDED WITH THE RULING. The batch-1 pack and journal framed this row's problem as\npartly \"no priced decision - zero figure facts\". That was WRONG, and d0be009d refutes it: it also\nhas zero figure facts and is a sound commercial_acumen drill. A commercial judgement can be\ngenuinely constrained without a number. The figures argument is not the discriminator and should not\nhave been leaned on.\n\nWHAT IS NOT CLAIMED. N6 could not adjudicate this and did not - both rows fail it identically under\neither tag. That is the claim ceiling behaving as documented: N6 measures LABELLING and the\nscenario's OBJECT-SHAPE, neither of which distinguishes these two skills. The ruling is a reader's\njudgement about the rubric, not a measurement.\n\nTHE COUNTER-CASE, RECORDED RATHER THAN SUPPRESSED. commercial_acumen descriptor 3 covers \"wider\norganisational matters\", which c3/c4 squarely are; the golden GOOD does commit (\"workable, but only\nonce...\"); and the F7 generic-centralisation disqualifier is a commercial failure mode. Keeping the\ntag was defensible - it is weaker only because the model answer's commitment is UNCREDITED by the\nrubric.",
+  "from": "commercial_acumen",
+  "to": "analysis_and_evaluation",
+  "row_before": {
+    "id": "55181aa8-dcde-42cd-8c01-dbd0b392a734",
+    "exam_board": "ACCA",
+    "paper_code": "AFM",
+    "lo_code": "E1a",
+    "topic": "The role of the treasury function in multinationals",
+    "command_verb": "discuss",
+    "intellectual_level": 3,
+    "professional_skill_tag": "commercial_acumen",
+    "calculation_required": false,
+    "marks_guide": 8,
+    "question": "Discuss the issues affecting the establishment of the new group treasury function, and the impact this would have on the existing subsidiary treasury desks and on the Osaka head-office treasury. Note: this requirement asks about THIS group’s specific situation — a generic list of the advantages and disadvantages of centralising treasury is not what is being asked for.",
+    "context_text": "Kaisho Holdings, a Japanese industrial-equipment group headquartered in Osaka, has expanded over the past decade into South America, where it now operates four subsidiaries that each run their own local treasury desk. Most of the group’s currency and financing activity now originates in the region. The group finance director has proposed establishing a new centralised group treasury function in São Paulo, while retaining a smaller treasury presence in Osaka. No decision has yet been taken on the exact location within South America, nor on how much financial autonomy the four subsidiary desks would keep. The board wants to understand the issues involved in setting up the new function and the impact it would have on the existing subsidiary desks and on the Osaka head-office treasury before it commits.",
+    "model_answer": "**Treasury function — establishing a group treasury and its impact on existing functions**\n\nThe board should first weigh the location-and-control questions this proposal leaves open. Deciding the exact location within South America matters because a treasury centre needs deep local banking relationships, staff with the right skills and time-zone reach across the four markets, so a poorly chosen site would undercut the very efficiency the move is meant to deliver. Control is the harder question: the group must decide how much financial autonomy the local desks retain, because pulling every hedging and financing decision into the centre risks slow responses to local conditions, while leaving too much locally defeats the purpose of centralising. A second establishment issue is that the rationale for siting the centre in São Paulo is that most activity has migrated to the region, so the case rests on being close to where the exposures arise — but the group still has to build the staffing and treasury systems there, which takes time and investment before any benefit appears. Turning to the impact, the roles and responsibilities of the subsidiary desks would change materially: if they lose their financial autonomy over financing and hedging to the new centre, they shift from decision-makers to executors, which affects morale, retention and the local knowledge the group relies on. Finally, the Osaka head-office treasury’s relationship changes too — it would move from running much of the activity to overseeing and coordinating a regional centre, so the group must be clear where ultimate authority for group-wide policy and risk limits now sits. On balance the proposal is workable, but only once location, the autonomy split, and the Osaka–São Paulo reporting line are settled explicitly rather than left open.",
+    "hint": "The generic centralisation pros-and-cons essay is exactly what the requirement warns against — before you write, ask what THIS group must actually decide (where in South America, how much autonomy the local desks keep) and how the specific existing functions (the subsidiary desks, the Osaka treasury) change, and make sure your points land on those named facts rather than on centralisation in the abstract.",
+    "full_reveal": "The dominant misconception on a treasury-establishment requirement is that it is an invitation to write the standard \"advantages and disadvantages of centralising treasury\" essay: candidates reach for economies of scale, better control and loss of local responsiveness, and never touch what the scenario actually asks. The examiner is explicit that this is the wrong question — the marks are for the issues affecting THIS establishment (location and control) and the impact on THIS group’s existing functions. The diagnosis-led reframe is to treat every generic point as worth nothing until it is anchored: \"control\" earns credit only when it becomes \"how much financial autonomy the four South American desks keep versus the new São Paulo centre\"; \"impact\" earns credit only when it becomes \"the subsidiary desks move from deciding to executing\" and \"Osaka shifts from running activity to overseeing a regional centre.\" A strong answer also closes with a committed view — the proposal works once location, the autonomy split and the reporting line are settled — rather than trailing off after a list. Recognising which specific decisions and which specific functions are in play, and building each point on them, is what separates a scoring answer from a textbook essay that happens to mention treasury.",
+    "published": true,
+    "created_at": "2026-07-24T14:53:11.14252+00:00",
+    "status": "approved",
+    "answer_schema": {
+      "mode": "narrative",
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "lo": "E1a",
+          "marks": 2,
+          "anchor_facts": [
+            "f_location",
+            "f_autonomy"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F7"
+          ],
+          "required_point": "Discuss the location-and-control issues specific to setting this function up — WHERE within South America to site it and how much financial autonomy to leave with the local desks — rather than a generic list of centralisation advantages.",
+          "evidence_anchor": "SD24 p.4, Northney (i): \"relevant issues such as location and control were rarely discussed\"; the generic centralisation-advantages essay is the wrong question (F7).",
+          "requirement_part": "(i) issues affecting the establishment of the new group treasury function",
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "lo": "E1a",
+          "marks": 2,
+          "anchor_facts": [
+            "f_saopaulo"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5",
+            "F2"
+          ],
+          "required_point": "Discuss a further establishment issue grounded in the group’s own position — e.g. that the shift of activity to the region is the rationale for siting the function in São Paulo, and the staffing/systems needed to run it there.",
+          "evidence_anchor": "SD24 p.4, Northney (i): scope is \"the issues affecting the establishment of a new group treasury function\", not generic centralisation pros/cons.",
+          "requirement_part": "(i) issues affecting the establishment of the new group treasury function",
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "lo": "E1a",
+          "marks": 2,
+          "anchor_facts": [
+            "f_desks",
+            "f_autonomy"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5"
+          ],
+          "required_point": "Discuss how the roles and responsibilities of the existing subsidiary desks would change — e.g. losing autonomy over financing/hedging decisions to the new central function.",
+          "evidence_anchor": "SD24 p.4, Northney (i): \"how roles and responsibilities within the existing subsidiaries treasury functions would change because of the new group function\".",
+          "requirement_part": "(ii) impact on the existing subsidiary desks and the Osaka head-office treasury",
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "lo": "E1a",
+          "marks": 2,
+          "anchor_facts": [
+            "f_osaka"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F5"
+          ],
+          "required_point": "Discuss how the relationship with the Osaka head-office treasury would change — e.g. Osaka moving from running activity to overseeing/coordinating a regional centre.",
+          "evidence_anchor": "SD24 p.4, Northney (i): \"the relationship of the new group treasury function with the head office treasury ... and how this might change\".",
+          "requirement_part": "(ii) impact on the existing subsidiary desks and the Osaka head-office treasury",
+          "development_required": true
+        }
+      ],
+      "_authoring": {
+        "note": "Rule-23 golden BAD + designed F-modes. NOT served. Golden GOOD is model_answer. evidence_anchor per criterion carries the cited marking basis (this batch’s ruling; never served).",
+        "golden_bad": "The group finance director has proposed establishing a new centralised group treasury function. Centralising treasury has well-known advantages and disadvantages. The main advantages of centralisation are economies of scale, since one central team can negotiate better bank terms and pool cash more efficiently, and stronger control, since all decisions run through one place. Centralisation also allows netting of currency flows and standardised systems across the group. The disadvantages of centralisation are a loss of local responsiveness, higher fixed overheads for the central team, and possible resistance from local managers who prefer their own arrangements. A centralised treasury can be slower to react to local conditions. These are the general points about centralising a treasury department that any group would consider.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ]
+      },
+      "total_marks": 8,
+      "rubric_version": "narrative_v1",
+      "scenario_facts": [
+        {
+          "id": "f_location",
+          "key": "location within South America",
+          "kind": "constraint",
+          "text": "the exact location within South America for the new function"
+        },
+        {
+          "id": "f_autonomy",
+          "key": "financial autonomy",
+          "kind": "constraint",
+          "text": "how much financial autonomy the four subsidiary desks would keep"
+        },
+        {
+          "id": "f_saopaulo",
+          "key": "São Paulo",
+          "kind": "entity",
+          "text": "a new centralised group treasury function in São Paulo"
+        },
+        {
+          "id": "f_desks",
+          "key": "subsidiary desks",
+          "kind": "entity",
+          "text": "the four existing subsidiary treasury desks"
+        },
+        {
+          "id": "f_osaka",
+          "key": "Osaka head-office treasury",
+          "kind": "entity",
+          "text": "the Osaka head-office treasury"
+        }
+      ],
+      "requirement_parts": [
+        "(i) issues affecting the establishment of the new group treasury function",
+        "(ii) impact on the existing subsidiary desks and the Osaka head-office treasury"
+      ]
+    },
+    "mode": "discursive"
+  }
+}
