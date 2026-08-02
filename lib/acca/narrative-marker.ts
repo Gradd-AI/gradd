@@ -216,6 +216,22 @@ export function checkCommittedVerdict(rubric: NarrativeRubric, reveal: string): 
 // F10 CANNOT DISCRIMINATE BETWEEN THE TWO SKILLS IT COVERS. The mode is "no scepticism /
 // commercial acumen" — one mode, two skills. N6a proves a skill was named as the marking basis;
 // it can never prove WHICH. Any report built on N6 must say so.
+//
+// ── MEASURED 2026-08-02: N6a's LABELLING AND THE RUBRIC'S ACTUAL DEMAND DIVERGE ──────────
+// The claim ceiling above is not a theoretical hedge. First measured instance, D8 `f6426c06`
+// (B1b, scepticism, 12 marks, 5 criteria): F10 is LABELLED on c2 and c3 only, so N6a scores it
+// 6/12 — exactly at the bar. But c1 ("the output is therefore likely to understate true downside
+// risk"), c4 ("Osprey presents these figures as confirming safety rather than highlighting the
+// breadth of outcomes") and c5 ("reject Osprey's characterisation") all perform the act too.
+// REAL act coverage is 12/12 against a LABELLED 6/12.
+//
+// So N6a measured this drill at half its true coverage. The direction here is CONSERVATIVE —
+// it under-credits — but the divergence is two-directional in principle, and the other direction
+// is the dangerous one: a rubric can label F10 on every criterion while demanding only
+// description, which is precisely what an author writing to this detector would produce. That is
+// the concrete reason the phrase-table ban and the claim ceiling are not negotiable.
+//
+// N6a MEASURES LABELLING, NOT DEMAND. Never report an N6a share as a coverage figure.
 
 /** One part of N6. `not_evaluated` is a first-class outcome — a part that cannot run says so
  *  rather than passing vacuously (P-G1). */
