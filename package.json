@@ -60,7 +60,8 @@
     "test:tutor-discriminants": "tsx scripts/test-tutor-discriminants.ts",
     "test:advice-checks": "tsx scripts/test-advice-checks.ts",
     "verify:schema-discriminants": "tsx --env-file=.env.local scripts/verify-schema-discriminants.ts",
-    "test:case-authoring-spec": "tsx scripts/test-case-authoring-spec.ts"
+    "test:case-authoring-spec": "tsx scripts/test-case-authoring-spec.ts",
+    "audit:verb-coverage": "tsx --env-file=.env.local scripts/audit-verb-coverage.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
