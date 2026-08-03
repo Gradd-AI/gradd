@@ -25,7 +25,9 @@ import {
 import { notifyGrant } from '@/lib/notify';
 import { resolvePaper } from '@/lib/acca/paper';
 import { hasActiveACCAAccess } from '@/lib/acca/access';
-import { isTeachRequest, isRevealRequest, REVEAL_PHRASE_STRUGGLE, REVEAL_PHRASE_SOLVED } from '@/lib/acca/phrase-match';
+import {
+  isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
+} from '@/lib/acca/phrase-match';
 import {
   buildGroundingPack,
   renderChecklistAndFacts,
@@ -39,7 +41,7 @@ import {
   type GroundingPack,
 } from '@/lib/acca/tutor-grounding';
 import { cacheBlock, cachePrefix } from '@/lib/acca/prompt-cache';
-import { describeDemand } from '@/lib/acca/teach-demand';
+import { describeDemand, nextMoveContract } from '@/lib/acca/teach-demand';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -359,6 +361,7 @@ async function call3_hint(
   attempt: string,
   diagnosis: string,
   verbLevel: string,
+  nextMove: string,
   paper: string,
   grounding: GroundingPack,
 ): Promise<string> {
@@ -372,6 +375,9 @@ async function call3_hint(
   // only, never the drill's specific figure or point. Empty when no schema → identical to before.
   const groundingText = renderConventionsAndMisconception(grounding);
   const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_HINT}\n\n${groundingText}` : '';
+  // The level-aware closing contract (lib/acca/teach-demand.ts). Empty for an unknown level →
+  // byte-identical to the pre-change prompt, so pre-metadata drills are unaffected.
+  const nextMoveLine = nextMove ? `${nextMove}\n\n` : '';
   // Same partial-cache shape as call2_diagnose: attempt/diagnosis sit before the trailing stable
   // vlLine/groundingLine/instruction block, so only the leading context+question forms a clean
   // stable prefix without reordering (see lib/acca/prompt-cache.ts header).
@@ -390,11 +396,16 @@ async function call3_hint(
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
           groundingLine +
+          nextMoveLine +
           'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
           'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
           'move. Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
-          'structured breakdown. Work in the command verb and ACCA intellectual level from the ' +
-          "authored values above (do not infer them when given). Don't state the answer." +
+          // Was: "Work in the command verb and ACCA intellectual level from the authored values
+          // above (do not infer them when given)." The 2026-08-01 fence removed those values from
+          // the prompt but left this sentence, so the only way to satisfy it was to INFER a level
+          // and state it — an unfounded assertion, which is worse than the disclosed value the
+          // fence removed. The demand itself is already above in vlLine; nothing needs naming.
+          "structured breakdown. Calibrate against the demand above. Don't state the answer." +
           WRAP_UP,
         ),
       },
@@ -412,7 +423,8 @@ async function call3_teach(
   priorAttempt: string | null,
   diagnosis: string,
   verbLevel: string,
-  offerReveal: boolean,
+  nextMove: string,
+  selfAssess: boolean,
   paper: string,
   distressed = false,
   grounding: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [], discriminants: [], contradictions: [] },
@@ -427,12 +439,36 @@ async function call3_teach(
   const conventionsLine = grounding.conventions.length
     ? `${GROUNDING_INSTRUCTION_CONVENTION}\n\nCONVENTIONS (required methods for this drill):\n${grounding.conventions.map((c) => `- ${c}`).join('\n')}\n\n`
     : '';
-  // Earned-reveal nudge — only when struggle-gated (offerReveal). Tells the student the
-  // phrase that unlocks the reveal; the teach itself still withholds the answer.
-  // X1 fix item 2: built from the SAME canonical constant the router matches on
-  // (lib/acca/phrase-match.ts) — offer and router can never diverge again.
-  const offerLine = offerReveal
-    ? ` As the alternative next move, tell them they can say "${REVEAL_PHRASE_STRUGGLE}" to see exactly how a full-marks answer is built.`
+  // ── THE REVEAL OFFER IS NO LONGER INSTRUCTED HERE ───────────────────────────
+  // It used to be an instruction appended to this prompt, telling the model to mention the
+  // unlock phrase. It is now appended deterministically by the CALLER after the model returns —
+  // see `revealOfferLine` in lib/acca/phrase-match.ts for why (it was competing with WRAP_UP
+  // under a 600-token cap and is the exact text `finishClean` trims first).
+  //
+  // The level-aware closing contract (lib/acca/teach-demand.ts). This is what stops a level-3
+  // leg handing the student a second task the size of the first. Empty for an unknown level →
+  // byte-identical to the pre-change prompt.
+  const nextMoveLine = nextMove ? `${nextMove}\n\n` : '';
+  // ── SELF-ASSESSMENT BEFORE THE DIAGNOSIS (P5c, TEACHING_PRINCIPLES.md:77) ────
+  // Required behaviour: "Mia prompts the student to self-assess ('where do you think this answer
+  // is weak?') before revealing the mark — building metacognition." It had never been built on
+  // ANY ACCA path, for either paper.
+  //
+  // SCOPED, not blanket. Only on a SECOND or later attempt: on a first attempt it delays the
+  // diagnosis the student came for, and on a distressed turn it is a question asked of someone
+  // who has just said they are stuck (the dignity rule outranks it).
+  //
+  // CLAIM CEILING, stated because the rubric's wording invites a stronger reading: this is a
+  // SINGLE-TURN approximation. A true self-assessment beat asks, waits for the answer, and
+  // diagnoses against it. This route answers in one turn, so the clause asks and then diagnoses
+  // in the same message. It builds the habit of locating your own gap; it does not gate the
+  // diagnosis behind the student's reply. Doing that properly needs a turn boundary this loop
+  // does not have — recorded rather than quietly claimed as done.
+  const selfAssessLine = selfAssess
+    ? 'SELF-ASSESSMENT FIRST: open with ONE short clause asking which part of their own answer ' +
+      'they think is weakest ("before I say — which bit of that would you defend least?"), then ' +
+      'go straight on and name the gap yourself in the same message. One clause, not a paragraph, ' +
+      'and never instead of the diagnosis.\n\n'
     : '';
   // FIX B tone (red-team adjudication 2026-07-16): suppressing the CTA alone left probe E2 with a
   // COLD reply ("I don't see a student answer"). On distress, lead with warmth and steady them —
@@ -460,14 +496,20 @@ async function call3_teach(
           `Gap diagnosis: ${diagnosis}\n\n` +
           vlLine +
           conventionsLine +
+          nextMoveLine +
+          selfAssessLine +
           distressLine +
           "Second miss or stop-signal — they haven't cracked it yet. Still don't lecture: lead with " +
           'the specific thing that IS working, then name the ONE gap that matters most (one, sharply ' +
           '— not a list of four) and the single next move that unblocks it. Conversational prose, 3 ' +
           'sentences, 4 at the most — no numbered points or structured breakdown, a sharp tutor ' +
-          'talking not a marked script. Use the authored command verb and ACCA intellectual level ' +
-          'above (do not infer when given) to pin the gap accurately. Do not complete the answer or give the figures.' +
-          offerLine + WRAP_UP,
+          // Was: "Use the authored command verb and ACCA intellectual level above (do not infer
+          // when given) to pin the gap accurately." Same stale instruction as call3_hint — the
+          // values it points at were removed from the prompt on 2026-08-01 and only inference
+          // could satisfy it. The demand is in vlLine; the closing shape is in nextMoveLine.
+          'talking not a marked script. Pin the gap against the demand above. ' +
+          'Do not complete the answer or give the figures.' +
+          WRAP_UP,
         ),
       },
     ],
@@ -486,20 +528,16 @@ async function call3_confirm(
   attempt: string,
   verbLevel: string,
   paper: string,
-  offerReveal: boolean,
   grounding: GroundingPack,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
     ? `What this requirement demands (judge what the answer hit against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
-  // Post-success reveal nudge — the student has earned the model answer by solving; offer the
-  // phrase that surfaces it for comparison (the reveal itself is still the ONLY place the
-  // model_answer is shown; this only advertises the now-unlocked route). X1 fix item 2: built
-  // from the SAME canonical constant the router matches on — offer and router can never diverge.
-  const offerLine = offerReveal
-    ? ` Then, as a light closing offer, tell them that since they nailed it they can say "${REVEAL_PHRASE_SOLVED}" to see exactly how a full-marks version is laid out for comparison.`
-    : '';
+  // The post-success reveal nudge moved OUT of this prompt and is appended deterministically by
+  // the caller — same reasoning as call3_teach. A student who has just solved the drill has
+  // unambiguously earned the comparison, so whether they are told about it must not depend on
+  // whether the model remembered to mention it inside a 650-token budget.
   // PERSONA-HARDENING (2026-07-21): fixes finding 6 (CONVENTION-SOFTENING — a close that validated an
   // alternative WRONG/unscaled form as "equally valid" alongside the correct one). The old prompt's
   // own "say it's equally valid" clause is REMOVED below — it was written for genuine format/layout
@@ -529,16 +567,21 @@ async function call3_confirm(
           'The answer is CORRECT — it may use a different but equivalent PRESENTATION convention ' +
           '(sign convention, A/F labelling, layout) than a model answer would; those genuinely ARE ' +
           'equally valid. Tell them they nailed it, and mean it: 2–3 sentences, warm and peer-to-peer, ' +
-          'leading with the specific thing they did well (the real move, not empty praise). Name the ' +
-          'command verb and ACCA intellectual level the answer hit (from the authored values above — ' +
-          'do not infer when given) and say briefly why it holds / what puts it in the top band. If ' +
+          'leading with the specific thing they did well (the real move, not empty praise). ' +
+          // Was: "Name the command verb and ACCA intellectual level the answer hit (from the
+          // authored values above — do not infer when given)". The strongest of the six residual
+          // sites — an explicit instruction to NAME a taxonomy the 2026-08-01 fence had already
+          // removed from the prompt, so only inference could satisfy it. Replaced with what it
+          // was actually for: saying which part of the demand the answer satisfied.
+          'Say briefly which part of what the requirement demanded the answer actually hit, and why ' +
+          'it holds / what puts it in the top band. If ' +
           'their PRESENTATION differs from the usual model (layout/labelling only), say that is ' +
           'equally valid — but if they also mention an ALTERNATIVE FIGURE or METHOD (not just ' +
           'presentation), check it against the CONVENTIONS above first and correct it plainly if it ' +
           'fails the required method; never call a wrong or unscaled form "equally valid" to protect ' +
           'their mood. Do NOT restate, re-derive, or quote back their figures or workings — they ' +
           "already wrote them; refer to what they did in words, not numbers. Don't mark it as if it fell short." +
-          offerLine + WRAP_UP,
+          WRAP_UP,
         ),
       },
     ],
@@ -713,8 +756,11 @@ const WARM_INSTRUCTIONS: Record<Exclude<Intent, 'attempt'>, string> = {
     "themselves. Do NOT give this drill's answer or its numbers. 2–4 sentences, warm and peer-to-peer.",
   confusion:
     'The student is stuck or overwhelmed, not attempting. Acknowledge it without condescension, ' +
-    'normalise it in a line, then give ONE small concrete next step (e.g. name the command verb and ' +
-    'write a single sentence doing it). Then offer the alternative explicitly: tell them they can say ' +
+    // Was: "(e.g. name the command verb and write a single sentence doing it)". The example told
+    // the model to have the STUDENT name the taxonomy — the same instruction as the other five
+    // residual sites, one layer out. The step it was reaching for is the useful half.
+    'normalise it in a line, then give ONE small concrete next step (e.g. pick the single thing the ' +
+    'requirement is asking for and write one sentence doing it). Then offer the alternative explicitly: tell them they can say ' +
     '"walk me through" and you will take them through the approach. Do NOT mark them and do NOT give ' +
     'the answer. 2–4 sentences, warm.',
   aside:
@@ -1001,9 +1047,24 @@ export async function POST(request: Request): Promise<Response> {
   // plumbing rather than through a second parallel channel. Same hole as the case path — this
   // route DID fetch `answer_schema` and DID build a pack, but the pack only ever read
   // `components[].working_steps` and labels, never `params`.
+  // ── marks_guide IS AN ALLOCATION, NOT CRITERIA (corrected 2026-08-03) ───────
+  // This line used to read "Marks guidance (authored — criteria that earn marks):" followed by
+  // the column. `acca_drills.marks_guide` is a bare INTEGER on 154 of 154 live drills (measured;
+  // sample value 12), so the prompt promised criteria and delivered a number — telling the model
+  // to look for criteria that were never there.
+  //
+  // This is the IDENTICAL defect `396910e` fixed on the case path on 2026-08-01 ("the case path
+  // labelled marks_guide 'criteria that earn marks' and then printed a bare integer"). The drill
+  // path was not in that commit, and it is the surface all 154 live drills serve from — so the
+  // doc's central claim, that the marking engine feeds the teaching, was false exactly where it
+  // mattered most. Labelled here as what the column actually is: how many marks are at stake,
+  // which is real calibration (a 6-mark gap and a 20-mark gap are not the same coaching problem)
+  // and is honest about being an allocation rather than a rubric.
   const markScheme = [
     verbLevel,
-    drill.marks_guide ? `Marks guidance (authored — criteria that earn marks):\n${drill.marks_guide as string}` : '',
+    drill.marks_guide != null
+      ? `Marks available for this requirement (an ALLOCATION, not a list of criteria — there is no authored rubric to cite): ${drill.marks_guide as number}`
+      : '',
   ].filter(Boolean).join('\n');
 
   // ── 4. Read profile (cap counter + subscription state) ────────────────────
@@ -1128,7 +1189,28 @@ export async function POST(request: Request): Promise<Response> {
   // Earned reveal (item 3) is checked FIRST and is doubly gated: an explicit REVEAL_PHRASES
   // match AND genuine struggle (missCount >= 2, from the persisted §5b counter — reload-proof).
   // A sub-threshold reveal request hits the static EARN_REDIRECT, never call4_reveal.
-  const wantsReveal = REVEAL_ENABLED && isRevealRequest(student_message);
+  //
+  // ── PLAIN ANSWER REQUESTS, FOR A PAID USER WHO HAS ALREADY EARNED IT ────────
+  // "just tell me" is the plainest possible request for the answer, and it lives in
+  // TEACH_REQUEST_PHRASES by inheritance from the old capitulation list rather than by ruling
+  // (see lib/acca/phrase-match.ts). Measured cost on a real paid account: four uses across three
+  // weeks, four figure-free teaches, zero reveals — on a student carrying miss_count 7.
+  //
+  // NARROWLY GATED, and every clause is load-bearing:
+  //   • `hasActiveAccess` — a FREE user's "just tell me" stays a teach request exactly as today.
+  //     Routing it to revealDecision would return 'burn', replacing a free teach with a paywall
+  //     wrapper. That is a conversion change, not a teaching fix, and it is not what was asked for.
+  //   • `missCount >= 2` — below the earn threshold this must NOT become a reveal request, or
+  //     revealDecision returns 'earn_redirect' and the student gets the static "try first"
+  //     refusal INSTEAD of the good teach they get today. That would be a straight regression:
+  //     it is precisely what happened to this student on three separate drills, each of which
+  //     ended at exactly one miss.
+  // Both thresholds are the EXISTING ones, unchanged, and the phrase lists stay disjoint —
+  // nothing moves between them. What changes is only which door a paid, already-earned request
+  // walks through.
+  const plainAnswerEarned =
+    REVEAL_ENABLED && hasActiveAccess && missCount >= 2 && isPlainAnswerRequest(student_message);
+  const wantsReveal = (REVEAL_ENABLED && isRevealRequest(student_message)) || plainAnswerEarned;
   const fastTeach   = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
 
   // Access-aware earned-reveal gate (Bucket-B burn doctrine): SOLVED (resolved) → reveal for
@@ -1140,6 +1222,29 @@ export async function POST(request: Request): Promise<Response> {
   // (offerReveal) on hint/teach/confirm and the burn wall for THIS turn — no CTA/upsell to a
   // distressed student. The persona's DIGNITY_ON_DISTRESS clause carries the steady-and-kind tone.
   const distressed = containsDistressSignal(student_message);
+
+  // ── The level-aware closing contract, resolved once for every leg that teaches ──
+  // Taxonomy-free by construction (lib/acca/teach-demand.ts); '' for an unknown level, which
+  // leaves those prompts byte-identical to before this change.
+  const nextMove = nextMoveContract(drill.intellectual_level as number | null);
+
+  // ── Should this turn carry the deterministic reveal offer? ──
+  // Same gate as the instruction it replaces (REVEAL_ENABLED && missCount >= 2 && !distressed) —
+  // thresholds unchanged, per the brief. What changed is that it is now APPENDED rather than
+  // asked for, so a length-capped leg cannot swallow it.
+  //
+  // DELIBERATE DEVIATION, flagged: the brief said "for paid users". This keeps the existing
+  // audience, which includes FREE users at missCount >= 2. Restricting it to paid would strip the
+  // nudge that walks a free student into the burn wall — `revealDecision` returns 'burn' for them,
+  // which is the conversion path, and it cannot fire if nobody tells them the phrase. That is a
+  // funnel change rather than a teaching fix, so it is not made here. Say the word and it is one
+  // `&& hasActiveAccess`.
+  const offerReveal = REVEAL_ENABLED && missCount >= 2 && !distressed;
+
+  // Self-assessment (P5c) rides the same struggle threshold: a SECOND or later attempt, never a
+  // first, never a distressed turn. Independent of REVEAL_ENABLED — metacognition is not gated on
+  // the reveal flag.
+  const selfAssess = missCount >= 2 && !distressed;
 
   try {
     if (isIdentityProbe(student_message)) {
@@ -1175,7 +1280,10 @@ export async function POST(request: Request): Promise<Response> {
         // free — teachThroughDelivered left false, exactly like the burn it replaces.
         intent = 'teach_request';
         messageKind = 'teaching';
-        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, null, lastDiagnosis ?? '', verbLevel, false, paper, true, grounding);
+        // selfAssess forced FALSE here regardless of miss count: this student has just expressed
+        // distress, and "which bit would you defend least?" is the wrong question to ask someone
+        // who has said they are giving up. The dignity rule outranks the principle.
+        ezraResponse = await call3_teach(question, context, lastRealAttempt ?? student_message, null, lastDiagnosis ?? '', verbLevel, nextMove, false, paper, true, grounding);
       } else {
         // FREE user, struggle path: the reveal ARTIFACT is gated. Serve the figure-free
         // diagnosis-framing wrapper + conversion CTA (call_burn NEVER receives modelAnswer, so the
@@ -1195,7 +1303,8 @@ export async function POST(request: Request): Promise<Response> {
       messageKind = 'teaching';
       const contextAttempt = lastRealAttempt ?? student_message;
       const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-      ezraResponse = await call3_teach(question, context, contextAttempt, null, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2 && !distressed, paper, distressed, grounding);
+      ezraResponse = await call3_teach(question, context, contextAttempt, null, diagnosis, verbLevel, nextMove, selfAssess, paper, distressed, grounding);
+      if (offerReveal) ezraResponse += revealOfferLine('struggle');
       teachThroughDelivered = true;
     } else if (resolved) {
       // Item 4: a SOLVED drill never re-scaffolds from zero. Any non-reveal message post-solve
@@ -1223,6 +1332,16 @@ export async function POST(request: Request): Promise<Response> {
         ezraResponse = await call_warm(classified, student_message, question, context, paper);
         messageKind = classified === 'question' ? 'answer'
                     : classified === 'confusion' ? 'coaching' : 'chat';
+        // ── THE OFFER REACHES THE WARM PATH TOO (new) ──
+        // Previously the offer rode ONLY on the teach and confirm legs, so a student who had
+        // earned the reveal and then asked a clarifying question was told nothing — the
+        // entitlement stayed invisible for as long as they kept asking questions rather than
+        // re-attempting. Restricted to `question`/`confusion`: those are turns where the student
+        // is engaging with the drill. An `aside` is a social remark, and answering "morning!"
+        // with an unlock offer is the upsell drumbeat this deliberately is not.
+        if (offerReveal && (classified === 'question' || classified === 'confusion')) {
+          ezraResponse += revealOfferLine('struggle');
+        }
       } else {
         // ── THE MOAT — existing withholding pipeline ──
         // FIX (2026-07-23): lastRealAttempt (the PRIOR turn's real attempt, read at §5b) is now
@@ -1248,8 +1367,10 @@ export async function POST(request: Request): Promise<Response> {
           // gap-hint, do NOT set teachThroughDelivered (so §8 never charges a cap slot).
           // Item 1: mark the drill RESOLVED (success-solved mirrors reveal-solved) so the
           // model answer becomes reachable for comparison and the drill never re-scaffolds.
-          // Item 3a: offerReveal=REVEAL_ENABLED → the confirm nudges the now-earned phrase.
-          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, REVEAL_ENABLED && !distressed, grounding);
+          // Item 3a: the confirm nudges the now-earned phrase — DETERMINISTICALLY, appended below
+          // rather than instructed inside a 650-token prompt.
+          ezraResponse       = await call3_confirm(question, context, student_message, verbLevel, paper, grounding);
+          if (REVEAL_ENABLED && !distressed) ezraResponse += revealOfferLine('solved');
           messageKind        = 'correct';
           attemptOutcome     = 'correct';
           newLastRealAttempt = student_message;
@@ -1266,13 +1387,20 @@ export async function POST(request: Request): Promise<Response> {
           attemptOutcome   = 'miss';
 
           if (newMissCount === 1) {
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, paper, grounding);
+            // FIRST miss — no self-assessment beat (it delays the diagnosis they came for) and no
+            // reveal offer (not earned yet). Only the closing contract is new here.
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding);
             messageKind = 'hint';
           } else {
             // FIX (2026-07-23): same threading as call2_diagnose above — the second-miss teach
             // now sees the prior turn's real attempt alongside the current message, matching the
             // pattern already used at the reveal/burn/fast-teach call sites.
-            ezraResponse = await call3_teach(question, context, student_message, lastRealAttempt, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2 && !distressed, paper, distressed, grounding);
+            //
+            // selfAssess/offerReveal are computed on the PRE-increment `missCount` above, but this
+            // branch is by definition the second-or-later miss, so both conditions are satisfied
+            // here whatever `missCount` was — hence `newMissCount >= 2`, matching the original.
+            ezraResponse = await call3_teach(question, context, student_message, lastRealAttempt, gap, verbLevel, nextMove, !distressed, paper, distressed, grounding);
+            if (REVEAL_ENABLED && newMissCount >= 2 && !distressed) ezraResponse += revealOfferLine('struggle');
             teachThroughDelivered = true;
             messageKind = 'teaching';
           }
