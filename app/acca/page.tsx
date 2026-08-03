@@ -4,13 +4,45 @@ import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper, isDirectLinkOnlyArea } from '@/lib/acca/paper';
 import { hasPaperAccess } from '@/lib/acca/access';
 import ACCADashboard from './ACCADashboard';
+import ACCAPillarPage from '@/components/landing/ACCAPillarPage';
 import MetaTrackSignup from '@/components/MetaTrackSignup';
 import type { PickerArea } from './AreaPicker';
 
+// ── /acca IS NOW TWO THINGS, DECIDED BY AUTH ────────────────────────────────
+// Anonymous → the ACCA PILLAR (public marketing: the qualification, both papers, per-paper
+// pricing, routing to /acca/apm and /acca/afm). Signed in → the drill dashboard, unchanged.
+//
+// This is why the restructure needed no route moves. /acca was already the authed surface
+// and is linked from dashboards, emails and the resit funnel; moving it would have meant
+// updating every one of those. Serving the pillar to the anonymous case adds the pillar
+// without touching a single existing link — and crawlers are anonymous, so the pillar is
+// what gets indexed.
+//
+// It used to `redirect('/')` when signed out, which under hub-and-spoke would bounce ACCA
+// search intent onto a hub that does not mention ACCA. That redirect is gone.
 export const metadata: Metadata = {
-  title: 'ACCA Drill — Gradd AI',
+  title: 'ACCA Tutor — Taught, Not Just Marked | Gradd',
   description:
-    'Pick an area and get coached by Ezra — targeted ACCA feedback, not generic hints.',
+    'AI tutor for ACCA Strategic Professional. APM and AFM: diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. Free to start.',
+  keywords: [
+    'ACCA tutor',
+    'ACCA Strategic Professional',
+    'ACCA APM',
+    'ACCA AFM',
+    'ACCA exam practice',
+    'ACCA resit',
+    'ACCA AI tutor',
+  ],
+  alternates: { canonical: 'https://gradd.ai/acca' },
+  openGraph: {
+    title: 'ACCA Tutor — Taught, Not Just Marked | Gradd',
+    description:
+      'AI tutor for ACCA Strategic Professional. APM and AFM — taught, not just marked.',
+    url: 'https://gradd.ai/acca',
+    siteName: 'Gradd',
+    type: 'website',
+  },
+  robots: { index: true, follow: true },
 };
 
 export default async function ACCAPage({
@@ -18,13 +50,11 @@ export default async function ACCAPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // ── Auth guard (per-page, not middleware) ──────────────────────────────────
+  // ── Anonymous → the public pillar. Signed in → the dashboard below. ────────
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) {
-    // Root (gradd.ai) is now the public APM marketing landing — send unauthenticated
-    // visitors there rather than straight to the auth wall.
-    redirect('/');
+    return <ACCAPillarPage />;
   }
 
   const { paper: paperParam, area: areaParam } = await searchParams;

@@ -13,9 +13,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   if (isAI) {
     const posts = getAllPosts();
     return [
-      { url: AI_BASE,                    lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 }, // APM flagship landing
+      // ── HUB-AND-SPOKE (2026-08-03) ──────────────────────────────────────────
+      // /acca/apm carries PRIORITY 1.0, not the root. The APM content moved there and the
+      // ranking signal must follow it: the root was 1.0 while it WAS the APM landing, and
+      // leaving it there would point crawlers at a hub that no longer mentions APM for
+      // the terms APM ranks on. Priority follows content, never position.
+      { url: `${AI_BASE}/acca/apm`,      lastModified: new Date(), changeFrequency: 'weekly',  priority: 1.0 }, // APM spoke — was the root
+      { url: AI_BASE,                    lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // hub — method + routing
+      { url: `${AI_BASE}/acca`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // ACCA pillar — qualification-level intent
       { url: `${AI_BASE}/acca/resit`,    lastModified: new Date(), changeFrequency: 'monthly', priority: 0.9 }, // free resit diagnostic (primary CTA)
-      { url: `${AI_BASE}/acca/afm`,      lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 }, // AFM product landing (early access)
+      { url: `${AI_BASE}/acca/afm`,      lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.8 }, // AFM spoke (early access)
       { url: `${AI_BASE}/acca/afm/proof`,lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 }, // real proof-transcript deposit
       { url: `${AI_BASE}/ib`,            lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 }, // IB landing (moved off root)
       { url: `${AI_BASE}/blog`,          lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.9 },
