@@ -33,7 +33,7 @@ export default function CaseList() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/acca/case/list');
+        const res = await fetch('/api/acca/case/list?paper=APM');
         // 404 = flag off / feature not live → the case UI renders nothing useful.
         if (res.status === 404) {
           router.replace('/acca');

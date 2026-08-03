@@ -23,8 +23,8 @@ import {
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
-import { resolvePaper } from '@/lib/acca/paper';
-import { hasActiveACCAAccess } from '@/lib/acca/access';
+import { resolvePaper, type AccaPaper } from '@/lib/acca/paper';
+import { hasPaperAccess } from '@/lib/acca/access';
 import {
   isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
 } from '@/lib/acca/phrase-match';
@@ -1079,7 +1079,12 @@ export async function POST(request: Request): Promise<Response> {
 
   const usedCount = ((profile as Record<string, unknown> | null)?.[capColumn] as number | null) ?? 0;
   // Access is bundle-wide (all ACCA papers) — the apm_* flag is the de-facto ACCA entitlement.
-  const hasActiveAccess = hasActiveACCAAccess(profile ?? {});
+  // PER-PAPER (2026-08-03). `paper` here is the DRILL'S OWN paper_code, read off the row
+  // fetched above — not a client hint — so this is the most authoritative form the gate can
+  // take: the entitlement checked is the one for the paper whose drill is being taught.
+  // A student holding only APM now meets the free cap on AFM drills, which is exactly what
+  // per-paper pricing means; the counters were already per-paper (apm_/afm_teach_throughs_used).
+  const hasActiveAccess = await hasPaperAccess(supabase, user.id, paper as AccaPaper, profile);
 
   // ── 5. Establish model answer + session continuity ─────────────────────────
   let modelAnswer: string;

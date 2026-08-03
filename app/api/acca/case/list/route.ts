@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { resolvePaper } from '@/lib/acca/paper';
+import { hasPaperAccess } from '@/lib/acca/access';
+import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 
 // ── APM case-list endpoint (case UI — list view) ──────────────────────────────
 // Behind APM_CASES (default OFF). Flag off → 404 (inert; the case UI's list page
@@ -26,6 +26,17 @@ export async function GET(request: Request): Promise<Response> {
 
   const { searchParams } = new URL(request.url);
   const paper = resolvePaper(searchParams.get('paper'));
+  // Strict paper for the LOCK decision — see app/api/acca/case/route.ts for why the
+  // gate must not inherit resolvePaper's APM default. This route does not 402; it
+  // returns `locked` per case, so an absent paper is a 400 rather than a silent
+  // "everything is unlocked".
+  const gatePaper = strictPaper(searchParams.get('paper'));
+  if (!gatePaper) {
+    return NextResponse.json(
+      { error: 'paper query parameter is required (APM or AFM)' },
+      { status: 400 },
+    );
+  }
 
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
@@ -43,7 +54,7 @@ export async function GET(request: Request): Promise<Response> {
     .eq('id', user.id)
     .single();
 
-  const locked = !hasActiveAPMAccess(profile ?? {});
+  const locked = !(await hasPaperAccess(supabase, user.id, gatePaper, profile));
 
   // mock_only cases are reserved for the timed-mock paper and never surface in the
   // free-standing case list. The load/turn/mark routes still serve them normally

@@ -13,7 +13,7 @@
 //
 // Both halves are now gone. `app/api/acca/sit/route.ts` gates on the STANDARD
 // `status='approved' AND published=true` like every other case route, behind the same
-// APM_CASES flag and the same `hasActiveAPMAccess` entitlement, and the allowlist is
+// APM_CASES flag and a per-paper `hasPaperAccess` entitlement, and the allowlist is
 // deleted — the sit surface is the real product surface, reachable by any entitled
 // student. Answer writes go through `app/api/acca/case/turn` (sitting:true), the same
 // route the APM sit uses, so there is ONE write path and one immutability rule.

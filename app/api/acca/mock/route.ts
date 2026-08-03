@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { hasPaperAccess } from '@/lib/acca/access';
 import { getMockPaper, getMockPapers } from '@/lib/acca/mocks';
 import { resolvePaper } from '@/lib/acca/paper';
 
 // ── APM timed-mock endpoint ────────────────────────────────────────────────────
 // Behind APM_CASES (default OFF). Flag off → 404 (inert; the mock page treats a
 // 404 as "feature not live" and redirects to /acca). Every verb is gated on
-// APM_CASES + auth + an active APM entitlement (hasActiveAPMAccess → 402), exactly
+// APM_CASES + auth + a per-paper entitlement (hasPaperAccess → 402), exactly
 // like the case routes — mocks are part of the subscription.
 //
 //   GET   → list papers (id, title, duration, case count) + the user's latest attempt
@@ -52,7 +52,20 @@ async function gate(): Promise<
     .select('apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
-  if (!hasActiveAPMAccess(profile ?? {})) {
+  // ── ORPHANED ROUTE, GATED CONSERVATIVELY ────────────────────────────────────
+  // This endpoint has NO callers left (the mock surface moved to /api/acca/sit when
+  // SitRunner replaced MockRunner). It is kept rather than deleted because deletion is
+  // out of scope here, but it must not become the one paper-blind door left open.
+  //
+  // It has no paper to check — it never resolved one — so it now requires BOTH papers.
+  // That is the safe direction for dead code: strictly harder to pass than before, and
+  // it cannot grant AFM to an APM holder or vice versa. If this route is ever revived,
+  // give it a real paper instead of loosening this.
+  const [apm, afm] = await Promise.all([
+    hasPaperAccess(supabase, user.id, 'APM', profile),
+    hasPaperAccess(supabase, user.id, 'AFM', profile),
+  ]);
+  if (!apm || !afm) {
     return { error: NextResponse.json({ error: 'subscription_required' }, { status: 402 }) };
   }
   return { userId: user.id, supabase };

@@ -157,7 +157,7 @@ export default function CaseSession({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}`);
+        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}&paper=APM`);
         // 404 = flag off OR case not servable → nothing useful to show.
         if (res.status === 404) {
           router.replace('/acca');
@@ -296,6 +296,12 @@ export default function CaseSession({
           session_state:     sessionByReq[activeReqId] ?? null,   // null on first turn of each requirement
           student_message:   trimmed,
           last_ezra_message: lastEzra,
+          // PER-PAPER ENTITLEMENT (2026-08-03): the gate now requires an explicit paper and
+          // refuses rather than defaulting. Hardcoded 'APM' because THIS SURFACE IS APM-ONLY —
+          // /acca/cases lists `paper_code='APM'` and its page title says so. The 5 AFM
+          // practice cases have no UI at all (recorded in docs/AFM_SURFACED.md); when that
+          // surface is built, this must become a prop, not a second literal.
+          paper:             'APM',
         }),
       });
       // 402 = subscription lapsed mid-session → roll the optimistic bubble back and
@@ -345,7 +351,7 @@ export default function CaseSession({
       const res = await fetch('/api/acca/case/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_id: caseId }),
+        body: JSON.stringify({ case_id: caseId, paper: 'APM' }),
       });
       if (res.status === 402) { setSessionLapsed(true); return; }
       if (res.status === 409) { setMarkingIncomplete(true); return; }

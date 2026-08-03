@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { resolvePaper } from '@/lib/acca/paper';
+import { hasPaperAccess } from '@/lib/acca/access';
+import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { runCaseMarking } from '@/lib/acca/case-mark-run';
 
 // ── APM professional-skills marking (terminal whole-case mark) ─────────────────
@@ -62,9 +62,14 @@ export async function POST(request: Request): Promise<Response> {
   };
   const caseId = typeof case_id === 'string' && case_id ? case_id : null;
   const paper = resolvePaper(paperRaw);
+  // Strict paper for the entitlement gate — no default. See app/api/acca/case/route.ts.
+  const gatePaper = strictPaper(paperRaw);
   const sitting = sittingRaw === true;
   if (!caseId) {
     return NextResponse.json({ error: 'case_id required' }, { status: 400 });
+  }
+  if (!gatePaper) {
+    return NextResponse.json({ error: 'paper is required (APM or AFM)' }, { status: 400 });
   }
 
   const supabase = createServiceClient();
@@ -78,7 +83,7 @@ export async function POST(request: Request): Promise<Response> {
     .eq('id', user.id)
     .single();
 
-  if (!hasActiveAPMAccess(profile ?? {})) {
+  if (!(await hasPaperAccess(supabase, user.id, gatePaper, profile))) {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
   }
 

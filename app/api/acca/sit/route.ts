@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { hasPaperAccess, type LegacyEntitlementProfile } from '@/lib/acca/access';
+import type { AccaPaper } from '@/lib/acca/paper';
 import { sitCaseGate, sitDisplayLabel } from '@/lib/acca/sit-preview';
 import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-attempt';
 
@@ -32,7 +33,7 @@ import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-att
 // ── ACCESS ────────────────────────────────────────────────────────────────────
 // The email allowlist is DELETED. Access is now exactly what every other case route
 // requires: the APM_CASES flag, auth, and an active ACCA entitlement
-// (hasActiveAPMAccess → 402). The sit surface is the real product surface, so it is
+// (hasPaperAccess, for the paper being sat → 402). The sit surface is the real product surface, so it is
 // reachable by any entitled student and gated like the rest of the product.
 //
 // ── WITHHOLD DISCIPLINE (stricter than the live case route) ──────────────────
@@ -97,13 +98,26 @@ const CASES_ENABLED = process.env.APM_CASES === '1';
 interface GateOk {
   userId: string;
   supabase: ReturnType<typeof createServiceClient>;
+  /** Selected in gateAuth and handed to hasPaperAccess as the legacy fallback arm, so
+   *  the per-paper check costs no extra profile read. */
+  profile: LegacyEntitlementProfile | null;
 }
 
 // Flag → 404. Unauthenticated → 401. No entitlement → 402. The uniform-404 posture is
 // deliberately GONE with the allowlist: it existed to hide unpublished content, and
 // this surface no longer serves any. It now answers like every other case route, so a
 // lapsed student sees the upsell instead of a surface that appears not to exist.
-async function gate(): Promise<{ error: Response } | GateOk> {
+// ── THE GATE IS NOW IN TWO HALVES, AND THE ORDER IS THE POINT ────────────────
+// It used to be one function: flag → auth → entitlement. That worked while access was
+// bundle-wide, because the entitlement question did not depend on WHICH paper was being
+// sat. Per-paper it does — and this route does not learn the paper until
+// `resolvePaperConfig` has read the mock_id / paper hint / open attempt.
+//
+// So `gateAuth` runs first (flag, auth, profile), the paper is resolved, and
+// `gatePaperAccess` applies the entitlement to THAT paper. Checking before resolution
+// would have meant guessing the paper, which is the defaulting hazard this whole change
+// exists to remove. Nothing is served between the two halves.
+async function gateAuth(): Promise<{ error: Response } | GateOk> {
   if (!CASES_ENABLED) {
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
@@ -118,10 +132,13 @@ async function gate(): Promise<{ error: Response } | GateOk> {
     .select('apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
-  if (!hasActiveAPMAccess(profile ?? {})) {
-    return { error: NextResponse.json({ error: 'subscription_required' }, { status: 402 }) };
-  }
-  return { userId: user.id, supabase };
+  return { userId: user.id, supabase, profile: profile ?? null };
+}
+
+/** 402 unless the caller holds THE PAPER they are trying to sit. */
+async function gatePaperAccess(g: GateOk, paper: AccaPaper): Promise<Response | null> {
+  const ok = await hasPaperAccess(g.supabase, g.userId, paper, g.profile);
+  return ok ? null : NextResponse.json({ error: 'subscription_required' }, { status: 402 });
 }
 
 // The paper/attempt resolution used to live here as three private helpers. It moved to
@@ -130,13 +147,17 @@ async function gate(): Promise<{ error: Response } | GateOk> {
 // APM debrief.
 
 export async function GET(request: Request): Promise<Response> {
-  const g = await gate();
+  const g = await gateAuth();
   if ('error' in g) return g.error;
   const { supabase, userId } = g;
 
   const resolved = await resolvePaperConfig(supabase, userId, new URL(request.url));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
+
+  // Entitlement is checked AFTER the paper is known and BEFORE anything is served.
+  const denied = await gatePaperAccess(g, PAPER.paper);
+  if (denied) return denied;
 
   // ── Cases (STANDARD gate — approved + published, same as every case route) ──
   // Filters are built BY ITERATING the gate rather than written inline, so the query and
@@ -245,7 +266,7 @@ export async function GET(request: Request): Promise<Response> {
 }
 
 export async function POST(request: Request): Promise<Response> {
-  const g = await gate();
+  const g = await gateAuth();
   if ('error' in g) return g.error;
   const { supabase, userId } = g;
 
@@ -264,6 +285,10 @@ export async function POST(request: Request): Promise<Response> {
   const resolved = await resolvePaperConfig(supabase, userId, hintUrl(request.url, mockIdRaw, paperRaw));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
+
+  // Entitlement, once the paper is known — before the clock is started or finished.
+  const denied = await gatePaperAccess(g, PAPER.paper);
+  if (denied) return denied;
 
   // The ACCA clock. `ends_at` USED to be written only because the column is NOT NULL, with
   // nothing reading it — this surface shipped with an elapsed-only clock and no expiry. It is
