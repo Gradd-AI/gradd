@@ -103,6 +103,8 @@ success while measuring less than it claimed**:
 - **P-G1** — a gate that cannot evaluate must say so distinguishably (silent absence reads green).
 - **P-G2** — a detector's *scope* must be proven (an unstated denominator reads as full coverage).
 - **P-G3** — a check's *failure path* must be proven (a branch that has never run is untested).
+  Corollary **P-G3(a)** — a render assertion must strip what the markup carries (inlined CSS
+  matches every class name), and every negative suite needs a POSITIVE CONTROL.
 
 P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
 individual result. A report that satisfies one and not the others is still misleading.
@@ -133,6 +135,52 @@ be shown to fire without re-authoring a live requirement label to break it.
 **This is the same family as P-G1 and P-G2** — all three are ways an instrument reports success
 while proving less than it claims. P-G1: it cannot evaluate and says nothing. P-G2: it evaluated
 less than the population and did not say so. **P-G3: its failure branch has never run at all.**
+
+### P-G3(a) — A RENDER ASSERTION MUST BE ISOLATED FROM WHAT THE MARKUP CARRIES (ruled 2026-08-03)
+
+**Same family, one layer out: the detector runs, the branch executes, and it still proves nothing
+— because it is matching against the wrong text.**
+
+**The sighting.** `components/landing/ProductLandingPage.tsx` inlines its entire stylesheet in a
+`<style>` block. A suite proving that an OMITTED section renders nothing did the obvious thing:
+
+```ts
+ok('MINIMAL renders no tier grid', !html.includes('plp-tier-grid'));   // ← always false
+```
+
+**Every class name the template knows appears in the markup whether or not the section rendered**,
+because the CSS naming those classes is part of the output. `plp-tier-grid`, `plp-faq-list`,
+`plp-totop` — all present in a config that renders none of them. The assertion would have been
+green while asserting the opposite of the truth. Caught only because the probe printed the
+substring hits alongside the length and the numbers did not make sense.
+
+**The rule.** Before asserting on rendered markup, **strip everything the markup carries that is
+not the markup**: `<style>`, `<script>`, inlined JSON, and any serialised props blob. Assert
+against the body, not the document.
+
+```ts
+const bodyOf = (cfg) => renderToStaticMarkup(...).replace(/<style[\s\S]*?<\/style>/g, '');
+```
+
+**⚠️ AND ALWAYS INCLUDE A POSITIVE CONTROL — this half matters more.** A suite made entirely of
+negative assertions (`!html.includes(...)`) passes **trivially and completely** against a
+component that rendered nothing at all: an empty string satisfies every one of them. A broken
+import, a thrown-and-swallowed error, a guard that accidentally wraps the whole page — all report
+as a clean sweep.
+
+So every negative suite must assert, in the same run, that the thing **is** rendering:
+
+```ts
+ok('MINIMAL still renders the REQUIRED sections',
+  html.includes('plp-hero') && html.includes('plp-price-card') && html.includes(cfg.headline));
+```
+
+**Generalises past rendering.** Any absence check needs a presence check beside it, or it cannot
+distinguish "correctly absent" from "nothing happened". It is the same defect as an empty result
+set reading as "all fine" (P-G1), and the same as a detector whose own detection was never
+exercised — `isTaxonomyFree` is asserted against a known-bad string for exactly this reason, and
+the bundle-claim regex in `scripts/test-product-landing.ts` is asserted against both retired
+strings. **A detector that matches nothing passes every test you give it.**
 
 ## P-G4 — NEVER `process.exit()` IN A DB-TOUCHING SCRIPT (ruled 2026-07-29)
 
