@@ -498,6 +498,67 @@ This composes with **P-DB3** (a rollback snapshot must be COMMITTED, for the sam
 scratchpad is outside the repo, and untracked files do not survive a `git clean` or a machine
 switch). P-DB3 protects the ability to undo a write; P-DB6 protects the ability to make it again.
 
+---
+
+**P-DB7 — REFERENCE DATA THAT GATES A TRANSACTION MUST BE VERIFIED AGAINST ITS OWN AUTHORITY,
+NOT AGAINST A PATTERN (ruled 2026-08-03).** When a stored value decides whether something can
+be SOLD, the only acceptable provenance is the authority that publishes it. A value inferred
+from how that authority *usually* behaves is a guess, and a guess in that position takes money
+for something that cannot be delivered.
+
+**The sighting.** `acca_sittings` was seeded with six ACCA sittings derived from ACCA's usual
+pattern — exams in the first full week of the month, late entry roughly two weeks out, results
+roughly five weeks after. On the two rows that then went live, the exam windows and results
+dates were **correct**. The late entry deadlines were not:
+
+| Sitting | Seeded | Actual (accaglobal.com) | Error |
+|---|---|---|---|
+| SEP26 | `2026-08-24` | **`2026-08-03`** | 21 days late |
+| DEC26 | `2026-11-23` | **`2026-11-09`** | 14 days late |
+
+A €99 pass is sitting-dated, and `late_entry_deadline` is what decides whether a sitting can
+still be entered. Selling on either wrong date would have taken payment for a sitting the
+student **could no longer enter** — for three weeks and two weeks respectively, from exactly
+the buyers who leave it latest.
+
+**WHY NO STRUCTURAL CHECK COULD HAVE CAUGHT IT — this is the load-bearing part.** Both wrong
+dates sat in the correct month. Both satisfied every constraint on the table, including
+`late_entry_deadline <= exam_start`, which held comfortably for both. They were internally
+consistent with their own row, ordered correctly against every neighbouring date, and passed
+review. **The failure was PLAUSIBLE, not obvious — which is precisely the property that lets it
+survive a careful reader.** No schema constraint, no fixture and no diff can distinguish a
+well-shaped guess from the truth, because the guess is well-shaped by construction. Only
+reading the authority's own page distinguishes them.
+
+**THE RULE.** Reference data in a gating position carries an explicit **verified flag that gates
+the sale, defaulting to false** — not a comment, not a TODO, not a reminder to check. The
+serving predicate reads the flag, so unverified data is *structurally unsellable* rather than
+merely *known to be unchecked*. Record the source URL and the verification date on the row or
+beside it, so a fresh environment inherits the provenance and not just the values.
+
+Implemented here as `acca_sittings.dates_verified` (default false) + the `acca_sittings_open`
+view computing `is_open = dates_verified AND now() < late_entry_deadline`. Nothing can be
+offered at checkout that has not been read off ACCA's page. This is the same structural-beats-
+instructed discipline as the withhold engine and the taxonomy fence: **architect the absence,
+never instruct the check.**
+
+**⚠️ THE COROLLARY, AND IT IS THE HALF THAT GETS FORGOTTEN: A VERIFIED FLAG ASSERTS ONLY WHAT
+IT NAMES.** `dates_verified` says the DATES are right. It says **nothing** about whether the
+CONTENT still matches the syllabus that sitting examines. Those are independent facts with
+independent expiry, and a single green flag reads as general safety unless the boundary is
+written down.
+
+Concretely: JUN27 is the last sitting under the current ACCA syllabus — from September 2027 the
+redesigned 11-exam qualification begins, which is also the edge of the **S26–J27** content this
+product is verified against. A DEC27 row could be perfectly `dates_verified` and still sell
+access to a bank written for a syllabus that sitting no longer examines. **Never offer a sitting
+beyond the syllabus year the CONTENT is verified for**, and treat verifying any post-JUN27
+sitting as a syllabus decision first and a calendar check second.
+
+**Generalised:** name a verified flag after the narrow thing it checks, and state in the same
+place what it does *not* cover. A flag called `verified` invites the reading that everything
+about the row is; a flag called `dates_verified` with its limits recorded does not.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
