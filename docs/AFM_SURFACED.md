@@ -16,6 +16,56 @@
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## ⭐ 🔴 OPEN 2026-08-03 — **P2 SPACING AND P3 INTERLEAVING HAVE NO MECHANISM** (branch `fix/teaching-principles-ezra`, NOT merged)
+
+The ACCA teaching loop was audited against `docs/TEACHING_PRINCIPLES.md` for the first time using
+**real student output** — the method `GRADD_BUILD_HARDENING.md:503` specifies as the only valid one
+(*"Always audit current live output"*), and the method the 27/06/2026 `TEACHING_PRINCIPLES_EZRA.md`
+audit did NOT use (it read the prompts). Corpus: 15 assistant messages to account `dd786100`, 4
+drills, 10 attempts, 18 Jul – 1 Aug.
+
+**Scored: P1 demonstrated · P2 absent · P3 absent · P4 absent · P5 partial (2 of 4).** The branch
+fixes what is fixable in code and prompt. **Two are NOT fixable there and are deferred with their
+reasons, so nobody re-specs them as prompt gaps:**
+
+**🔴 1. THE WEAK-AREA WRITER ON THE DRILL PATH — P2 has nothing to act on.**
+`acca_weak_areas` holds **0 rows globally**. It is written ONLY by sit marking
+(`lib/acca/case-mark-run.ts`); the drill/tutor path writes nothing to it. So the spacing principle
+has no signal to resurface, and `next-drill`'s `W_WEAK` term scores every candidate 0 for any
+student who has not sat a mock.
+**This is the IB `WEAK_AREA_FLAG` defect ported one product later, same shape** — that flag had
+never fired all-time, `weak_areas` was therefore always empty, and spacing recall had nothing to
+target (`GRADD_BUILD_HARDENING.md:501`, fix 3). IB found it by querying for zero emissions. ACCA
+returns zero rows on the same query. The IB fix was never ported.
+Its own session: it needs a write path, a decay/interval rule, and a session-opener recall beat —
+`TEACHING_PRINCIPLES_EZRA.md` P2(d) specifies all three. **Not a prompt gap; no prompt instruction
+can produce it, because the tutor is never given cross-drill state.** The per-turn context is
+scoped to one drill (`acca_tutor_progress` keyed `(user_id, drill_id)`).
+
+**🔴 2. INTERLEAVING — `APM_INTERLEAVE` is dark and `lo=` mode is anti-aligned.**
+`next-drill/route.ts` still *prefers the same sub-area*, which is **blocking** — the documented
+opposite of interleaving. The interleaved selector exists but sits behind `APM_INTERLEAVE`, which
+the route's own comment records as **not set in production**. A selection-strategy change needs its
+own measurement (does mixing help or hurt completion), so it is not bundled here.
+The *discrimination* half of P3 IS fixed on this branch — `EZRA_SYSTEM` no longer instructs the
+model to name the requirement's demand classification at the student, which was the instruction
+behind 8 of 15 of his messages.
+
+**⚠️ Claim ceiling on P5(c), stated in the code and repeated here:** the self-assessment beat this
+branch adds is a **single-turn approximation**. The rubric requires prompting self-assessment
+*before revealing the mark*; this route answers in one turn, so it asks and then diagnoses in the
+same message. It builds the habit of locating your own gap; it does not gate the diagnosis behind
+the student's reply. Doing that properly needs a turn boundary this loop does not have.
+
+**⚠️ P4 worked-example fading remains ABSENT after this branch, and that is deliberate.** The
+earned reveal (the specified fix) has shipped since June; this student never reached it, which the
+branch fixes. But the second half of `TEACHING_PRINCIPLES_EZRA.md` P4(d) — *"track exposure count
+per (user, LO); first encounter = more model, later encounters = less"* — **was never built**, and
+support therefore still does not visibly decrease across a topic. Same session as item 1: both need
+per-(user, LO) state.
+
+---
+
 ## ⭐ ✅ SESSION CLOSE 2026-08-02 — **AFM CONTENT IS COMPLETE**
 
 **63 published drills · 5 published practice cases · Mock 1 live · all seven measured (area × skill)
