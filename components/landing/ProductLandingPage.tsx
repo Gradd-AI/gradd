@@ -1,11 +1,35 @@
 // components/landing/ProductLandingPage.tsx
-// Parameterised product landing (first instance: AFM). Renders from a ProductLandingConfig.
-// Server component — the only client piece is AttributionCapture (first-touch utm/fbclid).
+// THE PARAMETERISED PRODUCT LANDING — a paper is a config file, not a page.
+//
+// ── SERVER COMPONENT, AND THAT IS LOAD-BEARING ──────────────────────────────
+// Everything here is server-rendered: the copy, the FAQ list, and critically the FAQPage
+// JSON-LD. The only client code is `ProductLandingChrome` (scroll shadow + back-to-top) and
+// `AttributionCapture`, both furniture that touches no config content.
+//
+// The alternative — porting ACCALandingPage's page-wide `'use client'` — would have put the
+// structured data behind hydration. That schema is worth a rich result, so the chrome is
+// the island and the page is not. See ProductLandingChrome for the full reasoning.
+//
+// ── EVERY OPTIONAL SECTION IS DECIDED BY product-landing-sections.ts ────────
+// This component never asks `c.faqs && c.faqs.length` inline. It asks `hasSection(c, ...)`,
+// which the fixtures ask too — so "an omitted section renders nothing" is asserted against
+// the same predicate the page uses, not a second copy of the condition.
+//
+// AFM RENDERS BYTE-IDENTICALLY after this change: it sets none of the optional fields, so
+// every new branch is false, and the one CSS rule that changed (the points grid) computes
+// to the same three columns it always did.
 import Link from 'next/link';
 import AttributionCapture from '@/components/AttributionCapture';
+import ProductLandingChrome from './ProductLandingChrome';
 import type { ProductLandingConfig } from './product-landing-config';
+import {
+  hasSection, pricingModel, buildFaqJsonLd, POINTS_GRID_TEMPLATE,
+} from './product-landing-sections';
 
 export default function ProductLandingPage({ config: c }: { config: ProductLandingConfig }) {
+  const pricing = pricingModel(c);
+  const faqJsonLd = buildFaqJsonLd(c);
+
   return (
     <>
       {/* First-touch utm_* / fbclid → cookie → persisted to the profile at signup. */}
@@ -24,6 +48,9 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                   spoke; the pillar is the sibling link that belongs beside it. */}
               <Link href="/acca/apm" className="plp-navlink">ACCA APM</Link>
               <Link href="/acca" className="plp-navlink">All ACCA</Link>
+              {(c.nav ?? []).map((n) => (
+                <Link key={n.href} href={n.href} className="plp-navlink">{n.label}</Link>
+              ))}
               <Link href={c.freeCta.href} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </nav>
           </div>
@@ -59,22 +86,176 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
             </div>
           </section>
 
-          <section className="plp-pricing">
-            <div className="plp-wrap">
-              <div className="plp-price-card">
-                {/* Was "Free to start. One pass covers every ACCA paper." — a BUNDLE claim,
-                    false since per-paper pricing was ruled 2026-08-03. Replaced with a
-                    PAPER-NEUTRAL heading so no config can inherit the claim; a paper that
-                    wants to state its own offer sets it explicitly. */}
-                <h2 className="plp-price-h">Free to start. Paid access when you need it.</h2>
-                <p className="plp-price-line">{c.pricing.free}</p>
-                <p className="plp-price-line">{c.pricing.paid}</p>
-                <div className="plp-cta-row" style={{ marginTop: 20 }}>
-                  <Link href={c.freeCta.href} className="btn btn-rust btn-lg">{c.freeCta.label} <span className="arrow">→</span></Link>
+          {/* ── MOCK-UPS (chat transcript / marking panel) ── */}
+          {hasSection(c, 'mockups') && (
+            <section className="plp-mockups" aria-label="What it looks like">
+              <div className="plp-wrap plp-mockup-stack">
+                {c.mockups!.map((m, i) => (
+                  <figure key={i} className="plp-mockup" role="img" aria-label={m.ariaLabel}>
+                    {(m.title || m.subtitle) && (
+                      <div className="plp-mockup-head">
+                        {m.title && <span className="plp-mockup-title">{m.title}</span>}
+                        {m.subtitle && <span className="plp-mockup-sub">{m.subtitle}</span>}
+                      </div>
+                    )}
+                    {m.kind === 'chat' && (m.turns ?? []).map((t, ti) => (
+                      <div key={ti} className={`plp-turn plp-turn--${t.role}`}>
+                        {t.lines.map((line, li) => <p key={li}>{line}</p>)}
+                      </div>
+                    ))}
+                    {m.kind === 'panel' && (m.rows ?? []).map((r, ri) => (
+                      <div key={ri} className="plp-panel-row">
+                        <div className="plp-panel-rowhead">
+                          <span className="plp-panel-label">{r.label}</span>
+                          {r.verdict && <span className="plp-panel-verdict">{r.verdict}</span>}
+                        </div>
+                        <p className="plp-panel-body">{r.body}</p>
+                      </div>
+                    ))}
+                    {m.footer && <figcaption className="plp-mockup-foot">{m.footer}</figcaption>}
+                  </figure>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ── ORDERED STEPS. The template numbers them, so a config never hardcodes "1." ── */}
+          {hasSection(c, 'steps') && (
+            <section className="plp-steps" aria-label={c.stepsHeading ?? 'How it works'}>
+              <div className="plp-wrap">
+                {c.stepsHeading && <h2 className="plp-h2">{c.stepsHeading}</h2>}
+                <ol className="plp-step-list">
+                  {c.steps!.map((s, i) => (
+                    <li key={s.title} className="plp-step">
+                      <span className="plp-step-n" aria-hidden="true">{i + 1}</span>
+                      <h3 className="plp-step-title">{s.title}</h3>
+                      <p className="plp-step-body">{s.body}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </section>
+          )}
+
+          {/* ── COMPARISON (weak / diagnosis / coached) ── */}
+          {hasSection(c, 'comparison') && (
+            <section className="plp-compare" aria-label={c.comparison!.heading}>
+              <div className="plp-wrap">
+                {c.comparison!.eyebrow && <p className="plp-eyebrow">{c.comparison!.eyebrow}</p>}
+                <h2 className="plp-h2">{c.comparison!.heading}</h2>
+                {c.comparison!.intro && <p className="plp-sub">{c.comparison!.intro}</p>}
+                <div className="plp-compare-grid">
+                  {c.comparison!.columns.map((col) => (
+                    <div key={col.label} className={`plp-col plp-col--${col.tone ?? 'neutral'}`}>
+                      <h3 className="plp-col-label">{col.label}</h3>
+                      <ul className="plp-col-list">
+                        {col.items.map((it, ii) => <li key={ii}>{it}</li>)}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
               </div>
+            </section>
+          )}
+
+          {/* ── SECONDARY CTA BAND (the resit-funnel entry on APM) ── */}
+          {hasSection(c, 'secondaryCta') && (
+            <section className="plp-band" aria-label={c.secondaryCta!.heading}>
+              <div className="plp-wrap">
+                {c.secondaryCta!.eyebrow && <p className="plp-eyebrow">{c.secondaryCta!.eyebrow}</p>}
+                <h2 className="plp-h2">{c.secondaryCta!.heading}</h2>
+                {c.secondaryCta!.body && <p className="plp-sub">{c.secondaryCta!.body}</p>}
+                <Link href={c.secondaryCta!.cta.href} className="btn btn-rust btn-lg">
+                  {c.secondaryCta!.cta.label} <span className="arrow">→</span>
+                </Link>
+              </div>
+            </section>
+          )}
+
+          {/* ── PRICING. Tiers when configured, otherwise the original simple card. ── */}
+          <section className="plp-pricing" id="pricing">
+            <div className="plp-wrap">
+              {pricing.mode === 'simple' ? (
+                <div className="plp-price-card">
+                  <h2 className="plp-price-h">{pricing.heading}</h2>
+                  <p className="plp-price-line">{pricing.free}</p>
+                  <p className="plp-price-line">{pricing.paid}</p>
+                  <div className="plp-cta-row" style={{ marginTop: 20 }}>
+                    <Link href={c.freeCta.href} className="btn btn-rust btn-lg">{c.freeCta.label} <span className="arrow">→</span></Link>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h2 className="plp-h2 plp-tier-h">{pricing.heading}</h2>
+                  <div className="plp-tier-grid">
+                    {pricing.tiers.map((t) => (
+                      <article key={t.name} className={`plp-tier${t.featured ? ' is-featured' : ''}`}>
+                        {t.badge && <span className="plp-tier-badge">{t.badge}</span>}
+                        <span className="plp-tier-name">{t.name}</span>
+                        <div className="plp-tier-amount">
+                          {t.amount}
+                          {t.period && <span className="plp-tier-period">{t.period}</span>}
+                        </div>
+                        <p className="plp-tier-tagline">{t.tagline}</p>
+                        <ul className="plp-tier-features">
+                          {t.features.map((f, fi) => <li key={fi}>{f}</li>)}
+                        </ul>
+                        <Link href={t.cta.href} className="btn btn-rust">
+                          {t.cta.label} <span className="arrow">→</span>
+                        </Link>
+                      </article>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </section>
+
+          {/* ── FAQ + FAQPage JSON-LD, from ONE array so they cannot drift. ── */}
+          {hasSection(c, 'faqs') && (
+            <section className="plp-faq" id="faq" aria-label="Frequently asked questions">
+              <div className="plp-wrap">
+                <h2 className="plp-h2">Questions, answered.</h2>
+                <dl className="plp-faq-list">
+                  {c.faqs!.map((f, i) => (
+                    <div key={i} className="plp-faq-item">
+                      <dt className="plp-faq-q">{f.q}</dt>
+                      <dd className="plp-faq-a">{f.a}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              {/* Server-rendered — the whole reason this component is not 'use client'. */}
+              {faqJsonLd && (
+                <script
+                  type="application/ld+json"
+                  dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+                />
+              )}
+            </section>
+          )}
+
+          {/* ── FINAL CTA ── */}
+          {hasSection(c, 'finalCta') && (
+            <section className="plp-final" aria-label="Get started">
+              <div className="plp-wrap">
+                {c.finalCta!.pill && <span className="plp-pill">{c.finalCta!.pill}</span>}
+                <h2 className="plp-h2">{c.finalCta!.heading}</h2>
+                {c.finalCta!.body && <p className="plp-sub">{c.finalCta!.body}</p>}
+                <div className="plp-cta-row">
+                  {c.finalCta!.ctas.map((cta) => (
+                    <Link
+                      key={cta.href + cta.label}
+                      href={cta.href}
+                      className={`btn btn-lg ${cta.variant === 'ghost' ? 'btn-ghost' : 'btn-rust'}`}
+                    >
+                      {cta.label} <span className="arrow">→</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
         </main>
 
         <footer className="plp-footer">
@@ -86,8 +267,16 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
               {/* Same correction as the nav above: the root is the hub now. */}
               <Link href="/acca/apm">ACCA APM</Link>
             </div>
+
           </div>
         </footer>
+
+        {/* The ONLY client island. Renders null when both chrome flags are off, so a config
+            that does not ask for chrome ships no scroll listener and no extra markup. */}
+        <ProductLandingChrome
+          headerShadow={hasSection(c, 'stickyHeaderShadow')}
+          backToTop={hasSection(c, 'backToTop')}
+        />
       </div>
     </>
   );
@@ -128,7 +317,11 @@ const CSS = `
 .plp-prooflink { color: var(--rust); font-weight: 600; text-decoration: none; }
 .plp-prooflink:hover { text-decoration: underline; }
 .plp-points { padding: clamp(24px, 4vw, 40px) 0; }
-.plp-points-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+/* FIXED: was \`repeat(3, 1fr)\`, which silently constrained \`points[]\` to exactly three —
+   four produced a broken row of one, two produced stretched cards, and nothing in the type
+   said so. auto-fit sizes to whatever it is given; at the 920px wrap width THREE points
+   still compute to three equal columns, which is what keeps AFM byte-identical. */
+.plp-points-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 18px; }
 @media (max-width: 720px) { .plp-points-grid { grid-template-columns: 1fr; } }
 .plp-point { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
 .plp-point-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -0.2px; margin: 0 0 8px; color: var(--text); }
@@ -142,4 +335,116 @@ const CSS = `
 .plp-footer-links { display: flex; gap: 16px; }
 .plp-footer-links a { font-size: 11.5px; color: var(--text-muted); text-decoration: none; }
 .plp-footer-links a:hover { color: var(--text); }
+
+/* ── Sections added with the generalisation (2026-08-03) ──────────────────────
+   Every selector below belongs to an OPTIONAL section. A config that omits the field
+   renders none of this markup, so these rules cost an existing page nothing. */
+.plp-h2 { font-family: var(--font-display); font-size: clamp(21px, 3.2vw, 28px); font-weight: 700;
+  letter-spacing: -.3px; margin: 0 0 16px; color: var(--text); }
+.plp .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.plp .btn-ghost:hover { border-color: var(--text-muted); }
+
+/* Header shadow — driven by data-scrolled, which ProductLandingChrome sets on .plp so the
+   header itself stays server-rendered markup. */
+.plp[data-scrolled="true"] .plp-header { box-shadow: 0 1px 12px rgba(0,0,0,.07); }
+
+/* Mock-ups */
+.plp-mockups { padding: clamp(20px, 4vw, 40px) 0; }
+.plp-mockup-stack { display: flex; flex-direction: column; gap: 18px; }
+.plp-mockup { margin: 0; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.plp-mockup-head { display: flex; flex-direction: column; gap: 2px; padding-bottom: 10px;
+  border-bottom: 1px solid var(--border); }
+.plp-mockup-title { font-size: 13.5px; font-weight: 700; color: var(--text); }
+.plp-mockup-sub { font-size: 12px; color: var(--text-muted); }
+.plp-turn { border-radius: 10px; padding: 11px 14px; font-size: 14px; line-height: 1.55; }
+.plp-turn p { margin: 0 0 8px; }
+.plp-turn p:last-child { margin-bottom: 0; }
+.plp-turn--student { background: color-mix(in oklab, var(--text) 5%, transparent); color: var(--text-muted); }
+.plp-turn--tutor { background: color-mix(in oklab, var(--rust) 8%, transparent);
+  border: 1px solid color-mix(in oklab, var(--rust) 22%, transparent); color: var(--text); }
+.plp-panel-row { border-top: 1px solid var(--border); padding-top: 10px; }
+.plp-panel-row:first-of-type { border-top: 0; padding-top: 0; }
+.plp-panel-rowhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.plp-panel-label { font-size: 13px; font-weight: 700; color: var(--text); }
+.plp-panel-verdict { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+  color: var(--rust); border: 1px solid color-mix(in oklab, var(--rust) 35%, transparent);
+  border-radius: 999px; padding: 2px 9px; }
+.plp-panel-body { font-size: 13.5px; line-height: 1.55; color: var(--text-muted); margin: 0; }
+.plp-mockup-foot { font-size: 11.5px; color: var(--text-muted); padding-top: 8px; border-top: 1px solid var(--border); }
+
+/* Steps */
+.plp-steps { padding: clamp(20px, 4vw, 40px) 0; }
+.plp-step-list { list-style: none; margin: 0; padding: 0; display: grid;
+  grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 18px; }
+@media (max-width: 720px) { .plp-step-list { grid-template-columns: 1fr; } }
+.plp-step { border-top: 2px solid color-mix(in oklab, var(--rust) 40%, transparent); padding-top: 14px; }
+.plp-step-n { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+  border-radius: 999px; background: var(--rust); color: var(--rust-ink); font-size: 12.5px;
+  font-weight: 700; margin-bottom: 8px; }
+.plp-step-title { font-family: var(--font-display); font-size: 16.5px; font-weight: 700; margin: 0 0 6px; }
+.plp-step-body { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin: 0; }
+
+/* Comparison */
+.plp-compare { padding: clamp(20px, 4vw, 40px) 0; }
+.plp-compare-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 16px; margin-top: 14px; }
+@media (max-width: 720px) { .plp-compare-grid { grid-template-columns: 1fr; } }
+.plp-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.plp-col--weak { border-color: color-mix(in oklab, var(--rust) 30%, var(--border)); }
+.plp-col--strong { border-color: color-mix(in oklab, var(--rust) 55%, var(--border)); }
+.plp-col-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--text-muted); margin: 0 0 10px; }
+.plp-col--strong .plp-col-label { color: var(--rust); }
+.plp-col-list { margin: 0; padding-left: 18px; }
+.plp-col-list li { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin-bottom: 7px; }
+
+/* Secondary CTA band */
+.plp-band { padding: clamp(24px, 4vw, 44px) 0; background: color-mix(in oklab, var(--rust) 6%, transparent);
+  border-top: 1px solid color-mix(in oklab, var(--rust) 18%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--rust) 18%, transparent); }
+
+/* Pricing tiers */
+.plp-tier-h { text-align: center; }
+.plp-tier-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 18px; align-items: stretch; }
+@media (max-width: 720px) { .plp-tier-grid { grid-template-columns: 1fr; } }
+.plp-tier { position: relative; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 8px; }
+.plp-tier.is-featured { border-color: var(--rust); box-shadow: var(--shadow-lg); }
+.plp-tier-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
+  background: var(--rust); color: var(--rust-ink); font-size: 11px; font-weight: 700;
+  letter-spacing: .03em; padding: 3px 11px; border-radius: 999px; white-space: nowrap; }
+.plp-tier-name { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+.plp-tier-amount { font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: -.8px; color: var(--text); }
+.plp-tier-period { display: block; font-family: var(--font-body); font-size: 12.5px; font-weight: 500;
+  letter-spacing: 0; color: var(--text-muted); margin-top: 2px; }
+.plp-tier-tagline { font-size: 13.5px; line-height: 1.5; color: var(--text-muted); margin: 0; }
+.plp-tier-features { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.plp-tier-features li { font-size: 13.5px; line-height: 1.5; color: var(--text-muted); padding-left: 18px; position: relative; }
+.plp-tier-features li::before { content: '✓'; position: absolute; left: 0; color: var(--rust); font-weight: 700; }
+.plp-tier .btn { align-self: stretch; justify-content: center; margin-top: auto; }
+
+/* FAQ */
+.plp-faq { padding: clamp(20px, 4vw, 44px) 0; }
+.plp-faq-list { margin: 0; }
+.plp-faq-item { border-top: 1px solid var(--border); padding: 16px 0; }
+.plp-faq-item:first-child { border-top: 0; }
+.plp-faq-q { font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 6px; }
+.plp-faq-a { font-size: 14.5px; line-height: 1.6; color: var(--text-muted); margin: 0; }
+
+/* Final CTA */
+.plp-final { padding: clamp(30px, 5vw, 60px) 0; text-align: center; }
+.plp-final .plp-cta-row { justify-content: center; }
+.plp-pill { display: inline-block; font-size: 12px; font-weight: 700; color: var(--rust);
+  border: 1px solid color-mix(in oklab, var(--rust) 30%, transparent); border-radius: 999px;
+  padding: 4px 13px; margin-bottom: 14px; }
+
+/* Back to top */
+.plp-totop { position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 38px; height: 38px;
+  border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text);
+  display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
+  opacity: 0; pointer-events: none; transform: translateY(6px);
+  transition: opacity .18s ease, transform .18s ease; box-shadow: var(--shadow-sm); }
+.plp-totop.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.plp-totop:hover { border-color: var(--rust); color: var(--rust); }
+@media (prefers-reduced-motion: reduce) { .plp-totop { transition: none; } }
 `;
