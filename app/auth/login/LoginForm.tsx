@@ -5,7 +5,32 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-export default function LoginForm({ isIBDomain }: { isIBDomain: boolean }) {
+import type { SiteProduct } from '@/lib/product-router';
+
+// Copy per product. `null` is a real case, not a gap: someone reaching /auth/login from a
+// password manager has no referrer and no params, and there is nothing to infer from. The
+// neutral strings are written to be true for every product rather than to hedge — a
+// sign-in page that guesses wrong reads worse than one that stays general.
+const SUBHEADING: Record<SiteProduct, string> = {
+  ACCA: 'Your ACCA coach — diagnoses why an answer lost marks, then teaches the fix.',
+  IB:   'Your AI-powered IB tutor — structured lessons, exam technique, and progress tracking.',
+  LC:   'Your AI-powered Leaving Cert Business tutor — guided lessons, exam technique, and progress tracking.',
+};
+const SUBMIT_LABEL: Record<SiteProduct, string> = {
+  ACCA: 'Sign in to continue with Ezra',
+  IB:   'Sign in to continue',
+  LC:   'Sign in to continue with Aoife',
+};
+const FOOTNOTE: Record<SiteProduct, string> = {
+  ACCA: 'Supporting ACCA Strategic Professional students worldwide.',
+  IB:   'Supporting IB Economics and Business Management students worldwide.',
+  LC:   'Built for Irish Leaving Cert Business students.',
+};
+
+export default function LoginForm({ product }: { product: SiteProduct | null }) {
+  const subheading = product ? SUBHEADING[product] : 'Sign in to pick up where you left off.';
+  const submitLabel = product ? SUBMIT_LABEL[product] : 'Sign in to continue';
+  const footnote = product ? FOOTNOTE[product] : 'Exam coaching for ACCA and IB students.';
   const router = useRouter();
   const supabase = createClient();
 
@@ -39,9 +64,7 @@ export default function LoginForm({ isIBDomain }: { isIBDomain: boolean }) {
 
       <h1 className="auth-heading">Welcome back</h1>
       <p className="auth-subheading">
-        {isIBDomain
-          ? 'Your AI-powered IB tutor — structured lessons, exam technique, and progress tracking.'
-          : 'Your AI-powered Leaving Cert Business tutor — guided lessons, exam technique, and progress tracking.'}
+        {subheading}
       </p>
 
       {error && <div className="alert alert-error">{error}</div>}
@@ -81,14 +104,12 @@ export default function LoginForm({ isIBDomain }: { isIBDomain: boolean }) {
           disabled={loading}
           style={{ marginTop: 8 }}
         >
-          {loading ? (<><span className="spinner" />Signing in…</>) : isIBDomain ? 'Sign in to continue' : 'Sign in to continue with Aoife'}
+          {loading ? (<><span className="spinner" />Signing in…</>) : submitLabel}
         </button>
       </form>
 
       <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--muted)', marginTop: 16 }}>
-        {isIBDomain
-          ? 'Supporting IB Economics and Business Management students worldwide.'
-          : 'Built for Irish Leaving Cert Business students.'}
+        {footnote}
       </p>
 
       <p className="auth-footer" style={{ marginTop: 12 }}>
