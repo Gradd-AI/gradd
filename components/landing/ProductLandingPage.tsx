@@ -19,7 +19,11 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
             </Link>
             <nav className="plp-nav">
               {c.proof && <Link href={c.proof.href} className="plp-navlink">{c.proof.label}</Link>}
-              <Link href="/" className="plp-navlink">ACCA APM</Link>
+              {/* Was `href="/"` labelled "ACCA APM" — correct while the root WAS the APM
+                  landing, and wrong the moment it became the hub. APM now lives at its own
+                  spoke; the pillar is the sibling link that belongs beside it. */}
+              <Link href="/acca/apm" className="plp-navlink">ACCA APM</Link>
+              <Link href="/acca" className="plp-navlink">All ACCA</Link>
               <Link href={c.freeCta.href} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </nav>
           </div>
@@ -75,7 +79,8 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
             <div className="plp-footer-links">
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
-              <Link href="/">ACCA APM</Link>
+              {/* Same correction as the nav above: the root is the hub now. */}
+              <Link href="/acca/apm">ACCA APM</Link>
             </div>
           </div>
         </footer>
