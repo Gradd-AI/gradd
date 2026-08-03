@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.)*
+*Last refreshed: 2026-08-03 (**TEACHING-PRINCIPLE FIXES MERGED** — items 1–9 on `main` at `1b86e22`, from the first audit of the ACCA teaching loop against real student output. Three principles remain open and are GROUPED as one session: P2/P3/P4 all block on per-(user, LO) state. The method lesson — a real transcript is an instrument, read it on a schedule — is banked at the top. Earlier: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.))*
 
 *Earlier: 2026-07-31 (the SIT LOOP closed end to end on branch `feat/sit-loop-end-to-end`, NOT merged and NOT deployed — Grant's review first. `SitRunner` moved to `components/acca/`; a results endpoint that marks both passes, persists `technical_feedback`, computes pacing and returns the debrief; the debrief rendered with case grouping, per-case subtotals, one headline, and per-requirement band/marks/collapsed-why/next-action with pacing adjacent and never merged; `W_WEAK = 0` closed — `acca_weak_areas` written by a marked sit on weak|competent bands and read by `next-drill` on the LIVE `area=`/`lo=` paths as well as the gated scorer, with PS-tag steering alongside it. Proven on a synthetic user against the real routes, then scoped-deleted with AFM Mock 1 re-proved virgin. Three new open items — see the block below.)*
 
@@ -16,53 +16,136 @@
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
-## ⭐ 🔴 OPEN 2026-08-03 — **P2 SPACING AND P3 INTERLEAVING HAVE NO MECHANISM** (branch `fix/teaching-principles-ezra`, NOT merged)
+## ⭐ 📐 METHOD LESSON 2026-08-03 — **A REAL TRANSCRIPT IS AN INSTRUMENT. READ IT ON A SCHEDULE.**
 
-The ACCA teaching loop was audited against `docs/TEACHING_PRINCIPLES.md` for the first time using
-**real student output** — the method `GRADD_BUILD_HARDENING.md:503` specifies as the only valid one
-(*"Always audit current live output"*), and the method the 27/06/2026 `TEACHING_PRINCIPLES_EZRA.md`
-audit did NOT use (it read the prompts). Corpus: 15 assistant messages to account `dd786100`, 4
-drills, 10 attempts, 18 Jul – 1 Aug.
+**This entire branch came from reading ONE real student's transcripts against the rubric.** Account
+`dd786100`, 15 assistant messages, 4 drills, 10 attempts, 18 Jul – 1 Aug. It produced nine fixes
+including a 44% coverage hole, six live prompt sites instructing a taxonomy that had already been
+removed, an unreachable paid entitlement, and a principle (P5c self-assessment) that had never been
+built on any path for either paper.
 
-**Scored: P1 demonstrated · P2 absent · P3 absent · P4 absent · P5 partial (2 of 4).** The branch
-fixes what is fixable in code and prompt. **Two are NOT fixable there and are deferred with their
-reasons, so nobody re-specs them as prompt gaps:**
+**Two months of synthetic walks and green gates surfaced none of it.** Not because the gates were
+weak — every one of them passed correctly. **The product was working exactly as specified, and the
+specification was incomplete.** A gate can only assert what someone thought to assert; a fixture
+over `REGISTERED_VERBS` is complete over itself and blind to the corpus; a walk driven by a script
+never types "just tell me" four times across three weeks and then stops coming back.
 
-**🔴 1. THE WEAK-AREA WRITER ON THE DRILL PATH — P2 has nothing to act on.**
-`acca_weak_areas` holds **0 rows globally**. It is written ONLY by sit marking
-(`lib/acca/case-mark-run.ts`); the drill/tutor path writes nothing to it. So the spacing principle
-has no signal to resurface, and `next-drill`'s `W_WEAK` term scores every candidate 0 for any
-student who has not sat a mock.
+This restates, from a second direction, the method note already banked at
+`GRADD_BUILD_HARDENING.md:504` (*"Live audit … beat auditing stale transcripts … Always audit
+current live output"*). That note was about prompt staleness. **This one is about coverage:** real
+usage explores the input space in ways no author enumerates, so a transcript is not anecdote — it
+is the only instrument that measures what the specification forgot.
+
+**Operational rule: read real transcripts on a schedule, not when something looks wrong.** Nothing
+looked wrong. The student did not complain about any of the nine defects; he wrote one email about
+his own answers being "correct ideas without enough explanation". Every finding came from reading
+past what he said to what the product did.
+
+Caveat that binds any repeat: transcripts age against prompt changes (his span crossed two, and the
+2026-08-01 taxonomy fence landed 20 hours after his last message). Record which findings a change
+supersedes, and re-measure rather than assuming.
+
+---
+
+## ⭐ 🔴 OPEN 2026-08-03 — **P2 / P3 / P4 ALL BLOCK ON THE SAME MISSING THING: PER-(USER, LO) STATE**
+
+**ONE session, three principles.** These were three separate items; they are grouped because they
+share a single root — the tutor is never handed cross-drill state — and building that state once
+unblocks all three. Splitting them would build the same table three times.
+
+**Nothing here is a prompt gap.** Per the rubric's own rule 3, an absent principle is normally a
+system-prompt gap to be fixed with an instruction. These are the exception, and the entry says so
+explicitly so nobody re-specs them that way: no instruction can make a tutor recall a drill it was
+never told about.
+
+**🔴 (a) THE WEAK-AREA WRITER ON THE DRILL PATH — P2 spacing has nothing to act on.**
+`acca_weak_areas` holds **0 rows globally, for every user**. It is written ONLY by sit marking
+(`lib/acca/case-mark-run.ts`); the drill/tutor path writes nothing to it. So there is no signal to
+resurface, and `next-drill`'s `W_WEAK` term scores every candidate 0 for any student who has not
+sat a mock.
 **This is the IB `WEAK_AREA_FLAG` defect ported one product later, same shape** — that flag had
 never fired all-time, `weak_areas` was therefore always empty, and spacing recall had nothing to
-target (`GRADD_BUILD_HARDENING.md:501`, fix 3). IB found it by querying for zero emissions. ACCA
-returns zero rows on the same query. The IB fix was never ported.
-Its own session: it needs a write path, a decay/interval rule, and a session-opener recall beat —
-`TEACHING_PRINCIPLES_EZRA.md` P2(d) specifies all three. **Not a prompt gap; no prompt instruction
-can produce it, because the tutor is never given cross-drill state.** The per-turn context is
-scoped to one drill (`acca_tutor_progress` keyed `(user_id, drill_id)`).
+target (`GRADD_BUILD_HARDENING.md:501`, fix 3). IB found it by querying for zero emissions
+all-time; ACCA returns zero rows on the same query. **The IB fix was never ported**, despite
+`GRADD_BUILD_HARDENING.md:503` saying it should be. Needs a write path, a decay/interval rule and a
+session-opener recall beat — `TEACHING_PRINCIPLES_EZRA.md` P2(d) specifies all three.
 
-**🔴 2. INTERLEAVING — `APM_INTERLEAVE` is dark and `lo=` mode is anti-aligned.**
-`next-drill/route.ts` still *prefers the same sub-area*, which is **blocking** — the documented
-opposite of interleaving. The interleaved selector exists but sits behind `APM_INTERLEAVE`, which
-the route's own comment records as **not set in production**. A selection-strategy change needs its
-own measurement (does mixing help or hurt completion), so it is not bundled here.
-The *discrimination* half of P3 IS fixed on this branch — `EZRA_SYSTEM` no longer instructs the
-model to name the requirement's demand classification at the student, which was the instruction
-behind 8 of 15 of his messages.
+**🔴 (b) INTERLEAVING — `APM_INTERLEAVE` dark, `lo=` mode anti-aligned.**
+`next-drill/route.ts` *prefers the same sub-area*, which is **blocking** — the documented opposite
+of interleaving. The interleaved selector exists but sits behind `APM_INTERLEAVE`, which the
+route's own comment records as **not set in production**. **Needs its own measurement** (does
+mixing help or hurt completion) before the default flips, which is why it is not a code-only fix.
+The *discrimination* half of P3 IS fixed and shipped — `EZRA_SYSTEM` no longer instructs the model
+to name the requirement's demand classification at the student (measured: 83% → 0% over 12 paired
+A/B runs).
 
-**⚠️ Claim ceiling on P5(c), stated in the code and repeated here:** the self-assessment beat this
-branch adds is a **single-turn approximation**. The rubric requires prompting self-assessment
-*before revealing the mark*; this route answers in one turn, so it asks and then diagnoses in the
-same message. It builds the habit of locating your own gap; it does not gate the diagnosis behind
-the student's reply. Doing that properly needs a turn boundary this loop does not have.
+**🔴 (c) P4 FADING'S SECOND HALF — exposure count per (user, LO), never built.**
+`TEACHING_PRINCIPLES_EZRA.md` P4(d): *"track exposure count per (user, LO); first encounter = more
+model, later encounters = less"*. Nothing tracks it, so scaffolding does not visibly decrease
+across a topic — the rubric's own fail signal, *"hand-holds every problem forever and never
+fades"*, still describes the drill path.
+**⚠️ The earned reveal being reachable again fixes P4's FIRST half only. P4 remains ABSENT after
+this branch** — a student can now get a completed answer when they ask for it, but support still
+does not fade. Do not read the shipped reveal as closing P4.
 
-**⚠️ P4 worked-example fading remains ABSENT after this branch, and that is deliberate.** The
-earned reveal (the specified fix) has shipped since June; this student never reached it, which the
-branch fixes. But the second half of `TEACHING_PRINCIPLES_EZRA.md` P4(d) — *"track exposure count
-per (user, LO); first encounter = more model, later encounters = less"* — **was never built**, and
-support therefore still does not visibly decrease across a topic. Same session as item 1: both need
-per-(user, LO) state.
+**⚠️ Claim ceiling on P5(c), stated in the code and repeated here:** the self-assessment beat that
+shipped is a **single-turn approximation**. The rubric requires prompting self-assessment *before
+revealing the mark*; this route answers in one turn, so it asks and then diagnoses in the same
+message. It builds the habit of locating your own gap; it does not gate the diagnosis behind the
+student's reply. Doing that properly needs a turn boundary this loop does not have.
+
+**Scored 2026-08-03 against real output: P1 demonstrated · P2 absent · P3 absent (discrimination
+half fixed) · P4 absent · P5 partial (2 of 4).** Shipped on `main` at `1b86e22`.
+
+---
+
+## ⭐ ✅ MERGED 2026-08-03 — teaching-principle fixes, items 1–9 (`fix/teaching-principles-ezra` → `main`)
+
+First audit of the ACCA teaching loop against `docs/TEACHING_PRINCIPLES.md` using **real student
+output**. The 27/06/2026 `TEACHING_PRINCIPLES_EZRA.md` audit read the PROMPTS and scored ~1.5/5;
+this one read 15 real assistant messages and scored the same ~1.5/5 seven weeks later — P1 held,
+P5 gained a wired mark scheme and lost it to a bare integer, P2/P3/P4 unmoved.
+
+**Nine fixes, six commits.**
+1. **Verb coverage 86/154 → 154/154.** `VERB_DEMAND` held 14 single verbs; the corpus holds 35, 24
+   of them compounds. 68 live drills fell through to a fallback shrug — **64 of them level 3**,
+   where the compound verb IS the second-part demand the student is failing to reach. Fixed
+   compositionally (register the 7 missing PARTS; compose the rest) so the 25th combination cannot
+   reopen it. The rule encoded is a real one: leading verbs are the floor, the **terminal** verb
+   carries the marks. Fixtures re-pointed at the CORPUS, not the table — the wrong denominator is
+   why a 44% hole stayed green. `npm run audit:verb-coverage` is the live counterpart.
+2 + 7. **Level-3 next-move contract.** The output contract was level-invariant and sized for a
+   level-2 edit. Level 3 now decomposes — the first concrete step of the marks-carrying part, using
+   work already in hand; never a rebuild, never a closing question with nothing to produce.
+3. **Deterministic reveal offer.** Was model-emitted prose instructed to sit LAST, competing with
+   `WRAP_UP` under a 600-token cap, and `finishClean` trims from the end. Now code-appended, and
+   extended to `call_warm` (question/confusion only).
+4. **"just tell me" reaches `revealDecision`** for a paid user at `missCount >= 2`. Thresholds and
+   the phrase-disjointness ruling UNCHANGED — nothing moved between lists. Both gate clauses are
+   load-bearing: without `paid` a free user's request becomes a paywall wrapper instead of a free
+   teach; without the threshold it becomes a static refusal instead of the good teach they get now.
+5. **Six residual taxonomy sites cleared** (4 in `tutor/route.ts`, 2 in `teach-engine.ts`). The
+   2026-08-01 fence removed the values from the prompt but left the instructions to name them, so
+   only INFERENCE could satisfy them — an unfounded assertion, worse than the disclosed value.
+6. **`marks_guide` label.** Was "criteria that earn marks" followed by a bare integer — measured as
+   an integer on **154 of 154** live drills. Same defect `396910e` fixed on the case path, on the
+   surface every drill actually serves from.
+8. **P5(c) self-assessment**, never built on any path for either paper. Second-or-later attempt
+   only, never distressed. Single-turn approximation — see the claim ceiling above.
+9. **`EZRA_SYSTEM` no longer instructs the discrimination AT the student.** Two defects in one
+   line: the taxonomy leak, and the worse half — deciding what a question asks for is the skill
+   being assessed.
+
+**Measured, not asserted.** A/B on his own drills and his own longest real attempts, old persona +
+old prompt vs new, 3 samples per arm, 12 paired runs: **taxonomy named at the student 10/12 (83%) →
+0/12 (0%)**. Closes-on-a-bare-question 2/12 → 1/12 — direction right, **effect NOT demonstrated** at
+n=12 with a crude end-of-string detector; do not claim it without a bigger run. The first probe was
+invalid (both arms ran the fixed persona) and was re-run; these are the corrected numbers.
+
+**Deviation from the brief, accepted deliberately:** the reveal offer keeps its existing audience
+(`missCount >= 2 && !distressed`) rather than narrowing to paid. Restricting it would strip the
+nudge that walks a FREE student into the burn wall, which is the conversion path and cannot fire if
+nobody tells them the phrase. One `&& hasActiveAccess` if that is later wanted.
 
 ---
 
