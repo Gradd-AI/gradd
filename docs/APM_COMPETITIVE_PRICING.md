@@ -25,3 +25,98 @@ LAUNCH PRICE = €99 pass / €49 mo. Raise pass to €129-149 once conversion p
 FREE TIER unchanged: unlimited drills + 3 teach-throughs (the felt-teaching proof) before the wall.
 
 Stripe objects to create: one 90-day pass price (€99, one-time) + one monthly sub price (€49/mo). Named APM (not "ACCA all papers").
+
+---
+
+### PER-PAPER ENTITLEMENT — LIVE IN CODE — 03/08/2026
+
+**RULING (Grant): pricing is per paper.** APM and AFM are sold separately, €99 sitting-dated
+pass and €49/month **each**. Bundle-wide access ends. Four live Stripe prices: APM pass/monthly
+(ids unchanged) + AFM pass/monthly (new).
+
+**Nothing was at commercial risk when this shipped.** Measured before the change: **zero
+customers have ever paid for ACCA** — no ACCA subscription has ever existed
+(`apm_stripe_subscription_id` null on all 11 profiles, `apm_subscription_status` `'inactive'`
+on all 11), and the only three entitlement holders are manual comps.
+
+**Shipped on `main` at `cccbc95`** (branch `feat/per-paper-entitlement`, 4 commits). Two
+migrations accompany it, both P-DB2, applied by hand.
+
+#### The mechanism
+
+`hasPaperAccess(supabase, userId, paper, legacyProfile?)` — **dual-read, table first**:
+
+1. `acca_entitlements` for `(user, paper)`. Any active row → **granted**.
+2. Rows exist but none active → **DENIED**. The table is authoritative once it has spoken
+   about a paper. Falling back here would let a legacy bundle column rescue an expired
+   per-paper row — grandfathering as a code branch, which the ruling forbids.
+3. **No rows at all, or no table yet** → fall back to the legacy `profiles.apm_*` columns.
+
+Step 3 is what made the code shippable **before** the SQL ran: until the table existed the
+query errored, and every caller resolved exactly as it had. **Grandfathering is DATA** — the
+three comp holders are backfilled with a row per paper, so they keep both papers for the life
+of their entitlement without a single `if` in the predicate. No legacy-bundle tier.
+
+`hasActiveAPMAccess` was **deleted, not re-pointed**: it and `hasActiveACCAAccess` were the
+same function object (11 call sites imported one name, 9 the other). Deleting it made every
+call site a compile error until it had been given a paper — there is no way to half-migrate
+this. The paper is a **required argument with no default**; `resolvePaper()`'s 'APM' fallback
+is correct for content scoping and fatal in a gate, so gates use `strictPaper()` and refuse
+on null.
+
+#### ⚠️ TWO CONSTRAINTS THAT COULD NOT BE BUILT AS SPECCED
+
+**1. `unique (user_id, paper_code) where active` is not creatable.** A partial index predicate
+must be **IMMUTABLE**; "active" depends on `now()`, which is **STABLE**. Postgres rejects
+`where expires_at > now()` outright. Replaced by an immutable predicate on an explicit
+revocation column — one open SUBSCRIPTION per paper, `where kind = 'subscription' and
+revoked_at is null` — the same shape `acca_weak_areas` already uses for its open rows. This is
+why `revoked_at` exists at all, and why cancellation writes it as well as the status: the
+status is what the predicate reads, `revoked_at` is what frees the index so the same student
+can resubscribe to that paper later.
+
+**2. PASSES ARE DELIBERATELY NOT UNIQUE per (user, paper).** A student who buys APM for the
+June sitting and again for September must end up with **two rows** — that is the purchase
+history the table exists to hold, and a uniqueness constraint would **reject the second,
+entirely legitimate purchase**. Multiple live passes are harmless: the predicate grants when
+ANY row is active. **The real risk is double-charging, and it is prevented at source** by a
+unique index on `stripe_event_id` (the checkout session id, stable across Stripe's retries),
+so a retried webhook is a no-op instead of a second entitlement.
+
+#### ⚠️ THE SITTINGS INTERLOCK — NOTHING IS SELLABLE UNTIL A HUMAN CHECKS THE DATES
+
+`acca_sittings` ships six seeded sittings (MAR26 → JUN27) and **every one carries
+`dates_verified = false`**. The `acca_sittings_open` view computes
+`is_open = dates_verified AND now() < late_entry_deadline`, so **`select count(*) from
+acca_sittings_open where is_open` returns 0** — no sitting can be offered at checkout. That is
+the correct post-migration state, not a bug.
+
+**This is deliberate.** The seeded dates follow ACCA's usual pattern (exams in the first full
+week of the month, late entry ~2 weeks out, results ~5 weeks after) but were **NOT read off
+ACCA's published calendar**. Inventing authoritative dates that gate real purchases is a
+failure class this project has already banked twice — selling a pass for a sitting the student
+cannot enter is the concrete harm. The interlock makes it structurally impossible rather than
+relying on anyone remembering.
+
+**To open a sitting:** verify against ACCA's calendar, correct the dates, re-derive
+`access_until = exam_end + 7`, then set `dates_verified = true`.
+
+Rulings encoded: **`access_until = exam_end + 7 days`**, stored as its own column so the rule
+can change per sitting without a deploy. **The purchase + 30-day floor is NOT stored** — it
+depends on when the student buys, which the sitting cannot know; the grant applies
+`max(access_until, purchase + 30d)`. **`late_entry_deadline` is the real cutoff** for
+`is_open` (early/standard only change ACCA's own price; late is the door closing).
+
+#### Transition state — the legacy columns are still written
+
+Both the legacy `profiles.apm_*` write and the new `acca_entitlements` row are maintained on
+every purchase. A rollback cannot strand a customer who paid meanwhile: the legacy columns
+alone still grant access (bundle-wide — generous rather than wrong), and the table alone grants
+the paper actually bought. **Dropping the legacy write is the LAST step**, after the dual-read
+has been verified to agree for all three holders (verification query #4 in the entitlements
+migration).
+
+A Stripe object created **before** this deploy carries no `paper` in its metadata. Those write
+the legacy column ONLY and never guess a paper — a pre-split purchase was made under the
+bundled offer, so bundle-wide is the correct reading, and guessing 'APM' would silently grant
+an AFM buyer the wrong paper.
