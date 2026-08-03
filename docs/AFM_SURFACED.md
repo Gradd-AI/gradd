@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-03 (**TEACHING-PRINCIPLE FIXES MERGED** — items 1–9 on `main` at `1b86e22`, from the first audit of the ACCA teaching loop against real student output. Three principles remain open and are GROUPED as one session: P2/P3/P4 all block on per-(user, LO) state. The method lesson — a real transcript is an instrument, read it on a schedule — is banked at the top. Earlier: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.))*
+*Last refreshed: 2026-08-03 (**gradd.ai IS HUB-AND-SPOKE** — shipped `df25eb6`: / hub, /acca pillar, /acca/apm + /acca/afm spokes; first real product router, and the three sites branching product behaviour on `resolveIsIB` are fixed. `/ib` untouched — splitting it is a pricing decision, not a routing one. Earlier same day: **TEACHING-PRINCIPLE FIXES MERGED** — items 1–9 on `main` at `1b86e22`, from the first audit of the ACCA teaching loop against real student output. Three principles remain open and are GROUPED as one session: P2/P3/P4 all block on per-(user, LO) state. The method lesson — a real transcript is an instrument, read it on a schedule — is banked at the top. Earlier: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.))*
 
 *Earlier: 2026-07-31 (the SIT LOOP closed end to end on branch `feat/sit-loop-end-to-end`, NOT merged and NOT deployed — Grant's review first. `SitRunner` moved to `components/acca/`; a results endpoint that marks both passes, persists `technical_feedback`, computes pacing and returns the debrief; the debrief rendered with case grouping, per-case subtotals, one headline, and per-requirement band/marks/collapsed-why/next-action with pacing adjacent and never merged; `W_WEAK = 0` closed — `acca_weak_areas` written by a marked sit on weak|competent bands and read by `next-drill` on the LIVE `area=`/`lo=` paths as well as the gated scorer, with PS-tag steering alongside it. Proven on a synthetic user against the real routes, then scoped-deleted with AFM Mock 1 re-proved virgin. Three new open items — see the block below.)*
 
@@ -15,6 +15,88 @@
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ ✅ RULED + SHIPPED 2026-08-03 — **gradd.ai IS HUB-AND-SPOKE** (`df25eb6`)
+
+```
+/                    hub    — sells the METHOD, routes to /acca or /ib
+/acca                pillar — the qualification, both papers, per-paper pricing
+/acca/apm            spoke  — MOVED off the root, intact
+/acca/afm            spoke  — unchanged
+/ib                  IB pillar — UNTOUCHED (see the ruling below)
+```
+
+Cheap path as ruled: `ACCALandingPage` **moved**, not rewritten, and `ProductLandingPage` was
+**not** generalised (7 of its 14 sections have no template equivalent — that job is severable
+and remains unbuilt). `/acca` needed **no route move**: anonymous gets the pillar, signed-in
+keeps the dashboard, so no existing link changed and crawlers — being anonymous — see the pillar.
+
+### ⚖️ THE 301-vs-HUB TENSION — they are mutually exclusive, and the hub won
+
+The brief asked for both a hub at `/` **and** a 301 from `/` to `/acca/apm`. **You cannot have
+both**: a 301 at `/` means there is no hub, and the pillar, the router and the three
+violation fixes all exist to serve one. The hub was chosen.
+
+**Consequence, accepted with eyes open:** `/` was the highest-priority indexed URL and held the
+APM keyword set (`ACCA APM tutor`, `APM P5 tutor`, `ACCA APM pass`). Those positions will decay
+at `/`, and `/acca/apm` has to earn them fresh. The APM signal transfers by **canonical +
+sitemap priority + internal linking**, not by redirect.
+
+**Grant's reasoning, recorded because it is the part that generalises:** *with no traffic, what
+decays is a position nobody arrives through* — and `/acca/apm` earns it back with **better
+intent match** than a root serving both ACCA and IB ever could. A single URL trying to rank for
+a paper, a qualification and a second qualification is competing with itself; splitting them is
+the point, not a side effect. **This trade is only cheap BEFORE traffic exists.** Do not
+generalise it to a later restructure — the same move against real inbound traffic is a
+different decision with a real cost.
+
+Sitemap now: `/acca/apm` **1.0** (priority follows CONTENT, never position), `/` and `/acca`
+0.9 each. The hub deliberately carries **no paper keywords** — otherwise it competes with its
+own spoke for the terms the spoke exists to rank for.
+
+### 🔴 `/ib/economics` AND `/ib/business` DO NOT EXIST — and that is a PRICING question
+
+`/ib` is a single combined landing selling Economics **and** Business Management as **ONE SKU**
+(*"One subscription. The complete IB Economics and IB Business Management curriculum."*). The
+two subjects appear only as two columns inside one section; every CTA goes to `/auth/signup`.
+There are no per-subject routes and no per-subject prices.
+
+**So the ACCA and IB restructures are NOT symmetrical and must not be scoped as one job.** ACCA
+was a *move* — the papers were already separately priced (ruled 2026-08-03), so splitting the
+pages followed the money that was already split. IB would be a *split*: building
+`/ib/economics` and `/ib/business` implies they can be bought separately, and **they cannot**.
+Shipping those routes under one SKU would advertise a choice that does not exist.
+
+**`/ib` is untouched, and stays untouched until IB pricing is ruled.** Pricing decision first,
+routing second.
+
+### 📐 `resolveProductIntent` RETURNS NULL ON NO EVIDENCE — DELIBERATELY
+
+`lib/product-router.ts` is the first real product router (`npm run test:product-router`, 29
+fixtures). Its defining property is that it is **not a boolean**: it returns `null` when nothing
+in the request evidences a product, and the caller must then **ask**.
+
+**The reason, and it is the same lesson twice now:** a boolean cannot express uncertainty, so it
+**defaults** — and a default in a routing position is a **silent wrong answer**. That is not
+theoretical. It is exactly why `/auth/signup` served the IB signup form to ACCA visitors:
+`resolveIsIB` returns `true` for ACCA *and* IB on gradd.ai, has no third state, and the code had
+no choice but to pick one.
+
+**The identical shape as `resolvePaper()` defaulting to `'APM'`** — correct for content scoping
+("serve the APM row"), fatal in an entitlement gate, where it would have answered *"does this
+user hold APM?"* for a request that named no paper. That was fixed by adding `strictPaper()`,
+which returns null and forces a refusal. Same defect class, same fix: **when absence and a
+specific value are different facts, the function must be able to say so.**
+
+**Standing rule: never add a default to `resolveProductIntent` to simplify a call site.** The
+call site handling `null` by showing a choice IS the feature — it is what the hub page is for.
+
+`resolveIsIB` survives only where it answers a genuine HOST question (which domain, which logo,
+which contact email). **All three sites that were branching PRODUCT behaviour on it are fixed**:
+`app/page.tsx`, `app/auth/signup/page.tsx` (the live mis-serve) and `app/auth/login/page.tsx`
+(wrong-product copy for every ACCA student signing in).
+
+---
 
 ## ⭐ 📐 METHOD LESSON 2026-08-03 — **A REAL TRANSCRIPT IS AN INSTRUMENT. READ IT ON A SCHEDULE.**
 
