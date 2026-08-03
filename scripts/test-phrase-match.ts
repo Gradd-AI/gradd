@@ -17,6 +17,7 @@
 import {
   isRevealRequest, isTeachRequest, fuzzyPhraseMatch, matchesAnyPhrase,
   REVEAL_PHRASES, TEACH_REQUEST_PHRASES, REVEAL_PHRASE_STRUGGLE, REVEAL_PHRASE_SOLVED,
+  PLAIN_ANSWER_REQUEST_PHRASES, isPlainAnswerRequest, revealOfferLine,
 } from '../lib/acca/phrase-match';
 
 let failures = 0;
@@ -127,5 +128,44 @@ ok('fuzzyPhraseMatch: single typo within tolerance', fuzzyPhraseMatch('shiw me t
 ok('fuzzyPhraseMatch: two unrelated words do not match', !fuzzyPhraseMatch('the quick brown fox', 'show me the full answer'));
 ok('fuzzyPhraseMatch: empty phrase never matches', !fuzzyPhraseMatch('anything at all', ''));
 
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// §9 — PLAIN ANSWER REQUESTS (added 2026-08-03)
+// The third list. It is deliberately a SUBSET of the teach list — it does not move a phrase
+// between the two, so the §6 disjointness ruling is untouched. What must hold: it never
+// overlaps REVEAL_PHRASES (or a plain "just tell me" would BE a reveal phrase and the earn
+// gate would be bypassed for everyone, free users included), and it stays a teach request
+// so that a FREE user or a sub-threshold paid user keeps today's behaviour exactly.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+let plainOverlap = 0;
+for (const pp of PLAIN_ANSWER_REQUEST_PHRASES) {
+  if (matchesAnyPhrase(pp, REVEAL_PHRASES)) { plainOverlap++; console.log(`  ✗ PLAIN phrase "${pp}" also matches a REVEAL phrase`); }
+}
+ok('PLAIN_ANSWER_REQUEST_PHRASES never overlap REVEAL_PHRASES (the earn gate is not bypassed)', plainOverlap === 0);
+ok('"just tell me" is STILL a teach request (free / sub-threshold behaviour unchanged)', isTeachRequest('just tell me'));
+ok('"just tell me" is a plain answer request', isPlainAnswerRequest('just tell me'));
+ok('"just tell me" is NOT a reveal request on its own — the route gates it on paid + earned',
+  !isRevealRequest('just tell me'));
+ok('"show me how" is NOT a plain answer request (the genuinely teach-shaped case is untouched)',
+  !isPlainAnswerRequest('show me how'));
+ok('"walk me through" is NOT a plain answer request', !isPlainAnswerRequest('walk me through'));
+ok('a real attempt does not read as a plain answer request',
+  !isPlainAnswerRequest('The ROCE is 21.7% which tells me the division is performing above its cost of capital'));
+ok('a typo\'d plain request still matches (same fuzzy matcher)', isPlainAnswerRequest('jsut tell me'));
+
+// ═══════════════════════════════════════════════════════════════════════════════════════
+// §10 — the DETERMINISTIC offer (added 2026-08-03)
+// The offer moved from a prompt instruction to a code-appended string. The single-source-of-
+// truth property from §7 must survive the move: the text a student is told to type must still
+// be the exact string the router matches on.
+// ═══════════════════════════════════════════════════════════════════════════════════════
+ok('the struggle offer contains the canonical struggle phrase', revealOfferLine('struggle').includes(REVEAL_PHRASE_STRUGGLE));
+ok('the solved offer contains the canonical solved phrase', revealOfferLine('solved').includes(REVEAL_PHRASE_SOLVED));
+ok('the phrase quoted in the struggle offer round-trips through isRevealRequest', isRevealRequest(REVEAL_PHRASE_STRUGGLE));
+ok('the phrase quoted in the solved offer round-trips through isRevealRequest', isRevealRequest(REVEAL_PHRASE_SOLVED));
+ok('struggle and solved offers are different text', revealOfferLine('struggle') !== revealOfferLine('solved'));
+ok('the offer starts on its own paragraph (appended after model prose, never mid-sentence)',
+  revealOfferLine('struggle').startsWith('\n\n') && revealOfferLine('solved').startsWith('\n\n'));
+
 console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILURE(S)`}`);
-process.exit(failures === 0 ? 0 : 1);
+// P-G4: exitCode, never process.exit() — an explicit exit can truncate buffered stdout on Windows.
+process.exitCode = failures === 0 ? 0 : 1;

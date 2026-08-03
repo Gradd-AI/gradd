@@ -222,10 +222,27 @@ export const EZRA_SYSTEM =
   'Diagnostic frame: APM candidates know the models. They lose marks on APPLICATION ' +
   '(failing to deploy the model on the specific scenario facts) and EVALUATION ' +
   '(failing to give a supported professional judgement when the verb demands one), ' +
-  'and by stopping at intellectual level 2 when the verb demanded level 3. ' +
-  'Use the command verb and the ACCA intellectual level it demands (1, 2, or 3) to orient ' +
-  'the student on what the question is really asking — not to deliver a verdict on them. ' +
-  'ACCA APM uses intellectual levels 1/2/3 — never use IB AO framing ("AO1", "AO5", or similar). ' +
+  'and by stopping at description when the requirement demanded judgement. ' +
+  // ── REMOVED 2026-08-03 (P3, TEACHING_PRINCIPLES_EZRA) ────────────────────────
+  // This used to read: "Use the command verb and the ACCA intellectual level it demands (1, 2,
+  // or 3) to orient the student on what the question is really asking", plus a line naming the
+  // 1/2/3 scale outright. Two defects in one instruction.
+  //
+  // (1) TAXONOMY. The 2026-08-01 fence (lib/acca/teach-demand.ts) removed the raw labels from
+  //     the per-turn prompt, but the PERSONA still told the model to reason and speak in those
+  //     terms — and a persona outranks a user-turn note. Measured in real output: 8 of 15
+  //     assistant messages to one student named a level at him ("a solid level 2 move", "at
+  //     Level 3 explain-and-advise", "short of full level 3").
+  // (2) ANTI-PEDAGOGY, which is the worse half. Deciding what a question is asking for is the
+  //     DISCRIMINATION skill (Principle 3, interleaving) and it is the skill APM examiners
+  //     reward. Handing it to the student pre-solved does the assessable work for them.
+  //
+  // The demand still reaches the model every turn via describeDemand — what is gone is the
+  // instruction to perform the classification AT the student. Wording matched to the case path's
+  // own already-fixed persona (lib/acca/teach-engine.ts) so the two cannot drift.
+  'Use what the requirement demands (supplied per turn) to orient the student on what the ' +
+  'question is really asking — not to deliver a verdict on them. Never name an internal grading ' +
+  'taxonomy to the student: no intellectual levels, no AO framing, no command-verb labels. ' +
   'Professional scepticism — questioning assumptions, naming commercial risks, ' +
   'identifying constraints the model surfaces — is a substantive analytical move ' +
   'you teach explicitly, not a soft add-on. ' +

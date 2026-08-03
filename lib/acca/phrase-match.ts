@@ -150,10 +150,60 @@ export const TEACH_REQUEST_PHRASES = [
   'what would a full marks',
 ] as const;
 
+// ── PLAIN ANSWER REQUESTS — a THIRD list, and deliberately a SUBSET of the teach list ──
+//
+// "just tell me" is the plainest possible request for the answer. It sits in
+// TEACH_REQUEST_PHRASES by INHERITANCE — it was the first entry under `// capitulation` in the
+// route's older STOP_PHRASES block and moved across wholesale when the intent layer split the
+// list. It was never reasoned about as a reveal-vs-teach boundary case. The disjointness ruling
+// above was made about "show me how", which is genuinely teach-shaped; "just tell me" is not.
+//
+// Measured cost, on a real paid account (dd786100): "just tell me" four times across three weeks,
+// four figure-free teaches, zero reveals — on a student carrying miss_count 7 and an active pass,
+// i.e. one who had earned the artifact three times over.
+//
+// THE DISJOINTNESS RULING IS UNTOUCHED. This list does not move a phrase between the two, and it
+// is asserted disjoint from REVEAL_PHRASES like everything else. What it does is let the ROUTE
+// treat a plain answer request as a reveal request FOR A PAID USER WHO HAS ALREADY EARNED THE
+// REVEAL — the one case where routing it to a figure-free teach serves nobody. Below the earn
+// threshold, or for a free user, it stays exactly what it is today: a teach request. That
+// asymmetry is the whole point and it lives at the call site, not here.
+export const PLAIN_ANSWER_REQUEST_PHRASES = [
+  'just tell me',
+  'just tell me the answer',
+  'tell me the answer',
+] as const;
+
 export function isRevealRequest(input: string): boolean {
   return matchesAnyPhrase(input, REVEAL_PHRASES);
 }
 
 export function isTeachRequest(input: string): boolean {
   return matchesAnyPhrase(input, TEACH_REQUEST_PHRASES);
+}
+
+/** A bare request to be told the answer. See PLAIN_ANSWER_REQUEST_PHRASES for why this is
+ *  separate from both other lists, and why the caller must gate it on paid + earned. */
+export function isPlainAnswerRequest(input: string): boolean {
+  return matchesAnyPhrase(input, PLAIN_ANSWER_REQUEST_PHRASES);
+}
+
+// ── THE REVEAL OFFER — DETERMINISTIC, not model-emitted ──────────────────────
+// The offer used to be an INSTRUCTION inside the teach/confirm prompt ("As the alternative next
+// move, tell them they can say …"). Three things were wrong with that:
+//   1. It competed with WRAP_UP ("if you are near the length limit, wrap up the current point
+//      cleanly rather than starting a new one") under a 600-token cap, and it is instructed to
+//      sit LAST — so it is structurally the first thing sacrificed under length pressure.
+//   2. `finishClean` trims to the last complete sentence on `max_tokens`, which trims from the
+//      END — again, the offer.
+//   3. A model may simply not say it. An entitlement the student cannot discover is not an
+//      entitlement, and this one is the single most valuable thing a paid account buys.
+// It is now appended by CODE after the model returns. Same canonical phrases, so offer and router
+// still cannot diverge (the X1 fix item-2 property is preserved — there is still one string).
+export type RevealOfferKind = 'struggle' | 'solved';
+
+export function revealOfferLine(kind: RevealOfferKind): string {
+  return kind === 'solved'
+    ? `\n\nYou've earned this one — say **"${REVEAL_PHRASE_SOLVED}"** and I'll show you how a full-marks version is laid out, so you can compare.`
+    : `\n\nWhenever you want it, say **"${REVEAL_PHRASE_STRUGGLE}"** and I'll show you exactly how a full-marks answer is built.`;
 }
