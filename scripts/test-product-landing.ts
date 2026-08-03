@@ -142,8 +142,29 @@ ok('AFM_LANDING renders NO optional section', visibleSections(AFM_LANDING).lengt
   visibleSections(AFM_LANDING).join(','));
 ok('AFM_LANDING still uses the simple pricing card', pricingModel(AFM_LANDING).mode === 'simple');
 ok('AFM_LANDING emits no FAQ JSON-LD', buildFaqJsonLd(AFM_LANDING) === null);
-ok('AFM_LANDING keeps the original pricing heading (byte-identical output)',
-  pricingModel(AFM_LANDING).heading === DEFAULT_PRICING_HEADING);
+// AFM sets its own heading (fixed in 184a16b, ahead of this template work), so it no longer
+// inherits the default. The durable assertion is not "which string" but "no bundle claim" —
+// that is the property that must survive any future copy edit to either.
+ok('AFM_LANDING states its OWN pricing heading rather than inheriting the default',
+  !!AFM_LANDING.pricingHeading && pricingModel(AFM_LANDING).heading === AFM_LANDING.pricingHeading);
+
+// ── BREAK MODE 5b: A BUNDLE CLAIM COMES BACK ───────────────────────────────
+// Per-paper pricing was ruled 2026-08-03. Any copy asserting one purchase covers several
+// papers is false, and it was live on the AFM card until 184a16b. The DEFAULT is the
+// dangerous one: it is inherited by every config that does not override it, including one
+// written by someone who never opens this file.
+const BUNDLE_CLAIM = /(every|all)\s+(acca\s+)?papers?|one\s+(pass|subscription)\s+covers|apm\s+and\s+afm\s+together/i;
+ok('DEFAULT_PRICING_HEADING makes no bundle claim', !BUNDLE_CLAIM.test(DEFAULT_PRICING_HEADING),
+  DEFAULT_PRICING_HEADING);
+ok('DEFAULT_PRICING_HEADING names no specific paper (it cannot know one)',
+  !/\b(APM|AFM)\b/.test(DEFAULT_PRICING_HEADING), DEFAULT_PRICING_HEADING);
+ok('AFM heading makes no bundle claim', !BUNDLE_CLAIM.test(AFM_LANDING.pricingHeading!),
+  AFM_LANDING.pricingHeading);
+ok('AFM paid line makes no bundle claim', !BUNDLE_CLAIM.test(AFM_LANDING.pricing.paid),
+  AFM_LANDING.pricing.paid);
+ok('the detector itself works — it catches the retired strings',
+  BUNDLE_CLAIM.test('Free to start. One pass covers every ACCA paper.') &&
+  BUNDLE_CLAIM.test('One ACCA pass covers every paper you sit: APM and AFM together, one subscription.'));
 ok('AFM_LANDING requests no client chrome — no scroll listener ships',
   !hasSection(AFM_LANDING, 'backToTop') && !hasSection(AFM_LANDING, 'stickyHeaderShadow'));
 
@@ -224,8 +245,10 @@ ok('AFM output contains no optional-section markup',
   !afmHtml.includes('plp-faq-list') && !afmHtml.includes('plp-tier-grid') &&
   !afmHtml.includes('plp-step-list') && !afmHtml.includes('plp-totop') &&
   !afmHtml.includes('ld+json'));
-ok('AFM output still contains its simple price card and original heading',
-  afmHtml.includes('plp-price-card') && afmHtml.includes(DEFAULT_PRICING_HEADING));
+ok('AFM output still contains its simple price card, carrying its OWN heading',
+  afmHtml.includes('plp-price-card') && afmHtml.includes(AFM_LANDING.pricingHeading!));
+ok('AFM output contains no bundle claim anywhere in the rendered body',
+  !BUNDLE_CLAIM.test(afmHtml.replace(/<[^>]+>/g, ' ')));
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} product-landing: ${pass} passed, ${fail} failed\n`);
 // P-G4: exitCode, never process.exit().

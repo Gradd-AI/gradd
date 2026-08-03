@@ -145,16 +145,21 @@ export interface ProductLandingConfig {
   };
 }
 
-/** The pricing heading the template has rendered since it was built. Kept as the DEFAULT so
- *  AFM's output is byte-identical after this change.
+/**
+ * The fallback pricing heading, used when a config sets no `pricingHeading`.
  *
- *  ⚠️ IT IS ALSO NOW FALSE. Per-paper pricing was ruled 2026-08-03 — APM and AFM are sold
- *  separately — so "One pass covers every ACCA paper" is a bundle claim the product no
- *  longer honours. It is preserved here ONLY because this change-set is forbidden from
- *  altering AFM's rendering, and changing a default silently changes AFM. Fix it by setting
- *  `pricingHeading` on AFM_LANDING in the conversion change-set, or sooner if that claim
- *  should not be live for another day. Recorded rather than quietly corrected. */
-export const DEFAULT_PRICING_HEADING = 'Free to start. One pass covers every ACCA paper.';
+ * ── DELIBERATELY PAPER-NEUTRAL, AND THAT IS THE POINT ───────────────────────
+ * It used to read "Free to start. One pass covers every ACCA paper." — a BUNDLE claim, and
+ * false since per-paper pricing was ruled 2026-08-03. Corrected in its own change-set
+ * (`184a16b`) ahead of this one, because it was a live commercial claim.
+ *
+ * A DEFAULT is inherited by every config that does not override it, including configs
+ * written by someone who never reads this file. So the default must be the weakest true
+ * statement available, not the most persuasive one: it may not name a paper, a price, or
+ * what a purchase covers, because it cannot know any of those for a future config. A paper
+ * that wants to say more sets `pricingHeading` explicitly and owns the claim.
+ */
+export const DEFAULT_PRICING_HEADING = 'Free to start. Paid access when you need it.';
 
 // AFM — early-access honest. Coverage states EXACTLY what is live (16 drills, four
 // calculators). CTA threads ?paper=AFM through the existing auth flow so the post-signup
@@ -163,6 +168,10 @@ export const AFM_LANDING: ProductLandingConfig = {
   paper: 'AFM',
   examName: 'Advanced Financial Management',
   eyebrow: 'ACCA AFM · early access',
+  // Explicit rather than inherited: AFM states ITS OWN offer, so the page does not depend on
+  // whatever a shared default happens to say. The default is deliberately the weakest true
+  // statement (see DEFAULT_PRICING_HEADING) — a paper that wants to name a price owns it here.
+  pricingHeading: 'Free to start. AFM access when you need it — priced on its own.',
   headline: 'AFM practice that shows you why answers lose marks',
   subhead:
     'Ezra marks your working like the examiner, diagnoses the exact gap — a mismatched discount rate, an un-stripped debt, a calculation that never became advice — then coaches the fix, drill by drill.',
@@ -182,9 +191,16 @@ export const AFM_LANDING: ProductLandingConfig = {
       body: 'AFM is new here: 16 drills live now across the appraisal and financing core, more every week. You see exactly what is covered — no padding, no “complete syllabus” claim.',
     },
   ],
+  // ── CORRECTED 2026-08-03: the paid line asserted the retired BUNDLE ─────────
+  // It read: "One ACCA pass covers every paper you sit: APM and AFM together, one
+  // subscription." Per-paper pricing was ruled 2026-08-03 — APM and AFM are separate SKUs —
+  // so that sentence was selling something the product no longer offers, on a live page.
+  // It was the MORE explicit of the two bundle claims on this card (the other was the
+  // heading, now paper-neutral in the template), and fixing only the heading would have
+  // left the page stating the bundle outright one line below a corrected title.
   pricing: {
     free: 'Free to start — every live AFM drill, with Ezra teach-throughs. No card required.',
-    paid: 'One ACCA pass covers every paper you sit: APM and AFM together, one subscription.',
+    paid: 'Then €99 for a sitting-dated AFM pass, or €49/month. Each ACCA paper is priced separately.',
   },
   freeCta: {
     label: 'Start free — every live drill',
