@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
-import { hasActiveACCAAccess } from '@/lib/acca/access';
+import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
 
@@ -106,7 +106,11 @@ export default async function ProgressPage({
     .select('apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
-  const paid = hasActiveACCAAccess(profile ?? {}); // bundle-wide ACCA access (all papers)
+  // PER-PAPER (2026-08-03) — scoped to the paper this progress view is showing.
+  // Uses `authClient` (the session client), like the profile read above: this page
+  // deliberately reads the student's OWN rows under RLS rather than escalating to a
+  // service client for a presentation decision.
+  const paid = await hasPaperAccess(authClient, user.id, paper, profile);
 
   const now = Date.now();
   const p = await getMyProgress(user.id, now, paper);

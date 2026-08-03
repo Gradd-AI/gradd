@@ -7,8 +7,8 @@ import {
   runTeachTurn,
   type ClientSessionState,
 } from '@/lib/acca/teach-engine';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { resolvePaper } from '@/lib/acca/paper';
+import { hasPaperAccess } from '@/lib/acca/access';
+import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
 import { paperForCase } from '@/lib/acca/mocks';
@@ -77,10 +77,17 @@ export async function POST(request: Request): Promise<Response> {
   const requirementId = typeof requirement_id === 'string' && requirement_id ? requirement_id : null;
   const lastEzraMessage = typeof last_ezra_message === 'string' ? last_ezra_message : '';
   const paper = resolvePaper(paperRaw);
+  // Strict paper for the entitlement gate — no default. See app/api/acca/case/route.ts
+  // for why the gate must not inherit resolvePaper's APM fallback. SitRunner already
+  // sends `paper` explicitly on every sit write; CaseSession now does too.
+  const gatePaper = strictPaper(paperRaw);
   const sitting = sittingRaw === true;
 
   if (!caseId || !requirementId) {
     return NextResponse.json({ error: 'case_id and requirement_id required' }, { status: 400 });
+  }
+  if (!gatePaper) {
+    return NextResponse.json({ error: 'paper is required (APM or AFM)' }, { status: 400 });
   }
   // A sit may record a BLANK answer (an unanswered requirement at move-on/timeout);
   // practice needs a real turn to teach against, so it still requires non-empty text.
@@ -102,7 +109,7 @@ export async function POST(request: Request): Promise<Response> {
     .eq('id', user.id)
     .single();
 
-  if (!hasActiveAPMAccess(profile ?? {})) {
+  if (!(await hasPaperAccess(supabase, user.id, gatePaper, profile))) {
     return NextResponse.json({ error: 'subscription_required' }, { status: 402 });
   }
 

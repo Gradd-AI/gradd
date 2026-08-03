@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
-import { resolvePaper } from '@/lib/acca/paper';
+import { hasPaperAccess } from '@/lib/acca/access';
+import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { mockContentAllowed, caseIsReserved, STANDARD_REQUIREMENT_SELECT } from '@/lib/acca/mock-access';
 import { sitDisplayLabel } from '@/lib/acca/sit-preview';
 
@@ -35,6 +35,13 @@ export async function GET(request: Request): Promise<Response> {
   const { searchParams } = new URL(request.url);
   const caseId = searchParams.get('case_id');
   const paper = resolvePaper(searchParams.get('paper'));
+  // ── The ENTITLEMENT paper is parsed separately, and strictly ──
+  // `paper` above keeps `resolvePaper` because it scopes CONTENT, where defaulting to
+  // APM means "serve the APM row" and is correct. The GATE may not share that default:
+  // it would ask "does this user hold APM?" for a request that named no paper, and
+  // answer yes for an APM-only holder reaching anything. `strictPaper` returns null
+  // for absent/unknown and the request is refused below.
+  const gatePaper = strictPaper(searchParams.get('paper'));
   // SIT mode rehydrates the student's own typed final_answer per requirement so a
   // refresh mid-sit restores what they wrote (practice mode never needs it, and its
   // payload stays byte-identical — final_answer is the student's own writing, not
@@ -42,6 +49,12 @@ export async function GET(request: Request): Promise<Response> {
   const sitting = searchParams.get('sitting') === 'true';
   if (!caseId) {
     return NextResponse.json({ error: 'case_id required' }, { status: 400 });
+  }
+  if (!gatePaper) {
+    return NextResponse.json(
+      { error: 'paper query parameter is required (APM or AFM)' },
+      { status: 400 },
+    );
   }
 
   const supabase = createServiceClient();
@@ -57,7 +70,7 @@ export async function GET(request: Request): Promise<Response> {
     .eq('id', user.id)
     .single();
 
-  if (!hasActiveAPMAccess(profile ?? {})) {
+  if (!(await hasPaperAccess(supabase, user.id, gatePaper, profile))) {
     const { data: locked } = await supabase
       .from('acca_cases')
       .select('title')

@@ -6,24 +6,40 @@ import Link from 'next/link';
 
 type APMProduct = 'pass' | 'monthly';
 
-// One ACCA subscription is a BUNDLE — it covers every live paper (APM + AFM today, more as
-// they ship), so the feature copy is paper-neutral: no APM-only breadth claim, no hardcoded
-// counts to drift. The paper the student came from only drives the lead line below.
-const PASS_FEATURES = [
-  'Every drill across APM and AFM — and every ACCA paper we add',
-  'Unlimited teach-throughs with Ezra for 90 days',
-  'Application & evaluation diagnosis on the specific scenario',
-  'Command-verb + ACCA intellectual-level coaching on every answer',
-  'One payment — no recurring charge',
-];
+// ── PER-PAPER COPY (2026-08-03) ──────────────────────────────────────────────
+// These lists used to open with "Every drill across APM and AFM — and every ACCA paper we
+// add", and a header note declaring the offer a BUNDLE. Both were true and are now false:
+// APM and AFM are sold separately, so a purchase buys ONE paper.
+//
+// The copy is therefore a function of the paper rather than a constant. A student who
+// cannot tell from this page which paper they are buying will buy the wrong one, and it is
+// the one mistake in this flow they pay for.
+//
+// ALSO CORRECTED, and it is not cosmetic: the fourth bullet promised "Command-verb + ACCA
+// intellectual-level coaching on every answer". The teaching loop was changed on
+// 2026-08-03 to stop naming that taxonomy at the student at all — it was measured leaking
+// into 83% of teach legs and removed as anti-pedagogy (the discrimination is the skill
+// being assessed). Selling a behaviour the product has deliberately removed is a false
+// claim, so the bullet now describes what the student actually gets.
+function passFeatures(paper: 'APM' | 'AFM'): string[] {
+  return [
+    `Every ${paper} drill, unlimited`,
+    'Unlimited teach-throughs with Ezra for 90 days',
+    'Application & evaluation diagnosis on the specific scenario',
+    'The exact gap named on every answer — what was missed, and the next move',
+    'One payment — no recurring charge',
+  ];
+}
 
-const MONTHLY_FEATURES = [
-  'Every drill across APM and AFM — and every ACCA paper we add',
-  'Unlimited teach-throughs with Ezra',
-  'Application & evaluation diagnosis on the specific scenario',
-  'Command-verb + ACCA intellectual-level coaching on every answer',
-  'Cancel any time',
-];
+function monthlyFeatures(paper: 'APM' | 'AFM'): string[] {
+  return [
+    `Every ${paper} drill, unlimited`,
+    'Unlimited teach-throughs with Ezra',
+    'Application & evaluation diagnosis on the specific scenario',
+    'The exact gap named on every answer — what was missed, and the next move',
+    'Cancel any time',
+  ];
+}
 
 // Polls the fail-closed access gate after the Stripe redirect. The webhook flips
 // the profile a beat after payment, so we poll until access is confirmed, then land
@@ -38,7 +54,7 @@ const FAST_INTERVAL_MS = 1000;
 const SLOW_INTERVAL_MS = 3000;
 const SLOW_AFTER_ATTEMPTS = 30;   // ~60s total (15×1s + 15×3s) → switch UI, keep polling
 
-function SuccessPoller() {
+function SuccessPoller({ paper }: { paper: 'APM' | 'AFM' }) {
   const router = useRouter();
   const [attempt, setAttempt] = useState(0);
   const stillActivating = attempt >= SLOW_AFTER_ATTEMPTS;
@@ -49,7 +65,7 @@ function SuccessPoller() {
 
     (async () => {
       try {
-        const res = await fetch('/api/acca/access', { cache: 'no-store' });
+        const res = await fetch(`/api/acca/access?paper=${paper}`, { cache: 'no-store' });
         // Fail-closed on the client too: only a 200 with access===true routes the
         // user through. Any non-200, parse failure, or access!==true falls through
         // to another poll — a paid user is never pushed forward on unconfirmed access.
@@ -71,7 +87,7 @@ function SuccessPoller() {
     })();
 
     return () => { cancelled = true; if (timer) clearTimeout(timer); };
-  }, [attempt, router]);
+  }, [attempt, router, paper]);
 
   if (stillActivating) {
     // Honest holding state — still polling in the background. "Check again" forces
@@ -107,7 +123,13 @@ function SuccessPoller() {
 
 // Resolve which paper the student came from: explicit ?paper= first, then an AFM referrer
 // heuristic (the burn CTA + tutor upsells pass ?paper=, so this is mostly the direct signal),
-// else null → paper-neutral lead. Bundle access is identical whichever paper they arrived on.
+// else null.
+//
+// ⚠️ NULL NO LONGER MEANS "it does not matter". Under the bundle it genuinely did — access
+// was identical whichever paper they arrived on, so a paper-neutral lead was honest. Now the
+// paper decides WHAT IS BOUGHT, so a null must resolve to a visible, changeable default
+// rather than being papered over: the page falls back to APM and says so, with a switch.
+// Silently defaulting and staying quiet about it is how someone buys the wrong paper.
 function resolvePaperContext(param: string | null): 'APM' | 'AFM' | null {
   const p = (param || '').toUpperCase();
   if (p === 'APM' || p === 'AFM') return p;
@@ -118,18 +140,22 @@ function resolvePaperContext(param: string | null): 'APM' | 'AFM' | null {
 function APMSubscribeInner() {
   const searchParams = useSearchParams();
   const paymentSuccess = searchParams.get('success') === 'true';
-  const paper = resolvePaperContext(searchParams.get('paper'));
-  // Lead with the paper they came from; the offer (bundle) is identical either way.
-  const leadSub = paper
-    ? `Unlock the full ${paper} bank — and everything else. One Gradd subscription covers every drill across APM and AFM, plus every ACCA paper we add.`
-    : 'One Gradd subscription covers every drill across APM and AFM — unlimited coaching with Ezra, plus every ACCA paper we add.';
+  const detectedPaper = resolvePaperContext(searchParams.get('paper'));
+  // The paper being PURCHASED. Defaults to APM when nothing was detected, and the default is
+  // shown and switchable in the UI below — never applied silently. See resolvePaperContext.
+  const [paper, setPaper] = useState<'APM' | 'AFM'>(detectedPaper ?? 'APM');
+
+  // Names the paper being bought, because that is now the material fact on this page.
+  const leadSub =
+    `Unlock the full ${paper} bank — unlimited coaching with Ezra on every ${paper} drill, ` +
+    `case and mock. ${paper === 'APM' ? 'AFM' : 'APM'} is sold separately.`;
 
   const [selected, setSelected] = useState<APMProduct>('pass');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (paymentSuccess) {
-    return <SuccessPoller />;
+    return <SuccessPoller paper={paper} />;
   }
 
   const handleCheckout = async (product: APMProduct) => {
@@ -141,7 +167,7 @@ function APMSubscribeInner() {
       const res = await fetch('/api/checkout/acca', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ product }),
+        body: JSON.stringify({ product, paper }),
       });
       const data = await res.json();
 
@@ -168,8 +194,33 @@ function APMSubscribeInner() {
       </div>
 
       <div className="apm-sub-head">
-        <h1 className="apm-sub-title">Keep drilling with Ezra</h1>
+        <h1 className="apm-sub-title">Keep drilling with {paper}</h1>
         <p className="apm-sub-sub">{leadSub}</p>
+
+        {/* ── WHICH PAPER AM I BUYING? ──────────────────────────────────────────
+            Under the bundle there was nothing to choose, so this control did not exist.
+            Now the choice IS the purchase, and the page arrives here with a paper that was
+            often INFERRED — from ?paper=, from a referrer regex, or from the APM default.
+            An inference the buyer cannot see or change is how someone pays €99 for the
+            wrong paper. It is rendered as a live control rather than a label so the answer
+            is always both visible and correctable. */}
+        <div className="apm-sub-paper" role="group" aria-label="Which ACCA paper are you buying?">
+          <span className="apm-sub-paper-label">Buying access to:</span>
+          {(['APM', 'AFM'] as const).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => setPaper(p)}
+              aria-pressed={paper === p}
+              className={`apm-sub-paper-btn${paper === p ? ' is-on' : ''}`}
+            >
+              {p}
+            </button>
+          ))}
+        </div>
+        <p className="apm-sub-paper-note">
+          Each paper is bought separately. {paper === 'APM' ? 'AFM' : 'APM'} is not included.
+        </p>
       </div>
 
       <div className="apm-sub-cards">
@@ -184,7 +235,7 @@ function APMSubscribeInner() {
           </div>
           <p className="apm-card-blurb">Full access through exam season. Pay once, no recurring charge.</p>
           <ul className="apm-card-features">
-            {PASS_FEATURES.map(f => (
+            {passFeatures(paper).map(f => (
               <li key={f}>
                 <span className="apm-tick" aria-hidden="true">
                   <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4L4 7L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -211,7 +262,7 @@ function APMSubscribeInner() {
           </div>
           <p className="apm-card-blurb">Flexible — keep it for as long as you&apos;re revising, cancel any time.</p>
           <ul className="apm-card-features">
-            {MONTHLY_FEATURES.map(f => (
+            {monthlyFeatures(paper).map(f => (
               <li key={f}>
                 <span className="apm-tick" aria-hidden="true">
                   <svg width="11" height="9" viewBox="0 0 11 9" fill="none"><path d="M1 4L4 7L10 1" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -279,6 +330,16 @@ const CSS = `
   line-height: 1.1;
 }
 .apm-sub-sub { font-size: 15px; color: var(--text-muted); line-height: 1.55; margin: 0; }
+.apm-sub-paper { display: inline-flex; align-items: center; gap: 8px; margin: 16px 0 6px; flex-wrap: wrap; }
+.apm-sub-paper-label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+.apm-sub-paper-btn {
+  font-size: 13px; font-weight: 700; letter-spacing: .02em; padding: 5px 14px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-muted);
+  cursor: pointer; transition: background .12s ease, color .12s ease, border-color .12s ease;
+}
+.apm-sub-paper-btn:hover { color: var(--text); border-color: var(--text-muted); }
+.apm-sub-paper-btn.is-on { background: var(--brand); border-color: var(--brand); color: #fff; }
+.apm-sub-paper-note { font-size: 12.5px; color: var(--text-muted); margin: 0; }
 
 .apm-sub-cards {
   display: grid;

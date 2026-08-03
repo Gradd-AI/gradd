@@ -11,8 +11,34 @@ export type AccaPaper = (typeof ACCA_PAPERS)[number];
 // Canonicalize an untrusted paper hint (a URL query param or request-body field) to a
 // known paper. Unknown/absent → 'APM' (the established default; AFM must be named
 // explicitly, so no existing APM entry point changes behaviour).
+//
+// ⚠️ NEVER USE THIS FOR AN ENTITLEMENT DECISION. Its default is the whole problem: a
+// request that omits the paper resolves to 'APM', so a gate built on it would ask "does
+// this user hold APM?" for a request that named no paper at all — and answer yes for an
+// APM holder reaching anything. Use `strictPaper` below, which refuses instead.
+// This function remains correct for CONTENT SCOPING, which is what it was built for:
+// there, defaulting to APM means "serve the APM row", and serving APM content to a
+// request gated on APM is coherent.
 export function resolvePaper(raw: unknown): AccaPaper {
   return raw === 'AFM' ? 'AFM' : 'APM';
+}
+
+/**
+ * Parse a paper hint with NO DEFAULT. Returns null for absent, empty, or unrecognised
+ * input so the caller must decide what to do about it.
+ *
+ * This exists because per-paper entitlement made `resolvePaper`'s default dangerous in one
+ * specific position — the authorisation gate. `lib/acca/sit-attempt.ts` already banked the
+ * same lesson from the other direction: it takes the RAW query value rather than
+ * `resolvePaper()`'s output precisely because "absent" and "explicitly APM" are different
+ * facts, and collapsing them was a cross-paper content leak.
+ *
+ * Callers gating access MUST treat null as a refusal, never as a paper.
+ */
+export function strictPaper(raw: unknown): AccaPaper | null {
+  if (typeof raw !== 'string') return null;
+  const v = raw.trim().toUpperCase();
+  return (ACCA_PAPERS as readonly string[]).includes(v) ? (v as AccaPaper) : null;
 }
 
 // DIRECT-LINK-ONLY areas: a lo_code that IS published (servable by direct link / ?area=) but must be

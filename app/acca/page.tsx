@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper, isDirectLinkOnlyArea } from '@/lib/acca/paper';
-import { hasActiveACCAAccess } from '@/lib/acca/access';
+import { hasPaperAccess } from '@/lib/acca/access';
 import ACCADashboard from './ACCADashboard';
 import MetaTrackSignup from '@/components/MetaTrackSignup';
 import type { PickerArea } from './AreaPicker';
@@ -67,7 +67,10 @@ export default async function ACCAPage({
     .single();
 
   const usedCount = ((profile as Record<string, unknown> | null)?.[capColumn] as number | null) ?? 0;
-  const hasActiveAccess = hasActiveACCAAccess(profile ?? {}); // bundle-wide ACCA access
+  // PER-PAPER (2026-08-03): this page is already scoped to one paper by `?paper=`, so the
+  // cap/upsell state it renders must be that paper's. A bundle answer here would show "go
+  // unlimited" as satisfied on AFM for an APM-only holder.
+  const hasActiveAccess = await hasPaperAccess(supabase, user.id, paper, profile);
 
   // Exam-cases entry point is gated on APM_CASES. Read server-side and pass only a
   // boolean to the client — the env value itself never enters the client bundle.

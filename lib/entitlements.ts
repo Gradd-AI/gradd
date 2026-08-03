@@ -13,7 +13,16 @@
 
 import { hasActiveACCAAccess } from '@/lib/acca/access';
 
-export type Product = 'LC' | 'IB' | 'APM';
+// RENAMED 'APM' → 'ACCA' (2026-08-03). The member never meant "holds the APM paper" — it
+// meant "holds ACCA", and it only ever decides `home = '/acca'` and guards the LC/IB
+// surfaces. Under per-paper pricing the old name reads as a paper-specific claim it has
+// never made, and a future reader would reasonably wire an APM-only check to it.
+//
+// Deliberately NOT split into 'APM' | 'AFM'. No ACCA surface reads this union — the
+// per-paper decision belongs to `hasPaperAccess`, which every ACCA gate now calls with an
+// explicit paper. Splitting it here would create a second, weaker answer to the same
+// question in the module that knows least about papers.
+export type Product = 'LC' | 'IB' | 'ACCA';
 
 export interface ProfileSignals {
   subject?: string | null;
@@ -71,16 +80,24 @@ export function resolveProducts(profile: ProfileSignals, ctx: ResolveContext): E
     else products.add('LC');
   }
 
-  // ACCA access — active sub or unexpired pass (bundle: one entitlement, all ACCA papers).
-  // The 'APM' product is the ACCA-access grant; AFM is bundled under it (no separate SKU).
-  if (hasActiveACCAAccess(profile)) products.add('APM');
+  // ACCA access — does this account hold ANY ACCA paper?
+  //
+  // This is deliberately still the LEGACY BUNDLE predicate, and it is deliberately still
+  // paper-blind. The only thing this answer drives is `home = '/acca'` — where to send an
+  // account that has no LC/IB product. "Holds APM but not AFM" and "holds both" route to
+  // the same place, so asking per-paper here would add a query per call to change nothing.
+  //
+  // The consequence to be aware of: a holder of EITHER paper resolves to 'ACCA'. That is
+  // correct for routing and would be wrong for authorisation — which is why no ACCA
+  // surface reads this union, and why every ACCA gate calls hasPaperAccess instead.
+  if (hasActiveACCAAccess(profile)) products.add('ACCA');
 
-  // Home: LC/IB holders → the LC/IB dashboard; APM-only → the APM home; no products →
+  // Home: LC/IB holders → the LC/IB dashboard; ACCA-only → the ACCA home; no products →
   // the host's free-funnel entry (gradd.ai = /acca, gradd.ie = /). Never /dashboard for a
   // non-LC/IB account, so the /dashboard guard can redirect here without looping.
   let home: string;
   if (products.has('LC') || products.has('IB')) home = '/dashboard';
-  else if (products.has('APM')) home = '/acca';
+  else if (products.has('ACCA')) home = '/acca';
   else home = ctx.isGraddAi ? '/acca' : '/';
 
   return { products, home };

@@ -1,3 +1,4 @@
+import { strictPaper } from '@/lib/acca/paper';
 import { createServiceClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
 import { Resend } from 'resend';
@@ -189,6 +190,17 @@ async function handleAPMCheckoutComplete(
   const product = session.metadata?.apm_product; // 'monthly' | 'pass'
   if (!userId || !product) return;
 
+  // ── WHICH PAPER (per-paper pricing, 2026-08-03) ─────────────────────────────
+  // Written by app/api/checkout/acca. A purchase with NO paper cannot be attributed —
+  // four SKUs do not help, because this handler branches on metadata rather than on the
+  // price id. Two behaviours, deliberately different:
+  //   • paper present  → write an acca_entitlements row for THAT paper.
+  //   • paper absent   → this is a pre-split Stripe object created before this deploy.
+  //     Fall through to the legacy column write ONLY, which is bundle-wide and therefore
+  //     still correct for a purchase made under the bundled offer. Do NOT guess 'APM':
+  //     an AFM buyer silently granted APM is the worst outcome available here.
+  const paper = strictPaper(session.metadata?.paper);
+
   if (product === 'pass') {
     // One-time €99 pass: grant 90 days from now. There is no Stripe 'ended' event
     // for a one-time payment — the access gate lapses this on date server-side.
@@ -219,13 +231,62 @@ async function handleAPMCheckoutComplete(
       .eq('id', userId);
   }
 
+  // ── THE PER-PAPER ENTITLEMENT ROW ───────────────────────────────────────────
+  // Written IN ADDITION to the legacy column write above, not instead of it. Both are
+  // maintained through the transition so a rollback of this deploy cannot strand a
+  // customer who paid in the meantime: the legacy columns alone still grant them access
+  // (bundle-wide, which is generous rather than wrong), and the table alone grants the
+  // paper they actually bought. Dropping the legacy write is the LAST step, after the
+  // dual-read has been verified.
+  //
+  // Skipped entirely when the paper is absent — a pre-split Stripe object. See the note
+  // where `paper` is parsed.
+  if (paper) {
+    // `stripe_event_id` carries the SESSION id, which is stable across Stripe's retries
+    // of the same checkout.session.completed. The unique index on it is what makes a
+    // retried webhook a no-op instead of a second entitlement.
+    const row = {
+      user_id: userId,
+      paper_code: paper,
+      source: 'stripe' as const,
+      stripe_event_id: session.id,
+      ...(product === 'pass'
+        ? {
+            kind: 'pass' as const,
+            // Still purchase + 90 days. Sitting-dated expiry lands when checkout offers a
+            // sitting to choose (acca_sittings exists but is unverified and therefore not
+            // sellable yet — see the migration's dates_verified interlock). Deriving from a
+            // sitting here before the UI can collect one would invent the student's choice.
+            expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+          }
+        : {
+            kind: 'subscription' as const,
+            subscription_status: 'active',
+            stripe_subscription_id: (session.subscription as string) ?? null,
+          }),
+    };
+    const { error } = await supabase.from('acca_entitlements').insert(row);
+    // 23505 = the idempotency index did its job on a Stripe retry. Anything else is
+    // logged and swallowed: the legacy column write above has already granted access, so
+    // a failure here must never turn a successful payment into a 500 that Stripe retries
+    // forever. It shows up as a missing row, which the reconcile query in the migration
+    // is written to surface.
+    if (error && (error as { code?: string }).code !== '23505') {
+      console.error('WEBHOOK: acca_entitlements insert failed', paper, product, error.message);
+    }
+  }
+
   // Best-effort internal alert. Only the one-off pass and the subscription START
   // flow through checkout.session.completed — renewals hit invoice.* and are not
   // reported here, which is exactly what we want. notifyGrant swallows all
   // errors, so this can never affect the webhook 200.
   const email = session.customer_details?.email ?? session.customer_email ?? 'unknown email';
   const label = product === 'pass' ? 'pass €99' : 'subscription €49/mo';
-  await notifyGrant(`[Gradd] APM payment — ${label}`, `APM ${label} — ${email}`);
+  const paperLabel = paper ?? 'ACCA (pre-split, no paper in metadata)';
+  await notifyGrant(
+    `[Gradd] ${paperLabel} payment — ${label}`,
+    `${paperLabel} ${label} — ${email}`,
+  );
 }
 
 async function handleAPMSubscriptionChange(
@@ -237,14 +298,25 @@ async function handleAPMSubscriptionChange(
 
   // Keep apm_subscription_status in sync with Stripe (e.g. past_due → not active).
   // Access is granted only on 'active', so any non-active status closes the gate.
+  const status = mapStripeStatus(subscription.status);
   await supabase
     .from('profiles')
     .update({
-      apm_subscription_status: mapStripeStatus(subscription.status),
+      apm_subscription_status: status,
       apm_stripe_subscription_id: subscription.id,
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+
+  // Mirror onto the per-paper row. Keyed by the SUBSCRIPTION ID rather than by paper:
+  // the id is what Stripe gives us on this event, and it already identifies exactly one
+  // row. Reading the paper from metadata and matching on that would break for a
+  // subscription created before the split, which carries no paper.
+  await supabase
+    .from('acca_entitlements')
+    .update({ subscription_status: status, updated_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('stripe_subscription_id', subscription.id);
 }
 
 async function handleAPMSubscriptionCancelled(
@@ -261,6 +333,21 @@ async function handleAPMSubscriptionCancelled(
       updated_at: new Date().toISOString(),
     })
     .eq('id', userId);
+
+  // Close the per-paper row too. `revoked_at` is set as well as the status: the status
+  // is what the predicate reads, and revoked_at is what frees the partial unique index so
+  // the same student can subscribe to that paper again later. Without it the second
+  // subscription would collide with the corpse of the first.
+  await supabase
+    .from('acca_entitlements')
+    .update({
+      subscription_status: 'inactive',
+      revoked_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .eq('stripe_subscription_id', subscription.id)
+    .is('revoked_at', null);
 }
 
 async function handleSubscriptionChange(

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
-import { hasActiveACCAAccess } from '@/lib/acca/access';
+import { hasPaperAccess } from '@/lib/acca/access';
 import TutorChat from './TutorChat';
 
 export const metadata: Metadata = {
@@ -163,7 +163,10 @@ export default async function APMTutorPage({
     .single();
 
   const usedCount = ((profile as Record<string, unknown> | null)?.[capColumn] as number | null) ?? 0;
-  const hasActiveAccess = hasActiveACCAAccess(profile ?? {}); // bundle-wide ACCA access
+  // PER-PAPER (2026-08-03): this page is already scoped to one paper by `?paper=`, so the
+  // cap/upsell state it renders must be that paper's. A bundle answer here would show "go
+  // unlimited" as satisfied on AFM for an APM-only holder.
+  const hasActiveAccess = await hasPaperAccess(supabase, user.id, paper, profile);
   const initialCapHit = !hasActiveAccess && usedCount >= 3;
 
   // Authoritative paper = the on-screen drill's own paper_code (an id-addressed entry may

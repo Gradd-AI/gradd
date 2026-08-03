@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { hasActiveAPMAccess } from '@/lib/acca/access';
+import { hasPaperAccess, type LegacyEntitlementProfile } from '@/lib/acca/access';
 import { sitCaseGate, attemptIsClosed } from '@/lib/acca/sit-preview';
 import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-attempt';
 import type { AccaPaper } from '@/lib/acca/paper';
@@ -75,10 +75,15 @@ const CASES_ENABLED = process.env.APM_CASES === '1';
 interface GateOk {
   userId: string;
   supabase: ReturnType<typeof createServiceClient>;
+  profile: LegacyEntitlementProfile | null;
 }
 
-// Identical to the sit route's gate — same flag, same auth, same entitlement, same codes.
-async function gate(): Promise<{ error: Response } | GateOk> {
+// Identical to the sit route's gate — same flag, same auth, same entitlement, same codes,
+// and now the same TWO-HALF shape for the same reason: the entitlement question is
+// per-paper, and this route does not know the paper until resolvePaperConfig has run.
+// Splitting it keeps both routes checking the paper they actually serve rather than a
+// guessed one.
+async function gateAuth(): Promise<{ error: Response } | GateOk> {
   if (!CASES_ENABLED) {
     return { error: NextResponse.json({ error: 'Not found' }, { status: 404 }) };
   }
@@ -93,10 +98,13 @@ async function gate(): Promise<{ error: Response } | GateOk> {
     .select('apm_subscription_status, apm_pass_expires_at')
     .eq('id', user.id)
     .single();
-  if (!hasActiveAPMAccess(profile ?? {})) {
-    return { error: NextResponse.json({ error: 'subscription_required' }, { status: 402 }) };
-  }
-  return { userId: user.id, supabase };
+  return { userId: user.id, supabase, profile: profile ?? null };
+}
+
+/** 402 unless the caller holds THE PAPER whose results they are asking for. */
+async function gatePaperAccess(g: GateOk, paper: AccaPaper): Promise<Response | null> {
+  const ok = await hasPaperAccess(g.supabase, g.userId, paper, g.profile);
+  return ok ? null : NextResponse.json({ error: 'subscription_required' }, { status: 402 });
 }
 
 /** Everything the debrief is built from, read in one place so GET and POST cannot disagree
@@ -269,13 +277,16 @@ async function claimCase(
 
 // ── GET — report what is persisted. Never marks, never spends. ────────────────
 export async function GET(request: Request): Promise<Response> {
-  const g = await gate();
+  const g = await gateAuth();
   if ('error' in g) return g.error;
   const { supabase, userId } = g;
 
   const resolved = await resolvePaperConfig(supabase, userId, new URL(request.url));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
+  // Entitlement, once the paper is known and before any marks are reported.
+  const deniedGet = await gatePaperAccess(g, PAPER.paper);
+  if (deniedGet) return deniedGet;
   // No attempt = no sitting = nothing to report. Previously this fell through and read every
   // progress row for the paper's cases, which is how PRACTICE work became a debrief.
   if (!resolved.attempt) return NextResponse.json({ error: 'no_attempt' }, { status: 409 });
@@ -296,7 +307,7 @@ export async function GET(request: Request): Promise<Response> {
 
 // ── POST — mark whatever is unmarked, then debrief. ───────────────────────────
 export async function POST(request: Request): Promise<Response> {
-  const g = await gate();
+  const g = await gateAuth();
   if ('error' in g) return g.error;
   const { supabase, userId } = g;
 
@@ -311,6 +322,10 @@ export async function POST(request: Request): Promise<Response> {
   const resolved = await resolvePaperConfig(supabase, userId, hintUrl(request.url, mockIdRaw, paperRaw));
   if (!resolved) return NextResponse.json({ error: 'Paper not available' }, { status: 404 });
   const PAPER = resolved.config;
+  // Entitlement before any marking runs — marking is a paid model call, so an unentitled
+  // POST must be refused before it can spend.
+  const deniedPost = await gatePaperAccess(g, PAPER.paper);
+  if (deniedPost) return deniedPost;
   if (!resolved.attempt) return NextResponse.json({ error: 'no_attempt' }, { status: 409 });
   const attemptId = resolved.attempt.id;
 
