@@ -1,11 +1,27 @@
 import { createServerClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
+import { strictPaper } from '@/lib/acca/paper';
 import { NextResponse } from 'next/server';
 
-// APM has two SKUs: a recurring €49/mo subscription and a one-time €99 90-day pass.
-// Both are TEST-MODE price IDs from .env.local.
-const APM_MONTHLY = process.env.STRIPE_APM_MONTHLY;
-const APM_PASS_90D = process.env.STRIPE_APM_PASS_90D;
+// ── FOUR SKUs: two papers x two mechanisms (per-paper pricing, 2026-08-03) ────
+// Each paper is sold separately — a recurring €49/mo subscription and a one-time €99
+// sitting-dated pass, per paper. The bundle is gone.
+//
+// WITHOUT `paper` IN THE METADATA A PURCHASE CANNOT BE ATTRIBUTED. Four SKUs are not
+// enough on their own: the webhook branches on metadata, not on the price id, so a
+// payment that does not carry its paper is un-routable — the handler would know that
+// someone bought a pass and not which paper to grant. `paper` therefore rides on the
+// checkout session AND on subscription_data, exactly as `apm_product` already does.
+const PRICE_IDS: Record<'APM' | 'AFM', Record<'monthly' | 'pass', string | undefined>> = {
+  APM: {
+    monthly: process.env.STRIPE_APM_MONTHLY,
+    pass:    process.env.STRIPE_APM_PASS_90D,
+  },
+  AFM: {
+    monthly: process.env.STRIPE_AFM_MONTHLY,
+    pass:    process.env.STRIPE_AFM_PASS_90D,
+  },
+};
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -20,10 +36,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'product must be "monthly" or "pass"' }, { status: 400 });
   }
 
-  const priceId = product === 'monthly' ? APM_MONTHLY : APM_PASS_90D;
+  // The paper is REQUIRED and is not defaulted. `strictPaper` returns null for absent or
+  // unrecognised input; defaulting to APM here would silently sell the wrong paper, and it
+  // is the one error in this flow the customer pays for.
+  const paper = strictPaper((body as { paper?: unknown }).paper);
+  if (!paper) {
+    return NextResponse.json({ error: 'paper must be "APM" or "AFM"' }, { status: 400 });
+  }
+
+  const priceId = PRICE_IDS[paper][product];
   if (!priceId) {
     return NextResponse.json(
-      { error: `Missing Stripe price ID for APM ${product}. Add it to environment variables.` },
+      { error: `Missing Stripe price ID for ${paper} ${product}. Add it to environment variables.` },
       { status: 500 }
     );
   }
@@ -47,7 +71,11 @@ export async function POST(request: Request) {
   // purchases never touch IB columns (and vice versa). It rides on BOTH the
   // checkout session AND the subscription (subscription_data.metadata) so it is
   // present on every downstream Stripe event (created/updated/deleted).
-  const apmMeta = { supabase_user_id: user.id, apm_product: product };
+  // `apm_product` keeps its name: it is the field the webhook's existing routing branches
+  // on, and renaming it would orphan any in-flight Stripe object created before this deploy.
+  // `paper` is added alongside it — see the PRICE_IDS note above for why four SKUs do not
+  // remove the need for it.
+  const apmMeta = { supabase_user_id: user.id, apm_product: product, paper };
 
   // We pass customer_email rather than reusing profile.stripe_customer_id: APM
   // deliberately keeps a Stripe customer distinct from the IB one so the
@@ -57,7 +85,7 @@ export async function POST(request: Request) {
     customer_email: profile.email,
     line_items: [{ price: priceId, quantity: 1 }],
     metadata: apmMeta,
-    success_url: `${origin}/acca/subscribe?success=true`,
+    success_url: `${origin}/acca/subscribe?success=true&paper=${paper}`,
     cancel_url: `${origin}/acca/subscribe`,
     allow_promotion_codes: true,
   };
