@@ -409,9 +409,15 @@ async function call3_confirm(
           'The answer is CORRECT — it may use a different but equivalent convention ' +
           '(sign convention, A/F labelling, layout) than a model answer would. Tell them they ' +
           'nailed it, and mean it: 2–3 sentences, warm and peer-to-peer, leading with the specific ' +
-          'thing they did well (the real move, not empty praise). Name the command verb and ACCA ' +
-          'intellectual level the answer hit (from the authored values above — do not infer when ' +
-          'given) and say briefly why it holds / what puts it in the top band. If their convention ' +
+          'thing they did well (the real move, not empty praise). ' +
+          // Was: "Name the command verb and ACCA intellectual level the answer hit (from the
+          // authored values above — do not infer when given)". Left behind by the 2026-08-01
+          // fence, which rewrote this leg's vlLine header but not its body — and it directly
+          // contradicted this module's OWN system prompt ("Never name an internal grading
+          // taxonomy to the student"), 240 lines apart. The values are no longer in the prompt,
+          // so the only way to obey it was to invent one.
+          'Say briefly which part of what the requirement demanded the answer actually hit, and ' +
+          'why it holds / what puts it in the top band. If their convention ' +
           "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
           'quote back their figures or workings — they already wrote them; refer to what they did ' +
           "in words, not numbers. Don't mark it as if it fell short.",
@@ -540,8 +546,10 @@ const WARM_INSTRUCTIONS: Record<Exclude<Intent, 'attempt'>, string> = {
     "themselves. Do NOT give this drill's answer or its numbers. 2–4 sentences, warm and peer-to-peer.",
   confusion:
     'The student is stuck or overwhelmed, not attempting. Acknowledge it without condescension, ' +
-    'normalise it in a line, then give ONE small concrete next step (e.g. name the command verb and ' +
-    'write a single sentence doing it). Then offer the alternative explicitly: tell them they can say ' +
+    // Was: "(e.g. name the command verb and write a single sentence doing it)". Same residual as
+    // the drill path's confusion leg — the example instructed the taxonomy at the student.
+    'normalise it in a line, then give ONE small concrete next step (e.g. pick the single thing the ' +
+    'requirement is asking for and write one sentence doing it). Then offer the alternative explicitly: tell them they can say ' +
     '"walk me through" and you will take them through the approach. Do NOT mark them and do NOT give ' +
     'the answer. 2–4 sentences, warm.',
   aside:
