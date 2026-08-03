@@ -62,7 +62,11 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
           <section className="plp-pricing">
             <div className="plp-wrap">
               <div className="plp-price-card">
-                <h2 className="plp-price-h">Free to start. One pass covers every ACCA paper.</h2>
+                {/* Was "Free to start. One pass covers every ACCA paper." — a BUNDLE claim,
+                    false since per-paper pricing was ruled 2026-08-03. Replaced with a
+                    PAPER-NEUTRAL heading so no config can inherit the claim; a paper that
+                    wants to state its own offer sets it explicitly. */}
+                <h2 className="plp-price-h">Free to start. Paid access when you need it.</h2>
                 <p className="plp-price-line">{c.pricing.free}</p>
                 <p className="plp-price-line">{c.pricing.paid}</p>
                 <div className="plp-cta-row" style={{ marginTop: 20 }}>

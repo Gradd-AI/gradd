@@ -44,9 +44,16 @@ export const AFM_LANDING: ProductLandingConfig = {
       body: 'AFM is new here: 16 drills live now across the appraisal and financing core, more every week. You see exactly what is covered — no padding, no “complete syllabus” claim.',
     },
   ],
+  // ── CORRECTED 2026-08-03: the paid line asserted the retired BUNDLE ─────────
+  // It read: "One ACCA pass covers every paper you sit: APM and AFM together, one
+  // subscription." Per-paper pricing was ruled 2026-08-03 — APM and AFM are separate SKUs —
+  // so that sentence was selling something the product no longer offers, on a live page.
+  // It was the MORE explicit of the two bundle claims on this card (the other was the
+  // heading, now paper-neutral in the template), and fixing only the heading would have
+  // left the page stating the bundle outright one line below a corrected title.
   pricing: {
     free: 'Free to start — every live AFM drill, with Ezra teach-throughs. No card required.',
-    paid: 'One ACCA pass covers every paper you sit: APM and AFM together, one subscription.',
+    paid: 'Then €99 for a sitting-dated AFM pass, or €49/month. Each ACCA paper is priced separately.',
   },
   freeCta: {
     label: 'Start free — every live drill',
