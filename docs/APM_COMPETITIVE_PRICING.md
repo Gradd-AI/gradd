@@ -120,3 +120,71 @@ A Stripe object created **before** this deploy carries no `paper` in its metadat
 the legacy column ONLY and never guess a paper — a pre-split purchase was made under the
 bundled offer, so bundle-wide is the correct reading, and guessing 'APM' would silently grant
 an AFM buyer the wrong paper.
+
+#### SITTINGS VERIFIED — 03/08/2026
+
+Verified against **`accaglobal.com/gb/en/student/getting-started/important-dates.html`** (ACCA's
+own published page, not a secondary source).
+
+| Sitting | `dates_verified` | Why |
+|---|---|---|
+| MAR26 | `false` | Past |
+| JUN26 | `false` | Past |
+| **SEP26** | **`true`** | Verified — sellable |
+| **DEC26** | **`true`** | Verified — sellable |
+| MAR27 | `false` | **Not yet published by ACCA** |
+| JUN27 | `false` | **Not yet published by ACCA** |
+
+#### ⚠️ THE SEEDED ENTRY DEADLINES WERE WRONG, AND THE INTERLOCK CAUGHT IT
+
+This is the whole justification for `dates_verified` defaulting to false, and it earned its
+keep on first use.
+
+The seeded **exam windows and results dates were correct** on both live rows. The seeded **late
+entry deadlines were not**:
+
+| Sitting | Seeded `late_entry_deadline` | **Actual** | Error |
+|---|---|---|---|
+| SEP26 | `2026-08-24` | **`2026-08-03`** | 21 days late |
+| DEC26 | `2026-11-23` | **`2026-11-09`** | 14 days late |
+
+**Both would have sold €99 passes for sittings the student could no longer enter** — for three
+weeks and two weeks respectively, to exactly the buyers most likely to purchase (the ones
+closest to the deadline). The money would have been taken for a sitting that could not be sat.
+
+The failure was plausible, not obvious: the pattern-derived dates *looked* right, sat inside the
+right month, and passed every structural check in the migration
+(`late_entry_deadline <= exam_start` held for both). Nothing but reading ACCA's page would have
+found it. **`acca_sittings_open` requiring `dates_verified` is what stood between a
+pattern-derived guess and a charge**, and it is why the interlock is a gate rather than a
+reminder.
+
+#### RECURRING MAINTENANCE — this has an owner and a hard boundary
+
+**ACCA publishes each session's dates roughly a year ahead.** MAR27 and JUN27 must be verified
+off ACCA's own page before either can be offered; until then they stay `false` and are
+invisible to checkout.
+
+**🛑 JUN27 IS THE LAST SITTING UNDER THE CURRENT SYLLABUS.** From **September 2027** the
+redesigned **11-exam qualification** begins — and that boundary is also the edge of the
+**S26–J27** content Gradd is built and verified against.
+
+**Standing rule: never offer a sitting beyond the syllabus year the content is verified for.**
+Selling a DEC27 pass would sell access to a bank written for a syllabus that sitting no longer
+examines. That is a content-validity failure wearing a date, and it will not announce itself —
+`dates_verified` only asserts the DATES are right, never that the CONTENT still matches the
+syllabus that sitting sets. Verifying a post-JUN27 sitting therefore requires a syllabus
+decision first, not just a calendar check.
+
+#### Field-naming note
+
+`early_entry_deadline` currently holds **ACCA's exam-entry OPENING date**, not an early-bird
+price cutoff — an honest reading of what ACCA actually publishes on that page. Nothing reads
+the column today (`is_open` keys on `late_entry_deadline` alone). Rename it if it ever matters;
+recorded so the next reader does not infer a discount deadline that does not exist.
+
+**⚠️ The migration file's seed block still carries the two wrong deadlines.** The live table is
+correct (Grant fixed it on apply), but `20260803120100_acca_sittings.sql` would reproduce the
+bad values in a fresh environment. The interlock contains the damage — a fresh env gets
+`dates_verified = false` and sells nothing — so this is a hygiene item, not a live risk. Correct
+the seed when that file is next touched.
