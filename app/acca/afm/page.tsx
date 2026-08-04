@@ -6,6 +6,9 @@ import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import ProductLandingPage from '@/components/landing/ProductLandingPage';
 import { AFM_LANDING } from '@/components/landing/product-landing-config';
+import { withDynamicCta } from '@/components/landing/product-landing-sections';
+import { resolveEntitlementCta } from '@/lib/acca/entitlement-cta';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 
 const TITLE = 'ACCA AFM Practice — Taught, Not Just Marked | Gradd';
 // 63 verified against the DB (exam_board='ACCA', paper_code='AFM', status='approved',
@@ -39,6 +42,28 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default function AFMLandingRoute() {
-  return <ProductLandingPage config={AFM_LANDING} />;
+export default async function AFMLandingRoute() {
+  // Entitlement-aware CTA — DEFENSIVE at every layer. resolveEntitlementCta() never throws
+  // and never redirects on its own; this try/catch is a second, page-level backstop so that
+  // even a client-construction failure (e.g. a missing env var) cannot take down a public
+  // marketing page. Any failure at all renders the exact page an anonymous visitor sees.
+  let config = AFM_LANDING;
+  try {
+    const cta = await resolveEntitlementCta({
+      authClient: await createServerClient(),
+      dbClient: createServiceClient(),
+      thisPaper: 'AFM',
+      otherPaper: 'APM',
+      anonymous: AFM_LANDING.freeCta,
+      entitledOtherLabel: 'Add AFM for your sitting',
+      dashboardHref: '/acca?paper=AFM',
+    });
+    if (cta.state !== 'anonymous') {
+      config = withDynamicCta(AFM_LANDING, cta);
+    }
+  } catch {
+    // config stays AFM_LANDING — the anonymous render.
+  }
+
+  return <ProductLandingPage config={config} />;
 }

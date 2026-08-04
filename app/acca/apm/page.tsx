@@ -13,6 +13,9 @@
 import type { Metadata } from 'next';
 import ProductLandingPage from '@/components/landing/ProductLandingPage';
 import { APM_LANDING } from '@/components/landing/product-landing-config';
+import { withDynamicCta } from '@/components/landing/product-landing-sections';
+import { resolveEntitlementCta } from '@/lib/acca/entitlement-cta';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 
 const TITLE = 'ACCA APM Tutor — Taught, Not Just Marked | Gradd';
 const DESCRIPTION =
@@ -47,6 +50,27 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function APMSpokePage() {
-  return <ProductLandingPage config={APM_LANDING} />;
+export default async function APMSpokePage() {
+  // Entitlement-aware CTA — same defensive pattern as app/acca/afm/page.tsx (see that file
+  // for the full reasoning). Any failure at all renders exactly what an anonymous visitor
+  // already sees.
+  let config = APM_LANDING;
+  try {
+    const cta = await resolveEntitlementCta({
+      authClient: await createServerClient(),
+      dbClient: createServiceClient(),
+      thisPaper: 'APM',
+      otherPaper: 'AFM',
+      anonymous: APM_LANDING.freeCta,
+      entitledOtherLabel: 'Add APM for your sitting',
+      dashboardHref: '/acca',
+    });
+    if (cta.state !== 'anonymous') {
+      config = withDynamicCta(APM_LANDING, cta);
+    }
+  } catch {
+    // config stays APM_LANDING — the anonymous render.
+  }
+
+  return <ProductLandingPage config={config} />;
 }
