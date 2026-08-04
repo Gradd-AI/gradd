@@ -16,8 +16,9 @@ import {
   OPTIONAL_SECTIONS, POINTS_GRID_TEMPLATE, withDynamicCta,
 } from '../components/landing/product-landing-sections';
 import {
-  AFM_LANDING, DEFAULT_PRICING_HEADING, type ProductLandingConfig,
+  AFM_LANDING, APM_LANDING, DEFAULT_PRICING_HEADING, type ProductLandingConfig,
 } from '../components/landing/product-landing-config';
+import crypto from 'node:crypto';
 
 let pass = 0, fail = 0;
 const ok = (label: string, cond: boolean, detail = '') => {
@@ -58,9 +59,44 @@ const FULL: ProductLandingConfig = {
   steps: [{ title: 's1' }, { title: 's2', body: 'b2' }, { title: 's3', body: 'b3' }],
   stepsHeading: 'How a teach-through works',
   sections: [
-    { eyebrow: 'e1', heading: 'Group one', lead: 'l1', cards: [{ title: 'c1', body: 'b1' }], caption: 'cap1' },
+    // band: 'dark' here proves the band wrapper works on the PRE-EXISTING sections[] group,
+    // not just the new section kinds — the explicit requirement of feat/landing-section-vocabulary.
+    { eyebrow: 'e1', heading: 'Group one', lead: 'l1', cards: [{ title: 'c1', body: 'b1' }], caption: 'cap1', band: 'dark' },
     { heading: 'Group two', cards: [{ title: 'c2', body: 'b2' }, { title: 'c3', body: 'b3' }] },
   ],
+  // ── feat/landing-section-vocabulary — the five new section kinds, all populated so FULL
+  // stays the one canonical "every optional section renders" fixture. ──
+  heroArtefact: {
+    kind: 'chat', ariaLabel: 'hero mockup', title: 'Ezra', subtitle: 'Live preview',
+    turns: [{ role: 'student', lines: ['hero line'] }],
+  },
+  statBar: {
+    label: 'Trusted by', band: 'dark',
+    stats: [{ value: '346', label: 'lessons' }, { value: '61', label: 'diagrams' }, { value: '24/7', label: 'access' }],
+  },
+  featureArtefacts: [
+    {
+      eyebrow: 'fa e', heading: 'Feature artefact one', lead: 'fa lead',
+      bullets: ['bullet one', 'bullet two'],
+      mockup: { kind: 'panel', ariaLabel: 'fa panel', rows: [{ label: 'Scepticism', body: 'fa body' }] },
+    },
+    {
+      heading: 'Feature artefact two (reversed)', reverse: true, band: 'sage',
+      mockup: { kind: 'chat', ariaLabel: 'fa chat', turns: [{ role: 'tutor', lines: ['fa chat line'] }] },
+    },
+  ],
+  bigNumbers: {
+    eyebrow: 'bn e', heading: 'Big numbers heading',
+    items: [{ value: '63', body: 'drills' }, { value: '5', body: 'cases' }, { value: '100%', body: 'marked' }],
+  },
+  cmpTable: {
+    eyebrow: 'cmp e', heading: 'Compare table heading',
+    rowLabels: ['Price', 'Marked'],
+    columns: [
+      { label: 'Others', values: ['€199', false] },
+      { label: 'Gradd', values: ['€99', true], featured: true },
+    ],
+  },
   judgement: {
     eyebrow: 'e', heading: 'It is a judgement paper.', lead: 'l',
     weak: { label: 'Weak answer', body: 'x' },
@@ -174,10 +210,20 @@ ok('a configured pricingHeading overrides the default', pFull.heading === 'Per p
 // copy) and makes no bundle claim.
 // 11 of 12, not 12 of 12: AFM_LANDING deliberately omits ONLY `secondaryCta` — APM's is the
 // free resit diagnostic, a real live feature with no AFM equivalent (`lib/acca/
-// resit-engine.ts` is written in APM's own terms). Every other optional section is present.
-ok('AFM_LANDING now renders the full section structure (all but the APM-only resit band)',
-  visibleSections(AFM_LANDING).length === OPTIONAL_SECTIONS.length - 1 &&
-  !hasSection(AFM_LANDING, 'secondaryCta'),
+// resit-engine.ts` is written in APM's own terms). Every other ORIGINAL optional section is
+// present.
+//
+// SUPERSEDED AGAIN 2026-08-04 (`feat/landing-section-vocabulary`): OPTIONAL_SECTIONS grew
+// from 12 to 17 (heroArtefact/statBar/featureArtefacts/bigNumbers/cmpTable). AFM_LANDING and
+// APM_LANDING set NONE of the five — this change-set is template-only, see the config file's
+// own header — so the count AFM renders is unchanged (still 11) while the denominator and
+// the "missing" set both grew by 5.
+ok('AFM_LANDING now renders the full section structure (all but the APM-only resit band + the not-yet-adopted new vocabulary)',
+  visibleSections(AFM_LANDING).length === OPTIONAL_SECTIONS.length - 6 &&
+  !hasSection(AFM_LANDING, 'secondaryCta') &&
+  !hasSection(AFM_LANDING, 'heroArtefact') && !hasSection(AFM_LANDING, 'statBar') &&
+  !hasSection(AFM_LANDING, 'featureArtefacts') && !hasSection(AFM_LANDING, 'bigNumbers') &&
+  !hasSection(AFM_LANDING, 'cmpTable'),
   `${visibleSections(AFM_LANDING).length}/${OPTIONAL_SECTIONS.length}: ${visibleSections(AFM_LANDING).join(',')}`);
 ok('AFM_LANDING uses the tier pricing grid, not the simple card', pricingModel(AFM_LANDING).mode === 'tiers');
 ok('AFM_LANDING emits its OWN FAQ JSON-LD', buildFaqJsonLd(AFM_LANDING)?.mainEntity.length === AFM_LANDING.faqs!.length);
@@ -324,6 +370,53 @@ ok('AFM output states the VERIFIED drill count (63), not the old undercount (16)
 ok('AFM output makes NO code-owned-marking overclaim (drill generation ≠ marking)',
   !/computed and verified deterministically/i.test(afmHtml) &&
   !/so the marking is exact/i.test(afmHtml));
+
+// ── BREAK MODE 10: THE NEW SECTION VOCABULARY (feat/landing-section-vocabulary) ───────────
+// heroArtefact / statBar / featureArtefacts / bigNumbers / cmpTable, plus `band` on the
+// PRE-EXISTING sections[] group. Same discipline as every section above: an omitted field
+// renders nothing (MINIMAL, and every real config today — neither AFM_LANDING nor
+// APM_LANDING sets any of the five), FULL (now exercising all five) proves the positive, and
+// — because "the template must be able to express the vocabulary first" means nothing may
+// visibly change on a page that doesn't ask for it — AFM_LANDING and APM_LANDING must render
+// BYTE-IDENTICALLY to their pre-extension output. That property can't be eyeballed from a
+// diff of this file, so it's asserted against a SHA-256 of the style-stripped body captured
+// by rendering the PARENT commit (`b3f4b11`, before any edit in this branch) through the
+// same `bodyOf()` used here.
+ok('MINIMAL renders none of the five new section types',
+  !minimalHtml.includes('plp-statbar-stats') && !minimalHtml.includes('plp-bignums-grid') &&
+  !minimalHtml.includes('plp-feature-artefact-grid') && !minimalHtml.includes('plp-cmptable-table') &&
+  !minimalHtml.includes('plp-hero-inner--split'));
+ok('every new-vocabulary section is individually ABSENT on MINIMAL',
+  (['heroArtefact', 'statBar', 'featureArtefacts', 'bigNumbers', 'cmpTable'] as const)
+    .every((s) => hasSection(MINIMAL, s) === false));
+
+ok('FULL renders the stat bar (statBar) with its configured stats, dark band applied',
+  fullHtml.includes('plp-statbar-stats') && fullHtml.includes('346') && fullHtml.includes('plp-band-dark'));
+ok('FULL renders big numbers (bigNumbers)',
+  fullHtml.includes('plp-bignums-grid') && fullHtml.includes('Big numbers heading'));
+ok('FULL renders feature artefacts (featureArtefacts) in both orientations, sage band applied',
+  fullHtml.includes('plp-feature-artefact-grid') && fullHtml.includes('Feature artefact one') &&
+  fullHtml.includes('Feature artefact two (reversed)') && fullHtml.includes('plp-band-sage'));
+ok('FULL renders the compare table (cmpTable) with a featured Gradd column and yes/no glyphs',
+  fullHtml.includes('plp-cmptable-table') && fullHtml.includes('is-gradd') &&
+  fullHtml.includes('plp-cmptable-y') && fullHtml.includes('plp-cmptable-n'));
+ok('FULL renders the hero artefact (heroArtefact) as a split grid, not the plain single-column hero',
+  fullHtml.includes('plp-hero-inner--split'));
+ok('FULL applies a dark band to an EXISTING sections[] group — the band wrapper works on old section kinds, not just new ones',
+  fullHtml.includes('class="plp-section-group plp-band-dark"'));
+ok('every new-vocabulary section is individually PRESENT on FULL',
+  (['heroArtefact', 'statBar', 'featureArtefacts', 'bigNumbers', 'cmpTable'] as const)
+    .every((s) => hasSection(FULL, s) === true));
+
+const apmHtml = bodyOf(APM_LANDING);
+const AFM_PRE_EXTENSION_SHA256 = '44f3549b63b147af0a90eba4e8b8efc23db5d39f5ce5362fa134f3c409e3371f';
+const APM_PRE_EXTENSION_SHA256 = 'c6bf462274dcbc4c89923e83db491be2d5e9835160c32e2003128f4b2ba8f976';
+const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
+ok('AFM_LANDING renders BYTE-IDENTICALLY to its pre-extension output (SHA-256 of the style-stripped body)',
+  sha256(afmHtml) === AFM_PRE_EXTENSION_SHA256, `got ${sha256(afmHtml)}, want ${AFM_PRE_EXTENSION_SHA256}`);
+ok('APM_LANDING renders BYTE-IDENTICALLY to its pre-extension output (SHA-256 of the style-stripped body)',
+  sha256(apmHtml) === APM_PRE_EXTENSION_SHA256, `got ${sha256(apmHtml)}, want ${APM_PRE_EXTENSION_SHA256}`);
+
 // ── withDynamicCta — the entitlement-aware CTA override (2026-08) ──────────
 // PURE half of the entitlement-CTA feature; lib/acca/entitlement-cta.ts (the DB-reading
 // half) is server-only and untestable here without a live client — fixtured separately in
