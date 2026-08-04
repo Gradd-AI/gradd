@@ -21,14 +21,94 @@
 import Link from 'next/link';
 import AttributionCapture from '@/components/AttributionCapture';
 import ProductLandingChrome from './ProductLandingChrome';
-import type { ProductLandingConfig } from './product-landing-config';
+import type { ProductLandingConfig, LandingMockup, LandingBand } from './product-landing-config';
 import {
   hasSection, pricingModel, buildFaqJsonLd, POINTS_GRID_TEMPLATE, DEFAULT_FOOTER_LINKS,
 } from './product-landing-sections';
 
+/** The class modifier for a full-width coloured band. `band` is undefined on every section
+ *  shape unless a config sets one, so this returns '' (no class change) for every existing
+ *  page — see `LandingBand`. */
+function bandClass(band: LandingBand | undefined): string {
+  if (band === 'dark') return ' plp-band-dark';
+  if (band === 'sage') return ' plp-band-sage';
+  return '';
+}
+
+/** One rendered mock-up (chat transcript or marking panel). Shared by `mockups[]`,
+ *  `heroArtefact` and `featureArtefacts[]` so the chat/panel renderer has exactly one
+ *  implementation regardless of which section is carrying the mock-up. */
+function renderMockup(m: LandingMockup, key: string | number) {
+  return (
+    <figure key={key} className="plp-mockup" role="img" aria-label={m.ariaLabel}>
+      {(m.title || m.subtitle) && (
+        <div className="plp-mockup-head">
+          {m.title && <span className="plp-mockup-title">{m.title}</span>}
+          {m.subtitle && <span className="plp-mockup-sub">{m.subtitle}</span>}
+        </div>
+      )}
+      {m.kind === 'chat' && (m.turns ?? []).map((t, ti) => (
+        <div key={ti} className={`plp-turn plp-turn--${t.role}`}>
+          {t.badge && <span className="plp-turn-badge">{t.badge}</span>}
+          {t.lines.map((line, li) => <p key={li}>{line}</p>)}
+        </div>
+      ))}
+      {m.kind === 'panel' && (m.rows ?? []).map((r, ri) => (
+        <div key={ri} className="plp-panel-row">
+          <div className="plp-panel-rowhead">
+            <span className="plp-panel-label">{r.label}</span>
+            {r.verdict && <span className="plp-panel-verdict">{r.verdict}</span>}
+          </div>
+          <p className="plp-panel-body">{r.body}</p>
+        </div>
+      ))}
+      {m.kind === 'chat' && m.inputPlaceholder && (
+        <div className="plp-chat-input">
+          <span className="plp-chat-input-ph">{m.inputPlaceholder}</span>
+          <span className="plp-chat-input-send" aria-hidden="true">↵</span>
+        </div>
+      )}
+      {m.footer && <figcaption className="plp-mockup-foot">{m.footer}</figcaption>}
+      {m.caption && <p className="plp-mockup-caption">{m.caption}</p>}
+    </figure>
+  );
+}
+
 export default function ProductLandingPage({ config: c }: { config: ProductLandingConfig }) {
   const pricing = pricingModel(c);
   const faqJsonLd = buildFaqJsonLd(c);
+
+  // Split out so the hero can render it either inline (no heroArtefact — unchanged markup,
+  // byte-identical for every page that doesn't set one) or inside a two-column grid cell
+  // alongside a mock-up. A Fragment emits no markup of its own.
+  const heroCopy = (
+    <>
+      <p className="plp-eyebrow">{c.eyebrow}</p>
+      <h1 className="plp-h1">{c.headline}</h1>
+      <p className="plp-sub">{c.subhead}</p>
+      <p className="plp-coverage"><strong>What’s live:</strong> {c.coverage}</p>
+      <div className="plp-cta-row">
+        <Link href={c.freeCta.href} className="btn btn-rust btn-lg">{c.freeCta.label} <span className="arrow">→</span></Link>
+      </div>
+      <p className="plp-microcopy">Free to start · no card · {c.examName} ({c.paper})</p>
+      {c.proof && (
+        <p className="plp-microcopy">
+          <Link href={c.proof.href} className="plp-prooflink">{c.proof.label} — a real, unedited transcript →</Link>
+        </p>
+      )}
+      {c.heroMicrocopy && <p className="plp-hero-microcopy">{c.heroMicrocopy}</p>}
+      {hasSection(c, 'heroMeta') && (
+        <div className="plp-hero-meta">
+          {c.heroMeta!.flatMap((m, i) => i === 0
+            ? [<span key={`m${i}`}>{m}</span>]
+            : [
+                <span key={`d${i}`} className="plp-hero-meta-dot" aria-hidden="true" />,
+                <span key={`m${i}`}>{m}</span>,
+              ])}
+        </div>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -59,39 +139,38 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
 
         <main>
           <section className="plp-hero">
-            <div className="plp-wrap plp-hero-inner">
-              <p className="plp-eyebrow">{c.eyebrow}</p>
-              <h1 className="plp-h1">{c.headline}</h1>
-              <p className="plp-sub">{c.subhead}</p>
-              <p className="plp-coverage"><strong>What’s live:</strong> {c.coverage}</p>
-              <div className="plp-cta-row">
-                <Link href={c.freeCta.href} className="btn btn-rust btn-lg">{c.freeCta.label} <span className="arrow">→</span></Link>
+            {hasSection(c, 'heroArtefact') ? (
+              <div className="plp-wrap plp-hero-inner plp-hero-inner--split">
+                <div className="plp-hero-copy">{heroCopy}</div>
+                <div className="plp-hero-visual">{renderMockup(c.heroArtefact!, 'hero-artefact')}</div>
               </div>
-              <p className="plp-microcopy">Free to start · no card · {c.examName} ({c.paper})</p>
-              {c.proof && (
-                <p className="plp-microcopy">
-                  <Link href={c.proof.href} className="plp-prooflink">{c.proof.label} — a real, unedited transcript →</Link>
-                </p>
-              )}
-              {c.heroMicrocopy && <p className="plp-hero-microcopy">{c.heroMicrocopy}</p>}
-              {hasSection(c, 'heroMeta') && (
-                <div className="plp-hero-meta">
-                  {c.heroMeta!.flatMap((m, i) => i === 0
-                    ? [<span key={`m${i}`}>{m}</span>]
-                    : [
-                        <span key={`d${i}`} className="plp-hero-meta-dot" aria-hidden="true" />,
-                        <span key={`m${i}`}>{m}</span>,
-                      ])}
-                </div>
-              )}
-            </div>
+            ) : (
+              <div className="plp-wrap plp-hero-inner">{heroCopy}</div>
+            )}
           </section>
+
+          {/* ── STAT BAR — a thin bordered strip of 3-5 stats under the hero, not a card. ── */}
+          {hasSection(c, 'statBar') && (
+            <section className={`plp-statbar${bandClass(c.statBar!.band)}`} aria-label={c.statBar!.label ?? 'By the numbers'}>
+              <div className="plp-wrap plp-statbar-inner">
+                {c.statBar!.label && <span className="plp-statbar-label">{c.statBar!.label}</span>}
+                <div className="plp-statbar-stats">
+                  {c.statBar!.stats.map((s, i) => (
+                    <div key={i} className="plp-statbar-stat">
+                      <span className="plp-statbar-num">{s.value}</span>
+                      <span className="plp-statbar-lbl">{s.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* ── SECTION GROUPS. `sections[]` REPLACES the flat points grid when present —
               points[] renders EXACTLY as before when it is not, so AFM is unaffected. ── */}
           {hasSection(c, 'sections') ? (
             c.sections!.map((g) => (
-              <section key={g.heading} className="plp-section-group" aria-label={g.heading}>
+              <section key={g.heading} className={`plp-section-group${bandClass(g.band)}`} aria-label={g.heading}>
                 <div className="plp-wrap">
                   {g.eyebrow && <p className="plp-eyebrow">{g.eyebrow}</p>}
                   <h2 className="plp-h2">{g.heading}</h2>
@@ -121,43 +200,54 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
             </section>
           )}
 
+          {/* ── FEATURE ARTEFACTS — full-width split copy/mock-up sections, each with its
+              own eyebrow/heading/lead. The framing a mockups[] entry never gets on its own. ── */}
+          {hasSection(c, 'featureArtefacts') && c.featureArtefacts!.map((fa, i) => (
+            <section
+              key={fa.heading}
+              className={`plp-feature-artefact${bandClass(fa.band)}`}
+              aria-label={fa.heading}
+            >
+              <div className="plp-wrap plp-feature-artefact-grid">
+                {fa.reverse && renderMockup(fa.mockup, `fa-${i}`)}
+                <div className="plp-feature-artefact-copy">
+                  {fa.eyebrow && <p className="plp-eyebrow">{fa.eyebrow}</p>}
+                  <h2 className="plp-h2">{fa.heading}</h2>
+                  {fa.lead && <p className="plp-sub">{fa.lead}</p>}
+                  {fa.bullets && fa.bullets.length > 0 && (
+                    <ul className="plp-feature-artefact-bullets">
+                      {fa.bullets.map((b, bi) => <li key={bi}>{b}</li>)}
+                    </ul>
+                  )}
+                </div>
+                {!fa.reverse && renderMockup(fa.mockup, `fa-${i}`)}
+              </div>
+            </section>
+          ))}
+
+          {/* ── BIG NUMBERS — enormous italic-serif figures separated by rules, no cards. ── */}
+          {hasSection(c, 'bigNumbers') && (
+            <section className={`plp-bignums${bandClass(c.bigNumbers!.band)}`} aria-label={c.bigNumbers!.heading ?? 'By the numbers'}>
+              <div className="plp-wrap">
+                {c.bigNumbers!.eyebrow && <p className="plp-eyebrow">{c.bigNumbers!.eyebrow}</p>}
+                {c.bigNumbers!.heading && <h2 className="plp-h2">{c.bigNumbers!.heading}</h2>}
+                <div className="plp-bignums-grid">
+                  {c.bigNumbers!.items.map((it, i) => (
+                    <div key={i} className="plp-bignum">
+                      <span className="plp-bignum-value">{it.value}</span>
+                      <p className="plp-bignum-body">{it.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
+
           {/* ── MOCK-UPS (chat transcript / marking panel) ── */}
           {hasSection(c, 'mockups') && (
             <section className="plp-mockups" aria-label="What it looks like">
               <div className="plp-wrap plp-mockup-stack">
-                {c.mockups!.map((m, i) => (
-                  <figure key={i} className="plp-mockup" role="img" aria-label={m.ariaLabel}>
-                    {(m.title || m.subtitle) && (
-                      <div className="plp-mockup-head">
-                        {m.title && <span className="plp-mockup-title">{m.title}</span>}
-                        {m.subtitle && <span className="plp-mockup-sub">{m.subtitle}</span>}
-                      </div>
-                    )}
-                    {m.kind === 'chat' && (m.turns ?? []).map((t, ti) => (
-                      <div key={ti} className={`plp-turn plp-turn--${t.role}`}>
-                        {t.badge && <span className="plp-turn-badge">{t.badge}</span>}
-                        {t.lines.map((line, li) => <p key={li}>{line}</p>)}
-                      </div>
-                    ))}
-                    {m.kind === 'panel' && (m.rows ?? []).map((r, ri) => (
-                      <div key={ri} className="plp-panel-row">
-                        <div className="plp-panel-rowhead">
-                          <span className="plp-panel-label">{r.label}</span>
-                          {r.verdict && <span className="plp-panel-verdict">{r.verdict}</span>}
-                        </div>
-                        <p className="plp-panel-body">{r.body}</p>
-                      </div>
-                    ))}
-                    {m.kind === 'chat' && m.inputPlaceholder && (
-                      <div className="plp-chat-input">
-                        <span className="plp-chat-input-ph">{m.inputPlaceholder}</span>
-                        <span className="plp-chat-input-send" aria-hidden="true">↵</span>
-                      </div>
-                    )}
-                    {m.footer && <figcaption className="plp-mockup-foot">{m.footer}</figcaption>}
-                    {m.caption && <p className="plp-mockup-caption">{m.caption}</p>}
-                  </figure>
-                ))}
+                {c.mockups!.map((m, i) => renderMockup(m, i))}
               </div>
             </section>
           )}
@@ -224,6 +314,47 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                     </div>
                   ))}
                 </div>
+              </div>
+            </section>
+          )}
+
+          {/* ── COMPARE TABLE — a real table with a highlighted Gradd column, distinct from
+              the flat compareStrip above (one paragraph per column, no shared rows). ── */}
+          {hasSection(c, 'cmpTable') && (
+            <section className={`plp-cmptable${bandClass(c.cmpTable!.band)}`} aria-label={c.cmpTable!.heading ?? 'Comparison'}>
+              <div className="plp-wrap">
+                {c.cmpTable!.eyebrow && <p className="plp-eyebrow">{c.cmpTable!.eyebrow}</p>}
+                {c.cmpTable!.heading && <h2 className="plp-h2">{c.cmpTable!.heading}</h2>}
+                <div className="plp-cmptable-scroll">
+                  <table className="plp-cmptable-table">
+                    <thead>
+                      <tr>
+                        <th scope="col" />
+                        {c.cmpTable!.columns.map((col) => (
+                          <th key={col.label} scope="col" className={col.featured ? 'is-gradd' : undefined}>{col.label}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {c.cmpTable!.rowLabels.map((row, ri) => (
+                        <tr key={row}>
+                          <th scope="row">{row}</th>
+                          {c.cmpTable!.columns.map((col) => {
+                            const v = col.values[ri];
+                            return (
+                              <td key={col.label} className={col.featured ? 'is-gradd' : undefined}>
+                                {typeof v === 'boolean'
+                                  ? (v ? <span className="plp-cmptable-y">✓</span> : <span className="plp-cmptable-n">—</span>)
+                                  : v}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="plp-cmptable-hint">Scroll to see more →</p>
               </div>
             </section>
           )}

@@ -711,4 +711,163 @@ body {
 
 /* ── Pillar — paper cards ── */
 .pil-card-code { font-family: var(--serif); font-weight: 400; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SECTION VOCABULARY EXTENSION (feat/landing-section-vocabulary)
+
+   Ported from IBLandingPage.tsx's own <style> block — .trust, .one-sub/.parents (the two
+   band treatments), .diag-demo/.parents-grid (the split copy/artefact shape), .cmp (the
+   comparison table) — into the SAME token set the block above already declares (.plp/.hub/
+   .pil custom properties). No new tokens, no new fonts: every value below reuses --paper/
+   --ink/--rule/--forest/--sage/--rust/--serif/--mono from the block above.
+
+   Nothing here is used by AFM_LANDING or APM_LANDING yet — see product-landing-config.ts's
+   header comment. This block exists so a FUTURE config can use the vocabulary; adopting it
+   on a real page is a separate, later change.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Band wrappers — background TREATMENTS, not content types. Work on any section that
+   accepts a `band` prop, including the pre-existing `sections[]` group. `.plp-band-dark`
+   reuses exactly the override pattern `.plp-final` already proved (forest bg, forest-ink
+   text, translucent card backgrounds); `.plp-band-sage` needs no text-colour overrides —
+   sage is light enough that the standard --ink/--ink-2/--ink-3 text already reads on it,
+   same as IB's .one-sub/.parents. ── */
+.plp-band-dark {
+  background: var(--forest); color: var(--forest-ink);
+}
+.plp-band-dark .plp-h2, .plp-band-dark .plp-eyebrow { color: var(--forest-ink); }
+.plp-band-dark .plp-sub, .plp-band-dark .plp-caption {
+  color: color-mix(in oklab, var(--forest-ink) 80%, transparent);
+}
+.plp-band-dark .plp-point, .plp-band-dark .plp-mockup, .plp-band-dark .plp-tier,
+.plp-band-dark .plp-judgement-col, .plp-band-dark .plp-compare-strip-col {
+  background: color-mix(in oklab, var(--forest) 85%, var(--paper));
+  border-color: color-mix(in oklab, var(--forest-ink) 25%, transparent);
+}
+.plp-band-dark .plp-point-title, .plp-band-dark .plp-mockup-title,
+.plp-band-dark .plp-tier-name, .plp-band-dark .plp-compare-strip-name {
+  color: var(--forest-ink);
+}
+.plp-band-dark .plp-point-body, .plp-band-dark .plp-panel-body, .plp-band-dark .plp-mockup-sub,
+.plp-band-dark .plp-compare-strip-col p {
+  color: color-mix(in oklab, var(--forest-ink) 70%, transparent);
+}
+.plp-band-sage { background: var(--sage); }
+
+/* ── Stat bar — .trust ported. A thin bordered strip, not a card. ── */
+.plp-statbar {
+  border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
+  padding: 22px 0; background: color-mix(in oklab, var(--paper) 90%, var(--paper-2));
+}
+.plp-statbar-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 32px; flex-wrap: wrap;
+}
+.plp-statbar-label {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--ink-3);
+}
+.plp-statbar-stats { display: flex; align-items: baseline; gap: clamp(20px, 4vw, 56px); flex-wrap: wrap; justify-content: center; }
+.plp-statbar-stat { display: flex; align-items: baseline; gap: 8px; }
+.plp-statbar-num {
+  font-family: var(--serif); font-size: 28px; letter-spacing: -0.02em;
+  font-style: italic; color: var(--ink);
+}
+.plp-statbar-lbl { font-size: 12px; color: var(--ink-3); }
+.plp-band-dark .plp-statbar-num { color: var(--forest-ink); }
+.plp-band-dark .plp-statbar-label, .plp-band-dark .plp-statbar-lbl {
+  color: color-mix(in oklab, var(--forest-ink) 65%, transparent);
+}
+
+/* ── Big numbers — the main weight-variety device the template lacked: three (or however
+   many a config sets) enormous italic-serif figures separated by rules, no cards. ── */
+.plp-bignums { padding: clamp(32px, 5vw, 56px) 0; }
+.plp-bignums-grid { display: flex; flex-wrap: wrap; margin-top: 24px; }
+.plp-bignum {
+  flex: 1 1 220px; padding: 0 clamp(16px, 3vw, 32px);
+  border-left: 1px solid var(--rule); text-align: center;
+}
+.plp-bignum:first-child { border-left: 0; }
+.plp-bignum-value {
+  display: block; font-family: var(--serif); font-style: italic; font-weight: 400;
+  font-size: clamp(64px, 9vw, 104px); line-height: 1; letter-spacing: -0.02em; color: var(--forest);
+}
+.plp-bignum-body { margin: 12px 0 0; font-size: 14.5px; line-height: 1.5; color: var(--ink-3); }
+.plp-band-dark .plp-bignum-value { color: var(--forest-ink); }
+.plp-band-dark .plp-bignum { border-left-color: color-mix(in oklab, var(--forest-ink) 25%, transparent); }
+.plp-band-dark .plp-bignum-body { color: color-mix(in oklab, var(--forest-ink) 65%, transparent); }
+@media (max-width: 720px) {
+  .plp-bignums-grid { flex-direction: column; }
+  .plp-bignum { border-left: 0; border-top: 1px solid var(--rule); padding: 20px 0 0; }
+  .plp-bignum:first-child { border-top: 0; padding-top: 0; }
+  .plp-band-dark .plp-bignum { border-top-color: color-mix(in oklab, var(--forest-ink) 25%, transparent); }
+}
+
+/* ── Feature artefact — .diag-demo/.parents-grid ported: full-width split, copy one side,
+   a mock-up (renderMockup's chat/panel output) the other, each with its own heading. ── */
+.plp-feature-artefact { padding: clamp(32px, 5vw, 56px) 0; }
+.plp-feature-artefact-grid {
+  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: clamp(32px, 5vw, 64px); align-items: center;
+}
+@media (max-width: 860px) { .plp-feature-artefact-grid { grid-template-columns: 1fr; } }
+.plp-feature-artefact-bullets {
+  list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px;
+}
+.plp-feature-artefact-bullets li {
+  display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start;
+  font-size: 14.5px; line-height: 1.5; color: var(--ink-2);
+}
+.plp-feature-artefact-bullets li::before {
+  content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--forest); margin-top: 4px;
+}
+.plp-band-dark .plp-feature-artefact-bullets li { color: color-mix(in oklab, var(--forest-ink) 80%, transparent); }
+.plp-band-dark .plp-feature-artefact-bullets li::before { background: var(--forest-ink); }
+
+/* ── Hero artefact — the hero grid, only applied when a config sets `heroArtefact`. The
+   compound selector (both classes) beats the single-class `.plp-hero-inner` rule in
+   ProductLandingPage.tsx's own inline <style> regardless of which stylesheet's rule ends up
+   later in the cascade — equal-specificity rules are order-dependent, and this component's
+   CSS lives in an inline <style> tag whose position relative to this file is not this file's
+   to control. ── */
+.plp-hero-inner.plp-hero-inner--split {
+  max-width: none; display: grid; grid-template-columns: minmax(0,1.15fr) minmax(0,1fr);
+  gap: clamp(32px, 5vw, 64px); align-items: center;
+}
+@media (max-width: 940px) { .plp-hero-inner.plp-hero-inner--split { grid-template-columns: 1fr; } }
+.plp-hero-copy { min-width: 0; }
+.plp-hero-visual .plp-mockup { margin: 0; }
+
+/* ── Compare table — .cmp ported. A real table (row labels + N columns), distinct from
+   .plp-compare-strip's flat one-paragraph-per-column shape. Horizontal scroll on mobile
+   with a text hint, rather than IB's separate card-collapse mobile view — the template
+   needs the vocabulary to express a comparison table at all; a bespoke mobile layout is
+   additional surface a future page can still add if it turns out to be needed. ── */
+.plp-cmptable { padding: clamp(24px, 4vw, 44px) 0; }
+.plp-cmptable-scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: var(--radius); }
+.plp-cmptable-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.plp-cmptable-table th, .plp-cmptable-table td {
+  padding: 16px 20px; text-align: left; border-bottom: 1px solid var(--rule);
+  vertical-align: top; white-space: nowrap;
+}
+.plp-cmptable-table tbody tr:last-child th, .plp-cmptable-table tbody tr:last-child td { border-bottom: 0; }
+.plp-cmptable-table thead th {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500; background: var(--paper-2); border-bottom: 1px solid var(--rule-strong);
+}
+.plp-cmptable-table thead th.is-gradd { color: var(--rust-ink); background: var(--forest); }
+.plp-cmptable-table td.is-gradd {
+  background: color-mix(in oklab, var(--forest) 12%, var(--paper));
+  border-left: 2px solid color-mix(in oklab, var(--forest) 60%, var(--rule));
+  border-right: 1px solid color-mix(in oklab, var(--forest) 20%, var(--rule));
+  font-weight: 600;
+}
+.plp-cmptable-table tbody th {
+  font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500; white-space: normal;
+}
+.plp-cmptable-y { color: oklch(45% 0.13 145); font-weight: 600; }
+.plp-cmptable-n { color: var(--ink-3); }
+.plp-cmptable-hint { display: none; margin: 10px 0 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+@media (max-width: 720px) { .plp-cmptable-hint { display: block; } }
+.plp-band-dark .plp-cmptable-scroll { border-color: color-mix(in oklab, var(--forest-ink) 25%, transparent); }
 .pil-note { border-radius: var(--radius-sm); }
