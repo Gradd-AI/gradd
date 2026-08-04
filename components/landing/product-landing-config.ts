@@ -257,53 +257,265 @@ export interface ProductLandingConfig {
  */
 export const DEFAULT_PRICING_HEADING = 'Free to start. Paid access when you need it.';
 
-// AFM — early-access honest. Coverage states EXACTLY what is live (16 drills, four
-// calculators). CTA threads ?paper=AFM through the existing auth flow so the post-signup
-// dashboard lands on AFM (the first-run banner then handles the first drill).
+// ── AFM_LANDING v2 (feat/afm-landing-rebuild) ────────────────────────────────
+// Rebuilt on the SAME section structure APM_LANDING now has — sections[], judgement,
+// compareStrip, steps, mockups, pricingTiers, faqs, finalCta, chrome. Not a cut-down page.
+// The ARGUMENT is AFM's own, not APM's: APM is "not a knowledge test, a judgement paper"
+// (the failure is describing instead of applying/evaluating). AFM's failure catalogue —
+// `docs/TEACHING_PRINCIPLES_EZRA_AFM.md`, extracted from five examiner reports (D23/J24/
+// SD24/MJ25/D25) — says the opposite: "AFM candidates' arithmetic is usually competent;
+// what fails is the advice, the hedging specification, and the valuation plumbing." AFM is
+// a TECHNICAL paper: the failure is execution and time, not judgement.
+//
+// ── VERIFIED AGAINST THE DB, 2026-08-04 (not taken from the brief) ──────────────────────
+// `acca_drills` — 63 published (exam_board='ACCA', paper_code='AFM', status='approved',
+// published=true). Section split by lo_code prefix: A=2, B=47, E=14 — ZERO in C or D
+// (M&A/reorganisation are the unbuilt "exam-ready" tier, `AFM_COVERAGE_CONTRACT.md`).
+// PS-tag split: analysis_and_evaluation 51, scepticism 5, commercial_acumen 4,
+// communication 3, 0 untagged.
+// `acca_cases` paper_code='AFM' — 8 rows, ALL published/approved: 3 `mock_only` (Mock
+// Paper 1 — Solenne Industries SA / Brecon Renewables plc / Aldebrino SpA) + 5 practice
+// (Kestrel Foods plc / Halvard Marine ASA / Lindqvist Instruments AB / Tamesis Diagnostics
+// plc / Castlereagh Utilities plc). So: "5 published practice cases" is exact, not rounded.
+// Mock reachability — confirmed LIVE, not inferred from a doc: an unauthenticated
+// `GET https://gradd.ai/api/acca/sit?paper=AFM` returned `401 {"error":"Unauthorised"}`.
+// `app/api/acca/sit/route.ts`'s `APM_CASES` flag check runs BEFORE the auth check and
+// returns a DISTINCT `404 {"error":"Not found"}` when the flag is off — so 401 (not 404)
+// proves `APM_CASES=1` is live in production right now, not merely as of an old journal
+// entry. `case-marking.ts` carries an AFM-specific `AFM_SKILL_DESCRIPTORS` set, page-
+// verified from AFM's own syllabus (not APM's, resolved from an open question logged
+// 25/07) — so "marked against AFM's own published descriptors" is accurate.
+//
+// ── THE THREE CONTENT CORRECTIONS (Grant's brief) ────────────────────────────
+// 1. "16 exam-style drills live" → 63, verified above (this file previously undercounted
+//    itself, not overclaimed).
+// 2. "Every figure and every accept/reject verdict is computed and verified
+//    deterministically, so the marking is exact" — REMOVED. The exact overclaim already
+//    corrected in CLAUDE.md / AFM_COVERAGE_CONTRACT.md / PRODUCT_STRENGTH_STANDARD.md: true
+//    of DRILL GENERATION, not of marking. Marking is answer-locked and model-graded — code
+//    owns band→marks, the model owns the band and authors the feedback prose (measured:
+//    114 of 1,518 asserted figures in that prose are owned by no schema component).
+// 3. Pricing states the AFM per-paper offer only — €99 sitting-dated 90-day pass, €49/
+//    month, AFM priced and sat on its own. No bundle claim anywhere on this page.
+//
+// ── THE THREE DO-NOT-CLAIM ITEMS (banked, `APM_MARKETING_POSITIONING.md`) ───────────────
+// - Error-carried-forward: built, unwired. Nowhere on this page claims Gradd carries a
+//   wrong figure forward for the student — "keep going after a wrong number" (sections[1])
+//   is exam-technique coaching (ACCA's own OFR convention), not a product capability claim.
+// - No AFM exam case beyond the verified 5. Every mention says "5 practice cases," never
+//   "cases" unscoped, never implies section-C/D case coverage that does not exist.
+// - No PS COACHING claim. The professional-skills section says Gradd MARKS the skills and
+//   names the evidence — never "trains," "coaches" or "teaches" a skill, matching the
+//   permitted formulation in `APM_MARKETING_POSITIONING.md`'s PS-coaching ruling. The skill
+//   tiles are short definitions, not instructive coaching copy — same register as APM's
+//   shipped tiles ("Structure, clarity, report style."), deliberately not "we'll teach you
+//   to challenge assumptions."
+//
+// ── NOT INCLUDED, DELIBERATELY: `secondaryCta` ───────────────────────────────
+// APM's secondaryCta is the free resit diagnostic — a real, live, free lead-gen wedge.
+// `lib/acca/resit-engine.ts`'s TOPIC_GROUPS and habit questions are written in APM's own
+// terms ("APM gives marks for professional skills…") — there is no AFM equivalent feature
+// to link to. Inventing a band for a feature that does not exist would be the "cut-down
+// page" problem in reverse (a real-looking section pointing at nothing real), so this
+// section is omitted rather than faked. The mock is instead described honestly inside
+// sections[2] ("What's live now") — as a PAID feature, since `hasPaperAccess` gates it
+// (verified: an unentitled sit attempt surfaces a bare "Couldn't load the paper" error in
+// `SitRunner`, not an upgrade prompt — not a page worth sending free traffic to directly).
 export const AFM_LANDING: ProductLandingConfig = {
   paper: 'AFM',
   examName: 'Advanced Financial Management',
-  eyebrow: 'ACCA AFM · early access',
-  // Explicit rather than inherited: AFM states ITS OWN offer, so the page does not depend on
-  // whatever a shared default happens to say. The default is deliberately the weakest true
-  // statement (see DEFAULT_PRICING_HEADING) — a paper that wants to name a price owns it here.
+  eyebrow: 'ACCA AFM · Advanced Financial Management',
   pricingHeading: 'Free to start. AFM access when you need it — priced on its own.',
-  headline: 'AFM practice that shows you why answers lose marks',
+  headline: 'Failed AFM? The model was right. The execution wasn’t.',
   subhead:
-    'Ezra marks your working like the examiner, diagnoses the exact gap — a mismatched discount rate, an un-stripped debt, a calculation that never became advice — then coaches the fix, drill by drill.',
+    'AFM is not passed by learning new models — by the time you sit it, you already know them. It is passed by executing them without a slip, under a clock: the right direction, the right period, the assumption you actually developed. Gradd finds exactly where the execution broke, then Ezra coaches the fix until it stops happening.',
   coverage:
-    '16 exam-style drills live across advanced investment appraisal and financing — NPV, IRR/MIRR, APV and cost of capital. New drills weekly.',
+    '63 exam-style drills live across investment appraisal & financing and treasury & risk management — sections B and E, the two ACCA guarantees a question from every sitting — plus ethics & advisory (A). M&A and reorganisation (C, D) are still building. No complete-syllabus claim.',
+  heroMicrocopy: 'Marked in about a minute — not a self-graded model answer or a three-day wait.',
+  heroMeta: ['Every drill free', 'No card to start', 'Upgrade for cases, marking and mock'],
+  // points[] stays populated (the required field), duplicating sections[0]'s cards — same
+  // pattern APM_LANDING uses. sections[] is what actually renders; see hasSection precedence.
   points: [
-    {
-      title: 'Diagnosis, not hints',
-      body: 'Ezra names the mark you lost and why, then coaches the correct move — the jump from a computed figure to advice a board could act on, which is where AFM answers actually fail.',
-    },
-    {
-      title: 'Numbers checked by code',
-      body: 'Every figure and every accept/reject verdict is computed and verified deterministically, so the marking is exact. You practise against the right answer, not an approximation.',
-    },
-    {
-      title: 'Early access, stated honestly',
-      body: 'AFM is new here: 16 drills live now across the appraisal and financing core, more every week. You see exactly what is covered — no padding, no “complete syllabus” claim.',
-    },
+    { title: 'Finds the exact step that broke.', body: 'Ezra doesn’t hand you the reference working — he finds precisely where your figure diverged and coaches from there. The answer stays sealed until you’ve earned it.' },
+    { title: 'Marks the instruction, not just the outcome.', body: 'A hedge answer is a set of instructions to the board — direction, contract month, whole number of contracts — not just a final figure. Gradd checks every component AFM’s own examiner reports say candidates miss.' },
+    { title: 'Trained on how AFM answers actually fail.', body: 'Ten minutes spent on a calculation nobody asked for. A discussion abandoned after one wrong number, when the marks after it were still earnable. An assumption listed but never developed. The exact patterns five AFM examiner reports name, coached out of you.' },
   ],
-  // ── CORRECTED 2026-08-03: the paid line asserted the retired BUNDLE ─────────
-  // It read: "One ACCA pass covers every paper you sit: APM and AFM together, one
-  // subscription." Per-paper pricing was ruled 2026-08-03 — APM and AFM are separate SKUs —
-  // so that sentence was selling something the product no longer offers, on a live page.
-  // It was the MORE explicit of the two bundle claims on this card (the other was the
-  // heading, now paper-neutral in the template), and fixing only the heading would have
-  // left the page stating the bundle outright one line below a corrected title.
   pricing: {
-    free: 'Free to start — every live AFM drill, with Ezra teach-throughs. No card required.',
-    paid: 'Then €99 for a sitting-dated AFM pass, or €49/month. Each ACCA paper is priced separately.',
+    free: 'Unlimited access to all 63 drills · 3 full Ezra teach-throughs included · No card required.',
+    paid: 'Then €99 for a sitting-dated AFM pass, or €49/month. AFM only — priced and sat on its own.',
   },
   freeCta: {
-    label: 'Start free — every live drill',
+    label: 'Start free',
     href: `/acca/auth?next=${encodeURIComponent('/acca?paper=AFM')}`,
   },
-  footnote: 'Gradd is not affiliated with or endorsed by ACCA. Scenarios are original works built to the public syllabus structure.',
+  footnote: 'AI tutor for ACCA AFM. Gradd is not affiliated with or endorsed by ACCA. Scenarios are original works built to the public syllabus structure.',
   proof: { label: 'See a real walkthrough', href: '/acca/afm/proof' },
+  nav: [
+    { label: 'The approach', href: '#taught' },
+    { label: 'What’s included', href: '#features' },
+    { label: 'Pricing', href: '#pricing' },
+    // Plain — ?subject=afm is not a recognised value on /blog (resolveSubject only
+    // knows 'apm' | 'ib'); filtering on an unsupported value would silently fall through
+    // to the unfiltered/IB-titled page, which is a worse and less honest link than plain.
+    { label: 'Blog', href: '/blog' },
+    { label: 'Sign in', href: `/acca/auth?next=${encodeURIComponent('/acca?paper=AFM')}` },
+  ],
+  // ── SECTION GROUPS — the fix for the old flat 3-card points[] grid. ────────
+  sections: [
+    {
+      eyebrow: 'The approach · Taught, not just marked',
+      heading: 'Taught, not just marked.',
+      lead: 'AFM’s numbers are usually right — five examiner reports in a row say so. What fails is precision under a clock: an unstated direction, a wrong period, a discussion abandoned once a calculation goes wrong. Gradd finds exactly where the execution broke, and Ezra coaches the fix.',
+      cards: [
+        { title: 'Finds the exact step that broke.', body: 'Ezra doesn’t hand you the reference working — he finds precisely where your figure diverged and coaches from there. The answer stays sealed until you’ve earned it.' },
+        { title: 'Marks the instruction, not just the outcome.', body: 'A hedge answer is a set of instructions to the board — direction, contract month, whole number of contracts — not just a final figure. Gradd checks every component AFM’s own examiner reports say candidates miss.' },
+        { title: 'Trained on how AFM answers actually fail.', body: 'Ten minutes spent on a calculation nobody asked for. A discussion abandoned after one wrong number, when the marks after it were still earnable. An assumption listed but never developed. The exact patterns five AFM examiner reports name, coached out of you.' },
+      ],
+    },
+    {
+      eyebrow: 'Professional skills',
+      heading: 'The marks examiners say are chronically missed.',
+      lead: 'A fifth of every AFM answer is professional skills. Five examiner reports in a row flag the same gap: assumptions accepted without challenge, a director’s claim taken at face value, a stated board constraint ignored. Gradd marks them against AFM’s own published descriptors — and names the evidence.',
+      cards: [
+        { title: 'Communication', body: 'Structure, a decisive conclusion, report style.' },
+        { title: 'Analysis & evaluation', body: 'Developed points, a recommendation that follows from your own figures.' },
+        { title: 'Scepticism', body: 'Challenging assumptions, a director’s claim, a stated constraint.' },
+        { title: 'Commercial acumen', body: 'Business impact, scenario-specific application.' },
+      ],
+      caption: 'Marked against AFM’s own published professional-skills descriptors, with the evidence named.',
+    },
+    {
+      eyebrow: 'What’s included',
+      heading: 'Built where the marks are guaranteed.',
+      lead: 'Every AFM sitting draws a question from sections B and E — investment appraisal, financing, treasury and risk. That is where Gradd is built out first.',
+      cards: [
+        { title: '63 exam-style drills.', body: 'Live across investment appraisal & financing, treasury & risk management, and ethics & advisory — sections B, E and A. M&A and reorganisation (C, D) are next.' },
+        { title: '5 practice cases.', body: 'Multi-exhibit, multi-requirement scenarios, marked as one case — not eight disconnected question marks.' },
+        { title: 'Professional-skills marking.', body: 'On your whole answer, with evidence-cited feedback per skill, against AFM’s own published descriptors.' },
+        { title: 'AFM Mock Paper 1.', body: 'One 50-mark case plus two 25-mark questions, sat and timed as one paper — the same clock the real exam gives you.' },
+      ],
+    },
+  ],
+  stepsHeading: 'How a teach-through works.',
+  steps: [
+    { title: 'Attempt the drill.' },
+    { title: 'Ezra marks it against the requirement.' },
+    { title: 'He names the failure mode.' },
+    { title: 'You repair the answer.' },
+    { title: 'Only then is the model answer revealed.' },
+  ],
+  // ── THE AFM PROOF STORY (differentiator #6, banked) — a real internal finding, stated
+  // as ours, per the grounding caveat in APM_MARKETING_POSITIONING.md. A blind run of AFM
+  // Mock Paper 1 (`docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md`): correct contract
+  // count, correct sell direction, both rate-rise/rate-fall scenarios reconciling to the
+  // same rate — and the candidate read that reconciliation as confirmation. It wasn’t: the
+  // paper’s own self-check cannot catch an omission that applies equally to both legs. ──
+  judgement: {
+    eyebrow: 'The real test',
+    heading: 'AFM is not a knowledge test. It is an execution test.',
+    lead: 'Five AFM examiner reports in a row point at the same thing: the arithmetic is usually competent. What fails is precision under a clock — a direction never stated, a period miscounted, an assumption listed but never developed.',
+    weak: {
+      label: 'Near-correct answer',
+      body: 'Contract count right. Sell direction right. Both the rate-rise and rate-fall scenarios reconcile to the same 4.95% — so the answer reads as confirmed.',
+    },
+    diagnosis: {
+      label: 'Diagnosis',
+      body: 'The 0.15pp unexpired basis was never subtracted from the closing futures price. The omission applies equally to both scenarios, so the candidate’s own cross-check reconciles just as cleanly at the wrong rate as at the right one.',
+    },
+    coached: {
+      label: 'Reference answer',
+      body: 'Subtracting the unexpired basis gives 4.80%, not 4.95% — a 0.15pp gap, one-to-one with the omission. Scored component by component: 2 of 7 pass; every one of the 5 failures traces to that single missed step, not five separate errors.',
+    },
+    caption: 'The candidate’s own self-check will not catch this. Marking has to.',
+  },
+  compareStrip: {
+    eyebrow: 'How it compares',
+    heading: 'Marked in a minute, not a self-check or a three-day wait.',
+    columns: [
+      { label: 'ACCA’s Practice Platform', body: 'A model answer, and you self-grade. Nothing checks whether you’d have caught your own mistake.' },
+      { label: 'LearnSignal mocks', body: '€29.99 each, two per paper, PDF, tutor-marked, three-day turnaround.' },
+      { label: 'Gradd', body: 'Marked in about a minute, unlimited attempts, €99 for the whole sitting.', featured: true },
+    ],
+  },
+  mockups: [
+    {
+      kind: 'chat',
+      ariaLabel: 'Ezra withholding a model answer while coaching an AFM requirement',
+      title: 'Ezra',
+      subtitle: 'ACCA AFM · Requirement (b)',
+      turns: [
+        { role: 'student', lines: ['The company should hedge with futures — I’ve calculated the effective rate at 4.95%.'] },
+        { role: 'tutor', badge: 'Hint', lines: ['You’ve got a rate — but is it an instruction the board could act on? Buy or sell? Which contract month?'] },
+        { role: 'student', lines: ['September futures, sold 96 contracts short. But the rate itself — is 4.95% not already right?'] },
+        { role: 'tutor', lines: ['Check your basis period again. That’s exactly where AFM’s own examiner reports say this mark is lost.'] },
+      ],
+      inputPlaceholder: 'Reply to Ezra…',
+      footer: 'The answer stays sealed · Ezra online 24/7',
+      caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
+    },
+    {
+      kind: 'panel',
+      ariaLabel: 'Professional-skills marking panel showing evidence-cited feedback',
+      title: 'Professional skills',
+      rows: [
+        { label: 'Scepticism', verdict: 'strong', body: '“challenged the stated 4% return target against the board’s own constraint, rather than accepting the director’s figure at face value…”' },
+        { label: 'Analysis & evaluation', verdict: 'competent', body: '“states both NPV outcomes but stops short of a recommendation — the report ends without a decision…”' },
+      ],
+    },
+  ],
+  pricingTiers: [
+    {
+      name: 'Free',
+      amount: '€0',
+      tagline: 'Unlimited access to all 63 drills · 3 full Ezra teach-throughs included · No card required.',
+      features: ['Every AFM drill, unlimited', '3 full teach-throughs with Ezra', 'No card, no commitment'],
+      cta: { label: 'Start free', href: `/acca/auth?next=${encodeURIComponent('/acca?paper=AFM')}` },
+    },
+    {
+      name: '90-day exam pass',
+      amount: '€99',
+      period: 'one-time · 90 days',
+      tagline: 'Full access through your sitting — drills, cases, marking and the timed mock.',
+      features: ['Unlimited teach-throughs with Ezra', '5 practice cases + professional-skills marking', 'AFM Mock Paper 1, marked as one paper', 'One payment — no recurring charge'],
+      cta: { label: 'Get the 90-day pass', href: `/acca/auth?next=${encodeURIComponent('/acca/subscribe?paper=AFM')}` },
+      badge: 'Best for one sitting',
+      featured: true,
+    },
+    {
+      name: 'Monthly',
+      amount: '€49',
+      period: '/ month',
+      tagline: 'Everything in the pass, month to month.',
+      features: ['Unlimited teach-throughs with Ezra', '5 practice cases + professional-skills marking', 'AFM Mock Paper 1, marked as one paper', 'Cancel any time'],
+      cta: { label: 'Subscribe monthly', href: `/acca/auth?next=${encodeURIComponent('/acca/subscribe?paper=AFM')}` },
+      badge: 'Flexible',
+    },
+  ],
+  pricingNote: 'AFM only, priced on its own — no bundle, no APM add-on required.',
+  faqs: [
+    { q: 'Is this based on the current AFM syllabus?', a: 'Yes — S26–J27, verified against the official study guide.' },
+    { q: 'How is this different from a general AI chatbot?', a: 'Structured drills and cases built from the syllabus, five years of AFM examiner failure modes, sealed reference answers, and professional-skills marking against AFM’s own published descriptors — not a chat window.' },
+    { q: 'Can I use it if I failed before?', a: 'Yes — built for exactly that: finding the execution slip that lost you the marks, not just the topic.' },
+    { q: 'Does it give model answers?', a: 'Yes — after you’ve attempted, been coached, and repaired your answer.' },
+    { q: 'What’s free?', a: 'All 63 drills, 3 full teach-throughs, no card.' },
+    { q: 'What do I pay for?', a: 'Unlimited teach-throughs, 5 practice cases, professional-skills marking, AFM Mock Paper 1.' },
+  ],
+  finalCta: {
+    pill: 'Every drill free · No card',
+    heading: 'Preparing for the next AFM sitting?',
+    body: 'Start with every drill free — no card. Upgrade when you commit to the sitting.',
+    ctas: [{ label: 'Start free', href: `/acca/auth?next=${encodeURIComponent('/acca?paper=AFM')}` }],
+    fineprint: 'Every drill free · €99 for 90 days or €49/month · AFM only, priced on its own',
+  },
+  footerLinks: [
+    { label: 'ACCA APM', href: '/acca/apm' },
+    { label: 'Terms', href: '/terms' },
+    { label: 'Privacy', href: '/privacy' },
+    { label: 'Cookies', href: '/cookies' },
+    { label: 'Blog', href: '/blog' },
+    { label: 'Contact', href: 'mailto:hello@gradd.ai' },
+  ],
+  chrome: { backToTop: true, stickyHeaderShadow: true },
 };
 
 // ── APM_LANDING v2 (feat/apm-template-conversion) ───────────────────────────

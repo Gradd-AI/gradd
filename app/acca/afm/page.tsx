@@ -8,8 +8,12 @@ import ProductLandingPage from '@/components/landing/ProductLandingPage';
 import { AFM_LANDING } from '@/components/landing/product-landing-config';
 
 const TITLE = 'ACCA AFM Practice — Taught, Not Just Marked | Gradd';
+// 63 verified against the DB (exam_board='ACCA', paper_code='AFM', status='approved',
+// published=true) 04/08/2026 — see the verification note on AFM_LANDING. Was 16, the exact
+// same understatement corrected in the config; this line quotes the config's copy, not a
+// separate number, and must move with it.
 const DESCRIPTION =
-  'AFM drills that mark like the examiner and coach the fix. 16 exam-style drills live across advanced investment appraisal and financing — NPV, IRR/MIRR, APV and cost of capital — new drills weekly. Free to start, no card.';
+  'AFM drills that mark like the examiner and coach the fix. 63 exam-style drills, 5 practice cases and a live timed mock — free to start, no card.';
 
 export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? 'gradd.ai';
