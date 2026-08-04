@@ -164,18 +164,31 @@ ok('pricingHeading defaults to the string the template has always rendered',
   pMin.heading === DEFAULT_PRICING_HEADING);
 ok('a configured pricingHeading overrides the default', pFull.heading === 'Per paper.');
 
-// ── BREAK MODE 5: AFM REGRESSES ────────────────────────────────────────────
-// This change-set is FORBIDDEN from altering AFM's rendering. AFM must therefore hit the
-// minimal path on every branch — asserted against the real exported config, not a copy.
-ok('AFM_LANDING renders NO optional section', visibleSections(AFM_LANDING).length === 0,
-  visibleSections(AFM_LANDING).join(','));
-ok('AFM_LANDING still uses the simple pricing card', pricingModel(AFM_LANDING).mode === 'simple');
-ok('AFM_LANDING emits no FAQ JSON-LD', buildFaqJsonLd(AFM_LANDING) === null);
+// ── BREAK MODE 5: AFM_LANDING NOW USES THE FULL SECTION STRUCTURE ──────────
+// SUPERSEDED 2026-08-04 (`feat/afm-landing-rebuild`): AFM used to be pinned to the minimal
+// path as a byte-identical guarantee while the SCHEMA changed under it (the APM template
+// conversion). That guarantee is now retired ON PURPOSE — this change-set's whole point is
+// to rebuild AFM's CONTENT on the same rich structure APM_LANDING has: sections[],
+// judgement, compareStrip, mockups, pricingTiers, faqs, finalCta, chrome. What must still
+// hold, and is asserted below instead, is that AFM states its OWN argument (not APM's
+// copy) and makes no bundle claim.
+// 11 of 12, not 12 of 12: AFM_LANDING deliberately omits ONLY `secondaryCta` — APM's is the
+// free resit diagnostic, a real live feature with no AFM equivalent (`lib/acca/
+// resit-engine.ts` is written in APM's own terms). Every other optional section is present.
+ok('AFM_LANDING now renders the full section structure (all but the APM-only resit band)',
+  visibleSections(AFM_LANDING).length === OPTIONAL_SECTIONS.length - 1 &&
+  !hasSection(AFM_LANDING, 'secondaryCta'),
+  `${visibleSections(AFM_LANDING).length}/${OPTIONAL_SECTIONS.length}: ${visibleSections(AFM_LANDING).join(',')}`);
+ok('AFM_LANDING uses the tier pricing grid, not the simple card', pricingModel(AFM_LANDING).mode === 'tiers');
+ok('AFM_LANDING emits its OWN FAQ JSON-LD', buildFaqJsonLd(AFM_LANDING)?.mainEntity.length === AFM_LANDING.faqs!.length);
 // AFM sets its own heading (fixed in 184a16b, ahead of this template work), so it no longer
 // inherits the default. The durable assertion is not "which string" but "no bundle claim" —
 // that is the property that must survive any future copy edit to either.
 ok('AFM_LANDING states its OWN pricing heading rather than inheriting the default',
   !!AFM_LANDING.pricingHeading && pricingModel(AFM_LANDING).heading === AFM_LANDING.pricingHeading);
+ok('AFM_LANDING states its OWN argument (execution/precision), never APM\'s ("judgement paper")',
+  !/judgement paper/i.test(AFM_LANDING.judgement?.heading ?? '') &&
+  /execution/i.test(AFM_LANDING.headline));
 
 // ── BREAK MODE 5b: A BUNDLE CLAIM COMES BACK ───────────────────────────────
 // Per-paper pricing was ruled 2026-08-03. Any copy asserting one purchase covers several
@@ -194,8 +207,10 @@ ok('AFM paid line makes no bundle claim', !BUNDLE_CLAIM.test(AFM_LANDING.pricing
 ok('the detector itself works — it catches the retired strings',
   BUNDLE_CLAIM.test('Free to start. One pass covers every ACCA paper.') &&
   BUNDLE_CLAIM.test('One ACCA pass covers every paper you sit: APM and AFM together, one subscription.'));
-ok('AFM_LANDING requests no client chrome — no scroll listener ships',
-  !hasSection(AFM_LANDING, 'backToTop') && !hasSection(AFM_LANDING, 'stickyHeaderShadow'));
+// SUPERSEDED 2026-08-04: AFM now requests the same chrome APM does, deliberately (part of
+// the "same look and feel" rebuild) — the opposite of the pre-rebuild guarantee.
+ok('AFM_LANDING now requests client chrome, same as APM_LANDING',
+  hasSection(AFM_LANDING, 'backToTop') && hasSection(AFM_LANDING, 'stickyHeaderShadow'));
 
 // ── BREAK MODE 6: THE POINTS GRID GOES BACK TO EXACTLY THREE ───────────────
 // The original CSS hardcoded repeat(3, 1fr), so points[] could not be any length but three
@@ -284,27 +299,31 @@ ok('FULL renders its configured footer links, including the mailto, in place of 
 ok('FULL renders the final CTA', fullHtml.includes('plp-final'));
 ok('FULL does NOT render the simple price card (tiers replaced it)', !fullHtml.includes('plp-price-card'));
 
-// AFM through the real renderer — the byte-identical claim, checked against output.
+// ── AFM through the real renderer, SUPERSEDED 2026-08-04 ('feat/afm-landing-rebuild') ──
+// AFM now renders the SAME rich structure as FULL, and the assertions below check exactly
+// that instead of the old "AFM stays minimal" claim. `class="..."` is used (not a bare
+// substring) wherever a class name is also part of the inlined stylesheet text, per P-G3a —
+// e.g. `.plp-points` is a real CSS rule regardless of which grid renders.
 const afmHtml = bodyOf(AFM_LANDING);
-ok('AFM output contains no optional-section markup',
-  !afmHtml.includes('plp-faq-list') && !afmHtml.includes('plp-tier-grid') &&
-  !afmHtml.includes('plp-step-list') && !afmHtml.includes('plp-totop') &&
-  !afmHtml.includes('ld+json'));
-ok('AFM output still contains its simple price card, carrying its OWN heading',
-  afmHtml.includes('plp-price-card') && afmHtml.includes(AFM_LANDING.pricingHeading!));
+ok('AFM output renders section groups (sections[] REPLACES the flat points grid), not the flat grid',
+  afmHtml.includes('plp-section-group-grid') && !afmHtml.includes('class="plp-points"'));
+ok('AFM output renders the judgement card AND the compare strip',
+  afmHtml.includes('plp-judgement-grid') && afmHtml.includes('plp-compare-strip-grid'));
+ok('AFM output renders the tier grid, not the simple price card',
+  afmHtml.includes('plp-tier-grid') && !afmHtml.includes('plp-price-card'));
+ok('AFM output renders the FAQ list and its JSON-LD', afmHtml.includes('plp-faq-list') && afmHtml.includes('ld+json'));
+ok('AFM output renders the final CTA and hero microcopy/meta',
+  afmHtml.includes('plp-final') && afmHtml.includes('plp-hero-microcopy') && afmHtml.includes('plp-hero-meta'));
+ok('AFM output renders its OWN configured footer links, including /cookies and the mailto',
+  afmHtml.includes('href="/cookies"') && afmHtml.includes('href="mailto:hello@gradd.ai"'));
 ok('AFM output contains no bundle claim anywhere in the rendered body',
   !BUNDLE_CLAIM.test(afmHtml.replace(/<[^>]+>/g, ' ')));
-// The section-groups + split-comparison + element-level fields added for APM must not move
-// AFM at all: it sets none of them, so it must render the SAME flat points grid and the
-// SAME default footer links it always has.
-ok('AFM still renders the flat points grid, not a section group',
-  afmHtml.includes('class="plp-points"') && !afmHtml.includes('plp-section-group-grid'));
-ok('AFM still renders the default footer links (Terms / Privacy / ACCA APM), unconfigured',
-  afmHtml.includes('href="/terms"') && afmHtml.includes('href="/privacy"') && afmHtml.includes('href="/acca/apm"'));
-ok('AFM renders no judgement card, compare strip, hero microcopy or hero meta strip',
-  !afmHtml.includes('plp-judgement-grid') && !afmHtml.includes('plp-compare-strip-grid') &&
-  !afmHtml.includes('plp-hero-microcopy') && !afmHtml.includes('plp-hero-meta'));
-
+// ── The two CONTENT CORRECTIONS, checked against actual output ─────────────
+ok('AFM output states the VERIFIED drill count (63), not the old undercount (16)',
+  afmHtml.includes('63') && !/\b16 exam-style drills\b/.test(afmHtml));
+ok('AFM output makes NO code-owned-marking overclaim (drill generation ≠ marking)',
+  !/computed and verified deterministically/i.test(afmHtml) &&
+  !/so the marking is exact/i.test(afmHtml));
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} product-landing: ${pass} passed, ${fail} failed\n`);
 // P-G4: exitCode, never process.exit().
 process.exitCode = fail === 0 ? 0 : 1;
