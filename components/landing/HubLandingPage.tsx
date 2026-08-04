@@ -22,6 +22,7 @@ export default function HubLandingPage() {
       <AttributionCapture />
       <style>{CSS}</style>
       <div className="hub">
+        <div className="bg-grain" aria-hidden="true" />
         <header className="hub-header">
           <div className="hub-wrap hub-header-inner">
             <span className="hub-logo">
@@ -122,41 +123,29 @@ export default function HubLandingPage() {
 }
 
 const CSS = `
-.hub { --rust: oklch(64% 0.17 47); --rust-2: oklch(58% 0.17 47); --rust-ink: oklch(98% 0.01 70);
-  background: var(--bg); color: var(--text); font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
-.hub *, .hub *::before, .hub *::after { box-sizing: border-box; }
 .hub-wrap { max-width: 960px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); width: 100%; }
-.hub-header { border-bottom: 1px solid var(--border-light, var(--border)); }
 .hub-header-inner { height: 56px; display: flex; align-items: center; justify-content: space-between; }
 .hub-logo { display: flex; align-items: center; }
 .hub-nav { display: flex; align-items: center; gap: 18px; }
-.hub-navlink { font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; }
-.hub-navlink:hover { color: var(--text); }
 .hub-hero { padding: clamp(48px, 9vw, 96px) 0 clamp(24px, 4vw, 40px); }
-.hub-h1 { font-family: var(--font-display); font-size: clamp(34px, 6.5vw, 56px); font-weight: 700;
-  letter-spacing: -.8px; line-height: 1.04; margin: 0 0 20px; }
-.hub-h2 { font-family: var(--font-display); font-size: clamp(21px, 3.2vw, 28px); font-weight: 700;
-  letter-spacing: -.3px; margin: 0 0 18px; }
-.hub-sub { font-size: clamp(16px, 2.3vw, 19px); line-height: 1.6; color: var(--text-muted);
-  margin: 0; max-width: 680px; }
+.hub-h1 { margin: 0 0 20px; }
+.hub-h2 { margin: 0 0 18px; }
+.hub-sub { margin: 0; max-width: 680px; }
 .hub-method { padding: clamp(20px, 4vw, 44px) 0; }
 .hub-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 @media (max-width: 760px) { .hub-steps { grid-template-columns: 1fr; } }
 .hub-step { border-top: 2px solid color-mix(in oklab, var(--rust) 40%, transparent); padding-top: 16px; }
-.hub-step-n { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px;
-  border-radius: 999px; background: var(--rust); color: var(--rust-ink); font-size: 13px;
-  font-weight: 700; margin-bottom: 10px; }
-.hub-step-h { font-family: var(--font-display); font-size: 17px; font-weight: 700; margin: 0 0 8px; letter-spacing: -.2px; }
+.hub-step-n { margin-bottom: 10px; }
+.hub-step-h { font-size: 17px; margin: 0 0 8px; letter-spacing: -.2px; }
 .hub-step-b { font-size: 14.5px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 .hub-routes { padding: clamp(24px, 4vw, 48px) 0 clamp(36px, 6vw, 64px); }
 .hub-route-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 @media (max-width: 760px) { .hub-route-grid { grid-template-columns: 1fr; } }
-.hub-route { display: flex; flex-direction: column; gap: 8px; background: var(--surface);
-  border: 1px solid var(--border); border-radius: 14px; padding: 26px; text-decoration: none;
+.hub-route { display: flex; flex-direction: column; gap: 8px;
+  border: 1px solid var(--border); padding: 26px; text-decoration: none;
   color: inherit; transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease; }
 .hub-route:hover { border-color: var(--rust); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
-.hub-route-code { font-family: var(--font-display); font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+.hub-route-code { font-size: 28px; letter-spacing: -.5px; }
 .hub-route-name { font-size: 13px; font-weight: 600; color: var(--text-muted); }
 .hub-route-detail { font-size: 14.5px; line-height: 1.55; color: var(--text-muted); margin-top: 4px; }
 .hub-route-cta { font-size: 14.5px; font-weight: 700; color: var(--rust); margin-top: 10px; }

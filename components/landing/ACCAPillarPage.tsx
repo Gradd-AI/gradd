@@ -56,6 +56,7 @@ export default function ACCAPillarPage() {
       <AttributionCapture />
       <style>{CSS}</style>
       <div className="pil">
+        <div className="bg-grain" aria-hidden="true" />
         <header className="pil-header">
           <div className="pil-wrap pil-header-inner">
             <Link href="/" className="pil-logo" aria-label="Gradd home">
@@ -65,7 +66,7 @@ export default function ACCAPillarPage() {
               <Link href="/acca/apm" className="pil-navlink">APM</Link>
               <Link href="/acca/afm" className="pil-navlink">AFM</Link>
               <Link href="/acca/resit" className="pil-navlink">Resit diagnostic</Link>
-              <Link href="/acca/auth?next=/acca" className="pil-btn pil-btn-sm">Start free</Link>
+              <Link href="/acca/auth?next=/acca" className="btn btn-rust btn-sm">Start free</Link>
             </nav>
           </div>
         </header>
@@ -99,7 +100,7 @@ export default function ACCAPillarPage() {
                   <p className="pil-card-name">{p.name}</p>
                   <p className="pil-card-blurb">{p.blurb}</p>
                   <p className="pil-card-live"><strong>What’s live:</strong> {p.live}</p>
-                  <Link href={p.href} className="pil-btn">
+                  <Link href={p.href} className="btn btn-rust pil-card-btn">
                     {p.code} in detail <span aria-hidden="true">→</span>
                   </Link>
                 </article>
@@ -134,7 +135,7 @@ export default function ACCAPillarPage() {
                 A three-minute diagnostic that names the habits that cost you marks, then points
                 you at the areas to fix first.
               </p>
-              <Link href="/acca/resit" className="pil-btn">
+              <Link href="/acca/resit" className="btn btn-rust">
                 Get my free resit diagnosis <span aria-hidden="true">→</span>
               </Link>
             </div>
@@ -160,42 +161,26 @@ export default function ACCAPillarPage() {
 }
 
 const CSS = `
-.pil { --rust: oklch(64% 0.17 47); --rust-2: oklch(58% 0.17 47); --rust-ink: oklch(98% 0.01 70);
-  background: var(--bg); color: var(--text); font-family: var(--font-body);
-  -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column; }
-.pil *, .pil *::before, .pil *::after { box-sizing: border-box; }
 .pil-wrap { max-width: 960px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); width: 100%; }
-.pil-header { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--bg) 88%, transparent);
-  backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-light, var(--border)); }
 .pil-header-inner { height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pil-logo { display: flex; align-items: center; text-decoration: none; }
 .pil-nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-.pil-navlink { font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; white-space: nowrap; }
-.pil-navlink:hover { color: var(--text); }
-.pil-btn { display: inline-flex; align-items: center; gap: 7px; background: var(--rust); color: var(--rust-ink);
-  font-size: 14.5px; font-weight: 700; padding: 11px 20px; border-radius: 8px; text-decoration: none;
-  transition: background .15s ease; white-space: nowrap; }
-.pil-btn:hover { background: var(--rust-2); }
-.pil-btn-sm { font-size: 13px; padding: 6px 14px; }
+.pil-card-btn { align-self: flex-start; margin-top: auto; }
 .pil-hero { padding: clamp(40px, 7vw, 76px) 0 clamp(20px, 3vw, 32px); }
-.pil-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--rust); margin: 0 0 14px; }
-.pil-h1 { font-family: var(--font-display); font-size: clamp(32px, 6vw, 50px); font-weight: 700;
-  letter-spacing: -.7px; line-height: 1.06; margin: 0 0 18px; }
-.pil-h2 { font-family: var(--font-display); font-size: clamp(21px, 3.2vw, 28px); font-weight: 700;
-  letter-spacing: -.3px; margin: 0 0 14px; }
-.pil-sub { font-size: clamp(15.5px, 2.1vw, 18px); line-height: 1.58; color: var(--text-muted);
-  margin: 0 0 18px; max-width: 660px; }
+.pil-eyebrow { margin: 0 0 14px; }
+.pil-h1 { margin: 0 0 18px; }
+.pil-h2 { margin: 0 0 14px; }
+.pil-sub { margin: 0 0 18px; max-width: 660px; }
 .pil-note { font-size: 14px; line-height: 1.55; color: var(--text); background: color-mix(in oklab, var(--rust) 8%, transparent);
   border: 1px solid color-mix(in oklab, var(--rust) 28%, transparent); border-radius: 10px;
   padding: 11px 15px; margin: 0; max-width: 660px; }
 .pil-papers { padding: clamp(20px, 4vw, 40px) 0; }
 .pil-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; }
 @media (max-width: 760px) { .pil-grid { grid-template-columns: 1fr; } }
-.pil-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+.pil-card { border: 1px solid var(--border); border-radius: 14px;
   padding: 24px; display: flex; flex-direction: column; gap: 10px; }
 .pil-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.pil-card-code { font-family: var(--font-display); font-size: 26px; font-weight: 700; margin: 0; letter-spacing: -.4px; }
+.pil-card-code { font-size: 26px; margin: 0; letter-spacing: -.4px; }
 .pil-chip { font-size: 11px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
   color: var(--rust); border: 1px solid color-mix(in oklab, var(--rust) 35%, transparent);
   border-radius: 999px; padding: 3px 10px; }
@@ -203,7 +188,6 @@ const CSS = `
 .pil-card-blurb { font-size: 14.5px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 .pil-card-live { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin: 0 0 6px; }
 .pil-card-live strong { color: var(--rust); }
-.pil-card .pil-btn { align-self: flex-start; margin-top: auto; }
 .pil-pricing { padding: clamp(20px, 4vw, 40px) 0; }
 .pil-price-line { font-size: 15px; line-height: 1.6; color: var(--text-muted); margin: 0 0 10px; max-width: 660px; }
 .pil-price-line strong { color: var(--text); }

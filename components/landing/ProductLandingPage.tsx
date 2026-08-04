@@ -36,6 +36,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
       <AttributionCapture />
       <style>{CSS}</style>
       <div className="plp">
+        <div className="bg-grain" aria-hidden="true" />
         <header className="plp-header">
           <div className="plp-wrap plp-header-inner">
             <Link href="/" className="plp-logo" aria-label="Gradd.ai home">
@@ -355,33 +356,14 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
 }
 
 const CSS = `
-.plp {
-  --rust: oklch(64% 0.17 47);
-  --rust-2: oklch(58% 0.17 47);
-  --rust-ink: oklch(98% 0.01 70);
-  background: var(--bg); color: var(--text); font-family: var(--font-body); -webkit-font-smoothing: antialiased; min-height: 100vh; display: flex; flex-direction: column;
-}
-.plp *, .plp *::before, .plp *::after { box-sizing: border-box; }
 .plp-wrap { max-width: 920px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); width: 100%; }
-.plp-header { position: sticky; top: 0; z-index: 40; background: color-mix(in oklab, var(--bg) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border-light, var(--border)); }
 .plp-header-inner { height: 56px; display: flex; align-items: center; justify-content: space-between; }
 .plp-logo { display: flex; align-items: center; text-decoration: none; }
 .plp-nav { display: flex; align-items: center; gap: 16px; }
-.plp-navlink { font-size: 13px; font-weight: 600; color: var(--text-muted); text-decoration: none; white-space: nowrap; }
-.plp-navlink:hover { color: var(--text); }
-/* AFM_SURFACED bug (flagged 21/07, fixed 21/07): .plp used className="btn btn-rust" throughout but,
-   unlike ACCALandingPage.tsx/IBLandingPage.tsx (each of which defines its own scoped .btn-rust),
-   never defined it here — the Start-free CTA has been rendering unstyled (bare .btn) since this file
-   was built. */
-.plp .btn-rust { background: var(--rust); color: var(--rust-ink); }
-.plp .btn-rust:hover:not(:disabled) { background: var(--rust-2); }
-.plp .btn .arrow { transition: transform 0.18s ease; }
-.plp .btn:hover .arrow { transform: translateX(3px); }
 .plp-hero { padding: clamp(44px, 8vw, 88px) 0 clamp(28px, 5vw, 52px); }
 .plp-hero-inner { max-width: 720px; }
-.plp-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--rust); margin: 0 0 14px; }
-.plp-h1 { font-family: var(--font-display); font-size: clamp(30px, 5.5vw, 46px); font-weight: 700; letter-spacing: -0.6px; line-height: 1.08; margin: 0 0 18px; color: var(--text); }
-.plp-sub { font-size: clamp(16px, 2.2vw, 19px); line-height: 1.55; color: var(--text-muted); margin: 0 0 20px; max-width: 620px; }
+.plp-eyebrow { margin: 0 0 14px; }
+.plp-sub { margin: 0 0 20px; max-width: 620px; }
 .plp-coverage { font-size: 14.5px; line-height: 1.55; color: var(--text); background: color-mix(in oklab, var(--rust) 8%, transparent); border: 1px solid color-mix(in oklab, var(--rust) 28%, transparent); border-radius: 12px; padding: 12px 16px; margin: 0 0 26px; max-width: 620px; }
 .plp-coverage strong { color: var(--rust); }
 .plp-cta-row { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -399,12 +381,12 @@ const CSS = `
    still compute to three equal columns, which is what keeps AFM byte-identical. */
 .plp-points-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 18px; }
 @media (max-width: 720px) { .plp-points-grid { grid-template-columns: 1fr; } }
-.plp-point { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
-.plp-point-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; letter-spacing: -0.2px; margin: 0 0 8px; color: var(--text); }
+.plp-point { border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+.plp-point-title { font-size: 18px; letter-spacing: -0.2px; margin: 0 0 8px; color: var(--text); }
 .plp-point-body { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 .plp-pricing { padding: clamp(24px, 4vw, 48px) 0; }
-.plp-price-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: clamp(24px, 4vw, 36px); box-shadow: var(--shadow-lg); max-width: 620px; margin: 0 auto; text-align: center; }
-.plp-price-h { font-family: var(--font-display); font-size: clamp(20px, 3vw, 26px); font-weight: 700; letter-spacing: -0.3px; margin: 0 0 14px; color: var(--text); }
+.plp-price-card { border: 1px solid var(--border); border-radius: 16px; padding: clamp(24px, 4vw, 36px); box-shadow: var(--shadow-lg); max-width: 620px; margin: 0 auto; text-align: center; }
+.plp-price-h { font-size: clamp(20px, 3vw, 26px); letter-spacing: -0.3px; margin: 0 0 14px; color: var(--text); }
 .plp-price-line { font-size: 15px; line-height: 1.6; color: var(--text-muted); margin: 0 0 8px; }
 .plp-price-note { text-align: center; font-size: 11.5px; font-weight: 700; letter-spacing: .05em;
   text-transform: uppercase; color: var(--text-muted); margin-top: 22px; }
@@ -417,10 +399,6 @@ const CSS = `
 /* ── Sections added with the generalisation (2026-08-03) ──────────────────────
    Every selector below belongs to an OPTIONAL section. A config that omits the field
    renders none of this markup, so these rules cost an existing page nothing. */
-.plp-h2 { font-family: var(--font-display); font-size: clamp(21px, 3.2vw, 28px); font-weight: 700;
-  letter-spacing: -.3px; margin: 0 0 16px; color: var(--text); }
-.plp .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
-.plp .btn-ghost:hover { border-color: var(--text-muted); }
 
 /* Header shadow — driven by data-scrolled, which ProductLandingChrome sets on .plp so the
    header itself stays server-rendered markup. */
@@ -429,7 +407,7 @@ const CSS = `
 /* Mock-ups */
 .plp-mockups { padding: clamp(20px, 4vw, 40px) 0; }
 .plp-mockup-stack { display: flex; flex-direction: column; gap: 18px; }
-.plp-mockup { margin: 0; background: var(--surface); border: 1px solid var(--border);
+.plp-mockup { margin: 0; border: 1px solid var(--border);
   border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
 .plp-mockup-head { display: flex; flex-direction: column; gap: 2px; padding-bottom: 10px;
   border-bottom: 1px solid var(--border); }
@@ -450,8 +428,7 @@ const CSS = `
   border-radius: 999px; padding: 2px 9px; }
 .plp-panel-body { font-size: 13.5px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 .plp-mockup-foot { font-size: 11.5px; color: var(--text-muted); padding-top: 8px; border-top: 1px solid var(--border); }
-.plp-mockup-caption { margin-top: 4px; text-align: center; font-family: var(--font-display); font-style: italic;
-  font-size: 14px; color: var(--rust); line-height: 1.4; }
+.plp-mockup-caption { margin-top: 4px; text-align: center; font-size: 14px; line-height: 1.4; }
 .plp-turn-badge { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
   letter-spacing: .06em; text-transform: uppercase; color: var(--rust);
   background: color-mix(in oklab, var(--rust) 14%, transparent);
@@ -472,22 +449,19 @@ const CSS = `
 .plp-step-n { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;
   border-radius: 999px; background: var(--rust); color: var(--rust-ink); font-size: 12.5px;
   font-weight: 700; margin-bottom: 8px; }
-.plp-step-title { font-family: var(--font-display); font-size: 16.5px; font-weight: 700; margin: 0 0 6px; }
+.plp-step-title { font-size: 16.5px; margin: 0 0 6px; }
 .plp-step-body { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 
 /* Section groups — headed clusters of cards, replacing the flat points grid when
    sections[] is set. Reuses .plp-points-grid / .plp-point for the card shape. */
 .plp-section-group { padding: clamp(24px, 4vw, 40px) 0; }
 .plp-section-group-grid { margin-top: 24px; }
-.plp-caption { margin-top: 20px; text-align: center; font-family: var(--font-display); font-style: italic;
-  font-size: 15px; color: var(--rust); line-height: 1.4; }
+.plp-caption { margin-top: 20px; text-align: center; font-size: 15px; line-height: 1.4; }
 
-/* Judgement (weak / diagnosis / coached before-after card) */
+/* Judgement (weak / diagnosis / coached before-after card). Grid mechanism (flex-wrap,
+   not a fixed-count template) lives in globals.css — see the comment there. */
 .plp-judgement { padding: clamp(20px, 4vw, 40px) 0; }
-.plp-judgement-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch;
-  gap: 12px; margin-top: 14px; }
-@media (max-width: 760px) { .plp-judgement-grid { grid-template-columns: 1fr; } }
-.plp-judgement-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+.plp-judgement-col { border: 1px solid var(--border); border-radius: 12px;
   padding: 18px; display: flex; flex-direction: column; gap: 8px; }
 .plp-judgement-col--coached { border-color: var(--rust); }
 .plp-judgement-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
@@ -495,14 +469,13 @@ const CSS = `
 .plp-judgement-col--coached .plp-judgement-tag { color: var(--rust); }
 .plp-judgement-col p { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 .plp-judgement-arrow { align-self: center; justify-self: center; color: var(--rust); font-size: 16px; }
-@media (max-width: 760px) { .plp-judgement-arrow { display: none; } }
 
 /* Compare strip (competitor columns) */
 .plp-compare-strip { padding: clamp(20px, 4vw, 40px) 0; }
 .plp-compare-strip-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 16px; margin-top: 14px; }
 @media (max-width: 720px) { .plp-compare-strip-grid { grid-template-columns: 1fr; } }
-.plp-compare-strip-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-.plp-compare-strip-col.is-featured { border-color: var(--rust); background: color-mix(in oklab, var(--surface) 88%, var(--rust)); }
+.plp-compare-strip-col { border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.plp-compare-strip-col.is-featured { border-color: var(--rust); background: color-mix(in oklab, var(--paper) 88%, var(--rust)); }
 .plp-compare-strip-name { font-size: 15px; font-weight: 700; color: var(--text); }
 .plp-compare-strip-col.is-featured .plp-compare-strip-name { color: var(--rust); }
 .plp-compare-strip-col p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin: 4px 0 0; }
@@ -516,14 +489,14 @@ const CSS = `
 .plp-tier-h { text-align: center; }
 .plp-tier-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 18px; align-items: stretch; }
 @media (max-width: 720px) { .plp-tier-grid { grid-template-columns: 1fr; } }
-.plp-tier { position: relative; background: var(--surface); border: 1px solid var(--border);
+.plp-tier { position: relative; border: 1px solid var(--border);
   border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 8px; }
 .plp-tier.is-featured { border-color: var(--rust); box-shadow: var(--shadow-lg); }
 .plp-tier-badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%);
   background: var(--rust); color: var(--rust-ink); font-size: 11px; font-weight: 700;
   letter-spacing: .03em; padding: 3px 11px; border-radius: 999px; white-space: nowrap; }
 .plp-tier-name { font-size: 12.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-.plp-tier-amount { font-family: var(--font-display); font-size: 34px; font-weight: 700; letter-spacing: -.8px; color: var(--text); }
+.plp-tier-amount { font-size: 34px; letter-spacing: -.8px; color: var(--text); }
 .plp-tier-period { display: block; font-family: var(--font-body); font-size: 12.5px; font-weight: 500;
   letter-spacing: 0; color: var(--text-muted); margin-top: 2px; }
 .plp-tier-tagline { font-size: 13.5px; line-height: 1.5; color: var(--text-muted); margin: 0; }
@@ -537,17 +510,16 @@ const CSS = `
 .plp-faq-list { margin: 0; }
 .plp-faq-item { border-top: 1px solid var(--border); padding: 16px 0; }
 .plp-faq-item:first-child { border-top: 0; }
-.plp-faq-q { font-size: 15px; font-weight: 700; color: var(--text); margin: 0 0 6px; }
+.plp-faq-q { margin: 0 0 6px; }
 .plp-faq-a { font-size: 14.5px; line-height: 1.6; color: var(--text-muted); margin: 0; }
 
-/* Final CTA */
-.plp-final { padding: clamp(30px, 5vw, 60px) 0; text-align: center; }
+/* Final CTA — the dark band background/text-color/padding live in globals.css. */
 .plp-final .plp-cta-row { justify-content: center; }
-.plp-pill { display: inline-block; font-size: 12px; font-weight: 700; color: var(--rust);
+.plp-pill { display: inline-block; font-size: 12px; font-weight: 700;
   border: 1px solid color-mix(in oklab, var(--rust) 30%, transparent); border-radius: 999px;
   padding: 4px 13px; margin-bottom: 14px; }
 .plp-final-fineprint { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
-  color: var(--text-muted); margin-top: 22px; }
+  margin-top: 22px; }
 
 /* Back to top */
 .plp-totop { position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 38px; height: 38px;
@@ -556,6 +528,5 @@ const CSS = `
   opacity: 0; pointer-events: none; transform: translateY(6px);
   transition: opacity .18s ease, transform .18s ease; box-shadow: var(--shadow-sm); }
 .plp-totop.is-visible { opacity: 1; pointer-events: auto; transform: translateY(0); }
-.plp-totop:hover { border-color: var(--rust); color: var(--rust); }
 @media (prefers-reduced-motion: reduce) { .plp-totop { transition: none; } }
 `;
