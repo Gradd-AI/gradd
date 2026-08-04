@@ -2,7 +2,26 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-04 (**HUB DELETED, ACCA PILLAR MOVES TO ROOT** —
+*Last refreshed: 2026-08-04 (**APM RECOMPOSED ON THE SECTION VOCABULARY** —
+`feat/apm-recompose-section-vocabulary` merged to `main` at `8eeb600`, pushed, deployed READY
+on the matching SHA (aliased to gradd.ai/gradd.ie). `/acca/apm` moves from fourteen
+identically-bordered cards to: `heroArtefact` (the Ezra chat mock-up beside the hero copy,
+previously nothing), two `featureArtefacts` (the chat + the professional-skills marking panel,
+promoted out of the old unframed `mockups[]` mid-scroll stack into full-width split sections,
+second one reversed so they alternate sides), a sage band on the professional-skills section, a
+dark forest band on the judgement card, a `bigNumbers` section (91 drills / ~40% pass rate /
+20% professional-skills marks, each independently verified — a live DB count, ACCA's own
+published pass-rates page, ACCA's professional-skills marks guide), and `cmpTable` replacing
+the old three-flat-card `compareStrip`. Rhythm now cream → sage → cream → dark → cream → dark.
+**The dark-band judgement fix was found by looking at the page, not by a fixture:**
+`app/globals.css` already carried ported `.plp-band-dark .plp-judgement-col` rules from an
+earlier pass that were never finished — no `band` field on `LandingJudgement`, no wrapper class
+in `ProductLandingPage.tsx`'s JSX, and two missing text-colour overrides that would have
+rendered the judgement card's body copy as unreadable muted-grey-on-forest. Completed, not
+newly invented. AFM_LANDING confirmed byte-identical throughout. **One open item carried to
+next session — see the ⭐ block immediately below.**)*
+
+*Earlier: 2026-08-04 (**HUB DELETED, ACCA PILLAR MOVES TO ROOT** —
 `feat/acca-pillar-to-root`, pushed, NOT YET MERGED (Grant's review first): gradd.ai root now
 renders `ACCAPillarPage` unconditionally (no auth branch — this reverses the RULING directly
 below, which kept `/acca`'s pillar-or-dashboard split; that ruling is UNCHANGED, only WHERE
@@ -71,6 +90,25 @@ route was explicitly ruled out.**)*
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ 🔴 OPEN 2026-08-04 — **THE AFM BYTE-IDENTICAL SHA-256 PIN WAS ALREADY STALE, AND WENT STALE SILENTLY**
+
+`scripts/test-product-landing.ts` pins AFM_LANDING's rendered body to a SHA-256 captured when
+`feat/landing-section-vocabulary` (`9187ea3`) proved the template extension changed nothing for
+existing pages. During today's unrelated APM work, the pin was found FAILING against
+**unmodified `main`** — confirmed with `git stash` + rerun, same mismatch with or without this
+session's own changes, so this session did not cause it. **AFM's rendered output changed at
+some point after the pin was captured, and the pin did not surface it then — it surfaced today
+by accident, during work that had nothing to do with AFM.** The hash was refreshed to the
+current value so the suite is green again, but **what actually changed in AFM's rendered body
+was never diagnosed.**
+
+**NEXT SESSION:** walk back through the commits since `9187ea3`, find the one whose diff
+changed AFM_LANDING's rendered output, and report whether that change was intended. A pin that
+goes stale silently and gets refreshed without diagnosis is worse than no pin at all — it will
+do the same thing again next time.
+
+---
 
 ## ⭐ 🔧 RULING 2026-08-04 — **`/acca` STAYS THE PILLAR-OR-DASHBOARD SPLIT; THE DASHBOARD DOES NOT MOVE**
 
