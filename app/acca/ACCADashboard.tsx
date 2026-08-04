@@ -28,6 +28,11 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
   // First-run (F3): a zero-attempt user gets one unmissable primary action above the grid.
   const showFirstRun = areas.length > 0 && !hasAttempted && !!firstDrillArea;
   const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
+  // Same convention — the "Go unlimited" CTA below used to be bare '/acca/subscribe', which
+  // resolved the right paper only via a document.referrer regex on the subscribe page
+  // (absent under common privacy settings / Referrer-Policy). Threading it explicitly, like
+  // every other paper-aware link in this component, removes that dependency.
+  const subscribeHref = paper === 'APM' ? '/acca/subscribe' : `/acca/subscribe?paper=${encodeURIComponent(paper)}`;
   // The timed mock is a per-paper SURFACE, not a query param: /acca/mock renders
   // <SitRunner paper="APM" /> and /acca/afm/mock renders <SitRunner paper="AFM" />.
   const mockHref = paper === 'AFM' ? '/acca/afm/mock' : '/acca/mock';
@@ -106,7 +111,7 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                   </span>
                 </div>
                 {capHit && (
-                  <a href="/acca/subscribe" className="apm-status-cta">Go unlimited →</a>
+                  <a href={subscribeHref} className="apm-status-cta">Go unlimited →</a>
                 )}
               </div>
             )}
