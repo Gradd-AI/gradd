@@ -2,7 +2,9 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-04 (**APM IS NOW CONFIG-DRIVEN** — `feat/apm-template-conversion` merged to `main` at `20585de`, deployed READY on the matching SHA. `/acca/apm` renders `ProductLandingPage` + `APM_LANDING`; `ACCALandingPage.tsx` (~1,150 lines, bespoke) is deleted. See the ⭐ block below for the full record, including a P-DB6 sighting: the branch itself was lost once already, authored on the other machine and never pushed.)*
+*Last refreshed: 2026-08-04 (**AFM LANDING REBUILT ON THE FULL TEMPLATE** — `feat/afm-landing-rebuild` merged to `main` at `d1b135b`, deployed READY on the matching SHA, live-verified: 63 drills / 5 cases / live mock all read correctly in rendered text, canonical/og/meta description all correct, pricing-tier CTAs carry `?paper=AFM` through the `/acca/auth` → `/auth/callback` hop (source-traced across all three hops — `next` is `encodeURIComponent`'d in and read back whole, never truncated to a bare path) to `/acca/subscribe` with AFM pre-selected, `/acca/apm` and the hub both unaffected. Two broadened claim detectors (code-owned-marking language; bundle language — not just the two exact retired strings) self-check clean against both retired strings and find zero hits on the live page. Two open items banked below, both discovered during this verification, neither blocking the merge.)*
+
+*Earlier: 2026-08-04 (**APM IS NOW CONFIG-DRIVEN** — `feat/apm-template-conversion` merged to `main` at `20585de`, deployed READY on the matching SHA. `/acca/apm` renders `ProductLandingPage` + `APM_LANDING`; `ACCALandingPage.tsx` (~1,150 lines, bespoke) is deleted. See the ⭐ block below for the full record, including a P-DB6 sighting: the branch itself was lost once already, authored on the other machine and never pushed.)*
 
 *Earlier: 2026-08-03 (**gradd.ai IS HUB-AND-SPOKE** — shipped `df25eb6`: / hub, /acca pillar, /acca/apm + /acca/afm spokes; first real product router, and the three sites branching product behaviour on `resolveIsIB` are fixed. `/ib` untouched — splitting it is a pricing decision, not a routing one. Earlier same day: **TEACHING-PRINCIPLE FIXES MERGED** — items 1–9 on `main` at `1b86e22`, from the first audit of the ACCA teaching loop against real student output. Three principles remain open and are GROUPED as one session: P2/P3/P4 all block on per-(user, LO) state. The method lesson — a real transcript is an instrument, read it on a schedule — is banked at the top. Earlier: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.))*
 
@@ -17,6 +19,69 @@
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **AFM LANDING REBUILT ON THE FULL TEMPLATE, OWN ARGUMENT** (`d1b135b`)
+
+`feat/afm-landing-rebuild` merged to `main`, deployed READY on the matching SHA. `AFM_LANDING`
+now carries the same rich section structure `APM_LANDING` has (11 of 12 optional sections —
+`secondaryCta` deliberately omitted, no AFM equivalent to APM's free resit diagnostic), stating
+AFM's OWN argument (execution/precision under a clock, from the five-examiner-report failure
+catalogue in `TEACHING_PRINCIPLES_EZRA_AFM.md`) rather than APM's ("judgement paper"). Three
+content corrections shipped: drill count 16→63 (this file previously understated itself), the
+code-owned-marking overclaim removed (marking is answer-locked and model-graded, not
+deterministic), pricing restated as the AFM-only per-paper offer with no bundle claim.
+
+**Live-verified post-deploy, not just in the build:** all 9 section headings present in
+rendered text; `63 exam-style drills`, `5 practice cases`, `AFM Mock Paper 1` all read
+correctly; meta description matches; canonical/og:url both self-referential to `/acca/afm`;
+pricing-tier CTAs carry `?paper=AFM` (confirmed in the served HTML:
+`href="/acca/auth?next=%2Facca%2Fsubscribe%3Fpaper%3DAFM"`) and the full three-hop chain —
+`/acca/auth` → `/auth/callback` → `/acca/subscribe` — was source-traced to confirm `next` is
+`encodeURIComponent`'d going in and read back as the whole string (path + query) at each hop,
+never truncated to a bare pathname; `/acca/apm` and the hub both unaffected (spot-checked
+distinctive content on each).
+
+**Two broadened claim detectors, self-checked per P-G3(a):**
+```
+CODE_OWNED_MARKING_CLAIM — any (marking|verdict|figure|accept/reject) within ~6 words of
+  (computed|deterministic(ally)|verified by code|code-verified|exact(ly)), either order.
+BUNDLE_CLAIM — (every|all|any|both) (ACCA )?paper(s); one (pass|subscription|payment|
+  purchase) (covers|unlocks|includes|gets you); "apm and afm"/"afm and apm"; unlocks/
+  includes/access to APM; "whole qualification".
+```
+Both self-check CATCHES IT against their own retired string (not a paraphrase — the actual
+retired copy: *"Every figure and every accept/reject verdict is computed and verified
+deterministically, so the marking is exact."* / *"One ACCA pass covers every paper you sit:
+APM and AFM together, one subscription."* / *"Free to start. One pass covers every ACCA
+paper."*) — a regex that matches nothing cannot pass silently. Run against the live
+production page (93,468 bytes fetched, 64,902 chars after stripping `<style>` and tags):
+**zero hits, both detectors.** Denominator: scanned the full rendered page body (component
+tree + `<head>` metadata) as actually served; did NOT scan source-file comments (they
+legitimately quote the retired strings for institutional memory — scanning them would be a
+false positive by construction) or `APM_LANDING`'s own copy (out of scope for this sweep).
+Detector script: `scripts/_sweep-afm-claims.ts` (gitignored `scripts/_*`, read-only, not an
+authoring path, so P-DB6 does not require committing it — kept locally as a rerunnable
+check, `npx tsx scripts/_sweep-afm-claims.ts local|live`).
+
+### 🔧 TWO OPEN ITEMS, surfaced during this verification — neither blocks the merge
+
+1. **The unentitled sit attempt is a dead end at the exact moment a free student has the
+   most intent.** `SitRunner`'s `phase === 'error'` branch renders a flat *"Couldn't load the
+   paper. Reload to try again."* for EVERY non-OK response — a 402 (not entitled) reads
+   identically to a genuine load failure. A free student who clicks through to `AFM Mock
+   Paper 1` gets a dead page instead of an upgrade prompt, at the single highest-intent
+   moment in the funnel. Small fix (branch on `res.status === 402` and render a CTA to
+   `/acca/subscribe?paper=<paper>` instead of the generic error), real conversion cost
+   left on the table until it's made. This is WHY the AFM landing page's `secondaryCta`
+   and mock-promotion copy route to `#pricing` / `/acca/subscribe` rather than straight to
+   `/acca/afm/mock` — routing free traffic into this dead end was avoided at the copy
+   layer, not fixed at the product layer.
+2. **`/blog`'s `resolveSubject` recognises only `'apm' | 'ib'`.** AFM now has 63 drills, 5
+   cases and a live timed mock — real content, real examiner-report grounding — with no
+   `?subject=afm` filter to point at. `AFM_LANDING`'s nav/footer link plain `/blog`
+   (unfiltered) rather than a filter that silently falls through to the wrong page (see the
+   in-file comment on the nav array). Rides the next blog work — extending
+   `resolveSubject`/`SubjectFilter` to a third value once AFM-tagged posts exist to filter to.
 
 ## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **APM IS CONFIG-DRIVEN: A NEW PAPER IS A CONFIG FILE** (`20585de`)
 
