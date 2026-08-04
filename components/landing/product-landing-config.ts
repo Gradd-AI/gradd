@@ -34,6 +34,16 @@ export interface LandingPoint { title: string; body: string }
 export interface LandingCard { title: string; body: string }
 
 /**
+ * A background TREATMENT, not a content type. Wraps an existing section in a full-width
+ * coloured band — 'dark' is the forest band already proven by `finalCta` (`.plp-final`);
+ * 'sage' is the softer green band ACCA's recovered design system also carries. Any section
+ * shape below that accepts a `band` field can be placed inside one, including the EXISTING
+ * `LandingSectionGroup` — the band is a class modifier on the section wrapper, not a
+ * separate structural layer, so it works on old and new section kinds alike.
+ */
+export type LandingBand = 'dark' | 'sage';
+
+/**
  * A SECTION GROUP: a heading-owning cluster of cards — the shape `points[]` could never be,
  * because `points[]` is one flat array with no headings of its own.
  *
@@ -56,6 +66,8 @@ export interface LandingSectionGroup {
   /** An italic one-line takeaway under the cards — e.g. "The difference is not knowledge.
    *  It is application, limitation, judgement." */
   caption?: string;
+  /** Places this group inside a full-width coloured band. See `LandingBand`. */
+  band?: LandingBand;
 }
 
 /** A pricing card. `pricingTiers` replaces the simple two-line card when present. */
@@ -141,6 +153,72 @@ export interface LandingMockup {
   /** An italic one-line caption under the WHOLE mock-up — e.g. the hero visual's "The
    *  answer stays sealed. Ezra teaches until your answer is strong enough to score." */
   caption?: string;
+}
+
+// ── SECTION VOCABULARY EXTENSION (feat/landing-section-vocabulary) ──────────
+// The IB landing page (`IBLandingPage.tsx`, hand-authored, no config) alternates section
+// TYPES and background bands; every ProductLandingPage section before this point renders as
+// a bordered card in a three-up grid — same box, same weight, same colour, regardless of
+// paper. These five shapes port IB's proven vocabulary into the config contract so a future
+// page CAN vary weight and rhythm. Nothing below is wired into AFM_LANDING or APM_LANDING
+// in this change-set — see the file header. Adding it to a config is a separate decision.
+
+/** The .trust stat strip — a thin bordered band under the hero, not a card. IB's reference
+ *  shape carries 3-5 stats; the template does not enforce the count. */
+export interface LandingStatBarItem { value: string; label: string }
+export interface LandingStatBar {
+  label?: string;
+  stats: LandingStatBarItem[];
+  band?: LandingBand;
+}
+
+/** Enormous italic-serif figures separated by rules, no cards — the main weight-variety
+ *  device the template lacked before this change (every other section is a bordered box).
+ *  IB's reference shape is exactly three; the template does not enforce the count. */
+export interface LandingBigNumberItem { value: string; body: string }
+export interface LandingBigNumbers {
+  eyebrow?: string;
+  heading?: string;
+  items: LandingBigNumberItem[];
+  band?: LandingBand;
+}
+
+/**
+ * A full-width split section: copy on one side, a mock-up on the other, with its OWN
+ * eyebrow/heading/lead — the framing a `mockups[]` entry never gets on its own (there it
+ * renders as a small boxed artefact mid-scroll with no heading). Reuses `LandingMockup`
+ * rather than inventing a second artefact shape, so the chat/panel renderer stays the one
+ * place that knows how to draw a transcript or a marking panel.
+ */
+export interface LandingFeatureArtefact {
+  eyebrow?: string;
+  heading: string;
+  lead?: string;
+  bullets?: string[];
+  mockup: LandingMockup;
+  /** Mock-up on the left, copy on the right. Defaults to copy-first (mock-up on the right). */
+  reverse?: boolean;
+  band?: LandingBand;
+}
+
+/**
+ * A real comparison TABLE — a row of feature labels, N competitor columns, one of which may
+ * be `featured` (the highlighted Gradd column). Distinct from `LandingCompareStrip`, which is
+ * a flat strip of one paragraph per column with no shared row structure across columns.
+ * `columns[i].values` is positional against `rowLabels` — `values[j]` is that column's answer
+ * for `rowLabels[j]`. A boolean cell renders as a yes/no glyph; a string renders as-is.
+ */
+export interface LandingCompareTableColumn {
+  label: string;
+  values: (string | boolean)[];
+  featured?: boolean;
+}
+export interface LandingCompareTable {
+  eyebrow?: string;
+  heading?: string;
+  rowLabels: string[];
+  columns: LandingCompareTableColumn[];
+  band?: LandingBand;
 }
 
 export interface FinalCta {
@@ -239,6 +317,28 @@ export interface ProductLandingConfig {
     backToTop?: boolean;
     stickyHeaderShadow?: boolean;
   };
+
+  // ── SECTION VOCABULARY EXTENSION (feat/landing-section-vocabulary) — see the interfaces
+  // above for the full rationale. All five are new surface; AFM_LANDING/APM_LANDING set
+  // none of them in this change-set.
+
+  /** A mock-up rendered BESIDE the hero copy, the way IB's hero carries a chat preview.
+   *  Reuses `LandingMockup` — the same chat/panel renderer `mockups[]` already has. */
+  heroArtefact?: LandingMockup;
+
+  /** The trust/stat strip under the hero. */
+  statBar?: LandingStatBar;
+
+  /** Full-width split copy/mock-up sections — the framing a chat transcript or a marking
+   *  panel needs and `mockups[]` alone cannot give it. */
+  featureArtefacts?: LandingFeatureArtefact[];
+
+  /** Three enormous italic-serif figures, no cards — the template's weight-variety device. */
+  bigNumbers?: LandingBigNumbers;
+
+  /** A real comparison table with a highlighted Gradd column. The other half of the old
+   *  `comparison{}` split has TWO homes now: the flat `compareStrip` and this table. */
+  cmpTable?: LandingCompareTable;
 }
 
 /**
