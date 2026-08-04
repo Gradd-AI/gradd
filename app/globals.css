@@ -186,7 +186,11 @@ body {
   gap: 12px;
 }
 
-.dashboard-nav-signout {
+/* ACCASignOutButton (components/acca/ACCASignOutButton.tsx) — one rule, global, so the six
+   independently-styled ACCA headers (each with their own scoped CSS-in-JS block) don't each
+   need their own copy. Same muted-text-button register .dashboard-nav-signout used before
+   this replaced it — neutral enough to sit in any of the six header backgrounds unstyled. */
+.acca-signout-btn {
   background: none;
   border: none;
   font-size: 13px;
@@ -196,7 +200,7 @@ body {
   border-radius: var(--radius-sm);
   transition: color 0.15s;
 }
-.dashboard-nav-signout:hover { color: var(--text); }
+.acca-signout-btn:hover { color: var(--text); }
 
 .dashboard-body {
   max-width: 680px;

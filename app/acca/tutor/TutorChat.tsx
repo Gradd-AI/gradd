@@ -5,6 +5,7 @@ import Link from 'next/link';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import AreaPicker, { type PickerArea } from '@/app/acca/AreaPicker';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 interface Drill {
   id: string;
@@ -263,10 +264,13 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
             <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`} className="et-logo" aria-label="Back to Gradd ACCA">
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
-            <div className="et-breadcrumb">
-              <span className="et-breadcrumb-paper">ACCA {paper}</span>
-              <span className="et-breadcrumb-sep">·</span>
-              <span className="et-breadcrumb-label">Tutor</span>
+            <div className="et-header-right">
+              <div className="et-breadcrumb">
+                <span className="et-breadcrumb-paper">ACCA {paper}</span>
+                <span className="et-breadcrumb-sep">·</span>
+                <span className="et-breadcrumb-label">Tutor</span>
+              </div>
+              <ACCASignOutButton />
             </div>
           </div>
         </header>
@@ -607,6 +611,7 @@ const CSS = `
   height: 56px;
 }
 .et-logo { display: flex; align-items: center; text-decoration: none; }
+.et-header-right { display: flex; align-items: center; gap: 14px; }
 .et-breadcrumb {
   display: flex;
   align-items: center;

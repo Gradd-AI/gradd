@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { caseMarkReady } from '@/lib/acca/case-sit';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 // ── Types (client-safe subset of the case/turn + case load responses) ──────────
 interface Exhibit { exhibit_order: number; title: string | null; body: string | null }
@@ -419,10 +420,13 @@ export default function CaseSession({
               <Link href="/acca/cases" className="ec-logo" aria-label="Back to cases">
                 <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
               </Link>
-              <div className="ec-breadcrumb">
-                <span className="ec-breadcrumb-paper">ACCA APM</span>
-                <span className="ec-breadcrumb-sep">·</span>
-                <span className="ec-breadcrumb-label">Exam case</span>
+              <div className="ec-header-right">
+                <div className="ec-breadcrumb">
+                  <span className="ec-breadcrumb-paper">ACCA APM</span>
+                  <span className="ec-breadcrumb-sep">·</span>
+                  <span className="ec-breadcrumb-label">Exam case</span>
+                </div>
+                <ACCASignOutButton />
               </div>
             </div>
           </header>
@@ -754,6 +758,7 @@ const CSS = `
 }
 .ec-header-inner { display: flex; align-items: center; justify-content: space-between; height: 56px; }
 .ec-logo { display: flex; align-items: center; text-decoration: none; }
+.ec-header-right { display: flex; align-items: center; gap: 14px; }
 .ec-breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); }
 .ec-breadcrumb-paper { font-weight: 600; color: var(--text); }
 .ec-breadcrumb-sep { color: var(--border); }

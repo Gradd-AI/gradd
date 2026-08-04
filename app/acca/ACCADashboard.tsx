@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AreaPicker, { type PickerArea } from './AreaPicker';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 interface ACCADashboardProps {
   areas: PickerArea[];
@@ -64,6 +65,7 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                 <span className="apm-dash-sep">·</span>
                 <span className="apm-dash-badge">Drill</span>
               </div>
+              <ACCASignOutButton />
             </div>
           </div>
         </header>

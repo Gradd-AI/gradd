@@ -7,6 +7,7 @@ import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/que
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -126,6 +127,7 @@ export default async function ProgressPage({
         <span className="org-crumb">
           <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`}>ACCA {paper}</Link><span>›</span> Your progress
         </span>
+        <ACCASignOutButton />
       </header>
 
       <h1>Your progress</h1>

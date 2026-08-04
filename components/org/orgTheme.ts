@@ -111,6 +111,14 @@ export const ORG_CSS = `
 .org-header .wordmark { display: inline-flex; align-items: center; text-decoration: none; }
 .org-header .wordmark img { height: 24px; width: auto; display: block; filter: brightness(0) invert(1); }
 .org-crumb { color: #b9cabf; font-size: 13px; display: flex; gap: 8px; align-items: center; }
+/* org-header's --brand background is dark; ACCASignOutButton's base rule (app/globals.css)
+   is a --text-muted/--text pair meant for the light --bg the other five ACCA headers use.
+   Overridden here, not in the shared component, because org-header is the one dark
+   exception — pushed to the far edge too, since .org-header has no space-between of its
+   own (unlike the other five headers, wordmark/crumb/signout would otherwise just cluster
+   left with the header's 12px gap). */
+.org-header .acca-signout-btn { color: #b9cabf; margin-left: auto; }
+.org-header .acca-signout-btn:hover { color: #fff; }
 .org-crumb a { color: #b9cabf; text-decoration: none; }
 .org-crumb a:hover { color: #fff; }
 
