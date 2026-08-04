@@ -2,7 +2,9 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-03 (**gradd.ai IS HUB-AND-SPOKE** — shipped `df25eb6`: / hub, /acca pillar, /acca/apm + /acca/afm spokes; first real product router, and the three sites branching product behaviour on `resolveIsIB` are fixed. `/ib` untouched — splitting it is a pricing decision, not a routing one. Earlier same day: **TEACHING-PRINCIPLE FIXES MERGED** — items 1–9 on `main` at `1b86e22`, from the first audit of the ACCA teaching loop against real student output. Three principles remain open and are GROUPED as one session: P2/P3/P4 all block on per-(user, LO) state. The method lesson — a real transcript is an instrument, read it on a schedule — is banked at the top. Earlier: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.))*
+*Last refreshed: 2026-08-04 (**APM IS NOW CONFIG-DRIVEN** — `feat/apm-template-conversion` merged to `main` at `20585de`, deployed READY on the matching SHA. `/acca/apm` renders `ProductLandingPage` + `APM_LANDING`; `ACCALandingPage.tsx` (~1,150 lines, bespoke) is deleted. See the ⭐ block below for the full record, including a P-DB6 sighting: the branch itself was lost once already, authored on the other machine and never pushed.)*
+
+*Earlier: 2026-08-03 (**gradd.ai IS HUB-AND-SPOKE** — shipped `df25eb6`: / hub, /acca pillar, /acca/apm + /acca/afm spokes; first real product router, and the three sites branching product behaviour on `resolveIsIB` are fixed. `/ib` untouched — splitting it is a pricing decision, not a routing one. Earlier same day: **TEACHING-PRINCIPLE FIXES MERGED** — items 1–9 on `main` at `1b86e22`, from the first audit of the ACCA teaching loop against real student output. Three principles remain open and are GROUPED as one session: P2/P3/P4 all block on per-(user, LO) state. The method lesson — a real transcript is an instrument, read it on a schedule — is banked at the top. Earlier: 2026-08-02 (**AFM CONTENT IS COMPLETE** — 63 published drills, 5 practice cases, Mock 1 live, and all seven measured (area × skill) cells served by a live drill. The PS routing gap, opened 2026-07-31, is closed. **What is NOT closed** — one standing open item (the calculator-path skill rotation, still defaulting) and two ungated defect classes — is recorded at the TOP of this file, immediately below. See the three ⭐ blocks.))*
 
 *Earlier: 2026-07-31 (the SIT LOOP closed end to end on branch `feat/sit-loop-end-to-end`, NOT merged and NOT deployed — Grant's review first. `SitRunner` moved to `components/acca/`; a results endpoint that marks both passes, persists `technical_feedback`, computes pacing and returns the debrief; the debrief rendered with case grouping, per-case subtotals, one headline, and per-requirement band/marks/collapsed-why/next-action with pacing adjacent and never merged; `W_WEAK = 0` closed — `acca_weak_areas` written by a marked sit on weak|competent bands and read by `next-drill` on the LIVE `area=`/`lo=` paths as well as the gated scorer, with PS-tag steering alongside it. Proven on a synthetic user against the real routes, then scoped-deleted with AFM Mock 1 re-proved virgin. Three new open items — see the block below.)*
 
@@ -16,6 +18,67 @@
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **APM IS CONFIG-DRIVEN: A NEW PAPER IS A CONFIG FILE** (`20585de`)
+
+`feat/apm-template-conversion` merged to `main`, pushed, **deployed READY on the matching SHA**
+(`20585de`, target `production`, aliased to `gradd.ai`/`gradd.ie`/`www.gradd.ai`/`www.gradd.ie`).
+`/acca/apm` now renders `ProductLandingPage` + `APM_LANDING` (`components/landing/
+product-landing-config.ts`); `ACCALandingPage.tsx` (~1,150 lines, bespoke) is **deleted**.
+
+**This CORRECTS the 2026-08-03 block below**, which said `ProductLandingPage` was deliberately
+**not** generalised and that job remained unbuilt (7 of 14 sections had no template equivalent).
+It is now built: `ProductLandingConfig` gained `sections[]` (headed card groups, replacing the
+flat `points[]` grid only when present — `points[]` stays required and renders exactly as
+before when absent, which is how `AFM_LANDING` is unaffected), `judgement{}` + `compareStrip{}`
+(split out of one `comparison{}` slot that could only ever hold one of the two live sections),
+optional `LandingStep.body`, hero microcopy/meta, mock-up hint-badge/input-row/caption,
+`pricingNote`, `finalCta.fineprint`, and configurable `footerLinks` (mailto-aware).
+
+**The ruler:** `scripts/compare-apm-landing.ts` (now deleted — its only subject was
+`ACCALandingPage`, so it could not survive the file it compared against) probed 20 elements
+pulled verbatim from the live page. Baseline against the pre-extension schema: **15 of 20
+lost** — not a bad config, a structural ceiling (one flat array, one comparison slot). After
+the schema extension: **0 of 20 lost**. Only then was the wire-and-delete commit made.
+
+**Live-verified post-deploy, not just in the build:** `/acca/apm`'s four section headings, three
+section eyebrows, the 14-day money-back line and both `/cookies`/mailto footer links (mailto
+confirmed via the server-sent RSC payload — Cloudflare's Email Address Obfuscation rewrites the
+*rendered* href to `/cdn-cgi/l/email-protection#...` for every mailto link on the domain, a
+CDN-level transform, not a regression) are present in the served page source, along with the
+FAQPage JSON-LD. Canonical/og:url still `https://gradd.ai/acca/apm`, the APM keyword set intact,
+sitemap priority still `1`. `/acca/afm` confirmed unaffected — same flat `points[]` grid, same
+default footer links, none of the new optional sections fire (checked as a real `class="..."`
+attribute match, not a bare substring — the whole stylesheet is inlined per-page, so every class
+name it defines appears in raw markup / the RSC payload's serialized copy of that CSS text
+regardless of whether the section rendered; P-G3a's trap, tripped and caught during this exact
+verification). Hub (`/`) and pillar (`/acca`) both 200, links to `/acca`/`/ib` and
+`/acca/apm`/`/acca/afm` respectively intact.
+
+**The generalisable lesson: a new paper is a config file.** The next paper this template needs
+to serve is an `X_LANDING` object plus a `compare-x-landing.ts` ruler if content is being
+migrated from a bespoke page — not a new component.
+
+### 🔴 P-DB6 SIGHTING — the branch itself was lost once, the same way, before any of this shipped
+
+`feat/apm-template-conversion` was originally authored on the other machine and **never
+pushed**. When this session started, the branch, `APM_LANDING`, and `compare:apm-landing`
+did not exist anywhere in the repo — not on `main`, not on any remote branch, not in history.
+Grant's call was to treat it as lost and rebuild from scratch on this machine, which is what
+the block above records.
+
+`GENERATOR_DOCTRINE.md`'s P-DB6 already names this failure mode for gitignored `scripts/_*`
+authoring paths — "one machine failure from gone" — and records it has cost the project once
+already: `scripts/_author_irhedge_batch.ts`, which authored the four live E3a drills, was
+never committed and is unrecoverable; the E3a one-leg schema defect it left behind still
+cannot be fixed as a result. **This is the same failure mode wearing a different shape — a
+whole feature branch instead of an untracked script — and it is the SECOND loss**, not
+hypothetical this time either: real authoring work (the config, the ruler, the schema design)
+had to be redone at real cost, caught only because the compare-apm-landing baseline came out
+15/20 instead of the expected ~16/20 and prompted a "does this branch actually exist" check
+before either number could be trusted. P-DB6's rule — commit anything that writes content or
+is the sole path to reproducing it, out of the gitignored throwaway zone — extends cleanly to
+"push anything that would be expensive to re-author," which this branch was.
+
 ## ⭐ ✅ RULED + SHIPPED 2026-08-03 — **gradd.ai IS HUB-AND-SPOKE** (`df25eb6`)
 
 ```
@@ -27,8 +90,9 @@
 ```
 
 Cheap path as ruled: `ACCALandingPage` **moved**, not rewritten, and `ProductLandingPage` was
-**not** generalised (7 of its 14 sections have no template equivalent — that job is severable
-and remains unbuilt). `/acca` needed **no route move**: anonymous gets the pillar, signed-in
+**not** generalised at the time (7 of its 14 sections had no template equivalent — that job was
+severable and stayed unbuilt until 2026-08-04; see the ⭐ block above — this description is
+historical, not current). `/acca` needed **no route move**: anonymous gets the pillar, signed-in
 keeps the dashboard, so no existing link changed and crawlers — being anonymous — see the pillar.
 
 ### ⚖️ THE 301-vs-HUB TENSION — they are mutually exclusive, and the hub won
