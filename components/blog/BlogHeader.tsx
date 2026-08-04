@@ -2,9 +2,9 @@ import Link from 'next/link';
 
 // Subject-aware blog header. The header can't live in the layout because the layout
 // sees neither the index's ?subject searchParam nor a post's frontmatter subject, so
-// each page derives the subject and renders this. APM views point home at the APM root,
-// carry an "ACCA APM" wordmark that doubles as back-to-the-APM-archive, and point the
-// CTA at the account-gated drills (mirrors BlogCTA); IB views are unchanged.
+// each page derives the subject and renders this. APM views point home at root — the
+// ACCA pillar — carry an "ACCA APM" wordmark that doubles as back-to-the-APM-archive,
+// and point the CTA at the account-gated drills (mirrors BlogCTA); IB views are unchanged.
 export default function BlogHeader({ subject }: { subject: 'apm' | 'ib' }) {
   const isAPM = subject === 'apm';
   const homeHref = isAPM ? '/' : '/ib';

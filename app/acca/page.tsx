@@ -1,60 +1,35 @@
-import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper, isDirectLinkOnlyArea } from '@/lib/acca/paper';
 import { hasPaperAccess } from '@/lib/acca/access';
 import ACCADashboard from './ACCADashboard';
-import ACCAPillarPage from '@/components/landing/ACCAPillarPage';
 import MetaTrackSignup from '@/components/MetaTrackSignup';
 import type { PickerArea } from './AreaPicker';
 
-// ── /acca IS NOW TWO THINGS, DECIDED BY AUTH ────────────────────────────────
-// Anonymous → the ACCA PILLAR (public marketing: the qualification, both papers, per-paper
-// pricing, routing to /acca/apm and /acca/afm). Signed in → the drill dashboard, unchanged.
+// ── /acca IS THE SIGNED-IN ACCA DASHBOARD ONLY (restructured 2026-08-04) ─────
+// The public ACCA pillar now lives at gradd.ai root (app/page.tsx). An anonymous
+// visitor here is sent there instead of rendering the pillar a second time, so
+// there is exactly one public ACCA marketing surface, not two — and crawlers are
+// anonymous, so root (not this route) is what gets indexed.
 //
-// This is why the restructure needed no route moves. /acca was already the authed surface
-// and is linked from dashboards, emails and the resit funnel; moving it would have meant
-// updating every one of those. Serving the pillar to the anonymous case adds the pillar
-// without touching a single existing link — and crawlers are anonymous, so the pillar is
-// what gets indexed.
+// No metadata export: this route is never the thing anonymous traffic or a crawler
+// actually sees (it redirects before rendering anything), so it carries none —
+// matching every other signed-in-only route (e.g. app/dashboard/page.tsx).
 //
-// It used to `redirect('/')` when signed out, which under hub-and-spoke would bounce ACCA
-// search intent onto a hub that does not mention ACCA. That redirect is gone.
-export const metadata: Metadata = {
-  title: 'ACCA Tutor — Taught, Not Just Marked | Gradd',
-  description:
-    'AI tutor for ACCA Strategic Professional. APM and AFM: diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. Free to start.',
-  keywords: [
-    'ACCA tutor',
-    'ACCA Strategic Professional',
-    'ACCA APM',
-    'ACCA AFM',
-    'ACCA exam practice',
-    'ACCA resit',
-    'ACCA AI tutor',
-  ],
-  alternates: { canonical: 'https://gradd.ai/acca' },
-  openGraph: {
-    title: 'ACCA Tutor — Taught, Not Just Marked | Gradd',
-    description:
-      'AI tutor for ACCA Strategic Professional. APM and AFM — taught, not just marked.',
-    url: 'https://gradd.ai/acca',
-    siteName: 'Gradd',
-    type: 'website',
-  },
-  robots: { index: true, follow: true },
-};
-
+// Every OTHER reference to '/acca' as "the signed-in ACCA home" is unchanged by this
+// move: lib/entitlements.ts's home resolution, app/go/page.tsx, the auth-callback
+// default `next=`, the ACCA checkout success/cancel targets, and the resit-plan
+// email CTA all still point here and are still correct.
 export default async function ACCAPage({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // ── Anonymous → the public pillar. Signed in → the dashboard below. ────────
+  // ── Anonymous → the pillar at root. Signed in → the dashboard below. ───────
   const authClient = await createServerClient();
   const { data: { user } } = await authClient.auth.getUser();
   if (!user) {
-    return <ACCAPillarPage />;
+    redirect('/');
   }
 
   const { paper: paperParam, area: areaParam } = await searchParams;

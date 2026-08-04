@@ -7,10 +7,9 @@ import LoginForm from './LoginForm';
 // IB copy and LC copy. On gradd.ai that meant every ACCA student signing in read
 // "Your AI-powered IB tutor" — wrong product, on the domain whose flagship is ACCA.
 //
-// Lower stakes than the signup mis-serve (copy, not a wrong flow) but the same defect, and
-// left in place it would have been the third live consumer of a boolean the hub now has to
-// route around. The form takes a PRODUCT now, so a fourth product cannot be bolted on as
-// another boolean.
+// Lower stakes than the signup mis-serve (copy, not a wrong flow) but the same defect. The
+// form takes a PRODUCT now (via resolveProductIntent, shared with signup), so a third
+// product cannot be bolted on as another boolean.
 export default async function LoginPage({
   searchParams,
 }: {

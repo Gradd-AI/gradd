@@ -2,7 +2,38 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-04 (**THREE ACCA FIXES, ONE BRANCH** —
+*Last refreshed: 2026-08-04 (**HUB DELETED, ACCA PILLAR MOVES TO ROOT** —
+`feat/acca-pillar-to-root`, pushed, NOT YET MERGED (Grant's review first): gradd.ai root now
+renders `ACCAPillarPage` unconditionally (no auth branch — this reverses the RULING directly
+below, which kept `/acca`'s pillar-or-dashboard split; that ruling is UNCHANGED, only WHERE
+the pillar renders moved) and `HubLandingPage.tsx` is deleted. `/acca` is now signed-in-only:
+anonymous hits `redirect('/')` instead of rendering the pillar a second time. Every reference
+to `/acca` as "the signed-in ACCA home" catalogued in the ruling below — `entitlements.ts:
+100-101`, `go/page.tsx:24`, `auth/callback/route.ts:10`, `acca/auth/page.tsx:10`, the
+`ACCADashboard`/`CaseList`/`CaseSession`/`progress`/`TutorChat`/`SitRunner` back-links — is
+UNCHANGED and still correct, confirming that ruling's own reasoning (moving the dashboard off
+`/acca` would have been the expensive direction; moving the PILLAR off `/acca` instead cost
+five files). Sitemap: root 1.0 (was 0.9), `/acca/apm` and `/acca/afm` both 0.9 (apm was 1.0,
+afm was 0.8 — no paper should outrank the other now that neither is "the root"), `/acca` itself
+removed from the sitemap (it has nothing left to index — anonymous traffic and every crawler
+redirect straight through it). `lib/product-router.ts` NOT deleted — `/auth/login` and
+`/auth/signup` still depend on `resolveProductIntent`/`PRODUCT_SIGNUP` for a different question
+(which product's auth form to render); only root's own call site is gone. One real behavioural
+gap found and fixed in that module: `PATH_PRODUCT` never mapped bare `/` to a product (correct
+while `/` was the ambiguous hub — it served ACCA AND IB), so a login/signup referrer or `?next=`
+of exactly `/` silently read as unknown intent; it now resolves to ACCA. Stale comments swept in
+`BlogHeader.tsx`, `app/(ib)/layout.tsx`, `app/auth/login/page.tsx` and `ProductLandingPage.tsx`
+that each still asserted an EARLIER root identity (some predating even the 2026-08-03 hub) —
+proof this kind of drift survives silently across a root-identity change unless swept
+explicitly; the sweep checklist was the read-only shape report's own link inventory. IB's nav
+link into it, previously carried only by the now-deleted hub, is replaced with a footer link on
+the pillar (`ACCAPillarPage.tsx` — the old self-referential "Gradd home" footer link, meaningless
+once this page IS gradd.ai home, repurposed for it). Build green, live-verified locally: root
+serves the pillar to anonymous (checked for pillar markup, absence of hub markup), `/acca`
+307-redirects an anonymous visitor to `/`, both spokes and `/ib` return 200 unaffected, sitemap
+priorities confirmed in the served XML, IB footer link confirmed in the served HTML.)*
+
+*Earlier: 2026-08-04 (**THREE ACCA FIXES, ONE BRANCH** —
 `fix/acca-subscribe-signout-entitlement-cta`, pushed, NOT YET MERGED: (1) `ACCADashboard.
 tsx`'s "Go unlimited" CTA now threads `?paper=` explicitly, same convention as every other
 link in that file — it previously resolved the right paper only via a `document.referrer`
@@ -117,7 +148,8 @@ Detector script: `scripts/_sweep-afm-claims.ts` (gitignored `scripts/_*`, read-o
 authoring path, so P-DB6 does not require committing it — kept locally as a rerunnable
 check, `npx tsx scripts/_sweep-afm-claims.ts local|live`).
 
-### 🔧 TWO OPEN ITEMS, surfaced during this verification — neither blocks the merge
+### 🔧 THREE OPEN ITEMS — neither of the first two blocked that merge; the third is logged
+    2026-08-04, unrelated to it, RECORD ONLY, no code touched
 
 1. **The unentitled sit attempt is a dead end at the exact moment a free student has the
    most intent.** `SitRunner`'s `phase === 'error'` branch renders a flat *"Couldn't load the
@@ -136,6 +168,47 @@ check, `npx tsx scripts/_sweep-afm-claims.ts local|live`).
    (unfiltered) rather than a filter that silently falls through to the wrong page (see the
    in-file comment on the nav array). Rides the next blog work — extending
    `resolveSubject`/`SubjectFilter` to a third value once AFM-tagged posts exist to filter to.
+3. **The free resit diagnostic (`/acca/resit`) is APM-only, and that's now a conversion gap,
+   not a content gap.** `lib/acca/resit-engine.ts` is pure and paper-blind in its own words
+   (`export function computeProfile`, no I/O, no model), but its DATA is APM-specific
+   throughout: `TOPIC_GROUPS`'s 10 groups carry APM's own `lo_code` prefixes (`A1`–`A5`,
+   `B1`–`B4`, `C1`, `D1`–`D2`) and plain-English labels (KPIs, budgeting & variances,
+   improvement models, etc.); `HABIT_QUESTIONS`'s six failure habits (`describe_vs_apply`,
+   `verb_object_drift`, `scepticism`, `prof_skills`, `pacing`, `requirement_planning`) are
+   sourced from `TEACHING_PRINCIPLES_EZRA.md`, APM's own failure catalogue — the file-top
+   comment on `HABIT_QUESTIONS` says so explicitly. There is no AFM equivalent of either
+   table. This is exactly why `AFM_LANDING` deliberately omits the `secondaryCta` section
+   (item 1 above, and the "RULED + SHIPPED" note two sections up) — the omission was a
+   conscious choice to not route free traffic at a diagnostic that doesn't exist for this
+   paper, not an oversight.
+
+   AFM now has 63 drills, 5 practice cases and a live mock — verified against the live DB
+   2026-08-04, not the count this doc used to understate for APM either — so the asymmetry
+   reads as a real hole in the AFM funnel: APM has a free three-minute entry point built
+   around ITS OWN failure modes, and AFM has nothing comparable at that price point (its
+   nearest free entry is the drill/teach-through allowance, not a diagnosed plan).
+
+   **What an AFM version needs, none of it started:**
+   - **AFM syllabus-area topic groups**, keyed to AFM's own `lo_code` prefixes and stated
+     in plain English the way `TOPIC_GROUPS` avoids raw syllabus letters (for pre-syllabus-
+     change sitters) — sourced from AFM's own area map (`docs/AFM_COVERAGE_CONTRACT.md`),
+     not copied from APM's ten groups with the labels swapped; AFM's section shape (A–E,
+     including the E-section hedging families with no APM analogue) doesn't line up with
+     APM's.
+   - **AFM-specific habit questions**, grounded in the five registered AFM examiner reports
+     (`docs/evidence/AFM_*_EVIDENCE.md`, `TEACHING_PRINCIPLES_EZRA_AFM.md`'s failure
+     catalogue) the way APM's habits are grounded in `TEACHING_PRINCIPLES_EZRA.md` — NOT a
+     relabelling of APM's six habits. AFM's own documented failure shape is different in
+     kind (per `CLAUDE.md`'s "MARKING DOES NOT EARN THAT CLAIM" section): correct
+     arithmetic that doesn't survive as committed advice, OFR/named-risk handling, the
+     senior-adviser register — not APM's describe-vs-apply / verb-drift pattern.
+   - **The plan email template.** Checked this session: `lib/email/resit-plan-template.ts`
+     is hardcoded to APM throughout, not paper-parameterised — the subject line is the
+     literal string `"Your APM resit plan"` (line 57), the file-top comment names "an ACCA
+     APM candidate" (line 3), and the input type's `score` field is commented "last APM
+     score" (line 8). An AFM version needs its own template (or a genuine paper-
+     parameterisation of this one covering both), not a copy with the acronym swapped —
+     the copy itself would need to speak AFM's register, not APM's.
 
 ## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **APM IS CONFIG-DRIVEN: A NEW PAPER IS A CONFIG FILE** (`20585de`)
 

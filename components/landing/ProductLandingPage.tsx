@@ -124,11 +124,11 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
             </Link>
             <nav className="plp-nav">
               {c.proof && <Link href={c.proof.href} className="plp-navlink">{c.proof.label}</Link>}
-              {/* Was `href="/"` labelled "ACCA APM" — correct while the root WAS the APM
-                  landing, and wrong the moment it became the hub. APM now lives at its own
-                  spoke; the pillar is the sibling link that belongs beside it. */}
               <Link href="/acca/apm" className="plp-navlink">ACCA APM</Link>
-              <Link href="/acca" className="plp-navlink">All ACCA</Link>
+              {/* Points at root, not /acca — root IS the ACCA pillar now, and /acca itself
+                  only redirects an anonymous visitor straight back here. Linking /acca
+                  directly would just add a redirect hop for every reader who clicks this. */}
+              <Link href="/" className="plp-navlink">All ACCA</Link>
               {(c.nav ?? []).map((n) => (
                 <Link key={n.href} href={n.href} className="plp-navlink">{n.label}</Link>
               ))}
