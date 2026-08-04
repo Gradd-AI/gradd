@@ -20,8 +20,10 @@ export default async function GoPage() {
   const host = (await headers()).get('host') ?? '';
   const isGraddAi = await resolveIsIB(host);
 
-  // Not signed in → the host's public entry (gradd.ai = APM funnel, gradd.ie = LC landing).
-  if (!user) redirect(isGraddAi ? '/acca' : '/');
+  // Not signed in → the host's public entry (gradd.ai = ACCA pillar at root, gradd.ie = LC
+  // landing). Both are '/' now — gradd.ai's /acca would just redirect here a second time,
+  // since it no longer serves anything to an anonymous visitor.
+  if (!user) redirect('/');
 
   const { data: profile } = await supabase
     .from('profiles')

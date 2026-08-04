@@ -10,20 +10,27 @@
 // wearing a product name, `GRADD_BUILD_HARDENING.md:1917` flags exactly that hazard, and
 // CLAUDE.md forbids branching product behaviour on it.
 //
-// A hub at `/` has to route between ACCA and IB — two products on ONE host — so
-// `resolveIsIB` is definitionally incapable of it: it cannot distinguish the two things
-// the hub exists to distinguish. This module is the real router, and it is deliberately
-// NOT a boolean.
+// /auth/login and /auth/signup each have to pick between ACCA, IB and LC copy/forms on
+// ONE host — so `resolveIsIB` is definitionally incapable of it: it cannot distinguish the
+// products it would need to distinguish. This module is the real router, and it is
+// deliberately NOT a boolean.
+//
+// gradd.ai root no longer has this problem (it IS the ACCA pillar, unconditionally — the
+// hub that used to sit above it and route between ACCA/IB is deleted), so this module's
+// only live callers are login and signup now. Kept as a shared module rather than inlined
+// into either, because both need the identical precedence rule and a THIRD caller (a
+// future hub, a campaign landing page, whatever) should not have to re-derive it.
 //
 // ── THE PROPERTY THAT MAKES IT SAFE: IT CAN SAY "I DON'T KNOW" ───────────────
 // `resolveProductIntent` returns `null` when nothing in the request evidences a product.
 // That is the whole design. A boolean has no way to express uncertainty, so it defaults —
 // and a default in a routing position is a silent wrong answer (an ACCA visitor served the
-// IB signup form, which is a live defect this pass fixes). A null forces the caller to ASK
-// the visitor rather than guess, which is precisely what the hub page is for.
+// IB signup form, which is a live defect this module fixed). A null forces the caller to
+// ASK or fall back to neutral copy rather than guess — see login/page.tsx and
+// signup/page.tsx for how each currently handles it.
 //
-// NEVER add a default here to make a call site simpler. The call site handling `null` by
-// showing a choice IS the feature.
+// NEVER add a default here to make a call site simpler. The call site handling `null`
+// explicitly IS the feature.
 
 export type SiteProduct = 'LC' | 'ACCA' | 'IB';
 
@@ -65,6 +72,13 @@ const PATH_PRODUCT: ReadonlyArray<readonly [string, SiteProduct]> = [
   ['/dashboard', 'IB'],
   ['/session', 'IB'],
   ['/onboarding', 'IB'],
+  // Root. Deliberately absent while '/' was the hub — it served ACCA AND IB, so it was
+  // genuinely ambiguous evidence. Root is now unconditionally the ACCA pillar
+  // (app/page.tsx), so a referrer or ?next= of exactly '/' is real ACCA evidence and was
+  // silently going unread until this entry existed. `productFromPath`'s match rule only
+  // ever matches this against an EXACT root path (`===`, or `/` + `/`/`?`), never as a
+  // prefix of every other path, so it cannot swallow `/acca` or `/ib` above it.
+  ['/', 'ACCA'],
 ];
 
 function productFromPath(path: string | null | undefined): SiteProduct | null {

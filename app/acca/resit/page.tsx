@@ -122,7 +122,9 @@ export default function ResitPage() {
       <style>{CSS}</style>
 
       <div className="resit-logo">
-        <Link href="/acca" style={{ textDecoration: 'none' }}>
+        {/* Root, not /acca — this page is public/no-auth (see file-top note), and /acca
+            only redirects an anonymous visitor straight back to root now. */}
+        <Link href="/" style={{ textDecoration: 'none' }}>
           <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 22, width: 'auto', display: 'block' }} />
         </Link>
       </div>

@@ -6,7 +6,7 @@ export default async function IBLayout({ children }: { children: React.ReactNode
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', flexDirection: 'column' }}>
       <header style={{ padding: '28px 24px 0', display: 'flex', justifyContent: 'center' }}>
-        {/* gradd.ai home is now the APM landing; the IB marketing page lives at /ib. */}
+        {/* gradd.ai home is the ACCA pillar; the IB marketing page lives at /ib. */}
         <Link href={brand.isIB ? '/ib' : '/'}>
           <img
             src={brand.logoSrc}
