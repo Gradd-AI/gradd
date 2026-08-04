@@ -51,7 +51,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
               {(c.nav ?? []).map((n) => (
                 <Link key={n.href} href={n.href} className="plp-navlink">{n.label}</Link>
               ))}
-              <Link href={c.freeCta.href} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
+              <Link href={c.freeCta.href} className="btn btn-rust btn-sm">{c.freeCta.label} <span className="arrow">→</span></Link>
             </nav>
           </div>
         </header>

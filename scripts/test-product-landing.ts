@@ -359,6 +359,20 @@ const withCtaOnMinimal = withDynamicCta(MINIMAL, DYNAMIC);
 ok('withDynamicCta on a config with no nav/pricingTiers/finalCta does not throw, freeCta still overrides',
   withCtaOnMinimal.freeCta.label === DYNAMIC.label && withCtaOnMinimal.nav === undefined);
 
+// ── BREAK MODE 9: A CTA SLOT HARDCODES ITS OWN LABEL INSTEAD OF READING THE CONFIG ──
+// THE actual live bug, caught by hand on gradd.ai/acca/apm the first time an entitled
+// account loaded the page: the header's ALWAYS-RENDERED "Start free" button
+// (ProductLandingPage.tsx's plp-nav, the one CTA slot withDynamicCta's own author missed)
+// had "Start free" baked into JSX text, reading `c.freeCta.href` for the link but never
+// `c.freeCta.label` for the text — so an entitled visitor saw a button correctly POINTING
+// at their dashboard while still SAYING "Start free". A passing pure-logic test on
+// withDynamicCta's return value could not catch this, because the bug was never in the
+// data — only in one place the template forgot to read it. Render-level, against the
+// SAME rendered output a browser gets, is the only way to prove this class of bug is gone.
+const ctaHtml = bodyOf(withDynamicCta(CTA_CONFIG, DYNAMIC));
+ok('every freeCta-linked button in the rendered header/hero/pricing/final CTA reads the DYNAMIC label — none still say the stale default',
+  ctaHtml.includes(DYNAMIC.label) && !/>Start free</.test(ctaHtml));
+
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} product-landing: ${pass} passed, ${fail} failed\n`);
 // P-G4: exitCode, never process.exit().
 process.exitCode = fail === 0 ? 0 : 1;
