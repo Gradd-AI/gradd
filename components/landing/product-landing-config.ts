@@ -209,3 +209,170 @@ export const AFM_LANDING: ProductLandingConfig = {
   footnote: 'Gradd is not affiliated with or endorsed by ACCA. Scenarios are original works built to the public syllabus structure.',
   proof: { label: 'See a real walkthrough', href: '/acca/afm/proof' },
 };
+
+// ── APM_LANDING v1 (feat/apm-template-conversion) ───────────────────────────
+// A VERBATIM inventory of components/landing/ACCALandingPage.tsx, poured into the
+// CURRENT ProductLandingConfig shape — before any schema extension. This is deliberately
+// the "before" config: everything the current fields CAN hold is filled in verbatim
+// (nothing paraphrased); everything they cannot hold is simply absent, because there is no
+// field for it yet. `npm run compare:apm-landing` is the ruler that turns that absence into
+// a number instead of a guess.
+//
+// Two structural losses are already visible just from filling this in:
+//   1. points[] is ONE FLAT ARRAY, so the three live sections that have their own eyebrow +
+//      heading + lead ("Taught, not just marked", "The 20% most candidates never practise",
+//      "Everything the paper demands") can only contribute their CARDS here — 3 + 4 + 4 = 11
+//      cards, with no section-level heading/eyebrow/lead attached to any of them. That is
+//      the exact "11 undifferentiated cards" this batch exists to fix.
+//   2. comparison{} is ONE SLOT, and the live page has TWO comparison-shaped sections: the
+//      judgement (weak/diagnosis/coached) card and the "how it compares" competitor strip.
+//      Only one can occupy the slot — the competitor strip is picked below because its
+//      shape (label + one line) fits `columns[].items` more honestly than the judgement
+//      card's three-paragraph-plus-arrows layout would. The judgement card is a total loss
+//      in this version; there is nowhere left to put it.
+// Both are fixed by the SECTION GROUPS + split-comparison schema extension that follows.
+export const APM_LANDING: ProductLandingConfig = {
+  paper: 'APM',
+  examName: 'Advanced Performance Management',
+  eyebrow: 'ACCA APM · Advanced Performance Management',
+  headline: 'Failed APM? Fix the reason you lost marks.',
+  subhead:
+    'APM is not passed by memorising models. It is passed by applying them to the scenario, evaluating properly, showing scepticism and writing commercially. Gradd diagnoses why your answer lost marks, then Ezra coaches you until your answer is strong enough to score.',
+  // Best current home for the hero-note line — the template has no separate "hero note"
+  // field, only `coverage` (rendered under a bold "What's live:" prefix the live page does
+  // not have). Content survives; the exact presentation does not.
+  coverage:
+    'Built on the live S26–J27 syllabus. Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.',
+  // ── LOSS 1: 11 flattened cards, no section eyebrow/heading/lead survives ────
+  points: [
+    { title: 'Finds the gap in your thinking.', body: 'Ezra doesn’t hand you the model answer — he diagnoses exactly where your attempt stalled and teaches from there. The answer stays sealed until you’ve earned it.' },
+    { title: 'Marks like the examiner.', body: 'Every case is marked against ACCA’s published professional-skills descriptors — communication, analysis & evaluation, scepticism, commercial acumen. The 20% of the paper most candidates never practise.' },
+    { title: 'Trained on how candidates actually fail.', body: 'Answering the wrong question, describing instead of applying, listing instead of developing — the exact failure modes the examiner’s reports cite, coached out of you.' },
+    { title: 'Communication', body: 'Structure, clarity, report style.' },
+    { title: 'Analysis & evaluation', body: 'Developed points, judgement, prioritisation.' },
+    { title: 'Scepticism', body: 'Challenge assumptions, limitations, reliability.' },
+    { title: 'Commercial acumen', body: 'Business impact, practical recommendations.' },
+    { title: '91 exam-style drills.', body: 'Every examinable learning outcome in the live S26–J27 syllabus covered.' },
+    { title: 'Full exam cases.', body: 'Multi-exhibit, multi-requirement, CBE-style. Section A 50-markers and Section B 25-markers.' },
+    { title: 'Professional-skills marking.', body: 'On your whole answer, with evidence-cited feedback per skill.' },
+    { title: 'A full timed mock.', body: '3h 15m, one clock, three cases, marked as one paper.' },
+  ],
+  pricing: {
+    free: 'Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.',
+    paid: 'Then €99 for a 90-day exam pass, or €49/month. Each ACCA paper is priced separately.',
+  },
+  freeCta: {
+    label: 'Start free',
+    href: '/acca/auth?next=/acca',
+  },
+  footnote: 'AI tutor for ACCA APM. Gradd.ai is an independent learning platform and is not affiliated with or endorsed by ACCA (the Association of Chartered Certified Accountants).',
+  pricingHeading: 'Start free. Pay only when you commit to the sitting.',
+  nav: [
+    { label: 'Blog', href: '/blog?subject=apm' },
+    { label: 'Sign in', href: '/acca/auth?next=/acca' },
+  ],
+  // ── The resit-funnel band maps cleanly — this section already fits. ────────
+  secondaryCta: {
+    eyebrow: 'Free resit diagnostic',
+    heading: 'Failed APM? Find out exactly why — in 3 minutes.',
+    body: 'Your result slip tells you the score. It doesn’t tell you the habit that lost the marks. Answer three quick steps — your score, how each syllabus area went, and six honest questions about how you write — and get a personalised resit plan: the areas to drill, the habits to fix first, and where to start. No sign-up needed to see your plan.',
+    cta: { label: 'Get my free resit plan', href: '/acca/resit' },
+  },
+  // ── "How a teach-through works" also fits: single-line steps, no body. ─────
+  // The type still requires `body`, so this is empty string — the exact "renders an empty
+  // <p>" defect LandingStep.body's optionality (schema-extension step) exists to fix.
+  stepsHeading: 'How a teach-through works.',
+  steps: [
+    { title: 'Attempt the drill.', body: '' },
+    { title: 'Ezra marks it against the requirement.', body: '' },
+    { title: 'He names the failure mode.', body: '' },
+    { title: 'You repair the answer.', body: '' },
+    { title: 'Only then is the model answer revealed.', body: '' },
+  ],
+  // ── LOSS 2: the ONE comparison slot goes to the competitor strip. The judgement
+  // card (weak/diagnosis/coached, with its own caption) has nowhere left to go. ─
+  comparison: {
+    eyebrow: 'How it compares',
+    heading: 'Taught, marked and mocked — for one sitting price.',
+    columns: [
+      { label: 'Question banks', tone: 'weak', items: ['Practice, no teaching; you mark yourself.'] },
+      { label: 'Human tuition', tone: 'neutral', items: ['One hour at a time.'] },
+      { label: 'Gradd', tone: 'strong', items: ['Taught, marked and mocked, €99 for the whole sitting.'] },
+    ],
+  },
+  // The professional-skills mark panel fits the existing 'panel' mockup shape. The hero
+  // chat mock-up fits the 'chat' shape for its TURNS ONLY — there is no field for the hint
+  // badge on a turn or for the input-row placeholder, so both are absent here.
+  mockups: [
+    {
+      kind: 'chat',
+      ariaLabel: 'Ezra withholding a model answer while coaching an APM requirement',
+      title: 'Ezra',
+      subtitle: 'ACCA APM · Requirement (b)',
+      turns: [
+        { role: 'student', lines: ['Retention fell from 82% to 74% and revenue per member is down 4%, so the company is underperforming and the board should act on retention.'] },
+        { role: 'tutor', lines: ['You’ve analysed the company — but the requirement asks you to evaluate the report. Does the board’s pack let them see any of what you just worked out? That’s where the marks are.'] },
+        { role: 'student', lines: ['…so I anchor every point to the report against a criterion, not the performance itself?'] },
+        { role: 'tutor', lines: ['Exactly. Fluent answers to the wrong question are the biggest mark-loser on this requirement type. Go again.'] },
+      ],
+      footer: 'The answer stays sealed · Ezra online 24/7',
+    },
+    {
+      kind: 'panel',
+      ariaLabel: 'Professional-skills marking panel showing evidence-cited feedback',
+      title: 'Professional skills',
+      rows: [
+        { label: 'Scepticism', verdict: 'strong', body: '“challenged the covering note’s ‘record revenue’ framing against falling ROCE and EPS…”' },
+        { label: 'Communication', verdict: 'competent', body: '“reads as notes, not a board report — no structure, conversational register…”' },
+      ],
+    },
+  ],
+  pricingTiers: [
+    {
+      name: 'Free',
+      amount: '€0',
+      tagline: 'Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.',
+      features: ['Every APM drill, unlimited', '3 full teach-throughs with Ezra', 'No card, no commitment'],
+      cta: { label: 'Start free', href: '/acca/auth?next=/acca' },
+    },
+    {
+      name: '90-day exam pass',
+      amount: '€99',
+      period: 'one-time · 90 days',
+      tagline: 'Full access through your sitting — drills, cases, marking and the timed mock.',
+      features: ['Unlimited teach-throughs with Ezra', 'Full exam cases + professional-skills marking', 'The timed mock, marked as one paper', 'One payment — no recurring charge'],
+      cta: { label: 'Get the 90-day pass', href: '/acca/auth?next=/acca/subscribe' },
+      badge: 'Best for one sitting',
+      featured: true,
+    },
+    {
+      name: 'Monthly',
+      amount: '€49',
+      period: '/ month',
+      tagline: 'Everything in the pass, month to month.',
+      features: ['Unlimited teach-throughs with Ezra', 'Full exam cases + professional-skills marking', 'The timed mock, marked as one paper', 'Cancel any time'],
+      cta: { label: 'Subscribe monthly', href: '/acca/auth?next=/acca/subscribe' },
+      badge: 'Flexible',
+    },
+  ],
+  // No field carries a note under the tier grid — the "14-day money-back guarantee." line
+  // has nowhere to go in this version. See `pricingNote` in the schema extension.
+  faqs: [
+    { q: 'Is this based on the current APM syllabus?', a: 'Yes — S26–J27, verified against the official guide.' },
+    { q: 'How is this different from a general AI chatbot?', a: 'Structured drills and cases built from the syllabus, examiner failure modes, sealed model answers, and professional-skills marking against ACCA’s published professional-skills descriptors — not a chat window.' },
+    { q: 'Can I use it if I failed before?', a: 'Yes — built for exactly that: understanding why your answers didn’t score.' },
+    { q: 'Does it give model answers?', a: 'Yes — after you’ve attempted, been coached, and repaired your answer.' },
+    { q: 'What’s free?', a: 'All 91 drills, 3 full teach-throughs, no card.' },
+    { q: 'What do I pay for?', a: 'Unlimited teach-throughs, full exam cases, professional-skills marking, the timed mock.' },
+  ],
+  // The final CTA's heading/body/CTA fit; the fine-print line under it ("Every drill free ·
+  // €99 for 90 days or €49/month · 14-day money-back guarantee") does not — `body` is
+  // already the lead paragraph, and the type has no second line.
+  finalCta: {
+    pill: 'Every drill free · No card',
+    heading: 'Preparing for the next APM sitting?',
+    body: 'Start with every drill free — no card. Upgrade when you commit to the sitting.',
+    ctas: [{ label: 'Start free', href: '/acca/auth?next=/acca' }],
+  },
+  chrome: { backToTop: true, stickyHeaderShadow: true },
+};

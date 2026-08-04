@@ -63,7 +63,8 @@
     "test:case-authoring-spec": "tsx scripts/test-case-authoring-spec.ts",
     "audit:verb-coverage": "tsx --env-file=.env.local scripts/audit-verb-coverage.ts",
     "test:product-router": "tsx scripts/test-product-router.ts",
-    "test:product-landing": "tsx scripts/test-product-landing.ts"
+    "test:product-landing": "tsx scripts/test-product-landing.ts",
+    "compare:apm-landing": "tsx scripts/compare-apm-landing.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
