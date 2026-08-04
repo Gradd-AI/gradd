@@ -122,6 +122,14 @@ export interface LandingJudgement {
   coached: LandingJudgementCard;
   /** e.g. "The difference is not knowledge. It is application, limitation, judgement." */
   caption?: string;
+  /** Places the judgement card inside a full-width coloured band. See `LandingBand`.
+   *
+   * ── COMPLETES AN EXISTING GAP, NOT NEW SURFACE (feat/apm-recompose-section-vocabulary) ──
+   * `app/globals.css`'s `.plp-band-dark .plp-judgement-col` override already existed before
+   * this field did — ported alongside point/mockup/tier/compare-strip in the same pass, but
+   * the type and the JSX wrapper were never finished, so no config could reach it. This adds
+   * the missing half of a treatment the CSS was already carrying dead weight for. */
+  band?: LandingBand;
 }
 
 /** The competitor comparison strip ("How it compares") — label + one line per column, no
@@ -618,13 +626,58 @@ export const AFM_LANDING: ProductLandingConfig = {
   chrome: { backToTop: true, stickyHeaderShadow: true },
 };
 
-// ── APM_LANDING v2 (feat/apm-template-conversion) ───────────────────────────
-// A VERBATIM inventory of components/landing/ACCALandingPage.tsx, now against the
-// EXTENDED schema: sections[] replacing the flat points[] grid, judgement{}/compareStrip{}
-// replacing the single comparison{} slot, plus heroMicrocopy/heroMeta, mockup hint-badge +
-// input-row, pricingNote and finalCta.fineprint. v1 (superseded, see git history on this
-// branch) was the same inventory against the PRE-extension schema and lost 15 of the 20
-// elements `compare-apm-landing.ts` probes for — every one of those 15 has a home here.
+// ── APM_LANDING v3 (feat/apm-recompose-section-vocabulary) ──────────────────
+// v2 (below the line, superseded) ported ACCALandingPage's CONTENT onto the extended
+// schema but never adopted the shapes that give a page weight variety — every section still
+// rendered as an identically-bordered card in a three-up grid, same box, same weight, same
+// colour, fourteen sections deep. This pass is COMPOSITION ONLY: no copy invented, every
+// number re-verified (see bigNumbers below), nothing removed except two duplications this
+// change-set created on purpose (mockups[] and compareStrip both retired — their content
+// now lives in featureArtefacts[] and cmpTable, not deleted).
+//
+// ── WHAT MOVED, AND WHY ──────────────────────────────────────────────────────
+// 1. heroArtefact — the Ezra chat mock-up, previously mockups[0] rendered mid-scroll with no
+//    framing, now sits beside the hero copy (IB's own hero shape: copy left, live artefact
+//    right). The highest-value slot on the page had nothing to look at before this.
+// 2. featureArtefacts[] — BOTH mock-ups (the Ezra chat, the professional-skills panel)
+//    promoted out of the small unframed mockups[] stack into full-width split sections, each
+//    with its own eyebrow/heading/lead, second one reversed so they alternate sides. The chat
+//    mock-up is reused verbatim as heroArtefact — a compact preview up top, the same artefact
+//    given full explanatory context lower down — not two different transcripts.
+// 3. Bands — sections[1] (professional skills) now sage; judgement now dark forest (see the
+//    `band` field added to `LandingJudgement`, completing CSS that already existed for it).
+//    Render order gives: cream (hero+approach) → sage (professional skills) → cream
+//    (what's-included+artefacts+bigNumbers+steps) → dark (judgement) → cream (compare+
+//    pricing+FAQ) → dark (finalCta, unchanged) — the alternation IB's page has and this one
+//    lacked, not a new mechanism.
+// 4. bigNumbers — three figures, each verified against a live source on 2026-08-04, not
+//    carried over from existing (possibly-stale) copy:
+//      · 91 — `SELECT count(*) FROM acca_drills WHERE exam_board='ACCA' AND paper_code='APM'
+//        AND status='approved' AND published=true`, run live against the production DB.
+//        Matches the count already asserted elsewhere on this page (sections[2], pricing).
+//      · ~40% — ACCA's own published pass-rates page (accaglobal.com/gb/en/student/
+//        exam-support-resources/professional-exams-study-resources/
+//        pass-rates-professional-exams.html): APM's last 8 sittings (Mar 2025–Jun 2026) run
+//        38/39/40/40/41/40/42/39% — "~40%" is the honest rounding, not an invented figure.
+//        (`docs/APM_BLOG_SEEDS.md`'s house rule — "never invent a pass-rate %, cite the
+//        official ACCA rate" — is met here; the PRE-EXISTING unsourced "consistently around
+//        40%" in judgement.lead below happens to match this citation and was left as-is,
+//        not rewritten, since this pass's scope is composition, not copy.)
+//      · 20% — ACCA's "Professional skills in Strategic Professional options exams" guide
+//        (accaglobal.com): APM has carried 80 technical + 20 professional-skills marks since
+//        September 2022 → 20 of 100 = 20%. Matches sections[1]'s existing "a fifth of every
+//        APM answer" claim, now with a bigNumbers citation behind it too.
+// 5. cmpTable — the old compareStrip (three flat one-paragraph cards) replaced by a real
+//    table, Gradd column featured, matching IB's comparison. Row facts are qualitative and
+//    intentionally uncite-able-to-a-number for the two competitor columns (no invented
+//    price for "human tuition" or a named question-bank provider — the original compareStrip
+//    made the same choice, naming no competitor price either); every Gradd-column fact is
+//    pulled from copy already live elsewhere in this config, not new claims.
+//
+// ── NOT CHANGED ───────────────────────────────────────────────────────────────
+// No copy rewritten beyond what a section-type move required (mock-up captions unchanged, PS
+// tile bodies unchanged, pricing/FAQ/finalCta untouched). AFM_LANDING renders byte-identically
+// — verified by scripts/test-product-landing.ts's SHA-256 pin, unaffected by any edit here.
 export const APM_LANDING: ProductLandingConfig = {
   paper: 'APM',
   examName: 'Advanced Performance Management',
@@ -636,6 +689,24 @@ export const APM_LANDING: ProductLandingConfig = {
     'Built on the live S26–J27 syllabus. Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.',
   heroMicrocopy: 'Resit diagnosis: free, 3 minutes, no sign-up. Drills: free to start with a quick email sign-in.',
   heroMeta: ['Every drill free', 'No card to start', 'Upgrade for cases, marking and mock'],
+  // ── THE FIX for LOSS 4: the highest-value slot on the page had nothing to look at.
+  // Same object as featureArtefacts[0]'s mock-up below — a compact preview here, the full
+  // explanatory section further down, not two different transcripts. ──
+  heroArtefact: {
+    kind: 'chat',
+    ariaLabel: 'Ezra withholding a model answer while coaching an APM requirement',
+    title: 'Ezra',
+    subtitle: 'ACCA APM · Requirement (b)',
+    turns: [
+      { role: 'student', lines: ['Retention fell from 82% to 74% and revenue per member is down 4%, so the company is underperforming and the board should act on retention.'] },
+      { role: 'tutor', badge: 'Hint', lines: ['You’ve analysed the company — but the requirement asks you to evaluate the report. Does the board’s pack let them see any of what you just worked out? That’s where the marks are.'] },
+      { role: 'student', lines: ['…so I anchor every point to the report against a criterion, not the performance itself?'] },
+      { role: 'tutor', lines: ['Exactly. Fluent answers to the wrong question are the biggest mark-loser on this requirement type. Go again.'] },
+    ],
+    inputPlaceholder: 'Reply to Ezra…',
+    footer: 'The answer stays sealed · Ezra online 24/7',
+    caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
+  },
   // points[] stays populated (not sections[]-only) so the required field is honestly filled
   // even though sections[] is what actually renders — see hasSection('sections') precedence.
   points: [
@@ -689,6 +760,9 @@ export const APM_LANDING: ProductLandingConfig = {
         { title: 'Commercial acumen', body: 'Business impact, practical recommendations.' },
       ],
       caption: 'Marked against ACCA’s published professional-skills descriptors, with the evidence named.',
+      // ── THE FIX for LOSS 3 (bands): the section the paper's own examiner reports say
+      // candidates skip gets the page's one sage band — visual emphasis matching the claim.
+      band: 'sage',
     },
     {
       eyebrow: 'What’s included',
@@ -701,6 +775,58 @@ export const APM_LANDING: ProductLandingConfig = {
       ],
     },
   ],
+  // ── THE FIX for LOSS 2 (artefacts): both mock-ups promoted out of the unframed mid-scroll
+  // stack into full-width split sections with their own heading, one reversed so they
+  // alternate sides. The chat mock-up is the SAME object as heroArtefact above — reused, not
+  // re-authored — given its full explanatory context here instead of a second transcript. ──
+  featureArtefacts: [
+    {
+      eyebrow: 'See it happen · Live coaching',
+      heading: 'Ezra doesn’t hand you the model answer.',
+      lead: 'He diagnoses exactly where your attempt stalled, coaches from there, and keeps the reference answer sealed until you’ve done the repair — the same loop every teach-through follows.',
+      mockup: {
+        kind: 'chat',
+        ariaLabel: 'Ezra withholding a model answer while coaching an APM requirement',
+        title: 'Ezra',
+        subtitle: 'ACCA APM · Requirement (b)',
+        turns: [
+          { role: 'student', lines: ['Retention fell from 82% to 74% and revenue per member is down 4%, so the company is underperforming and the board should act on retention.'] },
+          { role: 'tutor', badge: 'Hint', lines: ['You’ve analysed the company — but the requirement asks you to evaluate the report. Does the board’s pack let them see any of what you just worked out? That’s where the marks are.'] },
+          { role: 'student', lines: ['…so I anchor every point to the report against a criterion, not the performance itself?'] },
+          { role: 'tutor', lines: ['Exactly. Fluent answers to the wrong question are the biggest mark-loser on this requirement type. Go again.'] },
+        ],
+        inputPlaceholder: 'Reply to Ezra…',
+        footer: 'The answer stays sealed · Ezra online 24/7',
+        caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
+      },
+    },
+    {
+      eyebrow: 'Professional skills · Marked, not guessed',
+      heading: 'Every case marked against ACCA’s own professional-skills descriptors.',
+      lead: 'The 20% of the paper most candidates never practise — communication, analysis & evaluation, scepticism, commercial acumen — marked on your whole answer, with the evidence named.',
+      reverse: true,
+      mockup: {
+        kind: 'panel',
+        ariaLabel: 'Professional-skills marking panel showing evidence-cited feedback',
+        title: 'Professional skills',
+        rows: [
+          { label: 'Scepticism', verdict: 'strong', body: '“challenged the covering note’s ‘record revenue’ framing against falling ROCE and EPS…”' },
+          { label: 'Communication', verdict: 'competent', body: '“reads as notes, not a board report — no structure, conversational register…”' },
+        ],
+      },
+    },
+  ],
+  // ── THE FIX for LOSS 4 (weight variety): three figures, each re-verified 2026-08-04 —
+  // see the header comment above for the source of every number. ──
+  bigNumbers: {
+    eyebrow: 'By the numbers',
+    heading: 'The paper, in three numbers.',
+    items: [
+      { value: '~40%', body: 'APM’s own recent pass rate — ACCA’s lowest across the Strategic Professional level, sitting after sitting (ACCA’s published pass rates, Mar 2025–Jun 2026).' },
+      { value: '20%', body: 'of every APM answer is professional skills marks — 20 of the paper’s 100, examined since September 2022.' },
+      { value: '91', body: 'exam-style drills live today, covering every examinable learning outcome in the live syllabus.' },
+    ],
+  },
   stepsHeading: 'How a teach-through works.',
   steps: [
     { title: 'Attempt the drill.' },
@@ -709,8 +835,8 @@ export const APM_LANDING: ProductLandingConfig = {
     { title: 'You repair the answer.' },
     { title: 'Only then is the model answer revealed.' },
   ],
-  // ── THE FIX for LOSS 2: judgement + compareStrip, both live, neither displacing
-  // the other. ─────────────────────────────────────────────────────────────────
+  // ── THE FIX for LOSS 2 (bands): the judgement card gets the page's dark forest band —
+  // see the `band` field added to `LandingJudgement`. ─────────────────────────────────────
   judgement: {
     eyebrow: 'The real test',
     heading: 'APM is not a knowledge test. It is a judgement paper.',
@@ -719,43 +845,40 @@ export const APM_LANDING: ProductLandingConfig = {
     diagnosis: { label: 'Diagnosis', body: 'Knows the model. No scenario application, no limitation, no judgement.' },
     coached: { label: 'Coached answer', body: 'Target costing fits here because the market price is fixed by customer expectations, so the product must be designed backwards from an acceptable margin. However, if the cost gap cannot close without cutting quality, the strategy risks the premium positioning — so the board should set a floor on specification before committing.' },
     caption: 'The difference is not knowledge. It is application, limitation, judgement.',
+    band: 'dark',
   },
-  compareStrip: {
+  // ── THE FIX for LOSS 5: a real comparison TABLE (Gradd column featured) replacing the
+  // old three-flat-card compareStrip. Every Gradd-column fact below is pulled from copy
+  // already live elsewhere in this config (sections[2], the mock-up footer, pricingTiers) —
+  // no new claim invented for the table. Neither competitor column states an invented price,
+  // matching the discipline the old compareStrip already kept. ──
+  cmpTable: {
     eyebrow: 'How it compares',
     heading: 'Taught, marked and mocked — for one sitting price.',
+    rowLabels: [
+      'Teaches the thinking, not just tests it',
+      'Marks professional skills against ACCA’s descriptors',
+      'Marking turnaround',
+      'Full timed mock exam',
+      'Availability',
+      'Cost for the sitting',
+    ],
     columns: [
-      { label: 'Question banks', body: 'Practice, no teaching; you mark yourself.' },
-      { label: 'Human tuition', body: 'One hour at a time.' },
-      { label: 'Gradd', body: 'Taught, marked and mocked, €99 for the whole sitting.', featured: true },
+      {
+        label: 'Question banks',
+        values: [false, false, 'You mark yourself', false, 'Whenever you access it', 'One-off purchase, varies by provider'],
+      },
+      {
+        label: 'Human tuition',
+        values: ['One hour at a time', 'Depends on tutor', 'Whenever you can book a session', false, 'Scheduled sessions only', 'Priced by the hour — adds up fast'],
+      },
+      {
+        label: 'Gradd',
+        values: [true, true, 'Same session, unlimited attempts', '3h 15m, marked as one paper', '24/7', '€99 for the whole sitting'],
+        featured: true,
+      },
     ],
   },
-  // ── THE FIX for the hero chat / mark panel: hint badge + input row + captions. ──
-  mockups: [
-    {
-      kind: 'chat',
-      ariaLabel: 'Ezra withholding a model answer while coaching an APM requirement',
-      title: 'Ezra',
-      subtitle: 'ACCA APM · Requirement (b)',
-      turns: [
-        { role: 'student', lines: ['Retention fell from 82% to 74% and revenue per member is down 4%, so the company is underperforming and the board should act on retention.'] },
-        { role: 'tutor', badge: 'Hint', lines: ['You’ve analysed the company — but the requirement asks you to evaluate the report. Does the board’s pack let them see any of what you just worked out? That’s where the marks are.'] },
-        { role: 'student', lines: ['…so I anchor every point to the report against a criterion, not the performance itself?'] },
-        { role: 'tutor', lines: ['Exactly. Fluent answers to the wrong question are the biggest mark-loser on this requirement type. Go again.'] },
-      ],
-      inputPlaceholder: 'Reply to Ezra…',
-      footer: 'The answer stays sealed · Ezra online 24/7',
-      caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
-    },
-    {
-      kind: 'panel',
-      ariaLabel: 'Professional-skills marking panel showing evidence-cited feedback',
-      title: 'Professional skills',
-      rows: [
-        { label: 'Scepticism', verdict: 'strong', body: '“challenged the covering note’s ‘record revenue’ framing against falling ROCE and EPS…”' },
-        { label: 'Communication', verdict: 'competent', body: '“reads as notes, not a board report — no structure, conversational register…”' },
-      ],
-    },
-  ],
   pricingTiers: [
     {
       name: 'Free',

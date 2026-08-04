@@ -103,6 +103,9 @@ const FULL: ProductLandingConfig = {
     diagnosis: { label: 'Diagnosis', body: 'y' },
     coached: { label: 'Coached answer', body: 'z' },
     caption: 'The difference is judgement.',
+    // band proves the wrapper works on judgement too, not just sections[]/statBar/
+    // featureArtefacts — see BREAK MODE 10 below.
+    band: 'dark',
   },
   compareStrip: {
     eyebrow: 'e', heading: 'How Gradd compares',
@@ -404,18 +407,53 @@ ok('FULL renders the hero artefact (heroArtefact) as a split grid, not the plain
   fullHtml.includes('plp-hero-inner--split'));
 ok('FULL applies a dark band to an EXISTING sections[] group — the band wrapper works on old section kinds, not just new ones',
   fullHtml.includes('class="plp-section-group plp-band-dark"'));
+ok('FULL applies a dark band to the judgement card (band field added feat/apm-recompose-section-vocabulary)',
+  fullHtml.includes('class="plp-judgement plp-band-dark"'));
 ok('every new-vocabulary section is individually PRESENT on FULL',
   (['heroArtefact', 'statBar', 'featureArtefacts', 'bigNumbers', 'cmpTable'] as const)
     .every((s) => hasSection(FULL, s) === true));
 
 const apmHtml = bodyOf(APM_LANDING);
-const AFM_PRE_EXTENSION_SHA256 = '44f3549b63b147af0a90eba4e8b8efc23db5d39f5ce5362fa134f3c409e3371f';
-const APM_PRE_EXTENSION_SHA256 = 'c6bf462274dcbc4c89923e83db491be2d5e9835160c32e2003128f4b2ba8f976';
+// Refreshed 2026-08-04 (feat/apm-recompose-section-vocabulary) — found ALREADY STALE on
+// unmodified main before this branch touched anything (confirmed: `git stash` + rerun
+// reproduces the same mismatch against the old constant). Not this branch's regression: the
+// hash this branch's own code produces for AFM_LANDING is IDENTICAL with and without this
+// branch's changes (verified by running both ways), so AFM's rendered output is provably
+// unaffected here — only the stored pin was wrong, most likely stranded by AFM_LANDING's own
+// later content rebuild (see that config's "v2" header) never refreshing it.
+const AFM_PRE_EXTENSION_SHA256 = '4998e6dc002427c49d4ffa529f47356b0d8d8190edfe53a1e1099bf390f5dff8';
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 ok('AFM_LANDING renders BYTE-IDENTICALLY to its pre-extension output (SHA-256 of the style-stripped body)',
   sha256(afmHtml) === AFM_PRE_EXTENSION_SHA256, `got ${sha256(afmHtml)}, want ${AFM_PRE_EXTENSION_SHA256}`);
-ok('APM_LANDING renders BYTE-IDENTICALLY to its pre-extension output (SHA-256 of the style-stripped body)',
-  sha256(apmHtml) === APM_PRE_EXTENSION_SHA256, `got ${sha256(apmHtml)}, want ${APM_PRE_EXTENSION_SHA256}`);
+
+// ── BREAK MODE 11: APM_LANDING'S RECOMPOSE (feat/apm-recompose-section-vocabulary) ────────
+// SUPERSEDES the old "APM_LANDING renders byte-identically to its pre-extension output" pin
+// — that guarantee held while the template's SCHEMA changed under a page that adopted none
+// of it (v2, superseded, see the config file's header). This change-set's whole point is the
+// opposite: APM adopts the vocabulary, so the byte pin is retired ON PURPOSE and replaced
+// with assertions on what the new composition actually renders — same discipline as break
+// mode 5 did for AFM's content rebuild.
+ok('APM output renders the hero as a split grid with heroArtefact, not the plain single-column hero',
+  apmHtml.includes('plp-hero-inner--split'));
+ok('APM output renders BOTH feature artefacts (the Ezra chat and the professional-skills panel), reversed on the second',
+  apmHtml.includes('plp-feature-artefact-grid') &&
+  (apmHtml.match(/plp-feature-artefact-grid/g) ?? []).length === 2 &&
+  apmHtml.includes('Ezra doesn’t hand you the model answer.') &&
+  apmHtml.includes('Every case marked against ACCA’s own professional-skills descriptors.'));
+ok('APM output no longer renders the old unframed mockups stack (both promoted to featureArtefacts)',
+  !apmHtml.includes('plp-mockup-stack'));
+ok('APM output renders bigNumbers with the three re-verified figures (91 drills, ~40% pass rate, 20% professional skills)',
+  apmHtml.includes('plp-bignums-grid') &&
+  apmHtml.includes('~40%') && apmHtml.includes('>20%<') && apmHtml.includes('>91<'));
+ok('APM output applies the sage band to the professional-skills section group',
+  apmHtml.includes('class="plp-section-group plp-band-sage"'));
+ok('APM output applies the dark band to the judgement card',
+  apmHtml.includes('class="plp-judgement plp-band-dark"'));
+ok('APM output renders cmpTable with a featured Gradd column, not the old flat compareStrip',
+  apmHtml.includes('plp-cmptable-table') && apmHtml.includes('is-gradd') &&
+  !apmHtml.includes('plp-compare-strip-grid'));
+ok('APM output cmpTable Gradd column reuses facts already live elsewhere on the page (no invented cost/duration)',
+  apmHtml.includes('€99 for the whole sitting') && apmHtml.includes('3h 15m, marked as one paper'));
 
 // ── withDynamicCta — the entitlement-aware CTA override (2026-08) ──────────
 // PURE half of the entitlement-CTA feature; lib/acca/entitlement-cta.ts (the DB-reading

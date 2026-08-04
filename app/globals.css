@@ -752,6 +752,17 @@ body {
 .plp-band-dark .plp-compare-strip-col p {
   color: color-mix(in oklab, var(--forest-ink) 70%, transparent);
 }
+/* Judgement-card text — the CSS above already reused for `.plp-judgement-col`'s background/
+   border predates the `band` field on `LandingJudgement`; these two rules were the missing
+   half (the body copy and label would otherwise read as light-mode muted grey on a dark
+   forest card — unreadable). The coached card's rust BORDER is NOT preserved:
+   `.plp-band-dark .plp-judgement-col` (two classes) already outranks
+   `.plp-judgement-col--coached` (one class) on specificity, so the border falls back to the
+   same translucent one every other card in the band gets. The rust TAG colour is re-asserted
+   below at matching specificity so the coached card keeps its one distinguishing accent. */
+.plp-band-dark .plp-judgement-tag { color: color-mix(in oklab, var(--forest-ink) 65%, transparent); }
+.plp-band-dark .plp-judgement-col--coached .plp-judgement-tag { color: var(--rust); }
+.plp-band-dark .plp-judgement-col p { color: color-mix(in oklab, var(--forest-ink) 80%, transparent); }
 .plp-band-sage { background: var(--sage); }
 
 /* ── Stat bar — .trust ported. A thin bordered strip, not a card. ── */

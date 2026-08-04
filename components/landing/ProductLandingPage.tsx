@@ -273,7 +273,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
           {/* ── JUDGEMENT (weak / diagnosis / coached before-after card) ──
               Split out of the old single comparison{} slot — see LandingJudgement. ── */}
           {hasSection(c, 'judgement') && (
-            <section className="plp-judgement" aria-label={c.judgement!.heading}>
+            <section className={`plp-judgement${bandClass(c.judgement!.band)}`} aria-label={c.judgement!.heading}>
               <div className="plp-wrap">
                 {c.judgement!.eyebrow && <p className="plp-eyebrow">{c.judgement!.eyebrow}</p>}
                 <h2 className="plp-h2">{c.judgement!.heading}</h2>
