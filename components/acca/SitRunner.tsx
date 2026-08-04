@@ -10,6 +10,7 @@ import {
   clockState,
 } from '@/lib/acca/sit-preview';
 import type { AccaPaper } from '@/lib/acca/paper';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 // ── Lean sit runner — BOTH PAPERS (generalised 2026-07-30) ────────────────────
 // Was AFM-only, with 'AFM' written into the case/turn body. It now takes the paper as a
@@ -665,7 +666,10 @@ function Debrief({ data }: { data: ResultsData }) {
           door. */}
       <nav className="db-nav">
         <a className="db-nav-back" href={dashHref}>← Dashboard</a>
-        <span className="db-nav-paper">ACCA {paper}</span>
+        <div className="db-nav-right">
+          <span className="db-nav-paper">ACCA {paper}</span>
+          <ACCASignOutButton />
+        </div>
       </nav>
 
       <header className="db-head">
@@ -930,6 +934,7 @@ const CSS = `
   font-size: 14px; font-weight: 700; color: var(--text); text-decoration: none;
 }
 .db-nav-back:hover { color: var(--brand); }
+.db-nav-right { display: flex; align-items: center; gap: 14px; }
 .db-nav-paper {
   font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
   color: var(--text-muted);

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 // Section titles mirror AreaPicker's APM_SECTIONS (kept local — no shared import
 // of a client component, same as the drill picker duplicates SECTION_NAME).
@@ -67,6 +68,7 @@ export default function CaseList() {
               <span className="apm-cl-sep">·</span>
               <span className="apm-cl-badge">Exam cases</span>
             </div>
+            <ACCASignOutButton />
           </div>
         </header>
 

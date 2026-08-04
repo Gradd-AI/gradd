@@ -13,7 +13,7 @@
 import ProductLandingPage from '../components/landing/ProductLandingPage';
 import {
   hasSection, visibleSections, isMinimalConfig, pricingModel, buildFaqJsonLd,
-  OPTIONAL_SECTIONS, POINTS_GRID_TEMPLATE,
+  OPTIONAL_SECTIONS, POINTS_GRID_TEMPLATE, withDynamicCta,
 } from '../components/landing/product-landing-sections';
 import {
   AFM_LANDING, DEFAULT_PRICING_HEADING, type ProductLandingConfig,
@@ -324,6 +324,41 @@ ok('AFM output states the VERIFIED drill count (63), not the old undercount (16)
 ok('AFM output makes NO code-owned-marking overclaim (drill generation ≠ marking)',
   !/computed and verified deterministically/i.test(afmHtml) &&
   !/so the marking is exact/i.test(afmHtml));
+// ── withDynamicCta — the entitlement-aware CTA override (2026-08) ──────────
+// PURE half of the entitlement-CTA feature; lib/acca/entitlement-cta.ts (the DB-reading
+// half) is server-only and untestable here without a live client — fixtured separately in
+// scripts/test-entitlement-cta.ts with fake auth/db clients.
+// Own local config (not FULL) — FULL's nav has no "Sign in" entry to override, and this
+// needs one to prove the label-match works and every OTHER nav entry is left alone.
+const DYNAMIC = { label: 'Add AFM for your sitting', href: '/acca?paper=AFM' };
+const CTA_CONFIG: ProductLandingConfig = {
+  ...MINIMAL,
+  freeCta: { label: 'Start free', href: '/start' },
+  nav: [{ label: 'Blog', href: '/blog' }, { label: 'Sign in', href: '/acca/auth?next=/acca' }],
+  pricingTiers: [
+    { name: 'Free', amount: '€0', tagline: 't', features: ['f'], cta: { label: 'Start free', href: '/start' } },
+    { name: 'Pass', amount: '€99', tagline: 't', features: ['f'], cta: { label: 'Buy', href: '/b' } },
+    { name: 'Monthly', amount: '€49', tagline: 't', features: ['f'], cta: { label: 'Sub', href: '/s' } },
+  ],
+  finalCta: { heading: 'h', ctas: [{ label: 'Start free', href: '/start' }, { label: 'Pricing', href: '/p' }] },
+};
+const withCta = withDynamicCta(CTA_CONFIG, DYNAMIC);
+ok('withDynamicCta overrides freeCta', withCta.freeCta.label === DYNAMIC.label && withCta.freeCta.href === DYNAMIC.href);
+ok('withDynamicCta overrides the nav "Sign in" entry only, by label match',
+  withCta.nav?.find((n) => n.href === DYNAMIC.href)?.label === DYNAMIC.label &&
+  !withCta.nav?.some((n) => n.label === 'Sign in'));
+ok('withDynamicCta leaves every OTHER nav entry untouched',
+  withCta.nav?.some((n) => n.label === 'Blog' && n.href === '/blog'));
+ok('withDynamicCta overrides ONLY the first (Free) pricing tier\'s cta',
+  withCta.pricingTiers?.[0].cta.label === DYNAMIC.label &&
+  withCta.pricingTiers?.[1].cta.label === 'Buy' && withCta.pricingTiers?.[2].cta.label === 'Sub');
+ok('withDynamicCta overrides ONLY the first finalCta button',
+  withCta.finalCta?.ctas[0].label === DYNAMIC.label && withCta.finalCta?.ctas[1].label === 'Pricing');
+ok('withDynamicCta does not mutate the input config', CTA_CONFIG.freeCta.label === 'Start free');
+const withCtaOnMinimal = withDynamicCta(MINIMAL, DYNAMIC);
+ok('withDynamicCta on a config with no nav/pricingTiers/finalCta does not throw, freeCta still overrides',
+  withCtaOnMinimal.freeCta.label === DYNAMIC.label && withCtaOnMinimal.nav === undefined);
+
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} product-landing: ${pass} passed, ${fail} failed\n`);
 // P-G4: exitCode, never process.exit().
 process.exitCode = fail === 0 ? 0 : 1;

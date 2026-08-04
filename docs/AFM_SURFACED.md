@@ -2,7 +2,28 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-04 (**AFM LANDING REBUILT ON THE FULL TEMPLATE** — `feat/afm-landing-rebuild` merged to `main` at `d1b135b`, deployed READY on the matching SHA, live-verified: 63 drills / 5 cases / live mock all read correctly in rendered text, canonical/og/meta description all correct, pricing-tier CTAs carry `?paper=AFM` through the `/acca/auth` → `/auth/callback` hop (source-traced across all three hops — `next` is `encodeURIComponent`'d in and read back whole, never truncated to a bare path) to `/acca/subscribe` with AFM pre-selected, `/acca/apm` and the hub both unaffected. Two broadened claim detectors (code-owned-marking language; bundle language — not just the two exact retired strings) self-check clean against both retired strings and find zero hits on the live page. Two open items banked below, both discovered during this verification, neither blocking the merge.)*
+*Last refreshed: 2026-08-04 (**THREE ACCA FIXES, ONE BRANCH** —
+`fix/acca-subscribe-signout-entitlement-cta`, pushed, NOT YET MERGED: (1) `ACCADashboard.
+tsx`'s "Go unlimited" CTA now threads `?paper=` explicitly, same convention as every other
+link in that file — it previously resolved the right paper only via a `document.referrer`
+regex on `/acca/subscribe`, absent under common privacy settings, so an APM holder buying
+AFM could land on APM pricing. Two same-shape bugs found and reported, NOT fixed:
+`app/acca/progress/page.tsx:302`'s upsell link and `app/api/checkout/acca/route.ts`'s
+Stripe `cancel_url`, both bare `/acca/subscribe`. (2) **ACCA had no sign-out anywhere** —
+`/api/auth/signout` existed, worked, had zero callers; wired via a new
+`components/acca/ACCASignOutButton.tsx` (a plain form-POST, no client hook, so it renders
+identically from server and client header parents) into all six ACCA headers at once,
+except SitRunner's mid-sit countdown bar — signing out of a live timed paper is the one
+moment that would be destructive, and the product already treats that moment as
+chrome-free (same reason `CaseSession` suppresses its own header when embedded). (3)
+**Entitlement-aware CTAs on `/acca/apm`/`/acca/afm`** — anonymous / entitled-to-the-other-
+paper / entitled-to-this-paper / signed-in-with-neither, via `lib/acca/entitlement-cta.ts`,
+defensive by contract (never throws, never redirects, any failure falls through to the
+anonymous CTA). **RULING recorded below the ⭐ blocks: `/acca` keeps serving the pillar to
+anonymous visitors and the dashboard to signed-in ones — moving the dashboard to its own
+route was explicitly ruled out.**)*
+
+*Earlier: 2026-08-04 (**AFM LANDING REBUILT ON THE FULL TEMPLATE** — `feat/afm-landing-rebuild` merged to `main` at `d1b135b`, deployed READY on the matching SHA, live-verified: 63 drills / 5 cases / live mock all read correctly in rendered text, canonical/og/meta description all correct, pricing-tier CTAs carry `?paper=AFM` through the `/acca/auth` → `/auth/callback` hop (source-traced across all three hops — `next` is `encodeURIComponent`'d in and read back whole, never truncated to a bare path) to `/acca/subscribe` with AFM pre-selected, `/acca/apm` and the hub both unaffected. Two broadened claim detectors (code-owned-marking language; bundle language — not just the two exact retired strings) self-check clean against both retired strings and find zero hits on the live page. Two open items banked below, both discovered during this verification, neither blocking the merge.)*
 
 *Earlier: 2026-08-04 (**APM IS NOW CONFIG-DRIVEN** — `feat/apm-template-conversion` merged to `main` at `20585de`, deployed READY on the matching SHA. `/acca/apm` renders `ProductLandingPage` + `APM_LANDING`; `ACCALandingPage.tsx` (~1,150 lines, bespoke) is deleted. See the ⭐ block below for the full record, including a P-DB6 sighting: the branch itself was lost once already, authored on the other machine and never pushed.)*
 
@@ -19,6 +40,39 @@
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ 🔧 RULING 2026-08-04 — **`/acca` STAYS THE PILLAR-OR-DASHBOARD SPLIT; THE DASHBOARD DOES NOT MOVE**
+
+`fix/acca-subscribe-signout-entitlement-cta` (pushed, not yet merged) fixed three ACCA
+defects — see the refresh line at the top for the branch's contents. Alongside it, a
+question this session's own investigation raised (`app/acca/page.tsx:55-58` branches
+`ACCAPillarPage` vs the dashboard purely on auth state, with no toggle either way) was
+explicitly closed rather than left open.
+
+**RULED OUT: moving the dashboard to its own route so `/acca` could always serve the
+pillar.** Scoped and rejected on blast radius, not on merit — the pillar-vs-dashboard split
+is not wrong, it just costs nothing to keep. Every one of these currently assumes bare
+`/acca` reaches the dashboard for a signed-in user, and would need repointing:
+
+- `ACCADashboard.tsx:53-54` — the paper-switcher tabs link to `/acca` and `/acca?paper=AFM`
+- `CaseList.tsx:39,81`, `CaseSession.tsx:163` — "back to drills"
+- `progress/page.tsx:125,127`, `TutorChat.tsx:263`, `SitRunner.tsx:647` — logo/breadcrumb
+  back-links
+- `resit/page.tsx:125,306` — the post-diagnosis destination
+- `subscribe/page.tsx:191` — back-link
+- `acca/auth/page.tsx:10` and `auth/callback/route.ts:10` — both default `next` to `/acca`
+- `lib/entitlements.ts:100-101` — `home = '/acca'`, the computed post-login destination for
+  any ACCA-entitled user
+- `app/go/page.tsx:24` — redirects a signed-in gradd.ai visitor to `/acca`
+- Every `Start free`/`Sign in` CTA in `product-landing-config.ts`, both `APM_LANDING` and
+  `AFM_LANDING`
+- `ProductLandingPage.tsx:50` — the shared template's "All ACCA" nav link
+- `HubLandingPage.tsx:31,85,112` — three separate "ACCA" links from the gradd.ai hub
+
+**~20 files, for no student-facing benefit** — the split already does exactly what it's
+for (anonymous traffic sees the marketing page, crawlers see the marketing page, signed-in
+traffic sees their work). Revisit only if a concrete need for an authed user to reach the
+pillar surfaces — none has.
 
 ## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **AFM LANDING REBUILT ON THE FULL TEMPLATE, OWN ARGUMENT** (`d1b135b`)
 

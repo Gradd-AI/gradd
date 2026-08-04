@@ -159,3 +159,28 @@ export function buildFaqJsonLd(c: ProductLandingConfig): FaqJsonLd | null {
  * is what keeps AFM byte-identical.
  */
 export const POINTS_GRID_TEMPLATE = 'repeat(auto-fit, minmax(240px, 1fr))';
+
+// ── Entitlement-aware CTA ─────────────────────────────────────────────────────
+/**
+ * Overrides every CTA slot that currently duplicates `freeCta` verbatim — the hero button,
+ * the nav "Sign in" link, the Free pricing tier's button, and the final CTA's first
+ * button — with one entitlement-resolved label/href. PURE: takes the decision, never makes
+ * one (see `lib/acca/entitlement-cta.ts` for that; that module is server-only and does the
+ * actual auth/DB read).
+ *
+ * Only the "Sign in" nav entry is touched, matched by label — every other nav link (paper
+ * switcher, resit, blog) is untouched, because those are true whether or not this visitor
+ * happens to be entitled to this paper.
+ */
+export function withDynamicCta(c: ProductLandingConfig, cta: { label: string; href: string }): ProductLandingConfig {
+  return {
+    ...c,
+    freeCta: { label: cta.label, href: cta.href },
+    nav: c.nav?.map((n) => (n.label === 'Sign in' ? { label: cta.label, href: cta.href } : n)),
+    pricingTiers: c.pricingTiers?.map((t, i) =>
+      i === 0 ? { ...t, cta: { label: cta.label, href: cta.href } } : t),
+    finalCta: c.finalCta
+      ? { ...c.finalCta, ctas: c.finalCta.ctas.map((fc, i) => (i === 0 ? { ...fc, label: cta.label, href: cta.href } : fc)) }
+      : c.finalCta,
+  };
+}

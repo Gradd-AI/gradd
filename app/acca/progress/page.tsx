@@ -7,6 +7,7 @@ import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/que
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
 import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
+import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 
@@ -96,6 +97,10 @@ export default async function ProgressPage({
   const { paper: paperParam } = await searchParams;
   const paper = resolvePaper(typeof paperParam === 'string' ? paperParam : undefined);
   const areaName = (sa: string) => subAreaName(paper, sa);
+  // Same convention as the breadcrumb link below — the upsell CTA used to be bare
+  // '/acca/subscribe', resolving the right paper only via /acca/subscribe's
+  // document.referrer regex fallback, absent under common privacy settings.
+  const subscribeHref = paper === 'APM' ? '/acca/subscribe' : `/acca/subscribe?paper=${paper}`;
 
   // ── Tier check (server-side) ────────────────────────────────────────────────
   // The page stays reachable by every logged-in student — the TIER decides what
@@ -126,6 +131,7 @@ export default async function ProgressPage({
         <span className="org-crumb">
           <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`}>ACCA {paper}</Link><span>›</span> Your progress
         </span>
+        <ACCASignOutButton />
       </header>
 
       <h1>Your progress</h1>
@@ -299,7 +305,7 @@ export default async function ProgressPage({
           <span className="prog-upsell-text">
             Trend per area, resume-where-you-left-off, streaks and your mock &amp; case marks are part of full progress.
           </span>
-          <Link href="/acca/subscribe" className="prog-upsell-cta">Unlock your full progress →</Link>
+          <Link href={subscribeHref} className="prog-upsell-cta">Unlock your full progress →</Link>
         </div>
       )}
     </div>
