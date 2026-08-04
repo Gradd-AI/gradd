@@ -22,13 +22,23 @@ import {
   type NavLink,
 } from './product-landing-config';
 
-/** Every optional section the template knows how to render, in render order. */
+/** Every optional section the template knows how to render, in render order.
+ *
+ * ── EXTENDED (feat/landing-section-vocabulary) ── `heroArtefact`, `statBar`,
+ * `featureArtefacts`, `bigNumbers`, `cmpTable` are new — inserted in their actual render
+ * position, not appended, so this array stays a true render-order listing rather than a
+ * "original 12 then whatever came later" append log. */
 export const OPTIONAL_SECTIONS = [
+  'heroArtefact',
+  'statBar',
   'sections',
+  'featureArtefacts',
+  'bigNumbers',
   'mockups',
   'steps',
   'judgement',
   'compareStrip',
+  'cmpTable',
   'secondaryCta',
   'pricingTiers',
   'faqs',
@@ -59,7 +69,12 @@ export const DEFAULT_FOOTER_LINKS: NavLink[] = [
  */
 export function hasSection(c: ProductLandingConfig, section: OptionalSection): boolean {
   switch (section) {
+    // ── feat/landing-section-vocabulary ──
+    case 'heroArtefact':     return !!c.heroArtefact?.ariaLabel;
+    case 'statBar':          return (c.statBar?.stats?.length ?? 0) > 0;
     case 'sections':     return (c.sections?.length ?? 0) > 0;
+    case 'featureArtefacts': return (c.featureArtefacts?.length ?? 0) > 0;
+    case 'bigNumbers':       return (c.bigNumbers?.items?.length ?? 0) > 0;
     case 'mockups':      return (c.mockups?.length ?? 0) > 0;
     case 'steps':        return (c.steps?.length ?? 0) > 0;
     // Requires all three cards, not just a heading — a judgement card missing its
@@ -68,6 +83,9 @@ export function hasSection(c: ProductLandingConfig, section: OptionalSection): b
       return !!c.judgement?.heading &&
         !!c.judgement?.weak?.body && !!c.judgement?.diagnosis?.body && !!c.judgement?.coached?.body;
     case 'compareStrip': return !!c.compareStrip?.heading && (c.compareStrip?.columns?.length ?? 0) > 0;
+    // A table with row labels but no columns (or vice versa) has nothing to compare.
+    case 'cmpTable':
+      return (c.cmpTable?.rowLabels?.length ?? 0) > 0 && (c.cmpTable?.columns?.length ?? 0) > 0;
     case 'secondaryCta': return !!c.secondaryCta?.heading && !!c.secondaryCta?.cta?.href;
     case 'pricingTiers': return (c.pricingTiers?.length ?? 0) > 0;
     case 'faqs':         return (c.faqs?.length ?? 0) > 0;
