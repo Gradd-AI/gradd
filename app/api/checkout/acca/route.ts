@@ -86,7 +86,11 @@ export async function POST(request: Request) {
     line_items: [{ price: priceId, quantity: 1 }],
     metadata: apmMeta,
     success_url: `${origin}/acca/subscribe?success=true&paper=${paper}`,
-    cancel_url: `${origin}/acca/subscribe`,
+    // Same defect as success_url would have had without ?paper=: a bare cancel destination
+    // resolves via /acca/subscribe's document.referrer fallback, and Stripe's cancel
+    // redirect comes from stripe.com — the referrer can never match the AFM/APM regex, so
+    // there was no coincidental save here at all, unlike the dashboard CTA case.
+    cancel_url: `${origin}/acca/subscribe?paper=${paper}`,
     allow_promotion_codes: true,
   };
 
