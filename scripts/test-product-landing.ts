@@ -55,23 +55,40 @@ const FULL: ProductLandingConfig = {
   ],
   faqs: [{ q: 'Q1?', a: 'A1.' }, { q: 'Q2?', a: 'A2.' }],
   secondaryCta: { eyebrow: 'e', heading: 'Failed before?', body: 'b', cta: { label: 'Diagnose', href: '/resit' } },
-  steps: [{ title: 's1', body: 'b1' }, { title: 's2', body: 'b2' }, { title: 's3', body: 'b3' }],
+  steps: [{ title: 's1' }, { title: 's2', body: 'b2' }, { title: 's3', body: 'b3' }],
   stepsHeading: 'How a teach-through works',
-  comparison: {
-    eyebrow: 'e', heading: 'How Gradd compares', intro: 'i',
+  sections: [
+    { eyebrow: 'e1', heading: 'Group one', lead: 'l1', cards: [{ title: 'c1', body: 'b1' }], caption: 'cap1' },
+    { heading: 'Group two', cards: [{ title: 'c2', body: 'b2' }, { title: 'c3', body: 'b3' }] },
+  ],
+  judgement: {
+    eyebrow: 'e', heading: 'It is a judgement paper.', lead: 'l',
+    weak: { label: 'Weak answer', body: 'x' },
+    diagnosis: { label: 'Diagnosis', body: 'y' },
+    coached: { label: 'Coached answer', body: 'z' },
+    caption: 'The difference is judgement.',
+  },
+  compareStrip: {
+    eyebrow: 'e', heading: 'How Gradd compares',
     columns: [
-      { label: 'Weak', tone: 'weak', items: ['x'] },
-      { label: 'Diagnosis', tone: 'neutral', items: ['y'] },
-      { label: 'Coached', tone: 'strong', items: ['z'] },
+      { label: 'Question banks', body: 'x' },
+      { label: 'Human tuition', body: 'y' },
+      { label: 'Gradd', body: 'z', featured: true },
     ],
   },
+  heroMicrocopy: 'micro',
+  heroMeta: ['meta1', 'meta2'],
   mockups: [
     { kind: 'chat', ariaLabel: 'chat', title: 'Ezra', subtitle: 'Requirement (b)',
-      turns: [{ role: 'student', lines: ['l1'] }, { role: 'tutor', lines: ['l2', 'l3'] }], footer: 'foot' },
+      turns: [{ role: 'student', lines: ['l1'] }, { role: 'tutor', lines: ['l2', 'l3'], badge: 'Hint' }],
+      inputPlaceholder: 'Reply…', footer: 'foot', caption: 'mockup caption' },
     { kind: 'panel', ariaLabel: 'marks', rows: [{ label: 'Scepticism', verdict: 'Strong', body: 'body' }] },
   ],
+  pricingNote: 'note',
   finalCta: { pill: 'p', heading: 'Start', body: 'b',
-    ctas: [{ label: 'Free', href: '/f' }, { label: 'Pricing', href: '/p', variant: 'ghost' }] },
+    ctas: [{ label: 'Free', href: '/f' }, { label: 'Pricing', href: '/p', variant: 'ghost' }],
+    fineprint: 'fine print' },
+  footerLinks: [{ label: 'X', href: '/x' }, { label: 'Contact', href: 'mailto:x@y.z' }],
   chrome: { backToTop: true, stickyHeaderShadow: true },
 };
 
@@ -96,8 +113,20 @@ ok('faqs: [] is ABSENT, not present', !hasSection({ ...MINIMAL, faqs: [] }, 'faq
 ok('steps: [] is ABSENT', !hasSection({ ...MINIMAL, steps: [] }, 'steps'));
 ok('mockups: [] is ABSENT', !hasSection({ ...MINIMAL, mockups: [] }, 'mockups'));
 ok('pricingTiers: [] is ABSENT', !hasSection({ ...MINIMAL, pricingTiers: [] }, 'pricingTiers'));
-ok('a comparison with no columns is ABSENT',
-  !hasSection({ ...MINIMAL, comparison: { heading: 'h', columns: [] } }, 'comparison'));
+ok('sections: [] is ABSENT', !hasSection({ ...MINIMAL, sections: [] }, 'sections'));
+ok('heroMeta: [] is ABSENT', !hasSection({ ...MINIMAL, heroMeta: [] }, 'heroMeta'));
+ok('a compareStrip with no columns is ABSENT',
+  !hasSection({ ...MINIMAL, compareStrip: { heading: 'h', columns: [] } }, 'compareStrip'));
+ok('a judgement missing the coached card is ABSENT — a partial judgement card is a broken one',
+  !hasSection({
+    ...MINIMAL,
+    judgement: {
+      heading: 'h',
+      weak: { label: 'w', body: 'wb' },
+      diagnosis: { label: 'd', body: 'db' },
+      coached: { label: 'c', body: '' },
+    },
+  }, 'judgement'));
 ok('a finalCta with no ctas is ABSENT',
   !hasSection({ ...MINIMAL, finalCta: { heading: 'h', ctas: [] } }, 'finalCta'));
 ok('a secondaryCta with no href is ABSENT',
@@ -216,7 +245,10 @@ ok('MINIMAL renders no FAQ list', !minimalHtml.includes('plp-faq-list'));
 ok('MINIMAL renders no FAQPage JSON-LD script', !minimalHtml.includes('ld+json'));
 ok('MINIMAL renders no tier grid', !minimalHtml.includes('plp-tier-grid'));
 ok('MINIMAL renders no step list', !minimalHtml.includes('plp-step-list'));
-ok('MINIMAL renders no comparison grid', !minimalHtml.includes('plp-compare-grid'));
+ok('MINIMAL renders no judgement grid', !minimalHtml.includes('plp-judgement-grid'));
+ok('MINIMAL renders no compare strip', !minimalHtml.includes('plp-compare-strip-grid'));
+ok('MINIMAL renders no section group', !minimalHtml.includes('plp-section-group-grid'));
+ok('MINIMAL renders no hero meta strip', !minimalHtml.includes('plp-hero-meta'));
 ok('MINIMAL renders no CTA band', !minimalHtml.includes('plp-band'));
 ok('MINIMAL renders no mock-up', !minimalHtml.includes('plp-mockup-stack'));
 ok('MINIMAL renders no final CTA', !minimalHtml.includes('plp-final'));
@@ -233,9 +265,22 @@ ok('FULL renders the tier grid and its badge',
   fullHtml.includes('plp-tier-grid') && fullHtml.includes('Best for one sitting'));
 ok('FULL renders the ordered steps, numbered by the template',
   fullHtml.includes('plp-step-list') && fullHtml.includes('>1<') && fullHtml.includes('>3<'));
-ok('FULL renders the comparison and the CTA band',
-  fullHtml.includes('plp-compare-grid') && fullHtml.includes('plp-band'));
-ok('FULL renders both mock-ups', fullHtml.includes('plp-turn--tutor') && fullHtml.includes('plp-panel-verdict'));
+ok('FULL renders section groups (sections[] REPLACES the flat points grid) and NOT the flat grid',
+  fullHtml.includes('plp-section-group-grid') && fullHtml.includes('Group one') && fullHtml.includes('Group two'));
+ok('FULL does not render the flat points grid once sections[] is present',
+  !fullHtml.includes('class="plp-points"'));
+ok('FULL renders the judgement card AND the compare strip — both, neither displacing the other',
+  fullHtml.includes('plp-judgement-grid') && fullHtml.includes('plp-compare-strip-grid'));
+ok('FULL renders the CTA band', fullHtml.includes('plp-band'));
+ok('FULL renders both mock-ups, the hint badge and the chat input row',
+  fullHtml.includes('plp-turn--tutor') && fullHtml.includes('plp-panel-verdict') &&
+  fullHtml.includes('plp-turn-badge') && fullHtml.includes('plp-chat-input'));
+ok('FULL renders the hero microcopy and hero meta strip',
+  fullHtml.includes('plp-hero-microcopy') && fullHtml.includes('plp-hero-meta'));
+ok('FULL renders the pricing note and the final CTA fineprint',
+  fullHtml.includes('plp-price-note') && fullHtml.includes('plp-final-fineprint'));
+ok('FULL renders its configured footer links, including the mailto, in place of the default set',
+  fullHtml.includes('href="/x"') && fullHtml.includes('href="mailto:x@y.z"') && !fullHtml.includes('href="/terms"'));
 ok('FULL renders the final CTA', fullHtml.includes('plp-final'));
 ok('FULL does NOT render the simple price card (tiers replaced it)', !fullHtml.includes('plp-price-card'));
 
@@ -249,6 +294,16 @@ ok('AFM output still contains its simple price card, carrying its OWN heading',
   afmHtml.includes('plp-price-card') && afmHtml.includes(AFM_LANDING.pricingHeading!));
 ok('AFM output contains no bundle claim anywhere in the rendered body',
   !BUNDLE_CLAIM.test(afmHtml.replace(/<[^>]+>/g, ' ')));
+// The section-groups + split-comparison + element-level fields added for APM must not move
+// AFM at all: it sets none of them, so it must render the SAME flat points grid and the
+// SAME default footer links it always has.
+ok('AFM still renders the flat points grid, not a section group',
+  afmHtml.includes('class="plp-points"') && !afmHtml.includes('plp-section-group-grid'));
+ok('AFM still renders the default footer links (Terms / Privacy / ACCA APM), unconfigured',
+  afmHtml.includes('href="/terms"') && afmHtml.includes('href="/privacy"') && afmHtml.includes('href="/acca/apm"'));
+ok('AFM renders no judgement card, compare strip, hero microcopy or hero meta strip',
+  !afmHtml.includes('plp-judgement-grid') && !afmHtml.includes('plp-compare-strip-grid') &&
+  !afmHtml.includes('plp-hero-microcopy') && !afmHtml.includes('plp-hero-meta'));
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} product-landing: ${pass} passed, ${fail} failed\n`);
 // P-G4: exitCode, never process.exit().

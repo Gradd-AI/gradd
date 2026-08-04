@@ -23,7 +23,7 @@ import AttributionCapture from '@/components/AttributionCapture';
 import ProductLandingChrome from './ProductLandingChrome';
 import type { ProductLandingConfig } from './product-landing-config';
 import {
-  hasSection, pricingModel, buildFaqJsonLd, POINTS_GRID_TEMPLATE,
+  hasSection, pricingModel, buildFaqJsonLd, POINTS_GRID_TEMPLATE, DEFAULT_FOOTER_LINKS,
 } from './product-landing-sections';
 
 export default function ProductLandingPage({ config: c }: { config: ProductLandingConfig }) {
@@ -72,19 +72,53 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                   <Link href={c.proof.href} className="plp-prooflink">{c.proof.label} — a real, unedited transcript →</Link>
                 </p>
               )}
+              {c.heroMicrocopy && <p className="plp-hero-microcopy">{c.heroMicrocopy}</p>}
+              {hasSection(c, 'heroMeta') && (
+                <div className="plp-hero-meta">
+                  {c.heroMeta!.flatMap((m, i) => i === 0
+                    ? [<span key={`m${i}`}>{m}</span>]
+                    : [
+                        <span key={`d${i}`} className="plp-hero-meta-dot" aria-hidden="true" />,
+                        <span key={`m${i}`}>{m}</span>,
+                      ])}
+                </div>
+              )}
             </div>
           </section>
 
-          <section className="plp-points">
-            <div className="plp-wrap plp-points-grid">
-              {c.points.map((p) => (
-                <div key={p.title} className="plp-point">
-                  <h2 className="plp-point-title">{p.title}</h2>
-                  <p className="plp-point-body">{p.body}</p>
+          {/* ── SECTION GROUPS. `sections[]` REPLACES the flat points grid when present —
+              points[] renders EXACTLY as before when it is not, so AFM is unaffected. ── */}
+          {hasSection(c, 'sections') ? (
+            c.sections!.map((g) => (
+              <section key={g.heading} className="plp-section-group" aria-label={g.heading}>
+                <div className="plp-wrap">
+                  {g.eyebrow && <p className="plp-eyebrow">{g.eyebrow}</p>}
+                  <h2 className="plp-h2">{g.heading}</h2>
+                  {g.lead && <p className="plp-sub">{g.lead}</p>}
+                  <div className="plp-points-grid plp-section-group-grid">
+                    {g.cards.map((card) => (
+                      <div key={card.title} className="plp-point">
+                        <h3 className="plp-point-title">{card.title}</h3>
+                        <p className="plp-point-body">{card.body}</p>
+                      </div>
+                    ))}
+                  </div>
+                  {g.caption && <p className="plp-caption">{g.caption}</p>}
                 </div>
-              ))}
-            </div>
-          </section>
+              </section>
+            ))
+          ) : (
+            <section className="plp-points">
+              <div className="plp-wrap plp-points-grid">
+                {c.points.map((p) => (
+                  <div key={p.title} className="plp-point">
+                    <h2 className="plp-point-title">{p.title}</h2>
+                    <p className="plp-point-body">{p.body}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* ── MOCK-UPS (chat transcript / marking panel) ── */}
           {hasSection(c, 'mockups') && (
@@ -100,6 +134,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                     )}
                     {m.kind === 'chat' && (m.turns ?? []).map((t, ti) => (
                       <div key={ti} className={`plp-turn plp-turn--${t.role}`}>
+                        {t.badge && <span className="plp-turn-badge">{t.badge}</span>}
                         {t.lines.map((line, li) => <p key={li}>{line}</p>)}
                       </div>
                     ))}
@@ -112,7 +147,14 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                         <p className="plp-panel-body">{r.body}</p>
                       </div>
                     ))}
+                    {m.kind === 'chat' && m.inputPlaceholder && (
+                      <div className="plp-chat-input">
+                        <span className="plp-chat-input-ph">{m.inputPlaceholder}</span>
+                        <span className="plp-chat-input-send" aria-hidden="true">↵</span>
+                      </div>
+                    )}
                     {m.footer && <figcaption className="plp-mockup-foot">{m.footer}</figcaption>}
+                    {m.caption && <p className="plp-mockup-caption">{m.caption}</p>}
                   </figure>
                 ))}
               </div>
@@ -129,7 +171,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                     <li key={s.title} className="plp-step">
                       <span className="plp-step-n" aria-hidden="true">{i + 1}</span>
                       <h3 className="plp-step-title">{s.title}</h3>
-                      <p className="plp-step-body">{s.body}</p>
+                      {s.body && <p className="plp-step-body">{s.body}</p>}
                     </li>
                   ))}
                 </ol>
@@ -137,20 +179,47 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
             </section>
           )}
 
-          {/* ── COMPARISON (weak / diagnosis / coached) ── */}
-          {hasSection(c, 'comparison') && (
-            <section className="plp-compare" aria-label={c.comparison!.heading}>
+          {/* ── JUDGEMENT (weak / diagnosis / coached before-after card) ──
+              Split out of the old single comparison{} slot — see LandingJudgement. ── */}
+          {hasSection(c, 'judgement') && (
+            <section className="plp-judgement" aria-label={c.judgement!.heading}>
               <div className="plp-wrap">
-                {c.comparison!.eyebrow && <p className="plp-eyebrow">{c.comparison!.eyebrow}</p>}
-                <h2 className="plp-h2">{c.comparison!.heading}</h2>
-                {c.comparison!.intro && <p className="plp-sub">{c.comparison!.intro}</p>}
-                <div className="plp-compare-grid">
-                  {c.comparison!.columns.map((col) => (
-                    <div key={col.label} className={`plp-col plp-col--${col.tone ?? 'neutral'}`}>
-                      <h3 className="plp-col-label">{col.label}</h3>
-                      <ul className="plp-col-list">
-                        {col.items.map((it, ii) => <li key={ii}>{it}</li>)}
-                      </ul>
+                {c.judgement!.eyebrow && <p className="plp-eyebrow">{c.judgement!.eyebrow}</p>}
+                <h2 className="plp-h2">{c.judgement!.heading}</h2>
+                {c.judgement!.lead && <p className="plp-sub">{c.judgement!.lead}</p>}
+                <div className="plp-judgement-grid">
+                  <div className="plp-judgement-col plp-judgement-col--weak">
+                    <span className="plp-judgement-tag">{c.judgement!.weak.label}</span>
+                    <p>{c.judgement!.weak.body}</p>
+                  </div>
+                  <div className="plp-judgement-arrow" aria-hidden="true">↓</div>
+                  <div className="plp-judgement-col plp-judgement-col--diag">
+                    <span className="plp-judgement-tag">{c.judgement!.diagnosis.label}</span>
+                    <p>{c.judgement!.diagnosis.body}</p>
+                  </div>
+                  <div className="plp-judgement-arrow" aria-hidden="true">↓</div>
+                  <div className="plp-judgement-col plp-judgement-col--coached">
+                    <span className="plp-judgement-tag">{c.judgement!.coached.label}</span>
+                    <p>{c.judgement!.coached.body}</p>
+                  </div>
+                </div>
+                {c.judgement!.caption && <p className="plp-caption">{c.judgement!.caption}</p>}
+              </div>
+            </section>
+          )}
+
+          {/* ── COMPARE STRIP (the competitor columns) ──
+              The other half of the old comparison{} split — see LandingCompareStrip. ── */}
+          {hasSection(c, 'compareStrip') && (
+            <section className="plp-compare-strip" aria-label={c.compareStrip!.heading}>
+              <div className="plp-wrap">
+                {c.compareStrip!.eyebrow && <p className="plp-eyebrow">{c.compareStrip!.eyebrow}</p>}
+                <h2 className="plp-h2">{c.compareStrip!.heading}</h2>
+                <div className="plp-compare-strip-grid">
+                  {c.compareStrip!.columns.map((col) => (
+                    <div key={col.label} className={`plp-compare-strip-col${col.featured ? ' is-featured' : ''}`}>
+                      <span className="plp-compare-strip-name">{col.label}</span>
+                      <p>{col.body}</p>
                     </div>
                   ))}
                 </div>
@@ -208,6 +277,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                   </div>
                 </>
               )}
+              {c.pricingNote && <p className="plp-price-note">{c.pricingNote}</p>}
             </div>
           </section>
 
@@ -253,6 +323,7 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                     </Link>
                   ))}
                 </div>
+                {c.finalCta!.fineprint && <p className="plp-final-fineprint">{c.finalCta!.fineprint}</p>}
               </div>
             </section>
           )}
@@ -262,10 +333,11 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
           <div className="plp-wrap plp-footer-inner">
             <span>© 2026 Gradd.ai · {c.footnote}</span>
             <div className="plp-footer-links">
-              <Link href="/terms">Terms</Link>
-              <Link href="/privacy">Privacy</Link>
-              {/* Same correction as the nav above: the root is the hub now. */}
-              <Link href="/acca/apm">ACCA APM</Link>
+              {(c.footerLinks ?? DEFAULT_FOOTER_LINKS).map((l) => (
+                l.href.startsWith('mailto:')
+                  ? <a key={l.href} href={l.href}>{l.label}</a>
+                  : <Link key={l.href} href={l.href}>{l.label}</Link>
+              ))}
             </div>
 
           </div>
@@ -316,6 +388,10 @@ const CSS = `
 .plp-microcopy { font-size: 12.5px; color: var(--text-muted); margin: 14px 0 0; }
 .plp-prooflink { color: var(--rust); font-weight: 600; text-decoration: none; }
 .plp-prooflink:hover { text-decoration: underline; }
+.plp-hero-microcopy { font-size: 13px; color: var(--text-muted); margin: 12px 0 0; line-height: 1.5; }
+.plp-hero-meta { display: flex; gap: 18px; align-items: center; flex-wrap: wrap; margin: 18px 0 0;
+  font-size: 13px; color: var(--text-muted); }
+.plp-hero-meta-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); display: inline-block; }
 .plp-points { padding: clamp(24px, 4vw, 40px) 0; }
 /* FIXED: was \`repeat(3, 1fr)\`, which silently constrained \`points[]\` to exactly three —
    four produced a broken row of one, two produced stretched cards, and nothing in the type
@@ -330,6 +406,8 @@ const CSS = `
 .plp-price-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: clamp(24px, 4vw, 36px); box-shadow: var(--shadow-lg); max-width: 620px; margin: 0 auto; text-align: center; }
 .plp-price-h { font-family: var(--font-display); font-size: clamp(20px, 3vw, 26px); font-weight: 700; letter-spacing: -0.3px; margin: 0 0 14px; color: var(--text); }
 .plp-price-line { font-size: 15px; line-height: 1.6; color: var(--text-muted); margin: 0 0 8px; }
+.plp-price-note { text-align: center; font-size: 11.5px; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: var(--text-muted); margin-top: 22px; }
 .plp-footer { margin-top: auto; border-top: 1px solid var(--border-light, var(--border)); padding: 18px 0; }
 .plp-footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 11.5px; color: var(--text-muted); }
 .plp-footer-links { display: flex; gap: 16px; }
@@ -372,6 +450,18 @@ const CSS = `
   border-radius: 999px; padding: 2px 9px; }
 .plp-panel-body { font-size: 13.5px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 .plp-mockup-foot { font-size: 11.5px; color: var(--text-muted); padding-top: 8px; border-top: 1px solid var(--border); }
+.plp-mockup-caption { margin-top: 4px; text-align: center; font-family: var(--font-display); font-style: italic;
+  font-size: 14px; color: var(--rust); line-height: 1.4; }
+.plp-turn-badge { display: inline-block; align-self: flex-start; font-size: 10px; font-weight: 700;
+  letter-spacing: .06em; text-transform: uppercase; color: var(--rust);
+  background: color-mix(in oklab, var(--rust) 14%, transparent);
+  border: 1px solid color-mix(in oklab, var(--rust) 30%, transparent);
+  padding: 2px 8px; border-radius: 999px; margin-bottom: 4px; }
+.plp-chat-input { margin-top: 10px; display: flex; align-items: center; gap: 8px; padding: 8px 8px 8px 10px;
+  border: 1px solid var(--border); border-radius: 12px; background: color-mix(in oklab, var(--surface) 92%, transparent); }
+.plp-chat-input-ph { flex: 1; min-width: 0; font-size: 13px; color: var(--text-muted); }
+.plp-chat-input-send { width: 26px; height: 26px; border-radius: 7px; background: var(--rust); color: var(--rust-ink);
+  display: grid; place-items: center; font-size: 12px; flex: 0 0 auto; }
 
 /* Steps */
 .plp-steps { padding: clamp(20px, 4vw, 40px) 0; }
@@ -385,18 +475,37 @@ const CSS = `
 .plp-step-title { font-family: var(--font-display); font-size: 16.5px; font-weight: 700; margin: 0 0 6px; }
 .plp-step-body { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin: 0; }
 
-/* Comparison */
-.plp-compare { padding: clamp(20px, 4vw, 40px) 0; }
-.plp-compare-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 16px; margin-top: 14px; }
-@media (max-width: 720px) { .plp-compare-grid { grid-template-columns: 1fr; } }
-.plp-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
-.plp-col--weak { border-color: color-mix(in oklab, var(--rust) 30%, var(--border)); }
-.plp-col--strong { border-color: color-mix(in oklab, var(--rust) 55%, var(--border)); }
-.plp-col-label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
-  color: var(--text-muted); margin: 0 0 10px; }
-.plp-col--strong .plp-col-label { color: var(--rust); }
-.plp-col-list { margin: 0; padding-left: 18px; }
-.plp-col-list li { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin-bottom: 7px; }
+/* Section groups — headed clusters of cards, replacing the flat points grid when
+   sections[] is set. Reuses .plp-points-grid / .plp-point for the card shape. */
+.plp-section-group { padding: clamp(24px, 4vw, 40px) 0; }
+.plp-section-group-grid { margin-top: 24px; }
+.plp-caption { margin-top: 20px; text-align: center; font-family: var(--font-display); font-style: italic;
+  font-size: 15px; color: var(--rust); line-height: 1.4; }
+
+/* Judgement (weak / diagnosis / coached before-after card) */
+.plp-judgement { padding: clamp(20px, 4vw, 40px) 0; }
+.plp-judgement-grid { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: stretch;
+  gap: 12px; margin-top: 14px; }
+@media (max-width: 760px) { .plp-judgement-grid { grid-template-columns: 1fr; } }
+.plp-judgement-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.plp-judgement-col--coached { border-color: var(--rust); }
+.plp-judgement-tag { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-muted); }
+.plp-judgement-col--coached .plp-judgement-tag { color: var(--rust); }
+.plp-judgement-col p { font-size: 14px; line-height: 1.55; color: var(--text-muted); margin: 0; }
+.plp-judgement-arrow { align-self: center; justify-self: center; color: var(--rust); font-size: 16px; }
+@media (max-width: 760px) { .plp-judgement-arrow { display: none; } }
+
+/* Compare strip (competitor columns) */
+.plp-compare-strip { padding: clamp(20px, 4vw, 40px) 0; }
+.plp-compare-strip-grid { display: grid; grid-template-columns: ${POINTS_GRID_TEMPLATE}; gap: 16px; margin-top: 14px; }
+@media (max-width: 720px) { .plp-compare-strip-grid { grid-template-columns: 1fr; } }
+.plp-compare-strip-col { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.plp-compare-strip-col.is-featured { border-color: var(--rust); background: color-mix(in oklab, var(--surface) 88%, var(--rust)); }
+.plp-compare-strip-name { font-size: 15px; font-weight: 700; color: var(--text); }
+.plp-compare-strip-col.is-featured .plp-compare-strip-name { color: var(--rust); }
+.plp-compare-strip-col p { font-size: 14px; color: var(--text-muted); line-height: 1.5; margin: 4px 0 0; }
 
 /* Secondary CTA band */
 .plp-band { padding: clamp(24px, 4vw, 44px) 0; background: color-mix(in oklab, var(--rust) 6%, transparent);
@@ -437,6 +546,8 @@ const CSS = `
 .plp-pill { display: inline-block; font-size: 12px; font-weight: 700; color: var(--rust);
   border: 1px solid color-mix(in oklab, var(--rust) 30%, transparent); border-radius: 999px;
   padding: 4px 13px; margin-bottom: 14px; }
+.plp-final-fineprint { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted); margin-top: 22px; }
 
 /* Back to top */
 .plp-totop { position: fixed; right: 18px; bottom: 18px; z-index: 50; width: 38px; height: 38px;
