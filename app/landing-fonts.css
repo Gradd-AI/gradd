@@ -1,0 +1,6 @@
+/* Fraunces/Geist/Geist Mono — the gradd.ai landing design system's fonts (.plp/.hub/.pil
+   in globals.css). Kept in its own file, imported before globals.css, because Tailwind
+   v4's `@import "tailwindcss"` expands into real CSS rules during the build, and a plain
+   CSS @import is only legal before every other rule in the same file — the two imports
+   fought for "first" regardless of source order when they shared a file. */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;1,9..144,400;1,9..144,500&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap');

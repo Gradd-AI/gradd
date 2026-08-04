@@ -3,6 +3,7 @@ import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google';
 import { headers } from 'next/headers';
 import { resolveIsIB } from '@/lib/site';
 import MetaPixel from '@/components/MetaPixel';
+import './landing-fonts.css';
 import './globals.css';
 import '../styles/ib-session.css';
 
