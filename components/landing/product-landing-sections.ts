@@ -19,21 +19,34 @@ import {
   DEFAULT_PRICING_HEADING,
   type ProductLandingConfig,
   type PricingTier,
+  type NavLink,
 } from './product-landing-config';
 
 /** Every optional section the template knows how to render, in render order. */
 export const OPTIONAL_SECTIONS = [
+  'sections',
   'mockups',
   'steps',
-  'comparison',
+  'judgement',
+  'compareStrip',
   'secondaryCta',
   'pricingTiers',
   'faqs',
   'finalCta',
+  'heroMeta',
   'backToTop',
   'stickyHeaderShadow',
 ] as const;
 export type OptionalSection = (typeof OPTIONAL_SECTIONS)[number];
+
+/** The footer's original link set — Terms / Privacy / ACCA APM — used whenever a config
+ *  sets no `footerLinks`. This is exactly what the footer has always rendered, so AFM
+ *  (which sets no `footerLinks`) is unaffected by `footerLinks` existing at all. */
+export const DEFAULT_FOOTER_LINKS: NavLink[] = [
+  { label: 'Terms', href: '/terms' },
+  { label: 'Privacy', href: '/privacy' },
+  { label: 'ACCA APM', href: '/acca/apm' },
+];
 
 /**
  * Is this optional section present AND non-empty?
@@ -46,13 +59,20 @@ export type OptionalSection = (typeof OPTIONAL_SECTIONS)[number];
  */
 export function hasSection(c: ProductLandingConfig, section: OptionalSection): boolean {
   switch (section) {
+    case 'sections':     return (c.sections?.length ?? 0) > 0;
     case 'mockups':      return (c.mockups?.length ?? 0) > 0;
     case 'steps':        return (c.steps?.length ?? 0) > 0;
-    case 'comparison':   return (c.comparison?.columns?.length ?? 0) > 0;
+    // Requires all three cards, not just a heading — a judgement card missing its
+    // coached rewrite is not a judgement card, it's a broken one.
+    case 'judgement':
+      return !!c.judgement?.heading &&
+        !!c.judgement?.weak?.body && !!c.judgement?.diagnosis?.body && !!c.judgement?.coached?.body;
+    case 'compareStrip': return !!c.compareStrip?.heading && (c.compareStrip?.columns?.length ?? 0) > 0;
     case 'secondaryCta': return !!c.secondaryCta?.heading && !!c.secondaryCta?.cta?.href;
     case 'pricingTiers': return (c.pricingTiers?.length ?? 0) > 0;
     case 'faqs':         return (c.faqs?.length ?? 0) > 0;
     case 'finalCta':     return !!c.finalCta?.heading && (c.finalCta?.ctas?.length ?? 0) > 0;
+    case 'heroMeta':     return (c.heroMeta?.length ?? 0) > 0;
     case 'backToTop':          return c.chrome?.backToTop === true;
     case 'stickyHeaderShadow': return c.chrome?.stickyHeaderShadow === true;
   }

@@ -1,16 +1,9 @@
 // app/acca/apm/page.tsx
-// The APM spoke. This IS the page that used to live at the gradd.ai root — the component
-// is rendered unchanged and the metadata below is the root's APM_METADATA moved verbatim,
-// with only the canonical and og:url repointed from `/` to `/acca/apm`.
-//
-// ── THE MOVE IS DELIBERATELY A MOVE, NOT A REWRITE ──────────────────────────
-// ACCALandingPage is ~1,150 lines carrying the resit-funnel band, the Ezra chat mock-up,
-// the teach-through sequence, the professional-skills mark panel, the comparison block,
-// three pricing tiers and the FAQ + FAQPage JSON-LD. `ProductLandingPage` (the AFM
-// template) can express roughly the hero and a 3-up points grid — 7 of those 14 sections
-// have no template equivalent at all, including every section that does commercial work.
-// Generalising the template was scoped and explicitly ruled OUT of this pass; that is the
-// expensive job and it is severable from the restructure.
+// The APM spoke — now rendered through the GENERALISED template, not the bespoke
+// ACCALandingPage component. See feat/apm-template-conversion: APM_LANDING is a verbatim
+// inventory of the retired ACCALandingPage.tsx (its content lives on in the config, not in
+// a bespoke component), and `npm run compare:apm-landing` was the ruler that proved every
+// element survives the move (0 of 20 probed elements lost) before this file changed.
 //
 // ── SEO: THIS PAGE INHERITS THE APM RANKING SIGNAL ──────────────────────────
 // The root was the highest-priority indexed URL (sitemap 1.0) and held the APM keyword
@@ -18,7 +11,8 @@
 // so the signal follows the content rather than being stranded on a hub that no longer
 // mentions APM. `app/sitemap.ts` lists this at priority 1.0 and the hub separately.
 import type { Metadata } from 'next';
-import ACCALandingPage from '@/components/landing/ACCALandingPage';
+import ProductLandingPage from '@/components/landing/ProductLandingPage';
+import { APM_LANDING } from '@/components/landing/product-landing-config';
 
 const TITLE = 'ACCA APM Tutor — Taught, Not Just Marked | Gradd';
 const DESCRIPTION =
@@ -54,5 +48,5 @@ export const metadata: Metadata = {
 };
 
 export default function APMSpokePage() {
-  return <ACCALandingPage />;
+  return <ProductLandingPage config={APM_LANDING} />;
 }
