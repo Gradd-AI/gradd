@@ -1,5 +1,7 @@
 // components/landing/ACCAPillarPage.tsx
-// The ACCA PILLAR — what /acca serves to a visitor who is not signed in.
+// The ACCA PILLAR — what gradd.ai root serves, unconditionally (moved here from /acca
+// 2026-08-04; the hub that used to sit above this page is deleted). /acca itself now
+// only ever serves the signed-in dashboard, redirecting an anonymous visitor here.
 //
 // This is where ACCA-level search intent lands ("ACCA tutor", "ACCA Strategic Professional
 // practice") and where cross-sell happens: a student who came for APM discovers AFM exists,
@@ -149,7 +151,11 @@ export default function ACCAPillarPage() {
               original works built to the public syllabus structure.
             </span>
             <div className="pil-footer-links">
-              <Link href="/">Gradd home</Link>
+              {/* This page IS gradd.ai home now, so a "Gradd home" link here would be
+                  circular. IB has no nav link into it anywhere else on gradd.ai since the
+                  hub (whose nav carried it) was deleted — this is the replacement, so /ib
+                  stays reachable and crawlable from every page on the site. */}
+              <Link href="/ib">IB Diploma</Link>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
             </div>
