@@ -33,9 +33,13 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = (await headers()).get('host') ?? '';
   const isIB = await resolveIsIB(host);
   return {
-    title: isIB ? 'Gradd — Your IB Tutor' : 'Gradd — Your LC Business Tutor',
+    // isIB actually means "on gradd.ai" (see lib/site.ts) — this is the LAST-RESORT
+    // fallback for any gradd.ai page without its own metadata (root, /acca, /ib etc.
+    // all export their own and override this). Kept host-generic, not product-named,
+    // because it covers ACCA and IB pages alike.
+    title: isIB ? 'Gradd — Taught, Not Just Marked' : 'Gradd — Your LC Business Tutor',
     description: isIB
-      ? 'Full IB Economics and Business Management curriculum delivered by AI. Structured lessons, exam technique, progress tracking. 24/7.'
+      ? 'Anything can mark an answer. Gradd tells you why it lost the mark and coaches the fix — ACCA and IB.'
       : 'Full Leaving Certificate Business curriculum delivered by AI. Study at your own pace, from scratch to exam-ready.',
     metadataBase: new URL(isIB ? 'https://gradd.ai' : 'https://gradd.ie'),
     icons: ICONS,
