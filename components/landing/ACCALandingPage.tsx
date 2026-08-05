@@ -7,11 +7,25 @@
 // JSON-LD. Exactly one <h1> (hero); every section is a labelled <section> with an <h2>.
 // Design system: copied from IBLandingPage.tsx (Fraunces/Geist/Geist Mono, oklch).
 // Scope renamed .ib-lp → .acca-lp to avoid style collisions.
+//
+// ── RESTORED 2026-08-05 (`feat/apm-restore-preconversion`) ───────────────────
+// This file was DELETED in `59034bf` when /acca/apm was converted to the generalised
+// `ProductLandingPage` template. It is restored here byte-for-byte from `59034bf^` by
+// Grant's ruling, after both pages were rendered side by side — the template expressed
+// every ELEMENT of this page (the `compare:apm-landing` ruler probed 20 of them and lost
+// none) and composed none of them. See `app/acca/apm/page.tsx` for the ruling in full.
+//
+// ONE change was made on restore, and it is the only intentional difference from the
+// pre-conversion page: section E's three flat `.compare-strip` cards are now a real
+// comparison TABLE (COMPARE_ROWS / COMPARE_COLS below), ported back from the template's
+// `APM_LANDING.cmpTable` and re-expressed in `.acca-lp`'s own idiom. The template's
+// big-number band was deliberately NOT ported — separate ruling, still open.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import AttributionCapture from '@/components/AttributionCapture';
+import ScrollableHint from '@/components/landing/ScrollableHint';
 
 // Real entry points into the live APM product. The auth wall carries the
 // post-login destination: free lands in the drill dashboard, paid on subscribe.
@@ -27,6 +41,42 @@ const FAQS: { q: string; a: string }[] = [
   { q: 'Does it give model answers?', a: 'Yes — after you’ve attempted, been coached, and repaired your answer.' },
   { q: 'What’s free?', a: 'All 91 drills, 3 full teach-throughs, no card.' },
   { q: 'What do I pay for?', a: 'Unlimited teach-throughs, full exam cases, professional-skills marking, the timed mock.' },
+];
+
+// ── THE COMPARISON TABLE ────────────────────────────────────────────────────
+// Ported from the template's `APM_LANDING.cmpTable` (components/landing/
+// product-landing-config.ts) — the ONE thing this page took from the template conversion
+// before that conversion was reverted. Content is carried across VERBATIM: every fact here
+// either came from the three-card `.compare-strip` this replaces, or from copy already live
+// elsewhere on this page (the mock's "3h 15m … marked as one paper", the €99 sitting price).
+// No competitor PRICE is invented — "varies by provider" and "priced by the hour" are the
+// honest shape of the offer, which is the discipline the old strip already kept.
+//
+// `values` is POSITIONAL against COMPARE_ROWS: `values[j]` is that column's answer for
+// `COMPARE_ROWS[j]`. A boolean renders as a glyph; a string renders as itself.
+const COMPARE_ROWS: string[] = [
+  'Teaches the thinking, not just tests it',
+  'Marks professional skills against ACCA’s descriptors',
+  'Marking turnaround',
+  'Full timed mock exam',
+  'Availability',
+  'Cost for the sitting',
+];
+
+const COMPARE_COLS: { label: string; values: (string | boolean)[]; gradd?: boolean }[] = [
+  {
+    label: 'Question banks',
+    values: [false, false, 'You mark yourself', false, 'Whenever you access it', 'One-off purchase, varies by provider'],
+  },
+  {
+    label: 'Human tuition',
+    values: ['One hour at a time', 'Depends on tutor', 'Whenever you can book a session', false, 'Scheduled sessions only', 'Priced by the hour — adds up fast'],
+  },
+  {
+    label: 'Gradd',
+    values: [true, true, 'Same session, unlimited attempts', '3h 15m, marked as one paper', '24/7', '€99 for the whole sitting'],
+    gradd: true,
+  },
 ];
 
 const FAQ_JSONLD = {
@@ -333,27 +383,68 @@ export default function ACCALandingPage() {
           </div>
         </section>
 
-        {/* ── E. COMPARISON STRIP ── */}
+        {/* ── E. COMPARISON TABLE ──
+            Was three flat `.compare-strip` cards — one paragraph each, no shared rows, so
+            nothing lined up and the reader had to hold three sentences in their head to
+            compare anything. This is a real table: the rows are the questions a candidate
+            is actually choosing on, and every column has to answer all six. Ported from the
+            template's `cmpTable` (see COMPARE_ROWS/COMPARE_COLS above) and re-expressed in
+            `.acca-lp`'s own idiom — RUST for the Gradd column, because rust is this page's
+            featured accent (`.price-card.featured`, and the retired `.compare-col--gradd`),
+            not the template's forest. ── */}
         <section className="section" aria-label="How Gradd compares">
           <div className="wrap">
             <div className="section-head">
               <span className="eyebrow">How it compares</span>
               <h2 className="h-section">Taught, marked and mocked — <em className="italic">for one sitting price.</em></h2>
             </div>
-            <div className="compare-strip">
-              <div className="compare-col">
-                <div className="compare-name">Question banks</div>
-                <p>Practice, no teaching; you mark yourself.</p>
-              </div>
-              <div className="compare-col">
-                <div className="compare-name">Human tuition</div>
-                <p>One hour at a time.</p>
-              </div>
-              <div className="compare-col compare-col--gradd">
-                <div className="compare-name">Gradd</div>
-                <p>Taught, marked and mocked, €99 for the whole sitting.</p>
-              </div>
+            <div className="cmp-scroll">
+              <table className="cmp-table">
+                <thead>
+                  <tr>
+                    {/* Empty corner cell. `scope="col"` with no text is still the correct
+                        header for the row-label column; a <td> here would break the grid. */}
+                    <th scope="col" />
+                    {COMPARE_COLS.map((col) => (
+                      <th key={col.label} scope="col" className={col.gradd ? 'is-gradd' : undefined}>
+                        {col.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {COMPARE_ROWS.map((row, ri) => (
+                    <tr key={row}>
+                      <th scope="row">{row}</th>
+                      {COMPARE_COLS.map((col) => {
+                        const v = col.values[ri];
+                        return (
+                          <td key={col.label} className={col.gradd ? 'is-gradd' : undefined}>
+                            {/* role="img" is load-bearing, not decoration: aria-label is
+                                ignored on a bare <span> (a generic element has no role that
+                                supports naming), so a screen reader would announce a stray
+                                "✓" or an em dash — or nothing. With the role it reads "Yes"
+                                / "No", which is the only way this table is legible without
+                                sight of the glyph. */}
+                            {typeof v === 'boolean'
+                              ? (v ? <span className="cmp-y" role="img" aria-label="Yes">✓</span>
+                                   : <span className="cmp-n" role="img" aria-label="No">—</span>)
+                              : v}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
+            {/* Shown ONLY when the container actually overflows. It is the adjacent sibling
+                of `.cmp-scroll` on purpose — the CSS rule is
+                `[data-scrollable="true"] + .cmp-hint`, so the cue and the thing it describes
+                cannot drift apart. NOT breakpoint-gated: see ScrollableHint.tsx for why a
+                media query was wrong at both ends in production. */}
+            <p className="cmp-hint">Scroll to see more →</p>
+            <ScrollableHint selector=".cmp-scroll" />
           </div>
         </section>
 
@@ -1064,17 +1155,61 @@ const CSS = `
 .acca-lp .mark-band--mid { color: oklch(48% 0.11 75); background: color-mix(in oklab, var(--gold) 20%, transparent); }
 .acca-lp .mark-evidence { font-size: 13px; color: var(--ink-2); line-height: 1.5; font-style: italic; }
 
-/* ── E. Comparison strip ── */
-.acca-lp .compare-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 8px; }
-@media (max-width: 760px) { .acca-lp .compare-strip { grid-template-columns: 1fr; } }
-.acca-lp .compare-col {
+/* ── E. Comparison table ──
+   REPLACES the retired three-card .compare-strip (.compare-col, .compare-col--gradd and
+   .compare-name are all deleted with it; nothing else on the page used them).
+   The card shell is this page's standard one, unchanged: paper fill, --rule border,
+   --radius corners — the same shell as .price-card, .skill-tile, .tt-step. Only the
+   INSIDE is a table. The Gradd column is RUST, which is this page's featured accent
+   (.price-card.featured, .price-badge, and the old .compare-col--gradd all use it); the
+   template's version of this table highlights in forest, and forest on this page is
+   reserved for the final CTA.
+   NOTE FOR FUTURE EDITS: this whole stylesheet is one JS template literal — no backticks
+   and no dollar-brace in here, or the literal ends early and the build fails to parse. */
+.acca-lp .cmp-scroll {
+  overflow-x: auto; margin-top: 8px;
   background: var(--paper); border: 1px solid var(--rule); border-radius: var(--radius);
-  padding: 24px; display: flex; flex-direction: column; gap: 8px;
 }
-.acca-lp .compare-col--gradd { border-color: var(--rust); background: color-mix(in oklab, var(--paper) 88%, var(--rust)); }
-.acca-lp .compare-name { font-family: var(--serif); font-size: 20px; letter-spacing: -0.01em; color: var(--ink); }
-.acca-lp .compare-col--gradd .compare-name { color: var(--rust-2); }
-.acca-lp .compare-col p { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
+.acca-lp .cmp-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.acca-lp .cmp-table th, .acca-lp .cmp-table td {
+  padding: 16px 20px; text-align: left; vertical-align: top;
+  border-bottom: 1px solid var(--rule); white-space: nowrap;
+}
+.acca-lp .cmp-table tbody tr:last-child th, .acca-lp .cmp-table tbody tr:last-child td { border-bottom: 0; }
+/* Column heads carry the NAME, so they keep the serif voice the old .compare-name had —
+   one size down, because four of them share a row here rather than three cards. */
+.acca-lp .cmp-table thead th {
+  font-family: var(--serif); font-size: 17px; letter-spacing: -0.01em; font-weight: 400;
+  color: var(--ink); background: var(--paper-2); border-bottom: 1px solid var(--rule-strong);
+}
+.acca-lp .cmp-table thead th.is-gradd { background: var(--rust); color: var(--rust-ink); }
+/* Row labels are LABELS, so they take the page's small-label idiom (mono, uppercase) —
+   the same treatment as .price-name and .mark-panel-title. They wrap; the data cells do not. */
+.acca-lp .cmp-table tbody th {
+  font-family: var(--mono); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--ink-3); font-weight: 500; white-space: normal; min-width: 190px;
+}
+.acca-lp .cmp-table td { color: var(--ink-2); line-height: 1.45; }
+.acca-lp .cmp-table td.is-gradd {
+  color: var(--ink); font-weight: 600;
+  background: color-mix(in oklab, var(--paper) 88%, var(--rust));
+  border-left: 1px solid var(--rust); border-right: 1px solid var(--rust);
+}
+.acca-lp .cmp-table tbody tr:last-child td.is-gradd { border-bottom: 1px solid var(--rust); }
+/* ✓ in rust, matching .price-features li::before — the page already means "included" in rust. */
+.acca-lp .cmp-y { color: var(--rust); font-weight: 600; font-size: 16px; }
+.acca-lp .cmp-n { color: var(--ink-3); }
+/* DRIVEN BY ACTUAL OVERFLOW, NOT BY A BREAKPOINT. ScrollableHint measures scrollWidth vs
+   clientWidth and sets data-scrollable on .cmp-scroll; this rule keys off that attribute, so
+   the cue appears whenever the table really scrolls and at no other time. A media query here
+   would be a guess about the longest string in COMPARE_COLS — and that guess was wrong at
+   BOTH ends in production on the template's copy of this table. */
+.acca-lp .cmp-hint { display: none; margin: 10px 0 0; font-size: 12px; color: var(--ink-3); text-align: center; }
+.acca-lp .cmp-scroll[data-scrollable="true"] + .cmp-hint { display: block; }
+@media (max-width: 640px) {
+  .acca-lp .cmp-table th, .acca-lp .cmp-table td { padding: 13px 15px; }
+  .acca-lp .cmp-table tbody th { min-width: 160px; }
+}
 
 /* ── F. FAQ ── */
 .acca-lp .faq-list { margin-top: 8px; }

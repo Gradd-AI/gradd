@@ -17,6 +17,12 @@
 // The comparison ruler (`compare:apm-landing`) read zero because it probed for the PRESENCE
 // of elements, not for their composition. Presence was never the thing in question.
 //
+// ── WHAT CAME BACK WITH IT, AND WHAT DID NOT ───────────────────────────────
+// ONE thing was ported forward from the template: the comparison TABLE, which replaces this
+// page's three flat `.compare-strip` cards. Same content, `.acca-lp`'s own idiom, and the
+// overflow-driven scroll hint (`ScrollableHint`) rather than a breakpoint-gated one. The
+// template's big-number band was deliberately NOT ported — that is a separate ruling.
+//
 // ⚠️ THE ENTITLEMENT-AWARE CTA IS NOT ON THIS PAGE. `resolveEntitlementCta` +
 // `withDynamicCta` (added in `812af49`, AFTER the template conversion, so this component
 // never carried it) swapped the primary CTA for a signed-in visitor — "Continue" for an
