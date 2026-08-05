@@ -2,7 +2,28 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-05 (**THE STALE AFM PIN, DIAGNOSED — AND 44 OF 44 FIXTURES WERE ARMED
+*Last refreshed: 2026-08-05 (**THE ROOT RECOMPOSED, AND IT CARRIES ITS OWN ARGUMENT NOW** —
+`feat/pillar-recompose-section-vocabulary`. gradd.ai root moves from one cream column (an
+argument and two paper cards) to the rhythm APM already had: hero artefact, stat strip, compare
+table, DARK proof band, pacing feature artefact, SAGE paper cards, pricing, DARK closing CTA.
+**The lead argument CHANGED and that is the substantive half** — it was "Taught, not just
+marked," which is the SPOKES' line, so the page a stranger lands on taught them nothing they
+would not read one click later. It is now the market fact underneath the product (nobody marks
+what you write at Strategic Professional), sourced from `APM_MARKETING_POSITIONING.md`'s LEAD
+LINE, and the proof is the banked blind-candidate script with every figure checked against
+`docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md`. **Two findings banked below, neither of them
+the recompose itself:** the resit band was advertising an APM-only diagnostic paper-agnostically
+(see the ⚠ SECOND CONSEQUENCE under open item 3), and a grid-per-`<li>` bullet defect class that
+was live in TWO stylesheets (see the 🧨 block). **Three further defects found only by looking at
+the rendered page at 390px** — a fixed-height header the nav wrapped out of, a flex-basis that
+became a 200px minimum HEIGHT once the big-numbers band turned column, and ragged card widths
+where the judgement arrows wrapped onto the cards' lines. None was reachable by a fixture: they
+are all layout, and every fixture in this repo is a pure function over a config. **Mobile was
+verified by rendering the page inside a 390px iframe** — an iframe establishes its own viewport,
+so media queries resolve for real — after `resize_window` proved unable to take the browser
+below desktop. Method recorded because the obvious one did not work.)*
+
+*Earlier: 2026-08-05 (**THE STALE AFM PIN, DIAGNOSED — AND 44 OF 44 FIXTURES WERE ARMED
 BY NOBODY** — `feat/prebuild-contract-gate` merged to `main` at `063269c`. The pin broke at
 `5afef1d`, one href in the SHARED landing nav (`/acca` → `/`), a commit touching neither config;
 APM's pin broke identically and its unrelated retirement concealed it; the recorded cause
@@ -391,6 +412,71 @@ check, `npx tsx scripts/_sweep-afm-claims.ts local|live`).
      score" (line 8). An AFM version needs its own template (or a genuine paper-
      parameterisation of this one covering both), not a copy with the acronym swapped —
      the copy itself would need to speak AFM's register, not APM's.
+
+   **⚠ SECOND CONSEQUENCE, FOUND 2026-08-05 — and it was LIVE, not hypothetical.** The
+   asymmetry above is a missing AFM ENTRY POINT: something that should exist and doesn't.
+   That is the half already logged. The other half is that the APM-only diagnostic was being
+   ADVERTISED as paper-agnostic. The ACCA pillar (`ACCAPillarPage.tsx`, i.e. **gradd.ai root**
+   — the highest-traffic page on the site and the one a stranger actually lands on) closed on
+   a band headed *"Failed a paper? Find out exactly why."* — unqualified, on a page whose
+   whole job is to serve BOTH papers, linking to `/acca/resit`, which renders *"Free ACCA APM
+   resit diagnostic"* and asks six habit questions written in APM's terms. An AFM resitter
+   following the root's own closing CTA landed on a diagnostic for a paper they are not
+   sitting. Fixed in `feat/pillar-recompose-section-vocabulary`: the band now reads *"Failed
+   APM?"* and is labelled `aria-label="Free APM resit diagnostic"`.
+
+   **The generalisation, because this will recur:** `AFM_LANDING` omitting `secondaryCta` was
+   a correct decision that only ever bound the page that made it. The constraint is on the
+   ENGINE, so it binds every surface that links to `/acca/resit` — and the pillar was written
+   later, by a different pass, and re-introduced the promise the spoke had deliberately
+   declined. **Any future paper-agnostic surface (a pillar, a footer, a blog CTA, an email)
+   must scope its resit link to APM by name until an AFM engine exists** — the omission on
+   one page is not a guard on the others. When the AFM engine ships, this constraint and the
+   "Failed APM?" wording both lift together, and the search term to find every site is
+   `/acca/resit`.
+
+### 🧨 DEFECT CLASS BANKED 2026-08-05 — **A GRID-PER-`<li>` BULLET SILENTLY TEARS MARKUP OUT OF ITS OWN SENTENCE**
+
+**The shape.** A bulleted list whose marker is laid out as a GRID TRACK:
+
+```css
+li        { display: grid; grid-template-columns: 20px 1fr; gap: 10px; }
+li::before{ content: ""; width: 14px; height: 14px; border-radius: 50%; }
+```
+
+It renders perfectly — *for as long as every bullet is a bare string*. The `<li>` is a grid
+CONTAINER, so **every element child becomes a grid ITEM**: put an `<em>`, a `<strong>` or a
+`<Link>` mid-sentence and it is pulled out of the prose into a cell of its own, with the text
+after it landing in a third, implicitly-created row. The sentence renders in three pieces, out
+of order, and nothing errors.
+
+**Why it deserves banking rather than a one-line fix.** It is a **latency** defect: the bug is
+authored into the STYLESHEET, and detonated later by a CONTENT edit in a different file, by
+someone who has no reason to look at the CSS and whose change is obviously correct in
+isolation. Neither half is wrong on its own. There is also no test that can see it — the
+markup is valid, the build is green, and the fixtures here are pure functions over configs,
+not rendered layout. It surfaced only because someone looked at the page.
+
+**Both sites fixed, one bitten, one not:**
+- `ACCAPillarPage.tsx` `.pil-bullets` — **BITTEN**. Caught in-browser during the recompose on
+  the bullet reading *"reported as `<em>`not reached`</em>`, not as blank"*.
+- `app/globals.css` `.plp-feature-artefact-bullets` — **identical shape, never bitten**, and
+  unbitten only because no `ProductLandingConfig` has yet set a `bullets` entry containing
+  markup. Fixed the same day, preventively, while the reason was known.
+
+**The fix, and the rule.** Absolutely-position the marker instead of giving it a track:
+`li { position: relative; padding-left: 30px }` + `li::before { position: absolute; left: 0;
+top: 4px }`. The `<li>` stays a normal inline flow, so markup inside a bullet stays inside the
+sentence. Geometry is preserved exactly (old track + gap = new padding-left; old `margin-top`
+under `align-items: start` = new `top`). **Standing rule: never make a text-bearing element a
+grid or flex container purely to position its own decoration** — the decoration is
+presentational, so it belongs in a pseudo-element out of flow, not in a track that competes
+with the author's prose. Applies equally to `display: flex` on an `<li>`, `<p>` or `<dd>`.
+
+**One more trap from the same session, same file, worth one line:** these pages carry their CSS
+in a `const CSS = \`…\`` **template literal**, so a backtick inside a CSS COMMENT terminates the
+string and the page 500s with a JS parse error pointing at the comment. Use double quotes when
+quoting a CSS declaration in those comments.
 
 ## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **APM IS CONFIG-DRIVEN: A NEW PAPER IS A CONFIG FILE** (`20585de`)
 

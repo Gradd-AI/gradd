@@ -199,10 +199,12 @@ export default function ACCAPillarPage() {
               <img src="/gradd-ai-logo.png" alt="Gradd" style={{ height: 22, width: 'auto', display: 'block' }} />
             </Link>
             <nav className="pil-nav" aria-label="Primary">
-              <Link href="#papers" className="pil-navlink">Papers</Link>
+              {/* The two ANCHOR links drop out on a narrow viewport — see the media query.
+                  The paper links stay: they are the pillar's whole job. */}
+              <Link href="#papers" className="pil-navlink pil-navlink--wide">Papers</Link>
               <Link href="/acca/apm" className="pil-navlink">APM</Link>
               <Link href="/acca/afm" className="pil-navlink">AFM</Link>
-              <Link href="#pricing" className="pil-navlink">Pricing</Link>
+              <Link href="#pricing" className="pil-navlink pil-navlink--wide">Pricing</Link>
               <Link href="/acca/auth?next=/acca" className="btn btn-rust btn-sm">Start free</Link>
             </nav>
           </div>
@@ -605,9 +607,15 @@ export default function ACCAPillarPage() {
 // no rule here can win or lose a cascade race with the shared sheet.
 const CSS = `
 .pil-wrap { max-width: 1040px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); width: 100%; }
-.pil-header-inner { height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* MIN-height, not height. The nav is flex-wrap, so on a narrow viewport it takes a second
+   line — and against a fixed 56px that second line rendered OUTSIDE the header box, over the
+   hero. Measured at 390px in a 390px iframe, not eyeballed at desktop. The two anchor links
+   also drop below 560px so the wrap does not happen in the first place; the paper links and
+   the CTA stay, which at 390px measures ~302px against ~358px of available width. */
+.pil-header-inner { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .pil-logo { display: flex; align-items: center; text-decoration: none; }
 .pil-nav { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+@media (max-width: 560px) { .pil-navlink--wide { display: none; } }
 /* globals.css owns the type SCALE for these (font/size/colour); the margins are layout and
    live here, exactly as the pre-recompose file had them. A <p class="pil-eyebrow"> with no
    explicit margin picks up the browser's 1em default. */
@@ -711,8 +719,14 @@ const CSS = `
 .pil-bignum-body { margin: 12px 0 0; font-size: 14px; line-height: 1.5;
   color: color-mix(in oklab, var(--forest-ink) 68%, transparent); }
 @media (max-width: 760px) {
+  /* "flex: 0 0 auto" is load-bearing, not tidying. The row rule is "flex: 1 1 200px", and
+     flex-BASIS resolves against the MAIN axis — which becomes the block axis the moment the
+     container turns column. Each figure then claims a 200px minimum HEIGHT and the band
+     renders with ~100px of dead space under every body paragraph. Measured at 390px.
+     (NB: no backticks in this string — it is a template literal, and one here terminates it.) */
   .pil-bignums { flex-direction: column; gap: 22px; }
-  .pil-bignum { border-left: 0; border-top: 1px solid color-mix(in oklab, var(--forest-ink) 25%, transparent);
+  .pil-bignum { flex: 0 0 auto;
+    border-left: 0; border-top: 1px solid color-mix(in oklab, var(--forest-ink) 25%, transparent);
     padding: 20px 0 0; }
   .pil-bignum:first-child { border-top: 0; padding-top: 0; }
 }
@@ -727,6 +741,13 @@ const CSS = `
 .pil-jcol p { font-size: 14px; line-height: 1.55; margin: 0;
   color: color-mix(in oklab, var(--forest-ink) 82%, transparent); }
 .pil-jarrow { flex: 0 0 auto; align-self: center; color: var(--rust); font-size: 16px; }
+/* Once the chain stacks, the arrows must take a WHOLE line of their own. Left to wrap
+   naturally they ride on the end of the card above, so the first two cards lose the arrow's
+   width and render 332px against the last card's 352px — three stacked cards at two
+   different widths. Measured at 390px, not eyeballed. */
+@media (max-width: 760px) {
+  .pil-jarrow { flex: 1 0 100%; text-align: center; align-self: auto; }
+}
 
 /* ── 5. Feature artefact (pacing) ── */
 .pil-feature { padding: clamp(36px, 5.5vw, 64px) 0; }

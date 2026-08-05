@@ -824,12 +824,23 @@ body {
 .plp-feature-artefact-bullets {
   list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px;
 }
+/* THE MARKER IS ABSOLUTELY POSITIONED, NOT A GRID TRACK — fixed 2026-08-05, preventively.
+   This rule used to be `display: grid; grid-template-columns: 20px 1fr`, which works only
+   while every bullet is a BARE STRING. Any ELEMENT child of the <li> — an <em>, a <strong>,
+   a <Link> — becomes a grid ITEM of its own and is torn out of the sentence onto its own
+   line, with the text after it landing in a third, implicitly-created row. The defect was
+   caught on ACCAPillarPage's own copy of this shape ("reported as <em>not reached</em>"),
+   which is the only reason it is known; NO config on this template has ever set a `bullets`
+   entry containing markup, so nothing rendered wrong here and no fixture could have failed.
+   The geometry is preserved exactly: the old 20px track + 10px gap = the 30px padding-left,
+   and the marker's old `margin-top: 4px` under `align-items: start` = `top: 4px`. */
 .plp-feature-artefact-bullets li {
-  display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start;
+  position: relative; padding-left: 30px;
   font-size: 14.5px; line-height: 1.5; color: var(--ink-2);
 }
 .plp-feature-artefact-bullets li::before {
-  content: ""; width: 14px; height: 14px; border-radius: 50%; background: var(--forest); margin-top: 4px;
+  content: ""; position: absolute; left: 0; top: 4px;
+  width: 14px; height: 14px; border-radius: 50%; background: var(--forest);
 }
 .plp-band-dark .plp-feature-artefact-bullets li { color: color-mix(in oklab, var(--forest-ink) 80%, transparent); }
 .plp-band-dark .plp-feature-artefact-bullets li::before { background: var(--forest-ink); }
