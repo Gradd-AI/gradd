@@ -23,6 +23,12 @@ territory — follow the links for depth. Keep it under ~150 lines.
 - **`main` is production.** `next build` must be GREEN before ANY push to main. Large
   features go on a branch + PR, not direct to main; small fixes may commit to main when the
   task says so.
+- **`next build` now RUNS THE FIXTURES** — `prebuild` → `npm run test:contracts`
+  (`scripts/run-contracts.ts`), every pure `scripts/test-*.ts`, ~2.3s, locally and on Vercel.
+  It **discovers**, so a new fixture is armed automatically; keeping one out needs an
+  `EXCLUDED` entry with a reason. Only `test:exam-questions` + `test:sit-timing` are out (live
+  DB) and the runner names them on every run. Doctrine `P-G5` in `GENERATOR_DOCTRINE.md`:
+  before this, 44 of 44 `test:*` scripts were reachable from NO automatic path.
 - **Migrations: file AND manual apply.** Write the migration as a file in
   `supabase/migrations/`, AND apply it by hand in the Supabase SQL Editor as ONE block,
   followed by verification queries that prove it landed. There is no automated migration
