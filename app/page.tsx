@@ -62,10 +62,16 @@ const LC_METADATA: Metadata = {
 // Qualification-level keywords (not the old hub's brand-only set, not a paper spoke's
 // paper-specific set) — root is the "ACCA tutor" / "ACCA Strategic Professional"
 // landing now, and the canonical moves from /acca to here with it.
+//
+// RETITLED 2026-08-05 alongside the pillar recompose. "Taught, not just marked" is the
+// SPOKES' line — it is the H1 on neither page any more at root, and a title tag that
+// promises one argument while the page argues another is the kind of mismatch that reads as
+// a bounce. The title now carries the root's own argument (nobody marks what you write) and
+// the description carries the two facts underneath it.
 const ACCA_METADATA: Metadata = {
-  title: 'ACCA Tutor — Taught, Not Just Marked | Gradd',
+  title: 'ACCA Tutor — Nobody Marks What You Write. We Do | Gradd',
   description:
-    'AI tutor for ACCA Strategic Professional. APM and AFM: diagnoses why your answer lost marks, coaches examiner thinking, marks professional skills against ACCA’s descriptors. Free to start.',
+    'AI tutor for ACCA Strategic Professional. ACCA’s Practice Platform gives you a model answer to grade yourself; tutor-marked mocks take three days. Gradd marks the answer you wrote in about a minute — APM and AFM, free to start.',
   keywords: [
     'ACCA tutor',
     'ACCA Strategic Professional',
@@ -77,9 +83,9 @@ const ACCA_METADATA: Metadata = {
   ],
   alternates: { canonical: 'https://gradd.ai/' },
   openGraph: {
-    title: 'ACCA Tutor — Taught, Not Just Marked | Gradd',
+    title: 'ACCA Tutor — Nobody Marks What You Write. We Do | Gradd',
     description:
-      'AI tutor for ACCA Strategic Professional. APM and AFM — taught, not just marked.',
+      'AI tutor for ACCA Strategic Professional. APM and AFM — the answer you wrote, marked in about a minute.',
     url: 'https://gradd.ai/',
     siteName: 'Gradd',
     type: 'website',
