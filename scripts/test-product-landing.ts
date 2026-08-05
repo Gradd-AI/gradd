@@ -380,11 +380,13 @@ ok('AFM output makes NO code-owned-marking overclaim (drill generation ≠ marki
 // renders nothing (MINIMAL, and every real config today — neither AFM_LANDING nor
 // APM_LANDING sets any of the five), FULL (now exercising all five) proves the positive, and
 // — because "the template must be able to express the vocabulary first" means nothing may
-// visibly change on a page that doesn't ask for it — AFM_LANDING and APM_LANDING must render
+// visibly change on a page that doesn't ask for it — AFM_LANDING and APM_LANDING HAD TO render
 // BYTE-IDENTICALLY to their pre-extension output. That property can't be eyeballed from a
-// diff of this file, so it's asserted against a SHA-256 of the style-stripped body captured
+// diff of this file, so it was asserted against a SHA-256 of the style-stripped body captured
 // by rendering the PARENT commit (`b3f4b11`, before any edit in this branch) through the
-// same `bodyOf()` used here.
+// same `bodyOf()` used here. The pin did its job — that branch left both bodies untouched.
+// BOTH pins have since been superseded: APM's retired outright (break mode 11), AFM's
+// downgraded to a plain current-state snapshot. See the AFM snapshot block below.
 ok('MINIMAL renders none of the five new section types',
   !minimalHtml.includes('plp-statbar-stats') && !minimalHtml.includes('plp-bignums-grid') &&
   !minimalHtml.includes('plp-feature-artefact-grid') && !minimalHtml.includes('plp-cmptable-table') &&
@@ -414,17 +416,44 @@ ok('every new-vocabulary section is individually PRESENT on FULL',
     .every((s) => hasSection(FULL, s) === true));
 
 const apmHtml = bodyOf(APM_LANDING);
-// Refreshed 2026-08-04 (feat/apm-recompose-section-vocabulary) — found ALREADY STALE on
-// unmodified main before this branch touched anything (confirmed: `git stash` + rerun
-// reproduces the same mismatch against the old constant). Not this branch's regression: the
-// hash this branch's own code produces for AFM_LANDING is IDENTICAL with and without this
-// branch's changes (verified by running both ways), so AFM's rendered output is provably
-// unaffected here — only the stored pin was wrong, most likely stranded by AFM_LANDING's own
-// later content rebuild (see that config's "v2" header) never refreshing it.
-const AFM_PRE_EXTENSION_SHA256 = '4998e6dc002427c49d4ffa529f47356b0d8d8190edfe53a1e1099bf390f5dff8';
+// ── THE AFM RENDERED-BODY SNAPSHOT ────────────────────────────────────────────────────────
+// ⚠️ THIS IS A CURRENT-STATE SNAPSHOT. IT IS NOT AN EQUALITY CLAIM ABOUT ANY PAST COMMIT.
+// It was originally captured (`9187ea3`) against `b3f4b11` to prove the section-vocabulary
+// branch left AFM byte-identical, and it did hold through that merge (`2014a21`). That
+// guarantee is SPENT: the value below is NOT b3f4b11's body and never will be again, so
+// nothing here may be read as "AFM is unchanged since before the section vocabulary".
+//
+// WHAT ACTUALLY MOVED IT — diagnosed 2026-08-05 by re-rendering every commit in the range
+// through this same `bodyOf()` and diffing the bodies, not inferred from a commit message.
+// `5afef1d` (refactor(links): sweep root-identity references stale since the hub) changed ONE
+// href in the SHARED nav of ProductLandingPage.tsx, `/acca` → `/`, five characters to one:
+//     - <a class="plp-navlink" href="/acca">All ACCA</a>
+//     + <a class="plp-navlink" href="/">All ACCA</a>
+// That single line is the entire diff (19002 → 18998 bytes). The edit is CORRECT — root IS
+// the ACCA pillar now, and linking /acca would only add a redirect hop — and AFM was
+// collateral: that commit touches no config and names no paper. A shared-component edit
+// re-renders every landing page, which is the whole reason this pin exists; it could not
+// announce the change because nothing runs it unless a human chooses to.
+//
+// APM'S PIN BROKE IN THE SAME COMMIT, IDENTICALLY (`c6bf4622…` → `8258f8d2…`, the same −4
+// bytes) — on unmodified main BOTH were failing. It was then retired in `5db8d72` for an
+// unrelated and legitimate reason (APM adopts the vocabulary — break mode 11 below), and
+// that CONCEALED the breakage: the retirement reads as a deliberate supersession rather than
+// the removal of a pin that was already red.
+//
+// The note previously here blamed AFM_LANDING's own content rebuild (`c228380`). That was
+// WRONG and is deleted: `c228380` is an ANCESTOR of `b3f4b11`, so it predates the capture and
+// could not have stranded it.
+//
+// REFRESHING THIS VALUE IS A DECISION, NOT A CHORE. A mismatch means AFM's rendered output
+// moved. Find WHAT moved it and confirm it was intended before pasting a new hash in.
+const AFM_RENDERED_BODY_SHA256 = '4998e6dc002427c49d4ffa529f47356b0d8d8190edfe53a1e1099bf390f5dff8';
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
-ok('AFM_LANDING renders BYTE-IDENTICALLY to its pre-extension output (SHA-256 of the style-stripped body)',
-  sha256(afmHtml) === AFM_PRE_EXTENSION_SHA256, `got ${sha256(afmHtml)}, want ${AFM_PRE_EXTENSION_SHA256}`);
+ok('AFM_LANDING\'s rendered body matches the pinned snapshot (SHA-256 of the style-stripped body)',
+  sha256(afmHtml) === AFM_RENDERED_BODY_SHA256,
+  `got ${sha256(afmHtml)}, want ${AFM_RENDERED_BODY_SHA256} — AFM's rendered output MOVED. `
+  + 'A shared-component edit (ProductLandingPage.tsx) will do this without touching any '
+  + 'config. Identify the change and confirm it was intended BEFORE refreshing the constant.');
 
 // ── BREAK MODE 11: APM_LANDING'S RECOMPOSE (feat/apm-recompose-section-vocabulary) ────────
 // SUPERSEDES the old "APM_LANDING renders byte-identically to its pre-extension output" pin
