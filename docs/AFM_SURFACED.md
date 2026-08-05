@@ -2,7 +2,30 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-05 (**THE ROOT RECOMPOSED, AND IT CARRIES ITS OWN ARGUMENT NOW** —
+*Last refreshed: 2026-08-05 (**ALL FOUR SURFACES NOW COMPOSED — AFM WAS THE LAST**, merged at
+`931aa8f`, pushed, **deployed READY on the matching SHA** (target `production`, aliased to
+gradd.ai/gradd.ie/www.*). `/acca/afm` gains `heroArtefact` (AFM's OWN Ezra hedge/basis
+transcript — the Mock 1 Q3(i) marking panel was deliberately NOT reused, the pillar at root
+already leads with it and root→spoke is one click), two `featureArtefacts` (second reversed,
+`mockups[]` retired), sage on professional skills, dark on the judgement card, `bigNumbers`,
+and `cmpTable` replacing `compareStrip`. Rhythm cream → sage → cream → dark → cream → dark,
+APM's exactly. **The ARGUMENT did not move and two fixtures now pin that it cannot**: AFM stays
+an EXECUTION test, and APM's figures (91, ~40%) are asserted absent from AFM's rendered body —
+copying APM's composition was the job, copying its framing would have been a content
+regression nothing structural would notice. Big numbers all re-verified from live sources
+(~45% from ACCA's published pass-rates page fetched this session — deliberately NOT "ACCA's
+lowest", which is APM's claim and false for AFM; 20% corroborated by Mock 1's requirements
+summing to exactly 80 technical marks; 63 from a live production count). **The AFM SHA pin
+went red TWICE on this branch and was right both times** — once for the intended config
+recompose, then again mid-branch on a shared-component header edit, which is precisely the
+class of drift the `5afef1d` post-mortem said nothing was catching. Kept rather than retired
+(APM's was retired outright, leaving nothing pinning shared-component drift against a real
+config). **A new defect class banked below — see the 🧨 flex-row block.** Also carried: a
+PowerShell `Get-Content`/`Set-Content` round-trip double-encoded `ProductLandingPage.tsx` and
+added a BOM mid-session; caught, restored from git, re-applied with the Edit tool, and proven
+byte-identical by the pin still matching.)*
+
+*Earlier: 2026-08-05 (**THE ROOT RECOMPOSED, AND IT CARRIES ITS OWN ARGUMENT NOW** —
 `feat/pillar-recompose-section-vocabulary`. gradd.ai root moves from one cream column (an
 argument and two paper cards) to the rhythm APM already had: hero artefact, stat strip, compare
 table, DARK proof band, pacing feature artefact, SAGE paper cards, pricing, DARK closing CTA.
@@ -477,6 +500,82 @@ with the author's prose. Applies equally to `display: flex` on an `<li>`, `<p>` 
 in a `const CSS = \`…\`` **template literal**, so a backtick inside a CSS COMMENT terminates the
 string and the page 500s with a JS parse error pointing at the comment. Use double quotes when
 quoting a CSS declaration in those comments.
+
+### 🧨 DEFECT CLASS BANKED 2026-08-05 — **A FLEX ROW THAT FITS EXACTLY DEGRADES BY BREAKING ITS CHILDREN'S TEXT, NOT BY OVERFLOWING**
+
+Sits alongside the grid-per-`<li>` class above. Same family — a layout that is correct until
+content changes underneath it — but this one is worse, because it produces **no measurable
+symptom at all**.
+
+**The shape.** A `display: flex` row of text links inside a fixed-height container:
+
+```css
+.plp-header-inner { height: 56px; display: flex; justify-content: space-between; }
+.plp-nav         { display: flex; align-items: center; gap: 16px; }   /* no flex-wrap */
+```
+
+**What happens when the items no longer fit.** Nothing you can detect. Flex items default to
+`flex-shrink: 1`, and a text link's min-content width is its LONGEST WORD — so instead of
+overflowing, every link shrinks and **breaks its own label mid-phrase**: *"See a real /
+walkthrough"*, *"What's / included"*. Measured on `/acca/afm` at desktop: the nav's items
+summed to **759px against 759px of available track**. It fitted. `scrollWidth === clientWidth`,
+the header never exceeded its 56px, no element overflowed its parent, and the page looked
+broken to anyone who opened it.
+
+**Why nothing caught it, and why nothing was ever going to.** Every landing fixture in this
+repo is a pure function over a config or a render-level string check — neither can see
+computed layout. The obvious defensive check is the wrong one: `scrollWidth > clientWidth` is
+exactly the assertion that passes here. The SHA pin could not see it either, because the
+MARKUP was unchanged and correct; only the geometry was wrong.
+
+**⚠ THE PART WORTH REMEMBERING: the difference between broken and fine was CONTENT LENGTH,
+not code.** APM and AFM render the *same nav from the same component*. APM was fine with
+~146px of slack; AFM was broken at 0px of slack — because AFM's config sets `proof`, so its
+nav carried ONE MORE LINK, and that link's label was the longest of the set. No commit
+"caused" it in any reviewable sense: whoever added `proof` to `AFM_LANDING` added a legitimate
+field, and the damage appeared in a shared component they never opened. **Any shared nav /
+toolbar / breadcrumb row is one config field away from this**, and the paper that gets bitten
+is simply the one whose labels are longest.
+
+**The fix, and the rule.**
+```css
+.plp-header-inner { min-height: 56px; }                       /* was height */
+.plp-nav          { flex-wrap: wrap; column-gap: 16px; row-gap: 8px; }
+.plp-navlink      { white-space: nowrap; }
+@media (max-width: 560px) { .plp-navlink--anchor { display: none; } }
+```
+`nowrap` means a label can no longer absorb the pressure by breaking itself, so the pressure
+moves to the NAV, which wraps; `min-height` lets the header grow to hold it. **The failure
+mode becomes a visibly taller header instead of silent damage** — that is the whole point of
+the fix, not the wrapping itself. AFM additionally stopped rendering `c.proof` in the nav (it
+still renders in the hero, with a better label), which restored its ~146px of slack and made
+its header identical to APM's. The same-page anchor links (`#taught`/`#features`/`#pricing`)
+are tagged and drop below 560px, because at 390px the sticky header stood **102px** tall —
+a quarter of the screen on every scroll — and an in-page jump link is redundant on a phone
+that is already scrolling. 102px → 71px.
+
+**Standing rule: never put shrinkable text in a fixed-HEIGHT flex row without `white-space:
+nowrap` and a wrap rule.** And when a shared component renders per-config content, the slack
+belongs to the component, not to the config that happens to be shortest today.
+
+**VERIFIED LIVE 2026-08-05 on `931aa8f`, both papers, both viewports** (www.gradd.ai — note
+`gradd.ai` 307s to `www.`, and a `curl` without `-L` reads the redirect body, not the page):
+desktop 1920 — header 56px, every nav label 22px (single line) on AFM and APM alike, judgement
+cards 264/264/264, no horizontal overflow; 390px in a same-origin iframe — header 71px, nav
+reduced to the four cross-page links, judgement cards 352/352/352, big numbers content-sized
+(AFM 141/141/162, APM 141/141/141), compare table scrolling in its own container with the
+hint displayed, no horizontal overflow (384 vs 390) on either page.
+
+**Two smaller observations from the same sweep, neither fixed, neither blocking:**
+- At DESKTOP the compare table on APM scrolls horizontally while `.plp-cmptable-hint` is
+  `display: none` (the hint is gated to ≤720px). AFM's table fits and does not scroll. So on
+  APM the only cue that there is more table is the visual clip at the edge. Low priority; the
+  honest fix is to drive the hint off actual overflow rather than a breakpoint.
+- The dev server served a **stale Turbopack CSS cache** for the whole of this session's later
+  work — identical chunk filename across a full restart, missing a rule that was present on
+  disk — so a CSS change appeared not to work when it was already correct. `npm start` on the
+  built output showed it immediately. **If a CSS edit appears to have no effect in dev,
+  verify against `npm run build` + `npm start` before touching the CSS again.**
 
 ## ⭐ ✅ RULED + SHIPPED 2026-08-04 — **APM IS CONFIG-DRIVEN: A NEW PAPER IS A CONFIG FILE** (`20585de`)
 
