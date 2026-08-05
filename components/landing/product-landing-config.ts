@@ -365,6 +365,34 @@ export interface ProductLandingConfig {
  */
 export const DEFAULT_PRICING_HEADING = 'Free to start. Paid access when you need it.';
 
+// ── AFM_LANDING v3 (feat/afm-recompose-section-vocabulary, 2026-08-05) ───────────────────
+// COMPOSITION ONLY on top of v2, whose content notes are kept verbatim below because every
+// one of them still binds. AFM was the LAST of the four surfaces still rendering as a stack
+// of identically-bordered cards — IB, APM and the ACCA pillar at root had all been recomposed
+// — and Grant's standing requirement is that AFM has the SAME LOOK AND FEEL AS APM.
+//
+// WHAT MOVED, all of it structural:
+//   1. `heroArtefact` — the Ezra hedge/basis transcript beside the hero copy, previously
+//      `mockups[0]` rendered mid-scroll with no framing. AFM's OWN exchange, not APM's.
+//   2. `featureArtefacts[]` — BOTH mock-ups promoted out of the unframed `mockups[]` stack
+//      into full-width split sections with their own eyebrow/heading/lead, the second
+//      reversed so they alternate sides. `mockups` is retired; nothing is lost.
+//   3. Bands — `sections[1]` (professional skills) sage, `judgement` dark forest. Render
+//      order now gives cream (hero + approach) → sage (professional skills) → cream
+//      (what's-included + artefacts + bigNumbers + steps) → dark (judgement) → cream
+//      (compare + pricing + FAQ) → dark (finalCta): APM's rhythm exactly.
+//   4. `bigNumbers` — three figures, each verified this session against a live source. See
+//      the block above the field for the provenance of each.
+//   5. `cmpTable` — replaces the flat three-card `compareStrip`, Gradd column featured.
+//
+// WHAT DID NOT MOVE, deliberately: the ARGUMENT. AFM is an EXECUTION test — the arithmetic
+// is usually competent and precision under a clock is what fails — and APM's "not a knowledge
+// test, a judgement paper" framing is NOT imported. Every v2 correction below is intact: 63
+// drills (re-queried live, still 63), no code-owned-marking claim anywhere, per-paper pricing
+// with no bundle language, and no `secondaryCta` (there is still no AFM resit diagnostic —
+// see `AFM_SURFACED.md`, and note the pillar's own unqualified "Failed a paper?" band was
+// corrected for exactly this reason on 2026-08-05).
+//
 // ── AFM_LANDING v2 (feat/afm-landing-rebuild) ────────────────────────────────
 // Rebuilt on the SAME section structure APM_LANDING now has — sections[], judgement,
 // compareStrip, steps, mockups, pricingTiers, faqs, finalCta, chrome. Not a cut-down page.
@@ -441,6 +469,31 @@ export const AFM_LANDING: ProductLandingConfig = {
     '63 exam-style drills live across investment appraisal & financing and treasury & risk management — sections B and E, the two ACCA guarantees a question from every sitting — plus ethics & advisory (A). M&A and reorganisation (C, D) are still building. No complete-syllabus claim.',
   heroMicrocopy: 'Marked in about a minute — not a self-graded model answer or a three-day wait.',
   heroMeta: ['Every drill free', 'No card to start', 'Upgrade for cases, marking and mock'],
+  // ── HERO ARTEFACT (v3) — AFM'S OWN, not APM's. ────────────────────────────
+  // Same OBJECT as featureArtefacts[0]'s mock-up below: a compact preview beside the hero
+  // copy, the same artefact given full explanatory context lower down — the pattern APM
+  // proved, not two different transcripts. The transcript itself is AFM's, and deliberately
+  // so: it is a HEDGE-DIRECTION/BASIS exchange (sell 96 contracts, is 4.95% already right?),
+  // which is AFM's own failure shape. APM's hero transcript is a report-evaluation exchange
+  // and shares nothing with it but the format. The Mock 1 Q3(i) MARKING PANEL was the other
+  // candidate and is deliberately NOT used here — the ACCA pillar at root already leads with
+  // exactly that artefact, and root → spoke is one click, so reusing it would make the spoke
+  // read as the same page.
+  heroArtefact: {
+    kind: 'chat',
+    ariaLabel: 'Ezra withholding a model answer while coaching an AFM requirement',
+    title: 'Ezra',
+    subtitle: 'ACCA AFM · Requirement (b)',
+    turns: [
+      { role: 'student', lines: ['The company should hedge with futures — I’ve calculated the effective rate at 4.95%.'] },
+      { role: 'tutor', badge: 'Hint', lines: ['You’ve got a rate — but is it an instruction the board could act on? Buy or sell? Which contract month?'] },
+      { role: 'student', lines: ['September futures, sold 96 contracts short. But the rate itself — is 4.95% not already right?'] },
+      { role: 'tutor', lines: ['Check your basis period again. That’s exactly where AFM’s own examiner reports say this mark is lost.'] },
+    ],
+    inputPlaceholder: 'Reply to Ezra…',
+    footer: 'The answer stays sealed · Ezra online 24/7',
+    caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
+  },
   // points[] stays populated (the required field), duplicating sections[0]'s cards — same
   // pattern APM_LANDING uses. sections[] is what actually renders; see hasSection precedence.
   points: [
@@ -491,6 +544,9 @@ export const AFM_LANDING: ProductLandingConfig = {
         { title: 'Commercial acumen', body: 'Business impact, scenario-specific application.' },
       ],
       caption: 'Marked against AFM’s own published professional-skills descriptors, with the evidence named.',
+      // The page's one sage band, on the same section APM bands sage: the marks the paper's
+      // own examiner reports say candidates skip. Visual emphasis matching the claim.
+      band: 'sage',
     },
     {
       eyebrow: 'What’s included',
@@ -504,6 +560,74 @@ export const AFM_LANDING: ProductLandingConfig = {
       ],
     },
   ],
+  // ── FEATURE ARTEFACTS (v3) — both mock-ups promoted out of the old unframed mid-scroll
+  // `mockups[]` stack into full-width split sections, each with its own eyebrow/heading/lead,
+  // the second REVERSED so they alternate sides. Exactly APM's shape; the content is AFM's.
+  // `mockups[]` is RETIRED below, not deleted-and-lost: both objects live here now.
+  featureArtefacts: [
+    {
+      eyebrow: 'See it happen · Live coaching',
+      heading: 'Ezra doesn’t hand you the reference working.',
+      lead: 'He finds precisely where your figure diverged from the code-correct one and coaches from there, keeping the reference answer sealed until you have repaired it yourself — the same loop every teach-through follows.',
+      // SAME OBJECT as heroArtefact above — reused, not re-authored.
+      mockup: {
+        kind: 'chat',
+        ariaLabel: 'Ezra withholding a model answer while coaching an AFM requirement',
+        title: 'Ezra',
+        subtitle: 'ACCA AFM · Requirement (b)',
+        turns: [
+          { role: 'student', lines: ['The company should hedge with futures — I’ve calculated the effective rate at 4.95%.'] },
+          { role: 'tutor', badge: 'Hint', lines: ['You’ve got a rate — but is it an instruction the board could act on? Buy or sell? Which contract month?'] },
+          { role: 'student', lines: ['September futures, sold 96 contracts short. But the rate itself — is 4.95% not already right?'] },
+          { role: 'tutor', lines: ['Check your basis period again. That’s exactly where AFM’s own examiner reports say this mark is lost.'] },
+        ],
+        inputPlaceholder: 'Reply to Ezra…',
+        footer: 'The answer stays sealed · Ezra online 24/7',
+        caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
+      },
+    },
+    {
+      eyebrow: 'Professional skills · Marked, not guessed',
+      heading: 'Marked against AFM’s own published professional-skills descriptors.',
+      lead: 'A fifth of every AFM answer is professional skills, and five examiner reports in a row name the same gap — assumptions accepted without challenge, a director’s claim taken at face value, a stated board constraint ignored. Marked on your whole answer, with the evidence named.',
+      reverse: true,
+      mockup: {
+        kind: 'panel',
+        ariaLabel: 'Professional-skills marking panel showing evidence-cited feedback',
+        title: 'Professional skills',
+        rows: [
+          { label: 'Scepticism', verdict: 'strong', body: '“challenged the stated 4% return target against the board’s own constraint, rather than accepting the director’s figure at face value…”' },
+          { label: 'Analysis & evaluation', verdict: 'competent', body: '“states both NPV outcomes but stops short of a recommendation — the report ends without a decision…”' },
+        ],
+      },
+    },
+  ],
+  // ── BIG NUMBERS (v3) — the template's weight-variety device. THREE FIGURES, EACH
+  // INDEPENDENTLY VERIFIED 2026-08-05, none taken from this file's existing copy:
+  //   · ~45% — ACCA's own published pass-rates page (accaglobal.com/gb/en/student/
+  //     exam-support-resources/professional-exams-study-resources/
+  //     pass-rates-professional-exams.html), fetched this session. AFM's last EIGHT sittings
+  //     (Sep 2024 – Jun 2026) run 44/45/45/46/44/45/44/47% — "~45%" is the honest rounding
+  //     and the band is stated in the body rather than hidden. ⚠ DELIBERATELY NOT framed as
+  //     "ACCA's lowest": that is APM's claim (its own window runs 38–42% on the same page)
+  //     and it would be FALSE for AFM. AFM's number is lower-than-half, not lowest.
+  //   · 20% — ACCA's professional-skills structure for the Strategic Professional options
+  //     (80 technical + 20 professional-skills marks since September 2022). Corroborated
+  //     against our own build by a live query the same day: AFM Mock Paper 1's 8 requirements
+  //     carry marks_guide summing to exactly 80, with the professional-skills 20 apportioned
+  //     on top by `case-marking.ts` — 80 + 20 = the paper's 100.
+  //   · 63 — `SELECT count(*) FROM acca_drills WHERE exam_board='ACCA' AND paper_code='AFM'
+  //     AND status='approved' AND published=true`, run live against production. Section split
+  //     from the same query: A=2, B=47, E=14.
+  bigNumbers: {
+    eyebrow: 'By the numbers',
+    heading: 'The paper, in three numbers.',
+    items: [
+      { value: '~45%', body: 'of candidates pass AFM — so more than half of the people sitting it do not. ACCA’s published pass rates, Sep 2024–Jun 2026 (44–47%).' },
+      { value: '20%', body: 'of every AFM answer is professional-skills marks — 20 of the paper’s 100, examined since September 2022.' },
+      { value: '63', body: 'exam-style drills live today, across investment appraisal & financing, treasury & risk management, and ethics & advisory.' },
+    ],
+  },
   stepsHeading: 'How a teach-through works.',
   steps: [
     { title: 'Attempt the drill.' },
@@ -535,42 +659,54 @@ export const AFM_LANDING: ProductLandingConfig = {
       body: 'Subtracting the unexpired basis gives 4.80%, not 4.95% — a 0.15pp gap, one-to-one with the omission. Scored component by component: 2 of 7 pass; every one of the 5 failures traces to that single missed step, not five separate errors.',
     },
     caption: 'The candidate’s own self-check will not catch this. Marking has to.',
+    // The page's dark forest band, on the same section APM bands dark. AFM's argument is
+    // UNCHANGED and stays AFM's: an EXECUTION test, not a judgement paper. APM's
+    // "not a knowledge test, a judgement paper" framing is deliberately NOT imported —
+    // the two papers fail differently and their own examiner reports say so.
+    band: 'dark',
   },
-  compareStrip: {
+  // ── COMPARE TABLE (v3) — replaces the three-flat-card `compareStrip`, which is RETIRED.
+  // Every fact below is carried over from that strip or from copy already live elsewhere in
+  // this config; nothing new is claimed and no competitor price is invented. LearnSignal is
+  // still named here (it is named on this spoke, unlike the pillar, which states the shape of
+  // the offer without naming the provider) and its figures are `APM_MARKETING_POSITIONING.md`'s
+  // COMPETITOR CLAIMS: €29.99 each, two per paper → €59.98, PDF, tutor-marked, three days.
+  cmpTable: {
     eyebrow: 'How it compares',
     heading: 'Marked in a minute, not a self-check or a three-day wait.',
+    rowLabels: [
+      'Marks your written answer',
+      'Marking turnaround',
+      'Names the step where your figure diverged',
+      'Professional skills, against AFM’s own descriptors',
+      'Full timed mock paper',
+      'Attempts',
+      'Cost for the sitting',
+    ],
     columns: [
-      { label: 'ACCA’s Practice Platform', body: 'A model answer, and you self-grade. Nothing checks whether you’d have caught your own mistake.' },
-      { label: 'LearnSignal mocks', body: '€29.99 each, two per paper, PDF, tutor-marked, three-day turnaround.' },
-      { label: 'Gradd', body: 'Marked in about a minute, unlimited attempts, €99 for the whole sitting.', featured: true },
+      {
+        label: 'ACCA’s Practice Platform',
+        values: ['You do — against a model answer', 'Instant, self-graded', false, false, 'Past papers, unmarked', 'Unlimited', 'Free'],
+      },
+      {
+        label: 'LearnSignal mocks',
+        values: ['A tutor, on a PDF', 'Three days', 'Tutor’s discretion', 'Tutor’s discretion', 'Two per paper', 'Two per paper', '€59.98 for the two'],
+      },
+      {
+        label: 'Gradd',
+        values: [
+          'Ezra, against the requirement',
+          'About a minute',
+          true,
+          true,
+          'AFM Mock Paper 1, marked as one paper',
+          'Unlimited',
+          '€99 for the whole sitting',
+        ],
+        featured: true,
+      },
     ],
   },
-  mockups: [
-    {
-      kind: 'chat',
-      ariaLabel: 'Ezra withholding a model answer while coaching an AFM requirement',
-      title: 'Ezra',
-      subtitle: 'ACCA AFM · Requirement (b)',
-      turns: [
-        { role: 'student', lines: ['The company should hedge with futures — I’ve calculated the effective rate at 4.95%.'] },
-        { role: 'tutor', badge: 'Hint', lines: ['You’ve got a rate — but is it an instruction the board could act on? Buy or sell? Which contract month?'] },
-        { role: 'student', lines: ['September futures, sold 96 contracts short. But the rate itself — is 4.95% not already right?'] },
-        { role: 'tutor', lines: ['Check your basis period again. That’s exactly where AFM’s own examiner reports say this mark is lost.'] },
-      ],
-      inputPlaceholder: 'Reply to Ezra…',
-      footer: 'The answer stays sealed · Ezra online 24/7',
-      caption: 'The answer stays sealed. Ezra teaches until your answer is strong enough to score.',
-    },
-    {
-      kind: 'panel',
-      ariaLabel: 'Professional-skills marking panel showing evidence-cited feedback',
-      title: 'Professional skills',
-      rows: [
-        { label: 'Scepticism', verdict: 'strong', body: '“challenged the stated 4% return target against the board’s own constraint, rather than accepting the director’s figure at face value…”' },
-        { label: 'Analysis & evaluation', verdict: 'competent', body: '“states both NPV outcomes but stops short of a recommendation — the report ends without a decision…”' },
-      ],
-    },
-  ],
   pricingTiers: [
     {
       name: 'Free',

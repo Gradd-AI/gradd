@@ -221,12 +221,24 @@ ok('a configured pricingHeading overrides the default', pFull.heading === 'Per p
 // APM_LANDING set NONE of the five — this change-set is template-only, see the config file's
 // own header — so the count AFM renders is unchanged (still 11) while the denominator and
 // the "missing" set both grew by 5.
-ok('AFM_LANDING now renders the full section structure (all but the APM-only resit band + the not-yet-adopted new vocabulary)',
-  visibleSections(AFM_LANDING).length === OPTIONAL_SECTIONS.length - 6 &&
-  !hasSection(AFM_LANDING, 'secondaryCta') &&
-  !hasSection(AFM_LANDING, 'heroArtefact') && !hasSection(AFM_LANDING, 'statBar') &&
-  !hasSection(AFM_LANDING, 'featureArtefacts') && !hasSection(AFM_LANDING, 'bigNumbers') &&
-  !hasSection(AFM_LANDING, 'cmpTable'),
+// SUPERSEDED A THIRD TIME 2026-08-05 (`feat/afm-recompose-section-vocabulary`): AFM ADOPTS
+// the vocabulary, so the four "not-yet-adopted" negatives above are now false BY DESIGN and
+// the assertion inverts for them. FOUR sections remain absent and each is a
+// standing decision this fixture is the right place to hold:
+//   · secondaryCta — no AFM resit diagnostic exists (`lib/acca/resit-engine.ts` is APM-only).
+//   · statBar      — APM does not set one either; AFM matches APM, and an unasked-for extra
+//                    section is exactly what "same look and feel" is not.
+//   · mockups      — RETIRED into featureArtefacts[], same as APM's recompose did.
+//   · compareStrip — RETIRED in favour of cmpTable, same as APM's recompose did. Counted
+//                    here because it is ITSELF an entry in OPTIONAL_SECTIONS — missing that
+//                    is what made the first draft of this assertion read 13/17 against an
+//                    expected 14, which is the arithmetic and not the config.
+ok('AFM_LANDING renders the recomposed section structure — vocabulary adopted, four sections absent by decision',
+  visibleSections(AFM_LANDING).length === OPTIONAL_SECTIONS.length - 4 &&
+  hasSection(AFM_LANDING, 'heroArtefact') && hasSection(AFM_LANDING, 'featureArtefacts') &&
+  hasSection(AFM_LANDING, 'bigNumbers') && hasSection(AFM_LANDING, 'cmpTable') &&
+  !hasSection(AFM_LANDING, 'secondaryCta') && !hasSection(AFM_LANDING, 'statBar') &&
+  !hasSection(AFM_LANDING, 'mockups') && !hasSection(AFM_LANDING, 'compareStrip'),
   `${visibleSections(AFM_LANDING).length}/${OPTIONAL_SECTIONS.length}: ${visibleSections(AFM_LANDING).join(',')}`);
 ok('AFM_LANDING uses the tier pricing grid, not the simple card', pricingModel(AFM_LANDING).mode === 'tiers');
 ok('AFM_LANDING emits its OWN FAQ JSON-LD', buildFaqJsonLd(AFM_LANDING)?.mainEntity.length === AFM_LANDING.faqs!.length);
@@ -356,8 +368,11 @@ ok('FULL does NOT render the simple price card (tiers replaced it)', !fullHtml.i
 const afmHtml = bodyOf(AFM_LANDING);
 ok('AFM output renders section groups (sections[] REPLACES the flat points grid), not the flat grid',
   afmHtml.includes('plp-section-group-grid') && !afmHtml.includes('class="plp-points"'));
-ok('AFM output renders the judgement card AND the compare strip',
-  afmHtml.includes('plp-judgement-grid') && afmHtml.includes('plp-compare-strip-grid'));
+// The compare STRIP half of this assertion is retired with the strip itself (v3 replaces it
+// with a real cmpTable — see break mode 12). The judgement half survives unchanged: it is
+// the section carrying AFM's proof story and it must not silently disappear.
+ok('AFM output renders the judgement card, and no longer the retired flat compare strip',
+  afmHtml.includes('plp-judgement-grid') && !afmHtml.includes('plp-compare-strip-grid'));
 ok('AFM output renders the tier grid, not the simple price card',
   afmHtml.includes('plp-tier-grid') && !afmHtml.includes('plp-price-card'));
 ok('AFM output renders the FAQ list and its JSON-LD', afmHtml.includes('plp-faq-list') && afmHtml.includes('ld+json'));
@@ -447,7 +462,31 @@ const apmHtml = bodyOf(APM_LANDING);
 //
 // REFRESHING THIS VALUE IS A DECISION, NOT A CHORE. A mismatch means AFM's rendered output
 // moved. Find WHAT moved it and confirm it was intended before pasting a new hash in.
-const AFM_RENDERED_BODY_SHA256 = '4998e6dc002427c49d4ffa529f47356b0d8d8190edfe53a1e1099bf390f5dff8';
+//
+// ── REFRESHED 2026-08-05 (`feat/afm-recompose-section-vocabulary`), DELIBERATELY ──────────
+// Previous value `4998e6dc…`. AFM adopts the section vocabulary in this change-set, so its
+// rendered body moved BY DESIGN and by a large amount, not by four bytes of collateral: a
+// heroArtefact, two featureArtefacts, a bigNumbers band, sage/dark band classes, and a
+// cmpTable replacing the compareStrip. WHAT moved it is this branch's whole subject, and the
+// intent is asserted positively by break mode 12 immediately below rather than left to the
+// hash alone — a refreshed hash proves only that output is stable from now on, never that
+// the move was correct.
+//
+// KEPT RATHER THAN RETIRED, unlike APM's. APM's pin was retired outright when APM adopted the
+// vocabulary (break mode 11), which left NOTHING pinning a shared-component edit against any
+// real config — and that is precisely the failure this pin caught in `5afef1d`, where one
+// href in ProductLandingPage.tsx's shared nav silently re-rendered every landing page. With
+// AFM's kept and refreshed, one real page still holds that line.
+//
+// ── REFRESHED A SECOND TIME, SAME BRANCH, AND THE PIN EARNED ITS KEEP DOING IT ────────────
+// `f8101097…` was set for the config recompose. It then went red AGAIN, mid-branch, on a
+// SHARED-COMPONENT edit: ProductLandingPage.tsx stopped rendering `c.proof` in the nav and
+// began tagging same-page anchor links with `plp-navlink--anchor` (both header fixes — see
+// that file). That is precisely the class of change the `5afef1d` post-mortem says nothing
+// was catching, and this time it was caught on the same branch that caused it, before merge,
+// by a fixture that now runs on every build. It is also the reason the two assertions below
+// exist: a hash proves the output is stable, never that it is right.
+const AFM_RENDERED_BODY_SHA256 = '95046389f62c4386842057b6224eb7dc966f50851f6bcd642b8225ca9abb318b';
 const sha256 = (s: string) => crypto.createHash('sha256').update(s).digest('hex');
 ok('AFM_LANDING\'s rendered body matches the pinned snapshot (SHA-256 of the style-stripped body)',
   sha256(afmHtml) === AFM_RENDERED_BODY_SHA256,
@@ -483,6 +522,66 @@ ok('APM output renders cmpTable with a featured Gradd column, not the old flat c
   !apmHtml.includes('plp-compare-strip-grid'));
 ok('APM output cmpTable Gradd column reuses facts already live elsewhere on the page (no invented cost/duration)',
   apmHtml.includes('€99 for the whole sitting') && apmHtml.includes('3h 15m, marked as one paper'));
+
+// ── BREAK MODE 12: AFM_LANDING'S RECOMPOSE (feat/afm-recompose-section-vocabulary) ────────
+// Mirrors break mode 11 for the LAST of the four surfaces. The load-bearing assertions here
+// are the NEGATIVE ones: the standing requirement is that AFM matches APM's look and feel,
+// and the way that goes wrong is not a missing band — it is AFM quietly inheriting APM's
+// ARGUMENT or APM's FIGURES along with APM's layout. Those two are pinned explicitly.
+ok('AFM output renders the hero as a split grid with heroArtefact, not the plain single-column hero',
+  afmHtml.includes('plp-hero-inner--split'));
+ok('AFM output renders BOTH feature artefacts, reversed on the second',
+  (afmHtml.match(/plp-feature-artefact-grid/g) ?? []).length === 2 &&
+  afmHtml.includes('Ezra doesn’t hand you the reference working.') &&
+  afmHtml.includes('Marked against AFM’s own published professional-skills descriptors.'));
+ok('AFM output no longer renders the old unframed mockups stack (both promoted to featureArtefacts)',
+  !afmHtml.includes('plp-mockup-stack'));
+ok('AFM output renders bigNumbers with the three independently verified figures (~45% pass rate, 20% professional skills, 63 drills)',
+  afmHtml.includes('plp-bignums-grid') &&
+  afmHtml.includes('~45%') && afmHtml.includes('>20%<') && afmHtml.includes('>63<'));
+ok('AFM output applies the sage band to the professional-skills section group',
+  afmHtml.includes('class="plp-section-group plp-band-sage"'));
+ok('AFM output applies the dark band to the judgement card',
+  afmHtml.includes('class="plp-judgement plp-band-dark"'));
+ok('AFM output renders cmpTable with a featured Gradd column',
+  afmHtml.includes('plp-cmptable-table') && afmHtml.includes('is-gradd'));
+ok('AFM cmpTable carries the competitor facts forward from the retired compareStrip, unchanged',
+  afmHtml.includes('€59.98 for the two') && afmHtml.includes('Three days') &&
+  afmHtml.includes('€99 for the whole sitting'));
+// ── THE TWO THAT MATTER MOST: AFM MUST NOT INHERIT APM'S ARGUMENT OR APM'S NUMBERS ────────
+// AFM is an EXECUTION test (the arithmetic is usually competent; precision under a clock is
+// what fails). APM is a JUDGEMENT paper (describing instead of applying). Copying APM's
+// composition is the point of this change-set; copying APM's framing would be a content
+// regression that no structural assertion above would notice.
+ok('AFM keeps its OWN argument — an execution test — and does not import APM\'s judgement-paper framing',
+  afmHtml.includes('It is an execution test.') &&
+  !/judgement paper/i.test(afmHtml) && !/not a knowledge test\. It is a judgement/i.test(afmHtml));
+ok('AFM does not carry APM\'s figures (91 drills, ~40% pass rate) anywhere in its rendered body',
+  !afmHtml.includes('~40%') && !afmHtml.includes('>91<') && !/91 (exam-style )?drills/.test(afmHtml));
+// ── THE HEADER FIXES (shared component, both papers) ─────────────────────────────────────
+// AFM's nav summed to exactly its available width, so every label broke mid-phrase — no
+// overflow, no clipping, nothing measurable went wrong, it just looked broken. The proof
+// link is the item removed; it must still render in the HERO, which is the half that would
+// silently regress if someone "tidied" the removal later.
+ok('AFM renders its proof link in the hero but NOT in the nav (the header-crowding fix)',
+  afmHtml.includes('plp-prooflink') && afmHtml.includes('See a real walkthrough') &&
+  !/plp-navlink[^"]*"[^>]*>See a real walkthrough</.test(afmHtml));
+// Parsed, not regex-guessed: pull every nav link out as (href, isTagged) and assert the tag
+// tracks the href EXACTLY. Written this way so it fails if the tag is dropped, if it is
+// applied to everything, or if it lands on a cross-page link — a substring check on
+// "plp-navlink--anchor" would pass on all three.
+const navLinks = [...afmHtml.matchAll(/<a class="(plp-navlink[^"]*)" href="([^"]+)"/g)]
+  .map((m) => ({ tagged: m[1].includes('plp-navlink--anchor'), anchor: m[2].startsWith('#') }));
+ok('same-page anchor nav links are tagged so they can drop out on a narrow viewport; cross-page links are not',
+  navLinks.length >= 5 &&
+  navLinks.some((l) => l.anchor) && navLinks.some((l) => !l.anchor) &&
+  navLinks.every((l) => l.tagged === l.anchor));
+ok('APM gets the same header treatment from the shared component (anchor links tagged, no proof link to remove)',
+  apmHtml.includes('plp-navlink--anchor') && !apmHtml.includes('plp-prooflink'));
+
+ok('AFM still states 63 drills, and still makes no code-owned-marking claim',
+  /63 (exam-style )?drills/.test(afmHtml) && !/so the marking is exact/i.test(afmHtml) &&
+  !/every accept\/reject verdict/i.test(afmHtml));
 
 // ── withDynamicCta — the entitlement-aware CTA override (2026-08) ──────────
 // PURE half of the entitlement-CTA feature; lib/acca/entitlement-cta.ts (the DB-reading

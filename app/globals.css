@@ -672,6 +672,14 @@ body {
 }
 .plp-judgement-col { flex: 1 1 220px; }
 .plp-judgement-arrow { flex: 0 0 auto; }
+/* Once the chain stacks, each arrow must take a WHOLE line. Left to wrap naturally it rides
+   on the end of the card above it, so the first two cards lose the arrow's width and render
+   332px against the last card's 352px — three stacked cards at two different widths.
+   Measured at 390px on /acca/afm; the identical defect was fixed on ACCAPillarPage's own
+   copy of this chain the day before, and it is live on APM's dark judgement band too. */
+@media (max-width: 760px) {
+  .plp-judgement-arrow { flex: 1 0 100%; text-align: center; align-self: auto; }
+}
 
 /* ── Final CTA — the dark band, ported verbatim from .final-cta. ── */
 .plp-final {
@@ -807,8 +815,13 @@ body {
 .plp-band-dark .plp-bignum { border-left-color: color-mix(in oklab, var(--forest-ink) 25%, transparent); }
 .plp-band-dark .plp-bignum-body { color: color-mix(in oklab, var(--forest-ink) 65%, transparent); }
 @media (max-width: 720px) {
-  .plp-bignums-grid { flex-direction: column; }
-  .plp-bignum { border-left: 0; border-top: 1px solid var(--rule); padding: 20px 0 0; }
+  /* `flex: 0 0 auto` is load-bearing. The row rule is `flex: 1 1 220px`, and flex-BASIS
+     resolves against the MAIN axis — which becomes the BLOCK axis the moment this container
+     turns column. Each figure then claims a 220px minimum HEIGHT and the band renders with
+     ~100px of dead space under every body paragraph. Measured at 390px on /acca/afm; the
+     identical defect was fixed on ACCAPillarPage's own copy the day before. */
+  .plp-bignums-grid { flex-direction: column; gap: 22px; }
+  .plp-bignum { flex: 0 0 auto; border-left: 0; border-top: 1px solid var(--rule); padding: 20px 0 0; }
   .plp-bignum:first-child { border-top: 0; padding-top: 0; }
   .plp-band-dark .plp-bignum { border-top-color: color-mix(in oklab, var(--forest-ink) 25%, transparent); }
 }
