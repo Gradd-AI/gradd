@@ -2,7 +2,17 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-04 (**APM RECOMPOSED ON THE SECTION VOCABULARY** —
+*Last refreshed: 2026-08-05 (**THE STALE AFM PIN, DIAGNOSED — AND 44 OF 44 FIXTURES WERE ARMED
+BY NOBODY** — `feat/prebuild-contract-gate` merged to `main` at `063269c`. The pin broke at
+`5afef1d`, one href in the SHARED landing nav (`/acca` → `/`), a commit touching neither config;
+APM's pin broke identically and its unrelated retirement concealed it; the recorded cause
+(`c228380`) was an ancestor of the capture and impossible. It never failed because it was never
+run — and neither was anything else: no CI, no hooks, no lifecycle script, and `next build` does
+not execute `scripts/`. Now `prebuild` → `npm run test:contracts`, discovering every pure
+fixture, 46 in 2.3s, on Vercel as well as locally. Doctrine **`P-G5`**. See the CLOSED block
+below.)*
+
+*Earlier: 2026-08-04 (**APM RECOMPOSED ON THE SECTION VOCABULARY** —
 `feat/apm-recompose-section-vocabulary` merged to `main` at `8eeb600`, pushed, deployed READY
 on the matching SHA (aliased to gradd.ai/gradd.ie). `/acca/apm` moves from fourteen
 identically-bordered cards to: `heroArtefact` (the Ezra chat mock-up beside the hero copy,
@@ -91,6 +101,32 @@ route was explicitly ruled out.**)*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## ⭐ ✅ CLOSED 2026-08-05 — **THE STALE PIN, DIAGNOSED; AND EVERY FIXTURE NOW ARMED** (`feat/prebuild-contract-gate`)
+
+The item below is answered in full. **What moved it:** `5afef1d` changed ONE href in the SHARED
+nav of `ProductLandingPage.tsx` — `/acca` → `/`, five characters to one, 19002 → 18998 bytes.
+That single line is the entire diff, established by re-rendering every commit in the range
+through the fixture's own `bodyOf()` and diffing the bodies. **Intended?** Yes, and correct —
+root IS the ACCA pillar now — but AFM was COLLATERAL: the commit touches no config and names no
+paper. **APM's pin broke in the same commit**, so `main` carried two failing pins; APM's was
+retired in `5db8d72` for an unrelated reason, which concealed it. **The recorded cause was
+wrong** — it blamed `c228380`, an ANCESTOR of the capture point, and is deleted. **Why it did
+not fail then:** it was never run.
+
+**The finding that outgrew the pin: 44 of 44 `test:*` scripts were reachable from NO automatic
+path** — no CI, no hooks, no lifecycle script, no `vercel.json` build override, and `next build`
+never executes `scripts/`. Fixed: `prebuild` → `npm run test:contracts`
+(`scripts/run-contracts.ts`), which DISCOVERS `scripts/test-*.ts` so a new fixture is armed
+automatically. 46 pure fixtures, 2.3s, runs on Vercel too. Purity proven by RUNNING each fixture
+with no `.env.local` and again with it loaded — a grep had been wrong on four of six. Four
+previously-invisible fixtures (no npm script at all) now have one. Banked as **`P-G5`** in
+`GENERATOR_DOCTRINE.md`.
+
+**Still true and worth keeping:** the pin is a CURRENT-STATE snapshot, renamed
+`AFM_RENDERED_BODY_SHA256`, and a mismatch is a decision to diagnose, never a hash to refresh.
+
+<details><summary>The original open item, 2026-08-04 — kept verbatim</summary>
+
 ## ⭐ 🔴 OPEN 2026-08-04 — **THE AFM BYTE-IDENTICAL SHA-256 PIN WAS ALREADY STALE, AND WENT STALE SILENTLY**
 
 `scripts/test-product-landing.ts` pins AFM_LANDING's rendered body to a SHA-256 captured when
@@ -107,6 +143,8 @@ was never diagnosed.**
 changed AFM_LANDING's rendered output, and report whether that change was intended. A pin that
 goes stale silently and gets refreshed without diagnosis is worse than no pin at all — it will
 do the same thing again next time.
+
+</details>
 
 ---
 
