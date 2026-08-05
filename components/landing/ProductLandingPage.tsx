@@ -123,14 +123,34 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 22, width: 'auto', display: 'block' }} />
             </Link>
             <nav className="plp-nav">
-              {c.proof && <Link href={c.proof.href} className="plp-navlink">{c.proof.label}</Link>}
+              {/* THE PROOF LINK IS NOT IN THE NAV — removed 2026-08-05, and it is a fix, not a
+                  trim. Measured on /acca/afm at desktop: the nav's items summed to 759px
+                  against 759px of available track — it FIT, with zero slack, so flexbox shrank
+                  every link to its min-content width and each label broke mid-phrase ("See a
+                  real / walkthrough", "What's / included"). No overflow, no clipping, nothing
+                  a scrollWidth check would catch; it just looked broken. APM renders the same
+                  nav minus this one link and has ~146px of slack, which is the whole reason
+                  APM looked right and AFM did not — so removing it makes AFM's header exactly
+                  APM's. Nothing is lost: `c.proof` still renders in the HERO one line below,
+                  with a longer and better label ("… — a real, unedited transcript"). */}
               <Link href="/acca/apm" className="plp-navlink">ACCA APM</Link>
               {/* Points at root, not /acca — root IS the ACCA pillar now, and /acca itself
                   only redirects an anonymous visitor straight back here. Linking /acca
                   directly would just add a redirect hop for every reader who clicks this. */}
               <Link href="/" className="plp-navlink">All ACCA</Link>
+              {/* SAME-PAGE ANCHOR links are tagged so they can drop out on a narrow viewport
+                  — see the media query. Measured at 390px: with all of them present the nav
+                  wrapped to THREE rows and the STICKY header stood 102px tall, eating a
+                  quarter of the screen on every scroll. They are the right ones to lose: a
+                  "#pricing" jump is redundant on a phone already scrolling, while the
+                  cross-page links (the other paper, All ACCA, Blog, Sign in) are the only way
+                  out of this page. */}
               {(c.nav ?? []).map((n) => (
-                <Link key={n.href} href={n.href} className="plp-navlink">{n.label}</Link>
+                <Link
+                  key={n.href}
+                  href={n.href}
+                  className={`plp-navlink${n.href.startsWith('#') ? ' plp-navlink--anchor' : ''}`}
+                >{n.label}</Link>
               ))}
               <Link href={c.freeCta.href} className="btn btn-rust btn-sm">{c.freeCta.label} <span className="arrow">→</span></Link>
             </nav>
@@ -488,9 +508,18 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
 
 const CSS = `
 .plp-wrap { max-width: 920px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 32px); width: 100%; }
-.plp-header-inner { height: 56px; display: flex; align-items: center; justify-content: space-between; }
+/* MIN-height + nowrap links + a wrapping nav — the robustness net behind the proof-link
+   removal above. Fixed height plus a non-wrapping nav of shrinkable links is the combination
+   that produced the AFM header defect: the links absorb the pressure by breaking their own
+   text mid-phrase, so the header never overflows and never reports a problem. With
+   white-space nowrap a label can no longer break, so pressure moves to the NAV, which now
+   wraps to a second row, and min-height lets the header grow to hold it. A future config with
+   one nav link too many gets a visibly taller header instead of silent damage. */
+.plp-header-inner { min-height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .plp-logo { display: flex; align-items: center; text-decoration: none; }
-.plp-nav { display: flex; align-items: center; gap: 16px; }
+.plp-nav { display: flex; align-items: center; flex-wrap: wrap; justify-content: flex-end; column-gap: 16px; row-gap: 8px; }
+.plp-navlink { white-space: nowrap; }
+@media (max-width: 560px) { .plp-navlink--anchor { display: none; } }
 .plp-hero { padding: clamp(44px, 8vw, 88px) 0 clamp(28px, 5vw, 52px); }
 .plp-hero-inner { max-width: 720px; }
 .plp-eyebrow { margin: 0 0 14px; }
