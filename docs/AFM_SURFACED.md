@@ -101,6 +101,44 @@ route was explicitly ruled out.**)*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## ⭐ 🔴 OPEN 2026-08-05 — **A FIXTURE INSIDE THE GATE COULD NOT GO RED. ONE DECISION IS YOURS.**
+
+Follow-on from the item below. `test:exam-questions` was run against the live DB for the first
+time since it gained an npm script: **the RPC is fine** — `fetch_exam_questions_tiered` still
+returns the tiers its header documents (1,1,2 / 1,2,2 / 3,3,3), so its exclusion is
+environmental, not rot. **But it asserted nothing**: it printed, and an RPC error was
+`console.error` + `continue`, so a dead RPC would have reported success. Now asserts the tier
+sequences, the 3-row `LIMIT`, ascending tier order, tier range and non-empty `question_text`;
+`--self-test` drives all 9 checks through their failure paths with no DB, `--prove-failure` runs
+red against live data (`126bb8c`).
+
+**THE SWEEP FOUND THE SAME SHAPE INSIDE THE GATE.** Of all 48 `scripts/test-*.ts`, 47 wire their
+exit to a failure count. **`test-sit-preview.ts` incremented `failures` in `ok()` and never read
+the variable** — no summary, no exit code. All ~90 of its checks could fail and it exited 0, so
+the gate reported `ok test-sit-preview` and `PASS 46/46` while printing `FAIL ::` lines directly
+above it. Proved by breaking `fmtDuration(0)`: gate stayed green. Fixed and re-proved
+(`c708dc9`). **This is the worse position of the two** — a fixture outside the gate is merely
+unrun; one inside it that cannot go red prints PASS into every build log, Vercel's included.
+
+**🔴 THE OPEN DECISION — the home of `test:exam-questions`, yours to make.** The tier logic is
+**SQL**: the `CASE WHEN` in `20260612000000_*.sql`. There is nothing to import and nothing to
+mock that would not be a reimplementation of the thing under test, so **it cannot be made pure
+without ceasing to test the RPC**. It stays EXCLUDED — what it needs from you is an **owner and a
+stated manual cadence** (proposal: run it with any seed-library change, since that is what moves
+its expectations). Two further points for that call:
+
+- **Its expected sequences are facts about the SEED CORPUS, not the function.** The RPC ends
+  `ORDER BY tier ASC, RANDOM() LIMIT 3`, so a third Tier-1 seed on `IB_ECON_007` legitimately
+  makes Case A `1,1,1`. Structure and corpus failures are now labelled separately for that
+  reason; a CORPUS failure means "confirm which changed", never "the RPC regressed".
+- **⚠️ THE FIXTURE'S FORMATTER HAS DRIFTED FROM PRODUCTION AND IS UNTESTED.** Its
+  `formatContext` is a stale copy predating the 2026-06-12 migration: production
+  (`fetchExamQuestionsContext`, `lib/system-prompt.ts:215`) additionally injects mark schemes
+  (`[[SCHEME_INJECTED]]`) from `scheme_data`/`scheme_type`, and the fixture renders neither. So
+  its printed preview is **not** what Mia receives, and the real formatter has no fixture at
+  all. That half **is** pure and gate-eligible against a stubbed client — an available follow-up,
+  not built.
+
 ## ⭐ ✅ CLOSED 2026-08-05 — **THE STALE PIN, DIAGNOSED; AND EVERY FIXTURE NOW ARMED** (`feat/prebuild-contract-gate`)
 
 The item below is answered in full. **What moved it:** `5afef1d` changed ONE href in the SHARED
