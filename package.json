@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:contracts": "tsx scripts/run-contracts.ts",
     "generate-seed": "tsx --env-file=.env.local scripts/generate-seed-questions.ts",
     "verify-seed": "tsx --env-file=.env.local scripts/verify-seed-questions.ts",
     "dump-seed": "tsx --env-file=.env.local scripts/dump-seed.ts",
