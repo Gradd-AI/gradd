@@ -2,7 +2,18 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-05 (**ALL FOUR SURFACES NOW COMPOSED — AFM WAS THE LAST**, merged at
+*Last refreshed: 2026-08-05 (**THE APM TEMPLATE CONVERSION IS REVERTED BY RULING** —
+`feat/apm-restore-preconversion`. `/acca/apm` renders the bespoke `ACCALandingPage` again,
+restored from the commit `59034bf^`; the comparison ruler read zero because it probed for the
+PRESENCE of elements, and presence was never the question. **Exactly one thing came forward from
+the template: the comparison TABLE**, in `.acca-lp`'s own rust idiom, with the overflow-driven
+scroll hint. Big numbers deliberately NOT ported. `APM_LANDING` stays in the config, unused, and
+now says so at its declaration — it is a FIXTURE for the template, not a live page. **Two blocks
+below**: the ruling itself, and the standing requirement that AFM be rebuilt to the same ethos
+once APM is approved — **with no shared component abstracted until then**. One live behaviour is
+dropped by the revert and is flagged, not fixed: the entitlement-aware CTA on APM.)*
+
+*Earlier: 2026-08-05 (**ALL FOUR SURFACES NOW COMPOSED — AFM WAS THE LAST**, merged at
 `931aa8f`, pushed, **deployed READY on the matching SHA** (target `production`, aliased to
 gradd.ai/gradd.ie/www.*). `/acca/afm` gains `heroArtefact` (AFM's OWN Ezra hedge/basis
 transcript — the Mock 1 Q3(i) marking panel was deliberately NOT reused, the pillar at root
@@ -144,6 +155,88 @@ route was explicitly ruled out.**)*
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ 🔴 OPEN 2026-08-05 — **AFM MUST BE REBUILT TO APM's ETHOS ONCE /acca/apm IS SETTLED — AND THE SHARED COMPONENT IS *NOT* THE NEXT STEP** (Grant's standing requirement)
+
+**THE REQUIREMENT.** `/acca/apm` is being restored to the pre-conversion bespoke page
+(`feat/apm-restore-preconversion`, below). Once that page is APPROVED, **AFM must be rebuilt to
+the same ethos** — Grant's standing requirement, unchanged since the AFM landing rebuild: AFM has
+the same look and feel as APM. AFM is on `ProductLandingPage` + `AFM_LANDING` today and stays
+there until this is done.
+
+**⛔ DO NOT ABSTRACT A SHARED COMPONENT YET. THIS IS THE WHOLE POINT OF THE ITEM.** The template
+that exists today (`ProductLandingPage`) was invented BEFORE there was a page worth copying. It
+was generalised out of a page nobody had ruled on, against a ruler
+(`compare:apm-landing`) that probed for the PRESENCE of 20 elements and read zero losses — and
+presence was never what was in question. What it produced was a flagship page Grant rejected on
+sight: a flat hero, the Ezra chat rendered twice, the judgement card on a dark band competing
+with the final CTA, clipped big-number subheads. **An abstraction built before its subject
+exists cannot be checked against anything, so it gets checked against an inventory, and an
+inventory cannot see composition.**
+
+**THE MECHANISM IS DECIDED AFTER APM IS APPROVED, WITH THE WORKING PAGE AS THE SPEC.** Not
+before. The candidate mechanisms — extract a shared component from the approved page; copy the
+page and diverge; keep `ProductLandingPage` for AFM and re-derive it from the approved APM
+composition — are all still open, and the point of waiting is that the approved page is the only
+thing that can tell them apart. Duplication between two landing pages is cheap and visible;
+the wrong abstraction is neither.
+
+**DEPENDS ON:** Grant's approval of the restored `/acca/apm`. Nothing here starts until then.
+
+---
+
+## ⭐ 🔧 RULED 2026-08-05 — **THE APM TEMPLATE CONVERSION IS REVERTED; ONLY THE COMPARE TABLE CAME FORWARD** (`feat/apm-restore-preconversion`)
+
+**Grant's ruling, after comparing both pages side by side at desktop and 390px:** the
+pre-conversion APM page wins. `components/landing/ACCALandingPage.tsx` is restored from
+`59034bf^` — from the COMMIT, not from the local untracked comparison copy (the two were proved
+byte-identical first: blob `1eeffe0a`) — and `/acca/apm` renders it again. The temporary
+`/old-apm` comparison route is deleted.
+
+**THE REASONS, ON THE RECORD** (they are the evidence for the item immediately above): the
+bespoke hero runs at DISPLAY scale with the rust underline under the italic and owns the first
+screen, where the template hero is one flat line with the artefact pushed into dead space; the
+template rendered the Ezra chat TWICE (hero artefact AND feature artefact); it put the judgement
+card on a dark band where it competed with the final CTA for the page's one dark moment; it
+clipped the big-number subheads. The bespoke page was already COMPOSED — sage after the hero,
+sage for professional skills, forest only at the close — and its mobile work was already done.
+
+**WHAT CAME FORWARD: exactly one thing, the comparison TABLE.** The three flat
+`.compare-strip` cards are replaced by a real table (`COMPARE_ROWS` / `COMPARE_COLS` in
+`ACCALandingPage.tsx`), content carried verbatim from `APM_LANDING.cmpTable`, re-expressed in
+`.acca-lp`'s own idiom: **RUST for the Gradd column**, because rust is this page's featured
+accent (`.price-card.featured`, `.price-badge`, and the retired `.compare-col--gradd` all use
+it) — the template's version highlights in forest, and forest on this page is reserved for the
+final CTA. It carries the **overflow-driven** scroll hint (`ScrollableHint`, `data-scrollable`),
+never a breakpoint-gated one — the defect fixed in `aa038f1` is not being reintroduced.
+**The big-number band was deliberately NOT ported** — Grant rules on that once the table is in
+place.
+
+**`APM_LANDING` STAYS IN `product-landing-config.ts`, UNUSED, and the config now says so in a
+⚠️ block at its declaration.** No route renders it. It is kept because
+`scripts/test-product-landing.ts` renders it as the template's only exercise of the FULL section
+vocabulary (AFM adopts the vocabulary but not all of it), so deleting it would leave several
+section types with no real config behind them. **Anything that fixture asserts about
+`APM_LANDING` is now a claim about the TEMPLATE, never about what a visitor to `/acca/apm`
+sees.**
+
+**⚠️ ONE LIVE BEHAVIOUR IS DROPPED BY THE REVERT, AND IT IS NOT COSMETIC — AWAITING RULING.**
+The entitlement-aware CTA (`resolveEntitlementCta` + `withDynamicCta`, added `812af49` — AFTER
+the template conversion, so `ACCALandingPage` never carried it) swapped the primary CTA for a
+signed-in visitor: "Continue" for an entitled student, "Add APM for your sitting" for one
+entitled on AFM only. A signed-in APM student now sees "Start free" again. **`/acca/afm` is
+UNAFFECTED and keeps it.** Not fixed in this change-set because it needs a CTA prop on the
+component, which is more than the compare-table port this was scoped to. Flagged rather than
+done silently.
+
+**VERIFIED:** `next build` green with the 47/47 contract gate; `test:product-landing` 125/125
+including the **AFM SHA-256 pin unchanged** (`95046389…`); rendered `/acca/apm` carries zero
+`plp-` classes and 269 `.acca-lp` ones; `/acca/afm` still renders the template (780 `plp-`);
+`/old-apm` 404s. **NOT verified by me: the pixel render at desktop and 390px** — no browser
+automation was available this session (the Chrome extension was declined and there is no
+Playwright/Puppeteer in the repo). Grant's own side-by-side is the check.
+
+---
 
 ## ⭐ 🔴 OPEN 2026-08-05 — **A DEAD RPC TEACHES ON IN SILENCE: THE EMPTY-CONTEXT FALLBACK IS INDISTINGUISHABLE FROM "NO SEED QUESTIONS"**
 
