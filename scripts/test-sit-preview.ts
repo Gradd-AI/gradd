@@ -232,3 +232,13 @@ ok('the mark number is never mistaken for a code', sitDisplayLabel('(i) — 10 m
 ok('prose in a label survives', sitDisplayLabel('(i) Part one — 10 marks') === '(i) Part one');
 ok('null label stays null', sitDisplayLabel(null) === null);
 ok('undefined label stays null', sitDisplayLabel(undefined) === null);
+
+// ── The verdict ─────────────────────────────────────────────────────────────
+// ADDED 2026-08-05. `failures` was incremented above and NEVER READ: every check could fail
+// and this file still exited 0, so the contract gate reported `ok test-sit-preview` and
+// `PASS 46/46` while printing `FAIL ::` lines directly above it. A fixture inside the gate
+// that cannot go red is worse than one outside it — it prints PASS into every build log,
+// including Vercel's. Proved by breaking fmtDuration(0) and watching the gate stay green.
+// P-G4: exitCode, never process.exit().
+console.log(`\n${failures === 0 ? 'PASS' : 'FAIL'} sit-preview: ${failures} failure(s)`);
+process.exitCode = failures === 0 ? 0 : 1;
