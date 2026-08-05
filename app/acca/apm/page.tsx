@@ -1,21 +1,44 @@
 // app/acca/apm/page.tsx
-// The APM spoke — now rendered through the GENERALISED template, not the bespoke
-// ACCALandingPage component. See feat/apm-template-conversion: APM_LANDING is a verbatim
-// inventory of the retired ACCALandingPage.tsx (its content lives on in the config, not in
-// a bespoke component), and `npm run compare:apm-landing` was the ruler that proved every
-// element survives the move (0 of 20 probed elements lost) before this file changed.
+// The APM spoke. This renders the BESPOKE `ACCALandingPage` component again — the template
+// conversion (`59034bf`) is reverted here by ruling, after both pages were put side by side.
+//
+// ── WHY THE BESPOKE PAGE WON, ON THE RECORD ────────────────────────────────
+// Grant's ruling, 2026-08-05, having compared `/acca/apm` (template) against `/old-apm`
+// (this component) at desktop and 390px:
+//   · the bespoke hero runs at DISPLAY scale with the rust underline under the italic and
+//     owns the first screen; the template hero is one flat line with the artefact pushed
+//     into dead space;
+//   · the template rendered the Ezra chat TWICE (hero artefact AND feature artefact);
+//   · the template put the judgement card on a dark band, where it competed with the final
+//     CTA for the page's one dark moment;
+//   · the template clipped the big-number subheads;
+//   · this page was already COMPOSED — sage after the hero, sage for professional skills,
+//     forest only at the close — and its mobile work was already done.
+// The comparison ruler (`compare:apm-landing`) read zero because it probed for the PRESENCE
+// of elements, not for their composition. Presence was never the thing in question.
+//
+// ── WHAT CAME BACK WITH IT, AND WHAT DID NOT ───────────────────────────────
+// ONE thing was ported forward from the template: the comparison TABLE, which replaces this
+// page's three flat `.compare-strip` cards. Same content, `.acca-lp`'s own idiom, and the
+// overflow-driven scroll hint (`ScrollableHint`) rather than a breakpoint-gated one. The
+// template's big-number band was deliberately NOT ported — that is a separate ruling.
+//
+// ⚠️ THE ENTITLEMENT-AWARE CTA IS NOT ON THIS PAGE. `resolveEntitlementCta` +
+// `withDynamicCta` (added in `812af49`, AFTER the template conversion, so this component
+// never carried it) swapped the primary CTA for a signed-in visitor — "Continue" for an
+// entitled student, "Add APM for your sitting" for one entitled on AFM only. Restoring this
+// component drops that on APM; `/acca/afm` is UNAFFECTED and keeps it. Re-adding it here
+// means giving this component a CTA prop, which is more than the compare-table port this
+// change-set is scoped to. Flagged for ruling rather than done silently.
 //
 // ── SEO: THIS PAGE INHERITS THE APM RANKING SIGNAL ──────────────────────────
 // The root was the highest-priority indexed URL (sitemap 1.0) and held the APM keyword
 // set. Both move here with the content — canonical, og:url, keywords, title, description —
 // so the signal follows the content rather than being stranded on a hub that no longer
 // mentions APM. `app/sitemap.ts` lists this at priority 1.0 and the hub separately.
+// The metadata block below is UNCHANGED by the revert: it was never template-specific.
 import type { Metadata } from 'next';
-import ProductLandingPage from '@/components/landing/ProductLandingPage';
-import { APM_LANDING } from '@/components/landing/product-landing-config';
-import { withDynamicCta } from '@/components/landing/product-landing-sections';
-import { resolveEntitlementCta } from '@/lib/acca/entitlement-cta';
-import { createServerClient, createServiceClient } from '@/lib/supabase/server';
+import ACCALandingPage from '@/components/landing/ACCALandingPage';
 
 const TITLE = 'ACCA APM Tutor — Taught, Not Just Marked | Gradd';
 const DESCRIPTION =
@@ -50,27 +73,6 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default async function APMSpokePage() {
-  // Entitlement-aware CTA — same defensive pattern as app/acca/afm/page.tsx (see that file
-  // for the full reasoning). Any failure at all renders exactly what an anonymous visitor
-  // already sees.
-  let config = APM_LANDING;
-  try {
-    const cta = await resolveEntitlementCta({
-      authClient: await createServerClient(),
-      dbClient: createServiceClient(),
-      thisPaper: 'APM',
-      otherPaper: 'AFM',
-      anonymous: APM_LANDING.freeCta,
-      entitledOtherLabel: 'Add APM for your sitting',
-      dashboardHref: '/acca',
-    });
-    if (cta.state !== 'anonymous') {
-      config = withDynamicCta(APM_LANDING, cta);
-    }
-  } catch {
-    // config stays APM_LANDING — the anonymous render.
-  }
-
-  return <ProductLandingPage config={config} />;
+export default function APMSpokePage() {
+  return <ACCALandingPage />;
 }
