@@ -53,7 +53,13 @@ const TSX_CLI = require.resolve('tsx/cli');
 const EXCLUDED: Record<string, string> = {
   'test-exam-questions':
     'needs a live database (createClient on NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY). '
-    + 'Verified: exits 1 in a clean checkout with no .env.local. Run manually: npm run test:exam-questions',
+    + 'Verified: exits 1 in a clean checkout with no .env.local. RUN AGAINST THE LIVE DB 2026-08-05 — '
+    + 'the fetch_exam_questions_tiered RPC still returns the tiers its header documents (1,1,2 / 1,2,2 / '
+    + '3,3,3), so the exclusion is purely environmental, not rot. ⚠️ BUT IT ASSERTS NOTHING: it prints and '
+    + 'exits 0 whatever comes back (an RPC error is console.error + continue, test-exam-questions.ts:71-74), '
+    + 'so that verification was a HUMAN comparing output against the header comment. Adding it to the gate '
+    + 'would need assertions first — as written it can only ever fail on a thrown fatal. '
+    + 'Run manually: npm run test:exam-questions',
   'test-sit-timing':
     'needs a live database (createClient at test-sit-timing.ts:211). Verified: exits 1 in a clean '
     + 'checkout with no .env.local. Run manually: npm run test:sit-timing',
