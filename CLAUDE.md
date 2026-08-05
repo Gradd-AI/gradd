@@ -54,9 +54,24 @@ territory — follow the links for depth. Keep it under ~150 lines.
 ## SESSION CLOSE
 
 **Every session ends PUSHED.** After the final merge to `main`: `git push origin main`, then
-confirm the Vercel deploy is **green** (state `READY`, target `production`, and the commit SHA
-matches `main`) before reporting done. A push whose deploy is still `BUILDING` is not confirmed —
-wait for it, or say plainly that it was still building.
+confirm the deploy from the **BUILD LOG**, not from `readyState`.
+
+**CONFIRM THE DEPLOY FROM THE BUILD LOG. CHECK ONCE, IMMEDIATELY.** (Grant's amendment,
+2026-08-05.) Find the deployment whose `githubCommitSha` matches the pushed SHA
+(`list_deployments`, `target: "production"`), then call
+`mcp__plugin_vercel_vercel__get_deployment_build_logs` on it — **once**. If the log shows the
+contract gate passing and `Build Completed` / `Deployment completed`, report the SHA and move
+on. Project/team ids are in `.vercel/project.json` (`projectId` / `orgId`); no Vercel CLI is
+installed on either machine.
+- **DO NOT poll `readyState` in a loop, and DO NOT arm a background sleep timer.** The API
+  reports `BUILDING` for MINUTES after the log says `Build Completed` — the flip waits on the
+  build-cache write, not on the deploy. This lag has been hit repeatedly and is banked in
+  `memory/reference_vercel_deploy_state_lag.md`. Polling it converts a 50-second deploy into
+  several minutes of waiting and invites reporting "still building" about something already live.
+- **A FAILING LOG IS THE FINDING, AND IT MATTERS. REPORT IT AT ONCE** — do not re-check, do not
+  wait to see whether it recovers, do not bury it under the rest of the close.
+- `state: READY` is still the right thing to quote **if you already have it**; it is simply not
+  the thing to WAIT for. Never claim READY without having seen it.
 
 - **Never leave `main` ahead of `origin/main`.** Check with `git rev-list --count origin/main..main`
   — it must be `0` at close. Unpushed work on a production branch is invisible to the other
