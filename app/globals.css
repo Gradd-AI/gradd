@@ -902,7 +902,16 @@ body {
 }
 .plp-cmptable-y { color: oklch(45% 0.13 145); font-weight: 600; }
 .plp-cmptable-n { color: var(--ink-3); }
+/* DRIVEN BY ACTUAL OVERFLOW, NOT BY A BREAKPOINT — changed 2026-08-05.
+   This was `display: none` plus `@media (max-width: 720px) { display: block }`, i.e. "assume
+   the table overflows on a phone and nowhere else". Both halves were wrong in production
+   simultaneously: APM's table scrolled at 1920px with the hint HIDDEN — the only cue that
+   more table existed was the visual clip at the container edge — while a narrow viewport with
+   a short table would have shown a cue pointing at nothing. A breakpoint is a PROXY for
+   overflow, and its accuracy depends on the longest string a future config puts in a cell.
+   `ScrollableHint` measures scrollWidth vs clientWidth and sets the attribute; the cue now
+   tracks the condition it names, at any width. See components/landing/ScrollableHint.tsx. */
 .plp-cmptable-hint { display: none; margin: 10px 0 0; font-size: 12px; color: var(--ink-3); text-align: center; }
-@media (max-width: 720px) { .plp-cmptable-hint { display: block; } }
+.plp-cmptable-scroll[data-scrollable="true"] + .plp-cmptable-hint { display: block; }
 .plp-band-dark .plp-cmptable-scroll { border-color: color-mix(in oklab, var(--forest-ink) 25%, transparent); }
 .pil-note { border-radius: var(--radius-sm); }

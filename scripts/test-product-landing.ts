@@ -545,6 +545,20 @@ ok('AFM output applies the dark band to the judgement card',
   afmHtml.includes('class="plp-judgement plp-band-dark"'));
 ok('AFM output renders cmpTable with a featured Gradd column',
   afmHtml.includes('plp-cmptable-table') && afmHtml.includes('is-gradd'));
+// ── THE SCROLL HINT'S CSS DEPENDS ON DOM ADJACENCY, SO PIN THE ADJACENCY ──────────────────
+// The hint is no longer breakpoint-gated; it is shown by
+// `.plp-cmptable-scroll[data-scrollable="true"] + .plp-cmptable-hint`, an ADJACENT-SIBLING
+// rule. Whether it lights up at the right moment is layout behaviour that no pure fixture can
+// see (it needs a real scrollWidth) — that half is verified in a browser and recorded in the
+// commit. What IS pinnable, and what would break silently, is the adjacency: put anything
+// between the scroll container and the hint, or reorder them, and the selector stops matching
+// while both elements still render and every other assertion here still passes.
+ok('the compare-table hint is the IMMEDIATE next sibling of the scroll container (the CSS rule depends on it)',
+  afmHtml.includes('</table></div><p class="plp-cmptable-hint">') &&
+  apmHtml.includes('</table></div><p class="plp-cmptable-hint">'));
+ok('ScrollableHint contributes no markup, so it cannot move a rendered-body snapshot',
+  !afmHtml.includes('ScrollableHint') && !/data-scrollable/.test(afmHtml));
+
 ok('AFM cmpTable carries the competitor facts forward from the retired compareStrip, unchanged',
   afmHtml.includes('€59.98 for the two') && afmHtml.includes('Three days') &&
   afmHtml.includes('€99 for the whole sitting'));

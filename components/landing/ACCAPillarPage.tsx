@@ -76,6 +76,7 @@
 // about a paper they are not sitting, so the band names APM.
 import Link from 'next/link';
 import AttributionCapture from '@/components/AttributionCapture';
+import ScrollableHint from './ScrollableHint';
 
 interface PaperCard {
   code: string;
@@ -343,7 +344,12 @@ export default function ACCAPillarPage() {
                   </tbody>
                 </table>
               </div>
+              {/* Shown only when the container ACTUALLY overflows. The pillar carries its own
+                  copy of the compare table, so it carried its own copy of the breakpoint-gated
+                  hint — fixed here in the same pass as the template's, rather than left as a
+                  known instance of a defect class this repo has just finished writing down. */}
               <p className="pil-cmp-hint">Scroll to see more →</p>
+              <ScrollableHint selector=".pil-cmp-scroll" />
             </div>
           </section>
 
@@ -697,8 +703,10 @@ const CSS = `
   text-transform: uppercase; color: var(--ink-3); font-weight: 500; white-space: normal; }
 .pil-cmp-y { color: oklch(45% 0.13 145); font-weight: 600; }
 .pil-cmp-n { color: var(--ink-3); }
+/* Driven by ACTUAL overflow, not a breakpoint — see globals.css's matching note and
+   components/landing/ScrollableHint.tsx. Was display:none + a max-width:720px override. */
 .pil-cmp-hint { display: none; margin: 10px 0 0; font-size: 12px; color: var(--ink-3); text-align: center; }
-@media (max-width: 720px) { .pil-cmp-hint { display: block; } }
+.pil-cmp-scroll[data-scrollable="true"] + .pil-cmp-hint { display: block; }
 
 /* ── Band treatments. Same two the template carries (.plp-band-dark / .plp-band-sage),
    restated for this page's own class names — see the CSS note above the const. ── */

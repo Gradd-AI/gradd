@@ -21,6 +21,7 @@
 import Link from 'next/link';
 import AttributionCapture from '@/components/AttributionCapture';
 import ProductLandingChrome from './ProductLandingChrome';
+import ScrollableHint from './ScrollableHint';
 import type { ProductLandingConfig, LandingMockup, LandingBand } from './product-landing-config';
 import {
   hasSection, pricingModel, buildFaqJsonLd, POINTS_GRID_TEMPLATE, DEFAULT_FOOTER_LINKS,
@@ -374,7 +375,12 @@ export default function ProductLandingPage({ config: c }: { config: ProductLandi
                     </tbody>
                   </table>
                 </div>
+                {/* Shown only when the container ACTUALLY overflows — see ScrollableHint.
+                    It is the adjacent sibling of .plp-cmptable-scroll on purpose: the CSS
+                    rule is `[data-scrollable="true"] + .plp-cmptable-hint`, so the cue and
+                    the thing it describes cannot drift apart. */}
                 <p className="plp-cmptable-hint">Scroll to see more →</p>
+                <ScrollableHint selector=".plp-cmptable-scroll" />
               </div>
             </section>
           )}
