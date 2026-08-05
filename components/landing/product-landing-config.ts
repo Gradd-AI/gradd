@@ -814,6 +814,22 @@ export const AFM_LANDING: ProductLandingConfig = {
 // No copy rewritten beyond what a section-type move required (mock-up captions unchanged, PS
 // tile bodies unchanged, pricing/FAQ/finalCta untouched). AFM_LANDING renders byte-identically
 // — verified by scripts/test-product-landing.ts's SHA-256 pin, unaffected by any edit here.
+//
+// ⚠️⚠️ APM_LANDING IS NOT LIVE. NO ROUTE RENDERS IT. ⚠️⚠️ (2026-08-05, `feat/apm-restore-
+// preconversion`.) `/acca/apm` renders the BESPOKE `components/landing/ACCALandingPage.tsx`
+// again — Grant's ruling after comparing the two pages side by side; the reasoning is on the
+// record in `app/acca/apm/page.tsx`'s header, and the short version is that the template
+// expressed every ELEMENT of this config and composed none of them. The ONE thing that moved
+// the other way is `cmpTable`, which ACCALandingPage now carries in its own `.acca-lp` idiom
+// (COMPARE_ROWS / COMPARE_COLS in that file, content verbatim from the `cmpTable` block
+// below). Do not edit this config expecting a live page to change.
+//
+// KEPT, NOT DELETED, on purpose: `scripts/test-product-landing.ts` renders it (break mode 11
+// and the vocabulary assertions) as the template's only exercise of the full section
+// vocabulary — AFM_LANDING adopts the vocabulary but not all of it, so deleting this would
+// leave several section types with no real config behind them. It is a FIXTURE now, and it
+// is the fixture's job it is doing. Anything asserted about APM_LANDING is a claim about the
+// TEMPLATE, never a claim about what a visitor to /acca/apm sees.
 export const APM_LANDING: ProductLandingConfig = {
   paper: 'APM',
   examName: 'Advanced Performance Management',
