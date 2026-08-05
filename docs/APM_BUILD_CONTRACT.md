@@ -4282,3 +4282,77 @@ since it shipped, now has something to steer between in all seven examined cells
 batch caller still passes one LO**, so `deriveSkillTag` returns `pool[0]`. Those tags were never
 decided by anyone. Only the narrative path can author into a named cell; the next calculator batch
 will default the same way.
+
+## 05/08/2026 — THE STALE AFM PIN, DIAGNOSED, AND EVERY FIXTURE ARMED (`feat/prebuild-contract-gate`)
+
+**The sighting.** `AFM_LANDING`'s byte-identical SHA-256 pin was found already stale on unmodified
+`main` during the APM recompose, proven stale with `git stash`, and refreshed **without anyone
+diagnosing what had moved**. Grant's ruling: a pin that goes stale silently is worse than no pin —
+its whole purpose is that AFM cannot change without someone noticing, and AFM changed without
+anyone noticing.
+
+**What actually moved it — diagnosed, not inferred.** Every commit in the range was re-rendered
+through the fixture's own `bodyOf()` and the bodies diffed. The pin was captured HONESTLY at
+`9187ea3` against `b3f4b11` and held correct through the vocabulary branch and its merge
+(`2014a21`) — that branch really did leave AFM byte-identical, so the pin did its job. It broke at
+**`5afef1d`** (`refactor(links): sweep root-identity references stale since the hub`), which changed
+**one href in the SHARED nav of `ProductLandingPage.tsx`**, `/acca` → `/`, five characters to one:
+
+```
+- <a class="plp-navlink" href="/acca">All ACCA</a>
++ <a class="plp-navlink" href="/">All ACCA</a>
+```
+
+That single line is the entire diff, 19002 → 18998 bytes. The edit is CORRECT — root IS the ACCA
+pillar now — and AFM was collateral: the commit touches no config and names no paper. **APM's pin
+broke in the same commit, identically**, so `main` carried TWO failing pins. APM's was then retired
+in `5db8d72` for an unrelated and legitimate reason, which CONCEALED that it was already red.
+
+**The recorded cause was wrong and is deleted.** The fixture blamed `AFM_LANDING`'s own content
+rebuild `c228380` — which is an **ANCESTOR of `b3f4b11`**, so it predates the capture and could not
+have stranded it. Constant renamed `AFM_PRE_EXTENSION_SHA256` → **`AFM_RENDERED_BODY_SHA256`**: it
+stopped being a pre-extension equality claim the moment its value was refreshed, and the label
+saying otherwise is the reading that let it sit.
+
+**Why nothing caught it, and the finding that mattered more than the pin.** Not suppressed, not
+passing by accident — **not run**. The survey then found **44 of 44 `test:*` scripts reachable from
+NO automatic path**: no `.github/`, no `.husky/`, no non-sample `.git/hooks`, no
+`test`/`pretest`/`prebuild`/`postinstall`/`prepare` lifecycle script, no `buildCommand` override in
+`vercel.json`, no fixture spawning another, no hooks in `.claude/settings.local.json`. `next build`
+never executes anything under `scripts/`. `test:risk` (94 checks), `test:irhedge` (94),
+`test:fxhedge` (68) and the FX/IR Fix Round 1 MUST-FAIL regressions were all armed by nothing but
+someone choosing to type the command.
+
+**Fixed structurally.** `scripts/run-contracts.ts` + `"prebuild": "npm run test:contracts"`. It
+**discovers** (`scripts/test-*.ts`) rather than listing, so a new fixture is armed the moment it is
+written; keeping one out needs an `EXCLUDED` entry WITH A REASON. `prebuild` was chosen over a git
+hook (uncommitted — protects only the machine it was installed on, and this repo is cloned on two),
+a GitHub Action (catches after the push, does not prevent) and session-close discipline (a document,
+answering a mechanism failure).
+
+**Purity established by RUNNING, not reading — and the grep was wrong.** All 48 fixture files were
+run twice: a clean `git worktree` with no `.env.local` and every secret-shaped var scrubbed, then
+again with `.env.local` fully loaded (what a Vercel build looks like). **46 passed identically both
+ways; 2 failed without a database.** A grep for `process.env`/`supabase`/`Anthropic` had flagged
+**six** as impure and was **wrong on four** — mock clients, a dummy key never used for a request, and
+`test-notify`, which deletes the keys itself and asserts the unset-config branch. Trusting it would
+have left four real guards outside the gate. Both directions matter: passing WITHOUT env proves
+nothing if the fixture behaves differently WITH env, because Vercel has env.
+
+**Four fixtures were invisible, not merely unarmed** — no npm script at all, runnable only by
+knowing a file path, and missed by the first survey which counted the script list:
+`test-afm-prose`, `test-apm-framework`, `test-ib-bm-framework` (all pure, all now in the gate) and
+`test-exam-questions` (DB-gated, manual). All four now have scripts. Generalised in the doctrine:
+**when auditing coverage, enumerate the FILES — the script list cannot show you what it omits.**
+
+**Excluded and advertised:** `test-exam-questions` and `test-sit-timing`, both needing a live DB,
+named in the runner's own output on every run including every Vercel build log.
+
+**Cost:** 46 fixtures in **2.3s** wall clock at concurrency 8, against a `next build` whose own
+run-to-run variance spans 12.9s–22.2s. Inside the noise. Scoping is deliberate doctrine, not
+timidity — a gate that blocks deploys on a flaky or env-dependent fixture teaches people to bypass
+it, and a bypassed gate is the same failure with extra steps.
+
+**Banked as `P-G5`** in `GENERATOR_DOCTRINE.md`: P-G1/G2/G3 govern whether a check MEANS what it
+reports; P-G5 governs whether it ever RUNS. Failure path and auto-discovery both proven with a
+throwaway probe fixture (P-G3): 46 → 47 with no list edit, exit 1, failing output surfaced.

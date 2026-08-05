@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run test:contracts",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test:contracts": "tsx scripts/run-contracts.ts",
     "generate-seed": "tsx --env-file=.env.local scripts/generate-seed-questions.ts",
     "verify-seed": "tsx --env-file=.env.local scripts/verify-seed-questions.ts",
     "dump-seed": "tsx --env-file=.env.local scripts/dump-seed.ts",
@@ -64,7 +66,11 @@
     "audit:verb-coverage": "tsx --env-file=.env.local scripts/audit-verb-coverage.ts",
     "test:product-router": "tsx scripts/test-product-router.ts",
     "test:product-landing": "tsx scripts/test-product-landing.ts",
-    "test:entitlement-cta": "tsx scripts/test-entitlement-cta.ts"
+    "test:entitlement-cta": "tsx scripts/test-entitlement-cta.ts",
+    "test:afm-prose": "tsx scripts/test-afm-prose.ts",
+    "test:apm-framework": "tsx scripts/test-apm-framework.ts",
+    "test:ib-bm-framework": "tsx scripts/test-ib-bm-framework.ts",
+    "test:exam-questions": "tsx --env-file=.env.local scripts/test-exam-questions.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

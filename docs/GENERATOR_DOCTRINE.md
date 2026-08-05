@@ -105,6 +105,7 @@ success while measuring less than it claimed**:
 - **P-G3** — a check's *failure path* must be proven (a branch that has never run is untested).
   Corollary **P-G3(a)** — a render assertion must strip what the markup carries (inlined CSS
   matches every class name), and every negative suite needs a POSITIVE CONTROL.
+- **P-G5** — a check's *arming* must be automatic (a fixture nobody runs is not a guard).
 
 P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
 individual result. A report that satisfies one and not the others is still misleading.
@@ -201,6 +202,74 @@ free: `main().then((failures) => { process.exitCode = failures === 0 ? 0 : 1 })`
 
 Applies to every `scripts/*.ts` that constructs a Supabase client — checks, scans, patches and
 one-off authoring scripts alike.
+
+## P-G5 — A FIXTURE ARMED ONLY BY SOMEONE REMEMBERING TO RUN IT IS NOT A GUARD (ruled 2026-08-05)
+
+P-G1/G2/G3 govern whether a check *means* what it reports. P-G5 governs whether it ever *runs*.
+A check that is correct, scoped, failure-path-proven and never executed contributes nothing, and
+is worse than no check at all — because the file's existence is read, by the next person, as
+coverage.
+
+**Measured 2026-08-05, and the number is the whole ruling: 44 of 44 `test:*` scripts were
+reachable from NO automatic path.** Verified exhaustively, not sampled — no `.github/`
+workflows, no `.husky/`, no non-sample `.git/hooks`, no `test`/`pretest`/`prebuild`/
+`postinstall`/`prepare` npm lifecycle script, no `buildCommand` override in `vercel.json`
+(only crons and one `maxDuration`), no fixture spawning another, and no hooks in
+`.claude/settings.local.json`. `next build` never executes anything under `scripts/`. Every one
+of those 44 suites — including `test:risk` (94 checks), `test:irhedge` (94), `test:fxhedge` (68)
+and the MUST-FAIL formula regressions locked in after FX/IR Fix Round 1 — was armed by nothing
+but a human choosing to type the command.
+
+**What it cost, concretely.** Both landing-page SHA-256 pins (AFM and APM) broke in `5afef1d`,
+a commit that touched **neither config** — it changed one href in the SHARED nav of
+`ProductLandingPage.tsx` (`/acca` → `/`, −4 bytes on every landing body) on a branch about
+root-identity links, where running a landing fixture would have looked irrelevant. `main` then
+carried **two failing pins for a day** while every session honestly reported green, because
+green meant `next build`, and `next build` cannot see a fixture. The staleness surfaced only by
+accident, during unrelated work, and was refreshed without diagnosis — a pin that goes stale
+silently is worse than no pin, since its entire purpose is that the thing cannot change without
+someone noticing.
+
+**The rule.** A check intended as a guard must be reachable from a path that runs whether or not
+anyone remembers it. Attach it to a gate the project already obeys rather than inventing a second
+discipline: here, `prebuild` → `npm run test:contracts`, hanging off the standing rule that
+`next build` must be green before any push to `main`. Prefer a committed mechanism
+(`package.json`) over an uncommitted one (`.git/hooks`), which silently protects only the machine
+it was installed on — this repo is cloned on two.
+
+**DISCOVER, DO NOT LIST.** `scripts/run-contracts.ts` globs `scripts/test-*.ts` and runs
+everything it finds; keeping a fixture out requires an `EXCLUDED` entry **with a reason**. An
+explicit include-list would reproduce the original failure the first time someone writes a
+fixture and forgets to register it. Fail safe: new fixtures are armed by default.
+
+**SCOPE IT, AND THAT IS NOT TIMIDITY.** Only fixtures that need no DB, no env and no model call
+belong in a deploy gate. A gate that blocks deploys for reasons unrelated to the change being
+deployed teaches people to bypass it, and a bypassed gate is P-G5 again with extra steps. Two
+fixtures are excluded on this ground (`test-exam-questions`, `test-sit-timing`; both need a live
+database) and both are named in the runner's own output on every run, including every Vercel
+build log — the exclusion is advertised, never silent.
+
+**PURITY IS ESTABLISHED BY RUNNING, NOT BY READING — and this is not a nicety.** All 48 fixture
+files were run twice: once in a clean `git worktree` with no `.env.local` and every secret-shaped
+variable scrubbed from the environment, and again with `.env.local` fully loaded (what Vercel's
+build environment actually looks like). **46 passed identically in both directions; 2 failed
+without a database.** A grep for `process.env`/`supabase`/`Anthropic` had flagged **six** as
+impure and **was wrong on four of them** — they use mock clients, or set a dummy key that is
+never used to make a request, or (`test-notify`) delete the keys themselves and assert the
+unset-config branch. Trusting the grep would have left four real guards outside the gate. Both
+directions must be checked: passing *without* env is not sufficient evidence if the fixture
+behaves differently *with* env, because Vercel has env.
+
+**INVISIBLE IS WORSE THAN UNARMED.** Four fixtures had no npm script at all
+(`test-afm-prose`, `test-apm-framework`, `test-ib-bm-framework`, `test-exam-questions`) — they
+could not be run by remembering a command, only by knowing a file path. All four were given npm
+scripts; the three pure ones now run in the gate. When auditing coverage, enumerate the FILES,
+never the script list — the script list cannot show you what it omits.
+
+**Cost, measured.** The gate runs 46 fixtures in **2.3s** wall clock at concurrency 8 (slowest
+single fixture 891ms), against a `next build` whose own run-to-run variance on the same machine
+spans 12.9s–22.2s. The gate is inside the noise. Report this number whenever the gate grows: a
+slow build gets bypassed, and a bypassed gate guards nothing.
 
 ## P-M1 — A RELIABILITY FIX TO A MARKING CALL MUST BE RE-CALIBRATED, NOT MERELY RE-RUN (ruled 2026-07-29)
 
