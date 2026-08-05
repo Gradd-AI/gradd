@@ -54,12 +54,13 @@ const EXCLUDED: Record<string, string> = {
   'test-exam-questions':
     'needs a live database (createClient on NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY). '
     + 'Verified: exits 1 in a clean checkout with no .env.local. RUN AGAINST THE LIVE DB 2026-08-05 — '
-    + 'the fetch_exam_questions_tiered RPC still returns the tiers its header documents (1,1,2 / 1,2,2 / '
-    + '3,3,3), so the exclusion is purely environmental, not rot. ⚠️ BUT IT ASSERTS NOTHING: it prints and '
-    + 'exits 0 whatever comes back (an RPC error is console.error + continue, test-exam-questions.ts:71-74), '
-    + 'so that verification was a HUMAN comparing output against the header comment. Adding it to the gate '
-    + 'would need assertions first — as written it can only ever fail on a thrown fatal. '
-    + 'Run manually: npm run test:exam-questions',
+    + 'the RPC still returns the documented tiers (1,1,2 / 1,2,2 / 3,3,3), so the exclusion is '
+    + 'environmental, not rot. It ASSERTS those tiers as of 2026-08-05 (it previously printed and exited 0 '
+    + 'whatever came back, so a dead RPC read as success); --self-test drives every check through its '
+    + 'failure path with no DB, --prove-failure proves it goes red against live data. STAYS EXCLUDED '
+    + 'because the tier logic is SQL (the CASE WHEN in the 2026-06-12 migration) — there is nothing to '
+    + 'import and nothing to mock that is not a reimplementation of the thing under test. OWNER + MANUAL '
+    + 'CADENCE: Grant\'s call, open. Run manually: npm run test:exam-questions',
   'test-sit-timing':
     'needs a live database (createClient at test-sit-timing.ts:211). Verified: exits 1 in a clean '
     + 'checkout with no .env.local. Run manually: npm run test:sit-timing',
