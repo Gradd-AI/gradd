@@ -59,8 +59,10 @@ const EXCLUDED: Record<string, string> = {
     + 'whatever came back, so a dead RPC read as success); --self-test drives every check through its '
     + 'failure path with no DB, --prove-failure proves it goes red against live data. STAYS EXCLUDED '
     + 'because the tier logic is SQL (the CASE WHEN in the 2026-06-12 migration) — there is nothing to '
-    + 'import and nothing to mock that is not a reimplementation of the thing under test. OWNER + MANUAL '
-    + 'CADENCE: Grant\'s call, open. Run manually: npm run test:exam-questions',
+    + 'import and nothing to mock that is not a reimplementation of the thing under test. OWNER: Grant. '
+    + 'CADENCE (ruled 2026-08-05): on any seed-library change, AND once a quarter regardless — its '
+    + 'expected tiers are facts about the seed corpus, so drift arrives with no change to trigger on. '
+    + 'Run manually: npm run test:exam-questions',
   'test-sit-timing':
     'needs a live database (createClient at test-sit-timing.ts:211). Verified: exits 1 in a clean '
     + 'checkout with no .env.local. Run manually: npm run test:sit-timing',
