@@ -101,7 +101,46 @@ route was explicitly ruled out.**)*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
-## ⭐ 🔧 RULED + 🔴 OPEN 2026-08-05 — **A FIXTURE INSIDE THE GATE COULD NOT GO RED; OWNERSHIP RULED, THE PROMPT BUILDER STILL UNGUARDED**
+## ⭐ 🔴 OPEN 2026-08-05 — **A DEAD RPC TEACHES ON IN SILENCE: THE EMPTY-CONTEXT FALLBACK IS INDISTINGUISHABLE FROM "NO SEED QUESTIONS"**
+
+**A BEHAVIOUR DECISION, NOT A FIXTURE ONE — deliberately NOT fixed. Grant's call.**
+
+`lib/system-prompt.ts:211`, in `fetchExamQuestionsContext`:
+
+```ts
+if (error || !data || (data as ExamQuestion[]).length === 0) {
+  return { formatted: '' };
+}
+```
+
+**Three different situations collapse into one output.** An RPC that ERRORED, a null payload, and
+a lesson that genuinely has no seed questions all return `''`. `{{EXAM_QUESTIONS_CONTEXT}}` is
+then replaced with an empty string, the prompt builds normally, and **Mia teaches the session
+with no exam anchors and no indication that anything failed.** There is no throw, no log, no
+counter, and no flag on the session row.
+
+**Scope — this is the live teaching path, not a script.** Both call sites
+(`app/api/session/start/route.ts:168,199` and `app/api/session/message/route.ts:169,202`), both
+subjects (IB Economics AND IB Business). The message route calls it **every turn**, so a
+transient failure degrades individual turns invisibly.
+
+**Why it matters more than it looks:** exam-question anchoring is the mechanism behind the
+exam-prep delivery protocol (Mia is instructed to use one of the three seed questions VERBATIM).
+Losing it does not degrade the lesson visibly — it quietly removes the thing the protocol is
+built on, and the failure looks exactly like a lesson that was never seeded.
+
+**PINNED, NOT ENDORSED.** `scripts/test-exam-questions-format.ts` asserts all three arms of this
+fallback as CURRENT behaviour, with the reasoning stated in-file, so a future edit cannot make it
+worse unnoticed. **Those fixtures do not make it right and must not be read as approval** — they
+are why the behaviour can now be changed deliberately rather than accidentally.
+
+**The options, for the record, not a recommendation:** distinguish error from empty in the return
+type (`{ formatted, failed }`) and let the caller decide; or log/count the error arm and leave the
+prompt behaviour unchanged (cheapest, restores a signal without touching what students see); or
+leave it exactly as is, now that it is pinned and documented. **Changing it means changing what a
+live lesson does, so it is yours.**
+
+## ⭐ 🔧 RULED + ✅ CLOSED 2026-08-05 — **A FIXTURE INSIDE THE GATE COULD NOT GO RED; OWNERSHIP RULED, THE PROMPT BUILDER NOW GUARDED**
 
 Follow-on from the item below. `test:exam-questions` was run against the live DB for the first
 time since it gained an npm script: **the RPC is fine** — `fetch_exam_questions_tiered` still
@@ -133,7 +172,26 @@ change-driven cadence alone would never fire on it. Structure and corpus failure
 separately in the fixture for the same reason: a CORPUS failure means "confirm which changed",
 never "the RPC regressed".
 
-**🔴 STILL OPEN — THE PROMPT BUILDER ITSELF HAS NO FIXTURE, AND THAT IS THE BIGGER GAP.**
+**✅ CLOSED 2026-08-05 — THE PROMPT BUILDER NOW HAS A FIXTURE:
+`scripts/test-exam-questions-format.ts` (`npm run test:exam-questions-format`), 43 checks, PURE,
+IN THE GATE by discovery with no EXCLUDED entry — the gate went 46 → 47.** It asserts the
+silent-fallback contract (pinned, not endorsed — see the separate open item above), all five
+scheme branches including the `accepted_points`-beats-`bands` precedence and the
+`marking_rule` default, the negative (no `scheme_data` → NO marker), the request side via a
+recording stub (`HL → ['SL','HL']`, `SL → ['SL']`, `unitCode ?? null`), and the rendering rules.
+**P-G3, proved two ways, neither inverted:** mutating PRODUCTION to leak the marker onto a
+scheme-less question turned 5 negatives red at exit 1; and blinding a predicate showed main mode
+passing **green at exit 0** while `--self-test` caught it — which is precisely why the predicate
+self-test exists. Also pinned as a known quirk, deliberately unchanged: a multi-mark point renders
+the hardcoded singular, `"(2 mark) Alpha"`. **The two honest limits are written into the file's own
+header, where the next reader meets them:** `[[SCHEME_INJECTED]]` has NO consumer (4 occurrences
+repo-wide, 2 of them the emit sites, nothing parses it) so pinning it guards transcript
+inspection rather than a contract; and the `IB_BUSINESS → IB_BUSINESS_MANAGEMENT` mapping lives in
+the ROUTES, not this function, so a green run says nothing about it.
+
+<details><summary>The original gap, stated 2026-08-05 — kept verbatim</summary>
+
+**🔴 THE PROMPT BUILDER ITSELF HAS NO FIXTURE, AND THAT IS THE BIGGER GAP.**
 `fetchExamQuestionsContext` (`lib/system-prompt.ts:195`) is what actually composes
 `{{EXAM_QUESTIONS_CONTEXT}}` for Mia, at both `app/api/session/start` and
 `app/api/session/message`, for IB Economics AND IB Business. **Nothing tests it.** The test
@@ -146,6 +204,8 @@ statements, and a spike importing it with a hand-written `{ rpc }` stub rendered
 branches with **no `.env.local`, no DB and no network**. The stub also captures the RPC arguments,
 so the `HL → ['SL','HL']` level derivation and the `unitCode ?? null` threading are assertable
 too. Scoped and costed below; **not built — awaiting the go-ahead.**
+
+</details>
 
 ## ⭐ ✅ CLOSED 2026-08-05 — **THE STALE PIN, DIAGNOSED; AND EVERY FIXTURE NOW ARMED** (`feat/prebuild-contract-gate`)
 
