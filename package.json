@@ -70,7 +70,8 @@
     "test:afm-prose": "tsx scripts/test-afm-prose.ts",
     "test:apm-framework": "tsx scripts/test-apm-framework.ts",
     "test:ib-bm-framework": "tsx scripts/test-ib-bm-framework.ts",
-    "test:exam-questions": "tsx --env-file=.env.local scripts/test-exam-questions.ts"
+    "test:exam-questions": "tsx --env-file=.env.local scripts/test-exam-questions.ts",
+    "test:exam-questions-format": "tsx scripts/test-exam-questions-format.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
