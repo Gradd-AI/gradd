@@ -39,7 +39,17 @@ const CONCURRENCY = 8;
 /** tsx's real CLI entry — see the spawn() comment in runOne for why not the .bin shim. */
 const TSX_CLI = require.resolve('tsx/cli');
 
-/** Fixtures kept OUT of the build gate, each with the reason it cannot run in one. */
+/**
+ * Fixtures kept OUT of the build gate, each with the reason it cannot run in one.
+ *
+ * ⚠️ IF A FIXTURE IN THE GATE STARTS FAILING INTERMITTENTLY, ADD IT HERE TODAY (P-G5(a)).
+ * State the reason and name an owner. Do NOT work around it, do NOT comment the assertion out
+ * where it lives, and do NOT loosen the assertion to make it pass — a green gate that guards
+ * less is worse than the red one, which was at least telling the truth. Using this list is the
+ * CORRECT response, not an admission: the entry is reviewed, and the runner prints every
+ * exclusion into every build log including Vercel's. The two entries below are structural
+ * (they need a database), not flaky, which is why they carry no owner.
+ */
 const EXCLUDED: Record<string, string> = {
   'test-exam-questions':
     'needs a live database (createClient on NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY). '

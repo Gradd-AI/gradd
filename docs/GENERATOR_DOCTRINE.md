@@ -106,6 +106,8 @@ success while measuring less than it claimed**:
   Corollary **P-G3(a)** — a render assertion must strip what the markup carries (inlined CSS
   matches every class name), and every negative suite needs a POSITIVE CONTROL.
 - **P-G5** — a check's *arming* must be automatic (a fixture nobody runs is not a guard).
+  Corollary **P-G5(a)** — a flaky fixture is moved to `EXCLUDED` with a reason and an owner the
+  SAME DAY; never worked around, commented out in place, or made to pass by loosening it.
 
 P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
 individual result. A report that satisfies one and not the others is still misleading.
@@ -270,6 +272,36 @@ never the script list — the script list cannot show you what it omits.
 single fixture 891ms), against a `next build` whose own run-to-run variance on the same machine
 spans 12.9s–22.2s. The gate is inside the noise. Report this number whenever the gate grows: a
 slow build gets bypassed, and a bypassed gate guards nothing.
+
+### P-G5(a) — A FLAKY FIXTURE IS EXCLUDED THE SAME DAY, NEVER WORKED AROUND (ruled 2026-08-05, Grant)
+
+`scripts/run-contracts.ts` now sits between **every build and every deploy**. That is the point of
+it, and it is also its one real hazard: a fixture that fails intermittently stops production, and
+the predictable human response to a red gate blocking an urgent deploy is a WORKAROUND rather than
+a fix. Every workaround returns the repo to the exact state P-G5 exists to end — a check that no
+longer runs, or no longer means anything, while everyone still reads its presence as coverage.
+
+**The rule.** A fixture that fails intermittently is **moved to `EXCLUDED` with a stated reason and
+a named owner, the same day it is noticed.** Not next session, not after one more look.
+
+It is **never**:
+- worked around at the call site, or bypassed with a flag, or a build run some other way;
+- commented out in place — a commented assertion is invisible to `EXCLUDED`, prints in no build
+  log, and is precisely the silent non-coverage this doctrine was written about;
+- made to pass by LOOSENING its assertion. Widening a tolerance, deleting the failing case or
+  weakening a matcher converts a red gate into a green one that guards less, which is worse than
+  the red — the red was at least telling the truth.
+
+**Using `EXCLUDED` is the CORRECT behaviour, not an admission.** It is a visible, reviewed,
+reasoned act: the entry states why, the runner prints the exclusion in every build log including
+Vercel's, and the named owner carries the debt. An excluded fixture is a known gap being tracked.
+A worked-around fixture is an unknown gap being hidden, and there is no version of the second that
+is better than the first.
+
+**Why the same day.** A flaky gate is only tolerated for as long as it takes someone to learn a
+workaround. Once learned, the workaround outlives the flake and generalises to the next red gate —
+including the true ones. The window in which excluding is cheap is the window before anybody has
+had to ship around it.
 
 ## P-M1 — A RELIABILITY FIX TO A MARKING CALL MUST BE RE-CALIBRATED, NOT MERELY RE-RUN (ruled 2026-07-29)
 
