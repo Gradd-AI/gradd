@@ -84,6 +84,14 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 35. **Blog economics is sourced from the verified prompt guard, never from memory — and the prompt's own confusion-flags are the article backlog.** Same discipline as rules 22 and 27: a blog article's economic claims come from the relevant content guard in the live tutor system prompt (e.g. the supply-determinants list pulled verbatim from the Econ prompt's Unit 2.1-2.3 guard), not from model recall. Writing from memory shifts all error-catching onto the content gate; sourcing from the guard makes the article safe by construction. Corollary — the prompt's own "HIGHEST-CONFUSION / guard carefully / highest-error" labels ARE the keyword-research-free article priority list: those topics are simultaneously the highest-confusion concepts and the highest-volume "X vs Y" student searches. The blog H1/title, however, is keyword-locked from search-autocomplete data (see BLOG_VOICE.md non-negotiable) — voice reviews may improve any line EXCEPT the title; it must keep the exact validated search phrase. Two separate reviewers tried to "improve" the H1 out of its search cluster in one session.
 
+36. **The mobile check is THREE widths — 390px, 412px AND 430px — against the BUILT output, and it asserts a measured property rather than a look.** 390 alone was the standing convention and it is not enough: a real device sits at 412 (Samsung S23, and most large Androids) or 430 (iPhone Pro Max class), and a row that fits one can fail the next. **Where the widths came from:** the /acca/apm footer link row shipped as `display: flex` with a 24px gap and **no `flex-wrap`**, and was reported from an S23 at ~412px. Run all three; the widest is not automatically the safest, because a wider viewport can drop an element out of a media query as easily as into one.
+
+    **The harder half of this rule, and the reason it is not just "add two numbers".** That footer defect was ALSO present at 390 — measured afterwards, all six anchors were 40px tall (two lines each) at 390 *and* 412. It was never a width the check missed; it was a **defect the check could not see**, because the eye was on 390 and nothing was being asserted. **A flex row of text links does not overflow when its items stop fitting.** Flex items default to `shrink: 1` and a link's min-content width is its longest word, so the ITEMS shrink and the LABELS break mid-word instead — `scrollWidth === clientWidth` the whole time. This is the exactly-fits flex-row class already banked in `AFM_SURFACED.md`; the overflow assertion everyone reaches for is precisely the one that passes. **Assert the property that actually moves:** every link's rendered `height` equals its single-line height (a wrapped label is 2×), and no element's `right` exceeds the viewport. Add `flex-wrap` plus `white-space: nowrap` on the items so the row can only fail by getting TALLER.
+
+    **Method, because the obvious one does not work.** `resize_window` could not take the browser below desktop, so render the page inside a **same-origin iframe** set to the target width — an iframe establishes its own viewport, so media queries resolve for real. Compensate for the desktop scrollbar (`target - iframe.contentDocument.documentElement.clientWidth`) and widen the iframe by that much, or every measurement is 6–17px narrow and sits in the wrong side of a breakpoint. Point it at `npm start`, **never `next dev`** — and note `vw` units resolve against the iframe's OUTER width, scrollbar included, so a `clamp()` read back will differ slightly from a real phone with overlay scrollbars. Exclude anything inside a deliberate `overflow-x: auto` container (e.g. `.cmp-scroll`) before calling an overflow a defect.
+
+    **Same session, same page, second defect, and it generalises past mobile:** a `padding` SHORTHAND on an element that also carries a layout class silently overrides BOTH axes. `.final-cta-inner` is `class="wrap final-cta-inner"` and its `padding: clamp(…) 0` cancelled `.wrap`'s `padding: 0 var(--gut)`, so the whole closing band — heading, lead and small print — sat at L0/R0 flush to the viewport. Only the button looked wrong, because it was the only one with a background. **When an element combines a layout class with its own `padding`, use longhand or restate the class's value on the other axis.**
+
 ---
 
 ## ISSUE CATALOGUE
@@ -1300,7 +1308,17 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 **SYMPTOM:** "← Back" and "Create account" sat side-by-side; "Create account" clipped off the right edge at ~390px.
 **ROOT CAUSE:** A horizontal two-button layout with no mobile stacking rule.
 **FIX:** Stack the buttons vertically, full-width, below 480px.
-**PREVENTION:** Multi-button rows must stack vertically on mobile. Test every interactive row at 390px width.
+**PREVENTION:** Multi-button rows must stack vertically on mobile. Test every interactive row at **390px, 412px AND 430px** (rule 36) — 390 alone misses device widths, and a clipped row is only the LOUD failure of this class; see the footer-links entry below for the silent one.
+**CATEGORY:** UI/Rendering
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [ACCA] /acca/apm footer link row broke every label mid-word on mobile, and the closing band lost its gutter
+**SYMPTOM:** Reported from a Samsung S23 (~412px): the footer links (ACCA AFM · Terms · Privacy · Cookies · Blog · Contact) appeared clipped, with "ACCA AFM" on two lines. Separately, the "Start free" pill in the dark closing band spanned the full viewport with no side margin. Neither showed at desktop.
+**ROOT CAUSE:** Two independent bugs. (1) `.footer-links` was `display: flex; gap: 24px` with **no `flex-wrap`**. Six links plus five gaps exceed a 412px viewport's 372px content box, so the flex items shrank below content width and every label wrapped — the row never overflowed, so `scrollWidth === clientWidth` throughout. (2) `.final-cta-inner` is `class="wrap final-cta-inner"` and its own `padding: clamp(80px,11vw,140px) 0` shorthand overrode `.wrap`'s `padding: 0 var(--gut)`, cancelling the page gutter for the entire band.
+**FIX:** (1) `flex-wrap: wrap` + `row-gap` + `justify-content: center`, plus `white-space: nowrap` on the anchors so a link is the atomic unit and the row can only fail by getting taller; `.footer-inner` centred below 640px. (2) The shorthand now restates `var(--gut)` on the horizontal axis, and the CTA button takes a further `clamp(8px,4vw,28px)` inset on top so it reads as a button rather than a bar.
+**PREVENTION:** Rule 36 — check 390 / 412 / 430 against the built output, and assert link height (a wrapped label is 2× single-line), never overflow alone. **Measured pre-fix, the footer defect was present at 390 as well as 412** — it was not a width the old convention missed, it was a defect no assertion was looking for. Any element combining a layout class with its own `padding` must use longhand or restate the other axis.
 **CATEGORY:** UI/Rendering
 **SEVERITY:** Medium
 
@@ -1318,7 +1336,7 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 
 **ISSUE:** [IB] Session header cramped/clipped on mobile
 **SYMPTOM:** Lesson title truncated, "End session" cut off, the stacked subtitle eating vertical space.
-**ROOT CAUSE:** A desktop single-row header with too many elements for a 390px width.
+**ROOT CAUSE:** A desktop single-row header with too many elements for a 390px width (re-check such headers at 412 and 430 too — rule 36).
 **FIX:** A two-row mobile header — row 1: logo / Mia centred / End session; row 2: lesson title centred. Subject/level subtitle hidden on mobile.
 **PREVENTION:** Headers with 3+ elements need a dedicated mobile layout. Hide non-essential metadata on mobile rather than shrinking everything.
 **CATEGORY:** UI/Rendering
