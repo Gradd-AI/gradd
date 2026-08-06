@@ -1126,9 +1126,17 @@ const CSS = `
               radial-gradient(circle at 10% 90%,color-mix(in oklab,var(--forest-2) 80%,transparent),transparent 60%);
   pointer-events: none;
 }
+/* THE HORIZONTAL VALUE IS var(--gut), NOT 0 (fixed 2026-08-06).
+   This element is class="wrap final-cta-inner", and .wrap's whole job is padding: 0 var(--gut).
+   A padding SHORTHAND here overrides both axes, so the 0 silently cancelled the page gutter for
+   the entire closing band — measured pre-fix at 390px and 412px, the heading, the lead AND the
+   small print all sat at exactly L0 R0, flush to the viewport on both sides. The full-bleed CTA
+   pill was the visible symptom because it is the only one of them with a background; the centred
+   text was touching the edges just as hard and simply looked less obviously wrong.
+   Restating the gutter is the fix. Anything that sets padding here must set BOTH axes. */
 .acca-lp .final-cta-inner {
   position: relative; text-align: center;
-  padding: clamp(80px,11vw,140px) 0;
+  padding: clamp(80px,11vw,140px) var(--gut);
 }
 .acca-lp .final-cta .h-display { color: var(--forest-ink); max-width: 18ch; margin: 0 auto; }
 .acca-lp .final-cta .h-display em { color: var(--rust); }
@@ -1142,15 +1150,45 @@ const CSS = `
   text-transform: uppercase; color: color-mix(in oklab,var(--forest-ink) 55%,transparent); margin-top: 28px;
 }
 @media (max-width: 480px) {
-  .acca-lp .final-cta-inner { padding: clamp(56px,12vw,96px) 0; }
+  /* BOTH AXES — see the base rule above for why a bare 0 here is a bug, not a shorthand. */
+  .acca-lp .final-cta-inner { padding: clamp(56px,12vw,96px) var(--gut); }
   .acca-lp .final-cta .h-display { padding: 0 4px; font-size: clamp(40px,11vw,56px); }
+  /* THE CLOSING BUTTON IS NO LONGER FULL-BLEED (same S23 report).
+     Restoring the gutter above already pulls it off the edges; this is the second half of the
+     ask — "a little narrower, not full-bleed". This block reuses .hero-cta, and the hero's own
+     mobile rule stretches every .btn inside it to width:100%. In the HERO that is right: two
+     stacked buttons that must read as one block of equal weight. Here there is ONE button, and
+     a lone pill the full width of the band reads as a bar rather than a call to action.
+     An inset, NOT width:auto: shrunk to its own text ("Start free →") the pill is ~140px and
+     looks incidental against a display-scale heading. This adds to --gut rather than replacing
+     it, so the button sits inset FURTHER than the text it closes (measured L36 at 390px,
+     L37 at 412px, against L20 for the lead). */
+  .acca-lp .final-cta .hero-cta { padding: 0 clamp(8px,4vw,28px); }
 }
 
 /* ── Footer ── */
 .acca-lp .footer { padding: 56px 0 40px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); }
 .acca-lp .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-.acca-lp .footer-links { display: flex; gap: 24px; }
+/* FLEX-ROW EXACT-FIT DEFECT (fixed 2026-08-06, reported on a Samsung S23 at ~412px).
+   This row was display:flex with a 24px gap and NO flex-wrap. Six links plus five 24px gaps
+   do not fit a 412px viewport's 372px content box, and because a flex item may shrink below
+   its content width, the row did not overflow — the ITEMS shrank and every label broke
+   mid-word instead. Measured pre-fix at both 390px and 412px: all six anchors 40px tall,
+   i.e. two lines each. The parent .footer-inner already wraps, which is why the links land on
+   their own line; the links row itself never did.
+
+   THE FIX IS TWO RULES, AND BOTH ARE LOAD-BEARING. flex-wrap alone would still let a single
+   label break mid-word, so white-space:nowrap on the anchors is what makes a link the atomic
+   unit — the row can then only fail by getting TALLER, never by breaking text. The row gap
+   exists because wrapping without one puts two lines of links flush against each other. */
+.acca-lp .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
+.acca-lp .footer-links a { white-space: nowrap; }
 .acca-lp .footer-links a:hover { color: var(--ink); }
+/* Once the row has wrapped it is the full width of the footer, so the logo line above it is
+   centred too — a left-aligned line over a centred one reads as a mistake, not a layout. */
+@media (max-width: 640px) {
+  .acca-lp .footer-inner { justify-content: center; text-align: center; }
+}
 
 /* ── Tag pill ── */
 .acca-lp .tag-pill {
