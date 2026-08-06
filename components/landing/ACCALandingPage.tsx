@@ -1034,7 +1034,17 @@ const CSS = `
   position: relative; text-align: center;
   padding: clamp(80px,11vw,140px) var(--gut);
 }
-.acca-lp .final-cta .h-display { color: var(--forest-ink); max-width: 18ch; margin: 0 auto; }
+/* LINE-HEIGHT IS OVERRIDDEN HERE, AND ONLY HERE. The shared .h-display sets 0.96 — a line
+   box SMALLER than the font size, which is right for the hero, where the display type is the
+   first thing on a light page and the tightness reads as deliberate. It is wrong for this
+   heading, which is the one place a cream line sits directly above a RUST ITALIC line: the
+   descenders of line 1 (the "g" of "Preparing") land in the cap-height of line 2 ("APM"),
+   and the italic "?" rises into the line above. 1.06 is the smallest ratio that clears both
+   collisions while keeping the two lines reading as ONE phrase — 1.12 was measured too and
+   opens a gap that breaks the phrase in half. Unitless, so it holds at every width: the
+   mobile block below changes font-size only, and the crowding is worst there because the
+   heading wraps. The hero's 0.96 is untouched, and is approved as it stands. */
+.acca-lp .final-cta .h-display { color: var(--forest-ink); max-width: 18ch; margin: 0 auto; line-height: 1.06; }
 .acca-lp .final-cta .h-display em { color: var(--rust); }
 .acca-lp .final-cta .lead { color: color-mix(in oklab,var(--forest-ink) 80%,transparent); margin: 24px auto 0; }
 .acca-lp .final-cta .btn-ghost {
