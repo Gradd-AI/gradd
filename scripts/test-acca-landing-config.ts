@@ -215,6 +215,69 @@ for (const [name, html, cfg] of [['APM', apm, APM_ACCA_LANDING], ['AFM', afm, AF
     ld.mainEntity.every((q: { name: string }, i: number) => q.name === cfg.faq.items[i].q));
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// BREAK MODE 14 — THE CREAM-RUN SEAM RULES LAND SOMEWHERE THEY SHOULDN'T.
+//
+// The body closes with three consecutive CREAM sections, and a 1px --rule hairline is
+// drawn at the two seams inside that run so they stop reading as one block. The CSS
+// expresses it as "a section with no band class, immediately after a section with no
+// band class" — which means its correctness is a property of the ORDER AND CLASSES of
+// the rendered sections, not of the declaration.
+//
+// ⚠️ WHAT THIS CANNOT SEE, stated because the claim ceiling matters more than the check:
+// `bodyOf` strips <style>, so this suite CANNOT assert that a border is painted and does
+// not claim to. It re-derives the selector's MATCH SET from the class sequence. A green
+// result means "the two seams the rule targets are exactly these two, and no band section
+// is among them" — NEVER "the hairlines render". That is a CSS fact, held by screenshot.
+//
+// The break mode it does catch is the one that is invisible in a diff: someone adds a new
+// banded section kind (or reorders the body) and the rule either paints a second line onto
+// a band's own border, or stops reaching a seam that still needs one.
+// ════════════════════════════════════════════════════════════════════════════
+const BAND_CLASSES = ['one-sub', 'pricing-band', 'resit-band'];
+
+// The same predicate the CSS chain expresses, re-derived from the rendered markup.
+const seamsOf = (html: string): string[] => {
+  const sections = [...html.matchAll(/<section[^>]*class="([^"]*)"[^>]*aria-label="([^"]*)"/g)]
+    .map((m) => ({ cls: m[1].split(/\s+/), label: m[2] }));
+  const isCreamSection = (s: { cls: string[] }) =>
+    s.cls.includes('section') && !BAND_CLASSES.some((b) => s.cls.includes(b));
+  return sections
+    .filter((s, i) => i > 0 && isCreamSection(s) && isCreamSection(sections[i - 1]))
+    .map((s) => s.label);
+};
+
+// THE FAILURE PATH, RUN (P-G3). A check that only ever sees the good state proves nothing:
+// `seamsOf` returning 2 could just as easily mean the regex matched nothing interesting.
+// So feed it the break itself — the same markup with the band classes stripped, which is
+// exactly what "someone renamed or dropped a band class" looks like — and require that the
+// answer MOVES. If this assertion fails, the two checks below are decorative.
+ok('the seam check has teeth — stripping the band classes changes the answer',
+  (() => {
+    const debanded = BAND_CLASSES.reduce((h, b) => h.replaceAll(` ${b}"`, '"'), apm);
+    return seamsOf(debanded).length > seamsOf(apm).length;
+  })(),
+  `real=${seamsOf(apm).length}, debanded=${seamsOf(BAND_CLASSES.reduce((h, b) => h.replaceAll(` ${b}"`, '"'), apm)).length}`);
+
+for (const [name, html] of [['APM', apm], ['AFM', afm]] as const) {
+  const seams = seamsOf(html);
+  ok(`${name} draws a seam rule at exactly the two cream-run seams`,
+    seams.length === 2 && seams[0] === 'The timed mock' && seams[1] === 'How Gradd compares',
+    `got [${seams.join(' | ')}]`);
+  ok(`${name} draws no seam rule on a banded section, or on the one after a band`,
+    !seams.some((label) => /pricing|resit|taught, not just marked|professional-skills marking$/i.test(label)),
+    `got [${seams.join(' | ')}]`);
+}
+
+// The run is a property of the CONFIG order too: the last three body sections are the cream
+// ones. If a future edit slots a banded kind between them the seams above move, and this
+// names the reason rather than leaving a bare count mismatch.
+for (const [name, cfg] of [['APM', APM_ACCA_LANDING], ['AFM', AFM_ACCA_LANDING]] as const) {
+  ok(`${name}'s body still ends with the three-section cream run`,
+    kinds(cfg).slice(-3).join(',') === 'CARD_GRID,CARD_GRID,COMPARE_TABLE',
+    kinds(cfg).slice(-3).join(','));
+}
+
 // ── BREAK MODE 13: EXACTLY ONE <h1> ─────────────────────────────────────────
 for (const [name, html] of [['APM', apm], ['AFM', afm]] as const) {
   ok(`${name} has exactly one h1`, (html.match(/<h1/g) ?? []).length === 1);

@@ -630,6 +630,48 @@ const CSS = `
 /* ── Layout ── */
 .acca-lp .wrap { max-width: var(--max); margin: 0 auto; padding: 0 var(--gut); }
 .acca-lp .section { padding: var(--section) 0; }
+
+/* ── SEAM RULES INSIDE THE CREAM RUN ─────────────────────────────────────────
+   The body closes with THREE consecutive cream sections — what's included → the
+   timed mock → how it compares — 2,656px of unbroken cream at 1440 with no band
+   change anywhere in it, so they read as one long block (Grant, 2026-08-06; the
+   one thing flagged on an otherwise approved page).
+
+   The treatment REUSES the page's existing section-opening device — a 1px --rule
+   hairline — rather than inventing a tone or changing what a card means. No new
+   band: the approved rhythm (cream hero → sage → cream → sage → cream → forest)
+   is untouched.
+
+   ── THE :not() CHAIN IS THE SCOPING, and it is the whole rule. A hairline is drawn
+   only where a cream section FOLLOWS a cream section, which is true at exactly two
+   places on each page. It is deliberately NOT drawn:
+     · before STEPS or the first CARD_GRID — each follows a sage .one-sub band, whose
+       own border-bottom already separates it; a second line would double it
+     · before .pricing-band — it brings its own background and its own two borders
+     · before the FAQ — it follows .pricing-band, so the band edge has just fired
+     · before .judgement — on APM it follows the sage .resit-band, on AFM the hero
+   .judgement is NOT in the chain, and that is deliberate: it renders CREAM, not a
+   band. Listing it would assert otherwise and would suppress a CORRECT hairline if
+   the section order ever changed. Verified in-browser on both pages: exactly the two
+   seams match, with and without it.
+
+   Every genuine BAND class must appear in BOTH halves. A new one added later and not
+   listed here would paint a hairline directly onto that band's own border.
+   test-acca-landing-config.ts guards the PRECONDITION for that, and the limit of what
+   it can see is worth stating: its bodyOf() strips <style>, so it cannot assert a
+   painted border and does not claim to. It re-derives this selector's MATCH SET from
+   the rendered class sequence and pins it at exactly two named seams per page, which
+   is what catches a reordered body or a newly-banded section. That the matched seam
+   is then actually drawn is a CSS fact, verified by screenshot.
+
+   CSS-ONLY BY DESIGN: an <hr>, or a new class on the section, would change the
+   rendered body and break the APM SHA-256 pin. The pin's bodyOf() strips <style>, so
+   a rule expressed here passes through it untouched — pin still green after this. */
+.acca-lp .section:not(.one-sub):not(.pricing-band):not(.resit-band)
+       + .section:not(.one-sub):not(.pricing-band):not(.resit-band) {
+  border-top: 1px solid var(--rule);
+}
+
 .acca-lp .section-head { max-width: 780px; margin-bottom: 56px; }
 .acca-lp .section-head .eyebrow { display: block; margin-bottom: 18px; }
 .acca-lp .section-head .lead { margin-top: 22px; }
