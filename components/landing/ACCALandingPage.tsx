@@ -383,6 +383,78 @@ export default function ACCALandingPage() {
           </div>
         </section>
 
+        {/* ── THE TIMED MOCK ──
+            The biggest thing this page did not say. Cream band by instruction — the page's
+            dark/sage rhythm is already right and this adds no beat to it. Card shell is the
+            page's standard `.who-card`, unchanged; the only new CSS is `.mock-quote` (a
+            verbatim line of product output) and `.mock-limit` (the honest caveat).
+
+            EVERY FIGURE BELOW IS SOURCED. Do not adjust one without re-reading its source:
+            · "about a minute" — measured 58s and 60s across two end-to-end runs
+              (docs/APM_MARKETING_POSITIONING.md, 31/07 walk).
+            · per-requirement / per-case subtotal / paper total — lib/acca/debrief.ts,
+              `cases[].technical_awarded` + `totals` (technical AND professional).
+            · unlimited attempts — app/api/acca/sit/route.ts:307 (only a COMPLETED attempt
+              starts a fresh one, no count limit) + app/api/acca/case/turn/route.ts:247
+              (immutability is scoped `.eq('attempt_id', …)`, so a re-sit records afresh).
+            · €59.98 / three days — market fact, UNATTRIBUTED by instruction. Recorded at
+              docs/APM_MARKETING_POSITIONING.md:82 (two mocks at €29.99 each, PDF,
+              tutor-marked, three-day turnaround). NOT in APM_COMPETITIVE_PRICING.md.
+            · the marker figures — docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md:27-30
+              (candidate 95.00 / €132,000 / 4.95%) against
+              docs/reviews/AFM_MOCK_PAPER1_REVIEW_PACK.md:528-529 (code-owned 94.85, 96.65,
+              €168,000, 4.80%).
+            · the pacing line — VERBATIM from the 31/07 walk
+              (docs/APM_MARKETING_POSITIONING.md:92-94), rendered in the form
+              `composeCollapse` actually emits (lib/acca/debrief.ts:228). ⚠ 12 MINUTES, NOT 7.
+              "7 minutes across two requirements" is an earlier DRAFT the source doc
+              explicitly corrects at line 96: "Use the real numbers or none."
+
+            ⚠ NO MARKING-IS-COMPUTED CLAIM ANYWHERE IN HERE. Marking is answer-locked and
+            model-graded — code owns band→marks, the MODEL owns the band, and the feedback
+            prose is model-authored. Saying "computed", "deterministic" or "code-verified" of
+            marking is the exact overclaim already corrected in CLAUDE.md.
+
+            ⚠ "syllabus area", NOT "learning outcome". `DebriefRequirementLine.practise_area`
+            carries the 2-CHARACTER sub-area (E3a → E3), never the full LO — see the field
+            comment at lib/acca/debrief.ts:111-126. ── */}
+        <section className="section" aria-label="The timed mock">
+          <div className="wrap">
+            <div className="section-head">
+              <span className="eyebrow">The timed mock</span>
+              <h2 className="h-section">Sit the paper. Find out <em className="italic">where the marks — and the minutes — went.</em></h2>
+              <p className="lead">
+                Three cases, 3h 15m, one clock, marked as one paper. What comes back is not a score.
+              </p>
+            </div>
+            <div className="who-grid">
+              <div className="who-card">
+                <span className="who-tag">Turnaround</span>
+                <h3>Marked in about a minute.</h3>
+                <p>Every requirement, technical and professional skills, per-case subtotals, one paper total. Unlimited attempts. Two tutor-marked mocks elsewhere cost €59.98 and come back three days later, on a PDF.</p>
+              </div>
+              <div className="who-card">
+                <span className="who-tag">Diagnosis</span>
+                <h3>The figure, and the step.</h3>
+                <p>The marker names where your working diverged — not just that it did.</p>
+                <p className="mock-quote">&ldquo;You used 95.00 and 96.80 rather than 94.85 and 96.65, so your gain was €132,000 not €168,000, so your rate was 4.95% not 4.80%.&rdquo;</p>
+              </div>
+              <div className="who-card">
+                <span className="who-tag">Pacing</span>
+                <h3>Where the minutes went.</h3>
+                <p>Requirement by requirement, against the marks available.</p>
+                <p className="mock-quote">&ldquo;End-of-paper collapse. Between submitting Q2 (ii) and finishing, 12 minutes elapsed across Q3 (i)–Q3 (ii), against a combined budget of 39 minutes.&rdquo;</p>
+                <p className="mock-limit">Measured submission to submission — not time on task.</p>
+              </div>
+              <div className="who-card">
+                <span className="who-tag">Routing</span>
+                <h3>It routes you back.</h3>
+                <p>The debrief points at drills on the syllabus area you lost marks on. Weak or competent bands only — a requirement that scored gets nothing.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ── E. COMPARISON TABLE ──
             Was three flat `.compare-strip` cards — one paragraph each, no shared rows, so
             nothing lined up and the reader had to hold three sentences in their head to
@@ -957,6 +1029,28 @@ const CSS = `
 .acca-lp .who-card h3 { font-family: var(--serif); font-size: 24px; letter-spacing: -0.015em; line-height: 1.15; }
 .acca-lp .who-card p { font-size: 14px; color: var(--ink-2); line-height: 1.5; }
 
+/* ── The timed mock ──
+   No new card shell: the section reuses .who-grid / .who-card exactly. These two rules are
+   the whole addition.
+
+   .mock-quote is a VERBATIM line of the product's own output, so it is set apart from the
+   prose around it rather than blended into it — the rust rule is the same featured accent
+   the Gradd column and .price-card.featured use, and the italic matches .mark-evidence,
+   which is the page's existing treatment for a quoted line the product produced.
+   text-wrap: pretty matters here specifically: both quotes are dense with figures, and at
+   390px a greedy break leaves "4.80%." alone on the last line.
+
+   .mock-limit is the honest boundary on the pacing claim and it is deliberately NOT hidden
+   in small print — 12px, but full --ink-2 contrast, sitting directly under the claim it
+   qualifies rather than at the foot of the section where it would read as a disclaimer. */
+.acca-lp .mock-quote {
+  font-size: 13px; font-style: italic; line-height: 1.55;
+  color: var(--ink-2); text-wrap: pretty;
+  border-left: 2px solid var(--rust); padding-left: 14px;
+  margin-top: 2px;
+}
+.acca-lp .mock-limit { font-size: 12px; color: var(--ink-2); line-height: 1.45; }
+
 /* ── Pricing band (reused for waitlist) ── */
 .acca-lp .pricing-band {
   background: var(--paper-2); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule);
@@ -1032,9 +1126,17 @@ const CSS = `
               radial-gradient(circle at 10% 90%,color-mix(in oklab,var(--forest-2) 80%,transparent),transparent 60%);
   pointer-events: none;
 }
+/* THE HORIZONTAL VALUE IS var(--gut), NOT 0 (fixed 2026-08-06).
+   This element is class="wrap final-cta-inner", and .wrap's whole job is padding: 0 var(--gut).
+   A padding SHORTHAND here overrides both axes, so the 0 silently cancelled the page gutter for
+   the entire closing band — measured pre-fix at 390px and 412px, the heading, the lead AND the
+   small print all sat at exactly L0 R0, flush to the viewport on both sides. The full-bleed CTA
+   pill was the visible symptom because it is the only one of them with a background; the centred
+   text was touching the edges just as hard and simply looked less obviously wrong.
+   Restating the gutter is the fix. Anything that sets padding here must set BOTH axes. */
 .acca-lp .final-cta-inner {
   position: relative; text-align: center;
-  padding: clamp(80px,11vw,140px) 0;
+  padding: clamp(80px,11vw,140px) var(--gut);
 }
 .acca-lp .final-cta .h-display { color: var(--forest-ink); max-width: 18ch; margin: 0 auto; }
 .acca-lp .final-cta .h-display em { color: var(--rust); }
@@ -1048,15 +1150,45 @@ const CSS = `
   text-transform: uppercase; color: color-mix(in oklab,var(--forest-ink) 55%,transparent); margin-top: 28px;
 }
 @media (max-width: 480px) {
-  .acca-lp .final-cta-inner { padding: clamp(56px,12vw,96px) 0; }
+  /* BOTH AXES — see the base rule above for why a bare 0 here is a bug, not a shorthand. */
+  .acca-lp .final-cta-inner { padding: clamp(56px,12vw,96px) var(--gut); }
   .acca-lp .final-cta .h-display { padding: 0 4px; font-size: clamp(40px,11vw,56px); }
+  /* THE CLOSING BUTTON IS NO LONGER FULL-BLEED (same S23 report).
+     Restoring the gutter above already pulls it off the edges; this is the second half of the
+     ask — "a little narrower, not full-bleed". This block reuses .hero-cta, and the hero's own
+     mobile rule stretches every .btn inside it to width:100%. In the HERO that is right: two
+     stacked buttons that must read as one block of equal weight. Here there is ONE button, and
+     a lone pill the full width of the band reads as a bar rather than a call to action.
+     An inset, NOT width:auto: shrunk to its own text ("Start free →") the pill is ~140px and
+     looks incidental against a display-scale heading. This adds to --gut rather than replacing
+     it, so the button sits inset FURTHER than the text it closes (measured L36 at 390px,
+     L37 at 412px, against L20 for the lead). */
+  .acca-lp .final-cta .hero-cta { padding: 0 clamp(8px,4vw,28px); }
 }
 
 /* ── Footer ── */
 .acca-lp .footer { padding: 56px 0 40px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--ink-3); }
 .acca-lp .footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-.acca-lp .footer-links { display: flex; gap: 24px; }
+/* FLEX-ROW EXACT-FIT DEFECT (fixed 2026-08-06, reported on a Samsung S23 at ~412px).
+   This row was display:flex with a 24px gap and NO flex-wrap. Six links plus five 24px gaps
+   do not fit a 412px viewport's 372px content box, and because a flex item may shrink below
+   its content width, the row did not overflow — the ITEMS shrank and every label broke
+   mid-word instead. Measured pre-fix at both 390px and 412px: all six anchors 40px tall,
+   i.e. two lines each. The parent .footer-inner already wraps, which is why the links land on
+   their own line; the links row itself never did.
+
+   THE FIX IS TWO RULES, AND BOTH ARE LOAD-BEARING. flex-wrap alone would still let a single
+   label break mid-word, so white-space:nowrap on the anchors is what makes a link the atomic
+   unit — the row can then only fail by getting TALLER, never by breaking text. The row gap
+   exists because wrapping without one puts two lines of links flush against each other. */
+.acca-lp .footer-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 24px; }
+.acca-lp .footer-links a { white-space: nowrap; }
 .acca-lp .footer-links a:hover { color: var(--ink); }
+/* Once the row has wrapped it is the full width of the footer, so the logo line above it is
+   centred too — a left-aligned line over a centred one reads as a mistake, not a layout. */
+@media (max-width: 640px) {
+  .acca-lp .footer-inner { justify-content: center; text-align: center; }
+}
 
 /* ── Tag pill ── */
 .acca-lp .tag-pill {
