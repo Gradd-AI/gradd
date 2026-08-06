@@ -1,475 +1,235 @@
 'use client';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACCA APM Landing Page — flagship root marketing page (gradd.ai).
-// Live launch page: free-tier + paid pricing, real CTAs into /acca, examiner-thinking
-// proof (judgement paper, the withhold, professional-skills marking), FAQ + FAQPage
-// JSON-LD. Exactly one <h1> (hero); every section is a labelled <section> with an <h2>.
-// Design system: copied from IBLandingPage.tsx (Fraunces/Geist/Geist Mono, oklch).
-// Scope renamed .ib-lp → .acca-lp to avoid style collisions.
+// ACCA SPOKE LANDING PAGE — the flagship marketing page for a Strategic Professional
+// paper on gradd.ai. Renders /acca/apm and /acca/afm.
 //
-// ── RESTORED 2026-08-05 (`feat/apm-restore-preconversion`) ───────────────────
-// This file was DELETED in `59034bf` when /acca/apm was converted to the generalised
-// `ProductLandingPage` template. It is restored here byte-for-byte from `59034bf^` by
-// Grant's ruling, after both pages were rendered side by side — the template expressed
-// every ELEMENT of this page (the `compare:apm-landing` ruler probed 20 of them and lost
-// none) and composed none of them. See `app/acca/apm/page.tsx` for the ruling in full.
+// Free-tier + paid pricing, real CTAs into /acca, the proof row, professional-skills
+// marking, FAQ + FAQPage JSON-LD. Exactly one <h1> (hero); every section is a labelled
+// <section> with an <h2>. Design system: Fraunces/Geist/Geist Mono, oklch, scoped .acca-lp.
 //
-// ONE change was made on restore, and it is the only intentional difference from the
-// pre-conversion page: section E's three flat `.compare-strip` cards are now a real
-// comparison TABLE (COMPARE_ROWS / COMPARE_COLS below), ported back from the template's
-// `APM_LANDING.cmpTable` and re-expressed in `.acca-lp`'s own idiom. The template's
-// big-number band was deliberately NOT ported — separate ruling, still open.
+// ── CONFIG-DRIVEN, 2026-08-06 (`feat/afm-acca-landing-config`) ───────────────
+// THIS COMPONENT OWNS STRUCTURE AND CSS. `acca-landing-config.ts` owns what the page SAYS,
+// and nothing else. That split is deliberate and it is the opposite of the generalised
+// template (`ProductLandingPage`) this page was once converted to and reverted from: that
+// template let a config choose which section TYPES appeared, with no opinion about order,
+// band rhythm or where an artefact went — so it could express every element of this page and
+// compose none of them, and the result was rejected on sight (`app/acca/apm/page.tsx` carries
+// the ruling in full).
+//
+// Here, `sections[]` is an ORDERED array of six known kinds, each with ONE renderer below.
+// A config cannot reorder the page, cannot invent a section type, and cannot move the sage or
+// forest band — the rhythm (cream hero → sage approach → cream loop → sage professional
+// skills → cream what's-included/mock/compare → cream pricing → forest close) is in the
+// renderers, not in the data.
+//
+// ONE section is optional: `resitBand`. Omitting it renders NOTHING — not an empty band, not
+// a heading over blank space. APM sets it (a live free resit diagnostic); AFM omits it.
+//
+// APM's rendered body is BYTE-IDENTICAL across this extraction — proven with a SHA-256 over
+// the built output before and after, not by reading. If you change a renderer below, re-prove
+// it the same way.
 // ─────────────────────────────────────────────────────────────────────────────
 
-import { useState, useEffect } from 'react';
+import { Fragment, useState, useEffect } from 'react';
 import Link from 'next/link';
 import AttributionCapture from '@/components/AttributionCapture';
 import ScrollableHint from '@/components/landing/ScrollableHint';
+import type {
+  AccaLandingConfig,
+  AccaSection,
+  Cta,
+  Eyebrow,
+  Heading,
+  RichText,
+} from '@/components/landing/acca-landing-config';
 
-// Real entry points into the live APM product. The auth wall carries the
-// post-login destination: free lands in the drill dashboard, paid on subscribe.
-const AUTH_FREE = '/acca/auth?next=/acca';
-const AUTH_SUBSCRIBE = '/acca/auth?next=/acca/subscribe';
+// ── Shared bits ─────────────────────────────────────────────────────────────
 
-// Single source of truth for the FAQ — the visible list and the FAQPage JSON-LD are
-// both rendered from this, so the structured data mirrors the on-page copy exactly.
-const FAQS: { q: string; a: string }[] = [
-  { q: 'Is this based on the current APM syllabus?', a: 'Yes — S26–J27, verified against the official guide.' },
-  { q: 'How is this different from a general AI chatbot?', a: 'Structured drills and cases built from the syllabus, examiner failure modes, sealed model answers, and professional-skills marking against ACCA’s published professional-skills descriptors — not a chat window.' },
-  { q: 'Can I use it if I failed before?', a: 'Yes — built for exactly that: understanding why your answers didn’t score.' },
-  { q: 'Does it give model answers?', a: 'Yes — after you’ve attempted, been coached, and repaired your answer.' },
-  { q: 'What’s free?', a: 'All 91 drills, 3 full teach-throughs, no card.' },
-  { q: 'What do I pay for?', a: 'Unlimited teach-throughs, full exam cases, professional-skills marking, the timed mock.' },
-];
+/** Inline segments → text / <em> / <strong>. Strings in an array need no key. */
+function rich(parts: RichText) {
+  return parts.map((p, i) =>
+    typeof p === 'string' ? p : 'em' in p ? <em key={i}>{p.em}</em> : <strong key={i}>{p.strong}</strong>,
+  );
+}
 
-// ── THE COMPARISON TABLE ────────────────────────────────────────────────────
-// Ported from the template's `APM_LANDING.cmpTable` (components/landing/
-// product-landing-config.ts) — the ONE thing this page took from the template conversion
-// before that conversion was reverted. Content is carried across VERBATIM: every fact here
-// either came from the three-card `.compare-strip` this replaces, or from copy already live
-// elsewhere on this page (the mock's "3h 15m … marked as one paper", the €99 sitting price).
-// No competitor PRICE is invented — "varies by provider" and "priced by the hour" are the
-// honest shape of the offer, which is the discipline the old strip already kept.
-//
-// `values` is POSITIONAL against COMPARE_ROWS: `values[j]` is that column's answer for
-// `COMPARE_ROWS[j]`. A boolean renders as a glyph; a string renders as itself.
-const COMPARE_ROWS: string[] = [
-  'Teaches the thinking, not just tests it',
-  'Marks professional skills against ACCA’s descriptors',
-  'Marking turnaround',
-  'Full timed mock exam',
-  'Availability',
-  'Cost for the sitting',
-];
-
-const COMPARE_COLS: { label: string; values: (string | boolean)[]; gradd?: boolean }[] = [
-  {
-    label: 'Question banks',
-    values: [false, false, 'You mark yourself', false, 'Whenever you access it', 'One-off purchase, varies by provider'],
-  },
-  {
-    label: 'Human tuition',
-    values: ['One hour at a time', 'Depends on tutor', 'Whenever you can book a session', false, 'Scheduled sessions only', 'Priced by the hour — adds up fast'],
-  },
-  {
-    label: 'Gradd',
-    values: [true, true, 'Same session, unlimited attempts', '3h 15m, marked as one paper', '24/7', '€99 for the whole sitting'],
-    gradd: true,
-  },
-];
-
-const FAQ_JSONLD = {
-  '@context': 'https://schema.org',
-  '@type': 'FAQPage',
-  mainEntity: FAQS.map((f) => ({
-    '@type': 'Question',
-    name: f.q,
-    acceptedAnswer: { '@type': 'Answer', text: f.a },
-  })),
-};
-
-export default function ACCALandingPage() {
-  const [scrolled, setScrolled] = useState(false);
-  const [showTop, setShowTop] = useState(false);
-
-  useEffect(() => {
-    const onScroll = () => {
-      setScrolled(window.scrollY > 40);
-      setShowTop(window.scrollY > 600);
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) window.scrollTo({ top: el.offsetTop - 68, behavior: 'smooth' });
-  };
-
+/** The page's one heading idiom: plain lead-in, then the rust italic tail.
+ *
+ *  The space between them is emitted INSIDE the first text node (`${text} `) rather than as
+ *  its own child. Two adjacent text children would be separated by an HTML comment in the
+ *  server render, which is a real difference in the output even though it looks like none. */
+function heading(h: Heading) {
+  if (!h.em) return h.text;
   return (
     <>
-      {/* First-touch utm_* / fbclid → cookie → persisted to the profile at signup. */}
-      <AttributionCapture />
-      <style>{CSS}</style>
+      {`${h.text} `}
+      <em className="italic">{h.em}</em>
+    </>
+  );
+}
 
-      <div className="acca-lp">
-        <div className="bg-grain" aria-hidden="true" />
+/** A plain eyebrow, or two labels split by the rust dot. */
+function eyebrow(e: Eyebrow) {
+  if (typeof e === 'string') return e;
+  return (
+    <>
+      {e.a}
+      <span className="dot" />
+      {e.b}
+    </>
+  );
+}
 
-        {/* ── NAV ── */}
-        <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
-          <div className="wrap nav-inner">
-            <a href="#" className="nav-logo" aria-label="Gradd.ai home">
-              <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
-            </a>
-            <nav className="nav-links" aria-label="Primary">
-              <Link href="/acca/resit" className="nav-link-btn">Resit diagnostic</Link>
-              <Link href="/acca/afm" className="nav-link-btn">ACCA AFM</Link>
-              <button className="nav-link-btn" onClick={() => scrollTo('taught')}>The approach</button>
-              <button className="nav-link-btn" onClick={() => scrollTo('features')}>What&apos;s included</button>
-              <button className="nav-link-btn" onClick={() => scrollTo('pricing')}>Pricing</button>
-            </nav>
-            <div className="nav-cta">
-              {/* Quiet text link — magic-link flow handles returning users and new
-                  signups at the same destination, so Sign in shares AUTH_FREE. Lives
-                  in nav-cta (always visible) so it persists in the collapsed nav. */}
-              <Link href="/blog?subject=apm" className="nav-signin">Blog</Link>
-              <Link href={AUTH_FREE} className="nav-signin">Sign in</Link>
-              <Link href={AUTH_FREE} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
-            </div>
-          </div>
-        </header>
+/** Every button on the page is `label →`. The space belongs to the label's text node — see
+ *  `heading` above for why it is not emitted as its own child. */
+function btn(c: Cta, key?: string) {
+  return (
+    <Link key={key} href={c.href} className={`btn btn-${c.variant}`}>{`${c.label} `}<span className="arrow">→</span></Link>
+  );
+}
 
-        {/* ── HERO ── */}
-        <section className="hero" aria-label="Introduction">
-          <div className="wrap hero-grid">
-            <div className="hero-copy">
-              <div className="hero-eyebrow eyebrow">
-                <span>ACCA APM</span><span className="dot" /><span>Advanced Performance Management</span>
-              </div>
-              <h1 className="hero-h1 h-display">
-                Failed APM? <span className="em underline">Fix the reason you lost marks.</span>
-              </h1>
-              <p className="hero-sub">
-                APM is not passed by memorising models. It is passed by applying them to the scenario, evaluating properly, showing scepticism and writing commercially. Gradd diagnoses why your answer lost marks, then Ezra coaches you until your answer is strong enough to score.
-              </p>
-              <p className="hero-note">Built on the live S26–J27 syllabus. Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.</p>
-              <div className="hero-cta">
-                <Link href="/acca/resit" className="btn btn-rust">Get my free resit diagnosis <span className="arrow">→</span></Link>
-                <Link href={AUTH_FREE} className="btn btn-ghost">Start free — every drill, no card <span className="arrow">→</span></Link>
-              </div>
-              <p className="hero-microcopy">Resit diagnosis: free, 3 minutes, no sign-up. Drills: free to start with a quick email sign-in.</p>
-              <div className="hero-meta">
-                <span>Every drill free</span>
-                <span className="dot" />
-                <span>No card to start</span>
-                <span className="dot" />
-                <span>Upgrade for cases, marking and mock</span>
-              </div>
-            </div>
+/** The eyebrow / heading / optional lead block every section opens with. */
+function sectionHead(s: { eyebrow?: Eyebrow; heading: Heading; lead?: string }) {
+  return (
+    <div className="section-head">
+      {s.eyebrow !== undefined && <span className="eyebrow">{eyebrow(s.eyebrow)}</span>}
+      <h2 className="h-section">{heading(s.heading)}</h2>
+      {s.lead !== undefined && <p className="lead">{s.lead}</p>}
+    </div>
+  );
+}
 
-            <div className="hero-visual">
-              <div className="chat" role="img" aria-label="Ezra withholding a model answer while coaching an APM requirement">
-                <div className="chat-hd">
-                  <div className="chat-logo">
-                    <img src="/gradd-ai-logo.png" alt="" style={{height:16,width:'auto',display:'block'}} />
-                  </div>
-                  <div className="chat-name-pill"><span className="live" />Ezra</div>
-                  <div className="chat-course">
-                    <div className="em">Evaluating the board report</div>
-                    <div>ACCA APM · Requirement (b)</div>
-                  </div>
-                </div>
-                <div className="chat-body">
-                  <div className="chat-row from-user">
-                    <div className="user-bubble">Retention fell from 82% to 74% and revenue per member is down 4%, so the company is underperforming and the board should act on retention.</div>
-                    <div className="user-av">S</div>
-                  </div>
-                  <div className="chat-row">
-                    <div className="ezra-av">E</div>
-                    <div className="ezra-msg">
-                      <span className="hint-badge">Hint</span>
-                      <p>You&apos;ve analysed the company — but the requirement asks you to evaluate the <em>report</em>. Does the board&apos;s pack let them <strong>see</strong> any of what you just worked out? That&apos;s where the marks are.</p>
-                    </div>
-                  </div>
-                  <div className="chat-row from-user">
-                    <div className="user-bubble">…so I anchor every point to the report against a criterion, not the performance itself?</div>
-                    <div className="user-av">S</div>
-                  </div>
-                  <div className="chat-row">
-                    <div className="ezra-av">E</div>
-                    <div className="ezra-msg">
-                      <p>Exactly. Fluent answers to the wrong question are the biggest mark-loser on this requirement type. Go again.</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="chat-input">
-                  <div className="ph">Reply to Ezra…</div>
-                  <div className="send">↵</div>
-                </div>
-                <div className="chat-foot">The answer stays sealed · Ezra online 24/7</div>
-              </div>
-              <p className="visual-caption">The answer stays sealed. Ezra teaches until your answer is strong enough to score.</p>
-            </div>
-          </div>
-        </section>
+// ── Section renderers — one per kind, structure and classes owned here ───────
 
-        {/* ── FREE RESIT DIAGNOSTIC (directly after hero) ── */}
-        <section className="section resit-band" aria-label="Free resit diagnostic">
+function renderSection(s: AccaSection, key: number) {
+  switch (s.kind) {
+    // ── PROOF_ROW ──
+    // Three columns of PROSE, arrow-linked, reading left to right as ONE thing changing:
+    // an answer, what is wrong with it, what it becomes. NOT a compare row — the middle
+    // column diagnoses the first and the third is the payoff of the second, so the columns
+    // are not interchangeable the way a comparison's are.
+    case 'PROOF_ROW':
+      return (
+        <section key={key} className="section judgement" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
-            <div className="resit-band-inner">
-              <span className="eyebrow">Free resit diagnostic</span>
-              <h2 className="h-section">Failed APM? Find out exactly why — <em className="italic">in 3 minutes.</em></h2>
-              <p className="lead">
-                Your result slip tells you the score. It doesn&apos;t tell you the habit that lost the marks. Answer three quick steps — your score, how each syllabus area went, and six honest questions about how you write — and get a personalised resit plan: the areas to drill, the habits to fix first, and where to start. No sign-up needed to see your plan.
-              </p>
-              <div className="resit-band-cta">
-                <Link href="/acca/resit" className="btn btn-rust">Get my free resit plan <span className="arrow">→</span></Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── A. JUDGEMENT PAPER (before / after) ── */}
-        <section className="section judgement" aria-label="Why APM is a judgement paper">
-          <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">The real test</span>
-              <h2 className="h-section">APM is not a knowledge test. It is a <em className="italic">judgement paper.</em></h2>
-              <p className="lead">APM is one of ACCA&apos;s toughest papers, with pass rates consistently around 40% — among the lowest in the ACCA qualification. The candidates who fail rarely lack knowledge — they answer without applying, evaluating or judging.</p>
-            </div>
+            {sectionHead(s)}
             <div className="ja-card">
               <div className="ja-col ja-weak">
-                <div className="ja-tag">Weak answer</div>
-                <p>Target costing helps a business reduce costs by setting a target cost based on the market price.</p>
+                <div className="ja-tag">{s.weak.label}</div>
+                <p>{s.weak.body}</p>
               </div>
               <div className="ja-chip" aria-hidden="true">↓</div>
               <div className="ja-diag">
-                <div className="ja-tag ja-tag-diag">Diagnosis</div>
-                <p>Knows the model. No scenario application, no limitation, no judgement.</p>
+                <div className="ja-tag ja-tag-diag">{s.diagnosis.label}</div>
+                <p>{s.diagnosis.body}</p>
               </div>
               <div className="ja-chip" aria-hidden="true">↓</div>
               <div className="ja-col ja-coached">
-                <div className="ja-tag ja-tag-coached">Coached answer</div>
-                <p>Target costing fits here because the market price is fixed by customer expectations, so the product must be designed backwards from an acceptable margin. However, if the cost gap cannot close without cutting quality, the strategy risks the premium positioning — so the board should set a floor on specification before committing.</p>
+                <div className="ja-tag ja-tag-coached">{s.coached.label}</div>
+                <p>{s.coached.body}</p>
               </div>
             </div>
-            <p className="ja-caption">The difference is not knowledge. It is application, limitation, judgement.</p>
+            <p className="ja-caption">{s.caption}</p>
           </div>
         </section>
+      );
 
-        {/* ── TAUGHT, NOT JUST MARKED ── */}
-        <section className="section one-sub" id="taught" aria-label="Taught, not just marked">
+    // ── CARD_TRIO ── sage band, three numbered cards.
+    case 'CARD_TRIO':
+      return (
+        <section key={key} className="section one-sub" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">The approach<span className="dot" />Taught, not just marked</span>
-              <h2 className="h-section">Taught, not just <em className="italic">marked.</em></h2>
-              <p className="lead">
-                The paper punishes describing instead of applying. Gradd coaches the thinking the examiner actually rewards — and withholds the answer until you&apos;ve done the work.
-              </p>
-            </div>
+            {sectionHead(s)}
             <div className="one-sub-grid">
-              <div className="os-card">
-                <div className="num">01 / Diagnosis</div>
-                <h3>Finds the gap in your thinking.</h3>
-                <p>Ezra doesn&apos;t hand you the model answer — he diagnoses exactly where your attempt stalled and teaches from there. The answer stays sealed until you&apos;ve earned it.</p>
-              </div>
-              <div className="os-card">
-                <div className="num">02 / Marking</div>
-                <h3>Marks like the examiner.</h3>
-                <p>Every case is marked against ACCA&apos;s published professional-skills descriptors — communication, analysis &amp; evaluation, scepticism, commercial acumen. The 20% of the paper most candidates never practise.</p>
-              </div>
-              <div className="os-card">
-                <div className="num">03 / Failure modes</div>
-                <h3>Trained on how candidates actually fail.</h3>
-                <p>Answering the wrong question, describing instead of applying, listing instead of developing — the exact failure modes the examiner&apos;s reports cite, coached out of you.</p>
-              </div>
+              {s.cards.map((c) => (
+                <div className="os-card" key={c.num}>
+                  <div className="num">{c.num}</div>
+                  <h3>{c.title}</h3>
+                  <p>{c.body}</p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
+      );
 
-        {/* ── C. HOW A TEACH-THROUGH WORKS ── */}
-        <section className="section" aria-label="How a teach-through works">
+    // ── STEPS ── an ordered list; the component numbers them, so a config never writes "1."
+    case 'STEPS':
+      return (
+        <section key={key} className="section" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">The loop</span>
-              <h2 className="h-section">How a teach-through <em className="italic">works.</em></h2>
-            </div>
+            {sectionHead(s)}
             <ol className="tt-steps">
-              <li className="tt-step"><span className="tt-n">1</span><span className="tt-t">Attempt the drill.</span></li>
-              <li className="tt-step"><span className="tt-n">2</span><span className="tt-t">Ezra marks it against the requirement.</span></li>
-              <li className="tt-step"><span className="tt-n">3</span><span className="tt-t">He names the failure mode.</span></li>
-              <li className="tt-step"><span className="tt-n">4</span><span className="tt-t">You repair the answer.</span></li>
-              <li className="tt-step"><span className="tt-n">5</span><span className="tt-t">Only then is the model answer revealed.</span></li>
+              {s.steps.map((t, i) => (
+                <li className="tt-step" key={t}><span className="tt-n">{i + 1}</span><span className="tt-t">{t}</span></li>
+              ))}
             </ol>
           </div>
         </section>
+      );
 
-        {/* ── D. THE 20% MOST NEVER PRACTISE ── */}
-        <section className="section one-sub" aria-label="Professional-skills marking">
+    // ── SKILLS_PANEL ── sage band, four tiles beside a marking panel.
+    case 'SKILLS_PANEL':
+      return (
+        <section key={key} className="section one-sub" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">Professional skills</span>
-              <h2 className="h-section">The 20% most candidates <em className="italic">never practise.</em></h2>
-              <p className="lead">A fifth of every APM answer is the professional skills. Gradd marks them against ACCA&apos;s published professional-skills descriptors — and names the evidence.</p>
-            </div>
+            {sectionHead(s)}
             <div className="d-grid">
               <div className="skills-grid">
-                <div className="skill-tile">
-                  <h3>Communication</h3>
-                  <p>Structure, clarity, report style.</p>
-                </div>
-                <div className="skill-tile">
-                  <h3>Analysis &amp; evaluation</h3>
-                  <p>Developed points, judgement, prioritisation.</p>
-                </div>
-                <div className="skill-tile">
-                  <h3>Scepticism</h3>
-                  <p>Challenge assumptions, limitations, reliability.</p>
-                </div>
-                <div className="skill-tile">
-                  <h3>Commercial acumen</h3>
-                  <p>Business impact, practical recommendations.</p>
-                </div>
+                {s.tiles.map((t) => (
+                  <div className="skill-tile" key={t.title}>
+                    <h3>{t.title}</h3>
+                    <p>{t.body}</p>
+                  </div>
+                ))}
               </div>
-              <div className="mark-panel" role="img" aria-label="Professional-skills marking panel showing evidence-cited feedback">
+              <div className="mark-panel" role="img" aria-label={s.panel.ariaLabel}>
                 <div className="mark-panel-hd">
-                  <span className="mark-panel-title">Professional skills</span>
-                  <span className="mark-panel-score">7<span className="mark-panel-of">/10</span></span>
+                  <span className="mark-panel-title">{s.panel.title}</span>
+                  <span className="mark-panel-score">{s.panel.score}<span className="mark-panel-of">{s.panel.of}</span></span>
                 </div>
-                <div className="mark-row">
-                  <div className="mark-row-hd"><span className="mark-skill">Scepticism</span><span className="mark-band mark-band--strong">strong</span></div>
-                  <p className="mark-evidence">&ldquo;challenged the covering note&apos;s &lsquo;record revenue&rsquo; framing against falling ROCE and EPS…&rdquo;</p>
-                </div>
-                <div className="mark-row">
-                  <div className="mark-row-hd"><span className="mark-skill">Communication</span><span className="mark-band mark-band--mid">competent</span></div>
-                  <p className="mark-evidence">&ldquo;reads as notes, not a board report — no structure, conversational register…&rdquo;</p>
-                </div>
+                {s.panel.rows.map((r) => (
+                  <div className="mark-row" key={r.skill}>
+                    <div className="mark-row-hd"><span className="mark-skill">{r.skill}</span><span className={`mark-band mark-band--${r.tone}`}>{r.verdict}</span></div>
+                    <p className="mark-evidence">{r.evidence}</p>
+                  </div>
+                ))}
               </div>
             </div>
-            <p className="ja-caption">Marked against ACCA&apos;s published professional-skills descriptors, with the evidence named.</p>
+            <p className="ja-caption">{s.caption}</p>
           </div>
         </section>
+      );
 
-        {/* ── EVERYTHING THE PAPER DEMANDS ── */}
-        <section className="section" id="features" aria-label="What is included">
+    // ── CARD_GRID ── the two-up tagged grid. `quote` is a verbatim line of the product's own
+    // output, set apart from the prose around it; `limit` is the honest boundary on the claim
+    // directly above it, deliberately NOT hidden in small print at the foot of the section.
+    case 'CARD_GRID':
+      return (
+        <section key={key} className="section" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">What&apos;s included</span>
-              <h2 className="h-section">Everything the paper <em className="italic">demands.</em></h2>
-            </div>
+            {sectionHead(s)}
             <div className="who-grid">
-              <div className="who-card">
-                <span className="who-tag">Drills</span>
-                <h3>91 exam-style drills.</h3>
-                <p>Every examinable learning outcome in the live S26–J27 syllabus covered.</p>
-              </div>
-              <div className="who-card">
-                <span className="who-tag">Cases</span>
-                <h3>Full exam cases.</h3>
-                <p>Multi-exhibit, multi-requirement, CBE-style. Section A 50-markers and Section B 25-markers.</p>
-              </div>
-              <div className="who-card">
-                <span className="who-tag">Marking</span>
-                <h3>Professional-skills marking.</h3>
-                <p>On your whole answer, with evidence-cited feedback per skill.</p>
-              </div>
-              <div className="who-card">
-                <span className="who-tag">Mock</span>
-                <h3>A full timed mock.</h3>
-                <p>3h 15m, one clock, three cases, marked as one paper.</p>
-              </div>
+              {s.cards.map((c) => (
+                <div className="who-card" key={c.tag}>
+                  <span className="who-tag">{c.tag}</span>
+                  <h3>{c.title}</h3>
+                  <p>{c.body}</p>
+                  {c.quote !== undefined && <p className="mock-quote">{c.quote}</p>}
+                  {c.limit !== undefined && <p className="mock-limit">{c.limit}</p>}
+                </div>
+              ))}
             </div>
           </div>
         </section>
+      );
 
-        {/* ── THE TIMED MOCK ──
-            The biggest thing this page did not say. Cream band by instruction — the page's
-            dark/sage rhythm is already right and this adds no beat to it. Card shell is the
-            page's standard `.who-card`, unchanged; the only new CSS is `.mock-quote` (a
-            verbatim line of product output) and `.mock-limit` (the honest caveat).
-
-            EVERY FIGURE BELOW IS SOURCED. Do not adjust one without re-reading its source:
-            · "about a minute" — measured 58s and 60s across two end-to-end runs
-              (docs/APM_MARKETING_POSITIONING.md, 31/07 walk).
-            · per-requirement / per-case subtotal / paper total — lib/acca/debrief.ts,
-              `cases[].technical_awarded` + `totals` (technical AND professional).
-            · unlimited attempts — app/api/acca/sit/route.ts:307 (only a COMPLETED attempt
-              starts a fresh one, no count limit) + app/api/acca/case/turn/route.ts:247
-              (immutability is scoped `.eq('attempt_id', …)`, so a re-sit records afresh).
-            · €59.98 / three days — market fact, UNATTRIBUTED by instruction. Recorded at
-              docs/APM_MARKETING_POSITIONING.md:82 (two mocks at €29.99 each, PDF,
-              tutor-marked, three-day turnaround). NOT in APM_COMPETITIVE_PRICING.md.
-            · the marker figures — docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md:27-30
-              (candidate 95.00 / €132,000 / 4.95%) against
-              docs/reviews/AFM_MOCK_PAPER1_REVIEW_PACK.md:528-529 (code-owned 94.85, 96.65,
-              €168,000, 4.80%).
-            · the pacing line — VERBATIM from the 31/07 walk
-              (docs/APM_MARKETING_POSITIONING.md:92-94), rendered in the form
-              `composeCollapse` actually emits (lib/acca/debrief.ts:228). ⚠ 12 MINUTES, NOT 7.
-              "7 minutes across two requirements" is an earlier DRAFT the source doc
-              explicitly corrects at line 96: "Use the real numbers or none."
-
-            ⚠ NO MARKING-IS-COMPUTED CLAIM ANYWHERE IN HERE. Marking is answer-locked and
-            model-graded — code owns band→marks, the MODEL owns the band, and the feedback
-            prose is model-authored. Saying "computed", "deterministic" or "code-verified" of
-            marking is the exact overclaim already corrected in CLAUDE.md.
-
-            ⚠ "syllabus area", NOT "learning outcome". `DebriefRequirementLine.practise_area`
-            carries the 2-CHARACTER sub-area (E3a → E3), never the full LO — see the field
-            comment at lib/acca/debrief.ts:111-126. ── */}
-        <section className="section" aria-label="The timed mock">
+    // ── COMPARE_TABLE ── real shared rows, one column per option, Gradd's column in rust.
+    case 'COMPARE_TABLE':
+      return (
+        <section key={key} className="section" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">The timed mock</span>
-              <h2 className="h-section">Sit the paper. Find out <em className="italic">where the marks — and the minutes — went.</em></h2>
-              <p className="lead">
-                Three cases, 3h 15m, one clock, marked as one paper. What comes back is not a score.
-              </p>
-            </div>
-            <div className="who-grid">
-              <div className="who-card">
-                <span className="who-tag">Turnaround</span>
-                <h3>Marked in about a minute.</h3>
-                <p>Every requirement, technical and professional skills, per-case subtotals, one paper total. Unlimited attempts. Two tutor-marked mocks elsewhere cost €59.98 and come back three days later, on a PDF.</p>
-              </div>
-              <div className="who-card">
-                <span className="who-tag">Diagnosis</span>
-                <h3>The figure, and the step.</h3>
-                <p>The marker names where your working diverged — not just that it did.</p>
-                <p className="mock-quote">&ldquo;You used 95.00 and 96.80 rather than 94.85 and 96.65, so your gain was €132,000 not €168,000, so your rate was 4.95% not 4.80%.&rdquo;</p>
-              </div>
-              <div className="who-card">
-                <span className="who-tag">Pacing</span>
-                <h3>Where the minutes went.</h3>
-                <p>Requirement by requirement, against the marks available.</p>
-                <p className="mock-quote">&ldquo;End-of-paper collapse. Between submitting Q2 (ii) and finishing, 12 minutes elapsed across Q3 (i)–Q3 (ii), against a combined budget of 39 minutes.&rdquo;</p>
-                <p className="mock-limit">Measured submission to submission — not time on task.</p>
-              </div>
-              <div className="who-card">
-                <span className="who-tag">Routing</span>
-                <h3>It routes you back.</h3>
-                <p>The debrief points at drills on the syllabus area you lost marks on. Weak or competent bands only — a requirement that scored gets nothing.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── E. COMPARISON TABLE ──
-            Was three flat `.compare-strip` cards — one paragraph each, no shared rows, so
-            nothing lined up and the reader had to hold three sentences in their head to
-            compare anything. This is a real table: the rows are the questions a candidate
-            is actually choosing on, and every column has to answer all six. Ported from the
-            template's `cmpTable` (see COMPARE_ROWS/COMPARE_COLS above) and re-expressed in
-            `.acca-lp`'s own idiom — RUST for the Gradd column, because rust is this page's
-            featured accent (`.price-card.featured`, and the retired `.compare-col--gradd`),
-            not the template's forest. ── */}
-        <section className="section" aria-label="How Gradd compares">
-          <div className="wrap">
-            <div className="section-head">
-              <span className="eyebrow">How it compares</span>
-              <h2 className="h-section">Taught, marked and mocked — <em className="italic">for one sitting price.</em></h2>
-            </div>
+            {sectionHead(s)}
             <div className="cmp-scroll">
               <table className="cmp-table">
                 <thead>
@@ -477,7 +237,7 @@ export default function ACCALandingPage() {
                     {/* Empty corner cell. `scope="col"` with no text is still the correct
                         header for the row-label column; a <td> here would break the grid. */}
                     <th scope="col" />
-                    {COMPARE_COLS.map((col) => (
+                    {s.columns.map((col) => (
                       <th key={col.label} scope="col" className={col.gradd ? 'is-gradd' : undefined}>
                         {col.label}
                       </th>
@@ -485,10 +245,10 @@ export default function ACCALandingPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {COMPARE_ROWS.map((row, ri) => (
+                  {s.rowLabels.map((row, ri) => (
                     <tr key={row}>
                       <th scope="row">{row}</th>
-                      {COMPARE_COLS.map((col) => {
+                      {s.columns.map((col) => {
                         const v = col.values[ri];
                         return (
                           <td key={col.label} className={col.gradd ? 'is-gradd' : undefined}>
@@ -515,73 +275,210 @@ export default function ACCALandingPage() {
                 `[data-scrollable="true"] + .cmp-hint`, so the cue and the thing it describes
                 cannot drift apart. NOT breakpoint-gated: see ScrollableHint.tsx for why a
                 media query was wrong at both ends in production. */}
-            <p className="cmp-hint">Scroll to see more →</p>
+            <p className="cmp-hint">{s.scrollHint}</p>
             <ScrollableHint selector=".cmp-scroll" />
           </div>
         </section>
+      );
+  }
+}
 
-        {/* ── PRICING ── */}
-        <section className="section pricing-band" id="pricing" aria-label="Pricing">
-          <div className="wrap">
-            <div className="section-head" style={{marginLeft:'auto',marginRight:'auto',textAlign:'center'}}>
-              <span className="eyebrow" style={{display:'inline-block',marginBottom:18}}>Pricing</span>
-              <h2 className="h-section" style={{marginLeft:'auto',marginRight:'auto'}}>Start free. Pay only when you commit to the sitting.</h2>
-              <p className="lead" style={{margin:'22px auto 0'}}>Drills are free so you can test the method. Upgrade when you want full coaching, cases, marking and the mock.</p>
+// ── The page ────────────────────────────────────────────────────────────────
+
+export default function ACCALandingPage({ config }: { config: AccaLandingConfig }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [showTop, setShowTop] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
+      setShowTop(window.scrollY > 600);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const scrollTo = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) window.scrollTo({ top: el.offsetTop - 68, behavior: 'smooth' });
+  };
+
+  const { hero, resitBand, pricing, faq, finalCta, footer } = config;
+
+  // Built from the SAME array the visible list renders, so the structured data mirrors the
+  // on-page copy exactly and cannot drift from it.
+  const faqJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faq.items.map((f) => ({
+      '@type': 'Question',
+      name: f.q,
+      acceptedAnswer: { '@type': 'Answer', text: f.a },
+    })),
+  };
+
+  return (
+    <>
+      {/* First-touch utm_* / fbclid → cookie → persisted to the profile at signup. */}
+      <AttributionCapture />
+      <style>{CSS}</style>
+
+      <div className="acca-lp">
+        <div className="bg-grain" aria-hidden="true" />
+
+        {/* ── NAV ── */}
+        <header className={`nav${scrolled ? ' nav--scrolled' : ''}`}>
+          <div className="wrap nav-inner">
+            <a href="#" className="nav-logo" aria-label="Gradd.ai home">
+              <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:22,width:'auto',display:'block'}} />
+            </a>
+            <nav className="nav-links" aria-label="Primary">
+              {config.nav.links.map((l) =>
+                'href' in l
+                  ? <Link key={l.label} href={l.href} className="nav-link-btn">{l.label}</Link>
+                  : <button key={l.label} className="nav-link-btn" onClick={() => scrollTo(l.scrollTo)}>{l.label}</button>,
+              )}
+            </nav>
+            <div className="nav-cta">
+              {/* Quiet text links — the magic-link flow handles returning users and new
+                  signups at the same destination, so Sign in shares the free CTA's href.
+                  Lives in nav-cta (always visible) so it persists in the collapsed nav. */}
+              {config.nav.quiet.map((q) => (
+                <Link key={q.label} href={q.href} className="nav-signin">{q.label}</Link>
+              ))}
+              <Link href={config.nav.primary.href} className="btn btn-rust btn-sm">{`${config.nav.primary.label} `}<span className="arrow">→</span></Link>
             </div>
-            <div className="price-grid">
-              <article className="price-card">
-                <span className="price-name">Free</span>
-                <div className="price-amount"><span className="cur">€</span>0</div>
-                <p className="price-tagline">Unlimited access to all 91 drills · 3 full Ezra teach-throughs included · No card required.</p>
-                <ul className="price-features">
-                  <li>Every APM drill, unlimited</li>
-                  <li>3 full teach-throughs with Ezra</li>
-                  <li>No card, no commitment</li>
-                </ul>
-                <Link href={AUTH_FREE} className="btn btn-ghost">Start free <span className="arrow">→</span></Link>
-              </article>
+          </div>
+        </header>
 
-              <article className="price-card featured">
-                <span className="price-badge">Best for one sitting</span>
-                <span className="price-name">90-day exam pass</span>
-                <div className="price-amount"><span className="cur">€</span>99<span className="per">one-time · 90 days</span></div>
-                <p className="price-tagline">Full access through your sitting — drills, cases, marking and the timed mock.</p>
-                <ul className="price-features">
-                  <li>Unlimited teach-throughs with Ezra</li>
-                  <li>Full exam cases + professional-skills marking</li>
-                  <li>The timed mock, marked as one paper</li>
-                  <li>One payment — no recurring charge</li>
-                </ul>
-                <Link href={AUTH_SUBSCRIBE} className="btn btn-rust">Get the 90-day pass <span className="arrow">→</span></Link>
-              </article>
-
-              <article className="price-card">
-                <span className="price-badge price-badge--muted">Flexible</span>
-                <span className="price-name">Monthly</span>
-                <div className="price-amount"><span className="cur">€</span>49<span className="per">/ month</span></div>
-                <p className="price-tagline">Everything in the pass, month to month.</p>
-                <ul className="price-features">
-                  <li>Unlimited teach-throughs with Ezra</li>
-                  <li>Full exam cases + professional-skills marking</li>
-                  <li>The timed mock, marked as one paper</li>
-                  <li>Cancel any time</li>
-                </ul>
-                <Link href={AUTH_SUBSCRIBE} className="btn btn-ghost">Subscribe monthly <span className="arrow">→</span></Link>
-              </article>
+        {/* ── HERO ── */}
+        <section className="hero" aria-label="Introduction">
+          <div className="wrap hero-grid">
+            <div className="hero-copy">
+              <div className="hero-eyebrow eyebrow">
+                <span>{hero.eyebrow.paper}</span><span className="dot" /><span>{hero.eyebrow.exam}</span>
+              </div>
+              <h1 className="hero-h1 h-display">
+                {`${hero.h1.lead} `}<span className="em underline">{hero.h1.underline}</span>
+              </h1>
+              <p className="hero-sub">
+                {hero.sub}
+              </p>
+              <p className="hero-note">{hero.note}</p>
+              <div className="hero-cta">
+                {hero.ctas.map((c) => btn(c, c.label))}
+              </div>
+              <p className="hero-microcopy">{hero.microcopy}</p>
+              {/* Dot-separated, so the separator belongs BETWEEN items, not to an item — a
+                  Fragment carries the key without adding an element to the DOM. */}
+              <div className="hero-meta">
+                {hero.meta.map((m, i) => (
+                  <Fragment key={m}>
+                    {i > 0 && <span className="dot" />}
+                    <span>{m}</span>
+                  </Fragment>
+                ))}
+              </div>
             </div>
-            <p className="price-note">14-day money-back guarantee.</p>
+
+            <div className="hero-visual">
+              <div className="chat" role="img" aria-label={hero.artefact.ariaLabel}>
+                <div className="chat-hd">
+                  <div className="chat-logo">
+                    <img src="/gradd-ai-logo.png" alt="" style={{height:16,width:'auto',display:'block'}} />
+                  </div>
+                  <div className="chat-name-pill"><span className="live" />{hero.artefact.name}</div>
+                  <div className="chat-course">
+                    <div className="em">{hero.artefact.courseTitle}</div>
+                    <div>{hero.artefact.courseSub}</div>
+                  </div>
+                </div>
+                <div className="chat-body">
+                  {hero.artefact.turns.map((t, i) =>
+                    t.role === 'student' ? (
+                      <div className="chat-row from-user" key={i}>
+                        <div className="user-bubble">{t.text}</div>
+                        <div className="user-av">S</div>
+                      </div>
+                    ) : (
+                      <div className="chat-row" key={i}>
+                        <div className="ezra-av">E</div>
+                        <div className="ezra-msg">
+                          {t.badge !== undefined && <span className="hint-badge">{t.badge}</span>}
+                          {t.paragraphs.map((p, pi) => <p key={pi}>{rich(p)}</p>)}
+                        </div>
+                      </div>
+                    ),
+                  )}
+                </div>
+                <div className="chat-input">
+                  <div className="ph">{hero.artefact.inputPlaceholder}</div>
+                  <div className="send">↵</div>
+                </div>
+                <div className="chat-foot">{hero.artefact.footer}</div>
+              </div>
+              <p className="visual-caption">{hero.artefact.caption}</p>
+            </div>
           </div>
         </section>
 
-        {/* ── F. FAQ (+ FAQPage JSON-LD) ── */}
-        <section className="section" id="faq" aria-label="Frequently asked questions">
+        {/* ── FREE RESIT DIAGNOSTIC (directly after hero) ──
+            OPTIONAL. Omitted from the config, this renders nothing at all — no band, no
+            heading, no empty container. AFM omits it: there is no AFM resit diagnostic to
+            point at, and a real-looking band pointing at nothing is worse than no band. */}
+        {resitBand !== undefined && (
+          <section className="section resit-band" aria-label={resitBand.ariaLabel}>
+            <div className="wrap">
+              <div className="resit-band-inner">
+                <span className="eyebrow">{resitBand.eyebrow}</span>
+                <h2 className="h-section">{heading(resitBand.heading)}</h2>
+                <p className="lead">
+                  {resitBand.lead}
+                </p>
+                <div className="resit-band-cta">{btn(resitBand.cta)}</div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── THE BODY ── ordered by the config; one renderer per kind, above. */}
+        {config.sections.map((s, i) => renderSection(s, i))}
+
+        {/* ── PRICING ── */}
+        <section className="section pricing-band" id={pricing.id} aria-label={pricing.ariaLabel}>
+          <div className="wrap">
+            <div className="section-head" style={{marginLeft:'auto',marginRight:'auto',textAlign:'center'}}>
+              <span className="eyebrow" style={{display:'inline-block',marginBottom:18}}>{pricing.eyebrow}</span>
+              <h2 className="h-section" style={{marginLeft:'auto',marginRight:'auto'}}>{heading(pricing.heading)}</h2>
+              <p className="lead" style={{margin:'22px auto 0'}}>{pricing.lead}</p>
+            </div>
+            <div className="price-grid">
+              {pricing.tiers.map((t) => (
+                <article className={`price-card${t.featured ? ' featured' : ''}`} key={t.name}>
+                  {t.badge !== undefined && <span className={`price-badge${t.badgeMuted ? ' price-badge--muted' : ''}`}>{t.badge}</span>}
+                  <span className="price-name">{t.name}</span>
+                  <div className="price-amount"><span className="cur">{t.currency}</span>{t.amount}{t.per !== undefined && <span className="per">{t.per}</span>}</div>
+                  <p className="price-tagline">{t.tagline}</p>
+                  <ul className="price-features">
+                    {t.features.map((f) => <li key={f}>{f}</li>)}
+                  </ul>
+                  {btn(t.cta)}
+                </article>
+              ))}
+            </div>
+            <p className="price-note">{pricing.note}</p>
+          </div>
+        </section>
+
+        {/* ── FAQ (+ FAQPage JSON-LD) ── */}
+        <section className="section" id={faq.id} aria-label={faq.ariaLabel}>
           <div className="wrap" style={{maxWidth:820}}>
             <div className="section-head">
-              <span className="eyebrow">FAQ</span>
-              <h2 className="h-section">Questions, <em className="italic">answered.</em></h2>
+              <span className="eyebrow">{faq.eyebrow}</span>
+              <h2 className="h-section">{heading(faq.heading)}</h2>
             </div>
             <dl className="faq-list">
-              {FAQS.map((f, i) => (
+              {faq.items.map((f, i) => (
                 <div className="faq-item" key={i}>
                   <dt className="faq-q">{f.q}</dt>
                   <dd className="faq-a">{f.a}</dd>
@@ -591,22 +488,22 @@ export default function ACCALandingPage() {
           </div>
           <script
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSONLD) }}
+            dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
           />
         </section>
 
         {/* ── FINAL CTA ── */}
-        <section className="final-cta" aria-label="Get started">
+        <section className="final-cta" aria-label={finalCta.ariaLabel}>
           <div className="wrap final-cta-inner">
             <div className="tag-pill" style={{marginBottom:30,color:'color-mix(in oklab,var(--forest-ink) 80%,transparent)',borderColor:'color-mix(in oklab,var(--forest-ink) 30%,transparent)'}}>
-              <span className="dot" /> Every drill free · No card
+              <span className="dot" />{` ${finalCta.pill}`}
             </div>
-            <h2 className="h-display">Preparing for the <em className="italic">next APM sitting?</em></h2>
-            <p className="lead">Start with every drill free — no card. Upgrade when you commit to the sitting.</p>
+            <h2 className="h-display">{heading(finalCta.heading)}</h2>
+            <p className="lead">{finalCta.lead}</p>
             <div className="hero-cta" style={{justifyContent:'center',marginTop:36}}>
-              <Link href={AUTH_FREE} className="btn btn-rust">Start free <span className="arrow">→</span></Link>
+              {btn(finalCta.cta)}
             </div>
-            <div className="small">Every drill free · €99 for 90 days or €49/month · 14-day money-back guarantee</div>
+            <div className="small">{finalCta.small}</div>
           </div>
         </section>
 
@@ -615,20 +512,19 @@ export default function ACCALandingPage() {
           <div className="wrap footer-inner">
             <div style={{display:'flex',alignItems:'center',gap:10}}>
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{height:16,width:'auto',display:'block'}} />
-              <span style={{fontSize:12,color:'var(--ink-3)',marginLeft:14}}>© 2026 · AI tutor for ACCA APM</span>
+              <span style={{fontSize:12,color:'var(--ink-3)',marginLeft:14}}>{footer.copyright}</span>
             </div>
             <div className="footer-links">
-              <Link href="/acca/afm">ACCA AFM</Link>
-              <Link href="/terms">Terms</Link>
-              <Link href="/privacy">Privacy</Link>
-              <Link href="/cookies">Cookies</Link>
-              <Link href="/blog?subject=apm">Blog</Link>
-              <a href="mailto:hello@gradd.ai">Contact</a>
+              {footer.links.map((l) =>
+                l.href.startsWith('mailto:')
+                  ? <a key={l.label} href={l.href}>{l.label}</a>
+                  : <Link key={l.label} href={l.href}>{l.label}</Link>,
+              )}
             </div>
           </div>
           <div className="wrap" style={{textAlign:'center',marginTop:20,paddingBottom:8}}>
             <p style={{fontFamily:'var(--sans)',fontSize:11,color:'var(--ink-3)',lineHeight:1.5}}>
-              Gradd.ai is an independent learning platform and is not affiliated with or endorsed by ACCA (the Association of Chartered Certified Accountants).
+              {footer.disclaimer}
             </p>
           </div>
         </footer>

@@ -37,8 +37,17 @@
 // so the signal follows the content rather than being stranded on a hub that no longer
 // mentions APM. `app/sitemap.ts` lists this at priority 1.0 and the hub separately.
 // The metadata block below is UNCHANGED by the revert: it was never template-specific.
+//
+// ── THE PAGE IS NOW CONFIG-DRIVEN, AND ITS OUTPUT IS UNCHANGED ──────────────
+// (2026-08-06, `feat/afm-acca-landing-config`.) `ACCALandingPage` takes a config; APM's copy
+// moved verbatim into `APM_ACCA_LANDING`. STRUCTURE AND CSS STAY IN THE COMPONENT — a config
+// says what the page SAYS and cannot reorder it, reband it, or invent a section type, which
+// is the specific way the earlier generalised template lost this page's composition.
+// The rendered body of this URL is BYTE-IDENTICAL across the extraction, proven with a
+// SHA-256 over the built output before and after (69667f94…fece, 59,097 bytes).
 import type { Metadata } from 'next';
 import ACCALandingPage from '@/components/landing/ACCALandingPage';
+import { APM_ACCA_LANDING } from '@/components/landing/acca-landing-config';
 
 const TITLE = 'ACCA APM Tutor — Taught, Not Just Marked | Gradd';
 const DESCRIPTION =
@@ -74,5 +83,5 @@ export const metadata: Metadata = {
 };
 
 export default function APMSpokePage() {
-  return <ACCALandingPage />;
+  return <ACCALandingPage config={APM_ACCA_LANDING} />;
 }
