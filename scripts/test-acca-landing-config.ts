@@ -1,4 +1,5 @@
-// scripts/test-acca-landing-config.ts — fixtures for the config-driven ACCA spoke page.
+// scripts/test-acca-landing-config.ts — fixtures for the config-driven ACCA landing pages:
+// the two SPOKES (/acca/apm, /acca/afm) and, since 2026-08-07, the PILLAR at gradd.ai root.
 // Pure: no DB, no model, no network. Run: npm run test:acca-landing-config
 //
 // ── WHAT THIS SUITE IS FOR ──────────────────────────────────────────────────
@@ -16,13 +17,28 @@
 //
 // P-G3: every check below has a named break mode — the thing that would have to go wrong.
 //
+// The PILLAR (break modes 15-21, at the foot) adds a THIRD property. It is not a spoke and is
+// not checked as one — it sells the qualification and routes, so its sections, its argument
+// and its pricing CTAs are all deliberately different. What it must share is the COMPOSITION
+// DISCIPLINE, and the specific regression is that it drifts back into looking like a different
+// site: a second dark band competing with the close, a paper card flattened into a feature
+// grid, or the spokes' own "taught, not just marked" line repeated at root, where it teaches a
+// visitor nothing they will not read again one click later.
+//
 // It asserts against the RENDERED OUTPUT wherever the claim is about what a visitor sees.
 // Asserting on the config object alone would test this file's reading of the config, not the
-// page — the `sitCaseGate` lesson, and the same reason `test-product-landing.ts` renders.
+// page — the `sitCaseGate` lesson.
+//
+// ⚠️ `test-product-landing.ts` IS DELETED, with the template it tested. That suite carried 11
+// break modes about `ProductLandingPage`; every one of them was a claim about a component no
+// route rendered any more. The two it made that were about CONTENT rather than the template —
+// the BUNDLE_CLAIM detector and the "no /acca href in a shared nav" sweep — live on here, the
+// first verbatim (break mode 10) and the second as the per-page link assertions.
 
 import {
   APM_ACCA_LANDING,
   AFM_ACCA_LANDING,
+  ACCA_PILLAR_LANDING,
   withAccaDynamicCta,
   type AccaLandingConfig,
   type AccaSection,
@@ -51,6 +67,7 @@ const bodyOf = (config: AccaLandingConfig): string =>
 
 const apm = bodyOf(APM_ACCA_LANDING);
 const afm = bodyOf(AFM_ACCA_LANDING);
+const pil = bodyOf(ACCA_PILLAR_LANDING);
 
 // ════════════════════════════════════════════════════════════════════════════
 // BREAK MODE 1 — THE EXTRACTION QUIETLY CHANGED APM.
@@ -279,11 +296,121 @@ for (const [name, cfg] of [['APM', APM_ACCA_LANDING], ['AFM', AFM_ACCA_LANDING]]
 }
 
 // ── BREAK MODE 13: EXACTLY ONE <h1> ─────────────────────────────────────────
-for (const [name, html] of [['APM', apm], ['AFM', afm]] as const) {
+for (const [name, html] of [['APM', apm], ['AFM', afm], ['pillar', pil]] as const) {
   ok(`${name} has exactly one h1`, (html.match(/<h1/g) ?? []).length === 1);
   ok(`${name} labels every section`,
     (html.match(/<section/g) ?? []).length === (html.match(/<section[^>]*aria-label=/g) ?? []).length);
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// THE PILLAR (gradd.ai root) — BREAK MODES 15-21.
+//
+// It joined this component 2026-08-07 (`feat/acca-pillar-config`). It is NOT a third spoke and
+// must not be checked as one: it sells the qualification and routes, so its section list, its
+// argument and its pricing CTAs are all deliberately different. What it must share is the
+// COMPOSITION DISCIPLINE — the band rhythm, one dark moment, forest reserved for the close —
+// because "reads as their sibling" is the whole reason it moved.
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── BREAK MODE 15: THE PILLAR REPEATS THE SPOKES' ARGUMENT ──────────────────
+// The specific thing this rebuild exists to prevent. "Taught, not just marked" is the SPOKES'
+// line — both carry it as a section heading — and a root that repeats it teaches a visitor
+// nothing they will not read again one click later. Checked in BOTH directions: only asserting
+// the pillar's own line passes a page that says both.
+// Matched in HALVES, because both statements of the argument are split by the page's heading
+// idiom — the rust italic tail is a separate element, so "Nobody marks what you write" never
+// appears as one string in the markup. Asserting the whole phrase would fail on a page that
+// says it perfectly, which is the worse kind of broken check.
+ok('the pillar states its OWN argument — nobody marks what you write',
+  /Nobody marks/.test(pil) && /what you write\./.test(pil));
+ok('and states it again in the compare section', /Almost nobody/.test(pil) && /marks you\./.test(pil));
+ok('the pillar never borrows "taught, not just marked"', !/taught, not just/i.test(pil));
+ok('both spokes still keep that line', /taught, not just/i.test(apm) && /taught, not just/i.test(afm));
+ok('the pillar makes no judgement-paper or execution-test claim — those are the papers\', not the qualification\'s',
+  !/judgement paper/i.test(pil) && !/execution test/i.test(pil));
+
+// ── BREAK MODE 16: THE PILLAR'S THREE UNIQUE BLOCKS GET FLATTENED ───────────
+// The instruction was that the counts strip, the pacing feature and the paper cards would NOT
+// fit a card grid and should not be forced into one. The regression is a later edit "simplifying"
+// one of them into CARD_GRID — which typechecks, renders, and silently drops the CTA that makes
+// the paper cards routing rather than decoration.
+const pilKinds = kinds(ACCA_PILLAR_LANDING).join(',');
+ok('the pillar renders its own five-section body, in order',
+  pilKinds === 'STAT_STRIP,PROOF_ROW,FEATURE_PANEL,COMPARE_TABLE,PAPER_CARDS', pilKinds);
+ok('the counts strip renders as a strip, not a section', pil.includes('class="trust"') && pil.includes('trust-stat'));
+ok('the pacing feature renders bullets AND a panel', pil.includes('feat-bullets') && pil.includes('mark-panel'));
+ok('each paper card carries a link into that paper',
+  pil.includes('paper-card') && pil.includes('href="/acca/apm"') && pil.includes('href="/acca/afm"'));
+// The <em> is why bullets are RichText rather than strings: "not reached" is a status the
+// product reports verbatim, and a bullet that cannot carry markup would lose the distinction.
+ok('the "not reached" bullet keeps its emphasis', /<em>not reached<\/em>/.test(pil));
+
+// ── BREAK MODE 17: THE PILLAR STOPS READING AS THEIR SIBLING ────────────────
+// Composition, not content. The spokes' discipline is that forest appears ONCE, at the close,
+// and every other band alternates cream / sage. The page this replaced broke it — it had a
+// dark proof band competing with its own closing CTA, which is the exact defect Grant's
+// 2026-08-05 ruling cited when the template lost APM.
+const bandsOf = (html: string) =>
+  [...html.matchAll(/<section[^>]*class="([^"]*)"/g)].map((m) => m[1]);
+const pilBands = bandsOf(pil);
+ok('the pillar alternates cream and sage — no two sage bands in a row',
+  !pilBands.some((c, i) => i > 0 && c.includes('one-sub') && pilBands[i - 1].includes('one-sub')),
+  pilBands.join(' | '));
+ok('the pillar has exactly one forest moment, and it is the close',
+  (pil.match(/class="final-cta"/g) ?? []).length === 1 && !/band-dark/.test(pil));
+ok('the pillar draws no cream-run seam rule — its bands alternate, so there is no run',
+  seamsOf(pil).length === 0, `got [${seamsOf(pil).join(' | ')}]`);
+// The strip is what makes the hero→proof adjacency a non-seam. Prove the check would notice
+// if it were rendered as a plain section instead of a strip (P-G3: run the failure path).
+ok('the seam check would SEE a strip demoted to a plain section',
+  seamsOf(pil.replace('class="trust"', 'class="section"')).length > 0);
+
+// ── BREAK MODE 18: AN OPTIONAL SLOT RENDERS AN EMPTY SHELL ──────────────────
+// The pillar omits BOTH optional page-level slots. The careless implementation renders the
+// wrapper — which still typechecks and leaves a heading over blank space. The JSON-LD case is
+// worse than cosmetic: a FAQPage asserting questions the page does not ask is a rich result
+// built on nothing.
+ok('the pillar renders NO resit band — not an empty one', !pil.includes('resit-band'));
+ok('the pillar renders NO FAQ block', !pil.includes('faq-list') && !pil.includes('faq-item'));
+ok('the pillar emits NO FAQPage JSON-LD', !pil.includes('application/ld+json'));
+ok('both spokes still emit theirs', apm.includes('FAQPage') && afm.includes('FAQPage'));
+
+// ════════════════════════════════════════════════════════════════════════════
+// BREAK MODE 19 — THE PER-PAPER PRICING RULE GOES QUIET ON THE ONE PAGE THAT
+// SELLS BOTH PAPERS.
+//
+// This is the pillar's highest-consequence claim. A student who reads a two-paper page and
+// assumes one purchase covers both has been misled by omission, and the pillar is the LAST
+// surface that can correct it before they reach a spoke. It must be stated, and the paid CTAs
+// must not imply a paper-agnostic checkout — there is no such product.
+// ════════════════════════════════════════════════════════════════════════════
+ok('the pillar says buying APM does not include AFM, in those words',
+  /Buying APM does not include AFM/.test(pil));
+ok('the pillar states per-paper pricing more than once', (pil.match(/per paper/gi) ?? []).length >= 3);
+ok('the pillar makes no bundle claim anywhere on the page', !BUNDLE_CLAIM.test(pil));
+ok('no paid tier links to a checkout — both route to the paper choice',
+  (pil.match(/href="#papers"/g) ?? []).length === 2 && !/acca\/subscribe/.test(pil));
+
+// ── BREAK MODE 20: A COUNT DRIFTS BETWEEN THE PILLAR AND A SPOKE ────────────
+// 91 and 63 are stated on THREE pages now. The failure is not a typo: it is one number updated
+// where it was noticed and left everywhere else. 154 is their sum and must stay so.
+ok('the pillar states both papers\' counts, and they are the spokes\' own',
+  /91 drills/.test(pil) && /63 drills/.test(pil));
+ok('the pillar\'s total is the sum of the two it states', /154/.test(pil) && 91 + 63 === 154);
+ok('the pillar makes no code-owns-the-marking claim', !MARKING_OVERCLAIM.test(pil));
+
+// ── BREAK MODE 21: THE THINGS THE REBUILD WAS TOLD TO KEEP ──────────────────
+// Each of these was correct on the page this replaces, and each is the kind of thing a rewrite
+// drops silently. The /ib link is the load-bearing one: nothing else on gradd.ai links to the
+// IB landing since the hub was deleted, so losing it makes /ib unreachable and uncrawlable
+// from every page on the site.
+ok('the resit CTA survives, and is still scoped to APM',
+  pil.includes('/acca/resit') && /Failed APM/.test(pil) && !/Failed a paper/i.test(pil));
+ok('the resit close offers an alternative for a visitor not sitting APM',
+  /Start free instead/.test(pil));
+ok('the /ib footer link survives — it is IB\'s only inbound link on gradd.ai',
+  pil.includes('href="/ib"'));
+ok('the walkthrough link survives', pil.includes('/acca/afm/proof'));
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} acca-landing: ${pass} passed, ${fail} failed\n`);
 // P-G4: exitCode, never process.exit().
