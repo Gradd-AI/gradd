@@ -1,7 +1,7 @@
 // app/page.tsx
 // ROOT = THE ACCA PILLAR on gradd.ai, MARKETING-ONLY (restructured 2026-08-04,
 // Option B of the hub-deletion ruling):
-//   gradd.ai / → ACCAPillarPage, unconditionally. No auth branch — a signed-in
+//   gradd.ai / → the ACCA pillar, unconditionally. No auth branch — a signed-in
 //   visitor who lands on root sees the pillar too; the signed-in app lives at
 //   /acca, unchanged (app/acca/page.tsx redirects an anonymous /acca visitor here
 //   instead of rendering the pillar a second time, so there is exactly one public
@@ -16,11 +16,19 @@
 // to guess between. `resolveProductIntent`/`PRODUCT_HOME`/`PRODUCT_SIGNUP` are NOT
 // deleted — app/auth/login and app/auth/signup still depend on them to decide which
 // product's AUTH FORM to render, a different question this ruling doesn't touch.
+//
+// ── THE PILLAR IS NOW THE SPOKES' COMPONENT, CONFIGURED (2026-08-07) ────────────
+// `ACCAPillarPage` is DELETED. Root renders `ACCALandingPage` with `ACCA_PILLAR_LANDING`,
+// the same component and the same stylesheet /acca/apm and /acca/afm render — the page a
+// stranger lands on used to be the odd one out, on a template whose only remaining consumer
+// it was. Nothing about this file's ROUTING changed: the host question, the LC branch and
+// the metadata below are untouched, and root's canonical and sitemap priority 1.0 with them.
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 import { createServerClient } from '@/lib/supabase/server';
 import LandingPage from '@/components/landing/LandingPage';
-import ACCAPillarPage from '@/components/landing/ACCAPillarPage';
+import ACCALandingPage from '@/components/landing/ACCALandingPage';
+import { ACCA_PILLAR_LANDING } from '@/components/landing/acca-landing-config';
 import { resolveIsIB } from '@/lib/site';
 import type { Metadata } from 'next';
 
@@ -105,7 +113,7 @@ export default async function HomePage() {
 
   // ── gradd.ai — the ACCA pillar, unconditionally ─────────────────────────────
   if (onGraddAi) {
-    return <ACCAPillarPage />;
+    return <ACCALandingPage config={ACCA_PILLAR_LANDING} />;
   }
 
   // gradd.ie — LC Business. Preserve the existing logged-in→/dashboard behaviour.

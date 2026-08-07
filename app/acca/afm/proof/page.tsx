@@ -16,7 +16,18 @@ import { headers } from 'next/headers';
 import Link from 'next/link';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import AttributionCapture from '@/components/AttributionCapture';
-import { AFM_LANDING } from '@/components/landing/product-landing-config';
+// ── REPOINTED 2026-08-07 (`feat/acca-pillar-config`) ────────────────────────────────────
+// This page read its free-CTA href from `AFM_LANDING` (product-landing-config.ts), the
+// generalised template's config — which stopped being what /acca/afm renders on 2026-08-06
+// and is DELETED with the template in this change-set. It now reads the config the AFM spoke
+// actually renders, so the two destinations cannot drift; the href is byte-identical either
+// way (`/acca/auth?next=%2Facca%3Fpaper%3DAFM`), which is what makes this a repoint and not a
+// change of behaviour. The footnote was the template's per-product string and is now stated
+// here, where the only page that shows it lives.
+import { AFM_ACCA_LANDING } from '@/components/landing/acca-landing-config';
+
+const FOOTNOTE =
+  'AI tutor for ACCA AFM. Gradd is not affiliated with or endorsed by ACCA. Scenarios are original works built to the public syllabus structure.';
 
 const TITLE = 'A real AFM walkthrough — Gradd';
 const DESCRIPTION =
@@ -66,7 +77,7 @@ export default function AFMProofRoute() {
             </Link>
             <nav className="pf-nav">
               <Link href="/acca/afm" className="pf-navlink">AFM overview</Link>
-              <Link href={AFM_LANDING.freeCta.href} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
+              <Link href={AFM_ACCA_LANDING.freeCta.href} className="btn btn-rust btn-sm">Start free <span className="arrow">→</span></Link>
             </nav>
           </div>
         </header>
@@ -141,7 +152,7 @@ export default function AFMProofRoute() {
               <h2 className="pf-cta-h">Try it yourself</h2>
               <p className="pf-cta-line">Free to start — every live AFM drill, with Ezra teach-throughs. No card required.</p>
               <div className="pf-cta-row">
-                <Link href={AFM_LANDING.freeCta.href} className="btn btn-rust btn-lg">Start free <span className="arrow">→</span></Link>
+                <Link href={AFM_ACCA_LANDING.freeCta.href} className="btn btn-rust btn-lg">Start free <span className="arrow">→</span></Link>
                 <Link href="/acca/afm" className="pf-cta-secondary">See what&rsquo;s live in AFM</Link>
               </div>
             </div>
@@ -150,7 +161,7 @@ export default function AFMProofRoute() {
 
         <footer className="pf-footer">
           <div className="pf-wrap pf-footer-inner">
-            <span>© 2026 Gradd.ai · {AFM_LANDING.footnote}</span>
+            <span>© 2026 Gradd.ai · {FOOTNOTE}</span>
             <div className="pf-footer-links">
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>
