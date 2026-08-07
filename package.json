@@ -66,6 +66,7 @@
     "audit:verb-coverage": "tsx --env-file=.env.local scripts/audit-verb-coverage.ts",
     "test:product-router": "tsx scripts/test-product-router.ts",
     "test:product-landing": "tsx scripts/test-product-landing.ts",
+    "test:acca-landing-config": "tsx scripts/test-acca-landing-config.ts",
     "test:entitlement-cta": "tsx scripts/test-entitlement-cta.ts",
     "test:afm-prose": "tsx scripts/test-afm-prose.ts",
     "test:apm-framework": "tsx scripts/test-apm-framework.ts",

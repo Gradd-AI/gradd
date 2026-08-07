@@ -51,6 +51,11 @@ next-env.d.ts
 # Underscore-prefixed one-off / scratch scripts (diagnostics, patches, harnesses) — local only
 scripts/_*
 
+# scripts/screenshot-viewports.ts output — the harness is committed, its PNGs are not.
+# They are a per-machine render of the built page (the home machine's shots do not travel),
+# regenerable in one command, and heavy. Default --shot target.
+shots/
+
 # ClaudeSend.txt — transient handoff-to-Grant scratch file (overwritten each use), not VCS
 ClaudeSend.txt
 
