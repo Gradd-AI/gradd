@@ -633,7 +633,21 @@ async function completenessCheck(
   grounding: GroundingPack,
 ): Promise<string | null> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
-  const vlLine = verbLevel ? `Command verb + intellectual level: ${verbLevel}\n\n` : '';
+  // THE LAST TAXONOMY HEADER, reworded 2026-08-07. The three student-facing legs were rewritten on
+  // 2026-08-01 to "What this requirement demands (…do not quote it back as a label)"; this one was
+  // missed because it is an INTERNAL leg — it returns a component gap label, not prose.
+  //
+  // That is exactly why it still mattered. The label it returns becomes `gap`, which is handed
+  // straight to call3_hint / call3_teach as the diagnosis the student then reads. So this was the
+  // one remaining place where the words "command verb" and "intellectual level" sat in a prompt
+  // UPSTREAM of student-facing prose — the fence's own claim ("there is no code left to leak",
+  // lib/acca/teach-demand.ts) was very nearly true, and this line was the exception.
+  //
+  // The VALUE was never the problem: `verbLevel` is describeDemand output and taxonomy-free by
+  // construction. Only the header named the taxonomy. Now it matches its three siblings.
+  const vlLine = verbLevel
+    ? `What this requirement demands (judge completeness against this):\n${verbLevel}\n\n`
+    : '';
   // PERSONA-HARDENING (2026-07-21): fixes AFM_SURFACED finding 3 (FALSE-COMPLETE, the Nakheel-shaped
   // gap — a numerically-exact answer that never advises the board). When a checklist exists (narrative
   // criteria, or numeric "Step N — Label" headers extracted from model_answer), it is now the
