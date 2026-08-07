@@ -1,9 +1,23 @@
 // components/landing/acca-landing-config.ts
 //
-// CONTENT for the ACCA spoke landing page. STRUCTURE AND CSS STAY IN THE COMPONENT
-// (`ACCALandingPage.tsx`) — this file holds only what the page SAYS, never how it is laid out
-// or painted. That split is the whole point of the exercise: the page Grant approved is the
-// composition, and a config that could change the composition would be able to lose it again.
+// CONTENT for the ACCA landing pages — the two SPOKES (`/acca/apm`, `/acca/afm`) and the
+// PILLAR (gradd.ai root). STRUCTURE AND CSS STAY IN THE COMPONENT (`ACCALandingPage.tsx`) —
+// this file holds only what a page SAYS, never how it is laid out or painted. That split is
+// the whole point of the exercise: the page Grant approved is the composition, and a config
+// that could change the composition would be able to lose it again.
+//
+// ── THE PILLAR JOINED THIS MECHANISM 2026-08-07 (`feat/acca-pillar-config`) ──
+// Root used to render its own component (`ACCAPillarPage`) on the generalised template's
+// stylesheet, so the page a stranger ACTUALLY LANDS ON looked unlike the two pages it links
+// to. It now renders `ACCALandingPage` with `ACCA_PILLAR_LANDING` below.
+//
+// Three of its blocks do not fit — and were NOT forced into — an existing kind: the counts
+// strip (`STAT_STRIP`), the pacing feature (`FEATURE_PANEL`) and the two routing cards
+// (`PAPER_CARDS`). Each got a real section kind with its own renderer. The rule the spokes
+// established holds unchanged: a KIND decides the band and the shape, a CONFIG never does.
+// `ProductLandingPage`, `product-landing-sections.ts` and `APM_LANDING` were deleted in the
+// same change-set — with the pillar moved they had no consumer left, and a dead template that
+// still renders is one somebody finds and uses.
 //
 // ── WHY THIS IS NOT `ProductLandingConfig` ──────────────────────────────────
 // The generalised template (`ProductLandingPage` + `product-landing-config.ts`) was built
@@ -53,13 +67,18 @@ export interface Cta { label: string; href: string; variant: 'rust' | 'ghost' }
 /** A header link: either a real destination, or a smooth-scroll to a section on this page. */
 export type NavLink = { label: string; href: string } | { label: string; scrollTo: string };
 
-// ── The chat artefact ───────────────────────────────────────────────────────
+// ── Artefacts ───────────────────────────────────────────────────────────────
+// The thing beside the hero copy. Two shapes, because the two kinds of page make two
+// different claims: a SPOKE sells a tutor, so its artefact is a conversation; the PILLAR
+// sells marking, so its artefact is a marked answer. Discriminated by `kind`, which is
+// never rendered — adding it to the two existing configs changes no byte of their output.
 
 export type ChatTurn =
   | { role: 'student'; text: string }
   | { role: 'tutor'; badge?: string; paragraphs: RichText[] };
 
 export interface ChatArtefact {
+  kind: 'CHAT';
   ariaLabel: string;
   /** The name pill beside the logo — "Ezra". */
   name: string;
@@ -72,6 +91,54 @@ export interface ChatArtefact {
   /** The italic line UNDER the whole artefact, outside its frame. */
   caption: string;
 }
+
+/**
+ * One row of a marking panel: what was marked, the band, and the marker's line about it.
+ *
+ * `quoted` decides whether the body renders as a QUOTATION of the product's output (italic,
+ * the page's existing `.mark-evidence` treatment) or as an annotation about it
+ * (`.mark-note`). It is a claim about provenance, not a style knob: a line the marker wrote
+ * and a line we wrote about the marker are different things and must not look alike.
+ */
+export interface PanelRow {
+  label: string;
+  verdict: string;
+  /**
+   * The chip colour. `strong` and `mid` are the two BANDS the spokes' skills panel uses —
+   * green and gold, and both are a judgement about how well the answer did.
+   *
+   * `flat` is not a band, and it exists because the pacing panel has a row that is not
+   * judged: "no ratio" is a statement that a budget could not meaningfully be computed for
+   * the first requirement, and rendering it green told a visitor the candidate had done
+   * well at something. A neutral fact needs a neutral chip.
+   */
+  tone: 'strong' | 'mid' | 'flat';
+  body: string;
+  quoted?: boolean;
+}
+
+/**
+ * PANEL — a marking panel, rendered in the SAME `.mark-panel` frame the spokes' professional-
+ * skills section already uses. That reuse is the point: the pillar's hero artefact and the
+ * spokes' marking panel are the same object, so a visitor arriving from one recognises the
+ * other.
+ *
+ * The spokes' panel head carries a SCORE; this one carries a subtitle (which case, which
+ * requirement) because a pillar illustrating marking should not put a number on an
+ * illustration. `foot` and `caption` are both optional — `caption` is the italic line
+ * OUTSIDE the frame, and a panel used inside a section does not want one.
+ */
+export interface PanelArtefact {
+  kind: 'PANEL';
+  ariaLabel: string;
+  title: string;
+  sub: string;
+  rows: PanelRow[];
+  foot?: string;
+  caption?: string;
+}
+
+export type HeroArtefact = ChatArtefact | PanelArtefact;
 
 // ── Section shapes ──────────────────────────────────────────────────────────
 // Every section carries `ariaLabel` (each is a labelled <section>) and an optional `id` (the
@@ -103,10 +170,66 @@ interface SectionBase {
  */
 export interface ProofRowSection extends SectionBase {
   kind: 'PROOF_ROW';
+  /**
+   * OPTIONAL big figures, above the three columns. Omitted renders nothing at all.
+   *
+   * They belong to the proof rather than to a band of their own: "96 contracts / 0.15pp /
+   * 2 of 7" is the SAME finding the three columns narrate, stated as magnitudes. Split into
+   * a separate section it would need a second heading over the same argument, and a reader
+   * would take it for a second claim.
+   */
+  numbers?: { value: string; body: string }[];
   weak: { label: string; body: string };
   diagnosis: { label: string; body: string };
   coached: { label: string; body: string };
   caption: string;
+}
+
+/**
+ * STAT_STRIP — the thin bordered band of counts. NOT a card grid and not a section: it is a
+ * rule-to-rule strip between two sections, which is why it renders into the page's existing
+ * `.trust` treatment rather than a new one.
+ *
+ * It carries no heading, so it does NOT extend SectionBase. A strip of four numbers that
+ * needs a heading to be understood is the wrong strip.
+ */
+export interface StatStripSection {
+  kind: 'STAT_STRIP';
+  ariaLabel: string;
+  label: string;
+  stats: { value: string; label: string }[];
+}
+
+/**
+ * FEATURE_PANEL — a sage band: heading and lead, then bullets beside a marking panel.
+ *
+ * The bullets are RichText, not strings, and that is load-bearing rather than general: one of
+ * them names a status the product reports VERBATIM (`not reached`), and a bullet that cannot
+ * carry an <em> would either lose the distinction or smuggle it in with quote marks the
+ * product does not print.
+ */
+export interface FeaturePanelSection extends SectionBase {
+  kind: 'FEATURE_PANEL';
+  bullets: RichText[];
+  panel: PanelArtefact;
+}
+
+/**
+ * PAPER_CARDS — one card per paper: code, live/soon chip, name, what it teaches, what is
+ * live in it today, and a link into that paper's own page.
+ *
+ * ── WHY THIS IS NOT CARD_GRID ───────────────────────────────────────────────
+ * CARD_GRID's cards are FEATURES of one product and go nowhere; these are DESTINATIONS, and
+ * routing to the right paper is the pillar's whole job. The difference is the CTA, and a
+ * card grid that grew an optional CTA would be two components wearing one name.
+ *
+ * `live` is the counts line, and it is the one string on the pillar that must move whenever
+ * the DB does — it is stated per paper here and on that paper's own spoke, and the two must
+ * agree.
+ */
+export interface PaperCardsSection extends SectionBase {
+  kind: 'PAPER_CARDS';
+  cards: { code: string; name: string; status: string; blurb: string; live: string; cta: Cta }[];
 }
 
 /** CARD_TRIO — three numbered cards on the page's sage band ("01 / Diagnosis", …). */
@@ -166,7 +289,10 @@ export type AccaSection =
   | StepsSection
   | SkillsPanelSection
   | CardGridSection
-  | CompareTableSection;
+  | CompareTableSection
+  | StatStripSection
+  | FeaturePanelSection
+  | PaperCardsSection;
 
 // ── The page ────────────────────────────────────────────────────────────────
 
@@ -185,8 +311,10 @@ export interface PricingTier {
 }
 
 export interface AccaLandingConfig {
-  /** Used by nothing on the page itself — it is the key a caller identifies a config by. */
-  paper: 'APM' | 'AFM';
+  /** Used by nothing on the page itself — it is the key a caller identifies a config by.
+   *  `ACCA` is the PILLAR (gradd.ai root), which sells the qualification and routes to the
+   *  two papers rather than selling a paper. */
+  paper: 'APM' | 'AFM' | 'ACCA';
 
   /** The anonymous free-access CTA. Every slot carrying THIS href is what the
    *  entitlement-aware swap replaces — see `withAccaDynamicCta`. */
@@ -203,12 +331,16 @@ export interface AccaLandingConfig {
     eyebrow: { paper: string; exam: string };
     /** `lead` then the rust-underlined italic phrase. */
     h1: { lead: string; underline: string };
-    sub: string;
-    note: string;
+    /** One paragraph, or several. An array renders one <p class="hero-sub"> per entry — a
+     *  string renders exactly the single paragraph it always did. */
+    sub: string | string[];
+    /** OPTIONAL facts line under the sub — smaller and heavier. Omitted renders nothing. */
+    note?: string;
     ctas: Cta[];
-    microcopy: string;
+    /** OPTIONAL quiet line under the buttons. Omitted renders nothing. */
+    microcopy?: string;
     meta: string[];
-    artefact: ChatArtefact;
+    artefact: HeroArtefact;
   };
 
   /** OPTIONAL. Omitted renders nothing at all. AFM omits it. */
@@ -233,7 +365,10 @@ export interface AccaLandingConfig {
     note: string;
   };
 
-  faq: {
+  /** OPTIONAL, on the same terms as `resitBand`: omitting it renders NOTHING — no empty
+   *  list, no heading over blank space, and no FAQPage JSON-LD asserting questions the page
+   *  does not ask. The pillar omits it; see its header block for why. */
+  faq?: {
     id: string;
     ariaLabel: string;
     eyebrow: string;
@@ -249,6 +384,8 @@ export interface AccaLandingConfig {
     heading: Heading;
     lead: string;
     cta: Cta;
+    /** OPTIONAL second button beside the first. Omitted renders nothing. */
+    secondary?: Cta;
     small: string;
   };
 
@@ -347,6 +484,7 @@ export const APM_ACCA_LANDING: AccaLandingConfig = {
     microcopy: 'Resit diagnosis: free, 3 minutes, no sign-up. Drills: free to start with a quick email sign-in.',
     meta: ['Every drill free', 'No card to start', 'Upgrade for cases, marking and mock'],
     artefact: {
+      kind: 'CHAT',
       ariaLabel: 'Ezra withholding a model answer while coaching an APM requirement',
       name: 'Ezra',
       courseTitle: 'Evaluating the board report',
@@ -751,6 +889,7 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
     // 4.95% already right? — which is AFM's own failure shape. APM's hero transcript is a
     // report-evaluation exchange and shares nothing with it but the format.
     artefact: {
+      kind: 'CHAT',
       ariaLabel: 'Ezra withholding a model answer while coaching an AFM requirement',
       name: 'Ezra',
       courseTitle: 'Hedging the interest-rate exposure',
@@ -1034,5 +1173,382 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
       { label: 'Contact', href: 'mailto:hello@gradd.ai' },
     ],
     disclaimer: 'Gradd.ai is an independent learning platform and is not affiliated with or endorsed by ACCA (the Association of Chartered Certified Accountants).',
+  },
+};
+
+// ════════════════════════════════════════════════════════════════════════════
+// ACCA — THE PILLAR. What gradd.ai root serves, unconditionally.
+//
+// This is where qualification-level search intent lands ("ACCA tutor", "ACCA Strategic
+// Professional practice") and where cross-sell happens: a student who came for APM discovers
+// AFM exists. The two SPOKES sell a paper each; this page sells the qualification and ROUTES.
+//
+// ── THE ARGUMENT IS ITS OWN, AND IT IS NOT "TAUGHT, NOT JUST MARKED" ────────
+// That is the SPOKES' line — both of them carry it as a CARD_TRIO heading — and a root that
+// repeats it teaches a visitor nothing they will not read again one click later. The pillar's
+// argument is the market fact underneath all of it: AT STRATEGIC PROFESSIONAL, NOBODY MARKS
+// WHAT YOU WRITE. Sourced, not asserted — `docs/APM_MARKETING_POSITIONING.md` "SURFACED FROM
+// BUILD", LEAD LINE (31/07/2026): ACCA's own Practice Platform supplies a model answer and the
+// candidate self-grades; a tuition provider's mocks are EUR 29.99 each, two per paper, PDF,
+// tutor-marked, three-day turnaround; everything else is a question bank.
+//
+// ── WHAT THE PILLAR OMITS, AND WHY THAT IS NOT AN OVERSIGHT ─────────────────
+// · `resitBand` — the resit diagnostic is the pillar's CLOSING band instead (see finalCta),
+//   which is where it already sat, and the APM-scoping ruling below applies to it there.
+// · `faq` — the pillar has never had one. Omitting renders nothing; INVENTING six
+//   qualification-level Q&As would be authoring marketing claims nobody has ruled on, and a
+//   wrong answer in a FAQPage rich result is worse than no rich result. Flagged for Grant.
+// · `hero.note` / `hero.microcopy` — the spokes' note is a per-paper facts line ("all 91
+//   drills"), and the pillar has two papers with different counts. The counts live in the
+//   stat strip and on the paper cards, stated per paper, where they are true.
+//
+// ── EVERY NUMBER ON THIS PAGE, AND WHERE IT CAME FROM ───────────────────────
+// Carried across verbatim from `ACCAPillarPage.tsx`, whose provenance block this reproduces:
+// · 91 APM drills / 63 AFM drills / 154 total — queried LIVE against production 2026-08-05:
+//   `acca_drills` where exam_board='ACCA', status='approved', published=true. The two spoke
+//   configs above state 91 and 63 independently; if either moves, all three move together.
+// · 5 practice cases per paper / 10 total, 2 mock papers — same query against `acca_cases`
+//   (8 published rows per paper, 3 of them `mock_only`; 3 mock_only cases = one mock paper).
+// · "About a minute" to mark a paper — 58s and 60s across two end-to-end runs
+//   (`APM_MARKETING_POSITIONING.md`, claim 2).
+// · EUR 59.98 / three days — same doc, COMPETITOR CLAIMS + LEAD LINE. The provider is NOT
+//   named here (it is named on the AFM spoke); the pillar states the shape of the offer.
+// · 1.95 minutes per mark, 195 minutes, 100 marks — `lib/acca/pacing.ts` MINUTES_PER_MARK,
+//   which is ACCA's own arithmetic, not a house benchmark.
+// · The pacing quote is VERBATIM from the 31/07/2026 end-to-end walk (⚠ 12 MINUTES, NOT 7 —
+//   the source doc explicitly corrects an earlier draft at line 96: "Use the real numbers or
+//   none.") and is the SAME line the two spokes quote. One run, three pages, one wording.
+// · EVERY figure in the proof section is checked against
+//   `docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md`, line by line:
+//     · 96 contracts, SOLD ............... §Q3(i)/2 "N=96 contracts", "should sell 96"
+//     · both scenarios reconcile 4.95% ... §Q3(i) Summary table, both rows 4.95%
+//     · 0.15 unexpired basis omitted ..... header: candidate takes 100 − prevailing rate
+//     · closing price 94.85 vs 95.00 ..... header component table
+//     · effective rate 4.80% vs 4.95% .... header component table (abs ±0.05 band)
+//     · 2 of 7 pass, 5 fail, one cause ... header: "2 pass, 5 fail, and every one of the 5
+//                                          failures is that same omission"
+//     · the cross-check cannot catch it .. header §"The candidate's own self-check does NOT
+//                                          discriminate" — the omitted 0.15 applies
+//                                          identically to both legs
+//
+// ── THE RESIT CTA IS SCOPED TO APM, AND THAT IS A CORRECTION ────────────────
+// The closing band once read "Failed a paper?" unqualified. `lib/acca/resit-engine.ts` is
+// written in APM's own terms (its habit prompts say "APM gives marks for professional
+// skills…") and `app/acca/resit/page.tsx` renders "Free ACCA APM resit diagnostic" — there is
+// no AFM equivalent. An AFM resitter following an unqualified promise lands on a page about a
+// paper they are not sitting, so the band names APM.
+//
+// ⚠ PRICING IS PER PAPER (ruled 2026-08-03) and this page says so three times — in the hero
+// meta, in the paper-cards lead, and in the pricing note. Under the old bundle a pillar could
+// have implied one purchase covered everything; that is now false, and saying so HERE, before
+// the student reaches a spoke, is what stops them assuming it. The paid tiers therefore route
+// to the paper cards rather than to a checkout: there is no paper-agnostic thing to buy.
+// ⚠ NO CODE-OWNS-THE-MARKS CLAIM, same as both spokes. Code owns every figure in DRILL
+// GENERATION; MARKING is model-graded.
+// ════════════════════════════════════════════════════════════════════════════
+
+// The pillar's free CTA carries no `?paper=` — a visitor who has not chosen a paper yet lands
+// on the default. Choosing is what the paper cards are for.
+const ACCA_AUTH_FREE = '/acca/auth?next=/acca';
+
+export const ACCA_PILLAR_LANDING: AccaLandingConfig = {
+  paper: 'ACCA',
+  freeCta: { label: 'Start free', href: ACCA_AUTH_FREE },
+
+  nav: {
+    // The two ANCHOR links drop out below 860px with `.nav-links`; the PAPER links do not,
+    // because they are the pillar's whole job. That is why they sit in `quiet` (the
+    // always-visible right-hand group) rather than here — the ruling from the page this
+    // replaces, kept by putting each link in the group whose behaviour it needs.
+    links: [
+      { label: 'Papers', scrollTo: 'papers' },
+      { label: 'How it compares', scrollTo: 'compare' },
+      { label: 'Pricing', scrollTo: 'pricing' },
+    ],
+    quiet: [
+      { label: 'APM', href: '/acca/apm' },
+      { label: 'AFM', href: '/acca/afm' },
+    ],
+    primary: { label: 'Start free', href: ACCA_AUTH_FREE },
+  },
+
+  hero: {
+    eyebrow: { paper: 'ACCA Strategic Professional', exam: 'APM + AFM' },
+    h1: { lead: 'Nobody marks', underline: 'what you write.' },
+    // TWO paragraphs, and the order is the argument: the state of practice first, what Gradd
+    // does about it second. Merged into one they read as a grievance; reversed they read as a
+    // boast with no problem attached.
+    sub: [
+      'At Strategic Professional that is simply the state of practice. ACCA’s own Practice Platform hands you a model answer and asks you to grade yourself. Two tutor-marked mocks from a tuition provider cost €59.98 and come back three days later, on a PDF. Everything else is a question bank.',
+      'Gradd marks the answer you actually wrote — in about a minute, as many times as you want, and it names the step where your figure diverged.',
+    ],
+    ctas: [
+      { label: 'Start free', href: ACCA_AUTH_FREE, variant: 'rust' },
+      { label: 'See a real walkthrough', href: '/acca/afm/proof', variant: 'ghost' },
+    ],
+    meta: ['Every drill free', 'No card to start', 'Bought per paper'],
+    // THE PILLAR'S ARTEFACT IS A MARKED ANSWER, NOT A CONVERSATION — the spokes sell a tutor,
+    // this page sells marking, and the first screen has to show the thing it is selling. It
+    // renders in the SAME `.mark-panel` frame the spokes' professional-skills section uses.
+    artefact: {
+      kind: 'PANEL',
+      ariaLabel: 'A marking panel naming the exact step where a candidate’s figure diverged',
+      title: 'Marked',
+      sub: 'ACCA AFM · Mock Paper 1 · Q3 (i)',
+      rows: [
+        {
+          label: 'Technical',
+          verdict: 'competent',
+          tone: 'mid',
+          quoted: true,
+          body: '“Contract count, sell direction and both rate scenarios are right. The closing futures price omits the 0.15 unexpired basis, so the hedge locks 4.95% where the answer is 4.80%.”',
+        },
+        {
+          label: 'Scepticism',
+          verdict: 'strong',
+          tone: 'strong',
+          quoted: true,
+          body: '“States the basis-risk limitation outright rather than presenting the two-scenario reconciliation as proof the rate is guaranteed.”',
+        },
+      ],
+      foot: 'Marked in about a minute · unlimited attempts',
+      caption: 'The answer you wrote, marked — not a model answer you grade yourself.',
+    },
+  },
+
+  // resitBand DELIBERATELY OMITTED — the resit diagnostic is this page's CLOSING band. See
+  // the header block.
+
+  sections: [
+    // ── 1. WHAT IS LIVE ── A strip, not a section: four counts between the hero and the
+    // argument. Every figure is queried, not estimated; see the header block.
+    {
+      kind: 'STAT_STRIP',
+      ariaLabel: 'What is live today',
+      label: 'Live today',
+      stats: [
+        { value: '154', label: 'drills live across two papers' },
+        { value: '10', label: 'practice exam cases' },
+        { value: '2', label: 'timed mock papers' },
+        { value: '~1 min', label: 'to mark a whole paper' },
+      ],
+    },
+    // ── 2. THE PROOF ── The pillar's own version of the shape both spokes open with, and the
+    // reading is the pillar's rather than either paper's: not "this candidate described
+    // instead of judging" (APM) or "the execution broke" (AFM), but "the candidate could not
+    // have caught this alone, so somebody has to mark it".
+    {
+      kind: 'PROOF_ROW',
+      ariaLabel: 'The proof',
+      eyebrow: { a: 'The proof', b: 'AFM Mock Paper 1' },
+      heading: { text: 'The answer that checked itself, and was', em: 'still wrong.' },
+      lead: 'A candidate sat AFM Mock Paper 1 blind, with no access to any answer-side field. On the interest-rate futures hedge the contract count was right, the sell direction was right, and both the rate-rise and rate-fall scenarios reconciled to the same 4.95% — which is precisely the self-check the requirement asks for. It confirmed the wrong answer.',
+      numbers: [
+        { value: '96', body: 'contracts, sold — the count and the direction are both right. This is the near-correct script, not the zero script.' },
+        { value: '0.15pp', body: 'is the whole error. The unexpired basis was never taken off the closing futures price, so the hedge locks 4.95% where the answer is 4.80%.' },
+        { value: '2 of 7', body: 'components pass on tolerance. All five failures trace to that one missed step — not five separate errors.' },
+      ],
+      weak: {
+        label: 'What the candidate wrote',
+        body: '96 contracts, sold. Loan interest, futures gain and net cost all priced consistently off the candidate’s own closing price. Both scenarios land on 4.95%, and the script reads as confirmed.',
+      },
+      diagnosis: {
+        label: 'Why the cross-check cannot catch it',
+        body: 'The omitted 0.15 applies identically to the rate-rise and the rate-fall leg. The reconciliation is invariant to the omission — it lands just as cleanly on the wrong rate as on the right one.',
+      },
+      coached: {
+        label: 'What marking has to say',
+        body: 'The unexpired basis was never subtracted. Closing price 94.85, not 95.00; effective rate 4.80%, not 4.95%. One conceptual step, named — rather than five red components handed back as five errors.',
+      },
+      caption: 'Self-grading against a model answer shows a 0.15 gap. It does not tell you the gap is the basis, or that one step closes all five.',
+    },
+    // ── 3. PACING ── The sage band. The claim is about what a PDF structurally cannot do,
+    // which is the pillar's argument again in a second register.
+    {
+      kind: 'FEATURE_PANEL',
+      ariaLabel: 'Pacing',
+      eyebrow: { a: 'Pacing', b: 'What a PDF cannot do' },
+      heading: { text: 'A tutor marking a PDF three days later cannot know', em: 'when you wrote each answer.' },
+      lead: 'Gradd can, because every requirement is submitted separately and timestamped. The debrief measures each submission-to-submission interval against the paper’s own arithmetic — 195 minutes, 100 marks, 1.95 minutes per mark — and reports what happened.',
+      bullets: [
+        ['Intervals are submission-to-submission, never “time spent writing” — reading and thinking sit inside the interval, and the report says so.'],
+        ['The first requirement carries no ratio: its interval contains reading the whole Section A scenario and its exhibits.'],
+        ['A requirement never reached is reported as ', { em: 'not reached' }, ', not as blank. Different findings, different next actions.'],
+      ],
+      panel: {
+        kind: 'PANEL',
+        ariaLabel: 'A pacing report showing an end-of-paper collapse finding',
+        title: 'Pacing',
+        sub: 'AFM Mock Paper 1 · 8 requirements',
+        rows: [
+          {
+            label: 'End-of-paper collapse',
+            verdict: 'high',
+            tone: 'mid',
+            quoted: true,
+            body: '“Between submitting Q2 (ii) and finishing, 12 minutes elapsed across Q3 (i)–Q3 (ii), against a combined budget of 39 minutes. The final 2 requirements recorded no answer that could earn marks.”',
+          },
+          {
+            // NOT a band — see `PanelRow.tone`. "no ratio" says a budget could not be
+            // computed for this interval, which is neither good nor bad news.
+            label: 'Q1 (i) — reading + first requirement',
+            verdict: 'no ratio',
+            tone: 'flat',
+            body: 'Reported without a ratio on purpose: this interval contains the Section A scenario and its exhibits, so a marks-derived budget would mean nothing.',
+          },
+        ],
+        foot: 'Measured from submission timestamps · 1.95 minutes per mark',
+      },
+    },
+    // ── 4. HOW IT COMPARES ── The lead argument in its most checkable form. No competitor is
+    // named and no competitor price is invented beyond the one the positioning doc records;
+    // "varies by provider" is the honest cell for question banks.
+    {
+      kind: 'COMPARE_TABLE',
+      id: 'compare',
+      ariaLabel: 'How Gradd compares',
+      eyebrow: 'The state of practice',
+      heading: { text: 'Everyone tests you. Almost nobody', em: 'marks you.' },
+      lead: 'A question bank tells you whether a number matched. It cannot tell you that your answer stopped short of the judgement the verb asked for, or which step sent the figure wrong.',
+      rowLabels: [
+        'Who marks your written answer',
+        'Turnaround',
+        'Names where your figure diverged',
+        'Times each requirement against its budget',
+        'Attempts',
+        'Cost for one sitting',
+      ],
+      columns: [
+        {
+          label: 'ACCA Practice Platform',
+          values: ['You do — against a model answer', 'Instant, self-graded', false, false, 'Unlimited', 'Free'],
+        },
+        {
+          label: 'Tuition-provider mocks',
+          values: ['A tutor, on a PDF', 'Three days', 'Tutor’s discretion', false, 'Two per paper', '€59.98 for the two'],
+        },
+        {
+          label: 'Question banks',
+          values: ['Nobody', '—', false, false, 'Unlimited', 'Varies by provider'],
+        },
+        {
+          label: 'Gradd',
+          values: ['Ezra, against the requirement', 'About a minute', true, true, 'Unlimited', '€99 per paper'],
+          gradd: true,
+        },
+      ],
+      scrollHint: 'Scroll to see more →',
+    },
+    // ── 5. THE PAPERS ── The pillar's own job, on the sage band, immediately before pricing:
+    // the price is per paper, so the choice has to be made first.
+    {
+      kind: 'PAPER_CARDS',
+      id: 'papers',
+      ariaLabel: 'Papers',
+      eyebrow: 'Two papers live',
+      heading: { text: 'Pick the paper you are', em: 'sitting.' },
+      lead: 'Each paper is bought on its own. The drills, the cases and the mock belong to that paper — there is no shared bank and no bundle.',
+      cards: [
+        {
+          code: 'APM',
+          name: 'Advanced Performance Management',
+          status: 'Live',
+          blurb: 'Ezra diagnoses why an answer lost marks — describing a model instead of applying it, stopping short of the judgement the verb demanded — then coaches the fix until the answer would score.',
+          live: '91 drills, free to attempt · 5 practice exam cases · professional-skills marking · a timed mock, marked as one paper.',
+          cta: { label: 'APM in detail', href: '/acca/apm', variant: 'rust' },
+        },
+        {
+          code: 'AFM',
+          name: 'Advanced Financial Management',
+          status: 'Live',
+          blurb: 'The senior-adviser register: your arithmetic is usually fine, but the ADVICE would not survive a boardroom. Ezra pushes from a correct number to a committed recommendation.',
+          live: '63 drills, free to attempt · 5 practice exam cases · professional-skills marking · a timed mock, marked as one paper.',
+          cta: { label: 'AFM in detail', href: '/acca/afm', variant: 'rust' },
+        },
+      ],
+    },
+  ],
+
+  pricing: {
+    id: 'pricing',
+    ariaLabel: 'Pricing',
+    eyebrow: 'Pricing',
+    heading: { text: 'Free to start. Then priced', em: 'per paper.' },
+    lead: 'Every drill on both papers is free to attempt. Coaching, exam cases, marking and the timed mock are bought on the paper you are sitting.',
+    tiers: [
+      {
+        name: 'Free',
+        currency: '€',
+        amount: '0',
+        tagline: 'Every drill in the paper, unlimited, plus three full teach-throughs with Ezra. No card.',
+        features: ['Every drill in the paper, unlimited', '3 full teach-throughs with Ezra', 'No card, no commitment'],
+        cta: { label: 'Start free', href: ACCA_AUTH_FREE, variant: 'ghost' },
+      },
+      {
+        name: 'Exam pass',
+        currency: '€',
+        amount: '99',
+        per: 'one-time · 90 days',
+        tagline: 'Unlimited coaching, exam cases, professional-skills marking and the timed mock, through your sitting.',
+        features: [
+          'Unlimited teach-throughs with Ezra',
+          'Exam cases + professional-skills marking',
+          'The timed mock, marked as one paper',
+          'One payment — no recurring charge',
+        ],
+        // THERE IS NOTHING PAPER-AGNOSTIC TO BUY, so this cannot be a checkout link. It goes
+        // to the paper cards, which is the choice that has to happen first.
+        cta: { label: 'Pick your paper', href: '#papers', variant: 'rust' },
+        badge: 'Best for one sitting',
+        featured: true,
+      },
+      {
+        name: 'Monthly',
+        currency: '€',
+        amount: '49',
+        per: '/ month',
+        tagline: 'The same access, month to month.',
+        features: [
+          'Unlimited teach-throughs with Ezra',
+          'Exam cases + professional-skills marking',
+          'The timed mock, marked as one paper',
+          'Cancel any time',
+        ],
+        cta: { label: 'Pick your paper', href: '#papers', variant: 'ghost' },
+        badge: 'Flexible',
+        badgeMuted: true,
+      },
+    ],
+    note: 'Prices are per paper. Buying APM does not include AFM.',
+  },
+
+  // faq DELIBERATELY OMITTED — see the header block.
+
+  finalCta: {
+    ariaLabel: 'Free APM resit diagnostic',
+    pill: 'Free · 3 minutes · no sign-up',
+    heading: { text: 'Failed APM? Find out', em: 'exactly why.' },
+    lead: 'Your result slip gives you a score. It does not name the habit that cost the marks. Three quick steps — your score, how each syllabus area went, and six honest questions about how you write — and you get the areas to drill and the habits to fix first.',
+    cta: { label: 'Get my free resit diagnosis', href: '/acca/resit', variant: 'rust' },
+    secondary: { label: 'Start free instead', href: ACCA_AUTH_FREE, variant: 'ghost' },
+    small: 'Every drill free · €99 per paper for 90 days, or €49/month · No card to start',
+  },
+
+  footer: {
+    copyright: '© 2026 · AI tutor for ACCA Strategic Professional',
+    // THE /ib LINK IS LOAD-BEARING, not a courtesy. This page IS gradd.ai home, and since the
+    // hub (whose nav carried it) was deleted, nothing else on gradd.ai links to /ib. Remove it
+    // and the IB landing is unreachable and uncrawlable from every page on the site.
+    links: [
+      { label: 'ACCA APM', href: '/acca/apm' },
+      { label: 'ACCA AFM', href: '/acca/afm' },
+      { label: 'IB Diploma', href: '/ib' },
+      { label: 'Terms', href: '/terms' },
+      { label: 'Privacy', href: '/privacy' },
+      { label: 'Cookies', href: '/cookies' },
+      { label: 'Blog', href: '/blog' },
+      { label: 'Contact', href: 'mailto:hello@gradd.ai' },
+    ],
+    disclaimer: 'Gradd.ai is an independent learning platform and is not affiliated with or endorsed by ACCA (the Association of Chartered Certified Accountants). Scenarios are original works built to the public syllabus structure.',
   },
 };

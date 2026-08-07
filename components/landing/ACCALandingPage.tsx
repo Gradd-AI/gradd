@@ -1,8 +1,21 @@
 'use client';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ACCA SPOKE LANDING PAGE — the flagship marketing page for a Strategic Professional
-// paper on gradd.ai. Renders /acca/apm and /acca/afm.
+// ACCA LANDING PAGE — the flagship marketing surface on gradd.ai. Renders the two SPOKES
+// (/acca/apm, /acca/afm) and, since 2026-08-07, the PILLAR at root.
+//
+// ── THE PILLAR JOINED THIS COMPONENT (`feat/acca-pillar-config`) ─────────────
+// Root used to be its own component on the generalised template's stylesheet, so the page a
+// stranger ACTUALLY LANDS ON looked unlike the two it links to. It now renders here with
+// `ACCA_PILLAR_LANDING`, which is why the section list below is nine kinds rather than six.
+// The three new ones exist because the pillar's three unique blocks are real shapes —
+// STAT_STRIP is a rule-to-rule strip, FEATURE_PANEL is a split with an artefact in it, and
+// PAPER_CARDS carry a destination — and none of them is a points[] grid pretending.
+//
+// Each reuses an EXISTING treatment rather than inventing one: STAT_STRIP renders `.trust`,
+// FEATURE_PANEL renders the `.one-sub` band and the `.d-grid` split SKILLS_PANEL uses, and
+// PAPER_CARDS renders the `.os-card` shell. That is what makes the three pages read as one
+// family; the new CSS below is only the shapes that genuinely did not exist.
 //
 // Free-tier + paid pricing, real CTAs into /acca, the proof row, professional-skills
 // marking, FAQ + FAQPage JSON-LD. Exactly one <h1> (hero); every section is a labelled
@@ -41,6 +54,7 @@ import type {
   Cta,
   Eyebrow,
   Heading,
+  PanelArtefact,
   RichText,
 } from '@/components/landing/acca-landing-config';
 
@@ -99,6 +113,39 @@ function sectionHead(s: { eyebrow?: Eyebrow; heading: Heading; lead?: string }) 
   );
 }
 
+/** ONE row of a marking panel, shared by SKILLS_PANEL and every PANEL artefact.
+ *
+ *  Shared deliberately rather than copied: the pillar's hero panel and the spokes' skills
+ *  panel are meant to BE the same object, and two copies of this markup would let them drift
+ *  apart one small edit at a time. `quoted` picks between the italic quotation treatment and
+ *  the upright annotation one — see `PanelRow` for why that distinction is not decoration.
+ *
+ *  ⚠️ The output here is inside APM's SHA-256 pin. Anything added must be rendered only when a
+ *  field is present, or the pin moves — which is the point of the pin. */
+function markRow(r: { label: string; verdict: string; tone: 'strong' | 'mid' | 'flat'; body: string; quoted?: boolean }) {
+  return (
+    <div className="mark-row" key={r.label}>
+      <div className="mark-row-hd"><span className="mark-skill">{r.label}</span><span className={`mark-band mark-band--${r.tone}`}>{r.verdict}</span></div>
+      <p className={r.quoted ? 'mark-evidence' : 'mark-note'}>{r.body}</p>
+    </div>
+  );
+}
+
+/** A marking panel — the frame, its head, its rows and its optional foot. The italic
+ *  `caption` is NOT rendered here: it sits OUTSIDE the frame, and only the hero has one. */
+function panel(p: PanelArtefact) {
+  return (
+    <div className="mark-panel" role="img" aria-label={p.ariaLabel}>
+      <div className="mark-panel-hd">
+        <span className="mark-panel-title">{p.title}</span>
+        <span className="mark-panel-sub">{p.sub}</span>
+      </div>
+      {p.rows.map(markRow)}
+      {p.foot !== undefined && <p className="mark-panel-foot">{p.foot}</p>}
+    </div>
+  );
+}
+
 // ── Section renderers — one per kind, structure and classes owned here ───────
 
 function renderSection(s: AccaSection, key: number) {
@@ -113,6 +160,19 @@ function renderSection(s: AccaSection, key: number) {
         <section key={key} className="section judgement" id={s.id} aria-label={s.ariaLabel}>
           <div className="wrap">
             {sectionHead(s)}
+            {/* OPTIONAL big figures. Omitted, this renders nothing at all — not an empty
+                row. They sit between the lead and the columns because they are the same
+                finding stated as magnitudes, not a second claim. */}
+            {s.numbers !== undefined && (
+              <div className="ja-nums">
+                {s.numbers.map((n) => (
+                  <div className="ja-num" key={n.value}>
+                    <span className="ja-num-value">{n.value}</span>
+                    <p className="ja-num-body">{n.body}</p>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="ja-card">
               <div className="ja-col ja-weak">
                 <div className="ja-tag">{s.weak.label}</div>
@@ -183,17 +243,14 @@ function renderSection(s: AccaSection, key: number) {
                   </div>
                 ))}
               </div>
+              {/* The SCORE head, which only this section has — the pillar's panels carry a
+                  subtitle instead. The ROWS below it are the shared `markRow`. */}
               <div className="mark-panel" role="img" aria-label={s.panel.ariaLabel}>
                 <div className="mark-panel-hd">
                   <span className="mark-panel-title">{s.panel.title}</span>
                   <span className="mark-panel-score">{s.panel.score}<span className="mark-panel-of">{s.panel.of}</span></span>
                 </div>
-                {s.panel.rows.map((r) => (
-                  <div className="mark-row" key={r.skill}>
-                    <div className="mark-row-hd"><span className="mark-skill">{r.skill}</span><span className={`mark-band mark-band--${r.tone}`}>{r.verdict}</span></div>
-                    <p className="mark-evidence">{r.evidence}</p>
-                  </div>
-                ))}
+                {s.panel.rows.map((r) => markRow({ ...r, label: r.skill, body: r.evidence, quoted: true }))}
               </div>
             </div>
             <p className="ja-caption">{s.caption}</p>
@@ -280,6 +337,80 @@ function renderSection(s: AccaSection, key: number) {
           </div>
         </section>
       );
+
+    // ── STAT_STRIP ── the thin bordered counts band, rule to rule.
+    //
+    // It renders `.trust`, NOT `.section`, and that is load-bearing twice over. Visually it
+    // is a strip between two sections rather than a section of its own, so it carries its own
+    // top and bottom hairline and none of the section padding. Structurally, because it is
+    // not `.section`, it BREAKS the cream-run adjacency chain — two cream sections either
+    // side of it get no seam rule drawn across it, which is right: the strip's own borders
+    // have already done that job, and a third line would be a triple.
+    case 'STAT_STRIP':
+      return (
+        <section key={key} className="trust" aria-label={s.ariaLabel}>
+          <div className="wrap trust-inner">
+            <span className="trust-label">{s.label}</span>
+            <div className="trust-stats">
+              {s.stats.map((st) => (
+                <div className="trust-stat" key={st.label}>
+                  <span className="num">{st.value}</span>
+                  <span className="lbl">{st.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
+
+    // ── FEATURE_PANEL ── sage band: bullets beside a marking panel.
+    //
+    // Reuses `.one-sub` (the band) and `.d-grid` (the two-column split) exactly as
+    // SKILLS_PANEL does — same band, same proportions, same collapse point — so the pillar's
+    // one sage feature and the spokes' sage feature are the same object at a glance.
+    case 'FEATURE_PANEL':
+      return (
+        <section key={key} className="section one-sub" id={s.id} aria-label={s.ariaLabel}>
+          <div className="wrap">
+            {sectionHead(s)}
+            <div className="d-grid">
+              <ul className="feat-bullets">
+                {s.bullets.map((b, i) => <li key={i}>{rich(b)}</li>)}
+              </ul>
+              {panel(s.panel)}
+            </div>
+          </div>
+        </section>
+      );
+
+    // ── PAPER_CARDS ── one card per paper, each with a link into that paper's own page.
+    //
+    // The card SHELL is `.os-card`, the same one the sage band's numbered cards use; only the
+    // contents differ, because a card on this band should not look like a new species. What
+    // makes this a kind of its own rather than a CARD_GRID variant is the CTA: these cards are
+    // destinations, and routing is the pillar's whole job.
+    case 'PAPER_CARDS':
+      return (
+        <section key={key} className="section one-sub" id={s.id} aria-label={s.ariaLabel}>
+          <div className="wrap">
+            {sectionHead(s)}
+            <div className="paper-grid">
+              {s.cards.map((c) => (
+                <article className="os-card paper-card" key={c.code}>
+                  <div className="paper-hd">
+                    <h3>{c.code}</h3>
+                    <span className="paper-chip">{c.status}</span>
+                  </div>
+                  <p className="paper-name">{c.name}</p>
+                  <p className="paper-blurb">{c.blurb}</p>
+                  <p className="paper-live"><strong>What&rsquo;s live:</strong>{` ${c.live}`}</p>
+                  {btn(c.cta)}
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      );
   }
 }
 
@@ -306,8 +437,9 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
   const { hero, resitBand, pricing, faq, finalCta, footer } = config;
 
   // Built from the SAME array the visible list renders, so the structured data mirrors the
-  // on-page copy exactly and cannot drift from it.
-  const faqJsonLd = {
+  // on-page copy exactly and cannot drift from it. A page with no FAQ emits NO JSON-LD —
+  // structured data asserting questions the page does not ask is worse than none.
+  const faqJsonLd = faq === undefined ? null : {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: faq.items.map((f) => ({
@@ -361,14 +493,19 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
               <h1 className="hero-h1 h-display">
                 {`${hero.h1.lead} `}<span className="em underline">{hero.h1.underline}</span>
               </h1>
-              <p className="hero-sub">
-                {hero.sub}
-              </p>
-              <p className="hero-note">{hero.note}</p>
+              {/* One paragraph or several. A plain string renders the single <p> it always
+                  did — the array form is what the pillar needs, because its hero states the
+                  problem and the answer to it in that order and they are not one sentence. */}
+              {(Array.isArray(hero.sub) ? hero.sub : [hero.sub]).map((p, i) => (
+                <p className="hero-sub" key={i}>
+                  {p}
+                </p>
+              ))}
+              {hero.note !== undefined && <p className="hero-note">{hero.note}</p>}
               <div className="hero-cta">
                 {hero.ctas.map((c) => btn(c, c.label))}
               </div>
-              <p className="hero-microcopy">{hero.microcopy}</p>
+              {hero.microcopy !== undefined && <p className="hero-microcopy">{hero.microcopy}</p>}
               {/* Dot-separated, so the separator belongs BETWEEN items, not to an item — a
                   Fragment carries the key without adding an element to the DOM. */}
               <div className="hero-meta">
@@ -381,43 +518,51 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
               </div>
             </div>
 
+            {/* TWO ARTEFACT SHAPES, and the choice is the page's claim about itself: a SPOKE
+                sells a tutor, so it shows a conversation; the PILLAR sells marking, so it
+                shows a marked answer. Both sit in the same slot with the same caption
+                treatment beneath. */}
             <div className="hero-visual">
-              <div className="chat" role="img" aria-label={hero.artefact.ariaLabel}>
-                <div className="chat-hd">
-                  <div className="chat-logo">
-                    <img src="/gradd-ai-logo.png" alt="" style={{height:16,width:'auto',display:'block'}} />
+              {hero.artefact.kind === 'CHAT' ? (
+                <div className="chat" role="img" aria-label={hero.artefact.ariaLabel}>
+                  <div className="chat-hd">
+                    <div className="chat-logo">
+                      <img src="/gradd-ai-logo.png" alt="" style={{height:16,width:'auto',display:'block'}} />
+                    </div>
+                    <div className="chat-name-pill"><span className="live" />{hero.artefact.name}</div>
+                    <div className="chat-course">
+                      <div className="em">{hero.artefact.courseTitle}</div>
+                      <div>{hero.artefact.courseSub}</div>
+                    </div>
                   </div>
-                  <div className="chat-name-pill"><span className="live" />{hero.artefact.name}</div>
-                  <div className="chat-course">
-                    <div className="em">{hero.artefact.courseTitle}</div>
-                    <div>{hero.artefact.courseSub}</div>
-                  </div>
-                </div>
-                <div className="chat-body">
-                  {hero.artefact.turns.map((t, i) =>
-                    t.role === 'student' ? (
-                      <div className="chat-row from-user" key={i}>
-                        <div className="user-bubble">{t.text}</div>
-                        <div className="user-av">S</div>
-                      </div>
-                    ) : (
-                      <div className="chat-row" key={i}>
-                        <div className="ezra-av">E</div>
-                        <div className="ezra-msg">
-                          {t.badge !== undefined && <span className="hint-badge">{t.badge}</span>}
-                          {t.paragraphs.map((p, pi) => <p key={pi}>{rich(p)}</p>)}
+                  <div className="chat-body">
+                    {hero.artefact.turns.map((t, i) =>
+                      t.role === 'student' ? (
+                        <div className="chat-row from-user" key={i}>
+                          <div className="user-bubble">{t.text}</div>
+                          <div className="user-av">S</div>
                         </div>
-                      </div>
-                    ),
-                  )}
+                      ) : (
+                        <div className="chat-row" key={i}>
+                          <div className="ezra-av">E</div>
+                          <div className="ezra-msg">
+                            {t.badge !== undefined && <span className="hint-badge">{t.badge}</span>}
+                            {t.paragraphs.map((p, pi) => <p key={pi}>{rich(p)}</p>)}
+                          </div>
+                        </div>
+                      ),
+                    )}
+                  </div>
+                  <div className="chat-input">
+                    <div className="ph">{hero.artefact.inputPlaceholder}</div>
+                    <div className="send">↵</div>
+                  </div>
+                  <div className="chat-foot">{hero.artefact.footer}</div>
                 </div>
-                <div className="chat-input">
-                  <div className="ph">{hero.artefact.inputPlaceholder}</div>
-                  <div className="send">↵</div>
-                </div>
-                <div className="chat-foot">{hero.artefact.footer}</div>
-              </div>
-              <p className="visual-caption">{hero.artefact.caption}</p>
+              ) : (
+                panel(hero.artefact)
+              )}
+              {hero.artefact.caption !== undefined && <p className="visual-caption">{hero.artefact.caption}</p>}
             </div>
           </div>
         </section>
@@ -470,7 +615,10 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
           </div>
         </section>
 
-        {/* ── FAQ (+ FAQPage JSON-LD) ── */}
+        {/* ── FAQ (+ FAQPage JSON-LD) ──
+            OPTIONAL, on the same terms as the resit band: omitted, this renders nothing —
+            no empty <dl>, no heading over blank space, and no JSON-LD. */}
+        {faq !== undefined && (
         <section className="section" id={faq.id} aria-label={faq.ariaLabel}>
           <div className="wrap" style={{maxWidth:820}}>
             <div className="section-head">
@@ -491,6 +639,7 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
             dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
           />
         </section>
+        )}
 
         {/* ── FINAL CTA ── */}
         <section className="final-cta" aria-label={finalCta.ariaLabel}>
@@ -500,8 +649,13 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
             </div>
             <h2 className="h-display">{heading(finalCta.heading)}</h2>
             <p className="lead">{finalCta.lead}</p>
+            {/* The optional SECOND button renders only when a config sets one, so a page with
+                one CTA still emits exactly one child here. The pillar sets it because its
+                close offers the free APM resit diagnostic, and a visitor sitting AFM needs
+                somewhere to go that is not that. */}
             <div className="hero-cta" style={{justifyContent:'center',marginTop:36}}>
               {btn(finalCta.cta)}
+              {finalCta.secondary !== undefined && btn(finalCta.secondary)}
             </div>
             <div className="small">{finalCta.small}</div>
           </div>
@@ -655,6 +809,12 @@ const CSS = `
    the section order ever changed. Verified in-browser on both pages: exactly the two
    seams match, with and without it.
 
+   THE PILLAR'S STAT_STRIP IS OUTSIDE THIS RULE BY CONSTRUCTION, not by exclusion: it renders
+   .trust, which is not .section, so it is not an adjacent sibling either half can match.
+   That is the correct answer — it carries its own top and bottom hairline, and a seam rule
+   drawn across it would be a third line. A future strip-shaped kind must do the same, or be
+   listed here.
+
    Every genuine BAND class must appear in BOTH halves. A new one added later and not
    listed here would paint a hairline directly onto that band's own border.
    test-acca-landing-config.ts guards the PRECONDITION for that, and the limit of what
@@ -754,6 +914,10 @@ const CSS = `
   margin-top: 28px; font-size: clamp(17px, 1.4vw, 19px);
   line-height: 1.55; color: var(--ink-2); max-width: 52ch;
 }
+/* A SECOND hero paragraph is a paragraph, not a second block: 28px is the gap between the
+   h1 and the copy, and repeating it between two sentences of one argument breaks them apart.
+   Only ever matches when a config supplies an array. */
+.acca-lp .hero-sub + .hero-sub { margin-top: 14px; }
 .acca-lp .hero-thesis {
   font-family: var(--serif);
   font-style: italic;
@@ -931,6 +1095,44 @@ const CSS = `
   letter-spacing: -0.015em; margin-bottom: 10px;
 }
 .acca-lp .os-card p { font-size: 14px; color: var(--ink-2); line-height: 1.55; }
+
+/* ── Paper cards — the pillar's routing pair, on the same sage band and in the same .os-card
+   shell as the numbered cards above. Only the contents differ: a card on this band should
+   not look like a new species because it happens to carry a link. ── */
+.acca-lp .paper-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 40px; }
+@media (max-width: 760px) { .acca-lp .paper-grid { grid-template-columns: 1fr; } }
+.acca-lp .paper-card { display: flex; flex-direction: column; gap: 10px; }
+.acca-lp .paper-hd { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+/* margin-bottom is zeroed because .os-card h3 carries 10px for a non-flex card, and here it
+   would compound with the column gap into an uneven 20px under the code alone. */
+.acca-lp .paper-card h3 { font-size: 30px; margin-bottom: 0; }
+.acca-lp .paper-chip {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--rust); border: 1px solid color-mix(in oklab, var(--rust) 35%, transparent);
+  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+.acca-lp .paper-card .paper-name { font-size: 13px; font-weight: 500; color: var(--ink-3); }
+.acca-lp .paper-card .paper-blurb { font-size: 14px; line-height: 1.55; }
+.acca-lp .paper-card .paper-live { font-size: 13px; line-height: 1.5; margin-bottom: 6px; }
+.acca-lp .paper-card .paper-live strong { color: var(--rust); font-weight: 600; }
+/* margin-top:auto so both buttons sit on one line however unevenly the blurbs wrap. */
+.acca-lp .paper-card .btn { align-self: flex-start; margin-top: auto; }
+
+/* ── Feature bullets — the copy half of FEATURE_PANEL.
+   PADDING-LEFT + ::before, NOT a two-column grid on the <li>. A grid makes every ELEMENT
+   child of the bullet a grid ITEM of its own, so an <em> inside a sentence is torn out onto
+   its own line — caught on the "reported as <em>not reached</em>" bullet, which is exactly
+   the bullet that needs the emphasis. This keeps the <li> in normal inline flow. ── */
+.acca-lp .feat-bullets { list-style: none; display: flex; flex-direction: column; gap: 14px; }
+.acca-lp .feat-bullets li {
+  position: relative; padding-left: 30px;
+  font-size: 14.5px; line-height: 1.5; color: var(--ink-2);
+}
+.acca-lp .feat-bullets li::before {
+  content: ""; position: absolute; left: 4px; top: 7px;
+  width: 10px; height: 10px; border-radius: 50%; background: var(--forest);
+}
+.acca-lp .feat-bullets li em { font-style: italic; color: var(--forest); font-weight: 500; }
 
 /* ── Exam-ready / How it marks band ── */
 .acca-lp .band-dark { background: var(--forest); color: var(--forest-ink); }
@@ -1197,6 +1399,35 @@ const CSS = `
   margin-top: 22px; text-align: center; font-family: var(--serif); font-style: italic; font-size: 16px; color: var(--forest);
 }
 
+/* ── A2. The proof's optional big figures ──
+   The page's ONE weight-variety device, and it is deliberately borderless-on-cream rather
+   than a fourth kind of card: three cards above three cards would read as six of a thing.
+   Rust italic serif is the same numeral treatment .tt-n and .pillar .num already use.
+
+   ⚠️ "flex: 0 0 auto" in the stacked block is LOAD-BEARING, not tidying — this is the exact
+   defect measured on the page this replaced, at 390px. The row rule is "flex: 1 1 200px",
+   and flex-BASIS resolves against the MAIN axis, which becomes the block axis the moment the
+   container turns column. Each figure then claims a 200px minimum HEIGHT and the section
+   renders with ~100px of dead space under every body paragraph.
+   (NB: no backticks anywhere in this string — it is a template literal, and one here ends it
+   early. This exact comment cost a build once; the double quotes above are why.) */
+.acca-lp .ja-nums { display: flex; flex-wrap: wrap; margin: 0 0 34px; }
+.acca-lp .ja-num {
+  flex: 1 1 200px; padding: 0 clamp(14px, 2.6vw, 30px);
+  border-left: 1px solid var(--rule); text-align: center;
+}
+.acca-lp .ja-num:first-child { border-left: 0; }
+.acca-lp .ja-num-value {
+  display: block; font-family: var(--serif); font-style: italic;
+  font-size: clamp(44px, 6vw, 76px); line-height: 1; letter-spacing: -0.02em; color: var(--rust);
+}
+.acca-lp .ja-num-body { margin-top: 12px; font-size: 14px; line-height: 1.5; color: var(--ink-2); }
+@media (max-width: 760px) {
+  .acca-lp .ja-nums { flex-direction: column; gap: 22px; }
+  .acca-lp .ja-num { flex: 0 0 auto; border-left: 0; border-top: 1px solid var(--rule); padding: 20px 0 0; }
+  .acca-lp .ja-num:first-child { border-top: 0; padding-top: 0; }
+}
+
 /* ── C. Teach-through steps ── */
 .acca-lp .tt-steps { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 8px; }
 @media (max-width: 860px) { .acca-lp .tt-steps { grid-template-columns: 1fr; } }
@@ -1223,17 +1454,38 @@ const CSS = `
   padding: 22px 24px; box-shadow: 0 20px 40px -28px rgba(20,24,22,0.18);
   display: flex; flex-direction: column; gap: 14px;
 }
-.acca-lp .mark-panel-hd { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+/* GAP + WRAP ARE NOT TIDYING. This row is space-between with two children, and the pillar's
+   panels put a long subtitle ("ACCA AFM · Mock Paper 1 · Q3 (i)") in the right-hand slot
+   rather than the spokes' two-character score. Without a gap the two run together at the
+   collapse point; without wrap the subtitle breaks mid-word instead of taking its own line. */
+.acca-lp .mark-panel-hd { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
 .acca-lp .mark-panel-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
 .acca-lp .mark-panel-score { font-family: var(--serif); font-size: 30px; color: var(--forest); line-height: 1; }
 .acca-lp .mark-panel-of { font-size: 16px; color: var(--ink-3); }
+/* The pillar's panels caption their head rather than scoring it — an illustration of marking
+   should not put an invented number on itself. Same slot, same baseline, quieter voice. */
+.acca-lp .mark-panel-sub { font-size: 12px; color: var(--ink-3); text-align: right; }
+.acca-lp .mark-panel-foot {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.04em; color: var(--ink-3);
+  padding-top: 12px; border-top: 1px solid var(--rule);
+}
 .acca-lp .mark-row { display: flex; flex-direction: column; gap: 6px; }
 .acca-lp .mark-row-hd { display: flex; align-items: center; gap: 10px; }
 .acca-lp .mark-skill { font-size: 13.5px; font-weight: 600; color: var(--ink); }
 .acca-lp .mark-band { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; }
 .acca-lp .mark-band--strong { color: oklch(45% 0.12 145); background: oklch(90% 0.06 145); }
 .acca-lp .mark-band--mid { color: oklch(48% 0.11 75); background: color-mix(in oklab, var(--gold) 20%, transparent); }
+/* NOT A BAND. Green says "did well" and gold says "middling"; a row reporting that no budget
+   could be computed is neither, and painting it green claimed a result that was never
+   measured. This is the page's neutral label treatment, borrowed from .price-name. */
+.acca-lp .mark-band--flat { color: var(--ink-3); background: var(--paper-2); border: 1px solid var(--rule); }
+/* TWO TREATMENTS, ONE SIZE, AND THE DIFFERENCE IS PROVENANCE. .mark-evidence is a line the
+   product WROTE, so it is italic — the page's quotation voice, shared with .ja-caption and
+   .visual-caption. .mark-note is a line WE wrote about the product, and setting it in the
+   same italic would claim the marker said it. Everything else about them matches, because
+   the distinction is authorship and not importance. */
 .acca-lp .mark-evidence { font-size: 13px; color: var(--ink-2); line-height: 1.5; font-style: italic; }
+.acca-lp .mark-note { font-size: 13px; color: var(--ink-2); line-height: 1.5; }
 
 /* ── E. Comparison table ──
    REPLACES the retired three-card .compare-strip (.compare-col, .compare-col--gradd and
