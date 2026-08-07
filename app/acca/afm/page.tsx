@@ -16,11 +16,13 @@
 // AFM Mock Paper 1, AFM's own blind-run proof story. Every figure is re-verified against the DB
 // in the config's header block; nothing is inherited from the APM page.
 //
-// ⚠️ `AFM_LANDING` (product-landing-config.ts) IS NO LONGER RENDERED BY ANY ROUTE, the same
-// disposition `APM_LANDING` already has. It is KEPT because `scripts/test-product-landing.ts`
-// renders it as the template's real-config exercise, and because `/acca/afm/proof` still reads
-// `AFM_LANDING.freeCta` / `.footnote`. Anything asserted about it is a claim about the
-// TEMPLATE, never a claim about what a visitor to this URL sees.
+// ⚠️ THE TEMPLATE IS DELETED (2026-08-07, `feat/acca-pillar-config`). `ProductLandingPage`,
+// `ProductLandingChrome`, `product-landing-sections.ts`, `product-landing-config.ts` (with
+// both `AFM_LANDING` and `APM_LANDING` in it) and `scripts/test-product-landing.ts` are gone,
+// along with the ~400-line `.plp/.hub/.pil` block in `app/globals.css`. They went when the
+// PILLAR moved onto this component: root was the last thing rendering that stylesheet, and a
+// dead template that still renders is one somebody finds and uses. `/acca/afm/proof` now reads
+// its free-CTA href from `AFM_ACCA_LANDING` — the config this route actually renders.
 import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import ACCALandingPage from '@/components/landing/ACCALandingPage';

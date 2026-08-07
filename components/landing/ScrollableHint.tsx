@@ -20,9 +20,10 @@
 //
 // ── RENDERS NULL, DELIBERATELY ──────────────────────────────────────────────
 // It contributes no markup — it only annotates existing server-rendered DOM. That keeps the
-// pages that use it server-rendered (ProductLandingPage's FAQPage JSON-LD must not move behind
-// hydration; see that file's header) and means adding it cannot change a rendered-body
-// snapshot. Effects still run for a component that returns null, because it is mounted.
+// pages that use it server-rendered (ACCALandingPage's FAQPage JSON-LD must not move behind
+// hydration) and means adding it cannot change a rendered-body snapshot — which is what lets
+// it sit inside APM's SHA-256 pin. Effects still run for a component that returns null,
+// because it is mounted.
 //
 // ── NO-JS BEHAVIOUR, STATED PLAINLY ─────────────────────────────────────────
 // Without JS the attribute is never set and the hint stays hidden at every width. That is a
