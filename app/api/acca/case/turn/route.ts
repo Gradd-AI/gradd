@@ -12,7 +12,7 @@ import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { shouldRunTeachLoop } from '@/lib/acca/case-sit';
 import { mockContentAllowed, caseIsReserved } from '@/lib/acca/mock-access';
 import { paperForCase } from '@/lib/acca/mocks';
-import { describeDemand } from '@/lib/acca/teach-demand';
+import { describeDemand, nextMoveContract } from '@/lib/acca/teach-demand';
 import { extractDiscriminants, detectContradictions, renderDiscriminants } from '@/lib/acca/tutor-discriminants';
 
 // ── APM case-turn handler (redesign P0 item 1 — case-scope construct) ──────────
@@ -383,6 +383,20 @@ export async function POST(request: Request): Promise<Response> {
     req.intellectual_level as number | null,
   );
 
+  // ── THE LEVEL-AWARE CLOSING CONTRACT (ported from the drill route, 2026-08-07) ──
+  // Same field, second use, and the two uses are independent: describeDemand says WHAT the
+  // requirement asks for, nextMoveContract says what SHAPE the teaching leg must close on.
+  //
+  // It was built for drills on 2026-08-03 and wired only there, so cases — the longer, heavier
+  // surface, and the one a student moves to after drills — kept the single un-levelled contract
+  // ("the single next move that unblocks it"). That is a level-2-sized repair, and applied at
+  // level 3 it produces a restatement of the whole requirement: a second task the size of the
+  // first, which is where students stop.
+  //
+  // Taxonomy-free like its sibling, and '' for a null level, which leaves the engine's prompts
+  // byte-identical for any requirement that has no authored level.
+  const nextMove = nextMoveContract(req.intellectual_level as number | null);
+
   // `marks_guide` on a CASE requirement is an INTEGER allocation (13), not a list of criteria.
   // The old label said "criteria that earn marks" and then printed a bare number, which told the
   // model to look for criteria that were never there. Describe it as what it is.
@@ -467,6 +481,7 @@ export async function POST(request: Request): Promise<Response> {
       verbLevel,
       markScheme,
       groundedFacts: directionBlock,
+      nextMove,
       studentMessage: student_message,
       lastEzraMessage,
       missCount,
