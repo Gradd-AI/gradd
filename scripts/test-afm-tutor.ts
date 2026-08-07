@@ -16,6 +16,7 @@ import {
   sanitizeAfmWrapper,
   revealDecision,
   trimToLastSentence,
+  stripOpenerDivider,
   REVEAL_FOOTER,
   BURN_CTA,
   buildBurnCta,
@@ -310,6 +311,44 @@ ok('trim: a decimal mid-number is NOT a sentence end',
   trimToLastSentence('The modified duration is 6.297 years, which is close to matur') === 'The modified duration is 6.297 years, which is close to matur');
 ok('trim: ? and ! count as terminators',
   trimToLastSentence('Is APV right here? Yes — and the reason is that financ') === 'Is APV right here?');
+
+// ── (6) Opener-divider guard — the self-assessment clause cannot become its own block ──
+// THE SIGHTING, reproduced verbatim as the first case: a real teach turn rendered the
+// self-assessment clause as a lone paragraph, then a `---`, then the diagnosis. That reads as
+// "answer this, I'll wait", which the beat's own claim ceiling says it is not. The prompt now
+// forbids the divider; this is the half that GUARANTEES it.
+// P-G3 — every break mode is named, including the ones that would make this too aggressive.
+const SIGHTED =
+  'Before I say — which bit of that would you defend least: the claim that the division is ' +
+  'destroying value, or the case for why the board should greenlight the expansion?\n\n---\n\n' +
+  "You've nailed the floor: WACC > ROCE means economic profit is negative.";
+const stripped = stripOpenerDivider(SIGHTED);
+ok('divider: the sighted opener-then-rule shape loses its rule',
+  !/^\s*-{3,}\s*$/m.test(stripped));
+ok('divider: both halves survive — the clause and the diagnosis are still there',
+  stripped.includes('defend least') && stripped.includes("You've nailed the floor"));
+ok('divider: the two halves are rejoined as ONE paragraph break, not left with a hole',
+  !/\n{3,}/.test(stripped));
+ok('divider: *** and ___ are thematic breaks too',
+  !stripOpenerDivider('Which bit is weakest?\n\n***\n\nThe gap is X.').includes('***') &&
+  !stripOpenerDivider('Which bit is weakest?\n\n___\n\nThe gap is X.').includes('___'));
+
+// ── The break modes that would make it DESTRUCTIVE ──
+// A divider deep in a long answer is legitimate structure and must survive. This is the property
+// that keeps the guard safe to apply, and it is why the caller also scopes it to one leg.
+const DEEP = 'Line one.\nLine two.\nLine three.\nLine four.\n\n---\n\nA later section.';
+ok('divider: a rule BELOW the third content line is untouched (legitimate structure)',
+  stripOpenerDivider(DEEP) === DEEP);
+ok('divider: only the FIRST rule goes, a second one stays',
+  (stripOpenerDivider('Q?\n\n---\n\nBody.\n\n---\n\nMore.').match(/^\s*-{3,}\s*$/gm) ?? []).length === 1);
+ok('divider: text with no rule at all is returned unchanged (idempotent)',
+  stripOpenerDivider('Which bit is weakest? The gap is X.') === 'Which bit is weakest? The gap is X.');
+ok('divider: running it twice changes nothing further',
+  stripOpenerDivider(stripped) === stripped);
+ok('divider: an em-dash sentence is not mistaken for a rule',
+  stripOpenerDivider('Before I say — which bit?\n\nThe gap is X.') === 'Before I say — which bit?\n\nThe gap is X.');
+ok('divider: a markdown table separator row is NOT a thematic break',
+  stripOpenerDivider('| a | b |\n| --- | --- |\n| 1 | 2 |').includes('| --- | --- |'));
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : failures + ' FAILURE(S)'}`);
 process.exit(failures === 0 ? 0 : 1);

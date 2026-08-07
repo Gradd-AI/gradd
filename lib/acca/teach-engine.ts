@@ -287,9 +287,14 @@ async function call3_hint(
   // METHOD facts, not figures — the same trust tier as `conventions`, which this leg already
   // sees — so they are safe here and the moat is untouched.
   groundedFacts = '',
+  // THE LEVEL-AWARE CLOSING CONTRACT (lib/acca/teach-demand.ts → nextMoveContract), ported to the
+  // case path 2026-08-07. Defaulted to '' so every existing caller keeps a byte-identical prompt.
+  // See the block comment on TeachTurnInput.nextMove for why this could not stay drill-only.
+  nextMove = '',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
+  const nextMoveLine = nextMove ? `${nextMove}\n\n` : '';
   const vlLine = verbLevel
     // Was "Authored command verb + intellectual level (name these — do not infer)". The model
     // did name them, and students saw "At ACCA intellectual level 3, where 'calculate' sits…".
@@ -310,6 +315,7 @@ async function call3_hint(
           `Gap diagnosis: ${diagnosis}\n\n` +
           gfLine +
           vlLine +
+          nextMoveLine +
           // THE PRAISE INSTRUCTION IS NOW CONDITIONAL, and that is the other half of the fix.
           // "Lead with the ONE specific thing they got right" COMPELS praise on every turn. Given
           // an answer that is wrong on the side of the trade, the model manufactures one — which
@@ -344,9 +350,11 @@ async function call3_teach(
   verbLevel: string,
   offerReveal: boolean,
   groundedFacts = '',
+  nextMove = '',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
+  const nextMoveLine = nextMove ? `${nextMove}\n\n` : '';
   const vlLine = verbLevel
     ? `What this requirement demands (diagnose against this; do not quote it back as a label):\n${verbLevel}\n\n`
     : '';
@@ -366,6 +374,7 @@ async function call3_teach(
           `Gap diagnosis: ${diagnosis}\n\n` +
           gfLine +
           vlLine +
+          nextMoveLine +
           (groundedFacts.includes('CONTRADICTION FOUND')
             ? "Second miss, and the answer is still on the WRONG SIDE of a settled choice stated " +
               'above. Do NOT credit them with that choice. State plainly which way round it goes ' +
@@ -639,6 +648,23 @@ export interface TeachTurnInput {
    *  FIRST in the diagnose prompt, and NOT inside markScheme — the mark-scheme block is framed
    *  "do not quote it", which is exactly wrong for a contradiction the student must be told. */
   groundedFacts?: string;
+  /** THE LEVEL-AWARE CLOSING CONTRACT — `nextMoveContract(intellectual_level)` from
+   *  lib/acca/teach-demand.ts. Optional, '' by default, so a caller that does not pass it gets
+   *  the exact prompt it got before this field existed.
+   *
+   *  WHY IT IS HERE AT ALL. It was built on 2026-08-03 for the DRILL route and wired only there,
+   *  and the two teaching surfaces then disagreed about the one thing the contract exists to fix.
+   *  At level 3 the un-contracted legs close by handing back a task the size of the original
+   *  ("rebuild capital employed and NOPAT and recalculate EVA") — measured on a real student's
+   *  transcripts, who capitulated after ONE attempt on all three of his level-3 drills while
+   *  writing his longest answers. The contract replaces that with a first concrete step built
+   *  from work the student already has in front of them.
+   *
+   *  Cases are the surface with the LONGEST requirements and therefore the most to lose from a
+   *  restated one; leaving them uncontracted meant the fix held on drills and lapsed on the exact
+   *  path a student moves to next. Taxonomy-free by construction — the contract never names the
+   *  level that selected it. */
+  nextMove?: string;
   studentMessage: string;
   lastEzraMessage: string;
   missCount: number;
@@ -662,7 +688,7 @@ export interface TeachTurnResult {
 
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
   const {
-    question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '',
+    question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '', nextMove = '',
     studentMessage, lastEzraMessage,
     missCount, lastDiagnosis, lastRealAttempt, resolved,
   } = input;
@@ -695,7 +721,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind = 'teaching';
     const contextAttempt = lastRealAttempt ?? studentMessage;
     const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts);
+    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts, nextMove);
     teachThroughDelivered = true;
   } else {
     const classified: Intent = INTENT_LAYER_ENABLED
@@ -730,10 +756,10 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         newLastRealAttempt = studentMessage;
 
         if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts);
+          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove);
           messageKind = 'hint';
         } else {
-          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts);
+          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove);
           teachThroughDelivered = true;
           messageKind = 'teaching';
         }

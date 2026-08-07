@@ -156,6 +156,52 @@ route was explicitly ruled out.**)*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## ⭐ ✅ MEASURED + MERGED 2026-08-07 — **THE LEVEL-3 CONTRACT NOW REACHES CASES, AND THE CASE LEGS MOVED** (`feat/case-teach-next-move`)
+
+**MEASURED, NOT ASSERTED (P-T1).** 60 case teaching legs on the real `/api/acca/case/turn`
+route, 3 level-3 AFM requirements × 5 repeats × 2 legs, run twice: BEFORE (pre-fix code) and
+AFTER (this branch), same targets, same floor-only student attempts. New harness arm
+`redteam-tutor.ts --surface case`.
+
+| discriminator | BEFORE | AFTER |
+|---|---|---|
+| closes on an open question | **17/30** | **4/30** |
+| closes on a sized one-step move ("in one sentence …") | 2/30 | **20/30** |
+| closes using what the student already holds | 3/30 | **12/30** |
+
+Per requirement, every target improved on every measure; B401(ii) went 9/10 → 1/10 on
+ends-on-a-question and 1/10 → 9/10 on one-step.
+
+**🔴 RESIDUAL, OPEN.** The contract says *never* end on a question a student is left to ponder.
+**4 of 30 still do**, 3 of them on B501(ii) — the requirement whose scenario invites "ask
+yourself which exposure matters most". Improved ~4×, not closed. Re-measure if that leg is
+touched.
+
+**📐 DETECTOR HONESTY — the "second task" regex is NOT the finding, and reported it backwards.**
+Built on the drill path's phrasing ("rebuild capital employed and NOPAT and recalculate EVA"), it
+scored 0/30 BEFORE and 1/30 AFTER — the exact inverse of the truth. BEFORE's second tasks are
+phrased as *questions* ("ask yourself: which of these can Kestrel sensibly hedge, which ones
+shouldn't be, and why"), which the regex cannot see; AFTER's single hit is the contract being
+obeyed out loud ("Don't recalculate; just reason through it using what you already know"). The
+ends-on-a-question count is the deterministic measure that survives, because it tests a clause the
+contract actually states. **The judgement is a reading of the 60 legs, not a regex.**
+
+**⚠️ A101(i) IS THE WEAKEST OF THE THREE TARGETS.** It is a `calculate` requirement and the
+floor-only attempt carried no arithmetic, so asking the student to do the calculation is the
+un-attempted requirement, not a second task. B501(ii) and B401(ii) (both `evaluate`, both with the
+substance actually written) are the clean tests of the defect.
+
+Run artefacts are gitignored (`docs/redteam/*`) and live only on the machine that ran them:
+`docs/redteam/case-nextmove-{BEFORE,AFTER}-case-legs.json`.
+
+**Also in this branch:** the self-assessment opener now stands down once a student has asked to be
+told (sticky per session, in the sealed payload) and can no longer render as its own block above a
+`---`; `completenessCheck`'s prompt header stops naming the taxonomy; `reveal_shown` /
+`try_tutor_clicked` are RETIRED as dead funnel events (count reveals from
+`acca_drill_messages.call_type='reveal'`, not from `acca_funnel_events`).
+
+---
+
 ## ⭐ 🔴 OPEN 2026-08-05 — **AFM MUST BE REBUILT TO APM's ETHOS ONCE /acca/apm IS SETTLED — AND THE SHARED COMPONENT IS *NOT* THE NEXT STEP** (Grant's standing requirement)
 
 **THE REQUIREMENT.** `/acca/apm` is being restored to the pre-conversion bespoke page

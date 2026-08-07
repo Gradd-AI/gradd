@@ -506,3 +506,55 @@ export function trimToLastSentence(text: string): string {
   while ((m = re.exec(text)) !== null) end = m.index + m[0].length;
   return end > 0 ? text.slice(0, end) : text;
 }
+
+// ── Opener-divider guard (pure) ───────────────────────────────────────────────
+// The DETERMINISTIC half of the self-assessment rendering fix (2026-08-07). Its sibling above is
+// the model of the pattern: the prompt asks, and code guarantees.
+//
+// THE SIGHTING. The self-assessment beat is specified as "ONE short clause … then go straight on"
+// and its claim ceiling (app/api/acca/tutor/route.ts) is explicit that it does NOT gate the
+// diagnosis behind the student's reply — the route answers in one turn. The model complied on
+// LENGTH and broke it on LAYOUT, emitting:
+//
+//     Before I say — which bit of that would you defend least: X, or Y?
+//
+//     ---
+//
+//     You've nailed the floor: …
+//
+// A lone question above a horizontal rule reads as "answer this, I'll wait". The student had
+// asked to be told the answer six minutes earlier. Nothing in the words was wrong; the divider
+// did the damage, and no length or phrase assertion can see it.
+//
+// STRUCTURAL, NOT INSTRUCTED (docs/TEACHING_ARCHITECTURE.md). The prompt now forbids the divider
+// too, but a prompt is a request; this is the guarantee. Rendering the opener as its own block is
+// made IMPOSSIBLE rather than discouraged.
+//
+// SCOPE, deliberately narrow — this must never touch a legitimate divider:
+//   • only a thematic break that is one of the FIRST THREE non-blank lines, which is the only
+//     place the opener-then-rule shape can occur;
+//   • only the FIRST such break;
+//   • the surrounding text is otherwise untouched — the paragraphs are rejoined, so the opener
+//     runs straight into the diagnosis exactly as the instruction asks.
+// A reveal (a DOCUMENT, which legitimately uses `---` to separate sections) never calls this: the
+// caller applies it ONLY on the leg where the self-assessment clause can fire, and only when it
+// actually fired. Idempotent — text with no leading break is returned unchanged.
+export function stripOpenerDivider(text: string): string {
+  const lines = text.split('\n');
+  const isBreak = (s: string) => /^\s*(?:-{3,}|\*{3,}|_{3,})\s*$/.test(s);
+  let seenContent = 0;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === '') continue;
+    if (isBreak(line)) {
+      // Drop the rule, then collapse the blank lines it leaves behind into one paragraph break.
+      const before = lines.slice(0, i);
+      const after  = lines.slice(i + 1);
+      while (before.length && before[before.length - 1].trim() === '') before.pop();
+      while (after.length && after[0].trim() === '') after.shift();
+      return [...before, '', ...after].join('\n');
+    }
+    if (++seenContent >= 3) break;
+  }
+  return text;
+}

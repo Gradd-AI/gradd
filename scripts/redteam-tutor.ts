@@ -35,6 +35,76 @@ const BASE = val('--base', TARGET === 'prod' ? 'https://www.gradd.ai' : 'http://
 const ONLY = (val('--probes') ?? '').split(',').map((s) => s.trim()).filter(Boolean);
 const OUT = val('--out', `docs/redteam/run-${new Date().toISOString().slice(0, 16).replace(/[:T]/g, '')}`)!;
 
+// ── CASE SURFACE (--surface case) ────────────────────────────────────────────
+// The battery above drives /api/acca/tutor — the DRILL route — and had no way to reach the CASE
+// teaching path at all. That gap is why `nextMoveContract` could be wired into one teaching
+// surface and not the other for four days with every fixture green.
+//
+// P-T1: threading a contract into a prompt is NOT the fix. The fix is that the leg which speaks
+// to the student closes on a concrete next move built from what the student already wrote, rather
+// than a second task the size of the first. Only the produced prose can show that, so this arm
+// captures the teaching legs VERBATIM and repeats them enough times to be a rate.
+//
+// It targets LEVEL-3 requirements specifically: level 3 is the only level whose contract
+// decomposes, and the level-3 legs are the ones a real student abandoned.
+const SURFACE = (val('--surface', 'drill') as 'drill' | 'case');
+const REPEATS = Number(val('--n', '5'));
+
+// Floor-only attempts: each does the technique the requirement asks for and STOPS before the
+// judgement that carries the marks — the exact shape that produced the sighting. Written from the
+// QUESTION text, never from the model answer, so nothing here can accidentally pass the gate.
+const CASE_TARGETS: ReadonlyArray<{
+  label: string; paper: Paper; caseId: string; reqId: string; attempt1: string; attempt2: string;
+}> = [
+  {
+    label: 'A101(i) calculate — project discount rate',
+    paper: 'AFM',
+    caseId: 'ac000000-0000-4000-8000-00000000a101',
+    reqId:  'ed1ab4f4-9305-4272-8e82-13d2753fd7ce',
+    attempt1:
+      'The Brackwater project needs its own discount rate because the risk is not the same as the ' +
+      'company average. I would ungear the proxy beta and then regear it to Hendry\'s capital ' +
+      'structure, then put that equity beta through CAPM to get a cost of equity, and use that in ' +
+      'a WACC. It differs from the company WACC because the project is in a different business ' +
+      'area with a different asset beta.',
+    attempt2:
+      'Using the asset beta from the proxy and regearing to the company\'s own debt-equity mix, the ' +
+      'CAPM cost of equity comes out higher than the group figure, so the project WACC is above the ' +
+      'company WACC. The reason it differs is the systematic business risk of the new activity.',
+  },
+  {
+    label: 'B501(ii) evaluate — FX exposures created by an overseas investment',
+    paper: 'AFM',
+    caseId: 'ac000000-0000-4000-8000-00000000b501',
+    reqId:  'e861173b-56c9-46d9-99c6-cf17dc1b6b5d',
+    attempt1:
+      'The Monterrey investment creates three exposures. Transaction exposure on the peso cash ' +
+      'flows being remitted, translation exposure when the subsidiary is consolidated into ' +
+      'sterling, and economic exposure because a sustained move in the peso changes the ' +
+      'competitiveness of the operation. Transaction exposure is the one that hits cash.',
+    attempt2:
+      'Transaction exposure arises on each remittance, translation exposure arises on ' +
+      'consolidation of the net assets, and economic exposure is the longer-run effect on the ' +
+      'value of the business. All three follow from the project being denominated in pesos while ' +
+      'the parent reports in sterling.',
+  },
+  {
+    label: 'B401(ii) evaluate — what an option-based valuation adds',
+    paper: 'AFM',
+    caseId: 'ac000000-0000-4000-8000-00000000b401',
+    reqId:  '215b98b7-d9af-4ab6-88e7-550b45db86bd',
+    attempt1:
+      'A free cash flow valuation assumes the pipeline is developed on a fixed path. An ' +
+      'option-based valuation treats the pipeline as a real option, so it captures the value of ' +
+      'being able to wait and see before committing. That extra value comes from volatility, ' +
+      'which the DCF ignores because it discounts a single expected path.',
+    attempt2:
+      'The option approach adds the value of managerial flexibility — the right, not the ' +
+      'obligation, to develop. Higher volatility raises that value, whereas in a DCF higher ' +
+      'volatility only raises the discount rate and lowers the number.',
+  },
+];
+
 function selected(): Probe[] { return ONLY.length ? PROBES.filter((p) => ONLY.includes(p.id)) : PROBES; }
 function runsFor(p: Probe): number { return p.papers.length * (1 + (p.turns?.length ?? 0)); }
 
@@ -193,8 +263,64 @@ function printList() {
   console.log(`\nSTOP POINT: to fire, run with --target local (dev server) or --target prod --yes-production (guarded). Default is local.\n`);
 }
 
+// ── CASE SURFACE driver ──────────────────────────────────────────────────────
+// Fires the PAID account at /api/acca/case/turn twice per repeat (first miss → hint leg, second
+// miss → teach leg), capturing both legs verbatim. Progress is cleared before every repeat so
+// each one starts from miss_count 0 and the two legs are always the same two legs.
+async function fireCase(cookie: string, caseId: string, reqId: string, paper: Paper, msg: string, sessionState: any) {
+  const r = await fetch(`${BASE}/api/acca/case/turn`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', cookie },
+    body: JSON.stringify({ case_id: caseId, requirement_id: reqId, paper, student_message: msg, session_state: sessionState ?? undefined }),
+  });
+  const text = await r.text();
+  let j: any = null; try { j = JSON.parse(text); } catch {}
+  return { status: r.status, body: j?.ezra_response ?? text, kind: j?.message_kind ?? null, intent: j?.intent ?? null, session: j?.session_state ?? null, passed: j?.requirement_passed ?? null };
+}
+
+async function runCaseSurface() {
+  console.log(`\nCASE-SURFACE RUN — ${BASE} · ${CASE_TARGETS.length} level-3 requirements × ${REPEATS} repeats × 2 legs = ${CASE_TARGETS.length * REPEATS * 2} teaching legs\n`);
+  const cookie = await mintCookie(ACCOUNTS.paid);
+  const uid    = await userId(ACCOUNTS.paid);
+  const rows: any[] = [];
+
+  for (const t of CASE_TARGETS) {
+    // Confirm the target really is level 3 — the whole point of the run. A silent level-2 target
+    // would measure the wrong contract and still look green.
+    const { data: reqRow } = await svc.from('acca_case_requirements').select('intellectual_level, command_verb, marks_guide').eq('id', t.reqId).single();
+    const lvl = (reqRow as any)?.intellectual_level;
+    if (lvl !== 3) throw new Error(`${t.label}: intellectual_level is ${lvl}, expected 3 — refusing to measure the wrong contract`);
+    console.log(`■ ${t.label}  [level ${lvl} · ${(reqRow as any).command_verb} · ${(reqRow as any).marks_guide} marks]`);
+
+    for (let rep = 1; rep <= REPEATS; rep++) {
+      await svc.from('acca_case_progress').delete().eq('user_id', uid).eq('case_id', t.caseId).eq('requirement_id', t.reqId);
+      let session: any = null;
+      const legs: any[] = [];
+      for (const [i, msg] of [t.attempt1, t.attempt2].entries()) {
+        const r = await fireCase(cookie, t.caseId, t.reqId, t.paper, msg, session);
+        session = r.session ?? session;
+        legs.push({ leg: i === 0 ? 'hint (first miss)' : 'teach (second miss)', status: r.status, kind: r.kind, intent: r.intent, passed: r.passed, ezra: r.body });
+        if (r.status !== 200) { console.log(`   rep ${rep}: HTTP ${r.status} — ${String(r.body).slice(0, 200)}`); break; }
+      }
+      rows.push({ target: t.label, caseId: t.caseId, reqId: t.reqId, level: lvl, rep, legs });
+      process.stdout.write(legs.every((l) => l.status === 200) ? '.' : '✗');
+    }
+    console.log('');
+    await svc.from('acca_case_progress').delete().eq('user_id', uid).eq('case_id', t.caseId).eq('requirement_id', t.reqId);
+  }
+
+  mkdirSync(dirname(OUT), { recursive: true });
+  writeFileSync(`${OUT}-case-legs.json`, JSON.stringify({ base: BASE, surface: 'case', repeats: REPEATS, at: new Date().toISOString(), rows }, null, 2));
+  console.log(`\nWrote ${OUT}-case-legs.json — ${rows.length} repeats, ${rows.reduce((s, r) => s + r.legs.length, 0)} legs captured.`);
+}
+
 async function main() {
   if (LIST) { printList(); return; }
+  if (SURFACE === 'case') {
+    if (TARGET === 'prod' && !flag('--yes-production')) { console.error('REFUSING: --target prod requires --yes-production.'); process.exit(1); }
+    await runCaseSurface();
+    return;
+  }
   if (TARGET === 'prod' && !flag('--yes-production')) { console.error('REFUSING: --target prod requires the explicit --yes-production confirm flag (this fires the matrix at LIVE production, writes to acca_drill_messages, and spends Anthropic tokens).'); process.exit(1); }
   console.log(`RED-TEAM firing at ${BASE} (${TARGET}) — ${selected().length} probes`);
 
