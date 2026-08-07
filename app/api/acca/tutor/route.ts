@@ -13,6 +13,7 @@ import {
   assembleAfmReveal,
   revealDecision,
   trimToLastSentence,
+  stripOpenerDivider,
   REVEAL_FOOTER,
   buildBurnCta,
   containsDistressSignal,
@@ -54,10 +55,19 @@ export interface ClientSessionState {
   // enc so the client cannot manipulate it to skip the cap increment.
 }
 
-// The decrypted payload — both fields are tamper-proof inside AES-256-GCM.
+// The decrypted payload — every field is tamper-proof inside AES-256-GCM.
 interface EncPayload {
   answer: string;
   counted: boolean; // true once the DB increment for this drill has been applied
+  // STICKY FOR THE SESSION: the student has, at some point on this drill, plainly asked to be
+  // told the answer ("just tell me"). Only the self-assessment opener reads it — see the
+  // `selfAssess` gate. Optional because seals written before 2026-08-07 do not carry it; absent
+  // parses as undefined → falsy → today's behaviour, so no migration and no seal break.
+  //
+  // It rides in the ENCRYPTED blob rather than the plaintext ClientSessionState purely for
+  // consistency with `counted`. Nothing is gated on it, so tampering buys a student only the
+  // suppression of a Socratic question — which is the thing they would be asking for anyway.
+  plainAsked?: boolean;
 }
 
 // ── Encryption ────────────────────────────────────────────────────────────────
@@ -68,10 +78,10 @@ function getKey(): Buffer {
   return createHash('sha256').update(secret).digest();
 }
 
-function sealPayload(answer: string, counted: boolean): string {
+function sealPayload(answer: string, counted: boolean, plainAsked = false): string {
   const key  = getKey();
   const iv   = randomBytes(12);
-  const body = JSON.stringify({ answer, counted } satisfies EncPayload);
+  const body = JSON.stringify({ answer, counted, plainAsked } satisfies EncPayload);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const enc  = Buffer.concat([cipher.update(body, 'utf8'), cipher.final()]);
   const tag  = cipher.getAuthTag();
@@ -464,11 +474,19 @@ async function call3_teach(
   // in the same message. It builds the habit of locating your own gap; it does not gate the
   // diagnosis behind the student's reply. Doing that properly needs a turn boundary this loop
   // does not have — recorded rather than quietly claimed as done.
+  // RENDERING IS PART OF THE MEANING HERE, so the instruction now constrains it. Sighted
+  // 2026-08-07: the model obeyed "one short clause" as to LENGTH and then set it as its own
+  // paragraph followed by a `---` horizontal rule, with the diagnosis after the break. A question
+  // alone above a divider reads as "answer this, I'll wait" — which is exactly what the claim
+  // ceiling below says this beat is NOT. The words were compliant; the layout inverted them.
   const selfAssessLine = selfAssess
     ? 'SELF-ASSESSMENT FIRST: open with ONE short clause asking which part of their own answer ' +
       'they think is weakest ("before I say — which bit of that would you defend least?"), then ' +
       'go straight on and name the gap yourself in the same message. One clause, not a paragraph, ' +
-      'and never instead of the diagnosis.\n\n'
+      'and never instead of the diagnosis. It must sit INSIDE the opening paragraph, sharing it ' +
+      'with the start of your diagnosis — do NOT put it on a line of its own, do NOT follow it ' +
+      'with a horizontal rule, divider or "---", and do NOT leave a blank line after it. It is an ' +
+      'aside you talk straight through, not a question you pause on.\n\n'
     : '';
   // FIX B tone (red-team adjudication 2026-07-16): suppressing the CTA alone left probe E2 with a
   // COLD reply ("I don't see a student answer"). On distress, lead with warmth and steady them —
@@ -514,7 +532,11 @@ async function call3_teach(
       },
     ],
   });
-  return finishClean(res);
+  // The structural half of the rendering fix: applied ONLY when the self-assessment clause was
+  // actually asked for, so no other leg — least of all the reveal, which is a document and uses
+  // `---` legitimately — can be touched by it. See stripOpenerDivider in tutor-personas.ts.
+  const out = finishClean(res);
+  return selfAssess ? stripOpenerDivider(out) : out;
 }
 
 // ── CALL 3: Confirm (correct answer) ──────────────────────────────────────────
@@ -1089,6 +1111,8 @@ export async function POST(request: Request): Promise<Response> {
   // ── 5. Establish model answer + session continuity ─────────────────────────
   let modelAnswer: string;
   let teachThroughCounted = false;
+  // Sticky across the turns of one drill session; see EncPayload.plainAsked.
+  let plainAskedBefore    = false;
   let missCount           = 0;
   let lastDiagnosis:    string | null = null;
   let lastRealAttempt:  string | null = null;
@@ -1115,6 +1139,7 @@ export async function POST(request: Request): Promise<Response> {
       const payload     = openPayload(s.enc);
       modelAnswer       = payload.answer;
       teachThroughCounted = payload.counted;
+      plainAskedBefore  = payload.plainAsked === true;
     } catch {
       return NextResponse.json({ error: 'Session state corrupted' }, { status: 400 });
     }
@@ -1213,8 +1238,15 @@ export async function POST(request: Request): Promise<Response> {
   // Both thresholds are the EXISTING ones, unchanged, and the phrase lists stay disjoint —
   // nothing moves between them. What changes is only which door a paid, already-earned request
   // walks through.
+  // NOTE the deliberate asymmetry with `plainAnswerEarned` below: THIS is the bare question "did
+  // they ask to be told?", with no paid/earned qualification, because the self-assessment
+  // suppression is about TONE, not entitlement. A free student one miss in who says "just tell
+  // me" has still said it, and asking them which part they would defend least is still the wrong
+  // reply. `plainAskedNow` therefore reads the phrase alone; `plainAnswerEarned` adds the gates.
+  const plainAskedNow  = isPlainAnswerRequest(student_message);
+  const plainAskedEver = plainAskedBefore || plainAskedNow;
   const plainAnswerEarned =
-    REVEAL_ENABLED && hasActiveAccess && missCount >= 2 && isPlainAnswerRequest(student_message);
+    REVEAL_ENABLED && hasActiveAccess && missCount >= 2 && plainAskedNow;
   const wantsReveal = (REVEAL_ENABLED && isRevealRequest(student_message)) || plainAnswerEarned;
   const fastTeach   = INTENT_LAYER_ENABLED ? isTeachRequest(student_message) : isStopSignal(student_message);
 
@@ -1249,7 +1281,21 @@ export async function POST(request: Request): Promise<Response> {
   // Self-assessment (P5c) rides the same struggle threshold: a SECOND or later attempt, never a
   // first, never a distressed turn. Independent of REVEAL_ENABLED — metacognition is not gated on
   // the reveal flag.
-  const selfAssess = missCount >= 2 && !distressed;
+  //
+  // ── AND NEVER ONCE THEY HAVE ASKED TO BE TOLD (2026-08-07) ──────────────────
+  // SIGHTED, not theorised: a real student wrote "just tell me" at 02:04, and at 02:10 the tutor
+  // opened its reply with "Before I say — which bit of that would you defend least…?". The gate
+  // had two exemptions — first attempt and distress — so a plain request for the answer left no
+  // trace, and the next turn asked him a question instead of answering.
+  //
+  // STICKY FOR THE SESSION, not merely for the turn, and that is the whole point: on the turn he
+  // says it he is routed to teach or reveal anyway. The damage lands on the NEXT turn, once he has
+  // gone back and written more — exactly the turn a per-turn check cannot see. `plainAsked` rides
+  // the sealed payload so it survives to that turn.
+  //
+  // It does NOT reset when he re-engages. Asking to be told is a statement about how he wants to
+  // be taught on this drill; going back and attempting again is not a retraction of it.
+  const selfAssess = missCount >= 2 && !distressed && !plainAskedEver;
 
   try {
     if (isIdentityProbe(student_message)) {
@@ -1464,7 +1510,10 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── 9. Seal updated session state ─────────────────────────────────────────
   const updatedSessionState: ClientSessionState = {
-    enc:               sealPayload(modelAnswer, newTeachThroughCounted),
+    // `plainAskedEver` (not `plainAskedNow`) — the flag is sticky, so once sealed true it stays
+    // true for every later turn of this session. Sealing the per-turn value would clear it on the
+    // very next message, which is the turn the suppression exists for.
+    enc:               sealPayload(modelAnswer, newTeachThroughCounted, plainAskedEver),
     miss_count:        newMissCount,
     last_diagnosis:    newLastDiagnosis,
     last_real_attempt: newLastRealAttempt,
