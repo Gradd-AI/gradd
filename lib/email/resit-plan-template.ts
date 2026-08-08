@@ -1,11 +1,20 @@
 // lib/email/resit-plan-template.ts
 // Gradd.ai — Resit diagnostic plan email.
-// Audience: an ACCA APM candidate who just failed and asked us to email their
-// plan. Voice: direct, encouraging, no fluff — Ezra's register, not Aoife's.
+// Audience: an ACCA candidate who just failed and asked us to email their plan.
+// Voice: direct, encouraging, no fluff — Ezra's register, not Aoife's.
+//
+// PAPER-SCOPED (2026-08-08). Three things named the paper — the subject, the
+// kicker and the CTA — and all three now take it from the caller. The CTA also
+// carries `paper=` into the app: without it the drill serve falls back on
+// resolvePaper's APM default, and since AFM and APM lo_code prefixes collide
+// exactly, an AFM sitter would land in APM's drills rather than on a dead link.
+
+import type { AccaPaper } from '@/lib/acca/paper';
 
 export interface ResitPlanEmailData {
+  paper: AccaPaper;     // which paper they sat — decides subject, kicker and CTA
   plan: string;         // the model-written narrative (plain text, paragraphs split by blank lines)
-  score: number;        // last APM score, 0–49
+  score: number;        // last score for that paper, 0–49
   sitting: string;      // e.g. "Jun 2026"
   weakAreas: string[];  // ranked weak-area topic names, worst first (from profile.weak_groups)
 }
@@ -53,8 +62,10 @@ export function buildResitPlanEmail(data: ResitPlanEmailData): {
   subject: string;
   html: string;
 } {
-  const { plan, score, sitting, weakAreas } = data;
-  const subject = `Your APM resit plan`;
+  const { paper, plan, score, sitting, weakAreas } = data;
+  const subject = `Your ${paper} resit plan`;
+  // paper= is load-bearing, not decoration — see the header block.
+  const ctaHref = `https://gradd.ai/acca/auth?next=${encodeURIComponent(`/acca?paper=${paper}`)}`;
 
   const html = `
 <!DOCTYPE html>
@@ -78,7 +89,7 @@ export function buildResitPlanEmail(data: ResitPlanEmailData): {
             <td style="padding:36px 40px 8px;">
 
               <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#6b5f4e;text-transform:uppercase;letter-spacing:0.8px;font-family:Arial,Helvetica,sans-serif;">
-                Gradd.ai · ACCA APM
+                Gradd.ai · ACCA ${paper}
               </p>
               <h1 style="margin:0 0 4px;font-size:24px;color:#0e2b1e;line-height:1.2;">
                 Your resit plan
@@ -95,7 +106,7 @@ export function buildResitPlanEmail(data: ResitPlanEmailData): {
               <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:12px 0 8px;">
                 <tr>
                   <td align="center">
-                    <a href="https://gradd.ai/acca/auth?next=/acca"
+                    <a href="${ctaHref}"
                       style="display:inline-block;background-color:#0e2b1e;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 32px;border-radius:8px;letter-spacing:0.2px;font-family:Arial,Helvetica,sans-serif;">
                       Start the free drills for your weak areas →
                     </a>
