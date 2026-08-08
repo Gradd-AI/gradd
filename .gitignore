@@ -69,3 +69,14 @@ official_acca_pdfs/
 # docs/evidence/fetch_acca_sources.ps1. Local working copies must never be committed.
 *AFM examiner*.pdf
 afm_examiner_report_*.pdf
+
+# Chartered Accountants Ireland competency statements (FAE + CAP2) — registered in
+# docs/evidence/sources.json as fetched-not-stored. CAI requires WRITTEN PERMISSION before
+# any part is stored in a retrieval system, so these are working copies only: never
+# committed, never indexed, never quoted verbatim into a repo document.
+#
+# THE WHOLE DIRECTORY, NOT A GLOB. `docs/*.pdf` (line 40) matches only the immediate
+# children of docs/ — a single `*` never crosses a `/` — so docs/FAE/*.pdf was NOT covered
+# by it and the four PDFs were reported by `git status` as a trackable untracked directory.
+# One `git add .` would have committed them.
+docs/FAE/
