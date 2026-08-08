@@ -1036,11 +1036,40 @@ const CSS = `
   font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
   text-transform: uppercase; color: var(--ink-3);
 }
-.acca-lp .trust-stats { display: flex; align-items: baseline; gap: clamp(20px,4vw,56px); flex-wrap: wrap; justify-content: center; }
+/* GRID, NOT flex-wrap. Four stats of unequal width in a wrapping flex row wrap by whatever
+   happens to fit, which produced a staggered 1 / 2 / 1 at mid widths — the figures landing at
+   three different vertical positions, reading as a layout error rather than a strip. An
+   explicit column count can only ever produce a FULL row or the stack: 4-up, then an even
+   2×2, then one per line. Never 3, never an orphan.
+   auto-fit / auto-fill is the wrong tool here for the same reason flex-wrap was — both pick
+   the count from available width, and both can land on 3. The count is a design decision, so
+   it is stated. (No backticks in this block: it is a JS template literal, and one terminates
+   the CSS mid-rule.)
+   align-items:baseline aligns the first baseline of each cell, so within any row the italic
+   serif figures sit on one line however many lines a label wraps to. */
+.acca-lp .trust-stats {
+  display: grid; grid-template-columns: repeat(4, auto);
+  align-items: baseline; justify-content: center;
+  gap: 16px clamp(20px,4vw,56px);
+}
+@media (max-width: 900px) {
+  /* THE LABEL GOES ABOVE, not beside. .trust-inner is a space-between flex row, and once the
+     stats narrow to one or two columns the row still fits both children — so "LIVE TODAY"
+     ended up vertically centred against a four-row stack, reading as a stray word rather than
+     the strip's label. Stacking the row is what makes the 2×2 sit square under it. */
+  .acca-lp .trust-inner { flex-direction: column; align-items: flex-start; gap: 18px; }
+  /* 1fr, not auto: an even 2×2 is the requirement, and auto columns size to their own content,
+     so the long first label made column 1 twice column 2. */
+  .acca-lp .trust-stats { grid-template-columns: repeat(2, 1fr); width: 100%; }
+}
+@media (max-width: 400px) { .acca-lp .trust-stats { grid-template-columns: 1fr; } }
 .acca-lp .trust-stat { display: flex; align-items: baseline; gap: 8px; }
+/* white-space:nowrap because the FIGURE IS AN ATOM. "~1 min" is the one stat whose value
+   contains a space, and in a narrow column it broke after "~1", dropping "min" onto its own
+   line underneath — so the unit read as belonging to the label rather than the number. */
 .acca-lp .trust-stat .num {
   font-family: var(--serif); font-size: 28px; letter-spacing: -0.02em;
-  font-style: italic; color: var(--ink);
+  font-style: italic; color: var(--ink); white-space: nowrap;
 }
 .acca-lp .trust-stat .lbl { font-size: 12px; color: var(--ink-3); }
 .acca-lp .trust-footnote {
@@ -1125,12 +1154,19 @@ const CSS = `
    the bullet that needs the emphasis. This keeps the <li> in normal inline flow. ── */
 .acca-lp .feat-bullets { list-style: none; display: flex; flex-direction: column; gap: 14px; }
 .acca-lp .feat-bullets li {
-  position: relative; padding-left: 30px;
+  position: relative; padding-left: 26px;
   font-size: 14.5px; line-height: 1.5; color: var(--ink-2);
 }
+/* RUST, not --forest. The marker was already a drawn ::before rather than a browser default,
+   but --forest is oklch(22% 0.035 168) — 22% lightness at 0.035 chroma reads as black at this
+   size, so the one piece of decoration on this band looked like the one piece nobody had
+   designed. Rust is the page's marker colour everywhere else it appears: .price-features
+   ::before, .paper-chip, .paper-live strong.
+   Geometry and colour only — still padding-left + absolute ::before, still NOT a grid on the
+   <li>, for the reason stated above. */
 .acca-lp .feat-bullets li::before {
   content: ""; position: absolute; left: 4px; top: 7px;
-  width: 10px; height: 10px; border-radius: 50%; background: var(--forest);
+  width: 8px; height: 8px; border-radius: 50%; background: var(--rust);
 }
 .acca-lp .feat-bullets li em { font-style: italic; color: var(--forest); font-weight: 500; }
 
