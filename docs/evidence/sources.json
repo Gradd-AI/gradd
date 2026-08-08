@@ -165,6 +165,21 @@
       "bytes": 568640,
       "use": "Syllabus marking basis for AFM_NARRATIVE_EVIDENCE.md §1a: intellectual levels (p.5), LO descriptors (pp.9-11), professional skills Section F (p.13), exam structure (pp.15-16), professional-skills mark split 80/20 (p.18). Also the source of record for scripts/afm-framework.ts.",
       "note": "Page-verified 20/07/2026. The detailed study guide is laid out in TWO COLUMNS - pdftotext without -layout interleaves them, so verify with -layout and split columns, or quotes will appear to be missing when they are present."
+    },
+    {
+      "id": "E7",
+      "label": "CAI-FAE",
+      "title": "FAE Competency Statement 2025/2026 (FAE Core & FAE Electives)",
+      "edition": "2025/2026",
+      "issuer": "Chartered Accountants Ireland",
+      "filename": "FAE_Competency_Statement_2025-26.pdf",
+      "url": "https://www.charteredaccountants.ie/docs/default-source/dept-exams/fae/fae-competency-statement-2025_26-final.pdf",
+      "bytes": 1346063,
+      "sha256": "6C89744A0735613C3A7FFFC6A0632C9B37D6F545CE302CEDAC3F4C82E27ACBB9",
+      "pages": 64,
+      "use": "Specification for docs/research/FAE_ADVISORY_CROSSWALK.md. The Advisory ELECTIVE is pp.47-51: objective and learning outcomes p.47; the 24 numbered functional competencies pp.48-50 (areas 1-5, each marked U/A/I); examinable governance codes p.50; assessment basis and reading list p.51 (open book, two independent simulations, 4h30m, at least 4 of the 5 areas examinable, any area up to circa 40%).",
+      "ip_restriction": "FETCHED, NOT STORED - and stricter than the ACCA entries. CAI requires WRITTEN PERMISSION before any part is stored in a retrieval system. The local working copy lives under docs/FAE/, which is git-ignored (.gitignore, rule 'docs/FAE/'); it is never committed, never indexed, never added to a vector store or RAG corpus, and its wording is never reproduced in any repo document. The crosswalk cites competencies by CAI's own numbering and paraphrases throughout. NOTE: 'docs/*.pdf' does NOT cover it - a single * never crosses a '/', which is why the directory rule exists.",
+      "note": "BASE EDITION ONLY - the aim is the 2026/27 cycle and that statement is inside CAI's Learning Hub, behind student authentication, and was NOT available. Every /docs/ link on CAI's public FAE downloads page was enumerated: exactly four exist (competency statements 2024/25 and 2025/26, plus summary-of-changes for those same two years). There is NO public 2026/27 statement and NO public 2026/27 change summary, so the delta could not be applied or inferred. Re-running the crosswalk against 2026/27 is a hard prerequisite to any commercial release. Extraction route: no poppler on either machine - use 'npx -y pdf2json -f <pdf> -o <scratchdir>', then decode each Texts[].R[].T with decodeURIComponent inside a try/catch (a bare % such as '40%' is not a valid escape and throws URIError)."
     }
   ],
   "question_sources": [
