@@ -54,7 +54,15 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
             <div className="apm-dash-header-right">
-              {/* Paper switcher — the AFM discovery entry (bundle: one ACCA entitlement). */}
+              {/* Paper switcher — the AFM discovery entry.
+                  IT IS NAVIGATION, AND IT GATES NOTHING. That is deliberate, not an omission:
+                  a link can always be typed by hand, so entitlement is enforced at the
+                  RESOURCE, per paper, via hasPaperAccess — app/acca/page.tsx, tutor (page +
+                  route), progress, case, case/list, case/turn, mock, sit and access all call
+                  it with an explicit paper. Switching to a paper you do not hold gives you the
+                  free tier for it and a 402 / locked state on everything paid.
+                  Was annotated "(bundle: one ACCA entitlement)". That is FALSE since per-paper
+                  pricing shipped — the code was already right, the comment was not. */}
               <div className="apm-dash-paper-switch" role="group" aria-label="Choose ACCA paper">
                 <Link href="/acca" className={`apm-dash-paper-tab${paper === 'APM' ? ' active' : ''}`}>APM</Link>
                 <Link href="/acca?paper=AFM" className={`apm-dash-paper-tab${paper === 'AFM' ? ' active' : ''}`}>AFM</Link>
@@ -147,9 +155,15 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                   student clicking "Timed mock" was served the APM paper: Halworth, Rivenor and
                   Bexley scenarios, requirements and marks. A cross-paper content leak, not just
                   a wrong screen.
-                  Entitlement is bundle-wide, so "if they hold both, they choose" is already
-                  answered by the APM/AFM switch above — this card simply follows the paper the
-                  student is looking at, like every other link on the page. */}
+                  ENTITLEMENT IS PER PAPER, not bundle-wide (this said "bundle-wide" until
+                  2026-08-08, which was true when written and false from the day per-paper
+                  pricing shipped). It does not change what this card does: it follows the
+                  paper the student is looking at, like every other link on the page, and
+                  app/api/acca/mock + app/api/acca/sit each check hasPaperAccess for the paper
+                  actually being sat. A student who holds neither still SEES this card —
+                  casesEnabled is the only condition on rendering it — and is refused on click.
+                  That is an upsell, not a leak, but it does mean the card's presence is not a
+                  statement about what they bought. */}
               <Link href={mockHref} className="apm-dash-cases-card">
                 <div className="apm-dash-cases-text">
                   <span className="apm-dash-cases-title">Timed mock</span>
