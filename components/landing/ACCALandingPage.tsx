@@ -651,8 +651,10 @@ export default function ACCALandingPage({ config }: { config: AccaLandingConfig 
             <p className="lead">{finalCta.lead}</p>
             {/* The optional SECOND button renders only when a config sets one, so a page with
                 one CTA still emits exactly one child here. The pillar sets it because its
-                close offers the free APM resit diagnostic, and a visitor sitting AFM needs
-                somewhere to go that is not that. */}
+                close now offers BOTH free resit diagnostics — APM and AFM — and root is the
+                one page that cannot assume which paper the visitor sat. Both carry the same
+                variant on purpose: this renderer takes a button's weight from `variant`
+                alone, so a rust-plus-ghost pair would quietly nominate a default paper. */}
             <div className="hero-cta" style={{justifyContent:'center',marginTop:36}}>
               {btn(finalCta.cta)}
               {finalCta.secondary !== undefined && btn(finalCta.secondary)}

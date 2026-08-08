@@ -415,10 +415,42 @@ ok('the pillar makes no code-owns-the-marking claim', !MARKING_OVERCLAIM.test(pi
 // drops silently. The /ib link is the load-bearing one: nothing else on gradd.ai links to the
 // IB landing since the hub was deleted, so losing it makes /ib unreachable and uncrawlable
 // from every page on the site.
-ok('the resit CTA survives, and is still scoped to APM',
-  pil.includes('/acca/resit') && /Failed APM/.test(pil) && !/Failed a paper/i.test(pil));
-ok('the resit close offers an alternative for a visitor not sitting APM',
-  /Start free instead/.test(pil));
+// ── THE PILLAR'S RESIT CLOSE ROUTES TO BOTH PAPERS (ruled 2026-08-08) ───────
+// It was pinned as APM-scoped, correctly, while AFM had no diagnostic. Now that it has one,
+// APM-only routing IS the defect: root cannot know which paper a stranger sat, and sending an
+// AFM resitter to APM's diagnostic profiles them against APM's corpus rather than failing
+// visibly, because the two engines' group ids and lo_code prefixes collide.
+//
+// Note the href regexes are ANCHORED. A bare `pil.includes('/acca/resit')` is ALSO true of
+// '/acca/afm/resit' — substring containment cannot tell the two destinations apart, so it
+// would pass on a page that had lost the APM link entirely.
+ok('the pillar routes to APM\'s diagnostic', /href="\/acca\/resit"/.test(pil));
+ok('the pillar routes to AFM\'s diagnostic', /href="\/acca\/afm\/resit"/.test(pil));
+ok('the pillar names both papers rather than nominating one',
+  /Failed APM or AFM/.test(pil) && !/Failed APM\?/.test(pil));
+ok('the close still explains WHY there are two, not just that there are',
+  /habits that lose marks in APM are not the ones that lose them in AFM/.test(pil));
+
+// EQUAL WEIGHT, not merely both-present. btn() takes a button's weight from `variant` alone
+// (`btn btn-${variant}`), so a rust-plus-ghost pair would render one paper as the default and
+// the other as the fallback — the same bias, re-expressed in CSS.
+{
+  // Attribute ORDER-AGNOSTIC on purpose: the tag is emitted by next/link, and pinning
+  // href-before-class would make this fixture fail on a Next upgrade that reordered props —
+  // a false alarm about routing when nothing about routing had changed.
+  const resitBtns = [...pil.matchAll(/<a\b[^>]*>/g)]
+    .map((m) => m[0])
+    .map((tag) => ({
+      href: (tag.match(/href="([^"]*)"/) ?? [])[1] ?? '',
+      cls: (tag.match(/class="([^"]*)"/) ?? [])[1] ?? '',
+    }))
+    .filter((a) => a.href === '/acca/resit' || a.href === '/acca/afm/resit');
+  ok('both resit buttons render in the close', resitBtns.length === 2,
+    resitBtns.map((b) => b.href).join(' | ') || 'none matched');
+  ok('neither paper is styled as the lesser option',
+    resitBtns.length === 2 && resitBtns[0].cls === resitBtns[1].cls,
+    resitBtns.map((b) => b.cls).join(' vs '));
+}
 ok('the /ib footer link survives — it is IB\'s only inbound link on gradd.ai',
   pil.includes('href="/ib"'));
 ok('the walkthrough link survives', pil.includes('/acca/afm/proof'));

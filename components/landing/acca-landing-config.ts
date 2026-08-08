@@ -1251,12 +1251,22 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
 //                                          discriminate" — the omitted 0.15 applies
 //                                          identically to both legs
 //
-// ── THE RESIT CTA IS SCOPED TO APM, AND THAT IS A CORRECTION ────────────────
-// The closing band once read "Failed a paper?" unqualified. `lib/acca/resit-engine.ts` is
-// written in APM's own terms (its habit prompts say "APM gives marks for professional
-// skills…") and `app/acca/resit/page.tsx` renders "Free ACCA APM resit diagnostic" — there is
-// no AFM equivalent. An AFM resitter following an unqualified promise lands on a page about a
-// paper they are not sitting, so the band names APM.
+// ── THE RESIT CLOSE ROUTES TO BOTH PAPERS (ruled 2026-08-08) ────────────────
+// It once read "Failed a paper?" unqualified, was corrected to name APM because there was no
+// AFM diagnostic to send anyone to, and is now paper-neutral because there is one.
+//
+// THE APM-ONLY SCOPING HAD BECOME THE SAME DEFECT ONE LEVEL UP. Root is where a stranger
+// lands, and AFM's whole problem was having no free entry point; a close that offered only
+// APM's diagnostic sent an AFM resitter to a diagnostic for a paper they are not sitting —
+// which, because the two engines' topic-group ids and lo_code prefixes collide, would have
+// profiled them against APM's corpus rather than failing visibly.
+//
+// TWO destinations, equal weight: /acca/resit and /acca/afm/resit. The lead earns the split
+// rather than just presenting it — the habits that lose marks differ by paper, which is why
+// there are two diagnostics and not one with a dropdown.
+//
+// The old "Start free instead" secondary is displaced by AFM's button. Nothing is stranded:
+// the free CTA still appears in the nav, the hero, the paper cards and the pricing block.
 //
 // ⚠ PRICING IS PER PAPER (ruled 2026-08-03) and this page says so three times — in the hero
 // meta, in the paper-cards lead, and in the pricing note. Under the old bundle a pillar could
@@ -1562,12 +1572,16 @@ export const ACCA_PILLAR_LANDING: AccaLandingConfig = {
   // faq DELIBERATELY OMITTED — see the header block.
 
   finalCta: {
-    ariaLabel: 'Free APM resit diagnostic',
+    ariaLabel: 'Free resit diagnostic — APM and AFM',
     pill: 'Free · 3 minutes · no sign-up',
-    heading: { text: 'Failed APM? Find out', em: 'exactly why.' },
-    lead: 'Your result slip gives you a score. It does not name the habit that cost the marks. Three quick steps — your score, how each syllabus area went, and six honest questions about how you write — and you get the areas to drill and the habits to fix first.',
-    cta: { label: 'Get my free resit diagnosis', href: '/acca/resit', variant: 'rust' },
-    secondary: { label: 'Start free instead', href: ACCA_AUTH_FREE, variant: 'ghost' },
+    heading: { text: 'Failed APM or AFM? Find out', em: 'exactly why.' },
+    lead: 'Your result slip gives you a score. It does not name the habit that cost the marks. Three quick steps — your score, how each area went, and six honest questions about how you write — and you get the areas to drill and the habits to fix first. Each paper has its own diagnostic: the habits that lose marks in APM are not the ones that lose them in AFM.',
+    // BOTH 'rust', deliberately. The renderer draws cta and secondary identically and takes
+    // the weight from `variant` alone, so a rust-plus-ghost pair would read as "APM, or else"
+    // — the same APM-first bias one level up that this change exists to remove. Two doors of
+    // equal weight; the pillar has no opinion about which paper you sat.
+    cta: { label: 'APM resit diagnostic', href: '/acca/resit', variant: 'rust' },
+    secondary: { label: 'AFM resit diagnostic', href: '/acca/afm/resit', variant: 'rust' },
     small: 'Every drill free · €99 per paper for 90 days, or €49/month · No card to start',
   },
 
