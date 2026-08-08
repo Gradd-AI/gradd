@@ -1004,7 +1004,15 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
       id: 'features',
       ariaLabel: 'What is included',
       eyebrow: "What's included",
-      heading: { text: 'Built where the marks are', em: 'guaranteed.' },
+      // "AWARDED", NOT "guaranteed". The sentence is about where the DRILLS are built — the
+      // sections every sitting draws from, which is exactly what the lead below then says. Read
+      // as written, though, "the marks are guaranteed" is a promise about the student's result:
+      // a checkable outcome claim on a paper for which there is no outcome data, made in the
+      // section that otherwise takes care to state its own coverage boundary ("No
+      // complete-syllabus claim", one card down). Unrelated to the FR1 hedging-register ruling
+      // — that is the hero panel — and unrelated to the two "14-day money-back guarantee" hits,
+      // which are the commercial sense and stay.
+      heading: { text: 'Built where the marks are', em: 'awarded.' },
       lead: 'Every AFM sitting draws a question from sections B and E — investment appraisal, financing, treasury and risk. That is where Gradd is built out first.',
       cards: [
         { tag: 'Drills', title: '63 exam-style drills.', body: 'Live across investment appraisal & financing, treasury & risk management, and ethics & advisory — sections B, E and A. M&A and reorganisation (C, D) are next. No complete-syllabus claim.' },
@@ -1308,7 +1316,15 @@ export const ACCA_PILLAR_LANDING: AccaLandingConfig = {
           verdict: 'strong',
           tone: 'strong',
           quoted: true,
-          body: '“States the basis-risk limitation outright rather than presenting the two-scenario reconciliation as proof the rate is guaranteed.”',
+          // "LOCKED IN", NOT "guaranteed" — authored copy, so the FR1 register ruling applies.
+          // This panel is a WRITTEN illustration in the marker's voice, not a captured marking
+          // run: it lives in a landing config, cites no drill id and no marking row, and its
+          // sibling row above already uses the post-FR1 verb ("the hedge LOCKS 4.95%"). The
+          // scenario it depicts is irhedge futures — the exact family FR1 swept — where K1's
+          // question went from "guaranteed effective borrowing cost" to "locked in" and all 4
+          // drills × 5 fields were left with zero hits. Copy that sells that content should not
+          // reintroduce the word the content retired.
+          body: '“States the basis-risk limitation outright rather than presenting the two-scenario reconciliation as proof the rate is locked in.”',
         },
       ],
       foot: 'Marked in about a minute · unlimited attempts',
@@ -1480,8 +1496,17 @@ export const ACCA_PILLAR_LANDING: AccaLandingConfig = {
         name: 'Free',
         currency: '€',
         amount: '0',
-        tagline: 'Every drill in the paper, unlimited, plus three full teach-throughs with Ezra. No card.',
-        features: ['Every drill in the paper, unlimited', '3 full teach-throughs with Ezra', 'No card, no commitment'],
+        // "BOTH PAPERS", NOT "the paper" — this card used to contradict its own lead four lines
+        // up. The lead is the correct one: the free tier is not paper-scoped. The drill serve
+        // (app/api/acca/next-drill/route.ts) gates on AUTHENTICATION ONLY — 401 for a signed-out
+        // request and no entitlement check of any kind after it — and `paper` reaches it as a
+        // query param through `resolvePaper`, which lib/acca/paper.ts:15 marks explicitly as
+        // CONTENT SCOPING and NEVER an entitlement decision. So a free account can attempt all
+        // 154 drills on both papers, and the per-paper €99 buys coaching, cases, marking and the
+        // mock. The spokes say "Every APM drill" / "Every AFM drill" and stay correct: a spoke is
+        // describing its own paper, and neither claims the free tier stops there.
+        tagline: 'Every drill on both papers, unlimited, plus three full teach-throughs with Ezra. No card.',
+        features: ['Every drill on both papers, unlimited', '3 full teach-throughs with Ezra', 'No card, no commitment'],
         cta: { label: 'Start free', href: ACCA_AUTH_FREE, variant: 'ghost' },
       },
       {
