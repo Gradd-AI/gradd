@@ -57,6 +57,7 @@
     "test:pacing": "tsx scripts/test-pacing.ts",
     "test:debrief": "tsx scripts/test-debrief.ts",
     "test:weak-areas": "tsx scripts/test-weak-areas.ts",
+    "test:resit-engine": "tsx scripts/test-resit-engine.ts",
     "test:sit-results": "tsx scripts/test-sit-results.ts",
     "test:teach-demand": "tsx scripts/test-teach-demand.ts",
     "test:teach-wiring": "tsx scripts/test-teach-wiring.ts",
