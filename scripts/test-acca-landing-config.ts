@@ -103,10 +103,21 @@ ok('APM\'s rendered body is UNCHANGED by the config extraction (SHA-256 pin)',
 // implementation renders the <section> wrapper (or its heading) with nothing inside — which
 // still "renders", still typechecks, and leaves a band of blank sage on the page.
 ok('APM renders the resit band', apm.includes('resit-band') && apm.includes('Get my free resit plan'));
-ok('AFM renders NO resit band at all — not an empty one', !afm.includes('resit-band'));
-ok('AFM renders no resit copy anywhere', !/resit/i.test(afm));
-ok('AFM has exactly one section fewer than APM, and it is the resit band',
-  (afm.match(/<section/g) ?? []).length + 1 === (apm.match(/<section/g) ?? []).length);
+
+// AFM CARRIES THE BAND NOW (2026-08-08). It did not until the resit engine's three data
+// constants were keyed by paper and AFM got its own topic groups and habit questions; before
+// that the field was omitted because a real-looking band pointing at nothing is worse than no
+// band. What must NOT drift is where each band points: the two papers' diagnostics are
+// different surfaces, and crossing them would profile a sitter against the other paper's
+// corpus — the lo_code prefixes collide exactly, so it would not even 404.
+ok('AFM renders the resit band', afm.includes('resit-band') && afm.includes('Get my free resit plan'));
+ok('AFM\'s resit CTA points at the AFM surface', afm.includes('/acca/afm/resit'));
+ok('AFM\'s resit CTA never points at the APM surface', !/href="\/acca\/resit"/.test(afm));
+ok('APM\'s resit CTA still points at the APM surface, not AFM\'s',
+  /href="\/acca\/resit"/.test(apm) && !apm.includes('/acca/afm/resit'));
+ok('each band names its own paper', /Failed AFM\?/.test(afm) && /Failed APM\?/.test(apm));
+ok('the two spokes now render the same number of sections',
+  (afm.match(/<section/g) ?? []).length === (apm.match(/<section/g) ?? []).length);
 
 // ── BREAK MODE 3: THE TWO PAGES DRIFT APART STRUCTURALLY ────────────────────
 // The point of sharing the component is that AFM gets APM's COMPOSITION. If a future edit

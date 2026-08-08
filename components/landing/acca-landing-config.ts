@@ -835,9 +835,12 @@ export const APM_ACCA_LANDING: AccaLandingConfig = {
 // model-graded (code owns band→marks, the model owns the band and authors the feedback prose).
 // ⚠ NO COMPLETE-SYLLABUS CLAIM. C and D are unbuilt and the page says so, in the section that
 // makes the coverage claim rather than in a footnote.
-// ⚠ NO RESIT BAND. `resitBand` is omitted: `lib/acca/resit-engine.ts` is written in APM's own
-// terms and there is no AFM equivalent. A real-looking band pointing at nothing is worse than
-// no band.
+// ✅ RESIT BAND, ADDED 2026-08-08. It was omitted because `lib/acca/resit-engine.ts` was
+// written in APM's own terms and there was no AFM equivalent — a real-looking band pointing
+// at nothing being worse than no band. There is one now: the engine's three data constants
+// are keyed by paper, AFM has its own eight topic groups and its own six habit questions
+// (evidenced against the AFM examiner reports F1/F2/F3/F6/F9/F11, NOT ported from APM), and
+// the surface is live at `/acca/afm/resit`. This was AFM's only missing free entry point.
 // ════════════════════════════════════════════════════════════════════════════
 
 // AFM's auth hops carry `?paper=AFM` through `/acca/auth` → `/auth/callback` so the
@@ -916,7 +919,16 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
     },
   },
 
-  // resitBand DELIBERATELY OMITTED — see the header block. Omitting it renders nothing.
+  // The AFM counterpart to APM's band. The lead names the mode the AFM engine actually leads
+  // on — carrying your own calculated figure into the argument (F9, the one failure mode with
+  // no APM analogue, because only a numeric paper can fail that way).
+  resitBand: {
+    ariaLabel: 'Free resit diagnostic',
+    eyebrow: 'Free resit diagnostic',
+    heading: { text: 'Failed AFM? Find out exactly why —', em: 'in 3 minutes.' },
+    lead: "Your result slip tells you the score. It doesn't tell you whether the arithmetic was the problem at all. Answer three quick steps — your score, how each area went, and six honest questions about how you write — and get a personalised resit plan. Most AFM marks are lost after the calculation: the figure is right and the discussion never uses it. No sign-up needed to see your plan.",
+    cta: { label: 'Get my free resit plan', href: '/acca/afm/resit', variant: 'rust' },
+  },
 
   sections: [
     // AFM's proof story, and the reason PROOF_ROW is not a compare row: this is one attempt
