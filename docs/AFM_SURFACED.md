@@ -156,6 +156,64 @@ route was explicitly ruled out.**)*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
 
+## ⭐ 🔧 RULED 2026-08-08 — **THE `.acca-lp` EXTRACTION, AND THE PROOF IT NEEDS: THE EXISTING PIN CANNOT SEE CSS**
+
+**NOTHING BUILT. This is the ruling and the proof design, banked ahead of the work.** Grant's
+order stands: no extraction begins until he has seen the authed surfaces and ruled on order.
+
+**THE RULING (Grant, 2026-08-08).** `.acca-lp` is extracted into `globals.css` as a **SCOPED
+LAYER, NOT `:root`**. The app's tokens stay where they are; the landing tokens live under a
+class an app surface opts into. Adoption becomes per-surface and deliberate, and **nothing
+reskins by being extracted**. That also resolves `--radius` / `--radius-sm` **by
+construction**: they exist in both token sets at different values, and hoisting either to
+`:root` would silently change every app surface. Scoping keeps the collision inert rather than
+renaming around it. The extraction ships as **its own change-set with nothing adopted** — the
+first surface to consume it is a separate decision.
+
+### 🧨 THE FINDING — a pin that reports green on a change it cannot see
+
+`bodyOf()` (`scripts/test-acca-landing-config.ts:65-66`) **strips `<style>` blocks before
+hashing**. On a CSS extraction the existing SHA-256 pin therefore reports **GREEN whether the
+stylesheet arrived intact, arrived mangled, or never arrived at all.** It sees only that the
+markup did not move.
+
+**That blindness was CORRECT for its original purpose and becomes wrong the moment CSS is the
+thing under test.** The seam-rule change was CSS-only and was *deliberately designed* to pass
+through the pin untouched — the rule's own comment says so: *"CSS-ONLY BY DESIGN … The pin's
+`bodyOf()` strips `<style>`, so a rule expressed here passes through it untouched — pin still
+green after this."* Nothing about the pin is broken. It is being asked a question it was built
+not to answer.
+
+⚠️ **SAME FAMILY AS THE OTHER FALSE-GREENS: a check that cannot see the thing being changed.**
+Siblings already banked in this file — the AFM pin that went stale silently and was refreshed
+without diagnosis (2026-08-04, below); the fixture inside the gate that could not go red
+(2026-08-05); the comparison ruler that read zero because it probed for the PRESENCE of
+elements when presence was never the question (2026-08-05). The shape recurs: the instrument is
+sound, its blind spot is undocumented, and the green is read as evidence.
+
+### 🔴 SECOND GAP — only APM is pinned
+
+`APM_BODY_SHA` (`test-acca-landing-config.ts:96`) covers **APM alone**. `afm` and `pil` are
+rendered at lines 69–70 and asserted on structurally, but **neither is hashed**. So "all three
+pages render byte-identically" needs **two new pins regardless of the CSS question** — this
+gap is independent of the extraction and is true today.
+
+### THE THREE-PART PROOF (accepted 2026-08-08; supersedes "the fixture already exists")
+
+| Part | Sees | Blind to |
+|---|---|---|
+| Stripped-body markup hash, all three pages (**2 new pins**) | markup | the stylesheet entirely |
+| Normalised hash over the extracted rule text, before vs after | CSS | whether it reaches the page |
+| **Served-bytes capture** against `npm start`, `<script>` stripped | **markup and CSS together** | — |
+
+**The served-bytes capture is the only part that closes the loop**, which is why it is
+load-bearing rather than belt-and-braces. The other two localise a failure it would only tell
+you exists. `<script>` is stripped because chunk filenames move on any code change and would
+make the comparison meaningless — the same method the original APM extraction used
+(`test-acca-landing-config.ts:81-85`).
+
+---
+
 ## ⭐ ✅ MEASURED + MERGED 2026-08-07 — **THE LEVEL-3 CONTRACT NOW REACHES CASES, AND THE CASE LEGS MOVED** (`feat/case-teach-next-move`)
 
 **MEASURED, NOT ASSERTED (P-T1).** 60 case teaching legs on the real `/api/acca/case/turn`
