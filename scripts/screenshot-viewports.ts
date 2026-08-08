@@ -34,6 +34,18 @@
  *              the scroll, so focusing never changes what was measured.
  *   --frame-h  Frame height in px when shooting. Default 900. Without --shot the
  *              frames expand to the framed page's full height.
+ *   --cookie   OPTIONAL. A full Cookie header value, forwarded to the UPSTREAM on
+ *              every proxied request. Without it the authed surfaces (dashboard,
+ *              tutor, cases, progress, sit, org) all 307 to /acca/auth and the
+ *              harness can only shoot the four public pages.
+ *              PREFER THE ENV FORM — `SHOT_COOKIE=... npx tsx …` — because process
+ *              arguments are readable by other processes on the machine and
+ *              environment is not. SHOT_COOKIE wins if both are given.
+ *              The value is never logged, never drawn into the PNG and never
+ *              persisted; a 3xx on a framed page while a cookie is set is reported
+ *              as a warning, so a shot of the sign-in page cannot pass for a result.
+ *              The cookie must come from the SAME origin as --origin: a session for
+ *              gradd.ai is not valid for localhost:3000.
  *   --origin   Upstream to proxy. Default http://localhost:3000.
  *   --port     Port for this tool's own server. Default 4311.
  *   --chrome   Path to chrome.exe. Default: the usual install locations.
@@ -110,6 +122,21 @@ function argList(flag: string): string[] {
   return out;
 }
 const arg = (flag: string, fallback?: string) => argList(flag)[0] ?? fallback;
+
+// ── SESSION COOKIE ──────────────────────────────────────────────────────────
+// Every authed ACCA surface 307s to /acca/auth without one, so the harness could only ever
+// shoot the four public pages. This forwards a real session to the UPSTREAM on every proxied
+// request, which is why it works at all: Chrome runs headless against a throwaway
+// --user-data-dir and holds no cookies of its own, and the frames load from THIS origin
+// (127.0.0.1:<port>), not from the app's — so a cookie set for localhost:3000 would never be
+// sent by the browser even if it had one. Injecting server-side sidesteps both.
+//
+// ⚠️ THIS IS A LIVE SESSION TOKEN. It is never logged, never written to the PNG, never put in
+// the on-page meta line, and never persisted. Prefer the ENV form: process arguments are
+// visible to other processes on the machine (`ps`, Task Manager details, shell history),
+// environment is not. --cookie exists because it is convenient for a one-off.
+const cookie = process.env.SHOT_COOKIE ?? arg('--cookie') ?? '';
+const cookieSource = process.env.SHOT_COOKIE ? 'SHOT_COOKIE env' : (arg('--cookie') ? '--cookie flag' : null);
 
 const rawUrl = arg('--url');
 if (!rawUrl) {
@@ -378,11 +405,31 @@ const server = createServer(async (req, res) => {
     return;
   }
   try {
+    // The injected cookie REPLACES rather than appends: headless Chrome on a throwaway
+    // profile sends none of its own, so there is nothing to merge, and appending would risk
+    // sending two Cookie headers on a retry.
+    const upstreamHeaders: Record<string, string> = {
+      ...(req.headers as Record<string, string>),
+      host: new URL(upstream).host,
+    };
+    if (cookie) upstreamHeaders.cookie = cookie;
+
     const upstreamRes = await fetch(upstream + url, {
       method: req.method,
-      headers: { ...(req.headers as Record<string, string>), host: new URL(upstream).host },
+      headers: upstreamHeaders,
       redirect: 'manual',
     });
+
+    // A 3xx on the FRAMED page with a cookie supplied is the signal that the session did not
+    // take — an expired token, or one copied from a different origin than --origin. Said once,
+    // here, because the alternative is a screenshot of the sign-in page that looks like a
+    // finished job. The Location is printed; the cookie never is.
+    if (cookie && upstreamRes.status >= 300 && upstreamRes.status < 400 && !url.startsWith('/__viewports')) {
+      console.error(
+        `  ⚠ ${url} → ${upstreamRes.status} ${upstreamRes.headers.get('location') ?? ''}` +
+        `  (session not accepted — is the cookie current, and copied from ${upstream}?)`,
+      );
+    }
     const headers: Record<string, string> = {};
     upstreamRes.headers.forEach((v, k) => {
       // fetch has already decoded the body; forwarding these would lie about it.
@@ -402,6 +449,8 @@ server.listen(port, '127.0.0.1', async () => {
   const harnessUrl = `http://127.0.0.1:${port}${HARNESS_PATH}`;
   console.log(`serving ${harnessUrl}`);
   console.log(`frames  ${path}  (proxied from ${upstream}) at ${widths.join(' / ')}px`);
+  // Presence and SOURCE only — never the value, and never its length, which is a fingerprint.
+  if (cookieSource) console.log(`session forwarded to upstream (from ${cookieSource})`);
   if (lhSelectors.length) console.log(`probe   line-height of ${lhSelectors.join(', ')}`);
 
   if (!shotDir) {
