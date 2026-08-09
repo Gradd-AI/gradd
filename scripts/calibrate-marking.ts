@@ -108,6 +108,14 @@ function buildWholeAnswer(reqOne: string, reqTwo: string): string {
   return [`${REQ_1_LABEL}\n${reqOne.trim()}`, `${REQ_2_LABEL}\n${reqTwo.trim()}`].join('\n\n');
 }
 
+// The candidate's answers ALONE — the blank-check input, assembled exactly as the route
+// assembles it. Mirrored here for the same reason this whole file mirrors the route: if
+// calibration built its inputs differently from production, it would be calibrating
+// something production never runs.
+function buildAnswersOnly(reqOne: string, reqTwo: string): string {
+  return [reqOne.trim(), reqTwo.trim()].join('\n\n');
+}
+
 // ── WEAK fixture (authored) — covers the content points but flat professional
 // skills: assertion-only, dismisses the operations director, no payback/risk
 // evaluation, no value challenge. Should band weak on A&E / scepticism / commercial
@@ -199,6 +207,7 @@ const STRONG_REQ_2 =
 interface Fixture {
   key: 'WEAK' | 'STRONG';
   wholeAnswer: string;
+  answersOnly: string;
   // Inclusive expected range for the awarded score against the 5-mark pool.
   expectMin: number;
   expectMax: number;
@@ -209,6 +218,7 @@ const FIXTURES: Fixture[] = [
   {
     key: 'WEAK',
     wholeAnswer: buildWholeAnswer(WEAK_REQ_1, WEAK_REQ_2),
+    answersOnly: buildAnswersOnly(WEAK_REQ_1, WEAK_REQ_2),
     expectMin: 0,
     expectMax: 2,
     expectLabel: '≤ 2 / 5',
@@ -216,6 +226,7 @@ const FIXTURES: Fixture[] = [
   {
     key: 'STRONG',
     wholeAnswer: buildWholeAnswer(STRONG_REQ_1, STRONG_REQ_2),
+    answersOnly: buildAnswersOnly(STRONG_REQ_1, STRONG_REQ_2),
     expectMin: 4,
     expectMax: POOL,
     expectLabel: '≥ 4 / 5',
@@ -242,6 +253,7 @@ async function runFixture(f: Fixture): Promise<{ pass: boolean; scores: number[]
         paper: 'APM',
         context: CONTEXT,
         wholeAnswer: f.wholeAnswer,
+        answersOnly: f.answersOnly,
         examinedSkills: EXAMINED_SKILLS,
         professionalSkillsMarks: POOL,
       });

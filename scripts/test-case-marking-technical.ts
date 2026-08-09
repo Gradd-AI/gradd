@@ -70,10 +70,31 @@ process.env.ANTHROPIC_API_KEY ||= 'test-key-unused-no-request-made';
     ok('full-blank: technical awarded 0', techAwarded === 0);
     ok('full-blank: technical available 80', techAvailable === 80);
 
-    // PS on a blank whole answer → 0 (no model call, blank short-circuit)
-    const psA = await judgeCaseMarking({ paper: 'AFM', context: 'ctx', wholeAnswer: '', examinedSkills: ['communication', 'analysis_and_evaluation', 'scepticism', 'commercial_acumen'], professionalSkillsMarks: 10 });
-    const psB1 = await judgeCaseMarking({ paper: 'AFM', context: 'ctx', wholeAnswer: '   ', examinedSkills: ['analysis_and_evaluation', 'scepticism'], professionalSkillsMarks: 5 });
-    const psB2 = await judgeCaseMarking({ paper: 'AFM', context: 'ctx', wholeAnswer: '-', examinedSkills: ['scepticism', 'commercial_acumen'], professionalSkillsMarks: 5 });
+    // PS on a blank paper → 0 (no model call, blank short-circuit).
+    //
+    // ⚠️ `wholeAnswer` CARRIES THE REAL LABELLED JOIN, and `answersOnly` the empty answers.
+    // These cases used to pass '' / '   ' / '-' as wholeAnswer with no labels at all, and
+    // that is precisely why they stayed green through a live defect: production never builds
+    // an unlabelled string. lib/acca/case-mark-run.ts joins `${label}\n${answer}` per
+    // requirement, so a fully blank AFM sit reached the old guard as 22-46 alphanumerics of
+    // requirement headings, sailed past isBlankAnswer's 3-char threshold, and was model-judged
+    // 'weak' across the board — 5/20 on professional skills for an empty paper.
+    // The labels below are the STORED AFM Mock Paper 1 labels, verbatim.
+    const psA = await judgeCaseMarking({
+      paper: 'AFM', context: 'ctx',
+      wholeAnswer: '(i) B3e — 10 marks\n\n\n(ii) B5b — 16 marks\n\n\n(iii) E2b — 8 marks\n\n\n(iv) E1a — 6 marks\n',
+      answersOnly: '\n\n\n\n\n\n',
+      examinedSkills: ['communication', 'analysis_and_evaluation', 'scepticism', 'commercial_acumen'], professionalSkillsMarks: 10 });
+    const psB1 = await judgeCaseMarking({
+      paper: 'AFM', context: 'ctx',
+      wholeAnswer: '(i) B1a — 12 marks\n\n\n(ii) B1b — 8 marks\n',
+      answersOnly: '\n\n   ',
+      examinedSkills: ['analysis_and_evaluation', 'scepticism'], professionalSkillsMarks: 5 });
+    const psB2 = await judgeCaseMarking({
+      paper: 'AFM', context: 'ctx',
+      wholeAnswer: '(i) E3a — 12 marks\n\n\n(ii) E2a — 8 marks\n',
+      answersOnly: '-\n\n',
+      examinedSkills: ['scepticism', 'commercial_acumen'], professionalSkillsMarks: 5 });
     const psAwarded = psA.professional_marks_awarded + psB1.professional_marks_awarded + psB2.professional_marks_awarded;
     const psAvailable = psA.professional_marks_available + psB1.professional_marks_available + psB2.professional_marks_available;
     ok('full-blank: PS awarded 0 (blank short-circuit, no model call)', psAwarded === 0);

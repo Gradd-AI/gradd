@@ -159,7 +159,24 @@ export interface CaseMarkingResult {
 export interface JudgeCaseMarkingInput {
   paper: AccaPaper;                // selects the paper's OWN PS descriptors — never shared across papers
   context: string;                 // scenario_intro + exhibits (NOT sealed) — same shape as case/turn
-  wholeAnswer: string;             // final_answer per requirement, labelled, joined in order
+  wholeAnswer: string;             // final_answer per requirement, labelled, joined in order — WHAT THE MODEL SEES
+  /**
+   * The candidate's answers ALONE, joined — no labels, no headings, nothing the candidate
+   * did not type. Used for ONE purpose: deciding whether this submission is blank.
+   *
+   * ⚠️ IT IS SEPARATE FROM `wholeAnswer` BECAUSE THE BLANK CHECK USED TO READ THAT, AND
+   * REQUIREMENT LABELS DEFEATED IT. `wholeAnswer` interleaves each requirement's label with
+   * its answer, so a paper with every box empty still carried the labels' 22-46 alphanumerics
+   * — comfortably over isBlankAnswer's 3-character threshold. The guard never fired on a real
+   * paper, the model was handed a "whole answer" consisting only of requirement headings, and
+   * the PS ladder has no band below `weak` (25%), so a completely blank AFM sit scored 5/20 on
+   * professional skills against a correct technical 0/80. Measured 2026-08-09.
+   *
+   * Required, not optional: a caller that cannot say what the candidate actually wrote must
+   * not compile. The same reasoning retired `hasActiveAPMAccess` — a defaultable safety check
+   * is one nobody notices is missing.
+   */
+  answersOnly: string;
   examinedSkills: string[];        // union of professional_skill_tags across requirements
   professionalSkillsMarks: number; // the case pool (5 for Section B, 10 for Section A)
 }
@@ -320,14 +337,20 @@ function apportion(raw: number[], target: number): number[] {
 // Throws Error('call') on API/extract failure and Error('parse') on parse/shape
 // failure so the caller can preserve the distinct 502 messages.
 export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<CaseMarkingResult> {
-  const { paper, context, wholeAnswer, examinedSkills, professionalSkillsMarks } = input;
+  const { paper, context, wholeAnswer, answersOnly, examinedSkills, professionalSkillsMarks } = input;
 
   // ── Blank whole-answer → 0, no model call ──
   // A blank or trivially-short whole answer demonstrates zero professional skill, so
   // it scores 0 across the pool deterministically (a fully-blank timed sit costs no
   // model spend and honestly scores 0/100). Never reached in practice mode, where
   // marking only runs once every requirement has been judged correct.
-  if (isBlankAnswer(wholeAnswer)) {
+  //
+  // TESTED ON `answersOnly`, NEVER ON `wholeAnswer` — the labels in the latter kept this
+  // guard from ever firing, which is the whole defect. See JudgeCaseMarkingInput.answersOnly.
+  // The technical pass has always tested the raw per-requirement answer (isBlankAnswer(
+  // r.final_answer) below), which is exactly why IT banded a blank sit 'nothing' on all 8
+  // requirements while this pass was banding the same sit 'weak' across the board.
+  if (isBlankAnswer(answersOnly)) {
     return {
       professional_marks_awarded: 0,
       professional_marks_available: professionalSkillsMarks,

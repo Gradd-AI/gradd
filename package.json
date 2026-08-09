@@ -69,6 +69,8 @@
     "test:product-router": "tsx scripts/test-product-router.ts",
     "test:acca-landing-config": "tsx scripts/test-acca-landing-config.ts",
     "test:entitlement-cta": "tsx scripts/test-entitlement-cta.ts",
+    "test:paper-access": "tsx scripts/test-paper-access.ts",
+    "probe:paper-access": "tsx --env-file=.env.local scripts/probe-paper-access.ts",
     "test:afm-prose": "tsx scripts/test-afm-prose.ts",
     "test:apm-framework": "tsx scripts/test-apm-framework.ts",
     "test:ib-bm-framework": "tsx scripts/test-ib-bm-framework.ts",

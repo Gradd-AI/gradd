@@ -173,13 +173,20 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
   if (!gate.ready) return { ok: false, status: 409, error: gate.reason ?? 'case not complete' };
 
   // ── Whole-answer input (final_answer per requirement, in order) ──
+  // TWO strings out of ONE pass over the same trimmed answers:
+  //   wholeAnswer — labelled, what the MODEL sees. Byte-for-byte what it always was.
+  //   answersOnly — the candidate's text alone, used ONLY for the blank check.
+  // They are separate because the blank check used to read the labelled join, and the labels
+  // alone cleared isBlankAnswer's threshold, so a fully blank paper was never detected as
+  // blank. See JudgeCaseMarkingInput.answersOnly in lib/acca/case-marking.ts.
+  const trimmedAnswers = requirements.map((r) => (progressByReq.get(r.id)?.final_answer ?? '').trim());
   const wholeAnswer = requirements
-    .map((r) => {
+    .map((r, i) => {
       const label = (r.label ?? '').trim() || `Requirement ${r.requirement_order}`;
-      const answer = (progressByReq.get(r.id)?.final_answer ?? '').trim();
-      return `${label}\n${answer}`;
+      return `${label}\n${trimmedAnswers[i]}`;
     })
     .join('\n\n');
+  const answersOnly = trimmedAnswers.join('\n\n');
 
   // ── Case context (scenario_intro + exhibits) — same shape as case/turn ──
   const { data: exhibits } = await supabase
@@ -213,7 +220,7 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
   let result;
   try {
     result = await judgeCaseMarking({
-      paper, context, wholeAnswer, examinedSkills, professionalSkillsMarks,
+      paper, context, wholeAnswer, answersOnly, examinedSkills, professionalSkillsMarks,
     });
   } catch (e) {
     return {

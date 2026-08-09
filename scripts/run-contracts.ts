@@ -13,6 +13,16 @@
 // design (an explicit include list) drifts silently the first time someone adds a fixture
 // and forgets the list, which is the exact failure this gate was built to end.
 //
+// ── LIVE PROBES USE THE `probe-` PREFIX, NOT AN `EXCLUDED` ENTRY ──────────────────────
+// Discovery is /^test-.+\.ts$/, so a script named `probe-*.ts` is outside this gate by
+// construction and needs no entry here. That is deliberate and is the right mechanism for
+// a tool that is not a fixture at all: EXCLUDED keys are checked against real files below,
+// and an entry naming a non-`test-` script would print the "names a fixture that no longer
+// exists" drift warning on EVERY build, forever. EXCLUDED is for a genuine fixture that
+// cannot run in a build; the prefix is for something that was never a fixture.
+//   • scripts/probe-paper-access.ts — live per-paper entitlement probe (needs DB + server).
+//     Its pure counterpart, scripts/test-paper-access.ts, IS in this gate and is the lock.
+//
 // ── WHY ONLY THE PURE ONES ────────────────────────────────────────────────────────────
 // A Vercel build has no `.env.local` and no database. A fixture needing either would fail
 // every deploy, and a gate that blocks deploys for reasons unrelated to the change being

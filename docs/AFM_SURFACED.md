@@ -2,7 +2,24 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-05 (**THE APM TEMPLATE CONVERSION IS REVERTED BY RULING** —
+*Last refreshed: 2026-08-09 (**TWO LIVE DEFECTS FIXED, ONE SCOPED.** ① The per-paper ENTITLEMENT
+LEAK: `hasPaperAccess` fell back to the paper-blind legacy columns whenever the `(user, paper)`
+query came back empty — which a single-paper holder ALWAYS is for the other paper — and the Stripe
+webhook sets those columns on every purchase with no paper attached, so buying APM granted AFM and
+vice versa. Unreproducible with any pre-existing account (all three `acca_entitlements` holders are
+`source='migration'` comps with BOTH papers), so a permanent single-paper account was created:
+`perpaper-test@gradd.ai`, held deliberately in the LEAK SHAPE. Proven end-to-end with one field as
+the only variable — `sit?paper=AFM` went 402 → **200, serving AFM Mock Paper 1** → 402. The
+fallback is now keyed on the USER. Same fix exposed the MIRROR failure on `/acca/progress`, which
+passed the SESSION client into a table with RLS enabled and NO policies: zero rows, no error,
+indistinguishable from "no entitlements", so a genuine APM holder saw the UNPAID page. ② The BLANK
+PAPER scoring **5/20** on professional skills: the blank guard tested the labelled join, and the
+labels alone cleared the threshold. Fixed narrowly (Option A), P-M1 proven by byte-diffing the
+captured model call. ③ **"B" — the PS ladder's missing floor below `weak` — is SCOPED BUT NOT
+BUILT; see the first block below.** New doctrine **P-G6** banked: a fixture's input must be the
+shape production builds.)*
+
+*Earlier: 2026-08-05 (**THE APM TEMPLATE CONVERSION IS REVERTED BY RULING** —
 `feat/apm-restore-preconversion`. `/acca/apm` renders the bespoke `ACCALandingPage` again,
 restored from the commit `59034bf^`; the comparison ruler read zero because it probed for the
 PRESENCE of elements, and presence was never the question. **Exactly one thing came forward from
@@ -155,6 +172,62 @@ route was explicitly ruled out.**)*
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ 🔴 OPEN 2026-08-09 — **THE PS LADDER HAS NO FLOOR BELOW `weak`: "B" IS SCOPED, NOT BUILT** (Grant's ruling, split from the blank-paper fix)
+
+**The hole.** `judgeCaseMarking`'s band lexicon is `['exemplary','strong','competent','weak']`
+(`lib/acca/case-marking.ts:109`) and the prompt offers only those four. `weak` pays **25%**, and
+its wording — *"falls short of the descriptor — superficial, poorly communicated, or missing the…"*
+— describes a POOR attempt, not an ABSENT one; every adjective presupposes that writing exists.
+So the marker **cannot say "no credit" even when it correctly reads an answer as absent**. The
+technical prompt has exactly that option (`"nothing": earns no credit — irrelevant, absent, or
+entirely wrong`); the PS prompt does not. `nothing` IS emitted in a `CaseMarkingResult`, but only
+by the hand-built short-circuit — never by judgement.
+
+**What was fixed on 2026-08-09 and what was NOT.** Option A shipped (`5a06cdf`): the blank guard
+now tests `answersOnly` instead of the labelled join, so a FULLY blank paper short-circuits to 0
+with no model call. That closes the 5/20 sighting. It does **not** close the NEAR-blank case — an
+answer of `"asdf"`, or three words of irrelevance, clears `isBlankAnswer`'s 3-alphanumeric
+threshold, reaches the model, and still floors at `weak`/25%. **B is the ladder fix and it is not
+built.**
+
+**Bundled with B, deliberately: the label strip.** The PS marker receives the RAW stored label as
+part of what it judges as the student's answer — on AFM that is `"(i) B3e — 10 marks"`, i.e. an
+internal LO code plus a TECHNICAL-pool mark allocation, inside a block headed *"Candidate's whole
+answer"*, for a pass scoring a SEPARATE 5- or 10-mark PS pool. The student never wrote it and
+never saw it (the sit route strips the code at the serve boundary). Measured, and the two papers
+differ — which is why the answer is "strip", not "remove":
+
+| case | RAW (what the PS marker sees today) | `sitDisplayLabel` |
+|---|---|---|
+| AFM Solenne | `"(i) B3e — 10 marks"` | `"(i)"` |
+| AFM Brecon | `"(i) B1a — 12 marks"` | `"(i)"` |
+| APM Halworth | `"(i) The benchmarking exercise"` | *unchanged* |
+| APM Rivenor | `"(ii) The proposed dashboard"` | *unchanged* |
+
+**AFM labels carry no content at all; APM labels are descriptive titles that do.** Removing labels
+outright would strip APM of genuine context to fix an AFM-only problem. Stripping keeps the ordinal
+(`"(i)"`) and leaves APM untouched.
+
+**⚠️ THE `sitDisplayLabel` CAVEAT — B's change-set DECIDES THIS EXPLICITLY, it does not inherit it.**
+`sitDisplayLabel` lives in `lib/acca/sit-preview.ts` and is a **SERVE-BOUNDARY helper**. Calling it
+from the marking core couples marking to sit-preview — a module whose job is what the browser
+receives, not what the marker reads — and the two boundaries have no reason to move together.
+Second, it **returns `null`** when a label was ONLY a code with nothing candidate-facing left
+(documented at its definition), and the join has **no defined behaviour for `null` today**. B must
+choose one and state it: reuse the helper and define the `null` fallback in the join; or give
+marking its OWN strip so the coupling never forms; or normalise the stored labels and leave both
+readers alone. Not a detail to discover mid-implementation.
+
+**⚠️ CALIBRATE ONCE, AND IT IS A FULL RECALIBRATION (P-M1).** Unlike A — proven narrow by capturing
+the serialized model call before and after (content-bearing paper: 4247 bytes, `cmp` byte-equal;
+blank paper: 1 call → 0 calls) — **every part of B changes the request bytes on EVERY paper**, both
+papers, content-bearing or not. The ladder change touches the prompt; the label strip changes
+`wholeAnswer`. That is why they ride together: one calibration, not two. They also interact —
+B's purpose is letting the marker say "no credit" when it reads an answer as absent, and what it
+is currently reading when the answer is absent is precisely those labels.
+
+---
 
 ## ⭐ 🔧 RULED 2026-08-08 — **THE `.acca-lp` EXTRACTION, AND THE PROOF IT NEEDS: THE EXISTING PIN CANNOT SEE CSS**
 

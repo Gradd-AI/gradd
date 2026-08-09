@@ -108,9 +108,12 @@ success while measuring less than it claimed**:
 - **P-G5** — a check's *arming* must be automatic (a fixture nobody runs is not a guard).
   Corollary **P-G5(a)** — a flaky fixture is moved to `EXCLUDED` with a reason and an owner the
   SAME DAY; never worked around, commented out in place, or made to pass by loosening it.
+- **P-G6** — a check's *input* must be the shape production builds (a fixture that constructs an
+  input production never produces tests a function that is never called).
 
 P-DB5 governs the numerator's meaning, P-G2 the denominator's extent, P-G1 the honesty of the
-individual result. A report that satisfies one and not the others is still misleading.
+individual result, P-G6 the fidelity of the input. A report that satisfies one and not the
+others is still misleading.
 
 ## P-G3 — A CHECK THAT HAS NEVER FAILED IS AN UNTESTED BRANCH (ruled 2026-07-29)
 
@@ -302,6 +305,46 @@ is better than the first.
 workaround. Once learned, the workaround outlives the flake and generalises to the next red gate —
 including the true ones. The window in which excluding is cheap is the window before anybody has
 had to ship around it.
+
+## P-G6 — A FIXTURE'S INPUT MUST BE THE SHAPE PRODUCTION BUILDS (ruled 2026-08-09)
+
+P-G5 governs whether a check *runs*. P-G6 governs whether what it runs *on* is real. A fixture
+can be correct, scoped, failure-path-proven and automatically armed, and still guard nothing —
+because the input it hand-constructs is not the input the code receives in production. It is
+then testing a function that is never called with that argument.
+
+**What it cost, concretely.** `judgeCaseMarking` has always had a blank-answer guard that
+returns 0 with no model call, and `test-case-marking-technical` asserted it — passing `''`,
+`'   '` and `'-'` as `wholeAnswer`. Every one of those is a string production never builds.
+`lib/acca/case-mark-run.ts` assembles `wholeAnswer` as `${label}\n${answer}` per requirement, so
+a sit with every box empty still carries the requirement labels: 22–46 alphanumerics on the
+three AFM Mock Paper 1 cases, against `isBlankAnswer`'s 3-character threshold. The guard could
+therefore never fire on a real paper. The model was handed a "candidate's whole answer"
+consisting only of requirement headings, and — the PS ladder having no band below `weak` (25%)
+— banded it `weak` across the board. **A completely blank AFM sit scored 5/20 on professional
+skills**, against a correctly-computed technical 0/80, with the fixture green throughout.
+
+The fixture was not weak on any axis P-G1/G2/G3/G5 measures. It ran, in the gate, and its
+assertion was true. It asserted a true thing about an input that does not occur.
+
+**The tell, and it generalises.** The fixture built its input with a *literal*; production built
+it with an *assembler*. Wherever those differ, the fixture is describing a shape the author
+imagined rather than the one the code meets. The same asymmetry is visible inside the same
+module and is what makes it diagnosable: the TECHNICAL pass tests `isBlankAnswer(r.final_answer)`
+— the raw stored field, uncontaminated — and correctly banded that blank sit `nothing` on all 8
+requirements. Same predicate, same paper, different input purity, opposite verdicts.
+
+**The rule.** A fixture asserting behaviour on an assembled input must build that input with the
+SAME assembler production uses, or with a literal copied from a captured production value — never
+with a hand-written approximation of it. Where the assembler is not importable, paste real stored
+data (the AFM labels are now pasted verbatim into the fixture) and say in a comment where it came
+from. When a guard exists to catch a degenerate case, the fixture must feed it the degenerate case
+*as production would present it*, which is rarely the empty string.
+
+**Corollary P-G6(a) — a fix is not proven by the fixture that missed it.** The fixture that
+stayed green is evidence about the fixture, not about the code. Prove the fix against the real
+assembled shape (here: capture the serialized model-call payload before and after, and diff),
+then repair the fixture so it would have caught it. Both, in that order.
 
 ## P-M1 — A RELIABILITY FIX TO A MARKING CALL MUST BE RE-CALIBRATED, NOT MERELY RE-RUN (ruled 2026-07-29)
 
