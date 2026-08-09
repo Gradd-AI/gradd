@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
@@ -112,10 +112,21 @@ export default async function ProgressPage({
     .eq('id', user.id)
     .single();
   // PER-PAPER (2026-08-03) — scoped to the paper this progress view is showing.
-  // Uses `authClient` (the session client), like the profile read above: this page
-  // deliberately reads the student's OWN rows under RLS rather than escalating to a
-  // service client for a presentation decision.
-  const paid = await hasPaperAccess(authClient, user.id, paper, profile);
+  //
+  // ⚠️ THE ENTITLEMENT READ USES A SERVICE CLIENT, AND MUST (fixed 2026-08-09). This passed
+  // `authClient` on the stated principle that the page reads the student's OWN rows under
+  // RLS rather than escalating for a presentation decision. That principle is right for
+  // `profiles` (which HAS a self-read policy, used above) and impossible for
+  // `acca_entitlements`, which has RLS enabled and NO policies at all — service-role only,
+  // by its migration's design. A session client therefore reads ZERO rows with NO error,
+  // which `hasPaperAccess` cannot distinguish from "this user has no entitlements", so it
+  // fell through to the paper-blind legacy columns on EVERY request.
+  //
+  // Both failure directions were live and measured on the same account: with the legacy
+  // columns empty, a genuine APM holder was shown the UNPAID progress page; with them set
+  // (which is what the webhook writes on any purchase), BOTH papers rendered PAID. The read
+  // is scoped to this user's own id, so escalating it grants no breadth.
+  const paid = await hasPaperAccess(createServiceClient(), user.id, paper, profile);
 
   const now = Date.now();
   const p = await getMyProgress(user.id, now, paper);

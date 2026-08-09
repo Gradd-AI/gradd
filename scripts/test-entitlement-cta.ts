@@ -41,19 +41,24 @@ function fakeDbClient(opts: { entitlements: Record<string, boolean>; throwOnEnti
         };
       }
       if (table === 'acca_entitlements') {
+        // ONE .eq(user_id) and no paper filter — hasPaperAccess reads EVERY row for the
+        // user and matches the paper in code (the paper-filtered query was the 2026-08-09
+        // cross-paper leak). The mock models the real query, so it returns this user's rows
+        // across ALL papers and each row carries its own paper_code.
         return {
           select: () => ({
-            eq: (_col: string, userId: string) => ({
-              eq: (_col2: string, paper: string) => {
-                if (opts.throwOnEntitlements) throw new Error('entitlements read failed');
-                const key = `${userId}:${paper}`;
-                const active = opts.entitlements[key] === true;
-                return Promise.resolve({
-                  data: active ? [{ kind: 'pass', expires_at: null, subscription_status: 'active' }] : [],
-                  error: null,
-                });
-              },
-            }),
+            eq: (_col: string, userId: string) => {
+              if (opts.throwOnEntitlements) throw new Error('entitlements read failed');
+              const rows = Object.entries(opts.entitlements)
+                .filter(([key, active]) => active === true && key.startsWith(`${userId}:`))
+                .map(([key]) => ({
+                  paper_code: key.slice(userId.length + 1),
+                  kind: 'pass',
+                  expires_at: null,
+                  subscription_status: 'active',
+                }));
+              return Promise.resolve({ data: rows, error: null });
+            },
           }),
         };
       }
