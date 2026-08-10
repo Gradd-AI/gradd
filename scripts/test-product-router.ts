@@ -6,7 +6,7 @@
 // typechecks perfectly while serving an ACCA visitor the IB signup form.
 
 import {
-  resolveProductIntent, PRODUCT_HOME, PRODUCT_SIGNUP, type SiteProduct,
+  resolveProductIntent, PRODUCT_HOME, PRODUCT_SIGNUP, PRODUCT_PUBLIC_HOME, type SiteProduct,
 } from '../lib/product-router';
 
 let pass = 0, fail = 0;
@@ -97,6 +97,13 @@ ok('holding none is unknown', resolveProductIntent({ host: AI, heldProducts: [] 
 const products: SiteProduct[] = ['LC', 'ACCA', 'IB'];
 ok('every product has a home and a signup destination',
   products.every((p) => !!PRODUCT_HOME[p] && !!PRODUCT_SIGNUP[p]));
+// PRODUCT_PUBLIC_HOME is asserted here as well as in test-signout-destination.ts, and
+// deliberately: a FOURTH product would be added to the loop above, and the sign-out map is the
+// one a reader is most likely to leave behind — it is the newest and the only one whose answer
+// differs from PRODUCT_HOME. Its behavioural rules live in the sign-out fixture; this is the
+// completeness lock, in the file that owns the maps.
+ok('every product has a SIGNED-OUT public home too (the map most likely to be forgotten)',
+  products.every((p) => !!PRODUCT_PUBLIC_HOME[p] && PRODUCT_PUBLIC_HOME[p].startsWith('/')));
 ok('every destination is a root-relative path', products.every((p) =>
   PRODUCT_HOME[p].startsWith('/') && PRODUCT_SIGNUP[p].startsWith('/')));
 ok('ACCA home is the pillar, not a spoke — the pillar is where ACCA intent lands',
