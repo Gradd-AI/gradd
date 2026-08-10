@@ -855,11 +855,71 @@ The highest-value lessons from two complete product builds, distilled. Read thes
 ---
 
 **ISSUE:** [ACCA] No sign-out option in the APM tutor
-**STATUS:** OPEN — pre-launch / go-live gate (not yet built). Small, self-contained; can ship anytime before launch.
+**STATUS:** CLOSED in two phases. **(a) 2026-08-04** — the control was built: `components/acca/ACCASignOutButton.tsx`, a plain form-POST to `/api/auth/signout`, wired into all six ACCA headers except SitRunner's mid-sit countdown bar. **(b) 2026-08-10** — the control worked and its DESTINATION did not; fixed on `fix/signout-per-product-destination`. Phase (a) shipping without phase (b) is the lesson: an affordance was ticked off as done while the surface it delivered you to was a dead end for the very product it was built for.
 **SYMPTOM:** There is no way to sign out of the APM tutor. A session, once authenticated, stays authenticated in the browser with no user-facing exit.
 **ROOT CAUSE:** The sign-out affordance was never built — the tutor UI has no control wired to Supabase `signOut()`. This is an **auth-layer / UX gap**, NOT a data-integrity issue: all teaching state (`miss_count`, `counted`, `resolved`, and the cap counter) is persisted per-turn server-side in `acca_tutor_progress` / `profiles`, so closing the tab loses nothing — the gap is purely the inability to *end* a session deliberately.
-**FIX (planned — small):** Add a sign-out button that calls Supabase `signOut()` and redirects to `/acca/auth`.
-**PREVENTION:** Needed for the ordinary reasons, not edge cases: (1) **privacy on shared/work/library devices** — without it, the next person to open the browser lands inside the previous user's account; (2) **account switching**; (3) **basic user expectation** — an authenticated app is expected to have a visible way out. Treat a sign-out control as part of the definition-of-done for any authenticated surface, not a later add-on.
+**FIX (SHIPPED — and the planned destination was WRONG, recorded because the plan is what a
+reader would otherwise copy):** the plan above said "redirects to `/acca/auth`". **Superseded.**
+`/acca/auth` is a SIGN-IN WALL, so sending a student who just deliberately signed out there
+immediately asks them to sign back in — and it hardcodes ONE product's path into a route shared
+by three. What shipped instead: the destination is resolved **per product** through
+`PRODUCT_PUBLIC_HOME` (`lib/product-router.ts`) → the product's PUBLIC surface, which carries
+its own way back in without demanding it (ACCA → `/`, the pillar, whose CTAs link `/acca/auth`;
+LC → `/`; IB → `/ib`). The rule is pure and fixtured in `lib/signout-destination.ts` /
+`scripts/test-signout-destination.ts`. See the SECOND issue below for the defect that made this
+a fix rather than a preference.
+**PREVENTION:** Needed for the ordinary reasons, not edge cases: (1) **privacy on shared/work/library devices** — without it, the next person to open the browser lands inside the previous user's account; (2) **account switching**; (3) **basic user expectation** — an authenticated app is expected to have a visible way out. Treat a sign-out control as part of the definition-of-done for any authenticated surface, not a later add-on. **AND (4), from phase (b): a sign-out control is not done when the button works — it is done when the page it lands on can sign that account back in.** Walk the destination as the product whose account you just ended, not as yourself.
+**CATEGORY:** Auth
+**SEVERITY:** Medium
+
+---
+
+**ISSUE:** [ACCA] Sign-out landed on a password form for accounts that have no password
+**STATUS:** FIXED 2026-08-10 — `fix/signout-per-product-destination`.
+**SYMPTOM:** Signing out of any ACCA surface landed the student on `/auth/login`, a
+`signInWithPassword` form. ACCA students authenticate by MAGIC LINK and have no password to
+enter — so the page offered no way forward. A dead end, not a cosmetic product mismatch.
+**ROOT CAUSE:** `/api/auth/signout` redirected to a **hardcoded** `/auth/login`. Nothing decided
+that destination — no product branch, no entitlement read, no param — while the accounts reaching
+it came from three products with two different credential types: LC and IB set a password at
+signup (`app/auth/signup/lc-form.tsx` → `signUp`), ACCA never does
+(`app/acca/auth/page.tsx` → `signInWithOtp`). The one hardcoded path was correct for two products
+out of three, which is why it survived: **it was not broken for whoever last tested it.**
+**TWO SECONDARY DEFECTS IN THE SAME TWO LINES:**
+(a) The origin was read from the `Origin` **header** with a fallback to a literal
+`https://gradd.ai` — so a gradd.ie LC student on a request without that header could be bounced
+to the wrong brand's host. Fixed by not building an absolute URL at all: the `Location` is
+root-relative and the browser resolves it against the request, so there is no origin to guess.
+(b) The status was the `NextResponse.redirect` default of **307**, which preserves the method.
+**FIX:** `lib/signout-destination.ts` (pure) composes the existing `resolveProductIntent`
+precedence onto `PRODUCT_PUBLIC_HOME`; the ACCA button sends `?product=acca` so the decision
+rests on an explicit signal rather than the `referer` header; the route reads the profile and
+resolves entitlement **before** `signOut()`, since after it there is no session to read.
+**⚠️ THE 307 WAS NOT THE DEFECT — CORRECTED AFTER MEASURING, AND BANKED BECAUSE THE WRONG
+INFERENCE IS THE NATURAL ONE.** 307 preserves the method, so the browser re-issues the **POST**
+at the destination — and the obvious conclusion is that a page route rejects it (405) and the
+sign-out visibly failed. **Measured on the running app: `POST /auth/login` returns `200`.** Next
+renders the page for a POST. So the old status was never erroring, nothing was masked by it, and
+**the dead end was ENTIRELY the destination.** 303 is right on its own merits — it is the spec's
+answer for a completed POST, and it stops the landing being a POST-shaped navigation that
+re-submits on refresh — but it fixed nothing a student could see, and claiming it did would
+misattribute the bug. **The rule: a status code is a mechanism, not a symptom. Do not promote one
+to root cause without issuing the request and reading what came back.**
+**MEASURED END TO END** (dev server, real routes, real session for the ACCA test account
+`7126c67d`, whose profile resolves to exactly `['ACCA']`): `?product=acca` → **303 `/`** → **200**,
+terminates, auth cookie cleared (`Max-Age=0`) · `?product=ib` → **303 `/ib`** → **200** ·
+`?product=lc` → **303 `/`** → **200** · **no param at all, session present** → **303 `/`**, resolved
+from entitlement alone (the branch fixtures cannot reach) · and the destination is not itself a
+bounce: `GET /` unauthenticated returns **200** in BOTH host branches, the ACCA pillar linking
+`/acca/auth` ×7 and `/auth/login` ×0, the LC landing the reverse.
+**PREVENTION:** **A shared auth route must not hardcode a destination when the accounts reaching
+it hold different credential types.** The general trap: a route serving N products with one
+literal path is only as broken as the products nobody on the team signs in as. Route per
+ENTITLEMENT through the existing resolver (`lib/product-router.ts`), never per host and never per
+literal — and give the route an EXPLICIT signal (`?product=`) rather than letting it infer from
+`referer`, which common privacy settings strip. Second: **`?next=` is evidence, never a
+destination.** A sign-out has nothing to resume, and a route that redirects to a caller-supplied
+path is an open redirect regardless of who calls it today; the answer must come from a closed set.
 **CATEGORY:** Auth
 **SEVERITY:** Medium
 

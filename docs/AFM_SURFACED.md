@@ -2,7 +2,24 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-09 (**TWO LIVE DEFECTS FIXED, ONE SCOPED.** ① The per-paper ENTITLEMENT
+*Last refreshed: 2026-08-10 (**SIGN-OUT WAS A DEAD END FOR EVERY ACCA STUDENT** —
+`fix/signout-per-product-destination`. `/api/auth/signout` redirected to a **hardcoded**
+`/auth/login`, a `signInWithPassword` form; ACCA accounts are created by magic link and have no
+password, so the one visible way out of the product delivered you to a page you could not get past.
+Correct for LC and IB, who set a password at signup — **which is exactly why it survived: it was not
+broken for whoever last tested it.** Now routed per product through a new `PRODUCT_PUBLIC_HOME`
+(ACCA → `/`, the pillar; LC → `/`; IB → `/ib`) by a pure, fixtured
+`lib/signout-destination.ts`, on an EXPLICIT `?product=` from the button rather than the `referer`
+header common privacy settings strip, with the entitlement read placed **above** `signOut()` because
+after it there is no session to read. Two secondary defects in the same two lines: the origin came
+from the `Origin` HEADER with a literal `https://gradd.ai` fallback (a gradd.ie student could be
+bounced across hosts — now a root-relative `Location`, so there is no origin to guess), and the
+status was the `NextResponse.redirect` default 307. **⚠️ THE 307 WAS NOT THE DEFECT — see the block
+below; measured, `POST /auth/login` returns 200.** Walked end to end on real routes with a real
+ACCA-entitled session: 4 chains, every hop. **The two-mechanism divergence is LOGGED, NOT MIGRATED**
+— the LC/IB dashboards sign out client-side and never touch this route.)*
+
+*Earlier: 2026-08-09 (**TWO LIVE DEFECTS FIXED, ONE SCOPED.** ① The per-paper ENTITLEMENT
 LEAK: `hasPaperAccess` fell back to the paper-blind legacy columns whenever the `(user, paper)`
 query came back empty — which a single-paper holder ALWAYS is for the other paper — and the Stripe
 webhook sets those columns on every purchase with no paper attached, so buying APM granted AFM and
@@ -172,6 +189,98 @@ route was explicitly ruled out.**)*
 *Earlier: 2026-07-28 (blind-candidate QA findings banked as PENDING content edits — b101 VaR reference-point ambiguity + paper-wide "guaranteed"→"locked in" register fix; both HELD for the next Mock 1 content write, neither executed).*
 
 *Earlier: 2026-07-26 (FR3-CORRECTED: HALFWAY_ROUNDING_RISK either-rendering absorption shipped; B3k `dedca530` ruled CORRECT — the re-author fixed a phantom, rollback deliberately NOT applied; publish-flip trap on the 3 AFM mock cases recorded; P-DB5 added. Earlier same day: sit-surface artefact audit — LO codes stripped at the serve boundary. Prior: mock-engine Phase-1 preconditions; param-sweep APM scope gap + `?? 0` lossy default logged; AFM Mock Paper 1 lean sit UI shipped preview-gated).*
+
+## ⭐ ✅ FIXED + 🟠 ONE ITEM LOGGED 2026-08-10 — **SIGN-OUT'S DESTINATION WAS A PASSWORD FORM ACCA ACCOUNTS CANNOT USE** (`fix/signout-per-product-destination`)
+
+**The defect.** `/api/auth/signout` ended with a hardcoded literal:
+`NextResponse.redirect(new URL('/auth/login', origin))`. That page is `signInWithPassword` and
+nothing else (`app/auth/login/LoginForm.tsx:47`), while ACCA accounts are created by
+`signInWithOtp` (`app/acca/auth/page.tsx:26`) and never set a password. The single visible exit
+from the product handed the student a form they had no credential for.
+
+**Why it survived.** LC and IB set a password at signup (`app/auth/signup/lc-form.tsx` → `signUp`),
+so `/auth/login` is a working destination for two of the three products the route serves. **A shared
+auth route with one hardcoded destination is only as broken as the products nobody on the team signs
+in as.** Banked in `GRADD_BUILD_HARDENING.md` as the prevention rule.
+
+**The fix.** Per-product, through the resolver that already exists — not a second hardcoded path.
+New `PRODUCT_PUBLIC_HOME` in `lib/product-router.ts` (**ACCA → `/`**, **LC → `/`**, **IB → `/ib`**)
+answers a question `PRODUCT_HOME` cannot: its `PRODUCT_HOME.ACCA` is `/acca`, still documented as
+"the pillar" and **stale since the 2026-08-04 hub-deletion ruling moved the pillar to root** —
+`app/acca/page.tsx` now redirects an anonymous visitor to `/`, so `/acca` is an AUTHED route and a
+just-signed-out student would reach root by an accidental second hop. Pure rule in
+`lib/signout-destination.ts`; the ACCA button sends an explicit `?product=acca` instead of leaving
+`referer` as the only signal (the header common privacy settings strip — the same class as the
+`document.referrer` regex in ACCADashboard's paper CTA); the profile/entitlement read sits **above**
+`signOut()`, because after it there is no session to read. `?next=` is read as product **evidence
+only, never as a destination** — a sign-out has nothing to resume, and the answer always comes from
+a closed set, so no input string can become a redirect target.
+
+### ⚠️ BANKED: THE 307 WAS *NOT* THE DEFECT, AND THE WRONG INFERENCE IS THE NATURAL ONE
+
+`NextResponse.redirect` defaults to **307** (verified in
+`next/dist/server/web/spec-extension/response.js:99`, Next 16.2.4), which **preserves the method** —
+so a form POST redirect makes the browser re-issue the **POST** at the destination. The obvious next
+step is to conclude that a page route rejects a POST (405) and that the sign-out was therefore
+failing outright. **Measured on the running app: `POST /auth/login` returns `200`.** Next renders the
+page for a POST. **So the old status was never erroring, nothing was masked by it, and the dead end
+was ENTIRELY the destination.**
+
+**303 is still correct, on its own merits** — it is the spec's answer for a completed POST, and it
+stops the landing being a POST-shaped navigation that re-submits on refresh. **But it fixed nothing a
+student could see**, and reporting it as part of the break would have misattributed the bug. Recorded
+because an unverified status-code story is a *plausible* root cause, which is the dangerous kind.
+**The rule: a status code is a MECHANISM, not a SYMPTOM. Never promote one to root cause without
+issuing the request and reading what came back.** (Instance of `feedback_verify_before_headline`; the
+same discipline as P-G6 — build the input the way production builds it, then look.)
+
+### MEASURED END TO END — 4 chains, every hop
+
+Dev server, real routes, real session minted for the ACCA test account `7126c67d`
+(`admin.generateLink` → `verifyOtp` → cookies serialised by `@supabase/ssr` itself), whose profile
+resolves to exactly **`['ACCA']`**. Session proved live first: `GET /acca` → **200** (the authed
+dashboard; anonymous is redirected).
+
+| POST | Chain | Terminates |
+|---|---|---|
+| `?product=acca` | **303** `location: /` + `set-cookie: …auth-token=; Max-Age=0` → **200** | yes |
+| `?product=ib` | **303** `location: /ib` → **200** | yes |
+| `?product=lc` | **303** `location: /` → **200** | yes |
+| *no param, session present* | **303** `location: /` — resolved from **entitlement alone** | — |
+
+That last row is the branch the fixtures cannot reach, so it was worth a live hop: it proves the
+profile-read-before-`signOut()` path actually fires.
+
+**And the destination is not itself a bounce** — the question that decides whether the destination
+was the defect at all. `GET /` unauthenticated returns **200 in BOTH host branches**, no `location`
+header on either: the ACCA pillar links `/acca/auth` **×7** and `/auth/login` **×0**; the LC landing
+links `/auth/login` **×2** and `/acca/auth` **×0**; `/ib` links `/auth/login` **×1**. Each landing
+carries exactly one product's sign-in and not the other's. *(Dev-host precision: `resolveIsIB` reads
+the host and `localhost:3000` is neither, so root falls to the **LC** branch locally — the ACCA
+pillar was measured through the documented `__site=ib` override, not assumed.)*
+
+**Fixtures.** `scripts/test-signout-destination.ts` — 41 checks, 10 named break modes (P-G3), raw
+`referer` headers fed as the browser sends them (P-G6), auto-discovered by the contract gate
+(**50 → 51**). **BREAK MODE 0 pins both wrong rules as MUST-FAIL** and asserts the real rule passes
+the same three checks they fail: `OLD_RULE` (the shipped hardcode) and `ALL_ROOT` (reading
+"destination is root `/`" as literally one path, which hands an IB student the ACCA pillar). A green
+suite that a broken implementation would also pass is not evidence.
+
+### 🟠 LOGGED, NOT FIXED — TWO SIGN-OUT MECHANISMS ARE LIVE
+
+`components/dashboard/DashboardClient.tsx:192` and `components/dashboard/IBDashboardClient.tsx:207`
+do a client-side `supabase.auth.signOut()` then `router.push('/auth/login')`. **They never touch this
+route.** That works — those accounts have passwords — so there is no defect here, and **the route's
+LC and IB branches are correct but UNEXERCISED in production**: today the only live caller is
+`ACCASignOutButton`, which always sends `?product=acca`.
+
+**Deliberately not migrated.** Pointing those two buttons at the shared route would change where live
+LC and IB students land (a landing page instead of a login form) with **no defect driving it**, and
+would put the first production traffic through two branches proven only by fixture and by a local
+walk. Recorded so the divergence is a known state rather than a discovery: whoever migrates them gets
+one sign-out path and should re-walk both products against the deployed route when they do.
+
+---
 
 ## ⭐ 🔴 OPEN 2026-08-09 — **THE PS LADDER HAS NO FLOOR BELOW `weak`: "B" IS SCOPED, NOT BUILT** (Grant's ruling, split from the blank-paper fix)
 
