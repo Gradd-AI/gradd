@@ -155,6 +155,33 @@ export const PRODUCT_HOME: Readonly<Record<SiteProduct, string>> = {
   IB: '/ib',
 };
 
+/** Where a SIGNED-OUT visitor of each product belongs — the public surface that carries that
+ *  product's own way back in.
+ *
+ *  ── WHY THIS IS NOT `PRODUCT_HOME` ─────────────────────────────────────────────────────
+ *  It differs from `PRODUCT_HOME` for ACCA, and the difference is the whole reason it
+ *  exists. `PRODUCT_HOME.ACCA` is `/acca`, whose doc comment above still calls it "the
+ *  pillar" — that has been stale since the 2026-08-04 hub-deletion ruling moved the pillar
+ *  to root. `app/acca/page.tsx` now redirects an anonymous visitor to `/`, so `/acca` is an
+ *  AUTHED surface: sending a student who has just signed out there works only by way of a
+ *  second redirect, and reads as a bug the first time that redirect is touched.
+ *
+ *  ── AND WHY IT IS NOT JUST '/' FOR EVERYONE ────────────────────────────────────────────
+ *  Root is host-dependent: gradd.ie `/` is the LC landing, gradd.ai `/` is the ACCA pillar.
+ *  An IB student sent to `/` on gradd.ai lands on ACCA's marketing — the wrong product's
+ *  page, which is why `/ib` is named here rather than collapsing all three to one path.
+ *
+ *  Every value is a route that renders something to an ANONYMOUS visitor and links to the
+ *  sign-in that product actually uses (ACCA's pillar CTA → `/acca/auth`, the magic-link
+ *  wall; LC's and IB's landings → `/auth/login`, the password form their accounts have).
+ *  That last property is what a post-sign-out destination has to have and what the old
+ *  hardcoded `/auth/login` did not have for ACCA. */
+export const PRODUCT_PUBLIC_HOME: Readonly<Record<SiteProduct, string>> = {
+  LC: '/',
+  ACCA: '/',
+  IB: '/ib',
+};
+
 /** Where a resolved product's SIGN-UP flow lives. ACCA has its own wall; IB and LC share
  *  /auth/signup, which branches on the same resolver. */
 export const PRODUCT_SIGNUP: Readonly<Record<SiteProduct, string>> = {
