@@ -8,6 +8,18 @@
 export const ACCA_PAPERS = ['APM', 'AFM'] as const;
 export type AccaPaper = (typeof ACCA_PAPERS)[number];
 
+/**
+ * The paper an unqualified ACCA URL means. APM, because every APM entry point predates the
+ * paper param and its URLs stay clean.
+ *
+ * ⚠️ THIS CONSTANT EXISTS TO COUPLE TWO FUNCTIONS THAT MUST NEVER DISAGREE: `resolvePaper`
+ * below (which READS an absent paper as this one) and `paperHref` in `paper-url.ts` (which
+ * WRITES no param for this one). If they ever diverge, links stop round-tripping — a link
+ * built for paper X resolves to paper Y — and nothing typechecks differently. Structural,
+ * not instructed: change this and both sides move together.
+ */
+export const DEFAULT_PAPER: AccaPaper = 'APM';
+
 // Canonicalize an untrusted paper hint (a URL query param or request-body field) to a
 // known paper. Unknown/absent → 'APM' (the established default; AFM must be named
 // explicitly, so no existing APM entry point changes behaviour).
@@ -20,7 +32,7 @@ export type AccaPaper = (typeof ACCA_PAPERS)[number];
 // there, defaulting to APM means "serve the APM row", and serving APM content to a
 // request gated on APM is coherent.
 export function resolvePaper(raw: unknown): AccaPaper {
-  return raw === 'AFM' ? 'AFM' : 'APM';
+  return raw === 'AFM' ? 'AFM' : DEFAULT_PAPER;
 }
 
 /**
