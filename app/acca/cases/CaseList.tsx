@@ -4,15 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
-
-// Section titles mirror AreaPicker's APM_SECTIONS (kept local — no shared import
-// of a client component, same as the drill picker duplicates SECTION_NAME).
-const SECTION_NAME: Record<string, string> = {
-  A: 'Strategic management and value creation',
-  B: 'Performance optimisation',
-  C: 'Performance reporting',
-  D: 'Data science and technology',
-};
+import type { AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
+import { caseSectionName } from '@/lib/acca/case-surface';
 
 interface CaseRow {
   id: string;
@@ -25,19 +19,26 @@ interface CaseRow {
   locked: boolean;
 }
 
-export default function CaseList() {
+// THE PAPER IS A PROP, RESOLVED FROM THE ROUTE (page.tsx) — never a literal in here.
+// `paper=APM` was hardcoded on the fetch below, and that single literal was the whole
+// reason five published AFM cases had no UI: the list endpoint has been paper-scoped
+// since it was written, and it was only ever asked for one paper.
+export default function CaseList({ paper }: { paper: AccaPaper }) {
   const router = useRouter();
   const [cases, setCases]   = useState<CaseRow[] | null>(null);
   const [error, setError]   = useState(false);
+  // Where "back to the hub" goes, carrying the paper — same rule as every other ACCA
+  // link (lib/acca/paper-url.ts); APM stays byte-identical to the bare '/acca'.
+  const hubHref = paperHref('/acca', paper);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch('/api/acca/case/list?paper=APM');
+        const res = await fetch(`/api/acca/case/list?paper=${paper}`);
         // 404 = flag off / feature not live → the case UI renders nothing useful.
         if (res.status === 404) {
-          router.replace('/acca');
+          router.replace(paperHref('/acca', paper));
           return;
         }
         if (!res.ok) {
@@ -51,7 +52,7 @@ export default function CaseList() {
       }
     })();
     return () => { cancelled = true; };
-  }, [router]);
+  }, [router, paper]);
 
   return (
     <>
@@ -64,7 +65,7 @@ export default function CaseList() {
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
             <div className="apm-cl-breadcrumb">
-              <span className="apm-cl-paper">ACCA APM</span>
+              <span className="apm-cl-paper">ACCA {paper}</span>
               <span className="apm-cl-sep">·</span>
               <span className="apm-cl-badge">Exam cases</span>
             </div>
@@ -80,7 +81,7 @@ export default function CaseList() {
               Full exam-style cases — one shared scenario, linked requirements, and
               professional-skills marking. Ezra coaches you through each part, then marks the whole answer.
             </p>
-            <Link href="/acca" className="apm-cl-back">← Back to drills</Link>
+            <Link href={hubHref} className="apm-cl-back">← Back to drills</Link>
           </div>
 
           {error ? (
@@ -101,9 +102,12 @@ export default function CaseList() {
                     : section
                     ? `Section ${section}`
                     : null;
-                // Locked cases stay visible but route to /acca/subscribe with a
-                // lock indicator and an upsell CTA instead of into the case.
-                const href = c.locked ? '/acca/subscribe' : `/acca/cases/${c.id}`;
+                // Locked cases stay visible but route to the subscribe page with a
+                // lock indicator and an upsell CTA instead of into the case. The
+                // subscribe link CARRIES the paper (it decides what is sold — the
+                // `?paper=APM%20subscribe` defect); the case link stays BARE, because
+                // a case id is a globally-unique key and the row owns its paper.
+                const href = c.locked ? paperHref('/acca/subscribe', paper) : `/acca/cases/${c.id}`;
                 return (
                   <Link
                     key={c.id}
@@ -113,7 +117,7 @@ export default function CaseList() {
                     <div className="apm-cl-card-top">
                       {sectionLabel && <span className="apm-cl-card-section">{sectionLabel}</span>}
                       {c.anchor_area && (
-                        <span className="apm-cl-card-anchor" title={SECTION_NAME[c.anchor_area[0]?.toUpperCase()] ?? ''}>
+                        <span className="apm-cl-card-anchor" title={caseSectionName(paper, c.anchor_area)}>
                           {c.anchor_area}
                         </span>
                       )}

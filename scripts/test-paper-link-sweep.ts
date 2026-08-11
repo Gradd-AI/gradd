@@ -67,8 +67,6 @@ const EXEMPT: { pattern: RegExp; why: string }[] = [
 const WAIVED: { file: string; literal?: RegExp; why: string }[] = [
   { file: 'app/acca/ACCADashboard.tsx', literal: /^\/acca\/cases$/,
     why: 'defect (a) — the card into the APM-hardcoded cases surface; awaiting hide-vs-thread ruling' },
-  { file: 'app/acca/cases/CaseList.tsx',
-    why: 'defect (a) — whole surface is APM-hardcoded (fetch, breadcrumb, section names)' },
   { file: 'app/acca/cases/[id]/CaseSession.tsx',
     why: 'defect (a) — same surface, same ruling' },
 ];
