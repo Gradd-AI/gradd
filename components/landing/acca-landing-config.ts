@@ -863,9 +863,14 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
       { label: 'Pricing', scrollTo: 'pricing' },
     ],
     quiet: [
-      // Plain /blog — `?subject=afm` is not a recognised value (`resolveSubject` knows only
-      // 'apm' | 'ib'), and an unsupported value falls through to the IB-titled page.
-      { label: 'Blog', href: '/blog' },
+      // THE ACCA GROUP VIEW, NOT `?subject=afm`, AND NOT THE BARE ARCHIVE (Grant, 2026-08-11).
+      // `?subject=afm` is now a recognised value, but there are no AFM posts yet and it would
+      // render "No posts yet." to every reader who clicks Blog on this page. `/blog` is no
+      // longer IB-titled, but it is the mixed archive, and no ACCA surface should hand a
+      // reader an archive of IB posts. `?subject=acca` is both: non-empty today (the nine APM
+      // posts, whose technique content applies to any Strategic Professional paper) and
+      // neutral between the papers. Repoint at `?subject=afm` when the first AFM post lands.
+      { label: 'Blog', href: '/blog?subject=acca' },
       { label: 'Sign in', href: AFM_AUTH_FREE },
     ],
     primary: { label: 'Start free', href: AFM_AUTH_FREE },
@@ -1189,7 +1194,8 @@ export const AFM_ACCA_LANDING: AccaLandingConfig = {
       { label: 'Terms', href: '/terms' },
       { label: 'Privacy', href: '/privacy' },
       { label: 'Cookies', href: '/cookies' },
-      { label: 'Blog', href: '/blog' },
+      // ACCA-wide, matching this page's nav — see the note there.
+      { label: 'Blog', href: '/blog?subject=acca' },
       { label: 'Contact', href: 'mailto:hello@gradd.ai' },
     ],
     disclaimer: 'Gradd.ai is an independent learning platform and is not affiliated with or endorsed by ACCA (the Association of Chartered Certified Accountants).',
@@ -1597,7 +1603,10 @@ export const ACCA_PILLAR_LANDING: AccaLandingConfig = {
       { label: 'Terms', href: '/terms' },
       { label: 'Privacy', href: '/privacy' },
       { label: 'Cookies', href: '/cookies' },
-      { label: 'Blog', href: '/blog' },
+      // THE GROUP VIEW, because this page sells both papers and names neither. The bare
+      // /blog is the mixed ACCA+IB archive; sending the ACCA pillar's readers there put them
+      // in front of five IB posts under (until 2026-08-11) an "IB exam clarity" title.
+      { label: 'Blog', href: '/blog?subject=acca' },
       { label: 'Contact', href: 'mailto:hello@gradd.ai' },
     ],
     disclaimer: 'Gradd.ai is an independent learning platform and is not affiliated with or endorsed by ACCA (the Association of Chartered Certified Accountants). Scenarios are original works built to the public syllabus structure.',

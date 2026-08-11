@@ -2,7 +2,9 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-11 (**DEFECT (a) IS CLOSED — `/acca/cases` SERVES BOTH PAPERS.** Grant
+*Last refreshed: 2026-08-11 (**THE BLOG NOW HAS AFM, AND THE ARCHIVE GOOGLE INDEXES IS NO LONGER
+FILED AS IB.** `fix/blog-subject-afm-and-neutral-archive` — see the ✅ block below. Earlier same
+day: **DEFECT (a) IS CLOSED — `/acca/cases` SERVES BOTH PAPERS.** Grant
 ruled THREAD, not hide; `feat/acca-cases-paper-aware`, pushed, **not merged — awaiting review**.
 The paper is resolved from the ROUTE on the list (`?paper=`) and from the CASE'S OWN ROW on the
 id-addressed detail page, then threaded as a prop; five published AFM cases are reachable for the
@@ -22,6 +24,60 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
+
+## ✅ CLOSED 2026-08-11 — THE BLOG HAD NO AFM, AND ITS CANONICAL PAGE CLAIMED TO BE IB (`fix/blog-subject-afm-and-neutral-archive`)
+
+**AFM could not be written about**: `subject` was `'Econ' | 'BM' | 'APM'` and `resolveSubject` knew
+`'apm' | 'ib'`, against 63 published drills, 5 practice cases and a live timed mock. Now
+`lib/blog-subject.ts` — pure, one exhaustive product table, `npm run test:blog-subject` (177).
+
+**THE FOUR DEFECTS WERE ONE MISTAKE**: a three-or-four-way question answered with a two-way
+ternary, four times, each right about the case that existed when it was written and each
+typechecking either way. (a) `BlogCTA`'s `isAPM` would have offered an AFM post **Mia, the IB
+curriculum note and `/auth/signup/ib`** — the wrong PRODUCT at the conversion point; its `subject`
+prop was `string`. (b) `BlogHeader` took a binary, so both callers collapsed `null` to `'ib'` and
+the **mixed archive rendered as the IB view with an `/ib` logo**. (c) the IB filter was
+`p.subject !== 'APM'`, so an AFM post landed in the IB view by construction. (d) the badge would
+have read **"IB AFM"**.
+
+**⚠️ THE LOGO WAS NEVER THE INTERESTING HALF.** `homeHref = isAPM ? '/' : '/ib'` has said `'/'`
+since 2026-07-06 and `/` has meant three different things since (the APM root, the hub, then the
+ACCA pillar) — `5afef1d` corrected only its COMMENT and the href is right today **by coincidence,
+not by correction**. The mis-send was the `null` branch, and the route to it was
+`acca-landing-config.ts`: **three of five Blog links pointed at the bare `/blog`** (the AFM spoke's
+nav + footer, the pillar's footer), all now `?subject=acca`.
+
+**THE SEO HALF MATTERS MORE.** Every `?subject` view self-canonicalizes to `/blog` and `/blog` is
+the blog's only sitemap entry, so the archive titled *"Gradd Blog — IB exam clarity"* — holding
+**9 ACCA posts against 5 IB** — is the document search engines file the whole blog under. Now
+neutral and naming both; the APM and IB strings are unchanged byte-for-byte because they are
+indexed.
+
+**SUBJECT ≠ PAPER, and the blog index is deliberately NOT routed through `paperHref`** — a subject
+spans two PRODUCTS (Econ/BM have no paper at all) where `AccaPaper` is APM|AFM. The two concepts
+meet in exactly one place: the outbound ACCA links, which use `strictPaper` (its refusal on a
+non-ACCA subject is the wanted answer; `resolvePaper`'s APM default would build an ACCA link on an
+IB post) and build the paper INSIDE the encoded `next=` via `paperHref`, as `paper-url.ts`'s
+exempt-category rule requires.
+
+**🟠 ONE ITEM LEFT OPEN, deliberately (Grant's ruling):** the **AFM spoke's Blog links point at
+`?subject=acca`, not `?subject=afm`** — the value now resolves, but there are no AFM posts and it
+would render "No posts yet." **Repoint both (nav + footer, `acca-landing-config.ts`) when the first
+AFM post lands.** Note also that `getRelatedPosts` is same-SUBJECT, so the first two AFM posts will
+render no related block at all and the third fills it.
+
+**No existing post is mis-filed** — all 9 APM posts are APM-specific in title, description and
+keywords, and a case-insensitive grep for `afm` / `advanced financial management` across
+`content/blog/` returns zero hits. The nearest is `apm-how-many-times-can-you-resit`, whose
+substance (attempt limits, resit habits) is ACCA-wide and whose framing is APM-only — a candidate
+to generalise, not a mis-filing.
+
+**⚠️ THE BLOG HAD NO FIXTURES AT ALL**, and `test-paper-link-sweep.ts` excludes both the landing
+configs and the blog from its `SURFACES`, so every defect above sat outside every existing guard.
+The new suite pins all four pre-fix behaviours as MUST-FAIL (P-G3), takes Next's raw
+`string | string[] | undefined` (P-G6 — the `case-surface.ts` array lesson applied), and adds a
+STATIC SWEEP of both landing configs and the four blog files **plus an assertion that each imports
+the shared module**, without which the four negative checks pass vacuously.
 
 ## ✅ CLOSED 2026-08-11 — `/acca/cases` SERVES BOTH PAPERS (`feat/acca-cases-paper-aware`, unmerged)
 

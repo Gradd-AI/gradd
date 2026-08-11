@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { getPostBySlug, getRelatedPosts, dateToISO } from '@/lib/blog';
+import { filterForSubject, subjectBadge, archiveHref } from '@/lib/blog-subject';
 import BlogCTA from '@/components/blog/BlogCTA';
 import BlogHeader from '@/components/blog/BlogHeader';
 import Link from 'next/link';
@@ -69,9 +70,11 @@ export default async function BlogPostPage({
   // subject has ≥3 posts.
   const relatedPosts = getRelatedPosts(slug, 3);
 
-  // Back-to-index carries the subject so an APM reader lands on the APM-scoped
-  // archive, not the default IB view. IB posts go to the bare /blog (unchanged).
-  const indexHref = post.subject === 'APM' ? '/blog?subject=apm' : '/blog';
+  // Back-to-index carries the post's own view, so a reader lands on the archive scoped to
+  // what they were just reading. Every subject now resolves to one — including IB, which used
+  // to fall to the bare /blog and land on an archive holding nine ACCA posts.
+  const view = filterForSubject(post.subject);
+  const indexHref = archiveHref(view);
 
   return (
     <>
@@ -79,7 +82,7 @@ export default async function BlogPostPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <BlogHeader subject={post.subject === 'APM' ? 'apm' : 'ib'} />
+      <BlogHeader filter={view} />
       <main>
         <article className="blog-prose">
           <Link
@@ -107,7 +110,7 @@ export default async function BlogPostPage({
                 padding: '3px 8px',
                 borderRadius: 4,
               }}>
-                {post.subject === 'APM' ? 'ACCA APM' : `IB ${post.subject}`}
+                {subjectBadge(post.subject)}
               </span>
               <time style={{ fontSize: 13, color: 'var(--text)', opacity: 0.45 }}>
                 {post.date}

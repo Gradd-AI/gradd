@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import { marked } from 'marked';
+import type { BlogIntent, BlogSubject } from './blog-subject';
 
 const POSTS_DIR = path.join(process.cwd(), 'content', 'blog');
 
@@ -19,12 +20,15 @@ const POSTS_DIR = path.join(process.cwd(), 'content', 'blog');
 export interface PostMeta {
   title: string;
   slug: string;
-  subject: 'Econ' | 'BM' | 'APM'; // IB Economics / IB Business Management / ACCA APM
+  // IB Economics / IB Business Management / ACCA APM / ACCA AFM. The union and every
+  // product question about it live in lib/blog-subject.ts — a post's product, paper, badge,
+  // filter membership and CTA all resolve through the one table there.
+  subject: BlogSubject;
   description: string;
   date: string;          // dd/mm/yyyy — displayed date
   published: boolean;
   publish_date?: string; // dd/mm/yyyy — go-live gate (future ⇒ hidden)
-  intent?: 'failure' | 'technique' | 'syllabus' | 'exam-structure';
+  intent?: BlogIntent;
   keywords?: string[];
   related?: string[];
 }
@@ -102,6 +106,11 @@ export function getPostMeta(slug: string): PostMeta | null {
  * an empty block when its subject has enough siblings. Never returns the post itself.
  * Same-subject is enforced throughout: an APM post never surfaces IB. Future-dated
  * posts are excluded because getPostMeta / getAllPosts both apply the isLive gate.
+ *
+ * Same-SUBJECT, not same-product, and that is deliberate — but it means a newly opened
+ * subject starts with an empty pool: the first two AFM posts will render no related block
+ * at all, and the third fills it. If cross-paper related is ever wanted, it is a change
+ * here (to `productForSubject`), not a change to the frontmatter.
  */
 export function getRelatedPosts(slug: string, limit = 3): PostMeta[] {
   const self = getPostMeta(slug);

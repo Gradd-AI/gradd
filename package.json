@@ -35,6 +35,7 @@
     "test:irhedge": "tsx scripts/test-irhedge.ts",
     "test:narrative-marker": "tsx scripts/test-narrative-marker.ts",
     "test:area-entry": "tsx scripts/test-area-entry.ts",
+    "test:blog-subject": "tsx scripts/test-blog-subject.ts",
     "test:case-gates": "tsx scripts/test-case-gates.ts",
     "test:case-marking-descriptors": "tsx scripts/test-case-marking-descriptors.ts",
     "test:case-marking-technical": "tsx scripts/test-case-marking-technical.ts",

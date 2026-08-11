@@ -1,6 +1,14 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { getAllPosts, type PostMeta } from '@/lib/blog';
+import {
+  resolveSubject,
+  subjectMatchesFilter,
+  subjectBadge,
+  archiveMetaFor,
+  intentGroupsFor,
+  usesIntentGroups,
+} from '@/lib/blog-subject';
 import BlogHeader from '@/components/blog/BlogHeader';
 
 // searchParams is a request-time Promise in this Next version (see node_modules/next
@@ -9,42 +17,27 @@ import BlogHeader from '@/components/blog/BlogHeader';
 // (and any publish_date gating in getAllPosts) is re-evaluated on every request.
 type SearchParams = Promise<{ [key: string]: string | string[] | undefined }>;
 
-// ?subject=apm|ib scopes the shared index without a new route or fork. Any other value
-// (or none) falls through to the full archive at /blog — the canonical, harmless catch-all.
-type SubjectFilter = 'apm' | 'ib' | null;
-
-function resolveSubject(raw: string | string[] | undefined): SubjectFilter {
-  const v = Array.isArray(raw) ? raw[0] : raw;
-  if (v === 'apm') return 'apm';
-  if (v === 'ib') return 'ib';
-  return null;
-}
-
-const APM_TITLE = 'ACCA APM — exam technique, marking and the syllabus, explained';
-const APM_DESC =
-  'How ACCA APM is marked, the professional-skills marks, describe vs apply, and the S26–J27 syllabus — exam technique explained for APM candidates.';
-const IB_TITLE = 'Gradd Blog — IB exam clarity';
-const IB_DESC = 'Common IB Economics and Business Management misconceptions, explained.';
-
-// APM archive is grouped by intent under scannable headings. syllabus + exam-structure
-// share one bucket; untagged posts fall to a "More" catch-all so nothing is dropped.
-const APM_GROUPS: { label: string; intents: NonNullable<PostMeta['intent']>[] }[] = [
-  { label: 'Failed APM?',          intents: ['failure'] },
-  { label: 'Exam technique',       intents: ['technique'] },
-  { label: 'Syllabus & structure', intents: ['syllabus', 'exam-structure'] },
-];
+// ?subject=apm|afm|acca|ib scopes the shared index without a new route or fork. Any other
+// value (or none) falls through to the full archive at /blog — the harmless catch-all, and
+// the canonical document for every post.
+//
+// THE FILTER, THE MEMBERSHIP RULE AND EVERY VIEW'S IDENTITY LIVE IN lib/blog-subject.ts.
+// They used to live here as a local `resolveSubject` returning 'apm' | 'ib' | null, whose
+// null this page then collapsed to 'ib' when handing the header its subject — so the mixed
+// archive, 9 of whose 14 live posts are ACCA, rendered as the IB view under an "IB exam
+// clarity" title. Being pure and shared is what lets `npm run test:blog-subject` pin that.
 
 export async function generateMetadata({
   searchParams,
 }: {
   searchParams: SearchParams;
 }): Promise<Metadata> {
-  const subject = resolveSubject((await searchParams).subject);
-  const title = subject === 'apm' ? APM_TITLE : IB_TITLE;
-  const description = subject === 'apm' ? APM_DESC : IB_DESC;
+  const { title, description } = archiveMetaFor(resolveSubject((await searchParams).subject));
 
   // Canonical stays the unfiltered archive: the ?subject views are convenience filters,
-  // not separate documents, so they self-canonicalize to /blog.
+  // not separate documents, so they self-canonicalize to /blog. That is what makes the
+  // NEUTRAL title load-bearing rather than cosmetic — /blog is the document search engines
+  // index for the whole blog, so whatever it claims to be about is what the blog is filed as.
   return {
     title,
     description,
@@ -80,7 +73,7 @@ function PostCard({ post }: { post: PostMeta }) {
             padding: '3px 8px',
             borderRadius: 4,
           }}>
-            {post.subject === 'APM' ? 'ACCA APM' : `IB ${post.subject}`}
+            {subjectBadge(post.subject)}
           </span>
           <span aria-hidden="true" style={{ fontSize: 13, color: 'var(--text)', opacity: 0.3 }}>·</span>
           <time style={{ fontSize: 13, color: 'var(--text)', opacity: 0.45 }}>
@@ -127,18 +120,15 @@ export default async function BlogIndexPage({
 }) {
   const subject = resolveSubject((await searchParams).subject);
   const all = getAllPosts();
-  const posts =
-    subject === 'apm'
-      ? all.filter(p => p.subject === 'APM')
-      : subject === 'ib'
-        ? all.filter(p => p.subject !== 'APM')
-        : all;
+  // Positive membership, one rule, one table (lib/blog-subject.ts). The ib arm used to be
+  // `p.subject !== 'APM'` — negative space that would have served an AFM post to IB readers.
+  const posts = all.filter(p => subjectMatchesFilter(p.subject, subject));
 
-  // APM view: group by intent under headings. Everything else: flat, date-ordered.
+  // ACCA views: group by intent under headings. IB and the neutral archive: flat, date-ordered.
   let grouped: { label: string; posts: PostMeta[] }[] | null = null;
-  if (subject === 'apm') {
+  if (usesIntentGroups(subject)) {
     const used = new Set<string>();
-    grouped = APM_GROUPS.map(g => {
+    grouped = intentGroupsFor(subject).map(g => {
       const groupPosts = posts.filter(p => p.intent && g.intents.includes(p.intent));
       groupPosts.forEach(p => used.add(p.slug));
       return { label: g.label, posts: groupPosts };
@@ -150,7 +140,7 @@ export default async function BlogIndexPage({
 
   return (
     <>
-    <BlogHeader subject={subject === 'apm' ? 'apm' : 'ib'} />
+    <BlogHeader filter={subject} />
     <main style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px 80px' }}>
         {posts.length === 0 && (
           <p style={{ color: 'var(--text)', opacity: 0.6 }}>No posts yet.</p>
