@@ -40,6 +40,10 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
   // document.referrer regex on the subscribe page, absent under common privacy settings.
   const progressHref = paperHref('/acca/progress', paper);
   const subscribeHref = paperHref('/acca/subscribe', paper);
+  // Exam cases: the card sat three lines above the timed-mock one and carried the identical
+  // bug for months, bare while its sibling was fixed. It is a paper-PARAMETERISED surface
+  // (one /acca/cases, `?paper=` chooses the list), unlike the mock's per-paper paths below.
+  const casesHref = paperHref('/acca/cases', paper);
   const tutorAreaHref = (subArea: string) =>
     paperHref(`/acca/tutor?area=${encodeURIComponent(subArea)}`, paper);
   // The timed mock is a per-paper SURFACE, not a query param: /acca/mock renders
@@ -154,7 +158,7 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
             </Link>
             {casesEnabled && (
               <>
-              <Link href="/acca/cases" className="apm-dash-cases-card">
+              <Link href={casesHref} className="apm-dash-cases-card">
                 <div className="apm-dash-cases-text">
                   <span className="apm-dash-cases-title">Exam cases</span>
                   <span className="apm-dash-cases-sub">
