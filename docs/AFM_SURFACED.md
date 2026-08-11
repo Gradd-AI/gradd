@@ -2,7 +2,49 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-10 (**SIGN-OUT WAS A DEAD END FOR EVERY ACCA STUDENT** —
+*Last refreshed: 2026-08-11 (**THE PAPER WAS CARRIED BY CONVENTION, NOT CONSTRUCTION.** ~17 link
+sites across ACCA's six independently-styled page headers each hand-built the same rule in FOUR
+different shapes, and every one typechecks whether or not it carries the paper — so the failure is
+silent and a fix does not generalise. Now one pure, fixtured `paperHref` (`lib/acca/paper-url.ts`,
+`npm run test:paper-url`, 38 checks) plus a **static sweep** over every authed surface
+(`npm run test:paper-link-sweep`, 21) that proves the rule is USED, not merely right. The sweep
+earned its place immediately, finding two live defects review had missed: the post-payment poller
+pushed a student who had just paid for AFM into APM's tutor, and the subscribe page's own logo was
+bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an AFM page —
+`resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
+and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
+drill was reachable through that route at all. **⚠️ DEFECT (a) IS OPEN AND AWAITS GRANT'S RULING —
+see the block immediately below.**)*
+
+## ⚠️ OPEN — `/acca/cases` IS APM-HARDCODED AND HIDES FIVE PUBLISHED AFM CASES (2026-08-11)
+
+**`AFM_SURFACED.md`'s own earlier note that "AFM list 0 cases" is STALE and is corrected here.**
+Queried live 2026-08-11: there are **5 AFM practice cases**, all `status='approved'`,
+`published=true`, `mock_only=false` — `ac000000-…-a101` Castlereagh Utilities plc ·
+`ac000000-…-b101` Halvard Marine ASA · `ac000000-…-b501` Kestrel Foods plc · `ac000000-…-e201`
+Lindqvist Instruments AB · `ac000000-…-b401` Tamesis Diagnostics plc. (Plus the 3 `mock_only=true`
+Mock Paper 1 cases, correctly excluded from the list.)
+
+**So this is a ROUTING defect, not an unbuilt surface.** `app/api/acca/case/list` is already fully
+paper-parameterised (`.eq('paper_code', paper)`) and would serve all five today. The only thing
+blocking them is the hardcoded string `?paper=APM` at `CaseList.tsx:37`. Five published cases are
+**unreachable**, not absent — and an AFM student clicking "Exam cases" is served APM's list,
+breadcrumb, page title and four-section taxonomy.
+
+**Not fixed in this pass, deliberately: it is a component change, not a link change,** and it needs a
+ruling. `paperHref('/acca/cases','AFM')` alone produces a URL that still renders APM content — the
+paper must be threaded through `CaseList` (fetch, breadcrumb, `SECTION_NAME`, metadata) and
+`CaseSession` (`:161`, `:305`, `:355`, `:425`), whose own comment already anticipates this: *"when
+that surface is built, this must become a prop, not a second literal."*
+**The dashboard card, `CaseList` and `CaseSession` are WAIVED BY NAME in `test-paper-link-sweep.ts`**
+so the rest of each file stays guarded and this item cannot be silently forgotten — a waiver that
+stops matching FAILS the suite.
+
+**Precedent that makes this urgent rather than cosmetic:** the "Timed mock" link sits three lines
+BELOW the Exam-cases card and carried this exact bug until 2026-08-01, recorded there as *"a
+cross-paper content leak, not just a wrong screen."* Patching one ternary left its sibling.
+
+*Earlier: 2026-08-10 (**SIGN-OUT WAS A DEAD END FOR EVERY ACCA STUDENT** —
 `fix/signout-per-product-destination`. `/api/auth/signout` redirected to a **hardcoded**
 `/auth/login`, a `signInWithPassword` form; ACCA accounts are created by magic link and have no
 password, so the one visible way out of the product delivered you to a page you could not get past.
@@ -2882,8 +2924,12 @@ pass, with no reconciliation step. That is what P-DB5 now prohibits, and what
 > transitional carve-out and the one open decision (`marks_guide`).
 >
 > **⚠ KNOWN EXPOSURE, pre-existing and NOT introduced by this flip.** `mock_only=true` keeps the
-> three cases out of `case/list` (verified live: AFM list 0 cases, APM list 5, zero mock ids in
-> either). But the **id-addressed `GET /api/acca/case` has no `mock_only` filter**, so an entitled
+> three cases out of `case/list` (verified live at the time: AFM list 0 cases, APM list 5, zero mock
+> ids in either — **⚠️ THE "AFM list 0 cases" HALF IS NOW STALE: 5 AFM practice cases were authored
+> and published on 2026-08-02 and the AFM list returns them; re-verified 2026-08-11. The
+> mock-exclusion point this sentence exists to make is unaffected.** See the open `/acca/cases`
+> block at the top of this file). But the **id-addressed `GET /api/acca/case` has no `mock_only`
+> filter**, so an entitled
 > user holding a case id can fetch the mock's requirements *with* `marks_guide`,
 > `professional_skill_tags` and `lo_code`, and practice mode would teach on them. Verified
 > identical on the APM mock cases, published for months — this is how `mock_only` has always

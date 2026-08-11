@@ -614,6 +614,26 @@ installed on either machine.
   **`withParseRetry`** = 1 + 3 attempts, parse failures ONLY (`Error('call')` propagates); every
   failure is CAPTURED to `MARKING_PARSE_FAILURES` + a structured log before the retry. Fixtures
   `scripts/test-marking-json-extract.ts` (`npm run test:marking-json-extract`, 16 checks, pure).
+- **THE PAPER AT A URL BOUNDARY — `lib/acca/paper-url.ts` (pure).** `paperHref(path, paper)` WRITES
+  the paper into a link; `resolveSubscribePaper(param, referrer)` READS one back. One rule, two ends,
+  one module — the round trip is the property that has to hold. **`DEFAULT_PAPER` (`paper.ts`) is
+  SHARED with `resolvePaper`**: paperHref omits the param for it, resolvePaper reads an absent param
+  as it, and if they ever diverge a link built for one paper resolves to the other with nothing
+  typechecking differently. **`paperHref('/acca','APM') === '/acca'`** byte-for-byte — that is what
+  makes it a drop-in for the ~17 hand-built ternaries rather than a change to every APM URL.
+  **THREE CATEGORIES STAY BARE and must NOT be passed through it:** cross-product (`/` wordmark) ·
+  id-addressed (`?drill_id=`, `/acca/cases/<id>` — a primary key is globally unique, so no paper
+  scoping applies) · auth (`/acca/auth?next=` — the paper rides INSIDE the encoded `next=`). A
+  per-paper SURFACE (`/acca/mock` vs `/acca/afm/mock`) is a different path, not a param, and stays a
+  ternary. Fixtures: `npm run test:paper-url` (38, P-G3 pins three wrong implementations + the
+  pre-fix subscribe rule as MUST-FAIL) **and `npm run test:paper-link-sweep` (21) — a STATIC SWEEP
+  over every authed ACCA surface, because the unit suite proves the rule is RIGHT and cannot prove it
+  is USED, which is what every defect in this class actually was.** The sweep blanks comments to
+  spaces (indices preserved) and finds `paperHref` calls by balanced-paren spans; a line-prefix/
+  same-line version reported four false positives against doc comments that quote the bad literals.
+  Waivers are PER-LITERAL where one link in a clean file is blocked, and **a waiver that matches
+  nothing FAILS** (it outlived its bug and is unguarding a fixed line). ⚠️ **CLAIM CEILING:** green
+  means no link silently DROPS the paper — never that every link carries the CORRECT one.
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR
