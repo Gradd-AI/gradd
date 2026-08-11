@@ -61,8 +61,16 @@ confirm the deploy from the **BUILD LOG**, not from `readyState`.
 (`list_deployments`, `target: "production"`), then call
 `mcp__plugin_vercel_vercel__get_deployment_build_logs` on it — **once**. If the log shows the
 contract gate passing and `Build Completed` / `Deployment completed`, report the SHA and move
-on. Project/team ids are in `.vercel/project.json` (`projectId` / `orgId`); no Vercel CLI is
-installed on either machine.
+on. Project/team ids are in `.vercel/project.json` (`projectId` / `orgId`).
+**⚠️ THE MCP 403s ON DEPLOYMENTS — USE THE CLI (corrected 2026-08-11).** `list_deployments`
+returns `403 forbidden … resource: deployment` on this token, and "no Vercel CLI is installed
+on either machine" was ALSO wrong: it is at `%APPDATA%\npm\vercel.ps1`, authed, and the
+plugin's "not installed" banner is a known Windows spawn false-negative
+(`memory/reference_vercel_plugin_cli_detection_windows.md`). Working route, both used this
+session: `vercel ls --meta githubCommitSha=<sha>` → `vercel inspect --logs <url>`, filtered for
+`contract gate` / `Build Completed` / `Deployment completed`. Same rule stands — read it ONCE.
+A branch push produces a **Preview** deployment, not production; that is the one to confirm
+when the session ends on a branch.
 - **DO NOT poll `readyState` in a loop, and DO NOT arm a background sleep timer.** The API
   reports `BUILDING` for MINUTES after the log says `Build Completed` — the flip waits on the
   build-cache write, not on the deploy. This lag has been hit repeatedly and is banked in
