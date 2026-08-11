@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { paperHref, resolveSubscribePaper } from '@/lib/acca/paper-url';
 
 type APMProduct = 'pass' | 'monthly';
 
@@ -72,7 +73,11 @@ function SuccessPoller({ paper }: { paper: 'APM' | 'AFM' }) {
         if (!cancelled && res.ok) {
           const json = await res.json();
           if (json.access === true) {
-            router.push('/acca/tutor');
+            // FOUND BY THE LINK SWEEP, not by review: this was bare, so a student who had
+            // just PAID for AFM was pushed into APM's tutor on the strength of
+            // resolvePaper's default — on the one screen where the paper is the thing
+            // they bought. `paper` was already in scope the whole time.
+            router.push(paperHref('/acca/tutor', paper));
             return;
           }
         }
@@ -121,26 +126,32 @@ function SuccessPoller({ paper }: { paper: 'APM' | 'AFM' }) {
   );
 }
 
-// Resolve which paper the student came from: explicit ?paper= first, then an AFM referrer
-// heuristic (the burn CTA + tutor upsells pass ?paper=, so this is mostly the direct signal),
-// else null.
+// Which paper the student came to buy. The rule — explicit `?paper=` first, an AFM referrer
+// heuristic ONLY when nothing was named, else null — now lives in `lib/acca/paper-url.ts`
+// (`resolveSubscribePaper`), pure and fixtured: `npm run test:paper-url`.
 //
 // ⚠️ NULL NO LONGER MEANS "it does not matter". Under the bundle it genuinely did — access
 // was identical whichever paper they arrived on, so a paper-neutral lead was honest. Now the
 // paper decides WHAT IS BOUGHT, so a null must resolve to a visible, changeable default
 // rather than being papered over: the page falls back to APM and says so, with a switch.
 // Silently defaulting and staying quiet about it is how someone buys the wrong paper.
-function resolvePaperContext(param: string | null): 'APM' | 'AFM' | null {
-  const p = (param || '').toUpperCase();
-  if (p === 'APM' || p === 'AFM') return p;
-  if (typeof document !== 'undefined' && /(?:paper=afm|\/acca\/afm|\/afm)/i.test(document.referrer)) return 'AFM';
-  return null;
-}
+//
+// ⚠️ WHAT MOVED, AND WHY IT WAS NOT JUST A PARSER SWAP. The rule this replaced compared the
+// param against two literals and fell through to the referrer regex on ANY miss — so
+// `?paper=APM%20subscribe`, which plainly names APM, was sold AFM to anyone arriving from an
+// AFM page. `strictPaper` alone does not fix that: it returns null for absent AND for
+// unparseable, which is the very conflation at fault. The fix is the BRANCH — a param that is
+// present but unparseable REFUSES, and only a genuinely absent one may reach the heuristic.
 
 function APMSubscribeInner() {
   const searchParams = useSearchParams();
   const paymentSuccess = searchParams.get('success') === 'true';
-  const detectedPaper = resolvePaperContext(searchParams.get('paper'));
+  // `document` is guarded because this client component also renders on the server, where
+  // there is no referrer to read; null there simply means "no heuristic signal".
+  const detectedPaper = resolveSubscribePaper(
+    searchParams.get('paper'),
+    typeof document !== 'undefined' ? document.referrer : null,
+  );
   // The paper being PURCHASED. Defaults to APM when nothing was detected, and the default is
   // shown and switchable in the UI below — never applied silently. See resolvePaperContext.
   const [paper, setPaper] = useState<'APM' | 'AFM'>(detectedPaper ?? 'APM');
@@ -188,7 +199,7 @@ function APMSubscribeInner() {
       <style>{CSS}</style>
 
       <div className="apm-sub-logo">
-        <Link href="/acca" style={{ textDecoration: 'none' }}>
+        <Link href={paperHref('/acca', paper)} style={{ textDecoration: 'none' }}>
           <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 22, width: 'auto', display: 'block' }} />
         </Link>
       </div>
