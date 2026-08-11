@@ -10,6 +10,7 @@ import {
   clockState,
 } from '@/lib/acca/sit-preview';
 import type { AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 // ── Lean sit runner — BOTH PAPERS (generalised 2026-07-30) ────────────────────
@@ -638,15 +639,15 @@ const PRACTISABLE_BANDS = new Set(['weak', 'competent']);
 function practiseHref(loCode: string | null, paper: AccaPaper): string | null {
   const area = (loCode ?? '').trim().slice(0, 2);
   if (!area) return null;
-  return `/acca/tutor?area=${encodeURIComponent(area)}${paper === 'APM' ? '' : `&paper=${encodeURIComponent(paper)}`}`;
+  return paperHref(`/acca/tutor?area=${encodeURIComponent(area)}`, paper);
 }
 
 function Debrief({ data }: { data: ResultsData }) {
   const { debrief } = data;
   const t = debrief.totals;
   const paper = data.paper.paper;
-  const dashHref = paper === 'APM' ? '/acca' : `/acca?paper=${encodeURIComponent(paper)}`;
-  const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
+  const dashHref = paperHref('/acca', paper);
+  const progressHref = paperHref('/acca/progress', paper);
 
   if (debrief.not_evaluated) {
     return (

@@ -28,6 +28,7 @@ import { headers } from 'next/headers';
 import ACCALandingPage from '@/components/landing/ACCALandingPage';
 import { AFM_ACCA_LANDING, withAccaDynamicCta } from '@/components/landing/acca-landing-config';
 import { resolveEntitlementCta } from '@/lib/acca/entitlement-cta';
+import { paperHref } from '@/lib/acca/paper-url';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 
 const TITLE = 'ACCA AFM Practice — Taught, Not Just Marked | Gradd';
@@ -76,7 +77,7 @@ export default async function AFMLandingRoute() {
       otherPaper: 'APM',
       anonymous: AFM_ACCA_LANDING.freeCta,
       entitledOtherLabel: 'Add AFM for your sitting',
-      dashboardHref: '/acca?paper=AFM',
+      dashboardHref: paperHref('/acca', 'AFM'),
     });
     if (cta.state !== 'anonymous') {
       config = withAccaDynamicCta(AFM_ACCA_LANDING, cta);

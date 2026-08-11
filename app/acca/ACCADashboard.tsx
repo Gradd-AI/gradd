@@ -5,13 +5,19 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AreaPicker, { type PickerArea } from './AreaPicker';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
+import type { AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 
 interface ACCADashboardProps {
   areas: PickerArea[];
   teachThroughsUsed: number;
   hasActiveAccess: boolean;
   casesEnabled?: boolean;
-  paper: string;
+  // `AccaPaper`, not `string`. The caller already computes one through `resolvePaper`, and
+  // the loose type is part of how this component came to hand-build four paper ternaries:
+  // a `string` paper cannot be handed to a helper that only accepts a real paper, so each
+  // link grew its own comparison instead.
+  paper: AccaPaper;
   hasAttempted?: boolean;
   firstDrillArea?: string | null;
   firstDrillFromResit?: boolean;
@@ -24,23 +30,25 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
   const [navigating, setNavigating] = useState(false);
 
   const capHit = !hasActiveAccess && teachThroughsUsed >= FREE_TEACH_THROUGHS;
-  // Carry the active paper on same-surface links; APM URLs stay clean (default).
-  const paperQ = paper === 'APM' ? '' : `&paper=${encodeURIComponent(paper)}`;
   // First-run (F3): a zero-attempt user gets one unmissable primary action above the grid.
   const showFirstRun = areas.length > 0 && !hasAttempted && !!firstDrillArea;
-  const progressHref = paper === 'APM' ? '/acca/progress' : `/acca/progress?paper=${encodeURIComponent(paper)}`;
-  // Same convention — the "Go unlimited" CTA below used to be bare '/acca/subscribe', which
-  // resolved the right paper only via a document.referrer regex on the subscribe page
-  // (absent under common privacy settings / Referrer-Policy). Threading it explicitly, like
-  // every other paper-aware link in this component, removes that dependency.
-  const subscribeHref = paper === 'APM' ? '/acca/subscribe' : `/acca/subscribe?paper=${encodeURIComponent(paper)}`;
+  // Carry the active paper on same-surface links; APM URLs stay clean (the default paper
+  // gets no param). The rule is `paperHref` — one helper, fixtured — not a ternary per link:
+  // this component alone hand-built four of them, and the "Timed mock" comment below records
+  // what a missed one costs. The "Go unlimited" CTA is in here for the same reason it was
+  // made paper-aware in the first place: bare, it resolved the paper only via a
+  // document.referrer regex on the subscribe page, absent under common privacy settings.
+  const progressHref = paperHref('/acca/progress', paper);
+  const subscribeHref = paperHref('/acca/subscribe', paper);
+  const tutorAreaHref = (subArea: string) =>
+    paperHref(`/acca/tutor?area=${encodeURIComponent(subArea)}`, paper);
   // The timed mock is a per-paper SURFACE, not a query param: /acca/mock renders
   // <SitRunner paper="APM" /> and /acca/afm/mock renders <SitRunner paper="AFM" />.
   const mockHref = paper === 'AFM' ? '/acca/afm/mock' : '/acca/mock';
 
   function handleSelect(subArea: string) {
     setNavigating(true);
-    router.push(`/acca/tutor?area=${encodeURIComponent(subArea)}${paperQ}`);
+    router.push(tutorAreaHref(subArea));
   }
 
   return (
@@ -64,8 +72,13 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                   Was annotated "(bundle: one ACCA entitlement)". That is FALSE since per-paper
                   pricing shipped — the code was already right, the comment was not. */}
               <div className="apm-dash-paper-switch" role="group" aria-label="Choose ACCA paper">
-                <Link href="/acca" className={`apm-dash-paper-tab${paper === 'APM' ? ' active' : ''}`}>APM</Link>
-                <Link href="/acca?paper=AFM" className={`apm-dash-paper-tab${paper === 'AFM' ? ' active' : ''}`}>AFM</Link>
+                {/* Built through paperHref rather than as the literals '/acca' and
+                    '/acca?paper=AFM'. Those two strings ARE the rule this component used to
+                    restate by hand at four other links, and the switcher is the one place a
+                    drift between them would be least visible — both tabs still render, they
+                    just stop switching. */}
+                <Link href={paperHref('/acca', 'APM')} className={`apm-dash-paper-tab${paper === 'APM' ? ' active' : ''}`}>APM</Link>
+                <Link href={paperHref('/acca', 'AFM')} className={`apm-dash-paper-tab${paper === 'AFM' ? ' active' : ''}`}>AFM</Link>
               </div>
               <Link href={progressHref} className="apm-dash-navlink">Progress</Link>
               <div className="apm-dash-breadcrumb">
@@ -83,7 +96,7 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
           {/* First-run primary action (F3) — the seam a brand-new signup bounced on. One
               banner, one link, deep into a sensible default drill. Grid stays below. */}
           {showFirstRun && (
-            <a className="apm-firstrun" href={`/acca/tutor?area=${encodeURIComponent(firstDrillArea!)}${paperQ}`}>
+            <a className="apm-firstrun" href={tutorAreaHref(firstDrillArea!)}>
               <div className="apm-firstrun-text">
                 <span className="apm-firstrun-eyebrow">{firstDrillFromResit ? 'From your resit diagnosis' : 'Start here'}</span>
                 <span className="apm-firstrun-title">{firstDrillFromResit ? 'Start with your weakest area' : 'Start your first drill'}</span>

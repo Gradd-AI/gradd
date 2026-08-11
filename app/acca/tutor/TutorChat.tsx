@@ -6,6 +6,8 @@ import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import AreaPicker, { type PickerArea } from '@/app/acca/AreaPicker';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
+import type { AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 
 interface Drill {
   id: string;
@@ -51,10 +53,12 @@ function ezraOpening(drill: Drill): Message {
   };
 }
 
-export default function TutorChat({ drill, initialCapHit, userId, paper }: { drill: Drill; initialCapHit: boolean; userId: string; paper: string }) {
+// `paper` is `AccaPaper`, not `string`: the caller already computes one through
+// `resolvePaper`, and the loose type was what let this component build paper links by hand.
+export default function TutorChat({ drill, initialCapHit, userId, paper }: { drill: Drill; initialCapHit: boolean; userId: string; paper: AccaPaper }) {
   // Carry the paper into every upsell link so /acca/subscribe leads with the paper they came
-  // from (bundle copy is paper-aware; neutral fallback when absent).
-  const subscribeHref = `/acca/subscribe?paper=${encodeURIComponent(paper)}`;
+  // from (per-paper copy; visible, switchable default when absent).
+  const subscribeHref = paperHref('/acca/subscribe', paper);
   const [currentDrill, setCurrentDrill]           = useState<Drill>(drill);
   const [messages, setMessages]                   = useState<Message[]>([ezraOpening(drill)]);
   const [sessionState, setSessionState]           = useState<ClientSessionState | null>(null);
@@ -261,7 +265,7 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
         {/* ── Header ── */}
         <header className="et-header">
           <div className="et-wrap et-header-inner">
-            <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`} className="et-logo" aria-label="Back to Gradd ACCA">
+            <Link href={paperHref('/acca', paper)} className="et-logo" aria-label="Back to Gradd ACCA">
               <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
             </Link>
             <div className="et-header-right">

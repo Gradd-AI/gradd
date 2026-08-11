@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { resolvePaper } from '@/lib/acca/paper';
+import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
 import { hasPaperAccess } from '@/lib/acca/access';
 import TutorChat from './TutorChat';
@@ -171,5 +171,12 @@ export default async function APMTutorPage({
 
   // Authoritative paper = the on-screen drill's own paper_code (an id-addressed entry may
   // carry no ?paper=). TutorChat scopes its next-drill / areas fetches to it.
-  return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} paper={data.paper_code} />;
+  //
+  // `paper_code` is a DB column typed `string`, so it is parsed at this boundary rather than
+  // asserted through: `strictPaper` refuses an unrecognised value instead of coercing it, and
+  // the fallback is this request's own resolved paper — not APM. Coercing a bad row to APM is
+  // the exact class of silent default the `?paper=` work removed from the URL boundary, and a
+  // DB boundary deserves the same treatment.
+  const drillPaper = strictPaper(data.paper_code) ?? paper;
+  return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} paper={drillPaper} />;
 }

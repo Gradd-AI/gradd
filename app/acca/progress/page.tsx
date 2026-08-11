@@ -6,6 +6,7 @@ import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { getMyProgress, type RecentAttempt, type AreaTrend } from '@/lib/org/queries';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 import { ORG_CSS, subAreaName, fmtDays, fmtDate, cellTone } from '@/components/org/orgTheme';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
@@ -97,10 +98,11 @@ export default async function ProgressPage({
   const { paper: paperParam } = await searchParams;
   const paper = resolvePaper(typeof paperParam === 'string' ? paperParam : undefined);
   const areaName = (sa: string) => subAreaName(paper, sa);
-  // Same convention as the breadcrumb link below — the upsell CTA used to be bare
-  // '/acca/subscribe', resolving the right paper only via /acca/subscribe's
+  // Every same-surface link on this page goes through `paperHref` — the upsell CTA used to
+  // be bare '/acca/subscribe', resolving the right paper only via /acca/subscribe's
   // document.referrer regex fallback, absent under common privacy settings.
-  const subscribeHref = paper === 'APM' ? '/acca/subscribe' : `/acca/subscribe?paper=${paper}`;
+  const subscribeHref = paperHref('/acca/subscribe', paper);
+  const accaHomeHref = paperHref('/acca', paper);
 
   // ── Tier check (server-side) ────────────────────────────────────────────────
   // The page stays reachable by every logged-in student — the TIER decides what
@@ -138,9 +140,14 @@ export default async function ProgressPage({
       <style>{PROG_CSS}</style>
 
       <header className="org-header">
-        <Link className="wordmark" href="/acca"><img src="/gradd-ai-logo.png" alt="Gradd" /></Link>
+        {/* THE DEFECT (b) SIGHTING, and why this file is the canonical example: the wordmark
+            was bare '/acca' while the breadcrumb two lines below it was paper-aware. Both
+            point at the SAME destination — ACCA home — so an AFM student clicking the logo
+            landed on APM while the crumb beside it said "ACCA AFM". Not a cross-surface
+            drift; a drift between two adjacent lines of one header. */}
+        <Link className="wordmark" href={accaHomeHref}><img src="/gradd-ai-logo.png" alt="Gradd" /></Link>
         <span className="org-crumb">
-          <Link href={paper === 'APM' ? '/acca' : `/acca?paper=${paper}`}>ACCA {paper}</Link><span>›</span> Your progress
+          <Link href={accaHomeHref}>ACCA {paper}</Link><span>›</span> Your progress
         </span>
         <ACCASignOutButton />
       </header>
@@ -221,7 +228,7 @@ export default async function ProgressPage({
             {p.weakAreas.map((w) => {
               const tone = cellTone(w.missRate);
               return (
-                <Link key={w.subArea} href={`/acca/tutor?area=${encodeURIComponent(w.subArea)}&paper=${paper}`} className="prog-card">
+                <Link key={w.subArea} href={paperHref(`/acca/tutor?area=${encodeURIComponent(w.subArea)}`, paper)} className="prog-card">
                   <span className="prog-card-dot" style={{ background: tone.bg }} aria-hidden="true" />
                   <span className="prog-card-body">
                     <span className="prog-card-title">{areaName(w.subArea)}</span>
@@ -301,7 +308,7 @@ export default async function ProgressPage({
           </p>
           <div className="org-kv">
             {p.uncoveredSubAreas.map((sa) => (
-              <Link key={sa} href={`/acca/tutor?area=${encodeURIComponent(sa)}&paper=${paper}`} className="pill prog-pill-link">
+              <Link key={sa} href={paperHref(`/acca/tutor?area=${encodeURIComponent(sa)}`, paper)} className="pill prog-pill-link">
                 {areaName(sa)} <span className="prog-pill-cta">start here →</span>
               </Link>
             ))}

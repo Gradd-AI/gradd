@@ -19,6 +19,7 @@ import {
   type ResitProfile,
 } from '@/lib/acca/resit-engine';
 import type { AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 import { trackMetaEvent } from '@/lib/meta-consent';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -334,11 +335,17 @@ export default function ResitRunner({ paper }: { paper: AccaPaper }) {
               resolvePaper's APM default, and because AFM and APM lo_code prefixes collide
               exactly (B1/B2/B3/B4 are live in both), an AFM sitter carrying area=B1 would
               land silently in APM's budgeting drills rather than on a dead link. */}
+          {/* The AUTH link itself stays bare — the paper rides INSIDE the encoded `next=`,
+              which is the destination that actually needs scoping. Two copies of one fact
+              (one outside `next=`, one inside) is the drift this whole change removes. */}
           <Link
             href={`/acca/auth?next=${encodeURIComponent(
-              profile && profile.weak_prefixes.length > 0
-                ? `/acca?paper=${paper}&area=${profile.weak_prefixes[0]}`
-                : `/acca?paper=${paper}`
+              paperHref(
+                profile && profile.weak_prefixes.length > 0
+                  ? `/acca?area=${encodeURIComponent(profile.weak_prefixes[0])}`
+                  : '/acca',
+                paper,
+              )
             )}`}
             className="resit-btn resit-btn--primary resit-btn--cta"
           >
