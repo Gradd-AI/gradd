@@ -41,6 +41,11 @@ const SURFACES = [
   'app/acca/drill/page.tsx',
   'app/acca/cases/CaseList.tsx',
   'app/acca/cases/[id]/CaseSession.tsx',
+  // The two case SERVER pages joined the population on 2026-08-11: they now build
+  // paper-bearing links themselves (the auth redirect's next=), so leaving them out would
+  // understate the denominator the moment they were the thing worth checking (P-G2).
+  'app/acca/cases/page.tsx',
+  'app/acca/cases/[id]/page.tsx',
   'components/acca/SitRunner.tsx',
   'components/acca/ResitRunner.tsx',
 ];
@@ -64,14 +69,13 @@ const EXEMPT: { pattern: RegExp; why: string }[] = [
 // surface is unresolved. Where one link in an otherwise-clean file is blocked, the waiver
 // names that literal so the file's OTHER links stay guarded — waiving ACCADashboard whole
 // for the sake of its cases card would unguard the five links just fixed in it.
-const WAIVED: { file: string; literal?: RegExp; why: string }[] = [
-  { file: 'app/acca/ACCADashboard.tsx', literal: /^\/acca\/cases$/,
-    why: 'defect (a) — the card into the APM-hardcoded cases surface; awaiting hide-vs-thread ruling' },
-  { file: 'app/acca/cases/CaseList.tsx',
-    why: 'defect (a) — whole surface is APM-hardcoded (fetch, breadcrumb, section names)' },
-  { file: 'app/acca/cases/[id]/CaseSession.tsx',
-    why: 'defect (a) — same surface, same ruling' },
-];
+//
+// EMPTY as of 2026-08-11, and that is the point: the three entries this list shipped with
+// were all defect (a) — the Exam-cases card and the two APM-hardcoded case surfaces it led
+// to. All three are threaded, so all three waivers are gone. The mechanism stays for the
+// next unresolved site, and because the list is empty its arms are now driven by synthetic
+// findings below rather than by any real file (P-G3 — an unreachable branch is untested).
+const WAIVED: { file: string; literal?: RegExp; why: string }[] = [];
 
 /**
  * Blank every comment to spaces, preserving length and newlines so indices and line numbers
@@ -138,6 +142,33 @@ function accaLinkLiterals(src: string): { literal: string; line: number }[] {
   return out;
 }
 
+type Finding = { literal: string; line: number };
+type Waiver = { file: string; literal?: RegExp; why: string };
+type Verdict =
+  | { kind: 'file-waiver'; waiver: Waiver; earned: boolean }
+  | { kind: 'checked'; literalWaivers: { waiver: Waiver; earned: boolean }[]; remaining: Finding[] };
+
+/**
+ * Apply a file's waivers to its findings. Extracted from the loop below so its arms can be
+ * DRIVEN (P-G3): with WAIVED now empty, every branch in here is dead code on a real run, and
+ * a dead branch is an untested one — the emptiness of the list must not quietly disarm the
+ * mechanism that polices the next entry. The probes below exercise all four outcomes.
+ */
+function verdictFor(findings: Finding[], waivers: Waiver[]): Verdict {
+  const fileWaiver = waivers.find((w) => !w.literal);
+  // A whole-file waiver is EARNED only while the file still has something to waive.
+  if (fileWaiver) return { kind: 'file-waiver', waiver: fileWaiver, earned: findings.length > 0 };
+  const literalWaivers = waivers.filter((w) => w.literal);
+  return {
+    kind: 'checked',
+    literalWaivers: literalWaivers.map((waiver) => ({
+      waiver,
+      earned: findings.some((f) => waiver.literal!.test(f.literal)),
+    })),
+    remaining: findings.filter((f) => !literalWaivers.some((w) => w.literal!.test(f.literal))),
+  };
+}
+
 console.log('\npaper-link-sweep — no authed ACCA surface may hardcode a paper-bearing link\n');
 
 // ── POSITIVE CONTROL (P-G3(a)) ───────────────────────────────────────────────
@@ -164,6 +195,36 @@ ok('NEGATIVE CONTROL: blanking comments does not blind the detector to real code
 ok('a "//" inside a URL string is not read as a comment',
   accaLinkLiterals(`const u = "https://gradd.ai/x"; <Link href="/acca/progress">x</Link>`).length === 1);
 
+// ── THE WAIVER MECHANISM'S OWN FAILURE PATHS (P-G3) ──────────────────────────
+// WAIVED is empty as of 2026-08-11 — every entry it shipped with is fixed. That makes each
+// branch below unreachable on a real run, so it is driven here with synthetic findings. The
+// arm that matters most is the one nobody thinks about: a waiver that has stopped matching
+// is silently unguarding a line somebody already fixed, and it must go RED, not quiet.
+console.log('\n  — the waiver mechanism itself —');
+const F = (literal: string): Finding => ({ literal, line: 1 });
+const W_FILE: Waiver = { file: 'x.tsx', why: 'whole surface' };
+const W_LIT: Waiver = { file: 'x.tsx', literal: /^\/acca\/cases$/, why: 'one link' };
+
+const vFileEarned = verdictFor([F('/acca/cases')], [W_FILE]);
+ok('a whole-file waiver over a file that STILL has findings is earned',
+  vFileEarned.kind === 'file-waiver' && vFileEarned.earned);
+const vFileStale = verdictFor([], [W_FILE]);
+ok('MUST GO RED: a whole-file waiver over a CLEAN file is not earned',
+  vFileStale.kind === 'file-waiver' && !vFileStale.earned);
+const vLitEarned = verdictFor([F('/acca/cases')], [W_LIT]);
+ok('a per-literal waiver that still matches is earned, and suppresses only that literal',
+  vLitEarned.kind === 'checked' && vLitEarned.literalWaivers[0].earned
+  && vLitEarned.remaining.length === 0);
+const vLitStale = verdictFor([F('/acca/progress')], [W_LIT]);
+ok('MUST GO RED: a per-literal waiver matching nothing is not earned',
+  vLitStale.kind === 'checked' && !vLitStale.literalWaivers[0].earned);
+ok('  …and the file\'s OTHER links stay guarded by it',
+  vLitStale.kind === 'checked' && vLitStale.remaining.length === 1
+  && vLitStale.remaining[0].literal === '/acca/progress');
+ok('no waivers → every finding is reported',
+  (() => { const v = verdictFor([F('/acca'), F('/acca/progress')], []);
+    return v.kind === 'checked' && v.remaining.length === 2; })());
+
 console.log('\n  — the surfaces —');
 for (const rel of SURFACES) {
   const abs = join(ROOT, ...rel.split('/'));
@@ -171,29 +232,24 @@ for (const rel of SURFACES) {
   try { src = readFileSync(abs, 'utf-8'); }
   catch { ok(`${rel} exists`, false, 'file not found — did it move?'); continue; }
 
-  const waivers = WAIVED.filter((w) => w.file === rel);
-  const fileWaiver = waivers.find((w) => !w.literal);
-  const literalWaivers = waivers.filter((w) => w.literal);
-
   const findings = accaLinkLiterals(src)
     .filter(({ literal }) => !EXEMPT.some((e) => e.pattern.test(literal)));
+  const verdict = verdictFor(findings, WAIVED.filter((w) => w.file === rel));
 
-  if (fileWaiver) {
-    ok(`WAIVED ${rel} — ${fileWaiver.why}`, findings.length > 0,
+  if (verdict.kind === 'file-waiver') {
+    ok(`WAIVED ${rel} — ${verdict.waiver.why}`, verdict.earned,
       'no bare literals left; remove this waiver');
     continue;
   }
 
   // Every per-literal waiver must still MATCH something, or it is unguarding a fixed line.
-  for (const w of literalWaivers) {
-    ok(`  waiver still earns its place: ${rel} ${w.literal} — ${w.why}`,
-      findings.some((f) => w.literal!.test(f.literal)),
+  for (const { waiver, earned } of verdict.literalWaivers) {
+    ok(`  waiver still earns its place: ${rel} ${waiver.literal} — ${waiver.why}`, earned,
       'nothing matches; remove this waiver');
   }
 
-  const remaining = findings.filter((f) => !literalWaivers.some((w) => w.literal!.test(f.literal)));
-  ok(`${rel} — no bare paper-bearing link`, remaining.length === 0,
-    remaining.map((f) => `:${f.line} ${f.literal}`).join('  '));
+  ok(`${rel} — no bare paper-bearing link`, verdict.remaining.length === 0,
+    verdict.remaining.map((f) => `:${f.line} ${f.literal}`).join('  '));
 }
 
 // ── THE COUPLING THAT MUST NOT DRIFT ─────────────────────────────────────────

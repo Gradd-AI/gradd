@@ -7,6 +7,8 @@ import { caseMarkReady } from '@/lib/acca/case-sit';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
+import type { AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 
 // ── Types (client-safe subset of the case/turn + case load responses) ──────────
 interface Exhibit { exhibit_order: number; title: string | null; body: string | null }
@@ -110,16 +112,28 @@ function completedOpening(): Message {
 // a mode switch that nothing switches is a trap — it reads as though a sit could arrive
 // here and be handled correctly, which was never true. Sit mode lives in SitRunner +
 // /api/acca/sit, and this component is unambiguously the teach surface again.
+//
+// `paper` IS A PROP, resolved server-side from the case's OWN row (page.tsx). It was three
+// hardcoded 'APM' literals — the load fetch, every turn body, and the mark body — plus a
+// breadcrumb that said so. This surface is no longer APM-only: the five published AFM
+// practice cases reach it through the same list. The paper is NOT re-derived here and must
+// not be: a client-side second opinion about which paper a case is would be a second source
+// of truth for a fact the row owns.
 export default function CaseSession({
   caseId,
+  paper,
   embedded = false,
   onComplete,
 }: {
   caseId: string;
+  paper: AccaPaper;
   embedded?: boolean;
   onComplete?: () => void;
 }) {
   const router = useRouter();
+  // Same-surface links, carrying the paper (lib/acca/paper-url.ts). APM stays byte-identical.
+  const casesHref     = paperHref('/acca/cases', paper);
+  const subscribeHref = paperHref('/acca/subscribe', paper);
 
   // ── Case load ──
   const [header, setHeader]             = useState<CaseHeader | null>(null);
@@ -158,13 +172,13 @@ export default function CaseSession({
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}&paper=APM`);
+        const res = await fetch(`/api/acca/case?case_id=${encodeURIComponent(caseId)}&paper=${paper}`);
         // 404 = flag off OR case not servable → nothing useful to show.
         if (res.status === 404) {
-          router.replace('/acca');
+          router.replace(paperHref('/acca', paper));
           return;
         }
-        // 402 = no active APM subscription → focused upsell, not an error. The
+        // 402 = no active subscription for THIS paper → focused upsell, not an error. The
         // route returns the (public) case title so the upsell can name the case.
         if (res.status === 402) {
           let title: string | null = null;
@@ -213,7 +227,7 @@ export default function CaseSession({
       }
     })();
     return () => { cancelled = true; };
-  }, [caseId, router]);
+  }, [caseId, paper, router]);
 
   const activeReq = useMemo(
     () => requirements.find((r) => r.id === activeReqId) ?? null,
@@ -297,12 +311,12 @@ export default function CaseSession({
           session_state:     sessionByReq[activeReqId] ?? null,   // null on first turn of each requirement
           student_message:   trimmed,
           last_ezra_message: lastEzra,
-          // PER-PAPER ENTITLEMENT (2026-08-03): the gate now requires an explicit paper and
-          // refuses rather than defaulting. Hardcoded 'APM' because THIS SURFACE IS APM-ONLY —
-          // /acca/cases lists `paper_code='APM'` and its page title says so. The 5 AFM
-          // practice cases have no UI at all (recorded in docs/AFM_SURFACED.md); when that
-          // surface is built, this must become a prop, not a second literal.
-          paper:             'APM',
+          // PER-PAPER ENTITLEMENT (2026-08-03): the gate requires an explicit paper and
+          // refuses rather than defaulting. THE PROP, not a literal — this is the line whose
+          // own comment said it had to become one when the surface stopped being APM-only.
+          // It has: the case's paper comes from its row, so the gate is asked about the
+          // paper the student is actually working, not the one this file was written for.
+          paper,
         }),
       });
       // 402 = subscription lapsed mid-session → roll the optimistic bubble back and
@@ -352,7 +366,7 @@ export default function CaseSession({
       const res = await fetch('/api/acca/case/mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ case_id: caseId, paper: 'APM' }),
+        body: JSON.stringify({ case_id: caseId, paper }),
       });
       if (res.status === 402) { setSessionLapsed(true); return; }
       if (res.status === 409) { setMarkingIncomplete(true); return; }
@@ -392,9 +406,9 @@ export default function CaseSession({
         <div className="ec-upsell">
           <span className="ec-upsell-lock" aria-hidden="true">🔒</span>
           <h1 className="ec-upsell-title">{lockedTitle ?? header?.title ?? 'Exam case'}</h1>
-          <p className="ec-upsell-copy">Exam cases are part of the APM subscription.</p>
-          <Link href="/acca/subscribe" className="ec-btn ec-btn--rust">Subscribe to unlock <span className="ec-arrow">→</span></Link>
-          <Link href="/acca/cases" className="ec-upsell-back">← Back to cases</Link>
+          <p className="ec-upsell-copy">Exam cases are part of the {paper} subscription.</p>
+          <Link href={subscribeHref} className="ec-btn ec-btn--rust">Subscribe to unlock <span className="ec-arrow">→</span></Link>
+          <Link href={casesHref} className="ec-upsell-back">← Back to cases</Link>
         </div>
       </div>
     );
@@ -403,7 +417,7 @@ export default function CaseSession({
     return (
       <div className="ec-fullmsg">
         <style>{CSS}</style>
-        <p>This case isn&apos;t available right now — <Link href="/acca/cases">back to cases</Link>.</p>
+        <p>This case isn&apos;t available right now — <Link href={casesHref}>back to cases</Link>.</p>
       </div>
     );
   }
@@ -417,12 +431,12 @@ export default function CaseSession({
         {!embedded && (
           <header className="ec-header">
             <div className="ec-wrap ec-header-inner">
-              <Link href="/acca/cases" className="ec-logo" aria-label="Back to cases">
+              <Link href={casesHref} className="ec-logo" aria-label="Back to cases">
                 <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
               </Link>
               <div className="ec-header-right">
                 <div className="ec-breadcrumb">
-                  <span className="ec-breadcrumb-paper">ACCA APM</span>
+                  <span className="ec-breadcrumb-paper">ACCA {paper}</span>
                   <span className="ec-breadcrumb-sep">·</span>
                   <span className="ec-breadcrumb-label">Exam case</span>
                 </div>
@@ -562,8 +576,8 @@ export default function CaseSession({
               {/* Subscription lapsed mid-session — same upsell message, inline */}
               {sessionLapsed && (
                 <div className="ec-lapse" role="alert">
-                  Exam cases are part of the APM subscription.{' '}
-                  <Link href="/acca/subscribe" className="ec-lapse-link">Subscribe to continue →</Link>
+                  Exam cases are part of the {paper} subscription.{' '}
+                  <Link href={subscribeHref} className="ec-lapse-link">Subscribe to continue →</Link>
                 </div>
               )}
 
@@ -622,7 +636,7 @@ export default function CaseSession({
                           </div>
                         ))}
                       </div>
-                      <Link href="/acca/cases" className="ec-marking-done">← Back to cases</Link>
+                      <Link href={casesHref} className="ec-marking-done">← Back to cases</Link>
                     </>
                   ) : null}
                 </div>

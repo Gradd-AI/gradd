@@ -4356,3 +4356,47 @@ it, and a bypassed gate is the same failure with extra steps.
 **Banked as `P-G5`** in `GENERATOR_DOCTRINE.md`: P-G1/G2/G3 govern whether a check MEANS what it
 reports; P-G5 governs whether it ever RUNS. Failure path and auto-discovery both proven with a
 throwaway probe fixture (P-G3): 46 → 47 with no list edit, exit 1, failing output surfaced.
+
+## 2026-08-11 — `/acca/cases` IS PER-PAPER; FIVE PUBLISHED AFM CASES BECOME REACHABLE
+
+Grant's ruling on defect (a): **thread, not hide.** Branch `feat/acca-cases-paper-aware` — pushed,
+**not merged**, review-gated by request.
+
+**What was wrong.** `app/api/acca/case/list` has been paper-scoped since it was written and would
+have served AFM's five practice cases at any point. `CaseList.tsx:37` only ever asked it for APM.
+The surface said APM in five independent places — the list fetch, the load fetch, the turn and mark
+bodies, two breadcrumbs, two page titles, and a `SECTION_NAME` table holding APM's four-section
+taxonomy. Five approved, published, `mock_only=false` cases were unreachable, not absent.
+
+**Two resolutions, because the two URLs are different kinds.** The LIST is paper-parameterised and
+reads `?paper=` from the route. The DETAIL page is ID-ADDRESSED and reads `acca_cases.paper_code`
+off the case's own row — one `cache`d query shared with `generateMetadata`. A `?paper=` there would
+have been a second source of truth for a fact the row owns, and a BARE bookmark (which is what a
+shared link is) would have resolved to APM and 404'd against `.eq('paper_code', …)`. Both rules and
+every label live in the new pure `lib/acca/case-surface.ts`.
+
+**Threading only the fetch would have shipped a second literal.** `SECTION_NAME['E']` is undefined
+in APM's table and AFM's Lindqvist case anchors on E2 — the right cases under an APM heading with a
+blank section name. The two things called "section" on one card are different columns
+(`section` = exam section A/B; `anchor_area` = syllabus area), and only the second is a taxonomy.
+
+**P-G6 in a new place.** `paperFromRouteParam` is deliberately not `resolvePaper`: Next hands a page
+`string | string[] | undefined`, `resolvePaper` tests `raw === 'AFM'`, so `?paper=AFM&paper=AFM` (an
+array) and `?paper=afm` both resolved silently to APM. `resolvePaper` stays correct for a request
+BODY field our own client writes.
+
+**Walked live, twice, and the second walk existed because the first could not see the surface.**
+Real routes with a real session cookie: 24/24. Then a real headless Chrome over CDP: 31/31 —
+`CaseSession` returns "Loading case…" server-side, so its breadcrumb and its `paper=` query exist
+only after hydration, and a server-HTML assertion fails on correct output while its negation passes
+on ANY output. Both directions were observed on the first run before the assertions were fixed
+(P-G3(a) again, this time React's `<!-- -->` text/expression separator inside `ACCA {paper}`).
+Measured: five AFM cards, click through to **ACCA AFM** with a `paper=AFM` load fetch on a bare id
+URL; the pre-fix `paper=APM` shape refused on both load and turn; APM's five untouched — locked for
+an AFM-only holder, and fully unchanged once the same synthetic account was granted APM. Account
+scoped-deleted, zero residue verified.
+
+**All three sweep waivers retired in the commits that earned them.** `WAIVED` is now empty, which
+makes every branch of the waiver machinery unreachable — so the arms moved into `verdictFor` and are
+driven by synthetic findings (P-G3): a whole-file waiver over a clean file and a per-literal waiver
+matching nothing must both go RED. The two case server pages joined `SURFACES` (P-G2).
