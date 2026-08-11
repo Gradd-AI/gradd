@@ -2,7 +2,15 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-11 (**THE PAPER WAS CARRIED BY CONVENTION, NOT CONSTRUCTION.** ~17 link
+*Last refreshed: 2026-08-11 (**DEFECT (a) IS CLOSED — `/acca/cases` SERVES BOTH PAPERS.** Grant
+ruled THREAD, not hide; `feat/acca-cases-paper-aware`, pushed, **not merged — awaiting review**.
+The paper is resolved from the ROUTE on the list (`?paper=`) and from the CASE'S OWN ROW on the
+id-addressed detail page, then threaded as a prop; five published AFM cases are reachable for the
+first time. Walked live in a real headless browser: an AFM student sees all five, opens one by
+clicking it, and every label reads AFM — with APM's five proven untouched from the same bare URL
+shape. All three sweep waivers retired; `WAIVED` is now empty and its arms are driven by synthetic
+findings so the mechanism stays proven. See the ✅ block immediately below. Earlier same day: **THE
+PAPER WAS CARRIED BY CONVENTION, NOT CONSTRUCTION.** ~17 link
 sites across ACCA's six independently-styled page headers each hand-built the same rule in FOUR
 different shapes, and every one typechecks whether or not it carries the paper — so the failure is
 silent and a fix does not generalise. Now one pure, fixtured `paperHref` (`lib/acca/paper-url.ts`,
@@ -13,36 +21,50 @@ pushed a student who had just paid for AFM into APM's tutor, and the subscribe p
 bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an AFM page —
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
-drill was reachable through that route at all. **⚠️ DEFECT (a) IS OPEN AND AWAITS GRANT'S RULING —
-see the block immediately below.**)*
+drill was reachable through that route at all.)*
 
-## ⚠️ OPEN — `/acca/cases` IS APM-HARDCODED AND HIDES FIVE PUBLISHED AFM CASES (2026-08-11)
+## ✅ CLOSED 2026-08-11 — `/acca/cases` SERVES BOTH PAPERS (`feat/acca-cases-paper-aware`, unmerged)
 
-**`AFM_SURFACED.md`'s own earlier note that "AFM list 0 cases" is STALE and is corrected here.**
-Queried live 2026-08-11: there are **5 AFM practice cases**, all `status='approved'`,
-`published=true`, `mock_only=false` — `ac000000-…-a101` Castlereagh Utilities plc ·
-`ac000000-…-b101` Halvard Marine ASA · `ac000000-…-b501` Kestrel Foods plc · `ac000000-…-e201`
-Lindqvist Instruments AB · `ac000000-…-b401` Tamesis Diagnostics plc. (Plus the 3 `mock_only=true`
-Mock Paper 1 cases, correctly excluded from the list.)
+**Grant's ruling: THREAD, not hide.** Five published AFM practice cases were reachable by the API
+and by nothing else — `app/api/acca/case/list` has been paper-parameterised since it was written,
+and `CaseList.tsx:37` only ever asked it for APM. A ROUTING defect, not an unbuilt surface. The five:
+`ac000000-…-a101` Castlereagh Utilities plc · `ac000000-…-b101` Halvard Marine ASA · `ac000000-…-b501`
+Kestrel Foods plc · `ac000000-…-e201` Lindqvist Instruments AB · `ac000000-…-b401` Tamesis
+Diagnostics plc. (The 3 `mock_only=true` Mock Paper 1 cases stay correctly excluded.)
 
-**So this is a ROUTING defect, not an unbuilt surface.** `app/api/acca/case/list` is already fully
-paper-parameterised (`.eq('paper_code', paper)`) and would serve all five today. The only thing
-blocking them is the hardcoded string `?paper=APM` at `CaseList.tsx:37`. Five published cases are
-**unreachable**, not absent — and an AFM student clicking "Exam cases" is served APM's list,
-breadcrumb, page title and four-section taxonomy.
+**Two different resolutions, because the two URLs are different kinds.** The LIST is
+paper-parameterised, so it reads `?paper=` from the route (`paperFromRouteParam`). The DETAIL page is
+ID-ADDRESSED, so it reads `acca_cases.paper_code` off the case's own row (`paperForCaseRow`, one
+`cache`d query shared with `generateMetadata`) — a `?paper=` there would be a second source of truth
+for a fact the row owns, and a BARE bookmark to an AFM case would resolve to APM and 404 against
+`.eq('paper_code', …)`. Both live in the new pure `lib/acca/case-surface.ts` (`npm run
+test:case-surface`, 52 checks) with the labels: breadcrumbs, both page titles, and the section
+taxonomy that used to be APM's four — **AFM's Lindqvist case anchors on E2 and APM's table has no E**,
+so threading only the fetch would have shipped the right cases under a blank section name.
 
-**Not fixed in this pass, deliberately: it is a component change, not a link change,** and it needs a
-ruling. `paperHref('/acca/cases','AFM')` alone produces a URL that still renders APM content — the
-paper must be threaded through `CaseList` (fetch, breadcrumb, `SECTION_NAME`, metadata) and
-`CaseSession` (`:161`, `:305`, `:355`, `:425`), whose own comment already anticipates this: *"when
-that surface is built, this must become a prop, not a second literal."*
-**The dashboard card, `CaseList` and `CaseSession` are WAIVED BY NAME in `test-paper-link-sweep.ts`**
-so the rest of each file stays guarded and this item cannot be silently forgotten — a waiver that
-stops matching FAILS the suite.
+**`paperFromRouteParam` is NOT `resolvePaper` (P-G6).** Next hands a page `string | string[] |
+undefined` and `resolvePaper` tests `raw === 'AFM'`, so `?paper=AFM&paper=AFM` (an array) and
+`?paper=afm` both resolved silently to APM. `resolvePaper` stays right where it is used — a request
+BODY field our own client writes.
 
-**Precedent that makes this urgent rather than cosmetic:** the "Timed mock" link sits three lines
-BELOW the Exam-cases card and carried this exact bug until 2026-08-01, recorded there as *"a
-cross-paper content leak, not just a wrong screen."* Patching one ternary left its sibling.
+**WALKED LIVE, TWICE.** Real routes with a real session cookie (24/24) — five AFM cases served and
+unlocked, APM's five locked for an AFM-only holder, the pre-fix `paper=APM` shape refused on both the
+load and the turn. Then a real headless Chrome over CDP (31/31), which is the only thing that can see
+this surface: `CaseSession` renders "Loading case…" server-side, so its breadcrumb and its `paper=`
+query exist only after hydration. An AFM student saw all five cards, clicked one, got **ACCA AFM**
+and a `paper=AFM` load fetch on a bare id URL; the same account on an APM case was upsold, and once
+granted APM saw **ACCA APM** and APM's five unchanged. Synthetic account, scoped-deleted, verified
+zero residue.
+
+**All three sweep waivers retired in the commits that earned it** — `WAIVED` in
+`test-paper-link-sweep.ts` is now empty, and because an empty list makes every branch of the waiver
+machinery unreachable, its arms are now driven by synthetic findings (P-G3): a whole-file waiver over
+a clean file and a per-literal waiver matching nothing must both go RED. The two case server pages
+joined `SURFACES` — they build paper-bearing links now (P-G2).
+
+**Precedent, recorded because it was the point:** the "Timed mock" link sat three lines BELOW the
+Exam-cases card and carried this exact bug until 2026-08-01 — *"a cross-paper content leak, not just
+a wrong screen."* Patching one ternary left its sibling; the sweep is what stopped that repeating.
 
 *Earlier: 2026-08-10 (**SIGN-OUT WAS A DEAD END FOR EVERY ACCA STUDENT** —
 `fix/signout-per-product-destination`. `/api/auth/signout` redirected to a **hardcoded**

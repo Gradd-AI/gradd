@@ -632,8 +632,31 @@ installed on either machine.
   spaces (indices preserved) and finds `paperHref` calls by balanced-paren spans; a line-prefix/
   same-line version reported four false positives against doc comments that quote the bad literals.
   Waivers are PER-LITERAL where one link in a clean file is blocked, and **a waiver that matches
-  nothing FAILS** (it outlived its bug and is unguarding a fixed line). ⚠️ **CLAIM CEILING:** green
-  means no link silently DROPS the paper — never that every link carries the CORRECT one.
+  nothing FAILS** (it outlived its bug and is unguarding a fixed line). **`WAIVED` IS NOW EMPTY**
+  (2026-08-11) — all three entries were defect (a) and defect (a) is fixed — so the waiver arms are
+  driven by SYNTHETIC findings via `verdictFor` (P-G3: an empty list makes every branch unreachable,
+  and unreachable is untested). ⚠️ **CLAIM CEILING:** green means no link silently DROPS the paper —
+  never that every link carries the CORRECT one.
+- **THE EXAM-CASE SURFACE IS PER-PAPER — `lib/acca/case-surface.ts` (pure).** `/acca/cases` was
+  APM in five places (list fetch, load fetch, turn/mark bodies, two breadcrumbs, two titles, and a
+  `SECTION_NAME` holding APM's four-section taxonomy) while five published AFM cases sat servable
+  behind `?paper=AFM`. **TWO RESOLUTIONS, because the two URLs are different kinds:** the LIST is
+  paper-parameterised → `paperFromRouteParam(searchParams.paper)`; the DETAIL page is ID-ADDRESSED →
+  `paperForCaseRow(row.paper_code)`, one `cache`d query in `[id]/page.tsx` shared with
+  `generateMetadata`. **Never put `?paper=` on `/acca/cases/<id>`** — the row owns that fact, and a
+  bare bookmark would resolve to APM and 404 against `.eq('paper_code', …)`. **`paperFromRouteParam`
+  is NOT `resolvePaper`** (P-G6): Next hands a page `string | string[] | undefined`, and
+  `resolvePaper` tests `raw === 'AFM'`, so `?paper=AFM&paper=AFM` (array) and `?paper=afm` both
+  resolved to APM; `resolvePaper` stays correct for a request BODY field our own client writes.
+  `caseSectionName(paper, anchor_area)` — **`acca_cases.section` (exam section A/B) and `anchor_area`
+  (syllabus area) are BOTH called "section" on one card and are different columns**; the AFM table is
+  fixture-asserted equal to `scripts/afm-framework.ts` SECTIONS A–E. Fixtures: `npm run
+  test:case-surface` (52; pins a hardcoded paper, `resolvePaper` on a route param, and one section
+  table for both papers as MUST-FAIL; APM metadata pinned byte-identical). ⚠️ **THIS SURFACE CANNOT
+  BE VERIFIED FROM SERVER HTML** — `CaseSession` returns "Loading case…" until a client fetch
+  resolves, so `includes('ACCA AFM')` fails on correct output AND `!includes('ACCA APM')` passes on
+  any output. Walk it in a real browser; and strip React's `<!-- -->` text/expression separator
+  before asserting on `ACCA {paper}` (P-G3(a)).
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR
