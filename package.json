@@ -39,6 +39,7 @@
     "test:case-marking-descriptors": "tsx scripts/test-case-marking-descriptors.ts",
     "test:case-marking-technical": "tsx scripts/test-case-marking-technical.ts",
     "test:case-sit": "tsx scripts/test-case-sit.ts",
+    "test:case-surface": "tsx scripts/test-case-surface.ts",
     "test:sit-preview": "tsx scripts/test-sit-preview.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
