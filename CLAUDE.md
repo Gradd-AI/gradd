@@ -701,6 +701,46 @@ when the session ends on a branch.
   upsell half was false for the surface's whole life). **Generalisable:** *"the API owns the
   decision"* and *"the client can explain the decision"* are TWO requirements, and satisfying the
   first says nothing about the second.
+- **THE TIMED-OUT PAPER WENT BACK TO THE START SCREEN — the load-effect fall-through
+  (fixed 2026-08-12, `fix/sit-completed-attempt-intro-fallthrough`).** A sit that ends on the
+  CLOCK carries **`completed=true` AND an incomplete submitted set** — the auto-submit records
+  the requirement being written and deliberately does not back-fill the tail (`not_reached` ≠
+  `blank`). `SitRunner`'s load effect asked *"is every slot submitted?"* FIRST and *"is the
+  attempt open?"* second, so that pair matched neither arm and fell through the `else` to
+  **`intro`**. A returning student got the **Start screen**: debrief unreachable (the `done`
+  phase is the only route to `sit/results`), the "I've subscribed — mark my paper" retry
+  unreachable, and a Start click **minted a new attempt**, after which `attemptFor` resolves the
+  NEW one on every later results POST and the old paper's answers are unmarkable through the UI
+  for good. **THE RULE: the ATTEMPT'S STATE decides, not the submitted set** — "is this paper
+  over?" is a fact about the attempt (completed, or past `ends_at`), and completeness is
+  downstream of it, not a second opinion. Arms now live in **`sitLoadDecision`
+  (`lib/acca/sit-preview.ts`, pure)**, tested `completed → expired → complete → resume`; it
+  returns `phase`/`index`/`finishAttempt`/`expiredOut`/`reportIntro` so the component decides
+  nothing. **`endedOnClock` compares `completed_at` against `ends_at`, NEVER against `now`** —
+  every past paper has `ends_at` in the past when revisited, so a now-based test headlines
+  "Time's up." at someone who finished early; a NULL `completed_at` returns false (unknown beats
+  a false accusation). **The server half was VERIFIED, not assumed:** the fixtures import
+  `caseMarkReady` ACROSS MODULES and pin that a closed attempt with an unreached tail is
+  markable, that the same paper is refused without the flag, and that one still running stays
+  refused. **Also narrowed correctly — the old `else` caught completed attempts too, so a
+  returning student emitted `mock_intro_viewed` while never seeing the intro; those rows were
+  miscounted.** Fixtures `npm run test:sit-preview` (+43; the shipped collapse transcribed as
+  `LEGACY_phase` and pinned MUST-FAIL, state built the way production builds it — `ends_at` from
+  the registry's own `duration_minutes`). **PROVEN LIVE** on a real expired attempt through the
+  real routes (`docs/rollbacks/sit_expired_walk_20260812.json`): OLD → INTRO, NEW → DONE on the
+  served payload, then results 200 marking 3/3 in 27s with the tail reported `not_reached`.
+- **NOTHING RETRIES A FAILED SIT MARKING — `npm run audit:unmarked-sits` (read-only,
+  2026-08-12).** Marking has exactly ONE trigger: the client POSTing `sit/results` from the
+  `done` phase. No queue, no retry beyond a button, **no server-side sweep** — the two crons in
+  `vercel.json` touch no ACCA table — and no observation: there is no "a sit finished" event and
+  the surface telemetry does not cover it. `scripts/audit-unmarked-sits.ts` is that missing
+  observation, committed so it is run rather than rediscovered. It reads a marking row as a
+  RESULT only when `technical_marks_available` is non-null (a NULL is a `claimCase` CLAIM, and
+  counting one as a result reports a crashed run as a marked paper), and resolves entitlement
+  through `hasPaperAccess` so "unmarked because unentitled" is verified. Out of the contract gate
+  by construction — the `audit-` prefix misses `run-contracts.ts`'s `test-*.ts` discovery, so no
+  `EXCLUDED` entry is needed. **THE SWEEP AND THE RETRY ARE LOGGED, NOT BUILT** (Grant-ruled
+  2026-08-12): a cron before the fall-through was fixed treats the symptom.
 - **CASE/MOCK SURFACE TELEMETRY — three events, and only three (built 2026-08-12).**
   `lib/acca/surface-events.ts` (PURE — the closed vocabulary `SURFACE_EVENTS`, the three builders,
   and `parseSurfaceEvent`, so the write shape and the read shape are ONE definition) ·

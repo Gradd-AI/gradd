@@ -2,7 +2,10 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-12 (**THE UNENTITLED SIT NOW SELLS INSTEAD OF LOOKING BROKEN** —
+*Last refreshed: 2026-08-12 (**A TIMED-OUT PAPER SENT THE STUDENT BACK TO THE START SCREEN** —
+`fix/sit-completed-attempt-intro-fallthrough`, pushed, **not merged — awaiting review**. Proven live
+on a real expired attempt. See the ✅ block immediately below, and the two 🔴 items it deliberately
+left open. Earlier same day: **THE UNENTITLED SIT NOW SELLS INSTEAD OF LOOKING BROKEN** —
 `feat/sit-unentitled-upsell`, three 402 dead ends closed, results arm first; a latent bug came out
 with it, where `attempt_closed` was being reported to candidates as saved work. Earlier same day:
 **THE CASE AND MOCK SURFACES ARE INSTRUMENTED — three events, and the
@@ -29,6 +32,56 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
+
+## ✅ CLOSED 2026-08-12 — A TIMED-OUT PAPER WENT BACK TO THE START SCREEN (`fix/sit-completed-attempt-intro-fallthrough`)
+
+**The shape the countdown itself produces had nowhere to go.** A sit that ends on the CLOCK carries
+**`completed=true` AND an incomplete submitted set** — the auto-submit records the requirement being
+written and deliberately does not back-fill the tail, because `not_reached` is a different finding
+from `blank`. `SitRunner`'s load effect tested *"is every slot submitted?"* FIRST and *"is the attempt
+open?"* second, so that pair matched neither arm and fell through the `else` to **`intro`**.
+
+**What the student lost.** Returning to their own timed-out paper they got the **Start screen**: the
+debrief unreachable (the `done` phase is the only route to `sit/results`), the *"I've subscribed —
+mark my paper"* retry unreachable, and a Start click **minting a new attempt** — after which
+`attemptFor` resolves the new one on every later results POST and the old paper's answers are
+unmarkable through the UI for good. A 3h15m sit, recoverable only by hand.
+
+**THE RULE (Grant-ruled 2026-08-12): the ATTEMPT'S STATE decides, not the submitted set.** Arms moved
+to **`sitLoadDecision`** (`lib/acca/sit-preview.ts`, pure), ordered `completed → expired → complete →
+resume`. **`endedOnClock` compares `completed_at` to `ends_at`, never to `now`** — every past paper
+has `ends_at` in the past when revisited. **The server half was VERIFIED not assumed** (cross-module
+`caseMarkReady` fixtures). **The old `else` also mis-emitted `mock_intro_viewed`** for completed
+attempts — intro views recorded for students never shown the intro; those rows were miscounted.
+`npm run test:sit-preview` +43, shipped collapse pinned MUST-FAIL as `LEGACY_phase`. **PROVEN LIVE**:
+`docs/rollbacks/sit_expired_walk_20260812.json` — OLD → INTRO, NEW → DONE on the real served payload,
+results then 200 marking 3/3 in 27s, tail reported `not_reached`, scoped-deleted with zero residue.
+
+## 🔴 OPEN 2026-08-12 — NOTHING RETRIES A FAILED SIT MARKING, AND NOTHING WATCHES
+
+**Logged deliberately, not built** (Grant-ruled 2026-08-12): a cron before the fall-through above was
+fixed would have treated the symptom. Now that it is fixed, these are the two real questions left.
+
+Marking has exactly **one** trigger — the client POSTing `sit/results` from the `done` phase.
+`fetchResults` fires once per mount behind `requestedRef`; a thrown fetch offers a manual button and
+nothing else. **No queue, no backoff, no server-side sweep** (the two crons in `vercel.json` touch no
+ACCA table), and **no observation**: there is no "a sit finished" event and the three surface events
+do not cover it. A closed tab mid-POST leaves a completed attempt with no marking row, silently.
+
+What DOES work, and bounds the risk: a per-case failure returns the cases that marked, a later POST
+re-marks only `casesNeedingMarking`, and `claimCase`'s 5-minute staleness escape makes a crashed run
+recoverable rather than wedged.
+
+- **(a) A SWEEP.** A job that finds closed, entitled, unmarked papers and marks them. The detection
+  half exists and is committed — **`npm run audit:unmarked-sits`**, read-only. Open question is
+  whether a cron should ACT on it, and what it costs to re-mark unattended (paid model calls with no
+  student waiting).
+- **(b) A CLIENT RETRY.** `fetchResults` has no backoff at all. A single bounded retry on a transport
+  failure would cover the commonest case without touching the server.
+
+**Current exposure, measured:** 2 attempts have ever carried answers; 0 closed-entitled-unmarked. No
+real student has been hit. That is the reason this is logged rather than urgent — not a reason to
+believe it cannot happen.
 
 ## ✅ CLOSED 2026-08-12 — THE UNENTITLED SIT WAS A WALL THAT READ AS BROKEN (`feat/sit-unentitled-upsell`)
 

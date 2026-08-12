@@ -4525,3 +4525,53 @@ confidently enough that nobody went and clicked it. **The generalisable rule: "t
 decision" and "the client can explain the decision" are two requirements, and satisfying the first
 says nothing about the second. Delegating a refusal upward obliges the caller to carry the reason
 back down.**
+
+---
+
+## SESSION BANK — 2026-08-12 (c) — THE TIMED-OUT PAPER WENT BACK TO THE START SCREEN
+
+Branch `fix/sit-completed-attempt-intro-fallthrough`. Opened by a diagnosis, not a bug report:
+a read-only sweep of per-(user, LO) state noticed a completed APM sit with no marking row, and
+chasing why produced two corrections and one live defect.
+
+**TWO PREMISES CORRECTED FIRST, both load-bearing.**
+1. `acca_weak_areas` holds 0 rows, but NOT because "the drill path never writes to it". A writer
+   EXISTS and HAS RUN (`lib/acca/case-mark-run.ts`, sit-only). It is empty because the only AFM
+   sit ever marked banded `nothing` on all 8 requirements — a blank paper — and `nothing` is the
+   deliberate no-write band. The three earlier APM markings scored full marks (resolving bands,
+   which close rows and open none). The ledger has never had a non-blank, non-perfect sit to record.
+2. The IB `weak_areas` writer RUNS — 12 rows, 4 open, written 2026-06-06→06-16 by
+   `app/api/session/message/route.ts` from `signals.weakAreaFlags`. "A writer that never ran"
+   described IB BEFORE its own fix. There is no IB fix to port; the shapes differ (IB stores a
+   model-emitted named misconception, ACCA a code-derived band on an LO).
+
+**THE UNMARKED SIT WAS THE 402 ARM WORKING**, as Grant said. `apm-sit-walk@gradd.ai` created
+10:52:43, sat 10:55, finished 10:56:29. `mock_intro_viewed` fired at 10:55:01, so the sit served
+200 and they WERE entitled while sitting; entitlement was removed before the results POST. That is
+precisely the mid-sit-lapse case `feat/sit-unentitled-upsell` was built for. Answers durable, 7/7.
+
+**THE REAL DEFECT, found by tracing whether an expired paper could still be marked.** A sit ending
+on the CLOCK carries `completed=true` AND an incomplete submitted set. `SitRunner`'s load effect
+asked "is every slot submitted?" first, so that pair matched neither arm and fell to `else` →
+`intro`. A returning student got the Start screen — debrief unreachable, subscribe-and-mark retry
+unreachable, and a Start click minted a new attempt that made the old paper unmarkable through the
+UI for good. Grant ruled the fix: **completed is the fact that decides**.
+
+**WHAT SHIPPED.** `sitLoadDecision` + `endedOnClock` (`lib/acca/sit-preview.ts`, pure), arms ordered
+`completed → expired → complete → resume`. `endedOnClock` compares `completed_at` to `ends_at`,
+never to `now`. Server half VERIFIED rather than assumed — cross-module `caseMarkReady` fixtures
+prove a closed attempt with an unreached tail is markable and that the same paper is refused
+without the flag. `mock_intro_viewed` narrowed: the old `else` emitted it for completed attempts,
+so some intro views were recorded for students never shown the intro. `npm run test:sit-preview`
++43, shipped collapse transcribed as `LEGACY_phase` and pinned MUST-FAIL, state built the way
+production builds it (`ends_at` from the registry's own `duration_minutes`).
+
+**PROVEN LIVE, as instructed** (`docs/rollbacks/sit_expired_walk_20260812.json`): real routes, real
+expired attempt, `perpaper-test@gradd.ai`, 3 of 7 answered. `OLD arms → INTRO, NEW arms → DONE` on
+the real served payload; results then 200, 3/3 cases marked in 27s (6 model calls), tail reported
+`not_reached`. Scoped-deleted, zero residue, auth user left in place (funnel FK is SET NULL).
+
+**LOGGED, NOT BUILT** (Grant's call): the sweep and the client retry. Nothing retries a failed sit
+marking and nothing watches — one trigger, no cron, no event. The DETECTION half is committed as
+`npm run audit:unmarked-sits` so it is run rather than rediscovered. Current exposure measured at
+0 closed-entitled-unmarked papers. Open items in `AFM_SURFACED.md`.
