@@ -4400,3 +4400,63 @@ scoped-deleted, zero residue verified.
 makes every branch of the waiver machinery unreachable — so the arms moved into `verdictFor` and are
 driven by synthetic findings (P-G3): a whole-file waiver over a clean file and a per-literal waiver
 matching nothing must both go RED. The two case server pages joined `SURFACES` (P-G2).
+
+---
+
+## SESSION 2026-08-12 — THE CASE AND MOCK SURFACES GET EYES (`feat/case-mock-surface-events`)
+
+**DIAGNOSED FIRST, ON INSTRUCTION, AND THE DIAGNOSIS SIZED THE BUILD DOWN FROM TWELVE MOMENTS TO
+THREE.** Grant asked what analytics existed, what the meaningful moments were, what existing rows
+already answer, and whether *opened-and-bounced* could be told from *never-opened*.
+
+**What existed:** one table (`acca_funnel_events`, hand-created, no migration file), one sink
+(`POST /api/acca/event` — auth-free, validates shape not vocabulary, trusts a client-supplied
+`user_id`), one emitter (`app/acca/tutor/TutorChat.tsx`, 9 `fireEvent` sites). Six live event types
+plus two already ruled dead. **504 rows, of which 87 have NEITHER `user_id` NOR `anon_id`** — ~17%
+of the corpus unattributable, because the sink coerces a bad identity to null and inserts anyway.
+No other analytics anywhere: no `@vercel/analytics`, and **Vercel Web Analytics is not enabled** for
+the project (`get_web_analytics` → 404 "Web Analytics not found"), so there are zero pageviews on
+record, ever.
+
+**The answer to the question asked: NO, and structurally.** Nothing writes a row on OPEN — the case
+GET/list/sit routes contain no insert/upsert/update, the first case row needs a turn (practice) or a
+submit (sit), and the first mock row needs the Start click. Ruled out the easy explanation before
+concluding: the flag is ON in production (unauthenticated `/api/acca/case/list?paper=AFM` → **401**,
+and both routes check `APM_CASES` before auth, so flag-off would be 404), and both surfaces are
+linked from `ACCADashboard`. So the student could have looked and we cannot tell.
+
+**The student it was actually about:** "Aubrey" matches no row in `profiles` / `acca_leads` /
+`resit_leads` / `waitlist` / `org_memberships` / `orgs` and no file in the repo — flagged rather than
+guessed. The only live account fitting the question is `maphosaan@gmail.com` (`dd786100`), APM pass
+to 2026-10-31, 18 active days 2026-07-13 → 2026-08-07, 42 `drill_shown`, 38 tutor messages over 5
+drills, and zero rows on every case and mock table. **No event added now recovers July** — which is
+the argument for instrumenting before the next student, not after.
+
+**BUILT: exactly three** — `case_list_viewed`, `case_opened`, `mock_intro_viewed`. Everything else
+was refused as reconstructable from a stored row; the eight moments left open on purpose, with the
+reason each was declined, are listed in `AFM_SURFACED.md`. Module map, the case-identity ruling
+(`metadata` jsonb, not `drill_lo`, not new columns), the two-sinks-refuse-each-other rule, and the
+claim ceiling are all in `CLAUDE.md`'s CODE MAP.
+
+**Two measured caveats banked, both of which make existing rows say less than they appear to.**
+`acca_case_progress.submitted_at` is SIT-ONLY (37 rows, 8 populated — exactly the 8 sit rows; every
+practice row NULL). `acca_mock_attempts.completed_at` is only trustworthy FORWARD (8 of 12 attempts
+are `completed=true` with NULL `completed_at`, predating the column being written), so no duration is
+recoverable for any pre-sit-loop attempt.
+
+**WALKED LIVE END TO END** (local dev with `APM_CASES=1` — the flag is **not** in `.env.local` —
+against the live DB; synthetic user, scoped-deleted, 504 rows before and after, zero residue). Four
+rows, all with `user_id` populated and `anon_id`/`drill_lo` NULL, one per view despite React Strict
+Mode. The walk user finished with **0 rows on `acca_case_progress`/`acca_mock_attempts`/
+`acca_case_marking`** — it WAS the opened-and-bounced case, and that is the state that used to leave
+no trace. Every refusal path probed live and wrote nothing: unauthenticated → 401; surface event at
+the old sink → 400; typo'd metadata key → 400 naming the key; APM `mock_id` declared AFM → 400; a
+client-supplied `user_id` for ANOTHER user → 400. Drill events at the old sink still 200 (regression
+control, row deleted). Evidence: `docs/rollbacks/surface_events_walk_20260812.json`.
+
+**52 fixtures** (`npm run test:surface-events`), discovered automatically by the contract gate —
+56 pure fixtures now pass, up from 55. P-G3: three plausible-but-wrong parsers are PINNED as
+MUST-FAIL (a lenient key check, independent mock/paper validation, and an echoing parser), because
+the defect class here is a row that lands looking fine and means nothing. P-G6: every accepted case
+goes through `JSON.parse(JSON.stringify(builder(...)))` — the wire trip an emitter performs — never a
+hand-written literal, and the mock lookup is the REAL `getMockPaper`, not a stub.

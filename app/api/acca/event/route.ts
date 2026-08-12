@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/server';
+import { isSurfaceEventType, SURFACE_EVENTS } from '@/lib/acca/surface-events';
 
 // ── The ACCA funnel event sink ────────────────────────────────────────────────
 // `event_type` is a free string by design — this route validates shape, not vocabulary.
@@ -44,6 +45,29 @@ export async function POST(request: Request): Promise<Response> {
 
   if (typeof event_type !== 'string' || !event_type) {
     return NextResponse.json({ error: 'event_type required' }, { status: 400 });
+  }
+
+  // ── THE CASE/MOCK SURFACE EVENTS DO NOT COME THROUGH THIS DOOR (added 2026-08-12) ──
+  // This route is intentionally AUTH-FREE (it serves the anonymous pre-signup drill funnel)
+  // and it trusts a client-supplied `user_id`. Both are correct here and both are wrong for an
+  // event that is a claim about an identified student's work, so the surface events have their
+  // own authed sink at /api/acca/surface-event, which derives `user_id` from the session.
+  //
+  // Refused rather than quietly accepted, because accepting would defeat the guarantee at the
+  // other door: a caller who reached this one — by copying the older `fireEvent` helper, most
+  // likely — would write a surface event with a forgeable or NULL identity, and nothing
+  // downstream could tell those rows from the attributable ones. The two sinks refuse each
+  // other's vocabulary; the closed list in surface-events.ts is the single definition of which
+  // is which.
+  if (isSurfaceEventType(event_type)) {
+    return NextResponse.json(
+      {
+        error: `${event_type} must be sent to /api/acca/surface-event (authed sink — `
+          + `server-derived user_id). This route is for the drill funnel only. `
+          + `Surface events: ${SURFACE_EVENTS.join(', ')}`,
+      },
+      { status: 400 },
+    );
   }
 
   const supabase = createServiceClient();

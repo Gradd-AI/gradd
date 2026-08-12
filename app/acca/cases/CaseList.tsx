@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 import type { AccaPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { caseSectionName } from '@/lib/acca/case-surface';
+import { caseListViewed } from '@/lib/acca/surface-events';
+import { emitSurfaceEvent } from '@/lib/acca/surface-event-client';
 
 interface CaseRow {
   id: string;
@@ -30,6 +32,11 @@ export default function CaseList({ paper }: { paper: AccaPaper }) {
   // Where "back to the hub" goes, carrying the paper — same rule as every other ACCA
   // link (lib/acca/paper-url.ts); APM stays byte-identical to the bare '/acca'.
   const hubHref = paperHref('/acca', paper);
+  // Which paper this mount has already reported a view for. Guards React's Strict Mode
+  // double-invoke, and keys on the PAPER rather than a bare boolean so switching
+  // /acca/cases?paper=… without a remount still reports the second list as a second view —
+  // it is one.
+  const viewReported = useRef<AccaPaper | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,6 +54,20 @@ export default function CaseList({ paper }: { paper: AccaPaper }) {
         }
         const json = await res.json();
         if (!cancelled) setCases((json.cases ?? []) as CaseRow[]);
+        // ── case_list_viewed — ON SUCCESS ONLY, AND THAT IS THE POINT ──────────
+        // Not on mount: the 404 arm above redirects to /acca, and counting a flag-off
+        // bounce-through as "viewed the case list" would put a false positive in the one
+        // metric that exists to tell looked-and-left from never-looked. Nor on the !ok arm —
+        // an error page is not a case list. This fires exactly where the list is about to
+        // render, so the row means what its name says.
+        //
+        // AFTER the cancelled check but NOT gated on it: an unmount mid-flight must not
+        // write state, and the view still happened. Locked users are included by design —
+        // browsing the list is the act being measured, not entitlement.
+        if (viewReported.current !== paper) {
+          viewReported.current = paper;
+          emitSurfaceEvent(caseListViewed(paper));
+        }
       } catch {
         if (!cancelled) setError(true);
       }

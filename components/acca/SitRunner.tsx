@@ -11,6 +11,8 @@ import {
 } from '@/lib/acca/sit-preview';
 import type { AccaPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
+import { mockIntroViewed } from '@/lib/acca/surface-events';
+import { emitSurfaceEvent } from '@/lib/acca/surface-event-client';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 
 // ── Lean sit runner — BOTH PAPERS (generalised 2026-07-30) ────────────────────
@@ -184,6 +186,11 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   // Purely for what the done screen SAYS — it changes nothing about what was recorded.
   const [expiredOut, setExpiredOut] = useState(false);
   const autoSubmitRef = useRef(false);
+  // Which mock paper this mount has already reported an intro view for. The load effect's
+  // `cancelled` flag usually absorbs React's Strict Mode double-invoke, but only if the fetch
+  // resolves AFTER cleanup — a warm cache can beat it. Keyed on the mock id, like CaseList's
+  // paper key and CaseSession's case key.
+  const introReported = useRef<string | null>(null);
 
   const slots = useMemo(() => data?.slots ?? [], [data]);
   const slotIds = useMemo(() => slots.map((s) => s.requirement_id), [slots]);
@@ -224,6 +231,26 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
           }
         } else {
           setPhase('intro');
+          // ── mock_intro_viewed — THE MOCK'S ANSWER TO THE CASE BOUNCE QUESTION ──
+          // This arm is the ONLY route to the start screen: no attempt at all, or the last one
+          // completed. Reaching it means the student loaded the paper, saw "3h 15m", and has
+          // not clicked Start — and until now that left NO ROW ANYWHERE, because
+          // acca_mock_attempts is written only by the Start click below. Opening the mock and
+          // closing the tab was indistinguishable from never opening it.
+          //
+          // Deliberately NOT fired on the other three arms, which are different findings and
+          // already have rows: `done` (a complete paper), the expired-out branch (an attempt
+          // whose clock ran out), and the resume branch (an open attempt) all have an
+          // acca_mock_attempts row that says so.
+          //
+          // The mock_id and paper come from the SERVED config (`json.paper`), never from the
+          // `paper` prop or a literal — the same discipline recordAnswer follows, and the
+          // server cross-checks that the two agree (a mock_id whose paper contradicts the
+          // stated paper is refused rather than stored).
+          if (introReported.current !== json.paper.id) {
+            introReported.current = json.paper.id;
+            emitSurfaceEvent(mockIntroViewed(json.paper.id, json.paper.paper));
+          }
         }
       } catch {
         if (!cancelled) setPhase('error');

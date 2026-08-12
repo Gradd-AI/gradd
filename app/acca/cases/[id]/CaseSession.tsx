@@ -9,6 +9,8 @@ import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 import type { AccaPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
+import { caseOpened } from '@/lib/acca/surface-events';
+import { emitSurfaceEvent } from '@/lib/acca/surface-event-client';
 
 // ── Types (client-safe subset of the case/turn + case load responses) ──────────
 interface Exhibit { exhibit_order: number; title: string | null; body: string | null }
@@ -166,6 +168,9 @@ export default function CaseSession({
   const [markingIncomplete, setMarkingIncomplete] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  // Which case id this mount has already reported opening. Keyed on the id, not a boolean,
+  // for the same reason CaseList keys on the paper: the effect re-runs when `caseId` changes.
+  const openReported = useRef<string | null>(null);
 
   // ── Initial case load ──
   useEffect(() => {
@@ -222,12 +227,33 @@ export default function CaseSession({
           setMessagesByReq({ [active.id]: [opening] });
         }
         setLoaded(true);
+        // ── case_opened — THE SUCCESS PATH ONLY ───────────────────────────────
+        // Reached only once the case itself is served, so the row means "this case was in
+        // front of them". The three earlier arms are deliberately silent and each for its own
+        // reason: 404 is a redirect to /acca (nothing was opened), !ok is an error page, and
+        // 402 shows a SUBSCRIBE UPSELL rather than a case — that one is a real funnel moment
+        // but it is `case_locked_upsell_shown`, which was explicitly not built, and quietly
+        // folding it in here would make this row mean two different things.
+        //
+        // CLIENT-SIDE, not from the server component that renders this one, and that is a
+        // decision rather than convenience: a Next <Link> prefetch renders the RSC payload on
+        // hover, so a server-side emit would report a case as opened by a student who only
+        // moved their mouse past it. An overcount is the one error a bounce metric cannot
+        // absorb.
+        //
+        // Skipped when `embedded` — no caller passes it today (MockRunner is deleted, and this
+        // component is unambiguously the practice surface again), but if the embedded path is
+        // ever revived its views belong to the mock surface, not to this one.
+        if (!embedded && openReported.current !== caseId) {
+          openReported.current = caseId;
+          emitSurfaceEvent(caseOpened(caseId, paper));
+        }
       } catch {
         if (!cancelled) { setLoadError(true); setLoaded(true); }
       }
     })();
     return () => { cancelled = true; };
-  }, [caseId, paper, router]);
+  }, [caseId, paper, router, embedded]);
 
   const activeReq = useMemo(
     () => requirements.find((r) => r.id === activeReqId) ?? null,

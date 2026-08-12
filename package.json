@@ -71,6 +71,7 @@
     "test:product-router": "tsx scripts/test-product-router.ts",
     "test:paper-url": "tsx scripts/test-paper-url.ts",
     "test:paper-link-sweep": "tsx scripts/test-paper-link-sweep.ts",
+    "test:surface-events": "tsx scripts/test-surface-events.ts",
     "test:signout-destination": "tsx scripts/test-signout-destination.ts",
     "test:acca-landing-config": "tsx scripts/test-acca-landing-config.ts",
     "test:entitlement-cta": "tsx scripts/test-entitlement-cta.ts",
