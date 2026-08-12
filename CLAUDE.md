@@ -665,6 +665,42 @@ when the session ends on a branch.
   resolves, so `includes('ACCA AFM')` fails on correct output AND `!includes('ACCA APM')` passes on
   any output. Walk it in a real browser; and strip React's `<!-- -->` text/expression separator
   before asserting on `ACCA {paper}` (P-G3(a)).
+- **THE UNENTITLED SIT SOLD NOTHING — three dead ends, one root cause (fixed 2026-08-12).**
+  A 402 `subscription_required` reached the sit surface at THREE points and all three collapsed
+  into copy that told the student to retry something that could never succeed: load →
+  *"Couldn't load the paper. Reload to try again."* · mid-sit write → *"That didn't save. Press
+  submit again."* · **results → *"Marking did not complete… try again"* under a "Try marking
+  again" button, AFTER a 3h15m paper had been sat.** Root cause was type-shaped in both places:
+  `Phase` had no member for "refused, and why", and `recordAnswer` returned a BARE BOOLEAN
+  (`res.ok || res.status === 409`), so no caller could have told 402 from 500.
+  **Mapping is now PURE and fixtured — `lib/acca/sit-preview.ts`:** `sitRefusalFor` (402 →
+  `paper_locked`, 404 → `not_available`, else `failed`; **401 is deliberately `failed`** because
+  the mock PAGE redirects server-side so "reload" IS honest for it) · `sitPhaseForRefusal` ·
+  `resultsOutcomeFor(status, code)` — **two args because `paper_not_finished` is itself a 409**,
+  so status alone cannot decide it · `sitWriteOutcomeFor(status, code)` → discriminated.
+  ⚠️ **THE BOOLEAN WAS WRONG, NOT MERELY UNINFORMATIVE:** `case/turn` returns 409 for
+  `already_submitted` (saved), `attempt_closed` AND `no_open_attempt` (both refusals) — the last
+  two were reported to the student **as saved work**. Now refusals; `attempt_closed` sends the
+  runner to the results instead of leaving "press submit again" up forever. An UNKNOWN 409 is
+  `failed`, the safe and self-correcting direction (a retry on a landed write returns
+  `already_submitted` → saved; claiming saved has no recovery).
+  **COPY REGISTER IS CaseSession's, NOT A NEW ONE** — that surface already sells from this exact
+  status code, and one status code must not get two voices. **Mid-sit lapse = PRESERVE, THEN
+  SELL:** phase stays `sitting`, subscribe opens in a **NEW TAB** (the in-progress answer lives
+  only in React state, so navigating this tab is the one thing that would destroy it), the
+  existing Submit button IS the retry, and the banner **says the clock does not stop** — `ends_at`
+  is server-authoritative and pausing it would let a candidate stop a timed exam by letting a card
+  lapse. Amber, not the red of `.sit-err`: a lapse is not a fault.
+  **RESULTS ARM LEADS WITH THE WORK BEING SAFE**, then the subscription — verified literally true
+  (8/8 answers durable, attempt-linked, `submitted_at` set) before the copy was written. Retry
+  re-labelled *"I've subscribed — mark my paper"*. Fixtures: `npm run test:sit-preview`
+  (+43 checks, **P-G3 pins all three shipped collapses as MUST-FAIL**).
+  **Two comments CORRECTED because they asserted this already worked:**
+  `app/acca/afm/mock/page.tsx` ("the runner renders its own error state" — it could not say WHY)
+  and `ACCADashboard.tsx` (**"That is an upsell, not a leak"** — the not-a-leak half was true, the
+  upsell half was false for the surface's whole life). **Generalisable:** *"the API owns the
+  decision"* and *"the client can explain the decision"* are TWO requirements, and satisfying the
+  first says nothing about the second.
 - **CASE/MOCK SURFACE TELEMETRY — three events, and only three (built 2026-08-12).**
   `lib/acca/surface-events.ts` (PURE — the closed vocabulary `SURFACE_EVENTS`, the three builders,
   and `parseSurfaceEvent`, so the write shape and the read shape are ONE definition) ·

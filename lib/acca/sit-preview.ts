@@ -235,6 +235,110 @@ export function attemptIsClosed(
   return isExpired(attempt.ends_at, nowMs);
 }
 
+// ── A NON-200 IS NOT ONE THING (added 2026-08-12) ────────────────────────────
+// Every sit request used to collapse to a single boolean at the client boundary:
+//   load       `if (!res.ok) { setPhase('error'); return; }`
+//   write      `return res.ok || res.status === 409;`
+//   results    `json?.error === 'paper_not_finished' ? … : <generic>`
+// So a 402 `subscription_required` — the ONE refusal a student can act on — arrived as
+// "Couldn't load the paper. Reload to try again.", "That didn't save. Press submit again.",
+// and "Marking did not complete. Try again." All three instruct a retry that CANNOT succeed,
+// at the highest-intent moment in the product, and the worst of them fires after a 3h15m
+// paper has already been sat.
+//
+// The root cause was type-shaped in both places: the phase union had no member for
+// "refused, and here is why", and the write helper returned a bare boolean, so no caller
+// could have distinguished 402 from 500 even if it wanted to. These three functions give the
+// client the vocabulary; they are pure so the mapping is fixtured rather than eyeballed.
+//
+// THE PRACTICE SURFACE ALREADY SELLS FROM THIS EXACT STATUS CODE — app/acca/cases/[id]/
+// CaseSession.tsx handles 402 twice (a load-time upsell and a mid-session lapse line). The
+// sit surface reuses that copy register deliberately; a second voice for one status code is
+// how a product ends up with two apologies for the same thing.
+
+/** Why a sit request was refused. `paper_locked` is the only one a student can act on. */
+export type SitRefusal = 'paper_locked' | 'not_available' | 'failed';
+
+/**
+ * Map an HTTP status from the sit READ endpoint to a refusal.
+ *
+ * 401 is deliberately `failed` rather than its own kind: the mock PAGE redirects an
+ * unauthenticated visitor to /acca/auth server-side, so a reload genuinely does resolve a
+ * session that expired mid-flight — "reload to try again" is the correct instruction for it,
+ * which is not true of any other non-200.
+ */
+export function sitRefusalFor(status: number): SitRefusal {
+  if (status === 402) return 'paper_locked';
+  if (status === 404) return 'not_available';   // flag off, or the paper is not servable
+  return 'failed';
+}
+
+/**
+ * Which phase a refusal lands in. `paper_locked` is the ONLY refusal that is not an error —
+ * it is a state the student can leave, so it gets its own screen and its own copy.
+ *
+ * Returns the narrow pair rather than the runner's full `Phase` union so this module stays
+ * free of any component import; `Phase` is a superset, so the assignment typechecks.
+ */
+export function sitPhaseForRefusal(refusal: SitRefusal): 'locked' | 'error' {
+  return refusal === 'paper_locked' ? 'locked' : 'error';
+}
+
+/** What the results endpoint said. `ok` means a debrief came back. */
+export type ResultsOutcome = 'ok' | 'paper_locked' | 'not_finished' | 'failed';
+
+/**
+ * Map (status, error code) from /api/acca/sit/results.
+ *
+ * `paper_not_finished` arrives as 409, NOT 4xx-generic, so the code is load-bearing and the
+ * status alone cannot decide this. `no_attempt` is also a 409 and is folded into `failed`
+ * ON PURPOSE: the runner only ever fetches results from the `done` phase, which is reached
+ * either by submitting the last requirement or by returning to an attempt that exists — so
+ * "no attempt to mark" cannot arise from the runner's own flow, and inventing copy for it
+ * would be describing a state to the student that their session cannot be in.
+ */
+export function resultsOutcomeFor(status: number, errorCode?: string | null): ResultsOutcome {
+  if (status >= 200 && status < 300) return 'ok';
+  if (status === 402) return 'paper_locked';
+  if (status === 409 && errorCode === 'paper_not_finished') return 'not_finished';
+  return 'failed';
+}
+
+/**
+ * What a sit ANSWER WRITE did. Discriminated, because the two failure kinds need opposite
+ * things from the student: `paper_locked` needs an action that will make a retry work, and
+ * `attempt_closed` means the paper is over and there is nothing left to retry at all.
+ */
+export type SitWriteOutcome =
+  | { ok: true; alreadySubmitted: boolean }
+  | { ok: false; reason: 'paper_locked' | 'attempt_closed' | 'failed' };
+
+/**
+ * Map (status, error code) from POST /api/acca/case/turn with `sitting:true`.
+ *
+ * ⚠️ THIS CORRECTS A REAL MIS-READING, not just the copy. The old rule was
+ * `res.ok || res.status === 409`, and that route returns 409 for THREE different things:
+ * `already_submitted` (the answer IS recorded — success, and the reason the 409 arm existed),
+ * `attempt_closed`, and `no_open_attempt` (both refusals). The last two were being reported
+ * to the student as saved work. They are now failures.
+ *
+ * An UNRECOGNISED 409 is `failed`, which is the safe direction and is self-correcting: if the
+ * answer had in fact landed, pressing submit again returns `already_submitted` and reads as
+ * saved. Reporting an unknown refusal as saved has no such recovery.
+ */
+export function sitWriteOutcomeFor(status: number, errorCode?: string | null): SitWriteOutcome {
+  if (status >= 200 && status < 300) return { ok: true, alreadySubmitted: false };
+  if (status === 402) return { ok: false, reason: 'paper_locked' };
+  if (status === 409) {
+    if (errorCode === 'already_submitted') return { ok: true, alreadySubmitted: true };
+    if (errorCode === 'attempt_closed' || errorCode === 'no_open_attempt') {
+      return { ok: false, reason: 'attempt_closed' };
+    }
+    return { ok: false, reason: 'failed' };
+  }
+  return { ok: false, reason: 'failed' };
+}
+
 // H:MM:SS. A DURATION formatter — it renders both directions (time remaining on the running
 // clock, and any elapsed figure) because a duration is a duration. Clamped at zero so clock
 // skew can never render a negative time.

@@ -2,8 +2,11 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-12 (**THE CASE AND MOCK SURFACES ARE INSTRUMENTED — three events, and the
-other eight moments are open ON PURPOSE.** `feat/case-mock-surface-events` — see the ✅ block below.
+*Last refreshed: 2026-08-12 (**THE UNENTITLED SIT NOW SELLS INSTEAD OF LOOKING BROKEN** —
+`feat/sit-unentitled-upsell`, three 402 dead ends closed, results arm first; a latent bug came out
+with it, where `attempt_closed` was being reported to candidates as saved work. Earlier same day:
+**THE CASE AND MOCK SURFACES ARE INSTRUMENTED — three events, and the
+other eight moments are open ON PURPOSE.** `feat/case-mock-surface-events` — see the ✅ blocks below.
 Previously: 2026-08-11 (**THE BLOG NOW HAS AFM, AND THE ARCHIVE GOOGLE INDEXES IS NO LONGER
 FILED AS IB.** `fix/blog-subject-afm-and-neutral-archive` — see the ✅ block below. Earlier same
 day: **DEFECT (a) IS CLOSED — `/acca/cases` SERVES BOTH PAPERS.** Grant
@@ -26,6 +29,53 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
+
+## ✅ CLOSED 2026-08-12 — THE UNENTITLED SIT WAS A WALL THAT READ AS BROKEN (`feat/sit-unentitled-upsell`)
+
+**Three dead ends from one status code, and all three told the student to retry something that
+could never succeed.** A 402 `subscription_required` reaches the sit surface at the load, the
+mid-sit write and the results POST. Every one collapsed to generic copy: *"Reload to try again"*,
+*"press submit again"*, and — worst — *"Marking did not complete… try again"* under a **"Try marking
+again"** button, on a screen only reachable AFTER a 3h15m paper has been sat. Ordered results-first
+on Grant's instruction: it is the one where the work is already done.
+
+Root cause was type-shaped, not copy-shaped: `Phase` had no member for "refused, and why", and
+`recordAnswer` returned a bare boolean. Mapping is now pure in `lib/acca/sit-preview.ts` and
+fixtured (+43 checks, P-G3 pins all three shipped collapses as MUST-FAIL). Details, the copy-register
+rule, and the mid-sit preserve-then-sell choice are in `CLAUDE.md`'s CODE MAP.
+
+**⚠️ A LATENT CORRECTNESS BUG CAME OUT WITH IT.** `res.ok || res.status === 409` was not merely
+uninformative — `case/turn` returns 409 for `already_submitted` (saved) **and** `attempt_closed`
+**and** `no_open_attempt` (both refusals), so the last two were being reported to the candidate as
+**saved work**. They are refusals now, and `attempt_closed` routes to the results rather than
+leaving "press submit again" on screen indefinitely.
+
+**Walked live** (local dev, real routes, real 402s, synthetic user, scoped-deleted — 504 funnel rows
+and 87 orphans before and after, no new orphans because the funnel rows were deleted before the auth
+user, per the FK hazard banked in the new migration the same day):
+- load unentitled → the locked screen, `/acca/subscribe?paper=AFM`, no red, no "reload"
+- lapse mid-paper → the amber banner, **answer still in the box**, still on requirement 1, clock
+  still counting (3:14:23), link `target="_blank"`
+- re-grant → **submit again advanced to requirement 2** — so "press submit again" is now true advice
+- full paper submitted → results 402 → *"Your paper is saved"* screen; verified literally true
+  (8/8 answers durable, attempt-linked, `submitted_at` set) and **0 marking rows, so no model spend**
+- retry against the REAL endpoint (entitlement revoked) → lands on the locked screen, not the generic
+
+**Two false comments corrected.** `app/acca/afm/mock/page.tsx` claimed the runner rendered its own
+error state (it could not say WHY), and `ACCADashboard.tsx` concluded **"That is an upsell, not a
+leak"** — the not-a-leak half true, the upsell half false for the surface's whole life, asserted
+confidently enough that nobody clicked it. **The generalisable rule: "the API owns the decision" and
+"the client can explain the decision" are two requirements.**
+
+### 🟡 STILL OPEN — narrow, and named rather than left implicit
+
+- **`/acca/mock` (APM) shares every fix** (one component), but the walk was AFM-only. The APM path
+  differs in nothing but the `paper` prop; not separately clicked.
+- **The Timed mock card still renders for unentitled students by design.** It is now a real upsell,
+  but it remains an unconditional card — no locked affordance on the dashboard itself.
+- **`no_attempt` (409) at results is folded into `failed`** on purpose: the runner only fetches
+  results from the `done` phase, so it cannot arise from its own flow. If a future entry point can
+  reach results without an attempt, it needs its own copy.
 
 ## ✅ CLOSED 2026-08-12 — OPENED-AND-BOUNCED WAS INDISTINGUISHABLE FROM NEVER-OPENED (`feat/case-mock-surface-events`)
 
