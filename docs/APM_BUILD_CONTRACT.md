@@ -4471,3 +4471,57 @@ MUST-FAIL (a lenient key check, independent mock/paper validation, and an echoin
 the defect class here is a row that lands looking fine and means nothing. P-G6: every accepted case
 goes through `JSON.parse(JSON.stringify(builder(...)))` — the wire trip an emitter performs — never a
 hand-written literal, and the mock lookup is the REAL `getMockPaper`, not a stub.
+
+**② THE UNENTITLED SIT DEAD END (`feat/sit-unentitled-upsell`).** Diagnosed before building, on
+instruction. A 402 `subscription_required` reaches the sit surface at three points — the load
+(`GET /api/acca/sit`), the mid-sit write (`case/turn`, `sitting:true`) and the results POST — and
+every one collapsed into copy instructing a retry that cannot succeed. Built results-first because
+that screen is only reachable after a 3h15m paper has been sat.
+
+Root cause was TYPE-shaped, not copy-shaped, in both places: `Phase` had no member for "refused, and
+why", and `recordAnswer` returned a bare boolean, so no caller could have distinguished 402 from 500
+even if it had wanted to. The mapping is now four pure functions in `lib/acca/sit-preview.ts`,
+fixtured with +43 checks and P-G3 pins on all three shipped collapses.
+
+**A LATENT CORRECTNESS BUG SURFACED WHILE DOING IT, and it is the more serious finding.**
+`res.ok || res.status === 409` was not just uninformative. `case/turn` returns 409 for
+`already_submitted` (the answer IS recorded — the reason that arm existed), `attempt_closed` and
+`no_open_attempt`. The latter two are REFUSALS and were being reported to the candidate as saved
+work — a sit answer they believed was banked and was not. Both are refusals now, an unknown 409 is a
+failure (safe and self-correcting: a retry on a landed write returns `already_submitted`), and
+`attempt_closed` routes to the results rather than leaving "press submit again" up forever.
+
+**Mid-sit lapse: PRESERVE, THEN SELL.** Phase stays `sitting`; the subscribe link opens in a NEW TAB
+because the in-progress answer exists only in React state and navigating the tab is the one thing
+that destroys it; the existing Submit button IS the retry; and the banner states that the clock does
+NOT stop. Pausing was considered and refused — `ends_at` is server-authoritative and a pausable clock
+would let a candidate stop a timed exam by letting a card lapse, which changes what a timed sit
+means. Rendered amber, not the red of `.sit-err`: a lapse is not a fault, and colouring it as one is
+what taught the student to read a solvable state as a broken one.
+
+**WALKED LIVE**, real routes, real 402s at all three endpoints, synthetic user, scoped-deleted with
+504 funnel rows and 87 orphans before and after — no new orphans, because the funnel rows were
+deleted before the auth user per the `ON DELETE SET NULL` hazard banked in the migration written
+hours earlier. Load unentitled → locked screen with `/acca/subscribe?paper=AFM`. Lapse mid-paper →
+amber banner, answer still in the box, still on requirement 1, clock still at 3:14:23. Re-grant →
+**submit again advanced to requirement 2**, so the banner's instruction is true advice. Full paper
+submitted → results 402 → "Your paper is saved", verified literally true (8/8 answers durable,
+attempt-linked, `submitted_at` set) with **0 marking rows, so no model spend**. Retry against the
+REAL endpoint with entitlement revoked → the locked screen, not the generic.
+
+⚠️ **ONE HARNESS ARTEFACT WORTH BANKING, because it looked exactly like a bug.** `delete window.fetch`
+does NOT restore the native fetch in Chrome — it removes it entirely, so the next call throws and
+the runner correctly showed its transport-failure copy. Read as "the real 402 falls through to the
+generic arm" for about a minute. Recover a pristine fetch from a hidden same-origin iframe
+(`f.contentWindow.fetch.bind(window)`) instead; re-run then produced the locked screen from a real
+402. Check `typeof window.fetch` before believing a client-side finding obtained this way.
+
+**Two comments corrected because they asserted the broken thing already worked.**
+`app/acca/afm/mock/page.tsx` ended "the runner renders its own error state when the API refuses" and
+treated that as sufficient — the single-source-of-truth reasoning was right, but nobody checked
+whether that state could say WHY. `ACCADashboard.tsx` concluded **"That is an upsell, not a leak"**:
+the not-a-leak half was true and the upsell half was false for this surface's entire life, asserted
+confidently enough that nobody went and clicked it. **The generalisable rule: "the API owns the
+decision" and "the client can explain the decision" are two requirements, and satisfying the first
+says nothing about the second. Delegating a refusal upward obliges the caller to carry the reason
+back down.**
