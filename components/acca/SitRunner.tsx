@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   fmtDuration,
+  // `isPaperComplete` is no longer imported here: completeness is one input to
+  // `sitLoadDecision` and is not a screen decision on its own any more.
   nextUnsubmittedIndex,
-  isPaperComplete,
   remainingMs,
   isExpired,
   clockState,
@@ -12,6 +13,7 @@ import {
   sitPhaseForRefusal,
   resultsOutcomeFor,
   sitWriteOutcomeFor,
+  sitLoadDecision,
   type SitRefusal,
   type SitWriteOutcome,
 } from '@/lib/acca/sit-preview';
@@ -163,7 +165,17 @@ interface Slot {
   marks: number | null;
   question: string;
 }
-interface Attempt { mock_id: string; started_at: string; ends_at: string; completed: boolean }
+// `completed_at` is served by the sit GET (lib/acca/sit-attempt.ts selects it) and is what
+// distinguishes a paper that ran out of time from one that was finished early — see
+// `endedOnClock`. Optional because POST {action:'start'} returns a narrower row that does not
+// include it; that row is always an OPEN attempt, where the field would be null anyway.
+interface Attempt {
+  mock_id: string;
+  started_at: string;
+  ends_at: string;
+  completed: boolean;
+  completed_at?: string | null;
+}
 interface PaperData {
   paper: { id: string; paper: AccaPaper; title: string; duration_minutes: number };
   cases: SitCase[];
@@ -244,49 +256,57 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
 
         const done = new Set(json.submitted);
         const ids = json.slots.map((s) => s.requirement_id);
-        if (isPaperComplete(ids, done)) {
-          setPhase('done');
-        } else if (json.attempt && !json.attempt.completed) {
-          if (isExpired(json.attempt.ends_at, Date.now())) {
-            // EXPIRED WHILE AWAY. Closing the tab must not buy time, so a return visit does
-            // not resume into a paper whose clock ran out — it closes the attempt and goes
-            // to the results. Nothing is submitted here: whatever was in the box when the tab
-            // closed was never sent, so those requirements are genuinely unreached.
-            await fetch('/api/acca/sit', {
-              method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish', paper }),
-            }).catch(() => {});
-            if (cancelled) return;
-            setExpiredOut(true);
-            setPhase('done');
-          } else {
-            // Resume mid-sit: the clock never restarted, and the paper picks up at the
-            // first requirement with no recorded answer.
-            setIndex(nextUnsubmittedIndex(ids, done));
-            setPhase('sitting');
-          }
-        } else {
-          setPhase('intro');
-          // ── mock_intro_viewed — THE MOCK'S ANSWER TO THE CASE BOUNCE QUESTION ──
-          // This arm is the ONLY route to the start screen: no attempt at all, or the last one
-          // completed. Reaching it means the student loaded the paper, saw "3h 15m", and has
-          // not clicked Start — and until now that left NO ROW ANYWHERE, because
-          // acca_mock_attempts is written only by the Start click below. Opening the mock and
-          // closing the tab was indistinguishable from never opening it.
-          //
-          // Deliberately NOT fired on the other three arms, which are different findings and
-          // already have rows: `done` (a complete paper), the expired-out branch (an attempt
-          // whose clock ran out), and the resume branch (an open attempt) all have an
-          // acca_mock_attempts row that says so.
-          //
-          // The mock_id and paper come from the SERVED config (`json.paper`), never from the
-          // `paper` prop or a literal — the same discipline recordAnswer follows, and the
-          // server cross-checks that the two agree (a mock_id whose paper contradicts the
-          // stated paper is refused rather than stored).
-          if (introReported.current !== json.paper.id) {
-            introReported.current = json.paper.id;
-            emitSurfaceEvent(mockIntroViewed(json.paper.id, json.paper.paper));
-          }
+
+        // ── ONE DECISION, MADE IN lib/acca/sit-preview.ts ──────────────────────
+        // This was an inline if / else-if / else whose `else` was `intro`, and a paper that
+        // ended on the CLOCK matched neither of the first two arms — `completed=true` with an
+        // incomplete submitted set, because the auto-submit does not back-fill the tail. It
+        // fell through to the START SCREEN, taking the debrief and the subscribe-and-mark
+        // retry with it, and a Start click there minted a new attempt that made the old
+        // paper unmarkable through the UI for good. See `sitLoadDecision`'s header.
+        //
+        // The arms are now pure and fixtured. Nothing about the intro / resume / expired
+        // behaviour changes; the completed-and-incomplete shape simply has somewhere to go.
+        const decision = sitLoadDecision(json.attempt, ids, done, Date.now());
+
+        if (decision.finishAttempt) {
+          // EXPIRED WHILE AWAY. Closing the tab must not buy time, so a return visit does
+          // not resume into a paper whose clock ran out — it closes the attempt and goes
+          // to the results. Nothing is submitted here: whatever was in the box when the tab
+          // closed was never sent, so those requirements are genuinely unreached.
+          await fetch('/api/acca/sit', {
+            method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ action: 'finish', paper }),
+          }).catch(() => {});
+          if (cancelled) return;
         }
+        if (decision.expiredOut) setExpiredOut(true);
+        if (decision.phase === 'sitting') setIndex(decision.index);
+
+        // ── mock_intro_viewed — THE MOCK'S ANSWER TO THE CASE BOUNCE QUESTION ──
+        // Fired on the intro arm ALONE: no attempt at all. Reaching it means the student
+        // loaded the paper, saw "3h 15m", and has not clicked Start — and until this event
+        // that left NO ROW ANYWHERE, because acca_mock_attempts is written only by the Start
+        // click. Opening the mock and closing the tab was indistinguishable from never
+        // opening it.
+        //
+        // Deliberately NOT fired on the other arms, which are different findings and already
+        // have rows: every one of them has an acca_mock_attempts row that says so.
+        //
+        // ⚠️ NARROWED BY THIS FIX, and correctly. The old `else` also caught a COMPLETED
+        // attempt, so a returning student whose paper was over emitted `mock_intro_viewed` —
+        // an intro view recorded for someone who was not being shown the intro. Those rows
+        // were miscounted; the arm that produced them was the bug.
+        //
+        // The mock_id and paper come from the SERVED config (`json.paper`), never from the
+        // `paper` prop or a literal — the same discipline recordAnswer follows, and the
+        // server cross-checks that the two agree (a mock_id whose paper contradicts the
+        // stated paper is refused rather than stored).
+        if (decision.reportIntro && introReported.current !== json.paper.id) {
+          introReported.current = json.paper.id;
+          emitSurfaceEvent(mockIntroViewed(json.paper.id, json.paper.paper));
+        }
+
+        setPhase(decision.phase);
       } catch {
         if (!cancelled) setPhase('error');
       }
