@@ -32,7 +32,12 @@ import {
   type TechnicalMarkingResult,
 } from '@/lib/acca/case-marking';
 import { caseMarkReady } from '@/lib/acca/case-sit';
-import { ledgerActionsFor, type WeaknessWrite, type WeaknessClose } from '@/lib/acca/weak-areas';
+import { ledgerActionsFor } from '@/lib/acca/weak-areas';
+// The open/close implementation MOVED to lib/acca/weak-area-store.ts (2026-08-12) when the
+// drill path became a second writer. It used to live here privately with `source: 'sit'`
+// written in as a literal on both the insert AND the close filter — which would have left a
+// drill row unopenable with its own source and, once opened, permanently unclosable.
+import { openWeakness, closeWeakness } from '@/lib/acca/weak-area-store';
 
 // Structural typing so this module never imports a server-only Supabase factory; the
 // caller passes its own service client.
@@ -314,10 +319,20 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
         band: pr.band,
       })),
     );
-    weaknessRows = await recordWeaknesses(
-      supabase, userId, paper, actions.opens.map((w) => ({ ...w, case_id: caseId })),
-    );
-    resolvedRows = await resolveWeaknesses(supabase, userId, paper, actions.closes);
+    // source:'sit' on BOTH halves, and that is what keeps the two writers apart: a drill
+    // success can never close one of these rows, and this close can never touch a drill row.
+    for (const w of actions.opens) {
+      const wrote = await openWeakness(supabase, {
+        userId, paper, loCode: w.lo_code, band: w.band, source: 'sit',
+        caseId, requirementId: w.requirement_id,
+      });
+      if (wrote) weaknessRows++;
+    }
+    for (const c of actions.closes) {
+      resolvedRows += await closeWeakness(supabase, {
+        userId, paper, loCode: c.lo_code, source: 'sit',
+      });
+    }
   }
 
   return {
@@ -329,132 +344,4 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
     weakness_rows: weaknessRows,
     resolved_rows: resolvedRows,
   };
-}
-
-/**
- * Upsert on the OPEN-ROW key — (user_id, paper_code, lo_code, source) WHERE resolved_at IS
- * NULL.
- *
- * READ-THEN-WRITE, NOT `.upsert()`, and that is forced by the schema rather than chosen:
- * the unique index is PARTIAL, and Postgres only infers a partial index as an ON CONFLICT
- * arbiter when the inference clause repeats its WHERE — which PostgREST's `on_conflict=`
- * has no way to express. A plain `.upsert({ onConflict: 'user_id,paper_code,lo_code,source' })`
- * does not silently degrade; it errors with "no unique or exclusion constraint matching the
- * ON CONFLICT specification". So the read-then-write is the correct shape here, and the
- * unique index remains the thing that actually enforces one open row per area.
- *
- * A concurrent writer losing the race hits that index and is caught: the 23505 path
- * re-reads and increments, so two simultaneous marks converge on one row rather than one
- * of them vanishing. Every write is best-effort — a ledger failure must never fail a mark.
- */
-async function recordWeaknesses(
-  supabase: Queryable,
-  userId: string,
-  paper: AccaPaper,
-  writes: readonly (WeaknessWrite & { case_id: string })[],
-): Promise<number> {
-  let written = 0;
-  for (const w of writes) {
-    try {
-      if (await writeOne(supabase, userId, paper, w)) written++;
-    } catch {
-      // one bad row must not stop the rest
-    }
-  }
-  return written;
-}
-
-/**
- * Close the open row for each resolved area — the `resolved_at` writer.
- *
- * A single scoped UPDATE, and no read first: `resolved_at IS NULL` in the WHERE means the
- * statement is a no-op when there is nothing open, which is the common case (most strong
- * bands were never weak). Nothing is deleted — the closed row stays as history, and the
- * partial unique index is what then lets a later weak finding open a FRESH row for the same
- * area rather than incrementing a resolved one.
- *
- * `case_id`/`requirement_id` are deliberately NOT rewritten here: they are the provenance of
- * the finding that OPENED the row, and overwriting them with the requirement that closed it
- * would lose where the weakness came from.
- */
-async function resolveWeaknesses(
-  supabase: Queryable,
-  userId: string,
-  paper: AccaPaper,
-  closes: readonly WeaknessClose[],
-): Promise<number> {
-  let resolved = 0;
-  for (const c of closes) {
-    try {
-      const { data } = await supabase
-        .from('acca_weak_areas')
-        .update({ resolved_at: new Date().toISOString() })
-        .eq('user_id', userId)
-        .eq('paper_code', paper)
-        .eq('lo_code', c.lo_code)
-        .eq('source', 'sit')
-        .is('resolved_at', null)
-        .select('id');
-      resolved += (data as unknown[] | null)?.length ?? 0;
-    } catch {
-      // one bad close must not stop the rest, and must never fail a marked paper
-    }
-  }
-  return resolved;
-}
-
-async function writeOne(
-  supabase: Queryable,
-  userId: string,
-  paper: AccaPaper,
-  w: WeaknessWrite & { case_id: string },
-): Promise<boolean> {
-  const findOpen = async () => {
-    const { data } = await supabase
-      .from('acca_weak_areas')
-      .select('id, occurrence_count')
-      .eq('user_id', userId)
-      .eq('paper_code', paper)
-      .eq('lo_code', w.lo_code)
-      .eq('source', 'sit')
-      .is('resolved_at', null)
-      .maybeSingle();
-    return (data as { id: string; occurrence_count: number } | null) ?? null;
-  };
-
-  const bump = async (row: { id: string; occurrence_count: number }) => {
-    // The band is OVERWRITTEN with the latest finding, not kept at its worst-ever value: the
-    // ledger describes where the student is NOW. A student who was weak and is now merely
-    // competent should be steered less hard, not held at their worst sitting forever.
-    await supabase
-      .from('acca_weak_areas')
-      .update({
-        band: w.band,
-        occurrence_count: (row.occurrence_count ?? 1) + 1,
-        case_id: w.case_id,
-        requirement_id: w.requirement_id,
-      })
-      .eq('id', row.id);
-  };
-
-  const existing = await findOpen();
-  if (existing) { await bump(existing); return true; }
-
-  const { error } = await supabase.from('acca_weak_areas').insert({
-    user_id: userId,
-    paper_code: paper,
-    lo_code: w.lo_code,
-    band: w.band,
-    source: 'sit',
-    case_id: w.case_id,
-    requirement_id: w.requirement_id,
-  });
-  if (!error) return true;
-
-  // Lost the race — the unique index did its job. Re-read and increment instead.
-  if ((error as { code?: string }).code === '23505') {
-    const raced = await findOpen();
-    if (raced) { await bump(raced); return true; }
-  }
-  return false;
 }

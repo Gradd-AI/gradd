@@ -594,6 +594,36 @@ when the session ends on a branch.
   closed row is history, and the PARTIAL index is what lets a later weak band open a fresh row rather
   than increment a resolved one. Proved against the live index in the walk: close → reopen → both
   rows survive → the selector sees exactly one open row → a second open row for the same key 23505s.
+  **THE DRILL PATH WRITES TOO (2026-08-12, unflagged).** Decision pure in `weak-areas.ts`
+  (`drillBandFor` / `drillLedgerAction`), write shared with the sit via **`lib/acca/
+  weak-area-store.ts`** (`openWeakness`/`closeWeakness` — moved out of `case-mark-run.ts`,
+  where `source:'sit'` was a LITERAL on both the insert and the close filter, so a drill row
+  would have been unopenable with its own source and permanently unclosable). Called from
+  `app/api/acca/tutor/route.ts` **§10a**, best-effort, paper from the DRILL'S OWN `paper_code`.
+  **OPENS at `miss_count >= 2` and not `resolved`** — a miss is a designed beat of the TEACH
+  loop, and 83 of 115 miss-carrying pairs were a SINGLE miss; 2 is the number the earned-reveal
+  gate and `stuckDrills` already use. Band: `competent` at 2, `weak` at ≥3. **CLOSES on a later
+  `outcome='correct'` — NEVER on `tutor_progress.resolved`**, which the EARNED REVEAL also sets:
+  closing on it would resolve a weakness the moment a struggling student asked for the answer.
+  **`SOURCE_WEIGHT` sit 1.0 / drill 0.6, explicit** (a rule living only in a threshold is one
+  the next reader must reverse-engineer); `weaknessScore` takes the MAX not the sum, so sit and
+  drill rows on one LO never compound, and a source-less row scores as a sit. **Sit and drill
+  rows are independent by the unique key — a drill success must NOT close a sit finding.**
+  Backfill `npm run backfill:drill-weak-areas` (replays the attempt log; `--revert` deletes
+  only drill rows). ⚠️ **311 of 644 attempts are DEMO-ORG SEED rows** (`seed-demo-org.ts`,
+  fabricated `drill_id`s) — the paper join skips them rather than defaulting, without which the
+  ledger would invent weaknesses for 24 users who do not exist. **The real population is 3
+  users / 333 attempts**, one of them a dev account.
+  📐 **MEASURED THE DAY IT SHIPPED — `npm run probe:steering`, and the finding is that the LO
+  term BARELY STEERS.** In 4 of 5 (user, paper) cases every candidate in the pool scored
+  IDENTICALLY (`distinct scores in pool: 1/N`), so `pickWeighted` degraded to the uniform random
+  pick it makes with NO ledger. Cause is structural, not a magnitude problem: the live `area=`
+  and `lo=` paths already scope the pool to ONE sub-area, so every candidate is the same kind of
+  match and the weakness term becomes a CONSTANT OFFSET, which cannot change who wins. It only
+  discriminates across a pool spanning sub-areas — i.e. the `APM_INTERLEAVE` scorer, which is
+  OFF in production. The only term observed to change a winner was **PS** (`D2h` at 2.20 vs
+  1.20, on a `communication` tag). **Raising `W_WEAK` would not fix this** — n×constant is still
+  a constant. Report `distinct scores in pool`, never the score.
   **READ:** `app/api/acca/next-drill/route.ts`. `W_WEAK = 0` is **CLOSED** — and the steering is
   applied on the LIVE `area=` and `lo=` paths as well as the `APM_INTERLEAVE`-gated scorer, because
   that flag is NOT set in production and steering only there would have shipped a ledger no student's

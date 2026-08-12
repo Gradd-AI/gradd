@@ -41,6 +41,11 @@ import {
   GROUNDING_INSTRUCTION_OUTRO,
   type GroundingPack,
 } from '@/lib/acca/tutor-grounding';
+// The weakness ledger's drill half (2026-08-12). The DECISION is pure (weak-areas); the
+// WRITE is shared with the sit path (weak-area-store) so there is one implementation of the
+// partial-index open/close rather than two that can drift.
+import { drillLedgerAction } from '@/lib/acca/weak-areas';
+import { openWeakness, closeWeakness } from '@/lib/acca/weak-area-store';
 import { cacheBlock, cachePrefix } from '@/lib/acca/prompt-cache';
 import { describeDemand, nextMoveContract } from '@/lib/acca/teach-demand';
 
@@ -1575,6 +1580,49 @@ export async function POST(request: Request): Promise<Response> {
           });
       } catch {
         // non-fatal: attempt logging is best-effort, never blocks the response
+      }
+
+      // ── 10a. THE WEAKNESS LEDGER — the drill path's half (added 2026-08-12) ──
+      // Until now `acca_weak_areas` was written ONLY by a marked sit, and it held 0 rows
+      // globally: the two sits that ever carried answers correctly wrote nothing (one blank,
+      // one full marks), while 115 distinct (user, LO) pairs carrying a miss sat in
+      // acca_drill_attempts, invisible to the selector that reads this table.
+      //
+      // The DECISION is pure and lives in lib/acca/weak-areas.ts — a miss opens a row only at
+      // `miss_count >= 2` and not resolved (the same stuckDrills predicate the progress page
+      // already shows the student), and a CORRECT attempt closes it. Deliberately NOT
+      // `resolved`, which the earned-reveal branch also sets: closing on that would resolve a
+      // weakness at the moment a struggling student asked for the answer.
+      //
+      // `paper` is the DRILL'S OWN paper_code, read off the fetched row at the top of this
+      // handler — never a client hint and never a default. That is the paper scoping ruling 6
+      // demands: AFM and APM LO codes collide exactly, so an unscoped row would steer the
+      // wrong paper. No join is needed here because the route already holds the value; the
+      // BACKFILL, which starts from acca_tutor_progress, does need one.
+      //
+      // Best-effort and swallowed, exactly like the two writes above: the teach response is
+      // already built, and a ledger write must never block or 500 the teach path.
+      try {
+        const action = drillLedgerAction({
+          missCount: newMissCount,
+          resolved: newResolved,
+          outcome: attemptOutcome,
+        });
+        const ledgerArgs = {
+          userId: user.id,
+          paper: paper as AccaPaper,
+          loCode: drill.lo_code as string,
+          source: 'drill' as const,
+        };
+        if (action.kind === 'open') {
+          await openWeakness(supabase, { ...ledgerArgs, band: action.band });
+        } else if (action.kind === 'close') {
+          // Closes the DRILL row only. A drill success must never close a SIT finding —
+          // see the header of lib/acca/weak-area-store.ts.
+          await closeWeakness(supabase, ledgerArgs);
+        }
+      } catch {
+        // non-fatal: ledger maintenance is best-effort, never blocks the response
       }
     }
   }

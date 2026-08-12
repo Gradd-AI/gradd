@@ -43,15 +43,42 @@ export function shouldRecordWeakness(band: string | null | undefined): band is W
   return typeof band === 'string' && (WEAKNESS_BANDS as readonly string[]).includes(band);
 }
 
-/** The ledger row as the selector reads it. `source` is carried so a future rule can weigh
- *  a sit differently from a drill miss; today both score the same and the field is only
- *  read for provenance. */
+/** Where a ledger row's finding came from. The `source` CHECK on acca_weak_areas has
+ *  admitted both values since the table was created; only 'sit' was ever written. */
+export const WEAKNESS_SOURCES = ['sit', 'drill'] as const;
+export type WeaknessSource = (typeof WEAKNESS_SOURCES)[number];
+
+/**
+ * How much a row's ORIGIN is worth, as a multiplier on its pull.
+ *
+ * EXPLICIT, not implied by the drill threshold (Grant-ruled 2026-08-12). The migration's own
+ * rationale says a sit is a far stronger signal than a drill miss and the selector must be
+ * able to tell them apart. Requiring two misses before a drill row opens narrows that gap but
+ * does not STATE it, and a rule that lives only in a threshold is a rule the next reader has
+ * to reverse-engineer from a constant in another file.
+ *
+ * WHY A SIT OUTWEIGHS A STUCK DRILL even though both are real evidence: a sit is finished
+ * work, written once, under time pressure, judged against a code-correct model answer. A
+ * stuck drill is an unfinished conversation the student can still walk back into — and the
+ * teach loop is DESIGNED to produce misses on the way to understanding.
+ *
+ * `weaknessScore` takes the MAX over matching rows, never the sum, so a sit row and a drill
+ * row on the same LO do not compound: the sit's 1.0 simply wins.
+ */
+export const SOURCE_WEIGHT: Record<WeaknessSource, number> = { sit: 1, drill: 0.6 };
+
+/** The ledger row as the selector reads it. `source` is now READ, not merely carried —
+ *  see SOURCE_WEIGHT. An absent/unknown source is treated as 'sit', which is what every row
+ *  written before 2026-08-12 is. */
 export interface WeakAreaRow {
   lo_code: string;
   band: string;
   occurrence_count: number;
   source?: string;
 }
+
+const sourceWeight = (source: string | undefined): number =>
+  SOURCE_WEIGHT[(source ?? 'sit') as WeaknessSource] ?? SOURCE_WEIGHT.sit;
 
 // A weak band is twice the pull of a competent one: 'competent' means the approach was
 // right and a material point was missed, 'weak' means the method itself needs re-working.
@@ -92,7 +119,7 @@ export function weaknessScore(loCode: string, open: readonly WeakAreaRow[]): num
       OCCURRENCE_CAP,
       1 + Math.max(0, (row.occurrence_count ?? 1) - 1) * OCCURRENCE_STEP,
     );
-    best = Math.max(best, pull * match * occurrences);
+    best = Math.max(best, pull * match * occurrences * sourceWeight(row.source));
   }
   return Math.round(best * 100) / 100;
 }
@@ -198,6 +225,91 @@ export const RESOLVING_BANDS = ['strong', 'exemplary'] as const;
 
 export function shouldResolveWeakness(band: string | null | undefined): boolean {
   return typeof band === 'string' && (RESOLVING_BANDS as readonly string[]).includes(band);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE DRILL PATH (added 2026-08-12)
+// ═══════════════════════════════════════════════════════════════════════════
+// Until now only a marked SIT wrote to this ledger, and the ledger held 0 rows globally —
+// because the only two sits that ever carried answers correctly wrote nothing (one blank,
+// one full marks). Meanwhile 115 distinct (user, LO) pairs carrying a miss sat in
+// acca_drill_attempts across 27 users, invisible to it.
+//
+// ── WHY A SINGLE MISS DOES NOT OPEN A ROW ───────────────────────────────────
+// A `miss` on the drill path is NOT the drill-path equivalent of a weak band. The drill
+// loop is a TEACH loop: attempt → miss → hint → teach → retry → accepted. The miss is a
+// designed beat of that loop, written on the ordinary hint path. Measured over the live
+// table, 83 of the 115 miss-carrying pairs are a SINGLE miss — opening on one would make
+// ~72% of the ledger a record of the teach loop working correctly, and would drown the sit
+// signal it exists to complement (a whole sat paper produces 2–4 rows).
+//
+// ── WHY THE THRESHOLD IS 2, AND NOT AN ARBITRARY NUMBER ─────────────────────
+// The product ALREADY treats 2 as the struggle boundary, in two places that a student can
+// see: `miss_count >= 2` is the earned-reveal gate (app/api/acca/tutor/route.ts), and
+// `miss_count >= 2 AND NOT resolved` is what lib/org/queries.ts already calls a STUCK DRILL
+// on the student's own progress page. Reusing that predicate means the ledger says the same
+// thing the student is already being shown, instead of inventing a third opinion about them.
+export const DRILL_OPEN_MISSES = 2;   // stuck: opens a row
+export const DRILL_WEAK_MISSES = 3;   // and by here the method itself needs re-working
+
+/**
+ * Which band a stuck drill records. Returns null below the threshold — that is the whole
+ * "one miss is not a weakness" rule, in one place.
+ *
+ * The five-band CHECK on acca_weak_areas is the marker's technical lexicon and a drill miss
+ * has no band of its own, so this MAPS onto the two the ledger already opens on rather than
+ * widening the constraint. `competent` and `weak` read correctly here for the same reason
+ * they do for a sit: "the approach was right and something was missed" vs "the method needs
+ * re-working".
+ */
+export function drillBandFor(missCount: number): WeaknessBand | null {
+  if (!Number.isFinite(missCount) || missCount < DRILL_OPEN_MISSES) return null;
+  return missCount >= DRILL_WEAK_MISSES ? 'weak' : 'competent';
+}
+
+export type DrillLedgerAction =
+  | { kind: 'open'; band: WeaknessBand }
+  | { kind: 'close' }
+  | { kind: 'none' };
+
+export interface DrillTurn {
+  /** acca_tutor_progress.miss_count AFTER this turn. Per DRILL; the ledger row it opens is
+   *  per LO, so two stuck drills on one LO increment a single row rather than making two. */
+  missCount: number;
+  /** acca_tutor_progress.resolved AFTER this turn. */
+  resolved: boolean;
+  /** The scored outcome of THIS turn, or null on a warm/teach/reveal turn — which are not
+   *  scored attempts and must move the ledger in neither direction. */
+  outcome: 'correct' | 'miss' | null;
+}
+
+/**
+ * What one drill turn does to the ledger.
+ *
+ * ── CLOSING IS KEYED ON A LATER `outcome='correct'`, NOT ON `resolved` ──────
+ * THIS IS THE LOAD-BEARING DECISION (Grant-ruled 2026-08-12), and the obvious answer is the
+ * wrong one. `acca_tutor_progress.resolved` is set on TWO paths in the tutor route: an
+ * accepted attempt, AND an EARNED REVEAL — the student asking for the answer after two
+ * misses and being shown it. The route's own code names the difference
+ * (`reachedFrom: resolved ? 'solved' : 'struggle'`).
+ *
+ * So closing on `resolved` would resolve a weakness at the exact moment a struggling student
+ * gave up and asked for the answer: the strongest evidence of weakness the drill path
+ * produces, read as mastery. An accepted attempt is the drill path's ONLY judgement of
+ * quality, which makes it the true analogue of the sit's passing band — and it keeps the
+ * ledger's rule intact that the instrument which opens a row is the one that closes it.
+ *
+ * A turn is never both: a correct attempt closes and never opens, and the two are separate
+ * branches rather than a precedence rule, because unlike a sit (which marks eight
+ * requirements at once) a drill turn produces exactly one outcome.
+ */
+export function drillLedgerAction(turn: DrillTurn): DrillLedgerAction {
+  if (turn.outcome === 'correct') return { kind: 'close' };
+  if (turn.outcome !== 'miss') return { kind: 'none' };
+  // The stuckDrills predicate, verbatim: missed enough, and not already resolved.
+  if (turn.resolved) return { kind: 'none' };
+  const band = drillBandFor(turn.missCount);
+  return band ? { kind: 'open', band } : { kind: 'none' };
 }
 
 // ── What the writer emits ────────────────────────────────────────────────────

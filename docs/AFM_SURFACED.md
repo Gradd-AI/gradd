@@ -2,7 +2,11 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-12 (**A TIMED-OUT PAPER SENT THE STUDENT BACK TO THE START SCREEN** —
+*Last refreshed: 2026-08-12 (**THE DRILL PATH NOW WRITES TO THE WEAKNESS LEDGER — AND MEASURING IT
+IMMEDIATELY SHOWED THE LO TERM BARELY STEERS.** `feat/drill-path-weakness-ledger`, shipped
+unflagged. 12 rows backfilled, and `npm run probe:steering` found 4 of 5 serves with NO
+discrimination at all. See the ✅ and 🔴 blocks below. Earlier same day: **A TIMED-OUT PAPER SENT
+THE STUDENT BACK TO THE START SCREEN** —
 `fix/sit-completed-attempt-intro-fallthrough`, pushed, **not merged — awaiting review**. Proven live
 on a real expired attempt. See the ✅ block immediately below, and the two 🔴 items it deliberately
 left open. Earlier same day: **THE UNENTITLED SIT NOW SELLS INSTEAD OF LOOKING BROKEN** —
@@ -32,6 +36,45 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
+
+## ✅ CLOSED 2026-08-12 — THE DRILL PATH WRITES TO THE WEAKNESS LEDGER (`feat/drill-path-weakness-ledger`)
+
+Shipped **unflagged**, by ruling. Opens at `miss_count >= 2` and not `resolved` (the `stuckDrills`
+predicate, and the same number the earned-reveal gate uses); `competent` at 2, `weak` at ≥3. Closes
+on a later `outcome='correct'` — **never** on `tutor_progress.resolved`, which an earned reveal also
+sets. `SOURCE_WEIGHT` sit 1.0 / drill 0.6, explicit; `weaknessScore` takes the max so they never
+compound. Open/close moved to `lib/acca/weak-area-store.ts` and `source` threaded through both ends.
++55 fixtures (107). Backfilled 12 rows from history — **and 311 of 644 attempts turned out to be
+demo-org seed rows with fabricated `drill_id`s, correctly skipped by the paper join; the real
+population is 3 users, one of them a dev account.**
+
+## 🔴 OPEN 2026-08-12 — THE WEAKNESS TERM DOES NOT DISCRIMINATE ON THE LIVE SERVE PATHS
+
+**Measured, not suspected** (`npm run probe:steering`, first run, the day the writer shipped). In
+**4 of 5** (user, paper) cases every candidate in the pool scored **identically** — `distinct scores
+in pool: 1/N` — so `pickWeighted` degraded to the uniform random pick it makes with an EMPTY ledger.
+The steering had no effect on who was served.
+
+**The cause is structural, not a magnitude problem.** The live `area=` and `lo=` paths already scope
+the candidate pool to ONE sub-area (`like 'B1%'`). Every candidate is therefore the same KIND of
+match against the ledger — all exact, or all siblings — so the weakness term resolves to the same
+number for all of them. A constant added to every candidate cannot change which one wins.
+**Raising `W_WEAK` does nothing: n × constant is still a constant.**
+
+It discriminates only across a pool spanning sub-areas — the `APM_INTERLEAVE` scorer, which is OFF
+in production. The one term observed to change a winner was **PS** (`D2h` at 2.20 against a field of
+1.20, on a `communication` tag), which works because a skill tag varies WITHIN a sub-area.
+
+Options, none taken yet:
+- **(a) Widen the pool** on the live paths so the term has something to discriminate over — which is
+  most of what `APM_INTERLEAVE` already does, and would want its measurement first.
+- **(b) Make the term vary within a sub-area** — e.g. weight the exact-LO match far above the
+  sibling match, so a B1a weakness pulls B1a drills above other B1 drills instead of lifting the
+  whole B1 pool equally.
+- **(c) Accept it as a tie-break** and stop describing it as steering.
+
+⚠️ **Until this is resolved, do not report `W_WEAK` or `MAX_WEAKNESS_SCORE` as tuned.** The right
+metric is `distinct scores in pool`, not the score.
 
 ## ✅ CLOSED 2026-08-12 — A TIMED-OUT PAPER WENT BACK TO THE START SCREEN (`fix/sit-completed-attempt-intro-fallthrough`)
 

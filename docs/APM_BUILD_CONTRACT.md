@@ -4575,3 +4575,42 @@ the real served payload; results then 200, 3/3 cases marked in 27s (6 model call
 marking and nothing watches — one trigger, no cron, no event. The DETECTION half is committed as
 `npm run audit:unmarked-sits` so it is run rather than rediscovered. Current exposure measured at
 0 closed-entitled-unmarked papers. Open items in `AFM_SURFACED.md`.
+
+---
+
+## SESSION BANK — 2026-08-12 (d) — THE DRILL PATH WRITES TO THE LEDGER, AND THE LEDGER BARELY STEERS
+
+Branch `feat/drill-path-weakness-ledger`, shipped UNFLAGGED on Grant's ruling ("a flag protects
+you from seeing what it does"). Rulings taken as given: threshold 2, close on a later
+`outcome='correct'`, SOURCE_WEIGHT sit 1.0 / drill 0.6, thread `source`, band weak at >=3, the
+paper join is not optional.
+
+**BUILT.** `drillBandFor` + `drillLedgerAction` (pure, `weak-areas.ts`); `openWeakness` /
+`closeWeakness` extracted to `weak-area-store.ts` with `source` as a parameter — it had been
+private to `case-mark-run.ts` with `source:'sit'` as a literal on BOTH the insert and the close
+filter, so a drill row would have been unopenable with its own source and permanently unclosable.
+Wired at `tutor/route.ts` §10a, best-effort, paper from the drill's own `paper_code`. +55 fixtures
+(107 total), with one-miss-opens, `resolved`-closes and additive-scoring all pinned MUST-FAIL.
+
+**TWO CORRECTIONS TO WHAT WAS REPORTED BEFORE BUILDING, both found by the paper join.**
+1. The "115 (user, LO) miss pairs across 27 users" figure was INFLATED. 311 of the 644 attempts
+   are demo-org seed rows (`seed-demo-org.ts`) carrying FABRICATED drill_ids that resolve to no
+   drill. The join skips them rather than defaulting the paper — without that, the backfill would
+   have invented weaknesses for 24 users who do not exist. Real population: **3 users, 333
+   attempts, 26 pairs, 13 at threshold 2** — and one of the three is a dev account with 289 of
+   those attempts.
+2. Backfill therefore wrote **12 rows** (9 weak / 3 competent; 8 AFM / 4 APM), not the ~32 the
+   pre-build estimate implied.
+
+**THE FINDING THAT MATTERS — the LO term does not discriminate on the live serve paths.**
+First run of `npm run probe:steering`: in 4 of 5 (user, paper) cases EVERY candidate in the pool
+scored identically, so `pickWeighted` degraded to the uniform random pick it makes with an empty
+ledger. Structural, not magnitude: `area=` and `lo=` already scope the pool to ONE sub-area, so
+every candidate is the same kind of match and the term becomes a constant offset — which cannot
+change a winner. Raising W_WEAK does nothing (n x constant is still a constant). It discriminates
+only across a pool spanning sub-areas, i.e. the `APM_INTERLEAVE` scorer, which is off in
+production. The only term observed to change a winner was PS, because a skill tag varies WITHIN a
+sub-area. Options logged in `AFM_SURFACED.md`; none taken.
+
+**Also measured:** 9 of the 12 rows sit at the occurrence cap, so occurrence_count values from 3
+to 144 all score identically — the ledger cannot tell "stuck three times" from "stuck 144 times".
