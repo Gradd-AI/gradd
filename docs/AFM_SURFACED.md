@@ -48,7 +48,32 @@ compound. Open/close moved to `lib/acca/weak-area-store.ts` and `source` threade
 demo-org seed rows with fabricated `drill_id`s, correctly skipped by the paper join; the real
 population is 3 users, one of them a dev account.**
 
-## 🔴 OPEN 2026-08-12 — THE WEAKNESS TERM DOES NOT DISCRIMINATE ON THE LIVE SERVE PATHS
+## ✅ CLOSED 2026-08-12 — THE POOL, NOT THE WEIGHTS (`fix/next-drill-exclude-drill-not-lo`)
+
+`.neq('lo_code', lo)` → exclude the current **drill by id** (`currentDrillExclusion`), finishing
+an intent the route stated twice already. **Weights untouched** — exact-over-sibling was modelled
+at 0.25/1, 0.2/1.5 and 0/1 and changed the distinct count in none of five real serves, and would
+have swamped PS. `SUB_AREA_PULL` stays 0.5. ⚠️ **The `.limit(10)` was part of the pool and
+silently undid the change** (no `ORDER BY`; AFM B1's 14 drills returned ten B1a rows, so the weak
+LO's drills were never fetched) — raised to 50. **Measured after: 3 of 5 serves discriminate, not
+the 5 of 5 predicted.** +20 fixtures (127); the shipped exclusion pinned MUST-FAIL along with all
+three re-weightings, plus a check that the serve never repeats the current drill.
+
+## 🔴 OPEN 2026-08-12 — THE REMAINING TWO ARE CONTENT DEPTH, AND THE LEDGER STILL CANNOT RANK
+
+**(a) One drill per LO defeats the fix.** APM A1 is **10 LOs across 10 drills**, D2 is **9 across
+11**. Excluding the current drill removes the ONLY drill on the weak LO, so the pool is all
+siblings again and the score is flat. Both remaining flat serves are APM. AFM works because it has
+depth (B1c: 4 drills, B1a: 8). **This is a content question, not a code one** — the steering
+term's ceiling is drills-per-LO, and no weight or query change raises it.
+
+**(b) The occurrence cap saturates at 3, so two weak LOs are indistinguishable.** `weak×18` and
+`weak×5` both sit at `MAX_WEAKNESS_SCORE`; **9 of the 12 live rows are at the cap**. The ledger can
+say *this LO is weak* but not *this LO is worse than that one* — so even a deep sub-area serves a
+uniform pick among its weak LOs. Fixtured as a known limit; untouched on instruction (do not tune
+magnitudes). Revisit only with more than 3 users of data.
+
+## 🔴 SUPERSEDED 2026-08-12 — THE WEAKNESS TERM DOES NOT DISCRIMINATE ON THE LIVE SERVE PATHS
 
 **Measured, not suspected** (`npm run probe:steering`, first run, the day the writer shipped). In
 **4 of 5** (user, paper) cases every candidate in the pool scored **identically** — `distinct scores
