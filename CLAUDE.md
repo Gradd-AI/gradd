@@ -694,9 +694,12 @@ when the session ends on a branch.
   anon-keyed rows, by design) — it now 400s on any `SURFACE_EVENTS` string. `/api/acca/surface-event`
   requires a session, takes `user_id` from `auth.getUser()` and NEVER from the body (`user_id` is
   rejected as an unknown metadata key), and writes `anon_id: null` always. **There is no code path
-  in it that writes an unattributable row** — which is the point: 87 of the 504 pre-existing rows
-  have neither identity, ~17% of the corpus, because the older sink coerces a bad identity to null
-  and inserts anyway. **`mock_id` is validated against the REAL registry and CROSS-CHECKED against
+  in it that writes an unattributable row.** 87 of the 504 pre-existing rows have neither identity
+  — **CORRECTED 2026-08-12: that is ONE CLOSED two-day window** (2026-06-25 + 06-27, 100% of both
+  days) where the emitter sent neither, not scattered coercion and not the FK below; the sink's null
+  tolerance let them land rather than causing them, and nothing has produced one since. The
+  conclusion stands even though the cause did not: a sink that accepts a null identity stores
+  whatever a mis-wired emitter sends. **`mock_id` is validated against the REAL registry and CROSS-CHECKED against
   `paper`** (`{mock_id:'paper-1', paper:'AFM'}` is refused), so one mis-wired emitter cannot file
   every APM intro under AFM.
   ⚠️ **CLAIM CEILING, verbatim:** all three are CLIENT-TRIGGERED, so **WHO is trusted and WHETHER is
@@ -712,6 +715,18 @@ when the session ends on a branch.
   `acca_case_progress`/`acca_mock_attempts`/`acca_case_marking`** — i.e. it WAS the
   opened-and-bounced case, previously invisible. Evidence:
   `docs/rollbacks/surface_events_walk_20260812.json`.
+  **MIGRATION BACKFILLED 2026-08-12 — `supabase/migrations/20260812120000_acca_funnel_events.sql`.**
+  The table was hand-created with no file, so it existed in production and NOWHERE in the repo: a
+  fresh `supabase db reset` produced a schema where both sink routes fail at their INSERT, silently
+  on the older one. Written from the LIVE catalogue (pg_attribute/pg_constraint/pg_indexes/pg_class),
+  not inferred from the inserts — which would have missed the PK, all three btree indexes, the FK
+  and RLS. No-op against production; carries a DRIFT CHECK that RAISES rather than half-applying,
+  because `event_type` is NOT NULL with no default and an `ADD COLUMN` convergence would leave a
+  state no environment has. ⚠️ **`user_id` is `ON DELETE SET NULL`, which is a LIVE ANALYTICS
+  HAZARD**: deleting an auth user silently converts their funnel rows into rows attributable to
+  nobody instead of removing them, so any synthetic/burner teardown must delete the funnel rows
+  FIRST or the counts quietly rot. Not changed to CASCADE — that migration reconciles the repo with
+  production and must not alter it. Flagged, not fixed.
   ⚠️ **`APM_CASES` IS NOT IN `.env.local`** — a local walk of these surfaces must set it explicitly
   or every route 404s. It IS set for Production; confirm the flag from an UNAUTHENTICATED probe
   (`/api/acca/case/list?paper=AFM` → **401 = flag on**, 404 = flag off; both routes check the flag

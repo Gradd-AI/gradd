@@ -4412,8 +4412,19 @@ already answer, and whether *opened-and-bounced* could be told from *never-opene
 **What existed:** one table (`acca_funnel_events`, hand-created, no migration file), one sink
 (`POST /api/acca/event` — auth-free, validates shape not vocabulary, trusts a client-supplied
 `user_id`), one emitter (`app/acca/tutor/TutorChat.tsx`, 9 `fireEvent` sites). Six live event types
-plus two already ruled dead. **504 rows, of which 87 have NEITHER `user_id` NOR `anon_id`** — ~17%
-of the corpus unattributable, because the sink coerces a bad identity to null and inserts anyway.
+plus two already ruled dead. **504 rows, of which 87 have NEITHER `user_id` NOR `anon_id`.**
+⚠️ **CORRECTED 2026-08-12 (same session, while writing the migration):** the first reading of that
+— "the sink coerces a bad identity to null and inserts anyway" — was WRONG about the cause, and it
+had already been written into `CLAUDE.md`, the route header and this bank before it was checked.
+Read by day, the 87 are ONE CONTIGUOUS TWO-DAY WINDOW — 2026-06-25 (18) and 06-27 (69), **100% of
+both days**, bracketed by anon-only rows on 06-23/24 and user-attributed rows from 06-29 on. The
+emitter sent NEITHER identity for two days: `anon_id` had been dropped as the anonymous surface was
+removed and `user_id` was not yet threaded through. Nothing has produced an unattributable row
+since. The sink's null tolerance LET them land rather than causing them, so the design conclusion is
+unchanged — a sink that accepts a null identity stores whatever a mis-wired emitter sends — but the
+mechanism is not what was recorded, and a bounded dead window reads very differently from an ongoing
+17% leak. **Also NOT the `ON DELETE SET NULL` FK**, which was the other plausible cause and was
+ruled out by the same by-day breakdown (a deletion would leave a mixed picture, not two whole days).
 No other analytics anywhere: no `@vercel/analytics`, and **Vercel Web Analytics is not enabled** for
 the project (`get_web_analytics` → 404 "Web Analytics not found"), so there are zero pageviews on
 record, ever.

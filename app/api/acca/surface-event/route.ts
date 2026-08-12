@@ -20,10 +20,16 @@ import { getMockPaper } from '@/lib/acca/mocks';
 // authenticated + server-attributed here.
 //
 // ── ATTRIBUTABLE OR REFUSED, STRUCTURALLY ────────────────────────────────────
-// 87 of the 504 rows already in `acca_funnel_events` have NEITHER `user_id` NOR `anon_id` —
-// ~17% of the corpus is unattributable to anybody — because the older sink coerces a
-// non-string identity to null and inserts anyway. An event that cannot be attributed to a
-// student cannot answer a question about a student, so none of that is inherited:
+// 87 of the 504 rows already in `acca_funnel_events` have NEITHER `user_id` NOR `anon_id`.
+// CORRECTED 2026-08-12 after reading the table by day: that is NOT scattered coercion by the
+// older sink, it is one CLOSED two-day window (2026-06-25 and 06-27, 100% of both days) in
+// which the emitter sent neither identity — anon_id dropped as the anonymous surface was
+// removed, user_id not yet threaded through. The sink's null tolerance LET those rows land
+// rather than causing them, and nothing has produced an unattributable row since.
+//
+// The conclusion is unchanged even though the cause was: an event that cannot be attributed
+// to a student cannot answer a question about a student, and a sink that accepts a null
+// identity will store whatever a mis-wired emitter sends. So none of it is inherited:
 //
 //   • no session → 401, and NOTHING IS WRITTEN.
 //   • `user_id` is taken from `auth.getUser()`. The request body's `user_id` is never read —
