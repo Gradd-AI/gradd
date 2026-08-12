@@ -78,6 +78,8 @@
     "test:paper-access": "tsx scripts/test-paper-access.ts",
     "probe:paper-access": "tsx --env-file=.env.local scripts/probe-paper-access.ts",
     "audit:unmarked-sits": "tsx --env-file=.env.local scripts/audit-unmarked-sits.ts",
+    "probe:steering": "tsx --env-file=.env.local scripts/probe-steering.ts",
+    "backfill:drill-weak-areas": "tsx --env-file=.env.local scripts/backfill-drill-weak-areas.ts",
     "test:afm-prose": "tsx scripts/test-afm-prose.ts",
     "test:apm-framework": "tsx scripts/test-apm-framework.ts",
     "test:ib-bm-framework": "tsx scripts/test-ib-bm-framework.ts",
