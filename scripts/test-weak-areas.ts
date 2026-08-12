@@ -22,6 +22,9 @@ import {
   W_WEAK,
   W_PS,
   NO_SIGNALS,
+  drillBandFor,
+  drillLedgerAction,
+  SOURCE_WEIGHT,
   type WeakAreaRow,
   type SelectionSignals,
 } from '../lib/acca/weak-areas';
@@ -303,7 +306,92 @@ eq('rnd returning exactly 1 does not fall off the end',
 eq('negative scores still rank (a resolved-deprioritised candidate loses)',
   pickWeighted([{ id: 'lo', s: -3 }, { id: 'hi', s: 0 }], (c) => c.s, () => 0)?.id, 'hi');
 
+// ═════════════════════════════════════════════════════════════════════════════
+// 8. THE DRILL PATH (added 2026-08-12)
+// ═════════════════════════════════════════════════════════════════════════════
+line('\n  8. DRILL PATH — threshold, band mapping, and what closes a row');
+
+// ── 8a. One miss is NOT a weakness ──
+// The drill loop is a TEACH loop and a miss is a designed beat of it. Measured over the live
+// table when this shipped: 83 of the 115 miss-carrying (user, LO) pairs were a SINGLE miss.
+eq('0 misses maps to no band', drillBandFor(0), null);
+eq('ONE miss maps to no band — the load-bearing negative', drillBandFor(1), null);
+eq('two misses map to competent', drillBandFor(2), 'competent');
+eq('three misses map to weak', drillBandFor(3), 'weak');
+eq('many misses stay weak (no third band)', drillBandFor(167), 'weak');
+ok('a non-finite miss count opens nothing', drillBandFor(NaN as unknown as number) === null);
+
+// ⛔ MUST-FAIL — a threshold of 1. Pinned so lowering it is a deliberate act with a failing
+// fixture attached, not a one-character edit.
+ok('⛔ MUST-FAIL: a single miss must never produce a band', drillBandFor(1) !== 'competent');
+
+// ── 8b. What a turn does ──
+const turn = (outcome: 'correct' | 'miss' | null, missCount: number, resolved = false) =>
+  drillLedgerAction({ missCount, resolved, outcome });
+
+eq('a second miss OPENS at competent', turn('miss', 2), { kind: 'open', band: 'competent' });
+eq('a third miss OPENS at weak', turn('miss', 3), { kind: 'open', band: 'weak' });
+eq('a first miss does nothing', turn('miss', 1), { kind: 'none' });
+eq('a correct attempt CLOSES', turn('correct', 5), { kind: 'close' });
+eq('a correct attempt closes even with no misses behind it', turn('correct', 0), { kind: 'close' });
+// Warm / teach / reveal turns are not scored attempts and must move the ledger neither way.
+eq('a non-attempt turn does nothing', turn(null, 9), { kind: 'none' });
+
+// ── 8c. THE DECISIVE ONE: `resolved` does NOT close, and does not open either ──
+// acca_tutor_progress.resolved is set on TWO paths in the tutor route: an accepted attempt
+// AND an EARNED REVEAL — the student asking for the answer after two misses. Closing on it
+// would resolve a weakness at the exact moment a struggling student gave up.
+eq('a resolved drill missing again opens nothing (stuckDrills predicate, verbatim)',
+  turn('miss', 4, true), { kind: 'none' });
+ok('⛔ MUST-FAIL: `resolved` is not a close — only an outcome=correct is',
+  turn('miss', 4, true).kind !== 'close');
+// The failure this prevents, stated as a case: a student misses twice, asks for the answer
+// (resolved := true via the reveal), and misses a third time. Nothing may be CLOSED by that.
+ok('the earned-reveal sequence never closes a row',
+  [turn('miss', 2), turn('miss', 3, true), turn('miss', 4, true)]
+    .every((a) => a.kind !== 'close'));
+
+// ── 8d. SOURCE_WEIGHT is explicit, and a sit outweighs a stuck drill ──
+line('\n  8d. SOURCE_WEIGHT');
+const drillRow = (lo: string, band: string, occ = 1): WeakAreaRow =>
+  ({ lo_code: lo, band, occurrence_count: occ, source: 'drill' });
+
+eq('sit weight is 1', SOURCE_WEIGHT.sit, 1);
+eq('drill weight is 0.6', SOURCE_WEIGHT.drill, 0.6);
+ok('a sit row outscores a drill row of the SAME band and count',
+  weaknessScore('E3a', [row('E3a', 'weak')]) > weaknessScore('E3a', [drillRow('E3a', 'weak')]),
+  `sit=${weaknessScore('E3a', [row('E3a', 'weak')])} drill=${weaknessScore('E3a', [drillRow('E3a', 'weak')])}`);
+eq('a drill weak row scores 0.6 of a sit one', weaknessScore('E3a', [drillRow('E3a', 'weak')]), 0.6);
+eq('a drill competent row scores 0.3', weaknessScore('E3a', [drillRow('E3a', 'competent')]), 0.3);
+// A row with NO source is every row written before 2026-08-12 — it must keep scoring as a sit.
+eq('a source-less row still scores as a sit (no silent devaluation of history)',
+  weaknessScore('E3a', [{ lo_code: 'E3a', band: 'weak', occurrence_count: 1 }]), 1);
+eq('an unknown source falls back to the sit weight rather than zeroing the row',
+  weaknessScore('E3a', [{ lo_code: 'E3a', band: 'weak', occurrence_count: 1, source: 'mystery' }]), 1);
+
+// MAX takes precedence over SUM — the property that stops a sit row and a drill row on one
+// LO compounding into a score no single finding could reach.
+eq('a sit row and a drill row on the SAME LO do not compound — the sit wins outright',
+  weaknessScore('E3a', [row('E3a', 'weak'), drillRow('E3a', 'weak')]), 1);
+ok('⛔ MUST-FAIL: they would sum to 1.6 if the rule were addition',
+  weaknessScore('E3a', [row('E3a', 'weak'), drillRow('E3a', 'weak')]) !== 1.6);
+eq('the ceiling is still the SIT ceiling', MAX_WEAKNESS_SCORE, 2);
+ok('a maxed-out DRILL row cannot reach the ceiling',
+  weaknessScore('E3a', [drillRow('E3a', 'weak', 9)]) < MAX_WEAKNESS_SCORE,
+  `drill max=${weaknessScore('E3a', [drillRow('E3a', 'weak', 9)])}`);
+eq('a maxed-out drill row scores 1.2 (0.6 × the 2× occurrence cap)',
+  weaknessScore('E3a', [drillRow('E3a', 'weak', 9)]), 1.2);
+
+// The sub-area half-pull still applies on top of the source weight, in that order.
+eq('a drill row reaches a sibling LO at half its own pull',
+  weaknessScore('E3b', [drillRow('E3a', 'weak')]), 0.3);
+eq('and reaches an unrelated LO not at all', weaknessScore('B1a', [drillRow('E3a', 'weak')]), 0);
+
+// The rollback property must survive the new term: no rows → every candidate still 0.
+eq('zero-signal rollback is intact for drill rows too',
+  selectionBoost({ lo_code: 'E3a' }, NO_SIGNALS), 0);
+
 rule();
 line(`  ${failures === 0 ? `ALL ${checks} CHECKS PASS` : `${failures} of ${checks} CHECKS FAILED`}`);
 rule();
-if (failures) process.exit(1);
+process.exitCode = failures === 0 ? 0 : 1;   // P-G4: exitCode, never process.exit()
