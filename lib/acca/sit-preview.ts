@@ -339,6 +339,125 @@ export function sitWriteOutcomeFor(status: number, errorCode?: string | null): S
   return { ok: false, reason: 'failed' };
 }
 
+// ── WHICH SCREEN DOES A RETURNING STUDENT GET? (added 2026-08-12) ────────────
+// The runner's load effect chose between `intro`, `sitting` and `done` with an inline
+// if/else-if/else, and the else was `intro`. That produced a live dead end:
+//
+//   A paper that ends ON THE CLOCK has BOTH `completed=true` (the auto-submit, or the
+//   return-visit finish call, sets it) AND an incomplete submitted set — because the
+//   auto-submit deliberately does not back-fill the tail, `not_reached` being a different
+//   finding from `blank`. That combination matched neither of the first two arms and fell
+//   through to `intro`.
+//
+// So a timed-out student returning to their paper got the START SCREEN. The debrief was
+// unreachable (the done phase is the only route to /api/acca/sit/results), the
+// "I've subscribed — mark my paper" retry was unreachable, and pressing Start minted a NEW
+// attempt — after which `attemptFor` resolves the new one on every subsequent results POST
+// and the old paper's answers are permanently unmarkable through the UI. A 3h15m sit,
+// recoverable only by hand.
+//
+// ── THE RULE: THE ATTEMPT'S STATE DECIDES, NOT THE SUBMITTED SET ─────────────
+// Ruled 2026-08-12. "Is this paper over?" is a fact about the ATTEMPT — completed, or past
+// its deadline — and the count of submitted requirements is downstream of it, not a second
+// opinion on it. The old order asked "is every slot submitted?" first, which is why a paper
+// that was over but incomplete had nowhere to go. Completeness now only decides between
+// `sitting` and `done` for an attempt that is still genuinely open.
+//
+// The server already accepts this shape: `caseMarkReady(sitting, reqs, attemptClosed=true)`
+// short-circuits the per-requirement `submitted_at` check (lib/acca/case-sit.ts), and
+// `attemptIsClosed` above is what the results endpoint passes as `attemptClosed`. The client
+// was the only half that could not express it.
+//
+// PURE so the arms are fixtured rather than eyeballed — scripts/test-sit-preview.ts builds a
+// real expired-attempt shape and pins the old collapse as MUST-FAIL.
+
+/** The three screens the load effect can land on. A subset of the runner's `Phase` union
+ *  (which also carries `loading` / `locked` / `error`, none of which this decides). */
+export type SitLoadPhase = 'intro' | 'sitting' | 'done';
+
+/** The attempt fields this decision reads. Structural, so the runner's own `Attempt` type
+ *  satisfies it without this module importing a component type. */
+export interface SitLoadAttempt {
+  ends_at?: string | null;
+  completed?: boolean | null;
+  completed_at?: string | null;
+}
+
+export interface SitLoadDecision {
+  phase: SitLoadPhase;
+  /** Which requirement to present. Only meaningful when `phase === 'sitting'`. */
+  index: number;
+  /** The caller must POST `action:'finish'` before rendering. True ONLY where the attempt is
+   *  still open and its deadline has passed — an already-completed attempt needs no second
+   *  finish, and the endpoint would no-op on it anyway. */
+  finishAttempt: boolean;
+  /** The paper ended because the clock ran out rather than because it was finished.
+   *  PRESENTATION ONLY — it changes the done screen's heading and nothing about what was
+   *  recorded or what gets marked. */
+  expiredOut: boolean;
+  /** Emit `mock_intro_viewed`. True on the intro arm alone, which is the only route to the
+   *  start screen and the only one with no acca_mock_attempts row already saying so. */
+  reportIntro: boolean;
+}
+
+/**
+ * Did this COMPLETED attempt end on the clock rather than by being finished?
+ *
+ * Compares `completed_at` against `ends_at`, NOT against `now`: every past paper has an
+ * `ends_at` in the past when it is revisited, so a now-based test would headline "Time's up."
+ * on a paper the candidate finished early and came back to read a week later.
+ *
+ * A NULL `completed_at` returns false. Attempts predating that column exist (migration
+ * 20260801120000 added the surrogate key; older rows carry no completion timestamp), and for
+ * those the honest answer is "not known" — claiming the clock beat a student who may well have
+ * finished in time is the worse of the two errors, so the neutral heading wins.
+ */
+export function endedOnClock(attempt: SitLoadAttempt | null | undefined): boolean {
+  if (!attempt || attempt.completed !== true) return false;
+  const ends = Date.parse(attempt.ends_at ?? '');
+  const finished = Date.parse(attempt.completed_at ?? '');
+  if (!Number.isFinite(ends) || !Number.isFinite(finished)) return false;
+  return finished >= ends;
+}
+
+/**
+ * Which screen a load of the sit surface lands on.
+ *
+ * The arms, in the order they are tested and for the reason stated above:
+ *   1. NO ATTEMPT           → intro. Nothing has been started; this is the only start screen.
+ *   2. COMPLETED            → done. THE FIX. Regardless of how many slots were submitted —
+ *                             a finished paper is finished, and an unreached tail is part of
+ *                             what happened rather than a reason to hide the result.
+ *   3. OPEN BUT EXPIRED     → done, after finishing it. Closing the tab must not buy time.
+ *   4. OPEN, ALL SUBMITTED  → done. Reachable only when the last submission's own finish call
+ *                             failed; marking is unaffected (`paperFullySubmitted` carries it).
+ *   5. OPEN, WORK LEFT      → sitting, at the first requirement with no recorded answer.
+ */
+export function sitLoadDecision(
+  attempt: SitLoadAttempt | null | undefined,
+  slotRequirementIds: readonly string[],
+  submitted: ReadonlySet<string>,
+  nowMs: number,
+): SitLoadDecision {
+  const base = { index: 0, finishAttempt: false, expiredOut: false, reportIntro: false };
+
+  if (!attempt) return { ...base, phase: 'intro', reportIntro: true };
+
+  if (attempt.completed === true) {
+    return { ...base, phase: 'done', expiredOut: endedOnClock(attempt) };
+  }
+
+  if (isExpired(attempt.ends_at, nowMs)) {
+    return { ...base, phase: 'done', finishAttempt: true, expiredOut: true };
+  }
+
+  if (isPaperComplete(slotRequirementIds, submitted)) {
+    return { ...base, phase: 'done' };
+  }
+
+  return { ...base, phase: 'sitting', index: nextUnsubmittedIndex(slotRequirementIds, submitted) };
+}
+
 // H:MM:SS. A DURATION formatter — it renders both directions (time remaining on the running
 // clock, and any elapsed figure) because a duration is a duration. Clamped at zero so clock
 // skew can never render a negative time.

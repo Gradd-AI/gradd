@@ -33,8 +33,14 @@ import {
   sitPhaseForRefusal,
   resultsOutcomeFor,
   sitWriteOutcomeFor,
+  sitLoadDecision,
+  endedOnClock,
 } from '../lib/acca/sit-preview';
 import { MOCK_PAPERS, getMockPaper } from '../lib/acca/mocks';
+// Cross-module by design — see the ITEM 2 block at the foot of this file. The client's
+// "this paper is over" and the server's "this paper is markable" have to agree, and that
+// agreement cannot be shown from inside either module alone.
+import { caseMarkReady } from '../lib/acca/case-sit';
 
 // The AFM paper now lives in the merged MOCK_PAPERS registry, not in its own config.
 const AFM_MOCK_PAPER_1 = getMockPaper('afm-paper-1')!;
@@ -335,6 +341,179 @@ ok('the write refusal reasons do not collapse into one another',
 // A locked outcome must never also read as saved — the one confusion that would send a student
 // back into the paper believing an unsaved answer was banked.
 ok('paper_locked is never ok', sitWriteOutcomeFor(402, null).ok === false);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE LOAD-EFFECT ARMS — `sitLoadDecision` (added 2026-08-12)
+// ═══════════════════════════════════════════════════════════════════════════
+// THE DEFECT THESE PIN: a paper that ends ON THE CLOCK carries `completed=true` AND an
+// incomplete submitted set (the auto-submit records the requirement being written and does
+// NOT back-fill the tail). The runner's old inline if/else-if/else matched neither of its
+// first two arms on that shape and fell through to `else` → INTRO. A timed-out student
+// returning to their paper got the START screen: no debrief, no subscribe-and-mark retry,
+// and a Start click there minted a new attempt that made the old paper's answers unmarkable
+// through the UI for good.
+//
+// ── THE STATE IS BUILT THE WAY PRODUCTION BUILDS IT (P-G6) ──────────────────
+// Not a hand-written `{completed:true, ends_at:'…'}` literal, which would prove only that
+// the function reads the fields it is handed. `startedAttempt` runs the SAME arithmetic as
+// app/api/acca/sit/route.ts POST {action:'start'} — `ends_at = started_at +
+// duration_minutes × 60_000`, with `duration_minutes` read from the REAL registry entry, so
+// a paper whose duration changes changes these fixtures with it. `finished` applies what
+// {action:'finish'} writes. `timedOutSubmissions` reproduces what the auto-submit leaves
+// behind rather than asserting a count.
+//
+// The requirement ids are opaque to the decision (it does set membership and nothing else),
+// so they are derived from the paper's real case_ids in the live 4/2/2 split.
+
+const SIT_PAPER = getMockPaper('afm-paper-1')!;
+
+/** Slot ids in paper order, shaped like the live AFM paper: 4 requirements on the Section A
+ *  case, then 2 on each Section B case. */
+const SLOT_IDS: string[] = SIT_PAPER.case_ids.flatMap((caseId, i) =>
+  Array.from({ length: [4, 2, 2][i] }, (_, j) => `${caseId}:r${j + 1}`),
+);
+
+/** An attempt row exactly as POST {action:'start'} writes one. */
+function startedAttempt(startedAtMs: number) {
+  return {
+    mock_id: SIT_PAPER.id,
+    started_at: new Date(startedAtMs).toISOString(),
+    ends_at: new Date(startedAtMs + SIT_PAPER.duration_minutes * 60_000).toISOString(),
+    completed: false,
+    completed_at: null as string | null,
+  };
+}
+
+/** …and what POST {action:'finish'} then does to it. */
+function finished(attempt: ReturnType<typeof startedAttempt>, atMs: number) {
+  return { ...attempt, completed: true, completed_at: new Date(atMs).toISOString() };
+}
+
+/** What the auto-submit leaves behind: everything answered up to and including the
+ *  requirement being written when the bell went, and NO row for anything after it. */
+function timedOutSubmissions(reachedIndex: number): Set<string> {
+  return new Set(SLOT_IDS.slice(0, reachedIndex + 1));
+}
+
+/** The SHIPPED collapse, transcribed from the runner as it was, so the fixtures pin the real
+ *  previous behaviour rather than a description of it. MUST disagree with `sitLoadDecision`
+ *  on the timed-out shape and agree with it everywhere else. */
+function LEGACY_phase(
+  attempt: { ends_at: string; completed: boolean } | null,
+  ids: readonly string[],
+  submitted: ReadonlySet<string>,
+  nowMs: number,
+): 'intro' | 'sitting' | 'done' {
+  if (isPaperComplete(ids, submitted)) return 'done';
+  if (attempt && !attempt.completed) return isExpired(attempt.ends_at, nowMs) ? 'done' : 'sitting';
+  return 'intro';
+}
+
+// ── The timed-out paper: sat, bell went at requirement 5 of 8, returned to later ──
+const SAT_AT = Date.parse('2026-08-10T09:00:00.000Z');
+const BELL = SAT_AT + SIT_PAPER.duration_minutes * 60_000;      // exactly ends_at
+const TIMED_OUT = finished(startedAttempt(SAT_AT), BELL + 400); // auto-submit records, then finishes
+const TIMED_OUT_SUBS = timedOutSubmissions(4);                  // 5 of 8 reached
+const NEXT_DAY = BELL + 24 * 3600_000;
+
+// ⛔ MUST-FAIL — the shipped collapse. This is the bug, asserted as the bug.
+ok('⛔ MUST-FAIL: the OLD arms sent a timed-out paper to the INTRO screen',
+  LEGACY_phase(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY) === 'intro');
+
+// ✅ THE FIX.
+ok('a COMPLETED attempt with an unreached tail goes to DONE',
+  sitLoadDecision(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY).phase === 'done');
+ok('…and the two rules genuinely disagree on that shape (the fix is not a no-op)',
+  sitLoadDecision(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY).phase
+    !== LEGACY_phase(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY));
+ok('…it is reported as having run out of time',
+  sitLoadDecision(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY).expiredOut === true);
+ok('…and is NOT finished again — it is already completed',
+  sitLoadDecision(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY).finishAttempt === false);
+
+// The event half of the same bug: the old `else` also caught this shape, so a returning
+// student with a finished paper emitted `mock_intro_viewed` while never seeing the intro.
+ok('a completed attempt does NOT emit mock_intro_viewed',
+  sitLoadDecision(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY).reportIntro === false);
+ok('⛔ MUST-FAIL: the OLD arms DID count that as an intro view',
+  LEGACY_phase(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY) === 'intro');
+
+// Not one lucky case: EVERY partial tail on a completed attempt lands on done.
+ok('every unreached-tail length on a completed attempt goes to done',
+  SLOT_IDS.every((_, i) =>
+    sitLoadDecision(TIMED_OUT, SLOT_IDS, timedOutSubmissions(i), NEXT_DAY).phase === 'done'));
+
+// ── Every OTHER arm is unchanged. Regression, one shape at a time. ──
+const MID = SAT_AT + 60 * 60_000;                               // an hour in, clock running
+const OPEN = startedAttempt(SAT_AT);
+const PART = timedOutSubmissions(2);                            // 3 of 8 answered
+const ALL = new Set(SLOT_IDS);
+
+ok('no attempt at all → intro', sitLoadDecision(null, SLOT_IDS, new Set(), MID).phase === 'intro');
+ok('…and that is the ONLY arm that emits mock_intro_viewed',
+  sitLoadDecision(null, SLOT_IDS, new Set(), MID).reportIntro === true);
+ok('an open attempt with work left → sitting', sitLoadDecision(OPEN, SLOT_IDS, PART, MID).phase === 'sitting');
+ok('…resuming at the first UNANSWERED requirement',
+  sitLoadDecision(OPEN, SLOT_IDS, PART, MID).index === 3);
+ok('an open attempt past its deadline → done', sitLoadDecision(OPEN, SLOT_IDS, PART, NEXT_DAY).phase === 'done');
+ok('…and IS finished first, so closing the tab buys no time',
+  sitLoadDecision(OPEN, SLOT_IDS, PART, NEXT_DAY).finishAttempt === true);
+ok('an open attempt with every slot submitted → done',
+  sitLoadDecision(OPEN, SLOT_IDS, ALL, MID).phase === 'done');
+ok('a completed attempt with every slot submitted → done',
+  sitLoadDecision(finished(OPEN, MID), SLOT_IDS, ALL, NEXT_DAY).phase === 'done');
+
+for (const [name, a, subs, now] of [
+  ['no attempt', null, new Set<string>(), MID],
+  ['open, work left', OPEN, PART, MID],
+  ['open, expired', OPEN, PART, NEXT_DAY],
+  ['open, all submitted', OPEN, ALL, MID],
+  ['completed, all submitted', finished(OPEN, MID), ALL, NEXT_DAY],
+] as const) {
+  ok(`unchanged vs the old arms: ${name}`,
+    sitLoadDecision(a, SLOT_IDS, subs, now).phase === LEGACY_phase(a, SLOT_IDS, subs, now));
+}
+
+// ── endedOnClock: compared against ends_at, NEVER against now ──
+ok('finished AFTER the bell reads as timed out', endedOnClock(TIMED_OUT) === true);
+ok('finished BEFORE the bell does not', endedOnClock(finished(OPEN, MID)) === false);
+ok('a null completed_at does not claim the clock beat them',
+  endedOnClock({ ...finished(OPEN, MID), completed_at: null }) === false);
+ok('an OPEN attempt is never "ended on the clock"', endedOnClock(OPEN) === false);
+// ⛔ MUST-FAIL — a now-based test. Every past paper has ends_at in the past when revisited, so
+// this would headline "Time's up." on a paper the candidate finished early and came back to.
+ok('⛔ MUST-FAIL: a now-based rule mislabels an early finish revisited later',
+  isExpired(finished(OPEN, MID).ends_at, NEXT_DAY) === true
+    && endedOnClock(finished(OPEN, MID)) === false);
+ok('…and the done screen therefore does not cry "time\'s up" at them',
+  sitLoadDecision(finished(OPEN, MID), SLOT_IDS, ALL, NEXT_DAY).expiredOut === false);
+
+// ── ITEM 2, VERIFIED RATHER THAN ASSUMED: the server accepts this shape ──────
+// The client now sends a timed-out paper to `done`, which fires the results POST. That is
+// only worth doing if the server marks it. Two links, both checked here against the SAME
+// attempt row the fixtures above use:
+//   `attemptIsClosed` is what app/api/acca/sit/results passes as `attemptClosed`, and
+//   `caseMarkReady` is the gate inside lib/acca/case-mark-run that it feeds.
+// Cross-module on purpose — the point is that the two halves agree, and a fixture confined
+// to one module could not have shown that.
+const UNREACHED_TAIL = [
+  { final_answer: 'an answer', passed: false, submitted_at: '2026-08-10T09:30:00.000Z' },
+  { final_answer: '', passed: false, submitted_at: '2026-08-10T12:15:00.000Z' },
+  { final_answer: null, passed: false, submitted_at: null },   // never reached — no row at all
+  { final_answer: null, passed: false, submitted_at: null },
+];
+
+ok('the server agrees the timed-out attempt is CLOSED', attemptIsClosed(TIMED_OUT, NEXT_DAY) === true);
+ok('caseMarkReady MARKS a closed attempt whose tail was never reached',
+  caseMarkReady(true, UNREACHED_TAIL, true).ready === true);
+ok('⛔ MUST-FAIL: without the closed flag that same paper is REFUSED',
+  caseMarkReady(true, UNREACHED_TAIL, false).ready === false);
+ok('…and a paper still RUNNING with an unreached tail stays refused',
+  caseMarkReady(true, UNREACHED_TAIL, attemptIsClosed(OPEN, MID)).ready === false);
+// The whole loop, end to end: client says done → server says closed → gate says markable.
+ok('client `done` and server `markable` agree on the timed-out paper',
+  sitLoadDecision(TIMED_OUT, SLOT_IDS, TIMED_OUT_SUBS, NEXT_DAY).phase === 'done'
+    && caseMarkReady(true, UNREACHED_TAIL, attemptIsClosed(TIMED_OUT, NEXT_DAY)).ready === true);
 
 // ── The verdict ─────────────────────────────────────────────────────────────
 // ADDED 2026-08-05. `failures` was incremented above and NEVER READ: every check could fail

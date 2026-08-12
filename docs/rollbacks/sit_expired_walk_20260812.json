@@ -1,0 +1,65 @@
+{
+  "walk": "sit — completed-attempt intro fall-through, live proof",
+  "date": "2026-08-12",
+  "branch": "fix/sit-completed-attempt-intro-fallthrough",
+  "script": "scripts/_walk_expired_sit.ts (gitignored one-off; this file is the record)",
+  "base": "http://localhost:3111 (dev, APM_CASES=1 — confirmed by an unauthenticated /api/acca/case/list?paper=AFM returning 401)",
+  "account": {
+    "email": "perpaper-test@gradd.ai",
+    "user_id": "0b23b42f-6bcf-44e6-807f-3a440f8ecfcc",
+    "entitlement": "APM only (acca_entitlements 1 row) + legacy profiles.apm_pass_expires_at set",
+    "auth_user_deleted": false,
+    "why_not_deleted": "acca_funnel_events.user_id is ON DELETE SET NULL — deleting a user converts their funnel rows into unattributable ones instead of removing them. Only the walk's own rows were deleted."
+  },
+  "virgin_state_before": {
+    "acca_mock_attempts": 0,
+    "acca_case_progress": 0,
+    "acca_case_marking": 0,
+    "acca_weak_areas": 0
+  },
+  "method": {
+    "real_through_routes": [
+      "POST /api/acca/sit {action:'start'} → attempt created by the route",
+      "POST /api/acca/case/turn ×3 (sitting:true) → the one sit write path",
+      "POST /api/acca/sit {action:'finish'} → what the client fires on the expired-while-away arm",
+      "GET  /api/acca/sit ×2 → the real served payload the decision runs on",
+      "POST /api/acca/sit/results → the real paid marking"
+    ],
+    "single_synthetic_step": "the attempt's started_at/ends_at were moved 4h back with the service client. The route computes ends_at from now and cannot be asked for a deadline already passed, so a genuinely expired attempt cannot be produced any other way. The ROW is route-created; only the two timestamps moved.",
+    "paper": "APM paper-1, 7 requirements across 3 cases; 3 answered, 4 never reached"
+  },
+  "the_finding": {
+    "shape": "completed=true AND 3 of 7 submitted — a paper that ended on the clock with an unreached tail",
+    "old_arms": "INTRO",
+    "new_arms": "DONE",
+    "computed_on": "the REAL GET /api/acca/sit payload, not a literal",
+    "expiredOut": true,
+    "reportIntro": false,
+    "note": "the old `else` also emitted mock_intro_viewed for this shape — an intro view recorded for a student who was never shown the intro"
+  },
+  "server_accepted_it": {
+    "results_status": 200,
+    "marked": true,
+    "marked_now": 3,
+    "marking_seconds": 27,
+    "model_calls": "6 (3 cases × PS + technical)",
+    "marking_rows": 3,
+    "all_results_not_claims": true,
+    "bands_on_answered_requirements": ["nothing", "nothing", "nothing"],
+    "technical_feedback_persisted": true,
+    "debrief_headline_present": true,
+    "answer_states": ["answered", "not_reached"],
+    "weakness_rows": 0,
+    "resolved_rows": 0,
+    "why_zero_weakness_rows": "the walk's answers were one-line placeholders, so every answered requirement banded 'nothing' — the deliberate no-write band (lib/acca/weak-areas.ts). Expected, and the same reason the ledger holds 0 rows globally; not a property of this fix.",
+    "why_it_matters": "'done' is not a cosmetic redirect — the paper the old arms hid behind the Start screen marks cleanly, and the unreached tail is reported as not_reached rather than blank."
+  },
+  "teardown": {
+    "acca_weak_areas": 0,
+    "acca_case_marking": 0,
+    "acca_case_progress": 0,
+    "acca_mock_attempts": 0,
+    "residue": "none — the account is back to the virgin state above"
+  },
+  "result": "PASS — 0 failures across 26 checks"
+}
