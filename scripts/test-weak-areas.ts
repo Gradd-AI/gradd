@@ -25,6 +25,8 @@ import {
   drillBandFor,
   drillLedgerAction,
   SOURCE_WEIGHT,
+  currentDrillExclusion,
+  applyExclusion,
   type WeakAreaRow,
   type SelectionSignals,
 } from '../lib/acca/weak-areas';
@@ -390,6 +392,107 @@ eq('and reaches an unrelated LO not at all', weaknessScore('B1a', [drillRow('E3a
 // The rollback property must survive the new term: no rows → every candidate still 0.
 eq('zero-signal rollback is intact for drill rows too',
   selectionBoost({ lo_code: 'E3a' }, NO_SIGNALS), 0);
+
+// ═════════════════════════════════════════════════════════════════════════════
+// 9. WHAT "TRY ANOTHER" EXCLUDES (changed 2026-08-12)
+// ═════════════════════════════════════════════════════════════════════════════
+line('\n  9. EXCLUSION — the current DRILL, not its LO');
+
+// A representative pool: the AFM B1 shape that measured 1/10 distinct scores. The student is
+// on a B1c drill; the ledger says B1a is weak. Under the OLD rule every B1a drill was filtered
+// out of the pool — the exact drills the ledger was pointing at.
+const CUR = 'drill-b1c-1';
+const POOL = [
+  { id: CUR,           lo_code: 'B1c' },
+  { id: 'drill-b1c-2', lo_code: 'B1c' },
+  { id: 'drill-b1a-1', lo_code: 'B1a' },
+  { id: 'drill-b1a-2', lo_code: 'B1a' },
+  { id: 'drill-b1b-1', lo_code: 'B1b' },
+];
+
+const withId = currentDrillExclusion('B1c', CUR);
+const withoutId = currentDrillExclusion('B1c', null);
+
+eq('with a drill id, the DRILL is excluded', withId, { column: 'id', value: CUR });
+eq('with no drill id, the LO is excluded (the only way left to guarantee a new drill)',
+  withoutId, { column: 'lo_code', value: 'B1c' });
+eq('an empty/whitespace drill id falls back to the LO', currentDrillExclusion('B1c', '   '),
+  { column: 'lo_code', value: 'B1c' });
+eq('undefined falls back to the LO', currentDrillExclusion('B1c', undefined),
+  { column: 'lo_code', value: 'B1c' });
+
+// ── THE GUARANTEE THAT MUST SURVIVE: never re-serve the drill they are on ──
+ok('the current drill is excluded — the serve never repeats it',
+  !applyExclusion(POOL, withId).some((d) => d.id === CUR));
+ok('…and it is excluded on the no-id fallback too',
+  !applyExclusion(POOL, withoutId).some((d) => d.id === CUR));
+// Belt and braces: true for EVERY drill in the pool, not just the one we picked.
+ok('whichever drill the student is on, that drill is the one removed',
+  POOL.every((cur) => !applyExclusion(POOL, currentDrillExclusion(cur.lo_code, cur.id))
+    .some((d) => d.id === cur.id)));
+
+// ── WHAT CHANGED: the weak LO's drills stay in the pool ──
+eq('the weak LO\'s own drills survive the exclusion',
+  applyExclusion(POOL, withId).filter((d) => d.lo_code === 'B1a').length, 2);
+eq('a SIBLING drill on the current LO also survives (a different drill, same LO)',
+  applyExclusion(POOL, withId).filter((d) => d.id === 'drill-b1c-2').length, 1);
+
+// ⛔ MUST-FAIL — the SHIPPED rule. Excluding the LO removed every drill on it, which for a
+// pool already scoped to one sub-area left nothing but siblings scoring identically.
+ok('⛔ MUST-FAIL: the OLD LO exclusion also removed the other B1c drill',
+  applyExclusion(POOL, { column: 'lo_code', value: 'B1c' }).every((d) => d.lo_code !== 'B1c'));
+ok('⛔ MUST-FAIL: the two rules genuinely differ (the fix is not a no-op)',
+  applyExclusion(POOL, withId).length !== applyExclusion(POOL, { column: 'lo_code', value: 'B1c' }).length);
+
+// ── AND THE POINT OF ALL OF IT: the pool now has DISTINCT SCORES ──
+// The metric is the count of distinct scores, never the score itself: a constant added to
+// every candidate cannot pick a winner however large it is.
+// THE LEDGER SHAPE THAT ACTUALLY COLLAPSED, reproduced exactly: ONE open row, on the LO the
+// student is currently drilling. That is 4 of the 5 measured serves (D2c weak with a D2 pool,
+// A1b weak with an A1 pool) — and it is the common shape, because the drill they are stuck on
+// is the drill that opened the row. Excluding that LO leaves nothing but siblings.
+const LEDGER: WeakAreaRow[] = [
+  { lo_code: 'B1c', band: 'weak', occurrence_count: 18, source: 'drill' },
+];
+const sig: SelectionSignals = { openWeaknesses: LEDGER, weakSkills: new Set() };
+const scoresNew = new Set(applyExclusion(POOL, withId).map((d) => selectionBoost(d, sig)));
+const scoresOld = new Set(
+  applyExclusion(POOL, { column: 'lo_code', value: 'B1c' }).map((d) => selectionBoost(d, sig)),
+);
+ok('the new pool carries MORE THAN ONE distinct score — the term can pick a winner',
+  scoresNew.size > 1, `distinct=${scoresNew.size} values=${[...scoresNew].sort().join(', ')}`);
+ok('⛔ MUST-FAIL: the OLD pool collapsed to a SINGLE score — uniform random, as measured',
+  scoresOld.size === 1, `distinct=${scoresOld.size} values=${[...scoresOld].join(', ')}`);
+ok('the weak LO outranks its siblings in the new pool',
+  Math.max(...applyExclusion(POOL, withId).filter((d) => d.lo_code === 'B1c').map((d) => selectionBoost(d, sig)))
+  > Math.max(...applyExclusion(POOL, withId).filter((d) => d.lo_code !== 'B1c').map((d) => selectionBoost(d, sig))));
+// And the reason a bigger weight was refused: under the OLD pool the collapse survives ANY
+// magnitude, because every candidate moves together. Modelled here the way it was modelled
+// against live data before the ruling.
+for (const sibPull of [0.5, 0.25, 0]) {
+  const scaled = new Set(
+    applyExclusion(POOL, { column: 'lo_code', value: 'B1c' })
+      .map((d) => (d.lo_code.slice(0, 2) === 'B1' ? sibPull : 0)),
+  );
+  ok(`⛔ MUST-FAIL: re-weighting the sibling pull to ${sibPull} still collapses the OLD pool`,
+    scaled.size === 1);
+}
+
+// The weights were NOT touched, and that is load-bearing: raising exact over sibling was
+// measured to change the distinct count in none of five real serves, and would swamp the PS
+// term, which is the only term observed to move a winner.
+eq('the sibling pull is UNCHANGED at half an exact match',
+  weaknessScore('B1b', [{ lo_code: 'B1a', band: 'weak', occurrence_count: 1 }]) /
+  weaknessScore('B1a', [{ lo_code: 'B1a', band: 'weak', occurrence_count: 1 }]), 0.5);
+
+// ⚠️ LOGGED, NOT FIXED (2026-08-12): the occurrence cap saturates at 3, so two weak LOs are
+// indistinguishable however far apart their counts are. 9 of the 12 live rows sit at the cap.
+// The pool fix does not touch this, and the ledger still cannot RANK two weak LOs.
+eq('⚠️ a weak LO seen 18 times scores the SAME as one seen 5 times (cap saturation)',
+  weaknessScore('B1a', [{ lo_code: 'B1a', band: 'weak', occurrence_count: 18 }]),
+  weaknessScore('B1a', [{ lo_code: 'B1a', band: 'weak', occurrence_count: 5 }]));
+ok('⚠️ …and both sit exactly at the ceiling',
+  weaknessScore('B1a', [{ lo_code: 'B1a', band: 'weak', occurrence_count: 18 }]) === MAX_WEAKNESS_SCORE);
 
 rule();
 line(`  ${failures === 0 ? `ALL ${checks} CHECKS PASS` : `${failures} of ${checks} CHECKS FAILED`}`);

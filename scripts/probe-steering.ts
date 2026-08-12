@@ -21,7 +21,7 @@
 // NOT IN THE CONTRACT GATE — it needs a database. The `probe-` prefix keeps it clear of
 // run-contracts.ts's `test-*.ts` discovery by construction.
 import { createClient } from '@supabase/supabase-js';
-import { selectionBoost, isWeakSkillBand, type WeakAreaRow } from '../lib/acca/weak-areas';
+import { selectionBoost, isWeakSkillBand, currentDrillExclusion, type WeakAreaRow } from '../lib/acca/weak-areas';
 
 const svc = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
 
@@ -58,13 +58,21 @@ async function main() {
     console.log(`  open ledger: ${open.map((r) => `${r.lo_code}:${r.band}×${r.occurrence_count}`).join('  ')}`);
     console.log(`  weak skills: ${[...weakSkills].join(', ') || '(none)'}`);
 
-    // The `lo=` path: same sub-area as the drill just done, excluding it.
+    // The `lo=` path: same sub-area as the drill just done, excluding THE CURRENT DRILL —
+    // `currentDrillExclusion`, the same rule the route builds its filter from (changed
+    // 2026-08-12). It used to exclude the whole LO, which removed the drills the ledger was
+    // pointing at and left a pool of pure siblings scoring identically.
     const anchor = open[0].lo_code;
     const sub = anchor.slice(0, 2);
+    // Stand in for "the drill the student is on": one on the anchor LO.
+    const { data: cur } = await svc.from('acca_drills').select('id')
+      .eq('exam_board', 'ACCA').eq('paper_code', paper).eq('status', 'approved').eq('published', true)
+      .eq('lo_code', anchor).limit(1).maybeSingle();
+    const exclude = currentDrillExclusion(anchor, (cur as any)?.id ?? null);
     const { data: pool } = await svc.from('acca_drills')
       .select('id, lo_code, topic, professional_skill_tag')
       .eq('exam_board', 'ACCA').eq('paper_code', paper).eq('status', 'approved').eq('published', true)
-      .neq('lo_code', anchor).like('lo_code', `${sub}%`).limit(10);
+      .neq(exclude.column, exclude.value).like('lo_code', `${sub}%`).limit(50);
 
     const scored = (pool ?? []).map((d: any) => ({ ...d, score: selectionBoost(d, signals) }))
       .sort((a, b) => b.score - a.score);
