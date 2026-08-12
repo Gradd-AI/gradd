@@ -6,6 +6,7 @@ import {
   selectionBoost,
   pickWeighted,
   isWeakSkillBand,
+  currentDrillExclusion,
   NO_SIGNALS,
   type SelectionSignals,
   type WeakAreaRow,
@@ -175,7 +176,15 @@ export async function GET(request: Request): Promise<Response> {
   const steer = (d: { lo_code: string; professional_skill_tag?: string | null }) =>
     selectionBoost(d, signals);
 
-  // Prefer same sub-area (same syllabus section), exclude current drill
+  // ── WHAT IS EXCLUDED: THE CURRENT DRILL, NOT ITS LO (changed 2026-08-12) ──
+  // This tier's comment already read "exclude current drill" while the code excluded the whole
+  // LO — and that gap is what made the weakness term inert. Measured across five real serves
+  // (`npm run probe:steering`), removing the anchor LO left a pool of pure siblings, every one
+  // scoring identically, so `pickWeighted` fell back to the uniform random pick it makes with
+  // an empty ledger. Putting the weak LO's own drills back gives them an exact match (2.4) in
+  // a field of siblings (1.2) — 5 of 5 serves gained a second distinct score, with NO change
+  // to any weight. See `currentDrillExclusion` for why it is not simply `.neq('id', …)`.
+  const exclude = currentDrillExclusion(lo!, drillId);
   const { data: sameArea } = await supabase
     .from('acca_drills')
     .select(SERVE_SEL)
@@ -183,15 +192,24 @@ export async function GET(request: Request): Promise<Response> {
     .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
-    .neq('lo_code', lo)
+    .neq(exclude.column, exclude.value)
     .like('lo_code', `${subArea}%`)
-    .limit(10);
+    // ⚠️ THE LIMIT IS PART OF THE POOL, and at 10 it silently undid the exclusion change.
+    // There is no ORDER BY, so Postgres returns an arbitrary 10 — and AFM's B1 sub-area holds
+    // 14 published drills, 8 of them on B1a. The measured result was a pool of ten B1a rows
+    // in which the weak LO's own drills were never FETCHED, so putting them back in scope
+    // achieved nothing. 50 covers every sub-area in both papers today (the largest is APM A3
+    // at 18) with room to grow, and the scoring already handles a larger pool — it ranks and
+    // takes the max, it does not iterate expensively.
+    .limit(50);
 
   if (sameArea && sameArea.length > 0) {
     return NextResponse.json(serveDrill(pickWeighted(sameArea, steer)!));
   }
 
-  // Fall back to any other approved drill
+  // Fall back to any other approved drill — same exclusion rule, for the same reason. A
+  // student weak on this LO should not have its remaining drills filtered out of the widest
+  // pool either.
   const { data: anyDrill } = await supabase
     .from('acca_drills')
     .select(SERVE_SEL)
@@ -199,7 +217,7 @@ export async function GET(request: Request): Promise<Response> {
     .eq('paper_code', paper)
     .eq('status', 'approved')
     .eq('published', true)
-    .neq('lo_code', lo)
+    .neq(exclude.column, exclude.value)
     .limit(20);
 
   if (anyDrill && anyDrill.length > 0) {

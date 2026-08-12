@@ -205,6 +205,70 @@ export function pickWeighted<T>(
   return top[Math.floor(rnd() * top.length)] ?? top[0];
 }
 
+// ── WHAT "TRY ANOTHER" EXCLUDES (changed 2026-08-12) ─────────────────────────
+// The live `lo=` tiers excluded the whole LEARNING OUTCOME (`.neq('lo_code', lo)`), and that
+// is what made the weakness term inert on every real serve.
+//
+// MEASURED, not theorised (`npm run probe:steering`, 2026-08-12): across five real
+// (user, paper) serves, EVERY candidate in the pool scored identically — `distinct scores in
+// pool: 1/N` — so `pickWeighted` degraded to the uniform random pick it makes with an EMPTY
+// ledger. The cause: the pool is already scoped to one sub-area, and excluding the anchor LO
+// removes the ONE LO the ledger has most to say about, leaving a pool of pure siblings. Every
+// candidate then gets the identical sub-area half-pull, and a constant added to everyone
+// cannot pick a winner. Re-weighting exact against sibling was modelled at 0.25/1, 0.2/1.5 and
+// 0/1 and changed the distinct count in NONE of the five — a constant is a constant at any
+// magnitude.
+//
+// Excluding the current DRILL instead puts the weak LO's own drills back in the pool, where
+// they score an exact match (2.4) against a field of siblings (1.2). Modelled over the same
+// five serves: 5 of 5 gain a second distinct score, WITH THE WEIGHTS UNCHANGED.
+//
+// THIS FINISHES AN INTENT ALREADY STATED IN THE ROUTE. `next-drill/route.ts` declares
+// `drill_id` as "item 4: exclude current DRILL, not LO", and the sameArea tier's own comment
+// already read "exclude current drill" while the code excluded the LO. The interleave scorer
+// honours it (`d.id !== drillId`); the live tiers never adopted it.
+//
+// ⚠️ WHY IT IS NOT SIMPLY `.neq('id', drillId)`: `drill_id` is an OPTIONAL query param, and a
+// legacy client that sends none leaves us no way to name the current drill. Dropping the LO
+// exclusion there would let "try another" serve back the exact drill the student is looking
+// at. So the rule excludes the NARROWEST THING IT CAN IDENTIFY — the drill when it is known,
+// the LO when it is not — which is never worse than today's behaviour and is better whenever
+// the client supplies the id (every current client does).
+
+/** One `.neq(column, value)` filter. Returned as data rather than applied, so the route builds
+ *  its query from the same object the fixtures assert on — there is no second copy of the
+ *  rule to drift. */
+export interface ExclusionRule {
+  column: 'id' | 'lo_code';
+  value: string;
+}
+
+/**
+ * What must "try another" exclude so it never re-serves the drill the student is on?
+ *
+ * With a drill id: that drill, and nothing else — so other drills on the same (weak) LO stay
+ * in the pool and can be picked.
+ * Without one: the whole LO, because that is the only remaining way to guarantee a different
+ * drill. Strictly today's behaviour, kept as the fallback rather than as the rule.
+ */
+export function currentDrillExclusion(
+  lo: string,
+  drillId: string | null | undefined,
+): ExclusionRule {
+  const id = typeof drillId === 'string' ? drillId.trim() : '';
+  return id ? { column: 'id', value: id } : { column: 'lo_code', value: lo };
+}
+
+/** Apply an ExclusionRule in code. The route applies it in SQL; this exists so fixtures can
+ *  assert what the rule MEANS over a representative pool — that the current drill is gone and
+ *  that same-LO siblings survive — rather than restating the filter. */
+export function applyExclusion<T extends { id: string; lo_code: string }>(
+  rows: readonly T[],
+  rule: ExclusionRule,
+): T[] {
+  return rows.filter((r) => String(r[rule.column]) !== rule.value);
+}
+
 // ── Closing a row ────────────────────────────────────────────────────────────
 // THE SAME INSTRUMENT THAT OPENS A ROW CLOSES IT (Grant-ruled 2026-07-31). A later STRONG or
 // EXEMPLARY band on the same (user, paper, lo_code, source) resolves the open row. No new

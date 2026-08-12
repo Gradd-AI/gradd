@@ -624,6 +624,28 @@ when the session ends on a branch.
   OFF in production. The only term observed to change a winner was **PS** (`D2h` at 2.20 vs
   1.20, on a `communication` tag). **Raising `W_WEAK` would not fix this** — n×constant is still
   a constant. Report `distinct scores in pool`, never the score.
+  ✅ **FIXED BY CHANGING THE POOL, NOT THE WEIGHTS (2026-08-12).** `currentDrillExclusion`
+  (`weak-areas.ts`) — the live `lo=` tiers now exclude the **current DRILL by id**, not its whole
+  LO, so the weak LO's own drills are back in the pool and score an exact match against a field
+  of siblings. Finishes an intent stated TWICE in the route already (`drill_id` is declared
+  *"item 4: exclude current DRILL, not LO"*, and the sameArea tier's comment read *"exclude
+  current drill"* while the code excluded the LO). Falls back to the LO when no `drill_id` is
+  supplied — the narrowest exclusion it can identify, since a legacy client leaves no other way
+  to guarantee a different drill. **Weights UNTOUCHED**: exact-over-sibling was modelled at
+  0.25/1, 0.2/1.5 and 0/1 and changed the distinct count in NONE of five real serves, and would
+  swamp the PS term. ⚠️ **THE `.limit()` IS PART OF THE POOL** — at 10, with no `ORDER BY`, an
+  arbitrary 10 came back and AFM B1 (14 drills, 8 on B1a) returned ten B1a rows in which the
+  weak LO's drills were never FETCHED, silently undoing the change. Raised to **50**.
+  📐 **MEASURED AFTER: 3 of 5 serves now discriminate (1/N → 2/N), not 5 of 5.** The pre-build
+  model predicted 5/5 and was WRONG because it did not exclude the current drill by id. The
+  remaining two are blocked by **CONTENT DEPTH, not code**: APM A1 is 10 LOs across 10 drills and
+  D2 is 9 across 11, so excluding the current drill removes the ONLY drill on the weak LO and the
+  pool is all siblings again. **The fix's ceiling is drills-per-LO** — AFM (B1c: 4, B1a: 8) has
+  it, APM does not.
+  ⚠️ **OCCURRENCE-CAP SATURATION — KNOWN, LOGGED, NOT FIXED.** The cap saturates at 3 misses, so
+  `weak×18` and `weak×5` score identically (both at `MAX_WEAKNESS_SCORE`); **9 of the 12 live rows
+  sit at the cap**. The ledger can say an LO is weak but CANNOT RANK two weak LOs against each
+  other, and the pool fix does not touch that. Fixtured as a known limit.
   **READ:** `app/api/acca/next-drill/route.ts`. `W_WEAK = 0` is **CLOSED** — and the steering is
   applied on the LIVE `area=` and `lo=` paths as well as the `APM_INTERLEAVE`-gated scorer, because
   that flag is NOT set in production and steering only there would have shipped a ledger no student's

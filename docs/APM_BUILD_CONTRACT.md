@@ -4614,3 +4614,44 @@ sub-area. Options logged in `AFM_SURFACED.md`; none taken.
 
 **Also measured:** 9 of the 12 rows sit at the occurrence cap, so occurrence_count values from 3
 to 144 all score identically — the ledger cannot tell "stuck three times" from "stuck 144 times".
+
+---
+
+## SESSION BANK — 2026-08-12 (e) — THE POOL, NOT THE WEIGHTS
+
+Branch `fix/next-drill-exclude-drill-not-lo`. Grant ruled (b'): change the pool, leave the
+weights alone, do not raise exact over sibling, keep SUB_AREA_PULL at 0.5.
+
+**WHY THE WEIGHTS WERE THE WRONG LEVER, measured before building.** All five live pools were
+HOMOGENEOUS with respect to the ledger — four all-sibling, one all-exact — so no exact:sibling
+ratio could discriminate. Modelled at 0.5/1, 0.25/1, 0.2/1.5 and 0/1: distinct count unchanged
+in every case. A constant added to every candidate cannot pick a winner at any magnitude, and
+raising it would have swamped the PS term, the only term observed to move a winner.
+
+**WHAT SHIPPED.** `currentDrillExclusion` (pure, `weak-areas.ts`) — exclude the current DRILL by
+id, falling back to the LO when no `drill_id` is supplied. The route builds its `.neq` from that
+object so there is no second copy. This finishes an intent the route stated TWICE: `drill_id` is
+declared "item 4: exclude current DRILL, not LO", and the sameArea tier's comment already read
+"exclude current drill" while the code excluded the LO.
+
+**THE LIMIT WAS PART OF THE POOL — found only by re-measuring.** With the exclusion changed, the
+probe still reported 1/10. Cause: `.limit(10)` with no ORDER BY returns an arbitrary 10, and AFM
+B1 holds 14 drills of which 8 are B1a — so the pool came back as ten B1a rows and the weak LO's
+drills were never FETCHED. Raised to 50. Without this the exclusion change was inert on AFM too.
+
+**THE PREDICTION WAS WRONG AND THE MEASUREMENT CORRECTED IT.** Pre-build modelling said 5 of 5
+serves would gain a second distinct score. Actual: **3 of 5**. The model had not excluded the
+current drill by id — it dropped an arbitrary row instead — so it assumed the anchor LO always
+contributes a surviving drill. For a one-drill LO it does not.
+
+**THE REMAINING TWO ARE CONTENT DEPTH.** APM A1 = 10 LOs across 10 drills, D2 = 9 across 11.
+Excluding the current drill removes the only drill on the weak LO, so the pool is all siblings
+again. Both flat serves are APM; AFM works because B1c has 4 drills and B1a 8. The steering
+term's ceiling is drills-per-LO and no query or weight change raises it.
+
+**ALSO LOGGED, NOT FIXED (on instruction):** the occurrence cap saturates at 3, so weak x18 and
+weak x5 score identically and 9 of the 12 live rows sit at the cap. The ledger can say an LO is
+weak but cannot rank two weak LOs against each other. Fixtured as a known limit.
+
+Caveat unchanged: 3 users, one of them Grant's. Enough to show the term was inert and enough to
+show the pool change makes it fire on AFM; not enough to tune anything.
