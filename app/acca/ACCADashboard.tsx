@@ -179,8 +179,21 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                   app/api/acca/mock + app/api/acca/sit each check hasPaperAccess for the paper
                   actually being sat. A student who holds neither still SEES this card —
                   casesEnabled is the only condition on rendering it — and is refused on click.
-                  That is an upsell, not a leak, but it does mean the card's presence is not a
-                  statement about what they bought. */}
+                  It is not a leak, and the card's presence is not a statement about what they
+                  bought.
+
+                  ⚠️ CORRECTED 2026-08-12: this said "That is an upsell, not a leak." The
+                  "not a leak" half was true; the "upsell" half was FALSE for the whole life of
+                  this surface. Clicking through landed on SitRunner's generic error —
+                  "Couldn't load the paper. Reload to try again." — because every non-200 from
+                  /api/acca/sit collapsed into one phase with one hardcoded string. The card
+                  sent unentitled students to a wall that read as BROKEN rather than one that
+                  sold, and this comment asserted the opposite confidently enough that nobody
+                  went and clicked it.
+                  It IS an upsell now: SitRunner has a `locked` phase (402 -> `paper_locked`,
+                  lib/acca/sit-preview.ts) rendering the same "part of the {paper} subscription"
+                  copy and the same Subscribe-to-unlock CTA the practice case surface uses.
+                  Do not restore the original wording without re-walking the click. */}
               <Link href={mockHref} className="apm-dash-cases-card">
                 <div className="apm-dash-cases-text">
                   <span className="apm-dash-cases-title">Timed mock</span>

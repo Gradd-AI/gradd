@@ -29,6 +29,10 @@ import {
   sitDisplayLabel,
   sitCaseGate,
   isSittableCaseRow,
+  sitRefusalFor,
+  sitPhaseForRefusal,
+  resultsOutcomeFor,
+  sitWriteOutcomeFor,
 } from '../lib/acca/sit-preview';
 import { MOCK_PAPERS, getMockPaper } from '../lib/acca/mocks';
 
@@ -232,6 +236,105 @@ ok('the mark number is never mistaken for a code', sitDisplayLabel('(i) — 10 m
 ok('prose in a label survives', sitDisplayLabel('(i) Part one — 10 marks') === '(i) Part one');
 ok('null label stays null', sitDisplayLabel(null) === null);
 ok('undefined label stays null', sitDisplayLabel(undefined) === null);
+
+// ── STATUS → PHASE / OUTCOME (added 2026-08-12) ───────────────────────────────
+// The defect these guard is not a crash. It is a student being told to retry something that
+// cannot succeed, three times over, with the worst instance landing after a 3h15m paper has
+// already been sat. Nothing throws; the copy is simply false. Only a behavioural assertion
+// over the mapping catches that class.
+//
+// P-G3: THE THREE COLLAPSES THAT SHIPPED ARE PINNED AS MUST-FAIL. Each is exactly what the
+// code did before this change, and each would pass a suite that only checked the happy path.
+//
+//   OK_ONLY      the load arm: `!res.ok` → one phase, one string. Cannot distinguish 402.
+//   ANY_409_OK   the write arm: `res.ok || res.status === 409`. Reports `attempt_closed`
+//                and `no_open_attempt` — both refusals — to the student as SAVED WORK.
+//   CODE_ONLY    the results arm: only `paper_not_finished` was special-cased, so a lapsed
+//                subscription got the generic retry copy under a "Try marking again" button.
+const OK_ONLY = (status: number) => (status >= 200 && status < 300 ? 'ok' : 'error');
+const ANY_409_OK = (status: number) => (status >= 200 && status < 300) || status === 409;
+const CODE_ONLY = (_status: number, code?: string | null) =>
+  code === 'paper_not_finished' ? 'not_finished' : 'failed';
+
+ok('MUST-FAIL: the load collapse cannot tell 402 from 500 — both are "error"',
+  OK_ONLY(402) === OK_ONLY(500));
+ok('...and the real mapping separates them',
+  sitPhaseForRefusal(sitRefusalFor(402)) !== sitPhaseForRefusal(sitRefusalFor(500)));
+
+ok('MUST-FAIL: the write collapse calls attempt_closed a success',
+  ANY_409_OK(409) === true);
+ok('...and the real mapping refuses it',
+  sitWriteOutcomeFor(409, 'attempt_closed').ok === false);
+ok('...while still counting already_submitted as saved (the reason that arm existed)',
+  sitWriteOutcomeFor(409, 'already_submitted').ok === true);
+
+ok('MUST-FAIL: the results collapse sends a 402 to the generic retry copy',
+  CODE_ONLY(402, 'subscription_required') === 'failed');
+ok('...and the real mapping calls it paper_locked',
+  resultsOutcomeFor(402, 'subscription_required') === 'paper_locked');
+
+// ── sitRefusalFor / sitPhaseForRefusal ──
+ok('402 is the only load status that is not an error phase',
+  sitRefusalFor(402) === 'paper_locked' && sitPhaseForRefusal('paper_locked') === 'locked');
+ok('404 is not_available and lands in error',
+  sitRefusalFor(404) === 'not_available' && sitPhaseForRefusal('not_available') === 'error');
+ok('500 is failed', sitRefusalFor(500) === 'failed');
+ok('502 is failed', sitRefusalFor(502) === 'failed');
+// 401 deliberately shares the `failed` copy: the mock PAGE redirects an unauthenticated
+// visitor server-side, so a reload really does resolve a session that expired mid-flight.
+ok('401 is failed, so "reload" stays the honest instruction for it',
+  sitRefusalFor(401) === 'failed' && sitPhaseForRefusal(sitRefusalFor(401)) === 'error');
+
+// ── resultsOutcomeFor ──
+ok('a 200 is ok', resultsOutcomeFor(200, null) === 'ok');
+ok('a 201 is ok', resultsOutcomeFor(201, null) === 'ok');
+ok('402 is paper_locked regardless of code', resultsOutcomeFor(402, null) === 'paper_locked');
+// `paper_not_finished` arrives as a 409, so the CODE is load-bearing — the status alone cannot
+// decide it, which is the whole reason this function takes two arguments.
+ok('409 paper_not_finished is not_finished', resultsOutcomeFor(409, 'paper_not_finished') === 'not_finished');
+ok('409 with a different code is failed, not silently not_finished',
+  resultsOutcomeFor(409, 'no_attempt') === 'failed');
+ok('409 with no code is failed', resultsOutcomeFor(409, null) === 'failed');
+ok('404 is failed', resultsOutcomeFor(404, null) === 'failed');
+ok('500 is failed (results)', resultsOutcomeFor(500, null) === 'failed');
+ok('a status alone can never yield not_finished — the code is required',
+  resultsOutcomeFor(409, undefined) !== 'not_finished');
+
+// ── sitWriteOutcomeFor ──
+ok('a 200 write is ok and not flagged already-submitted',
+  (() => { const o = sitWriteOutcomeFor(200, null); return o.ok === true && o.alreadySubmitted === false; })());
+ok('already_submitted is ok AND flagged, because the answer really is recorded',
+  (() => { const o = sitWriteOutcomeFor(409, 'already_submitted'); return o.ok === true && o.alreadySubmitted === true; })());
+ok('402 is a paper_locked refusal',
+  (() => { const o = sitWriteOutcomeFor(402, 'subscription_required'); return o.ok === false && o.reason === 'paper_locked'; })());
+ok('attempt_closed is a refusal, not a save',
+  (() => { const o = sitWriteOutcomeFor(409, 'attempt_closed'); return o.ok === false && o.reason === 'attempt_closed'; })());
+ok('no_open_attempt is a refusal, not a save',
+  (() => { const o = sitWriteOutcomeFor(409, 'no_open_attempt'); return o.ok === false && o.reason === 'attempt_closed'; })());
+// An UNRECOGNISED 409 must fail, which is the safe direction and self-correcting: if the write
+// had in fact landed, the retry returns already_submitted and reads as saved. The reverse —
+// claiming saved — has no recovery at all.
+ok('an unknown 409 code is a failure, not an assumed save',
+  (() => { const o = sitWriteOutcomeFor(409, 'something_new'); return o.ok === false && o.reason === 'failed'; })());
+ok('a 409 with no code at all is a failure',
+  (() => { const o = sitWriteOutcomeFor(409, null); return o.ok === false && o.reason === 'failed'; })());
+ok('a 500 write is a plain failure',
+  (() => { const o = sitWriteOutcomeFor(500, null); return o.ok === false && o.reason === 'failed'; })());
+ok('a 404 write is a plain failure',
+  (() => { const o = sitWriteOutcomeFor(404, null); return o.ok === false && o.reason === 'failed'; })());
+
+// The three refusal reasons stay DISTINCT, because each needs a different thing from the
+// student: an action that makes the retry work, a move to the results, or a blind retry.
+ok('the write refusal reasons do not collapse into one another',
+  new Set([
+    (sitWriteOutcomeFor(402, 'subscription_required') as { ok: false; reason: string }).reason,
+    (sitWriteOutcomeFor(409, 'attempt_closed') as { ok: false; reason: string }).reason,
+    (sitWriteOutcomeFor(500, null) as { ok: false; reason: string }).reason,
+  ]).size === 3);
+
+// A locked outcome must never also read as saved — the one confusion that would send a student
+// back into the paper believing an unsaved answer was banked.
+ok('paper_locked is never ok', sitWriteOutcomeFor(402, null).ok === false);
 
 // ── The verdict ─────────────────────────────────────────────────────────────
 // ADDED 2026-08-05. `failures` was incremented above and NEVER READ: every check could fail

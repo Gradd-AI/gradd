@@ -8,6 +8,12 @@ import {
   remainingMs,
   isExpired,
   clockState,
+  sitRefusalFor,
+  sitPhaseForRefusal,
+  resultsOutcomeFor,
+  sitWriteOutcomeFor,
+  type SitRefusal,
+  type SitWriteOutcome,
 } from '@/lib/acca/sit-preview';
 import type { AccaPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
@@ -71,7 +77,10 @@ import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 // server holding an answer the candidate has not committed, which the immutable-
 // submission rule below then could not cleanly reconcile.
 
-type Phase = 'loading' | 'error' | 'intro' | 'sitting' | 'done';
+// `locked` added 2026-08-12. The union previously had nowhere to put "refused, and here is
+// why", so a 402 subscription_required landed in `error` beside a 500 and rendered the same
+// generic "Couldn't load the paper. Reload to try again." — advice that can never work.
+type Phase = 'loading' | 'error' | 'locked' | 'intro' | 'sitting' | 'done';
 
 // ── Debrief payload (mirrors lib/acca/debrief.ts's DebriefReport) ─────────────
 // Typed here rather than imported so the client bundle never pulls a server module in
@@ -181,11 +190,27 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   // guard that itself triggers a render would be the thing it is guarding against.
   const [results, setResults] = useState<ResultsData | null>(null);
   const [resultsError, setResultsError] = useState<string | null>(null);
+  // Marking refused for entitlement, AFTER the paper was sat. Its own flag rather than a
+  // string in `resultsError`, because it is not an error — the paper is safe and the student
+  // has an action. See the locked branch of the `done` render.
+  const [resultsLocked, setResultsLocked] = useState(false);
   const requestedRef = useRef(false);
   // The paper ended because the clock ran out rather than because the candidate finished it.
   // Purely for what the done screen SAYS — it changes nothing about what was recorded.
   const [expiredOut, setExpiredOut] = useState(false);
   const autoSubmitRef = useRef(false);
+  // WHY a request was refused, when it was. Carried for both the `locked` and `error` phases:
+  // `not_available` (flag off / paper not servable) and `failed` share the error screen but
+  // must not share its copy — "reload" is honest advice for one of them and not the other.
+  const [refusal, setRefusal] = useState<SitRefusal | null>(null);
+  // A mid-sit lapse. Distinct from `submitError` because it is not a failure to retry blindly:
+  // the answer is still in the box, the paper is not over, and there is an action that makes
+  // the retry work. `null` means no lapse.
+  const [lapsed, setLapsed] = useState(false);
+  // Where the upsell goes, carrying the paper (lib/acca/paper-url.ts). Same href the practice
+  // surface uses, so both surfaces sell the same paper from the same status code.
+  const subscribeHref = paperHref('/acca/subscribe', paper);
+  const hubHref = paperHref('/acca', paper);
   // Which mock paper this mount has already reported an intro view for. The load effect's
   // `cancelled` flag usually absorbs React's Strict Mode double-invoke, but only if the fetch
   // resolves AFTER cleanup — a warm cache can beat it. Keyed on the mock id, like CaseList's
@@ -201,7 +226,17 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     (async () => {
       try {
         const res = await fetch(`/api/acca/sit?paper=${encodeURIComponent(paper)}`);
-        if (!res.ok) { if (!cancelled) setPhase('error'); return; }
+        // A non-200 is not one thing. This used to be `setPhase('error')` for every status,
+        // so an unentitled student — the highest-intent visitor this surface gets — was told
+        // "Couldn't load the paper. Reload to try again." A reload cannot fix a subscription.
+        if (!res.ok) {
+          if (!cancelled) {
+            const why = sitRefusalFor(res.status);
+            setRefusal(why);
+            setPhase(sitPhaseForRefusal(why));
+          }
+          return;
+        }
         const json = (await res.json()) as PaperData;
         if (cancelled) return;
         setData(json);
@@ -281,21 +316,40 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
   // idempotency — the server owns that.
   const fetchResults = useCallback(async () => {
     setResultsError(null);
+    setResultsLocked(false);
     try {
       const res = await fetch('/api/acca/sit/results', {
         method: 'POST', headers: JSON_HEADERS, body: JSON.stringify({ paper }),
       });
       const json = await res.json().catch(() => null);
-      if (!res.ok) {
-        setResultsError(
-          json?.error === 'paper_not_finished'
-            ? 'This paper is not finished yet, so it has not been marked.'
-            : 'Marking did not complete. Your answers are saved — try again.',
-        );
+      // ── THE WORST OF THE THREE DEAD ENDS, AND THE ONE FIXED FIRST ────────────
+      // A lapsed subscription 402s here, and this screen is reached only AFTER a 3h15m paper
+      // has been sat. The old code sent every non-200 except `paper_not_finished` to
+      // "Marking did not complete. Your answers are saved — try again." under a button
+      // labelled "Try marking again" — an infinite retry on a request that cannot succeed
+      // until something changes outside this screen, at the moment the student has the most
+      // invested and the least patience.
+      //
+      // `resultsOutcomeFor` reads the code as well as the status, because
+      // `paper_not_finished` is itself a 409 and the status alone cannot decide it.
+      const outcome = resultsOutcomeFor(res.status, json?.error);
+      if (outcome === 'paper_locked') {
+        // NOT set as `resultsError`: the locked render leads with the work being safe, and
+        // reusing the error slot would put it in red beside a genuine failure.
+        setResultsLocked(true);
+        return;
+      }
+      if (outcome === 'not_finished') {
+        setResultsError('This paper is not finished yet, so it has not been marked.');
+        return;
+      }
+      if (outcome === 'failed') {
+        setResultsError('Marking did not complete. Your answers are saved — try again.');
         return;
       }
       setResults(json as ResultsData);
     } catch {
+      // A thrown fetch is a transport failure, which IS worth retrying blindly.
       setResultsError('Marking did not complete. Your answers are saved — try again.');
     }
   }, [paper]);
@@ -329,11 +383,19 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     }
   }, [slotIds, data, paper]);
 
-  /** Record ONE requirement through the standard sit write path. Returns false only on a real
-   *  failure — a 409 is success from the candidate's point of view, because it means the
-   *  answer is already recorded (a double-submit, a replay, or the auto-submit racing a manual
-   *  one). Shared by the manual submit and the auto-submit so there is one write shape. */
-  const recordAnswer = useCallback(async (slot: Slot, body: string): Promise<boolean> => {
+  /** Record ONE requirement through the standard sit write path. Shared by the manual submit
+   *  and the auto-submit so there is one write shape.
+   *
+   *  ── RETURNS A DISCRIMINATED OUTCOME, NOT A BOOLEAN (changed 2026-08-12) ────
+   *  It used to be `res.ok || res.status === 409`, which threw the status away — so no caller
+   *  could tell a lapsed subscription from a server fault, and both surfaced as "That didn't
+   *  save. Press submit again." One of those retries works and the other never will.
+   *
+   *  The boolean was also WRONG about 409, not merely uninformative: that route returns 409 for
+   *  `already_submitted` (the answer IS recorded — the reason this arm existed),
+   *  `attempt_closed` and `no_open_attempt`. The last two are refusals and were being reported
+   *  to the student as saved work. `sitWriteOutcomeFor` reads the code and separates them. */
+  const recordAnswer = useCallback(async (slot: Slot, body: string): Promise<SitWriteOutcome> => {
     // `sitting` makes the turn route skip the teach engine, record `final_answer` and never
     // write `passed`. It is also what makes that route serve mock content at all: the mock
     // guard refuses reserved cases in practice mode and allows them in sit mode.
@@ -351,7 +413,8 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
         paper: data?.paper.paper ?? paper,
       }),
     });
-    return res.ok || res.status === 409;
+    const json = res.ok ? null : await res.json().catch(() => null);
+    return sitWriteOutcomeFor(res.status, json?.error);
   }, [data, paper]);
 
   const finishPaper = useCallback(async () => {
@@ -376,6 +439,11 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
     const slot = slots[index];
     setSubmitting(true);
     try {
+      // The outcome is deliberately DISCARDED here, unlike in submitCurrent. At the bell there
+      // is no retry to offer and no screen left to offer it on: the paper closes either way,
+      // and a lapse banner on a surface that is about to become the done screen would be a
+      // prompt the student cannot act on. If the write was refused, that requirement stays
+      // `not_reached` — which is the truth of what happened.
       if (slot) await recordAnswer(slot, text);
     } catch {
       // Nothing to retry against — the clock has run out either way, and the paper must close.
@@ -408,9 +476,35 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
 
     setSubmitting(true);
     setSubmitError(false);
+    setLapsed(false);
     try {
-      // The ONE sit write path for both papers — see recordAnswer. A 409 counts as saved.
-      if (!(await recordAnswer(slot, text))) { setSubmitError(true); return; }
+      // The ONE sit write path for both papers — see recordAnswer.
+      const outcome = await recordAnswer(slot, text);
+      if (!outcome.ok) {
+        // ── A LAPSE WITH THE CLOCK RUNNING: PRESERVE, THEN SELL ────────────────
+        // Chosen treatment, and what it deliberately does NOT do:
+        //   • The phase STAYS `sitting`. The paper is not finished, not abandoned, and not
+        //     navigated away from — so `text` survives in the box and the submitted
+        //     requirements stay durable in acca_case_progress exactly as they were.
+        //   • The subscribe link opens in a NEW TAB. This is the whole preservation
+        //     mechanism: the in-progress answer exists only in React state, so navigating
+        //     this tab would destroy the one thing that is not already saved.
+        //   • The existing Submit button IS the retry. Nothing extra to press, and it
+        //     re-reads the entitlement server-side on the next attempt.
+        //   • THE CLOCK IS NOT PAUSED, and the banner says so rather than implying safety.
+        //     `ends_at` is server-authoritative and set once at start; pausing it would mean
+        //     a candidate could stop a timed exam by letting a card lapse, which is a change
+        //     to what a timed sit MEANS, not a courtesy. Being honest about the running clock
+        //     is the difference between preserving their work and misleading them about it.
+        if (outcome.reason === 'paper_locked') { setLapsed(true); return; }
+        // The server says this attempt is over (finished elsewhere, or closed). There is
+        // nothing to retry, so go where the paper actually is — the results — rather than
+        // leaving "press submit again" on screen forever. This arm is only reachable now that
+        // `attempt_closed` is no longer mis-read as a successful write.
+        if (outcome.reason === 'attempt_closed') { setPhase('done'); return; }
+        setSubmitError(true);
+        return;
+      }
 
       if (last) {
         await finishPaper();
@@ -436,15 +530,87 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
 
   if (phase === 'loading') return shell(<div className="sit-state">Loading…</div>);
 
+  // ── Refused for entitlement, BEFORE the paper was started ────────────────────
+  // The copy register is CaseSession's, not a new one: "Exam cases are part of the {paper}
+  // subscription." → "Timed mocks are part of the {paper} subscription.", the same
+  // "Subscribe to unlock →" CTA, and the same back-link shape. One status code, one voice.
+  //
+  // This tab may be navigated away freely — nothing has been written yet and there is no
+  // clock running — so the link is a normal in-tab navigation, unlike the two arms below.
+  if (phase === 'locked') {
+    return shell(
+      <main className="sit-locked">
+        <h1 className="sit-locked-title">ACCA {paper} timed mock</h1>
+        <p className="sit-locked-copy">
+          Timed mocks are part of the {paper} subscription — a full paper against the clock,
+          sat as three cases back to back and marked as one.
+        </p>
+        <a className="sit-btn" href={subscribeHref}>
+          Subscribe to unlock <span aria-hidden="true">→</span>
+        </a>
+        <a className="sit-locked-back" href={hubHref}>← Back to drills</a>
+      </main>,
+    );
+  }
+
   if (phase === 'error') {
     return shell(
       <div className="sit-state sit-state--error" role="alert">
-        Couldn’t load the paper. Reload to try again.
+        {/* `not_available` and `failed` share this screen and must not share its copy: a
+            reload genuinely retries a transient failure, and cannot conjure a paper that is
+            not being served. Telling a student to reload at a paper that does not exist for
+            them is the same class of false advice this change exists to remove. */}
+        {refusal === 'not_available'
+          ? 'This paper isn’t available right now.'
+          : 'Couldn’t load the paper. Reload to try again.'}
       </div>,
     );
   }
 
   if (phase === 'done') {
+    // ── MARKING REFUSED FOR ENTITLEMENT, AFTER A FULL PAPER ──────────────────
+    // Ordered deliberately: this branch is tested BEFORE `resultsError`, and it leads with
+    // what is TRUE and reassuring — the answers are already durable in acca_case_progress,
+    // written one at a time as they were submitted — before it mentions the subscription.
+    // A student who has just sat 3h15m needs to know their work is not lost first and that
+    // there is something to buy second.
+    //
+    // The subscribe link opens in a NEW TAB. Navigating this tab away would lose the done
+    // screen, and with it the only route back to marking is a fresh load of the mock — which
+    // now resolves an expired attempt and lands here again. A new tab keeps the retry in reach.
+    //
+    // The retry is KEPT but re-labelled. "Try marking again" was the dead end; "I've
+    // subscribed — mark my paper" names the thing that has to change first, so pressing it is
+    // a consequence of an action rather than a hopeful repeat.
+    if (resultsLocked) {
+      return shell(
+        <div className="sit-done">
+          <h1 className="sit-done-title">{expiredOut ? 'Time’s up.' : 'Paper submitted.'}</h1>
+          <p className="sit-done-note">
+            <strong>Your paper is saved.</strong> Every answer you submitted is stored as you
+            submitted it — nothing here is lost, and nothing needs re-typing.
+          </p>
+          <p className="sit-done-note">
+            Marking is part of the {paper} subscription. Subscribe and this paper will be
+            marked in full, with the debrief.
+          </p>
+          <a
+            className="sit-btn"
+            href={subscribeHref}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Subscribe to unlock <span aria-hidden="true">→</span>
+          </a>
+          <div className="sit-locked-actions">
+            <button className="sit-linkbtn" onClick={() => { void fetchResults(); }}>
+              I’ve subscribed — mark my paper
+            </button>
+            <a className="sit-locked-back" href={hubHref}>← Back to drills</a>
+          </div>
+        </div>,
+      );
+    }
     if (resultsError) {
       return shell(
         <div className="sit-done">
@@ -560,6 +726,27 @@ export default function SitRunner({ paper }: { paper: AccaPaper }) {
             {submitError && (
               <div className="sit-err" role="alert">
                 That didn’t save. Your answer is still here — press submit again.
+              </div>
+            )}
+
+            {/* A lapse mid-paper. Same copy register as CaseSession's `ec-lapse` line, with
+                the two facts a candidate under a running clock actually needs first: the
+                answer is still here, and the submitted work is already safe. The link opens
+                in a new tab so this one is never navigated away — see submitCurrent. */}
+            {lapsed && (
+              <div className="sit-lapse" role="alert">
+                <strong>Your answer is still here.</strong> Everything you have already
+                submitted is saved. This one couldn’t be — timed mocks are part of the{' '}
+                {paper} subscription, and it has lapsed.{' '}
+                <a
+                  className="sit-lapse-link"
+                  href={subscribeHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Subscribe to continue →
+                </a>{' '}
+                then press submit again. <em>The clock does not stop.</em>
               </div>
             )}
 
@@ -827,6 +1014,33 @@ const CSS = `
 }
 .sit-state--error { color: #c0392b; }
 
+/* ── Locked (entitlement) ──
+   Laid out like .sit-intro, not like .sit-state: this is a screen with something to read and
+   an action to take, not a one-line status. Deliberately NOT red — a lapsed subscription is
+   not a fault, and colouring it as one is what made the old copy read as broken. */
+.sit-locked {
+  max-width: 560px; margin: 0 auto; min-height: 100vh;
+  display: flex; flex-direction: column; justify-content: center;
+  align-items: flex-start; gap: 18px;
+  padding: 48px clamp(16px, 4vw, 32px);
+}
+.sit-locked-title {
+  font-family: var(--font-display); font-size: clamp(24px, 4vw, 32px);
+  font-weight: 700; letter-spacing: -0.4px; margin: 0; color: var(--text);
+}
+.sit-locked-copy { font-size: 15px; line-height: 1.6; color: var(--text); margin: 0; max-width: 46ch; }
+.sit-locked-back { font-size: 14px; color: var(--text-muted); text-decoration: none; }
+.sit-locked-back:hover { color: var(--text); }
+.sit-locked-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: center; }
+
+/* A text-weight action beside the primary CTA. The retry is secondary here — the thing that
+   has to happen first is the subscription. */
+.sit-linkbtn {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  color: var(--brand); text-decoration: underline; text-underline-offset: 2px;
+}
+
 /* ── Intro ── */
 .sit-intro {
   max-width: 620px; margin: 0 auto; min-height: 100vh;
@@ -923,6 +1137,15 @@ const CSS = `
   font-size: 13px; border-radius: 8px; padding: 9px 12px;
   background: #fff0f0; border: 1px solid #f5c6c6; color: #c0392b;
 }
+/* A lapse is not an error. Amber, not the red of .sit-err — the answer is safe and there is
+   an action, and rendering it in the failure colour is what taught the student to read a
+   solvable state as a broken one. */
+.sit-lapse {
+  font-size: 13px; line-height: 1.55; border-radius: 8px; padding: 10px 12px;
+  background: #fff8e6; border: 1px solid #f0dca8; color: var(--text);
+}
+.sit-lapse-link { color: var(--brand); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+
 .sit-actions { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
 .sit-final-note { font-size: 12px; color: var(--text-muted); }
 
