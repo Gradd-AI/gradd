@@ -665,6 +665,57 @@ when the session ends on a branch.
   resolves, so `includes('ACCA AFM')` fails on correct output AND `!includes('ACCA APM')` passes on
   any output. Walk it in a real browser; and strip React's `<!-- -->` text/expression separator
   before asserting on `ACCA {paper}` (P-G3(a)).
+- **CASE/MOCK SURFACE TELEMETRY — three events, and only three (built 2026-08-12).**
+  `lib/acca/surface-events.ts` (PURE — the closed vocabulary `SURFACE_EVENTS`, the three builders,
+  and `parseSurfaceEvent`, so the write shape and the read shape are ONE definition) ·
+  `lib/acca/surface-event-client.ts` (`emitSurfaceEvent` — fire-and-forget, silent on failure) ·
+  `app/api/acca/surface-event/route.ts` (the AUTHED sink) · fixtures
+  `scripts/test-surface-events.ts` (`npm run test:surface-events`, 52 checks, in the contract gate).
+  **THE DIAGNOSIS THAT SIZED IT:** nothing wrote a row when a student OPENED a case or a mock — the
+  first case row needs a turn (practice) or a submit (sit), the first mock row needs the Start
+  click — so *opened-and-bounced* and *never-opened* were the same observation, and there is no
+  pageview layer to fall back on (**Vercel Web Analytics is NOT enabled** for this project; no
+  `@vercel/analytics`, no third-party analytics). **Everything else was DELIBERATELY NOT BUILT**:
+  every other moment on these surfaces is reconstructable from a stored row
+  (`acca_case_progress.created_at` = first requirement attempted on PRACTICE;
+  `.submitted_at` = **SIT-ONLY**; `acca_mock_attempts.started_at`/`completed`/`completed_at`;
+  `acca_case_marking.marked_at` = marked AND first debrief view; mock ABANDONED =
+  `completed=false AND ends_at<now()`), and duplicating a durable row with an event is the
+  `reveal_shown` mistake. See `docs/AFM_SURFACED.md` for the eight moments left open on purpose.
+  **CASE IDENTITY IS `metadata` JSONB, NOT `drill_lo`, NOT NEW COLUMNS** — `drill_lo` is
+  drill-shaped and writing a case id into it would poison every funnel query that groups by it;
+  columns cost a manual migration for no query benefit at this volume. Keys are fixed:
+  `case_list_viewed{paper}` · `case_opened{paper,case_id}` · `mock_intro_viewed{paper,mock_id}`.
+  **jsonb's typo hazard is closed STRUCTURALLY, not by convention:** `parseSurfaceEvent` is strict
+  in BOTH directions (a missing required key AND an unknown key are refusals), and the row stored
+  is the BUILDER'S output, never the caller's object.
+  **TWO SINKS, ONE TABLE, AND EACH REFUSES THE OTHER'S VOCABULARY.** `/api/acca/event` stays
+  auth-free and client-attributed because it serves the ANONYMOUS pre-signup drill funnel (45
+  anon-keyed rows, by design) — it now 400s on any `SURFACE_EVENTS` string. `/api/acca/surface-event`
+  requires a session, takes `user_id` from `auth.getUser()` and NEVER from the body (`user_id` is
+  rejected as an unknown metadata key), and writes `anon_id: null` always. **There is no code path
+  in it that writes an unattributable row** — which is the point: 87 of the 504 pre-existing rows
+  have neither identity, ~17% of the corpus, because the older sink coerces a bad identity to null
+  and inserts anyway. **`mock_id` is validated against the REAL registry and CROSS-CHECKED against
+  `paper`** (`{mock_id:'paper-1', paper:'AFM'}` is refused), so one mis-wired emitter cannot file
+  every APM intro under AFM.
+  ⚠️ **CLAIM CEILING, verbatim:** all three are CLIENT-TRIGGERED, so **WHO is trusted and WHETHER is
+  not** — a blocked fetch undercounts, an authed student with curl overcounts their own row.
+  Affordable only because **NOTHING READS THESE AT SERVE TIME**; a wrong row costs a wrong count,
+  never a wrong serve. Do not wire a serving decision to one without revisiting that.
+  `case_opened` is client-side ON PURPOSE: a Next `<Link>` prefetch renders the RSC payload on
+  hover, so a server-side emit would report a case as opened by a student who moved their mouse
+  past it, and an overcount is the one error a bounce metric cannot absorb. It fires on the SUCCESS
+  arm only — 404 redirects, `!ok` is an error page, and 402 shows an upsell rather than a case.
+  Walked live end-to-end 2026-08-12 (synthetic user, scoped-deleted, zero residue): all four rows
+  attributed, one per view despite Strict Mode, and the walk user ended with **0 rows on
+  `acca_case_progress`/`acca_mock_attempts`/`acca_case_marking`** — i.e. it WAS the
+  opened-and-bounced case, previously invisible. Evidence:
+  `docs/rollbacks/surface_events_walk_20260812.json`.
+  ⚠️ **`APM_CASES` IS NOT IN `.env.local`** — a local walk of these surfaces must set it explicitly
+  or every route 404s. It IS set for Production; confirm the flag from an UNAUTHENTICATED probe
+  (`/api/acca/case/list?paper=AFM` → **401 = flag on**, 404 = flag off; both routes check the flag
+  before auth).
 - **The 6 gates:** GATE1 self-consistency+tolerance+OFR-wiring = `validateSchemaSelfConsistency`
   (`lib/acca/validate-schema.ts`); GATE2 answer↔schema figure integrity (1/2/3 dp) =
   model_answer must contain every `fmt1(expected_value)`; GATE3 distinct-factor seeded-OFR

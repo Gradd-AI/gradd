@@ -2,7 +2,9 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-11 (**THE BLOG NOW HAS AFM, AND THE ARCHIVE GOOGLE INDEXES IS NO LONGER
+*Last refreshed: 2026-08-12 (**THE CASE AND MOCK SURFACES ARE INSTRUMENTED — three events, and the
+other eight moments are open ON PURPOSE.** `feat/case-mock-surface-events` — see the ✅ block below.
+Previously: 2026-08-11 (**THE BLOG NOW HAS AFM, AND THE ARCHIVE GOOGLE INDEXES IS NO LONGER
 FILED AS IB.** `fix/blog-subject-afm-and-neutral-archive` — see the ✅ block below. Earlier same
 day: **DEFECT (a) IS CLOSED — `/acca/cases` SERVES BOTH PAPERS.** Grant
 ruled THREAD, not hide; `feat/acca-cases-paper-aware`, pushed, **not merged — awaiting review**.
@@ -24,6 +26,65 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
+
+## ✅ CLOSED 2026-08-12 — OPENED-AND-BOUNCED WAS INDISTINGUISHABLE FROM NEVER-OPENED (`feat/case-mock-surface-events`)
+
+**The finding, before any code.** No `case_*`, `mock_*` or `sit_*` event existed anywhere — the only
+emitter of anything was `app/acca/tutor/TutorChat.tsx`, into `acca_funnel_events` via
+`/api/acca/event`. And the durable tables cannot substitute, because **nothing writes a row on
+OPEN**: `GET /api/acca/case`, `/case/list` and `/sit` contain no insert/upsert/update; the first case
+row needs a real turn (practice, `case/turn` step 10) or a submit (sit); the first mock row needs the
+explicit Start click. There is no pageview layer either — **Vercel Web Analytics is not enabled**
+(`get_web_analytics` → 404) and `@vercel/analytics` is not a dependency. So the question "did this
+student open a case and leave, or never look?" had no answer, and — measured — the flag is ON in
+production (`/api/acca/case/list?paper=AFM` → **401**, and the flag is checked before auth), so "they
+could not have" was not available either.
+
+**Built: exactly three.** `case_list_viewed` · `case_opened` · `mock_intro_viewed`. Module map,
+claim ceiling, and the case-identity ruling are in `CLAUDE.md`'s CODE MAP. Walked live end-to-end
+(synthetic user, scoped-deleted, zero residue — `docs/rollbacks/surface_events_walk_20260812.json`);
+the walk user finished with 4 attributed event rows and **0 rows on `acca_case_progress` /
+`acca_mock_attempts` / `acca_case_marking`**, which is precisely the state that used to be invisible.
+
+**⚠️ THE ONE REAL STUDENT THIS WAS ABOUT CANNOT BE ANSWERED RETROSPECTIVELY.** `maphosaan@gmail.com`
+(`dd786100-7d5d-4e1b-a0af-62f5ac8686e1`), APM pass to 2026-10-31: 42 `drill_shown` across 18
+calendar days 2026-07-13 → 2026-08-07, 38 tutor messages over 5 drills, 1 `drill_resolved` — and zero
+rows on every case and mock table. Whether they ever LOOKED at a case is unknowable for that window;
+no event added now recovers July. Every other ACCA-touching account is Grant's own, a `@gradd.ai`
+test address, or an `ezimb.com`/`luxudata.com`/`synsky.com` burner.
+
+### 🟡 STILL OPEN BY DECISION — the eight moments NOT instrumented
+
+Ruled out because each is reconstructable from a stored row, and duplicating a durable row with an
+event is the `reveal_shown` mistake (two signals for one fact that can silently disagree, where the
+row survives a client that never fires). Listed so the decision is visible rather than an omission:
+
+1. **`case_locked_upsell_shown` / `case_upsell_clicked`** — `case/list` returns a per-case `locked`
+   flag and `CaseList` sends locked users to `/acca/subscribe`. A revenue moment with an impression
+   and a click, and both are invisible. **The strongest candidate if more is ever wanted.**
+2. **`practise_clicked`** — `practiseHref` renders a bare `<a href="/acca/tutor?area=XX">`, so the
+   click produces a `drill_shown` indistinguishable from any other. **Currently impossible to
+   infer**, not merely un-instrumented, and it is the one metric that closes the debrief→drill loop.
+3. **`debrief_viewed` on a RE-visit** — the results POST marks on first arrival only, and a revisit
+   is a GET that writes nothing. First view is dated by `acca_case_marking.marked_at`; every
+   subsequent view is invisible.
+4. **`mock_ended_how`** — `SitRunner` computes `expiredOut` purely to change what the done screen
+   says, then throws it away. "Ran out of time" vs "chose to stop" are different findings.
+5. **`mock_resumed`** — the sit route returns `resumed:true` and nobody records it.
+6. **`case_requirement_advanced`** — voluntary "move on" is client-driven with no server state, so a
+   skipped requirement is only visible as a gap in row order.
+7. **`requirement_viewed`** — the only sub-case moment `created_at` cannot give.
+8. **`mock_abandoned`** — deliberately NOT an event and should stay that way: by definition the
+   browser is gone. `completed=false AND ends_at<now()` is *better* than a beacon, because
+   `SitRunner` closes an expired attempt on the next visit, so the state means "expired AND never
+   came back".
+
+**Two data caveats banked while measuring, both of which make existing rows say less than they look
+like they say.** `acca_case_progress.submitted_at` is **SIT-ONLY** (37 rows, 8 populated, exactly the
+8 sit rows). `acca_mock_attempts.completed_at` is **only trustworthy forward** — 8 of 12 attempts are
+`completed=true` with a NULL `completed_at`, predating the column being written, so no duration is
+recoverable for any attempt before the sit loop shipped. `attempt_id` likewise only separates sit
+from practice from 2026-08-01 (29 of 37 rows NULL).
 
 ## ✅ CLOSED 2026-08-11 — THE BLOG HAD NO AFM, AND ITS CANONICAL PAGE CLAIMED TO BE IB (`fix/blog-subject-afm-and-neutral-archive`)
 
