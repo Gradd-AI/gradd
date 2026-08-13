@@ -2,7 +2,13 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-12 (**THE DRILL PATH NOW WRITES TO THE WEAKNESS LEDGER — AND MEASURING IT
+*Last refreshed: 2026-08-13 (**THE PS LADDER HAS A FLOOR BELOW `weak`, AND IT IS REACHABLE ON BOTH
+PAPERS.** `feat/ps-nothing-floor-and-label-strip` — the `nothing` band + the label strip, calibrated
+once. **120/120 cells on both papers; the LADDER does the work and the label strip turns out NOT to
+be load-bearing for the floor.** The rule-4 carve-out is what makes the band selectable, and its
+first wording was itself a defect the probe caught. One item opened: **~1 in 10 PS feedback strings
+names "the descriptor" to the candidate**, measured and attributed as **PRE-EXISTING**. See the ✅
+and 🔴 blocks below. Previously: 2026-08-12 (**THE DRILL PATH NOW WRITES TO THE WEAKNESS LEDGER — AND MEASURING IT
 IMMEDIATELY SHOWED THE LO TERM BARELY STEERS.** `feat/drill-path-weakness-ledger`, shipped
 unflagged. 12 rows backfilled, and `npm run probe:steering` found 4 of 5 serves with NO
 discrimination at all. See the ✅ and 🔴 blocks below. Earlier same day: **A TIMED-OUT PAPER SENT
@@ -634,7 +640,91 @@ one sign-out path and should re-walk both products against the deployed route wh
 
 ---
 
-## ⭐ 🔴 OPEN 2026-08-09 — **THE PS LADDER HAS NO FLOOR BELOW `weak`: "B" IS SCOPED, NOT BUILT** (Grant's ruling, split from the blank-paper fix)
+## ⭐ ✅ CLOSED 2026-08-13 — **THE PS LADDER HAS A FLOOR, AND IT IS REACHABLE ON BOTH PAPERS** (`feat/ps-nothing-floor-and-label-strip`)
+
+**Option B shipped, both halves, one calibration.** The four rulings were: band name `nothing`;
+strip PS-only with the technical site logged; the marking strip drops the generic code-shape sweep;
+PS steering stopping for near-blank papers accepted.
+
+**📐 THE ANSWER TO THE QUESTION THE CHANGE EXISTED FOR — 80 chains, 240 skill-cells, 2 papers × 2
+cases × 2 variants × 2 join shapes × 5 runs.** `"asdf"` bands **`nothing` 120/120 cells, 0 marks**;
+the soft case (*"I revised this topic but ran out of time here."*) **also 120/120**. **AFM 100% AND
+APM 100%** — so **the LADDER does the work, not the strip**. The `raw`-join arm settles it from the
+other direction: with the OLD labels still in the prompt, `"asdf"` still bands `nothing` **60/60**.
+**THE LABEL STRIP IS NOT LOAD-BEARING FOR THE FLOOR.** It earns its place on its own merits (an
+internal code and a technical mark allocation inside a block captioned *"Candidate's whole
+answer"*), and the bundling argument stands for its own reason — both halves change request bytes,
+so they calibrate once — but it was NOT a precondition, and the pre-build reasoning that treated it
+as possibly one was wrong. Under the old ladder every one of those cells was `weak`/25%.
+
+**⚠️ THE FLOOR CATCHES MORE THAN THE SIGHTING.** The soft case was specified with *no fixed target*
+and it went to `nothing` at 100%. Defensible — a sentence about time management gives no evidence
+of any skill either way — but it means the floor is not narrowly scoped to `"asdf"`-shaped input.
+
+**🔑 THE RULE-4 CARVE-OUT IS WHAT MAKES THE FLOOR SELECTABLE, AND IT NEEDED A FIX THE PROBE CAUGHT.**
+Rule 4 (*"quote a short phrase"*) is unsatisfiable on an answer with nothing worth quoting, and a
+model facing an unsatisfiable rule picks a band whose feedback it CAN write. **Left alone, rule 4
+would have quietly repealed the new bullet** — it would sit in the prompt, never be chosen, and pass
+every calibration bar cleanly while changing nothing. Restated for the band, never waived (P-T2).
+**Its FIRST wording was itself the defect:** the examples were passive (*"that no answer was given
+to this part"*) and the model reproduced the construction verbatim — **0/6 second person**, against
+rule 1. Corrected to second-person examples with the observed wrong outputs named as forbidden;
+re-probed **6/6 second person · 0/6 impersonal · bands still `nothing` 6/6**.
+
+**📐 PS RECALIBRATION — 10 runs × 3 cases = 30 chains, 90 skill-cells, 30/30 returned, 0 parse
+failures.** Case ranges **identical to baseline** (Q1 7–9 · Q2 4–5 · Q3 4–5). **Paper PS total
+16–18 against a baseline of 17–19** — one mark down at both ends, driven by Q1 (mean 8.2 → 7.6).
+**Three cells moved one band down, six held:** Q1 `analysis_and_evaluation` (exemplary 9 → strong 6)
+· Q1 `scepticism` (strong 9 → competent 6) · Q2 `scepticism` (exemplary 6 → strong 3). Q3
+`scepticism` held `strong 10/10` exactly. Direction is HARSHER, which is the safe direction for a
+change whose purpose was to stop over-crediting. **Per the standing ruling the baseline is not
+ground truth and error detection is the bar** — the technical pass is byte-unchanged, so B2(i)
+`competent/6` is a control, not a bar, and was not re-run.
+
+**⚠️ THE HARNESS HAD A DEFECT THAT WOULD HAVE BEEN SILENT.** The first draft ordered the DB cases by
+`(pool desc, title asc)`, which puts Aldebrino before Brecon — while the blind script's Question 2
+IS Brecon. Brecon's scenario would have been marked against Aldebrino's answers. It passed the only
+guard present (both cases have 2 requirements and a pool of 5) and would have produced a complete,
+plausible, **entirely meaningless** matrix. Answers are now bound to cases by the script's own
+question title and an unmatched title throws; the corrected binding reproduces the 2026-07-29
+baseline's own per-case skill lists exactly, which is the independent check that it is right.
+
+**Fixtures:** `npm run test:requirement-label` (**110**, auto-discovered, gate **56 → 57**) +
+`test-case-marking-technical` (the reachable `Requirement N` arm). Harnesses `scripts/_run10_ps_marking.ts`,
+`_nearblank_probe.ts`, `_ps_control_and_reprobe.ts` — all gitignored, read-only, zero DB writes.
+
+---
+
+## ⭐ 🔴 OPEN 2026-08-13 — **~1 IN 10 PS FEEDBACK STRINGS NAMES "THE DESCRIPTOR" TO THE CANDIDATE, AND IT IS PRE-EXISTING**
+
+**The rule it breaks.** PS feedback rule 2: *"NEVER POINT AT ANYTHING THEY CANNOT SEE … no
+descriptor, standard, document, reference, model, scheme or 'provided' text may be mentioned,
+HOWEVER NAMED."* Observed shape, verbatim from a student-facing string: *"…which is exactly the kind
+of reflective interpretation the descriptor requires."* The candidate has never seen a descriptor.
+
+**MEASURED, AND ATTRIBUTED.** New prompt **9/90**. Old prompt, **verbatim, with the real descriptor
+prose**, **1/27** — same shape (*"exactly the quality of judgement the descriptor requires"*). **So
+it is INHERITED, not introduced by this change set.** The word appears **9× in the PS system prompt
+both before and after** — identical count. ⚠️ **Whether the change moved the RATE is UNMEASURED and
+27 samples cannot resolve it**: at a true rate of 10%, seeing ≤1/27 has probability ≈0.23. Do not
+report 9/90 vs 1/27 as an increase.
+
+**⚠️ TWO MEASUREMENT FAILURES ON THE WAY TO THAT NUMBER, BOTH CAUGHT, BOTH GENERALISABLE.**
+**(a) The first detector had 5 false positives in 14 hits** — `standard deviation` ×4 (a STATISTIC,
+not the marking standard) and *"matches the figure given in the scenario"* ×1 (the candidate's OWN
+scenario, which they can see). The corrected detector self-tests all three shapes before it runs.
+**A hand count is not a measurement:** the loose pattern flagged **14**, not the 13 counted by eye.
+**(b) The FIRST attribution control returned `0/27` and was DISCARDED** — it fed the old prompt a
+*placeholder* rubric (`"(descriptor as production supplies it)"`) instead of the real descriptor
+prose, so the model had no descriptor text to name. **A control that changes the input it is
+controlling for measures nothing.**
+
+**NOT FIXED HERE, deliberately.** It is a third prompt change and would need its own calibration
+round; folding it in would confound the result this session's 30 chains just produced.
+
+---
+
+## ⭐ ✅ SUPERSEDED 2026-08-13 — **THE PS LADDER HAS NO FLOOR BELOW `weak`: "B" IS SCOPED, NOT BUILT** (Grant's ruling, split from the blank-paper fix)
 
 **The hole.** `judgeCaseMarking`'s band lexicon is `['exemplary','strong','competent','weak']`
 (`lib/acca/case-marking.ts:109`) and the prompt offers only those four. `weak` pays **25%**, and

@@ -2590,6 +2590,28 @@ in requirement_order joined by a blank line, using the **STORED** label (LO code
 = ordered union of comma-split `professional_skill_tags` · pool = `acca_cases.professional_skills_marks`.
 One PS chain per CASE, because the pool and the per-skill ceiling are case-level.
 
+> **⛔ JOURNAL CORRECTION (2026-08-13) — THE PARENTHESIS ABOVE IS NO LONGER TRUE, AND WAS REVERSED
+> DELIBERATELY.** "Using the **STORED** label (LO code and all — `sitDisplayLabel` is a serve-side
+> strip the marking path deliberately does not apply)" describes what this harness mirrored on
+> 2026-07-29 and what production did until 2026-08-13. **The PS pass now strips the label before
+> reading it** (`markerLabel`, `lib/acca/requirement-label.ts`), so `wholeAnswer` is
+> `(i)\n<answer>` on AFM, not `(i) B3e — 10 marks\n<answer>`.
+>
+> Recorded as a REVERSAL rather than left to read as drift, because the original was a considered
+> choice and this line is the only place it was written down. What changed the answer: the stored
+> label carries an internal syllabus code **and the TECHNICAL mark allocation**, and the PS pass
+> interleaves it with the candidate's text inside a block captioned *"Candidate's whole answer"*
+> while scoring a **separate** 5- or 10-mark professional-skills pool. The student never wrote it
+> and never saw it.
+>
+> **The TECHNICAL pass still reads the raw label** — ruled PS-only, logged as a known second
+> occurrence at `lib/acca/case-mark-run.ts`. So a rebuilt `_run10_technical_marking.ts` mirrors
+> this paragraph unchanged; only a PS harness needs the strip.
+>
+> This bank's PS matrices below were produced under the OLD shape. They remain the honest record of
+> that run and the baseline the 2026-08-13 recalibration was measured against — **not** a
+> description of what production now sends.
+
 **POPULATION (P-G2).** 10 runs × 3 cases = **30 chains**, **90 skill-cells**, PS pool Σ20 (A 10 · B1 5 ·
 B2 5, read from the DB, not assumed). Examined skills as the model sees them, in ordinal order:
 A = 1 analysis_and_evaluation / 2 communication / 3 scepticism / 4 commercial_acumen (ceiling 2.5) ·
@@ -4655,3 +4677,78 @@ weak but cannot rank two weak LOs against each other. Fixtured as a known limit.
 
 Caveat unchanged: 3 users, one of them Grant's. Enough to show the term was inert and enough to
 show the pool change makes it fire on AFM; not enough to tune anything.
+
+## Session 2026-08-13 — the PS ladder gets a floor, and the label strip rides with it (Option B)
+
+**Branch `feat/ps-nothing-floor-and-label-strip`.** Two changes shipped together because both alter
+request bytes on every paper, so calibrating them separately would confound the result. Grant ruled
+all four open questions up front: band name `nothing` · strip **PS-only**, technical site logged ·
+the marking strip **drops the generic code-shape sweep** · PS steering stopping for near-blank
+papers **accepted**.
+
+**THE DEFECT.** `weak` pays 25% and its wording described a POOR attempt, not an ABSENT one, so the
+PS marker could not say "no credit" even when it correctly read an answer as absent. Option A
+(2026-08-09) closed the fully blank case deterministically; `"asdf"` clears `isBlankAnswer`'s
+3-alphanumeric threshold, reaches the model, and floored at `weak`/25%.
+
+**📐 THE HEADLINE MEASUREMENT — 80 chains, 240 skill-cells** (2 papers × 2 cases × 2 variants × 2
+join shapes × 5 runs). `"asdf"` → **`nothing` 120/120 cells, 0 marks**. Soft case → **120/120**.
+**AFM 100% and APM 100%, so the LADDER does the work.** The `raw`-join arm settles it from the other
+side: with the OLD labels still in the prompt, `"asdf"` still bands `nothing` **60/60** — **the label
+strip is NOT load-bearing for the floor**, and the pre-build reasoning that treated it as possibly a
+precondition was wrong. It earns its place on its own merits.
+
+**🔑 THE RULE-4 CARVE-OUT, and the fix the probe caught.** Rule 4 (*"quote a short phrase"*) is
+unsatisfiable on an answer with nothing worth quoting, and a model facing an unsatisfiable rule picks
+a band whose feedback it CAN write — so rule 4 would have quietly repealed the new bullet, which
+would then have passed every bar cleanly while changing nothing. **Its first wording was itself the
+defect:** passive examples (*"that no answer was given to this part"*) which the model reproduced
+verbatim — **0/6 second person**, against rule 1. Corrected to second-person examples naming the
+observed wrong outputs as forbidden; re-probed **6/6 second person · 0/6 impersonal · `nothing` 6/6**.
+
+**📐 PS RECALIBRATION — 10 runs × 3 cases = 30 chains, 90 skill-cells, 30/30 returned, 0 parse
+failures.** Case ranges **identical to baseline** (Q1 7–9 · Q2 4–5 · Q3 4–5). **Paper PS total 16–18
+vs baseline 17–19.** Three cells moved one band down, six held; Q3 `scepticism` held `strong 10/10`
+exactly. Harsher direction, which is the safe one here. Technical pass byte-unchanged, so B2(i)
+`competent/6` is a **control**, not a bar, and was not re-run.
+
+| cell | baseline (2026-07-29) | 2026-08-13 |
+|---|---|---|
+| Q1 analysis_and_evaluation | exemplary 9, strong 1 | strong 6, exemplary 4 ✗ |
+| Q1 communication | strong 10 | strong 9, exemplary 1 ✓ |
+| Q1 scepticism | strong 9, competent 1 | competent 6, strong 4 ✗ |
+| Q1 commercial_acumen | strong 7, exemplary 3 | strong 8, exemplary 2 ✓ |
+| Q2 analysis_and_evaluation | exemplary 10 | exemplary 10 ✓ |
+| Q2 scepticism | exemplary 6, strong 4 | strong 7, exemplary 3 ✗ |
+| Q3 analysis_and_evaluation | exemplary 10 | exemplary 10 ✓ |
+| Q3 scepticism | strong 10 | strong 10 ✓ exact |
+| Q3 commercial_acumen | exemplary 6, strong 4 | exemplary 7, strong 3 ✓ |
+
+**⚠️ THE HARNESS HAD A SILENT DEFECT, CAUGHT BEFORE SPENDING ON IT.** The first draft ordered DB
+cases by `(pool desc, title asc)`, which puts Aldebrino before Brecon — while the blind script's
+Question 2 IS Brecon. Brecon's scenario would have been marked against Aldebrino's answers. It passed
+the only guard present (both cases: 2 requirements, pool 5) and would have produced a complete,
+plausible, meaningless matrix. Answers are now bound by the script's own question title, unmatched
+titles throw, and the corrected binding reproduces this journal's own 2026-07-29 per-case skill lists.
+
+**⚠️ TWO MEASUREMENT FAILURES, both caught, both generalisable.** (a) The first register detector had
+**5 false positives in 14 hits** — `standard deviation` ×4 and *"matches the figure given in the
+scenario"* ×1; the corrected one self-tests all three shapes before running. **A hand count is not a
+measurement:** the loose pattern flagged **14**, not the 13 counted by eye. (b) The first attribution
+control returned `0/27` and was **DISCARDED** — it fed the old prompt a *placeholder* rubric instead
+of the real descriptor prose. **A control that changes the input it is controlling for measures
+nothing.**
+
+**🔴 OPENED, NOT FIXED — the `descriptor` leak.** New prompt **9/90**, old prompt (verbatim, real
+descriptors) **1/27**, same shape: **inherited, not introduced**. Whether the change moved the rate is
+**unmeasured** — at a true rate of 10%, ≤1/27 has probability ≈0.23. Left for its own calibration
+round rather than folded in. Tracked in `AFM_SURFACED.md`.
+
+**Gates:** `test:requirement-label` **110 new checks**, gate **56 → 57/57** · `tsc --noEmit` clean ·
+`next build` GREEN. **DB: zero writes.** Harnesses `scripts/_run10_ps_marking.ts`,
+`_nearblank_probe.ts`, `_ps_control_and_reprobe.ts` — gitignored, read-only.
+
+**Docs corrected in the same close:** `APM_BUILD_CONTRACT.md:2588` (journal-correction block — the
+STORED-label decision is reversed on the record) and `docs/reviews/AFM_MOCK1_CANDIDATE_VIEW.md`
+(its provenance line predated the 2026-07-30 marks change; content re-verified against the live rows
+8/8, and the regeneration script it named **does not exist**).

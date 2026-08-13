@@ -1,8 +1,10 @@
 # AFM MOCK PAPER 1 — CANDIDATE VIEW
 
-**This is exactly what the sit surface serves a candidate — nothing more.** Read-only export of the LIVE `acca_case_*` rows, regenerated 2026-07-28. The answer side is withheld in full: no `model_answer`, no `hint`, no `full_reveal`, no `answer_schema`, no mark scheme, no professional-skill tags, no syllabus codes, no ids. Requirement labels are stripped at the serve boundary exactly as `sitDisplayLabel` strips them, so the internal `lo_code` never reaches a candidate.
+**This is exactly what the sit surface serves a candidate — nothing more.** Read-only export of the LIVE `acca_case_*` rows, exported 2026-07-28, **content re-verified against the live rows 2026-08-13**. The answer side is withheld in full: no `model_answer`, no `hint`, no `full_reveal`, no `answer_schema`, no mark scheme, no professional-skill tags, no syllabus codes, no ids. Requirement labels are stripped at the serve boundary exactly as `sitDisplayLabel` strips them, so the internal `lo_code` never reaches a candidate.
 
-**Regenerate with `scripts/_export_candidate_view.ts` after ANY Mock Paper 1 content write** — this file is a DB snapshot and goes stale silently otherwise.
+**⚠️ THE EXPORT DATE ALONE IS NOT EVIDENCE, WHICH IS WHY THE RE-VERIFICATION IS STATED SEPARATELY.** The export predates the **2026-07-30** change that reduced the label to the part alone and moved marks to the `marks_guide` column, so on its date this file could not have been evidence of the behaviour it describes. It was checked programmatically instead: each requirement's `sitDisplayLabel(label, lo_code)` and its `marks_guide` matched what this document prints on **8 of 8** requirements, and **0 of 8** `lo_code` values appear anywhere in the file. The claims above are current; the date is not what makes them so.
+
+**⚠️ THERE IS NO REGENERATION SCRIPT.** This file previously instructed regeneration with `scripts/_export_candidate_view.ts`, which **does not exist** — `scripts/_*` is gitignored, so it was a local throwaway that left with the machine that made it. An instruction naming a script nobody has is worse than none: it reads as a followed procedure. **This file is a DB snapshot and goes stale silently.** After ANY Mock Paper 1 content write, either re-verify it against the live rows the way the check above did, or record it as an open item in `docs/AFM_SURFACED.md`.
 
 Total: 100 marks. Three hours 15 minutes.
 
