@@ -34,6 +34,7 @@
 // label derivation, resume, the clock). The import direction flipped with the merge —
 // mocks.ts no longer imports this module, so there is no cycle.
 import type { AccaPaper } from '@/lib/acca/paper';
+import { strippedLabel } from '@/lib/acca/requirement-label';
 export { getMockPaper as getSitPaper, getMockPapers as getSitPapers, type MockPaper as SitPaper } from '@/lib/acca/mocks';
 
 // ── The serving gate, as DATA ────────────────────────────────────────────────
@@ -99,36 +100,21 @@ export function isSittableCaseRow(
 // same route served marks for one paper and not the other — parity by formatting accident,
 // which breaks the moment a label is re-authored without its marks. Taking marks from the
 // column makes both papers right for the same reason.
-const LO_CODE_SHAPE = /\b[A-E][0-9]{1,2}[a-z]?\b/g;
-// "— 10 marks", "- 1 mark", "(12 marks)" — the marks phrase in any authored form.
-const MARKS_PHRASE = /[([]?\s*\d+\s*marks?\s*[)\]]?/gi;
-
-function escapeForRegExp(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
+//
+// ── THE RULE MOVED OUT (2026-08-13), THE BEHAVIOUR DID NOT ───────────────────
+// The strip now lives in lib/acca/requirement-label.ts because the PS MARKER needs it
+// too, and the same rule with two implementations is the failure class paper-url.ts was
+// written to close. `sweepCodeShape: true` is THIS reader's answer and the reasoning is
+// stated at the module: a leaked syllabus code on a candidate's screen is the worse
+// failure here, so the generic backstop stays on. Marking answers false, for the opposite
+// reason. This function's name, signature, return contract and every output are unchanged.
 export function sitDisplayLabel(
   label: string | null | undefined,
   loCode?: string | null,
 ): string | null {
-  if (typeof label !== 'string') return null;
-
-  let out = label;
-  if (typeof loCode === 'string' && loCode.trim()) {
-    out = out.replace(new RegExp(`\\b${escapeForRegExp(loCode.trim())}\\b`, 'gi'), '');
-  }
-  out = out.replace(LO_CODE_SHAPE, '');
-  out = out.replace(MARKS_PHRASE, '');
-
-  // Tidy what the removal left behind: doubled spaces, and a separator now dangling at
-  // either end (a label of "B3e — 10 marks" would otherwise render as "— 10 marks").
-  out = out.replace(/\s+/g, ' ').trim();
-  out = out.replace(/^[—–\-·:|]+\s*/, '').trim();
-  out = out.replace(/\s*[—–\-·:|]+$/, '').trim();
-
-  // A label that was ONLY a code has nothing candidate-facing left to say — return null
-  // so the UI renders no chip at all rather than an empty one.
-  return out === '' ? null : out;
+  // A label that was ONLY a code has nothing candidate-facing left to say — `strippedLabel`
+  // returns null and the UI renders no chip at all rather than an empty one.
+  return strippedLabel(label, loCode, { sweepCodeShape: true });
 }
 
 // ── Resume ───────────────────────────────────────────────────────────────────
