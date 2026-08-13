@@ -703,9 +703,42 @@ when the session ends on a branch.
   ⚠️ **The carve-out's FIRST wording was itself the defect** — passive examples the model reproduced
   verbatim (0/6 second person); second-person examples now name the wrong outputs as forbidden.
   ⚠️ **PS steering STOPS for a near-blank paper** (`WEAKNESS_BANDS` excludes `nothing`) — ruled correct.
-  🔴 **OPEN: ~1 in 10 PS feedback strings names "the descriptor" to the candidate** — measured 9/90 new
-  vs 1/27 on the verbatim old prompt, so **PRE-EXISTING**; whether the change moved the rate is
-  unmeasured (27 samples cannot resolve 10% vs 4%). See `AFM_SURFACED.md`.
+- **THE PS PROMPT IS A PURE BUILDER WITH NAMED VARIANTS — `buildPsSystemPrompt(paper, variant)`
+  (2026-08-13).** `judgeCaseMarking` takes an optional `promptVariant`; **production default is
+  `ladder`**. Fixtures `npm run test:ps-prompt-variants` (57) pin `shipped` **BYTE-IDENTICAL** to the
+  pre-refactor string, so the historical calibration control survives and the refactor cannot
+  silently reword the live prompt. **A calibration arm now drives the REAL core** instead of a hand
+  transcription beside it — the first round had to copy the prompt to get a control, which put a
+  transcription of the one string under test at the centre of the measurement.
+  **THE LEAK AND ITS SOURCE.** ~1 in 10 PS feedback strings named *"the descriptor"* to the
+  candidate. Rule 2 **already** banned it in capitals, *"HOWEVER NAMED"*, and was losing at 12.9% —
+  because **FIVE of the prompt's NINE `descriptor` mentions WERE the band definitions** (*"meets the
+  descriptor in full"* …) and rule 4 demands *"no band without a named reason"*, so the model
+  warranted the band by restating the band's own definition. **8 of the first 9 sightings sat on
+  `exemplary`**, where the old rule 2 (*"where the band is below exemplary…"*) offered no closing
+  move at all. Fixed by rewriting those five to describe the QUALITY OF THE WRITING (*"demonstrates
+  the skill"*), 9 → 4 mentions, **every severity anchor preserved verbatim** — which is what keeps it
+  band-neutral. **The descriptor block, its `(the standard)` header and all three instructions to
+  judge against it are UNTOUCHED** (fence the output, never the input — P-M3).
+  📐 **CALIBRATED, 3 arms × 264 paired skill-cells** (11 real cases, interleaved): control 12.9% ·
+  **ladder +0.019 bands (t=0.66), 78% cells identical, leak 6.4% (z=2.50)** · ladder+P-T2 −0.030
+  bands but **25.4% (z=−3.65)**.
+  ⛔ **TWO ATTEMPTS FAILED FIRST AND THEY ARE THE EVIDENCE (doctrine `P-M4`).** The
+  judgement/feedback split (P-M3 ported here) took mentions 9 → 22 and **doubled the leak while
+  moving bands HARSHER** (`competent` 7/92 → 17/92) — reverted, never merged. The P-T2 half (rule 2
+  restated + an `exemplary` carve-out on rule 4) hit **z = −3.65** and did not fix the band it was
+  written for (exemplary 19% → 25%). **Any instruction ADDED to the feedback rules that names the
+  referent raises the rate by priming it; removing it from the band DEFINITIONS lowers it.** P-M3's
+  split works only where the reference has CONCRETE RESIDUE that survives the rewrite (*"your WACC of
+  9.59% is correct"*); a descriptor has none. `ladder_p_t2` is retained in the builder as a **recorded
+  loser, not an option**.
+  🔴 **OPEN — CLASS C, and the fix made it WORSE at `nothing`.** *"There is nothing here to assess
+  **against the requirement to** investigate information, estimate outcomes…"* attributes descriptor
+  content to the requirement — a document the student **IS** holding, which does not say that; the
+  worst of the three classes. **BY HAND: control 4/16 → ladder 9/16.** The n-gram detector cannot see
+  it (the model paraphrases), **so the 6.4% does not cover it** — never quote that figure as though it
+  did. `n=16` is one near-blank case × 2 skills × 8 runs, too small to act on; needs a
+  paraphrase-tolerant detector and a corpus with real weak/nothing answers. See `AFM_SURFACED.md`.
 - **THE PAPER AT A URL BOUNDARY — `lib/acca/paper-url.ts` (pure).** `paperHref(path, paper)` WRITES
   the paper into a link; `resolveSubscribePaper(param, referrer)` READS one back. One rule, two ends,
   one module — the round trip is the property that has to hold. **`DEFAULT_PAPER` (`paper.ts`) is

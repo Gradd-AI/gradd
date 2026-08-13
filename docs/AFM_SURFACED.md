@@ -2,13 +2,18 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-13 (**THE PS LADDER HAS A FLOOR BELOW `weak`, AND IT IS REACHABLE ON BOTH
-PAPERS.** `feat/ps-nothing-floor-and-label-strip` — the `nothing` band + the label strip, calibrated
-once. **120/120 cells on both papers; the LADDER does the work and the label strip turns out NOT to
-be load-bearing for the floor.** The rule-4 carve-out is what makes the band selectable, and its
-first wording was itself a defect the probe caught. One item opened: **~1 in 10 PS feedback strings
-names "the descriptor" to the candidate**, measured and attributed as **PRE-EXISTING**. See the ✅
-and 🔴 blocks below. Previously: 2026-08-12 (**THE DRILL PATH NOW WRITES TO THE WEAKNESS LEDGER — AND MEASURING IT
+*Last refreshed: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
+ITSELF.** `fix/ps-ladder-not-descriptor-relative` — five of the nine `descriptor` mentions WERE the
+band definitions, so no wording of rule 2 could outrun them. Rewritten to describe the quality of
+the writing, every severity anchor preserved verbatim: **band-neutral (+0.019 bands, t=0.66) and the
+leak halves, 12.9% → 6.4%, z=2.50**, over 3 arms × 264 paired cells. **TWO ATTEMPTS FAILED FIRST and
+they are the evidence** — the judgement/feedback split and the P-T2 restatement BOTH roughly doubled
+the leak (z = −3.65 for the latter), because any instruction added to the feedback rules that names
+the referent primes it. Doctrine **P-M4**. One item opened, deliberately unfolded: **class C —
+descriptor content attributed to "the requirement", a document the student IS holding — and the fix
+made it MORE common at `nothing`, 4/16 → 9/16 BY HAND.** See the ✅ and 🔴 blocks below. Earlier same
+day: **THE PS LADDER GOT A FLOOR BELOW `weak`** (`feat/ps-nothing-floor-and-label-strip`), 120/120
+cells on both papers. Previously: 2026-08-12 (**THE DRILL PATH NOW WRITES TO THE WEAKNESS LEDGER — AND MEASURING IT
 IMMEDIATELY SHOWED THE LO TERM BARELY STEERS.** `feat/drill-path-weakness-ledger`, shipped
 unflagged. 12 rows backfilled, and `npm run probe:steering` found 4 of 5 serves with NO
 discrimination at all. See the ✅ and 🔴 blocks below. Earlier same day: **A TIMED-OUT PAPER SENT
@@ -695,32 +700,84 @@ baseline's own per-case skill lists exactly, which is the independent check that
 
 ---
 
-## ⭐ 🔴 OPEN 2026-08-13 — **~1 IN 10 PS FEEDBACK STRINGS NAMES "THE DESCRIPTOR" TO THE CANDIDATE, AND IT IS PRE-EXISTING**
+## ⭐ ✅ CLOSED 2026-08-13 — **THE DESCRIPTOR LEAK: THE BAND LADDER WAS THE SOURCE** (`fix/ps-ladder-not-descriptor-relative`)
 
-**The rule it breaks.** PS feedback rule 2: *"NEVER POINT AT ANYTHING THEY CANNOT SEE … no
-descriptor, standard, document, reference, model, scheme or 'provided' text may be mentioned,
-HOWEVER NAMED."* Observed shape, verbatim from a student-facing string: *"…which is exactly the kind
-of reflective interpretation the descriptor requires."* The candidate has never seen a descriptor.
+**The leak.** *"…which is exactly the kind of reflective interpretation the descriptor requires."*
+Rule 2 **already** banned it, in capitals, *"HOWEVER NAMED"* — and was losing at **12.9%**.
 
-**MEASURED, AND ATTRIBUTED.** New prompt **9/90**. Old prompt, **verbatim, with the real descriptor
-prose**, **1/27** — same shape (*"exactly the quality of judgement the descriptor requires"*). **So
-it is INHERITED, not introduced by this change set.** The word appears **9× in the PS system prompt
-both before and after** — identical count. ⚠️ **Whether the change moved the RATE is UNMEASURED and
-27 samples cannot resolve it**: at a true rate of 10%, seeing ≤1/27 has probability ≈0.23. Do not
-report 9/90 vs 1/27 as an increase.
+**The source was above the ban.** FIVE of the prompt's NINE `descriptor` mentions were the BAND
+DEFINITIONS. Rule 4 demands *"no band without a named reason"*, so the model warranted the band by
+restating the band's own definition. The five are rewritten to describe the QUALITY OF THE WRITING
+(*"demonstrates the skill"*); 9 → 4 mentions. **Every severity anchor preserved verbatim.** The
+descriptor block, its `(the standard)` header and all three instructions to judge against it are
+UNTOUCHED — fence the output, never the input.
 
-**⚠️ TWO MEASUREMENT FAILURES ON THE WAY TO THAT NUMBER, BOTH CAUGHT, BOTH GENERALISABLE.**
-**(a) The first detector had 5 false positives in 14 hits** — `standard deviation` ×4 (a STATISTIC,
-not the marking standard) and *"matches the figure given in the scenario"* ×1 (the candidate's OWN
-scenario, which they can see). The corrected detector self-tests all three shapes before it runs.
-**A hand count is not a measurement:** the loose pattern flagged **14**, not the 13 counted by eye.
-**(b) The FIRST attribution control returned `0/27` and was DISCARDED** — it fed the old prompt a
-*placeholder* rubric (`"(descriptor as production supplies it)"`) instead of the real descriptor
-prose, so the model had no descriptor text to name. **A control that changes the input it is
-controlling for measures nothing.**
+**CALIBRATED, 3 arms × 264 paired skill-cells** (11 real cases: 3 AFM + 7 APM + a near-blank),
+every arm driving the production core via a new `promptVariant`:
 
-**NOT FIXED HERE, deliberately.** It is a third prompt change and would need its own calibration
-round; folding it in would confound the result this session's 30 chains just produced.
+| arm | band shift | leak | exemplary | strong |
+|---|---|---|---|---|
+| control | — | 12.9% | 19% | 8% |
+| **ladder** | **+0.019 (t=0.66)** | **6.4% (z=2.50)** | 13% | 2% |
+| ladder + P-T2 | −0.030 (t=−1.13) | 25.4% (z=−3.65) | 25% | 26% |
+
+Band-neutral: **78% of cells identical**, one (case, skill) pair moved ≥0.34 of a band.
+Doctrine **P-M4**. Fixtures `npm run test:ps-prompt-variants` (57), gate **57 → 58/58**.
+
+**⚠️ TWO ATTEMPTS FAILED FIRST, AND THEY ARE THE EVIDENCE FOR THE RULE.** The judgement/feedback
+split (P-M3 ported here) took mentions 9 → 22 and **doubled the leak, 8.7% → 18.5%**, moving bands
+harsher (`competent` 7/92 → 17/92) — dropped. The P-T2 half (rule 2 restated + an `exemplary`
+carve-out) came in at **z = −3.65** and did not fix the band it was written for (exemplary 19% →
+25%). **Any instruction ADDED to the feedback rules that names the referent raises the rate by
+priming it.**
+
+**⚠️ MEASUREMENT FAILURES ON THE WAY, ALL CAUGHT, ALL GENERALISABLE.** (a) The first detector had
+5 false positives in 14 — `standard deviation` ×4, *"matches the figure given in the scenario"* ×1.
+(b) A second pair surfaced only in round 1's treatment arm and was **inflating it**: `specification`
+(matched inside *"mis-specification"* and *"actionable specification"*) and `the solution` (the
+candidate's OWN proposed solutions). (c) The first attribution control returned `0/27` and was
+DISCARDED — it fed the old prompt a *placeholder* rubric. **A control that changes the input it is
+controlling for measures nothing.** (d) **A hand count is not a measurement**: the loose pattern
+flagged 14, not the 13 counted by eye.
+
+---
+
+## ⭐ 🔴 OPEN 2026-08-13 — **CLASS C: DESCRIPTOR CONTENT ATTRIBUTED TO "THE REQUIREMENT", A DOCUMENT THE STUDENT IS HOLDING**
+
+**The shape**, verbatim from a live `nothing`-band string:
+
+> "There is nothing here to assess **against the requirement to** investigate information, estimate
+> outcomes, balance costs and risks, or recommend decisions."
+
+The candidate **can** see the requirement. The requirement does **not** say that — the descriptor
+does. **This is the worst of the three classes**: naming an invisible document points at something
+they cannot check; this makes a FALSE STATEMENT about one they are holding.
+
+**⚠️ THE LADDER FIX MADE IT MORE COMMON AT `nothing`. HAND COUNTS, NOT DETECTOR COUNTS:**
+
+| arm | `nothing` cells | detector-flagged | **"against the requirement" shape, BY HAND** |
+|---|---|---|---|
+| control | 16 | 0 | **4/16** |
+| **ladder (shipped)** | 16 | 0 | **9/16** |
+| ladder + P-T2 | 16 | 5 | 7/16 |
+
+**Do not read the closed item's 6.4% as covering this.** That figure is detector-measured and this
+class is largely invisible to that detector.
+
+**Why it is a different instrument, and why it is not folded in.** The class-C detector matches a
+5-word descriptor n-gram inside 60 characters of an attribution frame. The model **PARAPHRASES**
+(*"investigate information, estimate outcomes"* against the descriptor's *"Investigate relevant
+information from a range of sources … to estimate outcomes"*), so no n-gram matches. Catching it
+needs paraphrase detection, which is a different build. **`n=16` is one near-blank case × 2 skills ×
+8 runs — too small to act on**, and the near-blank arm is the only place the class appears at all
+(it needs a `weak`/`nothing` band, which a strong script never reaches).
+
+**Note the direction of the P-T2 arm.** Its apparent `nothing` regression (0 → 5 detector-flagged)
+is largely the same content made EXPLICIT (*"the analysis and evaluation descriptor"*), which the
+detector sees, where the paraphrase escapes it. Both are leaks; the paraphrase is the worse one.
+
+**Next step when it is taken up:** a paraphrase-tolerant detector first, then a corpus with real
+weak/nothing answers across several cases — not another prompt round on `n=16`.
 
 ---
 

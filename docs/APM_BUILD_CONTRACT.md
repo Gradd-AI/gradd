@@ -4752,3 +4752,89 @@ round rather than folded in. Tracked in `AFM_SURFACED.md`.
 STORED-label decision is reversed on the record) and `docs/reviews/AFM_MOCK1_CANDIDATE_VIEW.md`
 (its provenance line predated the 2026-07-30 marks change; content re-verified against the live rows
 8/8, and the regeneration script it named **does not exist**).
+
+---
+
+## 2026-08-13 (III) — THE DESCRIPTOR LEAK: THE BAND LADDER WAS THE SOURCE (`fix/ps-ladder-not-descriptor-relative`)
+
+**The finding.** ~1 in 10 PS feedback strings named *"the descriptor"* to the candidate. Rule 2
+**already** banned it, in capitals, as a CLASS ban, *"HOWEVER NAMED"* — and it was losing at
+**12.9%** measured over 264 production-core cells.
+
+**The source sat ABOVE the ban.** FIVE of the prompt's NINE `descriptor` mentions were the BAND
+DEFINITIONS (*"meets the descriptor in full"* …), and rule 4 demands *"no band without a named
+reason"* — so the model warranted the band by restating the band's own definition. Every observed
+leak was one construction: *"[their evidence] is exactly what the descriptor requires"*, and **8 of
+the original 9 sat on `exemplary`**, where the old rule 2 (*"where the band is below exemplary, what
+would have raised it"*) offered no closing move at all.
+
+**Diagnosis first, and it corrected a banked premise.** Commit `3093ae3` closed with *"PS core
+untouched — judgeCaseMarking receives no code-owned reference, so it has no comparative frame to
+fence."* It has one: the descriptor block, sent under the header *"…descriptors (the standard)"*.
+Not code-OWNED — but code-owned was never the property that mattered; INVISIBLE TO THE CANDIDATE is.
+
+**A wide sweep over persisted production data (zero model spend)** found the 9/90 headline was the
+rate on ONE strong AFM script: real post-contract PS feedback ran **9/19**. It also found the
+technical pass's production rows prove NOTHING about P-M3's split — all 7 model-written rows predate
+the split commit by three hours, and the 8 after it are blank short-circuits with no model call.
+
+**⛔ TWO ATTEMPTS FAILED, AND THEY ARE THE EVIDENCE FOR P-M4.**
+**(a) The judgement/feedback split** (P-M3 ported here) took `descriptor` 9 → 22 mentions and
+**doubled the leak, 8.7% → 18.5%**, while moving bands HARSHER (`competent` 7/92 → 17/92; 9 of 11
+shifted cells harsher). Stopped at run 3 of 20 — a band shift outranks the prose. **Reverted, never
+merged, never pushed.** It failed because P-M3's fix relies on the reference having CONCRETE RESIDUE
+that survives the rewrite (*"your WACC of 9.59% is correct"*); a descriptor has none.
+**(b) The P-T2 half** (rule 2 restated + an `exemplary` carve-out on rule 4) came in at **z = −3.65,
+twice the control**, and did not fix the band it was written for — exemplary **19% → 25%**.
+
+**WHAT SHIPPED.** The five band-definition mentions rewritten to describe the QUALITY OF THE WRITING
+(*"demonstrates the skill"*), 9 → 4. **Every severity anchor preserved verbatim** — that is what
+makes it band-neutral. The descriptor block, its `(the standard)` header and all three instructions
+to judge against it are UNTOUCHED (fence the output, never the input — settled by P-M3).
+
+**CALIBRATION — 3 arms × 264 paired skill-cells, interleaved, 11 real cases (3 AFM + 7 APM + a
+near-blank), every arm driving the production core through a new `promptVariant`:**
+
+| arm | band shift vs control | leak | exemplary | strong |
+|---|---|---|---|---|
+| control | — | 12.9% | 19% | 8% |
+| **ladder (SHIPPED)** | **+0.019 (t=0.66), 78% cells identical** | **6.4% (z=2.50)** | 13% | 2% |
+| ladder + P-T2 | −0.030 (t=−1.13) | 25.4% (z=−3.65) | 25% | 26% |
+
+The control independently reproduced the original mechanism on a corpus now 2/3 APM: exemplary 19%
+vs strong 8%.
+
+**Mechanism banked as doctrine `P-M4`** — a leaked referent is fixed by removing the model's NEED
+for the word, never by forbidding it; cross-referenced to P-T2 (this is the case P-T2 does not
+reach: the instruction that had to change was in the DEFINITIONS, not the rules) and to P-M3 (do not
+port a fix on a matching SYMPTOM; check the thing being fenced is the same KIND of thing).
+
+**🔴 OPENED, NOT FOLDED IN — class C.** *"There is nothing here to assess **against the requirement
+to** investigate information, estimate outcomes…"* attributes descriptor content to the requirement,
+a document the student IS holding and which does not say that. **The ladder made it MORE common at
+`nothing`: 4/16 → 9/16, BY HAND.** The n-gram detector cannot see it (the model paraphrases), so the
+6.4% does not cover it; `n=16` is one near-blank case × 2 skills × 8 runs, too small to act on.
+Needs a paraphrase-tolerant detector and a corpus with real weak/nothing answers. Tracked in
+`AFM_SURFACED.md`.
+
+**⚠️ FOUR MEASUREMENT FAILURES, all caught.** (a) 5 false positives in 14 (`standard deviation` ×4,
+*"matches the figure given in the scenario"*). (b) A second pair surfaced only in round 1's
+TREATMENT arm and was inflating it — `specification` (matched inside *"mis-specification"*) and
+`the solution` (the candidate's OWN solutions). (c) The first attribution control fed a
+*placeholder* rubric and returned a meaningless `0/27` — **a control that changes the input it is
+controlling for measures nothing.** (d) Round 1's harness printed ONLY matches and discarded 77 of
+90 strings, so no wider class was measurable after the fact; every harness since retains every
+string.
+
+**Structural improvement carried in the same change.** The PS prompt is extracted into a pure
+`buildPsSystemPrompt(paper, variant)` and `judgeCaseMarking` takes an optional `promptVariant`, so a
+calibration arm drives the REAL core rather than a hand transcription beside it — round 1 had to
+copy the prompt to get a control, putting a transcription of the one string under test at the centre
+of the measurement. `shipped` is retained and **pinned BYTE-IDENTICAL** by fixture, so the
+historical control survives and the refactor cannot silently reword the live prompt.
+
+**Gates:** `test:ps-prompt-variants` **57 checks** (incl. 3 MUST-FAIL: rewriting one band
+definition, softening a severity anchor, degrading the input instruction), gate **57 → 58/58** ·
+`tsc --noEmit` clean · `next build` GREEN. **DB: zero writes.** Harnesses
+`scripts/_sweep_invisible_referents.ts`, `_probe_split_effect.ts`, `_calibrate_ps_split.ts`,
+`_calibrate_ps_ladder.ts` — gitignored, read-only.
