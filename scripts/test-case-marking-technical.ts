@@ -11,6 +11,7 @@ process.env.ANTHROPIC_API_KEY ||= 'test-key-unused-no-request-made';
 
 (async () => {
   const { apportionTechnicalMarks, isBlankAnswer, judgeCaseMarking } = await import('../lib/acca/case-marking');
+  const { markerLabel } = await import('../lib/acca/requirement-label');
 
   let failures = 0;
   function ok(name: string, cond: boolean) {
@@ -79,20 +80,52 @@ process.env.ANTHROPIC_API_KEY ||= 'test-key-unused-no-request-made';
     // requirement, so a fully blank AFM sit reached the old guard as 22-46 alphanumerics of
     // requirement headings, sailed past isBlankAnswer's 3-char threshold, and was model-judged
     // 'weak' across the board — 5/20 on professional skills for an empty paper.
-    // The labels below are the STORED AFM Mock Paper 1 labels, verbatim.
+    //
+    // ── AND THE LABELS ARE NOW STRIPPED (2026-08-13) ──────────────────────────
+    // Production runs the stored label through `markerLabel` before the PS pass reads it, so
+    // hardcoding the RAW string here would reintroduce exactly the unfaithfulness the note
+    // above exists to prevent — a fixture asserting a join production stopped building.
+    // `psJoin` therefore performs the SAME transformation with the SAME function over the
+    // real stored labels, rather than pinning its output: if the strip changes, this moves
+    // with it instead of quietly disagreeing.
+    const psJoin = (rows: Array<[string, string]>, answers: string[]) =>
+      rows.map(([label, lo], i) =>
+        `${(markerLabel(label, lo) ?? '').trim() || `Requirement ${i + 1}`}\n${answers[i]}`).join('\n\n');
+
+    ok('the stripped PS join really is shorter than the raw one it replaced',
+      psJoin([['(i) B3e — 10 marks', 'B3e']], ['']).length < '(i) B3e — 10 marks\n'.length);
+    ok('the stripped PS join carries NO syllabus code into the PS pass',
+      !/\b[A-E][0-9]{1,2}[a-z]?\b/.test(psJoin([['(i) B3e — 10 marks', 'B3e'], ['(ii) B5b — 16 marks', 'B5b']], ['', ''])));
+    ok('the stripped PS join carries NO technical mark allocation into the PS pass',
+      !/marks?/i.test(psJoin([['(i) B3e — 10 marks', 'B3e'], ['(ii) B5b — 16 marks', 'B5b']], ['', ''])));
+
+    // ⛔ THE `Requirement N` FALLBACK IS NOW REACHABLE, so it is exercised (P-G3). Before the
+    // strip no stored label was ever empty, so this arm was dead code; a label that is ONLY a
+    // code strips to null and lands here. Measured as 0 live rows today (every requirement has
+    // a lo_code, and no label is code-only), which is why it is a guard and not the main path.
+    ok('a code-only label falls back to "Requirement N", never to an empty heading',
+      psJoin([['B3e', 'B3e']], ['answer text']) === 'Requirement 1\nanswer text');
+    ok('a null label falls back the same way',
+      psJoin([[null as unknown as string, 'B3e']], ['answer text']) === 'Requirement 1\nanswer text');
+    ok('an APM descriptive label is NOT replaced by the fallback',
+      psJoin([['(i) The benchmarking exercise', null as unknown as string]], ['x'])
+        === '(i) The benchmarking exercise\nx');
+
     const psA = await judgeCaseMarking({
       paper: 'AFM', context: 'ctx',
-      wholeAnswer: '(i) B3e — 10 marks\n\n\n(ii) B5b — 16 marks\n\n\n(iii) E2b — 8 marks\n\n\n(iv) E1a — 6 marks\n',
+      wholeAnswer: psJoin(
+        [['(i) B3e — 10 marks', 'B3e'], ['(ii) B5b — 16 marks', 'B5b'], ['(iii) E2b — 8 marks', 'E2b'], ['(iv) E1a — 6 marks', 'E1a']],
+        ['', '', '', '']),
       answersOnly: '\n\n\n\n\n\n',
       examinedSkills: ['communication', 'analysis_and_evaluation', 'scepticism', 'commercial_acumen'], professionalSkillsMarks: 10 });
     const psB1 = await judgeCaseMarking({
       paper: 'AFM', context: 'ctx',
-      wholeAnswer: '(i) B1a — 12 marks\n\n\n(ii) B1b — 8 marks\n',
+      wholeAnswer: psJoin([['(i) B1a — 12 marks', 'B1a'], ['(ii) B1b — 8 marks', 'B1b']], ['', '']),
       answersOnly: '\n\n   ',
       examinedSkills: ['analysis_and_evaluation', 'scepticism'], professionalSkillsMarks: 5 });
     const psB2 = await judgeCaseMarking({
       paper: 'AFM', context: 'ctx',
-      wholeAnswer: '(i) E3a — 12 marks\n\n\n(ii) E2a — 8 marks\n',
+      wholeAnswer: psJoin([['(i) E3a — 12 marks', 'E3a'], ['(ii) E2a — 8 marks', 'E2a']], ['', '']),
       answersOnly: '-\n\n',
       examinedSkills: ['scepticism', 'commercial_acumen'], professionalSkillsMarks: 5 });
     const psAwarded = psA.professional_marks_awarded + psB1.professional_marks_awarded + psB2.professional_marks_awarded;
