@@ -42,6 +42,7 @@
     "test:case-sit": "tsx scripts/test-case-sit.ts",
     "test:case-surface": "tsx scripts/test-case-surface.ts",
     "test:sit-preview": "tsx scripts/test-sit-preview.ts",
+    "test:requirement-label": "tsx scripts/test-requirement-label.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts",

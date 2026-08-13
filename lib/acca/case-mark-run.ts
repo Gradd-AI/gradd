@@ -32,6 +32,7 @@ import {
   type TechnicalMarkingResult,
 } from '@/lib/acca/case-marking';
 import { caseMarkReady } from '@/lib/acca/case-sit';
+import { markerLabel } from '@/lib/acca/requirement-label';
 import { ledgerActionsFor } from '@/lib/acca/weak-areas';
 // The open/close implementation MOVED to lib/acca/weak-area-store.ts (2026-08-12) when the
 // drill path became a second writer. It used to live here privately with `source: 'sit'`
@@ -179,15 +180,35 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
 
   // ── Whole-answer input (final_answer per requirement, in order) ──
   // TWO strings out of ONE pass over the same trimmed answers:
-  //   wholeAnswer — labelled, what the MODEL sees. Byte-for-byte what it always was.
+  //   wholeAnswer — labelled, what the MODEL sees.
   //   answersOnly — the candidate's text alone, used ONLY for the blank check.
   // They are separate because the blank check used to read the labelled join, and the labels
   // alone cleared isBlankAnswer's threshold, so a fully blank paper was never detected as
   // blank. See JudgeCaseMarkingInput.answersOnly in lib/acca/case-marking.ts.
+  //
+  // ── THE LABEL IS STRIPPED BEFORE THE PS MARKER READS IT (2026-08-13) ────────
+  // It used to be the RAW stored label, and on AFM that is "(i) B3e — 10 marks": an
+  // internal syllabus code plus the TECHNICAL mark allocation, interleaved with the
+  // candidate's text inside a block captioned "Candidate's whole answer", for a pass
+  // scoring a SEPARATE 5- or 10-mark professional-skills pool. The student never wrote it
+  // and never saw it — the sit route strips the code at the serve boundary.
+  //
+  // This REVERSES a documented decision (APM_BUILD_CONTRACT.md 2026-07-29, "using the
+  // STORED label (LO code and all — sitDisplayLabel is a serve-side strip the marking path
+  // deliberately does not apply)"), so it is a reversal on the record, not a drift.
+  //
+  // `markerLabel`, not `sitDisplayLabel`: same module, same rule, `sweepCodeShape:false`.
+  // The generic code-SHAPE backstop would silently delete an APM label's "B2" division
+  // from what the marker reads. Reasoning and the live measurement that licensed dropping
+  // it are at lib/acca/requirement-label.ts.
+  //
+  // The `Requirement N` fallback is UNCHANGED and is now REACHABLE: a label that was only
+  // a code strips to null, where before it was merely never empty. Pinned in
+  // scripts/test-case-marking-technical.ts.
   const trimmedAnswers = requirements.map((r) => (progressByReq.get(r.id)?.final_answer ?? '').trim());
   const wholeAnswer = requirements
     .map((r, i) => {
-      const label = (r.label ?? '').trim() || `Requirement ${r.requirement_order}`;
+      const label = (markerLabel(r.label, r.lo_code) ?? '').trim() || `Requirement ${r.requirement_order}`;
       return `${label}\n${trimmedAnswers[i]}`;
     })
     .join('\n\n');
@@ -238,6 +259,22 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
   let technical: TechnicalMarkingResult | null = null;
   if (sitting) {
     try {
+      // ⚠️ KNOWN SECOND OCCURRENCE — THE TECHNICAL PASS STILL READS THE RAW LABEL.
+      // Grant-ruled 2026-08-13: the strip is PS-ONLY, and this site is logged rather than
+      // changed. The two are genuinely different exposures. Here the label is a HEADING
+      // ("Requirement N — <label>", case-marking.ts:595) over a block that also carries the
+      // question, the model answer and the candidate's answer; the PS defect was that the
+      // label sat INSIDE a block captioned "Candidate's whole answer". And an AFM label's
+      // mark count at least AGREES with the ceiling this pass marks to, which it did not in
+      // the PS pass.
+      //
+      // What is still true here, and is why this is logged and not closed: `feedback` on
+      // this pass is student-facing under the same "never point at anything they cannot
+      // see" ban, and "B3e" is exactly such a thing.
+      //
+      // Changing it would also have doubled the calibration surface — with the technical
+      // bytes unchanged, B2(i) competent/6 stays a CONTROL for the PS recalibration rather
+      // than becoming a second live bar. Whoever closes this needs its own 10-run round.
       technical = await judgeTechnicalMarking({
         paper,
         context,

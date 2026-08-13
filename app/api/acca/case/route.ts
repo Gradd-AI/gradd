@@ -3,7 +3,6 @@ import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { hasPaperAccess } from '@/lib/acca/access';
 import { resolvePaper, strictPaper } from '@/lib/acca/paper';
 import { mockContentAllowed, caseIsReserved, STANDARD_REQUIREMENT_SELECT } from '@/lib/acca/mock-access';
-import { sitDisplayLabel } from '@/lib/acca/sit-preview';
 
 // ── APM case-load endpoint (redesign P0 item 1 — case-scope construct) ─────────
 // Behind APM_CASES (default OFF). Flag off → 404 (endpoint is inert; the proven

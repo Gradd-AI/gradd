@@ -674,6 +674,38 @@ when the session ends on a branch.
   **`withParseRetry`** = 1 + 3 attempts, parse failures ONLY (`Error('call')` propagates); every
   failure is CAPTURED to `MARKING_PARSE_FAILURES` + a structured log before the retry. Fixtures
   `scripts/test-marking-json-extract.ts` (`npm run test:marking-json-extract`, 16 checks, pure).
+- **THE REQUIREMENT LABEL AT TWO BOUNDARIES — `lib/acca/requirement-label.ts` (pure, 2026-08-13).**
+  `strippedLabel(label, loCode, {sweepCodeShape})` + `markerLabel` (the marking form). ONE rule, TWO
+  readers: the CANDIDATE (`sitDisplayLabel`, serve boundary) and the PS MARKER (`case-mark-run.ts`).
+  **`sweepCodeShape` is a REQUIRED parameter, not a default, because the right answer inverts.** The
+  exact-`lo_code` removal is safe everywhere; the GENERIC sweep is a SHAPE (`<A-E><digit(s)><letter?>`),
+  so **true** at the serve boundary (a leaked code on a candidate's screen is the worse failure) and
+  **false** in marking (an APM label naming a division "B2" would be silently gutted before the marker
+  bands the candidate on it). **Measured before dropping it: 38 requirement rows, 0 null `lo_code`, 8
+  labels carrying a code shape, 0 where `lo_code` was absent or disagreed** — the exact removal handles
+  every code that exists. Fixtures `npm run test:requirement-label` (110; all 16 real APM labels pinned
+  byte-identical, BOTH AFM label shapes — mock-1 code+marks and `author-afm-case`'s marks-only — and
+  B2-in-prose pinned MUST-FAIL in both directions). ⚠️ **THE TECHNICAL PASS STILL READS THE RAW LABEL**
+  (`case-marking.ts:595`) — ruled PS-only, logged in `case-mark-run.ts`; its `feedback` is student-facing
+  under the same "never point at anything they cannot see" ban, so it is open, not closed.
+- **THE PS LADDER HAS A FLOOR — `nothing` (2026-08-13).** `BANDS`/`SkillBand`/`isBand` are **DELETED**;
+  ONE lexicon (`TECHNICAL_BANDS`) serves both passes. `weak` pays 25% and described a POOR attempt, not
+  an ABSENT one, so the marker could not say "no credit"; Option A's short-circuit only caught the FULLY
+  blank case, and `"asdf"` cleared `isBlankAnswer`'s 3-char threshold and floored at `weak`. **Three
+  prompt changes, all load-bearing:** the floor bullet · `weak` RE-ANCHORED (the line is a question of
+  FACT — is there writing to judge — not a further question of degree) · **THE RULE-4 CARVE-OUT, which
+  is what makes the band selectable** (rule 4's "quote a short phrase" is unsatisfiable on a near-blank
+  answer, and a model facing an unsatisfiable rule picks a band whose feedback it CAN write — left
+  alone it would have quietly repealed the new bullet, which would then pass every calibration bar
+  while changing nothing). 📐 **MEASURED: `nothing` 120/120 cells, 0 marks, BOTH papers; and 60/60 on
+  the RAW-label join too, so THE LADDER does the work and the LABEL STRIP IS NOT LOAD-BEARING FOR THE
+  FLOOR.** PS recalibration 30 chains: case ranges identical to baseline, paper total 16–18 vs 17–19.
+  ⚠️ **The carve-out's FIRST wording was itself the defect** — passive examples the model reproduced
+  verbatim (0/6 second person); second-person examples now name the wrong outputs as forbidden.
+  ⚠️ **PS steering STOPS for a near-blank paper** (`WEAKNESS_BANDS` excludes `nothing`) — ruled correct.
+  🔴 **OPEN: ~1 in 10 PS feedback strings names "the descriptor" to the candidate** — measured 9/90 new
+  vs 1/27 on the verbatim old prompt, so **PRE-EXISTING**; whether the change moved the rate is
+  unmeasured (27 samples cannot resolve 10% vs 4%). See `AFM_SURFACED.md`.
 - **THE PAPER AT A URL BOUNDARY — `lib/acca/paper-url.ts` (pure).** `paperHref(path, paper)` WRITES
   the paper into a link; `resolveSubscribePaper(param, referrer)` READS one back. One rule, two ends,
   one module — the round trip is the property that has to hold. **`DEFAULT_PAPER` (`paper.ts`) is
