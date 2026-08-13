@@ -105,31 +105,46 @@ export function getSkillDescriptors(paper: AccaPaper): Record<string, string> {
   return SKILL_DESCRIPTORS_BY_PAPER[paper];
 }
 
-// Professional-skills bands — the 4-value quality lexicon the PS prompt offers.
-const BANDS = ['exemplary', 'strong', 'competent', 'weak'] as const;
-export type SkillBand = (typeof BANDS)[number];
-function isBand(v: string): v is SkillBand {
-  return (BANDS as readonly string[]).includes(v);
-}
-
-// Technical bands = the 4 PS bands PLUS 'nothing' — the zero-credit floor a timed
-// SIT needs (a blank or entirely-wrong requirement). 'weak' is NOT that floor; it
-// still credits a recognisable attempt at 25%. PS marking never produces 'nothing'.
+// ── ONE BAND LEXICON, BOTH PASSES (was two until 2026-08-13) ─────────────────
+// `nothing` is the zero-credit floor. It used to be TECHNICAL-ONLY, on the reasoning
+// that a PS answer always has *some* writing to judge — and the separate 4-value PS
+// list (`BANDS`/`SkillBand`/`isBand`, now deleted) enforced it.
+//
+// THAT WAS THE DEFECT. `weak` pays 25% and its wording describes a POOR attempt, not an
+// ABSENT one, so the PS marker could not say "no credit" even when it correctly read an
+// answer as absent. Option A (2026-08-09) closed the FULLY blank case with a
+// deterministic short-circuit; an answer of "asdf" clears isBlankAnswer's 3-alphanumeric
+// threshold, reaches the model, and floored at `weak`/25% — 5/20 on an empty-in-substance
+// AFM paper. `nothing` is now offered to the PS prompt too, so the floor is REACHABLE BY
+// JUDGEMENT and not only by the hand-built short-circuit.
+//
+// Reusing `nothing` rather than minting a second name for 0% is deliberate:
+// `PerSkillMark.band` was ALREADY typed TechnicalBand, the blank short-circuit already
+// writes 'nothing', and `acca_case_marking.per_skill` is persisted jsonb — a second name
+// would put two strings on one fact, split across the deterministic and judged paths,
+// permanently.
 const TECHNICAL_BANDS = ['exemplary', 'strong', 'competent', 'weak', 'nothing'] as const;
 export type TechnicalBand = (typeof TECHNICAL_BANDS)[number];
 function isTechnicalBand(v: string): v is TechnicalBand {
   return (TECHNICAL_BANDS as readonly string[]).includes(v);
 }
 
-// ONE multiplier table serves both passes: SkillBand ⊂ TechnicalBand, so PS marking
-// (which only ever yields the 4 quality bands) indexes it safely, and 'nothing' → 0.
+// One multiplier table, one lexicon, both passes. `nothing` → 0, and `apportion` can
+// never hand it a surplus mark (its fractional part is 0, so it sorts last).
 const BAND_MULTIPLIER: Record<TechnicalBand, number> = {
   exemplary: 1, strong: 0.75, competent: 0.5, weak: 0.25, nothing: 0,
 };
 
+// ⚠️ DOWNSTREAM CONSEQUENCE, ACCEPTED AND RULED (2026-08-13): PS STEERING STOPS FOR A
+// NEAR-BLANK PAPER. `isWeakSkillBand` (lib/acca/weak-areas.ts) reads WEAKNESS_BANDS =
+// ['weak','competent'], which excludes 'nothing'. Before this change a near-blank paper
+// banded `weak` on every skill and DID steer the next drill served; it now bands
+// `nothing` and does not. That is correct and consistent with the technical side's
+// standing rule — a paper that gave no evidence is a pacing finding, not evidence about
+// which professional skill the student is weak on.
 interface SkillJudgement {
   skill: string;
-  band: SkillBand;
+  band: TechnicalBand;
   feedback: string;
 }
 
@@ -137,7 +152,7 @@ export interface PerSkillMark {
   skill: string;
   mark_awarded: number;
   feedback: string;
-  band: TechnicalBand;   // a model-judged PS answer yields a SkillBand; a blank answer short-circuits to 'nothing'
+  band: TechnicalBand;   // model-judged or short-circuited; one lexicon since 2026-08-13
 }
 
 // A submission earns nothing WITHOUT a model call when it is empty or trivially
@@ -389,8 +404,19 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
     '- "strong": meets the descriptor well, with only minor and immaterial gaps.\n' +
     '- "competent": broadly meets the descriptor but with a material weakness in depth, register ' +
     'or format.\n' +
-    '- "weak": falls short of the descriptor — superficial, poorly communicated, or missing the ' +
-    'professional standard.\n' +
+    // `weak` is RE-ANCHORED, not left alone. Its old wording ("superficial, poorly communicated")
+    // and the new floor describe the same region of the ruler twice, and the model would land
+    // wherever its prior put it — which is the behaviour this change exists to remove. The
+    // dividing line is stated as a QUESTION OF FACT ("is there writing to judge"), not a further
+    // question of degree.
+    '- "weak": a real attempt that falls short of the descriptor — superficial, poorly ' +
+    'communicated, or missing the professional standard. There IS writing to judge here; it is ' +
+    'not good enough.\n' +
+    '- "nothing": earns no credit — there is nothing here to assess this skill on. The answer is ' +
+    'absent, or so slight or off-topic that it gives no evidence of the skill either way.\n' +
+    'The line between "weak" and "nothing" is whether there is writing to judge at all, not how ' +
+    'bad it is. A short, wrong or badly argued answer is "weak". A blank, a stray character, or a ' +
+    'few words with no bearing on the requirement is "nothing". ' +
     'Judge each skill on its ABSOLUTE quality against the descriptor. Do not grade on a curve, and ' +
     'do not assume the answer is good. ' +
     // ── FEEDBACK CONTRACT — same rules as the technical pass, same reason ──
@@ -406,11 +432,25 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
     'what would have raised it.\n' +
     '3. WRITE WHATEVER THE BAND NEEDS — no length target, floor or ceiling. Never pad, and never ' +
     'truncate a reason to hit a length.\n' +
-    '4. Point to their OWN writing when you name evidence — quote a short phrase or name the section. ' +
-    'No band without a named reason.\n' +
+    // ── THE CARVE-OUT THAT MAKES `nothing` SELECTABLE ──────────────────────────
+    // Rule 4 as written ("quote a short phrase") is UNSATISFIABLE on an answer with nothing
+    // worth quoting, and the model resolves an unsatisfiable rule the cheap way: by picking a
+    // band whose feedback it CAN write. Left alone, this rule would have quietly repealed the
+    // `nothing` bullet above — the new floor would sit in the prompt, never be chosen, and pass
+    // every calibration bar cleanly while changing nothing. Structural, not instructed: the
+    // requirement is RESTATED for this band, not waived by a prohibition.
+    '4. Point to their OWN writing when you name evidence — quote a short phrase or name the ' +
+    'section. No band without a named reason. WHERE THE BAND IS "nothing" there is nothing to ' +
+    'quote, and this rule is met by stating plainly what is absent — STILL IN SECOND PERSON, as ' +
+    'rule 1 requires: "you did not answer this part", "what you wrote here does not address the ' +
+    'requirement". Rule 1 is NOT suspended for this band. Never write "no answer was given", ' +
+    '"the submission contains" or "the text provided" — those address nobody, and a candidate ' +
+    'reading their own result should not be described in the third person at the one moment the ' +
+    'result is worst. Do not invent a quotation, do not stretch to find one, and do not choose a ' +
+    'higher band merely because it would be easier to write feedback for.\n' +
     '5. No praise for its own sake, no encouragement, no grade prediction. ' +
     'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
-    '[{ "index": 1, "band": "exemplary|strong|competent|weak", "feedback": "..." }] — one ' +
+    '[{ "index": 1, "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — one ' +
     'object per examined skill, where index is the NUMBER of the skill in the list above. ' +
     'Use the numbers, never the skill names.';
 
@@ -451,7 +491,7 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
         const band = typeof o?.band === 'string' ? o.band.trim().toLowerCase() : '';
         const feedback = typeof o?.feedback === 'string' ? o.feedback : '';
         if (!Number.isInteger(idx) || idx < 1 || idx > examinedSkills.length) throw new Error();
-        if (!isBand(band)) throw new Error();
+        if (!isTechnicalBand(band)) throw new Error();
         return { skill: examinedSkills[idx - 1], band, feedback };
       });
       if (out.length === 0) throw new Error('empty');
