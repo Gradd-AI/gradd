@@ -434,6 +434,72 @@ Restoring the comparative words was necessary-looking and insufficient; the like
 is the "compare in full, quote both figures" instruction inviting a completeness check rather than a
 quality judgement. Recorded as open, not blocking, under P-M2 — it needs a referee, not another round.
 
+## P-M4 — A LEAKED REFERENT IS FIXED BY REMOVING THE MODEL'S NEED FOR THE WORD, NEVER BY FORBIDDING IT (ruled 2026-08-13)
+
+**The instance.** ~1 in 10 PS feedback strings named *"the descriptor"* to the candidate — a
+document they have never seen. Rule 2 **already** forbade it, in capitals, as an explicit CLASS ban,
+*"HOWEVER NAMED"*. It was losing at 12.9%.
+
+**Why it was losing.** The ban sat UNDER the thing that created the need. FIVE of the prompt's NINE
+`descriptor` mentions were the BAND DEFINITIONS — *"meets the descriptor in full"*, *"meets the
+descriptor well"*, *"broadly meets the descriptor"*, *"falls short of the descriptor"*, and the
+lead-in framing all four. Rule 4 demands *"no band without a named reason"*, so the model warranted
+the band by restating the band's own definition — and the definition names the referent. Every
+observed leak was one construction: *"[their evidence] is exactly what the descriptor requires"*.
+**No wording of a downstream rule can outrun the definitions above it.**
+
+**MEASURED, THREE ARMS × 264 PAIRED SKILL-CELLS, interleaved on identical content:**
+
+| arm | band shift vs control | leak | exemplary | strong |
+|---|---|---|---|---|
+| control (ban only) | — | 12.9% | 19% | 8% |
+| **band definitions rewritten** | +0.019 bands (t=0.66) | **6.4%** (z = 2.50) | 13% | 2% |
+| definitions + restated rule 2 + carve-out | −0.030 bands (t=−1.13) | **25.4%** (z = −3.65) | 25% | 26% |
+
+**The rule.** When a model leaks a referent into user-facing prose, find WHERE THE PROMPT MAKES IT
+NEED THE WORD and remove that need. Adding any instruction — a ban, a restatement, a carve-out —
+that itself names the referent **raises** the rate, because it primes what it discusses.
+
+**TWO INDEPENDENT FAILURES ARE THE EVIDENCE, both on the same day, both the same shape:**
+- **The judgement/feedback split** (P-M3's fix, ported here): took `descriptor` from 9 → 22
+  mentions and **roughly doubled the leak, 8.7% → 18.5%**, while moving bands harsher (`competent`
+  7/92 → 17/92). Dropped.
+- **The P-T2 half** (rule 2 restated + an `exemplary` carve-out on rule 4): **z = −3.65, twice the
+  control**. It did not even fix the band it was written for — exemplary **19% → 25%**, worse than
+  doing nothing.
+
+**Relation to P-T2.** P-T2 says change the instruction, do not add a prohibition. This is the case
+P-T2 does not reach: **here the instruction that had to change was not in the rules at all — it was
+in the DEFINITIONS the rules operate on.** A restatement is still an addition when the thing
+creating the demand sits above it, and P-T2's own remedy measured WORSE than the control. Read the
+two together: remove the demand, and check where the demand actually lives before rewriting the
+rule that merely inherits it.
+
+**Relation to P-M3, which still stands for its own case.** P-M3's field split works when the
+reference has CONCRETE RESIDUE that survives the rewrite: *"the standard requires WACC 9.59%; the
+candidate got 9.59%"* → *"your WACC of 9.59% is correct"* — content survives, referent drops. **A
+descriptor has no such residue**: its content IS abstract behavioural criteria, so nothing is left
+to state once the referent goes. Do not port a fix across on the strength of a matching SYMPTOM;
+check that the thing being fenced is the same KIND of thing.
+
+**Corollary — preserve every severity anchor verbatim when rewriting a band ladder.** A band shift
+outranks the prose (P-M2, P-M3). The rewrite moved only the OBJECT of the comparison ("meets the
+descriptor" → "demonstrates the skill") and kept *"nothing material to fault"*, *"only minor and
+immaterial gaps"*, *"a material weakness in depth, register or format"*, *"superficial, poorly
+communicated"* and *"There IS writing to judge here; it is not good enough"* word for word. Result:
+78% of cells identical, one (case, skill) pair moved ≥0.34 of a band. The attempt that did not
+preserve them moved bands and was dropped.
+
+**Corollary — fence the OUTPUT, never the INPUT.** The descriptor block, its `(the standard)`
+header and all three instructions to judge against it are UNTOUCHED. Degrading the reference moved
+bands twice on the technical pass (P-M3) and is settled.
+
+**Corollary — a calibration arm must drive the production core, not a copy of it.** The first round
+transcribed the shipped prompt into its harness to get a control, putting a hand copy of the one
+string the measurement is about at the centre of the measurement. The prompt is now a pure builder
+(`buildPsSystemPrompt(paper, variant)`) taking a `promptVariant`, with the historical control pinned
+BYTE-IDENTICAL by fixture, so the refactor cannot silently reword the live prompt.
+
 ## P-T1 — A FACT THREADED TO A CALL THAT DOES NOT SPEAK IS NOT A FIX (ruled 2026-08-01)
 
 **The instance, measured.** The tutor was affirming the inverse rule on a seeded wrong-direction

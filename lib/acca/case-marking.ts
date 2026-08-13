@@ -192,7 +192,13 @@ export interface JudgeCaseMarkingInput {
    * is one nobody notices is missing.
    */
   answersOnly: string;
-  examinedSkills: string[];        // union of professional_skill_tags across requirements
+  examinedSkills: string[];
+  /**
+   * CALIBRATION ONLY. Selects the PS system-prompt variant; production omits it and gets
+   * `shipped`. Exists so a calibration arm drives THIS core with a candidate prompt rather
+   * than a hand-copied reimplementation of it beside the harness.
+   */
+  promptVariant?: PsPromptVariant;        // union of professional_skill_tags across requirements
   professionalSkillsMarks: number; // the case pool (5 for Section B, 10 for Section A)
 }
 
@@ -347,6 +353,171 @@ function apportion(raw: number[], target: number): number[] {
   return out;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// THE PS SYSTEM PROMPT, AS A PURE BUILDER WITH NAMED VARIANTS.
+//
+// Extracted from judgeCaseMarking so a calibration arm runs the PRODUCTION CORE with a
+// different prompt, instead of a hand-copied reimplementation of the core beside it. The
+// 2026-08-13 split calibration had to transcribe the shipped prompt into its harness to get a
+// control arm, and a transcription is a silent-drift risk on the one string the whole
+// measurement is about.
+//
+// `shipped` is BYTE-IDENTICAL to what production has always sent. The fixtures assert that
+// against a verbatim copy, so this refactor cannot quietly reword the live prompt.
+//
+// ── WHY THE LADDER VARIANTS EXIST ────────────────────────────────────────────
+// ~1 in 10 PS feedback strings named "the descriptor" to the candidate. A CLASS BAN was
+// already in rule 2, in capitals, "HOWEVER NAMED", and it was losing — because the ladder
+// tells the model what a band MEANS in descriptor terms ("meets the descriptor in full") and
+// rule 4 demands a named reason for the band, so the model warrants the band by restating the
+// band's own definition. FIVE of the shipped prompt's NINE "descriptor" mentions ARE the band
+// definitions. No wording of rule 2 can outrun the definitions above it.
+//
+// `ladder` rewrites those five to describe the QUALITY OF THE WRITING instead — the object of
+// the comparison moves from "meets the descriptor" to "demonstrates the skill". EVERY SEVERITY
+// ANCHOR IS PRESERVED VERBATIM ("nothing material to fault", "only minor and immaterial gaps",
+// "a material weakness in depth, register or format", "superficial, poorly communicated",
+// "There IS writing to judge here; it is not good enough") — band movement is what killed the
+// previous attempt, so the rewrite changes what a band is measured AGAINST and nothing about
+// how severe it is.
+//
+// ⚠️ THE DESCRIPTOR BLOCK AND ITS "(the standard)" HEADER STAY, AND SO DO THE THREE
+// INSTRUCTIONS TO JUDGE AGAINST IT. Rounds 1 and 2 of the technical fix protected the
+// candidate by DEGRADING THE REFERENCE and both MOVED BANDS: the marker uses the comparison to
+// decide, not merely to phrase. Fence the output, never the input.
+//
+// `ladder_p_t2` adds the two P-T2 edits on top: rule 2 RESTATED (what the sentence is, not what
+// it may not contain) and an `exemplary` carve-out on rule 4, in the rule that creates the
+// demand — the same structural shape as the `nothing` carve-out beside it.
+//
+// ── CALIBRATED 2026-08-13, 3 arms × 264 skill-cells, paired and interleaved ──
+// `ladder` SHIPS. `ladder_p_t2` is RETAINED AS A LOSER, not as an option:
+//
+//                 band shift vs control        leak      exemplary   strong
+//   shipped       —                            12.9%     19%         8%
+//   ladder        +0.019 bands (t=0.66)         6.4%     13%         2%   <- SHIPS
+//   ladder_p_t2   -0.030 bands (t=-1.13)       25.4%     25%        26%
+//
+// Neither arm moved bands, so the ladder rewrite is band-neutral — which is the property the
+// severity anchors were preserved verbatim to protect, and the one the previous attempt (the
+// judgement/feedback split) failed.
+//
+// ⚠️ THE P-T2 EDITS MADE IT TWICE AS BAD (z = -3.65), AND THAT IS THE SECOND TIME THE SAME
+// SHAPE HAS BACKFIRED. Round 1's split also doubled the leak. The pattern across both rounds:
+// ANY instruction ADDED to the feedback rules that talks about the descriptor raises the rate,
+// because it primes the referent; REMOVING the descriptor from the band DEFINITIONS lowers it.
+// The rule-4 exemplary carve-out specifically did NOT fix the band it was written for —
+// exemplary went 19% -> 25%, worse than the control. THE LADDER ALONE CARRIES THE WIN.
+export type PsPromptVariant = 'shipped' | 'ladder' | 'ladder_p_t2';
+
+export function buildPsSystemPrompt(paper: AccaPaper, variant: PsPromptVariant = 'ladder'): string {
+  const ladderRewritten = variant !== 'shipped';
+  const pT2 = variant === 'ladder_p_t2';
+
+  // ── The ladder ────────────────────────────────────────────────────────────
+  const ladder = ladderRewritten
+    ? 'For each examined skill, assign exactly one band describing how well the whole answer ' +
+      'DEMONSTRATES that skill:\n' +
+      '- "exemplary": the skill is demonstrated in full, throughout; a professional marker ' +
+      'would find nothing material to fault.\n' +
+      '- "strong": the skill is clearly demonstrated, with only minor and immaterial gaps.\n' +
+      '- "competent": the skill is broadly demonstrated but with a material weakness in depth, ' +
+      'register or format.\n' +
+      '- "weak": a real attempt that does not reach the professional standard — superficial, ' +
+      'poorly communicated, or showing little of the skill. There IS writing to judge here; it ' +
+      'is not good enough.\n'
+    : 'For each examined skill, assign exactly one band describing how well the whole answer meets ' +
+      'that skill\'s descriptor:\n' +
+      '- "exemplary": meets the descriptor in full; a professional marker would find nothing ' +
+      'material to fault.\n' +
+      '- "strong": meets the descriptor well, with only minor and immaterial gaps.\n' +
+      '- "competent": broadly meets the descriptor but with a material weakness in depth, register ' +
+      'or format.\n' +
+      // `weak` is RE-ANCHORED, not left alone. Its old wording ("superficial, poorly communicated")
+      // and the new floor describe the same region of the ruler twice, and the model would land
+      // wherever its prior put it — which is the behaviour this change exists to remove. The
+      // dividing line is stated as a QUESTION OF FACT ("is there writing to judge"), not a further
+      // question of degree.
+      '- "weak": a real attempt that falls short of the descriptor — superficial, poorly ' +
+      'communicated, or missing the professional standard. There IS writing to judge here; it is ' +
+      'not good enough.\n';
+
+  // ── Rule 2: the ban (shipped) vs the restatement (P-T2) ──────────────────
+  const rule2 = pT2
+    ? '2. THE ONLY THING `feedback` POINTS AT IS THEIR OWN WRITING. Every sentence is a plain ' +
+      'statement about what they wrote — what it did, what it achieved, what it missed. Name the ' +
+      'professional behaviour their writing shows, in your own words: "You cross-check the ' +
+      'simulation mean against your own scenario ENPV before relying on either" — the behaviour IS ' +
+      'the reason and needs no authority behind it. Where a sentence would end by pointing at what ' +
+      'something requires, calls for or expects, END IT AT THE BEHAVIOUR INSTEAD. Where the band is ' +
+      'below exemplary, say what would have raised it.\n'
+    : '2. NEVER POINT AT ANYTHING THEY CANNOT SEE. This is a CLASS ban, not a list of banned words: ' +
+      'no descriptor, standard, document, reference, model, scheme or "provided" text may be ' +
+      'mentioned, HOWEVER NAMED. Say what their writing DID and, where the band is below exemplary, ' +
+      'what would have raised it.\n';
+
+  // ── Rule 4's `exemplary` carve-out, in the rule that CREATES the demand ──
+  // Rule 4 demands a named reason; at `exemplary` there is no shortfall to name and the shipped
+  // rule 2 stops short exactly there ("where the band is below exemplary…"). With nowhere to go
+  // the model closed on the only warrant the prompt had given it. 8 of the 9 measured leaks sat
+  // on this band. The requirement is RESTATED for it, not waived.
+  const exemplaryCarveOut = pT2
+    ? ' WHERE THE BAND IS "exemplary" there is no shortfall to name and the reason is the quality ' +
+      'of their own moves: name the two or three things this answer did that a weaker one would ' +
+      'not, and stop. "Nothing material is missing" is a complete ending — do not reach for an ' +
+      'authority to certify it.'
+    : '';
+
+  return (
+    `You are an experienced ACCA ${paper} marker judging the professional skills demonstrated in a ` +
+    'whole exam question. You judge HOW the candidate wrote — their reasoning, judgement and ' +
+    'communication across the whole answer — against the official ACCA professional-skills descriptor ' +
+    'for each examined skill. Each descriptor IS the standard; judge against it, not against a model ' +
+    'answer. ' +
+    ladder +
+    '- "nothing": earns no credit — there is nothing here to assess this skill on. The answer is ' +
+    'absent, or so slight or off-topic that it gives no evidence of the skill either way.\n' +
+    'The line between "weak" and "nothing" is whether there is writing to judge at all, not how ' +
+    'bad it is. A short, wrong or badly argued answer is "weak". A blank, a stray character, or a ' +
+    'few words with no bearing on the requirement is "nothing". ' +
+    'Judge each skill on its ABSOLUTE quality against the descriptor. Do not grade on a curve, and ' +
+    'do not assume the answer is good. ' +
+    // ── FEEDBACK CONTRACT — same rules as the technical pass, same reason ──
+    // Four skills at 800–1,500 characters each ran longer than the entire technical section and
+    // was almost all praise.
+    'THE `feedback` STRING IS SHOWN TO THE CANDIDATE. It is not a note to a moderator. Write it to ' +
+    'these rules:\n' +
+    '1. SECOND PERSON, addressed to them — "You structure the answer as a report…", never "The ' +
+    'candidate…".\n' +
+    rule2 +
+    '3. WRITE WHATEVER THE BAND NEEDS — no length target, floor or ceiling. Never pad, and never ' +
+    'truncate a reason to hit a length.\n' +
+    // ── THE CARVE-OUT THAT MAKES `nothing` SELECTABLE ──────────────────────────
+    // Rule 4 as written ("quote a short phrase") is UNSATISFIABLE on an answer with nothing
+    // worth quoting, and the model resolves an unsatisfiable rule the cheap way: by picking a
+    // band whose feedback it CAN write. Left alone, this rule would have quietly repealed the
+    // `nothing` bullet above — the new floor would sit in the prompt, never be chosen, and pass
+    // every calibration bar cleanly while changing nothing. Structural, not instructed: the
+    // requirement is RESTATED for this band, not waived by a prohibition.
+    '4. Point to their OWN writing when you name evidence — quote a short phrase or name the ' +
+    'section. No band without a named reason. WHERE THE BAND IS "nothing" there is nothing to ' +
+    'quote, and this rule is met by stating plainly what is absent — STILL IN SECOND PERSON, as ' +
+    'rule 1 requires: "you did not answer this part", "what you wrote here does not address the ' +
+    'requirement". Rule 1 is NOT suspended for this band. Never write "no answer was given", ' +
+    '"the submission contains" or "the text provided" — those address nobody, and a candidate ' +
+    'reading their own result should not be described in the third person at the one moment the ' +
+    'result is worst. Do not invent a quotation, do not stretch to find one, and do not choose a ' +
+    'higher band merely because it would be easier to write feedback for.' +
+    exemplaryCarveOut +
+    '\n' +
+    '5. No praise for its own sake, no encouragement, no grade prediction. ' +
+    'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
+    '[{ "index": 1, "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — one ' +
+    'object per examined skill, where index is the NUMBER of the skill in the list above. ' +
+    'Use the numbers, never the skill names.'
+  );
+}
+
 // Run ONE holistic professional-skills marking pass. The model judges a BAND per
 // examined skill against the section-E descriptor; code converts bands → marks.
 // Throws Error('call') on API/extract failure and Error('parse') on parse/shape
@@ -391,68 +562,9 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
 
   const contextLine = context ? `Case scenario and exhibits:\n${context}\n\n` : '';
 
-  const systemPrompt =
-    `You are an experienced ACCA ${paper} marker judging the professional skills demonstrated in a ` +
-    'whole exam question. You judge HOW the candidate wrote — their reasoning, judgement and ' +
-    'communication across the whole answer — against the official ACCA professional-skills descriptor ' +
-    'for each examined skill. Each descriptor IS the standard; judge against it, not against a model ' +
-    'answer. ' +
-    'For each examined skill, assign exactly one band describing how well the whole answer meets ' +
-    'that skill\'s descriptor:\n' +
-    '- "exemplary": meets the descriptor in full; a professional marker would find nothing ' +
-    'material to fault.\n' +
-    '- "strong": meets the descriptor well, with only minor and immaterial gaps.\n' +
-    '- "competent": broadly meets the descriptor but with a material weakness in depth, register ' +
-    'or format.\n' +
-    // `weak` is RE-ANCHORED, not left alone. Its old wording ("superficial, poorly communicated")
-    // and the new floor describe the same region of the ruler twice, and the model would land
-    // wherever its prior put it — which is the behaviour this change exists to remove. The
-    // dividing line is stated as a QUESTION OF FACT ("is there writing to judge"), not a further
-    // question of degree.
-    '- "weak": a real attempt that falls short of the descriptor — superficial, poorly ' +
-    'communicated, or missing the professional standard. There IS writing to judge here; it is ' +
-    'not good enough.\n' +
-    '- "nothing": earns no credit — there is nothing here to assess this skill on. The answer is ' +
-    'absent, or so slight or off-topic that it gives no evidence of the skill either way.\n' +
-    'The line between "weak" and "nothing" is whether there is writing to judge at all, not how ' +
-    'bad it is. A short, wrong or badly argued answer is "weak". A blank, a stray character, or a ' +
-    'few words with no bearing on the requirement is "nothing". ' +
-    'Judge each skill on its ABSOLUTE quality against the descriptor. Do not grade on a curve, and ' +
-    'do not assume the answer is good. ' +
-    // ── FEEDBACK CONTRACT — same rules as the technical pass, same reason ──
-    // Four skills at 800–1,500 characters each ran longer than the entire technical section and
-    // was almost all praise.
-    'THE `feedback` STRING IS SHOWN TO THE CANDIDATE. It is not a note to a moderator. Write it to ' +
-    'these rules:\n' +
-    '1. SECOND PERSON, addressed to them — "You structure the answer as a report…", never "The ' +
-    'candidate…".\n' +
-    '2. NEVER POINT AT ANYTHING THEY CANNOT SEE. This is a CLASS ban, not a list of banned words: ' +
-    'no descriptor, standard, document, reference, model, scheme or "provided" text may be ' +
-    'mentioned, HOWEVER NAMED. Say what their writing DID and, where the band is below exemplary, ' +
-    'what would have raised it.\n' +
-    '3. WRITE WHATEVER THE BAND NEEDS — no length target, floor or ceiling. Never pad, and never ' +
-    'truncate a reason to hit a length.\n' +
-    // ── THE CARVE-OUT THAT MAKES `nothing` SELECTABLE ──────────────────────────
-    // Rule 4 as written ("quote a short phrase") is UNSATISFIABLE on an answer with nothing
-    // worth quoting, and the model resolves an unsatisfiable rule the cheap way: by picking a
-    // band whose feedback it CAN write. Left alone, this rule would have quietly repealed the
-    // `nothing` bullet above — the new floor would sit in the prompt, never be chosen, and pass
-    // every calibration bar cleanly while changing nothing. Structural, not instructed: the
-    // requirement is RESTATED for this band, not waived by a prohibition.
-    '4. Point to their OWN writing when you name evidence — quote a short phrase or name the ' +
-    'section. No band without a named reason. WHERE THE BAND IS "nothing" there is nothing to ' +
-    'quote, and this rule is met by stating plainly what is absent — STILL IN SECOND PERSON, as ' +
-    'rule 1 requires: "you did not answer this part", "what you wrote here does not address the ' +
-    'requirement". Rule 1 is NOT suspended for this band. Never write "no answer was given", ' +
-    '"the submission contains" or "the text provided" — those address nobody, and a candidate ' +
-    'reading their own result should not be described in the third person at the one moment the ' +
-    'result is worst. Do not invent a quotation, do not stretch to find one, and do not choose a ' +
-    'higher band merely because it would be easier to write feedback for.\n' +
-    '5. No praise for its own sake, no encouragement, no grade prediction. ' +
-    'Return ONLY a JSON array, no prose, no code fences, in exactly this shape: ' +
-    '[{ "index": 1, "band": "exemplary|strong|competent|weak|nothing", "feedback": "..." }] — one ' +
-    'object per examined skill, where index is the NUMBER of the skill in the list above. ' +
-    'Use the numbers, never the skill names.';
+  // PRODUCTION RUNS `ladder` since 2026-08-13. `shipped` is retained as the historical control
+  // for calibration, not as a fallback — see buildPsSystemPrompt.
+  const systemPrompt = buildPsSystemPrompt(paper, input.promptVariant ?? 'ladder');
 
   const baseUserContent =
     contextLine +
