@@ -255,6 +255,7 @@ const SPEC: AfmCaseSpec = {
       ps_tags: ['analysis_and_evaluation'],
       intellectual_level: 3,
       calc: {
+        paper: 'AFM',
         lo: 'B4a',
         inputs: FCFF_INPUTS,
         currency: 'GBP',

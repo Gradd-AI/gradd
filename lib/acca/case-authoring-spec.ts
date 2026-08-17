@@ -28,10 +28,36 @@
 // cases.
 //
 // ── THE NUMERIC SPEC IS A TYPED UNION, AND THAT IS THE POINT ─────────────────
-// `NumericRequirementSpec` is discriminated on `lo`, and each arm carries that family's OWN
-// input type. An unsupported LO is a COMPILE ERROR, not a runtime surprise — which is the
-// difference between "this case has no family gates" being a decision and being an accident.
-// See `familyGateCoverage()` for what the union can and cannot reach today.
+// `NumericRequirementSpec` is discriminated on `(paper, lo)`, and each arm carries that
+// family's OWN input type. An unsupported family is a COMPILE ERROR, not a runtime surprise —
+// which is the difference between "this case has no family gates" being a decision and being
+// an accident. See `familyGateCoverage()` for what the union can and cannot reach today.
+//
+// ⚠️ THE PAPER IS HALF THE KEY, AND IT WAS NOT ALWAYS (fixed 2026-08-17). The union used to
+// discriminate on a BARE LO STRING, and an LO code is not unique across papers — `paper.ts`
+// already says so for the drill FETCH ("AFM and APM LO codes collide exactly and paper_code is
+// the only thing that separates them"), but this compile gate never saw a paper at all. FIVE of
+// the six codes below are ALSO real SBL learning outcomes:
+//
+//   B1a  SBL "Discuss the nature of the principal-agent relationship in the context of
+//        governance"                        ← here: AFM's ENPV / risk-and-uncertainty calculator
+//   B5b  SBL "Evaluate the case for and against unitary and two-tier board structures"
+//                                          ← here: AFM's international NPV calculator
+//   B4a  SBL "Discuss the factors that determine organisational policies on reporting to
+//        stakeholders"                      ← here: AFM's FCFF valuation calculator
+//   E2b  SBL "Describe big data and discuss the opportunities and threats big data presents"
+//                                          ← here: AFM's forward-vs-money-market FX hedge
+//   E3a  SBL "Explain the potential benefits of using artificial intelligence (AI), robotics
+//        and other forms of machine learning"
+//                                          ← here: AFM's interest-rate futures hedge
+//
+// (only B3e is safe — SBL's B3 stops at B3d.) So `{ lo: 'B1a', inputs: … }` written for SBL's
+// governance outcome TYPECHECKED CLEANLY and routed a narrative governance requirement into
+// AFM's ENPV calculator. Nothing downstream would have caught it: the family gates key off the
+// same bare `lo`, and the DB's `lo_code` column would have received a code that is correct for
+// BOTH papers. Requiring `paper` makes the collision unrepresentable — an SBL author must
+// either write `paper: 'AFM'` (a visible false assertion, not a silent one) or get a compile
+// error naming the supported set.
 
 import type { AnswerSchema } from './numeric-verifier';
 import {
@@ -58,6 +84,7 @@ import {
   computeFcff, buildFcffSchema, buildFcffModelAnswer,
   type FcffInputs, type FcffComputed,
 } from './valuation';
+import type { AccaPaper } from './paper';
 import type { FamilyGateInput } from './case-authoring-gates';
 import {
   gateSectionASpan, gateNotWhollyNarrative, gatePsSkillSet,
@@ -108,15 +135,17 @@ export interface RequirementProse {
   hint_method: string;
 }
 
-/** The TYPED calculator union. Each arm is one `FamilyGateInput` LO — extending this list is
- *  the only way to author a new numeric family, and it is deliberately a compile-time gate. */
+/** The TYPED calculator union. Each arm is one `FamilyGateInput` family, keyed on `(paper, lo)`
+ *  — extending this list is the only way to author a new numeric family, and it is deliberately
+ *  a compile-time gate. `paper` is NOT decoration: see the header note on the five AFM LO codes
+ *  that are also live SBL learning outcomes. */
 export type NumericCalcSpec =
-  | { lo: 'B3e'; kind: CapmKind; inputs: CapmInputs }
-  | { lo: 'B5b'; inputs: IntlNpvInputs }
-  | { lo: 'E2b'; inputs: ForwardMmhCompareInputs }
-  | { lo: 'B1a'; inputs: EnpvInputs }
-  | { lo: 'E3a'; inputs: IrFuturesInputs }
-  | { lo: 'B4a'; inputs: FcffInputs; currency: string; debt_value: number; equity_weight: number };
+  | { paper: 'AFM'; lo: 'B3e'; kind: CapmKind; inputs: CapmInputs }
+  | { paper: 'AFM'; lo: 'B5b'; inputs: IntlNpvInputs }
+  | { paper: 'AFM'; lo: 'E2b'; inputs: ForwardMmhCompareInputs }
+  | { paper: 'AFM'; lo: 'B1a'; inputs: EnpvInputs }
+  | { paper: 'AFM'; lo: 'E3a'; inputs: IrFuturesInputs }
+  | { paper: 'AFM'; lo: 'B4a'; inputs: FcffInputs; currency: string; debt_value: number; equity_weight: number };
 
 export interface NumericRequirementSpec {
   requirement_order: number;
@@ -227,6 +256,28 @@ export interface BuiltNumeric {
  * caller passing a wrong value silently disables the gate that depends on it.
  */
 export function buildNumericRequirement(spec: NumericRequirementSpec): BuiltNumeric {
+  // ── THE PAPER IS CHECKED AT RUNTIME, NOT ONLY AT COMPILE TIME ──────────────
+  // The typed union is the primary gate, but it CANNOT REACH THE AUTHORING SPECS: every real
+  // spec lives under `scripts/authoring/specs/`, and `tsconfig.json` excludes `scripts/`, so
+  // `npm run build` never typechecks one. A compile-only fix would therefore have been a fix
+  // that the files it was written for do not receive — the gate would hold in an editor and
+  // nowhere else.
+  //
+  // The switch below dispatches on `lo` ALONE, which is precisely the collision: an SBL spec
+  // saying `{ lo: 'B1a', … }` with no paper (or the wrong one) would fall straight into AFM's
+  // ENPV arm and return a fully-built, fully-gated numeric requirement for a governance
+  // outcome. So the pair is verified here, before dispatch.
+  if ((spec.calc as { paper?: string }).paper !== 'AFM') {
+    const bad = spec.calc as { paper?: string; lo?: string };
+    throw new Error(
+      `buildNumericRequirement: family "${bad.paper ?? '(no paper)'}:${bad.lo ?? '(no lo)'}" is not ` +
+      `an authorable numeric family. Supported: [${SUPPORTED_NUMERIC_FAMILIES.map(familyKey).join(', ')}]. ` +
+      'Every arm of NumericCalcSpec is an AFM calculator; an LO code alone does not identify one, ' +
+      'because AFM/APM LO codes collide exactly and five of the six above (B1a, B4a, B5b, E2b, E3a) ' +
+      'are also live SBL learning outcomes.',
+    );
+  }
+
   const p = spec.prose;
   const hint = composeHint(p.hint_lead, p.hint_method);
   const full_reveal = composeFullReveal(p.misconception, p.symptom, p.fix);
@@ -305,14 +356,21 @@ export function buildNumericRequirement(spec: NumericRequirementSpec): BuiltNume
     default: {
       // UNREACHABLE for a well-typed spec — NumericCalcSpec is a closed union, so this is the
       // exhaustiveness check. It exists because a `as never` cast at a call site would otherwise
-      // slip an unsupported LO past the compiler and out the other side as `undefined`, which the
-      // caller would happily insert as a requirement with no schema and no family gates. Throwing
-      // is the only safe answer: an LO outside the union has no calculator and no family cover.
-      const bad = spec.calc as { lo: string };
+      // slip an unsupported family past the compiler and out the other side as `undefined`, which
+      // the caller would happily insert as a requirement with no schema and no family gates.
+      // Throwing is the only safe answer: a family outside the union has no calculator and no
+      // family cover.
+      //
+      // The message names the PAPER as well as the LO, because "B1a" alone is not a family: it is
+      // an AFM calculator LO and an SBL governance LO, and an author who reached here by porting
+      // an AFM spec to another paper needs to be told which half was wrong.
+      const bad = spec.calc as { paper?: string; lo?: string };
       throw new Error(
-        `buildNumericRequirement: lo_code "${bad.lo}" is outside the supported family union ` +
-        `[${SUPPORTED_NUMERIC_LOS.join(', ')}]. It has no calculator and no family gates, so it ` +
-        'cannot be authored through this path. Extend NumericCalcSpec (and the family gates) first.',
+        `buildNumericRequirement: family "${bad.paper ?? '(no paper)'}:${bad.lo ?? '(no lo)'}" is ` +
+        `outside the supported family union [${SUPPORTED_NUMERIC_FAMILIES.map(familyKey).join(', ')}]. ` +
+        'It has no calculator and no family gates, so it cannot be authored through this path. ' +
+        'Extend NumericCalcSpec (and the family gates) first. If the LO code looks right, check ' +
+        'the paper: an LO code is not unique across ACCA papers.',
       );
     }
   }
@@ -519,20 +577,46 @@ export function toGateCase(spec: AfmCaseSpec): GateCase {
 // THE FAMILY-GATE CEILING
 // ═════════════════════════════════════════════════════════════════════════════
 
-/** The numeric LO codes that can be authored with FULL family-gate cover today. */
-export const SUPPORTED_NUMERIC_LOS = ['B3e', 'B5b', 'E2b', 'B1a', 'E3a', 'B4a'] as const;
-export type SupportedNumericLo = (typeof SUPPORTED_NUMERIC_LOS)[number];
+/**
+ * Every (paper, LO) pair that can be authored with FULL family-gate cover today.
+ *
+ * ⚠️ THE PAPER IS PART OF THE KEY. A predecessor of this constant was a bare LO-code list
+ * (`SUPPORTED_NUMERIC_LOS`), which is DELETED rather than kept alongside: a paper-blind export
+ * that reads like a key is exactly what let an SBL LO code match an AFM calculator. Five of the
+ * six codes below are also live SBL learning outcomes — see the module header.
+ */
+export const SUPPORTED_NUMERIC_FAMILIES = [
+  { paper: 'AFM', lo: 'B3e' },
+  { paper: 'AFM', lo: 'B5b' },
+  { paper: 'AFM', lo: 'E2b' },
+  { paper: 'AFM', lo: 'B1a' },
+  { paper: 'AFM', lo: 'E3a' },
+  { paper: 'AFM', lo: 'B4a' },
+] as const;
 
-/** What a numeric requirement gets, by LO. Everything outside the union still gets the BASE
- *  barrier (GATE1–3, P4–P9, GATE 26, GATE 27) — it loses only the family-specific lines, and
- *  it must say so via NO_FAMILY_GATES rather than omitting the argument. */
-export function familyGateCoverage(lo: string): { supported: boolean; note: string } {
-  return (SUPPORTED_NUMERIC_LOS as readonly string[]).includes(lo)
+export type SupportedNumericFamily = (typeof SUPPORTED_NUMERIC_FAMILIES)[number];
+
+/** `AFM:B1a` — the display form of a family key. One definition, so a message and a lookup can
+ *  never render the pair differently. */
+export function familyKey(f: { paper: string; lo: string }): string {
+  return `${f.paper}:${f.lo}`;
+}
+
+/** What a numeric requirement gets, by (paper, LO). Everything outside the union still gets the
+ *  BASE barrier (GATE1–3, P4–P9, GATE 26, GATE 27) — it loses only the family-specific lines, and
+ *  it must say so via NO_FAMILY_GATES rather than omitting the argument.
+ *
+ *  `paper` is typed `AccaPaper`, not `string`, so a caller cannot ask this question without
+ *  having resolved a real paper first. When SBL joins `ACCA_PAPERS` every SBL LO correctly
+ *  answers "unsupported" here — including the five whose codes collide with an AFM family. */
+export function familyGateCoverage(paper: AccaPaper, lo: string): { supported: boolean; note: string } {
+  const hit = SUPPORTED_NUMERIC_FAMILIES.some((f) => f.paper === paper && f.lo === lo);
+  return hit
     ? { supported: true, note: 'full family-gate cover' }
     : {
         supported: false,
-        note: 'BASE barrier only (GATE1–3, P4–P9, GATE 26, GATE 27). No family-specific gates ' +
-              'exist for this LO, so nothing checks its family conventions — the omission must be ' +
-              'declared with NO_FAMILY_GATES and a reason.',
+        note: `BASE barrier only (GATE1–3, P4–P9, GATE 26, GATE 27). No family-specific gates ` +
+              `exist for ${familyKey({ paper, lo })}, so nothing checks its family conventions — ` +
+              'the omission must be declared with NO_FAMILY_GATES and a reason.',
       };
 }

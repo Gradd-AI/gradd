@@ -216,7 +216,7 @@ async function main() {
   // ── 5. THE PER-REQUIREMENT BARRIER ──
   line('\n  5. PER-REQUIREMENT GATE BARRIER');
   for (const b of built) {
-    const cov = familyGateCoverage(b.out.lo);
+    const cov = familyGateCoverage('AFM', b.out.lo);
     line(`\n  [${b.spec.requirement_order}] ${b.out.lo} · ${b.spec.marks} marks · ${cov.supported ? 'FULL family cover' : 'NO family gates — ' + cov.note}`);
     const lines = runRequirementGateBarrier(
       b.out.schema,

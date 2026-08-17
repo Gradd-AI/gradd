@@ -13,7 +13,7 @@
 import {
   validateCaseSpec, toGateCase, standaloneCaseGates, corpusBandERepresented,
   checkExhibitsStateInputs, composeFullReveal, composeHint, buildNumericRequirement,
-  flattenNumbers, renderingsOf, familyGateCoverage, SUPPORTED_NUMERIC_LOS,
+  flattenNumbers, renderingsOf, familyGateCoverage, SUPPORTED_NUMERIC_FAMILIES,
   type AfmCaseSpec, type NumericRequirementSpec,
 } from '../lib/acca/case-authoring-spec';
 import { lintMisconceptionLead } from '../lib/acca/validate-afm-prose';
@@ -64,7 +64,7 @@ const EXHIBIT_BODY =
 
 const NUMERIC_REQ: NumericRequirementSpec = {
   requirement_order: 1, marks: 12, ps_tags: ['analysis_and_evaluation'], intellectual_level: 3,
-  calc: { lo: 'B1a', inputs: ENPV_INPUTS },
+  calc: { paper: 'AFM', lo: 'B1a', inputs: ENPV_INPUTS },
   prose: prose('expected net present value'),
 };
 
@@ -161,13 +161,15 @@ const chkWrongExempt = checkExhibitsStateInputs(holed, flattenNumbers(ENPV_INPUT
 ok('an exemption on the WRONG key does not rescue the real omission', chkWrongExempt.ok === false);
 
 // ── 5. BREAK MODE 4 — a requirement whose family gates cannot run ────────────
-line('\n  5. BREAK MODE — a numeric LO outside the family-gate union');
-ok('every supported LO reports full cover',
-  SUPPORTED_NUMERIC_LOS.every((lo) => familyGateCoverage(lo).supported));
-const unsupported = familyGateCoverage('B3f');
+line('\n  5. BREAK MODE — a numeric family outside the family-gate union');
+ok('every supported family reports full cover',
+  SUPPORTED_NUMERIC_FAMILIES.every((f) => familyGateCoverage(f.paper, f.lo).supported));
+const unsupported = familyGateCoverage('AFM', 'B3f');
 ok('an unsupported LO reports NO family cover', unsupported.supported === false);
 ok('...and says what is lost, not merely that it is unsupported',
   /BASE barrier only/.test(unsupported.note) && /NO_FAMILY_GATES/.test(unsupported.note), unsupported.note);
+ok('...and names the PAPER as well as the LO, so "B3f" alone is never the answer',
+  unsupported.note.includes('AFM:B3f'), unsupported.note);
 // The type system is the real gate here: `{ lo: 'B3f', ... }` is not assignable to
 // NumericCalcSpec, so an unsupported family cannot reach the builder at all. Asserted at
 // runtime as well, because a cast would bypass the compiler.
@@ -175,10 +177,81 @@ let threw = false;
 try {
   buildNumericRequirement({
     ...NUMERIC_REQ,
-    calc: { lo: 'B3f', inputs: {} } as unknown as NumericRequirementSpec['calc'],
+    calc: { paper: 'AFM', lo: 'B3f', inputs: {} } as unknown as NumericRequirementSpec['calc'],
   });
 } catch { threw = true; }
 ok('the builder REFUSES an LO outside the union rather than emitting an ungated requirement', threw);
+
+// ── 5b. THE LO COLLISION — pinned as MUST-FAIL in both directions (P-G3) ─────
+//
+// FIVE of the six supported AFM LO codes are ALSO real SBL learning outcomes, so before
+// 2026-08-17 `{ lo: 'B1a', inputs: … }` written for SBL's principal-agent outcome typechecked
+// cleanly and dispatched into AFM's ENPV calculator. These cases exist because the fix has a
+// hole the compiler cannot close: every real spec lives under `scripts/`, which `tsconfig.json`
+// excludes, so `npm run build` typechecks NONE of them. The runtime guard is what actually
+// protects the authoring path, and an untested guard is not a guard.
+line('\n  5b. THE PAPER IS HALF THE KEY — cross-paper LO collisions REFUSED');
+
+// The five colliding codes, with the SBL outcome each one would silently mis-route.
+const COLLIDING: ReadonlyArray<readonly [string, string]> = [
+  ['B1a', "SBL: 'Discuss the nature of the principal-agent relationship' → AFM ENPV"],
+  ['B5b', "SBL: 'Evaluate the case for and against unitary and two-tier board structures' → AFM international NPV"],
+  ['B4a', "SBL: 'Discuss the factors that determine organisational policies on reporting to stakeholders' → AFM FCFF"],
+  ['E2b', "SBL: 'Describe big data and discuss the opportunities and threats' → AFM forward-vs-MMH hedge"],
+  ['E3a', "SBL: 'Explain the potential benefits of using AI, robotics' → AFM interest-rate futures"],
+];
+// Every one of them IS a supported AFM family — that is what makes the collision dangerous
+// rather than merely wrong. If this ever fails, the union changed and the list below is stale.
+ok('all five colliding codes are live AFM families (so the collision is real, not hypothetical)',
+  COLLIDING.every(([lo]) => SUPPORTED_NUMERIC_FAMILIES.some((f) => f.paper === 'AFM' && f.lo === lo)),
+  COLLIDING.map(([lo]) => lo).join(','));
+ok('...and B3e is NOT among them — SBL\'s B3 stops at B3d',
+  !COLLIDING.some(([lo]) => lo === 'B3e'));
+
+for (const [lo, why] of COLLIDING) {
+  // (a) the SHIPPED COLLAPSE: an SBL LO code with no paper at all. This is the exact shape that
+  //     used to build a complete AFM numeric requirement for a governance outcome.
+  let threwNoPaper = false;
+  try {
+    buildNumericRequirement({
+      ...NUMERIC_REQ,
+      calc: { lo, inputs: {} } as unknown as NumericRequirementSpec['calc'],
+    });
+  } catch { threwNoPaper = true; }
+  ok(`${lo} with NO paper is refused — ${why}`, threwNoPaper);
+
+  // (b) the paper named, and named as something other than AFM.
+  let threwWrongPaper = false;
+  try {
+    buildNumericRequirement({
+      ...NUMERIC_REQ,
+      calc: { paper: 'SBL', lo, inputs: {} } as unknown as NumericRequirementSpec['calc'],
+    });
+  } catch { threwWrongPaper = true; }
+  ok(`SBL:${lo} is refused`, threwWrongPaper);
+
+  // (c) and the coverage query agrees, for every paper that is not AFM.
+  ok(`familyGateCoverage reports NO cover for APM:${lo} (LO codes collide across papers)`,
+    familyGateCoverage('APM', lo).supported === false);
+}
+
+// The refusal must EXPLAIN the collision, not merely reject — an author who reached it by
+// porting an AFM spec needs to be told which half of the key was wrong.
+let collisionMsg = '';
+try {
+  buildNumericRequirement({
+    ...NUMERIC_REQ,
+    calc: { lo: 'B1a', inputs: {} } as unknown as NumericRequirementSpec['calc'],
+  });
+} catch (e) { collisionMsg = (e as Error).message; }
+ok('the refusal names the missing paper rather than blaming the LO', /\(no paper\):B1a/.test(collisionMsg), collisionMsg);
+ok('...and says LO codes collide across papers', /collide/.test(collisionMsg));
+ok('...and lists the supported families in paper:lo form', /AFM:B1a/.test(collisionMsg));
+
+// The guard must NOT be a blanket refusal — a correct AFM family still builds.
+const stillBuilds = buildNumericRequirement(NUMERIC_REQ);
+eq('a correctly-papered AFM family still builds', stillBuilds.lo, 'B1a');
+ok('...and still carries its family-gate input', !!stillBuilds.family);
 
 // ── 6. Composers produce gate-compliant prose ────────────────────────────────
 line('\n  6. COMPOSED FIELDS ARE GATE-COMPLIANT BY CONSTRUCTION');

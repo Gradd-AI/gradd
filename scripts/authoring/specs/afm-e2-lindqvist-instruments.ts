@@ -248,7 +248,7 @@ const SPEC: AfmCaseSpec = {
       marks: 13,
       ps_tags: ['analysis_and_evaluation'],
       intellectual_level: 3,
-      calc: { lo: 'E2b', inputs: FXH_INPUTS },
+      calc: { paper: 'AFM', lo: 'E2b', inputs: FXH_INPUTS },
       prose: {
         question:
           '(i) Calculate the Swedish kronor receipt Lindqvist would secure under a forward hedge ' +
