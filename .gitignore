@@ -56,8 +56,12 @@ scripts/_*
 # regenerable in one command, and heavy. Default --shot target.
 shots/
 
-# ClaudeSend.txt — transient handoff-to-Grant scratch file (overwritten each use), not VCS
-ClaudeSend.txt
+# ClaudeSend*.txt — transient handoff-to-Grant scratch files (overwritten each use), not VCS.
+# Widened from the bare `ClaudeSend.txt` on 2026-08-17: a session had written
+# ClaudeSend_SBL_VERIFICATION.txt, which the exact-name rule did not match, so a transient
+# handoff report was sitting in `git status` as trackable. Anything durable in one of these
+# belongs in docs/, not in the handoff file.
+ClaudeSend*.txt
 
 # tutor red-team run artifacts (scripts + README committed; transcripts/verdicts are not)
 docs/redteam/*
@@ -69,6 +73,18 @@ official_acca_pdfs/
 # docs/evidence/fetch_acca_sources.ps1. Local working copies must never be committed.
 *AFM examiner*.pdf
 afm_examiner_report_*.pdf
+
+# SBL working copies — the S26–J27 syllabus & study guide, the seven examiner reports, and the
+# cross-paper syllabus-changes deck. All nine are registered in docs/evidence/sources.json
+# (SBL-GUIDE, SBL-E1..E7, SBL-CHANGES) with verified URLs and byte sizes, and are fetchable via
+# docs/evidence/fetch_acca_sources.ps1. Same fetched-not-stored posture as every other ACCA PDF.
+# The repo-side source of record is that manifest; a scripts/sbl-framework.ts does NOT exist yet
+# (the AFM/APM analogue of it is the intended home for the 138 LOs, and is unbuilt).
+#
+# THE WHOLE DIRECTORY, for the docs/FAE/ reason below: `docs/*.pdf` (line 40) does not cross
+# a '/', so these files were reported as a trackable untracked directory and one
+# `git add .` would have committed them.
+docs/sbl/
 
 # Chartered Accountants Ireland competency statements (FAE + CAP2) — registered in
 # docs/evidence/sources.json as fetched-not-stored. CAI requires WRITTEN PERMISSION before
