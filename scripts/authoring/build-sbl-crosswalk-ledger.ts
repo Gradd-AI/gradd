@@ -339,6 +339,14 @@ function render(los: Lo[], subNames: Record<string, string>): string {
   const w = (s = '') => out.push(s);
   const esc = (s: string) => s.replace(/\|/g, '\\|');
   const pct = (n: number, d: number) => `${(100 * n / d).toFixed(1)}%`;
+  // Narrative prose spells small counts as words. Deriving the WORD (rather than typing it beside
+  // an interpolated digit) is what keeps a sentence like "Five of the six" honest — see
+  // assertNarrativeNumbers() below, which re-reads every one of them out of the rendered file.
+  const NUM_WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+    'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen',
+    'nineteen', 'twenty'];
+  const spell = (n: number) => NUM_WORDS[n] ?? String(n);
+  const Spell = (n: number) => { const w0 = spell(n); return w0.charAt(0).toUpperCase() + w0.slice(1); };
   const tally = (list: Lo[]) => {
     const t: Record<Verdict, number> = { REUSE: 0, ADAPT: 0, NEW: 0 };
     for (const r of list) t[VERDICTS[r.code][0]]++;
@@ -353,6 +361,7 @@ function render(los: Lo[], subNames: Record<string, string>): string {
     AFM: adapts.filter((r) => /^AFM/.test(VERDICTS[r.code][1])).length,
   };
   const afmRows = adapts.filter((r) => /^AFM/.test(VERDICTS[r.code][1])).map((r) => r.code);
+  const afmInG = adapts.filter((r) => /^AFM/.test(VERDICTS[r.code][1]) && r.section === 'G').length;
   const tReason: Record<string, number> = {};
   for (const r of rows) {
     const [v, , f] = VERDICTS[r.code];
@@ -464,7 +473,11 @@ function render(los: Lo[], subNames: Record<string, string>): string {
   w('**The first pass never considered AFM at all** — it opened on "APM 91 published drills" and');
   w(`stopped there. The ${byPaper.AFM} AFM-backed rows (${afmRows.join(', ')}) would all have scored NEW on an`);
   w(`APM-only baseline, so an APM-only crosswalk reads ${pct(covered - byPaper.AFM, rows.length)} and understates coverage by`);
-  w(`${pct(byPaper.AFM, rows.length)}. Five of the six sit in section G, which is why G is one of the two best-covered`);
+  // WAS "Five of the six sit in section G" — a hand-typed literal sitting between two interpolated
+  // values, and WRONG: four of the six are in G (B2b is section B, H6d is section H). It survived
+  // because the completeness gate read verdicts and never read prose. Now derived, and
+  // re-asserted out of the rendered file by assertNarrativeNumbers().
+  w(`${pct(byPaper.AFM, rows.length)}. ${Spell(afmInG)} of the ${spell(byPaper.AFM)} sit in section G, which is why G is one of the two best-covered`);
   w('sections in the paper and was previously read as one of the worst.');
   w();
   w('### Why the NEWs are NEW');
@@ -578,6 +591,142 @@ function render(los: Lo[], subNames: Record<string, string>): string {
 // MAIN
 // ═════════════════════════════════════════════════════════════════════════════
 
+// ═════════════════════════════════════════════════════════════════════════════
+// PROSE-vs-TALLIES GATE
+//
+// The completeness gate read VERDICTS and never read PROSE, and that is exactly how
+// "Five of the six sit in section G" shipped wrong (it is four: B2b is section B, H6d is
+// section H). The sentence sat between two correctly-interpolated values, so nothing about it
+// looked hand-typed.
+//
+// THE RULE: every number-word in the narrative must be one of three things —
+//   DERIVED     a value this function RECOMPUTES from los + VERDICTS and matches against the
+//               rendered text. Recomputed here rather than passed in from render(): a gate that
+//               trusts the renderer's own variables cannot catch the renderer being wrong.
+//   ASSERTED    a literal that CANNOT be derived (external or historical fact), declared with a
+//               written reason. Allowed, but never silently.
+//   RHETORICAL  "one row per outcome", "all three of the following" — a number that counts
+//               nothing. Matched as a whole phrase, so it cannot drift into covering a tally.
+// Anything else REFUSES THE WRITE.
+//
+// ⚠️ CEILING, stated: this sweeps number-WORDS in narrative lines. Bare DIGITS in prose are not
+// swept — nearly every digit in this file is either inside a table or already interpolated, and
+// a digit sweep at this file's density produced more allow-list than signal. A hand-typed DIGIT
+// in a narrative sentence would still get through. The defect this closes is the word-shaped one.
+
+function assertNarrativeNumbers(md: string, los: Lo[]): string[] {
+  const rows = los.filter((r) => !['I', 'J'].includes(r.section));
+  const adapts = rows.filter((r) => VERDICTS[r.code][0] === 'ADAPT');
+  const afmAdapts = adapts.filter((r) => /^AFM/.test(VERDICTS[r.code][1]));
+  const teeth = new Set(
+    rows.filter((r) => VERDICTS[r.code][0] === 'NEW').flatMap((r) => VERDICTS[r.code][2].split('/')),
+  );
+
+  const WORDS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+    'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen',
+    'eighteen', 'nineteen', 'twenty'];
+  const val = (w: string) => WORDS.indexOf(w.toLowerCase());
+
+  // Narrative only: drop tables, and collapse whitespace so a claim may wrap across lines.
+  const flat = md.split(/\r?\n/).filter((l) => !l.startsWith('|')).join(' ').replace(/\s+/g, ' ');
+  const problems: string[] = [];
+
+  // ── DERIVED ────────────────────────────────────────────────────────────────
+  const derived: Array<{ what: string; re: RegExp; expect: number[] }> = [
+    {
+      what: 'AFM-backed ADAPTs sitting in section G / AFM-backed ADAPTs in total',
+      re: /(\w+) of the (\w+) sit in section G/i,
+      expect: [afmAdapts.filter((r) => r.section === 'G').length, afmAdapts.length],
+    },
+    {
+      what: 'sections the coverage concentrates in',
+      re: /concentrated in (\w+) sections/i,
+      expect: [['E', 'G'].length],
+    },
+    {
+      what: 'near-zero sections that carry most of the paper',
+      re: /near-zero in the (\w+) sections that carry most of the paper/i,
+      expect: [['A', 'C', 'D', 'F'].length],
+    },
+    {
+      what: 'named NEW failure modes (distinct teeth actually used)',
+      re: /(\w+) named failure modes/i,
+      expect: [teeth.size],
+    },
+  ];
+  for (const d of derived) {
+    const m = flat.match(d.re);
+    if (!m) {
+      problems.push(`DERIVED CLAIM MISSING from the prose: /${d.re.source}/ — ${d.what}`);
+      continue;
+    }
+    d.expect.forEach((want, i) => {
+      const got = val(m[i + 1]);
+      if (got !== want) {
+        problems.push(
+          `PROSE CONTRADICTS THE TALLY (${d.what}): prose says "${m[i + 1]}" (${got}), computed ${want}. ` +
+          `Full match: "${m[0]}"`);
+      }
+    });
+  }
+
+  // ── ASSERTED — cannot be derived; each carries its reason ───────────────────
+  const ASSERTED: Array<[string, string]> = [
+    ['from eight section subtotals', 'history: how the superseded 35% headline was built. Fixed past fact.'],
+    ['Those four contradicted', 'history: the prior pass recorded 4 REUSE. Fixed past fact.'],
+    ['Three published cases are C1-anchored', 'live acca_cases fact; this script has no DB access. Verified by hand 2026-08-18.'],
+    ['four pages of one report have been read', 'external reading progress against SBL-E1..E7. Not derivable.'],
+    ['the six capitals', 'the NAME of an <IR> concept, not a count of anything here.'],
+    ['FIVE-skill vocabulary', "SBL's own skill count, from the syllabus, not from this data."],
+    ['four-skill papers', 'APM/AFM skill count, from those syllabi.'],
+    ['Two things fix that', 'names the two mechanisms introduced immediately below.'],
+    ['Two things this ledger does NOT settle', 'section heading; its own list is two items long.'],
+    ['Three concentrations are worth naming', 'names the three bullets immediately below.'],
+    ['three tasks in one 100-mark paper', "SBL's exam structure, from the syllabus."],
+  ];
+
+  // ── RHETORICAL — whole phrases where the number counts nothing ──────────────
+  const RHETORICAL = [
+    'one row per outcome', 'of one column', 'all three of the following', 'more than one tooth',
+    'every one of these is ADAPT', 'one of the two best-covered', 'one way by design',
+    'across the two papers', 'one per ADAPT', 'one SBL outcome (G2f)', 'backs exactly one',
+    'let one drill back many outcomes', 'with exactly ONE published drill',
+    'one outcome counted once', 'as one of the worst',
+    'nearest asset for **four** outcomes', 'single D1a drill for four more',
+  ];
+
+  const covered: Array<string | RegExp> = [
+    ...ASSERTED.map((a) => a[0]), ...RHETORICAL, ...derived.map((d) => d.re),
+  ];
+  const spans: Array<[number, number]> = [];
+  // Case-INSENSITIVE: the same phrase opens a sentence ("All three of the following…") and sits
+  // mid-sentence elsewhere, and an allow-list that silently misses the capitalised copy would
+  // report a false positive on prose it was written to cover.
+  const hay = flat.toLowerCase();
+  for (const c of covered) {
+    if (typeof c === 'string') {
+      const needle = c.toLowerCase();
+      let at = hay.indexOf(needle);
+      while (at >= 0) { spans.push([at, at + needle.length]); at = hay.indexOf(needle, at + 1); }
+    } else {
+      const m = flat.match(c);
+      if (m && m.index !== undefined) spans.push([m.index, m.index + m[0].length]);
+    }
+  }
+  const isCovered = (i: number) => spans.some(([a, b]) => i >= a && i < b);
+
+  const WORD_RE = new RegExp(`\\b(${WORDS.slice(1).join('|')})\\b`, 'gi');
+  let m: RegExpExecArray | null;
+  while ((m = WORD_RE.exec(flat)) !== null) {
+    if (isCovered(m.index)) continue;
+    const ctx = flat.slice(Math.max(0, m.index - 60), m.index + 60).trim();
+    problems.push(
+      `UNREGISTERED NUMBER-WORD in narrative prose: "${m[1]}" — derive it, or add it to ASSERTED ` +
+      `with a reason, or to RHETORICAL if it counts nothing. Context: …${ctx}…`);
+  }
+  return problems;
+}
+
 function main(): void {
   const argv = process.argv.slice(2);
   const textArg = argv.includes('--text') ? argv[argv.indexOf('--text') + 1] : null;
@@ -603,6 +752,19 @@ function main(): void {
   }
 
   const md = render(los, subNames);
+
+  // ── PROSE IS GATED TOO ──
+  // Renders FIRST, then re-reads the rendered bytes. The verdict gate above proves every row
+  // has a verdict; this proves the narrative ABOUT those rows agrees with them. Both refuse the
+  // write rather than warning — a ledger whose prose contradicts its own table is worse than no
+  // ledger, because the prose is the part that gets quoted.
+  const prose = assertNarrativeNumbers(md, los);
+  if (prose.length) {
+    console.error('REFUSING TO WRITE — the narrative disagrees with the computed tallies:');
+    for (const p2 of prose) console.error(`  • ${p2}`);
+    process.exitCode = 1;
+    return;
+  }
 
   if (check) {
     const existing = existsSync(OUT) ? readFileSync(OUT, 'utf8') : '';

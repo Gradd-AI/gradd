@@ -100,7 +100,7 @@ A build plan that reads the headline as "a quarter of the work is done" would be
 **The first pass never considered AFM at all** — it opened on "APM 91 published drills" and
 stopped there. The 6 AFM-backed rows (B2b, G2b, G2c, G2d, G2e, H6d) would all have scored NEW on an
 APM-only baseline, so an APM-only crosswalk reads 20.3% and understates coverage by
-4.3%. Five of the six sit in section G, which is why G is one of the two best-covered
+4.3%. Four of the six sit in section G, which is why G is one of the two best-covered
 sections in the paper and was previously read as one of the worst.
 
 ### Why the NEWs are NEW
