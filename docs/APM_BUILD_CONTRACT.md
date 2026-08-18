@@ -4838,3 +4838,105 @@ definition, softening a severity anchor, degrading the input instruction), gate 
 `tsc --noEmit` clean · `next build` GREEN. **DB: zero writes.** Harnesses
 `scripts/_sweep_invisible_referents.ts`, `_probe_split_effect.ts`, `_calibrate_ps_split.ts`,
 `_calibrate_ps_ladder.ts` — gitignored, read-only.
+
+## SESSION BANK — 2026-08-17 — SBL FOUNDATION: NINE SOURCES REGISTERED, THE FAMILY KEY FIXED, 138 ROWS INSTEAD OF ONE HEADLINE (`feat/sbl-foundation`)
+
+**Written 2026-08-18, after the fact.** The session that did this work ended without recording
+itself — no journal entry, no `AFM_SURFACED.md` item, and the branch was never pushed. Two of its
+three commits sat on one machine only for a day. Banked here in arrears; the lateness is itself the
+finding, and the branch is now on origin at `8163720`.
+
+### 1. The paper and all nine sources — registered, FETCHED NOT STORED (`ad84b6b`)
+
+`docs/evidence/sources.json` gains `SBL-GUIDE` (the S26–J27 syllabus and study guide, 734,445
+bytes), `SBL-E1`..`SBL-E7` (seven examiner reports, Sep 2023 → Mar–Jun 2026) and `SBL-CHANGES`
+(the cross-paper syllabus-changes deck), each with a verified URL and byte size, fetchable via
+`docs/evidence/fetch_acca_sources.ps1`. Same posture as every other ACCA PDF: the manifest is the
+repo-side source of record, the bytes are not committed.
+
+**`docs/sbl/` is gitignored as a WHOLE DIRECTORY**, for the `docs/FAE/` reason — `docs/*.pdf` does
+not cross a `/`, so nine PDFs were sitting in `git status` as a trackable untracked directory and
+one `git add .` would have committed them.
+
+**`ClaudeSend.txt` → `ClaudeSend*.txt` in the same commit.** A session had written
+`ClaudeSend_SBL_VERIFICATION.txt`, which the exact-name rule did not match, so a transient
+handoff report was trackable. Anything durable in one of those belongs in `docs/`.
+
+**⚠️ THE PROVENANCE INCIDENT THAT PROMPTED ALL OF IT.** The SBL syllabus was found living in a DEAD
+session's scratchpad under a filename claiming it was an AFM examiner's report. An unregistered
+source under a wrong name is indistinguishable from a hallucinated one at the next read.
+
+### 2. THE NUMERIC FAMILY KEY IS `(paper, lo)`, NOT A BARE LO STRING (`10a471e`)
+
+`NumericCalcSpec` (`lib/acca/case-authoring-spec.ts`) discriminated on a BARE LO CODE. `paper.ts`
+has said for months that *"AFM and APM LO codes collide exactly and paper_code is the only thing
+that separates them"* — for the drill FETCH. This compile gate never saw a paper at all.
+
+**THE HAZARD IS LIVE TODAY AND DOES NOT DEPEND ON SBL EXISTING.** Of the six codes in the union,
+**three are also real APM learning outcomes** — verified against `scripts/apm-framework.ts`:
+
+| code | here | APM |
+|---|---|---|
+| `B1a` | AFM ENPV / risk-and-uncertainty | *"Evaluate the relative strengths and weaknesses of budgeting methods…"* |
+| `B3e` | AFM CAPM | *"Assess the use of Business Process Re-engineering (BPR)…"* |
+| `B4a` | AFM FCFF valuation | *"Assess the impact of the characteristics of service businesses (SHIP)…"* |
+
+**FIVE of the six are also real SBL outcomes** (`B1a` principal-agent · `B5b` unitary vs two-tier
+boards · `B4a` reporting to stakeholders · `E2b` big data · `E3a` AI and robotics). So
+`{ lo: 'B1a', inputs: … }` written for SBL's governance outcome TYPECHECKED CLEANLY and routed a
+narrative governance requirement into AFM's ENPV calculator. Nothing downstream would have caught
+it: the family gates keyed off the same bare `lo`, and the DB's `lo_code` column would have
+received a code correct for BOTH papers.
+
+**Requiring `paper` makes the collision unrepresentable** — a non-AFM author must either write
+`paper: 'AFM'`, a VISIBLE false assertion, or take a compile error naming the supported set. A
+runtime guard backs the compile gate for callers that cast, and both error messages name the PAPER
+as well as the LO, because `"B1a"` alone is not a family. `SUPPORTED_NUMERIC_LOS` is DELETED rather
+than kept alongside `SUPPORTED_NUMERIC_FAMILIES` — a paper-blind export is the same bug with a
+longer name. Fixtures `test:case-authoring-spec` +87 lines.
+
+**⚠️ ONE CORRECTION TO THAT COMMIT'S OWN HEADER NOTE.** It reads *"(only `B3e` is safe — SBL's B3
+stops at B3d)"*. That is true **against SBL and only against SBL**: `B3e` is a real APM outcome
+(BPR). Read as a general safety claim it is wrong, and it is the one code a future author is
+likeliest to trust. **No code is safe under a bare LO string; the key is the fix, not the audit.**
+
+### 3. The crosswalk: 138 rows with a stated threshold (`8163720`)
+
+`docs/SBL_CROSSWALK_LEDGER.md` + its committed generator
+`scripts/authoring/build-sbl-crosswalk-ledger.ts` (`npm run build:sbl-ledger`). Replaces a single
+headline — **35% covered** — computed from eight section subtotals over 138 judgements that were
+never written down, so it could not be re-opened at the row you disagreed with. A blind re-verdict
+of a random 15 outcomes came out at **53%** against an implied **38%**; tightening the unstated
+definition of ADAPT moved that same sample to roughly **17%**. **A number whose defensible range is
+17–53% is not a plan.**
+
+Fixed by a STATED ADAPT threshold (object · output · content-survives, all three) and ONE ROW PER
+OUTCOME, with a named NEAREST asset on every NEW so moving the threshold is a re-read of one column.
+**DERIVED:** LO codes, sub-area names, outcome text, intellectual levels (machine parse of
+`SBL-GUIDE` §5 pp.9–17 — 92 at [3], 46 at [2], zero at [1]), every tally, percentage and sensitivity
+figure. **JUDGED:** the verdicts block, and nothing else. **COMPLETENESS IS A HARD GATE** — a parsed
+outcome with no verdict, or a verdict naming an outcome the guide does not contain, writes NOTHING
+and exits non-zero. The generator is committed alongside the artefact (P-DB6 applied to a document):
+a hand-maintained table would rot the same way, and a lost authoring script is how the irhedge batch
+became an unfixable published defect.
+
+Read the other way it is starker: **154 live drills (APM 91, AFM 63), 34 claimed by an ADAPT, 120
+backing no SBL outcome at all.** APM A3b holds 9 drills and backs one outcome (G2f); APM C1 holds 13
+and backs one (B4a); AFM sections C and D are entirely undrilled, so SBL C5f has no asset despite a
+well-fitting AFM framework outcome.
+
+**⚠️ TWO THINGS THE LEDGER DOES NOT SETTLE — stated in the file, repeated here so they are not
+re-derived as discoveries:**
+
+1. **OUTCOMES, NOT MARKS.** Every row is one outcome counted once. SBL examines these across three
+   tasks in one 100-mark paper, so they are not equally weighted and **a coverage rate by outcome is
+   not a coverage rate by marks**. Weighting needs sitting-by-sitting evidence from `SBL-E1`..`SBL-E7`,
+   of which **four pages of one report have been read**.
+2. **AN ADAPT IS NOT A SMALL JOB.** It means a named drill exists whose marked act transfers — not
+   that the rewrite is quick. Every ADAPT still needs new scenario prose, a new rubric under the
+   **FIVE**-skill vocabulary SBL uses (Analysis and Evaluation are separate skills there; Enquire and
+   Estimate have no counterpart in the four-skill papers), and a fresh pass through the gate barrier.
+
+**`scripts/sbl-framework.ts` DOES NOT EXIST.** The AFM/APM analogue is the intended home for the 138
+LOs and is unbuilt; today they live only in the generator's parse. **No DB writes this session; no
+`next build` run — the branch is pushed unbuilt and unmerged.**
