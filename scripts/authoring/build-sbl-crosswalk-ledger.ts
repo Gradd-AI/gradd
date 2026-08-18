@@ -20,10 +20,16 @@
  *
  * ── WHAT IS DERIVED vs WHAT IS JUDGED ────────────────────────────────────────
  *   DERIVED  → LO codes, sub-area names, outcome text, intellectual levels (machine-parsed from
- *              the registered study guide), every tally, every percentage, every sensitivity
- *              figure, and the corpus attribution.
- *   JUDGED   → the VERDICTS table below, and nothing else. That is the auditable part, and it is
- *              one editable block rather than 138 places in a rendered table.
+ *              the registered study guide), every tally, every percentage, and every sensitivity
+ *              figure.
+ *   JUDGED   → the VERDICTS table, and the CORPUS snapshot. Both are single editable blocks
+ *              rather than 138 places in a rendered table, and both are gate-visible.
+ *
+ * ⚠️ "the corpus attribution" USED TO BE LISTED AS DERIVED HERE AND IT NEVER WAS. This script has
+ * no DB access, so the drill and case-requirement counts were always hand-typed literals. They
+ * are now the declared, dated CORPUS block below, printed with its `as_at` in the rendered
+ * ledger and re-checkable with `--verify-corpus`. Corrected 2026-08-18: a false DERIVED claim is
+ * worse than an honest JUDGED one, because it tells the next reader not to check.
  *
  * COMPLETENESS IS A HARD GATE. If a parsed outcome has no verdict, or a verdict names an outcome
  * the guide does not contain, this script writes NOTHING and exits non-zero. A ledger that is
@@ -83,7 +89,7 @@ const VERDICTS: Record<string, Row> = {
   A3a: ['NEW', '—', 'T1', 'Responsible leadership and public value: no asset.'],
   A3b: ['NEW', 'AFM A3c (1)', 'T2', 'IESBA/professional-body codes are examined by neither paper. No drill awards marks for code content.'],
   A3c: ['NEW', 'AFM A3c (1)', 'T2', 'AFM A3e/A3f (agency issues, stakeholder-conflict resolution) are the right outcomes and have ZERO drills. The A3c drill does not mark conflict-of-interest resolution.'],
-  A3d: ['NEW', '—', 'T1', 'Ethical threats and safeguards: no asset.'],
+  A3d: ['NEW', 'APM D2i case req (Bexley Grocers, 7m)', 'T2', 'Was `T1` (no asset). The case scan supplies one: Bexley Grocers requirement (ii) advises a board on the ethical issues raised by collecting and processing customer data. Object and output both transfer — assess an ethical situation, recommend a response. It fails on (c): SBL A3d awards its marks for the THREATS-AND-SAFEGUARDS framework (self-interest, self-review, advocacy, familiarity, intimidation), and Bexley marks data-privacy reasoning instead, so the rewrite replaces what the candidate must know. ⚠️ Bexley is MOCK-ONLY and therefore not an eligible asset under T1 in any case; it is named here as the nearest thing that exists, which is what this column is for.'],
   A3e: ['NEW', '—', 'T1', 'Fraud, bribery and corruption: no asset.'],
 
   // ── B Governance and sustainability ────────────────────────────────────────
@@ -165,7 +171,7 @@ const VERDICTS: Record<string, Row> = {
   E2c: ['ADAPT', 'APM D2b (1)', '', 'D2b: "Advise on the data science methods and processes from setting the goals of the exercise, to selecting, cleaning, transforming and storing the data." E2c is identifying and analysing relevant data for product/marketing/pricing decisions — selecting the relevant data is the shared marked act.'],
   E3a: ['ADAPT', 'APM D2f (2, 1 claimed)', '', 'D2f: "Assess the use of machine learning and artificial intelligence (AI) in gaining insights and recommending performance improvements." E3a is the potential benefits of AI, robotics and ML. ⚠️ COLLIDING CODE — AFM E3a is the interest-rate futures calculator.'],
   E3b: ['ADAPT', 'APM D2i (2, 1 claimed)', '', 'D2i: "Advise on the ethical issues related to information collection and processing (e.g. the use of algorithms which are impossible to interrogate and audit …)." E3b is the risk, control and ethical implications of AI. Distinct asset from E3a, so T3 holds.'],
-  E4a: ['NEW', '—', 'T1', 'The organisation\'s approach to delivering e-business: no asset.'],
+  E4a: ['NEW', 'APM D1b case req (Torfin Build Supplies, 13m)', 'T2', 'Was `T1` (no asset). The case scan supplies one: Torfin requirement (i) assesses the problems its data silos present and evaluates whether a proposed ERPS with integrated CRM would address them. Object is close — an organisation\'s information-systems estate — and the output (assess, then evaluate a proposal) transfers. It fails on (c): enterprise systems integration is not e-business DELIVERY, and none of the e-business content SBL marks here is what Torfin awards marks for.'],
   E4b: ['NEW', 'APM D1a (1) — claimed by E1a', 'T3', 'Third outcome to lose the single D1a drill.'],
   E4c: ['NEW', '—', 'T1', 'The 6 I\'s of e-marketing: no asset.'],
   E4d: ['ADAPT', 'APM A4d (1)', '', 'A4d: "Assess the significance of brand awareness and brand loyalty and their potential impact on business performance." E4d is online branding compared with traditional branding — same object and act, with the comparison added.'],
@@ -173,7 +179,7 @@ const VERDICTS: Record<string, Row> = {
   E5a: ['ADAPT', 'APM D1d (3, 1 of 3)', '', 'D1d: "Assess the risks to systems and data and recommend methods and controls to protect the security of the technology and information of an organisation." E5a is the continuing need for effective information systems control.'],
   E5b: ['ADAPT', 'APM D1d (3, 2 of 3)', '', 'Adequacy of IT and systems security controls. D1d has THREE drills, so three distinct SBL rows can claim it without breaching T3.'],
   E5c: ['ADAPT', 'APM D1d (3, 3 of 3)', '', 'Promoting cyber security. Third and last D1d drill.'],
-  E5d: ['NEW', 'APM D1d (3) — all three claimed', 'T3', 'Safeguarding IT assets. Content fits, but D1d is exhausted at 3/3. ⚠️ PURELY a depth limit: a fourth D1d drill would make this an ADAPT with no other change.'],
+  E5d: ['ADAPT', 'APM D1d case req (Vesla Retail, 7m)', '', 'Was NEW `T3` — D1d\'s three DRILLS are exhausted (E5a/E5b/E5c). The case scan found a FOURTH D1d asset that is not a drill: Vesla Retail requirement (ii), "Assess the risks to Vesla\'s data and systems arising from the working practices described in Exhibit 4, and recommend controls to protect the security of Vesla\'s information." (a) object = IT assets and information security; (b) output = evaluate then recommend controls, which is E5d\'s own verb pair; (c) content = IT security controls, which SBL examines. Vesla is a PRACTICE case, so it survives the mock_only rule in T1.'],
 
   // ── F Organisational control and audit ─────────────────────────────────────
   F1a: ['NEW', '—', 'T1', 'COSO is absent from both papers.'],
@@ -227,9 +233,56 @@ const VERDICTS: Record<string, Row> = {
   H6h: ['NEW', '—', 'T1', 'Post-implementation and post-project review: no asset.'],
 };
 
-/** Live published-drill totals, for the inverse-finding section. Queried 2026-08-17:
- *  status='approved' AND published on acca_drills. */
-const LIVE_DRILLS = { APM: 91, AFM: 63 };
+/**
+ * ── THE CORPUS SNAPSHOT IS **JUDGED**, NOT DERIVED, AND IT NOW SAYS SO ──────────────────────
+ *
+ * This used to be `const LIVE_DRILLS = { APM: 91, AFM: 63 }` with a comment saying it had been
+ * queried, while the file's own docblock listed "the corpus attribution" under DERIVED. It was
+ * not derived: this script has no DB access by design (it must regenerate on any machine from
+ * the PDF alone), so these are typed literals and the completeness gate could not see them.
+ * A drill published tomorrow silently made the ledger wrong with no failure anywhere.
+ *
+ * Two changes rather than one:
+ *   • the snapshot is DECLARED — an `as_at` date, the exact query that produced it, and every
+ *     count in one place. `assertCorpusSnapshot()` refuses the write if the block is malformed,
+ *     and the rendered ledger PRINTS the date, so a reader can see how old the figure is.
+ *   • `--verify-corpus` re-runs the query against the live DB and diffs it. That is the derived
+ *     path, kept OPT-IN because it needs `--env-file=.env.local`, which the PDF path does not.
+ *
+ * T1 EXCLUDES `mock_only` REQUIREMENTS, so the asset pool is the practice figure. The reserved
+ * count is recorded beside it rather than dropped — an asset class excluded by rule should stay
+ * visible, otherwise the next reader re-discovers it as missing data.
+ */
+const CORPUS = {
+  as_at: '2026-08-18',
+  query: "acca_drills WHERE status='approved' AND published; acca_case_requirements joined to "
+    + "acca_cases WHERE status='approved' AND published, split on mock_only",
+  drills: { APM: 91, AFM: 63 },
+  case_requirements: { APM: 11, AFM: 12 },            // mock_only = false → ELIGIBLE under T1
+  case_requirements_reserved: { APM: 7, AFM: 8 },     // mock_only = true  → excluded by T1
+} as const;
+
+/** Refuses a malformed or future-dated snapshot. The point is that the gate can SEE this block
+ *  at all — the failure it replaces was a literal no check could reach. */
+function assertCorpusSnapshot(): string[] {
+  const problems: string[] = [];
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(CORPUS.as_at)) {
+    problems.push(`CORPUS.as_at must be an ISO date (YYYY-MM-DD); got "${CORPUS.as_at}"`);
+  } else if (Number.isNaN(Date.parse(CORPUS.as_at))) {
+    problems.push(`CORPUS.as_at is not a real date: "${CORPUS.as_at}"`);
+  }
+  if (!CORPUS.query.trim()) problems.push('CORPUS.query is empty — an undated, unexplained count is what this block exists to prevent.');
+  for (const [group, rec] of Object.entries({
+    drills: CORPUS.drills,
+    case_requirements: CORPUS.case_requirements,
+    case_requirements_reserved: CORPUS.case_requirements_reserved,
+  })) {
+    for (const [paper, n] of Object.entries(rec)) {
+      if (!Number.isInteger(n) || n < 0) problems.push(`CORPUS.${group}.${paper} must be a non-negative integer; got ${n}`);
+    }
+  }
+  return problems;
+}
 
 const SECTION_TITLES: Record<string, string> = {
   A: 'Leadership',
@@ -416,7 +469,7 @@ function render(los: Lo[], subNames: Record<string, string>): string {
   w();
   w('| code | the rule | why it is a rule |');
   w('| --- | --- | --- |');
-  w('| **T1** | An asset is a **published drill or published case requirement**, never a framework LO. | APM B3e *is* Business Process Re-engineering and has **zero** published drills. Counting it would credit content that does not exist. |');
+  w('| **T1** | An asset is a **published drill, or a published case requirement on a case that is NOT `mock_only`** — never a framework LO. | APM B3e *is* Business Process Re-engineering and has **zero** published drills. Counting it would credit content that does not exist. **Reserved exam content is excluded on the same principle:** a `mock_only` requirement teaches nobody anything until it is sat, and spending it on another paper consumes the mock. That is a standing property of reserved content, not a judgement about SBL. |');
   w('| **T2** | The marked act must transfer (a/b/c above). | Otherwise "same model" silently becomes "same drill", which is where 35% came from. |');
   w('| **T3** | **One asset, one claim.** A single drill backs at most one SBL outcome. | A drill can only be rewritten once. The prior pass named one A1e drill for two SBL outcomes and one D1a drill for two more; there is one of each in existence. |');
   w();
@@ -554,9 +607,19 @@ function render(los: Lo[], subNames: Record<string, string>): string {
   w();
   w('The ledger reads one way by design — SBL outcome → asset. Read the other way it is starker.');
   w();
-  const total = LIVE_DRILLS.APM + LIVE_DRILLS.AFM;
-  w(`There are **${total} live drills** across the two papers (APM ${LIVE_DRILLS.APM}, AFM ${LIVE_DRILLS.AFM}). This ledger claims`);
-  w(`**${all.ADAPT}** of them, one per ADAPT. **${total - all.ADAPT} live drills back no SBL outcome at all.**`);
+  const drills = CORPUS.drills.APM + CORPUS.drills.AFM;
+  const caseReqs = CORPUS.case_requirements.APM + CORPUS.case_requirements.AFM;
+  const reserved = CORPUS.case_requirements_reserved.APM + CORPUS.case_requirements_reserved.AFM;
+  const pool = drills + caseReqs;
+  w(`As at **${CORPUS.as_at}** there are **${drills} live drills** (APM ${CORPUS.drills.APM}, AFM ${CORPUS.drills.AFM}) and`);
+  w(`**${caseReqs} eligible case requirements** (APM ${CORPUS.case_requirements.APM}, AFM ${CORPUS.case_requirements.AFM}) across the two papers —`);
+  w(`a published asset pool of **${pool}**. A further **${reserved}** case requirements sit on \`mock_only\` cases and are`);
+  w('NOT assets under T1. This ledger claims');
+  w(`**${all.ADAPT}** of the ${pool}, one per ADAPT. **${pool - all.ADAPT} published assets back no SBL outcome at all.**`);
+  w();
+  w(`⚠️ These corpus figures are a **declared snapshot, not a live query** — this script reads the`);
+  w('study guide PDF and never touches the database, so they are judged, not derived. Re-verify with');
+  w('`npm run build:sbl-ledger -- --verify-corpus` (needs `--env-file=.env.local`).');
   w();
   w('Three concentrations are worth naming:');
   w();
@@ -727,10 +790,79 @@ function assertNarrativeNumbers(md: string, los: Lo[]): string[] {
   return problems;
 }
 
+/**
+ * The DERIVED half of the corpus figures, opt-in because it needs the database.
+ * Imports supabase-js DYNAMICALLY so the default PDF path never loads it and never needs env —
+ * this script's whole point is that it regenerates from the study guide on any machine.
+ */
+async function verifyCorpus(): Promise<number> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) {
+    console.error('--verify-corpus needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.');
+    console.error('Run: npx tsx --env-file=.env.local scripts/authoring/build-sbl-crosswalk-ledger.ts --verify-corpus');
+    return 1;
+  }
+  const { createClient } = await import('@supabase/supabase-js');
+  const db = createClient(url, key);
+
+  const { data: drillRows } = await db.from('acca_drills')
+    .select('paper_code').eq('status', 'approved').eq('published', true);
+  const { data: caseRows } = await db.from('acca_cases')
+    .select('id, paper_code, mock_only').eq('status', 'approved').eq('published', true);
+  const { data: reqRows } = await db.from('acca_case_requirements').select('case_id');
+
+  const live = { APM: 0, AFM: 0 };
+  for (const r of drillRows ?? []) if (r.paper_code in live) live[r.paper_code as 'APM' | 'AFM']++;
+  const byCase = new Map((caseRows ?? []).map((c) => [c.id, c]));
+  const eligible = { APM: 0, AFM: 0 };
+  const reservedLive = { APM: 0, AFM: 0 };
+  for (const r of reqRows ?? []) {
+    const c = byCase.get(r.case_id);
+    if (!c) continue;                                   // requirement on an unpublished case
+    const bucket = c.mock_only ? reservedLive : eligible;
+    if (c.paper_code in bucket) bucket[c.paper_code as 'APM' | 'AFM']++;
+  }
+
+  const diffs: string[] = [];
+  const cmp = (what: string, got: Record<string, number>, want: Record<string, number>) => {
+    for (const p of ['APM', 'AFM']) {
+      if (got[p] !== want[p]) diffs.push(`  ${what}.${p}: snapshot ${want[p]}, live ${got[p]}`);
+    }
+  };
+  cmp('drills', live, CORPUS.drills);
+  cmp('case_requirements', eligible, CORPUS.case_requirements);
+  cmp('case_requirements_reserved', reservedLive, CORPUS.case_requirements_reserved);
+
+  if (!diffs.length) {
+    console.log(`OK  CORPUS snapshot (as at ${CORPUS.as_at}) matches the live database.`);
+    return 0;
+  }
+  console.error(`STALE  the CORPUS snapshot (as at ${CORPUS.as_at}) no longer matches the database:`);
+  for (const d of diffs) console.error(d);
+  console.error('Update the CORPUS block and its as_at, then re-run the generator.');
+  return 1;
+}
+
 function main(): void {
   const argv = process.argv.slice(2);
   const textArg = argv.includes('--text') ? argv[argv.indexOf('--text') + 1] : null;
   const check = argv.includes('--check');
+
+  if (argv.includes('--verify-corpus')) {
+    void verifyCorpus().then((code) => { process.exitCode = code; });
+    return;
+  }
+
+  // The snapshot is JUDGED, so the gate checks its SHAPE — a malformed or undated block refuses
+  // the write exactly as a missing verdict does. Only --verify-corpus can check its VALUES.
+  const snapshot = assertCorpusSnapshot();
+  if (snapshot.length) {
+    console.error('REFUSING TO WRITE — the CORPUS snapshot is malformed:');
+    for (const s of snapshot) console.error(`  • ${s}`);
+    process.exitCode = 1;
+    return;
+  }
 
   const raw = textArg ? readFileSync(resolve(textArg), 'utf8') : extractText(DEFAULT_PDF);
   const { los, subNames } = parseLos(raw);

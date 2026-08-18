@@ -44,7 +44,7 @@ to re-pointing the frame. All three of the following must hold:
 
 | code | the rule | why it is a rule |
 | --- | --- | --- |
-| **T1** | An asset is a **published drill or published case requirement**, never a framework LO. | APM B3e *is* Business Process Re-engineering and has **zero** published drills. Counting it would credit content that does not exist. |
+| **T1** | An asset is a **published drill, or a published case requirement on a case that is NOT `mock_only`** — never a framework LO. | APM B3e *is* Business Process Re-engineering and has **zero** published drills. Counting it would credit content that does not exist. **Reserved exam content is excluded on the same principle:** a `mock_only` requirement teaches nobody anything until it is sat, and spending it on another paper consumes the mock. That is a standing property of reserved content, not a judgement about SBL. |
 | **T2** | The marked act must transfer (a/b/c above). | Otherwise "same model" silently becomes "same drill", which is where 35% came from. |
 | **T3** | **One asset, one claim.** A single drill backs at most one SBL outcome. | A drill can only be rewritten once. The prior pass named one A1e drill for two SBL outcomes and one D1a drill for two more; there is one of each in existence. |
 
@@ -55,12 +55,12 @@ Where an outcome fails on more than one tooth, both are recorded (`T2/T3`).
 | verdict | rows | share |
 | --- | --- | --- |
 | REUSE | 0 | 0.0% |
-| ADAPT | 34 | 24.6% |
-| **covered (REUSE + ADAPT)** | **34** | **24.6%** |
-| NEW | 104 | 75.4% |
+| ADAPT | 35 | 25.4% |
+| **covered (REUSE + ADAPT)** | **35** | **25.4%** |
+| NEW | 103 | 74.6% |
 | total | 138 | 100% |
 
-**24.6% covered, 34 of 138.** Not 35%.
+**25.4% covered, 35 of 138.** Not 35%.
 
 **REUSE is zero, and that is a finding, not an omission.** No SBL outcome can be served by an
 existing asset unchanged — every SBL outcome sits in a different frame (governance, the public
@@ -77,14 +77,14 @@ its own law.
 | B Governance and sustainability | 27 | 7 | 25.9% |
 | C Strategy | 22 | 2 | 9.1% |
 | D Risk | 15 | 1 | 6.7% |
-| E Technology and data analytics | 17 | 11 | 64.7% |
+| E Technology and data analytics | 17 | 12 | 70.6% |
 | F Organisational control and audit | 12 | 1 | 8.3% |
 | G Finance in planning and decision-making | 10 | 6 | 60.0% |
 | H Enabling success, managing change and innovation | 23 | 6 | 26.1% |
 
 The distribution matters more than the headline. Coverage is **concentrated in two sections** —
 E (technology and data analytics) and G (finance), which are 27 outcomes at
-**63.0%** between them, holding 17 of the 34 ADAPTs — and is near-zero in the four
+**66.7%** between them, holding 18 of the 35 ADAPTs — and is near-zero in the four
 sections that carry most of the paper: **A, C, D and F together are 61 outcomes at
 6.6%** (4 covered). Section A is 0 of 12; sub-area F2 (audit) is 0 of 4.
 A build plan that reads the headline as "a quarter of the work is done" would be wrong about
@@ -94,12 +94,12 @@ A build plan that reads the headline as "a quarter of the work is done" would be
 
 | corpus | ADAPTs it backs |
 | --- | --- |
-| APM | 28 |
+| APM | 29 |
 | AFM | 6 |
 
 **The first pass never considered AFM at all** — it opened on "APM 91 published drills" and
 stopped there. The 6 AFM-backed rows (B2b, G2b, G2c, G2d, G2e, H6d) would all have scored NEW on an
-APM-only baseline, so an APM-only crosswalk reads 20.3% and understates coverage by
+APM-only baseline, so an APM-only crosswalk reads 21.0% and understates coverage by
 4.3%. Four of the six sit in section G, which is why G is one of the two best-covered
 sections in the paper and was previously read as one of the worst.
 
@@ -107,10 +107,10 @@ sections in the paper and was previously read as one of the worst.
 
 | failure | rows |
 | --- | --- |
-| `T1` | 63 |
-| `T2` | 28 |
+| `T1` | 61 |
+| `T2` | 30 |
 | `T2/T3` | 8 |
-| `T3` | 5 |
+| `T3` | 4 |
 
 **T1 dominates, and that is the load-bearing fact for a build plan.** The commonest reason an
 SBL outcome is uncovered is not that the nearest asset is a poor fit — it is that there is no
@@ -124,10 +124,10 @@ choosing a looser threshold.**
 
 The threshold is a choice, so here is its sensitivity — measured on this ledger, not estimated:
 
-- **Drop T3 (let one drill back many outcomes).** 5 rows fail on T3 ALONE
-  (C3d, D1e, E1c, E4b, E5d) and would become ADAPTs, taking coverage to
+- **Drop T3 (let one drill back many outcomes).** 4 rows fail on T3 ALONE
+  (C3d, D1e, E1c, E4b) and would become ADAPTs, taking coverage to
   **28.3%**. A further 8 fail on T3 together with T2.
-  ⚠️ T3 is what stops the corpus being counted twice: **22 of the 34 ADAPTs rest on an asset
+  ⚠️ T3 is what stops the corpus being counted twice: **22 of the 35 ADAPTs rest on an asset
   with exactly ONE published drill**, so dropping T3 credits the same drill repeatedly.
 - **Drop T2's output test (b) — "same model is enough".** The single APM A1e drill (SWOT, PEST,
   generic strategies) is the nearest asset for **four** outcomes (C2a, C2c, C3e, C4d), and the
@@ -135,7 +135,7 @@ The threshold is a choice, so here is its sensitivity — measured on this ledge
   the prior 53% came from.
 - **Tighten to REUSE only.** 0%.
 
-The 17-53% range is now a 24.6% point estimate with a stated rule and named levers, and every
+The 17-53% range is now a 25.4% point estimate with a stated rule and named levers, and every
 row below can be argued individually.
 
 ## Reading the ledger
@@ -175,7 +175,7 @@ a NEW** — that is the whole point of the column.
 | `A3a` | 3 | Critically evaluate the concept of responsible leadership and the creation of public value by acting in the public interest. | NEW `T1` | — | Responsible leadership and public value: no asset. |
 | `A3b` | 3 | Assess management behaviour against the codes of ethics relevant to accounting professionals including the IESBA (IFAC) or professional body codes. | NEW `T2` | AFM A3c (1) | IESBA/professional-body codes are examined by neither paper. No drill awards marks for code content. |
 | `A3c` | 3 | Analyse the reasons for conflicts of interest and ethical conflicts in organisations and recommend resolutions. | NEW `T2` | AFM A3c (1) | AFM A3e/A3f (agency issues, stakeholder-conflict resolution) are the right outcomes and have ZERO drills. The A3c drill does not mark conflict-of-interest resolution. |
-| `A3d` | 3 | Assess the nature and impact of different ethical threats and recommend appropriate safeguards to prevent or mitigate such threats. | NEW `T1` | — | Ethical threats and safeguards: no asset. |
+| `A3d` | 3 | Assess the nature and impact of different ethical threats and recommend appropriate safeguards to prevent or mitigate such threats. | NEW `T2` | APM D2i case req (Bexley Grocers, 7m) | Was `T1` (no asset). The case scan supplies one: Bexley Grocers requirement (ii) advises a board on the ethical issues raised by collecting and processing customer data. Object and output both transfer — assess an ethical situation, recommend a response. It fails on (c): SBL A3d awards its marks for the THREATS-AND-SAFEGUARDS framework (self-interest, self-review, advocacy, familiarity, intimidation), and Bexley marks data-privacy reasoning instead, so the rewrite replaces what the candidate must know. ⚠️ Bexley is MOCK-ONLY and therefore not an eligible asset under T1 in any case; it is named here as the nearest thing that exists, which is what this column is for. |
 | `A3e` | 3 | Recommend best practice for reducing and combating fraud, bribery and corruption to increase public confidence and trust in organisations. | NEW `T1` | — | Fraud, bribery and corruption: no asset. |
 
 ---
@@ -329,7 +329,7 @@ a NEW** — that is the whole point of the column.
 
 ## E — Technology and data analytics
 
-17 outcomes · ADAPT 11 · NEW 6 · **64.7% covered**
+17 outcomes · ADAPT 12 · NEW 5 · **70.6% covered**
 
 ### E1 — Cloud, mobile and smart technology
 
@@ -358,7 +358,7 @@ a NEW** — that is the whole point of the column.
 
 | LO | lvl | outcome | verdict | asset / nearest | reasoning |
 | --- | --- | --- | --- | --- | --- |
-| `E4a` | 3 | Assess the organisation's approach to delivering e-business. | NEW `T1` | — | The organisation's approach to delivering e-business: no asset. |
+| `E4a` | 3 | Assess the organisation's approach to delivering e-business. | NEW `T2` | APM D1b case req (Torfin Build Supplies, 13m) | Was `T1` (no asset). The case scan supplies one: Torfin requirement (i) assesses the problems its data silos present and evaluates whether a proposed ERPS with integrated CRM would address them. Object is close — an organisation's information-systems estate — and the output (assess, then evaluate a proposal) transfers. It fails on (c): enterprise systems integration is not e-business DELIVERY, and none of the e-business content SBL marks here is what Torfin awards marks for. |
 | `E4b` | 3 | Assess and advise on the potential application of information technology to support e- business. | NEW `T3` | APM D1a (1) — claimed by E1a | Third outcome to lose the single D1a drill. |
 | `E4c` | 2 | Explore the characteristics of e-marketing using the 6 I's of interactivity, intelligence, individualisation, integration, industry structure and independence of location. | NEW `T1` | — | The 6 I's of e-marketing: no asset. |
 | `E4d` | 2 | Assess the importance of online branding in e-marketing and compare it with traditional branding. | **ADAPT** | APM A4d (1) | A4d: "Assess the significance of brand awareness and brand loyalty and their potential impact on business performance." E4d is online branding compared with traditional branding — same object and act, with the comparison added. |
@@ -371,7 +371,7 @@ a NEW** — that is the whole point of the column.
 | `E5a` | 3 | Discuss, from a strategic perspective, the continuing need for effective information systems control within an organisation. | **ADAPT** | APM D1d (3, 1 of 3) | D1d: "Assess the risks to systems and data and recommend methods and controls to protect the security of the technology and information of an organisation." E5a is the continuing need for effective information systems control. |
 | `E5b` | 3 | Assess and advise on the adequacy of information technology and systems security controls for an organisation. | **ADAPT** | APM D1d (3, 2 of 3) | Adequacy of IT and systems security controls. D1d has THREE drills, so three distinct SBL rows can claim it without breaching T3. |
 | `E5c` | 3 | Evaluate and recommend ways to promote cyber security. | **ADAPT** | APM D1d (3, 3 of 3) | Promoting cyber security. Third and last D1d drill. |
-| `E5d` | 3 | Evaluate and recommend improvements or changes to controls over the safeguard of information technology assets, to ensure the organisation meets its business objectives. | NEW `T3` | APM D1d (3) — all three claimed | Safeguarding IT assets. Content fits, but D1d is exhausted at 3/3. ⚠️ PURELY a depth limit: a fourth D1d drill would make this an ADAPT with no other change. |
+| `E5d` | 3 | Evaluate and recommend improvements or changes to controls over the safeguard of information technology assets, to ensure the organisation meets its business objectives. | **ADAPT** | APM D1d case req (Vesla Retail, 7m) | Was NEW `T3` — D1d's three DRILLS are exhausted (E5a/E5b/E5c). The case scan found a FOURTH D1d asset that is not a drill: Vesla Retail requirement (ii), "Assess the risks to Vesla's data and systems arising from the working practices described in Exhibit 4, and recommend controls to protect the security of Vesla's information." (a) object = IT assets and information security; (b) output = evaluate then recommend controls, which is E5d's own verb pair; (c) content = IT security controls, which SBL examines. Vesla is a PRACTICE case, so it survives the mock_only rule in T1. |
 
 ---
 
@@ -502,8 +502,15 @@ a NEW** — that is the whole point of the column.
 
 The ledger reads one way by design — SBL outcome → asset. Read the other way it is starker.
 
-There are **154 live drills** across the two papers (APM 91, AFM 63). This ledger claims
-**34** of them, one per ADAPT. **120 live drills back no SBL outcome at all.**
+As at **2026-08-18** there are **154 live drills** (APM 91, AFM 63) and
+**23 eligible case requirements** (APM 11, AFM 12) across the two papers —
+a published asset pool of **177**. A further **15** case requirements sit on `mock_only` cases and are
+NOT assets under T1. This ledger claims
+**35** of the 177, one per ADAPT. **142 published assets back no SBL outcome at all.**
+
+⚠️ These corpus figures are a **declared snapshot, not a live query** — this script reads the
+study guide PDF and never touches the database, so they are judged, not derived. Re-verify with
+`npm run build:sbl-ledger -- --verify-corpus` (needs `--env-file=.env.local`).
 
 Three concentrations are worth naming:
 
