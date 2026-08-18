@@ -59,6 +59,8 @@ import { resolve } from 'node:path';
 const REPO = resolve(__dirname, '..', '..');
 const DEFAULT_PDF = resolve(REPO, 'docs/sbl/sbl_s26_j27_syllabus_and_study_guide.pdf');
 const OUT = resolve(REPO, 'docs/SBL_CROSSWALK_LEDGER.md');
+/** The second artefact off the same parse — see emitFramework(). */
+const FRAMEWORK_OUT = resolve(REPO, 'scripts/sbl-framework.ts');
 /** §5 detailed study guide. Sections A-H are the syllabus outcomes; I is the professional
  *  skills and J the employability outcomes, both excluded from the 138. */
 const FIRST_PAGE = 9;
@@ -844,6 +846,265 @@ async function verifyCorpus(): Promise<number> {
   return 1;
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// FRAMEWORK EMITTER  —  npm run build:sbl-ledger -- --emit-framework
+//
+// Writes scripts/sbl-framework.ts, the AFM/APM-shaped constants module for SBL.
+//
+// WHY IT LIVES IN THIS SCRIPT rather than as a second one: the 138 outcomes are already parsed
+// here, and a second parser is a second thing that can disagree with the guide. One parse, two
+// artefacts — the ledger (judgement about the outcomes) and the framework (the outcomes
+// themselves). Re-running either re-reads the PDF.
+//
+// EVERY DESCRIPTOR IS A MACHINE PARSE, NEVER A TRANSCRIPTION. That is the one property this
+// emitter exists to hold: afm-framework.ts records a purge of editorial gloss that had been
+// hand-added to its levels, and hand-copying 138 outcomes is exactly how that happens.
+// ═════════════════════════════════════════════════════════════════════════════
+
+/** Verbatim from the guide, §I Professional skills (pp.16-17). FIVE, not four — Analysis and
+ *  Evaluation are separate skills in SBL, and there is no combined analysis_and_evaluation. */
+const SBL_PROFESSIONAL_SKILLS: Array<[string, string, string[]]> = [
+  ['communication', 'Communication', [
+    'Inform concisely, objectively, and unambiguously, while being sensitive to cultural differences, using appropriate media and technology.',
+    'Persuade using compelling and logical arguments demonstrating the ability to counter argue when appropriate.',
+    'Clarify and simplify complex issues to convey relevant information in a way that adopts an appropriate tone and is easily understood by the intended audience.',
+  ]],
+  ['commercial_acumen', 'Commercial acumen', [
+    'Demonstrate awareness of organisational and wider external factors affecting the work of an individual or a team in contributing to the wider organisational objectives.',
+    'Use judgement to identify key issues in determining how to address or resolve problems and in proposing and recommending the solutions to be implemented.',
+    'Show insight and perception in understanding work-related and organisational issues, including the management of conflict, demonstrating acumen in arriving at appropriate solutions or outcomes.',
+  ]],
+  ['analysis', 'Analysis', [
+    'Investigate relevant information from a wide range of sources, using a variety of analytical techniques to establish the reasons and causes of problems, or to identify opportunities or solutions.',
+    'Enquire of individuals or analyse appropriate data sources to obtain suitable evidence to corroborate or dispute existing beliefs or opinion and come to appropriate conclusions.',
+    'Consider information, evidence and findings carefully, reflecting on their implications and how they can be used in the interests of the department and wider organisational goals.',
+  ]],
+  ['scepticism', 'Scepticism', [
+    'Probe deeply into the underlying reasons for issues and problems, beyond what is immediately apparent from the usual sources and opinions available.',
+    'Question facts, opinions and assertions, by seeking justifications and obtaining sufficient evidence for their support and acceptance.',
+    'Challenge information presented or decisions made, where this is clearly justified, in a professional and courteous manner; in the wider professional, ethical, organisational, or public interest.',
+  ]],
+  ['evaluation', 'Evaluation', [
+    'Assess and use professional judgement when considering organisational issues, problems or when making decisions; taking into account the implications of such decisions on the organisation and those affected.',
+    'Estimate trends or make reasoned forecasts of the implications of external and internal factors on the organisation, or of the outcomes of decisions available to the organisation.',
+    'Appraise facts, opinions and findings objectively, with a view to balancing the costs, risks, benefits and opportunities, before making or recommending solutions or decisions.',
+  ]],
+];
+
+/** Verbatim from the guide, §J Other employability and digital skills (p.17). */
+const SBL_EMPLOYABILITY: string[] = [
+  'Use computer technology to efficiently access and manipulate relevant information.',
+  'Work on relevant response options, using available functions and technology, as would be required in the workplace.',
+  'Navigate windows and computer screens to create and amend responses to exam requirements, using the appropriate tools.',
+  'Present data and information effectively, using the appropriate tools.',
+];
+
+function emitFramework(los: Lo[], subNames: Record<string, string>): string {
+  const rows = los.filter((r) => !['I', 'J'].includes(r.section));
+  const o: string[] = [];
+  const w = (s = '') => o.push(s);
+  const q = (s: string) => `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+
+  // Command verbs, DERIVED: the leading word of each descriptor, with the levels it appears at.
+  const verbs: Record<string, Set<number>> = {};
+  for (const r of rows) {
+    const m = r.text.match(/^([A-Za-z]+)/);
+    if (!m || r.level === null) continue;
+    (verbs[m[1].toLowerCase()] ??= new Set()).add(r.level);
+  }
+
+  const subs = [...new Set(rows.map((r) => r.sub))];
+  const constName = (sub: string) => `SECTION_${sub}_LOS`;
+
+  w('#!/usr/bin/env tsx');
+  w('/**');
+  w(' * sbl-framework.ts');
+  w(' *');
+  w(' * ACCA Strategic Business Leader (SBL) framework constants.');
+  w(' * Source: sbl_s26_j27_syllabus_and_study_guide.pdf (© ACCA 2026-2027), registered in');
+  w(' * docs/evidence/sources.json as SBL-GUIDE and FETCHED, NOT STORED.');
+  w(' * Modelled on afm-framework.ts / apm-framework.ts — same row shape, same export surface.');
+  w(' *');
+  w(` * ${rows.length} learning outcomes across sections A-H, all verbatim from the study guide.`);
+  w(' * Intellectual levels: [2] = Application & analysis, [3] = Synthesis & evaluation.');
+  w(' * No [1]-level LOs appear in SBL — professional-level strategic exam.');
+  w(' *');
+  w(' * ⚠️ GENERATED, NOT HAND-WRITTEN. Emitted by');
+  w(' * `npm run build:sbl-ledger -- --emit-framework`, which machine-parses the study guide.');
+  w(' * EDIT THE EMITTER, NEVER THIS FILE — a hand edit is lost on the next run, and');
+  w(' * hand-copying descriptors is precisely how afm-framework.ts acquired the editorial gloss');
+  w(' * its VERIFICATION LOG G1 later had to purge.');
+  w(' *');
+  w(' * Exam: 3h15m (including Reading, Planning and Reflection time), 100 marks.');
+  w(' *   ONE integrated case study, THREE tasks of varying marks, all compulsory.');
+  w(' *   20 of the 100 marks are professional skills marks.');
+  w(' *   Pre-seen information is released two weeks before the sitting.');
+  w(' *');
+  w(' * ── DELIBERATELY ABSENT, so their absence reads as a decision ────────────────');
+  w(' * NO `LoMode` / `QUANTITATIVE_LOS` / `MIXED_LOS` / `DISCURSIVE_LOS` (AFM has them) and NO');
+  w(' * `CALCULATION_LOS` (APM has it). Those route numeric verification, and assigning a mode to');
+  w(' * 138 SBL outcomes would be a per-LO judgement nobody has made. SBL is a single integrated');
+  w(' * case study with no calculator families, so an invented mode set would be fabricated');
+  w(' * routing data wearing the shape of parsed data. Add it when a real judgement exists.');
+  w(' */');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// Intellectual levels — the three ACCA cognitive levels (bare labels).');
+  w('// Superscripts [2] and [3] in the study guide correspond to these levels.');
+  w('// No [1]-level LOs appear in SBL.');
+  w('//');
+  w('// ⚠️ TWO LEVEL MARKERS ARE MALFORMED IN THE PUBLISHED PDF — A2d renders `[3}` and H5a');
+  w('// renders `[3)`. Both are level 3 and are parsed as such. A strict `]` match silently drops');
+  w('// them and produces a 95/43 level split instead of the correct 92/46.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const INTELLECTUAL_LEVELS = {');
+  w("  L1: 'Knowledge and comprehension',");
+  w("  L2: 'Application and analysis',");
+  w("  L3: 'Synthesis and evaluation',");
+  w('} as const;');
+  w();
+
+  let currentSection = '';
+  for (const sub of subs) {
+    const sec = sub[0];
+    if (sec !== currentSection) {
+      currentSection = sec;
+      w('// ─────────────────────────────────────────────────────────────────────────────');
+      w(`// Section ${sec} — ${SECTION_TITLES[sec]}`);
+      w('// ─────────────────────────────────────────────────────────────────────────────');
+      w();
+    }
+    const topic = subNames[sub] ?? sub;
+    w(`const ${constName(sub)} = {`);
+    for (const r of rows.filter((x) => x.sub === sub)) {
+      w(`  ${r.code}: { section: ${q(sec)} as const, sub_area: ${q(sub)}, topic: ${q(topic)}, intellectual_level: ${r.level} as const,`);
+      w(`    descriptor: ${q(r.text)} },`);
+    }
+    w('};');
+    w();
+  }
+
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// The full syllabus map. Professional skills (section I) and employability skills');
+  w('// (section J) are held SEPARATELY, mirroring afm-framework.ts / apm-framework.ts —');
+  w('// they are not learning outcomes and must never be drilled as if they were.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const SYLLABUS_MAP = {');
+  for (const sec of Object.keys(SECTION_TITLES)) {
+    const line = subs.filter((s) => s[0] === sec).map((s) => `...${constName(s)},`).join(' ');
+    if (line) w(`  ${line}`);
+  }
+  w('} as const;');
+  w();
+  w('export type LoCode = keyof typeof SYLLABUS_MAP;');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// Section names, from the detailed study guide headers.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const SECTIONS = {');
+  for (const [k, v] of Object.entries(SECTION_TITLES)) w(`  ${k}: ${q(v)},`);
+  w("  I: 'Professional skills',");
+  w("  J: 'Other employability and digital skills',");
+  w('} as const;');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// Command verbs — DERIVED, not curated: the leading word of every LO descriptor, with the');
+  w('// intellectual levels it actually appears at across the syllabus. Regenerated with the file,');
+  w('// so it can never drift from the descriptors above. No `typical_use` gloss: AFM/APM carry');
+  w('// hand-written ones, and a generated gloss would be invention rather than extraction.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const COMMAND_VERBS: Record<string, { levels: (2 | 3)[] }> = {');
+  for (const v of Object.keys(verbs).sort()) {
+    w(`  ${/^[a-z]+$/.test(v) ? v : q(v)}: { levels: [${[...verbs[v]].sort().join(', ')}] },`);
+  }
+  w('};');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// Professional skills — section I (verbatim, guide pp.16-17). All sub-descriptors are');
+  w('// intellectual level [3].');
+  w('//');
+  w('// ⚠️ SBL HAS FIVE PROFESSIONAL SKILLS AND THE FOUR-SKILL PAPERS HAVE FOUR. They are NOT a');
+  w('// superset: APM/AFM carry a single combined `analysis_and_evaluation`, while SBL splits');
+  w('// Analysis and Evaluation into two separately-marked skills. Evaluation also absorbs');
+  w('// ESTIMATE (forecasting trends), which has no counterpart in the four-skill papers, and');
+  w('// Analysis absorbs ENQUIRE. Never map an SBL skill tag onto an APM/AFM one by name.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const PROFESSIONAL_SKILLS = {');
+  for (const [key, label, subs2] of SBL_PROFESSIONAL_SKILLS) {
+    w(`  ${key}: {`);
+    w(`    label: ${q(label)},`);
+    w('    intellectual_level: 3 as const,');
+    w('    sub_descriptors: [');
+    for (const d of subs2) w(`      ${q(d)},`);
+    w('    ],');
+    w('  },');
+  }
+  w('} as const;');
+  w();
+  w('export type ProfessionalSkillTag = keyof typeof PROFESSIONAL_SKILLS;');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// Employability and digital skills — section J (verbatim, guide p.17). NO intellectual-level');
+  w('// superscripts in the source, so no level is recorded. Held separately, not in SYLLABUS_MAP.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const EMPLOYABILITY_SKILLS: readonly string[] = [');
+  for (const s of SBL_EMPLOYABILITY) w(`  ${q(s)},`);
+  w('];');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// Exam structure — verbatim from the guide §7 (pp.18-19) and §9 (p.20).');
+  w('//');
+  w('// ⚠️ SBL HAS NO SECTIONS IN ITS EXAM. APM and AFM both split into a Section A case and a');
+  w('// Section B of scenario questions; SBL is ONE integrated case study of three tasks. Any');
+  w('// consumer branching on `section_a` / `section_b` must not be pointed at this paper.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export const EXAM_STRUCTURE = {');
+  w('  duration_minutes:  195,   // 3 hours 15 minutes, INCLUDING Reading, Planning and Reflection');
+  w('                            // time (RPRT), which the candidate may use flexibly at any point.');
+  w('  total_marks:       100,');
+  w('  pass_mark_percent: 50,');
+  w("  format:            'integrated_case_study' as const,   // 100% integrated case study");
+  w('  task_count:        3,     // "Each exam will contain three tasks with a varying number of marks."');
+  w('  all_tasks_compulsory: true,');
+  w('  marks_professional_skills: 20,   // "Within the total marks available, there are 20 professional skills marks."');
+  w('  professional_skills_examined: \'all_five\' as const,');
+  w('  pre_seen: {');
+  w('    released_weeks_before: 2,');
+  w('    description: \'Background and contextual information on the fictitious organisation the exam is based on and the industry in which it operates. Students are not expected to conduct further research into the industry.\',');
+  w('  },');
+  w('  professional_skills_behaviours: [');
+  w(`    ${SBL_PROFESSIONAL_SKILLS.map(([k]) => q(k)).join(', ')},`);
+  w('  ] as const,');
+  w('  // Guide §6: "There have been no additions, deletions or amendments to the syllabus for');
+  w('  // September 2026 to June 2027."');
+  w("  syllabus_changes_this_cycle: 'none' as const,");
+  w('} as const;');
+  w();
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w('// DrillSpec — type for a single SBL practice item (mirrors afm-framework.ts / apm-framework.ts).');
+  w('// NO `mode` / `calculation_required` field: see the header note on deliberate absences.');
+  w('// ─────────────────────────────────────────────────────────────────────────────');
+  w();
+  w('export interface DrillSpec {');
+  w('  lo_code:                 LoCode;');
+  w('  topic:                   string;');
+  w('  command_verb:            string;');
+  w('  intellectual_level:      2 | 3;');
+  w('  professional_skill_tag?: ProfessionalSkillTag;');
+  w('  marks_guide:             number;');
+  w('}');
+  w();
+
+  return o.join('\n');
+}
+
 function main(): void {
   const argv = process.argv.slice(2);
   const textArg = argv.includes('--text') ? argv[argv.indexOf('--text') + 1] : null;
@@ -867,6 +1128,23 @@ function main(): void {
   const raw = textArg ? readFileSync(resolve(textArg), 'utf8') : extractText(DEFAULT_PDF);
   const { los, subNames } = parseLos(raw);
   const rows = los.filter((r) => !['I', 'J'].includes(r.section));
+
+  // ── FRAMEWORK EMIT ──
+  // Runs off the SAME parse as the ledger and exits. Deliberately BEFORE the verdict gate: the
+  // framework is the outcomes themselves and does not depend on anyone having judged them, so a
+  // half-verdicted VERDICTS block must not block regenerating it.
+  if (argv.includes('--emit-framework')) {
+    const unlevelledFw = rows.filter((r) => r.level === null).map((r) => r.code);
+    if (unlevelledFw.length) {
+      console.error(`REFUSING TO EMIT — ${unlevelledFw.length} outcome(s) parsed with no intellectual level: ${unlevelledFw.join(', ')}`);
+      process.exitCode = 1;
+      return;
+    }
+    writeFileSync(FRAMEWORK_OUT, emitFramework(los, subNames), 'utf8');
+    console.log(`wrote ${FRAMEWORK_OUT}`);
+    console.log(`  ${rows.length} outcomes · ${new Set(rows.map((r) => r.sub)).size} sub-areas · sections ${Object.keys(SECTION_TITLES).join('')}`);
+    return;
+  }
 
   // ── COMPLETENESS IS A HARD GATE ──
   const missing = rows.filter((r) => !VERDICTS[r.code]).map((r) => r.code);
