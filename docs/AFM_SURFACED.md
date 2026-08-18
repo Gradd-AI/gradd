@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-18 (**SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
+*Last refreshed: 2026-08-18 (**SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
 ITSELF.** `fix/ps-ladder-not-descriptor-relative` — five of the nine `descriptor` mentions WERE the
 band definitions, so no wording of rule 2 could outrun them. Rewritten to describe the quality of
 the writing, every severity anchor preserved verbatim: **band-neutral (+0.019 bands, t=0.66) and the
@@ -48,42 +48,55 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
-## 🔴 OPEN 2026-08-17 — SBL IS REGISTERED AND CROSSWALKED; THE FRAMEWORK MODULE AND THE MARK WEIGHTING ARE NOT (`feat/sbl-foundation`, pushed 2026-08-18, unmerged, unbuilt)
+## 🔴 OPEN 2026-08-18 — SBL: THE FRAMEWORK IS BUILT AND UNWIRED; THE MARK WEIGHTING IS STILL OPEN (`feat/sbl-foundation`, pushed 2026-08-18, unmerged; `next build` GREEN)
 
-**Journalled in arrears** — the session ended without recording itself, and two of its three
-commits sat on one machine for a day. Branch now on origin at `8163720`. Full bank:
-`APM_BUILD_CONTRACT.md` → *SESSION BANK — 2026-08-17*.
+**Journalled in arrears on 2026-08-18**, then extended the same day. Branch on origin at
+`cfcff20`. Full banks: `APM_BUILD_CONTRACT.md` → *SESSION BANK — 2026-08-17* and *— 2026-08-18*.
 
-**Shipped:** all nine SBL sources registered fetched-not-stored (`SBL-GUIDE`, `SBL-E1`..`SBL-E7`,
-`SBL-CHANGES`); `docs/sbl/` gitignored whole-directory; `NumericCalcSpec` re-keyed from a bare LO
-string to `(paper, lo)`; `docs/SBL_CROSSWALK_LEDGER.md` — 138 rows, 138 verdicts, a stated ADAPT
-threshold, and a committed generator (`npm run build:sbl-ledger`) that writes nothing if a row is
-missing a verdict.
+**Shipped:** all nine SBL sources registered fetched-not-stored; `docs/sbl/` gitignored
+whole-directory; `NumericCalcSpec` re-keyed from a bare LO string to `(paper, lo)`;
+`docs/SBL_CROSSWALK_LEDGER.md` at **35 of 138 (25.4%), REUSE 0**, with three gates over it
+(completeness · prose-vs-tallies · corpus-snapshot shape); and **`scripts/sbl-framework.ts`** —
+138 outcomes, generated from the same parse, fixture `test:sbl-framework` 1509 checks, contract
+gate 58 → 59.
 
-**🔴 OPEN — four, and the first two are the ledger's OWN stated limits, not new findings:**
+**🔴 OPEN — five. The first two are the ledger's OWN stated limits, not new findings.**
 
 1. **A COVERAGE RATE BY OUTCOME IS NOT A COVERAGE RATE BY MARKS.** Every row is one outcome counted
    once; SBL examines them across three tasks in one 100-mark paper, so they are not equally
    weighted. Weighting needs sitting-by-sitting evidence from `SBL-E1`..`SBL-E7`, of which **four
    pages of one report have been read.** Until that is done, no headline percentage off this ledger
    should be quoted as a readiness figure.
-2. **AN ADAPT IS NOT A SMALL JOB.** It means a named drill exists whose marked act transfers — not
-   that the rewrite is quick. Every one still needs new scenario prose, a new rubric under the
-   **FIVE**-skill SBL vocabulary (Analysis and Evaluation are separate skills there; Enquire and
-   Estimate have no counterpart in the four-skill papers), and a fresh pass through the gate
-   barrier. **34 ADAPTs is not 34 easy wins**, and sizing the SBL build off that count would be the
-   same error the 35% headline was.
-3. **`scripts/sbl-framework.ts` DOES NOT EXIST.** The AFM/APM analogue is the intended home for the
-   138 LOs; today they live only inside the ledger generator's PDF parse, so nothing else in the
-   repo can read an SBL LO code.
-4. **THE BRANCH IS UNBUILT AND UNMERGED.** No `next build` was run against it and no DB write was
-   made. It is pushed for durability, not for merge.
+2. **AN ADAPT IS NOT A SMALL JOB.** A named asset exists whose marked act transfers — not that the
+   rewrite is quick. Every one still needs new scenario prose, a new rubric under the **FIVE**-skill
+   SBL vocabulary, and a fresh pass through the gate barrier. **35 ADAPTs is not 35 easy wins**, and
+   sizing the SBL build off that count would be the same error the 35% headline was.
+3. **NOTHING IS WIRED TO THE FRAMEWORK.** `sbl-framework.ts` exists and is gated, and **no consumer
+   reads it** — no generator, no route, no marking path, no `paper.ts` entry. That is deliberate
+   (the shape was to be reviewed before wiring), but it means the module is currently proven
+   internally consistent and proven nothing else.
+4. **THE BRANCH IS UNMERGED.** `next build` is GREEN against it and the contract gate passes at
+   59/59, but it has not been merged and no DB write has been made all session.
+5. **⚠️ `AFM A3a` IS MIS-TAGGED IN A PUBLISHED CASE.** Castlereagh Utilities requirement (iv) is
+   tagged `A3a`, whose AFM framework topic is *corporate ESG and ethical issues*; the requirement
+   is *"Draft a short briefing note for the four board members who have no financial background,
+   explaining in plain language why Brackwater is not appraised at Castlereagh's own cost of
+   capital"* — a communication task. Surfaced by the SBL case scan, **not fixed**: it writes a
+   published row, and the weakness ledger is keyed on `lo_code`, so it needs its own ruling. It
+   also means "AFM A3a has a published asset" does not mean A3a's ESG content is covered.
 
-**⚠️ ONE CORRECTION carried from the fix's own header comment**, because it is the line a future
-author is likeliest to trust: it reads *"(only `B3e` is safe — SBL's B3 stops at B3d)"*. True
-against SBL and **only** against SBL — `B3e` is a real APM outcome (BPR), as are `B1a` (budgeting
-methods) and `B4a` (SHIP service characteristics). **Under a bare LO string no code is safe**; three
-of the six collided with a SHIPPING paper, so this was a live hazard that did not need SBL to exist.
+**⚠️ ONE CORRECTION carried from the family-key fix's own header comment**, because it is the line
+a future author is likeliest to trust: it reads *"(only `B3e` is safe — SBL's B3 stops at B3d)"*.
+True against SBL and **only** against SBL — `B3e` is a real APM outcome (BPR), as are `B1a`
+(budgeting methods) and `B4a` (SHIP service characteristics). **Under a bare LO string no code is
+safe**; three of the six collided with a SHIPPING paper, so this was a live hazard that did not
+need SBL to exist.
+
+**📐 TWO THINGS MEASURED THIS SESSION THAT CHANGED A CONCLUSION.** (a) The case corpus is **16
+cases / 38 requirements**, and **27 of its 28 LOs already have drills** — so scanning it moved
+coverage by **+1 row**, and the finding is that the SBL gap is CONTENT, not bookkeeping. (b) The
+mock/practice split is **15/23**, not the 18/20 first reported; the ruling that set the eligible
+pool inherited the wrong figure and was corrected before it was written into T1.
 
 ## ✅ CLOSED 2026-08-12 — THE DRILL PATH WRITES TO THE WEAKNESS LEDGER (`feat/drill-path-weakness-ledger`)
 

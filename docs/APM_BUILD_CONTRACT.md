@@ -4940,3 +4940,75 @@ re-derived as discoveries:**
 **`scripts/sbl-framework.ts` DOES NOT EXIST.** The AFM/APM analogue is the intended home for the 138
 LOs and is unbuilt; today they live only in the generator's parse. **No DB writes this session; no
 `next build` run — the branch is pushed unbuilt and unmerged.**
+
+## SESSION BANK — 2026-08-18 — SBL: THE CASES BECOME AN ASSET CLASS, THE PROSE GETS GATED, AND THE 138 OUTCOMES LEAVE THE PARSE (`feat/sbl-foundation`)
+
+Four commits on top of the arrears entry above. Branch pushed at each step; still unmerged.
+
+### 1. The case corpus, scanned for the first time (read-only)
+
+T1 admitted "a published drill **or published case requirement**" and **no asset cell in 138 rows
+named one** — while E2b's own reasoning acknowledged a Bexley Grocers requirement and did not
+count it. Scanned: **16 published cases, 38 requirements** (not the ten assumed).
+
+**THE STRUCTURAL FINDING IS THAT CASES ADD ALMOST NO TERRITORY. 27 of the 28 case-requirement LOs
+already have drills**, so cases could only ever move rows that failed on **T3** (asset spent), not
+T1. The single exception, `AFM A3a` (zero drills), is **MIS-TAGGED** — its framework topic is ESG
+and ethics, its requirement is a plain-language briefing note. Flagged, not fixed.
+
+Of the 13 T3-failing rows only three had a case requirement available and two of those also fail
+T2. **Net: +1.**
+
+### 2. Three rulings (Grant, 2026-08-18) — 34/138 → 35/138
+
+**MOCK_ONLY REQUIREMENTS ARE NOT ASSETS**, written into T1 as a standing property of reserved
+content rather than an SBL decision: it teaches nobody until it is sat, and spending it consumes
+the mock. **⚠️ MY FIGURE WAS WRONG AND THE RULING INHERITED IT** — the split is **15 mock / 23
+practice**, not 18/20. Verified per case before the rule was written.
+
+**E5d IS AN ADAPT** — Vesla Retail requirement (ii), a fourth D1d asset that is not a drill, and a
+practice case so it clears the new T1. The row the ledger itself had flagged as *"PURELY a depth
+limit"*. **A3d and E4a move T1 → T2**: an asset exists, both fail on (c) content. **T1 61 · T2 30
+· T2/T3 8 · T3 4.**
+
+**THE CORPUS SNAPSHOT IS JUDGED AND NOW SAYS SO.** The docblock listed "the corpus attribution"
+under DERIVED and it never was — no DB access by design, so the counts were hand-typed literals no
+gate could reach. Now a declared `CORPUS` block with `as_at` + its query, printed in the ledger;
+`--verify-corpus` is the derived path, opt-in, supabase-js imported dynamically so the PDF path
+never needs env. Inverse count now includes case requirements: pool **177**, claimed 35,
+**142 published assets back no SBL outcome** (was 120 on a drill-only count).
+
+### 3. `assertNarrativeNumbers` — the gate that reads the prose
+
+**"Five of the six sit in section G" is four.** B2b is section B, H6d is section H. It survived
+because the completeness gate read verdicts and never read prose, and the sentence sat *between two
+correctly-interpolated values*, so nothing about it looked hand-typed.
+
+Every narrative number-word must now be **DERIVED** (recomputed inside the gate from `los` +
+`VERDICTS` — deliberately NOT from `render()`'s own variables, because a gate that trusts the
+renderer cannot catch the renderer being wrong), **ASSERTED** (undrivable external/historical fact,
+declared with a written reason) or **RHETORICAL** (counts nothing, matched as a whole phrase).
+Anything else refuses the write. **PROVEN BOTH WAYS**: restoring the literal reports *prose says
+"Five" (5), computed 4*, exit 1, nothing written. ⚠️ **CEILING: number-WORDS only** — a hand-typed
+DIGIT in a narrative sentence still gets through, stated in the file.
+
+**Generalisable, and the reason this is banked rather than just fixed: a gate over the JUDGEMENTS
+is not a gate over the CLAIMS MADE ABOUT them, and the prose is the half that gets quoted.**
+
+### 4. `scripts/sbl-framework.ts` — 138 outcomes leave the parse
+
+They existed only inside the generator, so nothing else in the repo could read an SBL LO code.
+Now an AFM/APM-shaped module: same row shape, same export surface. **GENERATED via
+`--emit-framework` off the SAME parse** — one parser, two artefacts; re-emitting is byte-identical
+and the file says EDIT THE EMITTER. Hand-copying 138 descriptors is exactly how afm-framework.ts
+acquired the gloss its VERIFICATION LOG G1 later purged.
+
+**Three deliberate divergences, each fixture-pinned:** FIVE professional skills and **not a
+superset** (SBL marks Analysis and Evaluation separately; the fixture pins that
+`analysis_and_evaluation` must never appear) · **no exam sections** (`section_a`/`section_b`
+asserted ABSENT) · **no mode/calculation set** (a per-LO judgement nobody has made; inventing one
+would be fabricated routing data wearing the shape of parsed data). `COMMAND_VERBS` derived from
+the descriptors, 22 of them.
+
+**Gates:** `test:sbl-framework` **1509 checks**, auto-discovered, gate **58 → 59** · `next build`
+GREEN · **DB: zero writes** (the only DB access all session was read-only).

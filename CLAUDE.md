@@ -953,6 +953,56 @@ when the session ends on a branch.
   (standing rulings) · `docs/reviews/*.md` (per-batch review packs).
 - `docs/PRODUCT_STRENGTH_STANDARD.md` — the paper-agnostic strength bar every subject must
   meet; AFM coverage contract is the reference implementation.
+- **SBL — THE THIRD ACCA PAPER, FOUNDATION ONLY (2026-08-17/18, `feat/sbl-foundation`, unmerged).**
+  No content, no routes, no DB rows — a syllabus module, a crosswalk, and the sources behind them.
+  **`scripts/sbl-framework.ts`** is the AFM/APM analogue: 138 outcomes, 33 sub-areas, sections A–H,
+  92 at [3] / 46 at [2]. **GENERATED, never hand-written** — `npm run build:sbl-ledger --
+  --emit-framework` emits it from the SAME parse that builds the crosswalk (one parser, two
+  artefacts); the file says EDIT THE EMITTER. Fixture `npm run test:sbl-framework` (1509 checks,
+  auto-discovered, gate 58 → 59) tests the EMITTER as much as the file.
+  **THREE WAYS SBL IS NOT APM/AFM, each fixture-pinned, each a live mis-mapping risk:**
+  **(1) FIVE professional skills, and NOT a superset** — APM/AFM carry one combined
+  `analysis_and_evaluation`; SBL marks **Analysis** and **Evaluation** separately, Evaluation
+  absorbing ESTIMATE and Analysis absorbing ENQUIRE. The fixture pins that
+  `analysis_and_evaluation` must NEVER appear here. **(2) NO EXAM SECTIONS** — one 100% integrated
+  case study, three compulsory tasks, 20 of 100 PS marks, pre-seen two weeks ahead;
+  `section_a`/`section_b` are asserted ABSENT so a consumer branching on them cannot be pointed
+  here. **(3) NO mode / calculation set** — AFM's `LoMode` + `QUANTITATIVE/MIXED/DISCURSIVE_LOS`
+  and APM's `CALCULATION_LOS` route numeric verification; SBL has no calculator families and a
+  per-LO mode judgement does not exist, so inventing one would be fabricated routing data wearing
+  the shape of parsed data. `COMMAND_VERBS` are DERIVED (leading word + observed levels), so they
+  cannot drift from the descriptors.
+  ⚠️ **TWO LEVEL MARKERS ARE MALFORMED IN THE PUBLISHED PDF** — A2d renders `[3}`, H5a renders
+  `[3)`. Both are level 3. A strict `]` match yields 95/43 instead of 92/46; the regex is a
+  character class **on purpose** — do not "tidy" it.
+  **THE CROSSWALK — `docs/SBL_CROSSWALK_LEDGER.md` + its committed generator
+  `scripts/authoring/build-sbl-crosswalk-ledger.ts`.** One row per outcome, a STATED ADAPT
+  threshold (object · output · content-survives), a named NEAREST on every NEW. **35 of 138
+  (25.4%) covered, REUSE 0.** Replaces a 35% headline whose defensible range was 17–53%.
+  **T1 EXCLUDES `mock_only` REQUIREMENTS** (Grant-ruled 2026-08-18) — reserved exam content
+  teaches nobody until it is sat and spending it consumes the mock; a standing property of
+  reserved content, not an SBL decision. Eligible pool = 154 drills + 23 practice case
+  requirements = **177**, of which 35 are claimed, so **142 published assets back no SBL outcome**;
+  a further 15 requirements are reserved and excluded.
+  **THREE GATES, and the second and third exist because the first was not enough:** completeness
+  (a parsed outcome with no verdict refuses the write) · **`assertNarrativeNumbers` — PROSE vs
+  TALLIES**, because the verdict gate read verdicts and never read prose, which is how *"Five of
+  the six sit in section G"* shipped wrong (it is four). Every narrative number-word must be
+  DERIVED (recomputed here from `los` + `VERDICTS`, deliberately NOT from `render()`'s variables —
+  a gate that trusts the renderer cannot catch the renderer being wrong), ASSERTED (undrivable,
+  with a written reason) or RHETORICAL. **Ceiling: number-WORDS only; a hand-typed DIGIT in prose
+  still gets through.** · **`assertCorpusSnapshot`** — the corpus counts were listed as DERIVED and
+  never were (this script has no DB access by design), so they are now a declared `CORPUS` block
+  with an `as_at` date and its query, printed in the rendered ledger. `--verify-corpus` is the
+  derived path, opt-in (needs env), importing supabase-js dynamically so the PDF path never loads
+  it. **A false DERIVED claim is worse than an honest JUDGED one — it tells the next reader not to
+  check.**
+  ⚠️ **`docs/sbl/` is gitignored WHOLE-DIRECTORY** (`docs/*.pdf` does not cross a `/`); all nine
+  sources are registered fetched-not-stored in `docs/evidence/sources.json` (`SBL-GUIDE`,
+  `SBL-E1`..`SBL-E7`, `SBL-CHANGES`).
+  ⚠️ **OPEN:** outcomes ≠ marks (weighting needs `SBL-E1`..`SBL-E7`, of which four pages of one
+  report have been read) · an ADAPT is not a small job (34 ADAPTs ≠ 34 easy wins) · nothing is
+  wired to the framework yet. See `docs/AFM_SURFACED.md`.
 - **Batch lifecycle:** generate (`--*-batch`) → 6 gates → co-founder independent recompute →
   blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → **flip by EXPLICIT-id
   SQL** in the Supabase editor (reconcile approved-set vs journal FIRST; demote any
