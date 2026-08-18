@@ -1,6 +1,6 @@
 import { createServerClient } from '@/lib/supabase/server';
 import stripe from '@/lib/stripe';
-import { strictPaper } from '@/lib/acca/paper';
+import { servedPaper, type ServedPaper } from '@/lib/acca/paper';
 import { NextResponse } from 'next/server';
 
 // ── FOUR SKUs: two papers x two mechanisms (per-paper pricing, 2026-08-03) ────
@@ -12,7 +12,7 @@ import { NextResponse } from 'next/server';
 // payment that does not carry its paper is un-routable — the handler would know that
 // someone bought a pass and not which paper to grant. `paper` therefore rides on the
 // checkout session AND on subscription_data, exactly as `apm_product` already does.
-const PRICE_IDS: Record<'APM' | 'AFM', Record<'monthly' | 'pass', string | undefined>> = {
+const PRICE_IDS: Record<ServedPaper, Record<'monthly' | 'pass', string | undefined>> = {
   APM: {
     monthly: process.env.STRIPE_APM_MONTHLY,
     pass:    process.env.STRIPE_APM_PASS_90D,
@@ -36,10 +36,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'product must be "monthly" or "pass"' }, { status: 400 });
   }
 
-  // The paper is REQUIRED and is not defaulted. `strictPaper` returns null for absent or
-  // unrecognised input; defaulting to APM here would silently sell the wrong paper, and it
-  // is the one error in this flow the customer pays for.
-  const paper = strictPaper((body as { paper?: unknown }).paper);
+  // The paper is REQUIRED and is not defaulted. `servedPaper` returns null for absent,
+  // unrecognised, OR declared-but-unsold input; defaulting to APM here would silently sell the
+  // wrong paper, and it is the one error in this flow the customer pays for.
+  //
+  // ⚠️ IT IS `servedPaper`, NOT `strictPaper`, SINCE 2026-08-18. `strictPaper` now returns 'SBL'
+  // (an authorisation gate must be able to name a paper to refuse it), which would have carried
+  // paper=SBL past this null check and into a price lookup that cannot succeed — turning a clean
+  // 400 into a 500 about a missing environment variable. A paper with no price is refused here.
+  const paper = servedPaper((body as { paper?: unknown }).paper);
   if (!paper) {
     return NextResponse.json({ error: 'paper must be "APM" or "AFM"' }, { status: 400 });
   }

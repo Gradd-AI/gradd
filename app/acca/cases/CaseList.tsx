@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { caseSectionName } from '@/lib/acca/case-surface';
 import { caseListViewed } from '@/lib/acca/surface-events';
@@ -25,7 +25,7 @@ interface CaseRow {
 // `paper=APM` was hardcoded on the fetch below, and that single literal was the whole
 // reason five published AFM cases had no UI: the list endpoint has been paper-scoped
 // since it was written, and it was only ever asked for one paper.
-export default function CaseList({ paper }: { paper: AccaPaper }) {
+export default function CaseList({ paper }: { paper: ServedPaper }) {
   const router = useRouter();
   const [cases, setCases]   = useState<CaseRow[] | null>(null);
   const [error, setError]   = useState(false);
@@ -36,7 +36,7 @@ export default function CaseList({ paper }: { paper: AccaPaper }) {
   // double-invoke, and keys on the PAPER rather than a bare boolean so switching
   // /acca/cases?paper=… without a remount still reports the second list as a second view —
   // it is one.
-  const viewReported = useRef<AccaPaper | null>(null);
+  const viewReported = useRef<ServedPaper | null>(null);
 
   useEffect(() => {
     let cancelled = false;

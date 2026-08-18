@@ -11,7 +11,7 @@ import {
   type ResitInputs,
   type ResitProfile,
 } from '@/lib/acca/resit-engine';
-import { strictPaper, type AccaPaper } from '@/lib/acca/paper';
+import { servedPaper, type ServedPaper } from '@/lib/acca/paper';
 import { buildResitPlanEmail } from '@/lib/email/resit-plan-template';
 import { notifyGrant } from '@/lib/notify';
 
@@ -38,7 +38,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
 // ── Validation ────────────────────────────────────────────────────────────────
 
-function parseInputs(body: Record<string, unknown>, paper: AccaPaper): ResitInputs | null {
+function parseInputs(body: Record<string, unknown>, paper: ServedPaper): ResitInputs | null {
   const { score, sitting, attempts, topic_ratings, habit_answers } = body;
 
   if (typeof score !== 'number' || !Number.isInteger(score) || score < 0 || score > 49) return null;
@@ -71,7 +71,7 @@ function parseInputs(body: Record<string, unknown>, paper: AccaPaper): ResitInpu
 
 // ── Narrative (Haiku narrates the CODE-decided profile) ───────────────────────
 
-function narrativeSystem(paper: AccaPaper): string {
+function narrativeSystem(paper: ServedPaper): string {
   const shared =
     'A separate scoring engine has ALREADY decided their weak areas and their bad exam ' +
     'habits — these are FIXED FACTS. Your only job is to narrate a short, practical resit ' +
@@ -102,7 +102,7 @@ function narrativeSystem(paper: AccaPaper): string {
       'completed a short diagnostic. ' + shared;
 }
 
-function profileToText(paper: AccaPaper, inputs: ResitInputs, profile: ResitProfile): string {
+function profileToText(paper: ServedPaper, inputs: ResitInputs, profile: ResitProfile): string {
   const bandLine =
     profile.score_band === 'narrow'
       ? 'close to the pass mark — a narrow gap'
@@ -132,7 +132,7 @@ function profileToText(paper: AccaPaper, inputs: ResitInputs, profile: ResitProf
   ].join('\n');
 }
 
-async function generatePlan(paper: AccaPaper, inputs: ResitInputs, profile: ResitProfile): Promise<string> {
+async function generatePlan(paper: ServedPaper, inputs: ResitInputs, profile: ResitProfile): Promise<string> {
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 600,
@@ -161,7 +161,10 @@ export async function POST(request: Request) {
   const action = body.action;
 
   // Refuse rather than default. See the header block.
-  const paper = strictPaper(body.paper);
+  // servedPaper, not strictPaper: SBL is a declared paper with no resit diagnostic, and the
+  // topic groups / habit questions this route needs simply do not exist for it. Refusing by
+  // TYPE here is what keeps that a 400 rather than an empty profile keyed to nothing.
+  const paper = servedPaper(body.paper);
   if (!paper) {
     return NextResponse.json({ error: 'Unknown or missing paper' }, { status: 400 });
   }

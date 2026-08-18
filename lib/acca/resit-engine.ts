@@ -16,7 +16,7 @@
 // The three DATA constants are per-paper; the LOGIC is untouched and always was
 // paper-agnostic — computeProfile ranks ratings and habit scores and never knew
 // which paper it was scoring. The shape follows SKILL_DESCRIPTORS_BY_PAPER in
-// case-marking.ts: named per-paper constants, a Record<AccaPaper, …>, and a
+// case-marking.ts: named per-paper constants, a Record<ServedPaper, …>, and a
 // getter. Never merged across papers.
 //
 // ⚠️ WHY THE SEPARATION IS LOAD-BEARING, not cosmetic: AFM and APM lo_code
@@ -27,7 +27,7 @@
 // paper it was given, and the API validates against THAT paper's id set. Neither
 // this module nor the route may fall back on resolvePaper's APM default.
 
-import type { AccaPaper } from './paper';
+import type { ServedPaper } from './paper';
 
 export type Rating = 'weak' | 'mixed' | 'ok';
 
@@ -85,23 +85,23 @@ const AFM_TOPIC_GROUPS: TopicGroup[] = [
   { id: 'ir_hedging',    label: 'Hedging interest-rate risk',        hint: 'interest-rate futures, options, collars, swaps',                    prefixes: ['E3'] },
 ];
 
-export const TOPIC_GROUPS_BY_PAPER: Record<AccaPaper, TopicGroup[]> = {
+export const TOPIC_GROUPS_BY_PAPER: Record<ServedPaper, TopicGroup[]> = {
   APM: APM_TOPIC_GROUPS,
   AFM: AFM_TOPIC_GROUPS,
 };
 
-export function getTopicGroups(paper: AccaPaper): TopicGroup[] {
+export function getTopicGroups(paper: ServedPaper): TopicGroup[] {
   return TOPIC_GROUPS_BY_PAPER[paper];
 }
 
 // Built once per paper rather than per call — the route validates every submitted
 // rating key against this set, so it is on the hot path.
-const TOPIC_GROUP_IDS_BY_PAPER: Record<AccaPaper, Set<string>> = {
+const TOPIC_GROUP_IDS_BY_PAPER: Record<ServedPaper, Set<string>> = {
   APM: new Set(APM_TOPIC_GROUPS.map((g) => g.id)),
   AFM: new Set(AFM_TOPIC_GROUPS.map((g) => g.id)),
 };
 
-export function getTopicGroupIds(paper: AccaPaper): Set<string> {
+export function getTopicGroupIds(paper: ServedPaper): Set<string> {
   return TOPIC_GROUP_IDS_BY_PAPER[paper];
 }
 
@@ -236,12 +236,12 @@ const AFM_HABITS: Record<string, HabitMeta> = {
   },
 };
 
-export const HABITS_BY_PAPER: Record<AccaPaper, Record<string, HabitMeta>> = {
+export const HABITS_BY_PAPER: Record<ServedPaper, Record<string, HabitMeta>> = {
   APM: APM_HABITS,
   AFM: AFM_HABITS,
 };
 
-export function getHabits(paper: AccaPaper): Record<string, HabitMeta> {
+export function getHabits(paper: ServedPaper): Record<string, HabitMeta> {
   return HABITS_BY_PAPER[paper];
 }
 
@@ -378,12 +378,12 @@ const AFM_HABIT_QUESTIONS: HabitQuestion[] = [
   },
 ];
 
-export const HABIT_QUESTIONS_BY_PAPER: Record<AccaPaper, HabitQuestion[]> = {
+export const HABIT_QUESTIONS_BY_PAPER: Record<ServedPaper, HabitQuestion[]> = {
   APM: APM_HABIT_QUESTIONS,
   AFM: AFM_HABIT_QUESTIONS,
 };
 
-export function getHabitQuestions(paper: AccaPaper): HabitQuestion[] {
+export function getHabitQuestions(paper: ServedPaper): HabitQuestion[] {
   return HABIT_QUESTIONS_BY_PAPER[paper];
 }
 
@@ -439,7 +439,7 @@ const RATING_WEIGHT: Record<Rating, number> = { weak: 2, mixed: 1, ok: 0 };
  * dropped rather than scored, which is what stops a cross-paper submission from
  * routing a sitter into the wrong corpus.
  */
-export function computeProfile(paper: AccaPaper, inputs: ResitInputs): ResitProfile {
+export function computeProfile(paper: ServedPaper, inputs: ResitInputs): ResitProfile {
   const groups = getTopicGroups(paper);
   const questions = getHabitQuestions(paper);
   const habitMeta = getHabits(paper);

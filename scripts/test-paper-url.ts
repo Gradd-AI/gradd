@@ -14,7 +14,7 @@
 // is under test.
 
 import { paperHref, resolveSubscribePaper } from '../lib/acca/paper-url';
-import { ACCA_PAPERS, DEFAULT_PAPER, resolvePaper, type AccaPaper } from '../lib/acca/paper';
+import { SERVED_PAPERS, DEFAULT_PAPER, resolvePaper, type AccaPaper } from '../lib/acca/paper';
 
 let pass = 0, fail = 0;
 const ok = (label: string, cond: boolean, detail = '') => {
@@ -84,7 +84,7 @@ ok('multiple existing pairs are preserved in order',
 // paperHref's omission ever disagree, a link built for one paper resolves to the other —
 // silently, with nothing typechecking differently.
 console.log('\n  — write then read returns the same paper, for every paper —');
-for (const p of ACCA_PAPERS) {
+for (const p of SERVED_PAPERS) {
   const href = paperHref('/acca', p);
   const readBack = resolvePaper(new URLSearchParams(href.split('?')[1] ?? '').get('paper') ?? undefined);
   ok(`round trip: ${p} -> "${href}" -> ${readBack}`, readBack === p);

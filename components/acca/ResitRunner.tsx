@@ -18,7 +18,7 @@ import {
   type Rating,
   type ResitProfile,
 } from '@/lib/acca/resit-engine';
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { trackMetaEvent } from '@/lib/meta-consent';
 
@@ -36,12 +36,12 @@ const RATINGS: { value: Rating; label: string }[] = [
 // present and routing nowhere. The boundary is stated to the sitter in words instead — a
 // diagnostic that silently omits part of a syllabus reads as one that found nothing wrong
 // there.
-const COVERAGE_NOTE: Record<AccaPaper, string | null> = {
+const COVERAGE_NOTE: Record<ServedPaper, string | null> = {
   APM: null,
   AFM: 'These are the areas Gradd has drills for today. Mergers, acquisitions and reorganisation are examinable in AFM but are not built yet — if that is where you lost the marks, this diagnostic will not find it.',
 };
 
-export default function ResitRunner({ paper }: { paper: AccaPaper }) {
+export default function ResitRunner({ paper }: { paper: ServedPaper }) {
   const TOPIC_GROUPS = getTopicGroups(paper);
   const HABIT_QUESTIONS = getHabitQuestions(paper);
   const coverageNote = COVERAGE_NOTE[paper];

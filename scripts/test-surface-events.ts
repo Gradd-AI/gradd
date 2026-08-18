@@ -31,7 +31,7 @@ import {
   type SurfaceEvent,
 } from '../lib/acca/surface-events';
 import { getMockPaper, MOCK_PAPERS } from '../lib/acca/mocks';
-import { ACCA_PAPERS } from '../lib/acca/paper';
+import { ACCA_PAPERS, SERVED_PAPERS } from '../lib/acca/paper';
 
 let pass = 0, fail = 0;
 const ok = (label: string, cond: boolean, detail = '') => {
@@ -66,7 +66,7 @@ console.log('\nsurface-events — a view event must be attributable, canonical, 
 const LENIENT_KEYS = (md: Record<string, unknown>) =>
   typeof md.paper === 'string' && typeof md.case_id === 'string';
 const NO_CROSS = (mockId: string, paper: string) =>
-  !!getMockPaper(mockId) && (ACCA_PAPERS as readonly string[]).includes(paper);
+  !!getMockPaper(mockId) && (SERVED_PAPERS as readonly string[]).includes(paper);
 const ECHO = (md: Record<string, unknown>) => md;
 
 ok('MUST-FAIL: a lenient parser accepts a payload carrying an unknown key beside a valid one',
@@ -115,7 +115,9 @@ ok('an unknown event type is refused, and the reason names the vocabulary',
 
 // ── THE ROUND TRIP: EVERY BUILDER'S OUTPUT SURVIVES THE WIRE UNCHANGED ───────
 console.log('\n  round trip — what an emitter builds is what the sink stores');
-for (const paper of ACCA_PAPERS) {
+// SERVED papers only: a funnel event names a surface a student reached, and a declared-but-
+// unserved paper (SBL) has no case list to view. The refusal case below pins that.
+for (const paper of SERVED_PAPERS) {
   {
     const r = parse(overTheWire(caseListViewed(paper)));
     ok(`case_list_viewed round-trips for ${paper}`,

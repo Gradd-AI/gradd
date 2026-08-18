@@ -29,7 +29,7 @@ import {
   caseDetailMetadata,
   CASE_SECTION_NAMES,
 } from '../lib/acca/case-surface';
-import { ACCA_PAPERS, DEFAULT_PAPER, resolvePaper, type AccaPaper } from '../lib/acca/paper';
+import { SERVED_PAPERS, DEFAULT_PAPER, resolvePaper, type AccaPaper } from '../lib/acca/paper';
 import { paperHref } from '../lib/acca/paper-url';
 import { SECTIONS as AFM_SECTIONS } from './afm-framework';
 
@@ -91,7 +91,9 @@ ok('junk falls back to the default paper (a render choice, never an entitlement 
 // The dashboard card is built with paperHref and landed on by this parser. If the two ever
 // disagree the card silently serves the other paper — the exact defect, one link along.
 console.log('\n  — round trip with paperHref (the dashboard card writes, this page reads) —');
-for (const p of ACCA_PAPERS) {
+// SERVED papers: paperHref only builds links to surfaces that exist (its parameter is
+// ServedPaper since 2026-08-18), and this surface renders one of those.
+for (const p of SERVED_PAPERS) {
   const href = paperHref('/acca/cases', p);
   const query = href.includes('?') ? href.slice(href.indexOf('?') + 1) : '';
   const raw = new URLSearchParams(query).get('paper') ?? undefined;
@@ -172,7 +174,9 @@ ok('no metadata string says APM on an AFM page',
 
 // ── The whole surface discriminates, for every paper ─────────────────────────
 console.log('\n  — every paper is covered, and no output is paper-blind —');
-for (const p of ACCA_PAPERS) {
+// SERVED papers: paperHref only builds links to surfaces that exist (its parameter is
+// ServedPaper since 2026-08-18), and this surface renders one of those.
+for (const p of SERVED_PAPERS) {
   ok(`${p} has a section table with at least sections A–B`,
     Object.keys(CASE_SECTION_NAMES[p]).length >= 2);
   ok(`${p} metadata names ${p}`,

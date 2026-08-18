@@ -12,7 +12,7 @@
 // never risks a cross-paper collision). It exists so the LIST verb (GET with no
 // mock_id) can filter MOCK_PAPERS to the requesting paper — the same class of leak
 // as the unscoped acca_cases list, just in code config instead of a table.
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 
 // ── ONE REGISTRY, BOTH PAPERS (merged 2026-07-30) ────────────────────────────
 // The AFM sit paper used to live in its own config (`AFM_MOCK_PAPER_1` in
@@ -28,7 +28,7 @@ import type { AccaPaper } from '@/lib/acca/paper';
 
 export interface MockPaper {
   id: string;              // stable paper identifier, e.g. 'paper-1'
-  paper: AccaPaper;
+  paper: ServedPaper;
   title: string;
   duration_minutes: number;
   case_ids: string[];      // sat in this order: Section A first, then the two Section B
@@ -85,7 +85,7 @@ export function getMockPaper(id: string): MockPaper | null {
   return MOCK_PAPERS.find((p) => p.id === id) ?? null;
 }
 
-export function getMockPapers(paper: AccaPaper): MockPaper[] {
+export function getMockPapers(paper: ServedPaper): MockPaper[] {
   return MOCK_PAPERS.filter((p) => p.paper === paper);
 }
 

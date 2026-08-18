@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { resolvePaper, strictPaper } from '@/lib/acca/paper';
+import { resolvePaper, strictPaper, servedPaper } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
 import { hasPaperAccess } from '@/lib/acca/access';
 import TutorChat from './TutorChat';
@@ -177,6 +177,8 @@ export default async function APMTutorPage({
   // the fallback is this request's own resolved paper — not APM. Coercing a bad row to APM is
   // the exact class of silent default the `?paper=` work removed from the URL boundary, and a
   // DB boundary deserves the same treatment.
-  const drillPaper = strictPaper(data.paper_code) ?? paper;
+  // servedPaper: the row must name a paper this surface can actually render. SBL is declared
+  // but has no tutor, so it falls back to the request paper like any unrecognised value.
+  const drillPaper = servedPaper(data.paper_code) ?? paper;
   return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} paper={drillPaper} />;
 }

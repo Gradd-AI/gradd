@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import AreaPicker, { type PickerArea } from './AreaPicker';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 
 interface ACCADashboardProps {
@@ -13,11 +13,11 @@ interface ACCADashboardProps {
   teachThroughsUsed: number;
   hasActiveAccess: boolean;
   casesEnabled?: boolean;
-  // `AccaPaper`, not `string`. The caller already computes one through `resolvePaper`, and
+  // `ServedPaper`, not `string`. The caller already computes one through `resolvePaper`, and
   // the loose type is part of how this component came to hand-build four paper ternaries:
   // a `string` paper cannot be handed to a helper that only accepts a real paper, so each
   // link grew its own comparison instead.
-  paper: AccaPaper;
+  paper: ServedPaper;
   hasAttempted?: boolean;
   firstDrillArea?: string | null;
   firstDrillFromResit?: boolean;

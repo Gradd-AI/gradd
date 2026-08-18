@@ -39,6 +39,7 @@ import { ledgerActionsFor } from '@/lib/acca/weak-areas';
 // written in as a literal on both the insert AND the close filter — which would have left a
 // drill row unopenable with its own source and, once opened, permanently unclosable.
 import { openWeakness, closeWeakness } from '@/lib/acca/weak-area-store';
+import { unknownSkillTags } from './case-gates';
 
 // Structural typing so this module never imports a server-only Supabase factory; the
 // caller passes its own service client.
@@ -240,6 +241,23 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
   }
   if (examinedSkills.length === 0) {
     return { ok: false, status: 409, error: 'case examines no professional skills' };
+  }
+
+  // ── THE FREE-TEXT TRAP (2026-08-18) ──
+  // `professional_skill_tags` is an unconstrained text column and the list above is built by
+  // splitting it. An unknown tag used to reach `judgeCaseMarking`, miss the descriptor map, and be
+  // marked against '(no authored descriptor on file for this skill)' — while still consuming an
+  // equal share of the PS pool, so one typo silently took marks off the real skills. REFUSE it.
+  //
+  // Verified before shipping: all 38 published case requirements and all 155 tagged drills
+  // validate against their own paper's set, so no live row's behaviour changes. This can only
+  // fire on a row that was already going to be mis-marked.
+  const unknown = unknownSkillTags(paper, examinedSkills);
+  if (unknown.length > 0) {
+    return {
+      ok: false, status: 409,
+      error: `case carries professional skill tag(s) not in the ${paper} set: ${unknown.join(', ')}`,
+    };
   }
 
   // ── PS pass ──

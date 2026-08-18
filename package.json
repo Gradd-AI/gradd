@@ -87,6 +87,7 @@
     "test:ib-bm-framework": "tsx scripts/test-ib-bm-framework.ts",
     "test:exam-questions": "tsx --env-file=.env.local scripts/test-exam-questions.ts",
     "test:exam-questions-format": "tsx scripts/test-exam-questions-format.ts",
+    "test:paper-vocabulary": "tsx scripts/test-paper-vocabulary.ts",
     "test:sbl-framework": "tsx scripts/test-sbl-framework.ts",
     "build:sbl-ledger": "tsx scripts/authoring/build-sbl-crosswalk-ledger.ts"
   },
