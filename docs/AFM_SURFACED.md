@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-18 (**SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
+*Last refreshed: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
 ITSELF.** `fix/ps-ladder-not-descriptor-relative` — five of the nine `descriptor` mentions WERE the
 band definitions, so no wording of rule 2 could outrun them. Rewritten to describe the quality of
 the writing, every severity anchor preserved verbatim: **band-neutral (+0.019 bands, t=0.66) and the
@@ -60,7 +60,8 @@ whole-directory; `NumericCalcSpec` re-keyed from a bare LO string to `(paper, lo
 138 outcomes, generated from the same parse, fixture `test:sbl-framework` 1509 checks, contract
 gate 58 → 59.
 
-**🔴 OPEN — five. The first two are the ledger's OWN stated limits, not new findings.**
+**🔴 OPEN — five, plus one closed (item 5). The first two are the ledger's OWN stated limits, not
+new findings.**
 
 1. **A COVERAGE RATE BY OUTCOME IS NOT A COVERAGE RATE BY MARKS.** Every row is one outcome counted
    once; SBL examines them across three tasks in one 100-mark paper, so they are not equally
@@ -71,19 +72,31 @@ gate 58 → 59.
    rewrite is quick. Every one still needs new scenario prose, a new rubric under the **FIVE**-skill
    SBL vocabulary, and a fresh pass through the gate barrier. **35 ADAPTs is not 35 easy wins**, and
    sizing the SBL build off that count would be the same error the 35% headline was.
-3. **NOTHING IS WIRED TO THE FRAMEWORK.** `sbl-framework.ts` exists and is gated, and **no consumer
-   reads it** — no generator, no route, no marking path, no `paper.ts` entry. That is deliberate
-   (the shape was to be reviewed before wiring), but it means the module is currently proven
-   internally consistent and proven nothing else.
-4. **THE BRANCH IS UNMERGED.** `next build` is GREEN against it and the contract gate passes at
-   59/59, but it has not been merged and no DB write has been made all session.
-5. **⚠️ `AFM A3a` IS MIS-TAGGED IN A PUBLISHED CASE.** Castlereagh Utilities requirement (iv) is
-   tagged `A3a`, whose AFM framework topic is *corporate ESG and ethical issues*; the requirement
-   is *"Draft a short briefing note for the four board members who have no financial background,
-   explaining in plain language why Brackwater is not appraised at Castlereagh's own cost of
-   capital"* — a communication task. Surfaced by the SBL case scan, **not fixed**: it writes a
-   published row, and the weakness ledger is keyed on `lo_code`, so it needs its own ruling. It
-   also means "AFM A3a has a published asset" does not mean A3a's ESG content is covered.
+3. **NOTHING READS THE FRAMEWORK — narrowed 2026-08-18, not closed.** The VOCABULARY is now wired:
+   `ACCA_PAPERS` declares SBL, `SKILL_DESCRIPTORS_BY_PAPER` carries its five skills,
+   `CASE_SECTION_NAMES` its eight sections, and `GATE_CONFIG` knows it has no exam sections. What
+   still reads NOTHING is **`scripts/sbl-framework.ts` itself** — no generator, no route, no
+   marking path imports it, and its 138 outcomes reach no serve. The module is proven internally
+   consistent (1509 fixtures) and proven nothing else. Deliberate: the shape was to be reviewed
+   before wiring, and it has been.
+4. **THE BRANCH IS UNMERGED.** `next build` GREEN, contract gate 60/60. One DB write this session
+   (the A3a re-tag, item 5), under full P-DB2/3/4.
+5. **✅ CLOSED 2026-08-18 — the `AFM A3a` mis-tag.** Castlereagh (iv) is now `A1c`, applied with
+   `scripts/authoring/retag-afm-case-requirement.ts` under full P-DB2/3/4, gate barrier re-run on
+   the live rows (C1–C4 all PASS). **THE FINDING THAT OUTLIVED THE ROW, and it is the reusable
+   half:** the tag was CAUSED by gate C4 requiring four-skill coverage in a Section A case — the
+   communication requirement still needed a technical `lo_code` to hang on, so the author reached
+   into section A and landed on the ESG outcome. **C4 passes either way; it reads
+   `professional_skill_tags` and never looks at `lo_code`.** A gate that requires coverage the
+   content does not naturally supply will make an author reach for a code, and the gate cannot see
+   that it caused it. Banked in the CLAUDE.md code map.
+6. **🔴 NEW — per-requirement PS marking is unbuilt, and the current path cannot express it.** SBL
+   marks professional skills per task against a named skill; `judgeCaseMarking` takes a DEDUPED
+   union of skills, gives each an equal share of a case-level pool, bands each against the WHOLE
+   answer, and keys `per_skill` by skill rather than by (requirement, skill). All four are
+   blockers. It is a new marking UNIT, not a parameterisation — and **P-M1's founding instance is
+   precisely that splitting a batched per-case call into one call per requirement MOVED THE MARK**,
+   so it ships with its own band matrix or not at all. Deliberately not started this session.
 
 **⚠️ ONE CORRECTION carried from the family-key fix's own header comment**, because it is the line
 a future author is likeliest to trust: it reads *"(only `B3e` is safe — SBL's B3 stops at B3d)"*.

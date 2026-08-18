@@ -5012,3 +5012,89 @@ the descriptors, 22 of them.
 
 **Gates:** `test:sbl-framework` **1509 checks**, auto-discovered, gate **58 → 59** · `next build`
 GREEN · **DB: zero writes** (the only DB access all session was read-only).
+
+## SESSION BANK — 2026-08-18 (b) — A GATE CAUSED A MIS-TAG, AND SBL'S FIFTH SKILL GOES IN AS VOCABULARY (`feat/sbl-foundation`)
+
+Two commits. DB: one write, to a published row, under full P-DB2/3/4.
+
+### 1. Castlereagh (iv): `A3a` → `A1c` — and the CAUSE was a gate
+
+The tag named ESG. **The rubric awards no ESG marks.** Its two criteria are cost-of-capital
+content (3) and the communication act (3); the words ESG, environment, social, governance,
+stakeholder and ethics appear nowhere in the question, the model answer or either criterion.
+`A1c` fits both halves and was already in the framework — *"Advise the board … (ii) minimising
+the cost of capital; … (iv) communicating financial policy and corporate goals to internal and
+external stakeholders"*. Still section A, so the case's span is unchanged.
+
+**⚠️ IT WAS NOT A TYPO.** Castlereagh is a SECTION A case; gate **C4** requires a Section A case
+to examine ALL FOUR professional skills; (i)(ii)(iii) carried the other three, so (iv) HAD to be
+the `communication` requirement — and a communication act still needs a technical `lo_code` to
+hang on. The author reached into section A and landed on the ESG outcome. `gateSectionASpan` was
+already satisfied by B3e + E3a, so span did not force it; **C4's coverage demand did.**
+
+> **A GATE THAT REQUIRES COVERAGE THE CONTENT DOES NOT NATURALLY SUPPLY WILL MAKE AN AUTHOR REACH
+> FOR A CODE, AND THE GATE CANNOT SEE THAT IT CAUSED IT.** C4 passes either way — it reads
+> `professional_skill_tags` and never looks at `lo_code`. No gate in the barrier distinguishes the
+> two codes, which is exactly why it survived authoring.
+
+Applied with a NEW committed script, `retag-afm-case-requirement.ts`, separate from the drill one
+because **`lo_code` is DUPLICATED INSIDE `answer_schema`** — moving the column alone leaves a
+rubric marking against the old code, and a P-DB4 "exactly one field moved" check would **PASS on
+that half-done state**. It asserts both fields move together and that the schema differs by
+exactly the rewritten `lo` values. Result: fields moved `[lo_code, answer_schema]`, 13/13 others
+byte-identical, no stale `A3a` survives, gates re-run LIVE all PASS. Done while the window was
+free — A3a had 0 drills and 1 requirement, A1c had 0 and 0, 0 weakness rows.
+**The script refused a FABRICATED UUID on the first run** (the id had been guessed from a
+truncated print) — the "row is not what the caller said" arm working as designed.
+
+### 2. The fifth skill — vocabulary and paper-awareness only
+
+**DECLARED IS NOT SERVED.** `ACCA_PAPERS` gains SBL; `SERVED_PAPERS` holds the two with content,
+a price, a diagnostic and a surface. `strictPaper` RETURNS SBL (a gate must name a paper to
+refuse it); `servedPaper()` refuses it. `AccaPaper` for vocabulary, **`ServedPaper` for anything
+a customer can reach** — a key in a price map is a promise the thing exists.
+
+📐 **THE EXHAUSTIVE BREAK FOUND NINE SITES, NOT THE SIX PREDICTED**, and the three extra were the
+dangerous ones — checkout, subscribe, the resit runner. Left alone, `paper=SBL` would have passed
+checkout's null check and died indexing a price map: **a clean 400 becomes a 500 about a missing
+env var.** Retyping `paperHref` and the surface-event sink then found ten more UI/route sites and
+**four FIXTURES iterating `ACCA_PAPERS` where they meant served papers**. That cascade is the
+argument for adding the member early: the same list arrives either way, as a compile error now or
+as bugs later.
+
+**PER-PAPER GATE CONFIG, NOT A WIDENED CONDITIONAL.** C1/C2/C3 ask about A/B sections; SBL has
+none, so they report `applicable: false` with a reason. **INAPPLICABLE IS NOT PASS** — excluded
+from the aggregate, because a gate that passes for want of anything to check is indistinguishable
+in a report from one that checked and was satisfied. The field is set ONLY on inapplicable
+results, so **APM/AFM reports stay byte-identical**.
+
+**THE FREE-TEXT TRAP IS CLOSED.** `professional_skill_tags` is unconstrained `text`, the marking
+path splits it, and `judgeCaseMarking` soft-substituted *"(no authored descriptor on file)"*. That
+is a **silent mis-score**: the unknown skill enters the rubric, takes an equal share of the pool,
+and is banded against nothing. Now validated against the paper's declared set, refused with a 409,
+and the descriptor lookup THROWS — a throw rather than a filter, since dropping the skill would
+silently re-weight the pool. **Verified before shipping: all 38 published requirements and all 155
+tagged drills validate**, so no live row moved.
+
+**⚠️ SBL'S FIVE ARE NOT THE FOUR PLUS ONE.** `analysis` and `evaluation` are separate skills and
+neither is the combined one halved — SBL's Analysis absorbs ENQUIRE, its Evaluation absorbs
+ESTIMATE, and neither act is in the four-skill descriptors. Fixtured in both directions.
+
+**P-M1 AND THE BAR.** This touches two inputs to a marking call. The claim is narrow: *for APM and
+AFM the model sees the same bytes, so the call's shape is unchanged, so no band matrix is owed.*
+`npm run test:paper-vocabulary` — **53 checks**, five pin families (prompt bytes ×6, the numbered
+rubric string, the descriptor maps, `apportion` over the full 5⁴ cross-product, `runCaseGates`),
+plus a **live-corpus gate diff** on both published papers. ⚠️ **Three of the five were captured
+pre-change; two were not, and the fixture says so** — PIN2 rests on PIN3, PIN4 on a `git diff`
+showing the arithmetic untouched.
+
+**Gates:** contract gate **58 → 60** (`test:sbl-framework`, `test:paper-vocabulary`) · `tsc
+--noEmit` clean · `next build` GREEN.
+
+### Explicitly NOT started
+
+**Per-requirement PS marking is a SEPARATE change with its own calibration.** The current path
+cannot express it — the examined-skill list is a deduped union, the ceiling is an equal share of a
+case-level pool, the model bands against the whole answer, and `per_skill` is keyed by skill, not
+by (requirement, skill). P-M1's founding instance is precisely that splitting a batched per-case
+call into one call per requirement MOVED THE MARK.

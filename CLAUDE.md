@@ -1003,6 +1003,80 @@ when the session ends on a branch.
   ⚠️ **OPEN:** outcomes ≠ marks (weighting needs `SBL-E1`..`SBL-E7`, of which four pages of one
   report have been read) · an ADAPT is not a small job (34 ADAPTs ≠ 34 easy wins) · nothing is
   wired to the framework yet. See `docs/AFM_SURFACED.md`.
+- **DECLARED IS NOT SERVED — `ACCA_PAPERS` vs `SERVED_PAPERS` (`lib/acca/paper.ts`, 2026-08-18).**
+  `ACCA_PAPERS` = APM · AFM · **SBL** (declared: vocabulary exists). `SERVED_PAPERS` = APM · AFM
+  (content, a Stripe price, a resit diagnostic, a surface). **`strictPaper` RETURNS 'SBL'** — an
+  authorisation gate must be able to NAME a paper to refuse it — and **`servedPaper()` refuses
+  it**. Use `AccaPaper` for VOCABULARY (syllabus sections, PS descriptors); use **`ServedPaper`
+  for anything a customer can reach**, because a key in a price map is a promise the thing
+  exists, and the compiler should refuse an SBL price rather than accept a blank one.
+  **THE COMMERCE BOUNDARY IS THE SHARP CASE:** left alone, `paper=SBL` would have passed
+  checkout's null check and died indexing `PRICE_IDS` — a clean 400 turned into a 500 about a
+  missing env var. `resolvePaper` / `paperFromRouteParam` / `paperForCaseRow` / `paperHref` /
+  the surface-event sink are all **`ServedPaper`** now.
+  📐 **THE EXHAUSTIVE BREAK FOUND NINE SITES, NOT THE SIX PREDICTED** (the extra three were
+  checkout, subscribe and the resit runner), then ten more UI/route sites and **four FIXTURES
+  that iterated `ACCA_PAPERS` where they meant served papers**. Adding the member early is what
+  produced that list; adding it late would have produced the same list as bugs.
+- **PER-PAPER CASE-GATE CONFIG — `GATE_CONFIG` (`lib/acca/case-gates.ts`).** C1/C2/C3 ask
+  questions about A/B sections. **SBL has no sections** (one 100% integrated case study, three
+  compulsory tasks), so for SBL they return **`applicable: false` with a reason**.
+  ⚠️ **INAPPLICABLE IS NOT PASS** — an n/a gate is EXCLUDED from the aggregate, never counted
+  green: a gate that passes for want of anything to check reads identically to one that checked
+  and was satisfied. The field is set ONLY on inapplicable results, so an **APM/AFM report is
+  byte-identical to the pre-SBL shape**. C4 is properly paper-aware: unchanged for a sectioned
+  paper; for SBL it demands the whole five-skill set across the PAPER — the same rule asked of
+  the unit that exists. `runCaseGates(paper, paperCode = 'AFM')`; the default is IMMATERIAL
+  between served papers and that is fixture-proven, not asserted.
+- **⚠️ THE FREE-TEXT SKILL-TAG TRAP, CLOSED.** `professional_skill_tags` is `text` with **no
+  CHECK and no enum**; the marking path SPLITS it, and `judgeCaseMarking` fell back to
+  *"(no authored descriptor on file for this skill)"*. **That is a silent MIS-SCORE, not
+  degradation:** the unknown skill still enters the numbered rubric, still takes an equal share
+  of the pool (`ceiling = pool / examinedSkills.length`), and is still banded by the model —
+  against nothing. One typo mints a skill and takes marks off the real ones. Invisible while
+  every paper had the same four tags; **live the moment a five-skill paper whose set OVERLAPS
+  but does not match exists** (`analysis` vs `analysis_and_evaluation`). Now `unknownSkillTags()`
+  validates against the paper's declared set, `case-mark-run` **REFUSES with a 409**, and the
+  descriptor lookup **THROWS** — a throw, not a filter, because dropping the skill would silently
+  re-weight the pool instead. Verified before shipping: **all 38 published case requirements and
+  all 155 tagged drills validate**, so no live row's behaviour changed.
+- **⚠️ SBL'S FIVE SKILLS ARE NOT THE FOUR PLUS ONE.** APM/AFM carry ONE combined
+  `analysis_and_evaluation`; SBL marks **`analysis`** and **`evaluation`** SEPARATELY, and
+  neither is that skill halved — SBL's Analysis absorbs **ENQUIRE**, its Evaluation absorbs
+  **ESTIMATE**, and neither act appears in the four-skill descriptors at all. **NEVER map an SBL
+  tag onto an APM/AFM one by name.** Fixtures pin that `analysis_and_evaluation` must never
+  appear in the SBL map and `analysis`/`evaluation` never in the APM/AFM ones.
+- **THE BAR FOR ADDING A PAPER — `npm run test:paper-vocabulary` (53 checks, gate 59 → 60).**
+  Adding a paper touches `AccaPaper`, which keys the PS descriptor maps and the gate config —
+  **two inputs to a MARKING CALL**, so **P-M1** applies. The claim defended is narrow and
+  mechanical: *for APM and AFM the model sees the same bytes, so the call's SHAPE is unchanged,
+  so no band matrix is owed.* **If any pin moves, that argument collapses and the matrix IS
+  owed.** Five pin families: prompt bytes (2 papers × 3 variants) · the numbered
+  `examinedSkills` rubric string · the descriptor maps · `apportion` across the full 5⁴ band
+  cross-product · `runCaseGates` output. Plus a **live-corpus `runCaseGates` diff** over both
+  published papers (default AND explicit `paperCode`, violation strings included).
+  ⚠️ **THREE OF THE FIVE WERE CAPTURED PRE-CHANGE; TWO WERE NOT, and the fixture says so.**
+  PIN1/3/5 are true pre-change captures. PIN2 and PIN4 were captured after — PIN2's pre-change
+  validity rests on PIN3 (it is a pure function of the descriptor maps plus a one-line template),
+  PIN4's on `git diff` showing `apportion`/`BAND_MULTIPLIER`/the ceiling formula untouched.
+- **RE-TAGGING A PUBLISHED CASE REQUIREMENT — `scripts/authoring/retag-afm-case-requirement.ts`
+  (COMMITTED, P-DB6).** SEPARATE from `retag-afm-drill.ts` for a load-bearing reason: **a
+  requirement's `lo_code` is DUPLICATED INSIDE `answer_schema`** (every criterion carries its own
+  `"lo"`), so moving the column alone leaves a rubric marking against the old code — **and a
+  P-DB4 check asserting "exactly one field moved" would PASS on that half-done state**. It
+  asserts BOTH fields move together AND that the schema differs from before by exactly the
+  rewritten `lo` values, every other key byte-identical, with no stale reference surviving.
+  **First use 2026-08-18: Castlereagh Utilities (iv) `A3a` → `A1c`** — 13/13 other fields
+  byte-identical, 2 criterion `lo` values rewritten, `professional_skill_tags` unchanged, gate
+  barrier re-run LIVE (C1–C4 all PASS, span still B/E/A).
+  📐 **THE FINDING GENERALISES BEYOND THE ROW: A GATE THAT REQUIRES COVERAGE THE CONTENT DOES
+  NOT NATURALLY SUPPLY WILL MAKE AN AUTHOR REACH FOR A CODE, AND THE GATE CANNOT SEE THAT IT
+  CAUSED IT.** C4 requires a Section A case to examine all four skills; (i)(ii)(iii) held the
+  other three, so (iv) had to be `communication` — and a communication act still needs a
+  technical `lo_code` to hang on. The author reached into section A and landed on the ESG
+  outcome. **C4 passes either way — it reads `professional_skill_tags` and never looks at
+  `lo_code`.** The rubric awarded 3 marks for cost-of-capital content and 3 for the audience,
+  and **zero for ESG**.
 - **Batch lifecycle:** generate (`--*-batch`) → 6 gates → co-founder independent recompute →
   blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → **flip by EXPLICIT-id
   SQL** in the Supabase editor (reconcile approved-set vs journal FIRST; demote any
