@@ -1,0 +1,205 @@
+{
+  "plan_id": "SBL-A4",
+  "lo_code": "A3d",
+  "skill": "scepticism",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (scepticism): PASS",
+    "N6c claim-anchor link: PASS",
+    "N6 coverage: every part evaluated",
+    "P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS",
+    "P7 misconception-lead on the REVISED teaching leg: PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "SBL",
+    "lo_code": "A3d",
+    "topic": "Professionalism, ethical codes and the public interest",
+    "command_verb": "assess and recommend",
+    "intellectual_level": 3,
+    "professional_skill_tag": "scepticism",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 10,
+    "question": "Draft the section of the external auditors' briefing note for Palomino's audit committee chair that:\n(i) assesses the ethical threats that the consultancy retainer arrangement creates for Palomino; and\n(ii) recommends safeguards that the board should adopt to prevent or mitigate those threats.",
+    "context_text": "Constructora Palomino S.A. (\"Palomino\"), a Colombian listed construction and infrastructure group, bids regularly for public-sector contracts worth hundreds of millions of Colombian pesos. Over the past three years, Palomino has retained Gestoría Cívica Ltda (\"Gestoría\"), a government-relations consultancy, under an annual retainer of COP 480 million. Gestoría is co-owned by the brother-in-law of Palomino's chief procurement officer (\"CPO\"), who chairs the internal panel that scores and recommends public-contract bids. The CPO disclosed the family connection to Palomino's board at the time the retainer was first agreed, and the board recorded it in the minutes but took no further action. When Palomino's external auditors raised the arrangement during the current-year review, Finance Director Alejandra Ríos stated: \"The retainer of COP 480 million is fully disclosed and sits comfortably within applicable procurement rules, so there is no ethical issue to address.\" No independent review of the scoring panel's decisions has been taken place since the retainer began, and Palomino's code of conduct requires annual conflict-of-interest declarations but does not mandate recusal from decisions where a conflict exists.",
+    "model_answer": "**Ethical threats — testing \"within the rules\"**\n\n**Briefing Note — Section: Ethical Threats and Recommended Safeguards**\n**To: Chair, Audit Committee, Constructora Palomino S.A.**\n\n**(i) Assessment of ethical threats**\n\nThe arrangement creates a self-interest threat of high severity. Gestoría Cívica Ltda is co-owned by the brother-in-law of the very officer who chairs the internal panel that evaluates and recommends Palomino's public-contract bids. The COP 480 million annual retainer gives that officer's family a continuing financial stake in Palomino's commercial decisions — meaning each bid recommendation carries an undisclosed incentive to perpetuate the relationship, regardless of merit. Finance Director Ríos asserted that there is \"no ethical issue to address\" on the grounds that the payment is disclosed; that claim does not withstand scrutiny. Disclosure records the existence of a conflict; it does not neutralise the CPO's ongoing influence over outcomes. Because Palomino's code of conduct does not mandate recusal from decisions where a conflict exists, the CPO retains full scoring authority, and the disclosure is procedurally hollow. The assertion must therefore be challenged: compliance with procurement rules on paper says nothing about whether the CPO's judgement is, or reasonably appears to be, independent.\n\nA compounding self-review threat arises because no independent review of the scoring panel's decisions has taken place since the retainer began. The CPO, whose conduct is in question, has in effect been left to validate his own process. For a listed construction group whose revenue depends on public contracts, this creates acute legal and reputational exposure: any regulatory investigation would find a three-year gap in independent oversight that management cannot explain.\n\nFinally, when Director Ríos directed the auditors to treat the matter as closed, she created an intimidation threat to audit independence. If the audit team accepts that framing, Palomino's disclosures may fail to capture a material related-party arrangement — a direct risk to listed-company reporting obligations.\n\n**(ii) Recommended safeguards**\n\nFirst, the board must amend the code of conduct immediately to introduce mandatory recusal: because the code does not mandate recusal from decisions where a conflict exists, the CPO can continue to chair the internal panel even after disclosure, which makes the self-interest threat live on every subsequent bid. The amendment should require any panel member with a direct or indirect financial connection to an engaged consultancy to stand aside and be replaced by an evaluator with no such connection.\n\nSecond, I recommend that the audit committee commission an independent retrospective review of all scoring-panel decisions made since the COP 480 million retainer began. Because no independent review has taken place, the committee cannot currently confirm that any bid was assessed on merit. The reviewer must have no connection to Gestoría, its co-owners, or the CPO, and must report directly to the audit committee — not through the Finance Director — to prevent any repetition of the pressure already applied to the audit team.\n\nI recommend that the audit committee escalate both safeguards to the full board for approval at the next scheduled meeting and decline to sign off the current-year audit without written confirmation that recusal provisions will be enacted before the next bid cycle.",
+    "hint": "Your response raises the right concerns about the CPO's conflict and Director Ríos's assertion — but check whether you stated a conclusion about each threat or only asked the audit committee chair whether one might exist.",
+    "full_reveal": "The misconception this drill exposes is SCEPTICISM AS QUESTIONS: the candidate believes that surfacing a doubt — \"has the board considered whether the CPO's judgement is truly independent?\" — is itself the sceptical act, when in fact the examiner requires a committed, evidenced assessment delivered as a professional conclusion. Posing a question transfers the analytical burden to the reader; the briefing note exists precisely so the reader does not have to do that work, and the examiner awards nothing for a concern that is never resolved. The correct mental model is that scepticism is a two-stage act: you state what the evidence shows (the COP 480 million retainer gives the CPO's brother-in-law a continuing financial stake in every bid recommendation) and then you commit to what that means for Palomino (the disclosure Director Ríos cites records the conflict's existence but leaves the CPO's scoring authority intact, so the self-interest threat is live on every subsequent bid — not merely possible). Anchoring that committed conclusion to the two-mark rule: identifying the self-interest threat earns one mark; developing it — weighting its severity, tying it to the CPO's unchanged panel authority and Palomino's dependence on public-contract revenue, and following it to the consequence that three years of bid decisions are currently unreviable — earns the second, and a response built entirely on unresolved questions earns neither development mark on any point, forcing the candidate to find twice as many points in the same time to reach the same total.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) assess the ethical threats the arrangement creates",
+        "(ii) recommend safeguards"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_retainer",
+          "text": "The annual retainer paid to Gestoría Cívica Ltda of COP 480 million",
+          "key": "COP 480 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_assertion",
+          "text": "Finance Director Ríos's assertion that the arrangement is 'fully disclosed and sits comfortably within applicable procurement rules, so there is no ethical issue to address'",
+          "key": "no ethical issue to address",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_cpo_role",
+          "text": "The CPO chairs the internal scoring panel that recommends public-contract bids",
+          "key": "chairs the internal panel",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_family_link",
+          "text": "Gestoría is co-owned by the brother-in-law of the CPO",
+          "key": "brother-in-law",
+          "kind": "entity"
+        },
+        {
+          "id": "f_no_recusal",
+          "text": "Palomino's code of conduct requires annual declarations but does not mandate recusal from decisions where a conflict exists",
+          "key": "does not mandate recusal",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_no_review",
+          "text": "No independent review of the scoring panel's decisions has taken place since the retainer began",
+          "key": "no independent review",
+          "kind": "constraint"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) assess the ethical threats the arrangement creates",
+          "lo": "A3d",
+          "required_point": "The self-interest threat is severe and currently uncontrolled: because the CPO chairs the internal panel that scores contract bids while the COP 480 million retainer flows to a firm co-owned by his brother-in-law, the CPO has a direct and continuing financial incentive to favour Gestoría-related outcomes, meaning that every bid recommendation Palomino makes while this arrangement persists is potentially compromised. Director Ríos's claim that there is 'no ethical issue to address' cannot be accepted merely because the payment is disclosed: disclosure records a conflict but does not neutralise it, and the absence of recusal requirements means the CPO's influence over bid scoring is unchecked regardless of what the rules permit on paper. 1 mark if the self-interest threat is identified but the candidate does not challenge the 'no ethical issue to address' assertion or does not link it to the CPO's ongoing scoring role.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_retainer",
+            "f_assertion",
+            "f_cpo_role",
+            "f_family_link"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) assess the ethical threats the arrangement creates",
+          "lo": "A3d",
+          "required_point": "The self-review threat is material: because no independent review of the scoring panel's decisions has taken place since the retainer began, the same individual whose family connection creates the conflict is implicitly endorsing the adequacy of the process he controls, making it impossible for Palomino — or its auditors — to verify that bid recommendations have been made on merit. This matters acutely for a listed group dependent on public contracts, where any subsequent investigation could trigger debarment or reputational damage severe enough to threaten the business. 1 mark if the self-review element is identified but the candidate does not explain why the absence of independent review compounds rather than simply adds to the self-interest threat.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_no_review",
+            "f_cpo_role"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(i) assess the ethical threats the arrangement creates",
+          "lo": "A3d",
+          "required_point": "The intimidation threat to auditors must also be assessed: Finance Director Ríos's assertion that there is 'no ethical issue to address' — made specifically when external auditors raised the arrangement — creates pressure on the audit team to drop the matter, which itself undermines audit independence and is an ethical threat that Palomino's board needs to recognise and actively counteract. The significance is that if auditors yield to that pressure, a listed Colombian company could be filing accounts that fail to disclose a material related-party arrangement. 1 mark if the intimidation element is noted but the candidate does not identify the Finance Director's statement as the source or does not connect it to the listed-company disclosure obligation.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_assertion",
+            "f_retainer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) recommend safeguards",
+          "lo": "A3d",
+          "required_point": "The most urgent safeguard is mandatory recusal: the code of conduct does not mandate recusal from decisions where a conflict exists, so the board must amend it immediately to require the CPO to stand aside from every scoring panel session in which Gestoría or its principals have any interest, replacing him with an independent evaluator. This directly addresses the self-interest threat at source rather than merely recording it; without this change, disclosure alone — as Director Ríos implies is sufficient — leaves the conflict active and Palomino's bid integrity in doubt on every subsequent contract. 1 mark if recusal is recommended but the candidate does not identify the code's current gap or does not explain why disclosure without recusal is insufficient.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_no_recusal",
+            "f_assertion",
+            "f_retainer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(ii) recommend safeguards",
+          "lo": "A3d",
+          "required_point": "An independent retrospective review of all scoring-panel decisions taken since the retainer began should be commissioned: the fact that no independent review has taken place means the board cannot currently attest that any bid was awarded on merit, which is a specific legal and reputational risk for a listed group. The review should be conducted by a party with no connection to Gestoría, the CPO, or Gestoría's co-owners, and its findings should be reported directly to the audit committee rather than through management. 1 mark if an independent review is recommended but the candidate does not specify its scope, independence requirement, or reporting line.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_no_review",
+            "f_cpo_role"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F4",
+            "F5"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 10,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "**To: Audit Committee Chair**\n\n**Re: Retainer arrangement — ethical considerations**\n\nThe following questions arise from the retainer arrangement with Gestoría Cívica Ltda.\n\nHas the board considered whether the CPO's family connection to Gestoría creates a self-interest threat? The CPO chairs the internal panel and his brother-in-law co-owns the consultancy. Is it clear that a disclosed conflict is the same as a managed one? Finance Director Ríos has stated that the retainer is fully disclosed, but should the committee not ask whether disclosure alone is sufficient to address an ethical threat?\n\nIs it not the case that, because no independent review of scoring decisions has taken place, there may be a self-review concern? Should the committee not consider commissioning some form of oversight? And given that Palomino's code requires annual declarations but does not mandate recusal, is there not a gap in the current framework that merits attention?\n\nWhen Director Ríos told the auditors there was no ethical issue, should the committee not consider whether this placed any pressure on the audit team? Could this be seen as an intimidation concern? Is the committee satisfied that audit independence has been maintained?\n\nIn terms of safeguards, has management thought about recusal requirements? Is an independent review something the board might wish to consider? Would it not be worth reviewing the code of conduct to see whether the current wording is adequate?\n\nThese are matters the committee may wish to explore further with management and legal counsel before reaching any view.",
+        "designed_bad_flags": [
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

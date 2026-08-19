@@ -1,0 +1,220 @@
+{
+  "plan_id": "SBL-A1",
+  "lo_code": "A2b",
+  "skill": "analysis",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F5): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (analysis, SBL): NOT EVALUATED — the precondition is material from ≥2 separately-identified sources the candidate can relate. ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that the rubric requires one to bear on the other",
+    "N6c claim-anchor link: NOT EVALUATED — structurally N/A for analysis — only scepticism acts on a single identifiable asserted claim",
+    "N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (analysis, SBL); N6c claim-anchor link",
+    "P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS",
+    "P7 misconception-lead on the REVISED teaching leg: PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "SBL",
+    "lo_code": "A2b",
+    "topic": "Leadership and organisational culture",
+    "command_verb": "identify, evaluate, and advise",
+    "intellectual_level": 2,
+    "professional_skill_tag": "analysis",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 10,
+    "question": "Draft the relevant section of a briefing note for MPE's board chair that:\n(i) identifies and evaluates the leadership styles that CEO Nguyen Thanh Liem demonstrated in each of the three documented episodes during the export-push restructure; and\n(ii) advises which leadership style or combination of styles the board chair should ask Liem to adopt for the domestic-refocus restructure now facing MPE, with reasons.",
+    "context_text": "Minh Phat Electronics JSC (MPE), a household-appliance manufacturer headquartered in Ho Chi Minh City, Vietnam, recently abandoned a three-year export push into Southeast Asian markets after cumulative losses of VND 420 billion. The board has now approved a domestic-refocus restructure: closing two overseas sales offices, redeploying 340 staff, and rebuilding the mid-market product range for Vietnamese consumers. Three behavioural episodes have been documented for CEO Nguyen Thanh Liem during the earlier export-push restructure. Episode A: Liem learned that three regional logistics hubs were underperforming. Without consulting line managers, he issued written instructions the same afternoon, naming which hubs would close and which staff would transfer, citing the need for speed. Episode B: After engineers raised concerns that a planned product range simplification would eliminate a generator line that still generated positive cash flow, Liem held a half-day workshop with the product, finance, and operations teams, shared his draft proposal, invited challenges, revised the scope based on team feedback, and then formally approved the revised plan himself. Episode C: Liem appointed a cross-functional team of eight middle managers and told them to design and implement a new domestic-sales incentive scheme, setting only a budget ceiling of VND 12 billion and a three-month deadline; he reviewed nothing until the team presented its finished scheme. The new domestic-refocus restructure now facing MPE is characterised by high staff anxiety (an internal survey records that 68% of redeployed employees feel uncertain about their new roles), a CFO who believes the 68% figure overstates real concern because the survey was voluntary and self-selecting, and a board that wants decisions taken in weeks, not months.",
+    "model_answer": "**Leadership style — reading the style from the behaviour**\n\n**Briefing note — section: CEO leadership approach**\n*Prepared for: Board Chair, Minh Phat Electronics JSC*\n\n**Part (i): Styles observed in the three episodes**\n\nIn Episode A, Liem issued written instructions on hub closures the same afternoon, bypassing line managers entirely. This is a directive approach: decisions were made and communicated unilaterally. Its significance lies in what it sacrifices — without consultation, operational knowledge held by those managers was excluded, and resentment can outlast the short-term speed gained. A directive style is defensible in genuine emergencies, but using it as a default during a restructure involving large numbers of staff builds a compliance culture that inhibits the honest upward communication leaders need.\n\nIn Episode B, Liem shared his draft plan, invited technical challenge in a half-day workshop, revised the scope based on what the teams said, and retained final approval. This consultative style is more significant than it may appear: the revision of scope shows that the consultation was substantive, not performative — the engineers' point about the generator line's positive cash flow actually changed the outcome, demonstrating that Liem can update his position on evidence.\n\nIn Episode C, Liem handed eight middle managers full ownership of the new incentive scheme, setting only a budget ceiling, and reviewed nothing until completion. This is a delegating style. Delegation succeeds when the people receiving it are capable and confident. That condition matters greatly here: the 68% staff uncertainty rate recorded in the current domestic-refocus survey reveals that those same middle managers are themselves operating under significant stress, which is precisely the condition under which a hands-off approach is most likely to produce inconsistent or poorly-embedded outcomes.\n\n**Part (ii): Recommended style for the domestic-refocus restructure**\n\nBefore advising on style, the board should resolve a factual dispute: the CFO believes the 68% figure overstates genuine anxiety because the survey was voluntary and self-selecting. That argument points in the wrong direction. Voluntary surveys systematically under-represent the employees most disengaged or most anxious — those who feel unsafe or indifferent are less likely to respond — so a voluntary, self-selecting survey is structurally more likely to produce a *lower* anxiety reading than a census would. Far from inflating the result, the voluntary design means 68% should be treated as a floor. The CFO's scepticism is not supported by the logic of survey methodology, and the board should not use it to discount what the data shows.\n\nWith that established, I recommend that Liem leads the domestic-refocus restructure primarily through the consultative approach demonstrated in Episode B, supplemented by selective directive action of the kind seen in Episode A at decision points where the board's requirement for choices in weeks, not months, would otherwise be compromised. The case for consultation is direct: 340 staff face redeployment into unfamiliar roles after a failure that cost MPE VND 420 billion, and the confirmed anxiety level demands that people are given a genuine voice rather than instructions handed down after the fact. At the same time, pure consultation without a directive backstop risks drift — Liem must be prepared to close debate and decide, as he did in Episode A, when timelines demand it. Episode C's fully delegating approach should be reserved for tasks where middle managers have high confidence and the outcome is not time-critical; it is not suited to the restructure's core decisions given the current anxiety environment.\n\nI advise the board chair to set an explicit expectation with Liem that the default mode for the domestic-refocus programme is structured consultation with a committed decision deadline, and that unilateral direction is available as an exception — not a routine — when speed genuinely cannot wait.",
+    "hint": "Your answer likely described what each leadership style is — but the requirement asks you to read the style FROM Liem's specific behaviour in each episode and then commit to a reasoned recommendation for the domestic-refocus restructure, using MPE's 68% anxiety figure and the CFO's disputed interpretation as the evidence base for your advice.",
+    "full_reveal": "The misconception this drill exposes is THE ADJACENT QUESTION: the candidate describes leadership styles in the abstract — naming and defining them correctly — rather than performing the two acts the requirement actually specifies, which are reading a style from documented behaviour and then committing to a reasoned recommendation for a named, evidence-rich situation. This costs marks for a precise causal reason: identifying a style label earns one mark; the second mark is only released when that label is anchored to what Liem actually did (for example, bypassing line managers entirely in Episode A, or revising scope based on engineers' input in Episode B) and then followed to a consequence for MPE — so a candidate who writes \"Liem used a directive style, which can reduce consultation\" has identified and immediately stopped, earning one where two were available. The same arithmetic applies to Part (ii): naming a recommended style is one mark, but the second requires the recommendation to be grounded in the specific conditions MPE faces — the 68% staff uncertainty rate, the CFO's methodologically flawed attempt to discount it, and the redeployment of 340 staff after a VND 420 billion loss — so that the board chair can see why this organisation, at this moment, needs that style rather than another. The fix is not to find more style labels; it is to develop each point through the four moves — weigh its significance, tie it to MPE by the information given, follow it to a consequence, and illustrate it from the episodes — because doing that once, fully, outscores listing four undeveloped labels in the same time.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) identify and evaluate the leadership styles in the three episodes",
+        "(ii) advise which style(s) to adopt for the domestic-refocus restructure"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_ep_a",
+          "text": "Episode A: Liem issued unilateral written instructions on hub closures without consulting line managers",
+          "key": "Episode A",
+          "kind": "entity"
+        },
+        {
+          "id": "f_ep_b",
+          "text": "Episode B: Liem ran a half-day workshop, shared draft, invited challenges, revised scope, then approved",
+          "key": "Episode B",
+          "kind": "entity"
+        },
+        {
+          "id": "f_ep_c",
+          "text": "Episode C: Liem delegated the incentive scheme fully to eight middle managers with only a budget ceiling",
+          "key": "Episode C",
+          "kind": "entity"
+        },
+        {
+          "id": "f_68pct",
+          "text": "68% of redeployed employees feel uncertain about their new roles (internal survey)",
+          "key": "68%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_cfosceptic",
+          "text": "CFO believes the 68% figure overstates real concern because the survey was voluntary and self-selecting",
+          "key": "CFO",
+          "kind": "entity"
+        },
+        {
+          "id": "f_speed",
+          "text": "Board wants decisions taken in weeks, not months",
+          "key": "weeks, not months",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_losses",
+          "text": "Cumulative losses of VND 420 billion from the failed export push",
+          "key": "VND 420 billion",
+          "kind": "figure"
+        },
+        {
+          "id": "f_340staff",
+          "text": "340 staff to be redeployed in the domestic-refocus restructure",
+          "key": "340 staff",
+          "kind": "figure"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) identify and evaluate the leadership styles in the three episodes",
+          "lo": "A2b",
+          "required_point": "Episode A shows a directive (autocratic) style — Liem issued written instructions on hub closures without any consultation — and a full-marks answer goes further to evaluate its significance: because no line managers were involved, speed was gained at the cost of buy-in, which is a high-stakes trade-off that could create resistance in any repeat situation. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_ep_a"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F7"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) identify and evaluate the leadership styles in the three episodes",
+          "lo": "A2b",
+          "required_point": "Episode B shows a consultative style — Liem shared his draft proposal, invited challenges from product, finance and operations teams, and revised the scope before approving — and a full-marks answer evaluates its significance: the half-day workshop preserved Liem's final authority while securing technical input from those closest to the generator line's cash-flow reality, demonstrating that consultation reduced decision error without surrendering control. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_ep_b"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F7"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(i) identify and evaluate the leadership styles in the three episodes",
+          "lo": "A2b",
+          "required_point": "Episode C shows a delegating style — Liem gave eight middle managers full ownership of the incentive scheme, setting only a budget ceiling of VND 12 billion and reviewing nothing until completion — and a full-marks answer evaluates its suitability: delegation works where followers are capable and motivated, but a full-marks answer also cross-references the current change context: the 68% staff-anxiety figure from the domestic-refocus survey suggests that middle managers are themselves under stress, which materially limits the conditions under which a repeat of Episode C's fully hands-off approach could succeed for the new restructure. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_ep_c",
+            "f_68pct"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F7",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) advise which style(s) to adopt for the domestic-refocus restructure",
+          "lo": "A2b",
+          "required_point": "The CFO's belief that 68% overstates real concern because the survey was voluntary and self-selecting must be weighed against the survey figure itself: voluntary surveys systematically under-sample the least engaged and most anxious employees (who opt out), so the direction of the CFO's bias is actually the reverse of what is claimed — a voluntary survey is more likely to understate anxiety than to inflate it. A full-marks answer therefore disputes the CFO's position using this logic and concludes that 68% should be treated as a floor, not a ceiling, making high staff anxiety a confirmed driver of the recommended style. 1 mark if the tension is noted but the candidate does not resolve it or assess the direction of the bias.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_68pct",
+            "f_cfosceptic"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F4",
+            "F5",
+            "F7",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(ii) advise which style(s) to adopt for the domestic-refocus restructure",
+          "lo": "A2b",
+          "required_point": "For the domestic-refocus restructure, the board should ask Liem to lead primarily through a consultative style modelled on Episode B, supplemented by selective directive action modelled on Episode A for time-critical early decisions. The consultative approach directly addresses the anxiety confirmed by the 68% figure by giving the 340 redeployed staff a visible voice, while the directive supplement satisfies the board's requirement for decisions in weeks, not months — preventing the consultative process from drifting into indecision after the organisation's credibility was already damaged by VND 420 billion of losses. 1 mark if a style is recommended but the link to both the staff-anxiety evidence and the board's time constraint is absent.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_68pct",
+            "f_speed",
+            "f_340staff",
+            "f_losses"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F4",
+            "F5",
+            "F7",
+            "F10",
+            "F11"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 10,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "The domestic-refocus restructure at Minh Phat Electronics JSC represents a significant strategic change following the failure of the export push, which resulted in substantial losses. Managing such a transition effectively requires a structured approach to change management, and it is useful to consider the stages through which any major organisational change must pass: from establishing urgency, through building a guiding coalition, to embedding new ways of working.\n\nFirst, the organisation must communicate a compelling case for change. Employees who understand why the restructure is necessary are more likely to support it. The board should ensure that messaging around the domestic-refocus strategy is clear, consistent, and reaches all levels of the organisation.\n\nSecond, a guiding coalition should be established. Senior leaders and respected middle managers should be visibly involved in designing and delivering the restructure programme. This helps to secure buy-in and prevents the change being seen as imposed from above.\n\nThird, short-term wins should be identified and celebrated. Quick successes in the early weeks of the restructure will help to maintain momentum and demonstrate that the new domestic focus is delivering results.\n\nFourth, the change must be embedded in culture. Changes to incentive structures, performance targets, and values statements should reinforce the desired behaviours for the domestic market strategy.\n\nLeadership style is relevant to this programme and should be considered. Different situations may call for different approaches: a more directive style may suit urgent decisions, while a participative approach may be better for decisions requiring broad input. The CEO should reflect on his style and consider what best fits each stage of the change.\n\nOverall, the restructure requires careful sequencing, strong communication, and leadership that adapts to circumstances. With a clear plan and appropriate support for employees, MPE can successfully reposition itself for the domestic market.",
+        "designed_bad_flags": [
+          "F5"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

@@ -1,0 +1,239 @@
+{
+  "plan_id": "SBL-A3",
+  "lo_code": "A1a",
+  "skill": "analysis",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (analysis, SBL): NOT EVALUATED — the precondition is material from ≥2 separately-identified sources the candidate can relate. ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that the rubric requires one to bear on the other",
+    "N6c claim-anchor link: NOT EVALUATED — structurally N/A for analysis — only scepticism acts on a single identifiable asserted claim",
+    "N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (analysis, SBL); N6c claim-anchor link",
+    "P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS",
+    "P7 misconception-lead on the REVISED teaching leg: PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "SBL",
+    "lo_code": "A1a",
+    "topic": "Qualities of leadership",
+    "command_verb": "assess and compare",
+    "intellectual_level": 3,
+    "professional_skill_tag": "analysis",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "Draft the section of the board's post-implementation review report addressed to Kilimo's Chair of the Board that assesses the leadership contribution to:\n\n(i) the formulation of the PayHarvest strategy; and\n(ii) the implementation of the PayHarvest strategy.\n\nYour assessment should compare the two phases and explain what that comparison reveals about where Kilimo's leadership weakness actually lies.",
+    "context_text": "Kilimo Digital Co-operative (\"Kilimo\") is a national agricultural co-operative headquartered in Nairobi, Kenya, with 340,000 smallholder members spread across six regions. In 2022, the board commissioned a strategic study into cashless payments for the co-operative's crop-purchase cycle. The study team spent eight months conducting farmer surveys, mapping cash-handling costs, and benchmarking neighbouring co-operatives; it concluded that a mobile-payment platform called PayHarvest could reduce disbursement costs by 31% and reach 280,000 digitally active members within two years. The board unanimously endorsed the findings and approved a KES 420 million budget. Before the national rollout, Kilimo ran a 90-day pilot in Meru County covering 4,200 members; the pilot report, published internally in March 2023, recorded that only 38% of pilot farmers successfully completed a transaction without staff assistance, and specifically recommended that a dedicated regional-liaison role be created in each of the six regions before any wider launch. Despite the pilot report's recommendation, no regional-liaison roles were ever assigned. The national rollout began in September 2023; at launch, regional managers in four of the six regions confirmed they had received no prior briefing on PayHarvest and learned of the platform only through a circular sent on launch day. Eighteen months after launch, only 94,000 members — 33% of the 280,000 target — had successfully used PayHarvest, and a post-implementation survey found that 61% of non-adopting members cited \"lack of on-the-ground support\" as the principal barrier.",
+    "model_answer": "**Leadership in formulation and in implementation — the same strategy, two halves**\n\n**Post-Implementation Review — Leadership Assessment: PayHarvest**\n*To: Chair of the Board, Kilimo Digital Co-operative*\n\n**Phase I — Formulation**\n\nKilimo's leadership performed well in the formulation phase, and the board deserves credit for both the quality of the process it commissioned and the commercial courage it showed in committing KES 420 million on the back of that process. An eight-month study combining farmer surveys, internal cost mapping, and competitive benchmarking is substantive by any standard; for a co-operative whose legitimacy rests on member trust, a methodology that placed farmers' own payment behaviour at the centre of the analysis materially reduced the risk of misalignment between the platform and the people it was meant to serve. The 280,000 member target was not an aspiration plucked from thin air — it was anchored in evidence about digital readiness across the membership.\n\nThe decision to run a 90-day pilot before national launch reinforces this assessment. That discipline produced the 38% unassisted-completion finding — a number that, on its own, signals that adoption would not be self-sustaining without structured support — and the pilot report translated that finding into an unambiguous operational instruction: create a regional-liaison role in each of the six regions before wider rollout. Formulation-phase leadership, in short, did exactly what it should have done: it generated specific, testable intelligence and put it in writing.\n\n**Phase II — Implementation**\n\nThe implementation phase tells an entirely different story, and the contrast is sharp enough to identify where Kilimo's leadership problem actually resides. No regional-liaison roles were ever assigned. This was not a resource question — the board had already approved KES 420 million — it was an accountability failure: nobody was designated to own the instruction the pilot had issued. For a co-operative with 340,000 members dispersed across six geographically distinct regions, and in the knowledge that only 38% of pilot farmers could transact without assistance, the regional-liaison role was not a refinement; it was the mechanism through which 280,000 adoptions were meant to happen. Removing it from the implementation plan was effectively removing the engine.\n\nThe communication failure compounds this: regional managers in four of the six regions learned of PayHarvest through a launch-day circular. Regional managers are the co-operative's primary conduit to its farming members; informing them after the fact rather than engaging them as implementation partners left the organisation with no one positioned to champion the platform in the field at the moment of peak adoption opportunity. The outcome figures confirm the damage: 94,000 active users against a 280,000 target — a gap of 186,000 members — and a post-implementation survey in which 61% of non-adopters attributed their non-adoption to lack of on-the-ground support. That 61% is not a new finding; it is a member-level echo of what the pilot said in March 2023. The barrier members reported experiencing in 2024 is the same barrier leadership was warned about a year earlier and did not act on.\n\n**What the Comparison Reveals**\n\nSetting the two phases alongside each other settles one question and raises another. The question it settles is whether Kilimo's leadership lacked strategic capability — it did not. The board commissioned rigorous analysis, synthesised it correctly, and generated a well-evidenced opportunity. The question it raises is why leadership that demonstrated that quality of foresight then allowed its own pilot's conclusions to go unimplemented. The 38% completion rate and the regional-liaison role recommendation were not buried in appendices; they were the pilot's headline outputs. The failure is therefore not one of analytical capacity but of executional accountability — no assigned owners, no pre-briefed regional managers, no mechanism for translating strategy into operational behaviour at the community level.\n\nI recommend that the Chair table a governance resolution requiring, for every future initiative of comparable scale, that implementation-phase role assignments be approved by the board as a precondition of launch authorisation — so that the quality of analysis Kilimo demonstrably produces is matched by the accountability structure needed to act on it.",
+    "hint": "You have likely identified that leadership failed in implementation — but the requirement asks you to compare both phases and explain what that contrast reveals about where the weakness actually lies, so ask yourself whether you have weighed the significance of what the pilot's 38% completion finding and the unassigned regional-liaison roles together tell the Chair about the nature of the failure.",
+    "full_reveal": "The misconception this drill exposes is undeveloped points: the candidate correctly identifies a leadership failure — most often the missing regional-liaison roles or the late communication to regional managers — and then stops, treating the identification itself as the completed answer when it is only the first of two steps that earn the mark. Under the two-mark rule, a point identified and left there earns one mark; the second mark is released only when the candidate does all four of the following in the time available: states how significant the failure is (the regional-liaison role was not a refinement — it was the delivery mechanism for 280,000 adoptions), ties it to Kilimo's specific situation using the information given (a co-operative dispersed across six regions whose pilot had already shown only 38% of farmers could transact unaided), follows it to a consequence for the organisation (the 61% of non-adopters who cited lack of on-the-ground support in the post-implementation survey are a member-level echo of a warning leadership received and did not act on), and illustrates it with a fact from the case (regional managers in four of the six regions learned of PayHarvest through a launch-day circular, leaving no one positioned to champion the platform at the moment of peak adoption opportunity). Writing more undeveloped points is not the fix — a candidate whose points are all single-mark must find twice as many of them in the same time to reach the same total, which is an arithmetic trap, not a writing style preference. The deeper reframe this drill demands is that the comparison between phases is the analytical act the requirement is actually testing: formulation-phase leadership demonstrably generated rigorous, evidence-based intelligence, so the failure is not one of strategic capability but of executional accountability — and a candidate who never sets the two phases alongside each other never produces that conclusion, regardless of how many individual failures they list.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) assess leadership contribution to formulation",
+        "(ii) assess leadership contribution to implementation",
+        "(iii) compare the two phases and explain what the comparison reveals"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_budget",
+          "text": "KES 420 million board-approved budget",
+          "key": "KES 420 million",
+          "kind": "figure"
+        },
+        {
+          "id": "f_target",
+          "text": "target of 280,000 digitally active members within two years",
+          "key": "280,000",
+          "kind": "figure"
+        },
+        {
+          "id": "f_pilot_rate",
+          "text": "only 38% of pilot farmers completed a transaction without staff assistance",
+          "key": "38%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_pilot_rec",
+          "text": "pilot report recommended a dedicated regional-liaison role in each of the six regions",
+          "key": "regional-liaison role",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_no_roles",
+          "text": "no regional-liaison roles were ever assigned",
+          "key": "no regional-liaison roles were ever assigned",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_briefing",
+          "text": "regional managers in four of the six regions received no prior briefing",
+          "key": "four of the six regions",
+          "kind": "figure"
+        },
+        {
+          "id": "f_adoption",
+          "text": "only 94,000 members — 33% of the 280,000 target — had successfully used PayHarvest",
+          "key": "94,000",
+          "kind": "figure"
+        },
+        {
+          "id": "f_barrier",
+          "text": "61% of non-adopting members cited lack of on-the-ground support as principal barrier",
+          "key": "61%",
+          "kind": "figure"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) assess leadership contribution to formulation",
+          "lo": "A1a",
+          "required_point": "Leadership demonstrated sound strategic direction during formulation: the board commissioned a rigorous eight-month study, grounded the 280,000 member target in survey and benchmarking evidence, and committed KES 420 million — showing that leaders were willing to allocate significant resources to a validated opportunity. A full two marks require the candidate to assess why this matters for Kilimo specifically: because co-operatives depend on member trust, a methodology that consulted farmers directly reduced the risk of adopting a solution misaligned with members' actual payment behaviour — the consequence being that the strategic case arrived at the board free of the fatal analytical gaps that sink many digital-inclusion initiatives. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_budget",
+            "f_target"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) assess leadership contribution to formulation",
+          "lo": "A1a",
+          "required_point": "The pilot in Meru County represents a leadership decision to test before scaling — a formulation-phase discipline that itself generated the 38% unassisted-completion finding and the explicit regional-liaison role recommendation. A full two marks require the candidate to assess the significance of this act: commissioning the pilot shows leaders understood that a 340,000-member rollout carried adoption risk, and by publishing the March 2023 report internally they placed actionable, organisation-specific intelligence in the hands of those who would plan the rollout. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_pilot_rate",
+            "f_pilot_rec"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(ii) assess leadership contribution to implementation",
+          "lo": "A1a",
+          "required_point": "Leadership failed at the most basic accountability task during implementation: no regional-liaison roles were ever assigned, despite the pilot report's explicit recommendation. A full two marks require the candidate to assess why this omission was particularly damaging for Kilimo: with 340,000 members spread across six regions — many with low digital literacy, as the 38% unassisted-completion rate implied — human intermediaries were not optional extras but the mechanism through which adoption was supposed to reach 280,000 members. The consequence was a structural gap between Nairobi-based leadership and the farming communities the platform was meant to serve, which no circular or digital nudge could bridge. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_no_roles",
+            "f_pilot_rate"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) assess leadership contribution to implementation",
+          "lo": "A1a",
+          "required_point": "Communication governance was absent: four of the six regional managers learned of PayHarvest only on launch day, via a circular. A full two marks require the candidate to assess the consequence: regional managers are the co-operative's primary conduit to farmers, and their being bypassed meant there was no one positioned to translate the platform to members at the moment of greatest adoption potential — launch. The result is directly traceable in the outcome data: 61% of non-adopting members citing lack of on-the-ground support is a post-hoc confirmation of exactly the support vacuum that briefing those four regions before launch would have begun to fill. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_briefing",
+            "f_barrier"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(iii) compare the two phases and explain what the comparison reveals",
+          "lo": "A1a",
+          "required_point": "Placing formulation and implementation side by side reveals that the leadership failure was not analytical but executional: the same board that funded an eight-month study and designed a pilot generating the regional-liaison role recommendation then allowed that recommendation to go unimplemented, meaning the organisation's own internal evidence — the 38% completion rate and the explicit pilot-report instruction — was overridden by inaction. This cross-phase analysis disputes any narrative that Kilimo's leadership lacked strategic capability; the capability existed and produced correct conclusions. What failed was the translation of those conclusions into assigned roles, briefed managers and owned outcomes. A full two marks require the candidate to name this gap explicitly and use the juxtaposition of formulation-phase rigour against implementation-phase inaction to show that the problem is selective rather than systemic. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_pilot_rec",
+            "f_no_roles",
+            "f_adoption"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c6",
+          "requirement_part": "(iii) compare the two phases and explain what the comparison reveals",
+          "lo": "A1a",
+          "required_point": "The outcome figures corroborate the analytical conclusion from the cross-phase comparison: 94,000 actual users against a 280,000 target — a 67% shortfall — maps directly onto the absence of the regional-liaison infrastructure the pilot said was necessary. A full two marks require the candidate to use these two data points together: the 61% barrier-attribution to 'lack of on-the-ground support' is not a separate finding but a member-level echo of the pilot's own recommendation, confirming that the barrier members experienced in 2024 was the same barrier the pilot identified in 2023 and leadership chose not to address. That coherence between prediction and outcome shows the leadership weakness was not one of foresight but of follow-through. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_adoption",
+            "f_barrier",
+            "f_pilot_rec"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F4",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "**Leadership Assessment: PayHarvest**\n\n**Formulation Phase**\n\nThe leadership team conducted an eight-month strategic study before approving the PayHarvest platform. The board approved a budget of KES 420 million and set a target of 280,000 members. A pilot was run in Meru County before the national rollout, and the pilot report identified issues with unassisted transaction completion.\n\n**Implementation Phase**\n\nDuring implementation, no regional-liaison roles were assigned as the pilot had recommended. Regional managers in four of the six regions were not briefed before launch. Eighteen months after launch, only 94,000 members had used PayHarvest, against a target of 280,000. A post-implementation survey found that 61% of non-adopting members cited lack of on-the-ground support.\n\n**Comparison**\n\nThe formulation phase appears to have been handled more effectively than the implementation phase. Leadership invested time and resources in analysis but did not follow through on the operational steps needed. There are questions about whether the governance processes were sufficient to bridge strategy and execution.",
+        "designed_bad_flags": [
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

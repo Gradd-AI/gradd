@@ -1185,6 +1185,58 @@ interface RevealInput {
   command_verb: string;
   intellectual_level: 2 | 3;
   mode: string;
+  /**
+   * THE FAILURE THIS DRILL WAS BUILT TO TEACH — the seam this field closes.
+   *
+   * ⚠️ THIS IS A TEACHING-LEG DEFECT, NOT AN SBL ONE. SBL merely exposed it. The rubric knew its
+   * designed failure mode (it is a criterion disqualifier and it shapes the golden BAD), and the
+   * teaching call was never told — exactly the seam `SKILL_DEMAND` closed for rubrics on
+   * 2026-08-02 and which nobody closed for `full_reveal`. So pass 2 chose a misconception from a
+   * list, and the list has a first item.
+   *
+   * 📐 MEASURED 2026-08-19, SBL batch A: 5 of 5 reveals opened with "undeveloped points" — the
+   * first entry in the SBL persona's catalogue — when only ONE drill was designed to teach it.
+   * SBL-A2's golden BAD is a textbook description of a cultural model with no reference to the
+   * company, and its reveal never once said "generic". Doctrine `P-N2` predicted this in writing
+   * and was not consulted.
+   *
+   * Optional, and absent means the previous behaviour EXACTLY — the author picks from the
+   * catalogue. That is what keeps AFM's eleven reveal prompts byte-identical (PIN4) while the
+   * mechanism is available to every paper. AFM plans do not declare a mode yet; whether they
+   * should is downstream of measuring the published AFM corpus, not assumed here.
+   */
+  designed_failure?: string;
+}
+
+/**
+ * F-code → the misconception a reveal must headline when the drill declares that mode.
+ *
+ * PAPER-AGNOSTIC BY CONSTRUCTION: the F-vocabulary is shared (F1 is the SBL catalogue's M1 and
+ * AFM's scenario-restating alike), so this map serves any paper whose plan declares a mode.
+ * Phrased as the CANDIDATE'S BELIEF rather than the marker's label — a reveal that names a code
+ * teaches nothing, and the tutor broadcasts this sentence to a student who has never seen our
+ * failure catalogue.
+ */
+const FAILURE_MODE_TEACHING: Record<string, string> = {
+  F1: 'reproducing the case material — quoting or lightly rewording what the scenario already says, and believing that restating a fact is the same as using it',
+  F2: 'undeveloped points — identifying a correct point and stopping there, treating identification as the finished task when it is the first of two steps',
+  F4: 'never committing — setting out considerations on both sides, or posing questions to the reader, and leaving the decision to the person who asked for it',
+  F5: 'generic theory — explaining a model, or listing advantages, correctly and in the abstract, without ever making the answer about THIS organisation',
+  F6: 'superficial figure-commentary — saying what a given figure shows without saying what it means or whether it can be relied on',
+  F7: 'answering the adjacent question — responding to the noun in the requirement rather than the act it asked for, most often by reaching for a familiar model the wording merely evoked',
+  F9: 'not using the figures supplied — arguing in general terms when the scenario has already given the numbers that would settle the point',
+  F10: 'never performing the skill — covering the topic accurately while doing none of the challenging, weighing or deciding the marks are actually for',
+  F11: 'no breadth or no close — over-working one point at the expense of the rest, or ending without drawing the answer together',
+};
+
+/** The mode a plan's reveal must headline: the evidenced catalogue mode where the drill declares
+ *  one (it is the failure the drill exists to teach), otherwise the first deterministic mode. */
+function designedFailureFor(plan: NarrativePlan): string | undefined {
+  const db = plan.designed_bad;
+  if (!db) return undefined;                       // AFM today — unchanged behaviour
+  if (db.teaches) return db.teaches;               // explicit beats derived — see `teaches`
+  const code = db.evidenced ?? db.flags[0];
+  return code ? FAILURE_MODE_TEACHING[code] : undefined;
 }
 
 function buildRevealPromptAfm(spec: RevealInput, question: string, modelAnswer: string): string {
@@ -1215,7 +1267,8 @@ Quality rules (mandatory):
 - Reference ONLY facts present in the scenario/context — never invent events, savings, or risks; phrase un-evidenced risks conditionally.
 - Do not state any computed figure or any inequality between computed figures — the model answer already carries them.
 - FROZEN FACTS (P4b): the scenario is a DATED snapshot. NEVER write "current market …" or "currently" next to a rate/yield/spread/curve/price — say "at the valuation date" / "the assumptions as dated" instead.
-- Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).`;
+- Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).${spec.designed_failure ? `
+- THE MISCONCEPTION IS NOT YOURS TO CHOOSE. This drill was built to teach ONE failure and its golden BAD commits it deliberately: ${spec.designed_failure}. Name THAT failure, not a more general weakness.` : ''}`;
 }
 
 function buildRevealPromptSbl(spec: RevealInput, question: string, modelAnswer: string): string {
@@ -1234,7 +1287,14 @@ ${modelAnswer}
 
 Produce:
 1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
-2. full_reveal — 3–5 sentences. THE VERY FIRST SENTENCE must contain the word "misconception" followed later in that same sentence by a colon, and must name the specific SBL misconception a typical candidate brings to this type of question (undeveloped points / copy-paste / generic theory / the adjacent question / scepticism as questions). For example: "The misconception this drill exposes is <name>: <what the candidate wrongly believes>." Then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
+2. full_reveal — 3–5 sentences. THE VERY FIRST SENTENCE must contain the word "misconception" followed later in that same sentence by a colon. For example: "The misconception this drill exposes is <name>: <what the candidate wrongly believes>." Then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
+${spec.designed_failure ? `   ⚠️ THE MISCONCEPTION IS NOT YOURS TO CHOOSE. This drill was built to teach ONE failure and its
+   golden BAD commits it deliberately: ${spec.designed_failure}.
+   The opening sentence must name THAT failure and no other. Do not headline a different, more
+   general weakness — a reveal that teaches a failure the rubric does not penalise sends the
+   candidate to fix the wrong thing, and is worse than no reveal. You may mention other weaknesses
+   later, but the headline is fixed.` : `   Name the specific SBL misconception a typical candidate brings to this type of question
+   (undeveloped points / copy-paste / generic theory / the adjacent question / scepticism as questions).`}
    ⚠️ THE FIRST-LINE PLACEMENT IS LOAD-BEARING, NOT A STYLE NOTE. The live tutor extracts this sentence with a pattern whose "." does not match newlines, so a misconception named in a later sentence is not found at all and the tutor silently falls back to the opening line as though it were the failure mode. Naming it anywhere but first fails the P7 gate and the drill is discarded.
 
 Anchor the reveal to THE TWO-MARK RULE, which is the bar this paper is actually marked against: two marks are earned only where a point is identified AND developed — its significance weighed, tied to this organisation by the information given, followed to a consequence, and illustrated from the case material. A point identified and left there earns one. The candidate who writes only single-mark points must find twice as many of them, in the same time, to reach the same total.
@@ -2902,6 +2962,20 @@ interface NarrativePlan {
      * with its own evidence, never bundled with content.
      */
     evidenced?: string;
+    /**
+     * The teaching headline, where the F-CODE CANNOT NAME IT.
+     *
+     * ⚠️ F-CODES ARE MARKING MODES; CATALOGUE MODES ARE TEACHING FAILURES; THEY ARE NOT 1:1, and
+     * F10 is the proof. Its own text is "no scepticism / commercial acumen" — ONE mode, TWO
+     * skills — which is already documented as the reason N6a can never say WHICH skill a rubric
+     * demands. The same limitation defeats deriving a teaching headline from it: told only
+     * "never performing the skill", pass 2 fell back to the persona's first catalogue entry.
+     *
+     * 📐 MEASURED 2026-08-19: the F-code map fixed 4 of 5 SBL reveals. The fifth was SBL-A4, the
+     * F10 drill — and the one whose entire design is M7, the zero-credit rule. Set explicitly
+     * where the code is ambiguous; leave unset where the F-code names the failure exactly.
+     */
+    teaches?: string;
     brief: string;
   };
 }
@@ -3314,6 +3388,13 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     designed_bad: {
       flags: ['F4'],
       evidenced: 'F10',
+      // F10 names two skills and so cannot name this drill's failure. M7 is the failure:
+      // J24 p.19, SD25 p.9, MJ26 p.9 — and MJ26 p.9 states that no marks are awarded for it.
+      teaches:
+        'scepticism performed as questions — raising the right concerns in interrogative form '
+        + '("has the board considered…?", "is it clear that…?") and never stating an assessment or '
+        + 'committing to a conclusion, in the belief that raising a doubt is itself the sceptical '
+        + 'act. The examiners are explicit that this earns no marks at all',
       brief:
         'it performs scepticism AS QUESTIONS. It raises the right concerns in interrogative form — '
         + '"Has the board considered whether…?", "Is it clear that…?", "Should the committee not ask…?" '
@@ -3775,9 +3856,9 @@ function goldenBadBlock(plan: NarrativePlan): string {
   // ⚠️ ONLY the deterministic modes go in `designed_bad_flags` — N4 requires every entry to be
   // RAISED and can raise nothing else without the grader volunteering it. The evidenced mode is
   // still committed by the answer and still marked against, via the criteria's disqualifiers.
-  const deterministicOnly = flags.filter((f) => f === 'F1' || f === 'F4' || f === 'F5');
-  if (deterministicOnly.length !== flags.length) {
-    throw new Error(`${plan.id}: designed_bad.flags may contain ONLY deterministic modes (F1/F4/F5); move ${flags.filter((f) => !deterministicOnly.includes(f)).join(', ')} to designed_bad.evidenced`);
+  const nonDeterministic = flags.filter((f) => f !== 'F1' && f !== 'F4' && f !== 'F5');
+  if (nonDeterministic.length) {
+    throw new Error(`${plan.id}: designed_bad.flags may contain ONLY deterministic modes (F1/F4/F5); move ${nonDeterministic.join(', ')} to designed_bad.evidenced`);
   }
   return `GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
 - designed_bad_flags MUST be EXACTLY ${JSON.stringify(flags)} — no more, no fewer. That field is a
@@ -4192,6 +4273,61 @@ async function insertNarrativeDraft(supabase: ReturnType<typeof createClient>, d
   return id;
 }
 
+/**
+ * Re-run PASS 2 ONLY on a captured draft — regenerate hint + full_reveal, keep everything else.
+ *
+ * WHY THIS EXISTS RATHER THAN A RE-RUN. Pass 1 produces the scenario, rubric and golden pair; pass
+ * 2 produces the teaching leg. A defect in the teaching prompt does not implicate pass 1's output,
+ * and re-running the whole batch would DISCARD reviewed rubrics and goldens to regenerate content
+ * that was never at fault — the model does not repeat itself, so what was reviewed would not be
+ * what ships. This rewrites the two teaching fields in place and re-runs their gates (P4 + P7).
+ *
+ * Refuses anything already published, and refuses to write if the new reveal fails its gates —
+ * a draft with a stale-but-green teaching leg is better than one with an ungated new leg.
+ */
+async function reviseNarrativeReveal(anthropic: Anthropic, draftPath: string): Promise<boolean> {
+  const parsed = JSON.parse(readFileSync(draftPath, 'utf8')) as { plan_id?: string; row?: Record<string, unknown>; gate_lines?: string[] };
+  if (!parsed.row) throw new Error(`${draftPath}: no "row" key — not a narrative draft file`);
+  if (parsed.row.published === true) throw new Error(`${draftPath}: row is published — pass 2 revision is an authoring-time act only`);
+  const plan = NARRATIVE_PLAN.find((p) => p.id === parsed.plan_id);
+  if (!plan) throw new Error(`${draftPath}: no plan with id "${parsed.plan_id}" — cannot resolve its designed failure mode`);
+
+  const lo = frameworkFor(plan.paper).syllabus[plan.lo_code];
+  const spec: RevealInput = {
+    lo_code: plan.lo_code,
+    topic: lo.topic,
+    command_verb: String(parsed.row.command_verb),
+    intellectual_level: plan.level,
+    mode: loModeFor(plan.paper, plan.lo_code),
+    designed_failure: designedFailureFor(plan),
+  };
+  console.log(`Pass-2 revision ${plan.id} [${plan.paper}] — headline must be: ${spec.designed_failure ?? '(no mode declared — author chooses)'}`);
+
+  let reveal: { hint: string; full_reveal: string } | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try { reveal = await draftReveal(anthropic, plan.paper, spec, String(parsed.row.question), String(parsed.row.model_answer)); }
+    catch (err) { console.warn(`  ↻ attempt ${attempt + 1} error: ${(err as Error).message}`); await sleep(2000); continue; }
+    const jur = [
+      ...lintJurisdiction({ hint: reveal.hint, full_reveal: reveal.full_reveal }, { context: String(parsed.row.context_text) }),
+      ...lintFrozenMarketFacts({ hint: reveal.hint, full_reveal: reveal.full_reveal }),
+    ];
+    const misc = lintMisconceptionLead(reveal.full_reveal);
+    if (!jur.length && !misc.length) break;
+    for (const i of [...jur, ...misc]) console.warn(`  ↻ attempt ${attempt + 1} gate: [${i.field}] ${i.message.slice(0, 120)}`);
+    reveal = null; await sleep(1000);
+  }
+  if (!reveal) { console.error(`  ✗ ${plan.id} — pass 2 did not produce a gate-clean reveal; draft left UNCHANGED`); return false; }
+
+  parsed.row.hint = reveal.hint;
+  parsed.row.full_reveal = reveal.full_reveal;
+  parsed.gate_lines = [...(parsed.gate_lines ?? []).filter((l) => !l.startsWith('P4 ') && !l.startsWith('P7 ')),
+    'P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS',
+    'P7 misconception-lead on the REVISED teaching leg: PASS'];
+  writeFileSync(draftPath, JSON.stringify(parsed, null, 2), 'utf8');
+  console.log(`  ✓ ${plan.id} — hint + full_reveal rewritten; pass 1 rubric and goldens untouched`);
+  return true;
+}
+
 async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string, paper?: string) {
   // ONE GRADER PER PAPER, NOT ONE PER BATCH. The grader carries the marker's system prompt, and
   // SBL's development test is the examiners' four-limb one where AFM's is claim→because→
@@ -4266,6 +4402,8 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       // flagged, not fixed in passing. A framework with no per-LO mode (SBL) falls to
       // 'discursive', which for that paper is a statement about this pipeline, not a lookup.
       mode: loModeFor(plan.paper, plan.lo_code),
+      // The seam this closes: the rubric knew its designed failure and the teaching call did not.
+      designed_failure: designedFailureFor(plan),
     };
     let reveal: { hint: string; full_reveal: string } | null = null;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -4346,7 +4484,7 @@ async function main() {
   const narrativeBatch = flag('--narrative-batch');
 
   const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one; --narrative-paper SBL narrows to one paper (both error loudly on an unknown value).';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-paper', '--narrative-insert-from', '--narrative-regate-from', '--narrative-update-from', '--drill-id']);
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-paper', '--narrative-insert-from', '--narrative-revise-reveal-from', '--narrative-regate-from', '--narrative-update-from', '--drill-id']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
@@ -4368,6 +4506,16 @@ async function main() {
     if (!drillId) { console.error('Error: --narrative-update-from requires --drill-id <uuid>'); process.exitCode = 1; return; }
     const supabaseU = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
     await updateNarrativeDraft(supabaseU, updateFrom, drillId);
+    return;
+  }
+
+  // Pass-2-only revision: regenerate the teaching leg on captured drafts, keep pass 1's work.
+  const reviseFrom = argv.filter((a, i) => argv[i - 1] === '--narrative-revise-reveal-from');
+  if (reviseFrom.length) {
+    const anth = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+    let bad = 0;
+    for (const f of reviseFrom) { if (!(await reviseNarrativeReveal(anth, f))) bad++; }
+    process.exitCode = bad === 0 ? 0 : 1;   // P-G1: a run that changed nothing must not exit 0
     return;
   }
 

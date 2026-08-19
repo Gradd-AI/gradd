@@ -48,6 +48,64 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🔴 OPEN 2026-08-19 — A GATE FIX MADE THE TEACHING LEG NAME THE WRONG FAILURE, 5 TIMES OUT OF 5
+
+**THE FAILURE IS THE PROCESS, NOT THE COLLAPSE.** The collapse was caught and fixed the same
+session. What is worth recording is that **the doctrine which predicted it was already written and
+was not consulted before the change was made.**
+
+**P-N2** (banked 2026-08-02, in the CLAUDE.md code map) states it exactly: *"the teaching pair can
+coach a different skill from the one the rubric marks, and NO GATE CATCHES IT — P7 checks that a
+`"…misconception…: "` sentence EXISTS, never that it names the failure the criteria penalise."*
+That is a written description of the defect that was then introduced. It cost a full authoring run.
+
+**THE SEQUENCE.** SBL-A5 cleared all six gates on two consecutive runs and was discarded both times
+at P7, because `MISCONCEPTION_PATTERN` is `/^.*?misconception[^:]*:/i` — `.` does not match
+newlines, so the sentence must be on the FIRST LINE of `full_reveal`. The fix was to require the
+opening sentence to carry it. **That fix worked, and it caused the defect**: forced to commit in the
+first sentence, the author took the first entry in the persona's catalogue rather than the failure
+the drill was built on. **📐 5 of 5 SBL reveals opened with "undeveloped points" when ONE drill was
+designed to teach it.** SBL-A2's golden BAD is a textbook description of a cultural model with no
+reference to the company, and its reveal never once said the word "generic".
+
+**THE GENERALISABLE RULE: a fix that makes a gate pass is a change to the OUTPUT, and it is owed the
+same review as any other content change.** P7 went green on all five. The gate was satisfied and the
+teaching was wrong, which is precisely the shape P-N2 describes. Before changing anything to satisfy
+a gate, read what the gate does NOT check.
+
+**FIXED, PAPER-AGNOSTICALLY (`RevealInput.designed_failure` + `FAILURE_MODE_TEACHING`).** The rubric
+knew its designed mode all along — it is a criterion disqualifier and it shapes the golden BAD — and
+the pass-2 call was never told. Same seam `SKILL_DEMAND` closed for rubrics on 2026-08-02, left open
+for teaching. The field is optional and **absent means the previous behaviour exactly**, which is what
+keeps AFM's eleven reveal prompts byte-identical (PIN4) while the mechanism is available to every paper.
+
+**📐 AFM MEASURED BEFORE ANY AFM CHANGE — `npm exec tsx scripts/audit-reveal-misconception.ts`
+(read-only, committed). DENOMINATOR: 14 rows** — `paper_code='AFM'`, `published=true`,
+`status='approved'`, `answer_schema->>'mode'='narrative'`; 49 further published AFM rows are
+calculator drills with no designed mode and are excluded.
+
+- **AFM DOES NOT SHOW THE COLLAPSE.** 14 rows carry 14 contextual headlines. The persona's FIRST
+  catalogue item (FENCE-SITTING) is headlined by **4 of 14 (29%)**, against SBL's **5 of 5 (100%)**.
+  The difference is the first-line constraint: AFM's prompt has none, so the author reasons to a
+  misconception instead of committing before it has read the drill.
+- **14/14 headlines are extractable by the live mechanism** — no published AFM narrative row is on
+  `extractMisconceptionLead`'s silent-fallback path.
+- 🔴 **THE ONE REAL AFM FINDING, NOT FIXED, NUMBER FIRST BY RULING: 3 of 14 headline
+  UNDEVELOPED-ASSUMPTION (F3), which is NOT among their designed BAD flags** (every AFM narrative row
+  carries the fixed `[F1,F5,F4]` backbone). Those reveals teach a failure their own golden BAD does
+  not commit. Smaller than the SBL collapse and the same class of defect. Rows: `f6426c06` (B1b),
+  `d413fbe7` (B4d), `de0c2676` (E3a).
+- ⚠️ **THE 7/14 "no overlap" FIGURE IN THE AUDIT IS A KEYWORD PROXY AND A LOWER BOUND, NOT A DEFECT
+  COUNT.** It is wrong in the safe direction and provably so: `36edda4f` scores NONE and is
+  CORRECT — its headline is "WRITING FOR THE WRONG READER", the D9 reveal that was deliberately
+  rewritten on 2026-08-02 for this very reason. Three E-narrative rows score NONE for carrying
+  bespoke drill-specific misconceptions, which is better than a catalogue label, not worse. Never
+  quote 7/14 as a defect rate.
+
+**NOT DONE: AFM plans do not declare a designed mode**, so the new constraint does not engage for
+them. Whether they should is downstream of reading the three rows above, and was deliberately not
+assumed.
+
 ## 🔴 OPEN 2026-08-19 — N4 CAN ONLY VERIFY THREE OF TWELVE FAILURE MODES, AND THE ROOT CAUSE IS THE GRADER
 
 **Not built. Banked as its own change under P-M1** (Grant-ruled 2026-08-19), because the fix moves a

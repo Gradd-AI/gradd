@@ -1,0 +1,213 @@
+{
+  "plan_id": "SBL-A2",
+  "lo_code": "A2d",
+  "skill": "evaluation",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F5): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (evaluation, SBL): NOT EVALUATED — the precondition is a proposition with a real downside as well as an upside — stated costs, risks or affected parties — so that landing on one side concedes something. Whether a scenario is genuinely two-sided is a reading of the facts, not a countable shape; fact counts cannot see it. N5 covers only that the answer COMMITS, not that there was a trade-off to commit about. Confirm by hand",
+    "N6c claim-anchor link: NOT EVALUATED — structurally N/A for evaluation — only scepticism acts on a single identifiable asserted claim",
+    "N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (evaluation, SBL); N6c claim-anchor link",
+    "P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS",
+    "P7 misconception-lead on the REVISED teaching leg: PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "SBL",
+    "lo_code": "A2d",
+    "topic": "Leadership and organisational culture",
+    "command_verb": "assess and conclude",
+    "intellectual_level": 3,
+    "professional_skill_tag": "evaluation",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "You are a management consultant preparing a briefing note for PCG's chief executive. Draft the section of the briefing note addressed to the chief executive that assesses how PCG's current culture would help or constrain the board's stated aim of generating 40% of revenue from contract warehousing within four years, and concludes with a reasoned judgement on whether the aim is achievable without changing that culture.",
+    "context_text": "Polaris Cargo Group (PCG) is a regional logistics company headquartered in Wrocław, Poland, with 1,400 employees across eight haulage depots. The board has formally committed to a strategic aim of generating 40% of group revenue from contract warehousing within four years, a significant departure from its core haulage business. Observable practices inside PCG tell a consistent story. Bonuses are awarded solely on tonnage moved and fleet utilisation rates; no incentive exists for client satisfaction scores or solution design. The three most recent depot managers to be promoted to senior operations roles all came from driving backgrounds and were selected explicitly because they \"knew the road\" — the promotion announcement for each cited years behind the wheel as the primary credential. In management meetings, the operations director speaks first and longest; commercial and finance colleagues have described waiting until the final ten minutes to raise non-operational topics, and on two recorded occasions the meeting ended before they could do so. When a haulage error occurs, the post-incident review focuses entirely on the sequence of physical events — what broke or who drove where — and rarely records whether the root cause involved a planning or communication failure; drivers describe these reviews as \"blame-free for paperwork but not for people.\" The induction programme for all new hires, regardless of role, is a two-day tour of the truck fleet and depot layout, with no module on customer relationship management or warehousing operations.",
+    "model_answer": "**Culture and strategy — what the artefacts reveal about what is possible**\n\n**Briefing Note — Section 3: Cultural Readiness for the Warehousing Strategy**\n*Addressed to: Chief Executive, Polaris Cargo Group*\n\n**Incentive misalignment**\nPCG's entire bonus architecture is built around tonnage moved and fleet utilisation — neither of which has any bearing on the client intimacy and bespoke solution design that warehousing contracts require. This is not a peripheral issue: incentives govern what 1,400 employees prioritise every working day, and as long as no reward attaches to client satisfaction, staff will rationally deprioritise it. Warehousing clients will notice.\n\n**Leadership pipeline**\nThe three most recent promotions to senior operations roles were justified explicitly by years behind the wheel. PCG therefore has no internal senior cohort with warehousing or commercial credentials — the very people who would need to sponsor, protect and resource a new division simply do not exist in the hierarchy. Without them, the warehousing strategy will be administratively approved but operationally orphaned.\n\n**Suppression of commercial voice**\nCommercial and finance colleagues have described being confined to the final ten minutes of management meetings, and on two recorded occasions the meeting ended before they could contribute. A warehousing business demands cross-functional decision-making on pricing, SLAs and client retention; a structure that systematically silences these inputs will generate poor decisions precisely where margin is made or lost.\n\n**Absent learning loops**\nPost-incident reviews — described as blame-free for paperwork but not for people — record only physical sequences, never planning or communication failures. Warehousing is operationally more interdependent than haulage; service errors will recur unless root-cause analysis spans the full process. Each unlearned mistake erodes client confidence and delays the revenue ramp toward 40%.\n\n**Induction as cultural coding**\nThe two-day tour of the truck fleet that greets every new hire — regardless of role — contains no warehousing or CRM content. Every cohort therefore arrives pre-configured for a haulage identity. As PCG recruits for warehousing growth, this programme will continuously dilute any emerging warehousing culture.\n\n**Judgement on achievability**\nThese five constraints are not independent; they are mutually reinforcing. The bonus system selects for haulage behaviour; promotion criteria ensure haulage thinkers lead; meeting dynamics prevent commercial challenge; incident reviews prevent learning; and induction reproduces the cycle. Pursuing a 40% warehousing revenue target on top of this architecture carries a predictable outcome: the commercial pipeline will open, early contracts will underperform, commercially skilled hires will leave when they find their concerns crowded into the final ten minutes, and the organisation will drift toward the target on paper while haulage norms govern practice. The cost of that drift — damaged client relationships, unlearned service failures traced back to blame-free for paperwork reviews, and a leadership vacuum in the new division — outweighs the disruption of deliberate cultural change. I recommend that the board treats cultural reform as a precondition of the warehousing strategy, not a parallel workstream, and that the first visible signal of that reform is a redesigned incentive scheme that gives tonnage moved and client satisfaction equal weight in the bonus calculation.",
+    "hint": "Your answer identifies cultural factors in the abstract — check whether each point is anchored to a specific PCG artefact (the bonus architecture, the promotion criteria, the ten-minute meeting slot, the blame-free reviews, the fleet induction) and then followed through to a concrete consequence for the warehousing target.",
+    "full_reveal": "The misconception this drill exposes is generic theory: the candidate correctly names cultural concepts — misaligned incentives, leadership pipeline gaps, siloed communication — but describes them as they would appear in any organisation, never binding them to the specific artefacts PCG's briefing material provides. That is why the marks are lost: the examiner is not rewarding cultural literacy in the abstract; they are rewarding the act of reading PCG's evidence and committing to what it means for this board's specific 40% target. The two-mark rule makes the arithmetic visible — identify that PCG's bonuses are built around tonnage moved (one mark), then develop it: because no reward currently attaches to client satisfaction, 1,400 employees will rationally deprioritise warehousing clients, and the revenue ramp toward 40% is likely to stall as early contracts underperform and commercially skilled hires leave (second mark). Each of the four development moves — weighing significance, tying the point to PCG by name using the information given, following it to a consequence, and illustrating from the case — can be executed in two or three sentences; a candidate writing only identification-level points must find twice as many of them in the same time to reach the same total. The concluding judgement compounds the problem: a conclusion that says \"culture may be a barrier\" without committing to whether the 40% aim is achievable, and without reasoning from the specific constraints identified, reads as fence-sitting — the requirement asked for a reasoned judgement, and a qualified observation does not satisfy it.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) assess cultural factors that would help or constrain the warehousing aim",
+        "(ii) conclude with a reasoned judgement on achievability without cultural change"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_revenue_target",
+          "text": "the board's stated aim of 40% of group revenue from contract warehousing within four years",
+          "key": "40%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_bonuses",
+          "text": "bonuses awarded solely on tonnage moved and fleet utilisation rates",
+          "key": "tonnage moved",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_promotion",
+          "text": "the three most recent promotions cited years behind the wheel as the primary credential",
+          "key": "years behind the wheel",
+          "kind": "entity"
+        },
+        {
+          "id": "f_meetings",
+          "text": "commercial and finance colleagues described waiting until the final ten minutes and on two occasions the meeting ended before they could speak",
+          "key": "final ten minutes",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_mistakes_haulage",
+          "text": "post-incident reviews focus entirely on physical events and rarely record planning or communication failures; drivers describe them as blame-free for paperwork but not for people",
+          "key": "blame-free for paperwork",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_induction",
+          "text": "the induction programme is a two-day tour of the truck fleet and depot layout with no module on customer relationship management or warehousing operations",
+          "key": "two-day tour",
+          "kind": "constraint"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) assess cultural factors that would help or constrain the warehousing aim",
+          "lo": "A2d",
+          "required_point": "The incentive structure rewarding tonnage moved actively pulls behaviour away from the client-relationship and solution-design skills that contract warehousing demands. Full 2 marks if the candidate identifies this misalignment AND develops it by explaining the significance (incentives shape daily decisions across 1,400 employees), linking it to the specific bonus system described, explaining the consequence (staff optimise for what is measured, leaving warehousing clients under-served), and giving an example from the scenario (no incentive for client satisfaction scores). 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_bonuses"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) assess cultural factors that would help or constrain the warehousing aim",
+          "lo": "A2d",
+          "required_point": "Promoting exclusively on haulage experience — citing years behind the wheel as the primary credential — means PCG's senior pipeline carries no warehousing or commercial competence, so the leaders who would need to sponsor the new division are structurally absent. Full 2 marks if the candidate identifies this AND develops it by explaining significance (leadership shapes strategy execution), linking to the three most recent promotions described, explaining the consequence (the warehousing aim will lack internal champions with credible authority), and giving a case example (all three promotees selected for driving background). 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_promotion"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(i) assess cultural factors that would help or constrain the warehousing aim",
+          "lo": "A2d",
+          "required_point": "The meeting dynamic — where commercial and finance voices are crowded into the final ten minutes and sometimes lost entirely — signals that strategic and commercial inputs are structurally subordinated to operational ones, which will suppress the cross-functional dialogue warehousing sales cycles and margin management require. Full 2 marks if the candidate identifies this AND develops it by explaining significance (decisions in meetings shape resource allocation and strategic priorities), linking to the specific pattern where non-operational colleagues described waiting until the final ten minutes, explaining the consequence (commercial opportunities in warehousing will not receive adequate board-level air-time), and noting the two recorded occasions meetings ended before commercial issues were raised. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_meetings"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(i) assess cultural factors that would help or constrain the warehousing aim",
+          "lo": "A2d",
+          "required_point": "The post-incident review practice — described by drivers as blame-free for paperwork but not for people — focuses exclusively on physical sequences rather than planning or communication failures, which means PCG has no organisational learning loop for the process-design and service-recovery mistakes that are inherent in warehousing operations. Full 2 marks if the candidate identifies this AND develops it by explaining significance (warehousing is a higher-complexity, higher-interdependency service where communication failures are a primary risk), linking to the specific description of reviews that rarely record planning failures, explaining the consequence (PCG will repeat service errors with warehousing clients, damaging retention and the revenue ramp toward 40%), and using the case description of the driver reviews as an example. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_mistakes_haulage",
+            "f_revenue_target"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(i) assess cultural factors that would help or constrain the warehousing aim",
+          "lo": "A2d",
+          "required_point": "The induction's two-day tour of the truck fleet and depot layout — with no module on customer relationship management or warehousing operations — embeds a haulage identity in every new hire from day one, making it progressively harder to develop a commercially aware workforce as PCG scales into warehousing. Full 2 marks if the candidate identifies this AND develops it by explaining significance (induction is the primary moment when an employer signals what the organisation values), linking to the specific absence of any warehousing or CRM content in the programme, explaining the consequence (a growing headcount will arrive culturally coded for haulage, diluting any warehousing culture being built), and noting that this applies regardless of role as stated in the scenario. 1 mark if identified but left undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_induction"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F5",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c6",
+          "requirement_part": "(ii) conclude with a reasoned judgement on achievability without cultural change",
+          "lo": "A2d",
+          "required_point": "The candidate must come down with a committed judgement — not a balance — that the 40% warehousing revenue target is not achievable within four years without deliberate cultural change, weighing the compounding nature of the constraints (incentives, leadership pipeline, meeting dynamics, learning failures, and induction all point the same way) against any reasonable upside, and naming what PCG trades away if it pursues the target without change (credibility with warehousing clients, retention of commercially skilled hires, and the ability to learn from early mistakes). Full 2 marks if the candidate makes this explicit verdict AND develops it by explaining why the constraints are mutually reinforcing rather than individually addressable, linking the verdict to at least two specific artefacts from the scenario, and forecasting the consequence of inaction (the organisation drifts toward revenue targets on paper while haulage norms persist in practice). 1 mark if a judgement is offered but it remains hedged or undeveloped.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_revenue_target",
+            "f_bonuses",
+            "f_mistakes_haulage"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F4",
+            "F5",
+            "F10",
+            "F11"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "**Cultural Factors Affecting PCG's Warehousing Strategy**\n\nThe cultural web is a widely used model for analysing organisational culture. It consists of six elements: stories, rituals and routines, symbols, organisational structure, control systems, and power structures. Each element shapes how an organisation behaves and can either support or hinder a strategic change.\n\n**Stories** are the narratives that circulate within an organisation and reinforce what is valued. If PCG's stories celebrate operational achievement, new staff will understand that operations is what matters most.\n\n**Rituals and routines** refer to the day-to-day behaviours that signal cultural priorities. Organisations with strong operational routines may find it difficult to shift toward service-oriented behaviours when a new strategy demands it.\n\n**Control systems** include the measurement and reward mechanisms that govern behaviour. Where rewards are narrowly focused, employees will concentrate on the rewarded activity. Broadening the control system to include new metrics can signal a strategic shift.\n\n**Organisational structure** determines who has authority and how decisions are made. A structure dominated by a single function can marginalise others and slow decision-making in areas that require cross-functional input.\n\n**Power structures** reflect who holds real influence in an organisation. When power is concentrated in one area, strategic initiatives that require different capabilities may struggle to gain traction.\n\n**Symbols** include the visible signals — offices, titles, events — that communicate what an organisation values.\n\nIn conclusion, PCG would need to consider all six elements of the cultural web if it wishes to achieve its warehousing ambitions. Cultural change is complex and requires attention to multiple factors simultaneously. The board should assess each element carefully before proceeding.",
+        "designed_bad_flags": [
+          "F5"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}
