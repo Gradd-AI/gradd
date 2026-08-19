@@ -1,10 +1,29 @@
 #!/usr/bin/env tsx
 /**
- * generate-afm-drills.ts
+ * generate-acca-drills.ts  (was generate-afm-drills.ts until 2026-08-19)
  *
- * Drafts ACCA AFM practice drills and inserts them into `acca_drills` with
- * status='candidate', paper_code='AFM'. Ports scripts/generate-apm-drills.ts with the
- * AFM divergences from the pilot gap analysis:
+ * Drafts ACCA practice drills and inserts them into `acca_drills` with status='candidate'.
+ *
+ * ⚠️ THE TWO HALVES OF THIS FILE HAVE DIFFERENT PAPER REACH, AND THE ASYMMETRY IS DELIBERATE.
+ *
+ *   • The CALCULATOR half (`--*-batch`, `buildSpecsForList`, every `draft*Drill`) is
+ *     **AFM-ONLY BY CONSTRUCTION**, not by omission. It reads `LoMode` off AFM's
+ *     SYLLABUS_MAP to route numeric verification, and every calculator family it dispatches
+ *     to lives in `lib/acca/<family>.ts` against AFM conventions. SBL has no calculator
+ *     families and no per-LO mode judgement (see scripts/sbl-framework.ts's DELIBERATELY
+ *     ABSENT block), so there is nothing to parameterise — inventing a mode for 138 SBL
+ *     outcomes would be fabricated routing data. `NUMERIC_BATCH_PAPER` names the constraint.
+ *
+ *   • The NARRATIVE half (pipeline #2 — `runNarrativeBatch` and everything it calls) IS
+ *     paper-parameterised, because a discursive drill needs a syllabus map, a professional-
+ *     skill vocabulary and a failure catalogue, and nothing else. Papers are registered in
+ *     `PAPER_FRAMEWORKS` below; a `NarrativePlan` DECLARES its paper.
+ *
+ * AFM's output is pinned byte-for-byte across this parameterisation by
+ * `npm run test:narrative-paper-pins` — see that file's header for which pins are genuine
+ * pre-change captures and which are derived.
+ *
+ * The AFM divergences from the pilot gap analysis, unchanged:
  *
  *   • mode is READ from SYLLABUS_MAP (three-state: quantitative | mixed | discursive),
  *     never derived from a CALCULATION_LOS set (AFM has none).
@@ -32,8 +51,9 @@
  * the numeric verifier (see AFM_NUMERIC_VERIFICATION_DESIGN.md §9).
  *
  * Usage:
- *   npm run generate-afm-drills -- --los A3a,B4c [--dry-run]
- *   npm run generate-afm-drills -- --lo A3a [--dry-run]
+ *   npm run generate-acca-drills -- --los A3a,B4c [--dry-run]
+ *   npm run generate-acca-drills -- --lo A3a [--dry-run]
+ *   npm run generate-acca-drills -- --narrative-batch --narrative-paper SBL --dry-run
  *
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
  */
@@ -43,6 +63,10 @@ import { join } from 'node:path';
 import { fixedHalfUp } from '../lib/acca/rounding';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
+// The AFM framework stays a DIRECT import, not a registry lookup. The calculator half needs
+// `LoMode` / `LoCode` as compile-time types and reads `lo.mode` off this exact map; routing that
+// through a widened registry record would erase the very types that keep the numeric batches
+// honest. The registry below exists for the NARRATIVE half, which needs none of that.
 import {
   SYLLABUS_MAP,
   COMMAND_VERBS,
@@ -51,6 +75,11 @@ import {
   type LoMode,
   type ProfessionalSkillTag,
 } from './afm-framework';
+import {
+  SYLLABUS_MAP as SBL_SYLLABUS_MAP,
+  PROFESSIONAL_SKILLS as SBL_PROFESSIONAL_SKILLS,
+  type ProfessionalSkillTag as SblProfessionalSkillTag,
+} from './sbl-framework';
 import {
   verifyNumericAnswer,
   type AnswerSchema,
@@ -180,6 +209,73 @@ import {
   validateWholeContractIntegrity, validateBasisDecayReconciliation, validateCurrencyDirectionIntegrity,
   validatePremiumCurrency, validateBestMethodVerdict, validateQuoteSentencePresence,
 } from '../lib/acca/validate-schema';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAPERS
+//
+// `GeneratorPaper` is the set of papers THIS SCRIPT can author for. It is deliberately NOT
+// `AccaPaper` from lib/acca/paper.ts and NOT `ServedPaper` either: those answer "what
+// vocabulary exists" and "what a customer can reach". This one answers a third question —
+// "what can be generated here" — and the three sets are allowed to differ. APM has its own
+// generator (scripts/generate-apm-drills.ts) and is absent for that reason, not by oversight.
+// ─────────────────────────────────────────────────────────────────────────────
+
+type GeneratorPaper = 'AFM' | 'SBL';
+
+/**
+ * The CALCULATOR half's paper, as a named constant rather than a literal at the insert.
+ *
+ * This is not a parameter waiting for a second value. The numeric batches read `LoMode` off
+ * AFM's SYLLABUS_MAP, dispatch to AFM calculator families, and gate through the AFM numeric
+ * verifier; SBL has no calculator families and no per-LO mode. The constant exists so the
+ * `paper_code` written by that half NAMES its constraint instead of being an unexplained
+ * string at the bottom of a 200-line insert.
+ */
+const NUMERIC_BATCH_PAPER: GeneratorPaper = 'AFM';
+
+/** The slice of a framework module the NARRATIVE pipeline actually reads. Both
+ *  scripts/afm-framework.ts and scripts/sbl-framework.ts already export this shape; the
+ *  widened records are what let one code path read either without an `any`. */
+interface PaperFramework {
+  /** How the paper names itself in an authoring prompt. */
+  label:     string;
+  /** The study-guide edition the LO descriptors are quoted from, verbatim. */
+  guide:     string;
+  syllabus:  Record<string, { section: string; sub_area: string; topic: string; intellectual_level: 2 | 3; descriptor: string }>;
+  skills:    Record<string, { label: string; sub_descriptors: readonly string[] }>;
+}
+
+const PAPER_FRAMEWORKS: Record<GeneratorPaper, PaperFramework> = {
+  AFM: {
+    label:    'AFM',
+    guide:    'S26–J27',
+    syllabus: SYLLABUS_MAP as unknown as PaperFramework['syllabus'],
+    skills:   PROFESSIONAL_SKILLS as unknown as PaperFramework['skills'],
+  },
+  SBL: {
+    label:    'SBL',
+    guide:    'S26–J27',
+    syllabus: SBL_SYLLABUS_MAP as unknown as PaperFramework['syllabus'],
+    skills:   SBL_PROFESSIONAL_SKILLS as unknown as PaperFramework['skills'],
+  },
+};
+
+/** The LO's `mode`, where the paper's framework records one. AFM does (three-state, read never
+ *  derived); SBL deliberately does not — see the DELIBERATELY ABSENT block in sbl-framework.ts.
+ *  Falls back to 'discursive', which is what the narrative pipeline produces by construction. */
+function loModeFor(paper: GeneratorPaper, loCode: string): string {
+  const row = frameworkFor(paper).syllabus[loCode] as { mode?: string } | undefined;
+  return row?.mode ?? 'discursive';
+}
+
+function frameworkFor(paper: GeneratorPaper): PaperFramework {
+  const f = PAPER_FRAMEWORKS[paper];
+  // A throw, not a fallback. Falling back to AFM would author an SBL drill against AFM's
+  // syllabus map and skill vocabulary and write `paper_code` from the plan regardless — a
+  // row that is wrong in a way nothing downstream could detect.
+  if (!f) throw new Error(`No framework registered for paper "${paper}" — register it in PAPER_FRAMEWORKS`);
+  return f;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Scenario diversity pools — international, non-UK/Ireland (AFM sat in 100+ countries)
@@ -380,7 +476,7 @@ const AFM_EXAMINER_PERSONA =
   'financial services, energy, agriculture, technology, construction, hospitality; NEVER default to one sector. ' +
   '\n\n' + BOARDROOM_BAR_PASS1 + '\n\n' + AFM_CATALOGUE_RULES;
 
-const EZRA_TEACHING_PERSONA =
+const EZRA_TEACHING_PERSONA_AFM =
   "You are Ezra, Gradd's AI tutor for ACCA AFM. Your job is to generate the teaching reveal shown to a " +
   'candidate after they attempt a practice drill. You receive the drill question and the model answer. ' +
   'Your output has two parts: ' +
@@ -419,6 +515,63 @@ const EZRA_TEACHING_PERSONA =
   'between computed figures (the model answer already carries them). Scepticism challenges the data and names ' +
   'what to verify, it does not invent the answer. ' +
   'INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).';
+
+/**
+ * SBL's teaching persona — a FIFTH paper-coupled site, and it was not on the blocker list.
+ *
+ * Worth stating because it is the kind of coupling a four-item list misses: nothing about the
+ * teaching reveal is typed, named or imported per paper, so an SBL drill would have run
+ * silently through the AFM persona and come back teaching valuation plumbing, FCFF-versus-WACC
+ * and own-figure discipline on a leadership question. It would have passed every gate — P4 and
+ * P7 check invented facts and the presence of a misconception sentence, not whether the
+ * misconception belongs to the paper.
+ *
+ * The misconceptions here are the failure catalogue's, cited: undeveloped points (M3, the
+ * examiners' own two-mark rule, 7/7), copy-paste with nothing added (M1, 7/7), generic theory
+ * unapplied (M4, 7/7), answering the adjacent question (M2, 7/7) and scepticism performed as
+ * questions rather than an assessment (M7, 3/7 and zero-credit at MJ26 p.9).
+ */
+const EZRA_TEACHING_PERSONA_SBL =
+  "You are Ezra, Gradd's AI tutor for ACCA SBL. Your job is to generate the teaching reveal shown to a " +
+  'candidate after they attempt a practice drill. You receive the drill question and the model answer. ' +
+  'Your output has two parts: ' +
+  'hint: One sentence only. A targeted nudge for a candidate who answered incorrectly on the first attempt. ' +
+  'Point at the specific gap — the point left at identification, the assertion accepted unchallenged, the ' +
+  'paragraph that would fit any organisation, the requirement that was not the one answered — WITHOUT giving ' +
+  'the answer. Precise to this drill, not generic. ' +
+  'full_reveal: 3–5 sentences. Name the specific SBL misconception a typical candidate brings to this type of ' +
+  'drill — drawn from the SBL failure catalogue: UNDEVELOPED POINTS (a correct point identified and then left, ' +
+  'earning one mark where two were available, because it was never weighed for significance, never linked to ' +
+  'this organisation by the information given, never followed to a consequence and never illustrated from the ' +
+  'case), COPY-PASTE (reproducing the case material, sometimes without even changing the pronouns, and adding ' +
+  'nothing), GENERIC THEORY (a model or a list of advantages described correctly and never applied to this ' +
+  'organisation), THE ADJACENT QUESTION (answering about the noun in the requirement rather than the act it ' +
+  'asked for — most often reaching for a familiar framework the requirement merely evoked), or SCEPTICISM AS ' +
+  'QUESTIONS (asking the reader whether something is reliable instead of assessing it and committing, which ' +
+  'the examiners say earns no marks at all). Then give the diagnosis-led reframe: why that thinking is wrong ' +
+  'and what the correct mental model is. This is NOT a restated model answer — it is a mental-model correction. ' +
+  '\n\n' +
+  'TEACHING RULES: ' +
+  '(1) When explaining why an approach is wrong, state the correct causal mechanism — reason WHY it loses the ' +
+  'marks, do not merely restate the right answer. ' +
+  '(2) THE TWO-MARK RULE IS THE SPINE. Where the failure is under-development, teach the four moves that turn ' +
+  'a one-mark point into a two-mark one: say how significant it is, use the information given to tie it to ' +
+  'this organisation, follow it to a consequence for the organisation, and support it with an example from ' +
+  'the case. Teach it as arithmetic the candidate can do under time pressure, not as a style note. ' +
+  '(3) MORE POINTS IS NOT THE FIX. A candidate whose points are all undeveloped has to find twice as many of ' +
+  'them to reach the same mark, in the same time. Say so. ' +
+  '(4) SCEPTICISM IS A COMMITTED ASSESSMENT, professionally expressed. Challenging on the evidence is the ' +
+  'skill; posing questions to the reader is not, and neither is an accusation the case material does not ' +
+  'support — over-reaching reads as poor judgement to the person receiving the document. ' +
+  '(5) Reference ONLY facts present in the scenario — never invent events, figures or risks. ' +
+  '(6) The answer is a document for a named reader. Never refer to material as "the pre-seen"; the recipient ' +
+  'would not know the term. ' +
+  '(7) INTELLECTUAL LEVEL: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).';
+
+const EZRA_TEACHING_PERSONA: Record<GeneratorPaper, string> = {
+  AFM: EZRA_TEACHING_PERSONA_AFM,
+  SBL: EZRA_TEACHING_PERSONA_SBL,
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Professional-skill pools by section — AFM sections A–E. Section A examines all four;
@@ -1017,7 +1170,24 @@ Requirements:
 - DIVERSITY: ${spec.region_hint} / ${spec.sector_hint}.`;
 }
 
-function buildRevealPrompt(spec: AfmDrillSpec, question: string, modelAnswer: string): string {
+/**
+ * What the reveal prompt actually reads off a spec — five fields.
+ *
+ * Narrowed from `AfmDrillSpec` so the SBL narrative path does not have to fabricate one.
+ * `AfmDrillSpec` carries `mode: LoMode`, `section: 'A'|…|'E'` and a rotation-derived skill tag,
+ * none of which exist for SBL; synthesising them to satisfy a type would have put invented
+ * routing data into a row-adjacent object for no gain. `AfmDrillSpec` satisfies this
+ * structurally, so the calculator half passes its spec unchanged.
+ */
+interface RevealInput {
+  lo_code: string;
+  topic: string;
+  command_verb: string;
+  intellectual_level: 2 | 3;
+  mode: string;
+}
+
+function buildRevealPromptAfm(spec: RevealInput, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
 Drill:
@@ -1047,6 +1217,43 @@ Quality rules (mandatory):
 - FROZEN FACTS (P4b): the scenario is a DATED snapshot. NEVER write "current market …" or "currently" next to a rate/yield/spread/curve/price — say "at the valuation date" / "the assumptions as dated" instead.
 - Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).`;
 }
+
+function buildRevealPromptSbl(spec: RevealInput, question: string, modelAnswer: string): string {
+  return `Generate the teaching reveal for this SBL practice drill.
+
+Drill:
+- LO: ${spec.lo_code} — ${spec.topic}
+- Command verb: ${spec.command_verb}
+- Intellectual level: L${spec.intellectual_level}
+
+Question:
+${question}
+
+Model answer (mark-scheme level):
+${modelAnswer}
+
+Produce:
+1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
+2. full_reveal — 3–5 sentences: name the specific SBL misconception a typical candidate brings to this type of question (undeveloped points / copy-paste / generic theory / the adjacent question / scepticism as questions), then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
+
+Anchor the reveal to THE TWO-MARK RULE, which is the bar this paper is actually marked against: two marks are earned only where a point is identified AND developed — its significance weighed, tied to this organisation by the information given, followed to a consequence, and illustrated from the case material. A point identified and left there earns one. The candidate who writes only single-mark points must find twice as many of them, in the same time, to reach the same total.
+
+Quality rules (mandatory):
+- State the correct causal mechanism when reframing a misconception — WHY it loses the marks, not just what the right answer was.
+- Where the drill's failure is under-development, teach the four development moves as something the candidate can execute under time pressure, not as a style preference.
+- Scepticism is a COMMITTED assessment expressed professionally. Posing questions to the reader earns nothing; so does an accusation the case material does not support — over-reaching reads as poor judgement to the recipient.
+- Use "may", "is likely to", "suggests" for causal chains; avoid "directly", "depends entirely on" where the scenario shows only plausibility.
+- Reference ONLY facts present in the scenario/context — never invent events, savings, or risks; phrase un-evidenced risks conditionally.
+- Do not state any computed figure — this drill credits none.
+- The answer is a document for a named reader: never call the case material "the pre-seen".
+- Do NOT name a theoretical model or framework as the thing the candidate should have reached for. Teach the ACT the requirement asked for; reaching for a named model is the failure this paper punishes most often.
+- Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).`;
+}
+
+const REVEAL_PROMPT_BUILDER: Record<GeneratorPaper, (spec: RevealInput, question: string, modelAnswer: string) => string> = {
+  AFM: buildRevealPromptAfm,
+  SBL: buildRevealPromptSbl,
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Claude API — structured output via tool use
@@ -2295,14 +2502,14 @@ async function draftFxHedgeOnce(anthropic: Anthropic, spec: AfmDrillSpec, kind: 
     } };
 }
 
-async function draftReveal(anthropic: Anthropic, spec: AfmDrillSpec, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
+async function draftReveal(anthropic: Anthropic, paper: GeneratorPaper, spec: RevealInput, question: string, modelAnswer: string): Promise<{ hint: string; full_reveal: string }> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 600,
-    system: cacheBlock(EZRA_TEACHING_PERSONA),
+    system: cacheBlock(EZRA_TEACHING_PERSONA[paper]),
     tools: [SUBMIT_REVEAL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_reveal' },
-    messages: [{ role: 'user', content: buildRevealPrompt(spec, question, modelAnswer) }],
+    messages: [{ role: 'user', content: REVEAL_PROMPT_BUILDER[paper](spec, question, modelAnswer) }],
   });
   const block = res.content.find((b) => b.type === 'tool_use');
   if (!block || block.type !== 'tool_use') throw new Error('No tool_use block in Pass 2 response');
@@ -2610,7 +2817,18 @@ interface NarrativePlan {
    * an id would make `--narrative-only` ambiguous.
    */
   id: string;
-  lo_code: LoCode;              // primary tag
+  /**
+   * The paper this drill is FOR — declared, never defaulted.
+   *
+   * An optional field defaulting to 'AFM' would have been a smaller diff and is the wrong
+   * shape: `paper` decides the syllabus map the LO is looked up in, the skill vocabulary the
+   * rubric is written against, the authoring persona, the teaching-reveal prompt AND the
+   * `paper_code` written to the row. A plan that forgot to state it would not fail — it would
+   * quietly author an SBL drill as AFM. Same reasoning as `skill` below: a property of what the
+   * drill IS is declared, not inferred.
+   */
+  paper: GeneratorPaper;
+  lo_code: string;              // primary tag — a code in THIS PAPER's syllabus map (validated at build time)
   covers: string[];            // all LOs this drill exercises (per-criterion `lo`, for coverage journalling)
   level: 2 | 3;
   region: string;
@@ -2637,7 +2855,7 @@ interface NarrativePlan {
    * model_answer should demonstrate it"). An author who knows D3 is built to refute the CFO's
    * premise can say so; a rotation cannot know it.
    */
-  skill: ProfessionalSkillTag;
+  skill: string;
 }
 
 // Code-owned default bands (fraction of total_marks). Narrative marking's band→verdict is code-owned.
@@ -2652,7 +2870,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
   {
     // Interpreting a GIVEN simulation output: appraise the statistics and reach a conclusion.
     // The dominant demand is appraisal, not challenge — a_and_e is the honest tag.
-    id: 'D1', lo_code: 'B1b', covers: ['B1b'], level: 2, skill: 'analysis_and_evaluation', region: 'Vietnam',
+    paper: 'AFM', id: 'D1', lo_code: 'B1b', covers: ['B1b'], level: 2, skill: 'analysis_and_evaluation', region: 'Vietnam',
     sector: 'a deep-water port / container-terminal expansion project',
     heading: '**Monte Carlo simulation — interpreting the simulation output**',
     brief:
@@ -2667,7 +2885,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
   {
     // Four instruments weighed against three BINDING constraints, ending in a committed
     // recommendation. Proposing a commercially viable solution under real constraints.
-    id: 'D2', lo_code: 'B3a', covers: ['B3a', 'B3b', 'B3c'], level: 3, skill: 'commercial_acumen', region: 'Kenya',
+    paper: 'AFM', id: 'D2', lo_code: 'B3a', covers: ['B3a', 'B3b', 'B3c'], level: 3, skill: 'commercial_acumen', region: 'Kenya',
     sector: 'a renewable-energy (solar-plus-storage) developer',
     heading: '**Sources of finance — appropriateness for the organisation**',
     brief:
@@ -2682,7 +2900,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
   {
     // Built to REFUTE a named person's stated premise (the CFO's) using capital-structure
     // theory. Questioning an assertion is the definition of the scepticism skill.
-    id: 'D3', lo_code: 'B3i', covers: ['B3i'], level: 3, skill: 'scepticism', region: 'Chile',
+    paper: 'AFM', id: 'D3', lo_code: 'B3i', covers: ['B3i'], level: 3, skill: 'scepticism', region: 'Chile',
     sector: 'an established mining-and-metals group considering a large recapitalisation',
     heading: '**Capital structure — theory and practical impact**',
     brief:
@@ -2697,7 +2915,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // Applies BSOP and then CHALLENGES ITS ASSUMPTIONS — constant volatility against
     // concession-dependent toll revenue, unobservable asset value. Questioning a model's
     // premises, not just using it.
-    id: 'D4', lo_code: 'B4d', covers: ['B4d'], level: 2, skill: 'scepticism', region: 'Indonesia',
+    paper: 'AFM', id: 'D4', lo_code: 'B4d', covers: ['B4d'], level: 2, skill: 'scepticism', region: 'Indonesia',
     sector: 'a highly-geared toll-road concession company and its lending banks',
     heading: '**Option pricing models — role in valuing equity, debt and default risk**',
     brief:
@@ -2711,7 +2929,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
   {
     // Trapped cash and a financing choice: propose practical uses for blocked funds, weigh
     // Eurobond against GDR, and commit. Business consequences and a viable recommendation.
-    id: 'D5', lo_code: 'B5c', covers: ['B5c', 'B5d'], level: 3, skill: 'commercial_acumen', region: 'Nigeria',
+    paper: 'AFM', id: 'D5', lo_code: 'B5c', covers: ['B5c', 'B5d'], level: 3, skill: 'commercial_acumen', region: 'Nigeria',
     sector: 'a multinational consumer-goods parent with a subsidiary facing capital controls',
     heading: '**Exchange controls and international sources of finance**',
     brief:
@@ -2738,7 +2956,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // Kestrel (ii) E2a 7). E2a, not E2b: E2b is the fxhedge calculator's LO and a conceptual drill
     // there would sit on top of calc #11. The act is challenging a "we are fully hedged" claim —
     // transaction cover bought, translation and ECONOMIC exposure left unmanaged.
-    id: 'D6', lo_code: 'E2a', covers: ['E2a'], level: 3, skill: 'scepticism', region: 'Thailand',
+    paper: 'AFM', id: 'D6', lo_code: 'E2a', covers: ['E2a'], level: 3, skill: 'scepticism', region: 'Thailand',
     sector: 'an automotive-components exporter selling into three currency blocs',
     heading: '**Foreign-exchange exposure — testing a claim that the group is fully hedged**',
     brief:
@@ -2759,7 +2977,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // transaction costs and the management of market barriers") is commercial by construction, has
     // ZERO published drills, and keeps this drill from duplicating D6's scenario. The cell is keyed
     // on the 2-char area prefix, so any E2* satisfies it — E2c satisfies it AND adds LO coverage.
-    id: 'D7', lo_code: 'E2c', covers: ['E2c'], level: 3, skill: 'commercial_acumen', region: 'Chile',
+    paper: 'AFM', id: 'D7', lo_code: 'E2c', covers: ['E2c'], level: 3, skill: 'commercial_acumen', region: 'Chile',
     sector: 'a mining-services group with five trading subsidiaries across three continents',
     heading: '**Netting and matching — whether a group netting arrangement earns its cost**',
     brief:
@@ -2800,7 +3018,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // says). This one CHALLENGES the output's credibility — the input distributions, the
     // independence assumption, and a VaR being read as a worst case. Same LO, different act; that
     // is precisely the a_and_e / scepticism split the cell measures.
-    id: 'D8', lo_code: 'B1b', covers: ['B1b'], level: 2, skill: 'scepticism', region: 'Colombia',
+    paper: 'AFM', id: 'D8', lo_code: 'B1b', covers: ['B1b'], level: 2, skill: 'scepticism', region: 'Colombia',
     sector: 'a hydroelectric generation project promoted to a utility board',
     heading: '**Monte Carlo simulation — challenging the assumptions behind the output**',
     brief:
@@ -2832,7 +3050,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // would sit on top of it. B5c is discursive and already carries D5 (`32ef124c`,
     // commercial_acumen) — deliberately a DIFFERENT act on a different framing: D5 weighs financing
     // options and commits; this one explains a settled decision to an audience that must act on it.
-    id: 'D9', lo_code: 'B5c', covers: ['B5c'], level: 3, skill: 'communication', region: 'Vietnam',
+    paper: 'AFM', id: 'D9', lo_code: 'B5c', covers: ['B5c'], level: 3, skill: 'communication', region: 'Vietnam',
     sector: 'a European packaging group and its Vietnamese manufacturing subsidiary',
     heading: '**Exchange controls — briefing a local operating board on restricted remittance**',
     brief:
@@ -2864,7 +3082,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // locked in", because a futures hedge locks a rate approximately and does not eliminate risk.
     // A drill whose whole job is refuting a treasurer who claims exactly that is the fenced
     // misconception made into a teaching object.
-    id: 'D10', lo_code: 'E3a', covers: ['E3a'], level: 3, skill: 'scepticism', region: 'Poland',
+    paper: 'AFM', id: 'D10', lo_code: 'E3a', covers: ['E3a'], level: 3, skill: 'scepticism', region: 'Poland',
     sector: 'a cold-chain logistics operator financing a distribution-hub build',
     heading: '**Interest-rate hedging — testing a claim that the rate risk has been eliminated**',
     brief:
@@ -2901,7 +3119,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // A3c rather than A3a: stakeholder management is the natural home for a communication demand,
     // A3c has zero drills so this adds LO coverage, and it leaves `47c9d5ce`'s A3a ground clear for
     // whatever Grant rules about it.
-    id: 'D11', lo_code: 'A3c', covers: ['A3c'], level: 3, skill: 'communication', region: 'Peru',
+    paper: 'AFM', id: 'D11', lo_code: 'A3c', covers: ['A3c'], level: 3, skill: 'communication', region: 'Peru',
     sector: 'a copper-mining group and the farming communities along its tailings-water catchment',
     heading: '**Stakeholder management — communicating a remediation commitment to an affected community**',
     brief:
@@ -2931,18 +3149,30 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
  * Now that `id` is a free string (no closed union to catch a typo at author time), these are the
  * only things standing between a mistyped flag and a batch that appears to have run.
  */
-function assertNarrativePlanIds(plans: NarrativePlan[], only?: string): NarrativePlan[] {
+function assertNarrativePlanIds(plans: NarrativePlan[], only?: string, paper?: string): NarrativePlan[] {
   const seen = new Set<string>();
   for (const p of plans) {
     const id = (p.id ?? '').trim();
     if (!id) throw new Error('NARRATIVE_PLAN: a plan has an empty id');
     if (seen.has(id)) throw new Error(`NARRATIVE_PLAN: duplicate plan id "${id}" — ids must be unique for --narrative-only to be unambiguous`);
     seen.add(id);
+    if (!PAPER_FRAMEWORKS[p.paper]) throw new Error(`NARRATIVE_PLAN: plan "${id}" declares paper "${p.paper}", which has no entry in PAPER_FRAMEWORKS`);
   }
-  if (!only) return plans;
-  const selected = plans.filter((p) => p.id === only);
+  let pool = plans;
+  // --narrative-paper narrows to ONE paper's plans. Without it, `--narrative-batch` runs every
+  // plan in the file, which after a second paper joined is a batch nobody meant to start. Same
+  // P-G1 posture as --narrative-only: an unmatched value THROWS with the known set rather than
+  // filtering to [] and reporting a clean "0/0 passed".
+  if (paper) {
+    pool = plans.filter((p) => p.paper === paper);
+    if (pool.length === 0) {
+      throw new Error(`--narrative-paper "${paper}" matched no plan. Papers in NARRATIVE_PLAN: ${[...new Set(plans.map((p) => p.paper))].join(', ')}`);
+    }
+  }
+  if (!only) return pool;
+  const selected = pool.filter((p) => p.id === only);
   if (selected.length === 0) {
-    throw new Error(`--narrative-only "${only}" matched no plan. Known ids: ${plans.map((p) => p.id).join(', ')}`);
+    throw new Error(`--narrative-only "${only}" matched no plan${paper ? ` for paper ${paper}` : ''}. Known ids: ${pool.map((p) => p.id).join(', ')}`);
   }
   return selected;
 }
@@ -3002,7 +3232,7 @@ const SUBMIT_NARRATIVE_DRILL_TOOL: Anthropic.Tool = {
   },
 };
 
-const NARRATIVE_AUTHOR_PERSONA =
+const NARRATIVE_AUTHOR_PERSONA_AFM =
   'You are an ACCA Advanced Financial Management (AFM) examiner AND mark-scheme author. You write wholly ' +
   'original DISCURSIVE (prose) practice drills — never from any ACCA past paper — together with the marking ' +
   'rubric and a pair of golden answers. AFM candidates answer as the senior financial adviser to the board. ' +
@@ -3015,6 +3245,58 @@ const NARRATIVE_AUTHOR_PERSONA =
   'with action; F9 not using given figures; F10 no scepticism/commercial acumen; F11 no breadth/conclusion). ' +
   'The golden GOOD is a full-marks answer that avoids every mode; the golden BAD deliberately commits its ' +
   'designed modes. DIVERSITY: scenarios are international, NEVER UK or Ireland.';
+
+/**
+ * SBL's authoring persona. NOT a reworded AFM persona — three things differ materially.
+ *
+ * 1. THE MARKING SPINE IS THE EXAMINERS' OWN FOUR-PART DEVELOPMENT TEST, published on one page
+ *    of all seven examiner reports (docs/evidence/SBL_FAILURE_CATALOGUE.md M3) and stated
+ *    arithmetically at MJ25 p.4, SD25 p.4 and MJ26 p.5: two marks for a point identified AND
+ *    developed, one for a point left undeveloped. That is ACCA's scheme, not ours, which is why
+ *    it is stated to the author as a rule rather than a preference.
+ * 2. NO MODEL MAY BE NAMED IN THE STEM. The examiners record the mechanism twice (MJ25 p.4,
+ *    MJ26 p.4): a noun in the requirement summons an unrequested model, and answers go to the
+ *    model instead of the task. A stem that names one teaches the failure it should be testing.
+ * 3. THE ANSWER IS A DOCUMENT FOR A NAMED READER, and it must not refer to "the pre-seen"
+ *    (MJ26 p.4 — senior leadership would not know the term).
+ *
+ * The F-mode vocabulary is UNCHANGED from AFM's. It is not AFM-specific: F1 is the catalogue's
+ * M1 (copy-paste), F2 its M3 (undeveloped), F5 its M4 (generic theory unapplied), F7 its M2
+ * (answering the adjacent question) and F4 its M7 (questions instead of an assessment). Reusing
+ * one vocabulary keeps the deterministic detectors in lib/acca/narrative-marker.ts applicable to
+ * both papers, which is the whole reason the narrative pipeline could take a second paper at all.
+ */
+const NARRATIVE_AUTHOR_PERSONA_SBL =
+  'You are an ACCA Strategic Business Leader (SBL) examiner AND mark-scheme author. You write wholly ' +
+  'original DISCURSIVE (prose) practice drills — never from any ACCA past paper — together with the marking ' +
+  'rubric and a pair of golden answers. SBL is ONE integrated case study; the candidate answers as a ' +
+  'professional adviser writing a named document to a named reader inside or advising the organisation. ' +
+  'CRITICAL — CONCEPTUAL ONLY: these drills interpret, evaluate, discuss or advise on GIVEN information. They ' +
+  'NEVER ask the candidate to perform a calculation, and the rubric NEVER credits a computed figure. Any ' +
+  'number in the scenario is a GIVEN the candidate reads, not something they derive. ' +
+  'THE MARKING SPINE IS ACCA\'S OWN PUBLISHED DEVELOPMENT TEST: two marks are earned only where a relevant ' +
+  'point is identified AND THEN developed by (i) evaluating how significant it is, (ii) using information ' +
+  'given in the case that relates the point directly to THIS organisation, (iii) explaining the consequences ' +
+  'for the organisation, and (iv) supporting it with an example from the case material. A point identified ' +
+  'but left undeveloped earns ONE mark. Write every criterion at two marks and state the one-mark ' +
+  'undeveloped tier explicitly in its required_point. ' +
+  'NEVER NAME A THEORETICAL MODEL, FRAMEWORK OR NAMED AUTHOR IN THE QUESTION STEM. Candidates fail by ' +
+  'reading a noun in the requirement, reaching for the model it evokes, and answering about the model ' +
+  'instead of the task. The stem names the ACT and the OBJECT; if a model is genuinely the right tool the ' +
+  'candidate is the one who must choose it. ' +
+  'The rubric encodes the ACCA examiner failure modes (candidates lose marks for: F1 restating the scenario; ' +
+  'F2 listing without developing; F3 stating assumptions without discussing; F4 asking the reader questions ' +
+  'or sitting on the fence instead of giving an assessment; F5 generic theory not anchored to this ' +
+  'organisation; F6 superficial figure-commentary; F7 answering the adjacent question rather than the task ' +
+  'set; F8 confusing issue with action; F9 not using given figures; F10 no scepticism/commercial acumen; ' +
+  'F11 no breadth/conclusion). ' +
+  'The golden GOOD is a full-marks answer that avoids every mode; the golden BAD deliberately commits its ' +
+  'designed modes. DIVERSITY: scenarios are international, NEVER UK or Ireland.';
+
+const NARRATIVE_AUTHOR_PERSONA: Record<GeneratorPaper, string> = {
+  AFM: NARRATIVE_AUTHOR_PERSONA_AFM,
+  SBL: NARRATIVE_AUTHOR_PERSONA_SBL,
+};
 
 /**
  * WHAT EACH PROFESSIONAL SKILL MAKES THE CANDIDATE DO — the operational half of the tag.
@@ -3040,7 +3322,9 @@ const NARRATIVE_AUTHOR_PERSONA =
  * miss — a drill cannot demand that a candidate challenge an assertion if the scenario asserts
  * nothing, and the rubric would then quietly degrade to the topic-description it always was.
  */
-const SKILL_DEMAND: Record<ProfessionalSkillTag, { act: string; scenario: string }> = {
+interface SkillDemand { act: string; scenario: string }
+
+const SKILL_DEMAND_AFM: Record<ProfessionalSkillTag, SkillDemand> = {
   scepticism: {
     act:
       'CHALLENGE something the scenario asserts — a named person\'s claim, a stated assumption, or the ' +
@@ -3081,21 +3365,152 @@ const SKILL_DEMAND: Record<ProfessionalSkillTag, { act: string; scenario: string
   },
 };
 
-function buildNarrativeUserPrompt(plan: NarrativePlan, feedback?: string): string {
-  const lo = SYLLABUS_MAP[plan.lo_code];
-  const skill = plan.skill;
-  const demand = SKILL_DEMAND[skill];
-  const skillLabel = PROFESSIONAL_SKILLS[skill].label;
-  const skillDescriptors = PROFESSIONAL_SKILLS[skill].sub_descriptors.map((d) => `    · ${d}`).join('\n');
+/**
+ * SBL's five skills. ⚠️ NOT AFM's four plus one, and never map one onto the other by name.
+ *
+ * SBL splits Analysis and Evaluation into two separately-marked skills where AFM/APM carry one
+ * combined `analysis_and_evaluation` — and neither half is that skill halved. SBL's Analysis
+ * absorbs ENQUIRE (corroborate or dispute a belief against evidence) and its Evaluation absorbs
+ * ESTIMATE (reason forward to what a position implies); neither act appears in the four-skill
+ * descriptors at all. The three shared NAMES are shared names, not shared descriptors: SBL's
+ * commercial acumen is explicitly about wider external factors and the management of conflict,
+ * where AFM's is price-shaped, so its `act` deliberately does NOT require a figure.
+ *
+ * As with AFM: `sub_descriptors` in sbl-framework.ts are the ACCA authority, verbatim from the
+ * S26–J27 guide p.16; `act` and `scenario` here are house-authored operationalisations.
+ */
+const SKILL_DEMAND_SBL: Record<SblProfessionalSkillTag, SkillDemand> = {
+  scepticism: {
+    act:
+      'CHALLENGE something the case asserts — a named person\'s claim, a stated assumption, or a ' +
+      'conclusion drawn in an exhibit — saying why it does not hold on the organisation\'s own facts and ' +
+      'what follows if it is wrong, then COMMIT to an assessment. Asking the reader questions is NOT ' +
+      'scepticism and earns nothing; neither is correctly describing the claim. The challenge must stay ' +
+      'professional and proportionate: an accusation the case material does not support (incompetence, ' +
+      'dishonesty, fraud) is itself the failure, not a stronger version of the act.',
+    scenario:
+      'a named individual (a director, manager, adviser or author of an exhibit) making a SPECIFIC, ' +
+      'quotable claim that the case\'s own facts do not fully support — plus enough stated detail for the ' +
+      'candidate to show exactly WHY it does not hold, and enough for a fair reading to stop short of ' +
+      'alleging bad faith.',
+  },
+  commercial_acumen: {
+    act:
+      'bring the ORGANISATION\'S wider commercial position to bear — the external pressures on it, the ' +
+      'competing interests inside it, or the practical limits on what it can actually do — and propose a ' +
+      'course that survives them. Naming the issue correctly, or recommending what would work for any ' +
+      'organisation, is NOT the act; the act is a proposal that could only have been written about THIS one.',
+    scenario:
+      'stated commercial reality that makes a textbook answer unworkable HERE — an external pressure ' +
+      '(a competitor, a regulator, a market shift), a resource or capability limit, or a named conflict ' +
+      'between parties whose interests the course must reconcile.',
+  },
+  analysis: {
+    act:
+      'RELATE material from more than one part of the case to each other — establish what lies behind a ' +
+      'stated symptom, or corroborate or dispute a stated belief against evidence sitting elsewhere in the ' +
+      'case. Reporting what each source says, accurately and separately, is NOT the act; the act is what ' +
+      'one piece of evidence does to another.',
+    scenario:
+      'at least two separately-identified pieces of material a candidate can put side by side — a stated ' +
+      'belief plus data that bears on it, or two accounts of the same thing that do not agree. Without a ' +
+      'second source there is nothing to establish a cause from and the criterion collapses into reporting.',
+  },
+  evaluation: {
+    act:
+      'WEIGH the case for and against on this organisation\'s own facts and COME DOWN — naming what is ' +
+      'being traded away and who bears it — or reason forward to what the stated position implies for the ' +
+      'organisation. Setting out advantages and disadvantages in balance without landing is NOT the act.',
+    scenario:
+      'a decision or position with a real downside as well as an upside — stated costs, risks, or affected ' +
+      'parties — so that coming down on one side has something to concede. A one-sided proposition can be ' +
+      'described but not appraised.',
+  },
+  communication: {
+    act:
+      'SHAPE the answer for its named recipient and stated document type — pitched at what that reader ' +
+      'already knows, in a tone they can act on, with the recommendation and its reason arriving together. ' +
+      'Correct content in an undifferentiated form is NOT the act.',
+    scenario:
+      'a named recipient with a stated role and a stated document type and purpose — who is reading this, ' +
+      'what they must decide, and what they already know or do not know.',
+  },
+};
 
-  return `Write one original ACCA AFM DISCURSIVE drill + rubric + golden pair.
+const SKILL_DEMAND_BY_PAPER: Record<GeneratorPaper, Record<string, SkillDemand>> = {
+  AFM: SKILL_DEMAND_AFM,
+  SBL: SKILL_DEMAND_SBL,
+};
+
+/** Resolve a plan's skill demand. THROWS on an unregistered skill rather than falling back —
+ *  the free-text skill-tag trap (CLAUDE.md): a skill with no demand behind it would still be
+ *  written into the prompt as a label and would still take its share of the rubric, banded
+ *  against nothing. A throw is the only outcome that cannot silently mis-author. */
+function skillDemandFor(paper: GeneratorPaper, skill: string): SkillDemand {
+  const table = SKILL_DEMAND_BY_PAPER[paper];
+  const demand = table?.[skill];
+  if (!demand) {
+    throw new Error(
+      `No SKILL_DEMAND registered for ${paper} skill "${skill}" — known ${paper} skills: ` +
+      `${Object.keys(table ?? {}).join(', ') || 'none'}`,
+    );
+  }
+  return demand;
+}
+
+/**
+ * Paper-specific authoring rules, APPENDED to the shared HARD RULES block.
+ *
+ * AFM's entry is the EMPTY STRING on purpose. The shared block above IS AFM's rule set — it was
+ * written for AFM and every line of it is pinned byte-for-byte by test:narrative-paper-pins. A
+ * second paper is served by ADDING rules, never by editing the shared ones, so that the pin can
+ * stay a genuine equality rather than a diff nobody reads.
+ */
+const PAPER_NARRATIVE_RULES: Record<GeneratorPaper, string> = {
+  AFM: '',
+  SBL: `
+- SBL DEVELOPMENT TEST — THIS IS ACCA'S OWN PUBLISHED SCHEME, NOT A HOUSE PREFERENCE. Every
+  criterion is worth EXACTLY 2 marks. A criterion's required_point must be written so that the
+  full two marks require the point to be identified AND developed on ALL FOUR of the examiners'
+  published tests: (i) how SIGNIFICANT the point is, (ii) information given in the case that
+  relates the point directly to THIS organisation, (iii) the CONSEQUENCES for the organisation,
+  and (iv) an EXAMPLE drawn from the case material. Every required_point must ALSO state the
+  one-mark tier in these terms: "1 mark if identified but left undeveloped." Set
+  development_required = true on every criterion.
+- NEVER NAME A THEORETICAL MODEL, FRAMEWORK, MATRIX OR NAMED AUTHOR IN \`question\` OR IN
+  \`context_text\`. Not in the requirement, not in an exhibit heading, not in a character's
+  dialogue. The examiners record answers going to the model a requirement's noun evoked instead
+  of to the task set. Name the ACT and the OBJECT; choosing a tool is the candidate's job. (The
+  golden GOOD may reach for a framework of its own accord — that is the candidate demonstrating
+  judgement — but it must apply it to the case, never explain it.)
+- NEVER use the phrase "the pre-seen" anywhere in the drill. The answer is a document addressed
+  to people who would not know the term.
+- \`question\` must name the DOCUMENT and its RECIPIENT ("Draft the section of the briefing note
+  for the chair of the remuneration committee that…"), so the answer has a reader.
+- The golden BAD's F1 copy must be the sharpest observed form: paste a full sentence from
+  context_text WITHOUT even adapting its pronouns or point of view to the answer's own voice.
+- The golden BAD must ALSO fail the development test — every point it makes stops at
+  identification, with no significance, no link to this organisation, no consequence and no
+  example. It should read as a competent, fluent list that would score half marks.`,
+};
+
+function buildNarrativeUserPrompt(plan: NarrativePlan, feedback?: string): string {
+  const fw = frameworkFor(plan.paper);
+  const lo = fw.syllabus[plan.lo_code];
+  if (!lo) throw new Error(`${plan.id}: lo_code "${plan.lo_code}" is not in the ${plan.paper} syllabus map`);
+  const skill = plan.skill;
+  const demand = skillDemandFor(plan.paper, skill);
+  const skillLabel = fw.skills[skill].label;
+  const skillDescriptors = fw.skills[skill].sub_descriptors.map((d) => `    · ${d}`).join('\n');
+
+  return `Write one original ACCA ${fw.label} DISCURSIVE drill + rubric + golden pair.
 
 TASK (${plan.id}):
 ${plan.brief}
 
 Specification:
 - Primary LO: ${plan.lo_code} — ${lo.sub_area}: ${lo.topic}
-- LO descriptor (verbatim, ACCA S26–J27 study guide): "${lo.descriptor}"
+- LO descriptor (verbatim, ACCA ${fw.guide} study guide): "${lo.descriptor}"
 - Covers LOs: ${plan.covers.join(', ')}
 - Intellectual level: L${plan.level} ${plan.level === 2 ? '(apply/explain a bounded concept)' : '(synthesise + evaluate — weigh, assess appropriateness, recommend with justified reasoning)'}
 - Setting: ${plan.region} — ${plan.sector} (do NOT set in the UK or Ireland)
@@ -3103,7 +3518,7 @@ Specification:
 
 PROFESSIONAL SKILL — WHAT THE RUBRIC MUST MAKE THE CANDIDATE DO:
 The skill is not a label on the drill. It defines what a required_point IS here.
-- ACCA descriptor for ${skillLabel} (verbatim, S26–J27 guide):
+- ACCA descriptor for ${skillLabel} (verbatim, ${fw.guide} guide):
 ${skillDescriptors}
 - THE ACT: a full-marks answer must ${demand.act}
 - THE SCENARIO MUST CONTAIN what the act operates on: ${demand.scenario} Without it the act is
@@ -3124,7 +3539,7 @@ HARD RULES:
 - DISQUALIFIERS: a figure-INTERPRETATION criterion (the point reads/interprets a GIVEN figure) uses [F1, F5, F6] — F6 catches superficial state-the-figure commentary. Do NOT put F9 on a conceptual/interpretation criterion. F9 is reserved for a CARRY-A-VALUE-DOWNSTREAM criterion (uses one figure to justify a later step); conceptual narrative drills have none, so F9 is OFF by default. Do NOT set evidence_anchor.
 - A criterion marks RECOGNITION of the insight, however the candidate expresses it — never require a named statistic or a specific ratio VALUE in required_point (an insight stated in words earns full marks).
 - COHERENCE: if the scenario GIVES statistical output (mean / standard deviation / probability / VaR), cross-check those figures for internal consistency BEFORE writing any prose characterising the distribution's SHAPE. Do NOT assert "fat tails" / "thin tails" / skew unless the given figures actually imply it (e.g. a normal distribution fixes P(NPV<0)=Φ(−mean/sd) and the 5th-percentile loss ≈ mean − 1.65·sd). A VaR is a THRESHOLD — the loss the outcome will not exceed at the stated confidence — NOT a severity measure: never quote it as a "we will not lose more than X" ceiling, and never claim the tail is fatter/thinner than the figures support.
-- total_marks = sum of criteria marks (aim 8–12).
+- total_marks = sum of criteria marks (aim 8–12).${PAPER_NARRATIVE_RULES[plan.paper]}
 
 GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
 - designed_bad_flags MUST be EXACTLY ["F1","F5","F4"] — no more, no fewer.
@@ -3148,7 +3563,7 @@ async function draftNarrativeDrill(anthropic: Anthropic, plan: NarrativePlan, fe
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4000,
-    system: cacheBlock(NARRATIVE_AUTHOR_PERSONA),
+    system: cacheBlock(NARRATIVE_AUTHOR_PERSONA[plan.paper]),
     tools: [SUBMIT_NARRATIVE_DRILL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_narrative_drill' },
     messages: [{ role: 'user', content: buildNarrativeUserPrompt(plan, feedback) }],
@@ -3188,7 +3603,8 @@ async function draftNarrativeDrill(anthropic: Anthropic, plan: NarrativePlan, fe
 async function runNarrativeGates(
   drill: NarrativeDrill,
   grader: ReturnType<typeof makeAnthropicCriterionGrader>,
-  skill?: ProfessionalSkillTag,
+  skill?: string,
+  paper?: string,
 ): Promise<{ ok: boolean; lines: string[]; feedback: string }> {
   const { rubric, reveal, context_text: scenario, golden_bad, designed_bad_flags } = drill;
   const lines: string[] = [];
@@ -3254,10 +3670,17 @@ async function runNarrativeGates(
   //
   // CLAIM CEILING, verbatim: a green N6 means "the scenario admits the act and the rubric names
   // the skill as the marking basis". NEVER "the rubric demands the skill".
-  const n6 = checkSkillDemand(rubric, scenario, skill);
+  const n6 = checkSkillDemand(rubric, scenario, skill, paper);
   for (const p of n6.parts) {
     lines.push(`${p.name}: ${p.status === 'pass' ? 'PASS' : p.status === 'fail' ? 'FAIL — ' + p.detail : 'NOT EVALUATED — ' + p.detail}`);
   }
+  // `ok` is true when nothing FAILED, and nothing can fail a check that did not run. On SBL,
+  // three of five skills are structurally not evaluated (see the N6 header in narrative-marker.ts),
+  // so a gate line reading only PASS/FAIL would let a drill whose precondition was never tested
+  // read exactly like one whose precondition was tested and held. The coverage is recorded on its
+  // own line so it lands in the stored `gate_lines` and in the pack.
+  const notEvaluated = n6.parts.filter((p) => p.status === 'not_evaluated');
+  lines.push(`N6 coverage: ${n6.evaluatedAll ? 'every part evaluated' : `${notEvaluated.length} of ${n6.parts.length} part(s) NOT EVALUATED — ${notEvaluated.map((p) => p.name).join('; ')}`}`);
   if (!n6.ok) fails.push(`N6: ${n6.reason}`);
 
   return { ok: fails.length === 0, lines, feedback: fails.join('\n') };
@@ -3287,8 +3710,11 @@ function serializeNarrativeSchema(drill: NarrativeDrill): Record<string, unknown
 // exactly what is about to hit the DB (P-DB6: the artefact is the record of what was written and
 // why). Committed, so the reviewed content is in git before the row exists.
 const NARRATIVE_DRAFT_DIR = join(__dirname, '..', 'docs', 'rollbacks');
-function narrativeDraftPath(planId: string): string {
-  return join(NARRATIVE_DRAFT_DIR, `AFM_narrative_draft_${planId}.json`);
+// The paper is part of the FILENAME, not just the contents. Plan ids are only unique within a
+// paper (nothing stops SBL reusing 'D1'), and a draft whose paper is discoverable only by
+// opening it is one an insert can be pointed at by mistake.
+function narrativeDraftPath(paper: GeneratorPaper, planId: string): string {
+  return join(NARRATIVE_DRAFT_DIR, `${paper}_narrative_draft_${planId}.json`);
 }
 
 /** The acca_drills row. ONE definition, used by both the live insert and the dry-run capture, so a
@@ -3303,7 +3729,7 @@ function buildNarrativeRow(
 ) {
   return {
     exam_board:             'ACCA',
-    paper_code:             'AFM',
+    paper_code:             plan.paper,
     lo_code:                plan.lo_code,
     topic,
     command_verb:           drill.command_verb,
@@ -3329,7 +3755,7 @@ function buildNarrativeRow(
 /** Reconstruct the gate-input shape from a captured draft row. The draft stores the SERVED shape
  *  (model_answer = heading + reveal, rubric under answer_schema), so the golden GOOD has to be
  *  recovered by stripping the heading — done here once rather than at each call site. */
-function draftToGateInput(row: Record<string, unknown>): { drill: NarrativeDrill; skill: ProfessionalSkillTag } {
+function draftToGateInput(row: Record<string, unknown>): { drill: NarrativeDrill; skill: string } {
   const schema = row.answer_schema as Record<string, unknown>;
   const authoring = (schema._authoring ?? {}) as { golden_bad?: string; designed_bad_flags?: NarrativeFailureMode[] };
   const modelAnswer = String(row.model_answer);
@@ -3353,7 +3779,7 @@ function draftToGateInput(row: Record<string, unknown>): { drill: NarrativeDrill
       golden_bad: authoring.golden_bad ?? '',
       designed_bad_flags: authoring.designed_bad_flags ?? [],
     },
-    skill: row.professional_skill_tag as ProfessionalSkillTag,
+    skill: row.professional_skill_tag as string,
   };
 }
 
@@ -3369,8 +3795,13 @@ async function regateNarrativeDraft(anthropic: Anthropic, draftPath: string) {
   const parsed = JSON.parse(readFileSync(draftPath, 'utf8')) as { plan_id?: string; row?: Record<string, unknown>; gate_lines?: string[] };
   if (!parsed.row) throw new Error(`${draftPath}: no "row" key — not a narrative draft file`);
   const { drill, skill } = draftToGateInput(parsed.row);
-  console.log(`Re-gating ${parsed.plan_id ?? draftPath} — ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · declared skill: ${skill}`);
-  const report = await runNarrativeGates(drill, makeAnthropicCriterionGrader(anthropic), skill);
+  // The paper comes off the ROW's own `paper_code`, not off a separate draft key — the row is the
+  // thing being re-gated, and a paper read from anywhere else could disagree with what would be
+  // inserted. N6b's precondition differs by paper for a shared skill NAME (commercial_acumen), so
+  // a re-gate that did not pass it would silently apply AFM's test to an SBL rubric.
+  const paper = String(parsed.row.paper_code ?? '');
+  console.log(`Re-gating ${parsed.plan_id ?? draftPath} [${paper || 'paper unknown'}] — ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · declared skill: ${skill}`);
+  const report = await runNarrativeGates(drill, makeAnthropicCriterionGrader(anthropic), skill, paper);
   const lines = [...report.lines];
 
   // P4 + P7 ON THE TEACHING LEG. runNarrativeGates covers N1–N6, which are all about the RUBRIC and
@@ -3449,18 +3880,19 @@ async function insertNarrativeDraft(supabase: ReturnType<typeof createClient>, d
   return id;
 }
 
-async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string) {
+async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string, paper?: string) {
   const grader = makeAnthropicCriterionGrader(anthropic);
   // THROWS on a duplicate id or an unmatched --narrative-only, rather than filtering to [] and
   // reporting a clean "0/0" (P-G1: the batch must be able to say it did not run).
-  const plans = assertNarrativePlanIds(NARRATIVE_PLAN, only);
+  const plans = assertNarrativePlanIds(NARRATIVE_PLAN, only, paper);
   const MAX_ATTEMPTS = 5;
   const failed: string[] = [];
 
   for (const plan of plans) {
-    const lo = SYLLABUS_MAP[plan.lo_code];
+    const lo = frameworkFor(plan.paper).syllabus[plan.lo_code];
+    if (!lo) { console.error(`  ✗ ${plan.id} — lo_code "${plan.lo_code}" is not in the ${plan.paper} syllabus map`); failed.push(plan.id); continue; }
     console.log(`\n${'═'.repeat(80)}`);
-    console.log(`NARRATIVE ${plan.id}: ${plan.lo_code} — ${lo.sub_area}: ${lo.topic}  (covers ${plan.covers.join('/')}, L${plan.level})`);
+    console.log(`NARRATIVE ${plan.id} [${plan.paper}]: ${plan.lo_code} — ${lo.sub_area}: ${lo.topic}  (covers ${plan.covers.join('/')}, L${plan.level})`);
     console.log(`geo: ${plan.region} / ${plan.sector}`);
     console.log('─'.repeat(80));
 
@@ -3472,7 +3904,7 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       try { candidate = await draftNarrativeDrill(anthropic, plan, feedback); }
       catch (err) { console.warn(`  ↻ ${plan.id} attempt ${attempt} draft error: ${(err as Error).message}`); await sleep(2000); continue; }
 
-      const report = await runNarrativeGates(candidate, grader, plan.skill);
+      const report = await runNarrativeGates(candidate, grader, plan.skill, plan.paper);
       console.log(`\n  attempt ${attempt}:`);
       report.lines.forEach((l) => console.log(`    ${l}`));
       if (report.ok) { drill = candidate; lastLines = report.lines; break; }
@@ -3493,19 +3925,30 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
     console.log(`\n  RUBRIC: ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · parts: ${drill.rubric.requirement_parts.join(' | ')}`);
     console.log(`  designed BAD flags: ${drill.designed_bad_flags.join(', ')}`);
 
-    // Pass 2 — Ezra teaching reveal (hint + full_reveal), same as every AFM drill.
-    const spec: AfmDrillSpec = {
-      ...buildSpecsForList([plan.lo_code])[0],
-      intellectual_level: plan.level, region_hint: plan.region, sector_hint: plan.sector,
-      command_verb: drill.command_verb, calculation_required: false,
-      // Override the rotation's tag with the plan's DECLARED one so the same skill that lands
-      // in the row also steers the Ezra reveal prompt (skillLine, ~line 504). Without this the
-      // stored tag and the prompt could disagree.
-      professional_skill_tag: plan.skill,
+    // Pass 2 — Ezra teaching reveal (hint + full_reveal).
+    //
+    // Built from the PLAN and the paper's own syllabus row, not from `buildSpecsForList` — that
+    // helper reads AFM's SYLLABUS_MAP and its `LoMode`, so it cannot serve a second paper, and
+    // the five fields the reveal prompt actually reads are all available here directly. The
+    // rotation-derived skill tag it used to supply was overridden on the next line anyway.
+    const spec: RevealInput = {
+      lo_code: plan.lo_code,
+      topic: lo.topic,
+      command_verb: drill.command_verb,
+      intellectual_level: plan.level,
+      // ⚠️ READ FROM THE LO, NOT SET TO 'discursive', AND THAT IS DELIBERATE EVEN THOUGH IT
+      // LOOKS WRONG. A narrative drill IS discursive by construction, so 'discursive' is the
+      // truthful value — but two live AFM plans sit on LOs whose AFM mode is something else
+      // (D7 on E2c = mixed, D10 on E3a = quantitative), and both shipped with their LO's mode
+      // in this prompt line. Hardcoding the honest value here would change the Ezra prompt for
+      // those two, which is a content change wearing a refactor's clothes. It is preserved and
+      // flagged, not fixed in passing. A framework with no per-LO mode (SBL) falls to
+      // 'discursive', which for that paper is a statement about this pipeline, not a lookup.
+      mode: loModeFor(plan.paper, plan.lo_code),
     };
     let reveal: { hint: string; full_reveal: string } | null = null;
     for (let attempt = 0; attempt < 2; attempt++) {
-      try { reveal = await draftReveal(anthropic, spec, drill.question, model_answer); break; }
+      try { reveal = await draftReveal(anthropic, plan.paper, spec, drill.question, model_answer); break; }
       catch (err) { if (attempt === 0) { console.warn(`  ↻ ${plan.id} [Ezra] retry (${(err as Error).message})`); await sleep(2000); } else { console.error(`  ✗ ${plan.id} [Ezra] FAILED`); } }
     }
     if (!reveal) { failed.push(plan.id); continue; }
@@ -3537,10 +3980,10 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       // real run to REGENERATE — and the model does not repeat itself, so what was reviewed is not
       // what ships. The draft is written to a file and `--narrative-insert-from` inserts THAT
       // BYTE-FOR-BYTE, so review and insert are the same artefact.
-      const path = narrativeDraftPath(plan.id);
+      const path = narrativeDraftPath(plan.paper, plan.id);
       writeFileSync(path, JSON.stringify({ plan_id: plan.id, lo_code: plan.lo_code, skill: plan.skill, gate_lines: lastLines, row }, null, 2), 'utf8');
       console.log(`\n  (dry-run — NOT inserted; draft captured to ${path})`);
-      console.log(`  insert this exact draft with: npx tsx --env-file=.env.local scripts/generate-afm-drills.ts --narrative-insert-from ${path}`);
+      console.log(`  insert this exact draft with: npx tsx --env-file=.env.local scripts/generate-acca-drills.ts --narrative-insert-from ${path}`);
       await sleep(200); continue;
     }
 
@@ -3581,8 +4024,8 @@ async function main() {
   const fxhedgeBatch = flag('--fxhedge-batch');
   const narrativeBatch = flag('--narrative-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one (errors loudly on an unknown id).';
-  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-insert-from', '--narrative-regate-from', '--narrative-update-from', '--drill-id']);
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one; --narrative-paper SBL narrows to one paper (both error loudly on an unknown value).';
+  const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-paper', '--narrative-insert-from', '--narrative-regate-from', '--narrative-update-from', '--drill-id']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
 
@@ -3623,7 +4066,7 @@ async function main() {
     // whose drill failed all 5 attempts and wrote NO draft still exited 0, and a caller reading only
     // the exit code (or a run whose stdout was redirected, which is how this was found) saw success.
     // A batch that produced nothing must not be able to say it succeeded.
-    const failed = await runNarrativeBatch(anthropicN, supabaseN, dryRun, only);
+    const failed = await runNarrativeBatch(anthropicN, supabaseN, dryRun, only, arg('--narrative-paper'));
     process.exitCode = failed === 0 ? 0 : 1;   // P-G4: set exitCode, never process.exit()
     return;
   }
@@ -3907,7 +4350,7 @@ async function main() {
     // Pass 2 — Ezra reveal
     let reveal: { hint: string; full_reveal: string } | null = null;
     for (let attempt = 0; attempt < 2; attempt++) {
-      try { reveal = await draftReveal(anthropic, spec, drill.question, drill.model_answer); break; }
+      try { reveal = await draftReveal(anthropic, NUMERIC_BATCH_PAPER, spec, drill.question, drill.model_answer); break; }
       catch (err) {
         if (attempt === 0) { console.warn(`  ↻ ${label} [P2] retry (${(err as Error).message})`); await sleep(2000); }
         else { console.error(`  ✗ ${label} [P2] FAILED: ${(err as Error).message}`); failed.push(i + 1); }
@@ -3944,7 +4387,7 @@ async function main() {
 
     const { error: insErr } = await supabase!.from('acca_drills').insert({
       exam_board:             'ACCA',
-      paper_code:             'AFM',
+      paper_code:             NUMERIC_BATCH_PAPER,
       lo_code:                spec.lo_code,
       topic:                  spec.topic,
       command_verb:           drill.command_verb || spec.command_verb,
@@ -3972,4 +4415,29 @@ async function main() {
   if (failed.length) console.log(`Failed/again spec indices: ${[...new Set(failed)].join(', ')}`);
 }
 
-main().catch((err) => { console.error('Fatal:', err); process.exit(1); });
+// ─────────────────────────────────────────────────────────────────────────────
+// MAIN-MODULE GUARD. Without it, `main()` fires on IMPORT — so nothing could import this file
+// to test it, and the only way to pin its output was to copy the source and strip this line.
+// That is precisely how the pre-change capture for test:narrative-paper-pins had to be taken.
+// Run as a CLI this is a no-op; imported, the module is now inert.
+// ─────────────────────────────────────────────────────────────────────────────
+const invokedDirectly = (() => {
+  const entry = process.argv[1];
+  if (!entry) return false;
+  const norm = (p: string) => p.replace(/\\/g, '/').toLowerCase();
+  return norm(entry).endsWith('generate-acca-drills.ts');
+})();
+
+if (invokedDirectly) {
+  main().catch((err) => { console.error('Fatal:', err); process.exit(1); });
+}
+
+export {
+  // Exported for the pin fixture ONLY (test-narrative-paper-pins.ts). These are the
+  // paper-coupled surfaces AFM's output is proven unchanged across; nothing else imports them.
+  buildNarrativeUserPrompt, buildNarrativeRow, narrativeDraftPath, draftToGateInput,
+  serializeNarrativeSchema, buildRevealPromptAfm, buildRevealPromptSbl, REVEAL_PROMPT_BUILDER,
+  NARRATIVE_AUTHOR_PERSONA, SKILL_DEMAND_BY_PAPER, skillDemandFor, NARRATIVE_PLAN,
+  PAPER_FRAMEWORKS, frameworkFor, assertNarrativePlanIds, NUMERIC_BATCH_PAPER,
+  type GeneratorPaper, type NarrativePlan,
+};

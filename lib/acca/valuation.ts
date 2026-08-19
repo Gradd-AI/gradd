@@ -4,7 +4,7 @@
 // Code owns EVERY figure a drill states — including comparisons between computed figures
 // and break-even sensitivities — so the model never asserts a number, an inequality, or a
 // break-even in prose (docs/AFM_NUMERIC_VERIFICATION_DESIGN.md §1; adversarial pattern
-// fixes 1 & 2). Shared by the generator (scripts/generate-afm-drills.ts) and any patch/
+// fixes 1 & 2). Shared by the generator (scripts/generate-acca-drills.ts) and any patch/
 // serve-time caller so there is one source of truth for the arithmetic and the advice glue.
 
 import { fixedHalfUp } from './rounding';

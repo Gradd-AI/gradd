@@ -16,7 +16,7 @@
     "verify-schemes": "tsx --env-file=.env.local scripts/verify-mark-schemes.ts",
     "test:schemes": "tsx scripts/test-mark-scheme-framework.ts",
     "generate-apm-drills": "tsx --env-file=.env.local scripts/generate-apm-drills.ts",
-    "generate-afm-drills": "tsx --env-file=.env.local scripts/generate-afm-drills.ts",
+    "generate-acca-drills": "tsx --env-file=.env.local scripts/generate-acca-drills.ts",
     "calibrate-marking": "tsx --env-file=.env.local scripts/calibrate-marking.ts",
     "test:numeric-verifier": "tsx scripts/test-numeric-verifier.ts",
     "test:afm-tutor": "tsx scripts/test-afm-tutor.ts",
@@ -89,6 +89,7 @@
     "test:exam-questions-format": "tsx scripts/test-exam-questions-format.ts",
     "test:paper-vocabulary": "tsx scripts/test-paper-vocabulary.ts",
     "test:sbl-framework": "tsx scripts/test-sbl-framework.ts",
+    "test:narrative-paper-pins": "tsx scripts/test-narrative-paper-pins.ts",
     "build:sbl-ledger": "tsx scripts/authoring/build-sbl-crosswalk-ledger.ts"
   },
   "dependencies": {

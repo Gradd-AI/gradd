@@ -43,7 +43,7 @@ function run(name: string, schema: AnswerSchema, submission: StudentSubmission, 
   console.log(`${ok ? 'PASS' : 'FAIL'} :: ${name}`);
   if (!ok) { console.log(rows.join('\n')); failures++; }
 }
-// Distinct-factor OFR replication (mirrors scripts/generate-afm-drills.ts buildOfrProof).
+// Distinct-factor OFR replication (mirrors scripts/generate-acca-drills.ts buildOfrProof).
 function distinctFactorProof(schema: AnswerSchema) {
   const own = new Map<string, number>(); const comps: StudentSubmission['components'] = []; const exp: Record<string, Verdict> = {};
   let ri = 0;

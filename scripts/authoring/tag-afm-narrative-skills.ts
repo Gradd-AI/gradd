@@ -2,7 +2,7 @@
 //
 // P-DB2 WRITE — set `professional_skill_tag` on the 8 PUBLISHED AFM narrative drills.
 //
-// WHY THESE ROWS ARE NULL. `runNarrativeBatch` in scripts/generate-afm-drills.ts hardcoded
+// WHY THESE ROWS ARE NULL. `runNarrativeBatch` in scripts/generate-acca-drills.ts hardcoded
 // `professional_skill_tag: null` until 2026-08-01 (`86765ec`). Separately, the calculator
 // batches' rotation was DEFEATED — `buildSpecsForList` declares `sectionIdx` local to each call
 // and every caller passes ONE lo_code, so the index is always 0 and `deriveSkillTag` always

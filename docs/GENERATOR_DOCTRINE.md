@@ -2,7 +2,7 @@
 
 **Canonical home for the drill-generation doctrine and every standing ruling generation must obey.** Extracted from the `APM_BUILD_CONTRACT.md` journal so the rules live in one place; the journal keeps the narrative, this keeps the law. When a new ruling is adjudicated in a session bank, add it here.
 
-Companions: `AFM_NUMERIC_VERIFICATION_DESIGN.md` (the numeric layer's full design), `TEACHING_ARCHITECTURE.md` (structural withholding), and the code — `scripts/generate-afm-drills.ts` (generator), `lib/acca/{npv,numeric-verifier,validate-schema,validate-afm-prose}.ts` (calculator + gates).
+Companions: `AFM_NUMERIC_VERIFICATION_DESIGN.md` (the numeric layer's full design), `TEACHING_ARCHITECTURE.md` (structural withholding), and the code — `scripts/generate-acca-drills.ts` (generator), `lib/acca/{npv,numeric-verifier,validate-schema,validate-afm-prose}.ts` (calculator + gates).
 
 Cross-reference: `PRODUCT_STRENGTH_STANDARD.md` sets the paper-agnostic strength bar every subject must meet — the pipeline mechanics here implement the strength standard.
 
@@ -1055,7 +1055,7 @@ The second pipeline marks **discursive** drills against an authored rubric. Cano
 claim ceiling: `docs/NARRATIVE_MARKING_DESIGN.md`; detection targets (F1–F12, page-VERIFIED):
 `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b; marker + gates: `lib/acca/narrative-marker.ts`; the
 constrained model grader: `lib/acca/narrative-grader.ts`; generator wiring: `--narrative-batch` in
-`scripts/generate-afm-drills.ts`.
+`scripts/generate-acca-drills.ts`.
 - **CLAIM CEILING binds every surface (Grant 2026-07-18).** Narrative marking is *constrained-model
   marking with a code-owned rubric + code-owned aggregation + deterministic copy/anchor/coverage
   checks + Rule-23 consistency*. The per-criterion QUALITY verdict (developed? applied?) is
