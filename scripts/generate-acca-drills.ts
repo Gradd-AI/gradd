@@ -1234,7 +1234,8 @@ ${modelAnswer}
 
 Produce:
 1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
-2. full_reveal — 3–5 sentences: name the specific SBL misconception a typical candidate brings to this type of question (undeveloped points / copy-paste / generic theory / the adjacent question / scepticism as questions), then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
+2. full_reveal — 3–5 sentences. THE VERY FIRST SENTENCE must contain the word "misconception" followed later in that same sentence by a colon, and must name the specific SBL misconception a typical candidate brings to this type of question (undeveloped points / copy-paste / generic theory / the adjacent question / scepticism as questions). For example: "The misconception this drill exposes is <name>: <what the candidate wrongly believes>." Then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
+   ⚠️ THE FIRST-LINE PLACEMENT IS LOAD-BEARING, NOT A STYLE NOTE. The live tutor extracts this sentence with a pattern whose "." does not match newlines, so a misconception named in a later sentence is not found at all and the tutor silently falls back to the opening line as though it were the failure mode. Naming it anywhere but first fails the P7 gate and the drill is discarded.
 
 Anchor the reveal to THE TWO-MARK RULE, which is the bar this paper is actually marked against: two marks are earned only where a point is identified AND developed — its significance weighed, tied to this organisation by the information given, followed to a consequence, and illustrated from the case material. A point identified and left there earns one. The candidate who writes only single-mark points must find twice as many of them, in the same time, to reach the same total.
 
@@ -2864,7 +2865,45 @@ interface NarrativePlan {
    * `goldenBadBlock` returns verbatim when this is unset. Present on SBL plans, where one
    * evidenced mode per drill IS the batch design — see docs/SBL_BATCH_A_PLAN.md.
    */
-  designed_bad?: { flags: string[]; brief: string };
+  designed_bad?: {
+    /**
+     * THE N4 CONTRACT — deterministic modes ONLY (F1, F4, F5).
+     *
+     * ⚠️ THIS IS NARROWER THAN "the modes the BAD commits", DELIBERATELY, AND THE NARROWING IS
+     * THE WHOLE FIX (Grant-ruled 2026-08-19, ruling (b)). `checkRule23` requires EVERY entry here
+     * to be raised, and it can only raise three modes without the model's cooperation: F1 via
+     * `scenarioCopyOverlap`/`longestVerbatimRun`, F4 via `hasConclusion`, F5 via `missingAnchors`.
+     * Everything else needs a grader that was explicitly told to be conservative to volunteer a
+     * flag — and a BAD that answers the adjacent question simply reads as "criterion not
+     * addressed", so it scores `no` with no flag at all.
+     *
+     * MEASURED over runs 2 and 3 (2026-08-19): N4 refused a BAD 15 times and the unraised mode
+     * was F2, F7 or F10 EVERY time — never F1, F4 or F5. The only drill to clear N1–N6, twice,
+     * was the only one whose designed modes were both deterministic.
+     *
+     * Listing a mode here that N4 cannot raise does not make the gate stronger; it makes the
+     * gate fail on a drill that is fine. The root cause is `evidenced` below.
+     */
+    flags: string[];
+    /**
+     * The catalogue mode this BAD exists to teach, when N4 cannot verify it.
+     *
+     * The BAD still COMMITS it — a real bad answer fails several ways at once, and one failing
+     * in exactly one way is the artificial object. It is required as a disqualifier on the
+     * criteria it trips, and named in the `full_reveal`, so the teaching is unchanged. What it
+     * is NOT is a promise that the marker demonstrably identified it.
+     *
+     * ⚠️ CLAIM CEILING: a green N4 on an SBL drill means "the GOOD scores in band, the BAD scores
+     * below it, and the deterministic modes were raised". It does NOT mean the marker identified
+     * the evidenced mode. Do not report it as though it did.
+     *
+     * Closing that gap is `AFM_SURFACED.md`'s open item: make the grader raise a flag whenever
+     * `met !== 'yes'`. It moves PIN6 and AFM's gating, so under P-M1 it ships as its own change
+     * with its own evidence, never bundled with content.
+     */
+    evidenced?: string;
+    brief: string;
+  };
 }
 
 // Code-owned default bands (fraction of total_marks). Narrative marking's band→verdict is code-owned.
@@ -3184,7 +3223,8 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       + 'may name one either. The object of the requirement is the STYLE; the change programme is '
       + 'the context, not the answer.',
     designed_bad: {
-      flags: ['F7', 'F5'],
+      flags: ['F5'],
+      evidenced: 'F7',
       brief:
         'it writes competently about THE CHANGE PROGRAMME — what the restructure involves, why it is '
         + 'needed, how it should be sequenced — and reaches for a named change-process model to '
@@ -3212,7 +3252,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       + 'aim is achievable without changing it. CONCEPTUAL-ONLY. '
       + 'CRITICAL — the stem must not name the cultural web or any other cultural model.',
     designed_bad: {
-      flags: ['F5', 'F2'],
+      flags: ['F5'],
       brief:
         'it describes the cultural web AS A MODEL — naming its elements and explaining what each one '
         + 'means in general — and never connects any element to this organisation\'s stated artefacts '
@@ -3237,7 +3277,8 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       + 'shows about where the leadership weakness actually lies. CONCEPTUAL-ONLY. '
       + 'CRITICAL — the stem must not name any leadership-trait framework.',
     designed_bad: {
-      flags: ['F2'],
+      flags: ['F4'],
+      evidenced: 'F2',
       brief:
         'it identifies FOUR CORRECT POINTS and develops none of them. Each is a true statement about '
         + 'the leadership failure — "roles were not assigned", "the pilot findings were not acted on" '
@@ -3271,7 +3312,8 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       + 'must be anchored ON THE CLAIM BEING CHALLENGED, or the claim is unreachable as an anchor '
       + 'and no criterion can be required to bite on it.',
     designed_bad: {
-      flags: ['F4', 'F10'],
+      flags: ['F4'],
+      evidenced: 'F10',
       brief:
         'it performs scepticism AS QUESTIONS. It raises the right concerns in interrogative form — '
         + '"Has the board considered whether…?", "Is it clear that…?", "Should the committee not ask…?" '
@@ -3724,15 +3766,30 @@ function goldenBadBlock(plan: NarrativePlan): string {
 - F4: NEVER state a recommendation or conclusion in the bad answer (do not use the words recommend, conclude, on balance, should, advise).
 - Ensure the criteria's disqualifiers collectively include F1, F5 and F4 (put F5 on an anchored criterion, F4 on the recommendation criterion, F1 where restating would earn nothing).`;
   }
-  const { flags, brief } = plan.designed_bad;
-  const unknown = flags.filter((f) => !BAD_FLAG_MECHANICS[f]);
+  const { flags, evidenced, brief } = plan.designed_bad;
+  const all = evidenced ? [...flags, evidenced] : flags;
+  const unknown = all.filter((f) => !BAD_FLAG_MECHANICS[f]);
   // A typo'd flag would reach the model as a bare code with no instruction behind it, and the
   // author would improvise one. Same posture as skillDemandFor: throw, never improvise.
   if (unknown.length) throw new Error(`${plan.id}: designed_bad flag(s) with no mechanics registered: ${unknown.join(', ')}`);
+  // ⚠️ ONLY the deterministic modes go in `designed_bad_flags` — N4 requires every entry to be
+  // RAISED and can raise nothing else without the grader volunteering it. The evidenced mode is
+  // still committed by the answer and still marked against, via the criteria's disqualifiers.
+  const deterministicOnly = flags.filter((f) => f === 'F1' || f === 'F4' || f === 'F5');
+  if (deterministicOnly.length !== flags.length) {
+    throw new Error(`${plan.id}: designed_bad.flags may contain ONLY deterministic modes (F1/F4/F5); move ${flags.filter((f) => !deterministicOnly.includes(f)).join(', ')} to designed_bad.evidenced`);
+  }
   return `GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
-- designed_bad_flags MUST be EXACTLY ${JSON.stringify(flags)} — no more, no fewer.
+- designed_bad_flags MUST be EXACTLY ${JSON.stringify(flags)} — no more, no fewer. That field is a
+  machine contract, not a description of the answer: it lists only the modes the marker detects
+  without judgement. Do NOT add any other code to it, however plainly the answer commits it.
 - WHAT THE BAD DOES: ${brief}
-${flags.map((f) => `- ${BAD_FLAG_MECHANICS[f]}`).join('\n')}
+${flags.map((f) => `- ${BAD_FLAG_MECHANICS[f]}`).join('\n')}${evidenced ? `
+- IT MUST ALSO COMMIT ${evidenced}, which is the failure this drill exists to teach. A real bad
+  answer fails several ways at once; one that fails in exactly one way is an artificial object.
+  ${BAD_FLAG_MECHANICS[evidenced]}
+  ${evidenced} MUST appear in the disqualifiers of the criteria it trips, so it is the marking
+  basis — but it must NOT appear in designed_bad_flags.` : ''}
 - The bad answer must be FLUENT AND PLAUSIBLE. It is not a weak answer; it is a competent answer
   committing one named failure. A reader should have to know the mark scheme to see why it loses.
 - Every flag above must be listed as a disqualifier on at least one criterion the bad answer trips,

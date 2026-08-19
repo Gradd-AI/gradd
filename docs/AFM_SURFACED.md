@@ -48,6 +48,49 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🔴 OPEN 2026-08-19 — N4 CAN ONLY VERIFY THREE OF TWELVE FAILURE MODES, AND THE ROOT CAUSE IS THE GRADER
+
+**Not built. Banked as its own change under P-M1** (Grant-ruled 2026-08-19), because the fix moves a
+MARKING-CALL prompt and therefore owes its own evidence. It must never be bundled with a content batch.
+
+**THE DEFECT.** `checkRule23` (N4) requires EVERY entry in `designed_bad_flags` to be raised against
+the golden BAD, and it can raise only three modes without the model's cooperation: **F1** via
+`scenarioCopyOverlap`/`longestVerbatimRun`, **F4** via `hasConclusion`, **F5** via `missingAnchors`
+in `aggregate`. Every other mode must be VOLUNTEERED by `makeAnthropicCriterionGrader`, which is
+explicitly instructed to *"be conservative"* — and a BAD that answers the adjacent question simply
+reads as *criterion not addressed*, so it scores `met: 'no'` with an empty flag list.
+
+**📐 MEASURED, SBL batch A, runs 2 and 3 (2026-08-19).** N4 refused a golden BAD **15 times**, and the
+unraised mode was **F2, F7 or F10 every single time — never F1, F4 or F5** (F10 ×5, F2 ×6, F7 ×4). The
+control is exact: of five drills, the ONLY one to clear N1–N6, and it did so on both runs, was the only
+one whose designed modes were both deterministic (SBL-A5, `[F1, F4]`). AFM's fixed `["F1","F5","F4"]`
+backbone was never a style choice — **it is the set N4 can actually prove**, and nothing had tested that
+because no AFM drill ever declared anything else.
+
+**THE FIX, NOT BUILT: the grader should raise at least one listed disqualifier whenever `met !== 'yes'`.**
+A criterion judged unmet with no flag is the grader declining to say WHY, which is the whole defect.
+
+⚠️ **WHY IT IS NOT A ONE-LINE PROMPT EDIT.** `SYSTEM_AFM` is an input to N1 and N4 for every AFM
+narrative drill, so changing it moves AFM's gating and breaks **PIN6** in `test:narrative-paper-pins`.
+Under **P-M1** a change to the shape of a marking call changes the mark, so it ships with its own band
+matrix — or a demonstration that the existing corpus re-gates identically — and never alongside content.
+
+**THE INTERIM, SHIPPED 2026-08-19 (ruling (b)).** `NarrativePlan.designed_bad` split into `flags` (the
+N4 contract, deterministic modes ONLY — `goldenBadBlock` THROWS on anything else) and `evidenced` (the
+catalogue mode the BAD still commits, still carried as a criterion disqualifier and still named in the
+`full_reveal`). ⚠️ **CLAIM CEILING:** a green N4 on an SBL drill now means *"the GOOD scores in band, the
+BAD scores below it, and the deterministic modes were raised"*. It does **NOT** mean the marker
+identified the evidenced mode. Never report it as though it did.
+
+**ALSO FIXED IN THAT PASS — P7 is a FIRST-LINE constraint and nothing said so.**
+`MISCONCEPTION_PATTERN` is `/^.*?misconception[^:]*:/i`; `.` does not match newlines and there is no
+`m` flag, so the misconception sentence must be on the **first line** of `full_reveal`. Verified:
+first-line `true`, later-line `false`. SBL-A5 cleared all six gates on runs 2 and 3 and was discarded
+at P7 both times for naming its misconception in a later sentence. The SBL reveal prompt now requires
+the opening sentence to carry it. **This is a live-tutor concern, not cosmetics** — the tutor's
+`extractMisconceptionLead` silently falls back to the first sentence, so a misconception named second
+is not merely missed, it is replaced by scaffolding presented as the drill's failure mode.
+
 ## 🔴 OPEN 2026-08-18 — SBL: THE FRAMEWORK IS BUILT AND UNWIRED; THE MARK WEIGHTING IS STILL OPEN (`feat/sbl-foundation`, pushed 2026-08-18, unmerged; `next build` GREEN)
 
 **Journalled in arrears on 2026-08-18**, then extended the same day. Branch on origin at

@@ -387,13 +387,16 @@ check('PIN6 SBL marker keeps the evidence_span discipline',
 // SBL BATCH A — the approved five. Spec of record: docs/SBL_BATCH_A_PLAN.md.
 // ─────────────────────────────────────────────────────────────────────────────
 const sblPlans = NARRATIVE_PLAN.filter((p: NarrativePlan) => p.paper === 'SBL');
-const APPROVED: Record<string, { lo: string; skill: string; flags: string[] }> = {
-  'SBL-A1': { lo: 'A2b', skill: 'analysis',   flags: ['F7', 'F5'] },
-  'SBL-A2': { lo: 'A2d', skill: 'evaluation', flags: ['F5', 'F2'] },
-  'SBL-A3': { lo: 'A1a', skill: 'analysis',   flags: ['F2'] },
-  'SBL-A4': { lo: 'A3d', skill: 'scepticism', flags: ['F4', 'F10'] },
+// `flags` is the N4 CONTRACT (deterministic only); `evidenced` is the catalogue mode the BAD
+// also commits and the rubric marks against, which N4 cannot verify. Grant-ruled 2026-08-19 (b).
+const APPROVED: Record<string, { lo: string; skill: string; flags: string[]; evidenced?: string }> = {
+  'SBL-A1': { lo: 'A2b', skill: 'analysis',   flags: ['F5'], evidenced: 'F7' },
+  'SBL-A2': { lo: 'A2d', skill: 'evaluation', flags: ['F5'] },
+  'SBL-A3': { lo: 'A1a', skill: 'analysis',   flags: ['F4'], evidenced: 'F2' },
+  'SBL-A4': { lo: 'A3d', skill: 'scepticism', flags: ['F4'], evidenced: 'F10' },
   'SBL-A5': { lo: 'A3a', skill: 'evaluation', flags: ['F1', 'F4'] },
 };
+const DETERMINISTIC = ['F1', 'F4', 'F5'];
 check('SBL batch A is exactly the five approved plans',
   JSON.stringify(sblPlans.map((p: NarrativePlan) => p.id).sort()) === JSON.stringify(Object.keys(APPROVED).sort()),
   sblPlans.map((p: NarrativePlan) => p.id).join(','));
@@ -405,6 +408,13 @@ for (const [id, want] of Object.entries(APPROVED)) {
     `${plan.lo_code} · ${plan.skill}`);
   check(`${id} declares its designed BAD modes ${want.flags.join('/')}`,
     JSON.stringify(plan.designed_bad?.flags) === JSON.stringify(want.flags),
+    JSON.stringify(plan.designed_bad?.flags));
+  check(`${id} carries its evidenced catalogue mode ${want.evidenced ?? '(none — its evidenced mode is deterministic)'}`,
+    plan.designed_bad?.evidenced === want.evidenced, String(plan.designed_bad?.evidenced));
+  // THE RULE THE WHOLE BATCH TURNED ON: N4 requires EVERY designed flag to be raised and can
+  // raise only F1/F4/F5 unaided. A non-deterministic code here fails a drill that is fine.
+  check(`${id} lists ONLY deterministic modes in the N4 contract`,
+    (plan.designed_bad?.flags ?? []).every((f) => DETERMINISTIC.includes(f)),
     JSON.stringify(plan.designed_bad?.flags));
   // ⚠️ THE TWO EXCLUDED OUTCOMES. A3b and A1b return zero hits across all seven examiner reports,
   // so a golden BAD for them would have to be invented. Pinned so a later edit cannot quietly
