@@ -4,15 +4,29 @@
 `scripts/authoring/export-sbl-pack.ts`.** Spec: `docs/SBL_BATCH_A_PLAN.md`.
 Evidence: `docs/evidence/SBL_FAILURE_CATALOGUE.md`.
 
-## ⚠️ DB STATE — 1 OF 5 INSERTED
+## DB STATE — ALL FIVE INSERTED, `candidate` / `published=false`
 
-`SBL-A4` = `80b4918b-1602-46dc-a213-a4ba70cb12c4`, `status='candidate'`, `published=false`.
+| plan | id | LO | skill | marks |
+|---|---|---|---|---|
+| SBL-A1 | `9d414a87-b12d-4526-85cc-5e537a25104b` | A2b | analysis | 10 |
+| SBL-A2 | `5bd47a79-7640-4902-8360-b8b0952d0b19` | A2d | analysis | 12 |
+| SBL-A3 | `46e10662-914f-412b-8e56-faf426d0461f` | A1a | analysis | 12 |
+| SBL-A4 | `80b4918b-1602-46dc-a213-a4ba70cb12c4` | A3d | scepticism | 10 |
+| SBL-A5 | `2fbb2902-c254-4c9b-ac1a-240bf1adb9e7` | A3a | evaluation | 10 |
 
-The other four are refused by `acca_drills_skill_chk`, which pins the skill tag to APM/AFM's four.
-It admitted SBL-A4 because `scepticism` is a name SBL SHARES with AFM, and refused the four tagged
-`analysis` / `evaluation` because those are SBL-only. Migration
-`20260819130000_acca_drills_sbl_skill_vocabulary.sql` is written and awaits manual apply.
-**No publish flip has occurred — that is a separate GATE-P act.**
+**acca_drills 155 → 160.** AFM 64 · APM 91 · SBL 5. Post-insert: 5/5 `candidate`+unpublished,
+0 published, 0 approved, 5 distinct `lo_code` with no duplicate, and 0 AFM/APM rows created in the
+window — so nothing outside the batch moved. **Section A is now 5 of 12 outcomes** (A1a, A2b, A2d,
+A3a, A3d), counted as OUTCOMES, not marks.
+
+⚠️ **NO PUBLISH FLIP HAS OCCURRED, AND IT IS TWO STEPS, NOT ONE** — these rows are `candidate`, so
+going live means `approved` and then `published`, under GATE-P: reconcile the DB approved-set
+against the journal FIRST, flip by EXPLICIT id, demote any un-reviewed `approved` row in the same
+transaction, prove it with pre/post counts.
+
+⚠️ **THE BATCH NEEDED TWO SCHEMA MIGRATIONS THAT NOBODY PREDICTED**, both found by attempting the
+insert rather than by reading code — `20260819120000` (paper_code) and `20260819130000`
+(skill vocabulary, paper-aware). See `AFM_SURFACED.md`.
 
 **SBL-A2 was re-tagged `evaluation` → `analysis`** (Grant-ruled 2026-08-19): all six of its facts
 point one way, so committing concedes nothing and evaluation is the wrong act for what the scenario

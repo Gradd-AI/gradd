@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
+*Last refreshed: 2026-08-19 (**SBL BATCH A IS IN THE TABLE — acca_drills 155 → 160, Section A 0 → 5 of 12 outcomes, all five `candidate`/`published=false`, publish flip OWED and two steps.** The batch needed TWO schema migrations nobody predicted, both found by TRYING TO INSERT: SBL was declared in `ACCA_PAPERS`, `SKILL_DESCRIPTORS_BY_PAPER`, `GATE_CONFIG` and all 138 outcomes while the DB had never heard of it — and `acca_drills_skill_chk` then admitted exactly the one skill name SBL SHARES with AFM and refused the four SBL-only ones, drawing the vocabulary line correctly without being told. The fix is PAPER-AWARE, not flat, because a flat list would let an AFM row be tagged `analysis`. **Item 2 is BLOCKED and nothing was written**: AFM’s teaching catalogue has no entry for F6 or F10, so UNDEVELOPED-ASSUMPTION was the nearest name for a failure it cannot express. Earlier: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
 ITSELF.** `fix/ps-ladder-not-descriptor-relative` — five of the nine `descriptor` mentions WERE the
 band definitions, so no wording of rule 2 could outrun them. Rewritten to describe the quality of
 the writing, every severity anchor preserved verbatim: **band-neutral (+0.019 bands, t=0.66) and the
@@ -47,6 +47,68 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 `resolvePaperContext` conflated ABSENT with UNPARSEABLE and fell to a referrer heuristic on both;
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
+
+## ✅ CLOSED 2026-08-19 — SBL BATCH A IS IN THE TABLE (`feat/sbl-foundation`)
+
+**`acca_drills` 155 → 160**, all five `candidate` / `published=false`. **Section A 0 → 5 of 12
+outcomes** (A1a, A2b, A2d, A3a, A3d) — as OUTCOMES, not marks. Ids: SBL-A1 `9d414a87` ·
+SBL-A2 `5bd47a79` · SBL-A3 `46e10662` · SBL-A4 `80b4918b` · SBL-A5 `2fbb2902`.
+Post-insert: 0 published, 0 approved, 5 distinct `lo_code` with no duplicate, **0 AFM/APM rows
+created in the window**. Pack `docs/reviews/SBL_BATCH_A_REVIEW_PACK.md`, regenerated by the new
+`scripts/authoring/export-sbl-pack.ts`.
+
+⚠️ **THE PUBLISH FLIP IS OWED AND IS TWO STEPS, NOT ONE** — these rows are `candidate`, so going
+live means `approved` THEN `published`, under GATE-P (reconcile against the journal first, flip by
+explicit id, demote any un-reviewed `approved` row in the same transaction, pre/post counts).
+
+## 🔴 OPEN 2026-08-19 — SBL WAS DECLARED IN THE APPLICATION AND NOWHERE IN THE DATABASE
+
+**Two constraints, both found by TRYING TO INSERT — not by reading code.** `ACCA_PAPERS` carried
+SBL, `SKILL_DESCRIPTORS_BY_PAPER` carried its five skills, `GATE_CONFIG` knew it has no exam
+sections, and `scripts/sbl-framework.ts` held all 138 outcomes, while `acca_drills_paper_code_check`
+still read `CHECK (paper_code IN ('APM','AFM'))`. All five drafts were refused atomically — 0 rows,
+count unchanged at 155. **The vocabulary split is enforced in the application and the database had
+never been told either half.**
+
+**📐 THEN `acca_drills_skill_chk` ADMITTED EXACTLY ONE OF FIVE, AND WHICH ONE IS THE FINDING.**
+SBL-A4 inserted because `scepticism` is a name SBL **shares** with AFM; the four tagged `analysis`
+and `evaluation` — SBL-only names — were refused. **A constraint written long before SBL existed
+drew the vocabulary line exactly right without being told**: it admitted the shared name and
+rejected the unshared ones. The partial result WAS the diagnosis.
+
+**Migration `20260819130000` is PAPER-AWARE, not a flat widening, and that is the point.** A flat
+list would permit **an AFM row tagged `analysis`** — and the documented danger is precisely that
+SBL's skills are not the four renamed (APM/AFM carry one combined `analysis_and_evaluation`; SBL
+marks `analysis` and `evaluation` separately, absorbing ENQUIRE and ESTIMATE respectively, neither
+act appearing in the four-skill descriptors). Verified after apply: an AFM row tagged `analysis` is
+refused. Both migrations applied by hand and independently re-verified before each write.
+
+🔴 **WHAT STAYS OPEN: the four sibling tables are still two-paper by design** —
+`acca_entitlements`, `acca_weak_areas`, `resit_leads`, `resit_runs`. That is correct while SBL is
+declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
+**Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
+
+## 🔴 OPEN 2026-08-19 — AFM'S TEACHING CATALOGUE HAS NO ENTRY FOR F6 OR F10 (item 2, BLOCKED)
+
+Re-headlining the three published AFM reveals **cannot be done as a rewrite, and nothing was
+written.** `EZRA_TEACHING_PERSONA_AFM` names a CLOSED catalogue of five — FENCE-SITTING ·
+SCENARIO-FREE · VALUATION-PLUMBING · UNDEVELOPED-ASSUMPTION · ABANDONED-AFTER-CALC — and neither
+F6 nor F10 is among them. **AFM's teaching leg has no word for "you accepted a named officer's claim
+unchallenged", despite F10 being a disqualifier across the corpus.**
+
+**So `f6426c06`, `d413fbe7` and `de0c2676` never drifted — UNDEVELOPED-ASSUMPTION was the nearest
+available name for a failure the catalogue cannot express.** Measured: `f6426c06` returned it three
+times running under an explicit instruction not to; `de0c2676` escaped only sideways to F5
+(on-rubric, but not the ruled F10). The fix is adding the missing modes to a persona that governs
+EVERY future AFM reveal — its own change, with its own evidence. P-DB3 snapshots for both sit in
+`docs/rollbacks/AFM_reveal_rewrite_*.json`.
+
+Built and proven under P-DB6 meanwhile: `scripts/authoring/rewrite-afm-reveal.ts` (refuses an
+unruled id, snapshots the row, guards on `published=true`, asserts 17/17 immutable fields
+byte-identical). ⚠️ **It caught a defect in its own dry run: P7 checks only that a
+`misconception…:` sentence EXISTS, so a reveal naming it in sentence three yields a 100-word blob
+as the live tutor's broadcast lead.** A 220-char shape gate was added there; **the same hole is
+still open in P7 itself.**
 
 ## 🔴 OPEN 2026-08-19 — A GATE FIX MADE THE TEACHING LEG NAME THE WRONG FAILURE, 5 TIMES OUT OF 5
 

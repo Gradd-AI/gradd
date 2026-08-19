@@ -5098,3 +5098,93 @@ cannot express it — the examined-skill list is a deduped union, the ceiling is
 case-level pool, the model bands against the whole answer, and `per_skill` is keyed by skill, not
 by (requirement, skill). P-M1's founding instance is precisely that splitting a batched per-case
 call into one call per requirement MOVED THE MARK.
+
+---
+
+## SESSION BANK — 2026-08-19 — SBL BATCH A IS IN THE TABLE, AND THE SCHEMA HAD NEVER HEARD OF THE PAPER (`feat/sbl-foundation`)
+
+**SHIPPED: the first five SBL drills exist as rows.** `acca_drills` **155 → 160**, all five
+`status='candidate'`, `published=false`. Section A moves **0 → 5 of 12 outcomes** (A1a, A2b, A2d,
+A3a, A3d) — as OUTCOMES, not marks. **No publish flip, and it is two steps not one**: these are
+`candidate`, so going live means `approved` then `published` under GATE-P.
+
+| plan | id | LO | skill | marks | designed BAD (N4 contract) | evidenced |
+|---|---|---|---|---|---|---|
+| SBL-A1 | `9d414a87-b12d-4526-85cc-5e537a25104b` | A2b | analysis | 10 | `[F5]` | F7 |
+| SBL-A2 | `5bd47a79-7640-4902-8360-b8b0952d0b19` | A2d | analysis | 12 | `[F5]` | — |
+| SBL-A3 | `46e10662-914f-412b-8e56-faf426d0461f` | A1a | analysis | 12 | `[F4]` | F2 |
+| SBL-A4 | `80b4918b-1602-46dc-a213-a4ba70cb12c4` | A3d | scepticism | 10 | `[F4]` | F10 |
+| SBL-A5 | `2fbb2902-c254-4c9b-ac1a-240bf1adb9e7` | A3a | evaluation | 10 | `[F1,F4]` | — |
+
+Post-insert proof: 5/5 candidate+unpublished · 0 published · 0 approved · 5 distinct `lo_code`,
+0 duplicates · **0 AFM/APM rows created in the window**, so nothing outside the batch moved.
+Pack: `docs/reviews/SBL_BATCH_A_REVIEW_PACK.md`, regenerated from the drafts by the new
+`scripts/authoring/export-sbl-pack.ts` (pure, offline — closes the code map's standing
+"no dedicated exporter yet" gap).
+
+### 📐 TWO SCHEMA CONSTRAINTS, BOTH FOUND BY TRYING TO INSERT — NOT BY READING THE CODE
+
+**SBL was declared everywhere in the application and nowhere in the database.** `ACCA_PAPERS`
+carried it, `SKILL_DESCRIPTORS_BY_PAPER` carried its five skills, `GATE_CONFIG` knew it has no exam
+sections, `scripts/sbl-framework.ts` held all 138 outcomes — and `acca_drills_paper_code_check`
+still read `CHECK (paper_code IN ('APM','AFM'))`. All five drafts were refused atomically: **0 rows
+inserted, count unchanged at 155.** No amount of reading TypeScript would have surfaced it; the
+vocabulary split is enforced in the application, and the database had never been told either half.
+Migration `20260819120000` widens **`acca_drills` only** — `acca_entitlements`, `acca_weak_areas`,
+`resit_leads` and `resit_runs` carry the same two-paper CHECK and stay at two. **That asymmetry IS
+`AccaPaper` vs `ServedPaper` expressed in the schema:** declared vocabulary reaches the content
+table; a customer-facing promise does not.
+
+**THEN `acca_drills_skill_chk` REFUSED FOUR OF THE FIVE, AND WHICH ONE SURVIVED IS THE FINDING.**
+It pinned `professional_skill_tag` to APM/AFM's four. **SBL-A4 inserted because `scepticism` is a
+name SBL SHARES with AFM; the four tagged `analysis` and `evaluation` — SBL-only names — were
+refused.** A constraint written years before SBL existed drew the vocabulary line exactly right
+without being told: it admitted the shared name and rejected the unshared ones. The partial result
+was the diagnosis.
+
+**MIGRATION `20260819130000` IS PAPER-AWARE, NOT A FLAT WIDENING, AND THAT IS THE WHOLE POINT.**
+Adding `analysis`/`evaluation` to the flat list would permit **an AFM row tagged `analysis`**, and
+the documented danger of SBL's vocabulary is precisely that its skills are NOT the four renamed:
+APM/AFM carry ONE combined `analysis_and_evaluation`; SBL marks `analysis` and `evaluation`
+SEPARATELY, its Analysis absorbing ENQUIRE and its Evaluation ESTIMATE, and neither act appears in
+the four-skill descriptors at all. The application already refuses to cross them (`unknownSkillTags`
+validates against the PAPER's declared set; `getSkillDescriptors` THROWS rather than filtering,
+because dropping an unknown skill silently re-weights the marks pool). This puts the same rule in
+the database, so a mis-tagged row cannot exist even via a path that skips the application check.
+Carries a drift check that RAISES if the constraint comes back flat. Verified after apply: an AFM
+row tagged `analysis` is refused.
+
+### SBL-A2 RE-TAGGED `evaluation` → `analysis`
+
+All six of its facts point ONE WAY (bonuses, promotions, meeting dynamics, incident reviews,
+induction — every one against the warehousing aim), so **committing concedes nothing** and
+evaluation is the wrong act for what the scenario supplies. The finding came from the hand check
+N6b reports as NOT EVALUATED, not from a gate.
+
+⚠️ **`professional_skill_tag` is NOT duplicated inside `answer_schema` on a narrative drill** —
+verified before the edit. Unlike a CASE REQUIREMENT, where `lo_code` is mirrored on every criterion
+and moving the column alone leaves a rubric marking against the old code (the reason
+`retag-afm-case-requirement.ts` exists separately), **the narrative column moves alone.** Re-gated
+GREEN: N1–N6 + P4 + P7 all unchanged, N6a still PASS, and the only thing that moved was the N6b arm
+identity and its stated reason.
+
+### 🔴 ITEM 2 BLOCKED BY A PERSONA FINDING — NOTHING WRITTEN
+
+Re-headlining three published AFM reveals (`f6426c06`, `d413fbe7` → F6; `de0c2676` → F10) **cannot
+be done as a rewrite.** `EZRA_TEACHING_PERSONA_AFM` names a CLOSED catalogue of five —
+FENCE-SITTING · SCENARIO-FREE · VALUATION-PLUMBING · UNDEVELOPED-ASSUMPTION · ABANDONED-AFTER-CALC —
+and **neither F6 nor F10 is in it.** AFM's teaching leg has no word for *"you accepted a named
+officer's claim unchallenged"*, despite F10 being a disqualifier across the corpus.
+
+**So those rows never drifted: UNDEVELOPED-ASSUMPTION was the nearest available name for a failure
+the catalogue cannot express.** Measured: `f6426c06` returned it three times running under an
+explicit instruction not to; `de0c2676` escaped only sideways, to SCENARIO-FREE (F5 — on-rubric,
+but not the ruled F10). Fixing it means adding the missing modes to a persona governing EVERY future
+AFM reveal — its own change with its own evidence. **Nothing written; P-DB3 snapshots for both sit
+in `docs/rollbacks/AFM_reveal_rewrite_*.json`.**
+
+Also built and proven under P-DB6: `scripts/authoring/rewrite-afm-reveal.ts` — refuses an unruled
+id, snapshots the whole row, guards the update on `published=true`, asserts 17/17 immutable fields
+byte-identical. It caught a defect in its own dry run: **P7 only checks a `misconception…:` sentence
+EXISTS, so a reveal naming it in sentence three yields a 100-word blob as the tutor's broadcast
+lead.** A 220-char shape gate was added.
