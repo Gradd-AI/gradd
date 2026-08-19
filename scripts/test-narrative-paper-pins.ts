@@ -17,11 +17,19 @@
  *
  * ── WHICH PINS ARE GENUINE PRE-CHANGE CAPTURES, AND WHICH ARE DERIVED ─────────────────────
  *
- * ALL of PIN1–PIN5 are TRUE PRE-CHANGE CAPTURES. They were read off a copy of the pre-change
- * file: `head -3974 scripts/generate-afm-drills.ts` (the whole file bar its final
+ * ALL of PIN1–PIN6 are TRUE PRE-CHANGE CAPTURES. PIN1–PIN5 were read off a copy of the
+ * pre-change file: `head -3974 scripts/generate-afm-drills.ts` (the whole file bar its final
  * `main().catch(...)` invocation line, dropped only so the module could be imported at all)
  * plus an appended export block. No other edit. The values were then re-read from the changed
- * module and compared.
+ * module and compared. PIN6 was read from `git show HEAD:lib/acca/narrative-grader.ts` before
+ * that file's marker prompt was split per paper.
+ *
+ * PIN6 IS THE ONE ADDED IN ARREARS, and it is worth saying why. The grader's marker prompt was
+ * NOT on the list of paper-coupled sites — it is a different module, and nothing about it is
+ * typed or named per paper. It surfaced only when the SBL batch was actually RUN: an SBL drill
+ * was being gated by a marker told it was marking Advanced Financial Management, against a
+ * three-limb development test, while its rubric was written to ACCA's published four-limb one.
+ * Reading the code found six coupled sites; running it found the seventh.
  *
  * PIN1 is the strongest of the five and deserves naming separately: the six committed drafts in
  * `docs/rollbacks/AFM_narrative_draft_D*.json` were written by the PRE-CHANGE generator, in git,
@@ -60,6 +68,7 @@ import {
   PAPER_FRAMEWORKS, frameworkFor, assertNarrativePlanIds, NUMERIC_BATCH_PAPER,
   type NarrativePlan,
 } from './generate-acca-drills';
+import { makeAnthropicCriterionGrader } from '../lib/acca/narrative-grader';
 import { PROFESSIONAL_SKILLS as AFM_SKILLS } from './afm-framework';
 import { PROFESSIONAL_SKILLS as SBL_SKILLS, SYLLABUS_MAP as SBL_SYLLABUS } from './sbl-framework';
 
@@ -317,6 +326,125 @@ for (const plan of NARRATIVE_PLAN) {
   check(`plan ${plan.id}'s skill has a demand entry for its own paper`,
     !!SKILL_DEMAND_BY_PAPER[plan.paper]?.[plan.skill], `${plan.paper}/${plan.skill}`);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PIN6 — THE GRADER'S MARKER PROMPT. It is the model layer behind N1 and N4, so it decides
+// whether a drill gates at all; it was a hardcoded AFM string until 2026-08-19. The AFM bytes
+// are a GENUINE PRE-CHANGE CAPTURE, read from `git show HEAD:lib/acca/narrative-grader.ts`
+// before the split. Captured by intercepting the constructed client, so the WIRING is pinned
+// too and not just the constant — an unwired per-paper string would pass a constant check.
+// ─────────────────────────────────────────────────────────────────────────────
+function capturedSystemFor(paper?: string): string {
+  let seen = '';
+  const fake = {
+    messages: {
+      create: async (req: { system?: unknown }) => {
+        const s = req.system;
+        seen = typeof s === 'string' ? s
+          : Array.isArray(s) ? (s as { text?: string }[]).map((b) => b.text ?? '').join('')
+          : String(s ?? '');
+        return { content: [{ type: 'tool_use', input: { met: 'no', evidence_span: '', failure_flags: [] } }] };
+      },
+    },
+  };
+  const grader = makeAnthropicCriterionGrader(fake as never, paper ? { paper } : {});
+  // `seen` is set SYNCHRONOUSLY: an async function body runs to its first `await`, and the
+  // grader's first await IS the messages.create call, so the system block is captured before
+  // the returned promise is handed back. No draining needed, and no top-level await (this file
+  // is CJS — __dirname above — where top-level await is a parse error, not a runtime one).
+  void grader({ id: 'c1', requirement_part: 'p', lo: 'X', required_point: 'p', marks: 2, anchor_facts: [], disqualifiers: [], development_required: true }, 'answer', 'scenario');
+  return seen;
+}
+
+const afmMarker = capturedSystemFor('AFM');
+check('PIN6 AFM marker prompt bytes unchanged',
+  sha(afmMarker) === '0726830e6782147e' && afmMarker.length === 1476,
+  `sha ${sha(afmMarker)} len ${afmMarker.length}`);
+check('PIN6 omitting paper still yields the AFM marker (every pre-change caller)',
+  capturedSystemFor() === afmMarker);
+check('PIN6 an unregistered paper falls back to the AFM marker rather than an empty system block',
+  capturedSystemFor('APM') === afmMarker);
+
+const sblMarker = capturedSystemFor('SBL');
+check('PIN6 SBL gets its own marker', sblMarker !== afmMarker && sblMarker.length > 0);
+check('PIN6 SBL marker names the paper', sblMarker.includes('Strategic Business Leader (SBL)'));
+// ⚠️ The substantive half. AFM's rule (1) is claim -> because -> implication, a THREE-part test.
+// SBL's rubric is written to the examiners' FOUR-limb one, and the limb the two disagree on is
+// the example from the case — which carries marks on every SBL criterion.
+check('PIN6 SBL marker judges on the four-limb development test',
+  /SIGNIFICANCE/.test(sblMarker) && /THIS organisation/.test(sblMarker)
+  && /CONSEQUENCES/.test(sblMarker) && /EXAMPLE from the case material/.test(sblMarker));
+check('PIN6 SBL marker does NOT carry AFM\'s three-part development test',
+  !sblMarker.includes('claim → because → implication'));
+check('PIN6 AFM marker still carries its three-part test',
+  afmMarker.includes('claim → because → implication'));
+check('PIN6 SBL marker keeps the insight-not-arithmetic rule',
+  sblMarker.includes('NEVER require a named statistic'));
+check('PIN6 SBL marker keeps the evidence_span discipline',
+  sblMarker.includes('SHORT VERBATIM quote'));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SBL BATCH A — the approved five. Spec of record: docs/SBL_BATCH_A_PLAN.md.
+// ─────────────────────────────────────────────────────────────────────────────
+const sblPlans = NARRATIVE_PLAN.filter((p: NarrativePlan) => p.paper === 'SBL');
+const APPROVED: Record<string, { lo: string; skill: string; flags: string[] }> = {
+  'SBL-A1': { lo: 'A2b', skill: 'analysis',   flags: ['F7', 'F5'] },
+  'SBL-A2': { lo: 'A2d', skill: 'evaluation', flags: ['F5', 'F2'] },
+  'SBL-A3': { lo: 'A1a', skill: 'analysis',   flags: ['F2'] },
+  'SBL-A4': { lo: 'A3d', skill: 'scepticism', flags: ['F4', 'F10'] },
+  'SBL-A5': { lo: 'A3a', skill: 'evaluation', flags: ['F1', 'F4'] },
+};
+check('SBL batch A is exactly the five approved plans',
+  JSON.stringify(sblPlans.map((p: NarrativePlan) => p.id).sort()) === JSON.stringify(Object.keys(APPROVED).sort()),
+  sblPlans.map((p: NarrativePlan) => p.id).join(','));
+
+for (const [id, want] of Object.entries(APPROVED)) {
+  const plan = sblPlans.find((p: NarrativePlan) => p.id === id);
+  if (!plan) { check(`${id} exists`, false); continue; }
+  check(`${id} is ${want.lo} · ${want.skill} as approved`, plan.lo_code === want.lo && plan.skill === want.skill,
+    `${plan.lo_code} · ${plan.skill}`);
+  check(`${id} declares its designed BAD modes ${want.flags.join('/')}`,
+    JSON.stringify(plan.designed_bad?.flags) === JSON.stringify(want.flags),
+    JSON.stringify(plan.designed_bad?.flags));
+  // ⚠️ THE TWO EXCLUDED OUTCOMES. A3b and A1b return zero hits across all seven examiner reports,
+  // so a golden BAD for them would have to be invented. Pinned so a later edit cannot quietly
+  // re-add one without reading why it was left out.
+  check(`${id} is not built on a zero-evidence outcome`, plan.lo_code !== 'A3b' && plan.lo_code !== 'A1b');
+}
+
+check('exactly one SBL drill is a scepticism drill — the only one N6 gates',
+  sblPlans.filter((p: NarrativePlan) => p.skill === 'scepticism').length === 1);
+check('SBL-A4 is that drill', sblPlans.find((p: NarrativePlan) => p.skill === 'scepticism')?.id === 'SBL-A4');
+
+for (const plan of sblPlans) {
+  const prompt = buildNarrativeUserPrompt(plan);
+  // The golden BAD block must carry THIS plan's modes, not AFM's fixed backbone. A regression to
+  // the shared block would author five drills against one failure and call them different.
+  check(`${plan.id} prompt carries its own designed_bad_flags`,
+    prompt.includes(`designed_bad_flags MUST be EXACTLY ${JSON.stringify(plan.designed_bad!.flags)}`));
+  check(`${plan.id} prompt does NOT carry AFM's fixed backbone`,
+    !prompt.includes('designed_bad_flags MUST be EXACTLY ["F1","F5","F4"] — no more, no fewer.')
+    || JSON.stringify(plan.designed_bad!.flags) === JSON.stringify(['F1', 'F5', 'F4']));
+  check(`${plan.id} prompt states what the BAD does`, prompt.includes('WHAT THE BAD DOES:'));
+  check(`${plan.id} prompt carries mechanics for every declared flag`,
+    plan.designed_bad!.flags.every((f) => new RegExp(`\\n- ${f}: `).test(prompt)));
+  check(`${plan.id} brief forbids naming a model in the stem`, /must not name/i.test(plan.brief));
+}
+// SBL-A4 carries ONE golden BAD, and the aggressive pole is explicitly kept OUT of it.
+const a4 = sblPlans.find((p: NarrativePlan) => p.id === 'SBL-A4')!;
+check('SBL-A4 has ONE designed BAD, not two poles',
+  !/aggressive|accusator/i.test(a4.designed_bad!.brief.split('DO NOT make')[0]));
+check('SBL-A4 explicitly forbids the aggressive pole in the BAD',
+  a4.designed_bad!.brief.includes('DO NOT make the bad answer aggressive'));
+check('SBL-A4 scenario brief demands a quoted assertion long enough for N6b',
+  /twelve words|double quotes/i.test(a4.brief));
+check('SBL-A4 scenario brief demands a fact key inside the quote for N6c',
+  a4.brief.includes('VERBATIM INSIDE the quoted'));
+
+// An unregistered BAD flag must throw, never reach the model as a bare code.
+throws('a designed_bad flag with no mechanics is refused',
+  () => buildNarrativeUserPrompt({ ...a4, designed_bad: { flags: ['F99'], brief: 'x' } }),
+  'no mechanics registered');
 
 check('--narrative-paper AFM selects only AFM plans',
   assertNarrativePlanIds(NARRATIVE_PLAN, undefined, 'AFM').every((p: NarrativePlan) => p.paper === 'AFM'));

@@ -2856,6 +2856,15 @@ interface NarrativePlan {
    * premise can say so; a rotation cannot know it.
    */
   skill: string;
+  /**
+   * The failure mode this drill's golden BAD is DESIGNED to commit, and what it does.
+   *
+   * Absent on every AFM plan, and that absence is what keeps AFM's prompt byte-identical: the AFM
+   * corpus was authored to one fixed backbone (exactly F1/F5/F4 on every drill), which
+   * `goldenBadBlock` returns verbatim when this is unset. Present on SBL plans, where one
+   * evidenced mode per drill IS the batch design — see docs/SBL_BATCH_A_PLAN.md.
+   */
+  designed_bad?: { flags: string[]; brief: string };
 }
 
 // Code-owned default bands (fraction of total_marks). Narrative marking's band→verdict is code-owned.
@@ -3139,6 +3148,168 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       'adequate; the skill assessed is making a technical remediation commitment credible and ' +
       'actionable for the people it affects, given that trust has already been broken.',
   },
+
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+  // SBL BATCH A — section A (Leadership), 0/12 covered. Spec + rulings: docs/SBL_BATCH_A_PLAN.md
+  //
+  // TWO CONDITIONS PICKED THESE FIVE: zero coverage, AND an evidenced failure mode from
+  // docs/evidence/SBL_FAILURE_CATALOGUE.md to build the golden BAD against. `A3b` (IESBA codes)
+  // and `A1b` (entrepreneurship) meet the first and fail the second — zero hits across all seven
+  // examiner reports — so their BAD would have to be invented. That is an exclusion about
+  // EVIDENCE, not about safety: a zero-hit topic is examinable and probably just was not examined
+  // in these ten sittings (catalogue caveat 2). Both stay on the build list.
+  //
+  // Every brief obeys the two standing rulings: NO MODEL NAMED IN THE STEM (MJ25 p.4 / MJ26 p.4 —
+  // a noun in the requirement summons an unrequested model and answers go to the model), and the
+  // rubric is the examiners' four-part development test at 2 marks with the 1-mark undeveloped
+  // tier (MJ25 p.4, SD25 p.4, MJ26 p.5). The second is carried by PAPER_NARRATIVE_RULES.SBL, so
+  // it is not repeated in every brief.
+  // ═══════════════════════════════════════════════════════════════════════════════════════
+  {
+    // M2, the examiners' #1 stated reason since MJ25. The scenario gives BEHAVIOUR, not labelled
+    // styles — if it labelled them, identifying one would be reading rather than analysis.
+    paper: 'SBL', id: 'SBL-A1', lo_code: 'A2b', covers: ['A2b'], level: 2, skill: 'analysis',
+    region: 'Vietnam', sector: 'a household-appliance manufacturer restructuring after a failed export push',
+    heading: '**Leadership style — reading the style from the behaviour**',
+    brief:
+      'A2b (L2, discursive) — the leadership style appropriate to manage strategic change. The '
+      + 'scenario describes THREE SEPARATE EPISODES of a NAMED CEO\'S ACTUAL BEHAVIOUR during a '
+      + 'restructure: what they did, what they said to whom, how a decision was taken and who was '
+      + 'consulted. The episodes must differ from one another in a way a reader can see — one '
+      + 'directive, one consultative, one delegating would be a natural spread, but the scenario '
+      + 'must SHOW the behaviour and NEVER LABEL IT. The requirement asks the candidate to identify '
+      + 'the styles in evidence and advise which style fits the change NOW facing the organisation '
+      + '(a second, different change, stated in the scenario). CONCEPTUAL-ONLY. '
+      + 'CRITICAL — the stem must not name any leadership or change model, and no exhibit heading '
+      + 'may name one either. The object of the requirement is the STYLE; the change programme is '
+      + 'the context, not the answer.',
+    designed_bad: {
+      flags: ['F7', 'F5'],
+      brief:
+        'it writes competently about THE CHANGE PROGRAMME — what the restructure involves, why it is '
+        + 'needed, how it should be sequenced — and reaches for a named change-process model to '
+        + 'structure that discussion. Leadership STYLE is mentioned at most in passing. It never '
+        + 'uses the behavioural episodes as evidence of a style. This is the MJ26 p.4 failure '
+        + 'reproduced exactly, so it must read as a serious, well-informed answer to the question '
+        + 'the candidate wished had been set.',
+    },
+  },
+  {
+    // M4. Culture through ARTEFACTS is what makes the model reachable without the stem naming it —
+    // so the BAD's reach for it is the candidate's choice, not something the stem invited.
+    paper: 'SBL', id: 'SBL-A2', lo_code: 'A2d', covers: ['A2d'], level: 3, skill: 'evaluation',
+    region: 'Poland', sector: 'a regional logistics group moving from haulage into contract warehousing',
+    heading: '**Culture and strategy — what the artefacts reveal about what is possible**',
+    brief:
+      'A2d (L3, discursive) — the impact of culture on organisational purpose and strategy. The '
+      + 'scenario describes the culture ENTIRELY THROUGH ARTEFACTS AND OBSERVABLE PRACTICE: what '
+      + 'behaviour gets rewarded and how, who has been promoted and on what basis, what a typical '
+      + 'management meeting looks like and who speaks, how mistakes are handled, what the induction '
+      + 'covers. NO abstract characterisation of the culture — no sentence beginning "the culture '
+      + 'is…". The scenario also states a STRATEGIC AIM the board has committed to which sits '
+      + 'awkwardly against those artefacts. The requirement asks the candidate to assess how the '
+      + 'culture would help or constrain that stated aim, and to reach a judgement on whether the '
+      + 'aim is achievable without changing it. CONCEPTUAL-ONLY. '
+      + 'CRITICAL — the stem must not name the cultural web or any other cultural model.',
+    designed_bad: {
+      flags: ['F5', 'F2'],
+      brief:
+        'it describes the cultural web AS A MODEL — naming its elements and explaining what each one '
+        + 'means in general — and never connects any element to this organisation\'s stated artefacts '
+        + 'or to the strategic aim. Accurate textbook content, zero application. This is the S23 p.9 '
+        + 'and D23 p.8 move: correct theory, no reference to the company.',
+    },
+  },
+  {
+    // M3, the highest-value mode in the catalogue. THE BAD IS NOT WRONG — that is the point. Every
+    // point it makes is correct and it still scores the examiners' own single-mark tier.
+    paper: 'SBL', id: 'SBL-A3', lo_code: 'A1a', covers: ['A1a'], level: 3, skill: 'analysis',
+    region: 'Kenya', sector: 'a national agricultural co-operative that launched a digital payments platform',
+    heading: '**Leadership in formulation and in implementation — the same strategy, two halves**',
+    brief:
+      'A1a (L3, discursive) — the role of effective leadership in the successful formulation AND '
+      + 'implementation of strategy and change. The scenario is an exhibit setting out a strategy '
+      + 'that was FORMULATED WELL AND IMPLEMENTED BADLY: the analysis behind it was sound, the '
+      + 'opportunity was real and correctly sized, and the rollout then failed on things the '
+      + 'scenario states plainly (roles never assigned, a pilot ignored, regional managers hearing '
+      + 'about it after launch, no one owning the outcome). The requirement asks the candidate to '
+      + 'assess the LEADERSHIP CONTRIBUTION TO EACH HALF SEPARATELY and to say what that comparison '
+      + 'shows about where the leadership weakness actually lies. CONCEPTUAL-ONLY. '
+      + 'CRITICAL — the stem must not name any leadership-trait framework.',
+    designed_bad: {
+      flags: ['F2'],
+      brief:
+        'it identifies FOUR CORRECT POINTS and develops none of them. Each is a true statement about '
+        + 'the leadership failure — "roles were not assigned", "the pilot findings were not acted on" '
+        + '— stated in one clause and left there, with no assessment of how significant it is, no use '
+        + 'of the information given to tie it to this organisation, no consequence and no example '
+        + 'from the exhibit. NOTHING IN IT IS WRONG. It scores the examiners\' single-mark tier on '
+        + 'every point, and that is exactly what this drill exists to show.',
+    },
+  },
+  {
+    // M7 (J24 p.19, SD25 p.9, MJ26 p.9 — no marks awarded). The ONE drill of the five that N6
+    // gates: scepticism runs N6b (quoted assertion >=6 words) and N6c (an F10 criterion must
+    // anchor on a fact whose key falls inside that quote). Both shape the scenario below.
+    paper: 'SBL', id: 'SBL-A4', lo_code: 'A3d', covers: ['A3d'], level: 3, skill: 'scepticism',
+    region: 'Colombia', sector: 'a listed construction and infrastructure group bidding for public contracts',
+    heading: '**Ethical threats — testing "within the rules"**',
+    brief:
+      'A3d (L3, discursive) — the nature and impact of ethical threats and the safeguards that '
+      + 'prevent or mitigate them. The scenario must carry a DIRECTLY QUOTED ASSERTION FROM A NAMED '
+      + 'FINANCE DIRECTOR, at least twelve words long, in double quotes, to the effect that an '
+      + 'arrangement is WITHIN THE RULES. The arrangement must be described in enough stated detail '
+      + 'that a candidate can show exactly which threats it creates and why the assertion does not '
+      + 'settle the question — and the detail must fall short of anything that would justify '
+      + 'alleging dishonesty. AT LEAST ONE scenario_fact key must appear VERBATIM INSIDE the quoted '
+      + 'sentence (N6c requires the claim to be reachable as an anchor). The requirement asks the '
+      + 'candidate to assess the threats the arrangement creates and recommend safeguards. '
+      + 'CONCEPTUAL-ONLY. CRITICAL — the stem must not name any ethical-threat taxonomy or code. '
+      + 'GATE REQUIREMENT (N6c), and the first two runs failed on it: EVERY criterion carrying F10 '
+      + 'must list, in its anchor_facts, the scenario_fact whose key sits inside the quoted '
+      + 'sentence. It is not enough for that fact to exist — the criteria that mark the challenge '
+      + 'must be anchored ON THE CLAIM BEING CHALLENGED, or the claim is unreachable as an anchor '
+      + 'and no criterion can be required to bite on it.',
+    designed_bad: {
+      flags: ['F4', 'F10'],
+      brief:
+        'it performs scepticism AS QUESTIONS. It raises the right concerns in interrogative form — '
+        + '"Has the board considered whether…?", "Is it clear that…?", "Should the committee not ask…?" '
+        + '— and never states an assessment or reaches a conclusion. Every question is a good '
+        + 'question; not one is answered, and no safeguard is recommended. This is the MJ26 p.9 '
+        + 'failure, which the examiners say earns no marks at all. '
+        + 'DO NOT make the bad answer aggressive or accusatory — over-reaching is a DIFFERENT failure '
+        + '(SD25 p.9, MJ26 p.14) and it is taught as a named contrast in the teaching reveal, not '
+        + 'here. Two failure directions in one BAD would make the GOOD/BAD separation unverifiable.',
+    },
+  },
+  {
+    // M9 is single-sitting and the catalogue says do not build against it alone. It is not alone:
+    // M1 is 7/7 and is the deterministically detected half (F1). Both raise without the model layer.
+    paper: 'SBL', id: 'SBL-A5', lo_code: 'A3a', covers: ['A3a'], level: 3, skill: 'evaluation',
+    region: 'Indonesia', sector: 'a listed water utility serving a fast-growing coastal city',
+    heading: '**Responsible leadership — commercially defensible, and still a decision to make**',
+    brief:
+      'A3a (L3, discursive) — responsible leadership and the creation of public value by acting in '
+      + 'the public interest. The scenario states a decision with a GENUINELY DEFENSIBLE COMMERCIAL '
+      + 'CASE and a REAL PUBLIC-INTEREST COST, both concrete and both stated as GIVEN outputs — no '
+      + 'derivation and no arithmetic required of the candidate (P-N1). Neither side may be a straw '
+      + 'man: the commercial case must be one a competent board could accept, and the public cost '
+      + 'must fall on named, identifiable people. One exhibit must contain the management team\'s '
+      + 'OWN WRITTEN JUSTIFICATION for the decision, in their words, long enough to be lifted. The '
+      + 'requirement asks the candidate to evaluate the decision and COMMIT TO A VERDICT. '
+      + 'CONCEPTUAL-ONLY. CRITICAL — the stem must not name any stakeholder or ethics model.',
+    designed_bad: {
+      flags: ['F1', 'F4'],
+      brief:
+        'it lifts the management team\'s own written justification from the exhibit VERBATIM, '
+        + 'including their first-person voice, and adds nothing to it; then it sets out considerations '
+        + 'on both sides and stops without landing — "there are arguments either way", "the board will '
+        + 'need to weigh these factors". No verdict. This is S23 p.16 (fence-sitting, where the same '
+        + 'page records that candidates who DID commit scored well) combined with the copy-paste of '
+        + 'MJ26 p.8, where candidates pasted an exhibit\'s words without even changing the pronouns.',
+    },
+  },
 ];
 
 /**
@@ -3297,6 +3468,9 @@ const NARRATIVE_AUTHOR_PERSONA: Record<GeneratorPaper, string> = {
   AFM: NARRATIVE_AUTHOR_PERSONA_AFM,
   SBL: NARRATIVE_AUTHOR_PERSONA_SBL,
 };
+
+/** Pass-1 output cap. See the note at the call site for why AFM is pinned at its original 4000. */
+const NARRATIVE_MAX_TOKENS: Record<GeneratorPaper, number> = { AFM: 4000, SBL: 8000 };
 
 /**
  * WHAT EACH PROFESSIONAL SKILL MAKES THE CANDIDATE DO — the operational half of the tag.
@@ -3491,8 +3665,85 @@ const PAPER_NARRATIVE_RULES: Record<GeneratorPaper, string> = {
   context_text WITHOUT even adapting its pronouns or point of view to the answer's own voice.
 - The golden BAD must ALSO fail the development test — every point it makes stops at
   identification, with no significance, no link to this organisation, no consequence and no
-  example. It should read as a competent, fluent list that would score half marks.`,
+  example. It should read as a competent, fluent list that would score half marks.
+- Put F2 in the disqualifiers of EVERY criterion. Under this paper's scheme every criterion's
+  second mark is the development mark, so F2 is the marking basis on all of them.
+- THE GOLDEN GOOD MUST CLOSE WITH AN EXPLICIT COMMITTED RECOMMENDATION, as its own final
+  sentence, in the first person to the named recipient — "I recommend that…", "I advise the
+  committee to…", "My recommendation is…". Not a summary, not a restatement of the balance:
+  a decision the reader can act on. An answer that assesses well and stops is the failure this
+  paper's examiners single out most often, and the marker cannot award the closing marks for a
+  verdict it cannot find.`,
 };
+
+/**
+ * HOW TO MAKE A GOLDEN BAD COMMIT ONE NAMED FAILURE MODE.
+ *
+ * Only F1, F4 and F5 are raiseable DETERMINISTICALLY — N4 folds `scenarioCopyOverlap` /
+ * `longestVerbatimRun` (F1) and `hasConclusion` (F4) into the raised set itself, and F5 is a
+ * missing anchor the aggregator finds. Every other mode has to be raised BY THE GRADER against a
+ * criterion that lists it, which is why each entry below ends by saying where the flag must sit.
+ * A designed flag with no criterion carrying it fails N4-pre cheaply, before any model spend.
+ */
+const BAD_FLAG_MECHANICS: Record<string, string> = {
+  F1: 'F1: copy at least one FULL sentence (8+ words) VERBATIM from context_text into the bad answer — '
+    + 'and do NOT adapt its pronouns or point of view to the answer\'s own voice. Restating, no analysis.',
+  F2: 'F2: every point the bad answer makes STOPS AT IDENTIFICATION — no significance, no information '
+    + 'relating it to this organisation, no consequence, no example. The points must be CORRECT; that is '
+    + 'the whole design. Put F2 on the criteria whose two marks require development.',
+  F4: 'F4: NEVER state a recommendation or conclusion in the bad answer (do not use the words recommend, '
+    + 'conclude, on balance, should, advise). Put F4 on the criterion that requires the verdict.',
+  F5: 'F5: stay generic — do NOT use at least one of the named scenario_facts that a criterion requires '
+    + '(leave that anchor fact\'s key token OUT of the bad answer entirely). Put F5 on that anchored criterion.',
+  F7: 'F7: answer the ADJACENT question — write competently about the wrong object, as named in WHAT THE '
+    + 'BAD DOES below. It must read as a serious attempt at a question that was not the one set. Put F7 on '
+    + 'the criteria that name the object actually asked for.',
+  F10: 'F10: perform none of the skill\'s act while covering the same topic accurately. Put F10 on every '
+    + 'criterion that carries the act.',
+};
+
+/**
+ * The GOLDEN BAD instruction block.
+ *
+ * AFM PLANS RETURN THE PRE-CHANGE STRING BYTE-FOR-BYTE (pinned in test:narrative-paper-pins).
+ * The AFM corpus was authored to one fixed backbone — exactly ["F1","F5","F4"] on every drill —
+ * and that uniformity is load-bearing for N4-pre, which verifies all three deterministically.
+ *
+ * SBL plans DECLARE their own modes, because this batch's whole design is one evidenced failure
+ * per drill from the failure catalogue (M2 wrong object, M4 generic theory, M3 undeveloped, M7
+ * scepticism-as-questions, M9+M1 fence-sitting plus copy-paste). Forcing those five into AFM's
+ * fixed three would author five drills against the same failure and call them different.
+ */
+function goldenBadBlock(plan: NarrativePlan): string {
+  if (!plan.designed_bad) {
+    // AFM. Byte-identical to the pre-parameterisation literal — do not reformat.
+    return `GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
+- designed_bad_flags MUST be EXACTLY ["F1","F5","F4"] — no more, no fewer.
+- F1: copy at least one FULL sentence (8+ words) VERBATIM from context_text into the bad answer (restating, no analysis).
+- F5: stay generic — do NOT use at least one of the named scenario_facts that a criterion requires (leave that anchor fact's key token OUT of the bad answer entirely).
+- F4: NEVER state a recommendation or conclusion in the bad answer (do not use the words recommend, conclude, on balance, should, advise).
+- Ensure the criteria's disqualifiers collectively include F1, F5 and F4 (put F5 on an anchored criterion, F4 on the recommendation criterion, F1 where restating would earn nothing).`;
+  }
+  const { flags, brief } = plan.designed_bad;
+  const unknown = flags.filter((f) => !BAD_FLAG_MECHANICS[f]);
+  // A typo'd flag would reach the model as a bare code with no instruction behind it, and the
+  // author would improvise one. Same posture as skillDemandFor: throw, never improvise.
+  if (unknown.length) throw new Error(`${plan.id}: designed_bad flag(s) with no mechanics registered: ${unknown.join(', ')}`);
+  return `GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
+- designed_bad_flags MUST be EXACTLY ${JSON.stringify(flags)} — no more, no fewer.
+- WHAT THE BAD DOES: ${brief}
+${flags.map((f) => `- ${BAD_FLAG_MECHANICS[f]}`).join('\n')}
+- The bad answer must be FLUENT AND PLAUSIBLE. It is not a weak answer; it is a competent answer
+  committing one named failure. A reader should have to know the mark scheme to see why it loses.
+- Every flag above must be listed as a disqualifier on at least one criterion the bad answer trips,
+  or the marker cannot raise it and the drill will not gate.
+- THE BAD MUST COMMIT ITS MODES UNMISTAKEABLY, ON THE CRITERIA THAT NAME THEM. Only F1 (copying)
+  and F4 (no conclusion) are detected without a marker's judgement; every other mode above is
+  raised by a marker reading ONE criterion at a time and told to be conservative. So a bad answer
+  that commits its mode subtly, or commits it on criteria that do not list it, will be marked
+  down and the flag still will not be raised — which fails the drill. Make the failure the most
+  obvious thing about the answer on every criterion that lists it.`;
+}
 
 function buildNarrativeUserPrompt(plan: NarrativePlan, feedback?: string): string {
   const fw = frameworkFor(plan.paper);
@@ -3541,12 +3792,7 @@ HARD RULES:
 - COHERENCE: if the scenario GIVES statistical output (mean / standard deviation / probability / VaR), cross-check those figures for internal consistency BEFORE writing any prose characterising the distribution's SHAPE. Do NOT assert "fat tails" / "thin tails" / skew unless the given figures actually imply it (e.g. a normal distribution fixes P(NPV<0)=Φ(−mean/sd) and the 5th-percentile loss ≈ mean − 1.65·sd). A VaR is a THRESHOLD — the loss the outcome will not exceed at the stated confidence — NOT a severity measure: never quote it as a "we will not lose more than X" ceiling, and never claim the tail is fatter/thinner than the figures support.
 - total_marks = sum of criteria marks (aim 8–12).${PAPER_NARRATIVE_RULES[plan.paper]}
 
-GOLDEN BAD — build it to FAIL DETERMINISTICALLY so the marker provably separates it from the GOOD:
-- designed_bad_flags MUST be EXACTLY ["F1","F5","F4"] — no more, no fewer.
-- F1: copy at least one FULL sentence (8+ words) VERBATIM from context_text into the bad answer (restating, no analysis).
-- F5: stay generic — do NOT use at least one of the named scenario_facts that a criterion requires (leave that anchor fact's key token OUT of the bad answer entirely).
-- F4: NEVER state a recommendation or conclusion in the bad answer (do not use the words recommend, conclude, on balance, should, advise).
-- Ensure the criteria's disqualifiers collectively include F1, F5 and F4 (put F5 on an anchored criterion, F4 on the recommendation criterion, F1 where restating would earn nothing).${feedback ? `\n\nYOUR PREVIOUS ATTEMPT FAILED THE AUTHORING GATES. FIX EXACTLY THESE, keep everything else:\n${feedback}` : ''}`;
+${goldenBadBlock(plan)}${feedback ? `\n\nYOUR PREVIOUS ATTEMPT FAILED THE AUTHORING GATES. FIX EXACTLY THESE, keep everything else:\n${feedback}` : ''}`;
 }
 
 interface NarrativeDrill {
@@ -3562,7 +3808,16 @@ interface NarrativeDrill {
 async function draftNarrativeDrill(anthropic: Anthropic, plan: NarrativePlan, feedback?: string): Promise<NarrativeDrill> {
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4000,
+    // PER PAPER, and AFM KEEPS 4000. Raising a cap cannot change a response that already fits, so
+    // AFM's output is unaffected either way — but the whole bar on this change is that AFM is
+    // provably untouched, and "provably" does not survive an argument about sampling. It stays.
+    //
+    // SBL needs the headroom for a structural reason, not a stylistic one: its rubric writes the
+    // four-limb development test AND the 1-mark undeveloped tier into every `required_point`, and
+    // its golden GOOD must then satisfy all four limbs on every criterion. Measured on the first
+    // run: 2 of 5 SBL-A1 attempts died as `golden_bad came back empty` — the tool-use block
+    // truncated after the rubric, so the drill was lost to the cap rather than to the gates.
+    max_tokens: NARRATIVE_MAX_TOKENS[plan.paper],
     system: cacheBlock(NARRATIVE_AUTHOR_PERSONA[plan.paper]),
     tools: [SUBMIT_NARRATIVE_DRILL_TOOL],
     tool_choice: { type: 'tool', name: 'submit_narrative_drill' },
@@ -3801,7 +4056,7 @@ async function regateNarrativeDraft(anthropic: Anthropic, draftPath: string) {
   // a re-gate that did not pass it would silently apply AFM's test to an SBL rubric.
   const paper = String(parsed.row.paper_code ?? '');
   console.log(`Re-gating ${parsed.plan_id ?? draftPath} [${paper || 'paper unknown'}] — ${drill.rubric.criteria.length} criteria / ${drill.rubric.total_marks} marks · declared skill: ${skill}`);
-  const report = await runNarrativeGates(drill, makeAnthropicCriterionGrader(anthropic), skill, paper);
+  const report = await runNarrativeGates(drill, makeAnthropicCriterionGrader(anthropic, { paper }), skill, paper);
   const lines = [...report.lines];
 
   // P4 + P7 ON THE TEACHING LEG. runNarrativeGates covers N1–N6, which are all about the RUBRIC and
@@ -3881,7 +4136,16 @@ async function insertNarrativeDraft(supabase: ReturnType<typeof createClient>, d
 }
 
 async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string, paper?: string) {
-  const grader = makeAnthropicCriterionGrader(anthropic);
+  // ONE GRADER PER PAPER, NOT ONE PER BATCH. The grader carries the marker's system prompt, and
+  // SBL's development test is the examiners' four-limb one where AFM's is claim→because→
+  // implication. A batch hoisting a single grader would gate an SBL drill with an AFM marker —
+  // which is exactly what happened on this batch's first run, and it failed N1 on a criterion the
+  // reveal did satisfy under the rubric as written.
+  const graders = new Map<string, ReturnType<typeof makeAnthropicCriterionGrader>>();
+  const graderFor = (p: GeneratorPaper) => {
+    if (!graders.has(p)) graders.set(p, makeAnthropicCriterionGrader(anthropic, { paper: p }));
+    return graders.get(p)!;
+  };
   // THROWS on a duplicate id or an unmatched --narrative-only, rather than filtering to [] and
   // reporting a clean "0/0" (P-G1: the batch must be able to say it did not run).
   const plans = assertNarrativePlanIds(NARRATIVE_PLAN, only, paper);
@@ -3904,7 +4168,7 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       try { candidate = await draftNarrativeDrill(anthropic, plan, feedback); }
       catch (err) { console.warn(`  ↻ ${plan.id} attempt ${attempt} draft error: ${(err as Error).message}`); await sleep(2000); continue; }
 
-      const report = await runNarrativeGates(candidate, grader, plan.skill, plan.paper);
+      const report = await runNarrativeGates(candidate, graderFor(plan.paper), plan.skill, plan.paper);
       console.log(`\n  attempt ${attempt}:`);
       report.lines.forEach((l) => console.log(`    ${l}`));
       if (report.ok) { drill = candidate; lastLines = report.lines; break; }
