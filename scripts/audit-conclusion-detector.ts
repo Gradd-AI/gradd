@@ -79,6 +79,26 @@ async function main() {
     console.log(`${short} ${String(r.lo_code).padEnd(5)} F4-designed=${designedF4 ? 'y' : 'n'}  BAD commits now=${nowCommits ? 'y' : 'n'} widened=${thenCommits ? 'y' : 'n'}  ${breaks ? '<-- WOULD BREAK  first-hit="' + hit + '"' : ''}`);
   }
 
+  // The GOODs the detector does NOT accept. A GOOD that passes only because N5's `wantsVerdict`
+  // never fired is not a passing GOOD — it is an unasked question. Print enough to judge whether
+  // the answer commits in words the table lacks, or genuinely does not commit at all.
+  console.log('\n' + '='.repeat(90));
+  console.log('GOLDEN GOODs THE CURRENT DETECTOR DOES NOT ACCEPT');
+  console.log('='.repeat(90));
+  for (const r of rows) {
+    const good = String(r.model_answer ?? '');
+    if (CURRENT.test(good)) continue;
+    const schema = r.answer_schema as { requirement_parts?: string[]; criteria?: { required_point: string }[] } | null;
+    const parts = schema?.requirement_parts ?? [];
+    // checkCommittedVerdict's own trigger, reproduced so the report says WHY the gate stayed quiet.
+    const wantsVerdict = parts.some((p) => /recommend|advise|conclude|evaluate|assess|should/i.test(p))
+      || (schema?.criteria ?? []).some((c) => /recommend|verdict|conclusion/i.test(c.required_point));
+    console.log(`\n${String(r.id).slice(0, 8)}  ${r.lo_code}   N5 wantsVerdict = ${wantsVerdict}  ${wantsVerdict ? '<-- N5 DID fire and the GOOD still lacks an accepted phrase' : '<-- N5 never fired; the GOOD was never asked to commit'}`);
+    console.log(`  requirement_parts: ${JSON.stringify(parts)}`);
+    console.log(`  --- closing 420 chars of the golden GOOD ---`);
+    console.log('  ' + good.slice(-420).replace(/\n/g, '\n  '));
+  }
+
   console.log('\n' + '-'.repeat(90));
   console.log(`golden GOODs the CURRENT detector already accepts : ${goodOk}/${rows.length}`);
   console.log(`golden BADs that a WIDENED detector would BREAK   : ${badBreaks}/${rows.length}`);

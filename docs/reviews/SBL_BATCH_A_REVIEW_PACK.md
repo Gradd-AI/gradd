@@ -1,45 +1,61 @@
 # SBL Batch A — review pack
 
-**Generated 2026-08-19 from the five captured drafts in `docs/rollbacks/SBL_narrative_draft_SBL-A*.json`.**
-Spec of record: `docs/SBL_BATCH_A_PLAN.md`. Evidence: `docs/evidence/SBL_FAILURE_CATALOGUE.md`.
+**Regenerated from `docs/rollbacks/SBL_narrative_draft_SBL-A*.json` by
+`scripts/authoring/export-sbl-pack.ts`.** Spec: `docs/SBL_BATCH_A_PLAN.md`.
+Evidence: `docs/evidence/SBL_FAILURE_CATALOGUE.md`.
 
-**STATUS: DRAFTS ONLY. NOTHING HAS REACHED THE DATABASE.** The batch ran `--dry-run` and reported
-`5/5 passed gates, 0 inserted`. Pass 2 was subsequently re-run in place
-(`--narrative-revise-reveal-from`), rewriting `hint` and `full_reveal` only; pass 1's scenarios,
-rubrics and golden pairs are untouched. Insert is a separate explicit act and is not authorised.
+## ⚠️ DB STATE — 1 OF 5 INSERTED
+
+`SBL-A4` = `80b4918b-1602-46dc-a213-a4ba70cb12c4`, `status='candidate'`, `published=false`.
+
+The other four are refused by `acca_drills_skill_chk`, which pins the skill tag to APM/AFM's four.
+It admitted SBL-A4 because `scepticism` is a name SBL SHARES with AFM, and refused the four tagged
+`analysis` / `evaluation` because those are SBL-only. Migration
+`20260819130000_acca_drills_sbl_skill_vocabulary.sql` is written and awaits manual apply.
+**No publish flip has occurred — that is a separate GATE-P act.**
+
+**SBL-A2 was re-tagged `evaluation` → `analysis`** (Grant-ruled 2026-08-19): all six of its facts
+point one way, so committing concedes nothing and evaluation is the wrong act for what the scenario
+supplies. Re-gated green — the only thing that moved was the N6b arm's identity.
 
 ---
 
 ## ⚠️ FIVE THINGS TO HOLD WHILE READING
 
 **1. N4 verified the DETERMINISTIC modes only.** `designed_bad_flags` lists only F1/F4/F5 — what
-`checkRule23` can raise unaided. Where a drill declares an `evidenced` mode (F7, F2, F10) the BAD
-commits it and the rubric marks it, but **N4 did not prove the marker identified it**. Green N4 =
-the GOOD scores in band, the BAD scores below it, the deterministic modes were raised. Nothing more.
+`checkRule23` raises unaided. Where a drill declares an `evidenced` mode (F7, F2, F10) the BAD
+commits it and the rubric marks it, but **N4 did not prove the marker identified it**.
 
-**2. N6 gates ONE of the five.** Only SBL-A4 (`scepticism`) runs N6b and N6c. The four
-`analysis`/`evaluation` drills report N6b NOT EVALUATED. Read `N6 coverage:`, never `ok` alone.
+**2. N6 gates ONE of the five** — SBL-A4 (`scepticism`) alone runs N6b and N6c. Read
+`N6 coverage:`, never `ok` alone: `ok` is true when nothing failed, and nothing can fail a check
+that did not run.
 
 **3. N6a measures LABELLING, not demand.** F10's own text names scepticism and commercial acumen —
 neither `analysis` nor `evaluation`.
 
-**4. No numeric verifier on this pipeline.** Every figure is a stated given with no derivable chain.
-That is the structural answer, not a claim the gates checked them.
+**4. There is no numeric verifier on this pipeline.** Every figure is a stated given with no
+derivable chain. That is the structural answer, not a claim the gates checked them.
 
 **5. The four-part development test is ACCA's own scheme** — published on one page of all seven
-examiner reports, arithmetic stated at MJ25 p.4, SD25 p.4, MJ26 p.5. Every criterion is 2 marks and
-states its 1-mark undeveloped tier.
+examiner reports, arithmetic at MJ25 p.4, SD25 p.4, MJ26 p.5. Every criterion is 2 marks and states
+its 1-mark undeveloped tier.
 
-**Teaching legs were regenerated after a measured defect.** The first pass had all five reveals
-headlining "undeveloped points" when one drill was designed to teach it — see the banked finding in
-`AFM_SURFACED.md`. Each headline below now names its own drill's failure; verified 5/5.
+## Confirmed BY HAND — the check N6b reports as NOT EVALUATED
+
+- **SBL-A1** ✅ three behavioural episodes + the survey + the CFO's counter-claim; `c4` requires one
+  source to bear on another. Real trade: consultation against *weeks, not months*.
+- **SBL-A3** ✅✅ strongest — the 2022 study, the March 2023 pilot, the launch-day briefing failure and
+  the 18-month survey. Four dated sources that dispute each other.
+- **SBL-A5** ✅✅ strongest evaluation — 55% of mains unusable within eight years, a 1.8× covenant and a
+  declined subsidy, against 280,000 residents at +IDR 49,500 a month. Neither side is a straw man.
+- **SBL-A2** ⚠️ **fails it** — one-directional. That finding is why it is now tagged `analysis`.
 
 
 ---
 
 ## SBL-A1 · `A2b` · analysis · L2 · 10 marks
 
-**verb:** identify, evaluate, and advise · **mode:** discursive · **paper_code:** SBL · **status:** candidate, published=false
+**verb:** identify, evaluate, and advise · **paper_code:** SBL · **status:** candidate, published=false
 
 **Designed BAD — N4 contract:** `[F5]`  ·  **evidenced (NOT N4-verified):** `F7`
 
@@ -178,11 +194,11 @@ The misconception this drill exposes is THE ADJACENT QUESTION: the candidate des
 
 ---
 
-## SBL-A2 · `A2d` · evaluation · L3 · 12 marks
+## SBL-A2 · `A2d` · analysis · L3 · 12 marks
 
-**verb:** assess and conclude · **mode:** discursive · **paper_code:** SBL · **status:** candidate, published=false
+**verb:** assess and conclude · **paper_code:** SBL · **status:** candidate, published=false
 
-**Designed BAD — N4 contract:** `[F5]`  ·  *evidenced mode is itself deterministic*
+**Designed BAD — N4 contract:** `[F5]`  ·  *its evidenced mode is itself deterministic*
 
 ### context_text
 
@@ -310,7 +326,7 @@ Your answer identifies cultural factors in the abstract — check whether each p
 
 ### full_reveal
 
-The misconception this drill exposes is generic theory: the candidate correctly names cultural concepts — misaligned incentives, leadership pipeline gaps, siloed communication — but describes them as they would appear in any organisation, never binding them to the specific artefacts PCG's briefing material provides. That is why the marks are lost: the examiner is not rewarding cultural literacy in the abstract; they are rewarding the act of reading PCG's evidence and committing to what it means for this board's specific 40% target. The two-mark rule makes the arithmetic visible — identify that PCG's bonuses are built around tonnage moved (one mark), then develop it: because no reward currently attaches to client satisfaction, 1,400 employees will rationally deprioritise warehousing clients, and the revenue ramp toward 40% is likely to stall as early contracts underperform and commercially skilled hires leave (second mark). Each of the four development moves — weighing significance, tying the point to PCG by name using the information given, following it to a consequence, and illustrating from the case — can be executed in two or three sentences; a candidate writing only identification-level points must find twice as many of them in the same time to reach the same total. The concluding judgement compounds the problem: a conclusion that says "culture may be a barrier" without committing to whether the 40% aim is achievable, and without reasoning from the specific constraints identified, reads as fence-sitting — the requirement asked for a reasoned judgement, and a qualified observation does not satisfy it.
+The misconception this drill exposes is generic theory: the candidate correctly names cultural concepts — misaligned incentives, leadership pipeline gaps, siloed communication — but describes them as they would appear in any organisation, never binding them to the specific artefacts PCG's briefing material provides. That is why the marks are lost: the examiner is not rewarding cultural literacy in the abstract; they are rewarding the act of reading PCG's evidence and committing to what it means for this board's specific 40% target. The two-mark rule makes the arithmetic visible — identify that PCG's bonuses are built around tonnage moved (one mark), then develop it: because no reward currently attaches to client satisfaction, 1,400 employees will rationally deprioritise warehousing clients, and the revenue ramp toward 40% is likely to stall as early contracts underperform and commercially skilled hires leave (second mark). Each of the four development moves — weighing significance, tying the point to PCG by name using the information given, following it to a consequence, and illustrating from the case — can be executed in two or three sentences; a candidate writing only identification-level points must find twice as many of them in the same time to reach the same total.
 
 ### gate matrix
 
@@ -321,17 +337,17 @@ The misconception this drill exposes is generic theory: the candidate correctly 
 - N1 rubric-coverage (reveal = full marks; every part mapped): PASS
 - N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS
 - N6a F10 marks-share: PASS
-- N6b scenario precondition (evaluation, SBL): NOT EVALUATED — the precondition is a proposition with a real downside as well as an upside — stated costs, risks or affected parties — so that landing on one side concedes something. Whether a scenario is genuinely two-sided is a reading of the facts, not a countable shape; fact counts cannot see it. N5 covers only that the answer COMMITS, not that there was a trade-off to commit about. Confirm by hand
-- N6c claim-anchor link: NOT EVALUATED — structurally N/A for evaluation — only scepticism acts on a single identifiable asserted claim
-- N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (evaluation, SBL); N6c claim-anchor link
-- P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS
-- P7 misconception-lead on the REVISED teaching leg: PASS
+- N6b scenario precondition (analysis, SBL): NOT EVALUATED — the precondition is material from ≥2 separately-identified sources the candidate can relate. ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that the rubric requires one to bear on the other
+- N6c claim-anchor link: NOT EVALUATED — structurally N/A for analysis — only scepticism acts on a single identifiable asserted claim
+- N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (analysis, SBL); N6c claim-anchor link
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS
 
 ---
 
 ## SBL-A3 · `A1a` · analysis · L3 · 12 marks
 
-**verb:** assess and compare · **mode:** discursive · **paper_code:** SBL · **status:** candidate, published=false
+**verb:** assess and compare · **paper_code:** SBL · **status:** candidate, published=false
 
 **Designed BAD — N4 contract:** `[F4]`  ·  **evidenced (NOT N4-verified):** `F2`
 
@@ -486,7 +502,7 @@ The misconception this drill exposes is undeveloped points: the candidate correc
 
 ## SBL-A4 · `A3d` · scepticism · L3 · 10 marks
 
-**verb:** assess and recommend · **mode:** discursive · **paper_code:** SBL · **status:** candidate, published=false
+**verb:** assess and recommend · **paper_code:** SBL · **status:** candidate, published=false
 
 **Designed BAD — N4 contract:** `[F4]`  ·  **evidenced (NOT N4-verified):** `F10`
 
@@ -627,9 +643,9 @@ The misconception this drill exposes is SCEPTICISM AS QUESTIONS: the candidate b
 
 ## SBL-A5 · `A3a` · evaluation · L3 · 10 marks
 
-**verb:** evaluate and commit to a verdict · **mode:** discursive · **paper_code:** SBL · **status:** candidate, published=false
+**verb:** evaluate and commit to a verdict · **paper_code:** SBL · **status:** candidate, published=false
 
-**Designed BAD — N4 contract:** `[F1, F4]`  ·  *evidenced mode is itself deterministic*
+**Designed BAD — N4 contract:** `[F1, F4]`  ·  *its evidenced mode is itself deterministic*
 
 ### context_text
 
@@ -764,7 +780,7 @@ There are arguments on both sides of this decision. The operational need is genu
 
 ### hint
 
-Your answer restates what the scenario tells us — that the rate sits 42% below the commercial tariff, that the covenant is 1.8×, that the consultants confirmed 55% of mains failure — but never uses any of those facts to weigh significance, draw a consequence, or arrive at the verdict the requirement demands.
+Your answer reproduces the exhibit's own justification — the move from IDR 1,850 to IDR 4,600 per cubic metre, the IDR 4.2 trillion capital cost, the fact that the new tariff is still 42% below the standard commercial tariff — without adding an assessment of your own, and it closes by leaving the weighing to the committee rather than reaching the verdict the requirement asks for.
 
 ### full_reveal
 
@@ -782,5 +798,5 @@ The misconception this drill exposes is COPY-PASTE: the candidate believes that 
 - N6b scenario precondition (evaluation, SBL): NOT EVALUATED — the precondition is a proposition with a real downside as well as an upside — stated costs, risks or affected parties — so that landing on one side concedes something. Whether a scenario is genuinely two-sided is a reading of the facts, not a countable shape; fact counts cannot see it. N5 covers only that the answer COMMITS, not that there was a trade-off to commit about. Confirm by hand
 - N6c claim-anchor link: NOT EVALUATED — structurally N/A for evaluation — only scepticism acts on a single identifiable asserted claim
 - N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (evaluation, SBL); N6c claim-anchor link
-- P4 jurisdiction/frozen-facts on the REVISED teaching leg: PASS
-- P7 misconception-lead on the REVISED teaching leg: PASS
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS

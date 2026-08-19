@@ -391,7 +391,7 @@ const sblPlans = NARRATIVE_PLAN.filter((p: NarrativePlan) => p.paper === 'SBL');
 // also commits and the rubric marks against, which N4 cannot verify. Grant-ruled 2026-08-19 (b).
 const APPROVED: Record<string, { lo: string; skill: string; flags: string[]; evidenced?: string }> = {
   'SBL-A1': { lo: 'A2b', skill: 'analysis',   flags: ['F5'], evidenced: 'F7' },
-  'SBL-A2': { lo: 'A2d', skill: 'evaluation', flags: ['F5'] },
+  'SBL-A2': { lo: 'A2d', skill: 'analysis', flags: ['F5'] },
   'SBL-A3': { lo: 'A1a', skill: 'analysis',   flags: ['F4'], evidenced: 'F2' },
   'SBL-A4': { lo: 'A3d', skill: 'scepticism', flags: ['F4'], evidenced: 'F10' },
   'SBL-A5': { lo: 'A3a', skill: 'evaluation', flags: ['F1', 'F4'] },

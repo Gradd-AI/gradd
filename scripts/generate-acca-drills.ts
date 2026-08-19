@@ -3311,7 +3311,7 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
   {
     // M4. Culture through ARTEFACTS is what makes the model reachable without the stem naming it —
     // so the BAD's reach for it is the candidate's choice, not something the stem invited.
-    paper: 'SBL', id: 'SBL-A2', lo_code: 'A2d', covers: ['A2d'], level: 3, skill: 'evaluation',
+    paper: 'SBL', id: 'SBL-A2', lo_code: 'A2d', covers: ['A2d'], level: 3, skill: 'analysis',
     region: 'Poland', sector: 'a regional logistics group moving from haulage into contract warehousing',
     heading: '**Culture and strategy — what the artefacts reveal about what is possible**',
     brief:
@@ -4905,6 +4905,7 @@ export {
   // Exported for the pin fixture ONLY (test-narrative-paper-pins.ts). These are the
   // paper-coupled surfaces AFM's output is proven unchanged across; nothing else imports them.
   buildNarrativeUserPrompt, buildNarrativeRow, narrativeDraftPath, draftToGateInput,
+  draftReveal, FAILURE_MODE_TEACHING, type RevealInput,
   serializeNarrativeSchema, buildRevealPromptAfm, buildRevealPromptSbl, REVEAL_PROMPT_BUILDER,
   NARRATIVE_AUTHOR_PERSONA, SKILL_DEMAND_BY_PAPER, skillDemandFor, NARRATIVE_PLAN,
   PAPER_FRAMEWORKS, frameworkFor, assertNarrativePlanIds, NUMERIC_BATCH_PAPER,
