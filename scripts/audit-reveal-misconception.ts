@@ -106,6 +106,47 @@ async function main() {
     console.log(`          ${r.headline.slice(0, 150)}`);
   }
 
+  // --detail <id,id,…> — the full record for named rows, so a human can judge whether the REVEAL
+  // is wrong or the FLAGS are incomplete. Those are different defects with different fixes, and
+  // no count above can tell them apart.
+  const detailArg = process.argv.indexOf('--detail');
+  if (detailArg !== -1 && process.argv[detailArg + 1]) {
+    const want = process.argv[detailArg + 1].split(',').map((x) => x.trim());
+    for (const r of narrative) {
+      const short = String(r.id).slice(0, 8);
+      if (!want.includes(short)) continue;
+      const schema = r.answer_schema as {
+        total_marks?: number;
+        criteria?: { id: string; marks: number; disqualifiers?: string[]; development_required?: boolean; required_point: string }[];
+        _authoring?: { designed_bad_flags?: string[]; golden_bad?: string };
+      } | null;
+      const crits = schema?.criteria ?? [];
+      console.log('');
+      console.log('='.repeat(88));
+      console.log(`${short}  ${r.lo_code}  skill=${r.professional_skill_tag}  total=${schema?.total_marks}`);
+      console.log('='.repeat(88));
+      console.log('DESIGNED BAD FLAGS : ' + JSON.stringify(schema?._authoring?.designed_bad_flags ?? null));
+      console.log('DISQUALIFIER UNION : ' + JSON.stringify(Array.from(new Set(crits.flatMap((c) => c.disqualifiers ?? [])))));
+      console.log('F3 ON A CRITERION  : ' + (crits.some((c) => (c.disqualifiers ?? []).includes('F3')) ? 'YES' : 'NO'));
+      console.log('');
+      console.log('HEADLINE (verbatim, exactly as the live tutor extracts it):');
+      console.log('  ' + (String(r.full_reveal).match(MISCONCEPTION_PATTERN) || ['(none)'])[0]);
+      console.log('');
+      console.log('CRITERIA:');
+      for (const c of crits) {
+        console.log(`  ${c.id} · ${c.marks}m · disq=[${(c.disqualifiers ?? []).join(',')}] · dev=${c.development_required}`);
+        console.log(`     ${c.required_point}`);
+      }
+      console.log('');
+      console.log('FULL_REVEAL (verbatim):');
+      console.log(String(r.full_reveal));
+      console.log('');
+      console.log('GOLDEN BAD (what this drill actually penalises):');
+      console.log(schema?._authoring?.golden_bad ? String(schema._authoring.golden_bad) : '(not recorded on this row)');
+    }
+    return;
+  }
+
   const agree = rows.filter((r) => r.match.length > 0).length;
   const disagree = rows.filter((r) => r.match.length === 0 && !r.headline.startsWith('(NO')).length;
 
