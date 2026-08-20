@@ -88,6 +88,35 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## 🟠 LOGGED 2026-08-20 — TWO STUDENT-FACING TEXT DEFECTS NOTHING GATES, AND THEY ARE THE SAME CLASS
+
+**`scenario_fact.key` IS INJECTED VERBATIM INTO PROSE A STUDENT READS.** It is quoted into
+`required_point`s and into the golden GOOD exactly as given, so **a key that is a sentence-initial
+fragment renders a capital letter in the middle of someone else's sentence.** Hit on the SBL-A4
+rebuild: the key `"No independent review"` produced *"…because **No independent review** has ever
+been conducted"* twice, once in the model answer a student reads on the reveal. The only fix is to
+reword `context_text` so the phrase also occurs lowercase mid-sentence and key on that — a key must
+appear VERBATIM in the scenario, so the key cannot simply be lower-cased on its own.
+
+📐 **MEASURED BEFORE BANKING IT: 0 of 124 keys across all 19 live narrative rows (14 AFM, 5 SBL)
+carry the defect.** It never shipped. This is a PREVENTION rule, not remediation — do not describe
+it as a corpus problem.
+
+**SAME CLASS AS THE `"has been taken place"` GRAMMAR BUG** in the original A4 `context_text`: both
+are **student-facing English that no gate reads**. N1–N6 grade rubric coverage, anchoring, generic/
+copy overlap and GOOD-vs-BAD separation; P4 checks jurisdiction and frozen facts; P7 checks a
+misconception sentence exists. **Not one of them reads `context_text` or a `required_point` as
+prose.** Both defects were caught by a human reading the draft, which is currently the only thing
+that can catch them.
+
+**Fixed forward for SBL only** — a new bullet in `PAPER_NARRATIVE_RULES.SBL` requiring keys to be
+lowercase mid-sentence fragments. ⚠️ **AFM carries the same latent hazard and was deliberately not
+changed**: the rule would have to go in the SHARED hard-rules block, which moves
+`buildNarrativeUserPrompt` bytes for all eleven AFM plans and kills **PIN2**. AFM's narrative corpus
+is complete (8 rows, no further batches planned) and measured clean, so the trade is logged rather
+than taken. If AFM narrative authoring ever restarts, this rule moves to the shared block and PIN2
+is re-captured deliberately.
+
 ## ✅ CLOSED 2026-08-20 — EVERY SBL RUBRIC FORCED A CONCLUSION, AND THE INSTRUCTION WAS IN THE PROMPT (`PAPER_NARRATIVE_RULES.SBL`)
 
 **NO DRILL WAS TOUCHED. The five batch-A rows are unchanged and still `candidate`/unpublished; the

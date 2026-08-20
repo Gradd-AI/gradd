@@ -58,7 +58,7 @@
  * Reads .env.local for NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ANTHROPIC_API_KEY.
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fixedHalfUp } from '../lib/acca/rounding';
 import Anthropic from '@anthropic-ai/sdk';
@@ -3452,6 +3452,34 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
     // M7 (J24 p.19, SD25 p.9, MJ26 p.9 — no marks awarded). The ONE drill of the five that N6
     // gates: scepticism runs N6b (quoted assertion >=6 words) and N6c (an F10 criterion must
     // anchor on a fact whose key falls inside that quote). Both shape the scenario below.
+    //
+    // ⚠️ REBUILT 2026-08-20. The first build misclassified two of its three threats, and the cause
+    // was that the brief named the SKILL and the SCENARIO SHAPE and never named the THREATS — so
+    // the classification was emergent, and an emergent classification against a taxonomy the
+    // author is holding from memory is a coin toss. It came up wrong twice:
+    //   c2 called an ABSENT independent review a "self-review threat". Self-review needs someone
+    //      to re-evaluate their OWN prior judgement and rely on it [SBL-ETH1 S120.6 A3(b), PDF
+    //      p.39]. A control that never happened creates no self-review threat — it leaves an
+    //      existing threat uncontrolled. Category error, 2 of 10 marks.
+    //   c3 assessed a threat to the EXTERNAL AUDITORS' independence, in a note the external
+    //      auditors were themselves writing — a different Part of the framework from the one A3d
+    //      examines — and rested it on a single firm assertion of compliance, which does not reach
+    //      "actual or perceived pressures, including attempts to exercise undue influence"
+    //      [S120.6 A3(e)]. It then REQUIRED the candidate to make an accusation the case did not
+    //      support, which SKILL_DEMAND_SBL.scepticism names as the failure itself, not a stronger
+    //      version of the act.
+    //   c1 named self-interest on a BROTHER-IN-LAW's financial interest. Not wrong in substance,
+    //      but a brother-in-law is neither "immediate family" (a spouse or equivalent, or
+    //      dependent) nor "close family" (a parent, child or sibling who is not immediate family)
+    //      under the Code's own glossary [SBL-ETH1, PDF p.371] — so the rubric rested a threat on
+    //      a relationship the Code does not enumerate, and marked down the candidate who reached
+    //      instead for FAMILIARITY, which is the fitting category for a relationship limb.
+    // The brief below therefore NAMES all three threats and the stated fact that must create each,
+    // bans the self-review reading outright, and moves the author inside the organisation. The
+    // family relationship is constrained to the Code's enumerated terms so the drill cannot turn
+    // on a definitional argument. Source of record registered the same day: sources.json SBL-ETH1.
+    // KEPT UNCHANGED because all three were on target: the quoted twelve-word assertion, the N6c
+    // anchoring requirement, and the golden BAD (scepticism-as-questions, M7).
     paper: 'SBL', id: 'SBL-A4', lo_code: 'A3d', covers: ['A3d'], level: 3, skill: 'scepticism',
     region: 'Colombia', sector: 'a listed construction and infrastructure group bidding for public contracts',
     heading: '**Ethical threats — testing "within the rules"**',
@@ -3463,14 +3491,77 @@ const NARRATIVE_PLAN: NarrativePlan[] = [
       + 'that a candidate can show exactly which threats it creates and why the assertion does not '
       + 'settle the question — and the detail must fall short of anything that would justify '
       + 'alleging dishonesty. AT LEAST ONE scenario_fact key must appear VERBATIM INSIDE the quoted '
-      + 'sentence (N6c requires the claim to be reachable as an anchor). The requirement asks the '
-      + 'candidate to assess the threats the arrangement creates and recommend safeguards. '
+      + 'sentence (N6c requires the claim to be reachable as an anchor). '
+      + 'THE SPEAKER MUST BE THE CONFLICTED OFFICER HIMSELF, asserting in the FIRST PERSON that his '
+      + 'own arrangement is within the rules ("...sits below MY authority limit"). Naming him once '
+      + 'and then attributing the quote to an unnamed "the finance director" leaves the reader '
+      + 'unable to tell whether they are the same person, and N6b cannot see that — it checks only '
+      + 'that an attributed quote of six or more words exists. '
       + 'CONCEPTUAL-ONLY. CRITICAL — the stem must not name any ethical-threat taxonomy or code. '
-      + 'GATE REQUIREMENT (N6c), and the first two runs failed on it: EVERY criterion carrying F10 '
-      + 'must list, in its anchor_facts, the scenario_fact whose key sits inside the quoted '
-      + 'sentence. It is not enough for that fact to exist — the criteria that mark the challenge '
-      + 'must be anchored ON THE CLAIM BEING CHALLENGED, or the claim is unreachable as an anchor '
-      + 'and no criterion can be required to bite on it.',
+      + '\n'
+      + 'THE THREE THREATS THIS SCENARIO IS BUILT TO CREATE, AND THE STATED FACT THAT CREATES EACH. '
+      + 'The classification is DESIGNED, not emergent: write the scenario so that exactly these '
+      + 'three are present and each rests on a fact the case states outright. '
+      + '(1) SELF-INTEREST — a financial or other interest that could inappropriately influence '
+      + 'judgement. Create it the way the Code\'s own example does: an officer who is RESPONSIBLE '
+      + 'FOR SELECTING A VENDOR while a member of their IMMEDIATE OR CLOSE FAMILY benefits '
+      + 'financially from that vendor\'s contract. The relative MUST be a spouse, child, parent or '
+      + 'sibling — NOT an in-law, cousin, or friend. A more distant relative is a real-world '
+      + 'conflict but sits outside the Code\'s enumerated family terms, and the drill must not turn '
+      + 'on a definitional argument. Use the Code\'s own wording — CLOSE FAMILY for a parent, child '
+      + 'or sibling, IMMEDIATE FAMILY for a spouse or dependent — never a coined phrase such as '
+      + '"direct family": on an ethics drill the vocabulary tracks the Code. '
+      + '(2) FAMILIARITY — a long or close relationship making the officer too sympathetic to the '
+      + 'vendor\'s interests or too accepting of its work. State the DURATION of the relationship '
+      + 'and something that shows acceptance without challenge (renewal without re-tender, scope '
+      + 'growth nobody questioned). '
+      + '(3) INTIMIDATION — someone INSIDE the organisation deterred from acting objectively by '
+      + 'actual or perceived pressure. Give it a NAMED PARTY AND A STATED ACT: a junior employee '
+      + 'who raised a concern through a proper channel and was pressured, moved, warned or overruled '
+      + 'by a senior figure. A single firm assertion of compliance is NOT intimidation and must not '
+      + 'be presented as one — a disagreement is not pressure. '
+      + '⛔ DO NOT BUILD A SELF-REVIEW THREAT AND DO NOT LET ONE BE INFERRED. Self-review requires '
+      + 'someone to re-evaluate the results of their OWN earlier judgement and rely on it in a '
+      + 'current activity. An independent check that never happened is a MISSING SAFEGUARD, not a '
+      + 'self-review threat, and the scenario should carry that gap explicitly so it drives a '
+      + 'RECOMMENDATION rather than a threat classification. '
+      + '⛔ EVERY THREAT ASSESSED MUST BE A THREAT TO THE ORGANISATION AND ITS OWN PEOPLE. A3d is '
+      + 'about the entity, so the answer is written by an INTERNAL party (head of internal audit, or '
+      + 'the company secretary) to the chair of the audit and ethics committee. Do NOT make the '
+      + 'author the external auditors and do NOT ask about auditor independence — that is a '
+      + 'different Part of the ethical framework and it is not what this outcome examines. '
+      + '\n'
+      + 'THE REQUIREMENT asks the candidate to assess the threats the arrangement creates and to '
+      + 'recommend the safeguards the committee should adopt, COMMITTING to which package it should '
+      + 'put in place. Both a continue-with-safeguards package (recusal plus an independent '
+      + 'retrospective review) and an exit package (end the retainer and re-tender) must be '
+      + 'defensible on the stated facts, so the scenario must state what the vendor actually '
+      + 'delivers and what ending the arrangement would cost the group. ANY COST OR PENALTY THE '
+      + 'CANDIDATE IS EXPECTED TO WEIGH MUST CARRY THE STATED REASON IT ARISES — in a scepticism '
+      + 'drill a figure the candidate must accept but cannot test is the wrong kind of given. '
+      + 'SAFEGUARD CRITERIA CARRY ONE REMEDY EACH. Do not stack recusal, a retrospective review, a '
+      + 'conduct investigation and a whistleblower protection into a single 2-mark criterion: every '
+      + 'criterion here is worth exactly 2 marks against the same four-limb development test, so a '
+      + 'criterion holding four remedies is asking four times the work of its neighbours for the '
+      + 'same credit. One remedy (or one tightly-coupled pair) per criterion, each tied to the '
+      + 'threat it answers. '
+      + '\n'
+      + 'GATE REQUIREMENT (N6c) — THIS IS THE GATE THIS DRILL KEEPS FAILING, AND IT INTERACTS WITH '
+      + 'THE THREE-THREAT DESIGN ABOVE, SO READ BOTH TOGETHER. Every criterion carrying F10 must '
+      + 'list, IN ITS anchor_facts, the scenario_fact whose key sits inside the officer\'s quoted '
+      + 'sentence. A criterion may carry MORE THAN ONE anchor fact, and here it MUST: each F10 '
+      + 'criterion anchors on BOTH (a) the stated fact that creates the threat it assesses — the '
+      + 'family ownership, the relationship duration, the act of pressure — AND (b) the quoted-claim '
+      + 'fact. Anchoring only on (a) fails the gate; anchoring only on (b) makes the criterion '
+      + 'unmarkable. Both, on every F10 criterion. '
+      + 'The reason is not bookkeeping: the marks here are for showing that the officer\'s own '
+      + 'assertion does not survive THIS fact, so a criterion that never references the assertion is '
+      + 'marking a description of a threat rather than a challenge to a claim. '
+      + 'AT LEAST HALF THE TOTAL MARKS must sit on criteria carrying F10 (N6a) — put F10 on every '
+      + 'criterion that assesses a threat against the assertion; the safeguard and commitment '
+      + 'criteria carry F4. '
+      + 'EVERY anchor fact must be a scenario_fact that genuinely appears in context_text with its '
+      + 'key verbatim (N2) — do not invent an anchor for a fact the scenario does not state.',
     designed_bad: {
       flags: ['F4'],
       evidenced: 'F10',
@@ -3899,6 +3990,15 @@ const PAPER_NARRATIVE_RULES: Record<GeneratorPaper, string> = {
   and (iv) an EXAMPLE drawn from the case material. Every required_point must ALSO state the
   one-mark tier in these terms: "1 mark if identified but left undeveloped." Set
   development_required = true on every criterion.
+- A scenario_fact's \`key\` IS INJECTED VERBATIM INTO PROSE A STUDENT READS, so write it as a
+  LOWERCASE MID-SENTENCE FRAGMENT that reads grammatically wherever it lands. Never make a key a
+  sentence-initial fragment ("No independent review", "The board agreed"), a full sentence, or
+  anything ending in punctuation: the key is quoted into required_points and into the golden GOOD
+  exactly as given, so a capitalised opener renders a capital letter in the middle of someone
+  else's sentence. If the phrase only exists capitalised at the start of a sentence in
+  context_text, REWORD context_text so the phrase also occurs lowercase mid-sentence, then key on
+  that. Proper nouns and figures are fine capitalised ("Juliana Ríos", "COP 4.2 billion") — the
+  rule is about common words, not about capitals as such.
 - A required_point STATES A CAUSAL LINK ONLY AS STRONGLY AS THE CASE STATES IT. Where the case
   supplies an outcome and a candidate cause but not the link between them, what is being marked
   is the candidate TRACING that link and weighing how well the case supports it — "is likely to",
@@ -4247,6 +4347,39 @@ function narrativeDraftPath(paper: GeneratorPaper, planId: string): string {
   return join(NARRATIVE_DRAFT_DIR, `${paper}_narrative_draft_${planId}.json`);
 }
 
+/**
+ * ⚠️ A DRY RUN MUST NOT DESTROY THE THING IT IS A DRY RUN AGAINST.
+ *
+ * `narrativeDraftPath` is deterministic — same paper, same plan id, same filename — so re-running
+ * a batch for a plan that already has a captured draft silently overwrote it. That draft is a
+ * COMMITTED artefact and, for a plan whose row is already in the DB, it is the only record outside
+ * the DB of what that row was built from. Found the hard way rebuilding SBL-A4: the dry run
+ * replaced the committed draft of the LIVE row with a draft of a row that does not exist yet, with
+ * no flag, no prompt and no mention in the output. Recoverable from git only because it happened
+ * to be committed and the tree happened to be clean.
+ *
+ * The rule now: an existing draft is NEVER written through. The new capture lands on the next free
+ * `.2.json`, `.3.json` … sibling and BOTH paths are printed, so nothing is lost and the operator
+ * chooses which one an insert is pointed at. `--overwrite-draft` opts back into in-place writing
+ * for the case where the existing file is genuinely stale.
+ *
+ * Deliberately NOT a refusal. Blocking the run would break the ordinary iterate-on-a-brief loop,
+ * and a guard that stops useful work gets bypassed; preserving costs one file.
+ *
+ * Does NOT apply to `--narrative-regate-from` or `--narrative-revise-reveal-from`, which take a
+ * draft path as INPUT and rewrite it deliberately. Overwriting the file you named is the point
+ * there; overwriting a file you did not name is the defect.
+ */
+function nextFreeDraftPath(path: string): string {
+  if (!existsSync(path)) return path;
+  const stem = path.replace(/\.json$/i, '');
+  for (let n = 2; n < 1000; n++) {
+    const candidate = `${stem}.${n}.json`;
+    if (!existsSync(candidate)) return candidate;
+  }
+  throw new Error(`cannot find a free draft filename beside ${path} — clean up the .N.json siblings`);
+}
+
 /** The acca_drills row. ONE definition, used by both the live insert and the dry-run capture, so a
  *  reviewed draft cannot differ from an inserted row by a field the capture forgot to include. */
 function buildNarrativeRow(
@@ -4465,7 +4598,7 @@ async function reviseNarrativeReveal(anthropic: Anthropic, draftPath: string): P
   return true;
 }
 
-async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string, paper?: string) {
+async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<typeof createClient> | null, dryRun: boolean, only?: string, paper?: string, overwriteDraft = false) {
   // ONE GRADER PER PAPER, NOT ONE PER BATCH. The grader carries the marker's system prompt, and
   // SBL's development test is the examiners' four-limb one where AFM's is claim→because→
   // implication. A batch hoisting a single grader would gate an SBL drill with an AFM marker —
@@ -4576,9 +4709,14 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
       // real run to REGENERATE — and the model does not repeat itself, so what was reviewed is not
       // what ships. The draft is written to a file and `--narrative-insert-from` inserts THAT
       // BYTE-FOR-BYTE, so review and insert are the same artefact.
-      const path = narrativeDraftPath(plan.paper, plan.id);
+      const canonical = narrativeDraftPath(plan.paper, plan.id);
+      const path = overwriteDraft ? canonical : nextFreeDraftPath(canonical);
       writeFileSync(path, JSON.stringify({ plan_id: plan.id, lo_code: plan.lo_code, skill: plan.skill, gate_lines: lastLines, row }, null, 2), 'utf8');
       console.log(`\n  (dry-run — NOT inserted; draft captured to ${path})`);
+      if (path !== canonical) {
+        console.log(`  ⚠️ ${canonical} ALREADY EXISTED and was left untouched — a dry run does not overwrite a captured draft.`);
+        console.log(`     Compare the two, then delete whichever is stale. Pass --overwrite-draft to write the canonical path in place.`);
+      }
       console.log(`  insert this exact draft with: npx tsx --env-file=.env.local scripts/generate-acca-drills.ts --narrative-insert-from ${path}`);
       await sleep(200); continue;
     }
@@ -4620,7 +4758,7 @@ async function main() {
   const fxhedgeBatch = flag('--fxhedge-batch');
   const narrativeBatch = flag('--narrative-batch');
 
-  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one; --narrative-paper SBL narrows to one paper (both error loudly on an unknown value).';
+  const USAGE = 'Usage:\n  --los A3a,B4c [--dry-run]   explicit list, one drill per code\n  --lo A3a [--dry-run]        single LO\n  --npv-batch [--dry-run]     B1a NPV batch (4 drills: standard/rationing/sensitivity/section-A)\n  --apv-batch [--dry-run]     B3j/B3k APV batch (4 drills: standard/subsidised/reject/financing-compare)\n  --capm-batch [--dry-run]    B3d/B3e CAPM batch (4 drills: project-specific/org-wacc/keu-for-apv/wrong-hurdle)\n  --duration-batch [--dry-run] B3f duration batch (4 drills: standard/compare/zero-coupon/limitations)\n  --credit-batch [--dry-run]  B3h/B4a credit-risk batch (4 drills: downgrade/spread-estimation/kd-term-structure/debt-valuation)\n  --bsop-batch [--dry-run]    B2a/B2c BSOP / real-options batch (4 drills: financial-product/delay/expand/withdraw)\n  --valuation-batch [--dry-run] B4a/B4b/B4c valuation batch (5 drills: fcff-enterprise/fcfe-equity/dividend-capacity/valuation-compare + B4c rehab)\n  --international-batch [--dry-run] B5/A6a international batch (4 drills: home-currency-NPV/exchange-rate-sensitivity/restricted-remittance/multinational-dividend-capacity)\n  --risk-batch [--dry-run]    B1a/B1b risk & uncertainty batch (4 drills: enpv/sensitivity/radr-compare/risk-measures)\n  --fxhedge-batch [--dry-run] E2b FX-hedging batch (4 drills: forward-mmh-compare/futures/options/swap)\n  --narrative-batch [--dry-run] narrative cluster (8 discursive drills). D1–D5 (B): MonteCarlo/sources/capital-structure/BSOP-conceptual/exchange-controls. D6–D8 (PS-cell batch): E2a scepticism / E2c commercial-acumen / B1b scepticism. --narrative-only D3 regenerates one; --narrative-paper SBL narrows to one paper (both error loudly on an unknown value). A dry run NEVER overwrites an existing captured draft — it writes the next free .N.json sibling and names both; --overwrite-draft opts into writing the canonical path in place.';
   const KNOWN_FLAGS = new Set(['--lo', '--los', '--dry-run', '--npv-batch', '--apv-batch', '--capm-batch', '--duration-batch', '--credit-batch', '--bsop-batch', '--valuation-batch', '--international-batch', '--risk-batch', '--fxhedge-batch', '--narrative-batch', '--narrative-only', '--narrative-paper', '--narrative-insert-from', '--narrative-revise-reveal-from', '--narrative-regate-from', '--narrative-update-from', '--drill-id']);
   const unknown = argv.filter((a) => a.startsWith('--') && !KNOWN_FLAGS.has(a));
   if (unknown.length) { console.error(`Error: unrecognised flag(s): ${unknown.join(', ')}\n\n${USAGE}`); process.exit(1); }
@@ -4672,7 +4810,7 @@ async function main() {
     // whose drill failed all 5 attempts and wrote NO draft still exited 0, and a caller reading only
     // the exit code (or a run whose stdout was redirected, which is how this was found) saw success.
     // A batch that produced nothing must not be able to say it succeeded.
-    const failed = await runNarrativeBatch(anthropicN, supabaseN, dryRun, only, arg('--narrative-paper'));
+    const failed = await runNarrativeBatch(anthropicN, supabaseN, dryRun, only, arg('--narrative-paper'), flag('--overwrite-draft'));
     process.exitCode = failed === 0 ? 0 : 1;   // P-G4: set exitCode, never process.exit()
     return;
   }
