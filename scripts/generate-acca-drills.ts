@@ -4318,7 +4318,23 @@ async function runNarrativeGates(
 
 // Serialize the narrative rubric to the answer_schema jsonb (ruling 7 — no new column). Carries
 // rubric_version + the golden BAD/designed-flags as authoring artefacts (_authoring; never served).
-function serializeNarrativeSchema(drill: NarrativeDrill): Record<string, unknown> {
+function serializeNarrativeSchema(drill: NarrativeDrill, plan?: NarrativePlan): Record<string, unknown> {
+  // ⚠️ `designed_bad_flags` IS NOT THE DESIGNED MODE, AND STORING ONLY IT LOSES THE PROVENANCE.
+  //
+  // `flags` are the DETERMINISTICALLY RAISEABLE modes (F1/F4/F5) that N4 can prove from the golden
+  // BAD unaided. `evidenced` is the mode the drill was actually BUILT to teach, and it is what
+  // `designedFailureFor` hands the teaching prompt. They are routinely different: SBL-A1 declares
+  // `flags: ['F5']` with `evidenced: 'F7'`, so the row stored F5 while its reveal correctly
+  // headlined THE ADJACENT QUESTION (F7) — and an auditor reading the row later sees F5 against an
+  // F7 headline and concludes the reveal is off-rubric, which is the exact reverse of the truth.
+  // The audit script `audit-reveal-misconception.ts` reads this field, so the hole is not
+  // hypothetical: it feeds a measurement.
+  //
+  // PIN1-SAFE BY CONSTRUCTION: the keys are written ONLY where the plan declares them, and no AFM
+  // plan carries `designed_bad` at all, so every AFM row is byte-identical and the six committed
+  // AFM drafts still rebuild exactly. The pins fixture also calls this with one argument, which
+  // takes the same absent branch.
+  const db = plan?.designed_bad;
   return {
     mode: 'narrative',
     rubric_version: 'narrative_v1',
@@ -4330,6 +4346,8 @@ function serializeNarrativeSchema(drill: NarrativeDrill): Record<string, unknown
     _authoring: {
       golden_bad: drill.golden_bad,
       designed_bad_flags: drill.designed_bad_flags,
+      ...(db?.evidenced ? { designed_mode_evidenced: db.evidenced } : {}),
+      ...(db?.teaches ? { designed_mode_teaches: db.teaches } : {}),
       note: 'Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer.',
     },
   };
@@ -4643,7 +4661,7 @@ async function runNarrativeBatch(anthropic: Anthropic, supabase: ReturnType<type
 
     // Build the served model_answer = STABLE HEADING (area-entry key) + the golden-GOOD reveal.
     const model_answer = `${plan.heading}\n\n${drill.reveal.trim()}`;
-    const answer_schema = serializeNarrativeSchema(drill);
+    const answer_schema = serializeNarrativeSchema(drill, plan);
 
     console.log(`\n  ✓ ${plan.id} gates PASS (${lastLines.length} checks)`);
     console.log(`\n  CONTEXT_TEXT:\n${drill.context_text}`);
