@@ -3849,6 +3849,45 @@ function skillDemandFor(paper: GeneratorPaper, skill: string): SkillDemand {
  * second paper is served by ADDING rules, never by editing the shared ones, so that the pin can
  * stay a genuine equality rather than a diff nobody reads.
  */
+/**
+ * ⚠️ EVERY SBL BATCH-A RUBRIC FORCED A CONCLUSION, AND THE INSTRUCTION WAS HERE.
+ *
+ * Measured across all five drafts: A1 c5 prescribed "consultative modelled on Episode B,
+ * supplemented by selective directive", A2 c6 demanded "the 40% target is NOT achievable within
+ * four years" AND forbade a balance, A3 c5 prescribed "not analytical but executional", A5 c5
+ * prescribed "defensible in principle" (with the reveal handing over the exact phrase to write).
+ * A rubric that names the verdict marks AGREEMENT, not judgement.
+ *
+ * IT WAS NOT THE PLANS AND IT WAS NOT THE SKILL TABLE. `SKILL_DEMAND_SBL.evaluation.act` says
+ * "WEIGH … and COME DOWN" and `.scepticism.act` says "then COMMIT to an assessment" — both demand
+ * commitment, NEITHER names a direction. A1 and A2 declare no F4 at all and still forced a
+ * verdict. The chain ran: this bullet's old trailing clause ("the marker cannot award the closing
+ * marks for a verdict it cannot find") presupposed a verdict-carrying criterion → the generic hard
+ * rule that the reveal must make EVERY required_point and END committed → `BAD_FLAG_MECHANICS.F4`
+ * ("Put F4 on the criterion that requires the verdict") → and finally `required_point` is defined
+ * in the tool schema as "THE POINT A FULL-MARKS ANSWER MAKES", so a criterion that requires the
+ * verdict is written BY STATING IT. There was no shape available for "commit to something" that
+ * was not "commit to this".
+ *
+ * This is the C4/A3a doctrine one layer up: a gate or rule that requires coverage the content does
+ * not naturally supply makes the author reach for something, and it cannot see that it caused it.
+ * Nothing could catch it — N5 tests the REVEAL for a conclusion and never the criterion, N6
+ * explicitly declines to read `required_point` semantics, and N1/N4 grade coverage and GOOD-vs-BAD
+ * separation. A rubric that prescribes the answer passes all six.
+ *
+ * Fixed per P-T2 — the instruction is REDEFINED (what the criterion marks) rather than a
+ * prohibition being bolted on. The golden-GOOD-must-close half is evidenced (S23 p.16, where the
+ * same page records that candidates who DID commit scored well) and is untouched.
+ *
+ * THE HEDGING RULE IS THE SAME DEFECT ONE FIELD OVER. `buildRevealPromptSbl`'s quality rules
+ * already ban "directly" / "depends entirely on" where the scenario shows only plausibility — and
+ * nothing governed the RUBRIC. That is exactly why SBL-A3 shipped a properly hedged reveal beside
+ * criteria reading "directly traceable" and "confirming" for a 67% adoption shortfall the case
+ * supports as plausible, not proven.
+ *
+ * ⚠️ SBL-ONLY BY CONSTRUCTION. `AFM: ''` — AFM's narrative prompt bytes cannot move, which PIN2
+ * asserts over all eleven AFM plans with and without the retry arm. Verified green, not assumed.
+ */
 const PAPER_NARRATIVE_RULES: Record<GeneratorPaper, string> = {
   AFM: '',
   SBL: `
@@ -3860,6 +3899,12 @@ const PAPER_NARRATIVE_RULES: Record<GeneratorPaper, string> = {
   and (iv) an EXAMPLE drawn from the case material. Every required_point must ALSO state the
   one-mark tier in these terms: "1 mark if identified but left undeveloped." Set
   development_required = true on every criterion.
+- A required_point STATES A CAUSAL LINK ONLY AS STRONGLY AS THE CASE STATES IT. Where the case
+  supplies an outcome and a candidate cause but not the link between them, what is being marked
+  is the candidate TRACING that link and weighing how well the case supports it — "is likely to",
+  "suggests", "the most plausible driver on the case's own figures". Keep "directly", "confirms",
+  "traceable to" and "proves" for a link the case states outright. A criterion that overstates the
+  link marks down the candidate whose hedging was correct, and it is the criterion that is wrong.
 - NEVER NAME A THEORETICAL MODEL, FRAMEWORK, MATRIX OR NAMED AUTHOR IN \`question\` OR IN
   \`context_text\`. Not in the requirement, not in an exhibit heading, not in a character's
   dialogue. The examiners record answers going to the model a requirement's noun evoked instead
@@ -3881,8 +3926,14 @@ const PAPER_NARRATIVE_RULES: Record<GeneratorPaper, string> = {
   sentence, in the first person to the named recipient — "I recommend that…", "I advise the
   committee to…", "My recommendation is…". Not a summary, not a restatement of the balance:
   a decision the reader can act on. An answer that assesses well and stops is the failure this
-  paper's examiners single out most often, and the marker cannot award the closing marks for a
-  verdict it cannot find.`,
+  paper's examiners single out most often.
+- THE CRITERION THAT MARKS THAT CLOSE MARKS THE STRUCTURE OF A COMMITTED JUDGEMENT, NEVER ITS
+  DIRECTION. Its required_point states what a full-marks judgement CONTAINS — the case evidence
+  it cites, the consequence it states for this organisation, and the opposing case it addresses
+  and answers — and says in terms that EITHER verdict earns the full two marks where it is
+  reached that way. Write the ACT of landing, not the landing itself: a required_point that
+  spells out the conclusion is marking agreement with its author rather than the candidate's
+  judgement, so a candidate who reasons well to the other answer scores nothing for it.`,
 };
 
 /**

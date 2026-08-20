@@ -88,6 +88,53 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## ✅ CLOSED 2026-08-20 — EVERY SBL RUBRIC FORCED A CONCLUSION, AND THE INSTRUCTION WAS IN THE PROMPT (`PAPER_NARRATIVE_RULES.SBL`)
+
+**NO DRILL WAS TOUCHED. The five batch-A rows are unchanged and still `candidate`/unpublished; the
+per-drill fixes and the A4 rebuild remain open.** This closes the SYSTEMIC cause only.
+
+Measured across all five drafts: **A1 c5** prescribed *"consultative modelled on Episode B,
+supplemented by selective directive"* · **A2 c6** demanded *"the 40% target is NOT achievable within
+four years"* **and forbade a balance** · **A3 c5** prescribed *"not analytical but executional"* ·
+**A5 c5** prescribed *"defensible in principle"*, with the reveal handing over the exact phrase to
+write. A rubric that names the verdict marks **agreement**, not judgement.
+
+**IT WAS NOT THE PLANS AND NOT THE SKILL TABLE** — `SKILL_DEMAND_SBL.evaluation.act` says *"WEIGH …
+and COME DOWN"* and `.scepticism.act` says *"then COMMIT to an assessment"*: both demand commitment,
+**neither names a direction**, and A1/A2 declare no F4 at all yet still forced a verdict. The chain
+ran: this bullet's trailing clause (*"the marker cannot award the closing marks for a verdict it
+cannot find"*) presupposed a verdict-carrying criterion → the generic rule that the reveal must make
+EVERY `required_point` and end committed → `BAD_FLAG_MECHANICS.F4` (*"Put F4 on the criterion that
+requires the verdict"*) → and `required_point` is defined in the tool schema as **"the point a
+full-marks answer makes"**, so a criterion that requires the verdict is written BY STATING IT.
+
+**Nothing could catch it.** N5 tests the REVEAL for a conclusion and never the criterion; N6
+explicitly declines to read `required_point` semantics; N1/N4 grade coverage and GOOD-vs-BAD
+separation. **A rubric that prescribes the answer passes all six.** This is the C4/A3a doctrine one
+layer up — a rule requiring coverage the content does not naturally supply makes the author reach
+for something, and it cannot see that it caused it.
+
+**FIXED PER P-T2 — the instruction is REDEFINED, not prohibited.** The verdict criterion now marks
+**the STRUCTURE of a committed judgement, never its direction**: what a full-marks judgement
+CONTAINS (evidence cited, consequence stated, opposing case addressed and answered), with EITHER
+verdict earning full marks where it is reached that way. The golden-GOOD-must-close half is
+evidenced (S23 p.16, where the same page records that candidates who DID commit scored well) and is
+untouched.
+
+**THE HEDGING RULE SHIPPED ALONGSIDE — the same defect one field over.**
+`buildRevealPromptSbl`'s quality rules already ban *"directly"* / *"depends entirely on"* where the
+scenario shows only plausibility, and **nothing governed the rubric.** That is exactly why SBL-A3
+shipped a properly hedged reveal beside criteria reading *"directly traceable"* and *"confirming"*
+for a 67% adoption shortfall the case supports as plausible, not proven. A `required_point` now
+**states a causal link only as strongly as the case states it**, and what is marked is the candidate
+TRACING the link and weighing it.
+
+**SBL-only by construction, verified not assumed:** `PAPER_NARRATIVE_RULES.AFM` is `''`, and **PIN2
+is green (229/0 across PIN1–PIN6)** over all eleven AFM plans with and without the retry arm. A
+control was run alongside so PIN2 could not pass vacuously — a rule added to the wrong key would
+leave both papers unchanged and PIN2 would still be green: **all 5 SBL prompts carry both new rules
+and none of the 11 AFM prompts sees either.** Contract gate 61/61.
+
 ## ✅ CLOSED 2026-08-20 — THE TEACHING CATALOGUE GETS ITS TWO MISSING MODES, AND THE THREE ROWS ARE RE-HEADLINED
 
 **The catalogue was CLOSED, not exemplary, and it was stated THREE times, not once.**
