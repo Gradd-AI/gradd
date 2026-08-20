@@ -1152,6 +1152,43 @@ cannot be "state more of what code knows"; it has to be "do not create the deriv
 place". Both remedies are now standing — the builder-gap audit for calculator families, and this rule
 for narrative briefs.
 
+## P-N3 — NEVER LET THE RUBRIC OR THE GOLDEN GOOD KNOW MORE THAN THE EXHIBIT KNOWS (ruled 2026-08-20)
+
+A `required_point` is the point a full-marks answer makes, and a golden GOOD is that answer. Both
+are written by someone who can see the whole design — the intent behind the scenario, the reading
+the drill was built to reward. **The candidate can see only the exhibit.** Whenever the rubric or
+the GOOD states something the exhibit does not support, the drill stops marking reasoning and starts
+marking agreement with its author — and the candidate who reads the exhibit correctly is the one who
+loses.
+
+**Every defect found in SBL batch A reduces to this, in one of five disguises:**
+
+| disguise | instance | what the exhibit actually said |
+|---|---|---|
+| asserted DIRECTION | A1 c4 — non-response bias runs one way, so 68% is "a floor, not a ceiling" | nothing at all about who declined to respond |
+| manufactured ALTERNATIVES | A5 c2 — the tariff rise is "the only available lever" | the covenant restricts DEBT; the remedy's necessity is management's assertion |
+| absolute from a hedge | A2 c4 — "PCG has **no** organisational learning loop" | reviews "**rarely** record" planning failures |
+| population from a sample | A2 c2 — the senior pipeline "carries no warehousing competence", leaders "structurally absent" | three promotions |
+| proof from correlation | A3 c6 — the shortfall "maps directly onto" the missing roles, "**confirming**" the barrier | a shortfall across six regions, with nothing isolating a cause |
+
+⚠️ **THE OVER-CORRECTION IS THE SAME DEFECT, AND IT IS THE EASIEST ONE TO MISS.** A5 c2's first fix
+replaced *"the only available lever"* with a list of routes the case *"leaves open"* — equity, a
+commercial tariff band, phasing, disposals. **None of those is in the exhibit either**, and one
+rested on reading 310,000 *household* connections as a commercial customer base. Inventing options
+to refute an overclaim knows more than the exhibit exactly as the overclaim did, and it marked down
+a candidate who declined to invent them. The correct frame was neither: **separate what the exhibits
+PROVE from what management ASSERTS, and say the papers are silent on the rest.**
+
+**The test, applied to any criterion or golden-GOOD sentence:** *could a careful candidate holding
+only the exhibit reach this, and is the opposite reading closed to them?* If they could not reach
+it, the criterion marks the author's knowledge. If the opposite reading is open and the criterion
+forecloses it, the criterion marks agreement. Either way it moves.
+
+**No gate catches this and none realistically can.** N1/N4 grade coverage and GOOD-vs-BAD
+separation; N6 explicitly declines to read `required_point` semantics; P4 checks jurisdiction and
+frozen facts. It is a reader's finding — which is why an adversarial cold read of the exhibit
+against the rubric belongs in the batch lifecycle, not beside it.
+
 ## P-N2 — THE TEACHING PAIR CAN COACH A DIFFERENT SKILL FROM THE ONE THE RUBRIC MARKS (ruled 2026-08-02)
 
 **`hint` and `full_reveal` are the only fields a student actually READS as teaching. No gate checks
