@@ -2,7 +2,7 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-19 (**SBL BATCH A IS IN THE TABLE — acca_drills 155 → 160, Section A 0 → 5 of 12 outcomes, all five `candidate`/`published=false`, publish flip OWED and two steps.** The batch needed TWO schema migrations nobody predicted, both found by TRYING TO INSERT: SBL was declared in `ACCA_PAPERS`, `SKILL_DESCRIPTORS_BY_PAPER`, `GATE_CONFIG` and all 138 outcomes while the DB had never heard of it — and `acca_drills_skill_chk` then admitted exactly the one skill name SBL SHARES with AFM and refused the four SBL-only ones, drawing the vocabulary line correctly without being told. The fix is PAPER-AWARE, not flat, because a flat list would let an AFM row be tagged `analysis`. **Item 2 is BLOCKED and nothing was written**: AFM’s teaching catalogue has no entry for F6 or F10, so UNDEVELOPED-ASSUMPTION was the nearest name for a failure it cannot express. Earlier: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
+*Last refreshed: 2026-08-19 (**SBL BATCH A IS IN THE TABLE — acca_drills 155 → 160, Section A 0 → 5 of 12 outcomes, all five `candidate`/`published=false`, publish flip OWED and two steps.** The batch needed TWO schema migrations nobody predicted, both found by TRYING TO INSERT: SBL was declared in `ACCA_PAPERS`, `SKILL_DESCRIPTORS_BY_PAPER`, `GATE_CONFIG` and all 138 outcomes while the DB had never heard of it — and `acca_drills_skill_chk` then admitted exactly the one skill name SBL SHARES with AFM and refused the four SBL-only ones, drawing the vocabulary line correctly without being told. The fix is PAPER-AWARE, not flat, because a flat list would let an AFM row be tagged `analysis`. **Item 2 CLOSED 2026-08-20**: AFM’s teaching catalogue had no entry for F6 or F10 — the two most-marked modes in the corpus (33 and 24 criteria) against F3’s zero — so UNDEVELOPED-ASSUMPTION was the nearest name for a failure it could not express. Two modes added, the enumeration made conditional per SBL’s shape (PIN4 green), the shared reveal tool de-AFM’d, and all three rows re-headlined live under P-DB2/3/4. Earlier: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
 ITSELF.** `fix/ps-ladder-not-descriptor-relative` — five of the nine `descriptor` mentions WERE the
 band definitions, so no wording of rule 2 could outrun them. Rewritten to describe the quality of
 the writing, every severity anchor preserved verbatim: **band-neutral (+0.019 bands, t=0.66) and the
@@ -88,27 +88,92 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
-## 🔴 OPEN 2026-08-19 — AFM'S TEACHING CATALOGUE HAS NO ENTRY FOR F6 OR F10 (item 2, BLOCKED)
+## ✅ CLOSED 2026-08-20 — THE TEACHING CATALOGUE GETS ITS TWO MISSING MODES, AND THE THREE ROWS ARE RE-HEADLINED
 
-Re-headlining the three published AFM reveals **cannot be done as a rewrite, and nothing was
-written.** `EZRA_TEACHING_PERSONA_AFM` names a CLOSED catalogue of five — FENCE-SITTING ·
-SCENARIO-FREE · VALUATION-PLUMBING · UNDEVELOPED-ASSUMPTION · ABANDONED-AFTER-CALC — and neither
-F6 nor F10 is among them. **AFM's teaching leg has no word for "you accepted a named officer's claim
-unchallenged", despite F10 being a disqualifier across the corpus.**
+**The catalogue was CLOSED, not exemplary, and it was stated THREE times, not once.**
+`EZRA_TEACHING_PERSONA_AFM` said *"drawn from the AFM failure catalogue: A, B, C, D, **or** E"* —
+a definite disjunction with no `e.g.` (APM's persona uses one, which is why APM does not have this
+defect). `buildRevealPromptAfm` repeated the five as a slash-list. **`SUBMIT_REVEAL_TOOL` repeated
+them a third time — and that tool is SHARED BY BOTH PAPERS, so every SBL reveal call was handed a
+schema naming "the specific AFM misconception" and enumerating valuation plumbing on a leadership
+question. An EIGHTH paper-coupled site, missed by the seven-site sweep.** Against three statements
+of the closed five, the `designed_failure` override was ONE appended bullet. It lost.
 
-**So `f6426c06`, `d413fbe7` and `de0c2676` never drifted — UNDEVELOPED-ASSUMPTION was the nearest
-available name for a failure the catalogue cannot express.** Measured: `f6426c06` returned it three
-times running under an explicit instruction not to; `de0c2676` escaped only sideways to F5
-(on-rubric, but not the ruled F10). The fix is adding the missing modes to a persona that governs
-EVERY future AFM reveal — its own change, with its own evidence. P-DB3 snapshots for both sit in
-`docs/rollbacks/AFM_reveal_rewrite_*.json`.
+📐 **THE GAP, measured over the 14 published AFM narrative rows (74 criteria):** F6 on **33
+criteria / 10 rows**, F10 on **24 criteria / 6 rows** — neither nameable. **F3 on ZERO criteria** —
+and UNDEVELOPED-ASSUMPTION, its name, is the one the teaching leg reached for three times. The two
+most-marked modes after F1/F5/F4 were unsayable, and the only available development name is marked
+on nothing. Behavioural confirmation: **10 of the 11 reveals produced by `draftReveal` open with a
+catalogue name in capitals**; the 3 that do not never went through the prompt (hand-written
+literals in `scripts/_author_enarrative_batch.ts`) and the 4th was hand-rewritten under P-N2.
 
-Built and proven under P-DB6 meanwhile: `scripts/authoring/rewrite-afm-reveal.ts` (refuses an
-unruled id, snapshots the row, guards on `published=true`, asserts 17/17 immutable fields
-byte-identical). ⚠️ **It caught a defect in its own dry run: P7 checks only that a
-`misconception…:` sentence EXISTS, so a reveal naming it in sentence three yields a 100-word blob
-as the live tutor's broadcast lead.** A 220-char shape gate was added there; **the same hole is
-still open in P7 itself.**
+**THE FIX, three sites.** Persona **ADDITIVE** — the existing five byte-identical, two appended:
+**SUPERFICIAL-COMMENTARY** *(says what a figure or a given output shows without explaining or
+challenging it)* — MJ25 p.17 GCR — and **UNCHALLENGED-ASSERTION** *(takes a named director's or
+officer's claim, or a stated assumption, at face value)* — SD24 p.7 Northney, whose **"providing
+reasons"** clause is load-bearing. Prompt: the enumeration is now the **`else` of
+`designed_failure`**, which is `buildRevealPromptSbl`'s shape — **so with no AFM plan declaring a
+mode the absent branch renders byte-identical and PIN4 stays green (229/0), which an
+unconditional-plus-append edit would have killed across eleven pinned shas.** Tool schema
+de-enumerated and de-AFM'd on both fields.
+
+⚠️ **P7 WAS BEING SATISFIED BY AN ACCIDENT, AND REMOVING THE ENUMERATION EXPOSED IT.** The first
+three attempts after the change ALL failed `lintMisconceptionLead` — AFM's prompt never instructed
+the `"…misconception…:"` lead FORM at all; the catalogue labels had been producing it as a
+side-effect of naming a label. SBL's builder instructs it explicitly. That instruction is now
+ported into the AFM **present branch only** (absent branch untouched, PIN4 unaffected), and carries
+the short-lead rule as well as the first-sentence rule.
+
+**LIVE (P-DB2/3/4, 2026-08-20)** — `f6426c06` B1b → SUPERFICIAL-COMMENTARY · `d413fbe7` B4d →
+SUPERFICIAL-COMMENTARY · `de0c2676` E3a → UNCHALLENGED-ASSERTION. **17/17 immutable fields
+byte-identical on all three**, `status`/`published` untouched, leads **63 chars** against the
+220 cap, UNDEVELOPED-ASSUMPTION absent from all three reveals entirely. Audit re-run: **3 changed,
+11 untouched**, 14/14 still extractable. Snapshots `docs/rollbacks/AFM_reveal_rewrite_*.json`.
+
+⚠️ **THE DRY RUN IS NOT WHAT SHIPPED.** `rewrite-afm-reveal.ts` generates independently on the
+`--apply` pass, so the reviewed prose and the written prose are different strings — only the
+headline form and the gate-clean property carry over. This is the hazard `--narrative-insert-from`
+exists to close on the batch path and **the rewrite script has no equivalent**. Logged below.
+
+## 🔴 OPEN 2026-08-20 — P7 STILL ONLY CHECKS THAT A LEAD EXISTS, NOT THAT IT IS ONE
+
+`lintMisconceptionLead` tests `MISCONCEPTION_PATTERN.test(fullReveal)` and nothing else. `.` does
+not match newlines but matches everything else, so a reveal first saying "misconception" in its
+third sentence yields a 100-word blob — **and that blob is what the live tutor broadcasts.** The
+220-char shape gate added to `rewrite-afm-reveal.ts` catches it on that ONE path; the same hole is
+open in P7 itself, which is what every other authoring path uses.
+
+## 🟠 LOGGED 2026-08-20 — THE NINE-VS-FIVE PROJECTION, AND WHY A CHRONIC FAILURE BECAME UNSAYABLE
+
+`docs/TEACHING_PRINCIPLES_EZRA_AFM.md` is the persona's cited source and carries **NINE** numbered
+habits. Its **#1, Tier 1, "raised every sitting"** — *"Scepticism and commercial acumen
+under-demonstrated… directors' assertions taken at face value"* — **is F10.** It is carried
+VERBATIM into pass-1 authoring as `(#1 SCEPTICISM)` in `AFM_CATALOGUE_RULES`, and it was **dropped
+from the pass-2 teaching list.** The five names are a lossy projection of a nine-entry doc onto a
+twelve-code rubric, and **no mapping exists between the nine habits and the twelve F-codes in
+either direction.** That absence is the mechanism: a habit can be chronic, examiner-evidenced, and
+instructed to the author, while being unsayable to the teacher. Not acted on.
+
+## 🟠 LOGGED 2026-08-20 — UNCHALLENGED-ASSERTION NAMES THE SCEPTICISM ACT ONLY
+
+F10's own text covers scepticism **and** commercial acumen, and its six live rows span **THREE**
+skill tags — scepticism ×3 (`f6426c06`, `1030689b`, `de0c2676`), communication ×2 (`d2b06649`,
+`36edda4f`), commercial_acumen ×1 (`68a297a3`). No single name can carry that; one that tried would
+be as unusable as F10's generic map text, which a dry run showed produces a FENCE-SITTING headline.
+**The communication and commercial-acumen halves stay unnameable until someone rules on splitting
+F10.** Narrower than "the gap is closed" — do not restate it more strongly.
+
+## 🔴 LOGGED 2026-08-20 — THE APM FINDING, WHICH IS LARGER THAN THE AFM ONE
+
+**Only 29 of 91 live APM reveals carry an extractable `"…misconception…:"` sentence. 62 fall
+through to `extractMisconceptionLead`'s first-sentence fallback, and the live tutor broadcasts that
+opening line as though it were the drill's failure mode.** Cause: **P7 lives in
+`validate-afm-prose.ts` and `generate-apm-drills.ts` imports nothing from it** — verified, the grep
+returns no hits. **P7 has never gated APM authoring.** For contrast, all **63/63** live AFM rows
+have an extractable lead. Two further facts from the same check, for whoever picks this up: all 91
+live APM rows have `answer_schema = NULL` (no criteria, no disqualifiers — so "the headline names a
+mode the rubric never marks" is not measurable in APM), and **71 of 91 name the L2-STOP**, which is
+APM's single mandated headline, instructed in three places. Not acted on.
 
 ## 🔴 OPEN 2026-08-19 — A GATE FIX MADE THE TEACHING LEG NAME THE WRONG FAILURE, 5 TIMES OUT OF 5
 

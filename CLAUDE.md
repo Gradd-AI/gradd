@@ -441,6 +441,28 @@ when the session ends on a branch.
   `scripts/test-narrative-marker.ts` (unchanged) + `scripts/test-area-entry.ts` (new E2/E1/mixed-E2 cases).
   Pack: `docs/reviews/AFM_BATCH_E_NARRATIVE_REVIEW_PACK.md`. **LIVE (GATE-P flip, 2026-07-24):** all 3
   drills approved+published — AFM narrative cluster now 8/8 (5 B + 3 E).
+- **THE TEACHING-REVEAL CATALOGUE — three sites, all unpinned but one (2026-08-20).** The
+  `full_reveal` misconception list is stated in `EZRA_TEACHING_PERSONA_<PAPER>` (system block),
+  `buildRevealPrompt<Paper>` (user prompt) and **`SUBMIT_REVEAL_TOOL`, which is SHARED BY BOTH
+  PAPERS** — an eighth paper-coupled site the seven-site sweep missed; it is now paper-neutral and
+  carries no enumeration, because a third copy in a tool schema cannot be overridden and will
+  drift. AFM's list is CLOSED (`"drawn from the catalogue: A…or E"`), APM's is exemplary (`e.g.`).
+  **The enumeration is the `else` of `designed_failure` in BOTH builders now** — with no AFM plan
+  declaring a mode the absent branch renders byte-identical, which is what keeps **PIN4** green;
+  an unconditional-plus-append edit moves eleven pinned shas and `test-narrative-paper-pins.ts`'s
+  terms are that a moved pin kills the claim rather than being re-captured. **Only the user prompt
+  is pinned**; the persona and the tool schema are invisible to the gate suite and reach every
+  future reveal on both papers, calculator batches included. 📐 AFM gained **SUPERFICIAL-COMMENTARY**
+  (F6) and **UNCHALLENGED-ASSERTION** (F10) because F6 (33 criteria/10 rows) and F10 (24/6) were
+  the two most-marked modes in the published corpus and neither had a name, while **F3 — marked on
+  ZERO of 74 criteria — was the only development name available** and three rows headlined it.
+  ⚠️ **UNCHALLENGED-ASSERTION names the SCEPTICISM act only**: F10's six rows span three skill tags,
+  so its communication and commercial-acumen halves stay unnameable until F10 is split. ⚠️ **P7
+  (`lintMisconceptionLead`) was being satisfied by an ACCIDENT** — no AFM prompt ever instructed the
+  `"…misconception…:"` lead form; naming a catalogue label produced it as a side-effect, and removing
+  the enumeration failed three attempts until SBL's explicit instruction was ported in. **P7 still
+  only checks the sentence EXISTS**, so a lead named in sentence three is a 100-word blob the tutor
+  broadcasts; the 220-char shape gate in `rewrite-afm-reveal.ts` covers that ONE path only.
 - **PERSONA-HARDENING — the live tutor's grounding mechanism ("Rule 24 triangulation," shipped 2026-07-21):**
   `lib/acca/tutor-grounding.ts` — `buildGroundingPack(drill, resolvableAreas)` builds a `GroundingPack`
   (narrative: `criteria[]`/`scenario_facts[]` from the rubric; numeric: `**Step N — Label**` headers
