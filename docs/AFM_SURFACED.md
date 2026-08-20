@@ -88,6 +88,29 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## ❓ OPEN QUESTION 2026-08-20 — THE REVEAL-LENGTH SPEC AND THE CORPUS DISAGREE, AND NOTHING GATES IT
+
+Both reveal prompts specify **`full_reveal` — 3–5 sentences**. **Nothing checks it.** P7 tests only
+that a `"…misconception…:"` sentence exists; N1–N6 never read `full_reveal` at all.
+
+📐 **MEASURED over all 19 live narrative rows: 15 of 19 are inside 3–5 sentences** (AFM 11/14, SBL
+4/5); min 4, max 8, median 5. **An earlier claim in this session that "no reveal in the corpus obeys
+it" was WRONG** — it was asserted before it was measured, and the measurement contradicts it. The
+four outliers are `68a297a3` (6), `d2b06649` (6), `36edda4f` (7) and **`2fbb2902` (8) — SBL-A5,
+which became the corpus's worst outlier in this session, by a split I made on 2026-08-20 to separate
+three ideas that shared one sentence.** Nothing noticed.
+
+⚠️ **SENTENCE COUNT IS A POOR PROXY FOR LENGTH, which is part of why this is unresolved.** Character
+counts sit in a narrow 1,102–2,016 band with no relationship to sentence count: A5 at 8 sentences is
+1,707 chars, shorter than `46e10662` at 4 sentences and 2,016. The split made the same content
+easier to read without making it longer — so a naive sentence-count gate would fail the improved
+version and pass a denser one.
+
+**NOT RESOLVED, DELIBERATELY.** Either the number is wrong (and the spec should describe what the
+reveal must DO, not how many sentences it takes), or the gate is missing (and something should hold
+authors to it). Both are defensible and the choice is not mine. Recorded so the next author does not
+discover it the way this session did — by moving a row past the limit and having nothing object.
+
 ## 🟠 LOGGED 2026-08-20 — TWO STUDENT-FACING TEXT DEFECTS NOTHING GATES, AND THEY ARE THE SAME CLASS
 
 **`scenario_fact.key` IS INJECTED VERBATIM INTO PROSE A STUDENT READS.** It is quoted into
