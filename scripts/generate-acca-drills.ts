@@ -476,6 +476,43 @@ const AFM_EXAMINER_PERSONA =
   'financial services, energy, agriculture, technology, construction, hospitality; NEVER default to one sector. ' +
   '\n\n' + BOARDROOM_BAR_PASS1 + '\n\n' + AFM_CATALOGUE_RULES;
 
+/**
+ * THE TEACHING LIST WAS CLOSED, AND TWO OF THE THREE MOST-MARKED MODES WERE NOT ON IT.
+ *
+ * The `full_reveal` catalogue below is a CLOSED disjunction ("drawn from the AFM failure
+ * catalogue: A, B, C, D, or E") — not an `e.g.` list the model generalises from, which is what
+ * APM's persona uses. Measured over the 14 published AFM narrative rows: 10 of the 11 reveals
+ * produced by `draftReveal` open with one of these names in capitals; the 3 that do not never
+ * went through this prompt (hand-written literals in `scripts/_author_enarrative_batch.ts`) and
+ * the 4th was hand-rewritten under P-N2. The list was operating as closed.
+ *
+ * 📐 THE GAP, measured against the same 14 rows' criterion disqualifiers (74 criteria):
+ *   F6 superficial figure-commentary  33 criteria, 10/14 rows — NO NAME on this list
+ *   F10 no scepticism/comm. acumen    24 criteria,  6/14 rows — NO NAME on this list
+ *   F3 undeveloped assumption          0 criteria,  0/14 rows — named UNDEVELOPED-ASSUMPTION
+ * The two most-marked modes after F1/F5/F4 were unsayable, and the one name available for a
+ * development failure is marked on nothing. Three rows headline UNDEVELOPED-ASSUMPTION because
+ * it was the nearest available word, not because the rubric penalises it.
+ *
+ * The two additions are examiner-anchored, not invented:
+ *   SUPERFICIAL-COMMENTARY — "explain and challenge the figures calculated, rather than simply
+ *     stating what the figures show" [MJ25 p.17, GCR]
+ *   UNCHALLENGED-ASSERTION — "challenging information relating to the assumptions, directors'
+ *     views, decisions and/or techniques and PROVIDING REASONS for such challenges" [SD24 p.7,
+ *     Northney]. The "with reasons" clause is load-bearing: a bare challenge is not creditable.
+ *
+ * ⚠️ UNCHALLENGED-ASSERTION NAMES THE SCEPTICISM ACT ONLY. F10's own text covers scepticism AND
+ * commercial acumen, and its six live rows span THREE skill tags (scepticism ×3, communication
+ * ×2, commercial_acumen ×1). No single name can carry that, and one that tried would be as
+ * unusable as F10's generic map text — which a dry run showed produces a FENCE-SITTING headline.
+ * The communication and commercial-acumen halves stay unnameable until F10 is split. Do not
+ * describe this as closing the gap.
+ *
+ * ADDITIVE ONLY: the existing five names and glosses are byte-identical. Nothing pins this
+ * string — it is neither exported nor covered by test-narrative-paper-pins — so a change here
+ * is invisible to the gate suite and affects EVERY future AFM reveal, calculator batches
+ * included. That is the reason to append rather than restructure.
+ */
 const EZRA_TEACHING_PERSONA_AFM =
   "You are Ezra, Gradd's AI tutor for ACCA AFM. Your job is to generate the teaching reveal shown to a " +
   'candidate after they attempt a practice drill. You receive the drill question and the model answer. ' +
@@ -489,7 +526,11 @@ const EZRA_TEACHING_PERSONA_AFM =
   'SCENARIO-FREE discussion (generic lists, no scenario facts), VALUATION-PLUMBING (firm flow discounted at ' +
   'the cost of equity, interest wrongly deducted from FCFF, debt not stripped, growth added to a flat ' +
   'perpetuity), UNDEVELOPED-ASSUMPTION (assumptions listed not discussed), or ABANDONED-AFTER-CALC (giving up ' +
-  'the linked marks after a wrong number). Where the LO asks to RESOLVE a conflict (e.g. between ESG criteria), ' +
+  'the linked marks after a wrong number). The catalogue also carries two modes the five above do not cover: ' +
+  'SUPERFICIAL-COMMENTARY (says what a figure or a given output shows without explaining or challenging it) ' +
+  'and UNCHALLENGED-ASSERTION (takes a named director\'s or officer\'s claim, or a stated assumption, at face ' +
+  'value — describing how the technique works instead of testing whether the claim survives, with reasons). ' +
+  'Where the LO asks to RESOLVE a conflict (e.g. between ESG criteria), ' +
   'the reveal must teach the resolution move — how the competing criteria are weighed and reconciled — not only ' +
   'that a verdict is needed. Then give the diagnosis-led reframe: why that thinking is wrong and ' +
   'what the correct mental model is. This is NOT a restated model answer — it is a mental-model correction. ' +
@@ -1239,6 +1280,24 @@ function designedFailureFor(plan: NarrativePlan): string | undefined {
   return code ? FAILURE_MODE_TEACHING[code] : undefined;
 }
 
+/**
+ * THE CATALOGUE IS NOW THE `else` OF `designed_failure`, WHICH IS `buildRevealPromptSbl`'S SHAPE.
+ *
+ * Before this, the five-name enumeration was UNCONDITIONAL and the override was appended as one
+ * extra bullet at the bottom — so a call declaring a mode outside the five handed the model a
+ * closed list three times (system block, this parenthetical, and the tool schema) against one
+ * line telling it to ignore them. It resolved that the only way it could: by picking the nearest
+ * name on the list. Measured — `f6426c06` returned UNDEVELOPED-ASSUMPTION on three consecutive
+ * attempts under an explicit instruction not to. SBL's builder never had this defect because its
+ * catalogue was always the `else`.
+ *
+ * ⚠️ THE CONDITIONAL IS WHAT KEEPS PIN4 GREEN, and that is not incidental. No AFM plan declares
+ * `designed_bad`, so `designedFailureFor` returns undefined for all eleven and the `else` branch
+ * renders — byte-identical to the pre-change string, which is what
+ * `test-narrative-paper-pins.ts` PIN4 asserts. Making the enumeration unconditional-plus-append
+ * would have moved eleven pinned shas, and that fixture's terms are explicit: a moved pin kills
+ * the claim rather than being re-captured. Do not "simplify" this back into one branch.
+ */
 function buildRevealPromptAfm(spec: RevealInput, question: string, modelAnswer: string): string {
   return `Generate the teaching reveal for this AFM practice drill.
 
@@ -1256,7 +1315,21 @@ ${modelAnswer}
 
 Produce:
 1. hint — one sentence: a targeted nudge pointing at the specific gap for a candidate who answered incorrectly. Precise to this drill — not generic. Do not give the answer.
-2. full_reveal — 3–5 sentences: name the specific AFM misconception a typical candidate brings to this type of question (fence-sitting / scenario-free / valuation-plumbing / undeveloped-assumption / abandoned-after-calc), then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.
+2. full_reveal — 3–5 sentences: name the specific AFM misconception a typical candidate brings to this type of question${spec.designed_failure ? '' : ` (fence-sitting / scenario-free / valuation-plumbing / undeveloped-assumption / abandoned-after-calc)`}, then give the diagnosis-led reframe (why that thinking is wrong, the correct mental model). Not a restatement of the model answer.${spec.designed_failure ? `
+   ⚠️ THE MISCONCEPTION IS NOT YOURS TO CHOOSE. This drill was built to teach ONE failure and its
+   golden BAD commits it deliberately: ${spec.designed_failure}.
+   Name THAT failure and no other. Do not headline a different, more general weakness, and do NOT
+   substitute the nearest name from a catalogue — a reveal that teaches a failure the rubric does
+   not penalise sends the candidate to fix the wrong thing, and is worse than no reveal. You may
+   mention other weaknesses later, but the headline is fixed.
+   ⚠️ THE VERY FIRST SENTENCE must contain the word "misconception" followed later in that SAME
+   sentence by a colon — "The misconception this drill exposes is <short name>: <what the
+   candidate wrongly believes>." Keep everything before the colon SHORT: it is extracted verbatim
+   and broadcast on its own by the live tutor, so a lead that runs past about thirty words arrives
+   as a paragraph where a headline was needed. The placement is load-bearing, not a style note:
+   the extractor's pattern does not match across newlines, so a misconception first named in a
+   later sentence is not found at all and the tutor silently falls back to the opening line as
+   though that were the failure mode.` : ''}
 
 Anchor the reveal to the BOARDROOM BAR: the universal AFM failure is a calculation that never became advice. Where the drill is calculative, teach the own-figure move (carry a wrong figure forward consistently — where the downstream method holds, those marks still score; OFR credit is conditional on correct subsequent use, not automatic).
 
@@ -1267,8 +1340,7 @@ Quality rules (mandatory):
 - Reference ONLY facts present in the scenario/context — never invent events, savings, or risks; phrase un-evidenced risks conditionally.
 - Do not state any computed figure or any inequality between computed figures — the model answer already carries them.
 - FROZEN FACTS (P4b): the scenario is a DATED snapshot. NEVER write "current market …" or "currently" next to a rate/yield/spread/curve/price — say "at the valuation date" / "the assumptions as dated" instead.
-- Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).${spec.designed_failure ? `
-- THE MISCONCEPTION IS NOT YOURS TO CHOOSE. This drill was built to teach ONE failure and its golden BAD commits it deliberately: ${spec.designed_failure}. Name THAT failure, not a more general weakness.` : ''}`;
+- Intellectual level: ALWAYS 1/2/3, NEVER AO framing (AO1, AO5).`;
 }
 
 function buildRevealPromptSbl(spec: RevealInput, question: string, modelAnswer: string): string {
@@ -1827,14 +1899,28 @@ const SUBMIT_BSOP_SCENARIO_TOOL: Anthropic.Tool = {
   },
 };
 
+/**
+ * ⚠️ THIS TOOL IS SHARED BY BOTH PAPERS AND WAS WRITTEN FOR ONE — an EIGHTH paper-coupled site,
+ * missed by the seven-site sweep because nothing about it is typed or named per paper.
+ * `draftReveal` passes it on every call regardless of `paper`, so every SBL reveal was handed a
+ * schema instructing it to name "the specific AFM misconception" and then enumerating AFM's five
+ * — including valuation plumbing — on a leadership question. The `hint` gloss carried the same
+ * leak (mismatched discount rate, un-stripped debt).
+ *
+ * Both fields are now PAPER-NEUTRAL, and the enumeration is gone rather than duplicated per
+ * paper: the catalogue belongs in ONE place (each paper's persona plus its reveal prompt, where
+ * `designed_failure` can override it), and a third copy in a tool schema is a copy that cannot
+ * be overridden and will drift. Unpinned — no fixture reads this object — so the change is
+ * invisible to the gate suite and reaches every future reveal call on both papers.
+ */
 const SUBMIT_REVEAL_TOOL: Anthropic.Tool = {
   name: 'submit_reveal',
-  description: 'Submit the Ezra teaching reveal for a completed AFM drill',
+  description: 'Submit the Ezra teaching reveal for a completed practice drill',
   input_schema: {
     type: 'object' as const,
     properties: {
-      hint: { type: 'string', description: 'One sentence: targeted nudge for a wrong first attempt — points at the specific gap (missing recommendation, un-challenged assumption, mismatched discount rate, un-stripped debt) without giving the answer.' },
-      full_reveal: { type: 'string', description: '3–5 sentences: names the specific AFM misconception (fence-sitting / scenario-free / valuation-plumbing / undeveloped-assumption / abandoned-after-calc), then the diagnosis-led reframe. Not a restated model answer.' },
+      hint: { type: 'string', description: 'One sentence: targeted nudge for a wrong first attempt — points at the specific gap this drill exposes, without giving the answer. Precise to this drill, not generic.' },
+      full_reveal: { type: 'string', description: '3–5 sentences: names the specific misconception this drill was built to teach, then the diagnosis-led reframe. Not a restated model answer.' },
     },
     required: ['hint', 'full_reveal'],
   },
