@@ -88,6 +88,30 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## 🟠 LOGGED 2026-08-20 — TWO MARGINAL WORDINGS RULED NOT WORTH REOPENING, AND THE PUBLISH DECISION SHOULD SEE THEM
+
+Both surfaced in the read-only sweep of all 28 criteria across SBL batch A. Both are in rows that
+have already been re-gated and applied, and **Grant ruled that reopening an applied row for
+marginal wording is disproportionate** — but neither is invisible, so they are recorded here rather
+than dropped.
+
+**`9d414a87` SBL-A1 c3 — an inference the case does not quite take.** The criterion reads that the
+68% figure *"**suggests** that middle managers are themselves under stress"*. The survey is of
+**redeployed employees**; the case never says the eight middle managers of Episode C are among
+them. The word is hedged and the inference is reasonable, but it is a step beyond what the scenario
+records. A candidate who declines to take it is not wrong.
+
+**`2fbb2902` SBL-A5 c3 — a closure that is logically sound and still total.** The criterion holds
+that the severity *"is **not softened by**"* management's observation that the new rate sits 42%
+below the standard commercial tariff, *"because that comparison is between Tirta's own tariff
+bands"*. That reasoning is correct — a relative comparison inside one's own price list is not
+evidence of affordability. But it forecloses a candidate arguing the band gap carries **some**
+benchmark value, which is arguable rather than wrong.
+
+⚠️ **Neither is the prescribed-answer defect.** They are the residue after it: places where a
+criterion is more certain than its evidence, in a drill that is otherwise clean. Read them before
+any publish flip.
+
 ## ❓ OPEN QUESTION 2026-08-20 — THE REVEAL-LENGTH SPEC AND THE CORPUS DISAGREE, AND NOTHING GATES IT
 
 Both reveal prompts specify **`full_reveal` — 3–5 sentences**. **Nothing checks it.** P7 tests only
