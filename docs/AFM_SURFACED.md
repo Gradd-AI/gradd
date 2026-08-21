@@ -88,6 +88,46 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## 🔴 OPEN 2026-08-21 — GPT COLD READ 2 APPLIED TO A1–A4; THE BATCH NOW NEEDS A THIRD READ BEFORE ANY FLIP
+
+`docs/reviews/SBL_BATCH_A_GPT_READ_2.md` (banked; `ClaudeSend.txt` is the OUTGOING file and is
+overwritten each send, which is how read 1's reply was lost). All four ratings were **NO**: A1 7.5,
+A2 5.5, A3 4, A4 3.5. Every finding is applied and the pack is regenerated, so the drafts no longer
+match what GPT read — **the ratings above are now stale by construction and must not be quoted as
+the current state.** A5 was excluded from this read (its own read is applied).
+
+**Two were publication-blocking and both are fixed.** A1 c5 asserted that either verdict earns full
+marks and that one of them "would score nothing for it" in the same sentence. A4's reveal taught
+that questions earn no marks at all, against the two-mark rule three sentences later and against
+c1's own 1-mark tier — and A4's golden BAD is entirely interrogative, so the drill was teaching a
+rule it does not apply.
+
+**A3 carried two HARD reconciliation errors**, which is the finding that generalises: 94,000/280,000
+was stated as 33% (it is 33.57%, so 34%), and the GOOD called a March 2023 pilot "eighteen months
+before" a survey taken ~March 2025. Neither is a judgement call and neither gate reads for it. **The
+narrative pipeline still has no numeric verifier** and this is the second time that has cost
+something (D7 was the first).
+
+🟠 **ONE RULING OWED — GPT offered two fixes for A2 c1's population claim and only one was taken.**
+The exhibit says "Bonuses are awarded solely on tonnage moved and fleet utilisation" and never says
+all 1,400 employees are in the scheme. The criterion and GOOD now say "the employees covered by the
+scheme". GPT's alternative was to **edit the exhibit to "All employee bonuses…"**, which closes it
+more cleanly and keeps the 1,400 figure load-bearing. Not taken, because editing an exhibit
+mid-review changes what the already-read criteria were read against. **Grant's call.**
+
+⚠️ **A THIRD COLD READ IS OWED BEFORE THE FLIP.** A1–A4 changed substantially — A3 c4 and A4 c3 were
+rebuilt rather than patched — and nothing has read the batch in its current state. The rows remain
+`candidate`/`published=false`; the flip is still two steps under GATE-P.
+
+📐 **THE CERTAINTY LINT (P-N3(a)) FOUND THREE THINGS THE COLD READ DID NOT**, which is the measured
+case for keeping it in the lifecycle: A2's GOOD summary said meeting dynamics *"prevent"* commercial
+challenge and incident reviews *"prevent"* learning, three paragraphs below the c4 guard saying the
+case reads RARELY not never; and A4's REVEAL still taught the invented *"he set the parameters"*
+claim verbatim after c1 and the GOOD had both been corrected — a P-N2 teaching-pair drift that no
+gate reads. Batch unhedged **56 → 36**. ⚠️ The lint cannot judge, and a clean field is not P-N3
+clean (closed term list). **A1's count did not move at all** (11 → 11) and that is correct: GPT's A1
+findings were about causation, not certainty words, and all eleven survivors are legitimate.
+
 ## 🟠 LOGGED 2026-08-20 — TWO MARGINAL WORDINGS RULED NOT WORTH REOPENING, AND THE PUBLISH DECISION SHOULD SEE THEM
 
 Both surfaced in the read-only sweep of all 28 criteria across SBL batch A. Both are in rows that
