@@ -182,7 +182,15 @@ export function hedgesIn(sentence: string): string[] {
  * `hedged` or not. Nothing is filtered out here — see claim ceiling (c): the caller decides
  * what to count, and the hedged ones are still worth a reader's eye.
  */
-export function lintCertainty(text: string, field: CertaintyField, locator = field): CertaintyHit[] {
+// `locator` is annotated `string` DELIBERATELY and must not be left to inference. Writing
+// `locator = field` infers it as `CertaintyField`, which typechecks everywhere tsx runs (tsx
+// does not typecheck) and everywhere the contract gate runs (it runs fixtures, not tsc) — and
+// then fails `next build`, because `lintDrillCertainty` passes a criterion id like `c1`.
+export function lintCertainty(
+  text: string,
+  field: CertaintyField,
+  locator: string = field,
+): CertaintyHit[] {
   const hits: CertaintyHit[] = [];
   for (const sentence of splitSentences(text)) {
     const hedges = hedgesIn(sentence.text);
