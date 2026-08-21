@@ -1189,6 +1189,33 @@ separation; N6 explicitly declines to read `required_point` semantics; P4 checks
 frozen facts. It is a reader's finding — which is why an adversarial cold read of the exhibit
 against the rubric belongs in the batch lifecycle, not beside it.
 
+### THE OPERATIONAL TEST — the working form of P-N3 (GPT, cold read 2, 2026-08-21)
+
+The test above (*could a careful candidate holding only the exhibit reach this?*) is the right
+question and it is hard to apply to 60 sentences in a row. This is the form that can actually be
+run over a draft, sentence by sentence:
+
+> **Every verb stronger than *suggests* / *risks* / *is consistent with* needs an exhibit fact that
+> closes the weaker alternative.**
+
+It works because it puts the burden in the right place. The author does not have to prove the
+sentence is defensible in the abstract; they have to **name the fact** — and the moment there isn't
+one to name, the sentence is the defect. *Demonstrates* needs a fact that rules out coincidence.
+*Only* needs a fact that rules out the other routes. *Confirms* needs a fact that rules out the
+alternative cause. Where no such fact exists, the verb drops back to the register the exhibit
+supports, which is what the three named verbs mark out: the floor is not silence, it is *suggests*.
+
+**`lib/acca/certainty-lint.ts` is its MECHANISED HALF, and only half.** It finds the verbs; it
+cannot look for the fact. So:
+
+- **A hit is not a defect.** The verb may be exactly right, with the closing fact sitting in the
+  exhibit one sentence away. Only a reader holding the exhibit can tell.
+- **A clean field is NOT P-N3 clean.** The term list is CLOSED. An over-strong verb phrased outside
+  it — *"the pipeline has none"*, *"there is no route but"* — passes silently. A green run means
+  "no listed verb is unhedged here", never "this rubric knows only what the exhibit knows".
+
+The half the lint cannot do is the half that matters, and it stays with a human cold read.
+
 ### P-N3(a) — THE CERTAINTY LINT: IT CANNOT FIND THE DEFECT, BUT IT CAN SAY WHERE TO LOOK
 
 `lib/acca/certainty-lint.ts` (pure) · fixtures `npm run test:certainty-lint` (71 checks, in the
