@@ -1100,9 +1100,40 @@ when the session ends on a branch.
   `lo_code`.** The rubric awarded 3 marks for cost-of-capital content and 3 for the audience,
   and **zero for ESG**.
 - **Batch lifecycle:** generate (`--*-batch`) → 6 gates → co-founder independent recompute →
-  blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → **flip by EXPLICIT-id
-  SQL** in the Supabase editor (reconcile approved-set vs journal FIRST; demote any
-  un-reviewed `approved` row back to `candidate` in the same transaction).
+  blind GPT adversarial review (CLOSED RULINGS present) → adjudicate → **CONTENT SYNC (see
+  below)** → **flip by EXPLICIT-id SQL** in the Supabase editor (reconcile approved-set vs
+  journal FIRST; demote any un-reviewed `approved` row back to `candidate` in the same
+  transaction).
+- **⚠️ GATE-P's THIRD ARM — CONTENT (doctrine `P-DB8`, ruled 2026-08-21).** **A FLIP CARRIES
+  STATUS, NOT CONTENT.** The reconcile compares the DB's approved-set against the journal's
+  reviewed-set — two sets of IDENTIFIERS, entirely a check on STATUS. It never opens a row. So a
+  row can be correctly `candidate`, correctly journalled as reviewed with every finding applied,
+  and still hold text superseded days ago, **because the reviewing happened somewhere the
+  reconcile does not look** — which is exactly what the five SBL rows did between 2026-08-19 and
+  2026-08-21 (four cold reads applied only to `docs/rollbacks/*.json`; a flip would have
+  published two blockers and a live arithmetic error).
+  **The arm:** `lib/acca/reconcile-content.ts` — pure, diffs `context_text` / `model_answer` /
+  `answer_schema` / `hint` / `full_reveal` against the reviewed draft, resolved through the
+  SHARED `loadDraft` (so A4 reads `SBL-A4.2.json`, never its superseded namesake) and printing
+  which file it read. Object KEY order is not a difference (jsonb); **ARRAY order is** (`criteria`
+  is an ordered rubric); strings are BYTE-EXACT; unpaired blocks BOTH ways; an ambiguous pairing
+  key is refused, never guessed. `CONTENT_FIELDS` is imported by the check AND the sync so they
+  cannot disagree about what "content" means. Fixtures `npm run test:reconcile-content` (61,
+  every failure path). Runner `npm run reconcile:sbl-content`. **The sync that makes it green:**
+  `scripts/authoring/sync-sbl-content.ts` (P-DB3 snapshot → explicit-id writes → P-DB4 both
+  halves → re-runs the arm). **Build the arm BEFORE the sync so you can watch it go red** — and
+  if a row reports green, that may be correct (SBL-A5's read predated the insert); never tune the
+  check to match a prediction.
+- **⚠️ A FLIP GATED ON A CODE CHANGE NEEDS THAT CODE DEPLOYED, NOT COMMITTED (`P-DB8(b)`).** Per
+  P-DB1 a DB write is not branch-scoped: the flip ships the instant it runs while the guard sits
+  on a branch. Merge and confirm the deploy first, then flip.
+- **Serving scope sweep:** `scripts/test-drill-paper-scope-sweep.ts` (`npm run
+  test:drill-paper-scope-sweep`) — every `acca_drills` query under `app/` and `lib/` must
+  CONSTRAIN `paper_code` (`.eq`/`.in`), or carry a written exemption keyed on its own select-list.
+  Built when both id-addressed tutor fetches were found with no paper predicate at all — safe only
+  while every published row belonged to a served paper, and unsafe the moment SBL rows exist.
+  **`SERVED_PAPERS`, not one guessed paper:** an id is globally unique, so pinning an id-addressed
+  fetch to a single resolved paper 404s a legitimate AFM resume (the G1 regression).
 - **MAP BEFORE YOU CLOSE (standing lifecycle rule).** Every batch's FINAL commit MUST update
   this CODE MAP with the new family: module path, its gates, its fixture suite, and any new
   mechanism it introduces. **A batch whose map entry is missing is NOT closed.**

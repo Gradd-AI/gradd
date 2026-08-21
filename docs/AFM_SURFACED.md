@@ -88,7 +88,40 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
-## 🛑 BLOCKING — 2026-08-21 — THE SBL DB ROWS ARE PRE-REVIEW, AND A FLIP WOULD SHIP THEM
+## ✅ RESOLVED — 2026-08-21 — THE SBL ROWS WERE PRE-REVIEW; THE ARM IS BUILT AND THE SYNC IS DONE
+
+**Closed later the same day.** The content arm was built FIRST (so it could be watched going red),
+read 5 was applied to the drafts, and the sync then carried all five rows to the reviewed content.
+
+- **The arm:** `lib/acca/reconcile-content.ts` (pure, 61 fixtures, `npm run test:reconcile-content`)
+  · runner `npm run reconcile:sbl-content` · doctrine **P-DB8**.
+- **P-G3, first run against the live rows:** 4 of 5 RED, reproducing the markers recorded in
+  `a60f38d` independently. **A5 was GREEN and correctly so** — its own read was applied BEFORE the
+  2026-08-19 insert. The "all five red" expectation was itself wrong; the arm was not tuned to meet it.
+- **The sync:** `scripts/authoring/sync-sbl-content.ts`, P-DB3 snapshot
+  `docs/rollbacks/SBL_content_sync_20260821.json`, P-DB4 both halves on all five rows. 4 written,
+  A5 not issued a write at all and then asserted unmoved.
+- **Proved three ways:** the sync's own post-verify · the arm re-run as a separate process (5/5
+  green, exit 0) · a marker sweep independent of the diff (16/16 both directions — `"score
+  nothing"`, `"set the parameters"`, `"board-level air-time"`, `"low digital literacy"`, `"primary
+  conduit"` and `"33% of the 280,000"` all GONE; `"approximately 34%"`, `"All employee bonuses"`
+  and read 5's three fixes all PRESENT).
+- **Status untouched** — all five remain `candidate`/`published=false`. The sync carries content,
+  not status, which is the doctrine read in the other direction.
+
+### ⏳ STILL OPEN: the flip itself
+**GATE-P has NOT run.** Two things gate it and neither is done:
+1. **The tutor scoping must be DEPLOYED, not merely committed** (P-DB8(b)). It is on
+   `feat/sbl-foundation`; the flip is a DB write and ships instantly, so flipping before the guard
+   is live on `main` opens the very leak the guard closes.
+2. **There is no `docs/reviews/SBL_BATCH_A_GPT_READ_5.md`.** Reads 2, 3 and 4 each have a pack;
+   read 5's findings reached the drafts without one. GATE-P's status arm reconciles against the
+   journal's reviewed-set, and for read 5 there is nothing journalled to reconcile against.
+3. **Open question for Grant:** SBL is DECLARED but NOT SERVED. Publishing these rows makes them
+   live for a paper no surface serves — and every surface was just hardened to refuse it. Is the
+   flip meant to land now (content ready, surface later), or wait until SBL becomes served?
+
+<details><summary>Original finding, kept for the record</summary>
 
 **The five `acca_drills` SBL rows still hold the batch EXACTLY AS INSERTED ON 2026-08-19, before
 any cold read.** Every fix from reads 2, 3 and 4 exists only in `docs/rollbacks/*.json`. Found when
@@ -118,6 +151,8 @@ reconcile step needs a third arm** — today it compares the DB's approved-set a
 reviewed-set, which is a check on STATUS. It does not check that the row's CONTENT is the content
 that was reviewed. A row can be correctly `approved`, correctly journalled, and hold superseded
 text. That arm should compare row content against the reviewed draft.
+
+</details>
 
 ## 🔵 SCOPED, NOT BUILT — 2026-08-21 — THE EVIDENCE-STATUS LEDGER (doctrine P-N4)
 

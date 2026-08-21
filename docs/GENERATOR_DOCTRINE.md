@@ -873,6 +873,65 @@ sitting as a syllabus decision first and a calendar check second.
 place what it does *not* cover. A flag called `verified` invites the reading that everything
 about the row is; a flag called `dates_verified` with its limits recorded does not.
 
+**P-DB8 — A FLIP CARRIES STATUS, NOT CONTENT (ruled 2026-08-21, SBL batch A).**
+
+`candidate → approved → published` is an UPDATE of two columns. **Nothing in GATE-P has ever
+carried a reviewed draft into its row, and until now no gate compared them.** A flip publishes
+whatever the row already says.
+
+GATE-P's reconcile compares the DB's approved-set against the journal's reviewed-set. That is a
+comparison of **two sets of identifiers** — it answers "is every approved row one a review
+record exists for, and is every reviewed row approved?" It never opens a row.
+
+**So a row can be correctly `candidate`, correctly journalled as reviewed with every finding
+applied, and still hold text superseded days ago — BECAUSE THE REVIEWING HAPPENED SOMEWHERE THE
+RECONCILE DOES NOT LOOK.** Both halves of the status arm pass while the flip ships the old text.
+
+Found when an export was requested "from the live DB rows" and the premise was checked before
+acting: the five SBL rows held the batch exactly as inserted on 2026-08-19, with every fix from
+cold reads 2, 3 and 4 living only in `docs/rollbacks/*.json`. Flipping them would have published
+two named publication blockers (`"score nothing"`, the invented `"set the parameters"`) and a
+live arithmetic error (`"33% of the 280,000"` where the reviewed draft says `"approximately
+34%"`). Nothing was looking, and nothing *could* look — there was no such check to fail.
+
+**THE RULE.** A publish flip requires a **third reconcile arm** that compares the row's CONTENT
+against the reviewed draft, field by field, and blocks on any difference. Status is not a proxy
+for content and a journal entry is not a proxy for either.
+
+Implemented: `lib/acca/reconcile-content.ts` (pure, 61 fixtures) + `scripts/authoring/
+reconcile-sbl-content.ts` (the runner) + `scripts/authoring/sync-sbl-content.ts` (the sync that
+makes it green, under P-DB3/P-DB4).
+
+Four things the implementation had to decide, each of which is the rule in miniature:
+
+- **`CONTENT_FIELDS` is shared by the CHECK and the SYNC.** If the sync wrote a field the check
+  did not compare, the check would go green over unreviewed text — the same failure one level
+  down. One list, both sides, structurally unable to disagree.
+- **Object KEY order is not a difference; ARRAY order is.** jsonb does not preserve key order, so
+  a raw stringify diff cries phantom drift on a row that round-tripped unchanged (the P-DB4(a)
+  lesson). But `criteria` is an ordered rubric, and sorting arrays "for consistency" would blind
+  the check to a reordered one.
+- **Strings compare BYTE-EXACT.** "It is only whitespace" is still a row that is not the reviewed
+  text. Deciding the gap is small enough to publish past is not the check's call.
+- **Unpaired blocks in BOTH directions, and an ambiguous pairing key is refused rather than
+  guessed.** A row the check could not pair is a row it cannot make its claim about, and passing
+  it silently rebuilds the status arm's blind spot.
+
+**P-DB8(a) — THE ARM MUST BE WATCHED GOING RED BEFORE IT IS TRUSTED GREEN (P-G3, applied).**
+Build the check BEFORE the sync, precisely so it can be run against the broken state. This one
+reported **4 of 5 rows mismatched** on first run and independently reproduced markers recorded
+days earlier in `a60f38d`. A5 reported GREEN and correctly so — its own read was applied BEFORE
+the insert, so its row already held reviewed content. **An expectation of "all five red" was
+itself wrong**, and tuning the check until it matched would have been the worst available move:
+the arm's job is to report the state, not to confirm the prediction.
+
+**P-DB8(b) — CODE HARDENING AND A FLIP HAVE DIFFERENT SHIPPING CLOCKS, AND THE FLIP'S IS
+INSTANT.** Where a flip is gated on a code change (here: scoping the id-addressed tutor fetches
+so an unserved paper's row cannot be served), the code must be **merged and DEPLOYED** first —
+not merely committed. Per P-DB1 a DB write is not branch-scoped: the flip ships the moment it
+runs, while the guard sits on a branch. Committing the guard and then flipping inverts the order
+they were sequenced in and opens exactly the leak the guard was written to close.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
