@@ -306,10 +306,11 @@ workaround. Once learned, the workaround outlives the flake and generalises to t
 including the true ones. The window in which excluding is cheap is the window before anybody has
 had to ship around it.
 
-## P-G5(a) — A GREEN CONTRACT GATE DOES NOT MEAN THE TREE COMPILES (ruled 2026-08-21)
+### P-G5(b) — A GREEN CONTRACT GATE DOES NOT MEAN THE TREE COMPILES (ruled 2026-08-21)
 
-**`npm run verify` = `tsc --noEmit -p tsconfig.json` THEN the contract gate. Run it before every
-push.** `npm run typecheck` is the first half on its own.
+**`npm run verify` (`scripts/verify.ts`) = `tsc --noEmit` THEN the contract gate, in that order,
+because they answer DIFFERENT QUESTIONS — does the tree COMPILE, and do the FIXTURES pass. Wired to
+`prebuild`, so it runs on every build.**
 
 **The gap, found by shipping a broken deploy.** `certainty-lint.ts` was written with
 `locator = field`, which TypeScript infers as `CertaintyField` rather than `string`, so
@@ -334,13 +335,32 @@ question than the one being asked*: "do the fixtures pass" answered where "does 
 meant. A person reading `62/62` is not being misled about the fixtures; they are being misled about
 what the fixtures were ever about.
 
-⚠️ **`verify` IS ITSELF A P-G5 VIOLATION AND THAT IS ACKNOWLEDGED, NOT HIDDEN.** P-G5 rules that a
-check armed only by someone remembering to run it is not a guard, and this is exactly that: an npm
-script with no hook, no lifecycle wiring and nothing forcing it. The repo has no git hooks and no
-husky. **The P-G5-complete form is `prebuild: npm run verify`**, which would arm it on every local
-`next build` — deliberately NOT done here because it also runs on Vercel, where `next build`
-typechecks anyway, adding ~13s of duplicate work to every deploy. That is a live trade-off and
-Grant's call, not a settled rule.
+**IT IS ARMED, NOT MERELY AVAILABLE (Grant-ruled 2026-08-21).** `prebuild: npm run verify`, so it
+runs on every build rather than on memory. The duplicate-work objection is handled by the runner
+(`scripts/verify.ts`) rather than by declining to wire it: **the typecheck half is SKIPPED when
+`VERCEL` is set**, because `next build` typechecks there anyway — which is MEASURED, not assumed
+(*"Failed to type check."* is the literal deploy log that caught the original error). The gate half
+always runs. Locally nothing is skipped, so `npm run build` now fails in ~2s on a type error instead
+of after a full compile.
+
+📐 **ALL THREE BRANCHES PROVEN (P-G3), not just the happy one:**
+
+| branch | result |
+|---|---|
+| `VERCEL` set, clean tree | typecheck SKIPPED, gate runs, `PASS verify — 1 step` |
+| broken tree, local | `error TS2345`, **exit 1**, short-circuits — the gate never runs |
+| **broken tree, `VERCEL` set** | **`verify` goes GREEN** |
+
+⚠️ **THAT THIRD ROW IS A CONDITIONAL FALSE GREEN AND IT IS WRITTEN DOWN RATHER THAN GLOSSED.** On
+Vercel, `verify` passes a tree that does not compile. It is safe ONLY because a LATER step catches
+it, and if `next build` ever stopped typechecking — a `typescript.ignoreBuildErrors` in
+`next.config`, a framework change — this skip would silently become the hole it was designed around.
+The skip's safety is a **dependency on another step**, not a property of `verify`.
+
+⚠️ **AND IT STILL DOES NOT GUARD A PUSH.** Nothing in this repo runs on `git push` — no hooks, no
+husky. `prebuild` arms it on every BUILD. The guarantee that a broken tree cannot SHIP green remains
+Vercel's own typecheck, which already existed and already worked. So P-G5's "armed only by memory"
+objection is **reduced, not eliminated**; a pre-push hook is the only thing that would eliminate it.
 
 ## P-G6 — A FIXTURE'S INPUT MUST BE THE SHAPE PRODUCTION BUILDS (ruled 2026-08-09)
 
