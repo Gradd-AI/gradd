@@ -1245,7 +1245,7 @@ separation; N6 explicitly declines to read `required_point` semantics; P4 checks
 frozen facts. It is a reader's finding — which is why an adversarial cold read of the exhibit
 against the rubric belongs in the batch lifecycle, not beside it.
 
-### THE OPERATIONAL TEST — the working form of P-N3 (GPT, cold read 2, 2026-08-21)
+### THE FIRST OPERATIONAL TEST — CERTAINTY (GPT, cold read 2, 2026-08-21)
 
 The test above (*could a careful candidate holding only the exhibit reach this?*) is the right
 question and it is hard to apply to 60 sentences in a row. This is the form that can actually be
@@ -1271,6 +1271,36 @@ cannot look for the fact. So:
   "no listed verb is unhedged here", never "this rubric knows only what the exhibit knows".
 
 The half the lint cannot do is the half that matters, and it stays with a human cold read.
+
+### THE SECOND OPERATIONAL TEST — WARNING DRIFT (GPT, cold read 3, 2026-08-21)
+
+The certainty rule above governs a criterion in isolation. This one governs the drill as a whole,
+and by cold read 3 it was the defect class that remained:
+
+> **Whenever a criterion contains an explicit evidential warning — *"the case does not say…"*,
+> *"do not infer…"*, *"either reading earns…"* — search the GOOD and the reveal for the very
+> proposition that warning forbids.**
+
+**RUBRIC → GOOD → REVEAL DRIFT IS WORSE THAN THE OVERCLAIM IT REPLACES**, and that is the reason it
+earns doctrine. A criterion that names its own evidential limit reads as *proof the drill has been
+disciplined*. A reviewer who sees it relaxes. Meanwhile the model answer — the thing the student
+actually reads and imitates — quietly reintroduces the forbidden fact, so the repair is invisible
+where it matters most and the drill teaches the error its rubric refuses to mark.
+
+📐 **IT CAUGHT THREE PUBLICATION BLOCKERS IN ONE READ, ONE PER DRILL:** A2 c6 forbids inventing
+organisational routes and named three; its GOOD reasoned with *"any new division"* and *"buying
+capability"*. A3 c5 says the case does not reveal what the pilot report contained; its GOOD and
+reveal built the whole counter-reading from *"no role design, no named owner, no launch gate"*. A4
+c3 was REBUILT to refuse exactly two facts; its GOOD still opened with both, **verbatim**.
+
+**THE STANDING RULE THAT FOLLOWS: A CRITERION IS NEVER FIXED ALONE.** When a criterion's evidential
+boundary moves, the GOOD and the reveal move with it in the same edit, or the drill is left
+contradicting itself. Both earlier fix rounds in this batch produced exactly this state by repairing
+criteria and leaving the model answers behind.
+
+`lib/acca/warning-drift.ts` mechanises the search half — see **P-N3(b)** below for what it can and
+cannot do. As with the certainty lint, it finds candidates; only a reader holding the exhibit can
+say whether a sentence asserts the forbidden proposition.
 
 ### P-N3(a) — THE CERTAINTY LINT: IT CANNOT FIND THE DEFECT, BUT IT CAN SAY WHERE TO LOOK
 
@@ -1307,6 +1337,49 @@ real hit in A4 c3) · `can` · `risk(s)` (the SUBJECT of every governance drill 
 it) · `assertion` (A4 is ABOUT an assertion, so the noun is in nearly every sentence of it; the
 attributing VERBS are kept) · `states`. An extra sentence to read costs ten seconds; a suppressed
 defect ships.
+
+### P-N3(b) — THE WARNING-DRIFT CHECK: A RECALL TOOL, AND ONLY THAT
+
+`lib/acca/warning-drift.ts` (pure) · fixtures `npm run test:warning-drift` (34 checks, in the
+contract gate) · runner `npm run lint:sbl-drift`.
+
+Two stages. **Stage 1 finds the warning** by lead form — reliable, because these criteria are
+house-authored in a narrow register. **Stage 2 must name what is FORBIDDEN**, and what makes that
+tractable is that a well-written warning SAYS THE FORBIDDEN THING OUT LOUD in order to forbid it: a
+negative exemplar (*"rather than asserting that X"*), an enumeration of invented routes, the
+complement of *"does not establish that…"*, and the SANCTIONED FORM in the preceding sentence.
+
+📐 **THE NEGATIVE-EXEMPLAR CLAUSE IS LOAD-BEARING, NOT A REFINEMENT.** Plain overlap against the
+warning SENTENCE misses A4 c3 — the clearest known failure — because its first clause (*"the case
+does not record what happened to Ríos's report"*) shares NO vocabulary with the breach (*"the
+mechanism by which his claim would have been TESTED"*). The overlap lives only in the clause that
+follows: *"rather than asserting that the arrangement cannot be TESTED from inside CA at all"*.
+Pinned in the fixture, so deleting the sub-form goes red.
+
+📐 **FOUR REAL BUGS THE ACCEPTANCE TEST FOUND BEFORE THE CHECK COULD PASS**, one of them
+instructive beyond this module: **document frequency was computed over the text being scanned**,
+which INVERTS the check — the more often a GOOD breaches a warning, the commoner its term becomes
+and the less distinctive it scores, so a triple breach hides better than a single one. A2's three
+*"new division"* sentences pushed the term to 57% and silenced it. Also: the stemmer turned `roles`
+into `rol` while `role` stayed `role`; `own` was in the stoplist when it is the signal; and a
+document-frequency filter needs a document (a term used once in a 3-sentence corpus sits at 33%).
+
+⚠️ **THERE IS NO THRESHOLD THAT BOTH CUTS THE NOISE AND KEEPS ALL THREE KNOWN FAILURES.** A3's
+breach scores 4, A4's 3, and **A2's scores 1** — so raising the bar to 2 halves the batch from 186
+pairs to 92 and drops a known defect. It ships at min-score 1, deduplicated and ranked, read
+top-down. Tidiness bought by losing a real finding is the false green this catalogue is about.
+
+⚠️ **THE PAIR COUNT IS NOT A QUALITY SCORE, AND IT MOVES THE WRONG WAY.** Fixing all three
+blockers took the batch from **186 pairs to 234**, because the repairs ADD explicit evidential
+warnings (A3 4 → 5, A4 3 → 5) and every new warning generates new candidate pairs. A drill that
+states its limits carefully scores WORSE on this number than one that states none. Report the
+findings; never report the count as progress.
+
+**Claim ceiling:** a RECALL tool. Blind to **synonym drift** (*"a separate business unit"* scores
+zero against a warning that says *"division"*), blind to a warning with **no lead form**, blind to
+**drift by implication**, and unable to tell an ALLOWED mention from a FORBIDDEN one — A3 c5
+legitimately discusses roles and so does its GOOD. **A clean report is NOT evidence that a drill has
+no drift.**
 
 ## P-N2 — THE TEACHING PAIR CAN COACH A DIFFERENT SKILL FROM THE ONE THE RUBRIC MARKS (ruled 2026-08-02)
 
