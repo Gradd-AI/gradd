@@ -94,7 +94,9 @@
     "test:certainty-lint": "tsx scripts/test-certainty-lint.ts",
     "lint:sbl-certainty": "tsx scripts/authoring/lint-sbl-certainty.ts",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "verify": "tsx scripts/verify.ts"
+    "verify": "tsx scripts/verify.ts",
+    "test:warning-drift": "tsx scripts/test-warning-drift.ts",
+    "lint:sbl-drift": "tsx scripts/authoring/lint-sbl-warning-drift.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
