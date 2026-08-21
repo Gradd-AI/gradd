@@ -1208,6 +1208,49 @@ cannot be "state more of what code knows"; it has to be "do not create the deriv
 place". Both remedies are now standing — the builder-gap audit for calculator families, and this rule
 for narrative briefs.
 
+## P-N4 — PRESERVE EVIDENCE STATUS (ruled 2026-08-21, GPT cold read 4)
+
+> **A claim reported by the exhibit remains a claim; an opinion remains an opinion; a survey
+> attribution remains an attribution; an absence of recorded evidence remains an absence of recorded
+> evidence. Do not promote any of them to established fact without independent exhibit support.**
+
+Also called **EPISTEMIC-STATUS COLLAPSE**, or plainly **CLAIM → FACT LAUNDERING**. The exhibit
+contains something only as someone's assertion, opinion, justification, allegation, forecast or
+survey attribution — and the rubric or the GOOD silently promotes *the content of that statement*
+into an established case fact.
+
+**THE CLEANEST INSTANCE, A4.** The exhibit establishes that Camacho **stated** *"the annual retainer
+of COP 4.2 billion sits below my authority limit"*. That establishes **Camacho claims it is below
+his limit**. It does **not** establish **it is below his limit**. c1 then said *"sitting below an
+authority threshold demonstrates formal approval authority"*, and the GOOD said *"it confirms that
+the mechanical rule was not broken"* — the CFO's own assertion, laundered into a verified fact. This
+matters more here than anywhere, because **the requirement expressly tells the candidate to CHALLENGE
+that assertion**, and the model answer had already conceded it. The permitted form is *"even if
+Camacho is correct that the amount falls within his authority limit, that does not resolve the
+conflict."*
+
+### ⚠️ WHY A LEXICAL LINT CANNOT REACH THIS, MEASURED
+
+P-N3(a) happened to flag A4's two sentences via `demonstrates` and `confirms`. **That is incidental,
+and relying on it would be a false green.** The identical defect written without any red-flag word
+evades both existing checks — probed 2026-08-21 against the real modules, with A4 c3's real warning
+supplied to the drift check:
+
+| laundered sentence | certainty lint | warning-drift |
+|---|---|---|
+| *"The authority limit gives Camacho formal authority to approve the COP 4.2bn retainer, but…"* | **NO HIT** | **NO HIT** |
+| *"Given that the retainer falls below his authority limit…"* | **NO HIT** | **NO HIT** |
+| *"The retainer sits below his authority limit, so the procedural rule was observed."* | **NO HIT** | **NO HIT** |
+
+Both lints operate on **linguistic surface form**. This defect is not grammatical certainty at all —
+it is that **the source-status of the evidence was lost during reasoning**. No enlargement of a word
+list reaches it, because there is no word to add: the sentence is restrained, and wrong.
+
+**THE FIX IS GENERATION-SIDE, NOT A THIRD LINT** (Grant-ruled 2026-08-21, agreeing with the read).
+See the evidence-status ledger scoped in `docs/AFM_SURFACED.md`. A third vocabulary-based lint is
+diminishing returns; the remaining failures depend on **who said what, and how firmly the exhibit
+establishes it**.
+
 ## P-N3 — NEVER LET THE RUBRIC OR THE GOLDEN GOOD KNOW MORE THAN THE EXHIBIT KNOWS (ruled 2026-08-20)
 
 A `required_point` is the point a full-marks answer makes, and a golden GOOD is that answer. Both

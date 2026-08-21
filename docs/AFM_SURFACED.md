@@ -88,6 +88,67 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## 🔵 SCOPED, NOT BUILT — 2026-08-21 — THE EVIDENCE-STATUS LEDGER (doctrine P-N4)
+
+Scope requested, build deferred. The fix for CLAIM → FACT LAUNDERING is **generation-side**; a third
+vocabulary lint is ruled out (measured: all three of GPT's laundered paraphrases score NO HIT on both
+existing lints — see P-N4).
+
+**WHAT ADDING THE FIELD TAKES.** `ScenarioFact` already exists — `lib/acca/narrative-marker.ts:23`,
+four fields (`id`, `text`, `key?`, `kind`). One optional field:
+
+```ts
+status?: 'FACT' | 'OBSERVED_EVENT' | 'ACTOR_ASSERTION' | 'OPINION'
+       | 'SURVEY_FINDING' | 'INDEPENDENT_FINDING' | 'ABSENCE_OF_RECORD' | 'AUTHOR_INFERENCE';
+```
+
+**OPTIONAL, NOT REQUIRED, AND THAT IS THE WHOLE MIGRATION STORY.** `kind` has exactly two consumers
+(`narrative-marker.ts:345-346`, the N6b figure/constraint counts), and nothing reads a fact's
+provenance because there is none. So a required field would break every stored row and force a
+backfill of all 19 live narrative rows; an optional one is additive — existing rows read `undefined`,
+which must mean **UNDECLARED**, never a default status. **A default would be the whole defect
+mechanised**: silently stamping `FACT` on an undeclared assertion is exactly the promotion P-N4
+forbids, performed by the type system.
+
+Work: the field + a generator prompt change (the model already returns `scenario_facts`, so this is
+one more required property on the submit-tool schema, not a new call) + a gate + backfill of 5 SBL
+rows to prove it. **`_authoring` is the honest home if the schema is to stay frozen**, but the field
+belongs on the fact, and the fact is already stored — so put it there.
+
+**THE GENERATION RULE, GPT's wording:** *a derived statement cannot have stronger epistemic status
+than its strongest supporting exhibit proposition unless the reasoning explicitly makes it an
+inference.* `ACTOR_ASSERTION: below authority limit` can generate *"Camacho says the amount is within
+his authority"* or *"even if that assertion is correct…"*. It **cannot** generate *"the mechanical
+rule was not broken."*
+
+### 📐 WHAT BECOMES MECHANICALLY CHECKABLE — and this is the part worth having
+
+Today, *"the retainer sits below his authority limit"* is indistinguishable from any other sentence.
+Once the fact is declared `ACTOR_ASSERTION` with `key: "authority limit"`, a check can do what no
+word list can: **find every GOOD/reveal sentence carrying that key, and require an attribution or
+concession marker in the same sentence** — *says / claims / asserts / states / even if / if correct /
+according to*. Unattributed use of an `ACTOR_ASSERTION` becomes a mechanical finding. The same shape
+covers `ABSENCE_OF_RECORD` (*"no VFM review is recorded"* must not become *"never reviewed"* — the
+exact A4 c1 defect) and `SURVEY_FINDING` (*"61% cited"* must not become *"61% were caused by"*).
+
+**This is a genuinely different check from the two existing ones**: it keys on a DECLARED PROPERTY
+OF A FACT rather than on the vocabulary of a sentence, so a restrained paraphrase does not evade it.
+GPT's killer example carries the key *"authority limit"* and no attribution, and would be caught.
+
+⚠️ **CEILING, and it is real.** *(a)* It only covers facts someone declared, and declaring is itself
+a judgement — a fact wrongly typed `FACT` when it is an assertion produces a **confident false
+green**, which is worse than today's silence. *(b)* It cannot see a laundered claim that avoids the
+`key` — synonym evasion again. *(c)* Attribution-marker detection is lexical and inherits every
+limit of the existing lints; it just applies them to a much narrower, better-chosen target.
+*(d)* It says nothing about whether an `AUTHOR_INFERENCE` is a *reasonable* inference.
+
+📐 **SECOND PAYOFF, already documented and currently blocked on exactly this field.**
+`narrative-marker.ts:414-427` reports **N6b NOT EVALUATED for SBL `analysis`** because *"ScenarioFact
+carries no provenance: `kind` distinguishes figure/entity/constraint, never which exhibit or speaker
+a fact came from"*, and closes: **"Give ScenarioFact a `source` and this becomes a one-line test."**
+A status field is not that source field, but it is the same slot on the same type and both should be
+one decision, not two migrations.
+
 ## ⛔ RULED NOT TO BUILD — 2026-08-21 — A NUMERIC CHECK FOR NARRATIVE ROWS
 
 **GRANT'S RULING: DO NOT BUILD IT. Revisit ONLY if a cold read misses arithmetic.** The scoping is
