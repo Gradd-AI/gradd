@@ -31,12 +31,23 @@ const TITLE: Record<string, string> = {
   'SBL-A5': 'A5 — (Tirta Nusantara, Indonesia)',
 };
 
-const PREAMBLE = `SBL BATCH A — COLD READ 4, ON A1, A2, A3 AND A4 IN THEIR CURRENT STATE
+const PREAMBLE = `SBL BATCH A — COLD READ 5, ON A1, A2, A3 AND A4 IN THEIR CURRENT STATE
 
-⚠️ READ THIS FIRST: EVERY FINDING FROM YOUR THIRD READ HAS BEEN APPLIED.
-Your ratings from that read (A1 8.5, A2 6.5, A3 6, A4 5.5) are STALE BY
-CONSTRUCTION and must not anchor this one. Nothing has read the batch as it now
-stands. Please read it cold.
+THE TWO QUESTIONS WE MOST WANT ANSWERED, BEFORE ANYTHING ELSE:
+
+  Q1. Are the remaining findings INSTANCES of the shapes already named below,
+      or is there a SIXTH SHAPE not yet described?
+  Q2. Is any of what remains a PUBLICATION BLOCKER — or is what is left
+      grinding? We need to know when to stop as much as what to fix.
+
+Please answer both explicitly and up front. Four consecutive rounds of "do not
+publish" with a shrinking list is a shape that can run forever if nobody is
+asked to call it, and we would rather ship a drill with three arguable wordings
+than polish indefinitely. If a drill is clean, please say so plainly.
+
+⚠️ EVERY FINDING FROM YOUR FOURTH READ HAS BEEN APPLIED. Your ratings from that
+read are STALE BY CONSTRUCTION and must not anchor this one. Nothing has read
+the batch as it now stands.
 
 A5 is excluded again: its own read is applied and it has not moved since.
 
@@ -50,79 +61,73 @@ second only when its significance is weighed, it is tied to this organisation by
 the information given, it is followed to a consequence, and it is illustrated
 from the case.
 
-THE TEST WE MOST WANT APPLIED — doctrine P-N3:
+THE GOVERNING DOCTRINE — P-N3:
 
     NEVER LET THE RUBRIC OR THE GOLDEN GOOD KNOW MORE THAN THE EXHIBIT KNOWS.
-
-The rubric is written by someone who can see the whole design. The candidate can
-see only the exhibit. For every criterion and every sentence of the model answer:
 
   (a) Could a careful candidate holding ONLY the exhibit reach this?
   (b) Is the opposite reading open on the exhibit — and does the criterion
       foreclose it?
 
-BOTH OF YOUR OPERATIONAL TESTS ARE NOW DOCTRINE, and both drove this round:
+THE SHAPES ALREADY NAMED — please do NOT re-report these as new classes; report
+instances by name, so we can tell instances from genuinely new families:
 
-  1. Every verb stronger than "suggests / risks / is consistent with" needs an
-     exhibit fact that closes the weaker alternative.
-  2. Wherever a criterion contains an explicit evidential warning, search the
-     GOOD and the reveal for the very proposition that warning forbids.
+  1. CERTAINTY OVERCLAIM — converting risk/suggests into does/will. Your own
+     operational test is now doctrine: every verb stronger than "suggests /
+     risks / is consistent with" needs an exhibit fact that closes the weaker
+     alternative.
+  2. RUBRIC → GOOD → REVEAL DRIFT — a criterion repairs an inference and the
+     model answer or teaching field quietly reintroduces it. Also doctrine, with
+     the rule it implies: a criterion is never fixed alone.
+  3. INVENTED SPECIFICS / IMPORTED KNOWLEDGE — roles, processes, industry
+     mechanics or consequences the exhibit never supplies.
+  4. HIDDEN RANKING — "the strongest", "the primary", "best placed", "the most
+     urgent", "will dwarf". A ranking the candidate has to guess at.
+  5. SAMPLE → POPULATION — three promotions standing for a whole cohort.
+  6. EPISTEMIC-STATUS COLLAPSE / CLAIM → FACT LAUNDERING — YOUR FIND LAST ROUND,
+     now doctrine P-N4: a claim reported by the exhibit remains a claim, an
+     opinion an opinion, an absence of recorded evidence an absence of recorded
+     evidence. We confirmed your point that no word list reaches it — all three
+     of your laundered paraphrases score NO HIT on both existing lints.
 
-Both are half-mechanised now (a certainty lint and a warning-drift check, both
-ADVISORY — they find candidates, they cannot judge). Neither substitutes for
-this read, and both are blind to anything phrased outside their term lists.
+Also already ruled and not worth re-reporting: the OVER-CORRECTION is the same
+defect (inventing alternatives to refute an overclaim), and a rubric criterion
+cannot forfeit a whole paper.
 
-WHAT CHANGED SINCE YOUR THIRD READ — so you can attack the repairs directly:
+WHAT WAS FIXED SINCE YOUR FOURTH READ — all four of your residuals:
 
-  · A1 — c4 no longer makes its methodology mandatory; it marks the ACT (assess
-    the reliability and significance of the 68% evidence and say how much weight
-    it should carry) and credits a candidate who treats the survey as
-    inconclusive. GOOD: "builds a compliance culture" → "risks building"; "would
-    meet the timetable outright" → "would better protect"; and the
-    68%-as-buy-in blend is now stated as role uncertainty, not buy-in.
-  · A2 — THE BLOCKER IS GONE: no new division, no buying capability anywhere in
-    the GOOD or the reveal. Also c1's "most depends on" ranking, the GOOD's "no
-    bearing", the invented sponsorship structure, "more interdependent than
-    haulage", "the first thing an employer tells a new arrival", and the reveal's
-    deprioritise-customers framing.
-  · A3 — THE BLOCKER IS GONE: no "naming an owner", no "launch gate", no "with no
-    owner". The GOOD now states what the case records and says outright that it
-    does not know what else the pilot report contained. Also c4's "without
-    prepared support" → "weakened regional-MANAGEMENT preparedness", c1's
-    "validated opportunity" and the imported member-trust theory, the 38%
-    overstatement, and the GOOD's "settles" / "did exactly what it should have
-    done".
-  · A4 — THE BLOCKER IS GONE: the GOOD no longer says the hotline is a rule
-    Camacho invokes or the mechanism that would test his claim. Also c1/c2/GOOD's
-    "no independent review" absolutes, c3's "best placed" and "cannot rely", c4
-    is no longer written around continuation, c5's "is what deters", c6's
-    "irreversible", the invented 60-day deadline, and the reveal now says an
-    unanswered question is not a developed conclusion.
+  · A4 — THE LAUNDERING. c1 no longer says sitting below an authority threshold
+    "demonstrates formal approval authority"; it now runs on your form, "EVEN IF
+    Camacho is correct that the amount falls within his authority limit, that
+    does not resolve the conflict", states that the exhibit records the point as
+    Camacho's own assertion, and credits either route — saying so, or conceding
+    it arguendo and challenging anyway. The GOOD no longer says the assertion
+    "confirms that the mechanical rule was not broken" and carries the same
+    concession-plus-attribution.
+  · A4 c3 — the GOOD no longer says procurement staff are "the people best
+    placed"; it matches the criterion's "among those likely to hold relevant
+    information".
+  · A3 — the GOOD no longer says the briefing failure "left four of the six
+    regions without prepared support"; it says "weakened regional-management
+    preparedness" and names the limit itself. THE REVEAL CARRIED THE SAME PHRASE
+    and has been fixed too.
+  · A2 — the GOOD no longer says "decisions the operations function has
+    historically made alone"; the exhibit shows the operations director speaks
+    first and longest, so it now reads "a forum the operations director has
+    historically dominated".
 
-WHAT WE MOST WANT THIS TIME:
+WHAT ELSE TO LOOK FOR, beyond Q1 and Q2:
 
-  1. DID ANY REPAIR OVER-CORRECT? This is the specific risk of this round. Four
-     GOLDEN GOODs were rewritten to REMOVE claims, and a model answer that has
-     been hedged into vagueness is a different defect, not a fix. Ask of each
-     GOOD: does it still read as a FULL-MARKS answer — committed, developed,
-     illustrated — or has it retreated into safety? An answer that no longer
-     earns the marks it models is worse than one that overclaims, because it
-     teaches students to write nothing.
-  2. IS THERE DRIFT LEFT? Same hunt as last time, now that the criteria have
-     moved again: criterion v criterion, criterion v GOOD, GOOD v reveal, and any
-     stated marking rule against the two-mark rule.
-  3. DID A FIX INVENT ITS OWN FACTS TO REFUTE THE OLD ONE? The over-correction is
-     the same defect: an earlier round replaced "the only available lever" with a
-     list of routes the case leaves open, inventing alternatives exactly as the
-     overclaim had.
-  4. ARITHMETIC AND DATES. There is no numeric verifier on this pipeline and it
-     has cost a drill twice. Please recompute anything recomputable.
-  5. THE TEACHING FIELDS. hint and full_reveal are what a student actually reads.
-     Do they teach the failure the criteria PENALISE, at the right strength?
-
-Please give a publish/do-not-publish call per drill with the blocking reasons
-first, and SAY PLAINLY IF A DRILL IS NOW CLEAN — we need to know when to stop as
-much as what to fix next.
+  · DID ANY REPAIR OVER-CORRECT? Five rounds of subtraction is the risk. Does
+    each GOOD still read as a FULL-MARKS answer — committed, developed,
+    illustrated — or has it been hedged into vagueness? An answer that no longer
+    earns the marks it models is worse than one that overclaims, because it
+    teaches students to write nothing. A4's c1 and GOOD in particular were
+    rewritten around a concession; please check the challenge is still sharp.
+  · ARITHMETIC AND DATES. There is no numeric verifier on this pipeline and it
+    has cost a drill twice. Please recompute anything recomputable.
+  · THE TEACHING FIELDS. hint and full_reveal are what a student actually reads.
+    Do they teach the failure the criteria PENALISE, at the right strength?
 
 `;
 
@@ -178,4 +183,4 @@ const dest = join(__dirname, '..', '..', 'ClaudeSend.txt');
 writeFileSync(dest, out.join('\n'), 'utf8');
 console.log(`wrote ${dest}`);
 console.log(`  ${IDS.length} drills · ${out.join('\n').length.toLocaleString()} chars`);
-console.log('  ⚠️ the reply goes to docs/reviews/SBL_BATCH_A_GPT_READ_4.md — NOT back into this file.');
+console.log('  ⚠️ the reply goes to docs/reviews/SBL_BATCH_A_GPT_READ_5.md — NOT back into this file.');
