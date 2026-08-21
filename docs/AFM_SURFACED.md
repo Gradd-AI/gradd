@@ -108,12 +108,16 @@ before" a survey taken ~March 2025. Neither is a judgement call and neither gate
 narrative pipeline still has no numeric verifier** and this is the second time that has cost
 something (D7 was the first).
 
-🟠 **ONE RULING OWED — GPT offered two fixes for A2 c1's population claim and only one was taken.**
+✅ **RULED 2026-08-21 — GPT's ALTERNATIVE fix for A2 c1 was taken.**
 The exhibit says "Bonuses are awarded solely on tonnage moved and fleet utilisation" and never says
-all 1,400 employees are in the scheme. The criterion and GOOD now say "the employees covered by the
-scheme". GPT's alternative was to **edit the exhibit to "All employee bonuses…"**, which closes it
-more cleanly and keeps the 1,400 figure load-bearing. Not taken, because editing an exhibit
-mid-review changes what the already-read criteria were read against. **Grant's call.**
+all 1,400 employees are in the scheme. The exhibit now reads **"ALL EMPLOYEE bonuses are awarded
+solely on…"**, which closes the question at source and keeps the 1,400 figure load-bearing in c1,
+the GOOD and the reveal. The conservative fix (retreating to "the employees covered by the scheme")
+was applied first and then reversed: it was exhibit-safe and it cost the criterion its most concrete
+anchor. My objection to editing the exhibit — that it changes what the already-read criteria were
+read against — **does not bind, because a third read is owed anyway.** ⚠️ The REVEAL does not revert
+to its original wording: GPT flagged TWO defects in that sentence and the exhibit edit cures only
+one, so "1,400 employees WILL rationally deprioritise" stays "have a rational reason to".
 
 ⚠️ **A THIRD COLD READ IS OWED BEFORE THE FLIP.** A1–A4 changed substantially — A3 c4 and A4 c3 were
 rebuilt rather than patched — and nothing has read the batch in its current state. The rows remain
