@@ -88,9 +88,12 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
-## 🔵 SCOPED, NOT BUILT — 2026-08-21 — A NUMERIC CHECK FOR NARRATIVE ROWS
+## ⛔ RULED NOT TO BUILD — 2026-08-21 — A NUMERIC CHECK FOR NARRATIVE ROWS
 
-Grant asked for the scope, not the build. **The headline is that the cheap version would have
+**GRANT'S RULING: DO NOT BUILD IT. Revisit ONLY if a cold read misses arithmetic.** The scoping is
+kept because the measurement is the reason, and a future session must not re-derive it and reach a
+different answer. The trigger is specific and observable: a cold read that fails to catch a numeric
+error. Until that happens, arithmetic is a reader's job on this pipeline. **The headline is that the cheap version would have
 caught NEITHER of A3's two errors**, so it must not be sold as the fix.
 
 📐 **MEASURED over the five SBL drafts: 215 number tokens, 58 distinct**, across `context_text`,

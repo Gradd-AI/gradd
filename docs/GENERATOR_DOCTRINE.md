@@ -306,6 +306,42 @@ workaround. Once learned, the workaround outlives the flake and generalises to t
 including the true ones. The window in which excluding is cheap is the window before anybody has
 had to ship around it.
 
+## P-G5(a) — A GREEN CONTRACT GATE DOES NOT MEAN THE TREE COMPILES (ruled 2026-08-21)
+
+**`npm run verify` = `tsc --noEmit -p tsconfig.json` THEN the contract gate. Run it before every
+push.** `npm run typecheck` is the first half on its own.
+
+**The gap, found by shipping a broken deploy.** `certainty-lint.ts` was written with
+`locator = field`, which TypeScript infers as `CertaintyField` rather than `string`, so
+`lintDrillCertainty` passing a criterion id (`c1`) does not compile. It reached `origin` and killed
+the preview build at the type-check stage. **Nothing in the local loop could have caught it:** `tsx`
+does not typecheck (it strips types), and the contract gate runs FIXTURES, not `tsc`. Both were
+green. `next build` typechecks `lib/`, and that is where it surfaced — on Vercel.
+
+📐 **DEMONSTRATED, NOT ASSERTED.** The exact shipped bug was re-introduced and both paths run
+against the same tree:
+
+| on the identical broken tree | result |
+|---|---|
+| `npm run test:contracts` | **PASS contract gate: 62/62** ← the false green |
+| `npm run verify` | `error TS2345`, **exit 2** |
+
+⚠️ **THIS IS THE SESSION'S FALSE-GREEN SHAPE, AND IT IS THE WORST INSTANCE OF IT** — worse than an
+n/a gate counted as pass (P-G5's `applicable:false`), worse than an N6a share read as coverage —
+because it lives **in the loop rather than in a test**. Every other false green in this catalogue is
+a check reporting more confidence than it earned. This one is a check reporting on a *different
+question than the one being asked*: "do the fixtures pass" answered where "does this compile" was
+meant. A person reading `62/62` is not being misled about the fixtures; they are being misled about
+what the fixtures were ever about.
+
+⚠️ **`verify` IS ITSELF A P-G5 VIOLATION AND THAT IS ACKNOWLEDGED, NOT HIDDEN.** P-G5 rules that a
+check armed only by someone remembering to run it is not a guard, and this is exactly that: an npm
+script with no hook, no lifecycle wiring and nothing forcing it. The repo has no git hooks and no
+husky. **The P-G5-complete form is `prebuild: npm run verify`**, which would arm it on every local
+`next build` — deliberately NOT done here because it also runs on Vercel, where `next build`
+typechecks anyway, adding ~13s of duplicate work to every deploy. That is a live trade-off and
+Grant's call, not a settled rule.
+
 ## P-G6 — A FIXTURE'S INPUT MUST BE THE SHAPE PRODUCTION BUILDS (ruled 2026-08-09)
 
 P-G5 governs whether a check *runs*. P-G6 governs whether what it runs *on* is real. A fixture

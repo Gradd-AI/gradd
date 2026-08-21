@@ -92,7 +92,9 @@
     "test:narrative-paper-pins": "tsx scripts/test-narrative-paper-pins.ts",
     "build:sbl-ledger": "tsx scripts/authoring/build-sbl-crosswalk-ledger.ts",
     "test:certainty-lint": "tsx scripts/test-certainty-lint.ts",
-    "lint:sbl-certainty": "tsx scripts/authoring/lint-sbl-certainty.ts"
+    "lint:sbl-certainty": "tsx scripts/authoring/lint-sbl-certainty.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "verify": "npm run typecheck && npm run test:contracts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",
