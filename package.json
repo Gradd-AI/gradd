@@ -61,6 +61,8 @@
     "test:pacing": "tsx scripts/test-pacing.ts",
     "test:debrief": "tsx scripts/test-debrief.ts",
     "test:weak-areas": "tsx scripts/test-weak-areas.ts",
+    "test:reconcile-content": "tsx scripts/test-reconcile-content.ts",
+    "reconcile:sbl-content": "tsx --env-file=.env.local scripts/authoring/reconcile-sbl-content.ts",
     "test:resit-engine": "tsx scripts/test-resit-engine.ts",
     "test:sit-results": "tsx scripts/test-sit-results.ts",
     "test:teach-demand": "tsx scripts/test-teach-demand.ts",
