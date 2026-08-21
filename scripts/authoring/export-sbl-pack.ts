@@ -15,15 +15,14 @@
  * the per-drill sections are generated. Usage: npx tsx scripts/authoring/export-sbl-pack.ts
  */
 
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { newestDraftPath, SBL_PLAN_IDS } from './sbl-drafts';
 
-const IDS = ['SBL-A1', 'SBL-A2', 'SBL-A3', 'SBL-A4', 'SBL-A5'];
+const IDS = [...SBL_PLAN_IDS];
 /** Modes the BAD commits and the rubric marks, which N4 could not verify. See NarrativePlan.designed_bad.
  *  FALLBACK ONLY — `_authoring.designed_mode_evidenced` is now persisted on the row and is preferred. */
 const EVIDENCED: Record<string, string> = { 'SBL-A1': 'F7', 'SBL-A3': 'F2', 'SBL-A4': 'F10' };
-
-const DRAFT_DIR = join(__dirname, '..', '..', 'docs', 'rollbacks');
 
 /**
  * THE ONE FIELD THE DRAFT CANNOT SUPPLY. A draft is a PRE-INSERT capture — the row it describes has
@@ -39,31 +38,6 @@ const ROW_IDS: Record<string, string> = {
   'SBL-A4': '80b4918b-1602-46dc-a213-a4ba70cb12c4',
   'SBL-A5': '2fbb2902-c254-4c9b-ac1a-240bf1adb9e7',
 };
-
-/**
- * ⚠️ THE NEWEST DRAFT IS NOT ALWAYS `<id>.json`, AND READING THE WRONG ONE REPUBLISHES OLD CONTENT.
- *
- * A dry run no longer overwrites a captured draft (`nextFreeDraftPath` in the generator) — it lands
- * on `<id>.2.json`, `<id>.3.json` … and leaves the original alone. That guard is right, and it
- * introduced this trap: SBL-A4 was REBUILT on 2026-08-20 and its live content is in
- * `SBL_narrative_draft_SBL-A4.2.json`, while `SBL_narrative_draft_SBL-A4.json` still holds the
- * superseded pre-rebuild version. An exporter that globs the bare name regenerates a pack quoting a
- * drill that no longer exists, and it looks completely clean while doing it.
- *
- * So resolve the HIGHEST-numbered sibling, and PRINT which file each section came from. Reviewers
- * check what a pack quotes; they cannot check which file it read unless it says.
- */
-function newestDraftPath(id: string): string {
-  const base = join(DRAFT_DIR, `SBL_narrative_draft_${id}.json`);
-  let chosen = base;
-  for (let n = 2; n < 1000; n++) {
-    const candidate = join(DRAFT_DIR, `SBL_narrative_draft_${id}.${n}.json`);
-    if (!existsSync(candidate)) break;
-    chosen = candidate;
-  }
-  if (!existsSync(chosen)) throw new Error(`no draft found for ${id}`);
-  return chosen;
-}
 
 const PREAMBLE = `# SBL Batch A — review pack
 
