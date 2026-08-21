@@ -88,6 +88,37 @@ refused. Both migrations applied by hand and independently re-verified before ea
 declared-not-served, and it is a tripwire the moment SBL gains a price, a surface or a marking path.
 **Do not widen them "for consistency"** — the asymmetry IS `AccaPaper` vs `ServedPaper` in the schema.
 
+## 🛑 BLOCKING — 2026-08-21 — THE SBL DB ROWS ARE PRE-REVIEW, AND A FLIP WOULD SHIP THEM
+
+**The five `acca_drills` SBL rows still hold the batch EXACTLY AS INSERTED ON 2026-08-19, before
+any cold read.** Every fix from reads 2, 3 and 4 exists only in `docs/rollbacks/*.json`. Found when
+an export was requested "from the live DB rows" and the premise was checked before acting.
+
+Proven two ways. **md5 per field, DB vs draft:** A1 `model_answer` DIFF · A2 `context_text` +
+`model_answer` + `full_reveal` DIFF · A3 same three DIFF · A4 `model_answer` + `full_reveal` DIFF ·
+A5 identical (its fixes did not touch those fields). **By marker, over the live rows:**
+
+| live row still has / lacks | fixed in |
+|---|---|
+| A1 `"score nothing"` | read 2 — **a publication blocker** |
+| A4 `"set the parameters"`, `"most urgent evidential"` | read 2 |
+| A2 `"board-level air-time"` | read 2 |
+| A3 `"low digital literacy"`, `"primary conduit"` | read 2 |
+| A2 context **lacks** `"All employee bonuses"` | the exhibit edit |
+| A3 context **lacks** `"approximately 34%"` | **the 33% arithmetic error is live** |
+
+⚠️ **THE FLIP IS A STATUS CHANGE AND DOES NOT CARRY CONTENT.** Nothing in GATE-P syncs a draft to
+its row and no gate compares them, so `candidate → approved → published` on these ids would have
+published the pre-review text with both blockers and the arithmetic error intact. **This is the
+second and larger reason the flip was right to pause** — the tutor id-path was the first.
+
+**WHAT IS OWED BEFORE ANY FLIP:** a content sync from the reviewed drafts to the rows, under
+P-DB3/P-DB4 (snapshot first, assert exactly the intended fields moved), and then **GATE-P's
+reconcile step needs a third arm** — today it compares the DB's approved-set against the journal's
+reviewed-set, which is a check on STATUS. It does not check that the row's CONTENT is the content
+that was reviewed. A row can be correctly `approved`, correctly journalled, and hold superseded
+text. That arm should compare row content against the reviewed draft.
+
 ## 🔵 SCOPED, NOT BUILT — 2026-08-21 — THE EVIDENCE-STATUS LEDGER (doctrine P-N4)
 
 Scope requested, build deferred. The fix for CLAIM → FACT LAUNDERING is **generation-side**; a third
