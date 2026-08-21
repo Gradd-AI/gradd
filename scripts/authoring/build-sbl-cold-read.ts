@@ -31,13 +31,12 @@ const TITLE: Record<string, string> = {
   'SBL-A5': 'A5 — (Tirta Nusantara, Indonesia)',
 };
 
-const PREAMBLE = `SBL BATCH A — COLD READ 3, ON A1, A2, A3 AND A4 IN THEIR CURRENT STATE
+const PREAMBLE = `SBL BATCH A — COLD READ 4, ON A1, A2, A3 AND A4 IN THEIR CURRENT STATE
 
-⚠️ READ THIS FIRST: EVERY FINDING FROM YOUR SECOND READ HAS BEEN APPLIED.
-Your ratings from that read (A1 7.5, A2 5.5, A3 4, A4 3.5) are STALE BY
-CONSTRUCTION and should not anchor this one. Two criteria were REBUILT rather
-than patched — A3 c4 and A4 c3 — and A2's EXHIBIT was edited. Nothing has read
-the batch as it now stands. Please read it cold.
+⚠️ READ THIS FIRST: EVERY FINDING FROM YOUR THIRD READ HAS BEEN APPLIED.
+Your ratings from that read (A1 8.5, A2 6.5, A3 6, A4 5.5) are STALE BY
+CONSTRUCTION and must not anchor this one. Nothing has read the batch as it now
+stands. Please read it cold.
 
 A5 is excluded again: its own read is applied and it has not moved since.
 
@@ -62,66 +61,71 @@ see only the exhibit. For every criterion and every sentence of the model answer
   (b) Is the opposite reading open on the exhibit — and does the criterion
       foreclose it?
 
-If (a) is no, the criterion marks the author's knowledge. If (b) is yes, it marks
-agreement rather than reasoning. Both are defects.
+BOTH OF YOUR OPERATIONAL TESTS ARE NOW DOCTRINE, and both drove this round:
 
-YOUR OWN OPERATIONAL TEST IS NOW DOCTRINE and was used to drive these edits:
+  1. Every verb stronger than "suggests / risks / is consistent with" needs an
+     exhibit fact that closes the weaker alternative.
+  2. Wherever a criterion contains an explicit evidential warning, search the
+     GOOD and the reveal for the very proposition that warning forbids.
 
-    Every verb stronger than "suggests / risks / is consistent with" needs an
-    exhibit fact that closes the weaker alternative.
+Both are half-mechanised now (a certainty lint and a warning-drift check, both
+ADVISORY — they find candidates, they cannot judge). Neither substitutes for
+this read, and both are blind to anything phrased outside their term lists.
 
-It has been half-mechanised: a lint reports your 17 red-flag terms across
-required_point, model_answer and full_reveal, classifying each by whether its own
-sentence hedges it. It is ADVISORY — it finds the verbs and cannot look for the
-fact. Batch unhedged count went 56 → 36 across these edits. It found two things
-your read did not (A2's GOOD said meeting dynamics and incident reviews
-"prevent"; A4's REVEAL still taught an invented fact after the criterion and the
-GOOD had both been corrected). It is NOT a substitute for this read.
+WHAT CHANGED SINCE YOUR THIRD READ — so you can attack the repairs directly:
 
-DISGUISES ALREADY FOUND AND FIXED ACROSS THIS BATCH — listed so they are not
-re-reported, and so the same shapes can be hunted in what remains:
-  · asserted DIRECTION        — a causal link where the exhibit records sequence
-  · manufactured ALTERNATIVES — and its over-correction, a list of routes the
-                                exhibit never mentions
-  · absolute from a hedge     — "no learning loop" where the case says "rarely"
-  · population from a sample  — three promotions standing for a whole cohort
-  · proof from correlation    — an outcome "confirming" a cause nothing isolates
-  · imported knowledge        — plausible industry fact the exhibit never states
-  · imported legal status     — a hotline user called a protected discloser
-  · hidden ranking            — "the strongest competing option", "the primary
-                                conduit", "will dwarf", "the most urgent"
-  · prescribed answers        — a criterion offering exactly two approved verdicts
+  · A1 — c4 no longer makes its methodology mandatory; it marks the ACT (assess
+    the reliability and significance of the 68% evidence and say how much weight
+    it should carry) and credits a candidate who treats the survey as
+    inconclusive. GOOD: "builds a compliance culture" → "risks building"; "would
+    meet the timetable outright" → "would better protect"; and the
+    68%-as-buy-in blend is now stated as role uncertainty, not buy-in.
+  · A2 — THE BLOCKER IS GONE: no new division, no buying capability anywhere in
+    the GOOD or the reveal. Also c1's "most depends on" ranking, the GOOD's "no
+    bearing", the invented sponsorship structure, "more interdependent than
+    haulage", "the first thing an employer tells a new arrival", and the reveal's
+    deprioritise-customers framing.
+  · A3 — THE BLOCKER IS GONE: no "naming an owner", no "launch gate", no "with no
+    owner". The GOOD now states what the case records and says outright that it
+    does not know what else the pilot report contained. Also c4's "without
+    prepared support" → "weakened regional-MANAGEMENT preparedness", c1's
+    "validated opportunity" and the imported member-trust theory, the 38%
+    overstatement, and the GOOD's "settles" / "did exactly what it should have
+    done".
+  · A4 — THE BLOCKER IS GONE: the GOOD no longer says the hotline is a rule
+    Camacho invokes or the mechanism that would test his claim. Also c1/c2/GOOD's
+    "no independent review" absolutes, c3's "best placed" and "cannot rely", c4
+    is no longer written around continuation, c5's "is what deters", c6's
+    "irreversible", the invented 60-day deadline, and the reveal now says an
+    unanswered question is not a developed conclusion.
 
-WHAT WE MOST WANT THIS TIME, beyond a fresh P-N3 pass:
+WHAT WE MOST WANT THIS TIME:
 
-  1. THE TWO REBUILT CRITERIA. A3 c4 and A4 c3 are new prose, not edits. They
-     were rebuilt because each CONTRADICTED another criterion in its own drill
-     (A3 c4 claimed the result was "directly traceable" while c6 says nothing
-     isolates causation; A4 c3 asserted a chain of four things the exhibit does
-     not contain). Do they now sit inside the exhibit, and do they agree with
-     their siblings?
-
-  2. INTERNAL CONTRADICTION GENERALLY. Two of the three publication-blockers
-     found so far were one criterion contradicting another, or a teaching field
-     contradicting the rubric it accompanies. Please look for that class
-     explicitly: criterion v criterion, criterion v GOOD, GOOD v reveal, and any
+  1. DID ANY REPAIR OVER-CORRECT? This is the specific risk of this round. Four
+     GOLDEN GOODs were rewritten to REMOVE claims, and a model answer that has
+     been hedged into vagueness is a different defect, not a fix. Ask of each
+     GOOD: does it still read as a FULL-MARKS answer — committed, developed,
+     illustrated — or has it retreated into safety? An answer that no longer
+     earns the marks it models is worse than one that overclaims, because it
+     teaches students to write nothing.
+  2. IS THERE DRIFT LEFT? Same hunt as last time, now that the criteria have
+     moved again: criterion v criterion, criterion v GOOD, GOOD v reveal, and any
      stated marking rule against the two-mark rule.
-
-  3. ARITHMETIC AND DATES. A3 shipped two hard reconciliation errors — 94,000 of
-     280,000 stated as 33%, and a March 2023 pilot called "eighteen months
-     before" a survey taken around March 2025. There is no numeric verifier on
-     this pipeline. Please recompute anything recomputable.
-
-  4. WHETHER ANY EDIT OVER-CORRECTED. The over-correction is the same defect: an
-     earlier fix replaced "the only available lever" with a list of routes the
-     case leaves open, inventing alternatives exactly as the overclaim had. If a
-     repair here has retreated into vagueness, or invented its own facts to
-     refute the old ones, that is a finding.
+  3. DID A FIX INVENT ITS OWN FACTS TO REFUTE THE OLD ONE? The over-correction is
+     the same defect: an earlier round replaced "the only available lever" with a
+     list of routes the case leaves open, inventing alternatives exactly as the
+     overclaim had.
+  4. ARITHMETIC AND DATES. There is no numeric verifier on this pipeline and it
+     has cost a drill twice. Please recompute anything recomputable.
+  5. THE TEACHING FIELDS. hint and full_reveal are what a student actually reads.
+     Do they teach the failure the criteria PENALISE, at the right strength?
 
 Please give a publish/do-not-publish call per drill with the blocking reasons
-first, and say plainly if a drill is now clean.
+first, and SAY PLAINLY IF A DRILL IS NOW CLEAN — we need to know when to stop as
+much as what to fix next.
 
 `;
+
 
 function renderCriterion(c: SblCriterion): string {
   const anchors = (c.anchor_facts ?? []).join(', ');
@@ -174,4 +178,4 @@ const dest = join(__dirname, '..', '..', 'ClaudeSend.txt');
 writeFileSync(dest, out.join('\n'), 'utf8');
 console.log(`wrote ${dest}`);
 console.log(`  ${IDS.length} drills · ${out.join('\n').length.toLocaleString()} chars`);
-console.log('  ⚠️ the reply goes to docs/reviews/SBL_BATCH_A_GPT_READ_3.md — NOT back into this file.');
+console.log('  ⚠️ the reply goes to docs/reviews/SBL_BATCH_A_GPT_READ_4.md — NOT back into this file.');
