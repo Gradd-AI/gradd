@@ -90,7 +90,9 @@
     "test:paper-vocabulary": "tsx scripts/test-paper-vocabulary.ts",
     "test:sbl-framework": "tsx scripts/test-sbl-framework.ts",
     "test:narrative-paper-pins": "tsx scripts/test-narrative-paper-pins.ts",
-    "build:sbl-ledger": "tsx scripts/authoring/build-sbl-crosswalk-ledger.ts"
+    "build:sbl-ledger": "tsx scripts/authoring/build-sbl-crosswalk-ledger.ts",
+    "test:certainty-lint": "tsx scripts/test-certainty-lint.ts",
+    "lint:sbl-certainty": "tsx scripts/authoring/lint-sbl-certainty.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

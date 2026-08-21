@@ -1189,6 +1189,42 @@ separation; N6 explicitly declines to read `required_point` semantics; P4 checks
 frozen facts. It is a reader's finding — which is why an adversarial cold read of the exhibit
 against the rubric belongs in the batch lifecycle, not beside it.
 
+### P-N3(a) — THE CERTAINTY LINT: IT CANNOT FIND THE DEFECT, BUT IT CAN SAY WHERE TO LOOK
+
+`lib/acca/certainty-lint.ts` (pure) · fixtures `npm run test:certainty-lint` (71 checks, in the
+contract gate) · runner `npm run lint:sbl-certainty` (reads the drafts through the shared
+`scripts/authoring/sbl-drafts.ts`, so it can never lint a superseded `.json` while the pack renders
+a `.2.json`).
+
+**All five disguises above surface in the PROSE as a certainty word doing work the exhibit cannot
+support** — *demonstrates* what it can only make plausible, the *only* lever, *confirming* what is
+correlation, *every* renewal from three promotions. So the lint reports the 17 ruled certainty terms
+(Grant's list, 2026-08-21) across `required_point`, `model_answer` and `full_reveal`, and classifies
+each occurrence by whether its own sentence already hedges it.
+
+⚠️ **IT IS ADVISORY AND IT MUST STAY ADVISORY.** No `ok` boolean, no `blocking` field, nothing
+throws, exit code always 0. Every term is legitimate prose where an exhibit fact closes the weaker
+reading — A1 c4's *"the CFO's conclusion holds **only** if the employees who opted out were
+systematically less anxious … and nothing in the case establishes that"* is P-N3 done **correctly**
+and the lint flags it. Whether the exhibit closes the reading is a semantic judgement with no
+structural discriminator, and a gate refusing on a word list would be written-around by an author
+inside a week (P-DB5).
+
+**Claim ceiling, verbatim:** *(a)* a hit is not a defect, it is a sentence to read against the
+exhibit · *(b)* a clean field is **not** P-N3 clean — the term list is CLOSED, so an absolute
+phrased outside it passes silently · *(c)* the hedge test is **proximity, not attachment**: a hedge
+anywhere in the sentence suppresses, including one attached to a different clause. (c) is the
+false-NEGATIVE direction, which is why suppressed occurrences are still returned and still printed,
+and why **the unhedged count must never be reported as the number of occurrences.**
+
+📐 **THE HEDGE LIST IS WHERE THE JUDGEMENT LIVES, AND FIVE CANDIDATES WERE DROPPED AFTER MEASURING
+THEM AGAINST THIS CORPUS** — every hedge is a potential suppressed defect. `would` (counterfactual,
+not epistemic: *"the process that WOULD have verified his claim was shut down"* — it suppressed a
+real hit in A4 c3) · `can` · `risk(s)` (the SUBJECT of every governance drill here, not a hedge on
+it) · `assertion` (A4 is ABOUT an assertion, so the noun is in nearly every sentence of it; the
+attributing VERBS are kept) · `states`. An extra sentence to read costs ten seconds; a suppressed
+defect ships.
+
 ## P-N2 — THE TEACHING PAIR CAN COACH A DIFFERENT SKILL FROM THE ONE THE RUBRIC MARKS (ruled 2026-08-02)
 
 **`hint` and `full_reveal` are the only fields a student actually READS as teaching. No gate checks
