@@ -147,7 +147,31 @@ ruling: the fix there was to **state the outcome as given and forbid the raw dri
 deliberately REMOVES the derivable chain — so the policy already in force shrinks what Class 2 has
 left to check.
 
-## 🔴 OPEN 2026-08-21 — GPT COLD READ 2 APPLIED TO A1–A4; THE BATCH NOW NEEDS A THIRD READ BEFORE ANY FLIP
+## 🔴 OPEN 2026-08-21 — COLD READ 3 APPLIED TO A1–A4; A FOURTH READ IS OWED
+
+`docs/reviews/SBL_BATCH_A_GPT_READ_3.md`. Ratings A1 8.5 · A2 6.5 · A3 6 · A4 5.5, all **NO**, and
+all now stale by construction — every finding is applied. The batch is materially better and none of
+the four was clean.
+
+📐 **THE DEFECT CLASS MOVED, AND THAT IS THE FINDING OF THE READ.** It is no longer crude
+overclaiming in the rubrics — that is repaired — it is **rubric → GOOD → reveal DRIFT**: a criterion
+correctly refuses to assume a fact and the model answer quietly reintroduces it. **One publication
+blocker per drill, every one of that shape.** A2 c6 names three invented routes as the P-N3 error
+while its GOOD reasoned with *"any new division"* and *"buying capability"*. A3 c5 says the case
+does not reveal what the pilot report contained while its GOOD built the entire counter-reading from
+*"no role design, no named owner, no launch gate"*. A4 c3 was REBUILT to refuse two specific facts
+and its GOOD still opened with both, **verbatim**. Banked as P-N3's second operational test, with
+the standing rule it implies: **a criterion is never fixed alone.**
+
+⚠️ **A FOURTH COLD READ IS OWED BEFORE THE FLIP.** Rewritten this round: A1 c4, A4 c4, and the GOOD
+of all four drills. Nothing has read the batch in its current state. Rows remain
+`candidate`/`published=false`; the flip is still two steps under GATE-P.
+
+⚠️ **THE WARNING-DRIFT PAIR COUNT IS NOT A PROGRESS METRIC AND IT MOVED THE WRONG WAY** — 186 → 234
+after the fixes, because repairs ADD explicit warnings and each new warning generates new candidate
+pairs. Never quote it as progress.
+
+## ✅ SUPERSEDED 2026-08-21 — GPT COLD READ 2 APPLIED TO A1–A4
 
 `docs/reviews/SBL_BATCH_A_GPT_READ_2.md` (banked; `ClaudeSend.txt` is the OUTGOING file and is
 overwritten each send, which is how read 1's reply was lost). All four ratings were **NO**: A1 7.5,
