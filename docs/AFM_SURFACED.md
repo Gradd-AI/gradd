@@ -196,7 +196,7 @@ a consequence: a fix lands in one copy and the other keeps its old behaviour, an
 | Mechanism | DT | CT | MS | MK |
 | --- | :--: | :--: | :--: | :--: |
 | `buildGroundingPack` — checklist / facts / conventions / resolvableTopics | ✅ | ❌ | n/a | n/a |
-| code-owned **direction** (discriminants) | ✅ | ✅ | n/a | ❌ |
+| code-owned **direction** (discriminants) | ⚠️ | ⚠️ | n/a | ❌ |
 | blank-answer short-circuit (`isBlankAnswer`) | ❌ | ❌ | n/a | ✅ |
 | `nextMoveContract` (level-3 next move) | ✅ | ✅ | n/a | n/a |
 | reveal offer at `missCount >= 2` | ✅ | ⚠️ | n/a | n/a |
@@ -209,7 +209,48 @@ out of scope. ⚠️ on CT's reveal: `teach-engine.ts:710` is `wantsReveal && mi
 `paid` arm and no `resolved` arm**, where DT uses the four-input `revealDecision`. Harmless only
 because `case/turn` 402s an unentitled user first; the missing `resolved` arm is wrong regardless.
 
-### ⚠️ THE DATA HOLE, WHICH IS NOT A WIRING HOLE AND NEEDS ITS OWN DECISION
+### 🔴 THE DIRECTION FENCE IS INERT ACROSS THE WHOLE OF APM, AND IT COST A LIVE STUDENT (2026-08-22)
+
+**The ⚠️ on both teaching surfaces above replaced a ✅, and this is why.** The ✅ was true as a
+WIRING fact — both routes call `extractDiscriminants` / `detectContradictions` /
+`renderDiscriminants` — and badly misleading as a CAPABILITY fact.
+
+**THE SIGHTING that opened this.** APM · Aldermere Fitness · requirement (i) (`79e20a04`, `C1a`,
+*evaluate*, level 3, 13 marks). A student wrote *"they wouldnt think the strategy is working"*;
+Ezra replied *"you've identified the right conclusion, that the board **would** think the strategy
+is working"* — crediting the student for the opposite of what they wrote.
+
+**THE ANSWER: the fence had nothing to fire on. It did not fire and get ignored.**
+
+- That requirement's **`answer_schema` is NULL** — not "a schema without `params`", no schema.
+- So `extractDiscriminants(null)` → `[]` · `detectContradictions(msg, [])` → `[]` ·
+  `renderDiscriminants([], [])` → `''`. Both returns are fixture-pinned in
+  `test-tutor-discriminants.ts`. `directionBlock` was the **empty string** and contributed nothing
+  to the prompt.
+- **ALL 18 APM case requirements have `answer_schema` NULL. Zero exceptions.** With 0 of 91 APM
+  drills carrying `params`, the fence reaches **nothing on either APM surface** — the entire paper.
+
+**🔴 AND BACKFILLING `params` WOULD NOT HAVE PREVENTED IT.** `DISCRIMINANTS` (`tutor-discriminants.ts`)
+registers exactly **three** keys — `side` (buy/sell futures), `direction`
+(borrower/depositor/receipt/payment) and `quote_direction` (FX quoting). **All three are AFM
+hedging concepts.** Aldermere (i) is a performance-management board report; *"the board would /
+would not conclude the strategy is working"* is a **VERDICT POLARITY**, and no such discriminant
+exists. The registry deliberately ignores unregistered keys, so an authored
+`params: { verdict: 'not_working' }` would be silently dropped today.
+
+**So this is TWO changes, not one, and neither is "backfill APM `params`" on its own:**
+1. **A `verdict` / conclusion-polarity discriminant** in the registry — the closed-enum test the
+   module's own header sets still passes (a verdict is two-valued), but the surface forms of
+   "the strategy is working" are far broader than `buy|sell` and the false-contradiction risk the
+   header names is real. This needs designing, not just adding.
+2. **APM requirements need a schema to hang it on** — all 18 have none.
+
+**⚠️ AND THE TRANSCRIPT CANNOT BE RECOVERED.** There is no case-turn message table:
+`acca_drill_messages` is keyed by `drill_id` and the exam-case tutor persists **no transcript at
+all**. The sighting above is reconstructed from the row and the code, not re-read from the DB, and
+a future sighting on that surface will be equally unre-examinable. That is its own gap.
+
+### ⚠️ THE REST OF THE DATA HOLE, WHICH IS A SEPARATE DECISION
 
 A mechanism can be wired and still reach nothing. Measured over the live corpus:
 
