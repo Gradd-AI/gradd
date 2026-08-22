@@ -245,10 +245,22 @@ repeat — the sighting is what the tutor says the FIRST time the wrong polarity
 Seeded answers assert the opposite of the model answer's verdict. **Denominator: 20 turns per
 surface, 40 total, every one read by hand.**
 
-| surface | target | CREDITED | CORRECTED | NOT ADJUDICATED |
-| --- | --- | ---: | ---: | ---: |
-| **DRILL** | APM A3b EVA — Zitel (`a05bc641`) | **20/20 (100%)** | 0/20 | 0/20 |
-| **CASE** | APM Aldermere (i) (`79e20a04`) | **0/20** | **20/20 (100%)** | 0/20 |
+**Two runs. Run 2 added the SECOND-MISS leg**, which is the turn that matters most on a surface
+failing on the first. Miss-1 figures below are POOLED across both runs (n=40) — a genuine
+replication, and it moved: run 1 was 20/20, run 2 was 18/20.
+
+| surface | leg | n | CREDITED | CORRECTED | NOT ADJUDICATED |
+| --- | --- | ---: | ---: | ---: | ---: |
+| **DRILL** A3b EVA `a05bc641` | miss 1 (hint) | 40 | **38 (95%)** | 2 (5%) | 0 |
+| **DRILL** A3b EVA `a05bc641` | miss 2 (teach) | 20 | **1 (5%)** | **16 (80%)** | 3 (15%) |
+| **CASE** Aldermere (i) `79e20a04` | miss 1 (hint) | 40 | **0** | **40 (100%)** | 0 |
+| **CASE** Aldermere (i) `79e20a04` | miss 2 (teach) | 20 | **0** | **20 (100%)** | 0 |
+
+📐 **THE DRILL DEFECT IS THE FIRST TURN ONLY — 95% → 5% between miss 1 and miss 2.** The one
+credited miss-2 reply (rep 18) says *"You've correctly identified that the company is destroying
+shareholder value … which is the right direction"* while flagging the arithmetic, so it credits the
+verdict and corrects the number in the same breath. The 3 not-adjudicated ones defer explicitly
+(*"there is no way to verify whether the sign is correct"*), which is honest rather than wrong.
 
 Both targets have `answer_schema` NULL, so the direction fence was provably inert on both — the
 arm prints and asserts this before firing. **The fence's inertness is therefore NOT what
@@ -265,9 +277,49 @@ discriminates the two rates.**
   (reps 7, 11, 17, 20) about arithmetic that is wrong — the model answer's EVA is POSITIVE.
 
 🔴 **SO THE DRILL DEFECT IS NOT A VERDICT-POLARITY PROBLEM.** It is *a student-asserted figure
-accepted as computed when nothing code-owned contradicts it*. That is the **numeric-verification
-moat**, which AFM has (`params` + `lib/acca/numeric-verifier.ts`) and **APM has on 0 of 91 drills**
-— not the direction fence, which is about a two-valued enum.
+accepted as computed when nothing code-owned contradicts it*.
+
+### ✅ ANSWERED 2026-08-22 — THE TUTOR HAD THE CORRECT FIGURE. THIS IS NOT-CHECKING, NOT MISSING-DATA
+
+The prompts were **dumped from a live run** (temporary `TUTOR_PROMPT_DUMP` instrumentation, since
+reverted — `git checkout` verified, no trace in the repo). The question was whether the correct EVA
+figure reached the leg that speaks to the student. **It did, twice over.**
+
+**`call2_diagnose` received the full model answer** — 1,970 chars, containing `NOPAT = ₦18,400m ×
+(1 − 0.30) = ₦12,880m` and the whole computation — under the header *"Model answer (reference only
+— do NOT restate or correct in output)"*.
+
+**`call3_hint`'s own prompt named the correct figure and the correct sign**, via the grounding
+pack's `misconceptionLead` (extracted from `full_reveal`), verbatim:
+
+> *"The typical APM candidate calculates EVA™ and stops — producing the **₦280m figure** and
+> concluding **"value is being created"** … The misconception is treating a **positive** EVA™ as
+> automatically reassuring"*
+
+…and the prompt instructed it to **"lead with the MISCONCEPTION below (in your own words) before
+anything else."** It then wrote *"You've correctly identified that EVA™ is negative."*
+
+### 📐 THE MECHANISM, PROVEN BY THE TWO GAP LABELS FROM ONE RUN
+
+| leg | student showed working? | call2's returned gap label |
+| --- | --- | --- |
+| **miss 1** | no — figure asserted | `"states a figure but shows no working — cannot be credited"` |
+| **miss 2** | yes — reasoning shown | `"Student computed EVA as negative when it is actually positive, reaching the wrong investment conclusion entirely."` |
+
+**Same drill, same model answer, same session.** On miss 1 the **BARE-GUESS GUARD** fired — and
+`call2_diagnose`'s own prompt specifies it runs *"before the equivalence check"*, so **correctness
+was never assessed at all**. Its output is a criticism of **FORM**. That label is the only signal
+`call3_hint` gets about the answer's quality (`call3_hint` takes no `modelAnswer` parameter), and
+`call3_hint` is instructed to **"Lead with the ONE specific thing they got right."** Given a gap
+that says only *"no working shown"*, crediting the conclusion is the reasonable reading.
+
+On miss 2 the guard does not fire, the equivalence check runs against the model answer, and the
+label carries the correctness finding — and the downstream leg corrects, 16/20.
+
+**🟢 VERDICT: an afternoon, not a fortnight.** The fix lives in the guard's ordering and in what the
+gap label is allowed to carry — **not in 91 authored schemas**. `model_answer` is present on
+**154/154** published drills and `call2` already receives it. ⚠️ The `misconceptionLead` rescue path
+happens to exist here but reaches only **14 of 91** APM drills, so a fix must not be built on it.
 
 ⚠️ **THE SIGHTING WAS NOT REPRODUCED.** Aldermere corrected 20/20; the reported inversion happened
 0 times. So it is either a tail this n cannot see (0/20 bounds it below roughly 15% at 95%), or it

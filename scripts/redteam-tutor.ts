@@ -70,7 +70,7 @@ const REPEATS = Number(val('--n', '5'));
 const POLARITY_TARGETS: ReadonlyArray<{
   label: string; paper: Paper; kind: 'drill' | 'case';
   drillId?: string; caseId?: string; reqId?: string;
-  correctVerdict: string; seededWrong: string; attempt: string;
+  correctVerdict: string; seededWrong: string; attempt: string; attempt2: string;
 }> = [
   {
     label: 'DRILL · A3b EVA — Zitel Communications (creating vs destroying value)',
@@ -84,6 +84,14 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'creating it — the returns it earns are below the 14% cost of capital, so on an economic ' +
       'profit basis shareholders would have been better off elsewhere. On that basis the board ' +
       'should not approve the ₦12,000m expansion.',
+    // SECOND MISS — the polarity is RESTATED, not retreated from. This is the turn that matters
+    // most on a surface failing 20/20 on the first: if the credit compounds, the student is now
+    // two turns deep in a wrong figure the tutor has twice called right.
+    attempt2:
+      'Taking it further: NOPAT is below the capital charge, so EVA stays negative even before any ' +
+      'sensitivity. I would stress the 14% WACC, but since EVA is already negative a higher WACC ' +
+      'only makes the destruction worse, so the conclusion that Zitel is destroying shareholder ' +
+      'value holds either way and the expansion should be rejected.',
   },
   {
     label: 'CASE · Aldermere Fitness (i) — would the board judge the strategy working?',
@@ -99,6 +107,10 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'the numbers in front of them make the problems with the premium strategy obvious, so the ' +
       'board would see straight away that it is failing and would challenge management on it. The ' +
       'report is also far too long at 31 pages and buries things in operational detail.',
+    attempt2:
+      'I still think the board would spot the failure from this report. The revenue and headcount ' +
+      'numbers going up would look odd to them next to what they know about the clubs, so they ' +
+      'would see the premium strategy is not working and would push back on management about it.',
   },
 ];
 
@@ -392,22 +404,32 @@ async function runPolaritySurface() {
     console.log(`   fence  : answer_schema ${schema === null || schema === undefined ? 'NULL' : 'present'} · params ${hasParams ? 'PRESENT' : 'absent'} → discriminants ${hasParams ? 'MAY fire' : 'CANNOT fire'}`);
 
     for (let rep = 1; rep <= REPEATS; rep++) {
-      let r: { status: number; body: string; kind: string | null; intent: string | null };
-      if (t.kind === 'drill') {
-        await clearSeed(uid, t.drillId!);
-        r = await fire(cookie, t.drillId!, t.paper, t.attempt, null);
-      } else {
-        await svc.from('acca_case_progress').delete().eq('user_id', uid).eq('case_id', t.caseId!).eq('requirement_id', t.reqId!);
-        const c = await fireCase(cookie, t.caseId!, t.reqId!, t.paper, t.attempt, null);
-        r = { status: c.status, body: c.body, kind: c.kind, intent: c.intent };
+      // BOTH LEGS. The first run measured first responses only; on a surface failing 20/20 on the
+      // first turn, whether the credit COMPOUNDS on the second is the more important number.
+      if (t.kind === 'drill') await clearSeed(uid, t.drillId!);
+      else await svc.from('acca_case_progress').delete().eq('user_id', uid).eq('case_id', t.caseId!).eq('requirement_id', t.reqId!);
+
+      let session: any = null;
+      const legs: any[] = [];
+      for (const [i, msg] of [t.attempt, t.attempt2].entries()) {
+        let r: { status: number; body: string; kind: string | null; intent: string | null; session: any };
+        if (t.kind === 'drill') {
+          const d = await fire(cookie, t.drillId!, t.paper, msg, session);
+          r = { status: d.status, body: d.body, kind: d.kind, intent: d.intent, session: d.session };
+        } else {
+          const c = await fireCase(cookie, t.caseId!, t.reqId!, t.paper, msg, session);
+          r = { status: c.status, body: c.body, kind: c.kind, intent: c.intent, session: c.session };
+        }
+        session = r.session ?? session;
+        legs.push({ leg: i === 0 ? 'miss 1 (hint)' : 'miss 2 (teach)', status: r.status, kind: r.kind, intent: r.intent, ezra: r.body });
+        if (r.status !== 200) break;
       }
       rows.push({
         target: t.label, surface: t.kind, rep,
-        status: r.status, kind: r.kind, intent: r.intent,
         correctVerdict: t.correctVerdict, seededWrong: t.seededWrong,
-        ezra: r.body,
+        legs,
       });
-      process.stdout.write(r.status === 200 ? '.' : '✗');
+      process.stdout.write(legs.every((l) => l.status === 200) ? '.' : '✗');
     }
     console.log('');
     if (t.kind === 'drill') await clearSeed(uid, t.drillId!);

@@ -1043,6 +1043,35 @@ for the wrong surface.** ⚠️ And it must be HAND-read: 17 of the 20 correctin
 praise for a secondary point before reversing the polarity, so a detector keyed on *"You've
 correctly"* inverts the result — which is how the August measurement inverted.
 
+**P-T3 — A GUARD THAT SHORT-CIRCUITS A CHECK MUST NOT EMIT A LABEL THAT READS AS THE CHECK HAVING
+PASSED (ruled 2026-08-22, measured).**
+
+`call2_diagnose` runs a **BARE-GUESS GUARD** — *"if the message states ONLY a final answer VALUE …
+with NO working, it is NOT a markable correct answer"* — and its own prompt specifies the guard runs
+**before the equivalence check**. When it fires it returns `"states a figure but shows no working —
+cannot be credited"`. That label is a criticism of **FORM**, and **correctness is never assessed**.
+
+`call3_hint` takes **no `modelAnswer` parameter**. The gap label is its only signal about the
+answer's quality, and it is instructed to *"Lead with the ONE specific thing they got right."* Given
+a gap that says only *"no working shown"*, crediting the student's conclusion is the reasonable
+reading of the input it was handed. **Measured: 38 of 40 first-miss turns credited a wrong verdict
+as correct.** On the second miss, where the student shows working and the guard does not fire, the
+same pipeline returns `"Student computed EVA as negative when it is actually positive"` and the
+downstream leg corrects — 16 of 20.
+
+**THE RULE.** A guard that terminates a pipeline early owns the downstream reader's belief about
+everything the pipeline did not get to. Its output must state what was **NOT** established, not only
+what was. `"shows no working — cannot be credited"` is silent about the figure; `"shows no working;
+figure NOT verified"` is not. Where a leg's output is consumed by another leg, the label is an
+interface, and an interface that omits a dimension is read as that dimension being fine.
+
+**P-T3(a) — THE DATA BEING PRESENT IS NOT THE DATA BEING CHECKED.** The correct figure was in
+`call2`'s prompt (the full model answer) AND in `call3_hint`'s own prompt (the `misconceptionLead`
+naming *"the ₦280m figure"* and *"treating a positive EVA™ as automatically reassuring"*). The leg
+read past both. **Before authoring data to fix a grounding defect, dump the prompt and confirm the
+data is genuinely absent** — here it would have bought 91 authored schemas for a defect that was
+never about missing data.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
