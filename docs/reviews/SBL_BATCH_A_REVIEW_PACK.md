@@ -1,0 +1,882 @@
+# SBL Batch A — review pack
+
+**Regenerated from `docs/rollbacks/SBL_narrative_draft_SBL-A*.json` by
+`scripts/authoring/export-sbl-pack.ts`.** Spec: `docs/SBL_BATCH_A_PLAN.md`.
+Evidence: `docs/evidence/SBL_FAILURE_CATALOGUE.md`.
+
+## DB STATE — ALL FIVE INSERTED, `candidate` / `published=false`
+
+| plan | id | LO | skill | marks | criteria | draft |
+|---|---|---|---|---|---|---|
+| SBL-A1 | `9d414a87-b12d-4526-85cc-5e537a25104b` | A2b | analysis | 10 | 5 | `SBL_narrative_draft_SBL-A1.json` |
+| SBL-A2 | `5bd47a79-7640-4902-8360-b8b0952d0b19` | A2d | analysis | 12 | 6 | `SBL_narrative_draft_SBL-A2.json` |
+| SBL-A3 | `46e10662-914f-412b-8e56-faf426d0461f` | A1a | analysis | 12 | 6 | `SBL_narrative_draft_SBL-A3.json` |
+| SBL-A4 | `80b4918b-1602-46dc-a213-a4ba70cb12c4` | A3d | scepticism | 12 | 6 | `SBL_narrative_draft_SBL-A4.2.json` |
+| SBL-A5 | `2fbb2902-c254-4c9b-ac1a-240bf1adb9e7` | A3a | evaluation | 10 | 5 | `SBL_narrative_draft_SBL-A5.json` |
+
+**acca_drills 155 → 160.** AFM 64 · APM 91 · SBL 5. Post-insert: 5/5 `candidate`+unpublished,
+0 published, 0 approved, 5 distinct `lo_code` with no duplicate, and 0 AFM/APM rows created in the
+window — so nothing outside the batch moved. **Section A is now 5 of 12 outcomes** (A1a, A2b, A2d,
+A3a, A3d), counted as OUTCOMES, not marks.
+
+⚠️ **NO PUBLISH FLIP HAS OCCURRED, AND IT IS TWO STEPS, NOT ONE** — these rows are `candidate`, so
+going live means `approved` and then `published`, under GATE-P: reconcile the DB approved-set
+against the journal FIRST, flip by EXPLICIT id, demote any un-reviewed `approved` row in the same
+transaction, prove it with pre/post counts.
+
+⚠️ **THE BATCH NEEDED TWO SCHEMA MIGRATIONS THAT NOBODY PREDICTED**, both found by attempting the
+insert rather than by reading code — `20260819120000` (paper_code) and `20260819130000`
+(skill vocabulary, paper-aware). See `AFM_SURFACED.md`.
+
+**SBL-A2 was re-tagged `evaluation` → `analysis`** (Grant-ruled 2026-08-19): all six of its facts
+point one way, so committing concedes nothing and evaluation is the wrong act for what the scenario
+supplies. Re-gated green — the only thing that moved was the N6b arm's identity.
+
+---
+
+## ⚠️ FIVE THINGS TO HOLD WHILE READING
+
+**1. N4 verified the DETERMINISTIC modes only.** `designed_bad_flags` lists only F1/F4/F5 — what
+`checkRule23` raises unaided. Where a drill declares an `evidenced` mode (F7, F2, F10) the BAD
+commits it and the rubric marks it, but **N4 did not prove the marker identified it**.
+
+**2. N6 gates ONE of the five** — SBL-A4 (`scepticism`) alone runs N6b and N6c. Read
+`N6 coverage:`, never `ok` alone: `ok` is true when nothing failed, and nothing can fail a check
+that did not run.
+
+**3. N6a measures LABELLING, not demand.** F10's own text names scepticism and commercial acumen —
+neither `analysis` nor `evaluation`.
+
+**4. There is no numeric verifier on this pipeline.** Every figure is a stated given with no
+derivable chain. That is the structural answer, not a claim the gates checked them.
+
+**5. The four-part development test is ACCA's own scheme** — published on one page of all seven
+examiner reports, arithmetic at MJ25 p.4, SD25 p.4, MJ26 p.5. Every criterion is 2 marks and states
+its 1-mark undeveloped tier.
+
+## Confirmed BY HAND — the check N6b reports as NOT EVALUATED
+
+- **SBL-A1** ✅ three behavioural episodes + the survey + the CFO's counter-claim; `c4` requires one
+  source to bear on another. Real trade: consultation against *weeks, not months*.
+- **SBL-A3** ✅✅ strongest — the 2022 study, the March 2023 pilot, the launch-day briefing failure and
+  the 18-month survey. Four dated sources that dispute each other.
+- **SBL-A5** ✅✅ strongest evaluation — 55% of mains unusable within eight years, a 1.8× covenant and a
+  declined subsidy, against 280,000 residents at +IDR 49,500 a month. Neither side is a straw man.
+- **SBL-A2** ⚠️ **fails it** — one-directional. That finding is why it is now tagged `analysis`.
+
+## ⚠️ ALL FIVE ROWS WERE REWRITTEN AFTER GPT'S COLD READ (2026-08-20)
+
+**SBL-A4 was REBUILT, not patched** — new scenario, new organisation, 5 criteria/10 marks → 6/12.
+Its first version misclassified two of its three ethical threats: an ABSENT independent review was
+called a *self-review threat* (self-review needs someone to re-evaluate their own prior judgement
+and rely on it), and a threat to the EXTERNAL AUDITORS' independence was assessed in a note the
+auditors were writing, on evidence that does not reach *"actual or perceived pressures"*. Cause:
+the brief named the skill and the scenario shape and never named the THREATS, so the classification
+was emergent. The rebuilt brief names all three and the fact that must create each.
+**`SBL-ETH1` was registered the same day** — the ACCA Code of Ethics and Conduct (Section A: the
+IESBA Code, 2025 edition as adopted 1 Jan 2026), fetched-not-stored, with §120.6 A3, §210.4 A1 and
+the *close family* / *immediate family* glossary entries page-verified. Before it, 34 sources were
+registered and not one was an ethics code.
+
+**THE SYSTEMIC DEFECT: EVERY RUBRIC PRESCRIBED ITS OWN ANSWER.** A read-only sweep of all 28
+criteria found three shapes — a prescribed **VERDICT** (A1 c5, A2 c6, A3 c5, A5 c5), a required
+**RANKING** (A3 c3, A5 c4), and an asserted **DIRECTION** (A1 c4, A2 c2, A2 c4, A3 c6, A5 c2). The
+cause was in the PROMPT, not the plans: this bullet's predecessor in `PAPER_NARRATIVE_RULES.SBL`
+presupposed a verdict-carrying criterion, and `required_point` is defined as *"the point a
+full-marks answer makes"* — so a criterion requiring a verdict is written BY STATING IT. **Nothing
+could catch it**: N5 tests the REVEAL for a conclusion and never the criterion, N6 declines to read
+`required_point` semantics, N1/N4 grade coverage and separation. A rubric that prescribes the
+answer passes all six. The rule now marks the STRUCTURE of a judgement, never its direction, and a
+companion rule bars a criterion from asserting causation the case supports only as plausibility.
+**Every criterion below that carries a judgement now names both readings as full-marks.**
+
+**Also fixed:** A3's date error (rollout Sept 2023 + eighteen months = **2025**, not the 2024 the
+rubric and model answer both asserted) · two student-facing grammar defects nothing gates
+(`"has been taken place"`, `"decision to declined to provide"`) · a **key-injection** hazard —
+`scenario_fact.key` is spliced verbatim into prose a student reads, so a sentence-initial or
+finite-verb-phrase key renders ungrammatically mid-sentence.
+
+⚠️ **THE MODEL ANSWERS MIRRORED THE DEFECTS IN EVERY CASE, so they moved with the criteria.** A
+golden GOOD that still asserts what its criterion no longer requires fails N1 — and on A2 it did,
+mid-pass: softening c5 and its GOOD paragraph together dropped the GOOD below full marks and the
+grader caught it. **When a criterion and the answer that must satisfy it are softened together, the
+answer can fall through the floor the criterion still sets.**
+
+🟠 **TWO MARGINAL WORDINGS RULED NOT WORTH REOPENING** and left in place, recorded for this
+decision: **A1 c3** infers from a survey of *redeployed employees* that the eight middle managers
+are themselves under stress (hedged, but a step the case does not take), and **A5 c3** forecloses
+any benchmark value in the 42%-below-commercial comparison (sound reasoning, absolute closure).
+
+
+---
+
+## SBL-A1 · `A2b` · analysis · L2 · 10 marks
+
+**verb:** identify, evaluate, and advise · **paper_code:** SBL · **status:** candidate, published=false
+
+*Generated from `docs/rollbacks/SBL_narrative_draft_SBL-A1.json`.*
+
+**Designed BAD — N4 contract:** `[F5]`  ·  **evidenced (NOT N4-verified):** `F7`
+
+### context_text
+
+Minh Phat Electronics JSC (MPE), a household-appliance manufacturer headquartered in Ho Chi Minh City, Vietnam, recently abandoned a three-year export push into Southeast Asian markets after cumulative losses of VND 420 billion. The board has now approved a domestic-refocus restructure: closing two overseas sales offices, redeploying 340 staff, and rebuilding the mid-market product range for Vietnamese consumers. Three behavioural episodes have been documented for CEO Nguyen Thanh Liem during the earlier export-push restructure. Episode A: Liem learned that three regional logistics hubs were underperforming. Without consulting line managers, he issued written instructions the same afternoon, naming which hubs would close and which staff would transfer, citing the need for speed. Episode B: After engineers raised concerns that a planned product range simplification would eliminate a generator line that still generated positive cash flow, Liem held a half-day workshop with the product, finance, and operations teams, shared his draft proposal, invited challenges, revised the scope based on team feedback, and then formally approved the revised plan himself. Episode C: Liem appointed a cross-functional team of eight middle managers and told them to design and implement a new domestic-sales incentive scheme, setting only a budget ceiling of VND 12 billion and a three-month deadline; he reviewed nothing until the team presented its finished scheme. The new domestic-refocus restructure now facing MPE is characterised by high staff anxiety (an internal survey records that 68% of redeployed employees feel uncertain about their new roles), a CFO who believes the 68% figure overstates real concern because the survey was voluntary and self-selecting, and a board that wants decisions taken in weeks, not months.
+
+### question
+
+Draft the relevant section of a briefing note for MPE's board chair that:
+(i) identifies and evaluates the leadership styles that CEO Nguyen Thanh Liem demonstrated in each of the three documented episodes during the export-push restructure; and
+(ii) advises which leadership style or combination of styles the board chair should ask Liem to adopt for the domestic-refocus restructure now facing MPE, with reasons.
+
+### scenario facts
+
+| id | kind | key | text |
+|---|---|---|---|
+| `f_ep_a` | entity | `Episode A` | Episode A: Liem issued unilateral written instructions on hub closures without consulting line managers |
+| `f_ep_b` | entity | `Episode B` | Episode B: Liem ran a half-day workshop, shared draft, invited challenges, revised scope, then approved |
+| `f_ep_c` | entity | `Episode C` | Episode C: Liem delegated the incentive scheme fully to eight middle managers with only a budget ceiling |
+| `f_68pct` | figure | `68%` | 68% of redeployed employees feel uncertain about their new roles (internal survey) |
+| `f_cfosceptic` | entity | `CFO` | CFO believes the 68% figure overstates real concern because the survey was voluntary and self-selecting |
+| `f_speed` | constraint | `weeks, not months` | Board wants decisions taken in weeks, not months |
+| `f_losses` | figure | `VND 420 billion` | Cumulative losses of VND 420 billion from the failed export push |
+| `f_340staff` | figure | `340 staff` | 340 staff to be redeployed in the domestic-refocus restructure |
+
+### requirement parts
+
+1. (i) identify and evaluate the leadership styles in the three episodes
+2. (ii) advise which style(s) to adopt for the domestic-refocus restructure
+
+### criteria — 10 marks, 5 criteria, 2 marks each
+
+**`c1` — 2 marks** · lo `A2b` · part: *(i) identify and evaluate the leadership styles in the three episodes*
+
+- **anchors:** `f_ep_a`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F7`
+- **development_required:** true
+
+> Episode A shows a directive (autocratic) style — Liem issued written instructions on hub closures without any consultation — and a full-marks answer goes further to evaluate its significance: because no line managers were involved, the directive approach enabled an immediate decision but risked sacrificing managerial input and buy-in — a high-stakes trade-off that could create resistance in any repeat situation. 1 mark if identified but left undeveloped.
+
+**`c2` — 2 marks** · lo `A2b` · part: *(i) identify and evaluate the leadership styles in the three episodes*
+
+- **anchors:** `f_ep_b`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F7`
+- **development_required:** true
+
+> Episode B shows a consultative style — Liem shared his draft proposal, invited challenges from product, finance and operations teams, and revised the scope before approving — and a full-marks answer evaluates its significance: the half-day workshop preserved Liem's final authority while securing technical input from those closest to the generator line's cash-flow reality — the consultation ensured relevant technical evidence influenced the decision, reducing the risk of proceeding without considering it, and did so without surrendering control. 1 mark if identified but left undeveloped.
+
+**`c3` — 2 marks** · lo `A2b` · part: *(i) identify and evaluate the leadership styles in the three episodes*
+
+- **anchors:** `f_ep_c`, `f_68pct`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F7`, `F10`
+- **development_required:** true
+
+> Episode C shows a delegating style — Liem gave eight middle managers full ownership of the incentive scheme, setting only a budget ceiling of VND 12 billion and reviewing nothing until completion — and a full-marks answer evaluates its suitability: delegation works where followers are capable and motivated, but a full-marks answer also cross-references the current change context: the 68% staff-anxiety figure from the domestic-refocus survey suggests that middle managers are themselves under stress, which materially limits the conditions under which a repeat of Episode C's fully hands-off approach could succeed for the new restructure. 1 mark if identified but left undeveloped.
+
+**`c4` — 2 marks** · lo `A2b` · part: *(ii) advise which style(s) to adopt for the domestic-refocus restructure*
+
+- **anchors:** `f_68pct`, `f_cfosceptic`
+- **disqualifiers:** `F1`, `F2`, `F4`, `F5`, `F7`, `F10`
+- **development_required:** true
+
+> The CFO's inference — that 68% overstates real concern BECAUSE the survey was voluntary and self-selecting — must be tested rather than accepted or simply contradicted. The criterion marks the ACT: assess the reliability and significance of the 68% evidence, including the CFO's challenge, and explain how much weight it should receive in the leadership recommendation. The analysis below is the model route, not the only one — a candidate who treats the survey as inconclusive and reasons the style recommendation from the episodes, the 340-person redeployment and the weeks-not-months constraint has weighed the evidence and earns the marks. A full-marks answer of the model kind identifies that this is an inference about who did not respond, and that the scenario records no information about them at all: the CFO's conclusion holds only if the employees who opted out were systematically less anxious than those who responded, and nothing in the case establishes that. The candidate must state what would have to be true for the CFO to be right (and note that the opposite composition is equally consistent with the same survey design), and then say what the board should do about an evidence base whose direction of error is unknown — treat 68% as the only figure it has while commissioning something that does not rely on self-selection, rather than discounting it on an untested assumption. Full 2 marks require the significance weighed (how much weight the figure can carry in the style recommendation, whatever weight the candidate lands on), the point tied to MPE by the information given, the consequence followed through, and the case used as the example. 1 mark if the tension between the CFO and the survey is noted but the inference is not tested — including where the candidate simply asserts the CFO is wrong. A candidate who argues a specific direction of bias AND states the assumption that direction rests on has tested the inference and earns the mark; asserting a direction as fact has not.
+
+**`c5` — 2 marks** · lo `A2b` · part: *(ii) advise which style(s) to adopt for the domestic-refocus restructure*
+
+- **anchors:** `f_68pct`, `f_speed`, `f_340staff`, `f_losses`
+- **disqualifiers:** `F1`, `F2`, `F4`, `F5`, `F7`, `F10`, `F11`
+- **development_required:** true
+
+> The candidate must LAND on a style or combination for the domestic-refocus restructure, and this criterion marks the structure of that judgement, not which style it names. Full 2 marks require all four of: (a) a specific style or combination is committed to, not surveyed; (b) it is grounded in what the episodes actually SHOWED about how Liem leads — the behaviour, not the label; (c) the candidate states what the choice TRADES AWAY, weighed against both the board's requirement for decisions in weeks, not months and the 68% uncertainty among the 340 staff being redeployed after VND 420 billion of losses; and (d) a credible material alternative is named and answered rather than ignored. EITHER a consultative-led combination, a directive-led combination, or a reasoned case for delegation earns the full two marks where it is reached that way. The criterion deliberately does not name a style: a criterion that named the right style would be marking agreement with its author rather than the candidate's judgement. 1 mark if a style is recommended but the trade-off is not stated or no credible alternative is answered. No mark under this criterion if the three styles are surveyed without one being committed to — the candidate may still earn the marks on the other criteria.
+
+
+### golden GOOD (served as `model_answer`)
+
+**Leadership style — reading the style from the behaviour**
+
+**Briefing note — section: CEO leadership approach**
+*Prepared for: Board Chair, Minh Phat Electronics JSC*
+
+**Part (i): Styles observed in the three episodes**
+
+In Episode A, Liem issued written instructions on hub closures the same afternoon, bypassing line managers entirely. This is a directive approach: decisions were made and communicated unilaterally. Its significance lies in what it sacrifices — without consultation, operational knowledge held by those managers was excluded, and resentment can outlast the short-term speed gained. A directive style is defensible in genuine emergencies, but using it as a default during a restructure involving large numbers of staff risks building a compliance-oriented culture which may inhibit the honest upward challenge leaders need.
+
+In Episode B, Liem shared his draft plan, invited technical challenge in a half-day workshop, revised the scope based on what the teams said, and retained final approval. This consultative style is more significant than it may appear: the revision of scope shows that the consultation was substantive, not performative — the engineers' point about the generator line's positive cash flow actually changed the outcome, demonstrating that Liem can update his position on evidence.
+
+In Episode C, Liem handed eight middle managers full ownership of the new incentive scheme, setting only a budget ceiling, and reviewed nothing until completion. This is a delegating style. Delegation succeeds when the people receiving it are capable and confident. That condition matters greatly here: the 68% staff uncertainty rate recorded in the current domestic-refocus survey reveals that those same middle managers are themselves operating under significant stress, which is precisely the condition under which a hands-off approach is most likely to produce inconsistent or poorly-embedded outcomes.
+
+**Part (ii): Recommended style for the domestic-refocus restructure**
+
+Before advising on style, the board should test a factual claim rather than settle it. The CFO believes the 68% figure overstates genuine anxiety because the survey was voluntary and self-selecting. That is an inference about the employees who did NOT respond, and the survey tells us nothing about them: it holds only if the non-respondents were systematically calmer than those who replied. The opposite composition — that the most anxious stayed silent — is equally consistent with the same voluntary design, and nothing in front of the board distinguishes the two. The CFO's conclusion is therefore not supported by the survey's design; neither is its mirror image. My advice is that the board treats 68% as the only measurement it has, declines to discount it on an untested assumption, and commissions a short census or structured manager check-in that does not depend on self-selection before the redeployment decisions are finalised.
+
+On the style itself, I recommend that Liem leads the domestic-refocus restructure primarily through the consultative approach demonstrated in Episode B, supplemented by selective directive action of the kind seen in Episode A at the decision points where the board's requirement for choices in weeks, not months would otherwise be compromised. What that choice trades away should be stated plainly: consultation is slower, and it consumes more management time than unilateral direction — time the board has said it does not have — the recommendation accepts a real cost against the weeks-not-months constraint in exchange for engagement from a workforce in which 68% report uncertainty about their role — which is what the survey records, and is not the same thing as buy-in, though it bears on it. A credible material alternative is a directive-led combination, and it is not unreasonable: it would better protect the board's timetable, and Episode A shows Liem can execute a decision quickly. I reject it because Episode A also shows what it costs — line managers bypassed entirely and their operational knowledge excluded — and MPE is about to move 340 people into unfamiliar roles, which is precisely the situation in which excluding line managers increases implementation risk, because their operational knowledge and influence are not incorporated. Episode C's fully delegating approach I set aside for a different reason: delegation depends on the confidence of those receiving it, and the same survey recording 68% uncertainty is recording it about the middle managers who would have to carry it.
+
+I advise the board chair to set an explicit expectation with Liem that the default mode for the domestic-refocus programme is structured consultation with a committed decision deadline, and that unilateral direction is available as an exception — not a routine — when speed genuinely cannot wait.
+
+### golden BAD (authoring artefact — never served)
+
+The domestic-refocus restructure at Minh Phat Electronics JSC represents a significant strategic change following the failure of the export push, which resulted in substantial losses. Managing such a transition effectively requires a structured approach to change management, and it is useful to consider the stages through which any major organisational change must pass: from establishing urgency, through building a guiding coalition, to embedding new ways of working.
+
+First, the organisation must communicate a compelling case for change. Employees who understand why the restructure is necessary are more likely to support it. The board should ensure that messaging around the domestic-refocus strategy is clear, consistent, and reaches all levels of the organisation.
+
+Second, a guiding coalition should be established. Senior leaders and respected middle managers should be visibly involved in designing and delivering the restructure programme. This helps to secure buy-in and prevents the change being seen as imposed from above.
+
+Third, short-term wins should be identified and celebrated. Quick successes in the early weeks of the restructure will help to maintain momentum and demonstrate that the new domestic focus is delivering results.
+
+Fourth, the change must be embedded in culture. Changes to incentive structures, performance targets, and values statements should reinforce the desired behaviours for the domestic market strategy.
+
+Leadership style is relevant to this programme and should be considered. Different situations may call for different approaches: a more directive style may suit urgent decisions, while a participative approach may be better for decisions requiring broad input. The CEO should reflect on his style and consider what best fits each stage of the change.
+
+Overall, the restructure requires careful sequencing, strong communication, and leadership that adapts to circumstances. With a clear plan and appropriate support for employees, MPE can successfully reposition itself for the domestic market.
+
+### hint
+
+Check what your answer is actually about: if most of it discusses how the domestic-refocus restructure should be run rather than what Episodes A, B and C show about how Liem leads, you have answered the question the scenario suggested instead of the one the requirement set.
+
+### full_reveal
+
+The misconception this drill exposes is THE ADJACENT QUESTION: the candidate reads a requirement about leadership STYLE, recognises the restructure sitting behind it, and answers about the restructure instead — writing a competent change-management essay on how the programme should be sequenced and communicated, reaching for a staged change model nobody asked for, and mentioning style only in passing. Nothing in that answer is wrong, which is why it is so costly: it is a serious attempt at a question that was not set, and a marker with this rubric has almost nothing to award it. The mechanism is that a requirement's subject matter is not the same as its object — the domestic-refocus restructure is the CONTEXT the advice is for, while the OBJECT the marks attach to is Liem's style, read out of what he actually did in the three episodes and then recommended for the change now facing MPE. The correct mental model is to fix the object before writing a word: name the act the verb demands and the noun it acts on, and check every paragraph against it — if a paragraph would still make sense with the episodes deleted, it is answering the adjacent question. The pull towards a familiar framework is strongest exactly where the scenario supplies rich context for one, and that pull is what this drill is built to expose.
+
+### gate matrix
+
+- N2 scenario-anchor (facts in scenario + used in reveal): PASS
+- N3 generic/copy lint (reveal not scenario-restating): PASS
+- N5 committed-verdict/structure: PASS
+- N4-pre designed-flag raiseability (F5): PASS
+- N1 rubric-coverage (reveal = full marks; every part mapped): PASS
+- N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS
+- N6a F10 marks-share: PASS
+- N6b scenario precondition (analysis, SBL): NOT EVALUATED — the precondition is material from ≥2 separately-identified sources the candidate can relate. ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that the rubric requires one to bear on the other
+- N6c claim-anchor link: NOT EVALUATED — structurally N/A for analysis — only scepticism acts on a single identifiable asserted claim
+- N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (analysis, SBL); N6c claim-anchor link
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS
+
+---
+
+## SBL-A2 · `A2d` · analysis · L3 · 12 marks
+
+**verb:** assess and conclude · **paper_code:** SBL · **status:** candidate, published=false
+
+*Generated from `docs/rollbacks/SBL_narrative_draft_SBL-A2.json`.*
+
+**Designed BAD — N4 contract:** `[F5]`  ·  *its evidenced mode is itself deterministic*
+
+### context_text
+
+Polaris Cargo Group (PCG) is a regional logistics company headquartered in Wrocław, Poland, with 1,400 employees across eight haulage depots. The board has formally committed to a strategic aim of generating 40% of group revenue from contract warehousing within four years, a significant departure from its core haulage business. Observable practices inside PCG tell a consistent story. All employee bonuses are awarded solely on tonnage moved and fleet utilisation rates; no incentive exists for client satisfaction scores or solution design. The three most recent depot managers to be promoted to senior operations roles all came from driving backgrounds and were selected explicitly because they "knew the road" — the promotion announcement for each cited years behind the wheel as the primary credential. In management meetings, the operations director speaks first and longest; commercial and finance colleagues have described waiting until the final ten minutes to raise non-operational topics, and on two recorded occasions the meeting ended before they could do so. When a haulage error occurs, the post-incident review focuses entirely on the sequence of physical events — what broke or who drove where — and rarely records whether the root cause involved a planning or communication failure; drivers describe these reviews as "blame-free for paperwork but not for people." The induction programme for all new hires, regardless of role, is a two-day tour of the truck fleet and depot layout, with no module on customer relationship management or warehousing operations.
+
+### question
+
+You are a management consultant preparing a briefing note for PCG's chief executive. Draft the section of the briefing note addressed to the chief executive that assesses how PCG's current culture would help or constrain the board's stated aim of generating 40% of revenue from contract warehousing within four years, and concludes with a reasoned judgement on whether the aim is achievable without changing that culture.
+
+### scenario facts
+
+| id | kind | key | text |
+|---|---|---|---|
+| `f_revenue_target` | figure | `40%` | the board's stated aim of 40% of group revenue from contract warehousing within four years |
+| `f_bonuses` | constraint | `tonnage moved` | all employee bonuses awarded solely on tonnage moved and fleet utilisation rates |
+| `f_promotion` | entity | `years behind the wheel` | the three most recent promotions cited years behind the wheel as the primary credential |
+| `f_meetings` | constraint | `final ten minutes` | commercial and finance colleagues described waiting until the final ten minutes and on two occasions the meeting ended before they could speak |
+| `f_mistakes_haulage` | constraint | `blame-free for paperwork` | post-incident reviews focus entirely on physical events and rarely record planning or communication failures; drivers describe them as blame-free for paperwork but not for people |
+| `f_induction` | constraint | `two-day tour` | the induction programme is a two-day tour of the truck fleet and depot layout with no module on customer relationship management or warehousing operations |
+
+### requirement parts
+
+1. (i) assess cultural factors that would help or constrain the warehousing aim
+2. (ii) conclude with a reasoned judgement on achievability without cultural change
+
+### criteria — 12 marks, 6 criteria, 2 marks each
+
+**`c1` — 2 marks** · lo `A2d` · part: *(i) assess cultural factors that would help or constrain the warehousing aim*
+
+- **anchors:** `f_bonuses`
+- **disqualifiers:** `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The incentive structure rewards tonnage moved and fleet utilisation, and attaches no reward to client satisfaction scores or solution design, which contract warehousing depends on. Tonnage and utilisation may still matter to a warehousing business; what the case establishes is that PCG rewards haulage-volume measures and gives no incentive to the customer-satisfaction and solution-design measures the scenario expressly identifies. Full 2 marks if the candidate identifies this misalignment AND develops it by explaining the significance (incentives shape what 1,400 employees prioritise daily), linking it to the specific bonus system described, explaining the consequence (staff are likely to optimise for what is measured, so warehousing clients may be served less well than the aim requires), and giving an example from the scenario (no incentive attaches to client satisfaction scores). 1 mark if identified but left undeveloped.
+
+**`c2` — 2 marks** · lo `A2d` · part: *(i) assess cultural factors that would help or constrain the warehousing aim*
+
+- **anchors:** `f_promotion`
+- **disqualifiers:** `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The three most recent promotions to senior operations roles were justified explicitly by years behind the wheel, which is evidence about the credential that wins senior advancement at PCG. Full 2 marks if the candidate identifies that pattern AND develops it by explaining significance (leadership shapes which strategies get sponsored and resourced), linking to the three most recent promotions described, explaining the consequence (on this evidence the warehousing aim is likely to lack senior champions with credible internal authority), and giving a case example (all three promotees selected for driving background). THE CASE DESCRIBES THREE PROMOTIONS, NOT THE WHOLE SENIOR COHORT: a candidate who says the three most recent promotions suggest a pattern while noting that the case does not describe the wider cohort is reading the evidence correctly and earns full marks. This criterion does NOT require the stronger claim that no senior manager holds commercial or warehousing competence — the case does not establish it. 1 mark if identified but left undeveloped.
+
+**`c3` — 2 marks** · lo `A2d` · part: *(i) assess cultural factors that would help or constrain the warehousing aim*
+
+- **anchors:** `f_meetings`
+- **disqualifiers:** `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The meeting dynamic — where commercial and finance voices are crowded into the final ten minutes and sometimes lost entirely — signals that strategic and commercial inputs are subordinated to operational ones in practice, which is likely to suppress the cross-functional dialogue warehousing sales cycles and margin management require. Full 2 marks if the candidate identifies this AND develops it by explaining significance (decisions in meetings shape resource allocation and strategic priorities), linking to the specific pattern where non-operational colleagues described waiting until the final ten minutes, explaining the consequence (commercial questions about warehousing may not get adequate management decision-making airtime), and noting the two recorded occasions meetings ended before commercial issues were raised. 1 mark if identified but left undeveloped.
+
+**`c4` — 2 marks** · lo `A2d` · part: *(i) assess cultural factors that would help or constrain the warehousing aim*
+
+- **anchors:** `f_mistakes_haulage`, `f_revenue_target`
+- **disqualifiers:** `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The post-incident review practice — described by drivers as blame-free for paperwork but not for people — focuses on the sequence of physical events and RARELY records whether a planning or communication failure was the root cause, so PCG's organisational learning is weak in respect of the planning and communication causes the new strategy would newly depend on. Full 2 marks if the candidate identifies this AND develops it by explaining significance (entering warehousing requires new processes and customer-service capabilities, so a review system which rarely captures planning or communication causes may fail to learn from errors relevant to the new strategy), linking to the specific description of reviews that rarely record planning failures, explaining the consequence (service errors are likely to recur, damaging retention and the revenue ramp toward 40%), and using the case description of the driver reviews as an example. THE CASE SAYS 'RARELY', NOT 'NEVER': a candidate who describes the learning loop as weak or partial rather than absent is reading the case correctly and earns full marks. 1 mark if identified but left undeveloped.
+
+**`c5` — 2 marks** · lo `A2d` · part: *(i) assess cultural factors that would help or constrain the warehousing aim*
+
+- **anchors:** `f_induction`
+- **disqualifiers:** `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The induction's two-day tour of the truck fleet and depot layout — with no module on customer relationship management or warehousing operations — signals to every new hire, regardless of role, what the organisation takes itself to be about, which is likely to make a commercially aware workforce harder to build as PCG moves into warehousing. Full 2 marks if the candidate identifies this AND develops it by explaining significance (induction is an early and formative moment at which an employer signals what the organisation values), linking to the specific absence of any warehousing or CRM content in the programme, explaining the consequence (each new hire, whatever their role, is likely to arrive culturally coded for haulage, working against any warehousing culture being built), and noting that this applies regardless of role as stated in the scenario. 1 mark if identified but left undeveloped.
+
+**`c6` — 2 marks** · lo `A2d` · part: *(ii) conclude with a reasoned judgement on achievability without cultural change*
+
+- **anchors:** `f_revenue_target`, `f_bonuses`, `f_mistakes_haulage`
+- **disqualifiers:** `F2`, `F4`, `F5`, `F10`, `F11`
+- **development_required:** true
+
+> The candidate must LAND on a judgement about whether the 40% warehousing revenue target is achievable within four years without deliberate cultural change, and this criterion marks the structure of that judgement, not which way it goes. Full 2 marks require all four of: (a) an explicit verdict rather than a survey of considerations; (b) it is grounded in the specific artefacts — at least two of the bonus architecture, the promotion criteria, the meeting dynamic, the incident reviews and the induction — rather than in culture as a general idea; (c) the consequence of the verdict for PCG is stated; and (d) a credible opposing case is ANSWERED rather than ignored. EITHER verdict earns the full two marks where it is reached that way. Four years is a material horizon, and the exhibit describes PCG's PRESENT culture rather than its ability to alter that culture over that period — the case gives no financials, no competitor position and no client pipeline. So a candidate who argues the target is reachable is arguing from the same evidence as one who says the constraints are mutually reinforcing and decisive. A candidate who invents a route the case does not mention — an outside leadership hire, an arm's-length division, an acquisition — has made the same error as one who declares the target impossible: both know more than the exhibit. A criterion that named the answer would be marking agreement with its author rather than the candidate's judgement. 1 mark if a judgement is offered but the artefacts are not used, or no credible opposing case is answered. No mark under this criterion if the constraints are set out without landing on a judgement — the candidate may still earn the marks on the other criteria.
+
+
+### golden GOOD (served as `model_answer`)
+
+**Culture and strategy — what the artefacts reveal about what is possible**
+
+**Briefing Note — Section 3: Cultural Readiness for the Warehousing Strategy**
+*Addressed to: Chief Executive, Polaris Cargo Group*
+
+**Incentive misalignment**
+PCG's entire bonus architecture is built around tonnage moved and fleet utilisation, and gives no incentive to the client-satisfaction and solution-design outcomes the case expressly identifies as unrewarded. This is not a peripheral issue: incentives govern what all 1,400 employees prioritise every working day, and as long as no reward attaches to client satisfaction, staff are likely to keep prioritising what is measured — and warehousing clients are the ones who would notice.
+
+**Leadership pipeline**
+The three most recent promotions to senior operations roles were justified explicitly by years behind the wheel. What that tells us is which credential wins senior advancement here, and it is time behind the wheel. It does not tell us that nobody in the wider senior cohort has commercial or warehousing experience, and I do not claim it. What it does tell us is that nobody has recently been promoted for having it — so the recent promotion pattern risks reinforcing haulage experience in positions of senior operational influence, rather than visibly signalling the capabilities the warehousing strategy calls for.
+
+**Suppression of commercial voice**
+Commercial and finance colleagues have described being confined to the final ten minutes of management meetings, and on two recorded occasions the meeting ended before they could contribute. Moving into contract warehousing requires commercial and finance input into decisions taken in a forum the operations director has historically dominated; a structure that routinely crowds those inputs out is likely to generate poorer decisions in the new business than in the old one.
+
+**Weak learning loops**
+Post-incident reviews — described as blame-free for paperwork but not for people — focus on the sequence of physical events and rarely record whether a planning or communication failure was the root cause. Entering warehousing requires new processes and customer-service capabilities, so a review system that rarely captures planning or communication causes is likely to keep repeating errors relevant to the new strategy. Each unlearned mistake erodes client confidence and delays the revenue ramp toward 40%.
+
+**Induction as cultural coding**
+The two-day tour of the truck fleet that greets every new hire — regardless of role — contains no warehousing or CRM content. Induction is an early and formative signal of what an employer values, and what PCG signals is that it is a haulage business. Every new hire, whatever their role, is therefore likely to arrive culturally coded for haulage, working against any warehousing culture the board is trying to build.
+
+**Judgement on achievability**
+These five constraints are not independent; they are mutually reinforcing. The bonus system selects for haulage behaviour; the recent promotion pattern reinforces haulage experience in senior operations leadership; meeting dynamics crowd out commercial challenge; incident reviews rarely capture the planning and communication causes that would drive learning; and induction reproduces the cycle. My judgement is that the 40% target is not achievable within four years without deliberate cultural change. The opposing case is real and I have weighed it: four years is a material horizon, and what these artefacts describe is PCG's present culture, not its capacity to change that culture over that period — the case gives no financials, no competitor position and no client pipeline. What persuades me otherwise is that all five artefacts sit in the shared machinery — pay, promotion, meetings, reviews, induction — that any warehousing activity would still have to run inside, and nothing in the evidence suggests that machinery changes on its own. Without reform the risks are that early contracts underperform and that commercially skilled hires leave when they find their concerns crowded into the final ten minutes, with the organisation drifting toward the target on paper while haulage norms govern practice. The cost of that drift — damaged client relationships, unlearned service failures traced back to blame-free for paperwork reviews, and warehousing work run by people rewarded for something else — is in my view greater than the disruption of deliberate cultural change. I recommend that the board treats cultural reform as a precondition of the warehousing strategy, not a parallel workstream, and that the first visible signal of that reform is a redesigned incentive scheme that brings client satisfaction and solution-design outcomes into the bonus calculation alongside tonnage moved.
+
+### golden BAD (authoring artefact — never served)
+
+**Cultural Factors Affecting PCG's Warehousing Strategy**
+
+The cultural web is a widely used model for analysing organisational culture. It consists of six elements: stories, rituals and routines, symbols, organisational structure, control systems, and power structures. Each element shapes how an organisation behaves and can either support or hinder a strategic change.
+
+**Stories** are the narratives that circulate within an organisation and reinforce what is valued. If PCG's stories celebrate operational achievement, new staff will understand that operations is what matters most.
+
+**Rituals and routines** refer to the day-to-day behaviours that signal cultural priorities. Organisations with strong operational routines may find it difficult to shift toward service-oriented behaviours when a new strategy demands it.
+
+**Control systems** include the measurement and reward mechanisms that govern behaviour. Where rewards are narrowly focused, employees will concentrate on the rewarded activity. Broadening the control system to include new metrics can signal a strategic shift.
+
+**Organisational structure** determines who has authority and how decisions are made. A structure dominated by a single function can marginalise others and slow decision-making in areas that require cross-functional input.
+
+**Power structures** reflect who holds real influence in an organisation. When power is concentrated in one area, strategic initiatives that require different capabilities may struggle to gain traction.
+
+**Symbols** include the visible signals — offices, titles, events — that communicate what an organisation values.
+
+In conclusion, PCG would need to consider all six elements of the cultural web if it wishes to achieve its warehousing ambitions. Cultural change is complex and requires attention to multiple factors simultaneously. The board should assess each element carefully before proceeding.
+
+### hint
+
+Your answer identifies cultural factors in the abstract — check whether each point is anchored to a specific PCG artefact (the bonus architecture, the promotion criteria, the ten-minute meeting slot, the blame-free reviews, the fleet induction) and then followed through to a concrete consequence for the warehousing target.
+
+### full_reveal
+
+The misconception this drill exposes is generic theory: the candidate correctly names cultural concepts — misaligned incentives, leadership pipeline gaps, siloed communication — but describes them as they would appear in any organisation, never binding them to the specific artefacts PCG's briefing material provides. That is why the marks are lost: the examiner is not rewarding cultural literacy in the abstract; they are rewarding the act of reading PCG's evidence and committing to what it means for this board's specific 40% target. The two-mark rule makes the arithmetic visible — identify that PCG's bonuses are built around tonnage moved (one mark), then develop it: because no reward currently attaches to client satisfaction, all 1,400 employees have a rational reason to prioritise measured tonnage and utilisation outputs over the unmeasured customer and solution outcomes warehousing depends on, putting the revenue ramp toward 40% at risk (second mark). Each of the four development moves — weighing significance, tying the point to PCG by name using the information given, following it to a consequence, and illustrating from the case — can be executed in two or three sentences; a candidate writing only identification-level points must find twice as many of them in the same time to reach the same total.
+
+### gate matrix
+
+- N2 scenario-anchor (facts in scenario + used in reveal): PASS
+- N3 generic/copy lint (reveal not scenario-restating): PASS
+- N5 committed-verdict/structure: PASS
+- N4-pre designed-flag raiseability (F5): PASS
+- N1 rubric-coverage (reveal = full marks; every part mapped): PASS
+- N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS
+- N6a F10 marks-share: PASS
+- N6b scenario precondition (analysis, SBL): NOT EVALUATED — the precondition is material from ≥2 separately-identified sources the candidate can relate. ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that the rubric requires one to bear on the other
+- N6c claim-anchor link: NOT EVALUATED — structurally N/A for analysis — only scepticism acts on a single identifiable asserted claim
+- N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (analysis, SBL); N6c claim-anchor link
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS
+
+---
+
+## SBL-A3 · `A1a` · analysis · L3 · 12 marks
+
+**verb:** assess and compare · **paper_code:** SBL · **status:** candidate, published=false
+
+*Generated from `docs/rollbacks/SBL_narrative_draft_SBL-A3.json`.*
+
+**Designed BAD — N4 contract:** `[F4]`  ·  **evidenced (NOT N4-verified):** `F2`
+
+### context_text
+
+Kilimo Digital Co-operative ("Kilimo") is a national agricultural co-operative headquartered in Nairobi, Kenya, with 340,000 smallholder members spread across six regions. In 2022, the board commissioned a strategic study into cashless payments for the co-operative's crop-purchase cycle. The study team spent eight months conducting farmer surveys, mapping cash-handling costs, and benchmarking neighbouring co-operatives; it concluded that a mobile-payment platform called PayHarvest could reduce disbursement costs by 31% and reach 280,000 digitally active members within two years. The board unanimously endorsed the findings and approved a KES 420 million budget. Before the national rollout, Kilimo ran a 90-day pilot in Meru County covering 4,200 members; the pilot report, published internally in March 2023, recorded that only 38% of pilot farmers successfully completed a transaction without staff assistance, and specifically recommended that a dedicated regional-liaison role be created in each of the six regions before any wider launch. Despite the pilot report's recommendation, no regional-liaison roles were ever assigned. The national rollout began in September 2023; at launch, regional managers in four of the six regions confirmed they had received no prior briefing on PayHarvest and learned of the platform only through a circular sent on launch day. Eighteen months after launch, only 94,000 members — approximately 34% of the 280,000 target — had successfully used PayHarvest, and a post-implementation survey found that 61% of non-adopting members cited "lack of on-the-ground support" as the principal barrier.
+
+### question
+
+Draft the section of the board's post-implementation review report addressed to Kilimo's Chair of the Board that assesses the leadership contribution to:
+
+(i) the formulation of the PayHarvest strategy; and
+(ii) the implementation of the PayHarvest strategy.
+
+Your assessment should compare the two phases and explain what that comparison reveals about where Kilimo's leadership weakness actually lies.
+
+### scenario facts
+
+| id | kind | key | text |
+|---|---|---|---|
+| `f_budget` | figure | `KES 420 million` | KES 420 million board-approved budget |
+| `f_target` | figure | `280,000` | target of 280,000 digitally active members within two years |
+| `f_pilot_rate` | figure | `38%` | only 38% of pilot farmers completed a transaction without staff assistance |
+| `f_pilot_rec` | constraint | `regional-liaison role` | pilot report recommended a dedicated regional-liaison role in each of the six regions |
+| `f_no_roles` | constraint | `no regional-liaison roles were ever assigned` | no regional-liaison roles were ever assigned |
+| `f_briefing` | figure | `four of the six regions` | regional managers in four of the six regions received no prior briefing |
+| `f_adoption` | figure | `94,000` | only 94,000 members — approximately 34% of the 280,000 target — had successfully used PayHarvest |
+| `f_barrier` | figure | `61%` | 61% of non-adopting members cited lack of on-the-ground support as principal barrier |
+
+### requirement parts
+
+1. (i) assess leadership contribution to formulation
+2. (ii) assess leadership contribution to implementation
+3. (iii) compare the two phases and explain what the comparison reveals
+
+### criteria — 12 marks, 6 criteria, 2 marks each
+
+**`c1` — 2 marks** · lo `A1a` · part: *(i) assess leadership contribution to formulation*
+
+- **anchors:** `f_budget`, `f_target`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`
+- **development_required:** true
+
+> Leadership demonstrated sound strategic direction during formulation: the board commissioned a rigorous eight-month study, grounded the 280,000 member target in survey and benchmarking evidence, and committed KES 420 million — showing that leaders were willing to allocate significant resources to an opportunity the study had evidenced. A full two marks require the candidate to assess why this matters for Kilimo specifically: a methodology that consulted farmers directly reduced the risk of adopting a solution misaligned with the payment behaviour of the members it would have to serve — the consequence being that the strategic case reached the board grounded in evidence about the membership it would have to serve rather than in assumption. 1 mark if identified but left undeveloped.
+
+**`c2` — 2 marks** · lo `A1a` · part: *(i) assess leadership contribution to formulation*
+
+- **anchors:** `f_pilot_rate`, `f_pilot_rec`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`
+- **development_required:** true
+
+> The pilot in Meru County represents a leadership decision to test before scaling — a formulation-phase discipline that itself generated the 38% unassisted-completion finding and the explicit regional-liaison role recommendation. A full two marks require the candidate to assess the significance of this act: commissioning the pilot allowed adoption risk to be identified before wider rollout, and by publishing the March 2023 report internally leadership made actionable, organisation-specific intelligence available within the organisation. 1 mark if identified but left undeveloped.
+
+**`c3` — 2 marks** · lo `A1a` · part: *(ii) assess leadership contribution to implementation*
+
+- **anchors:** `f_no_roles`, `f_pilot_rate`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`, `F10`
+- **development_required:** true
+
+> Leadership left a basic accountability step undone during implementation: no regional-liaison roles were ever assigned, despite the pilot report's explicit recommendation. A full two marks require the candidate to assess why this omission was particularly damaging for Kilimo: with 340,000 members spread across six regions, and a pilot in which only 38% completed a transaction unaided, human intermediaries were an important implementation support — one the pilot report identified explicitly and before launch. The consequence was a structural gap between Nairobi-based leadership and the farming communities the platform was meant to serve, which a launch-day circular was unlikely to bridge. 1 mark if identified but left undeveloped.
+
+**`c4` — 2 marks** · lo `A1a` · part: *(ii) assess leadership contribution to implementation*
+
+- **anchors:** `f_briefing`, `f_barrier`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`, `F10`
+- **development_required:** true
+
+> Leadership did not brief the people who would have to carry the launch: regional managers in four of the six regions received no advance briefing and learned of PayHarvest through a launch-day circular, which weakened regional-MANAGEMENT preparedness in four of the six regions at the point of launch. A full two marks require the candidate to assess the consequence: regional managers are a channel between Nairobi-based leadership and farming members, so bypassing them weakened regional-management preparedness in four of the six regions at the moment the platform went live — the case does not record whether other prepared staff, trainers or local champions existed, and a candidate need not assume there were none. The later finding that 61% of non-adopting members cited lack of on-the-ground support is CONSISTENT with inadequate on-the-ground support; it does not prove that the briefing failure caused non-adoption, and a candidate who states the link at that strength — and no more — is reading the evidence correctly and earns full marks. 1 mark if identified but left undeveloped.
+
+**`c5` — 2 marks** · lo `A1a` · part: *(iii) compare the two phases and explain what the comparison reveals*
+
+- **anchors:** `f_pilot_rec`, `f_no_roles`, `f_adoption`
+- **disqualifiers:** `F1`, `F2`, `F4`, `F5`, `F10`
+- **development_required:** true
+
+> Placing formulation and implementation side by side is the analytical act this requirement is testing, and this criterion marks whether the candidate performs it and supports the conclusion from the case — not which conclusion they reach. Full 2 marks require all four of: (a) the two phases are actually set AGAINST each other rather than described in sequence; (b) the candidate LOCATES where the leadership weakness sits and says so explicitly; (c) the location is supported by specific evidence from BOTH phases; and (d) the consequence for Kilimo is followed through. A candidate who locates the failure in EXECUTION earns full marks — the same board that funded an eight-month study and commissioned the pilot then left its regional-liaison recommendation unassigned. So does a candidate who locates it in FORMULATION, arguing that leadership proceeded from pilot to rollout without ensuring the pilot's implementation requirement had been converted into an owned action. (What the case records is that no roles were ever assigned; it does not tell the candidate what else the report did or did not contain, and a criterion cannot require them to know.) Both readings are open on the case, and a criterion that named one would mark agreement with its author rather than the candidate's judgement. 1 mark if the two phases are described separately without being related to each other, or if a location is asserted without support from the case.
+
+**`c6` — 2 marks** · lo `A1a` · part: *(iii) compare the two phases and explain what the comparison reveals*
+
+- **anchors:** `f_adoption`, `f_barrier`, `f_pilot_rec`
+- **disqualifiers:** `F1`, `F2`, `F4`, `F5`, `F10`
+- **development_required:** true
+
+> The outcome figures bear on the cross-phase conclusion and a full-marks answer brings them to it rather than reporting them separately: 94,000 actual users against a 280,000 target, and 61% of non-adopting members citing 'lack of on-the-ground support'. The candidate must relate that 61% attribution to the pilot's own recommendation — it names the same kind of gap the pilot named before launch — and must state the link with the confidence the evidence carries and no more. A shortfall of this size across six regions and 340,000 members is likely to have more than one driver, and the case supplies nothing isolating the effect of the missing liaison roles, so the creditable claim is that the outcome is CONSISTENT with the pilot's warning — not that it proves it. The case records a second implementation failure alongside the missing roles, in that four of the six regions were unbriefed at launch, so the liaison gap is not the only candidate explanation the evidence itself supplies. On the sequence: the pilot reported in March 2023, the national rollout began in September 2023, and the outcome survey is taken eighteen months after launch, in 2025. Full 2 marks require the significance weighed, the link tied to Kilimo by the information given, the consequence followed through, and the case used as the example. 1 mark if the figures are quoted without being related to the pilot's recommendation, or if the link is asserted as proof.
+
+
+### golden GOOD (served as `model_answer`)
+
+**Leadership in formulation and in implementation — the same strategy, two halves**
+
+**Post-Implementation Review — Leadership Assessment: PayHarvest**
+*To: Chair of the Board, Kilimo Digital Co-operative*
+
+**Phase I — Formulation**
+
+Kilimo's leadership performed well in the formulation phase, and the board deserves credit for both the quality of the process it commissioned and the commercial courage it showed in committing KES 420 million on the back of that process. An eight-month study combining farmer surveys, internal cost mapping, and competitive benchmarking is substantive by any standard; a methodology that placed farmers' own payment behaviour at the centre of the analysis materially reduced the risk of misalignment between the platform and the people it was meant to serve. The 280,000 member target was not an aspiration plucked from thin air — it was anchored in evidence about digital readiness across the membership.
+
+The decision to run a 90-day pilot before national launch reinforces this assessment. That discipline produced the 38% unassisted-completion finding — a number that signals a substantial support requirement for wider rollout — and the pilot report translated that finding into an unambiguous operational instruction: create a regional-liaison role in each of the six regions before wider rollout. Formulation-phase leadership, in short, generated specific, testable intelligence and put it in writing.
+
+**Phase II — Implementation**
+
+The implementation phase tells an entirely different story, and the contrast is sharp enough to identify where Kilimo's leadership problem actually resides. No regional-liaison roles were ever assigned. What the case records is that the roles were never assigned; it does not record who, if anyone, was accountable for assigning them. For a co-operative with 340,000 members dispersed across six geographically distinct regions, and in the knowledge that only 38% of pilot farmers could transact without assistance, the regional-liaison role was not a refinement; it was an important implementation support, identified explicitly by the pilot before launch. It was never converted into an assigned role.
+
+The communication failure compounds this: regional managers in four of the six regions learned of PayHarvest through a launch-day circular. Regional managers are a channel between Nairobi-based leadership and its farming members; informing them after the fact rather than engaging them as implementation partners weakened regional-management preparedness in four of the six regions when the platform went live. Whether other prepared support existed in those regions — trainers, help desks, local champions — is not something this review records, and I do not assume it did not. The outcome figures are consistent with that reading: 94,000 active users against a 280,000 target, and a post-implementation survey in which 61% of non-adopters attributed their non-adoption to lack of on-the-ground support. That 61% is not a new finding — it is consistent with what the pilot reported in March 2023, two years before the survey was taken. A shortfall of that size across six regions is unlikely to have a single cause, and nothing in the review isolates the effect of the missing liaison roles. But the outcomes are consistent with the wider implementation-support failures this review records — the unassigned liaison roles and the four unbriefed regions alike — and the first of those was put to the organisation in writing before launch and not acted on.
+
+**What the Comparison Reveals**
+
+Setting the two phases alongside each other answers one question on balance and raises another. On the first: the evidence does not suggest Kilimo's leadership lacked strategic capability. The board commissioned rigorous analysis, synthesised it correctly, and generated a well-evidenced opportunity. The question it raises is why leadership that demonstrated that quality of foresight then allowed its own pilot's conclusions to go unimplemented. The 38% completion rate and the regional-liaison role recommendation were both stated in the pilot report, and the recommendation was explicit about what should happen before any wider launch. On this evidence the stronger diagnosis is an execution and accountability weakness rather than an analytical one — the liaison roles unassigned, and four of six regional managers unbriefed at launch. The counter-reading deserves a hearing: leadership moved from pilot to rollout without ensuring the pilot's own implementation requirement had been converted into an owned action, and on that view the weakness begins in formulation. I do not know what else the pilot report contained, and I do not need to in order to weigh that reading. I do not think it prevails, because the pilot report stated the requirement explicitly and in writing and the roles were still never assigned — but it is a reading the evidence leaves open.
+
+I recommend that the Chair table a governance resolution requiring, for every future initiative of comparable scale, that implementation-phase role assignments be approved by the board as a precondition of launch authorisation — so that the quality of analysis Kilimo demonstrably produces is matched by the accountability structure needed to act on it.
+
+### golden BAD (authoring artefact — never served)
+
+**Leadership Assessment: PayHarvest**
+
+**Formulation Phase**
+
+The leadership team conducted an eight-month strategic study before approving the PayHarvest platform. The board approved a budget of KES 420 million and set a target of 280,000 members. A pilot was run in Meru County before the national rollout, and the pilot report identified issues with unassisted transaction completion.
+
+**Implementation Phase**
+
+During implementation, no regional-liaison roles were assigned as the pilot had recommended. Regional managers in four of the six regions were not briefed before launch. Eighteen months after launch, only 94,000 members had used PayHarvest, against a target of 280,000. A post-implementation survey found that 61% of non-adopting members cited lack of on-the-ground support.
+
+**Comparison**
+
+The formulation phase appears to have been handled more effectively than the implementation phase. Leadership invested time and resources in analysis but did not follow through on the operational steps needed. There are questions about whether the governance processes were sufficient to bridge strategy and execution.
+
+### hint
+
+You have likely identified that leadership failed in implementation — but the requirement asks you to compare both phases and explain what that contrast reveals about where the weakness actually lies, so ask yourself whether you have weighed the significance of what the pilot's 38% completion finding and the unassigned regional-liaison roles together tell the Chair about the nature of the failure.
+
+### full_reveal
+
+The misconception this drill exposes is undeveloped points: the candidate correctly identifies a leadership failure — most often the missing regional-liaison roles or the late communication to regional managers — and then stops, treating the identification itself as the completed answer when it is only the first of two steps that earn the mark. Under the two-mark rule, a point identified and left there earns one mark; the second mark is released only when the candidate does all four of the following in the time available: states how significant the failure is (the regional-liaison role was an important implementation support, identified explicitly by the pilot before launch), ties it to Kilimo's specific situation using the information given (a co-operative dispersed across six regions whose pilot had already shown only 38% of farmers could transact unaided), follows it to a consequence for the organisation (the 61% of non-adopters who cited lack of on-the-ground support in the post-implementation survey are consistent with a warning leadership received in writing and did not act on), and illustrates it with a fact from the case (regional managers in four of the six regions learned of PayHarvest through a launch-day circular, weakening regional-management preparedness in four of the six regions when the platform went live). Writing more undeveloped points is not the fix — a candidate whose points are all single-mark must find twice as many of them in the same time to reach the same total, which is an arithmetic trap, not a writing style preference. The deeper reframe this drill demands is that the comparison between phases is the analytical act the requirement is actually testing: formulation-phase leadership demonstrably generated rigorous, evidence-based intelligence, so the question the requirement actually sets is where the weakness sits once that is granted — and a candidate who never puts the two phases alongside each other never produces a located conclusion at all, regardless of how many individual failures they list. Where you locate it matters less than whether you located it from the case: execution is the reading the pilot report most obviously supports, but a candidate who argues the formulation was incomplete because leadership went from pilot to rollout without converting the pilot's own requirement into an owned action is answering the question that was set.
+
+### gate matrix
+
+- N2 scenario-anchor (facts in scenario + used in reveal): PASS
+- N3 generic/copy lint (reveal not scenario-restating): PASS
+- N5 committed-verdict/structure: PASS
+- N4-pre designed-flag raiseability (F4): PASS
+- N1 rubric-coverage (reveal = full marks; every part mapped): PASS
+- N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS
+- N6a F10 marks-share: PASS
+- N6b scenario precondition (analysis, SBL): NOT EVALUATED — the precondition is material from ≥2 separately-identified sources the candidate can relate. ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that the rubric requires one to bear on the other
+- N6c claim-anchor link: NOT EVALUATED — structurally N/A for analysis — only scepticism acts on a single identifiable asserted claim
+- N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (analysis, SBL); N6c claim-anchor link
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS
+
+---
+
+## SBL-A4 · `A3d` · scepticism · L3 · 12 marks
+
+**verb:** assess and recommend · **paper_code:** SBL · **status:** candidate, published=false
+
+*Generated from `docs/rollbacks/SBL_narrative_draft_SBL-A4.2.json`.*
+
+**Designed BAD — N4 contract:** `[F4]`  ·  **evidenced (NOT N4-verified):** `F10`
+
+### context_text
+
+Constructora Andina S.A. ("CA"), a Colombian listed construction and infrastructure group bidding for public contracts, has engaged DataSphere Ltda. as its sole technology service provider since 2017 — a relationship now in its eighth year. DataSphere supplies the project-management and document-control platform that underpins every CA bid submission. The annual retainer is COP 4.2 billion, and the scope has grown from three modules in 2017 to eleven modules today without a competitive re-tender at any stage. Andrés Camacho is CA's Chief Financial Officer and the executive responsible for vendor selection and contract renewal. His wife, Valentina Camacho, holds a 34% equity stake in DataSphere Ltda., a fact disclosed to the CA compliance function in 2019 but not actioned. At the board's last technology committee meeting, Andrés Camacho stated: "The annual retainer of COP 4.2 billion sits below my authority limit, so this arrangement is entirely within the rules." When Procurement Analyst Juliana Ríos formally raised a conflict-of-interest concern through the ethics hotline in March 2024, her line manager — Senior Procurement Manager Diego Salazar — removed her from all DataSphere-related projects within one week of her submission and informed her team that hotline submissions "create unnecessary disruption." Replacing DataSphere would require a minimum six-month transition and an estimated one-off migration cost of COP 1.8 billion, arising because CA's bid templates are proprietary to the DataSphere platform and would need to be rebuilt. CA has never commissioned an independent value-for-money review of the DataSphere retainer.
+
+### question
+
+Draft the relevant section of the internal ethics briefing note to the Chair of the Audit and Ethics Committee that:
+(i) assesses the ethical threats that the DataSphere arrangement creates for Constructora Andina S.A., challenging the assertion made by Andrés Camacho;
+(ii) recommends, with justified reasoning, the safeguard package the committee should adopt, committing to a clear course of action.
+
+### scenario facts
+
+| id | kind | key | text |
+|---|---|---|---|
+| `f_retainer` | figure | `COP 4.2 billion` | Annual DataSphere retainer of COP 4.2 billion |
+| `f_stake` | figure | `34%` | Valentina Camacho's 34% equity stake in DataSphere |
+| `f_duration` | figure | `eighth year` | Eight-year relationship with DataSphere since 2017 |
+| `f_modules` | figure | `eleven modules` | Scope grew from three modules to eleven without re-tender |
+| `f_rios` | entity | `Juliana Ríos` | Juliana Ríos raised a concern through the ethics hotline in March 2024 |
+| `f_salazar` | entity | `Diego Salazar` | Diego Salazar removed Ríos from DataSphere projects within one week |
+| `f_migration` | figure | `COP 1.8 billion` | One-off migration cost of COP 1.8 billion if DataSphere is replaced |
+| `f_transition` | constraint | `six-month` | Minimum six-month transition period if DataSphere is replaced |
+| `f_no_review` | constraint | `independent value-for-money review` | CA has never commissioned an independent value-for-money review of the DataSphere retainer |
+| `f_spouse` | entity | `wife` | Valentina Camacho is Andrés Camacho's wife (immediate family member) |
+| `f_hotline` | constraint | `ethics hotline` | Ríos submitted her concern through the ethics hotline — a proper reporting channel |
+| `f_disclosed` | constraint | `2019 but not actioned` | The conflict was disclosed to the CA compliance function in 2019 but not actioned |
+
+### requirement parts
+
+1. (i) assess the ethical threats and challenge the assertion
+2. (ii) recommend the safeguard package with a committed course of action
+
+### criteria — 12 marks, 6 criteria, 2 marks each
+
+**`c1` — 2 marks** · lo `A3d` · part: *(i) assess the ethical threats and challenge the assertion*
+
+- **anchors:** `f_stake`, `f_retainer`, `f_spouse`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`, `F10`
+- **development_required:** true
+
+> The candidate identifies a self-interest threat arising because Andrés Camacho's wife holds a 34% equity stake in DataSphere and he controls vendor selection, then CHALLENGES his assertion by explaining that authority-limit compliance is a procedural test, not an ethical one: EVEN IF Camacho is correct that the amount falls within his authority limit, that does not resolve the conflict — an authority threshold speaks to who may approve, not to whether the approver's judgement was free from financial interest where their spouse owns 34% of the supplier. THE EXHIBIT RECORDS THE AUTHORITY-LIMIT POINT AS CAMACHO'S OWN ASSERTION and does not independently establish it; a candidate who says so, or who concedes it arguendo and challenges it anyway, is reading the exhibit correctly. A candidate who treats it as a verified fact has accepted the very claim the requirement asks them to test. Full 2 marks require: (i) the significance is high — the spouse's 34% interest gives the household a significant financial interest in DataSphere's commercial success; (ii) the case fact used is that Valentina Camacho is his wife (immediate family) and that the retainer is COP 4.2 billion; (iii) the consequence is that renewal and scope decisions were made within a process for which the conflicted CFO was responsible, with no independent value-for-money review recorded — the case records the stake as DISCLOSED in 2019 and does not say when it was acquired, so a candidate who scopes the concern from the disclosure rather than across the full eight years is reading the exhibit correctly; (iv) the case example is scope growth from three to eleven modules without re-tender. 1 mark if the self-interest threat is identified or the assertion is noted but neither is developed or challenged.
+
+**`c2` — 2 marks** · lo `A3d` · part: *(i) assess the ethical threats and challenge the assertion*
+
+- **anchors:** `f_duration`, `f_modules`, `f_retainer`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`, `F10`
+- **development_required:** true
+
+> The candidate identifies a familiarity threat arising from the eight-year uninterrupted relationship with DataSphere, then CHALLENGES the assertion by showing that the authority-limit argument fails to account for accumulated deference: an officer who has worked with the same vendor for that long, and allowed scope to grow to eleven modules without any competitive check, is exposed to a risk of excessive familiarity and reduced challenge — which is precisely why this is called a threat rather than a finding — and no authority limit addresses that risk. Full 2 marks require: (i) the significance is that the risk compounds over time, and eight years is a long period to run without any competitive check; (ii) the case facts used are the eighth year of the relationship, the growth to eleven modules, and the absence of re-tendering; (iii) the consequence is that the exhibit provides no independent market test supporting confidence that the COP 4.2 billion retainer represents value for money; (iv) the case example is the growth from three modules to eleven without competitive challenge. 1 mark if the familiarity threat is identified but not developed or linked to the assertion.
+
+**`c3` — 2 marks** · lo `A3d` · part: *(i) assess the ethical threats and challenge the assertion*
+
+- **anchors:** `f_rios`, `f_salazar`, `f_hotline`, `f_retainer`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`, `F10`
+- **development_required:** true
+
+> The candidate identifies an intimidation threat arising from Diego Salazar's response to Juliana Ríos's ethics-hotline submission, then CHALLENGES Camacho's assertion by explaining what that response does to the weight anyone can place on it. Ríos used the formal reporting channel; within one week her line manager removed her from all DataSphere-related work; and that same manager told her team that hotline submissions 'create unnecessary disruption.' Those facts create a serious apparent risk of retaliation against a reporter, and could deter the next person from raising a concern — so an assurance that the arrangement is 'entirely within the rules' carries less weight when the channel for testing it has been treated this way. Full 2 marks require: (i) the significance is that the deterrent effect falls on procurement staff working on this arrangement, who are among those likely to hold relevant information; (ii) the case facts used are Juliana Ríos, the ethics hotline, Diego Salazar, and the removal within one week; (iii) the consequence is that the treatment materially weakens confidence that CA's speak-up channel will surface future concerns about the DataSphere arrangement while it stands, and as a listed company bidding for public contracts it carries that weakness into its governance representations; (iv) the case example is Salazar's statement to his team that hotline submissions 'create unnecessary disruption.' THE CASE DOES NOT RECORD WHAT HAPPENED TO RÍOS'S REPORT ITSELF, and it does not establish that CA has no other internal route — it names a compliance function, and internal audit or an audit committee may exist. A candidate who confines the claim to the deterrent effect, rather than asserting that the arrangement cannot be tested from inside CA at all, is reading the exhibit correctly and earns full marks. 1 mark if the intimidation threat is identified, or Ríos's treatment is noted, but it is not connected to the weight Camacho's assertion can carry.
+
+**`c4` — 2 marks** · lo `A3d` · part: *(ii) recommend the safeguard package with a committed course of action*
+
+- **anchors:** `f_stake`, `f_retainer`, `f_no_review`
+- **disqualifiers:** `F2`, `F4`
+- **development_required:** true
+
+> The candidate recommends a safeguard package that does two things: it removes the conflicted officer from decisions on the arrangement, and it independently tests the commercial integrity of the existing relationship. Immediate recusal of Andrés Camacho from all DataSphere decisions, together with an independent retrospective value-for-money review of the COP 4.2 billion retainer, is the model answer — but THE CRITERION MARKS WHETHER BOTH FUNCTIONS ARE ADDRESSED AND JUSTIFIED FROM THE CASE, NOT WHETHER THOSE TWO LABELS APPEAR. Another package achieving both is equally creditable. The candidate must explain how those two controls address the self-interest and familiarity threats; where continuation is recommended, they must explain how the controls make continuation acceptable. THE CRITERION DOES NOT ASSUME CONTINUATION — a candidate whose overall recommendation under c6 is exit and re-tender still earns these marks by putting the same two controls in place while that exit runs. Full 2 marks require: (i) the significance is that recusal removes the conflicted officer's influence going forward while the review tests whether past decisions were sound; (ii) the case facts used are the 34% stake, the COP 4.2 billion retainer, and the absence of any independent value-for-money review; (iii) the consequence is that if the review finds the retainer overpriced, CA has documented grounds for renegotiation or re-tender; (iv) the case example is that CA has never commissioned an independent value-for-money review, which is the clearest evidential gap the case records. 1 mark if one of the two functions is addressed but not justified against the case facts, or if both are named without justification.
+
+**`c5` — 2 marks** · lo `A3d` · part: *(ii) recommend the safeguard package with a committed course of action*
+
+- **anchors:** `f_rios`, `f_salazar`, `f_hotline`
+- **disqualifiers:** `F2`, `F4`
+- **development_required:** true
+
+> The candidate recommends a formal investigation into Diego Salazar's conduct, conducted by a party independent of him, together with interim protection for Juliana Ríos while it runs — written assurance that she will be protected from retaliation while the matter is independently investigated, and her exclusion from DataSphere-related work not left to stand unexamined as the de facto outcome of having reported. The candidate must explain why this is needed if the ethics hotline is to work as an internal speak-up control at all. Full 2 marks require: (i) the significance is that without this step the hotline exists on paper while its most recent use was followed within a week by adverse treatment, which could deter the next reporter; (ii) the case facts used are Juliana Ríos, the ethics hotline, Diego Salazar, and the removal within one week; (iii) the consequence is that CA, as a listed entity bidding for public contracts, faces regulatory and reputational risk if this treatment of a hotline reporter becomes public; (iv) the case example is Salazar's statement to his team that hotline submissions 'create unnecessary disruption.' THE CRITERION MARKS RECOMMENDING THE INVESTIGATION AND PROTECTING THE REPORTER, NOT PRE-JUDGING WHAT THE INVESTIGATION SHOULD FIND. A candidate who recommends immediate reinstatement earns full marks; so does one who argues the removal should be held in abeyance until the investigation reports, provided her protection from retaliation is secured in writing in the meantime and the reasoning is given. 1 mark if an investigation or protection for Ríos is mentioned but not developed or tied to CA's governance obligations.
+
+**`c6` — 2 marks** · lo `A3d` · part: *(ii) recommend the safeguard package with a committed course of action*
+
+- **anchors:** `f_migration`, `f_transition`
+- **disqualifiers:** `F2`, `F4`
+- **development_required:** true
+
+> The candidate delivers a committed overall recommendation on the future of the arrangement that explicitly addresses both the COP 1.8 billion migration cost and the six-month transition as costs to be weighed against governance risk, and states which course the committee should take and why, citing the case evidence that tips the balance. Full 2 marks require: (i) the significance of the decision is that it has material short-term operational consequences, because replacement requires a minimum six-month transition; (ii) the case facts used are COP 1.8 billion and six-month transition alongside the governance failures identified; (iii) the consequence of the chosen course is stated — for example that continuing risks further entrenched conflict if safeguards are not enforced, or that exiting crystallises the migration cost while removing the conflict at source; (iv) the answer addresses the opposing case and explains why it does not prevail. 1 mark if a recommendation is offered but does not address the migration cost or transition period, or does not engage with the opposing argument. ANY committed course earns full marks if reached through the four-limb development test: continue with safeguards, exit and re-tender, or an intermediate course such as a bridge arrangement under independent oversight, a staged tender, or temporary continuation while a competitive procurement runs. THE CRITERION MARKS THE DECISION STRUCTURE, NOT WHICH OF A SET OF APPROVED LABELS IS CHOSEN — a criterion offering two options and no others makes the candidate guess which two the author had in mind, which is agreement dressed as judgement.
+
+
+### golden GOOD (served as `model_answer`)
+
+**Ethical threats — testing "within the rules"**
+
+**Internal Ethics Briefing Note — Section: DataSphere Arrangement**
+*To: Chair, Audit and Ethics Committee*
+
+**Part (i): Assessment of Ethical Threats**
+
+**Self-interest.** Andrés Camacho's wife holds a 34% equity stake in DataSphere Ltda. — a significant financial interest for the household in DataSphere's commercial success. His assertion that "the annual retainer of COP 4.2 billion sits below my authority limit" is, with respect, irrelevant to the ethical question: authority limits are procedural ceilings, not ethical clearances. They govern what an officer may approve unilaterally; they say nothing about whether that officer's judgement was free from financial bias. The assertion therefore cannot settle the conflict. Even if he is right that the figure falls within his limit — and the papers record that only as his own statement, not as something the committee has verified — an authority threshold speaks to who may approve, and leaves untouched whether the renewals and the expansion to eleven modules served CA's interest or his household's. The stake was disclosed to compliance in 2019 and not actioned; the case does not say when it was acquired, so the committee should at least treat decisions from that disclosure onward as made within a process for which the conflicted CFO was responsible, with no independent value-for-money review recorded.
+
+**Familiarity.** Now in its eighth year, the DataSphere relationship has never been tested by competitive re-tender, even as scope grew from three to eleven modules. An officer who has managed a vendor relationship for that long, without challenge, is exposed to a risk of reduced objectivity on price and performance. The consequence for CA is that the COP 4.2 billion retainer may substantially exceed market rates, and the organisation has no evidential basis to know otherwise, because CA has never commissioned an independent value-for-money review.
+
+**Intimidation.** Ríos used CA's formal channel to raise precisely the conflict Camacho says is within the rules. When Juliana Ríos used it — the proper internal reporting channel — Diego Salazar removed her from all DataSphere-related projects within one week and told her colleagues that hotline submissions “create unnecessary disruption.” That is not a compliance disagreement; those are strong prima facie indicators of retaliation against a reporter, and the effect is on everyone who watched it happen. Procurement staff working on this arrangement are among those likely to hold relevant information, and they have just seen what raising a concern cost a colleague. An assurance that the arrangement is “entirely within the rules” carries less weight when the channel for testing it has been treated this way — which is a reason to look harder at the claim, not to accept it. What became of Ríos's report itself is not recorded, and I do not assume it.
+
+**Part (ii): Recommended Safeguard Package**
+
+First, Andrés Camacho must be recused from all DataSphere decisions with immediate effect, and an independent value-for-money review of the COP 4.2 billion retainer must be commissioned. CA has never commissioned an independent value-for-money review across eight years of scope growth, which is the clearest evidential gap the papers show: if the review finds the retainer overpriced, CA has documented grounds for renegotiation or a structured re-tender even if it ultimately retains DataSphere.
+
+Second, a formal HR and conduct investigation into Diego Salazar's treatment of Juliana Ríos must be opened, led by someone independent of him. She should be given written assurance that she will be protected from retaliation while the matter is independently investigated, before it begins, and her exclusion from DataSphere-related work should not be allowed to stand as the settled consequence of having reported while the investigation is unresolved. I recommend she be returned to that work now; a committee that preferred to hold the position open until the investigation reports would also be acting properly, provided the protection is given in writing first. CA is a listed entity pursuing public contracts; if this treatment of an ethics-hotline reporter becomes public or attracts regulatory attention, it could create serious legal and reputational exposure.
+
+**Overall recommendation.** Exiting DataSphere immediately would crystallise a COP 1.8 billion migration cost and a minimum six-month transition carrying migration and continuity risk, since CA's bid templates are proprietary to the platform and would need rebuilding. However, those costs do not justify deferring governance action — they justify sequencing it. I recommend that the committee adopt the continue-with-safeguards package: immediate recusal, an independent review within a defined short timetable set by the committee, and the Salazar conduct investigation in parallel. If the independent review reveals that the retainer is materially above market, the committee should then mandate a full re-tender, at which point the COP 1.8 billion migration cost becomes the price of restoring integrity rather than an argument for tolerating conflict. The case for immediate exit is understandable but premature without that evidence; the case for doing nothing is, on the facts before this committee, untenable.
+
+### golden BAD (authoring artefact — never served)
+
+**To: Chair, Audit and Ethics Committee**
+**Re: DataSphere Arrangement — Ethical Considerations**
+
+There are a number of questions the committee should consider in relation to the DataSphere arrangement.
+
+Has the board fully considered whether the fact that a senior executive's family member benefits from a vendor relationship is sufficient to raise ethical concerns, even where the contract value sits within that executive's authority limit? Is it clear that an authority limit, by itself, provides adequate assurance that decisions have been made objectively?
+
+In relation to the duration of the vendor relationship, should the committee not ask whether an eight-year arrangement without competitive re-tender is consistent with CA's procurement policies? Is it possible that familiarity between CA and DataSphere has affected the rigour with which contract renewals have been evaluated?
+
+Regarding the treatment of Juliana Ríos, has the committee considered whether the actions taken by her line manager following her hotline submission are consistent with CA's stated commitment to protecting those who raise concerns? Is it not worth asking whether the timing of her removal from DataSphere-related work — within one week of the submission — warrants further scrutiny?
+
+On the question of transition costs, should the committee weigh the COP 1.8 billion migration cost and the six-month operational disruption against the risks of maintaining the current arrangement? Are these costs a reason to continue, or merely factors to consider alongside the governance concerns?
+
+These are important questions for the committee to reflect on as it determines how to proceed.
+
+### hint
+
+Your response raises the right concerns about Camacho's assertion and the DataSphere arrangement, but check whether you have actually committed to a conclusion — or whether you have instead left the reader to decide by framing your points as open questions.
+
+### full_reveal
+
+The misconception this drill exposes is SCEPTICISM AS QUESTIONS: the candidate believes that surfacing a doubt — asking "has the authority limit really settled the ethical question?" or "is it clear that eight years without re-tender is acceptable?" — is itself a sceptical act that earns credit. It is not. Questions are not a substitute for professional conclusions. They are unlikely to earn development credit and weaken the professional-scepticism performance because the analytical burden is left with the reader. Where the underlying technical concern is nevertheless clearly identifiable, limited technical credit may still be available. The rule is that an unanswered question is not a developed conclusion — "Camacho's authority-limit argument is irrelevant to the ethical question because authority limits are procedural ceilings, not ethical clearances" is a position that can be assessed; "one might ask whether the authority limit resolves the conflict" hands the assessment back to the reader. Under the two-mark rule, even a committed identification earns only one mark until it is developed: tie the point to this organisation using the facts given (the approver's own spouse holds 34% of the supplier, and he is the executive responsible for vendor selection and contract renewal), follow it to a consequence (sitting below an authority threshold shows formal approval authority, not freedom from conflict, so the assertion cannot settle the question it is offered to settle), and the second mark becomes available. Writing more undeveloped questions in the hope of accumulating marks forces the candidate to generate twice as many points in the same time — a losing strategy when the ceiling on each of them is limited technical credit at best.
+
+### gate matrix
+
+- N2 scenario-anchor (facts in scenario + used in reveal): PASS
+- N3 generic/copy lint (reveal not scenario-restating): PASS
+- N5 committed-verdict/structure: PASS
+- N4-pre designed-flag raiseability (F4): PASS
+- N1 rubric-coverage (reveal = full marks; every part mapped): PASS
+- N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS
+- N6a F10 marks-share: PASS
+- N6b scenario precondition (scepticism): PASS
+- N6c claim-anchor link: PASS
+- N6 coverage: every part evaluated
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS
+
+---
+
+## SBL-A5 · `A3a` · evaluation · L3 · 10 marks
+
+**verb:** evaluate and commit to a verdict · **paper_code:** SBL · **status:** candidate, published=false
+
+*Generated from `docs/rollbacks/SBL_narrative_draft_SBL-A5.json`.*
+
+**Designed BAD — N4 contract:** `[F1, F4]`  ·  *its evidenced mode is itself deterministic*
+
+### context_text
+
+Tirta Nusantara Tbk ("Tirta") is an Indonesian listed water utility serving Kota Pesisir, a coastal city whose population has grown by 34% over the past decade to 2.1 million residents. The company currently supplies 310,000 household connections, of which 78,000 — serving roughly 280,000 lower-income residents in the city's eastern districts — pay a subsidised "social tariff" of IDR 1,850 per cubic metre.
+
+In March 2025 the Board approved the Coastal Resilience Upgrade (CRU), a five-year capital programme costing IDR 4.2 trillion in total. The CRU will replace 620 km of ageing saltwater-infiltrated mains, install a desalination booster plant, and raise treated-water capacity from 1,450 litres per second to 2,200 litres per second. Independent engineering consultants have confirmed that without the CRU, seawater intrusion into the existing network will render approximately 55% of current mains unusable within eight years. To fund the CRU without breaching its debt-to-equity covenant of 1.8×, Tirta's finance committee recommended that the social tariff rise from IDR 1,850 to IDR 4,600 per cubic metre — an increase of IDR 2,750 per cubic metre — and the Board approved that recommendation, effective 1 January 2026. At average household consumption of 18 cubic metres per month, this translates to an additional monthly bill of IDR 49,500 for affected households. The regional government of Kota Pesisir has declined to provide any compensatory subsidy to affected social-tariff households.
+
+The management team published the following written justification in their March 2025 investor presentation:
+
+"The CRU is not a growth project; it is a survival project. Without new mains and desalination capacity, seawater intrusion will make over half our network unusable within eight years. The tariff adjustment for social-tariff customers is regrettable but unavoidable: the programme cannot be financed within our covenant constraints without it, and deferral would expose all 2.1 million residents — including social-tariff customers — to a city-wide supply failure. We are not choosing between affordability and infrastructure; we are choosing between a manageable cost increase now and a catastrophic supply collapse later. The adjustment brings social-tariff rates to a level that is still 42% below the standard commercial tariff of IDR 7,950 per cubic metre, and it preserves universal service coverage."
+
+### question
+
+Draft the section of a briefing note to the Chair of Tirta Nusantara Tbk's Audit and Ethics Committee that evaluates the Board's decision to raise the social tariff from IDR 1,850 to IDR 4,600 per cubic metre as a means of financing the Coastal Resilience Upgrade, and arrives at a clear verdict on whether the decision is defensible as an act of responsible leadership in the public interest.
+
+Your answer should address:
+(i) the strength of the commercial and operational case for the tariff increase;
+(ii) the nature and severity of the public-interest cost imposed on affected residents; and
+(iii) your verdict on whether the decision, taken as a whole, meets the standard of responsible leadership.
+
+### scenario facts
+
+| id | kind | key | text |
+|---|---|---|---|
+| `f_social_tariff_old` | figure | `IDR 1,850` | the existing subsidised social tariff of IDR 1,850 per cubic metre |
+| `f_social_tariff_new` | figure | `IDR 4,600` | the proposed new social tariff of IDR 4,600 per cubic metre |
+| `f_monthly_impact` | figure | `IDR 49,500` | additional monthly bill of IDR 49,500 for affected households |
+| `f_affected_residents` | entity | `280,000 lower-income residents` | approximately 280,000 lower-income residents in the eastern districts |
+| `f_cru_cost` | figure | `IDR 4.2 trillion` | the CRU's total capital cost of IDR 4.2 trillion |
+| `f_mains_failure` | figure | `55% of current mains` | seawater intrusion will render approximately 55% of current mains unusable within eight years |
+| `f_de_covenant` | constraint | `1.8×` | debt-to-equity covenant of 1.8× |
+| `f_below_commercial` | figure | `42% below the standard commercial tariff` | the new social tariff is still 42% below the standard commercial tariff of IDR 7,950 |
+| `f_no_subsidy` | constraint | `declined to provide any compensatory subsidy` | the regional government of Kota Pesisir has declined to provide any compensatory subsidy to affected social-tariff households |
+| `f_capacity_increase` | figure | `1,450 litres per second to 2,200 litres per second` | treated-water capacity rising from 1,450 to 2,200 litres per second |
+
+### requirement parts
+
+1. (i) the strength of the commercial and operational case for the tariff increase
+2. (ii) the nature and severity of the public-interest cost imposed on affected residents
+3. (iii) your verdict on whether the decision, taken as a whole, meets the standard of responsible leadership
+
+### criteria — 10 marks, 5 criteria, 2 marks each
+
+**`c1` — 2 marks** · lo `A3a` · part: *(i) the strength of the commercial and operational case for the tariff increase*
+
+- **anchors:** `f_mains_failure`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F10`
+- **development_required:** true
+
+> Part (i)'s strongest evidence is also where management's case is weakest, and a full-marks answer separates the two. The engineering finding is CONFIRMED by independent consultants: without the CRU, seawater intrusion will render approximately 55% of current mains unusable within eight years. That is a specific, time-bounded, externally verified prognosis, and it does distinguish the CRU from discretionary capital expenditure. What is NOT confirmed is management's interpretation of it — that deferral would expose all 2.1 million residents to a city-wide supply failure. That is management's own inference about what losing 55% of the network would mean for the remainder, and the exhibits do not establish it. Full 2 marks require the candidate to credit the confirmed finding, identify the inference as management's rather than the consultants', and assess whether it follows — weighing significance, tying it to Tirta's stated position, following it to a consequence, and using the case's own wording as the example. A candidate who concludes the inference is reasonable earns full marks, as does one who concludes it overstates what the engineering finding supports; the criterion marks the separation and the assessment, not the conclusion. 1 mark if the 55% figure is noted as serious without management's inference being distinguished from it.
+
+**`c2` — 2 marks** · lo `A3a` · part: *(i) the strength of the commercial and operational case for the tariff increase*
+
+- **anchors:** `f_de_covenant`, `f_cru_cost`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The 1.8× debt-to-equity covenant demonstrably restricts DEBT financing: the exhibits establish that the IDR 4.2 trillion programme cannot be met by borrowing without breaching it, and a breach would ordinarily trigger lender remedies. What the exhibits do NOT establish is that a social-tariff increase is the only viable response — that is management's assertion, not a demonstrated fact, and the distinction is the point of this criterion. Full 2 marks require the candidate to separate what the papers PROVE unavailable from what management ASSERTS is unavailable, weigh how significant that gap is, tie it to Tirta's stated position, follow it to the consequence that the tariff rise is the route the committee recommended and the Board approved rather than the only route that existed, and use the case's own figures as the example. The candidate may note that the papers do not show any alternative being tested; they should NOT invent alternatives the exhibits do not mention, and a candidate who names one without saying the case is silent on it has made the same error as management. 1 mark if the covenant is identified as a constraint but the proved/asserted distinction is never drawn.
+
+**`c3` — 2 marks** · lo `A3a` · part: *(ii) the nature and severity of the public-interest cost imposed on affected residents*
+
+- **anchors:** `f_monthly_impact`, `f_affected_residents`, `f_below_commercial`, `f_no_subsidy`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F6`, `F10`
+- **development_required:** true
+
+> The IDR 49,500 per month increase lands on 280,000 lower-income residents — a named, concentrated group — and the severity is not softened by the management team's observation that the new IDR 4,600 rate sits 42% below the standard commercial tariff, because that comparison is between Tirta's own tariff bands, not against these households' actual ability to pay; a candidate who notes 'the bill rises' earns 1 mark; full marks require the candidate to evaluate why a relative affordability claim (still 42% below the standard commercial tariff) is analytically insufficient as a public-interest defence when the absolute increase of IDR 49,500 falls entirely on a lower-income population and the scenario identifies no compensating subsidy or other affordability protection for them. 1 mark if identified but left undeveloped.
+
+**`c4` — 2 marks** · lo `A3a` · part: *(ii) the nature and severity of the public-interest cost imposed on affected residents*
+
+- **anchors:** `f_monthly_impact`, `f_affected_residents`, `f_social_tariff_new`
+- **disqualifiers:** `F1`, `F2`, `F5`, `F10`
+- **development_required:** true
+
+> The management team's written justification frames the decision as 'a manageable cost increase now versus a catastrophic supply collapse later'. That framing rests on a premise — that IDR 49,500 per month is manageable for lower-income households in Kota Pesisir's eastern districts — which the Board's own documents never test. Full 2 marks require the candidate to identify the premise as UNTESTED and to state what would have to be SHOWN for the framing to hold: evidence of what these households actually pay and can absorb, gathered from the affected population rather than assumed on their behalf. The candidate must weigh how significant that gap is, tie it to Tirta's stated position — the affected group is explicitly identified as lower-income, and the scenario identifies no compensating subsidy or other affordability protection for them, follow it to the consequence that a utility cannot discharge a public-interest duty by assuming affordability rather than demonstrating it, and use management's own wording as the example. A candidate who takes a different view of how damaging the gap is — including one who argues the framing survives once the engineering prognosis is weighed against it — earns full marks where the premise is still identified as untested and the test for it is named; this criterion does not require agreement on which of management's arguments is weakest. 1 mark if the justification is quoted or paraphrased without the premise being interrogated.
+
+**`c5` — 2 marks** · lo `A3a` · part: *(iii) your verdict on whether the decision, taken as a whole, meets the standard of responsible leadership*
+
+- **anchors:** `f_social_tariff_old`, `f_social_tariff_new`, `f_de_covenant`, `f_affected_residents`
+- **disqualifiers:** `F1`, `F2`, `F4`, `F5`, `F10`
+- **development_required:** true
+
+> The candidate must LAND on a verdict about whether the decision meets the standard of responsible leadership, and this criterion marks the structure of that judgement, not which verdict it reaches. Full 2 marks require all four of: (a) an explicit verdict rather than a balance; (b) it cites the case's own evidence on BOTH sides — the affordability evidence (the IDR 49,500 monthly increase falling on 280,000 lower-income residents, from IDR 1,850 to IDR 4,600, with the regional government having declined to provide any compensatory subsidy to them) and the funding evidence (the 1.8× covenant); (c) it names what is being traded away AND who bears it; and (d) it addresses the strongest opposing case and answers it rather than ignoring it. EITHER verdict earns the full two marks where it is reached that way — that the decision does meet the standard on the evidence available, or that it does not until a stated condition is met — because a criterion that named the right answer would be marking agreement with its author rather than the candidate's judgement. 1 mark if a verdict is stated but the opposing case is not answered, or what is traded away is not attributed to anyone. No mark under this criterion if no verdict is reached — the candidate may still earn the technical marks on the other criteria.
+
+
+### golden GOOD (served as `model_answer`)
+
+**Responsible leadership — commercially defensible, and still a decision to make**
+
+**Briefing Note — Section: Social Tariff Increase — Evaluation for the Audit and Ethics Committee**
+
+**To: Chair, Audit and Ethics Committee, Tirta Nusantara Tbk**
+
+**(i) Strength of the commercial and operational case**
+
+The engineering foundation of the CRU is compelling in a way that distinguishes it from ordinary capital investment. Independent consultants have confirmed that seawater intrusion will render 55% of current mains unusable within eight years — a specific, time-bounded, externally verified prognosis, not a management projection. The significance of this is that deferral is not a financially conservative choice; it accepts the loss of more than half the distribution network. Management goes further and says deferral would expose all 2.1 million residents to a city-wide supply failure — but that step is management's inference, not the consultants' finding, and the papers before this Committee do not evidence it. The confirmed finding is strong enough without it; the Committee should note that the stronger claim is management's own. The CRU's capacity expansion from 1,450 litres per second to 2,200 litres per second is consequently not growth spending but survival infrastructure.
+
+On funding, the 1.8× debt-to-equity covenant is a binding external constraint, not a management preference: the IDR 4.2 trillion programme cannot be met by borrowing without breaching it, and a breach would ordinarily trigger lender remedies that would imperil the project itself. That much the exhibits establish. What they do not establish is that a social-tariff increase was the only viable response — that is management's assertion, and it is a different thing from the constraint they have evidenced. The Committee should hold the two apart: the covenant is proved, the necessity of this particular remedy is asserted, and nothing in the papers records any alternative being considered and ruled out. I am not suggesting one; I am saying the papers do not show the question was asked.
+
+**(ii) Nature and severity of the public-interest cost**
+
+The public-interest cost is concrete and concentrated. The IDR 49,500 per month increase in monthly bills falls entirely on 280,000 lower-income residents in the eastern districts — a named and bounded population, identified in the papers by their income. Management's observation that the new IDR 4,600 rate sits 42% below the standard commercial tariff is arithmetically correct but analytically misleading as a public-interest defence: the relevant comparison is not between Tirta's own tariff bands but between IDR 49,500 and what these households can actually afford, a question management's own documents never answer. The regional government has declined to provide any compensatory subsidy to these households, and the scenario identifies no other affordability protection alongside the increase — so if IDR 49,500 a month exceeds what some of them can absorb, nothing in the papers cushions it. That could materially reduce affordability for a population the Board's own documents identify as lower-income.
+
+The deeper problem with management's written justification is its framing of IDR 49,500 per month as "a manageable cost increase." A listed utility acting in the public interest cannot fulfil its obligations by assuming affordability; it must demonstrate it. The eastern-district population was not asked whether the increase is manageable, and no hardship mechanism was announced alongside the tariff decision. That gap is the most significant weakness in the Board's position.
+
+**(iii) Verdict**
+
+The case for the CRU is genuine and the debt constraint is real: a Board facing a confirmed prognosis of 55% of current mains failing and a binding 1.8× covenant is not in a position of free choice — but it has evidenced the constraint and only asserted the remedy, and it has not shown this Committee that anything else was considered. On the evidence actually presented, the tariff increase from IDR 1,850 to IDR 4,600 is defensible in principle. However, responsible leadership in a public utility requires not merely selecting the least-bad option but actively mitigating the harm that option imposes on those least able to absorb it. The decision as currently constituted — with no tested hardship fund, no phased implementation, and no affordability assessment — does not yet meet that standard.
+
+I recommend that the Committee decline to endorse the decision as drafted and require the Board to return with a hardship-protection mechanism — means-tested tariff relief, a lifeline tariff for a basic consumption block, phased tariff steps, or targeted bill credits — before the IDR 4,600 rate takes effect on 1 January 2026. Only then can the increase be characterised as responsible leadership rather than cost transfer to the most vulnerable residents.
+
+### golden BAD (authoring artefact — never served)
+
+**Briefing Note — Social Tariff Increase**
+
+**Background**
+
+Tirta Nusantara Tbk serves Kota Pesisir, a fast-growing coastal city of 2.1 million residents. The Board has approved the Coastal Resilience Upgrade at a total cost of IDR 4.2 trillion and has proposed raising the social tariff from IDR 1,850 to IDR 4,600 per cubic metre to help fund it.
+
+The management team have explained their reasoning clearly in their investor presentation: "The CRU is not a growth project; it is a survival project. Without new mains and desalination capacity, seawater intrusion will make over half our network unusable within eight years. The tariff adjustment for social-tariff customers is regrettable but unavoidable: the programme cannot be financed within our covenant constraints without it, and deferral would expose all 2.1 million residents — including social-tariff customers — to a city-wide supply failure. We are not choosing between affordability and infrastructure; we are choosing between a manageable cost increase now and a catastrophic supply collapse later. The adjustment brings social-tariff rates to a level that is still 42% below the standard commercial tariff of IDR 7,950 per cubic metre, and it preserves universal service coverage."
+
+**Commercial and operational considerations**
+
+There is a clear operational need for the CRU. Seawater intrusion is a recognised threat to coastal water networks, and the engineering consultants have confirmed the risk to the existing mains. The covenant limits on debt mean additional borrowing is constrained. The regional government has not offered any subsidy, which reduces the options available to management.
+
+**Public-interest considerations**
+
+On the other hand, the tariff increase is significant. The affected residents are lower-income households in the eastern districts. The monthly bill increase may be difficult for some households to absorb. Water is a basic necessity, and any increase in its cost for vulnerable populations raises public-interest concerns.
+
+**Conclusion**
+
+There are arguments on both sides of this decision. The operational need is genuine and the funding options are limited. At the same time, the public-interest cost is real and falls on lower-income households. The Audit and Ethics Committee will need to weigh these factors carefully in reaching its own view.
+
+### hint
+
+Your answer reproduces the exhibit's own justification — the move from IDR 1,850 to IDR 4,600 per cubic metre, the IDR 4.2 trillion capital cost, the fact that the new tariff is still 42% below the standard commercial tariff — without adding an assessment of your own, and it closes by leaving the weighing to the committee rather than reaching the verdict the requirement asks for.
+
+### full_reveal
+
+The misconception this drill exposes is COPY-PASTE: restatement without evaluation. The candidate believes that reproducing a fact from the briefing material counts as analysis, when in reality restating what is already known adds nothing the reader could not read for themselves and therefore earns nothing. Under the two-mark rule, a point earns its second mark only when it is developed — its significance weighed, tied to Tirta Nusantara's specific position, followed to a consequence, and illustrated from the information given; a fact simply transcribed stops at one mark, or zero if no evaluative use is made of it at all. The practical cost is severe: a candidate who fills a page with lightly reworded scenario detail must find twice as many points, in the same time, to reach the same total as a candidate who develops half as many properly. The correction is not to write more; it is to ask, immediately after identifying each fact, what that fact means for this organisation and this decision. Take the 1.8× covenant: it is not a number to name, it is a constraint whose REACH has to be established — what it demonstrably rules out, what management merely asserts it rules out, and what that difference does to the claim that the rise was unavoidable. That move, from stating a fact to establishing what it does, is what turns a transcription into a Level 3 evaluation. The same applies at the close: the requirement asks for a verdict, so assembling the evidence and leaving the Chair to weigh it forfeits the final marks however good the assembly was. Commit to a position, say what it costs and who pays for it, and answer the strongest case against it — which verdict you reach matters far less than whether you reached it on the evidence.
+
+### gate matrix
+
+- N2 scenario-anchor (facts in scenario + used in reveal): PASS
+- N3 generic/copy lint (reveal not scenario-restating): PASS
+- N5 committed-verdict/structure: PASS
+- N4-pre designed-flag raiseability (F1,F4): PASS
+- N1 rubric-coverage (reveal = full marks; every part mapped): PASS
+- N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS
+- N6a F10 marks-share: PASS
+- N6b scenario precondition (evaluation, SBL): NOT EVALUATED — the precondition is a proposition with a real downside as well as an upside — stated costs, risks or affected parties — so that landing on one side concedes something. Whether a scenario is genuinely two-sided is a reading of the facts, not a countable shape; fact counts cannot see it. N5 covers only that the answer COMMITS, not that there was a trade-off to commit about. Confirm by hand
+- N6c claim-anchor link: NOT EVALUATED — structurally N/A for evaluation — only scepticism acts on a single identifiable asserted claim
+- N6 coverage: 2 of 3 part(s) NOT EVALUATED — N6b scenario precondition (evaluation, SBL); N6c claim-anchor link
+- P4 jurisdiction / frozen-facts (hint + full_reveal): PASS
+- P7 misconception-lead (full_reveal carries a real "...misconception...: " sentence): PASS

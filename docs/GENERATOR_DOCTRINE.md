@@ -2,7 +2,7 @@
 
 **Canonical home for the drill-generation doctrine and every standing ruling generation must obey.** Extracted from the `APM_BUILD_CONTRACT.md` journal so the rules live in one place; the journal keeps the narrative, this keeps the law. When a new ruling is adjudicated in a session bank, add it here.
 
-Companions: `AFM_NUMERIC_VERIFICATION_DESIGN.md` (the numeric layer's full design), `TEACHING_ARCHITECTURE.md` (structural withholding), and the code — `scripts/generate-afm-drills.ts` (generator), `lib/acca/{npv,numeric-verifier,validate-schema,validate-afm-prose}.ts` (calculator + gates).
+Companions: `AFM_NUMERIC_VERIFICATION_DESIGN.md` (the numeric layer's full design), `TEACHING_ARCHITECTURE.md` (structural withholding), and the code — `scripts/generate-acca-drills.ts` (generator), `lib/acca/{npv,numeric-verifier,validate-schema,validate-afm-prose}.ts` (calculator + gates).
 
 Cross-reference: `PRODUCT_STRENGTH_STANDARD.md` sets the paper-agnostic strength bar every subject must meet — the pipeline mechanics here implement the strength standard.
 
@@ -305,6 +305,62 @@ is better than the first.
 workaround. Once learned, the workaround outlives the flake and generalises to the next red gate —
 including the true ones. The window in which excluding is cheap is the window before anybody has
 had to ship around it.
+
+### P-G5(b) — A GREEN CONTRACT GATE DOES NOT MEAN THE TREE COMPILES (ruled 2026-08-21)
+
+**`npm run verify` (`scripts/verify.ts`) = `tsc --noEmit` THEN the contract gate, in that order,
+because they answer DIFFERENT QUESTIONS — does the tree COMPILE, and do the FIXTURES pass. Wired to
+`prebuild`, so it runs on every build.**
+
+**The gap, found by shipping a broken deploy.** `certainty-lint.ts` was written with
+`locator = field`, which TypeScript infers as `CertaintyField` rather than `string`, so
+`lintDrillCertainty` passing a criterion id (`c1`) does not compile. It reached `origin` and killed
+the preview build at the type-check stage. **Nothing in the local loop could have caught it:** `tsx`
+does not typecheck (it strips types), and the contract gate runs FIXTURES, not `tsc`. Both were
+green. `next build` typechecks `lib/`, and that is where it surfaced — on Vercel.
+
+📐 **DEMONSTRATED, NOT ASSERTED.** The exact shipped bug was re-introduced and both paths run
+against the same tree:
+
+| on the identical broken tree | result |
+|---|---|
+| `npm run test:contracts` | **PASS contract gate: 62/62** ← the false green |
+| `npm run verify` | `error TS2345`, **exit 2** |
+
+⚠️ **THIS IS THE SESSION'S FALSE-GREEN SHAPE, AND IT IS THE WORST INSTANCE OF IT** — worse than an
+n/a gate counted as pass (P-G5's `applicable:false`), worse than an N6a share read as coverage —
+because it lives **in the loop rather than in a test**. Every other false green in this catalogue is
+a check reporting more confidence than it earned. This one is a check reporting on a *different
+question than the one being asked*: "do the fixtures pass" answered where "does this compile" was
+meant. A person reading `62/62` is not being misled about the fixtures; they are being misled about
+what the fixtures were ever about.
+
+**IT IS ARMED, NOT MERELY AVAILABLE (Grant-ruled 2026-08-21).** `prebuild: npm run verify`, so it
+runs on every build rather than on memory. The duplicate-work objection is handled by the runner
+(`scripts/verify.ts`) rather than by declining to wire it: **the typecheck half is SKIPPED when
+`VERCEL` is set**, because `next build` typechecks there anyway — which is MEASURED, not assumed
+(*"Failed to type check."* is the literal deploy log that caught the original error). The gate half
+always runs. Locally nothing is skipped, so `npm run build` now fails in ~2s on a type error instead
+of after a full compile.
+
+📐 **ALL THREE BRANCHES PROVEN (P-G3), not just the happy one:**
+
+| branch | result |
+|---|---|
+| `VERCEL` set, clean tree | typecheck SKIPPED, gate runs, `PASS verify — 1 step` |
+| broken tree, local | `error TS2345`, **exit 1**, short-circuits — the gate never runs |
+| **broken tree, `VERCEL` set** | **`verify` goes GREEN** |
+
+⚠️ **THAT THIRD ROW IS A CONDITIONAL FALSE GREEN AND IT IS WRITTEN DOWN RATHER THAN GLOSSED.** On
+Vercel, `verify` passes a tree that does not compile. It is safe ONLY because a LATER step catches
+it, and if `next build` ever stopped typechecking — a `typescript.ignoreBuildErrors` in
+`next.config`, a framework change — this skip would silently become the hole it was designed around.
+The skip's safety is a **dependency on another step**, not a property of `verify`.
+
+⚠️ **AND IT STILL DOES NOT GUARD A PUSH.** Nothing in this repo runs on `git push` — no hooks, no
+husky. `prebuild` arms it on every BUILD. The guarantee that a broken tree cannot SHIP green remains
+Vercel's own typecheck, which already existed and already worked. So P-G5's "armed only by memory"
+objection is **reduced, not eliminated**; a pre-push hook is the only thing that would eliminate it.
 
 ## P-G6 — A FIXTURE'S INPUT MUST BE THE SHAPE PRODUCTION BUILDS (ruled 2026-08-09)
 
@@ -817,6 +873,65 @@ sitting as a syllabus decision first and a calendar check second.
 place what it does *not* cover. A flag called `verified` invites the reading that everything
 about the row is; a flag called `dates_verified` with its limits recorded does not.
 
+**P-DB8 — A FLIP CARRIES STATUS, NOT CONTENT (ruled 2026-08-21, SBL batch A).**
+
+`candidate → approved → published` is an UPDATE of two columns. **Nothing in GATE-P has ever
+carried a reviewed draft into its row, and until now no gate compared them.** A flip publishes
+whatever the row already says.
+
+GATE-P's reconcile compares the DB's approved-set against the journal's reviewed-set. That is a
+comparison of **two sets of identifiers** — it answers "is every approved row one a review
+record exists for, and is every reviewed row approved?" It never opens a row.
+
+**So a row can be correctly `candidate`, correctly journalled as reviewed with every finding
+applied, and still hold text superseded days ago — BECAUSE THE REVIEWING HAPPENED SOMEWHERE THE
+RECONCILE DOES NOT LOOK.** Both halves of the status arm pass while the flip ships the old text.
+
+Found when an export was requested "from the live DB rows" and the premise was checked before
+acting: the five SBL rows held the batch exactly as inserted on 2026-08-19, with every fix from
+cold reads 2, 3 and 4 living only in `docs/rollbacks/*.json`. Flipping them would have published
+two named publication blockers (`"score nothing"`, the invented `"set the parameters"`) and a
+live arithmetic error (`"33% of the 280,000"` where the reviewed draft says `"approximately
+34%"`). Nothing was looking, and nothing *could* look — there was no such check to fail.
+
+**THE RULE.** A publish flip requires a **third reconcile arm** that compares the row's CONTENT
+against the reviewed draft, field by field, and blocks on any difference. Status is not a proxy
+for content and a journal entry is not a proxy for either.
+
+Implemented: `lib/acca/reconcile-content.ts` (pure, 61 fixtures) + `scripts/authoring/
+reconcile-sbl-content.ts` (the runner) + `scripts/authoring/sync-sbl-content.ts` (the sync that
+makes it green, under P-DB3/P-DB4).
+
+Four things the implementation had to decide, each of which is the rule in miniature:
+
+- **`CONTENT_FIELDS` is shared by the CHECK and the SYNC.** If the sync wrote a field the check
+  did not compare, the check would go green over unreviewed text — the same failure one level
+  down. One list, both sides, structurally unable to disagree.
+- **Object KEY order is not a difference; ARRAY order is.** jsonb does not preserve key order, so
+  a raw stringify diff cries phantom drift on a row that round-tripped unchanged (the P-DB4(a)
+  lesson). But `criteria` is an ordered rubric, and sorting arrays "for consistency" would blind
+  the check to a reordered one.
+- **Strings compare BYTE-EXACT.** "It is only whitespace" is still a row that is not the reviewed
+  text. Deciding the gap is small enough to publish past is not the check's call.
+- **Unpaired blocks in BOTH directions, and an ambiguous pairing key is refused rather than
+  guessed.** A row the check could not pair is a row it cannot make its claim about, and passing
+  it silently rebuilds the status arm's blind spot.
+
+**P-DB8(a) — THE ARM MUST BE WATCHED GOING RED BEFORE IT IS TRUSTED GREEN (P-G3, applied).**
+Build the check BEFORE the sync, precisely so it can be run against the broken state. This one
+reported **4 of 5 rows mismatched** on first run and independently reproduced markers recorded
+days earlier in `a60f38d`. A5 reported GREEN and correctly so — its own read was applied BEFORE
+the insert, so its row already held reviewed content. **An expectation of "all five red" was
+itself wrong**, and tuning the check until it matched would have been the worst available move:
+the arm's job is to report the state, not to confirm the prediction.
+
+**P-DB8(b) — CODE HARDENING AND A FLIP HAVE DIFFERENT SHIPPING CLOCKS, AND THE FLIP'S IS
+INSTANT.** Where a flip is gated on a code change (here: scoping the id-addressed tutor fetches
+so an unserved paper's row cannot be served), the code must be **merged and DEPLOYED** first —
+not merely committed. Per P-DB1 a DB write is not branch-scoped: the flip ships the moment it
+runs, while the guard sits on a branch. Committing the guard and then flipping inverts the order
+they were sequenced in and opens exactly the leak the guard was written to close.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
@@ -1055,7 +1170,7 @@ The second pipeline marks **discursive** drills against an authored rubric. Cano
 claim ceiling: `docs/NARRATIVE_MARKING_DESIGN.md`; detection targets (F1–F12, page-VERIFIED):
 `docs/evidence/AFM_NARRATIVE_EVIDENCE.md` §1b; marker + gates: `lib/acca/narrative-marker.ts`; the
 constrained model grader: `lib/acca/narrative-grader.ts`; generator wiring: `--narrative-batch` in
-`scripts/generate-afm-drills.ts`.
+`scripts/generate-acca-drills.ts`.
 - **CLAIM CEILING binds every surface (Grant 2026-07-18).** Narrative marking is *constrained-model
   marking with a code-owned rubric + code-owned aggregation + deterministic copy/anchor/coverage
   checks + Rule-23 consistency*. The per-criterion QUALITY verdict (developed? applied?) is
@@ -1151,6 +1266,222 @@ backstop). **D7 is the harder version: there is no computed object to have known
 cannot be "state more of what code knows"; it has to be "do not create the derivation in the first
 place". Both remedies are now standing — the builder-gap audit for calculator families, and this rule
 for narrative briefs.
+
+## P-N4 — PRESERVE EVIDENCE STATUS (ruled 2026-08-21, GPT cold read 4)
+
+> **A claim reported by the exhibit remains a claim; an opinion remains an opinion; a survey
+> attribution remains an attribution; an absence of recorded evidence remains an absence of recorded
+> evidence. Do not promote any of them to established fact without independent exhibit support.**
+
+Also called **EPISTEMIC-STATUS COLLAPSE**, or plainly **CLAIM → FACT LAUNDERING**. The exhibit
+contains something only as someone's assertion, opinion, justification, allegation, forecast or
+survey attribution — and the rubric or the GOOD silently promotes *the content of that statement*
+into an established case fact.
+
+**THE CLEANEST INSTANCE, A4.** The exhibit establishes that Camacho **stated** *"the annual retainer
+of COP 4.2 billion sits below my authority limit"*. That establishes **Camacho claims it is below
+his limit**. It does **not** establish **it is below his limit**. c1 then said *"sitting below an
+authority threshold demonstrates formal approval authority"*, and the GOOD said *"it confirms that
+the mechanical rule was not broken"* — the CFO's own assertion, laundered into a verified fact. This
+matters more here than anywhere, because **the requirement expressly tells the candidate to CHALLENGE
+that assertion**, and the model answer had already conceded it. The permitted form is *"even if
+Camacho is correct that the amount falls within his authority limit, that does not resolve the
+conflict."*
+
+### ⚠️ WHY A LEXICAL LINT CANNOT REACH THIS, MEASURED
+
+P-N3(a) happened to flag A4's two sentences via `demonstrates` and `confirms`. **That is incidental,
+and relying on it would be a false green.** The identical defect written without any red-flag word
+evades both existing checks — probed 2026-08-21 against the real modules, with A4 c3's real warning
+supplied to the drift check:
+
+| laundered sentence | certainty lint | warning-drift |
+|---|---|---|
+| *"The authority limit gives Camacho formal authority to approve the COP 4.2bn retainer, but…"* | **NO HIT** | **NO HIT** |
+| *"Given that the retainer falls below his authority limit…"* | **NO HIT** | **NO HIT** |
+| *"The retainer sits below his authority limit, so the procedural rule was observed."* | **NO HIT** | **NO HIT** |
+
+Both lints operate on **linguistic surface form**. This defect is not grammatical certainty at all —
+it is that **the source-status of the evidence was lost during reasoning**. No enlargement of a word
+list reaches it, because there is no word to add: the sentence is restrained, and wrong.
+
+**THE FIX IS GENERATION-SIDE, NOT A THIRD LINT** (Grant-ruled 2026-08-21, agreeing with the read).
+See the evidence-status ledger scoped in `docs/AFM_SURFACED.md`. A third vocabulary-based lint is
+diminishing returns; the remaining failures depend on **who said what, and how firmly the exhibit
+establishes it**.
+
+## P-N3 — NEVER LET THE RUBRIC OR THE GOLDEN GOOD KNOW MORE THAN THE EXHIBIT KNOWS (ruled 2026-08-20)
+
+A `required_point` is the point a full-marks answer makes, and a golden GOOD is that answer. Both
+are written by someone who can see the whole design — the intent behind the scenario, the reading
+the drill was built to reward. **The candidate can see only the exhibit.** Whenever the rubric or
+the GOOD states something the exhibit does not support, the drill stops marking reasoning and starts
+marking agreement with its author — and the candidate who reads the exhibit correctly is the one who
+loses.
+
+**Every defect found in SBL batch A reduces to this, in one of five disguises:**
+
+| disguise | instance | what the exhibit actually said |
+|---|---|---|
+| asserted DIRECTION | A1 c4 — non-response bias runs one way, so 68% is "a floor, not a ceiling" | nothing at all about who declined to respond |
+| manufactured ALTERNATIVES | A5 c2 — the tariff rise is "the only available lever" | the covenant restricts DEBT; the remedy's necessity is management's assertion |
+| absolute from a hedge | A2 c4 — "PCG has **no** organisational learning loop" | reviews "**rarely** record" planning failures |
+| population from a sample | A2 c2 — the senior pipeline "carries no warehousing competence", leaders "structurally absent" | three promotions |
+| proof from correlation | A3 c6 — the shortfall "maps directly onto" the missing roles, "**confirming**" the barrier | a shortfall across six regions, with nothing isolating a cause |
+
+⚠️ **THE OVER-CORRECTION IS THE SAME DEFECT, AND IT IS THE EASIEST ONE TO MISS.** A5 c2's first fix
+replaced *"the only available lever"* with a list of routes the case *"leaves open"* — equity, a
+commercial tariff band, phasing, disposals. **None of those is in the exhibit either**, and one
+rested on reading 310,000 *household* connections as a commercial customer base. Inventing options
+to refute an overclaim knows more than the exhibit exactly as the overclaim did, and it marked down
+a candidate who declined to invent them. The correct frame was neither: **separate what the exhibits
+PROVE from what management ASSERTS, and say the papers are silent on the rest.**
+
+**The test, applied to any criterion or golden-GOOD sentence:** *could a careful candidate holding
+only the exhibit reach this, and is the opposite reading closed to them?* If they could not reach
+it, the criterion marks the author's knowledge. If the opposite reading is open and the criterion
+forecloses it, the criterion marks agreement. Either way it moves.
+
+**No gate catches this and none realistically can.** N1/N4 grade coverage and GOOD-vs-BAD
+separation; N6 explicitly declines to read `required_point` semantics; P4 checks jurisdiction and
+frozen facts. It is a reader's finding — which is why an adversarial cold read of the exhibit
+against the rubric belongs in the batch lifecycle, not beside it.
+
+### THE FIRST OPERATIONAL TEST — CERTAINTY (GPT, cold read 2, 2026-08-21)
+
+The test above (*could a careful candidate holding only the exhibit reach this?*) is the right
+question and it is hard to apply to 60 sentences in a row. This is the form that can actually be
+run over a draft, sentence by sentence:
+
+> **Every verb stronger than *suggests* / *risks* / *is consistent with* needs an exhibit fact that
+> closes the weaker alternative.**
+
+It works because it puts the burden in the right place. The author does not have to prove the
+sentence is defensible in the abstract; they have to **name the fact** — and the moment there isn't
+one to name, the sentence is the defect. *Demonstrates* needs a fact that rules out coincidence.
+*Only* needs a fact that rules out the other routes. *Confirms* needs a fact that rules out the
+alternative cause. Where no such fact exists, the verb drops back to the register the exhibit
+supports, which is what the three named verbs mark out: the floor is not silence, it is *suggests*.
+
+**`lib/acca/certainty-lint.ts` is its MECHANISED HALF, and only half.** It finds the verbs; it
+cannot look for the fact. So:
+
+- **A hit is not a defect.** The verb may be exactly right, with the closing fact sitting in the
+  exhibit one sentence away. Only a reader holding the exhibit can tell.
+- **A clean field is NOT P-N3 clean.** The term list is CLOSED. An over-strong verb phrased outside
+  it — *"the pipeline has none"*, *"there is no route but"* — passes silently. A green run means
+  "no listed verb is unhedged here", never "this rubric knows only what the exhibit knows".
+
+The half the lint cannot do is the half that matters, and it stays with a human cold read.
+
+### THE SECOND OPERATIONAL TEST — WARNING DRIFT (GPT, cold read 3, 2026-08-21)
+
+The certainty rule above governs a criterion in isolation. This one governs the drill as a whole,
+and by cold read 3 it was the defect class that remained:
+
+> **Whenever a criterion contains an explicit evidential warning — *"the case does not say…"*,
+> *"do not infer…"*, *"either reading earns…"* — search the GOOD and the reveal for the very
+> proposition that warning forbids.**
+
+**RUBRIC → GOOD → REVEAL DRIFT IS WORSE THAN THE OVERCLAIM IT REPLACES**, and that is the reason it
+earns doctrine. A criterion that names its own evidential limit reads as *proof the drill has been
+disciplined*. A reviewer who sees it relaxes. Meanwhile the model answer — the thing the student
+actually reads and imitates — quietly reintroduces the forbidden fact, so the repair is invisible
+where it matters most and the drill teaches the error its rubric refuses to mark.
+
+📐 **IT CAUGHT THREE PUBLICATION BLOCKERS IN ONE READ, ONE PER DRILL:** A2 c6 forbids inventing
+organisational routes and named three; its GOOD reasoned with *"any new division"* and *"buying
+capability"*. A3 c5 says the case does not reveal what the pilot report contained; its GOOD and
+reveal built the whole counter-reading from *"no role design, no named owner, no launch gate"*. A4
+c3 was REBUILT to refuse exactly two facts; its GOOD still opened with both, **verbatim**.
+
+**THE STANDING RULE THAT FOLLOWS: A CRITERION IS NEVER FIXED ALONE.** When a criterion's evidential
+boundary moves, the GOOD and the reveal move with it in the same edit, or the drill is left
+contradicting itself. Both earlier fix rounds in this batch produced exactly this state by repairing
+criteria and leaving the model answers behind.
+
+`lib/acca/warning-drift.ts` mechanises the search half — see **P-N3(b)** below for what it can and
+cannot do. As with the certainty lint, it finds candidates; only a reader holding the exhibit can
+say whether a sentence asserts the forbidden proposition.
+
+### P-N3(a) — THE CERTAINTY LINT: IT CANNOT FIND THE DEFECT, BUT IT CAN SAY WHERE TO LOOK
+
+`lib/acca/certainty-lint.ts` (pure) · fixtures `npm run test:certainty-lint` (71 checks, in the
+contract gate) · runner `npm run lint:sbl-certainty` (reads the drafts through the shared
+`scripts/authoring/sbl-drafts.ts`, so it can never lint a superseded `.json` while the pack renders
+a `.2.json`).
+
+**All five disguises above surface in the PROSE as a certainty word doing work the exhibit cannot
+support** — *demonstrates* what it can only make plausible, the *only* lever, *confirming* what is
+correlation, *every* renewal from three promotions. So the lint reports the 17 ruled certainty terms
+(Grant's list, 2026-08-21) across `required_point`, `model_answer` and `full_reveal`, and classifies
+each occurrence by whether its own sentence already hedges it.
+
+⚠️ **IT IS ADVISORY AND IT MUST STAY ADVISORY.** No `ok` boolean, no `blocking` field, nothing
+throws, exit code always 0. Every term is legitimate prose where an exhibit fact closes the weaker
+reading — A1 c4's *"the CFO's conclusion holds **only** if the employees who opted out were
+systematically less anxious … and nothing in the case establishes that"* is P-N3 done **correctly**
+and the lint flags it. Whether the exhibit closes the reading is a semantic judgement with no
+structural discriminator, and a gate refusing on a word list would be written-around by an author
+inside a week (P-DB5).
+
+**Claim ceiling, verbatim:** *(a)* a hit is not a defect, it is a sentence to read against the
+exhibit · *(b)* a clean field is **not** P-N3 clean — the term list is CLOSED, so an absolute
+phrased outside it passes silently · *(c)* the hedge test is **proximity, not attachment**: a hedge
+anywhere in the sentence suppresses, including one attached to a different clause. (c) is the
+false-NEGATIVE direction, which is why suppressed occurrences are still returned and still printed,
+and why **the unhedged count must never be reported as the number of occurrences.**
+
+📐 **THE HEDGE LIST IS WHERE THE JUDGEMENT LIVES, AND FIVE CANDIDATES WERE DROPPED AFTER MEASURING
+THEM AGAINST THIS CORPUS** — every hedge is a potential suppressed defect. `would` (counterfactual,
+not epistemic: *"the process that WOULD have verified his claim was shut down"* — it suppressed a
+real hit in A4 c3) · `can` · `risk(s)` (the SUBJECT of every governance drill here, not a hedge on
+it) · `assertion` (A4 is ABOUT an assertion, so the noun is in nearly every sentence of it; the
+attributing VERBS are kept) · `states`. An extra sentence to read costs ten seconds; a suppressed
+defect ships.
+
+### P-N3(b) — THE WARNING-DRIFT CHECK: A RECALL TOOL, AND ONLY THAT
+
+`lib/acca/warning-drift.ts` (pure) · fixtures `npm run test:warning-drift` (34 checks, in the
+contract gate) · runner `npm run lint:sbl-drift`.
+
+Two stages. **Stage 1 finds the warning** by lead form — reliable, because these criteria are
+house-authored in a narrow register. **Stage 2 must name what is FORBIDDEN**, and what makes that
+tractable is that a well-written warning SAYS THE FORBIDDEN THING OUT LOUD in order to forbid it: a
+negative exemplar (*"rather than asserting that X"*), an enumeration of invented routes, the
+complement of *"does not establish that…"*, and the SANCTIONED FORM in the preceding sentence.
+
+📐 **THE NEGATIVE-EXEMPLAR CLAUSE IS LOAD-BEARING, NOT A REFINEMENT.** Plain overlap against the
+warning SENTENCE misses A4 c3 — the clearest known failure — because its first clause (*"the case
+does not record what happened to Ríos's report"*) shares NO vocabulary with the breach (*"the
+mechanism by which his claim would have been TESTED"*). The overlap lives only in the clause that
+follows: *"rather than asserting that the arrangement cannot be TESTED from inside CA at all"*.
+Pinned in the fixture, so deleting the sub-form goes red.
+
+📐 **FOUR REAL BUGS THE ACCEPTANCE TEST FOUND BEFORE THE CHECK COULD PASS**, one of them
+instructive beyond this module: **document frequency was computed over the text being scanned**,
+which INVERTS the check — the more often a GOOD breaches a warning, the commoner its term becomes
+and the less distinctive it scores, so a triple breach hides better than a single one. A2's three
+*"new division"* sentences pushed the term to 57% and silenced it. Also: the stemmer turned `roles`
+into `rol` while `role` stayed `role`; `own` was in the stoplist when it is the signal; and a
+document-frequency filter needs a document (a term used once in a 3-sentence corpus sits at 33%).
+
+⚠️ **THERE IS NO THRESHOLD THAT BOTH CUTS THE NOISE AND KEEPS ALL THREE KNOWN FAILURES.** A3's
+breach scores 4, A4's 3, and **A2's scores 1** — so raising the bar to 2 halves the batch from 186
+pairs to 92 and drops a known defect. It ships at min-score 1, deduplicated and ranked, read
+top-down. Tidiness bought by losing a real finding is the false green this catalogue is about.
+
+⚠️ **THE PAIR COUNT IS NOT A QUALITY SCORE, AND IT MOVES THE WRONG WAY.** Fixing all three
+blockers took the batch from **186 pairs to 234**, because the repairs ADD explicit evidential
+warnings (A3 4 → 5, A4 3 → 5) and every new warning generates new candidate pairs. A drill that
+states its limits carefully scores WORSE on this number than one that states none. Report the
+findings; never report the count as progress.
+
+**Claim ceiling:** a RECALL tool. Blind to **synonym drift** (*"a separate business unit"* scores
+zero against a warning that says *"division"*), blind to a warning with **no lead form**, blind to
+**drift by implication**, and unable to tell an ALLOWED mention from a FORBIDDEN one — A3 c5
+legitimately discusses roles and so does its GOOD. **A clean report is NOT evidence that a drill has
+no drift.**
 
 ## P-N2 — THE TEACHING PAIR CAN COACH A DIFFERENT SKILL FROM THE ONE THE RUBRIC MARKS (ruled 2026-08-02)
 

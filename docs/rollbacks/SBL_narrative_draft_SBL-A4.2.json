@@ -1,0 +1,259 @@
+{
+  "plan_id": "SBL-A4",
+  "lo_code": "A3d",
+  "skill": "scepticism",
+  "gate_lines": [
+    "N2 scenario-anchor (facts in scenario + used in reveal): PASS",
+    "N3 generic/copy lint (reveal not scenario-restating): PASS",
+    "N5 committed-verdict/structure: PASS",
+    "N4-pre designed-flag raiseability (F4): PASS",
+    "N1 rubric-coverage (reveal = full marks; every part mapped): PASS",
+    "N4 Rule-23 (GOOD in band, BAD below + designed F-modes raised): PASS",
+    "N6a F10 marks-share: PASS",
+    "N6b scenario precondition (scepticism): PASS",
+    "N6c claim-anchor link: PASS",
+    "N6 coverage: every part evaluated",
+    "P4 jurisdiction / frozen-facts (hint + full_reveal): PASS",
+    "P7 misconception-lead (full_reveal carries a real \"...misconception...: \" sentence): PASS"
+  ],
+  "row": {
+    "exam_board": "ACCA",
+    "paper_code": "SBL",
+    "lo_code": "A3d",
+    "topic": "Professionalism, ethical codes and the public interest",
+    "command_verb": "assess and recommend",
+    "intellectual_level": 3,
+    "professional_skill_tag": "scepticism",
+    "calculation_required": false,
+    "mode": "discursive",
+    "marks_guide": 12,
+    "question": "Draft the relevant section of the internal ethics briefing note to the Chair of the Audit and Ethics Committee that:\n(i) assesses the ethical threats that the DataSphere arrangement creates for Constructora Andina S.A., challenging the assertion made by Andrés Camacho;\n(ii) recommends, with justified reasoning, the safeguard package the committee should adopt, committing to a clear course of action.",
+    "context_text": "Constructora Andina S.A. (\"CA\"), a Colombian listed construction and infrastructure group bidding for public contracts, has engaged DataSphere Ltda. as its sole technology service provider since 2017 — a relationship now in its eighth year. DataSphere supplies the project-management and document-control platform that underpins every CA bid submission. The annual retainer is COP 4.2 billion, and the scope has grown from three modules in 2017 to eleven modules today without a competitive re-tender at any stage. Andrés Camacho is CA's Chief Financial Officer and the executive responsible for vendor selection and contract renewal. His wife, Valentina Camacho, holds a 34% equity stake in DataSphere Ltda., a fact disclosed to the CA compliance function in 2019 but not actioned. At the board's last technology committee meeting, Andrés Camacho stated: \"The annual retainer of COP 4.2 billion sits below my authority limit, so this arrangement is entirely within the rules.\" When Procurement Analyst Juliana Ríos formally raised a conflict-of-interest concern through the ethics hotline in March 2024, her line manager — Senior Procurement Manager Diego Salazar — removed her from all DataSphere-related projects within one week of her submission and informed her team that hotline submissions \"create unnecessary disruption.\" Replacing DataSphere would require a minimum six-month transition and an estimated one-off migration cost of COP 1.8 billion, arising because CA's bid templates are proprietary to the DataSphere platform and would need to be rebuilt. CA has never commissioned an independent value-for-money review of the DataSphere retainer.",
+    "model_answer": "**Ethical threats — testing \"within the rules\"**\n\n**Internal Ethics Briefing Note — Section: DataSphere Arrangement**\n*To: Chair, Audit and Ethics Committee*\n\n**Part (i): Assessment of Ethical Threats**\n\n**Self-interest.** Andrés Camacho's wife holds a 34% equity stake in DataSphere Ltda. — a significant financial interest for the household in DataSphere's commercial success. His assertion that \"the annual retainer of COP 4.2 billion sits below my authority limit\" is, with respect, irrelevant to the ethical question: authority limits are procedural ceilings, not ethical clearances. They govern what an officer may approve unilaterally; they say nothing about whether that officer's judgement was free from financial bias. The assertion therefore cannot settle the conflict. Even if he is right that the figure falls within his limit — and the papers record that only as his own statement, not as something the committee has verified — an authority threshold speaks to who may approve, and leaves untouched whether the renewals and the expansion to eleven modules served CA's interest or his household's. The stake was disclosed to compliance in 2019 and not actioned; the case does not say when it was acquired, so the committee should at least treat decisions from that disclosure onward as made within a process for which the conflicted CFO was responsible, with no independent value-for-money review recorded.\n\n**Familiarity.** Now in its eighth year, the DataSphere relationship has never been tested by competitive re-tender, even as scope grew from three to eleven modules. An officer who has managed a vendor relationship for that long, without challenge, is exposed to a risk of reduced objectivity on price and performance. The consequence for CA is that the COP 4.2 billion retainer may substantially exceed market rates, and the organisation has no evidential basis to know otherwise, because CA has never commissioned an independent value-for-money review.\n\n**Intimidation.** Ríos used CA's formal channel to raise precisely the conflict Camacho says is within the rules. When Juliana Ríos used it — the proper internal reporting channel — Diego Salazar removed her from all DataSphere-related projects within one week and told her colleagues that hotline submissions “create unnecessary disruption.” That is not a compliance disagreement; those are strong prima facie indicators of retaliation against a reporter, and the effect is on everyone who watched it happen. Procurement staff working on this arrangement are among those likely to hold relevant information, and they have just seen what raising a concern cost a colleague. An assurance that the arrangement is “entirely within the rules” carries less weight when the formal channel for raising concerns about the arrangement has been treated this way — which is a reason to look harder at the claim, not to accept it. What became of Ríos's report itself is not recorded, and I do not assume it.\n\n**Part (ii): Recommended Safeguard Package**\n\nFirst, Andrés Camacho must be recused from all DataSphere decisions with immediate effect, and an independent value-for-money review of the COP 4.2 billion retainer must be commissioned. CA has never commissioned an independent value-for-money review across eight years of scope growth, which is the clearest evidential gap the papers show: if the review finds the retainer overpriced, CA has documented grounds for renegotiation or a structured re-tender even if it ultimately retains DataSphere.\n\nSecond, a formal HR and conduct investigation into Diego Salazar's treatment of Juliana Ríos must be opened, led by someone independent of him. She should be given written assurance that she will be protected from retaliation while the matter is independently investigated, before it begins, and her exclusion from DataSphere-related work should not be allowed to stand as the settled consequence of having reported while the investigation is unresolved. I recommend she be returned to that work now; a committee that preferred to hold the position open until the investigation reports would also be acting properly, provided the protection is given in writing first. CA is a listed entity pursuing public contracts; if this treatment of an ethics-hotline reporter becomes public or attracts regulatory attention, it could create serious legal and reputational exposure.\n\n**Overall recommendation.** Exiting DataSphere immediately would crystallise a COP 1.8 billion migration cost and a minimum six-month transition carrying migration and continuity risk, since CA's bid templates are proprietary to the platform and would need rebuilding. However, those costs do not justify deferring governance action — they justify sequencing it. I recommend that the committee adopt the continue-with-safeguards package: immediate recusal, an independent review within a defined short timetable set by the committee, and the Salazar conduct investigation in parallel. If the independent review reveals that the retainer is materially above market, the committee should then mandate a full re-tender, at which point the COP 1.8 billion migration cost becomes the price of restoring integrity rather than an argument for tolerating conflict. The case for immediate exit is understandable but premature without that evidence; the case for doing nothing is, on the facts before this committee, untenable.",
+    "hint": "Your response raises the right concerns about Camacho's assertion and the DataSphere arrangement, but check whether you have actually committed to a conclusion — or whether you have instead left the reader to decide by framing your points as open questions.",
+    "full_reveal": "The misconception this drill exposes is SCEPTICISM AS QUESTIONS: the candidate believes that surfacing a doubt — asking \"has the authority limit really settled the ethical question?\" or \"is it clear that eight years without re-tender is acceptable?\" — is itself a sceptical act that earns credit. It is not. Questions are not a substitute for professional conclusions. They are unlikely to earn development credit and weaken the professional-scepticism performance because the analytical burden is left with the reader. Where the underlying technical concern is nevertheless clearly identifiable, limited technical credit may still be available. The rule is that an unanswered question is not a developed conclusion — \"Camacho's authority-limit argument is irrelevant to the ethical question because authority limits are procedural ceilings, not ethical clearances\" is a position that can be assessed; \"one might ask whether the authority limit resolves the conflict\" hands the assessment back to the reader. Under the two-mark rule, even a committed identification earns only one mark until it is developed: tie the point to this organisation using the facts given (the approver's own spouse holds 34% of the supplier, and he is the executive responsible for vendor selection and contract renewal), follow it to a consequence (even if Camacho is correct that the amount sits below his authority threshold, that establishes only procedural authority and does not resolve the conflict), and the second mark becomes available. Writing more undeveloped questions in the hope of accumulating marks forces the candidate to generate twice as many points in the same time — a losing strategy when the ceiling on each of them is limited technical credit at best.",
+    "answer_schema": {
+      "mode": "narrative",
+      "rubric_version": "narrative_v1",
+      "requirement_parts": [
+        "(i) assess the ethical threats and challenge the assertion",
+        "(ii) recommend the safeguard package with a committed course of action"
+      ],
+      "scenario_facts": [
+        {
+          "id": "f_retainer",
+          "text": "Annual DataSphere retainer of COP 4.2 billion",
+          "key": "COP 4.2 billion",
+          "kind": "figure"
+        },
+        {
+          "id": "f_stake",
+          "text": "Valentina Camacho's 34% equity stake in DataSphere",
+          "key": "34%",
+          "kind": "figure"
+        },
+        {
+          "id": "f_duration",
+          "text": "Eight-year relationship with DataSphere since 2017",
+          "key": "eighth year",
+          "kind": "figure"
+        },
+        {
+          "id": "f_modules",
+          "text": "Scope grew from three modules to eleven without re-tender",
+          "key": "eleven modules",
+          "kind": "figure"
+        },
+        {
+          "id": "f_rios",
+          "text": "Juliana Ríos raised a concern through the ethics hotline in March 2024",
+          "key": "Juliana Ríos",
+          "kind": "entity"
+        },
+        {
+          "id": "f_salazar",
+          "text": "Diego Salazar removed Ríos from DataSphere projects within one week",
+          "key": "Diego Salazar",
+          "kind": "entity"
+        },
+        {
+          "id": "f_migration",
+          "text": "One-off migration cost of COP 1.8 billion if DataSphere is replaced",
+          "key": "COP 1.8 billion",
+          "kind": "figure"
+        },
+        {
+          "id": "f_transition",
+          "text": "Minimum six-month transition period if DataSphere is replaced",
+          "key": "six-month",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_no_review",
+          "text": "CA has never commissioned an independent value-for-money review of the DataSphere retainer",
+          "key": "independent value-for-money review",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_spouse",
+          "text": "Valentina Camacho is Andrés Camacho's wife (immediate family member)",
+          "key": "wife",
+          "kind": "entity"
+        },
+        {
+          "id": "f_hotline",
+          "text": "Ríos submitted her concern through the ethics hotline — a proper reporting channel",
+          "key": "ethics hotline",
+          "kind": "constraint"
+        },
+        {
+          "id": "f_disclosed",
+          "text": "The conflict was disclosed to the CA compliance function in 2019 but not actioned",
+          "key": "2019 but not actioned",
+          "kind": "constraint"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c1",
+          "requirement_part": "(i) assess the ethical threats and challenge the assertion",
+          "lo": "A3d",
+          "required_point": "The candidate identifies a self-interest threat arising because Andrés Camacho's wife holds a 34% equity stake in DataSphere and he controls vendor selection, then CHALLENGES his assertion by explaining that authority-limit compliance is a procedural test, not an ethical one: EVEN IF Camacho is correct that the amount falls within his authority limit, that does not resolve the conflict — an authority threshold speaks to who may approve, not to whether the approver's judgement was free from financial interest where their spouse owns 34% of the supplier. THE EXHIBIT RECORDS THE AUTHORITY-LIMIT POINT AS CAMACHO'S OWN ASSERTION and does not independently establish it; a candidate who says so, or who concedes it arguendo and challenges it anyway, is reading the exhibit correctly. A candidate who treats it as a verified fact has accepted the very claim the requirement asks them to test. Full 2 marks require: (i) the significance is high — the spouse's 34% interest gives the household a significant financial interest in DataSphere's commercial success; (ii) the case fact used is that Valentina Camacho is his wife (immediate family) and that the retainer is COP 4.2 billion; (iii) the consequence is that renewal and scope decisions were made within a process for which the conflicted CFO was responsible, with no independent value-for-money review recorded — the case records the stake as DISCLOSED in 2019 and does not say when it was acquired, so a candidate who scopes the concern from the disclosure rather than across the full eight years is reading the exhibit correctly; (iv) the case example is scope growth from three to eleven modules without re-tender. 1 mark if the self-interest threat is identified or the assertion is noted but neither is developed or challenged.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_stake",
+            "f_retainer",
+            "f_spouse"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c2",
+          "requirement_part": "(i) assess the ethical threats and challenge the assertion",
+          "lo": "A3d",
+          "required_point": "The candidate identifies a familiarity threat arising from the eight-year uninterrupted relationship with DataSphere, then CHALLENGES the assertion by showing that the authority-limit argument fails to account for accumulated deference: an officer who has worked with the same vendor for that long, and allowed scope to grow to eleven modules without any competitive check, is exposed to a risk of excessive familiarity and reduced challenge — which is precisely why this is called a threat rather than a finding — and no authority limit addresses that risk. Full 2 marks require: (i) the significance is that the risk compounds over time, and eight years is a long period to run without any competitive check; (ii) the case facts used are the eighth year of the relationship, the growth to eleven modules, and the absence of re-tendering; (iii) the consequence is that the exhibit provides no independent market test supporting confidence that the COP 4.2 billion retainer represents value for money; (iv) the case example is the growth from three modules to eleven without competitive challenge. 1 mark if the familiarity threat is identified but not developed or linked to the assertion.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_duration",
+            "f_modules",
+            "f_retainer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c3",
+          "requirement_part": "(i) assess the ethical threats and challenge the assertion",
+          "lo": "A3d",
+          "required_point": "The candidate identifies an intimidation threat arising from Diego Salazar's response to Juliana Ríos's ethics-hotline submission, then CHALLENGES Camacho's assertion by explaining what that response does to the weight anyone can place on it. Ríos used the formal reporting channel; within one week her line manager removed her from all DataSphere-related work; and that same manager told her team that hotline submissions 'create unnecessary disruption.' Those facts create a serious apparent risk of retaliation against a reporter, and could deter the next person from raising a concern — so an assurance that the arrangement is 'entirely within the rules' carries less weight when the formal channel for raising concerns about the arrangement has been treated this way. Full 2 marks require: (i) the significance is that the deterrent effect falls on procurement staff working on this arrangement, who are among those likely to hold relevant information; (ii) the case facts used are Juliana Ríos, the ethics hotline, Diego Salazar, and the removal within one week; (iii) the consequence is that the treatment materially weakens confidence that CA's speak-up channel will surface future concerns about the DataSphere arrangement while it stands, and as a listed company bidding for public contracts it carries that weakness into its governance representations; (iv) the case example is Salazar's statement to his team that hotline submissions 'create unnecessary disruption.' THE CASE DOES NOT RECORD WHAT HAPPENED TO RÍOS'S REPORT ITSELF, and it does not establish that CA has no other internal route — it names a compliance function, and internal audit or an audit committee may exist. A candidate who confines the claim to the deterrent effect, rather than asserting that the arrangement cannot be tested from inside CA at all, is reading the exhibit correctly and earns full marks. 1 mark if the intimidation threat is identified, or Ríos's treatment is noted, but it is not connected to the weight Camacho's assertion can carry.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_rios",
+            "f_salazar",
+            "f_hotline",
+            "f_retainer"
+          ],
+          "disqualifiers": [
+            "F1",
+            "F2",
+            "F5",
+            "F6",
+            "F10"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c4",
+          "requirement_part": "(ii) recommend the safeguard package with a committed course of action",
+          "lo": "A3d",
+          "required_point": "The candidate recommends a safeguard package that does two things: it removes the conflicted officer from decisions on the arrangement, and it independently tests the commercial integrity of the existing relationship. Immediate recusal of Andrés Camacho from all DataSphere decisions, together with an independent retrospective value-for-money review of the COP 4.2 billion retainer, is the model answer — but THE CRITERION MARKS WHETHER BOTH FUNCTIONS ARE ADDRESSED AND JUSTIFIED FROM THE CASE, NOT WHETHER THOSE TWO LABELS APPEAR. Another package achieving both is equally creditable. The candidate must explain how those two controls address the self-interest and familiarity threats; where continuation is recommended, they must explain how the controls make continuation acceptable. THE CRITERION DOES NOT ASSUME CONTINUATION — a candidate whose overall recommendation under c6 is exit and re-tender still earns these marks by putting the same two controls in place while that exit runs. Full 2 marks require: (i) the significance is that recusal removes the conflicted officer's influence going forward while the review tests whether past decisions were sound; (ii) the case facts used are the 34% stake, the COP 4.2 billion retainer, and the absence of any independent value-for-money review; (iii) the consequence is that if the review finds the retainer overpriced, CA has documented grounds for renegotiation or re-tender; (iv) the case example is that CA has never commissioned an independent value-for-money review, which is the clearest evidential gap the case records. 1 mark if one of the two functions is addressed but not justified against the case facts, or if both are named without justification.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_stake",
+            "f_retainer",
+            "f_no_review"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F4"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c5",
+          "requirement_part": "(ii) recommend the safeguard package with a committed course of action",
+          "lo": "A3d",
+          "required_point": "The candidate recommends a formal investigation into Diego Salazar's conduct, conducted by a party independent of him, together with interim protection for Juliana Ríos while it runs — written assurance that she will be protected from retaliation while the matter is independently investigated, and her exclusion from DataSphere-related work not left to stand unexamined as the de facto outcome of having reported. The candidate must explain why this is needed if the ethics hotline is to work as an internal speak-up control at all. Full 2 marks require: (i) the significance is that without this step the hotline exists on paper while its most recent use was followed within a week by adverse treatment, which could deter the next reporter; (ii) the case facts used are Juliana Ríos, the ethics hotline, Diego Salazar, and the removal within one week; (iii) the consequence is that CA, as a listed entity bidding for public contracts, faces regulatory and reputational risk if this treatment of a hotline reporter becomes public; (iv) the case example is Salazar's statement to his team that hotline submissions 'create unnecessary disruption.' THE CRITERION MARKS RECOMMENDING THE INVESTIGATION AND PROTECTING THE REPORTER, NOT PRE-JUDGING WHAT THE INVESTIGATION SHOULD FIND. A candidate who recommends immediate reinstatement earns full marks; so does one who argues the removal should be held in abeyance until the investigation reports, provided her protection from retaliation is secured in writing in the meantime and the reasoning is given. 1 mark if an investigation or protection for Ríos is mentioned but not developed or tied to CA's governance obligations.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_rios",
+            "f_salazar",
+            "f_hotline"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F4"
+          ],
+          "development_required": true
+        },
+        {
+          "id": "c6",
+          "requirement_part": "(ii) recommend the safeguard package with a committed course of action",
+          "lo": "A3d",
+          "required_point": "The candidate delivers a committed overall recommendation on the future of the arrangement that explicitly addresses both the COP 1.8 billion migration cost and the six-month transition as costs to be weighed against governance risk, and states which course the committee should take and why, citing the case evidence that tips the balance. Full 2 marks require: (i) the significance of the decision is that it has material short-term operational consequences, because replacement requires a minimum six-month transition; (ii) the case facts used are COP 1.8 billion and six-month transition alongside the governance failures identified; (iii) the consequence of the chosen course is stated — for example that continuing risks further entrenched conflict if safeguards are not enforced, or that exiting crystallises the migration cost while removing the conflict at source; (iv) the answer addresses the opposing case and explains why it does not prevail. 1 mark if a recommendation is offered but does not address the migration cost or transition period, or does not engage with the opposing argument. ANY committed course earns full marks if reached through the four-limb development test: continue with safeguards, exit and re-tender, or an intermediate course such as a bridge arrangement under independent oversight, a staged tender, or temporary continuation while a competitive procurement runs. THE CRITERION MARKS THE DECISION STRUCTURE, NOT WHICH OF A SET OF APPROVED LABELS IS CHOSEN — a criterion offering two options and no others makes the candidate guess which two the author had in mind, which is agreement dressed as judgement.",
+          "marks": 2,
+          "anchor_facts": [
+            "f_migration",
+            "f_transition"
+          ],
+          "disqualifiers": [
+            "F2",
+            "F4"
+          ],
+          "development_required": true
+        }
+      ],
+      "total_marks": 12,
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "_authoring": {
+        "golden_bad": "**To: Chair, Audit and Ethics Committee**\n**Re: DataSphere Arrangement — Ethical Considerations**\n\nThere are a number of questions the committee should consider in relation to the DataSphere arrangement.\n\nHas the board fully considered whether the fact that a senior executive's family member benefits from a vendor relationship is sufficient to raise ethical concerns, even where the contract value sits within that executive's authority limit? Is it clear that an authority limit, by itself, provides adequate assurance that decisions have been made objectively?\n\nIn relation to the duration of the vendor relationship, should the committee not ask whether an eight-year arrangement without competitive re-tender is consistent with CA's procurement policies? Is it possible that familiarity between CA and DataSphere has affected the rigour with which contract renewals have been evaluated?\n\nRegarding the treatment of Juliana Ríos, has the committee considered whether the actions taken by her line manager following her hotline submission are consistent with CA's stated commitment to protecting those who raise concerns? Is it not worth asking whether the timing of her removal from DataSphere-related work — within one week of the submission — warrants further scrutiny?\n\nOn the question of transition costs, should the committee weigh the COP 1.8 billion migration cost and the six-month operational disruption against the risks of maintaining the current arrangement? Are these costs a reason to continue, or merely factors to consider alongside the governance concerns?\n\nThese are important questions for the committee to reflect on as it determines how to proceed.",
+        "designed_bad_flags": [
+          "F4"
+        ],
+        "note": "Authoring artefacts (Rule-23 golden BAD + its designed F-modes). NOT served. The golden GOOD is model_answer."
+      }
+    },
+    "status": "candidate",
+    "published": false
+  }
+}

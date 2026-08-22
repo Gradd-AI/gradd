@@ -7,7 +7,7 @@ import { caseMarkReady } from '@/lib/acca/case-sit';
 import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { caseOpened } from '@/lib/acca/surface-events';
 import { emitSurfaceEvent } from '@/lib/acca/surface-event-client';
@@ -128,7 +128,7 @@ export default function CaseSession({
   onComplete,
 }: {
   caseId: string;
-  paper: AccaPaper;
+  paper: ServedPaper;
   embedded?: boolean;
   onComplete?: () => void;
 }) {

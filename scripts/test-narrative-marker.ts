@@ -187,6 +187,64 @@ ok('hasConclusion: GOOD commits, BAD does not', hasConclusion(good) && !hasConcl
   ok('N6c passes when EVERY F10 criterion anchors the claim, including a second one',
     checkSkillDemand(scepRubric([scepCrit(), scepCrit({ id: 'c2', anchor_facts: ['f_claim', 'f_costbase'] })]), scepScenario, 'scepticism').ok);
 
+  // ── SBL: N6 GATES ONE SKILL OF FIVE, AND SAYS SO ─────────────────────────────────────────
+  // The `paper` argument exists for ONE reason: `commercial_acumen` is a shared NAME with an
+  // unshared descriptor. Every other SBL divergence is carried by a skill name AFM does not have.
+  const facts2 = [
+    { id: 'f1', text: 'cost', key: 'USD 2.1m', kind: 'figure' as const },
+    { id: 'f2', text: 'limit', key: '24 months', kind: 'constraint' as const },
+  ];
+  const withFacts = { ...scepRubric([scepCrit()]), scenario_facts: facts2 };
+
+  ok('SBL analysis is NOT_EVALUATED — ScenarioFact carries no source provenance',
+    checkSkillDemand(withFacts, scepScenario, 'analysis', 'SBL').parts[1].status === 'not_evaluated');
+  ok('SBL evaluation is NOT_EVALUATED — two-sidedness is a reading, not a count',
+    checkSkillDemand(withFacts, scepScenario, 'evaluation', 'SBL').parts[1].status === 'not_evaluated');
+  ok('SBL analysis clears `ok` but NOT `evaluatedAll` — a caller reading ok alone is misled',
+    (() => { const r = checkSkillDemand(withFacts, scepScenario, 'analysis', 'SBL'); return r.ok && !r.evaluatedAll; })());
+  ok('SBL evaluation clears `ok` but NOT `evaluatedAll`',
+    (() => { const r = checkSkillDemand(withFacts, scepScenario, 'evaluation', 'SBL'); return r.ok && !r.evaluatedAll; })());
+
+  // ⚠️ THE SHARED NAME. Same rubric, same scenario, same skill string — different paper, and the
+  // AFM test must not be the one that runs. The pair below is the whole reason `paper` exists.
+  ok('SBL commercial_acumen is NOT_EVALUATED — its descriptor is not price-shaped',
+    checkSkillDemand(withFacts, scepScenario, 'commercial_acumen', 'SBL').parts[1].status === 'not_evaluated');
+  ok('AFM commercial_acumen still RUNS the figure+constraint test on the same input',
+    checkSkillDemand(withFacts, scepScenario, 'commercial_acumen', 'AFM').parts[1].status === 'pass');
+  ok('AFM commercial_acumen still FAILS on a price with no limit',
+    !checkSkillDemand({ ...scepRubric([scepCrit()]), scenario_facts: [facts2[0]] }, scepScenario, 'commercial_acumen', 'AFM').ok);
+  ok('an SBL scenario with NO figure would have failed AFM\'s test and is not judged by it',
+    (() => {
+      const noFigures = { ...scepRubric([scepCrit()]), scenario_facts: [facts2[1]] };
+      return !checkSkillDemand(noFigures, scepScenario, 'commercial_acumen', 'AFM').ok
+        && checkSkillDemand(noFigures, scepScenario, 'commercial_acumen', 'SBL').ok;
+    })());
+
+  // SBL scepticism IS gated — both N6b and N6c run, unchanged. This is the one that must not
+  // have been switched off along with the other three.
+  ok('SBL scepticism N6b RUNS and passes on a quoted attributed claim',
+    checkSkillDemand(scepRubric([scepCrit()]), scepScenario, 'scepticism', 'SBL').parts[1].status === 'pass');
+  ok('SBL scepticism N6c RUNS (not_evaluated would mean the one gated skill was lost)',
+    checkSkillDemand(scepRubric([scepCrit()]), scepScenario, 'scepticism', 'SBL').parts[2].status === 'pass');
+  ok('SBL scepticism still FAILS when the scenario asserts nothing',
+    !checkSkillDemand(scepRubric([scepCrit()]), 'Siam Axle exports widely and its cost base is in Thai baht.', 'scepticism', 'SBL').ok);
+  ok('SBL scepticism fully evaluated — the one skill of five that is',
+    checkSkillDemand(scepRubric([scepCrit()]), scepScenario, 'scepticism', 'SBL').evaluatedAll);
+
+  // Omitting `paper` must leave every pre-existing call byte-identical — every AFM caller does.
+  for (const s of ['scepticism', 'commercial_acumen', 'analysis_and_evaluation', 'communication']) {
+    ok(`omitting paper === passing 'AFM' for ${s} (no caller changed behaviour)`,
+      JSON.stringify(checkSkillDemand(withFacts, scepScenario, s))
+      === JSON.stringify(checkSkillDemand(withFacts, scepScenario, s, 'AFM')));
+  }
+  // An SBL skill name reaching the gate WITHOUT a paper still cannot pass silently.
+  ok('SBL `analysis` with no paper argument is still not_evaluated, never a pass',
+    checkSkillDemand(withFacts, scepScenario, 'analysis').parts[1].status === 'not_evaluated');
+  ok('a genuine typo is still the unregistered-skill arm, distinct from a declared SBL skill',
+    checkSkillDemand(withFacts, scepScenario, 'analisis', 'SBL').parts[1].detail.includes('unregistered skill'));
+  ok('a declared SBL skill does NOT report itself as unregistered',
+    !checkSkillDemand(withFacts, scepScenario, 'evaluation', 'SBL').parts[1].detail.includes('unregistered skill'));
+
   console.log(failures === 0 ? '\nALL NARRATIVE-MARKER FIXTURES PASS' : `\n${failures} FAILURE(S)`);
   process.exit(failures === 0 ? 0 : 1);
 })();

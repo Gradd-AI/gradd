@@ -25,11 +25,19 @@
 // must keep doing so. A function in this file that returns `DEFAULT_PAPER` for junk is
 // correct for choosing what to render and would be a hole in an authorisation gate.
 
-import { DEFAULT_PAPER, strictPaper, type AccaPaper } from './paper';
+import { DEFAULT_PAPER, servedPaper, type AccaPaper, type ServedPaper } from './paper';
 
-/** Shared coercion: a recognised paper, else the default. Never throws, never null. */
-function paperOrDefault(raw: unknown): AccaPaper {
-  return strictPaper(raw) ?? DEFAULT_PAPER;
+/**
+ * Shared coercion: a SERVED paper, else the default. Never throws, never null.
+ *
+ * ⚠️ `servedPaper`, NOT `strictPaper` (corrected 2026-08-18 when SBL was declared). This
+ * function decides what to RENDER, and `strictPaper` now returns 'SBL' — a paper with no cases,
+ * no list and no titles. `?paper=SBL` would have rendered an SBL-headed page over an empty
+ * fetch. Falling back to the default keeps the surface's existing "unrecognised → default"
+ * posture, which is the whole contract of this module.
+ */
+function paperOrDefault(raw: unknown): ServedPaper {
+  return servedPaper(raw) ?? DEFAULT_PAPER;
 }
 
 /**
@@ -48,7 +56,7 @@ function paperOrDefault(raw: unknown): AccaPaper {
  * `resolvePaper` stays correct where it is used — a request BODY field, machine-written by
  * our own client, where the value is always the exact string `paperHref` wrote.
  */
-export function paperFromRouteParam(raw: string | string[] | undefined): AccaPaper {
+export function paperFromRouteParam(raw: string | string[] | undefined): ServedPaper {
   return paperOrDefault(Array.isArray(raw) ? raw[0] : raw);
 }
 
@@ -66,7 +74,7 @@ export function paperFromRouteParam(raw: string | string[] | undefined): AccaPap
  * rather than throwing: the page renders its normal shell and the case-load route returns
  * its normal 404, so refusal keeps the uniform posture it already had.
  */
-export function paperForCaseRow(paperCode: unknown): AccaPaper {
+export function paperForCaseRow(paperCode: unknown): ServedPaper {
   return paperOrDefault(paperCode);
 }
 
@@ -100,6 +108,23 @@ export const CASE_SECTION_NAMES: Record<AccaPaper, Record<string, string>> = {
     C: 'Acquisitions and mergers',
     D: 'Corporate reconstruction and re-organisation',
     E: 'Treasury and advanced risk management techniques',
+  },
+  // SBL: mirrors `scripts/sbl-framework.ts` SECTIONS A–H, machine-parsed from the study guide.
+  // `test-case-surface.ts` asserts the two agree, exactly as it does for AFM. Sections I
+  // (professional skills) and J (employability and digital skills) are omitted on the same
+  // principle as AFM's F/G: they are skills, not content areas, and no case anchors on one.
+  //
+  // ⚠️ EIGHT SECTIONS, NOT FIVE. Every other paper here stops at E. Nothing in this module
+  // assumes five, but a reader who has only seen APM and AFM will, so it is said out loud.
+  SBL: {
+    A: 'Leadership',
+    B: 'Governance and sustainability',
+    C: 'Strategy',
+    D: 'Risk',
+    E: 'Technology and data analytics',
+    F: 'Organisational control and audit',
+    G: 'Finance in planning and decision-making',
+    H: 'Enabling success, managing change and innovation',
   },
 };
 

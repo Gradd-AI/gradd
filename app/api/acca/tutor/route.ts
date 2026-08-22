@@ -24,7 +24,7 @@ import {
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
-import { resolvePaper, type AccaPaper } from '@/lib/acca/paper';
+import { resolvePaper, SERVED_PAPERS, type AccaPaper } from '@/lib/acca/paper';
 import { hasPaperAccess } from '@/lib/acca/access';
 import {
   isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
@@ -1015,10 +1015,21 @@ export async function POST(request: Request): Promise<Response> {
   // Fall back to lo_code only for in-flight pre-deploy clients that haven't sent a
   // drill_id yet; that fallback stays safe while each LO has ≤1 published drill (true
   // until the depth drills publish — which must wait until this code is live).
-  // id is the PRIMARY KEY (globally unique across papers), so an id-addressed fetch needs
-  // NO paper_code filter — the row's own paper_code IS the paper, and filtering by a guessed
-  // paper is exactly what made AFM ids 404 before G1. An lo-addressed fetch (legacy fallback)
-  // MUST scope by paper: AFM and APM LO codes collide, and paper_code is the only separator.
+  // id is the PRIMARY KEY (globally unique across papers), so an id-addressed fetch must not
+  // filter by a GUESSED paper — doing that is exactly what made AFM ids 404 before G1. But
+  // "not a guessed paper" was wrongly implemented as "no paper filter at all", and that is a
+  // different claim. It held only while every published drill belonged to a served paper.
+  //
+  // ⚠️ SBL BROKE IT. SBL is DECLARED but NOT SERVED (lib/acca/paper.ts): no route, no price,
+  // no surface, and a teaching persona keyed by paper that has no SBL arm. The moment the five
+  // SBL rows go approved+published, an id-addressed request carrying an SBL id would fetch one
+  // here and be taught it by whichever persona `systemFor` fell back to. The row's own
+  // paper_code IS the paper — which is the reason to CHECK it, not a reason to skip checking.
+  //
+  // So: scope to the SET of served papers, never to one guessed paper. AFM and APM ids resolve
+  // exactly as before (G1 intact); an unserved paper's id 404s like any unknown drill, leaking
+  // no existence. An lo-addressed fetch (legacy fallback) additionally scopes to ONE paper:
+  // AFM and APM LO codes collide, and paper_code is the only separator.
   // paper comes from the request body (default APM via resolvePaper).
   // answer_schema added (PERSONA-HARDENING 2026-07-21): feeds buildGroundingPack (lib/acca/
   // tutor-grounding.ts). Was never fetched on this path before — see AFM_SURFACED.md's persona-
@@ -1028,7 +1039,10 @@ export async function POST(request: Request): Promise<Response> {
     .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal, answer_schema')
     .eq('exam_board', 'ACCA')
     .eq('status', 'approved')
-    .eq('published', true);
+    .eq('published', true)
+    // On the BASE select, so BOTH branches carry it and a future third branch inherits it
+    // rather than having to remember. Structural, not instructed.
+    .in('paper_code', [...SERVED_PAPERS]);
 
   const { data: drill, error: drillErr } = await (
     drillId

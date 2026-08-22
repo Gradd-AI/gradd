@@ -369,7 +369,7 @@ const SPEC: AfmCaseSpec = {
       marks: 12,
       ps_tags: ['analysis_and_evaluation'],
       intellectual_level: 3,
-      calc: { lo: 'B3e', kind: 'project_specific' as const, inputs: CAPM_INPUTS },
+      calc: { paper: 'AFM', lo: 'B3e', kind: 'project_specific' as const, inputs: CAPM_INPUTS },
       prose: {
         question:
           '(i) Calculate the discount rate that should be applied to the Brackwater project, and ' +
@@ -415,7 +415,7 @@ const SPEC: AfmCaseSpec = {
       marks: 12,
       ps_tags: ['analysis_and_evaluation', 'scepticism'],
       intellectual_level: 3,
-      calc: { lo: 'E3a', inputs: IR_INPUTS },
+      calc: { paper: 'AFM', lo: 'E3a', inputs: IR_INPUTS },
       // NAMED, never silent — same units convention as Tamesis. Exhibit 2 states the contract
       // size the way a real paper does, in pounds; IrFuturesInputs works in GBPm alongside the
       // GBP 480m notional, so the literal "0.5" is absent from the exhibit while the fact is not.

@@ -217,6 +217,27 @@ export function checkCommittedVerdict(rubric: NarrativeRubric, reveal: string): 
 // commercial acumen" — one mode, two skills. N6a proves a skill was named as the marking basis;
 // it can never prove WHICH. Any report built on N6 must say so.
 //
+// ⚠️ WIDENED 2026-08-19, AND THE WIDENING MAKES IT WORSE, NOT THE SAME. With SBL registered,
+// F10 now stands in for FIVE skills across two papers, and its own text names two of them. It
+// was already being used as a generic "this criterion is where the skill is marked" marker
+// rather than literally — the live AFM corpus labels F10 on `communication` criteria (D9
+// `36edda4f`, D11 `d2b06649`), which the mode's wording does not cover — and N6a passes them.
+// That usage is what makes N6a portable to a five-skill paper at all. It is also the exact
+// distance between what N6a MEASURES (a label was applied) and what a reader assumes it measures
+// (the named skill is demanded), and that distance is now four skills wide, not one.
+//
+// ── N6 DOES NOT GATE THREE OF SBL'S FIVE SKILLS. STATED, NOT DISCOVERED LATER ─────────────
+// N6b returns `not_evaluated` for SBL `analysis`, SBL `evaluation` and SBL `commercial_acumen`,
+// each with a written reason at its `case` below (a missing provenance field; a semantic
+// reading no count can see; a descriptor that is not the AFM one of the same name).
+// `communication` was already not evaluated, for both papers. SBL `scepticism` IS gated: its
+// descriptor and its act are the AFM ones, and the quoted-assertion precondition transfers
+// intact — so N6b and N6c both run for it, and the failure catalogue's M7 (3/7 reports,
+// zero-credit at MJ26 p.9) is exactly the behaviour it guards.
+// So for SBL, N6 gates ONE skill of five. A caller reporting on an SBL drill must read
+// `evaluatedAll`, never `ok` alone: `ok` is true when nothing failed, and nothing can fail a
+// check that did not run.
+//
 // ── MEASURED 2026-08-02: N6a's LABELLING AND THE RUBRIC'S ACTUAL DEMAND DIVERGE ──────────
 // The claim ceiling above is not a theoretical hedge. First measured instance, D8 `f6426c06`
 // (B1b, scepticism, 12 marks, 5 criteria): F10 is LABELLED on c2 and c3 only, so N6a scores it
@@ -281,6 +302,7 @@ export function checkSkillDemand(
   rubric: NarrativeRubric,
   scenario: string,
   skill: string | null | undefined,
+  paper?: string,
 ): SkillDemandResult {
   const parts: SkillDemandPart[] = [];
   const finish = (): SkillDemandResult => ({
@@ -356,12 +378,74 @@ export function checkSkillDemand(
       break;
     }
     case 'commercial_acumen': {
-      // The act is choosing under stated constraints and owning the cost. That needs a price and a limit.
+      // ⚠️ AFM/APM ONLY. This test encodes AFM's commercial acumen, whose act is choosing under
+      // stated constraints and owning the COST — hence a price and a limit. SBL's skill of the
+      // same NAME is a different descriptor: wider external factors, insight into organisational
+      // issues, and the management of conflict, none of which require a figure. Applying this
+      // test to an SBL drill would fail a sound one for lacking a price its skill never asked for.
+      if (paper === 'SBL') {
+        parts.push({
+          name: 'N6b scenario precondition (commercial_acumen, SBL)',
+          status: 'not_evaluated',
+          detail: 'SBL\'s commercial acumen is not price-shaped — its act is bringing external pressures, '
+            + 'organisational constraints or a conflict between named parties to bear. The AFM test (≥1 figure '
+            + '+ ≥1 constraint) encodes a different skill and is NOT applied here. A structural test would need '
+            + 'to distinguish a stated commercial pressure from any other constraint fact, which is a phrase '
+            + 'table (banned — see the header). Confirm by hand from the pack',
+        });
+        break;
+      }
       const ok = figures.length >= 1 && constraints.length >= 1;
       parts.push({
         name: 'N6b scenario precondition (commercial_acumen)',
         status: ok ? 'pass' : 'fail',
         detail: `${figures.length} figure fact(s) + ${constraints.length} constraint fact(s); need ≥1 of each so the decision has both a price and a limit`,
+      });
+      break;
+    }
+    case 'analysis': {
+      // SBL ONLY. ⚠️ NOT `analysis_and_evaluation` HALVED — SBL's Analysis absorbs ENQUIRE
+      // (corroborate or dispute a stated belief against evidence found elsewhere), an act that
+      // appears nowhere in the four-skill descriptors. Its precondition is "material from more
+      // than one place that a candidate can put side by side", which the examiners themselves
+      // make the driver of analysis marks (MJ26 p.13 — links between the information in the
+      // exhibits; M11 in the failure catalogue).
+      //
+      // NOT EVALUATED, and the reason is a MISSING FIELD, not a missing idea. `ScenarioFact`
+      // carries no provenance: `kind` distinguishes figure/entity/constraint, never which exhibit
+      // or speaker a fact came from. So nothing in the rubric can tell two facts drawn from one
+      // sentence from two facts drawn from two exhibits. Every proxy considered was wrong in both
+      // directions — "≥2 distinct kinds" passes a single-source scenario and fails a genuine
+      // two-exhibit one — and a green that reads as a check while checking nothing is worse than
+      // an honest blank. Give ScenarioFact a `source` and this becomes a one-line test.
+      parts.push({
+        name: 'N6b scenario precondition (analysis, SBL)',
+        status: 'not_evaluated',
+        detail: 'the precondition is material from ≥2 separately-identified sources the candidate can relate. '
+          + 'ScenarioFact carries no source/exhibit provenance, so no structural test exists that is not a '
+          + 'proxy wrong in both directions. Confirm by hand that the scenario carries a second source and that '
+          + 'the rubric requires one to bear on the other',
+      });
+      break;
+    }
+    case 'evaluation': {
+      // SBL ONLY. ⚠️ NOT `analysis_and_evaluation` HALVED — SBL's Evaluation absorbs ESTIMATE
+      // (reason forward to what a position implies), again absent from the four-skill set.
+      // Its precondition is a proposition with a real downside as well as an upside, so that
+      // coming down on one side concedes something.
+      //
+      // NOT EVALUATED because "this scenario has a genuine downside" is a semantic reading of the
+      // facts, not a shape. Fact COUNTS cannot see it: a scenario can state ten figures and be
+      // entirely one-sided. Note that N5 (committed verdict) already covers the OUTPUT half —
+      // that the reveal lands — so what is missing here is only the INPUT half, whether there was
+      // anything to trade off. Do not read a green N5 as covering it.
+      parts.push({
+        name: 'N6b scenario precondition (evaluation, SBL)',
+        status: 'not_evaluated',
+        detail: 'the precondition is a proposition with a real downside as well as an upside — stated costs, '
+          + 'risks or affected parties — so that landing on one side concedes something. Whether a scenario is '
+          + 'genuinely two-sided is a reading of the facts, not a countable shape; fact counts cannot see it. '
+          + 'N5 covers only that the answer COMMITS, not that there was a trade-off to commit about. Confirm by hand',
       });
       break;
     }

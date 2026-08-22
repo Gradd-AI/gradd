@@ -43,7 +43,10 @@
 // `paper` is on all three because AFM and APM LO codes collide exactly and every other
 // ACCA query is paper-scoped; a funnel that cannot be split by paper cannot be read.
 
-import { ACCA_PAPERS, type AccaPaper } from './paper';
+// SERVED, not declared: these events describe a surface a student reached. A declared-but-
+// unserved paper (SBL) has no case list and no mock, so an event naming it is a mis-wired
+// emitter, and this sink's whole job is to refuse those rather than store them.
+import { SERVED_PAPERS, type ServedPaper } from './paper';
 
 /**
  * How `parseSurfaceEvent` resolves a `mock_id`. INJECTED rather than imported, and the reason
@@ -56,7 +59,7 @@ import { ACCA_PAPERS, type AccaPaper } from './paper';
  * The route passes the REAL `getMockPaper`, and so do the fixtures (P-G6) — this is not a seam
  * for a convenient stub.
  */
-export type MockPaperLookup = (id: string) => { paper: AccaPaper } | null;
+export type MockPaperLookup = (id: string) => { paper: ServedPaper } | null;
 
 /** The closed vocabulary. A closed list is what makes the sink refuse an unknown event
  *  instead of storing a typo forever — `acca_funnel_events.event_type` is a free string at
@@ -90,15 +93,15 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // dumb and the validator is strict, so a client cannot smuggle a shape past the server by
 // calling a lenient helper.
 
-export function caseListViewed(paper: AccaPaper): SurfaceEvent {
+export function caseListViewed(paper: ServedPaper): SurfaceEvent {
   return { event_type: 'case_list_viewed', metadata: { paper } };
 }
 
-export function caseOpened(caseId: string, paper: AccaPaper): SurfaceEvent {
+export function caseOpened(caseId: string, paper: ServedPaper): SurfaceEvent {
   return { event_type: 'case_opened', metadata: { paper, case_id: caseId } };
 }
 
-export function mockIntroViewed(mockId: string, paper: AccaPaper): SurfaceEvent {
+export function mockIntroViewed(mockId: string, paper: ServedPaper): SurfaceEvent {
   return { event_type: 'mock_intro_viewed', metadata: { paper, mock_id: mockId } };
 }
 
@@ -151,12 +154,12 @@ export function parseSurfaceEvent(body: unknown, lookupMock: MockPaperLookup): P
   }
 
   const paper = md.paper as string;
-  if (!(ACCA_PAPERS as readonly string[]).includes(paper)) {
-    return { ok: false, reason: `metadata.paper must be one of ${ACCA_PAPERS.join(', ')}` };
+  if (!(SERVED_PAPERS as readonly string[]).includes(paper)) {
+    return { ok: false, reason: `metadata.paper must be one of ${SERVED_PAPERS.join(', ')}` };
   }
 
   if (type === 'case_list_viewed') {
-    return { ok: true, event: caseListViewed(paper as AccaPaper) };
+    return { ok: true, event: caseListViewed(paper as ServedPaper) };
   }
 
   if (type === 'case_opened') {
@@ -165,7 +168,7 @@ export function parseSurfaceEvent(body: unknown, lookupMock: MockPaperLookup): P
     // column that will be joined against acca_cases — a row whose case_id joins to nothing
     // reads as "a case that was deleted" rather than "a client sent rubbish".
     if (!UUID.test(caseId)) return { ok: false, reason: 'metadata.case_id must be a uuid' };
-    return { ok: true, event: caseOpened(caseId, paper as AccaPaper) };
+    return { ok: true, event: caseOpened(caseId, paper as ServedPaper) };
   }
 
   // mock_intro_viewed — validated against the REAL registry, not a regex. `mock_id` is a

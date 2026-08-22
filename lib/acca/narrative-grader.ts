@@ -33,7 +33,7 @@ const F_DEFS: Record<FailureMode, string> = {
   F12: 'F12 required output format ignored — a named output format (report/memo to a board) is not produced.',
 };
 
-const SYSTEM =
+const SYSTEM_AFM =
   'You are a strict ACCA Advanced Financial Management (AFM) marker grading ONE marking criterion at a ' +
   'time. You are given: the criterion (the point a full-marks answer makes, plus the scenario facts it ' +
   'must use), the scenario, and the student answer. Decide ONLY whether THIS criterion is met. ' +
@@ -50,6 +50,46 @@ const SYSTEM =
   'Raise a failure_flag ONLY from the provided list and ONLY when the answer genuinely exhibits it for THIS ' +
   'criterion. Be conservative: do not invent development that is not on the page, and do not reward a generic ' +
   'answer that never touches the named facts.';
+
+/**
+ * SBL's marker. ⚠️ THIS WAS A LIVE DEFECT, NOT A COSMETIC ONE.
+ *
+ * The grader is the model layer behind N1 and N4 — it decides whether the golden GOOD is a
+ * full-marks answer and whether the golden BAD is separable from it. Left as the AFM string, an
+ * SBL drill would be gated by a marker told it was marking Advanced Financial Management, and
+ * judged against AFM's THREE-part development test (claim → because → implication) while its
+ * rubric was written to ACCA's published FOUR-part one. The two disagree on the limb that carries
+ * the most SBL marks: an EXAMPLE FROM THE CASE MATERIAL is not part of claim→because→implication,
+ * so a GOOD that supplied one and a GOOD that did not would grade identically.
+ *
+ * Found by running the batch, not by reading the code: SBL-A1 failed N1 on a criterion its reveal
+ * did satisfy under the rubric as written.
+ *
+ * Rule (1) is therefore restated on SBL's own four limbs, and rules (2)-(4) are held verbatim from
+ * the AFM string so the conservatism, the insight-not-arithmetic rule and the evidence_span
+ * discipline do not drift between papers.
+ */
+const SYSTEM_SBL =
+  'You are a strict ACCA Strategic Business Leader (SBL) marker grading ONE marking criterion at a ' +
+  'time. You are given: the criterion (the point a full-marks answer makes, plus the scenario facts it ' +
+  'must use), the case material, and the student answer. Decide ONLY whether THIS criterion is met. ' +
+  'You do NOT assign marks, a total, or an overall grade — code does that. Rules: ' +
+  '(1) SBL AWARDS TWO MARKS ONLY FOR A POINT IDENTIFIED AND THEN DEVELOPED. Answer "yes" ONLY if the ' +
+  'required point is made AND developed on the examiners\' published test: its SIGNIFICANCE is weighed, ' +
+  'it is tied to THIS organisation using information given in the case, its CONSEQUENCES for the ' +
+  'organisation are explained, and it is supported by an EXAMPLE from the case material. A point that ' +
+  'is correct, relevant and simply left there is NOT "yes" however well expressed. ' +
+  '(2) "partial" if the point is present but undeveloped, merely listed, or not anchored to the named facts. ' +
+  '(3) "no" if the point is absent, or the text is only restating the case material. ' +
+  '(4) Credit the INSIGHT however the candidate expresses it — an insight stated correctly IN WORDS earns ' +
+  'full marks. NEVER require a named statistic, a specific ratio, or a reproduced number; a criterion marks ' +
+  'RECOGNITION of the point, not arithmetic. ' +
+  'Ground every verdict in a SHORT VERBATIM quote from the student answer (evidence_span); use "" only for "no". ' +
+  'Raise a failure_flag ONLY from the provided list and ONLY when the answer genuinely exhibits it for THIS ' +
+  'criterion. Be conservative: do not invent development that is not on the page, and do not reward a generic ' +
+  'answer that never touches the named facts.';
+
+const SYSTEM_BY_PAPER: Record<string, string> = { AFM: SYSTEM_AFM, SBL: SYSTEM_SBL };
 
 const SUBMIT_VERDICT_TOOL: Anthropic.Tool = {
   name: 'submit_criterion_verdict',
@@ -92,6 +132,12 @@ const ALL_F: ReadonlySet<string> = new Set<FailureMode>(['F1', 'F2', 'F3', 'F4',
 export interface GraderOpts {
   model?: string;
   maxRetries?: number;   // transient-error retries per criterion
+  /** Which paper's marker to be. Omitted → AFM, which is what every pre-2026-08-19 caller got
+   *  and is therefore the only default that leaves the AFM corpus's gating unchanged. An
+   *  unregistered paper falls to AFM rather than throwing, because a grader that cannot be
+   *  constructed fails the gate for a reason that has nothing to do with the drill — but the
+   *  generator resolves the paper from the plan, so that path cannot arise there. */
+  paper?: string;
 }
 
 // Factory: returns a CriterionGrader backed by a constrained (forced-tool, temperature 0) Anthropic call.
@@ -99,6 +145,7 @@ export interface GraderOpts {
 export function makeAnthropicCriterionGrader(anthropic: Anthropic, opts: GraderOpts = {}): CriterionGrader {
   const model = opts.model ?? 'claude-sonnet-4-6';
   const maxRetries = opts.maxRetries ?? 2;
+  const system = SYSTEM_BY_PAPER[opts.paper ?? 'AFM'] ?? SYSTEM_AFM;
   return async (c: Criterion, answer: string, scenario: string): Promise<CriterionVerdict> => {
     let lastErr: unknown;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -114,7 +161,7 @@ export function makeAnthropicCriterionGrader(anthropic: Anthropic, opts: GraderO
           model,
           max_tokens: 500,
           temperature: 0,
-          system: cacheBlock(SYSTEM),
+          system: cacheBlock(system),
           tools: [SUBMIT_VERDICT_TOOL],
           tool_choice: { type: 'tool', name: 'submit_criterion_verdict' },
           messages: [{ role: 'user', content: buildUserPrompt(c, answer, scenario) }],

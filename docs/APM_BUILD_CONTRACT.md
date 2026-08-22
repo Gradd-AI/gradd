@@ -4838,3 +4838,353 @@ definition, softening a severity anchor, degrading the input instruction), gate 
 `tsc --noEmit` clean · `next build` GREEN. **DB: zero writes.** Harnesses
 `scripts/_sweep_invisible_referents.ts`, `_probe_split_effect.ts`, `_calibrate_ps_split.ts`,
 `_calibrate_ps_ladder.ts` — gitignored, read-only.
+
+## SESSION BANK — 2026-08-17 — SBL FOUNDATION: NINE SOURCES REGISTERED, THE FAMILY KEY FIXED, 138 ROWS INSTEAD OF ONE HEADLINE (`feat/sbl-foundation`)
+
+**Written 2026-08-18, after the fact.** The session that did this work ended without recording
+itself — no journal entry, no `AFM_SURFACED.md` item, and the branch was never pushed. Two of its
+three commits sat on one machine only for a day. Banked here in arrears; the lateness is itself the
+finding, and the branch is now on origin at `8163720`.
+
+### 1. The paper and all nine sources — registered, FETCHED NOT STORED (`ad84b6b`)
+
+`docs/evidence/sources.json` gains `SBL-GUIDE` (the S26–J27 syllabus and study guide, 734,445
+bytes), `SBL-E1`..`SBL-E7` (seven examiner reports, Sep 2023 → Mar–Jun 2026) and `SBL-CHANGES`
+(the cross-paper syllabus-changes deck), each with a verified URL and byte size, fetchable via
+`docs/evidence/fetch_acca_sources.ps1`. Same posture as every other ACCA PDF: the manifest is the
+repo-side source of record, the bytes are not committed.
+
+**`docs/sbl/` is gitignored as a WHOLE DIRECTORY**, for the `docs/FAE/` reason — `docs/*.pdf` does
+not cross a `/`, so nine PDFs were sitting in `git status` as a trackable untracked directory and
+one `git add .` would have committed them.
+
+**`ClaudeSend.txt` → `ClaudeSend*.txt` in the same commit.** A session had written
+`ClaudeSend_SBL_VERIFICATION.txt`, which the exact-name rule did not match, so a transient
+handoff report was trackable. Anything durable in one of those belongs in `docs/`.
+
+**⚠️ THE PROVENANCE INCIDENT THAT PROMPTED ALL OF IT.** The SBL syllabus was found living in a DEAD
+session's scratchpad under a filename claiming it was an AFM examiner's report. An unregistered
+source under a wrong name is indistinguishable from a hallucinated one at the next read.
+
+### 2. THE NUMERIC FAMILY KEY IS `(paper, lo)`, NOT A BARE LO STRING (`10a471e`)
+
+`NumericCalcSpec` (`lib/acca/case-authoring-spec.ts`) discriminated on a BARE LO CODE. `paper.ts`
+has said for months that *"AFM and APM LO codes collide exactly and paper_code is the only thing
+that separates them"* — for the drill FETCH. This compile gate never saw a paper at all.
+
+**THE HAZARD IS LIVE TODAY AND DOES NOT DEPEND ON SBL EXISTING.** Of the six codes in the union,
+**three are also real APM learning outcomes** — verified against `scripts/apm-framework.ts`:
+
+| code | here | APM |
+|---|---|---|
+| `B1a` | AFM ENPV / risk-and-uncertainty | *"Evaluate the relative strengths and weaknesses of budgeting methods…"* |
+| `B3e` | AFM CAPM | *"Assess the use of Business Process Re-engineering (BPR)…"* |
+| `B4a` | AFM FCFF valuation | *"Assess the impact of the characteristics of service businesses (SHIP)…"* |
+
+**FIVE of the six are also real SBL outcomes** (`B1a` principal-agent · `B5b` unitary vs two-tier
+boards · `B4a` reporting to stakeholders · `E2b` big data · `E3a` AI and robotics). So
+`{ lo: 'B1a', inputs: … }` written for SBL's governance outcome TYPECHECKED CLEANLY and routed a
+narrative governance requirement into AFM's ENPV calculator. Nothing downstream would have caught
+it: the family gates keyed off the same bare `lo`, and the DB's `lo_code` column would have
+received a code correct for BOTH papers.
+
+**Requiring `paper` makes the collision unrepresentable** — a non-AFM author must either write
+`paper: 'AFM'`, a VISIBLE false assertion, or take a compile error naming the supported set. A
+runtime guard backs the compile gate for callers that cast, and both error messages name the PAPER
+as well as the LO, because `"B1a"` alone is not a family. `SUPPORTED_NUMERIC_LOS` is DELETED rather
+than kept alongside `SUPPORTED_NUMERIC_FAMILIES` — a paper-blind export is the same bug with a
+longer name. Fixtures `test:case-authoring-spec` +87 lines.
+
+**⚠️ ONE CORRECTION TO THAT COMMIT'S OWN HEADER NOTE.** It reads *"(only `B3e` is safe — SBL's B3
+stops at B3d)"*. That is true **against SBL and only against SBL**: `B3e` is a real APM outcome
+(BPR). Read as a general safety claim it is wrong, and it is the one code a future author is
+likeliest to trust. **No code is safe under a bare LO string; the key is the fix, not the audit.**
+
+### 3. The crosswalk: 138 rows with a stated threshold (`8163720`)
+
+`docs/SBL_CROSSWALK_LEDGER.md` + its committed generator
+`scripts/authoring/build-sbl-crosswalk-ledger.ts` (`npm run build:sbl-ledger`). Replaces a single
+headline — **35% covered** — computed from eight section subtotals over 138 judgements that were
+never written down, so it could not be re-opened at the row you disagreed with. A blind re-verdict
+of a random 15 outcomes came out at **53%** against an implied **38%**; tightening the unstated
+definition of ADAPT moved that same sample to roughly **17%**. **A number whose defensible range is
+17–53% is not a plan.**
+
+Fixed by a STATED ADAPT threshold (object · output · content-survives, all three) and ONE ROW PER
+OUTCOME, with a named NEAREST asset on every NEW so moving the threshold is a re-read of one column.
+**DERIVED:** LO codes, sub-area names, outcome text, intellectual levels (machine parse of
+`SBL-GUIDE` §5 pp.9–17 — 92 at [3], 46 at [2], zero at [1]), every tally, percentage and sensitivity
+figure. **JUDGED:** the verdicts block, and nothing else. **COMPLETENESS IS A HARD GATE** — a parsed
+outcome with no verdict, or a verdict naming an outcome the guide does not contain, writes NOTHING
+and exits non-zero. The generator is committed alongside the artefact (P-DB6 applied to a document):
+a hand-maintained table would rot the same way, and a lost authoring script is how the irhedge batch
+became an unfixable published defect.
+
+Read the other way it is starker: **154 live drills (APM 91, AFM 63), 34 claimed by an ADAPT, 120
+backing no SBL outcome at all.** APM A3b holds 9 drills and backs one outcome (G2f); APM C1 holds 13
+and backs one (B4a); AFM sections C and D are entirely undrilled, so SBL C5f has no asset despite a
+well-fitting AFM framework outcome.
+
+**⚠️ TWO THINGS THE LEDGER DOES NOT SETTLE — stated in the file, repeated here so they are not
+re-derived as discoveries:**
+
+1. **OUTCOMES, NOT MARKS.** Every row is one outcome counted once. SBL examines these across three
+   tasks in one 100-mark paper, so they are not equally weighted and **a coverage rate by outcome is
+   not a coverage rate by marks**. Weighting needs sitting-by-sitting evidence from `SBL-E1`..`SBL-E7`,
+   of which **four pages of one report have been read**.
+2. **AN ADAPT IS NOT A SMALL JOB.** It means a named drill exists whose marked act transfers — not
+   that the rewrite is quick. Every ADAPT still needs new scenario prose, a new rubric under the
+   **FIVE**-skill vocabulary SBL uses (Analysis and Evaluation are separate skills there; Enquire and
+   Estimate have no counterpart in the four-skill papers), and a fresh pass through the gate barrier.
+
+**`scripts/sbl-framework.ts` DOES NOT EXIST.** The AFM/APM analogue is the intended home for the 138
+LOs and is unbuilt; today they live only in the generator's parse. **No DB writes this session; no
+`next build` run — the branch is pushed unbuilt and unmerged.**
+
+## SESSION BANK — 2026-08-18 — SBL: THE CASES BECOME AN ASSET CLASS, THE PROSE GETS GATED, AND THE 138 OUTCOMES LEAVE THE PARSE (`feat/sbl-foundation`)
+
+Four commits on top of the arrears entry above. Branch pushed at each step; still unmerged.
+
+### 1. The case corpus, scanned for the first time (read-only)
+
+T1 admitted "a published drill **or published case requirement**" and **no asset cell in 138 rows
+named one** — while E2b's own reasoning acknowledged a Bexley Grocers requirement and did not
+count it. Scanned: **16 published cases, 38 requirements** (not the ten assumed).
+
+**THE STRUCTURAL FINDING IS THAT CASES ADD ALMOST NO TERRITORY. 27 of the 28 case-requirement LOs
+already have drills**, so cases could only ever move rows that failed on **T3** (asset spent), not
+T1. The single exception, `AFM A3a` (zero drills), is **MIS-TAGGED** — its framework topic is ESG
+and ethics, its requirement is a plain-language briefing note. Flagged, not fixed.
+
+Of the 13 T3-failing rows only three had a case requirement available and two of those also fail
+T2. **Net: +1.**
+
+### 2. Three rulings (Grant, 2026-08-18) — 34/138 → 35/138
+
+**MOCK_ONLY REQUIREMENTS ARE NOT ASSETS**, written into T1 as a standing property of reserved
+content rather than an SBL decision: it teaches nobody until it is sat, and spending it consumes
+the mock. **⚠️ MY FIGURE WAS WRONG AND THE RULING INHERITED IT** — the split is **15 mock / 23
+practice**, not 18/20. Verified per case before the rule was written.
+
+**E5d IS AN ADAPT** — Vesla Retail requirement (ii), a fourth D1d asset that is not a drill, and a
+practice case so it clears the new T1. The row the ledger itself had flagged as *"PURELY a depth
+limit"*. **A3d and E4a move T1 → T2**: an asset exists, both fail on (c) content. **T1 61 · T2 30
+· T2/T3 8 · T3 4.**
+
+**THE CORPUS SNAPSHOT IS JUDGED AND NOW SAYS SO.** The docblock listed "the corpus attribution"
+under DERIVED and it never was — no DB access by design, so the counts were hand-typed literals no
+gate could reach. Now a declared `CORPUS` block with `as_at` + its query, printed in the ledger;
+`--verify-corpus` is the derived path, opt-in, supabase-js imported dynamically so the PDF path
+never needs env. Inverse count now includes case requirements: pool **177**, claimed 35,
+**142 published assets back no SBL outcome** (was 120 on a drill-only count).
+
+### 3. `assertNarrativeNumbers` — the gate that reads the prose
+
+**"Five of the six sit in section G" is four.** B2b is section B, H6d is section H. It survived
+because the completeness gate read verdicts and never read prose, and the sentence sat *between two
+correctly-interpolated values*, so nothing about it looked hand-typed.
+
+Every narrative number-word must now be **DERIVED** (recomputed inside the gate from `los` +
+`VERDICTS` — deliberately NOT from `render()`'s own variables, because a gate that trusts the
+renderer cannot catch the renderer being wrong), **ASSERTED** (undrivable external/historical fact,
+declared with a written reason) or **RHETORICAL** (counts nothing, matched as a whole phrase).
+Anything else refuses the write. **PROVEN BOTH WAYS**: restoring the literal reports *prose says
+"Five" (5), computed 4*, exit 1, nothing written. ⚠️ **CEILING: number-WORDS only** — a hand-typed
+DIGIT in a narrative sentence still gets through, stated in the file.
+
+**Generalisable, and the reason this is banked rather than just fixed: a gate over the JUDGEMENTS
+is not a gate over the CLAIMS MADE ABOUT them, and the prose is the half that gets quoted.**
+
+### 4. `scripts/sbl-framework.ts` — 138 outcomes leave the parse
+
+They existed only inside the generator, so nothing else in the repo could read an SBL LO code.
+Now an AFM/APM-shaped module: same row shape, same export surface. **GENERATED via
+`--emit-framework` off the SAME parse** — one parser, two artefacts; re-emitting is byte-identical
+and the file says EDIT THE EMITTER. Hand-copying 138 descriptors is exactly how afm-framework.ts
+acquired the gloss its VERIFICATION LOG G1 later purged.
+
+**Three deliberate divergences, each fixture-pinned:** FIVE professional skills and **not a
+superset** (SBL marks Analysis and Evaluation separately; the fixture pins that
+`analysis_and_evaluation` must never appear) · **no exam sections** (`section_a`/`section_b`
+asserted ABSENT) · **no mode/calculation set** (a per-LO judgement nobody has made; inventing one
+would be fabricated routing data wearing the shape of parsed data). `COMMAND_VERBS` derived from
+the descriptors, 22 of them.
+
+**Gates:** `test:sbl-framework` **1509 checks**, auto-discovered, gate **58 → 59** · `next build`
+GREEN · **DB: zero writes** (the only DB access all session was read-only).
+
+## SESSION BANK — 2026-08-18 (b) — A GATE CAUSED A MIS-TAG, AND SBL'S FIFTH SKILL GOES IN AS VOCABULARY (`feat/sbl-foundation`)
+
+Two commits. DB: one write, to a published row, under full P-DB2/3/4.
+
+### 1. Castlereagh (iv): `A3a` → `A1c` — and the CAUSE was a gate
+
+The tag named ESG. **The rubric awards no ESG marks.** Its two criteria are cost-of-capital
+content (3) and the communication act (3); the words ESG, environment, social, governance,
+stakeholder and ethics appear nowhere in the question, the model answer or either criterion.
+`A1c` fits both halves and was already in the framework — *"Advise the board … (ii) minimising
+the cost of capital; … (iv) communicating financial policy and corporate goals to internal and
+external stakeholders"*. Still section A, so the case's span is unchanged.
+
+**⚠️ IT WAS NOT A TYPO.** Castlereagh is a SECTION A case; gate **C4** requires a Section A case
+to examine ALL FOUR professional skills; (i)(ii)(iii) carried the other three, so (iv) HAD to be
+the `communication` requirement — and a communication act still needs a technical `lo_code` to
+hang on. The author reached into section A and landed on the ESG outcome. `gateSectionASpan` was
+already satisfied by B3e + E3a, so span did not force it; **C4's coverage demand did.**
+
+> **A GATE THAT REQUIRES COVERAGE THE CONTENT DOES NOT NATURALLY SUPPLY WILL MAKE AN AUTHOR REACH
+> FOR A CODE, AND THE GATE CANNOT SEE THAT IT CAUSED IT.** C4 passes either way — it reads
+> `professional_skill_tags` and never looks at `lo_code`. No gate in the barrier distinguishes the
+> two codes, which is exactly why it survived authoring.
+
+Applied with a NEW committed script, `retag-afm-case-requirement.ts`, separate from the drill one
+because **`lo_code` is DUPLICATED INSIDE `answer_schema`** — moving the column alone leaves a
+rubric marking against the old code, and a P-DB4 "exactly one field moved" check would **PASS on
+that half-done state**. It asserts both fields move together and that the schema differs by
+exactly the rewritten `lo` values. Result: fields moved `[lo_code, answer_schema]`, 13/13 others
+byte-identical, no stale `A3a` survives, gates re-run LIVE all PASS. Done while the window was
+free — A3a had 0 drills and 1 requirement, A1c had 0 and 0, 0 weakness rows.
+**The script refused a FABRICATED UUID on the first run** (the id had been guessed from a
+truncated print) — the "row is not what the caller said" arm working as designed.
+
+### 2. The fifth skill — vocabulary and paper-awareness only
+
+**DECLARED IS NOT SERVED.** `ACCA_PAPERS` gains SBL; `SERVED_PAPERS` holds the two with content,
+a price, a diagnostic and a surface. `strictPaper` RETURNS SBL (a gate must name a paper to
+refuse it); `servedPaper()` refuses it. `AccaPaper` for vocabulary, **`ServedPaper` for anything
+a customer can reach** — a key in a price map is a promise the thing exists.
+
+📐 **THE EXHAUSTIVE BREAK FOUND NINE SITES, NOT THE SIX PREDICTED**, and the three extra were the
+dangerous ones — checkout, subscribe, the resit runner. Left alone, `paper=SBL` would have passed
+checkout's null check and died indexing a price map: **a clean 400 becomes a 500 about a missing
+env var.** Retyping `paperHref` and the surface-event sink then found ten more UI/route sites and
+**four FIXTURES iterating `ACCA_PAPERS` where they meant served papers**. That cascade is the
+argument for adding the member early: the same list arrives either way, as a compile error now or
+as bugs later.
+
+**PER-PAPER GATE CONFIG, NOT A WIDENED CONDITIONAL.** C1/C2/C3 ask about A/B sections; SBL has
+none, so they report `applicable: false` with a reason. **INAPPLICABLE IS NOT PASS** — excluded
+from the aggregate, because a gate that passes for want of anything to check is indistinguishable
+in a report from one that checked and was satisfied. The field is set ONLY on inapplicable
+results, so **APM/AFM reports stay byte-identical**.
+
+**THE FREE-TEXT TRAP IS CLOSED.** `professional_skill_tags` is unconstrained `text`, the marking
+path splits it, and `judgeCaseMarking` soft-substituted *"(no authored descriptor on file)"*. That
+is a **silent mis-score**: the unknown skill enters the rubric, takes an equal share of the pool,
+and is banded against nothing. Now validated against the paper's declared set, refused with a 409,
+and the descriptor lookup THROWS — a throw rather than a filter, since dropping the skill would
+silently re-weight the pool. **Verified before shipping: all 38 published requirements and all 155
+tagged drills validate**, so no live row moved.
+
+**⚠️ SBL'S FIVE ARE NOT THE FOUR PLUS ONE.** `analysis` and `evaluation` are separate skills and
+neither is the combined one halved — SBL's Analysis absorbs ENQUIRE, its Evaluation absorbs
+ESTIMATE, and neither act is in the four-skill descriptors. Fixtured in both directions.
+
+**P-M1 AND THE BAR.** This touches two inputs to a marking call. The claim is narrow: *for APM and
+AFM the model sees the same bytes, so the call's shape is unchanged, so no band matrix is owed.*
+`npm run test:paper-vocabulary` — **53 checks**, five pin families (prompt bytes ×6, the numbered
+rubric string, the descriptor maps, `apportion` over the full 5⁴ cross-product, `runCaseGates`),
+plus a **live-corpus gate diff** on both published papers. ⚠️ **Three of the five were captured
+pre-change; two were not, and the fixture says so** — PIN2 rests on PIN3, PIN4 on a `git diff`
+showing the arithmetic untouched.
+
+**Gates:** contract gate **58 → 60** (`test:sbl-framework`, `test:paper-vocabulary`) · `tsc
+--noEmit` clean · `next build` GREEN.
+
+### Explicitly NOT started
+
+**Per-requirement PS marking is a SEPARATE change with its own calibration.** The current path
+cannot express it — the examined-skill list is a deduped union, the ceiling is an equal share of a
+case-level pool, the model bands against the whole answer, and `per_skill` is keyed by skill, not
+by (requirement, skill). P-M1's founding instance is precisely that splitting a batched per-case
+call into one call per requirement MOVED THE MARK.
+
+---
+
+## SESSION BANK — 2026-08-19 — SBL BATCH A IS IN THE TABLE, AND THE SCHEMA HAD NEVER HEARD OF THE PAPER (`feat/sbl-foundation`)
+
+**SHIPPED: the first five SBL drills exist as rows.** `acca_drills` **155 → 160**, all five
+`status='candidate'`, `published=false`. Section A moves **0 → 5 of 12 outcomes** (A1a, A2b, A2d,
+A3a, A3d) — as OUTCOMES, not marks. **No publish flip, and it is two steps not one**: these are
+`candidate`, so going live means `approved` then `published` under GATE-P.
+
+| plan | id | LO | skill | marks | designed BAD (N4 contract) | evidenced |
+|---|---|---|---|---|---|---|
+| SBL-A1 | `9d414a87-b12d-4526-85cc-5e537a25104b` | A2b | analysis | 10 | `[F5]` | F7 |
+| SBL-A2 | `5bd47a79-7640-4902-8360-b8b0952d0b19` | A2d | analysis | 12 | `[F5]` | — |
+| SBL-A3 | `46e10662-914f-412b-8e56-faf426d0461f` | A1a | analysis | 12 | `[F4]` | F2 |
+| SBL-A4 | `80b4918b-1602-46dc-a213-a4ba70cb12c4` | A3d | scepticism | 10 | `[F4]` | F10 |
+| SBL-A5 | `2fbb2902-c254-4c9b-ac1a-240bf1adb9e7` | A3a | evaluation | 10 | `[F1,F4]` | — |
+
+Post-insert proof: 5/5 candidate+unpublished · 0 published · 0 approved · 5 distinct `lo_code`,
+0 duplicates · **0 AFM/APM rows created in the window**, so nothing outside the batch moved.
+Pack: `docs/reviews/SBL_BATCH_A_REVIEW_PACK.md`, regenerated from the drafts by the new
+`scripts/authoring/export-sbl-pack.ts` (pure, offline — closes the code map's standing
+"no dedicated exporter yet" gap).
+
+### 📐 TWO SCHEMA CONSTRAINTS, BOTH FOUND BY TRYING TO INSERT — NOT BY READING THE CODE
+
+**SBL was declared everywhere in the application and nowhere in the database.** `ACCA_PAPERS`
+carried it, `SKILL_DESCRIPTORS_BY_PAPER` carried its five skills, `GATE_CONFIG` knew it has no exam
+sections, `scripts/sbl-framework.ts` held all 138 outcomes — and `acca_drills_paper_code_check`
+still read `CHECK (paper_code IN ('APM','AFM'))`. All five drafts were refused atomically: **0 rows
+inserted, count unchanged at 155.** No amount of reading TypeScript would have surfaced it; the
+vocabulary split is enforced in the application, and the database had never been told either half.
+Migration `20260819120000` widens **`acca_drills` only** — `acca_entitlements`, `acca_weak_areas`,
+`resit_leads` and `resit_runs` carry the same two-paper CHECK and stay at two. **That asymmetry IS
+`AccaPaper` vs `ServedPaper` expressed in the schema:** declared vocabulary reaches the content
+table; a customer-facing promise does not.
+
+**THEN `acca_drills_skill_chk` REFUSED FOUR OF THE FIVE, AND WHICH ONE SURVIVED IS THE FINDING.**
+It pinned `professional_skill_tag` to APM/AFM's four. **SBL-A4 inserted because `scepticism` is a
+name SBL SHARES with AFM; the four tagged `analysis` and `evaluation` — SBL-only names — were
+refused.** A constraint written years before SBL existed drew the vocabulary line exactly right
+without being told: it admitted the shared name and rejected the unshared ones. The partial result
+was the diagnosis.
+
+**MIGRATION `20260819130000` IS PAPER-AWARE, NOT A FLAT WIDENING, AND THAT IS THE WHOLE POINT.**
+Adding `analysis`/`evaluation` to the flat list would permit **an AFM row tagged `analysis`**, and
+the documented danger of SBL's vocabulary is precisely that its skills are NOT the four renamed:
+APM/AFM carry ONE combined `analysis_and_evaluation`; SBL marks `analysis` and `evaluation`
+SEPARATELY, its Analysis absorbing ENQUIRE and its Evaluation ESTIMATE, and neither act appears in
+the four-skill descriptors at all. The application already refuses to cross them (`unknownSkillTags`
+validates against the PAPER's declared set; `getSkillDescriptors` THROWS rather than filtering,
+because dropping an unknown skill silently re-weights the marks pool). This puts the same rule in
+the database, so a mis-tagged row cannot exist even via a path that skips the application check.
+Carries a drift check that RAISES if the constraint comes back flat. Verified after apply: an AFM
+row tagged `analysis` is refused.
+
+### SBL-A2 RE-TAGGED `evaluation` → `analysis`
+
+All six of its facts point ONE WAY (bonuses, promotions, meeting dynamics, incident reviews,
+induction — every one against the warehousing aim), so **committing concedes nothing** and
+evaluation is the wrong act for what the scenario supplies. The finding came from the hand check
+N6b reports as NOT EVALUATED, not from a gate.
+
+⚠️ **`professional_skill_tag` is NOT duplicated inside `answer_schema` on a narrative drill** —
+verified before the edit. Unlike a CASE REQUIREMENT, where `lo_code` is mirrored on every criterion
+and moving the column alone leaves a rubric marking against the old code (the reason
+`retag-afm-case-requirement.ts` exists separately), **the narrative column moves alone.** Re-gated
+GREEN: N1–N6 + P4 + P7 all unchanged, N6a still PASS, and the only thing that moved was the N6b arm
+identity and its stated reason.
+
+### 🔴 ITEM 2 BLOCKED BY A PERSONA FINDING — NOTHING WRITTEN
+
+Re-headlining three published AFM reveals (`f6426c06`, `d413fbe7` → F6; `de0c2676` → F10) **cannot
+be done as a rewrite.** `EZRA_TEACHING_PERSONA_AFM` names a CLOSED catalogue of five —
+FENCE-SITTING · SCENARIO-FREE · VALUATION-PLUMBING · UNDEVELOPED-ASSUMPTION · ABANDONED-AFTER-CALC —
+and **neither F6 nor F10 is in it.** AFM's teaching leg has no word for *"you accepted a named
+officer's claim unchallenged"*, despite F10 being a disqualifier across the corpus.
+
+**So those rows never drifted: UNDEVELOPED-ASSUMPTION was the nearest available name for a failure
+the catalogue cannot express.** Measured: `f6426c06` returned it three times running under an
+explicit instruction not to; `de0c2676` escaped only sideways, to SCENARIO-FREE (F5 — on-rubric,
+but not the ruled F10). Fixing it means adding the missing modes to a persona governing EVERY future
+AFM reveal — its own change with its own evidence. **Nothing written; P-DB3 snapshots for both sit
+in `docs/rollbacks/AFM_reveal_rewrite_*.json`.**
+
+Also built and proven under P-DB6: `scripts/authoring/rewrite-afm-reveal.ts` — refuses an unruled
+id, snapshots the whole row, guards the update on `published=true`, asserts 17/17 immutable fields
+byte-identical. It caught a defect in its own dry run: **P7 only checks a `misconception…:` sentence
+EXISTS, so a reveal naming it in sentence three yields a 100-word blob as the tutor's broadcast
+lead.** A 220-char shape gate was added.

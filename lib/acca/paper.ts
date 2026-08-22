@@ -5,8 +5,41 @@
 // LO codes collide exactly and paper_code is the only thing that separates them.
 // (An id-addressed fetch needs no paper filter — the primary key is globally unique.)
 
-export const ACCA_PAPERS = ['APM', 'AFM'] as const;
+/**
+ * ⚠️ 'SBL' IS DECLARED BUT NOT SERVED (added 2026-08-18, vocabulary-only).
+ * There is no SBL content, no SBL route, and `resolvePaper` still never returns it — an
+ * unrecognised hint resolves to APM exactly as before, so no existing behaviour moves. It is
+ * declared here on purpose rather than later: `AccaPaper` keys six exhaustive
+ * `Record<AccaPaper, …>` maps, and adding the member is what makes the compiler enumerate every
+ * place a paper's own vocabulary has to be supplied. Half-adding a paper is the failure this
+ * prevents — `strictPaper` DOES return it, so an authorisation gate can refuse it by name.
+ */
+export const ACCA_PAPERS = ['APM', 'AFM', 'SBL'] as const;
 export type AccaPaper = (typeof ACCA_PAPERS)[number];
+
+/**
+ * The papers that are actually SERVED: content in the DB, a Stripe price, a resit diagnostic,
+ * a surface. DECLARED IS NOT SERVED, and conflating them is how a paper gets half-added.
+ *
+ * ⚠️ USE THIS, NOT `AccaPaper`, FOR ANYTHING A CUSTOMER CAN REACH — prices, purchase state,
+ * per-paper product copy, the resit diagnostic. Those maps must NOT gain an SBL key, because a
+ * key is a promise that the thing exists; the compiler should refuse an SBL price, not accept a
+ * blank one. `AccaPaper` is right for VOCABULARY — syllabus sections, professional-skills
+ * descriptors — which SBL genuinely has today.
+ *
+ * The commerce boundary is the sharp case. `strictPaper` now returns 'SBL' (it must — an
+ * authorisation gate has to be able to name it to refuse it), so a checkout body carrying
+ * paper=SBL would have passed the null check and died indexing a price map. `servedPaper`
+ * refuses it at the door with the same 400 it always got.
+ */
+export const SERVED_PAPERS = ['APM', 'AFM'] as const;
+export type ServedPaper = (typeof SERVED_PAPERS)[number];
+
+/** Like `strictPaper`, but refuses a declared-but-unserved paper. Null = refuse, never default. */
+export function servedPaper(raw: unknown): ServedPaper | null {
+  const p = strictPaper(raw);
+  return p && (SERVED_PAPERS as readonly string[]).includes(p) ? (p as ServedPaper) : null;
+}
 
 /**
  * The paper an unqualified ACCA URL means. APM, because every APM entry point predates the
@@ -18,7 +51,7 @@ export type AccaPaper = (typeof ACCA_PAPERS)[number];
  * built for paper X resolves to paper Y — and nothing typechecks differently. Structural,
  * not instructed: change this and both sides move together.
  */
-export const DEFAULT_PAPER: AccaPaper = 'APM';
+export const DEFAULT_PAPER: ServedPaper = 'APM';
 
 // Canonicalize an untrusted paper hint (a URL query param or request-body field) to a
 // known paper. Unknown/absent → 'APM' (the established default; AFM must be named
@@ -31,7 +64,7 @@ export const DEFAULT_PAPER: AccaPaper = 'APM';
 // This function remains correct for CONTENT SCOPING, which is what it was built for:
 // there, defaulting to APM means "serve the APM row", and serving APM content to a
 // request gated on APM is coherent.
-export function resolvePaper(raw: unknown): AccaPaper {
+export function resolvePaper(raw: unknown): ServedPaper {
   return raw === 'AFM' ? 'AFM' : DEFAULT_PAPER;
 }
 

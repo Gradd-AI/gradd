@@ -1,0 +1,117 @@
+{
+  "ruling": "\nRULING (Grant, 2026-08-18) — Castlereagh Utilities plc requirement (iv): lo_code A3a -> A1c\n\nTHE TAG NAMES ESG. THE RUBRIC AWARDS NO ESG MARKS.\n\nThe requirement:\n  \"(iv) Draft a short briefing note for the four board members who have no financial background,\n   explaining in plain language why Brackwater is not appraised at Castlereagh's own cost of\n   capital. (6 marks)\"\n\nAFM A3a is \"Assess an organisation's commitment to ESG criteria when undertaking business,\nfinancial and investment decisions, and discuss and recommend how conflicts between the criteria\nmay be resolved.\" The words ESG, environment, social, governance, stakeholder and ethics appear\nNOWHERE in the question, the model answer, or either criterion.\n\nWHAT THE RUBRIC ACTUALLY MARKS (answer_schema, 2 criteria x 3 marks):\n  c_principle  a discount rate reflects the RISK OF THE ACTIVITY, not the risk of the company\n               doing it -- cost-of-capital content.\n  c_audience   written for a NON-FINANCIAL reader, plain language, no algebra -- the\n               communication act.\nSo 3 of 6 marks are technical cost-of-capital content and 3 of 6 are communication. Zero are ESG.\n\nA1c IS THE CODE THAT FITS, and it fits on BOTH halves:\n  \"Advise the board of directors or management of the organisation in setting the financial goals\n   of the business and in its financial policy development with particular reference to:\n   ... (ii) MINIMISING THE COST OF CAPITAL; ... (iv) COMMUNICATING FINANCIAL POLICY AND CORPORATE\n   GOALS TO INTERNAL AND EXTERNAL STAKEHOLDERS ...\"\nAdvise the board / on cost of capital / communicated to non-specialists. A1c is also in section A,\nso the case's section span is unchanged (B3e, E3a, B3i, A1c -> still A, B, E).\n\nTHE PS TAG IS CORRECT AND DOES NOT MOVE. professional_skill_tags stays \"communication\".\n\nWHY THE WRONG CODE WAS CHOSEN -- AND IT WAS NOT A TYPO. Castlereagh is a SECTION A case, and gate\nC4 (gatePsSkillSet) requires a Section A case to examine ALL FOUR professional skills. Requirements\n(i)(ii)(iii) carry analysis_and_evaluation / scepticism / commercial_acumen, so (iv) HAD to be the\ncommunication requirement -- and a communication act still needs a technical lo_code to hang on.\nThe author reached into section A and landed on A3a. gateSectionASpan was already satisfied by\nB3e + E3a, so span did not force it; C4's coverage demand did.\n\n  => A GATE THAT REQUIRES COVERAGE THE CONTENT DOES NOT NATURALLY SUPPLY WILL MAKE AN AUTHOR REACH\n     FOR A CODE, AND THE GATE CANNOT SEE THAT IT CAUSED IT. C4 passes either way: it reads\n     professional_skill_tags and never looks at lo_code. Banked as its own finding.\n\nWHY NOW. The window is free and will not stay free: AFM A3a has 0 published drills and this 1\nrequirement; A1c has 0 drills and 0 requirements; acca_weak_areas holds 0 rows on A3a. Nothing a\nstudent holds moves. Once a drill or a sit lands on either code, it does.\n\nWHAT IS NOT CLAIMED. This is a reader's judgement about which LO the rubric examines, not a\nmeasurement. No gate distinguishes the two codes -- the case gates read section letters and PS\ntags, and the numeric/narrative barriers never read lo_code at all. That is precisely why it\nsurvived authoring.",
+  "from": "A3a",
+  "to": "A1c",
+  "case": {
+    "id": "ac000000-0000-4000-8000-00000000a101",
+    "title": "Castlereagh Utilities plc",
+    "paper_code": "AFM",
+    "section": "A",
+    "status": "approved",
+    "published": true,
+    "mock_only": false
+  },
+  "row_before": {
+    "id": "aeea3db3-3290-408b-af87-239d569c93ca",
+    "case_id": "ac000000-0000-4000-8000-00000000a101",
+    "requirement_order": 4,
+    "label": "(iv) — 6 marks",
+    "question": "(iv) Draft a short briefing note for the four board members who have no financial background, explaining in plain language why Brackwater is not appraised at Castlereagh's own cost of capital. (6 marks)",
+    "lo_code": "A3a",
+    "command_verb": "evaluate",
+    "intellectual_level": 2,
+    "marks_guide": 6,
+    "professional_skill_tags": "communication",
+    "model_answer": "BRIEFING NOTE — why Brackwater is not appraised at the group's own cost of capital\n\nThis note is for the four board members with no financial background, and it avoids technical terms wherever plain ones will do.\n\nWhen we decide whether an investment is worth making, we compare the cash it is expected to produce against a benchmark return. That benchmark is a rate we could earn elsewhere for taking the SAME KIND OF RISK. The essential point is that the benchmark belongs to the ACTIVITY, not to the company carrying it out. Castlereagh's own benchmark reflects what our shareholders expect from an electricity distribution business, because that is what we have always been. Brackwater is the group's first venture outside electricity distribution: it is a regulated water treatment concession, with different customers, a different regulator and a different pattern of risk. Judging it against an electricity benchmark would be like pricing a building using the cost per square metre of a different kind of building.\n\nBecause Castlereagh has never operated in water, we have no figures of our own for how risky that business is. So we borrow them. Ardhowen Water plc is a listed regulated water business, and the stock market's view of Ardhowen tells us what investors think water risk is worth. We cannot use Ardhowen's figures as they stand, because Ardhowen borrows a different amount of money than we do, and borrowing makes returns to shareholders more volatile regardless of the underlying business. So we take Ardhowen's figure, strip out the effect of Ardhowen's borrowing to isolate the water business itself, and then add back the effect of the borrowing CASTLEREAGH intends to use. What comes out is a benchmark for water risk carried on our balance sheet.\n\nWhy it matters in practice is straightforward. If we used our own lower electricity benchmark, Brackwater would look better than it is, and we could win a 25-year concession that never earns what its risk demands. If we set the benchmark too high, we would walk away from a project that would have been worth having, and a competitor would take it. The purpose of the calculation is to make sure the bid price reflects the risk the group is actually taking on.",
+    "hint": "Repeating the calculation in technical language is not a briefing note. Write for a reader with no financial background: the benchmark belongs to the activity, not the company; we have no water figures of our own so we borrow a listed water company's and adjust them for the fact that it borrows differently from us; and getting it wrong means either bidding for a concession that will not pay for its risk or losing a good one to a competitor.",
+    "full_reveal": "The classic misconception here is writing the technical explanation again in technical language and calling it a briefing note: candidates reproduce the ungearing and regearing steps, with formulae, for an audience that has been described as having no financial background.\n\nThe fix is to write for the reader described. Explain that the benchmark belongs to the activity rather than to the company, say why a water company's figures have to be borrowed and then adjusted, and state the consequence of getting it wrong in business terms — bidding for a concession that never earns what its risk demands, or walking away from one worth having. No algebra, and no term used without being explained.",
+    "created_at": "2026-08-01T15:19:34.155085+00:00",
+    "answer_schema": {
+      "mode": "narrative",
+      "bands": [
+        {
+          "min": 0,
+          "label": "fail"
+        },
+        {
+          "min": 0.5,
+          "label": "pass"
+        },
+        {
+          "min": 0.7,
+          "label": "good"
+        },
+        {
+          "min": 0.85,
+          "label": "excellent"
+        }
+      ],
+      "criteria": [
+        {
+          "id": "c_principle",
+          "lo": "A3a",
+          "marks": 3,
+          "anchor_facts": [
+            "f_first"
+          ],
+          "disqualifiers": [
+            "F2"
+          ],
+          "required_point": "Explains that a discount rate reflects the RISK OF THE ACTIVITY being appraised, not the risk of the company doing it — so using the group rate on a project of different business risk misprices it. Ties this to Brackwater being the group's FIRST venture outside electricity distribution.",
+          "requirement_part": "explain the principle",
+          "development_required": true
+        },
+        {
+          "id": "c_audience",
+          "lo": "A3a",
+          "marks": 3,
+          "anchor_facts": [
+            "f_four",
+            "f_proxy"
+          ],
+          "disqualifiers": [
+            "F2"
+          ],
+          "required_point": "Written for a NON-FINANCIAL reader: explains why a water company's figures are borrowed and adjusted, in plain language, without unexplained technical vocabulary and without algebra. Names the consequence of getting it wrong in business terms — accepting a bad project or rejecting a good one.",
+          "requirement_part": "explain it for this audience",
+          "development_required": true
+        }
+      ],
+      "_authoring": {
+        "note": "Rule-23 golden BAD + designed F-modes. NOT served. Golden GOOD is model_answer.",
+        "golden_bad": "Castlereagh Utilities plc owns and operates electricity distribution networks in the United Kingdom. The board has been invited to bid for a 25-year concession to build and operate a regulated water treatment network, the Brackwater project.\n\nThe project-specific discount rate is calculated using the capital asset pricing model. The proxy company's equity beta is ungeared using the asset beta formula to remove the effect of the proxy's financial gearing. The resulting asset beta is then regeared using the appraising company's own capital structure to give a project equity beta.\n\nThis equity beta is then substituted into the capital asset pricing model equation, being the risk-free rate plus beta multiplied by the equity risk premium, in order to derive a project-specific cost of equity. Where a weighted average cost of capital is required, the post-tax cost of debt is weighted alongside it using market values.\n\nThe use of a project-specific rate rather than the entity rate is a matter of standard practice in investment appraisal where the business risk of the project differs from that of the entity. There are a number of considerations that will require attention in applying this approach to the circumstances that arise here.",
+        "designed_bad_flags": [
+          "F1",
+          "F5",
+          "F4"
+        ]
+      },
+      "total_marks": 6,
+      "rubric_version": "narrative_v1",
+      "scenario_facts": [
+        {
+          "id": "f_four",
+          "key": "no financial background",
+          "kind": "entity",
+          "text": "four of the nine board members have no financial background"
+        },
+        {
+          "id": "f_first",
+          "key": "first venture",
+          "kind": "constraint",
+          "text": "Brackwater would be the group's first venture outside electricity distribution"
+        },
+        {
+          "id": "f_proxy",
+          "key": "Ardhowen",
+          "kind": "constraint",
+          "text": "the only suitable listed proxy for a regulated water business is Ardhowen Water plc"
+        }
+      ],
+      "requirement_parts": [
+        "explain the principle",
+        "explain it for this audience"
+      ]
+    }
+  }
+}

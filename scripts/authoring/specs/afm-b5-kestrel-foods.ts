@@ -266,7 +266,7 @@ const SPEC: AfmCaseSpec = {
       marks: 13,
       ps_tags: ['analysis_and_evaluation'],
       intellectual_level: 3,
-      calc: { lo: 'B5b', inputs: NPV_INPUTS },
+      calc: { paper: 'AFM', lo: 'B5b', inputs: NPV_INPUTS },
       prose: {
         question:
           '(i) Calculate the net present value of the Monterrey project in sterling, and advise the ' +

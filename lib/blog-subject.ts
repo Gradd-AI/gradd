@@ -27,7 +27,7 @@
 // in one module with one table behind it instead of four hand-built ternaries.
 //
 // ── SUBJECT IS NOT PAPER, AND THIS MODULE IS WHERE THEY MEET ────────────────────────────
-// `AccaPaper` is APM | AFM. A blog SUBJECT spans two PRODUCTS — Econ and BM are IB and have
+// `ServedPaper` is APM | AFM. A blog SUBJECT spans two PRODUCTS — Econ and BM are IB and have
 // no paper at all — so `?subject=` is not `?paper=` and the blog index must NEVER be passed
 // through `paperHref`. But the blog's OUTBOUND links do become ACCA urls, and there the paper
 // has to ride along. So this module owns exactly one crossing point: `accaPaperForSubject`,
@@ -35,7 +35,7 @@
 // subject (null) where `resolvePaper` would silently answer 'APM', which is the exact hazard
 // its own header warns about. A null paper means "do not build an ACCA link at all".
 
-import { DEFAULT_PAPER, strictPaper, type AccaPaper } from './acca/paper';
+import { DEFAULT_PAPER, strictPaper, servedPaper, type ServedPaper } from './acca/paper';
 import { paperHref } from './acca/paper-url';
 
 /** The `subject:` frontmatter value on every post in content/blog/. */
@@ -77,8 +77,11 @@ export function productForSubject(subject: BlogSubject): BlogProduct {
  * is precisely the answer wanted for Econ/BM. Callers MUST treat null as "not an ACCA
  * subject" and build no ACCA link — never as a paper.
  */
-export function accaPaperForSubject(subject: BlogSubject): AccaPaper | null {
-  return strictPaper(subject);
+export function accaPaperForSubject(subject: BlogSubject): ServedPaper | null {
+  // servedPaper, not strictPaper: this builds a LINK to a paper surface, and a declared-but-
+  // unserved paper has none. Returning null means "no ACCA link for this subject", which is
+  // exactly the contract documented above.
+  return servedPaper(subject);
 }
 
 /**
@@ -146,7 +149,7 @@ export interface BlogLink {
  * `?paper=${paper}` by hand is what keeps this from becoming a fourth private variant of the
  * rule: for APM it returns '/acca' byte-identical to the literal the pillar already uses.
  */
-export function accaAuthHref(paper: AccaPaper): string {
+export function accaAuthHref(paper: ServedPaper): string {
   return `/acca/auth?next=${encodeURIComponent(paperHref('/acca', paper))}`;
 }
 
@@ -191,7 +194,7 @@ export function blogIdentity(filter: SubjectFilter): BlogIdentity {
   // Every ACCA view points home at root, which IS the ACCA pillar (app/page.tsx, 2026-08-04).
   // The group view inherits the pillar's own paper default rather than inventing one: it sells
   // both papers and names neither, exactly as ACCA_AUTH_FREE does on the pillar itself.
-  const paper: AccaPaper = filter === 'afm' ? 'AFM' : filter === 'apm' ? 'APM' : DEFAULT_PAPER;
+  const paper: ServedPaper = filter === 'afm' ? 'AFM' : filter === 'apm' ? 'APM' : DEFAULT_PAPER;
   const label = filter === 'acca' ? 'ACCA' : `ACCA ${paper}`;
   return {
     homeHref: '/',

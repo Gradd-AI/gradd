@@ -95,10 +95,62 @@ const AFM_SKILL_DESCRIPTORS: Record<string, string> = {
     'matters, demonstrating acumen in arriving at appropriate recommendations.',
 };
 
+// ── SBL — FIVE skills, verbatim from the SBL study guide §I (pp.16-17) ───────
+// Concatenates each skill's own sub-points a/b/c in order; the [3] markers are PDF metadata,
+// not prose. Source registered as SBL-GUIDE in docs/evidence/sources.json, and the same text is
+// carried structurally in scripts/sbl-framework.ts PROFESSIONAL_SKILLS.
+//
+// ⚠️ THIS IS NOT A SUPERSET OF THE FOUR-SKILL MAPS, AND THE KEYS ARE THE PROOF. APM and AFM
+// carry ONE combined `analysis_and_evaluation`; SBL marks `analysis` and `evaluation`
+// SEPARATELY, and neither is that combined skill cut in half — SBL's Analysis absorbs ENQUIRE
+// ("enquire of individuals … to corroborate or dispute existing beliefs") and its Evaluation
+// absorbs ESTIMATE ("estimate trends or make reasoned forecasts"), neither of which appears in
+// the four-skill descriptors at all. NEVER map an SBL tag onto an APM/AFM one by name, and
+// never let `analysis_and_evaluation` appear in this map.
+const SBL_SKILL_DESCRIPTORS: Record<string, string> = {
+  communication:
+    'Inform concisely, objectively, and unambiguously, while being sensitive to cultural ' +
+    'differences, using appropriate media and technology. Persuade using compelling and logical ' +
+    'arguments demonstrating the ability to counter argue when appropriate. Clarify and simplify ' +
+    'complex issues to convey relevant information in a way that adopts an appropriate tone and ' +
+    'is easily understood by the intended audience.',
+  commercial_acumen:
+    'Demonstrate awareness of organisational and wider external factors affecting the work of an ' +
+    'individual or a team in contributing to the wider organisational objectives. Use judgement ' +
+    'to identify key issues in determining how to address or resolve problems and in proposing ' +
+    'and recommending the solutions to be implemented. Show insight and perception in ' +
+    'understanding work-related and organisational issues, including the management of conflict, ' +
+    'demonstrating acumen in arriving at appropriate solutions or outcomes.',
+  analysis:
+    'Investigate relevant information from a wide range of sources, using a variety of analytical ' +
+    'techniques to establish the reasons and causes of problems, or to identify opportunities or ' +
+    'solutions. Enquire of individuals or analyse appropriate data sources to obtain suitable ' +
+    'evidence to corroborate or dispute existing beliefs or opinion and come to appropriate ' +
+    'conclusions. Consider information, evidence and findings carefully, reflecting on their ' +
+    'implications and how they can be used in the interests of the department and wider ' +
+    'organisational goals.',
+  scepticism:
+    'Probe deeply into the underlying reasons for issues and problems, beyond what is immediately ' +
+    'apparent from the usual sources and opinions available. Question facts, opinions and ' +
+    'assertions, by seeking justifications and obtaining sufficient evidence for their support ' +
+    'and acceptance. Challenge information presented or decisions made, where this is clearly ' +
+    'justified, in a professional and courteous manner; in the wider professional, ethical, ' +
+    'organisational, or public interest.',
+  evaluation:
+    'Assess and use professional judgement when considering organisational issues, problems or ' +
+    'when making decisions; taking into account the implications of such decisions on the ' +
+    'organisation and those affected. Estimate trends or make reasoned forecasts of the ' +
+    'implications of external and internal factors on the organisation, or of the outcomes of ' +
+    'decisions available to the organisation. Appraise facts, opinions and findings objectively, ' +
+    'with a view to balancing the costs, risks, benefits and opportunities, before making or ' +
+    'recommending solutions or decisions.',
+};
+
 // Paper → descriptor set. Selected per marking pass; never merged.
 export const SKILL_DESCRIPTORS_BY_PAPER: Record<AccaPaper, Record<string, string>> = {
   APM: APM_SKILL_DESCRIPTORS,
   AFM: AFM_SKILL_DESCRIPTORS,
+  SBL: SBL_SKILL_DESCRIPTORS,
 };
 
 export function getSkillDescriptors(paper: AccaPaper): Record<string, string> {
@@ -553,9 +605,22 @@ export async function judgeCaseMarking(input: JudgeCaseMarkingInput): Promise<Ca
   // ORDINAL CONTRACT (2026-07-28): the list is NUMBERED and the model echoes the number, never
   // the skill name. Same reasoning as the technical path — any string the model must reproduce
   // verbatim is a transcription risk, and one slip discarded the entire response.
+  // ⚠️ NO SOFT FALLBACK ON A MISSING DESCRIPTOR (2026-08-18). This used to substitute
+  // '(no authored descriptor on file for this skill)' and carry on. That is not degradation, it
+  // is a silent mis-score: the skill still enters the numbered rubric, still takes an equal share
+  // of the pool via `ceiling = professionalSkillsMarks / examinedSkills.length`, and is still
+  // banded by the model — against nothing. One typo mints a skill and takes marks off the real
+  // ones. `case-mark-run.ts` refuses unknown tags before we get here; this throw is the
+  // belt-and-braces for any other caller, and it is a throw rather than a filter because dropping
+  // the skill would silently re-weight the pool instead.
   const rubric = examinedSkills
     .map((s, i) => {
-      const descriptor = descriptors[s] ?? '(no authored descriptor on file for this skill)';
+      const descriptor = descriptors[s];
+      if (!descriptor) {
+        throw new Error(
+          `no ${paper} professional-skills descriptor for "${s}" — known: ${Object.keys(descriptors).join(', ')}`,
+        );
+      }
       return `${i + 1}. ${s}: ${descriptor}`;
     })
     .join('\n');

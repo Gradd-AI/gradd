@@ -17,7 +17,7 @@ import {
   type SitRefusal,
   type SitWriteOutcome,
 } from '@/lib/acca/sit-preview';
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 import { mockIntroViewed } from '@/lib/acca/surface-events';
 import { emitSurfaceEvent } from '@/lib/acca/surface-event-client';
@@ -134,7 +134,7 @@ interface DebriefReport {
   limitations: string[];
 }
 interface ResultsData {
-  paper: { id: string; paper: AccaPaper; title: string; duration_minutes: number };
+  paper: { id: string; paper: ServedPaper; title: string; duration_minutes: number };
   debrief: DebriefReport;
   pacing: { total_elapsed_minutes: number | null; tail_minutes: number | null };
 }
@@ -177,7 +177,7 @@ interface Attempt {
   completed_at?: string | null;
 }
 interface PaperData {
-  paper: { id: string; paper: AccaPaper; title: string; duration_minutes: number };
+  paper: { id: string; paper: ServedPaper; title: string; duration_minutes: number };
   cases: SitCase[];
   slots: Slot[];
   submitted: string[];
@@ -186,7 +186,7 @@ interface PaperData {
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
-export default function SitRunner({ paper }: { paper: AccaPaper }) {
+export default function SitRunner({ paper }: { paper: ServedPaper }) {
   const [phase, setPhase] = useState<Phase>('loading');
   const [data, setData] = useState<PaperData | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null);
@@ -807,7 +807,7 @@ function bandLabel(band: string | null): string | null {
   return band.charAt(0).toUpperCase() + band.slice(1);
 }
 
-function DebriefRequirement({ line, paper }: { line: DebriefLine; paper: AccaPaper }) {
+function DebriefRequirement({ line, paper }: { line: DebriefLine; paper: ServedPaper }) {
   const href = line.practise_area ? practiseHref(line.practise_area, paper) : null;
   return (
     <li className={`db-req db-req--${line.verdict}`}>
@@ -870,7 +870,7 @@ const PRACTISABLE_BANDS = new Set(['weak', 'competent']);
 /** The drill surface for one syllabus area. `area=` is the 2-character sub-area (E3a → E3):
  *  the LO itself is often a single drill, and the sub-area is what the selector treats as a
  *  practisable bucket. Paper is carried because AFM and APM LO codes collide exactly. */
-function practiseHref(loCode: string | null, paper: AccaPaper): string | null {
+function practiseHref(loCode: string | null, paper: ServedPaper): string | null {
   const area = (loCode ?? '').trim().slice(0, 2);
   if (!area) return null;
   return paperHref(`/acca/tutor?area=${encodeURIComponent(area)}`, paper);

@@ -1,6 +1,6 @@
 {
   "created": "18/07/2026",
-  "purpose": "Official ACCA evidence for AFM/FM investment-risk conventions (sources S1-S7) and AFM narrative-marking failure modes (examiner_reports E1-E5). ACCA PDFs are never committed in-repo (copyright) - fetch them with fetch_acca_sources.ps1.",
+  "purpose": "Official ACCA evidence for AFM/FM investment-risk conventions (sources S1-S7), AFM narrative-marking failure modes (examiner_reports E1-E5), and the SBL paper build (SBL-GUIDE, SBL-E1..E7, SBL-CHANGES, SBL-ETH1). ACCA PDFs are never committed in-repo (copyright) - fetch them with fetch_acca_sources.ps1. Local SBL working copies live under docs/sbl/, which is git-ignored as a WHOLE DIRECTORY: 'docs/*.pdf' does not cover them because a single * never crosses a '/'.",
   "unverified_citations_do_not_bake_in": [
     {
       "cited_as": "AFM \"March 2020\"",
@@ -153,6 +153,86 @@
       "bytes": 1003837,
       "questions": "Halstock, Drimpton, Passmore",
       "use": "Narrative failure modes F1-F11 (AFM_NARRATIVE_EVIDENCE.md §1b)."
+    },
+    {
+      "id": "SBL-E1",
+      "label": "S23",
+      "paper": "SBL",
+      "edition": "September 2023",
+      "title": "SBL September 2023 Examiner's Report",
+      "filename": "15_ACCA_SBL_S2023_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/sbl-s23-examiner-report.pdf",
+      "bytes": 337520,
+      "use": "SBL failure catalogue. UNSAMPLED as of 2026-08-17 - registered so it can be read, not yet read."
+    },
+    {
+      "id": "SBL-E2",
+      "label": "D23",
+      "paper": "SBL",
+      "edition": "December 2023",
+      "title": "SBL December 2023 Examiner's Report",
+      "filename": "16_ACCA_SBL_D2023_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/D23%20SBL%20examiner%27s%20report.pdf",
+      "bytes": 369755,
+      "use": "SBL failure catalogue. UNSAMPLED as of 2026-08-17."
+    },
+    {
+      "id": "SBL-E3",
+      "label": "J24",
+      "paper": "SBL",
+      "edition": "June 2024",
+      "title": "SBL June 2024 Examiner's Report",
+      "filename": "17_ACCA_SBL_J2024_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/J24%20SBL%20examiner%27s%20report.pdf",
+      "bytes": 466080,
+      "use": "SBL failure catalogue. UNSAMPLED as of 2026-08-17."
+    },
+    {
+      "id": "SBL-E4",
+      "label": "D24",
+      "paper": "SBL",
+      "edition": "December 2024",
+      "title": "SBL December 2024 Examiner's Report",
+      "filename": "18_ACCA_SBL_D2024_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/SD24%20SBL%20examiner%27s%20report.pdf",
+      "bytes": 423839,
+      "use": "SBL failure catalogue. UNSAMPLED as of 2026-08-17.",
+      "note": "EDITION AND FILENAME DISAGREE, and the EDITION is authoritative. ACCA's own filename says 'SD24' (September/December) but the report's cover page and running header both say 'December 2024' only. Cite it as December 2024. The label field follows the cover, not the URL."
+    },
+    {
+      "id": "SBL-E5",
+      "label": "MJ25",
+      "paper": "SBL",
+      "edition": "March/June 2025",
+      "title": "SBL March/June 2025 Examiner's Report",
+      "filename": "19_ACCA_SBL_MJ2025_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/MJ25%20SBL%20examiner%27s%20report.pdf",
+      "bytes": 1148189,
+      "use": "SBL failure catalogue. UNSAMPLED as of 2026-08-17."
+    },
+    {
+      "id": "SBL-E6",
+      "label": "SD25",
+      "paper": "SBL",
+      "edition": "September/December 2025",
+      "title": "SBL September/December 2025 Examiner's Report",
+      "filename": "20_ACCA_SBL_SD2025_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/sbl_examiner_report_d25.pdf",
+      "bytes": 1029175,
+      "use": "SBL failure catalogue. UNSAMPLED as of 2026-08-17.",
+      "note": "ACCA's filename says 'd25'; the cover says 'September/December 2025'. Same convention as the AFM SD25 entry (E5), whose URL is likewise 'afm_examiner_report_d25.pdf' - ACCA names the file after the SECOND month of the pair."
+    },
+    {
+      "id": "SBL-E7",
+      "label": "MJ26",
+      "paper": "SBL",
+      "edition": "March/June 2026",
+      "title": "SBL March/June 2026 Examiner's Report",
+      "filename": "21_ACCA_SBL_MJ2026_Examiner_Report.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/sbl_examiner_report_j26.pdf",
+      "bytes": 1192658,
+      "use": "SBL failure catalogue - the MOST RECENT sitting, and the only SBL report sampled so far. p.2: 'the marking scheme included 20 marks for five professional skills' (the five-skill confirmation, independent of the syllabus). p.2 also: markers looked 'primarily' at the named skill but 'also considered the general professionalism that candidates demonstrated' - so the per-requirement shape is NOT 'exactly one skill, exclusively'. pp.3, 8-9 hold the pre-seen checklist and four of the failure modes.",
+      "note": "ACCA's filename says 'j26'; the cover says 'March/June 2026'. SAMPLING CEILING: four pages of this one document (pp.2-3, 8-9) are all that has been read across all seven reports. Roughly 6% of the citations any SBL failure catalogue would rest on. Do not describe the catalogue as verified."
     }
   ],
   "syllabus_sources": [
@@ -180,6 +260,48 @@
       "use": "Specification for docs/research/FAE_ADVISORY_CROSSWALK.md. The Advisory ELECTIVE is pp.47-51: objective and learning outcomes p.47; the 24 numbered functional competencies pp.48-50 (areas 1-5, each marked U/A/I); examinable governance codes p.50; assessment basis and reading list p.51 (open book, two independent simulations, 4h30m, at least 4 of the 5 areas examinable, any area up to circa 40%).",
       "ip_restriction": "FETCHED, NOT STORED - and stricter than the ACCA entries. CAI requires WRITTEN PERMISSION before any part is stored in a retrieval system. The local working copy lives under docs/FAE/, which is git-ignored (.gitignore, rule 'docs/FAE/'); it is never committed, never indexed, never added to a vector store or RAG corpus, and its wording is never reproduced in any repo document. The crosswalk cites competencies by CAI's own numbering and paraphrases throughout. NOTE: 'docs/*.pdf' does NOT cover it - a single * never crosses a '/', which is why the directory rule exists.",
       "note": "BASE EDITION ONLY - the aim is the 2026/27 cycle and that statement is inside CAI's Learning Hub, behind student authentication, and was NOT available. Every /docs/ link on CAI's public FAE downloads page was enumerated: exactly four exist (competency statements 2024/25 and 2025/26, plus summary-of-changes for those same two years). There is NO public 2026/27 statement and NO public 2026/27 change summary, so the delta could not be applied or inferred. Re-running the crosswalk against 2026/27 is a hard prerequisite to any commercial release. Extraction route: no poppler on either machine - use 'npx -y pdf2json -f <pdf> -o <scratchdir>', then decode each Texts[].R[].T with decodeURIComponent inside a try/catch (a bare % such as '40%' is not a valid escape and throws URIError)."
+    },
+    {
+      "id": "SBL-GUIDE",
+      "label": "SBL-GUIDE",
+      "paper": "SBL",
+      "edition": "September 2026 to June 2027",
+      "title": "SBL Syllabus and Study Guide September 2026 to June 2027",
+      "filename": "14_ACCA_SBL_S26_J27_Syllabus_and_Study_Guide.pdf",
+      "url": "https://www.accaglobal.com/content/dam/acca/global/PDF-students/acca/SBL/sbl_s26_j27_syllabus_and_study_guide.pdf",
+      "bytes": 734445,
+      "pages": 24,
+      "use": "THE source of record for the SBL paper. §5 detailed study guide pp.9-17 holds all 138 learning outcomes across sections A-H (machine-parsed: A 12, B 27, C 22, D 15, E 17, F 12, G 10, H 23), each with an intellectual-level marker - 92 at [3], 46 at [2], zero at [1]. §I pp.16-17 holds the FIVE professional skills, each with exactly three sub-descriptors (15 total): Communication (Inform/Persuade/Clarify), Commercial acumen (Demonstrate awareness/Use judgement/Show insight), Analysis (Investigate/Enquire/Consider), Scepticism (Probe/Question/Challenge), Evaluation (Assess/Estimate/Appraise). §J holds 4 unlettered employability outcomes. §6 p.18: 'There have been no additions, deletions or amendments to the syllabus for September 2026 to June 2027.' §7 pp.18-19: five professional skills, 'three tasks with a varying number of marks', 'MOST tasks will contain professional skills marks' (not all). §9 p.21: closed book, 3h15m including reading and planning time, pre-seen released two weeks before AND available inside the exam, 80 technical + 20 professional-skills marks. Also the intended source of record for a future scripts/sbl-framework.ts.",
+      "note": "TWO-COLUMN LAYOUT, and the right extraction flag is NOT the one the AFM guide (E6) needs. On the Xpdf pdftotext 4.00 build on these machines, '-layout' places the two columns SIDE BY SIDE on each output line and the default mode INTERLEAVES them (a left-column outcome can appear before the heading it belongs to). Use '-raw', which follows content-stream order and yields correct reading order column by column: 'pdftotext -raw -f 9 -l 18 <pdf> out.txt'. This build has NO crop options (-x/-y/-W/-H), so column-splitting by geometry is unavailable. TWO PUBLISHED TYPOS in the level markers, and they matter: A2d renders '[3}' and H5a renders '[3)' - a closing-bracket character CLASS is required, not a literal ']'. A strict ']' regex silently drops both rows from the [3] count, which is the mechanical cause of an earlier 95/43-vs-92/46 disagreement over the level split. Both are level 3."
+    },
+    {
+      "id": "SBL-CHANGES",
+      "label": "CHANGES",
+      "paper": "(all papers)",
+      "edition": "2025/26 to 2026/27",
+      "title": "Syllabus changes for ACCA Qualification exams 2025/26 - 2026/27",
+      "filename": "22_ACCA_Syllabus_Changes_2025-26_to_2026-27.pdf",
+      "url": "https://www.accaglobal.com/content/dam/ACCA_Global/Students/resourceFinder/acca-syllabus-changes.pdf",
+      "bytes": 631815,
+      "use": "Cross-paper change deck. p.2 change table: SBL = 'NO' (no changes), APM = 'YES'. p.3, APM guidance, verbatim: 'Areas being removed include the BCG model, Porter's five forces model, McKinsey 7S model, transfer pricing, and IRR and MIRR. New areas added to the syllabus include total shareholder return (TSR), environmental cost categories, service level agreements (SLAs), and net promoter score (NPS).' This is the evidence for the DELETION ASYMMETRY: SBL still examines BCG (C5d) and Porter's Five Forces (C3a), both located in the SBL study guide, while APM has dropped them - so no APM asset backs either SBL outcome. McKinsey 7S is deleted from APM and is ABSENT FROM SBL (all nine study-guide pages read; SBL's change models are POPIT H3b, Baldrige H4a, Harmon H5c, Lewin H5f, Balogun and Hope Hailey H5g) - it strands with no destination on either side. Nothing needs unwinding in scripts/apm-framework.ts: it is already on S26-J27 and greps clean for BCG / Boston / five forces / 7S / McKinsey.",
+      "note": "ROLLING FILENAME - THE BYTE GUARD WILL TRIP BY DESIGN. The URL has no year in it ('acca-syllabus-changes.pdf'), so ACCA overwrites it in place each cycle. When fetch_acca_sources.ps1 throws a size mismatch on this entry, the likely cause is a NEW EDITION at the same URL, not a corrupted download - re-verify every page ref above against the new document and update both the edition and the bytes. Stronger row-level evidence for the 7S deletion exists in the APM syllabus's own change table (apm_s26_j27_syllabus_and_study_guide.pdf p.14: 'B3a | A4d | McKinsey 7S removed and verb change'), which is ACCA mapping the deletion onto a specific LO; prefer that citation over this deck's summary paragraph."
+    },
+    {
+      "id": "SBL-ETH1",
+      "label": "ETH-CODE",
+      "paper": "SBL",
+      "edition": "IESBA Handbook 2025 Edition, as adopted by ACCA effective 1 January 2026",
+      "issuer": "IESBA, adopted in full and unaltered by ACCA as Section A of the ACCA Code of Ethics and Conduct",
+      "title": "ACCA Code of Ethics and Conduct - Section A: International Code of Ethics for Professional Accountants (including International Independence Standards), Volume 1",
+      "filename": "24_ACCA_CEC_SectionA_IESBA_Handbook_2025_Vol1_1Jan2026.pdf",
+      "url": "https://www.accaglobal.com/content/dam/ACCA_Global/Members/Doc/rule/ethics/1-Jan-26/CEC-2025-IESBA-Handbook-Vol-1-1-Jan-2026.pdf",
+      "bytes": 2308792,
+      "sha256": "FE6292FFD98B8D99D15F1A8F56D64ABBBF2251C52FE83693F15FFA0962BB429B",
+      "pages": 508,
+      "use": "THE marking basis for SBL section A3 ethics outcomes (A3a-A3d), and the source of record for any drill that classifies an ethical threat. THREE passages page-verified 20/08/2026: (1) PDF p.39 - S120.6 A3, the FIVE and only five threat categories, verbatim: 'Self-interest threat - the threat that a financial or other interest will inappropriately influence a professional accountant's judgment or behavior'; 'Self-review threat - the threat that a professional accountant will not appropriately evaluate the results of a previous judgment made, or an activity performed by the accountant or by another individual within the accountant's firm or employing organization, on which the accountant will rely when forming a judgment as part of performing a current activity'; 'Advocacy threat - ... will promote a client's or employing organization's position to the point that the accountant's objectivity is compromised'; 'Familiarity threat - the threat that due to a long or close relationship with a client, or employing organization, a professional accountant will be too sympathetic to their interests or too accepting of their work'; 'Intimidation threat - the threat that a professional accountant will be deterred from acting objectively because of actual or perceived pressures, including attempts to exercise undue influence over the accountant.' (2) PDF p.57, printed p.52 - S210.4 A1, Part 2 (Professional Accountants in BUSINESS), examples of circumstances that might create a conflict of interest, including verbatim: 'Being responsible for selecting a vendor for the employing organization when an immediate family member of the accountant might benefit financially from the transaction.' S210.2 frames a conflict of interest as creating threats to OBJECTIVITY. This is IESBA's own worked shape for a procurement-conflict scenario. (3) PDF p.371, glossary (printed p.363 onward) - 'Close family: A parent, child or sibling who is not an immediate family member.' and 'Immediate family: A spouse (or equivalent) or dependent.'",
+      "finding": "A BROTHER-IN-LAW IS NEITHER IMMEDIATE NOR CLOSE FAMILY under the Code's own glossary, so a rubric that rests a self-interest threat on a brother-in-law's financial interest is resting it on a relationship the Code does not enumerate. Where the connection is the relationship itself rather than a financial interest held by the accountant or their immediate/close family, FAMILIARITY is the fitting category. Also settled here: an ABSENT independent review is not a self-review threat - self-review requires the accountant to re-evaluate the results of their OWN (or their firm's/organization's) prior judgment and RELY on it in a current activity, so a control that never happened creates no self-review threat, it leaves an existing threat uncontrolled.",
+      "note": "FETCHED, NOT STORED - same posture as every other ACCA PDF here; 'official_acca_pdfs/' is git-ignored (.gitignore line 71). ADOPTION CHAIN, and it matters for citation: ACCA's Code of Ethics and Conduct was RESTRUCTURED on 1 July 2025 into three documents (Guide; Section A: IESBA Code; Sections B and C: Supplementary Requirements and Guidance). ACCA states it adopts the IESBA Code 'in full, using the original American English language text and interpretation' and adopts revisions 'in their entirety and unaltered' - so the threat definitions and the glossary are the IESBA text verbatim, and citing IESBA paragraph numbers IS citing ACCA's Code. Volume 1 holds Parts 1-4B plus the Glossary; Volume 2 (https://www.accaglobal.com/content/dam/ACCA_Global/Members/Doc/rule/ethics/1-Jan-26/CEC-2025-IESBA-Handbook-Vol-2-15-Dec-2026.pdf) is NOT registered - nothing in the SBL A3 outcomes needs it. A 10-page ACCA GUIDANCE FACTSHEET (https://www.accaglobal.com/content/dam/ACCA_Global/Members/members-in-practice/members-in-practice/Code-of-Ethics-and-Conduct-1-Jan-2026.pdf, 183946 bytes) quotes all five threat definitions compactly on its p.8 and is a useful locator, but it states on its own p.1 that it 'has no regulatory status' and that the Rulebook takes precedence - so it is deliberately NOT registered and must never be cited as the marking basis. EXTRACTION: pdftotext 4.00 is present on these machines; '-raw' works and gives correct reading order. The PDF has NO printed-page/PDF-page offset table - printed p.52 is PDF p.57, printed p.363 is around PDF p.371, so always cite the PDF page alongside the printed one.",
+      "gap_this_closed": "Registered 20/08/2026. Before this, 34 sources were registered and NOT ONE was an ethics code, on a qualification whose SBL section A examines ethical threats and safeguards directly (A3a-A3d). SBL-A4 was authored against the taxonomy from memory and misclassified two of its three threats. That is below the standard the AFM risk (S1-S7) and fx-hedge (S8/S9, T1/T2) families were held to, where every convention carries a page reference."
     }
   ],
   "question_sources": [

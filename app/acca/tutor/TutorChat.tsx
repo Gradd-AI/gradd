@@ -6,7 +6,7 @@ import MessageRenderer from '@/components/chat/MessageRenderer';
 import type { ClientSessionState } from '@/app/api/acca/tutor/route';
 import AreaPicker, { type PickerArea } from '@/app/acca/AreaPicker';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
-import type { AccaPaper } from '@/lib/acca/paper';
+import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
 
 interface Drill {
@@ -53,9 +53,9 @@ function ezraOpening(drill: Drill): Message {
   };
 }
 
-// `paper` is `AccaPaper`, not `string`: the caller already computes one through
+// `paper` is `ServedPaper`, not `string`: the caller already computes one through
 // `resolvePaper`, and the loose type was what let this component build paper links by hand.
-export default function TutorChat({ drill, initialCapHit, userId, paper }: { drill: Drill; initialCapHit: boolean; userId: string; paper: AccaPaper }) {
+export default function TutorChat({ drill, initialCapHit, userId, paper }: { drill: Drill; initialCapHit: boolean; userId: string; paper: ServedPaper }) {
   // Carry the paper into every upsell link so /acca/subscribe leads with the paper they came
   // from (per-paper copy; visible, switchable default when absent).
   const subscribeHref = paperHref('/acca/subscribe', paper);

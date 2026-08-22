@@ -264,7 +264,7 @@ const SPEC: AfmCaseSpec = {
       marks: 13,
       ps_tags: ['analysis_and_evaluation'],
       intellectual_level: 3,
-      calc: { lo: 'B1a', inputs: ENPV_INPUTS },
+      calc: { paper: 'AFM', lo: 'B1a', inputs: ENPV_INPUTS },
       prose: {
         question:
           '(i) Calculate the expected net present value of the vessel investment and the ' +

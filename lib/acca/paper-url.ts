@@ -20,7 +20,7 @@
 // is the thing that actually has to hold. Splitting them across two files is how the two
 // ends drift.
 
-import { DEFAULT_PAPER, strictPaper, type AccaPaper } from './paper';
+import { DEFAULT_PAPER, strictPaper, type AccaPaper, servedPaper, type ServedPaper } from './paper';
 
 /**
  * Build a root-relative ACCA link that carries the paper.
@@ -47,7 +47,7 @@ import { DEFAULT_PAPER, strictPaper, type AccaPaper } from './paper';
  * A per-paper SURFACE (`/acca/mock` vs `/acca/afm/mock`) is also out of scope — that is a
  * different path, not a parameterised one, and `ACCADashboard`'s `mockHref` stays a ternary.
  */
-export function paperHref(path: string, paper: AccaPaper): string {
+export function paperHref(path: string, paper: ServedPaper): string {
   const [base, rawQuery = ''] = path.split('?');
   const kept = rawQuery
     .split('&')
@@ -87,8 +87,12 @@ export function paperHref(path: string, paper: AccaPaper): string {
 export function resolveSubscribePaper(
   param: string | null,
   referrer: string | null,
-): AccaPaper | null {
-  const named = strictPaper(param);
+): ServedPaper | null {
+  // servedPaper, not strictPaper: this feeds a PURCHASE. `strictPaper` now returns 'SBL'
+  // (declared 2026-08-18), which would have made `?paper=SBL` resolve to a paper with no price
+  // instead of falling through to the refusal branch below. servedPaper keeps this function
+  // byte-identical in behaviour to before SBL existed, for every input including that one.
+  const named = servedPaper(param);
   if (named) return named;
 
   // Present and non-empty, but not a paper → something was stated and it was wrong. Refuse.

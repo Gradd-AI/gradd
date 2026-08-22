@@ -2,7 +2,7 @@
 //
 // Durable, COMMITTED pre-insert gate barrier for CASE/MOCK requirements (Section A/B mock
 // papers → acca_case_requirements rows), as distinct from the per-drill gate flow in
-// scripts/generate-afm-drills.ts (single practice drills → acca_drills rows, its own
+// scripts/generate-acca-drills.ts (single practice drills → acca_drills rows, its own
 // buildOfrProof + inline gate loop).
 //
 // Extracted 2026-07-25 (AFM Mock Paper 1 FR review) because GATE 26
@@ -121,7 +121,7 @@ const fmt1 = (n: number) => n.toFixed(1);
 // recomputable dependent 'carried'. Distinct per-root perturbation factors (not a single
 // ×0.8) so a dependent that is a scale-invariant ratio of two roots can't cancel the error
 // and false-verdict 'correct'. A second, independently-maintained copy of this same seeding
-// strategy lives in scripts/generate-afm-drills.ts for the per-drill (acca_drills) gate flow
+// strategy lives in scripts/generate-acca-drills.ts for the per-drill (acca_drills) gate flow
 // — keep the two in sync if the strategy ever changes; they are deliberately not shared
 // because the two authoring paths (case requirements vs. single drills) must never depend on
 // each other.
@@ -391,7 +391,7 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
       // the FIX-1 pattern rule — a DCF equity diverging >50% from the ESTIMATED equity figure
       // used to weight the WACC must carry the divergence-reconciliation point (the builder
       // injects it; this enforces that it survived). Both mirror the drill generator's own
-      // loop in scripts/generate-afm-drills.ts, kept here so a case/mock caller gets them too.
+      // loop in scripts/generate-acca-drills.ts, kept here so a case/mock caller gets them too.
       const { fcffC, debtValue, equityWeight, modelAnswer } = input;
       add('VAL-11 flow/rate/bridge', validateValuationBridge('fcff_enterprise', fcffC, { debt_value: debtValue }));
       const diverges = divergentEquity(fcffC.equity_value, equityWeight);
@@ -483,7 +483,7 @@ export function runFamilyGates(input: FamilyGateInput): GateLine[] {
 // N1–N5 NARRATIVE BARRIER — the single committed orchestration
 // ═══════════════════════════════════════════════════════════════════════════════════════
 // Previously N1–N5 were wired ad hoc in TWO scripts (_author_mock_paper1.ts and
-// generate-afm-drills.ts). That is precisely how N4 skipped three narrative requirements
+// generate-acca-drills.ts). That is precisely how N4 skipped three narrative requirements
 // undetected: one caller looked for `rubric.golden_bad` while the rubric stores it at
 // `_authoring.golden_bad`, found nothing, and printed a skip line nobody counted.
 //

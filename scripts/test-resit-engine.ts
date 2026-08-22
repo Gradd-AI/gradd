@@ -27,7 +27,7 @@ import {
   type Rating,
   type ResitInputs,
 } from '../lib/acca/resit-engine';
-import { ACCA_PAPERS, type AccaPaper } from '../lib/acca/paper';
+import { SERVED_PAPERS, type AccaPaper } from '../lib/acca/paper';
 
 let failures = 0;
 function ok(name: string, cond: boolean, detail = '') {
@@ -55,13 +55,13 @@ function inputs(paper: AccaPaper, over: Partial<ResitInputs> = {}): ResitInputs 
 // ── Shape invariants, both papers ────────────────────────────────────────────
 console.log('\n-- data constants: shape, per paper --');
 ok('both papers keyed in TOPIC_GROUPS_BY_PAPER',
-  ACCA_PAPERS.every((p) => Array.isArray(TOPIC_GROUPS_BY_PAPER[p])));
+  SERVED_PAPERS.every((p) => Array.isArray(TOPIC_GROUPS_BY_PAPER[p])));
 ok('both papers keyed in HABITS_BY_PAPER',
-  ACCA_PAPERS.every((p) => typeof HABITS_BY_PAPER[p] === 'object'));
+  SERVED_PAPERS.every((p) => typeof HABITS_BY_PAPER[p] === 'object'));
 ok('both papers keyed in HABIT_QUESTIONS_BY_PAPER',
-  ACCA_PAPERS.every((p) => Array.isArray(HABIT_QUESTIONS_BY_PAPER[p])));
+  SERVED_PAPERS.every((p) => Array.isArray(HABIT_QUESTIONS_BY_PAPER[p])));
 
-for (const paper of ACCA_PAPERS) {
+for (const paper of SERVED_PAPERS) {
   const groups = getTopicGroups(paper);
   const questions = getHabitQuestions(paper);
   const habits = getHabits(paper);

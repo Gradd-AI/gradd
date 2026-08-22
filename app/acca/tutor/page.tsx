@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
-import { resolvePaper, strictPaper } from '@/lib/acca/paper';
+import { resolvePaper, strictPaper, servedPaper, SERVED_PAPERS } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
 import { hasPaperAccess } from '@/lib/acca/access';
 import TutorChat from './TutorChat';
@@ -59,7 +59,16 @@ export default async function APMTutorPage({
   if (drillId) {
     // Resume exactly this drill: the tutor POST re-reads acca_tutor_progress by
     // (user_id, drill_id), so landing back on the same id restores miss_count/diagnosis.
-    // Still gated to a published APM drill so a stale/foreign id can't surface anything.
+    //
+    // Gated to an approved+published drill OF A SERVED PAPER. The comment here used to say
+    // "a published APM drill", which this query never actually enforced — there was no paper
+    // predicate at all, so any published row of any paper resolved. Harmless while every
+    // published row was APM or AFM; not harmless once SBL rows exist, because SBL is DECLARED
+    // but NOT SERVED (lib/acca/paper.ts) and this page has no SBL anything.
+    //
+    // Scoped to the SET, never to one guessed paper: an id is globally unique, so filtering it
+    // to `paper` would 404 a legitimate AFM resume arriving without ?paper=AFM. Same rule as
+    // the id branch in app/api/acca/tutor/route.ts — the two must not drift apart.
     const { data: drill } = await supabase
       .from('acca_drills')
       .select('id, lo_code, topic, question, context_text, paper_code')
@@ -67,6 +76,7 @@ export default async function APMTutorPage({
       .eq('exam_board', 'ACCA')
       .eq('status', 'approved')
       .eq('published', true)
+      .in('paper_code', [...SERVED_PAPERS])
       .maybeSingle();
     if (drill) data = drill as Drill;
   }
@@ -177,6 +187,8 @@ export default async function APMTutorPage({
   // the fallback is this request's own resolved paper — not APM. Coercing a bad row to APM is
   // the exact class of silent default the `?paper=` work removed from the URL boundary, and a
   // DB boundary deserves the same treatment.
-  const drillPaper = strictPaper(data.paper_code) ?? paper;
+  // servedPaper: the row must name a paper this surface can actually render. SBL is declared
+  // but has no tutor, so it falls back to the request paper like any unrecognised value.
+  const drillPaper = servedPaper(data.paper_code) ?? paper;
   return <TutorChat drill={data} initialCapHit={initialCapHit} userId={user.id} paper={drillPaper} />;
 }
