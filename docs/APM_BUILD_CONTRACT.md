@@ -5188,3 +5188,95 @@ id, snapshots the whole row, guards the update on `published=true`, asserts 17/1
 byte-identical. It caught a defect in its own dry run: **P7 only checks a `misconception…:` sentence
 EXISTS, so a reveal naming it in sentence three yields a 100-word blob as the tutor's broadcast
 lead.** A 220-char shape gate was added.
+
+
+## SESSION BANK — 2026-08-22 — GATE-P RUN HALF-WAY ON PURPOSE: SBL BATCH A IS APPROVED AND UNPUBLISHED (`main`)
+
+**SHIPPED: `feat/sbl-foundation` merged to `main` at `4918b17`** (69 commits), confirmed from the
+BUILD LOG via the CLI — SHA matched on `vercel ls --meta githubCommitSha=`, `PASS contract gate:
+65/65`, `Build Completed in /vercel/output [48s]`, `Deployment completed`, `● Ready`. That put the
+`SERVED_PAPERS` scoping live in production, which **P-DB8(b)** required before any SBL row could be
+flipped: a DB write is not branch-scoped, so the flip ships the instant it runs while a guard on a
+branch does not.
+
+**THEN THE FLIP — AND GRANT RULED IT HALF-WAY, WHICH IS THE FINDING (doctrine `P-DB9`).**
+`candidate → approved` on all five SBL rows; **`published` untouched.** `acca_drills` approved
+154 → **159**, published **154 → 154**.
+
+> `approved` records that the content passed review, which is true today. `published` records intent
+> to serve, which is not — SBL has no surface, no price and no entitlement. Splitting them is what
+> the two-step gate is for, and it stops `candidate` losing its meaning when the most-reviewed
+> content in the repo carries it. — Grant
+
+The alternative was not neutral. Leaving five drills that had cleared five cold reads, a content
+sync and three reconcile arms in the same state as an ungated draft **costs `candidate` its
+meaning**: a reader could no longer tell "not reviewed" from "reviewed, deliberately not served",
+and neither could the reconcile, because both its arms compare identifier sets and neither records
+intent. The vocabulary to say this already existed in the two-step gate; it had simply never been
+asked to.
+
+**🔴 AN INVARIANT DIED WITH IT, AND IT WAS LOAD-BEARING.** `acca_drills` had
+`approved == published == 154`, so "approved but unpublished" read as a leak signal ON SIGHT. It no
+longer does. **Every future reconcile must ALLOW-LIST these five by id** — the same disposition
+`47c9d5ce` (the permanent candidate) already carries. An *unregistered* approved-but-unpublished row
+still hard-stops, because the register is the only thing separating a decision from a leak.
+
+**THE RUNNER: `scripts/authoring/approve-sbl-batch-a.ts`**, committed under P-DB6, DRY RUN by
+default, and re-runnable read-only **so step two's owner can re-run the arms** — a gate whose
+evidence lives only in one session's scrollback cannot be re-run later. Three arms, each a hard stop:
+
+- **ARM 1 · STATUS** — DB approved-set vs the journal's reviewed-set. **0 approved rows without a
+  review record**, so nothing needed demoting; all 5 reviewed ids present. Re-run post-flip: exact
+  match. The two halves are **deliberately asymmetric pre-flip** — *approved with no record* is a
+  pipeline leak and stops everything, while *reviewed but not yet approved* IS the target set, and
+  is a violation only for a row that is not a target.
+- **ARM 2 · CONTENT (P-DB8)** — the same pure core and `CONTENT_FIELDS` as the standalone runner,
+  **in-process so it cannot be skipped by forgetting to run it**. 5/5 rows × 5 fields green.
+- **ARM 3 · JOURNAL (new, `P-DB9(a)`)** — the arm the status arm ASSUMES AND NEVER VERIFIES. The
+  status arm is HANDED its reviewed-set (a `--journalled` flag, a literal), so it takes on trust the
+  very thing it appears to check; a reviewed-set asserted by a literal in a script is a literal in a
+  script. This one opens `APM_BUILD_CONTRACT.md` and asserts it names all five ids IN FULL, and that
+  all five review packs exist on disk. ⚠️ **CEILING: it proves a record EXISTS and NAMES the row. It
+  cannot prove the review was good and is not a substitute for reading the pack.**
+
+Then P-DB3 snapshot `docs/rollbacks/SBL_batch_a_approve_flip_20260822.json` → five explicit-id
+`UPDATE`s each guarded `AND status='candidate' AND published=false`, with **`published` never on the
+left of any of them** → **P-DB4: 19/19 other fields byte-identical on all five, `published` INSIDE
+the comparison** → pre/post counts asserted (published unmoved, SBL published still 0, approved +5
+exactly, row count unmoved).
+
+**⚠️ `P-DB9(b)` — SAY "NOT A TRANSACTION" RATHER THAN IMPLYING IT IS.** The doctrine wants an
+un-reviewed `approved` row demoted in the SAME transaction as the flip. supabase-js has no
+transaction wrapper and cannot give that, so the script **refuses to write** when a demotion is
+required and prints the exact `BEGIN`/`COMMIT` block for the SQL editor. Today needed none. A
+sequenced pair of writes described as a transaction would have been the worse answer.
+
+**ALSO SHIPPED: `docs/reviews/SBL_BATCH_A_GPT_READ_5.md`**, the pack that had no pack. Reads 2, 3
+and 4 are banked as GPT's own text; read 5's findings reached the drafts through chat only and went
+straight into the rollback JSONs at `179db83`, so the status arm had nothing journalled to reconcile
+against. **The pack is a RECONSTRUCTION and says so in its first paragraph** — substance evidenced
+by the diff it produced, attributed wording is paraphrase, every draft string verbatim. A pack that
+read like a transcript when it is not would tell the next reader the provenance is stronger than it
+is, which is the same failure as a false DERIVED claim in the crosswalk ledger.
+
+It records **SHAPE 7 — FIXED-PREMISE VIOLATION**, which the six named shapes do not cover: not a
+defect in how strongly a claim is stated or where it came from, but in **which question is being
+marked**. A2's requirement stipulates the culture is held constant; `c6` and the GOOD built the
+credible-opposing-case half on PCG's capacity to CHANGE that culture. Plus the two residual imports
+read 4 did not reach — the A4 reveal still laundering Camacho's own assertion into a verified fact
+after `c1` and the GOOD were repaired (**a criterion is never fixed alone; the teaching fields are
+part of it**), and the hotline described as the channel for TESTING the assertion when the exhibit
+makes it the channel for RAISING concerns. **The three grinding items are recorded WITH THEIR
+FENCES** — A2 c2's *"credential that wins senior advancement"*, A3 c4's *"would have to carry the
+launch"*, A3's *"synthesised it correctly"* — because a finding that is not written down gets
+re-found. Each is a real over-reach in its site's lead sentence, each bounded by a fence already in
+the same field, none moving a mark. The last is the one a future pass should still reword: the
+exhibit records what the study did and concluded, never that its synthesis was correct.
+
+**STEP TWO IS NOT AUTHORISED BY ANY OF THIS.** It belongs to whoever builds the SBL surface and
+carries a **RE-READ OBLIGATION**: by then the content will be months old and the reviewer's context
+gone, and **all three arms go green on stale-but-unchanged rows**. Green means the row still holds
+what was reviewed — never that the review is still right. Written for its owner in
+`docs/AFM_SURFACED.md` beside the SBL surface item, not only in the batch's own block.
+
+**Batch A is closed.**

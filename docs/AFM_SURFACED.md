@@ -2,7 +2,21 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
-*Last refreshed: 2026-08-19 (**SBL BATCH A IS IN THE TABLE — acca_drills 155 → 160, Section A 0 → 5 of 12 outcomes, all five `candidate`/`published=false`, publish flip OWED and two steps.** The batch needed TWO schema migrations nobody predicted, both found by TRYING TO INSERT: SBL was declared in `ACCA_PAPERS`, `SKILL_DESCRIPTORS_BY_PAPER`, `GATE_CONFIG` and all 138 outcomes while the DB had never heard of it — and `acca_drills_skill_chk` then admitted exactly the one skill name SBL SHARES with AFM and refused the four SBL-only ones, drawing the vocabulary line correctly without being told. The fix is PAPER-AWARE, not flat, because a flat list would let an AFM row be tagged `analysis`. **Item 2 CLOSED 2026-08-20**: AFM’s teaching catalogue had no entry for F6 or F10 — the two most-marked modes in the corpus (33 and 24 criteria) against F3’s zero — so UNDEVELOPED-ASSUMPTION was the nearest name for a failure it could not express. Two modes added, the enumeration made conditional per SBL’s shape (PIN4 green), the shared reveal tool de-AFM’d, and all three rows re-headlined live under P-DB2/3/4. Earlier: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
+*Last refreshed: 2026-08-22 (**SBL BATCH A IS CLOSED. GATE-P STEP ONE ONLY: all five rows
+`candidate → approved`, `published` UNTOUCHED — approved 154 → 159, published 154 → 154.** Grant's
+ruling, and the two columns are not the same claim: `approved` says the content passed review, which
+is true; `published` says intent to serve, which is not — SBL has no surface, no price, no
+entitlement. **This BREAKS the old `approved == published` invariant on `acca_drills`, so every
+future reconcile must ALLOW-LIST these five** the way it already allow-lists `47c9d5ce`. Three arms
+all green before the write — status (0 un-reviewed approved rows, nothing to demote), content
+(P-DB8, 5/5 × 5 fields), and a new **JOURNAL arm** that checks the thing the status arm assumes and
+never verifies: that a review record actually exists and names the row. P-DB4 19/19 fields
+byte-identical, `published` inside the comparison. `feat/sbl-foundation` **merged to `main` at
+`4918b17`**, build log confirmed, so `SERVED_PAPERS` scoping is live; and
+`docs/reviews/SBL_BATCH_A_GPT_READ_5.md` now exists — a RECONSTRUCTION, flagged as one, recording
+SHAPE 7 (fixed-premise violation) and the three over-reaches deliberately left as grinding. **Step
+two belongs to whoever builds the SBL surface and carries a RE-READ obligation** — see the 🟢
+STANDING block. Earlier: 2026-08-19 (**SBL BATCH A IS IN THE TABLE — acca_drills 155 → 160, Section A 0 → 5 of 12 outcomes, all five `candidate`/`published=false`, publish flip OWED and two steps.** The batch needed TWO schema migrations nobody predicted, both found by TRYING TO INSERT: SBL was declared in `ACCA_PAPERS`, `SKILL_DESCRIPTORS_BY_PAPER`, `GATE_CONFIG` and all 138 outcomes while the DB had never heard of it — and `acca_drills_skill_chk` then admitted exactly the one skill name SBL SHARES with AFM and refused the four SBL-only ones, drawing the vocabulary line correctly without being told. The fix is PAPER-AWARE, not flat, because a flat list would let an AFM row be tagged `analysis`. **Item 2 CLOSED 2026-08-20**: AFM’s teaching catalogue had no entry for F6 or F10 — the two most-marked modes in the corpus (33 and 24 criteria) against F3’s zero — so UNDEVELOPED-ASSUMPTION was the nearest name for a failure it could not express. Two modes added, the enumeration made conditional per SBL’s shape (PIN4 green), the shared reveal tool de-AFM’d, and all three rows re-headlined live under P-DB2/3/4. Earlier: 2026-08-18 (**A GATE CAUSED A MIS-TAG, AND SBL GETS ITS FIFTH SKILL AS VOCABULARY.** Castlereagh (iv) re-tagged A3a → A1c under full P-DB2/3/4 — the tag named ESG and the rubric awards none — and the cause was gate C4 demanding four-skill coverage the content did not supply, which C4 cannot see. **ACCA_PAPERS now declares SBL**, split from a new SERVED_PAPERS so a declared paper can never reach a price map; the exhaustive break found NINE sites, not the six predicted, and the extra three were commerce. **The free-text skill-tag trap is closed** — an unknown tag was silently taking an equal share of the marks pool. APM/AFM proven byte-identical by 5 pin families (test:paper-vocabulary, 53 checks). Per-requirement PS marking deliberately NOT started. Earlier: **SBL: THE CASES BECAME AN ASSET CLASS, THE PROSE GOT GATED, AND THE 138 OUTCOMES LEFT THE PARSE.** Coverage 34/138 → **35/138 (25.4%)** on three rulings — reserved `mock_only` content is not an asset (a standing property, written into T1), E5d unlocks on a practice case requirement, and the corpus snapshot stops claiming to be DERIVED. **`scripts/sbl-framework.ts` now exists** — 138 outcomes, generated from the same parse, 1509-check fixture, gate 58 → 59, and **wired to nothing yet, on purpose**. The gate that matters: **`assertNarrativeNumbers`**, because *"Five of the six sit in section G"* is four and the completeness gate read verdicts and never read prose. Earlier: **SBL JOURNALLED IN ARREARS.** `feat/sbl-foundation` was authored 2026-08-17 and recorded nothing — no journal entry, no item here, branch unpushed. Now pushed at `8163720` and banked: nine sources registered fetched-not-stored, `NumericCalcSpec` re-keyed to `(paper, lo)` after three of its six codes were found to collide with SHIPPING APM outcomes, and a 138-row crosswalk ledger with a stated threshold replacing a 35% headline whose defensible range was 17–53%. **Four items open, two of them the ledger's own stated limits** — see the 🔴 block immediately below. Previously: 2026-08-13 (**THE DESCRIPTOR LEAK IS CLOSED, AND THE SOURCE WAS THE BAND LADDER
 ITSELF.** `fix/ps-ladder-not-descriptor-relative` — five of the nine `descriptor` mentions WERE the
 band definitions, so no wording of rule 2 could outrun them. Rewritten to describe the quality of
 the writing, every severity anchor preserved verbatim: **band-neutral (+0.019 bands, t=0.66) and the
@@ -109,14 +123,13 @@ read 5 was applied to the drafts, and the sync then carried all five rows to the
 - **Status untouched** — all five remain `candidate`/`published=false`. The sync carries content,
   not status, which is the doctrine read in the other direction.
 
-### ⏳ STILL OPEN: the flip itself
-**GATE-P has NOT run.** Three things gated it; **the two mechanical ones closed 2026-08-22, and the
-one that remains is a ruling, not a task.**
+### ✅ CLOSED 2026-08-22: GATE-P STEP ONE RAN. Step two did not, by decision — see the block below.
+All three gates cleared:
 1. ✅ **The tutor scoping is DEPLOYED, not merely committed** (P-DB8(b)). `feat/sbl-foundation`
    merged to `main` at `4918b17` and confirmed from the BUILD LOG via the CLI — SHA matched on
    `vercel ls --meta githubCommitSha=`, `PASS contract gate: 65/65`, `Build Completed in
    /vercel/output [48s]`, `Deployment completed`, `● Ready`. `SERVED_PAPERS` scoping is live, so the
-   flip can no longer open the leak the guard closes.
+   flip could no longer open the leak the guard closes.
 2. ✅ **`docs/reviews/SBL_BATCH_A_GPT_READ_5.md` now exists.** Reads 2, 3 and 4 are banked as GPT's
    own text; read 5's findings reached the drafts through chat only, so the pack is a
    **RECONSTRUCTION** from the applied diff (`179db83`), the drafts and that commit's message — the
@@ -126,10 +139,8 @@ one that remains is a ruling, not a task.**
    re-run, and **the three items deliberately left as grinding** — A2 c2's *"credential that wins
    senior advancement"*, A3 c4's *"would have to carry the launch"*, A3 GOOD's *"synthesised it
    correctly"* — each with its fence and the reason it does not move a mark.
-3. 🔴 **Open question for Grant — THE ONLY THING GATE-P NOW WAITS ON.** SBL is DECLARED but NOT
-   SERVED. Publishing these rows makes them live for a paper no surface serves — and every surface
-   was just hardened to refuse it. Is the flip meant to land now (content ready, surface later), or
-   wait until SBL becomes served? Not a technical question and not Claude Code's to answer.
+3. ✅ **Grant ruled 2026-08-22: run step one only.** `candidate → approved` on all five; do NOT
+   publish.
 
 <details><summary>Original finding, kept for the record</summary>
 
@@ -163,6 +174,102 @@ that was reviewed. A row can be correctly `approved`, correctly journalled, and 
 text. That arm should compare row content against the reviewed draft.
 
 </details>
+
+## 🟢 STANDING — 2026-08-22 — THE FIVE SBL ROWS ARE `approved` AND UNPUBLISHED **BY DECISION, NOT BY OMISSION**
+
+**👷 IF YOU ARE BUILDING THE SBL SURFACE, THIS IS THE ITEM ADDRESSED TO YOU. READ ALL OF IT.**
+
+**State right now:** five `acca_drills` rows, `paper_code='SBL'`, **`status='approved'`,
+`published=false`**. `acca_drills` approved 154 → **159**; published **154 → 154, unchanged**.
+
+| plan | id | `lo_code` | skill | marks |
+| --- | --- | --- | --- | --- |
+| SBL-A1 | `9d414a87-b12d-4526-85cc-5e537a25104b` | A2b | analysis | 10 |
+| SBL-A2 | `5bd47a79-7640-4902-8360-b8b0952d0b19` | A2d | analysis | 12 |
+| SBL-A3 | `46e10662-914f-412b-8e56-faf426d0461f` | A1a | analysis | 12 |
+| SBL-A4 | `80b4918b-1602-46dc-a213-a4ba70cb12c4` | A3d | scepticism | 10 |
+| SBL-A5 | `2fbb2902-c254-4c9b-ac1a-240bf1adb9e7` | A3a | evaluation | 10 |
+
+### The ruling, because the two columns record two different things
+
+> `approved` records that the content passed review, **which is true today**.
+> `published` records **intent to serve**, which is not — SBL has no surface, no price and no
+> entitlement. Splitting them is what the two-step gate is for, and it stops `candidate` losing its
+> meaning when the most-reviewed content in the repo carries it.
+> — Grant, 2026-08-22
+
+**So do not read `published=false` here as unfinished work, a stalled batch, or something to tidy
+up.** It is the recorded output of a decision. The content cleared five cold reads, a content
+reconcile and a three-arm gate; what it has not got is a surface.
+
+### ⚠️ THE INVARIANT THIS BREAKS — and every future GATE-P reconcile must know
+
+Before today, `acca_drills` had **approved == published == 154**: every approved row was a served
+row, so "approved but unpublished" was itself a leak signal. **That is no longer true.** There are
+now five approved-but-unpublished rows and they are CORRECT.
+
+**Any future reconcile must ALLOW-LIST these five by id**, exactly as it already allow-lists the
+permanent candidate `47c9d5ce` (AFM A3a). An *unregistered* approved-but-unpublished row still
+hard-stops — that is the leak check doing its job. These five are registered here and in
+`scripts/authoring/approve-sbl-batch-a.ts`.
+
+### 📌 STEP TWO IS YOURS, AND IT CARRIES A RE-READ OBLIGATION
+
+Flipping `published → true` is the second half of GATE-P and it has **not** been pre-authorised by
+today's ruling. When you do it:
+
+1. **RE-READ THE CONTENT FIRST. This is the obligation, not a suggestion.** By the time a surface
+   exists this content will be **months old and the reviewer's context will be gone** — five cold
+   reads' worth of judgement about what each exhibit does and does not establish, held by people who
+   have moved on. The three arms will all go green on stale-but-unchanged rows; **green means the
+   row still holds what was reviewed, never that the review is still right.** Re-read at minimum
+   `docs/reviews/SBL_BATCH_A_REVIEW_PACK.md` and `SBL_BATCH_A_GPT_READ_5.md` — the latter names
+   three known over-reaches deliberately left in place (A2 c2, A3 c4, A3's *"synthesised it
+   correctly"*), each currently fenced by surrounding text. **If you change the fence, you change
+   the finding.**
+2. **Run all three arms again** — `npx tsx --env-file=.env.local
+   scripts/authoring/approve-sbl-batch-a.ts` reports status/content/journal read-only, and
+   `npm run reconcile:sbl-content` is the content arm alone. The content arm especially: P-DB8 exists
+   because these exact rows once held text superseded days earlier while status and journal both
+   passed.
+3. **Check what else must be true before serving.** `SERVED_PAPERS` (`lib/acca/paper.ts`) does not
+   contain SBL, deliberately — a publish flip alone serves nothing, and adding SBL there without the
+   rest is the more dangerous half. There is no Stripe price, no entitlement row, no resit
+   diagnostic, and the four sibling tables (`acca_entitlements`, `acca_weak_areas`, `resit_leads`,
+   `resit_runs`) are still two-paper by design.
+4. **A DB write is not branch-scoped (P-DB1)** — `published=true` ships the instant it runs,
+   whatever branch the surface code is on. Deploy first, flip second (P-DB8(b)).
+
+### How step one was run (2026-08-22)
+
+`scripts/authoring/approve-sbl-batch-a.ts --apply`, committed under P-DB6 — it writes a status
+column on real rows, so it is the record of what was flipped and what was checked first. Three arms,
+each a hard stop:
+
+- **ARM 1 · STATUS** — DB approved-set vs the journal's reviewed-set. **0 rows approved without a
+  review record**, so nothing needed demoting; all 5 reviewed ids present in the DB. Re-run
+  post-flip: the two sets are an **exact match**. ⚠️ The two halves are deliberately asymmetric
+  pre-flip — *approved with no record* is a pipeline leak and stops everything, while *reviewed but
+  not yet approved* IS the target set.
+- **ARM 2 · CONTENT (P-DB8)** — the same pure core and `CONTENT_FIELDS` as the standalone runner,
+  in-process so it cannot be skipped by forgetting to run it. **5/5 rows × 5 fields green.**
+- **ARM 3 · JOURNAL** — the arm the status arm *assumes and never verifies*. The status arm compares
+  two sets of identifiers and takes the reviewed-set on trust; this one opens
+  `APM_BUILD_CONTRACT.md` and asserts it names all five ids in full, and that all five review packs
+  exist on disk. ⚠️ **CEILING: it proves a review record EXISTS and NAMES the row. It cannot prove
+  the review was good, and it is not a substitute for reading the pack.**
+
+Then: P-DB3 snapshot `docs/rollbacks/SBL_batch_a_approve_flip_20260822.json` → five explicit-id
+`UPDATE`s, each guarded `AND status='candidate' AND published=false`, with **`published` never on
+the left of any of them** → **P-DB4: 19/19 other fields byte-identical on all five, `published`
+included in the comparison** → pre/post counts asserted (published count unmoved, SBL published
+still 0, approved +5 exactly, row count unmoved).
+
+**⚠️ ATOMICITY, STATED HONESTLY.** The doctrine wants an un-reviewed `approved` row demoted in the
+SAME transaction as the flip. supabase-js has no transaction wrapper, so the script **refuses to
+write** when a demotion is required and prints the exact `BEGIN`/`COMMIT` block for the SQL editor
+instead. Today's run needed none. A sequenced pair of writes dressed up as a transaction would have
+been the worse answer.
 
 ## 🔵 SCOPED, NOT BUILT — 2026-08-21 — THE EVIDENCE-STATUS LEDGER (doctrine P-N4)
 
@@ -663,10 +770,16 @@ the opening sentence to carry it. **This is a live-tutor concern, not cosmetics*
 `extractMisconceptionLead` silently falls back to the first sentence, so a misconception named second
 is not merely missed, it is replaced by scaffolding presented as the drill's failure mode.
 
-## 🔴 OPEN 2026-08-18 — SBL: THE FRAMEWORK IS BUILT AND UNWIRED; THE MARK WEIGHTING IS STILL OPEN (`feat/sbl-foundation`, pushed 2026-08-18, unmerged; `next build` GREEN)
+## 🔴 OPEN 2026-08-18 — SBL: THE FRAMEWORK IS BUILT AND UNWIRED; THE MARK WEIGHTING IS STILL OPEN (`feat/sbl-foundation`, **MERGED to `main` at `4918b17` 2026-08-22**; `next build` GREEN)
 
-**Journalled in arrears on 2026-08-18**, then extended the same day. Branch on origin at
-`cfcff20`. Full banks: `APM_BUILD_CONTRACT.md` → *SESSION BANK — 2026-08-17* and *— 2026-08-18*.
+**👷 BUILDING THE SBL SURFACE? Read the 🟢 STANDING block above first** — *THE FIVE SBL ROWS ARE
+`approved` AND UNPUBLISHED BY DECISION*. Five reviewed drills already exist in `acca_drills`
+awaiting a surface, and step two of their publish gate carries a **re-read obligation** that is
+yours, not theirs.
+
+**Journalled in arrears on 2026-08-18**, then extended the same day. The branch is now merged;
+`SERVED_PAPERS` scoping is live in production. Full banks: `APM_BUILD_CONTRACT.md` →
+*SESSION BANK — 2026-08-17* and *— 2026-08-18*.
 
 **Shipped:** all nine SBL sources registered fetched-not-stored; `docs/sbl/` gitignored
 whole-directory; `NumericCalcSpec` re-keyed from a bare LO string to `(paper, lo)`;

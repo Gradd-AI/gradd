@@ -975,8 +975,10 @@ when the session ends on a branch.
   (standing rulings) · `docs/reviews/*.md` (per-batch review packs).
 - `docs/PRODUCT_STRENGTH_STANDARD.md` — the paper-agnostic strength bar every subject must
   meet; AFM coverage contract is the reference implementation.
-- **SBL — THE THIRD ACCA PAPER, FOUNDATION ONLY (2026-08-17/18, `feat/sbl-foundation`, unmerged).**
-  No content, no routes, no DB rows — a syllabus module, a crosswalk, and the sources behind them.
+- **SBL — THE THIRD ACCA PAPER (2026-08-17/22, `feat/sbl-foundation` **MERGED to `main` at
+  `4918b17`**).** Foundation + **batch A: 5 drills in `acca_drills`, `approved` and
+  `published=false` BY DECISION** (P-DB9 — see the GATE-P bullets below). Still no routes, no
+  price, no entitlement; `SERVED_PAPERS` deliberately excludes SBL.
   **`scripts/sbl-framework.ts`** is the AFM/APM analogue: 138 outcomes, 33 sub-areas, sections A–H,
   92 at [3] / 46 at [2]. **GENERATED, never hand-written** — `npm run build:sbl-ledger --
   --emit-framework` emits it from the SAME parse that builds the crosswalk (one parser, two
@@ -1127,6 +1129,29 @@ when the session ends on a branch.
 - **⚠️ A FLIP GATED ON A CODE CHANGE NEEDS THAT CODE DEPLOYED, NOT COMMITTED (`P-DB8(b)`).** Per
   P-DB1 a DB write is not branch-scoped: the flip ships the instant it runs while the guard sits
   on a branch. Merge and confirm the deploy first, then flip.
+- **⚠️ THE TWO-STEP GATE MAY BE RUN HALF-WAY, DELIBERATELY (doctrine `P-DB9`, ruled 2026-08-22).**
+  `approved` = the content passed review; `published` = **intent to serve**. SBL batch A is
+  `approved`/`published=false` because it cleared five cold reads and all three arms while SBL has
+  no surface, no price and no entitlement. Leaving it at `candidate` would cost `candidate` its
+  meaning — a reader could not tell "not reviewed" from "reviewed, deliberately not served".
+  **Runner: `scripts/authoring/approve-sbl-batch-a.ts` (committed P-DB6, DRY RUN by default,
+  re-runnable read-only so step two's owner can re-run the arms).**
+  🔴 **AN INVARIANT DIED WITH IT: `acca_drills` was `approved == published == 154`, so
+  "approved-but-unpublished" read as a leak on sight. It no longer does** — approved is now 159,
+  published still 154. **Every future reconcile must ALLOW-LIST those five by id**, the same
+  disposition `47c9d5ce` has; an *unregistered* approved-but-unpublished row still hard-stops,
+  because the register is the only thing separating a decision from a leak.
+  **`P-DB9(a)` — THE JOURNAL ARM.** The status arm compares the DB's approved-set against a
+  reviewed-set it is HANDED (a `--journalled` flag, a literal), so it takes on trust the very thing
+  it looks like it verifies. The third arm opens `APM_BUILD_CONTRACT.md` + the review packs and
+  asserts a record EXISTS and NAMES the row in full. ⚠️ **Ceiling: it cannot prove the review was
+  good and is not a substitute for reading the pack.**
+  **`P-DB9(b)` — SAY "NOT A TRANSACTION".** supabase-js has no transaction wrapper, so the script
+  REFUSES to write when a demotion is required and prints the `BEGIN`/`COMMIT` block instead.
+  **Step two carries a RE-READ obligation** — by then the content is months old and the reviewer's
+  context gone, and **all three arms go green on stale-but-unchanged rows**. Green means the row
+  still holds what was reviewed, never that the review is still right. Stated for its owner in
+  `docs/AFM_SURFACED.md` beside the SBL surface item, not only in the batch's own block.
 - **Serving scope sweep:** `scripts/test-drill-paper-scope-sweep.ts` (`npm run
   test:drill-paper-scope-sweep`) — every `acca_drills` query under `app/` and `lib/` must
   CONSTRAIN `paper_code` (`.eq`/`.in`), or carry a written exemption keyed on its own select-list.

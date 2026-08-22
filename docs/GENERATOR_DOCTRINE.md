@@ -932,6 +932,56 @@ not merely committed. Per P-DB1 a DB write is not branch-scoped: the flip ships 
 runs, while the guard sits on a branch. Committing the guard and then flipping inverts the order
 they were sequenced in and opens exactly the leak the guard was written to close.
 
+**P-DB9 — THE TWO-STEP GATE MAY BE RUN HALF-WAY, DELIBERATELY (ruled 2026-08-22, SBL batch A).**
+
+`approved` and `published` are two columns because they record **two different claims**, and this
+batch is the case that separates them:
+
+> `approved` = the content passed review. `published` = intent to serve.
+
+SBL batch A cleared five cold reads, a content sync and all three reconcile arms, while SBL had no
+surface, no Stripe price and no entitlement — and every served surface had just been hardened to
+refuse the paper. Both columns being true is the normal case; **it is not the only legitimate one.**
+Grant ruled step one alone: `candidate → approved`, `published` untouched.
+
+**Why this is a rule and not a one-off.** Leaving reviewed-and-not-servable content at `candidate`
+**costs `candidate` its meaning.** A reader who finds the most-reviewed content in the repo sitting
+in the same state as an ungated draft can no longer tell "not reviewed" from "reviewed, deliberately
+not served" — and the reconcile cannot either, because both arms compare identifier sets and neither
+records intent. The two-step gate already had the vocabulary to say this. It just had never been
+asked to.
+
+**Three consequences, each of which bit immediately:**
+
+- **AN INVARIANT DIES, AND IT WAS LOAD-BEARING.** `acca_drills` had `approved == published == 154`,
+  so "approved but unpublished" read as a leak signal on sight. **It no longer does.** A future
+  reconcile MUST allow-list a deliberately-unpublished set BY ID — the same disposition
+  `47c9d5ce` (the permanent candidate) already has. An *unregistered* approved-but-unpublished row
+  still hard-stops; the register is what separates a decision from a leak, and an unregistered
+  decision is indistinguishable from one.
+- **STEP TWO INHERITS A RE-READ OBLIGATION, AND IT MUST BE WRITTEN DOWN WHERE ITS OWNER WILL LAND.**
+  Step two is performed later, by someone else, with the reviewer's context gone and the content
+  months old. **All three arms will go green on stale-but-unchanged rows** — green means the row
+  still holds what was reviewed, NEVER that the review is still right. State the obligation in
+  `AFM_SURFACED.md` beside the surface item, not only in the batch's own block.
+- **THE ARMS MUST BE RE-RUNNABLE READ-ONLY, BY THE NEXT PERSON.** A gate whose evidence exists only
+  in one session's scrollback cannot be re-run at step two. `scripts/authoring/
+  approve-sbl-batch-a.ts` defaults to a DRY RUN that reports all three arms and writes nothing.
+
+**P-DB9(a) — THE JOURNAL ARM: CHECK THE THING THE STATUS ARM ASSUMES.** The status arm compares the
+DB's approved-set against the journal's reviewed-set — but the reviewed-set is supplied to it, as a
+`--journalled` flag or a literal. **It takes on trust the very thing it appears to verify.** A
+reviewed-set asserted by a literal in a script is a literal in a script. So a third arm opens
+`APM_BUILD_CONTRACT.md` and the review packs on disk and asserts a review record **exists** and
+**names the row in full**. ⚠️ **CEILING, verbatim: it proves a record exists and names the row. It
+cannot prove the review was good, and it is not a substitute for reading the pack.**
+
+**P-DB9(b) — SAY "NOT A TRANSACTION" RATHER THAN IMPLYING IT IS.** The doctrine wants an un-reviewed
+`approved` row demoted in the SAME transaction as the flip. supabase-js has no transaction wrapper
+and cannot give that. The script therefore **refuses to write** when a demotion is required, and
+prints the exact `BEGIN`/`COMMIT` block for the SQL editor. A sequenced pair of writes described as
+a transaction is a worse answer than a refusal that names its own limit.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
