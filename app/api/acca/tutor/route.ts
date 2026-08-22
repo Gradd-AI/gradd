@@ -24,8 +24,12 @@ import {
   type RevealReachedFrom,
 } from '@/lib/acca/tutor-personas';
 import { notifyGrant } from '@/lib/notify';
-import { resolvePaper, SERVED_PAPERS, type AccaPaper } from '@/lib/acca/paper';
+import { resolvePaper, servedPaper, SERVED_PAPERS, type AccaPaper } from '@/lib/acca/paper';
+import { paperHref } from '@/lib/acca/paper-url';
 import { hasPaperAccess } from '@/lib/acca/access';
+// THE FREE TIER'S TWO MEANINGS, separated (2026-08-22). `teachThroughsUsed` counts COACHING
+// DELIVERED and must never gate the ATTEMPT — see the module header and §6.
+import { teachAccessFor, upgradeAfterDiagnosisLine, FREE_TEACH_THROUGHS } from '@/lib/acca/teach-access';
 import {
   isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
 } from '@/lib/acca/phrase-match';
@@ -1208,24 +1212,42 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  // ── 6. Cap gate ────────────────────────────────────────────────────────────
-  // Allow the request when ANY of these is true:
-  //   a) user has an active subscription or unexpired pass
-  //   b) teach-through count is below the free limit
-  //   c) this is a FOLLOW-UP TURN on the drill that already consumed a cap slot
-  //      (teachThroughCounted=true inside the sealed enc — tamper-proof)
+  // ── 6. Coaching gate ───────────────────────────────────────────────────────
+  // ⚠️ THIS USED TO 403 THE ATTEMPT, AND THAT WAS THE DEFECT (fixed 2026-08-22).
   //
-  // Case (c) is the option-b boundary: a student who just received their 3rd
-  // teach-through can keep asking Ezra follow-up questions on that same drill.
-  // The cap wall fires only when they load a NEW drill (session_state = null,
-  // teachThroughCounted = false → gate fails → 403).
-
+  // It read `allowed = hasActiveAccess || usedCount < 3 || isFreeFollowUp` and returned
+  // 403 `cap_hit` when false — BEFORE the student could submit anything. A free student past
+  // three teach-throughs could not attempt a fourth drill at all: the page rendered the
+  // question, and TutorChat replaced the textarea with a paywall. Meanwhile the offer on the
+  // pillar, both spokes and every pricing card said "Every drill on both papers, unlimited,
+  // PLUS three full teach-throughs" — unlimited ACCESS, of which three are COACHED.
+  //
+  // THE COUNTER WAS NEVER WRONG. §8 increments it only when `teachThroughDelivered`, so it
+  // counts COACHING DELIVERED, correctly. The gate then used that number to refuse ENTRY. One
+  // value, two meanings, and the product shipped the wrong one.
+  //
+  // Now separated in lib/acca/teach-access.ts (pure, fixtured): `attemptAllowed` is always
+  // true — nothing here may refuse an attempt — and `coachingAllowed` gates the two legs where
+  // `teachThroughDelivered` is set (§7 legs G and L). That flag ALREADY drew this line; it was
+  // simply never the thing the gate consulted.
+  //
+  // Case (c), `isFreeFollowUp`, is unchanged: a student who just spent their 3rd slot keeps
+  // full coaching on THAT drill. Sealed inside the AES-256-GCM payload (and OR'd with the
+  // durable `acca_tutor_progress.counted` at §5b), so it is not forgeable.
   const isFreeFollowUp = teachThroughCounted; // sealed inside AES-256-GCM, not forgeable
-  const allowed = hasActiveAccess || usedCount < 3 || isFreeFollowUp;
+  const access = teachAccessFor({ hasActiveAccess, teachThroughsUsed: usedCount, isFreeFollowUp });
+  const coachingAllowed = access.coachingAllowed;
 
-  if (!allowed) {
-    return NextResponse.json({ error: 'cap_hit' }, { status: 403 });
-  }
+  // The upgrade prompt is appended by CODE after the diagnosis (see §7 legs G/L), never
+  // instructed inside a prompt — an instructed closing line is the first thing a token cap
+  // sacrifices. Paper-scoped through the same helper every other link uses.
+  //
+  // PARSED at this boundary, not asserted through: `paper` is a DB column typed `string`, and
+  // `servedPaper` refuses an unrecognised value rather than coercing it (P-G6). The drill fetch
+  // is already scoped `.in('paper_code', SERVED_PAPERS)`, so the fallback is unreachable today —
+  // it exists so a future widening of that fetch cannot silently mint an APM subscribe link for
+  // a paper that is not APM.
+  const subscribeHref = paperHref('/acca/subscribe', servedPaper(paper) ?? 'APM');
 
   // ── 7. Teaching engine ─────────────────────────────────────────────────────
   let ezraResponse:        string;
@@ -1382,6 +1404,18 @@ export async function POST(request: Request): Promise<Response> {
       intent = 'reveal_redirect';
       messageKind = 'reveal_locked';
       ezraResponse = EARN_REDIRECT;
+    } else if (fastTeach && !coachingAllowed) {
+      // ── LEG G, CAPPED (2026-08-22) ────────────────────────────────────────────
+      // An explicit teach request from a free student past their three teach-throughs. The
+      // COACHING is what is capped, so this serves `call_burn` — the same figure-free
+      // diagnosis-framing wrapper + conversion CTA the struggle wall already uses, which NEVER
+      // receives modelAnswer and so cannot leak the worked answer by construction.
+      //
+      // No `teachThroughDelivered`: §8 must not charge a slot for a leg that did not coach.
+      // No miss++, no resolved — this is not an attempt.
+      intent = 'teach_request_capped';
+      messageKind = 'reveal_burn';
+      ezraResponse = await call_burn(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', paper);
     } else if (fastTeach) {
       intent = 'teach_request';
       messageKind = 'teaching';
@@ -1473,8 +1507,30 @@ export async function POST(request: Request): Promise<Response> {
           if (newMissCount === 1) {
             // FIRST miss — no self-assessment beat (it delays the diagnosis they came for) and no
             // reveal offer (not earned yet). Only the closing contract is new here.
+            //
+            // THIS LEG IS THE FREE TIER'S FLOOR AND ALWAYS WAS: it names the gap, and it has
+            // never set `teachThroughDelivered`, so it has never charged a slot. The 2026-08-22
+            // ruling did not have to carve anything out for it — it only had to stop the gate
+            // above refusing the student before they could reach it.
             ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding);
             messageKind = 'hint';
+            if (!coachingAllowed) ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
+          } else if (!coachingAllowed) {
+            // ── LEG L, CAPPED (2026-08-22) ──────────────────────────────────────
+            // Second-or-later miss from a free student past their three teach-throughs. Under
+            // the ruling they get THE DIAGNOSIS — the gap named — and then the upgrade prompt;
+            // the coached walk-through is what the three teach-throughs bought.
+            //
+            // Serves `call3_hint`, the SAME leg the first miss uses, so the diagnosis they get
+            // is the diagnosis this engine already produces — not a degraded copy written for
+            // the paywall. No `teachThroughDelivered`, so §8 charges nothing.
+            //
+            // `selfAssess` and the reveal offer are deliberately absent: the offer walks a free
+            // student into `revealDecision`'s 'burn', and appending both a reveal nudge and an
+            // upgrade prompt to one message is two asks in a row.
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding);
+            ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
+            messageKind = 'hint_capped';
           } else {
             // FIX (2026-07-23): same threading as call2_diagnose above — the second-miss teach
             // now sees the prior turn's real attempt alongside the current message, matching the
@@ -1515,7 +1571,11 @@ export async function POST(request: Request): Promise<Response> {
       .update({ [capColumn]: newCount })
       .eq('id', user.id);
     newTeachThroughCounted = true;
-    capNowHit = newCount >= 3;
+    // `cap_now_hit` now means "COACHING is capped from here", not "you are locked out" — the
+    // client renders it as a banner above a live input, not as a wall replacing one. The
+    // literal 3 is gone: FREE_TEACH_THROUGHS is shared with the gate that reads it, so the
+    // increment and the gate cannot disagree about where the limit is.
+    capNowHit = newCount >= FREE_TEACH_THROUGHS;
   }
 
   // ── 8b. Reveal-velocity alert (best-effort) ────────────────────────────────

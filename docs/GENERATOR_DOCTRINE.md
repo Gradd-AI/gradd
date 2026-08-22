@@ -982,6 +982,41 @@ and cannot give that. The script therefore **refuses to write** when a demotion 
 prints the exact `BEGIN`/`COMMIT` block for the SQL editor. A sequenced pair of writes described as
 a transaction is a worse answer than a refusal that names its own limit.
 
+**P-V1 — A VERIFICATION RECORDED AS A JUSTIFICATION MUST NAME THE ROUTE IT ACTUALLY TESTED
+(ruled 2026-08-22, the free-tier defect).**
+
+The pillar's free pricing card carried a comment justifying its own copy:
+
+> *"The drill serve (`app/api/acca/next-drill/route.ts`) gates on AUTHENTICATION ONLY — 401 for a
+> signed-out request and no entitlement check of any kind after it … **So a free account can
+> attempt all 154 drills on both papers.**"*
+
+Every clause about `next-drill` was true. The conclusion was false. **`next-drill` is the
+SELECTOR** — it decides which drill to show. **Attempting one goes through `POST
+/api/acca/tutor`**, which was never checked, and which `403`d `cap_hit` before a free student
+past three teach-throughs could submit anything. The offer was false for exactly the users it
+was written to attract, and it stayed false because the comment told every later reader the
+question was settled.
+
+**THE RULE.** A comment of the form *"I checked X, therefore Y"* spends its credibility on **Y**
+while only ever evidencing **X**. Name the file, name what it proves, and name what it does NOT
+reach. A verification that cannot state its own boundary should not be recorded as a
+justification at all — an unverified claim invites a check; a wrongly-verified one forbids it.
+
+**P-V1(a) — THE SELECTOR IS NOT THE ACTION.** Where a capability spans a route that CHOOSES and a
+route that DOES, the entitlement question belongs to the second. `next-drill`, `areas`, `case/list`
+and the tutor PAGE all select; `tutor`, `case/turn`, `case/mark` and `sit` all act. Verifying a
+"can they?" claim against a selector is the specific mistake above, and the shape recurs.
+
+**P-V1(b) — ONE COLUMN, ONE MEANING.** The root defect underneath was that
+`profiles.<paper>_teach_throughs_used` counted **coaching delivered** (correctly — §8 increments
+only on `teachThroughDelivered`) and was then read as **entitlement to enter**. Where a stored
+count is used by two gates, the second use is where the product breaks. Split it into named
+decisions in a pure module and fixture the property that was violated, INCLUDING the field that is
+constant: `teachAccessFor` returns `attemptAllowed: true` always, and it is asserted across the
+whole input space precisely because "we never refuse an attempt" was previously true only by
+accident. A comment saying so is not checkable; a field is.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

@@ -4,6 +4,7 @@ import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import { resolvePaper, strictPaper, servedPaper, SERVED_PAPERS } from '@/lib/acca/paper';
 import { pickEntryDrill } from '@/lib/acca/area-entry';
 import { hasPaperAccess } from '@/lib/acca/access';
+import { teachAccessFor } from '@/lib/acca/teach-access';
 import TutorChat from './TutorChat';
 
 export const metadata: Metadata = {
@@ -177,7 +178,15 @@ export default async function APMTutorPage({
   // cap/upsell state it renders must be that paper's. A bundle answer here would show "go
   // unlimited" as satisfied on AFM for an APM-only holder.
   const hasActiveAccess = await hasPaperAccess(supabase, user.id, paper, profile);
-  const initialCapHit = !hasActiveAccess && usedCount >= 3;
+  // `initialCapHit` now means "COACHING is spent", not "you are locked out" — TutorChat renders
+  // it as a banner above a LIVE input. Derived from the same pure decision the route uses, so the
+  // page and the route can never disagree about who is capped (they each held their own literal 3
+  // before 2026-08-22, alongside the route's, which was the one that decided).
+  const initialCapHit = teachAccessFor({
+    hasActiveAccess,
+    teachThroughsUsed: usedCount,
+    isFreeFollowUp: false,   // a fresh page load has no sealed session; the route re-decides per turn
+  }).capped;
 
   // Authoritative paper = the on-screen drill's own paper_code (an id-addressed entry may
   // carry no ?paper=). TutorChat scopes its next-drill / areas fetches to it.

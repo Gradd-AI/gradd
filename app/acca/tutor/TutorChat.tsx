@@ -119,6 +119,11 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
 
       const json = await res.json();
       if (!res.ok) {
+        // `cap_hit` IS NO LONGER SERVED (2026-08-22) — the route stopped 403-ing the attempt.
+        // Kept as a DEPLOY-WINDOW defence, not as live behaviour: a browser holding this
+        // bundle can reach an older instance mid-rollout, and the old route would 403 there.
+        // Restoring the typed text and flipping the banner on is the right handling for that
+        // minute. Delete once no old instance can be reached.
         if (json.error === 'cap_hit') {
           setCapHit(true);
           setMessages(prev => prev.slice(0, -1));
@@ -473,24 +478,30 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input area: live throughout. Cap wall replaces only for returning capped users
-                who haven't yet had a teach-through this session (capHit && !teachThroughDone).
-                When capHit && teachThroughDone (just finished drill-3) the input stays live for
-                follow-ups; the ghost "Try another" button is replaced by an inline paywall nudge. */}
-            {capHit && !teachThroughDone ? (
-              <div className="et-cap-wall">
-                <p className="et-cap-title">You&apos;ve used your 3 free teach-throughs</p>
-                <p className="et-cap-copy">Continue coaching — €99 for 90 days, or €49/month.</p>
-                <a
-                  href={subscribeHref}
-                  className="et-btn et-btn--rust"
-                  style={{ textDecoration: 'none', alignSelf: 'flex-start' }}
-                >
-                  Get access <span className="et-arrow">→</span>
-                </a>
-              </div>
-            ) : (
+            {/* ── THE INPUT IS ALWAYS HERE (fixed 2026-08-22) ────────────────────
+                It used to be REPLACED — `capHit && !teachThroughDone ? <cap wall> : <input>` —
+                so a free student past three teach-throughs landed on a drill, read the whole
+                question, and had nowhere to type. That is not a capped feature, it is a locked
+                product, and the offer on every pricing card is "every drill, unlimited, PLUS
+                three full teach-throughs".
+
+                THE COACHING IS WHAT IS CAPPED. The wall is now a BANNER above a live input:
+                they attempt anything, Ezra names the gap (app/api/acca/tutor/route.ts §7 legs
+                K and L both serve `call3_hint`, neither charges a slot), and the upgrade prompt
+                is appended to that diagnosis server-side. Nothing here refuses a keystroke. */}
               <div className="et-input-area">
+                {capHit && !teachThroughDone && (
+                  <div className="et-cap-banner">
+                    <p className="et-cap-banner-title">You&apos;ve used your 3 free teach-throughs</p>
+                    <p className="et-cap-banner-copy">
+                      Keep going — attempt any drill and Ezra will still tell you where the gap is.
+                      Full coached walk-throughs are €99 for 90 days, or €49/month.
+                    </p>
+                    <a href={subscribeHref} className="et-cap-banner-cta">
+                      Unlock full coaching <span className="et-arrow">→</span>
+                    </a>
+                  </div>
+                )}
                 <div className="et-input-wrap">
                   <textarea
                     ref={textareaRef}
@@ -499,7 +510,12 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                       !hasAttempt
                         ? 'Write your full attempt here…'
                         : missCount === 1
-                        ? 'Re-attempt, or type "just tell me" for a full teach-through…'
+                        // A capped student must not be invited to say "just tell me": that phrase
+                        // buys a coached teach-through they no longer have, and the honest prompt
+                        // is the one that describes what they DO get.
+                        ? (capHit && !teachThroughDone
+                            ? 'Re-attempt — Ezra will name the gap again…'
+                            : 'Re-attempt, or type "just tell me" for a full teach-through…')
                         : teachThroughDone
                         ? 'Ask Ezra a follow-up…'
                         : 'Continue…'
@@ -522,19 +538,28 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
                     </button>
                   </div>
                 </div>
+                {/* ── "TRY ANOTHER DRILL" IS NO LONGER REPLACED BY A PAYWALL ────────
+                    It used to read: capped → a nudge INSTEAD of the button, which was correct
+                    only while the next drill was unreachable. It is reachable now, so removing
+                    the button would leave a student who can drill with no way to say so. The
+                    nudge rides ALONGSIDE it — the offer is real, and so is the next drill. */}
                 {teachThroughDone && (
-                  capHit
-                    ? <p className="et-cap-nudge">Go unlimited to drill the next question — <a href={subscribeHref}>Get access →</a></p>
-                    : <button
-                        className="et-btn et-btn--ghost et-try-another"
-                        onClick={handleTryAnother}
-                        disabled={navigating}
-                      >
-                        {navigating ? 'Finding next drill…' : <>Try another drill <span className="et-arrow">→</span></>}
-                      </button>
+                  <>
+                    <button
+                      className="et-btn et-btn--ghost et-try-another"
+                      onClick={handleTryAnother}
+                      disabled={navigating}
+                    >
+                      {navigating ? 'Finding next drill…' : <>Try another drill <span className="et-arrow">→</span></>}
+                    </button>
+                    {capHit && (
+                      <p className="et-cap-nudge">
+                        Ezra will name the gap on the next one too — <a href={subscribeHref}>unlock full coaching →</a>
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
-            )}
 
           </main>
         </div>
@@ -564,6 +589,19 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
 //   panel's conversation scrolls independently.
 // MessageRenderer vars: --chat-* mapped to existing --text/--border/--brand/--text-muted/--surface-2.
 
+// ── .et-cap-banner (2026-08-22) — the note lives HERE, not inside the CSS ─────
+// This template literal is inlined into a <style> tag, so anything written inside it SHIPS TO
+// EVERY VISITOR. A first draft of this note sat in the CSS and put the string "et-cap-wall" on
+// the wire on every tutor page load — which the UI walk then read back and reported as the old
+// wall still being present. A comment that can fail a check about the thing it describes belongs
+// outside the payload.
+//
+// The banner REPLACED `.et-cap-wall` / `.et-cap-title` / `.et-cap-copy`, which are deleted rather
+// than left behind: the wall was rendered INSTEAD OF the input and was the whole reason a capped
+// student could not type, so keeping its styles around invites the next reader to reinstate it.
+// The banner sits ABOVE a live input and is deliberately quieter — surface-toned, not the rust
+// call-to-action treatment — because it now accompanies a working drill rather than standing in
+// for one. Same choice the sit's lapse banner made: a cap is not a fault.
 const CSS = `
 .et {
   --rust: oklch(64% 0.17 47);
@@ -939,29 +977,41 @@ const CSS = `
 }
 .et-input-hint { font-size: 11px; color: var(--text-muted); }
 
-/* ── Cap wall — shown instead of input for returning users already at cap ── */
-.et-cap-wall {
-  border-top: 1px solid var(--border-light);
-  padding: 20px 0;
-  flex-shrink: 0;
+/* Cap banner — see the note above the CSS constant. */
+.et-cap-banner {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  padding: 12px 14px;
+  margin-bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px;
+  flex-shrink: 0;
 }
-.et-cap-title {
+.et-cap-banner-title {
   font-family: var(--font-display);
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--text);
   letter-spacing: -0.2px;
   margin: 0;
 }
-.et-cap-copy {
-  font-size: 14px;
+.et-cap-banner-copy {
+  font-size: 13px;
   color: var(--text-muted);
   margin: 0;
   line-height: 1.5;
 }
+.et-cap-banner-cta {
+  align-self: flex-start;
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--rust);
+  text-decoration: none;
+}
+.et-cap-banner-cta:hover { text-decoration: underline; }
 
 /* ── Buttons ── */
 .et-btn {

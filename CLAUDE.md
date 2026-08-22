@@ -16,6 +16,12 @@ territory — follow the links for depth. Keep it under ~150 lines.
 - **Ad-hoc DB queries:** inline `npx tsx --env-file=.env.local -e "..."` on a SINGLE line
   (a multi-line `-e` string exits silently with no output). Never leave temp query files in
   `scripts/`; a self-deleting temp file at the repo ROOT is the only tolerated fallback.
+- **⚠️ NEVER ROUND-TRIP A JSON FILE THROUGH POWERSHELL.** `ConvertFrom-Json | ConvertTo-Json |
+  Set-Content` on `package.json` **reformatted 257 lines to add one** (2026-08-22) — it re-indents,
+  re-escapes and reorders, and `tsx` then failed to parse the result at all, taking every npm
+  script down with it. Edit JSON with the `Edit` tool, matching the surrounding text exactly. The
+  same applies to any file whose formatting is load-bearing: the round trip is not a no-op, and
+  the diff stat is how you find out (`git diff --stat` should show `1 insertion(+)`, not 129).
 
 ## Workflow (non-negotiable)
 - **Atomic commits** — one concern per commit; commit per numbered task item.

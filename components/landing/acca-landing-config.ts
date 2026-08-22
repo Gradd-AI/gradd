@@ -1525,14 +1525,32 @@ export const ACCA_PILLAR_LANDING: AccaLandingConfig = {
         currency: '€',
         amount: '0',
         // "BOTH PAPERS", NOT "the paper" — this card used to contradict its own lead four lines
-        // up. The lead is the correct one: the free tier is not paper-scoped. The drill serve
+        // up. The lead is the correct one: the free tier is not paper-scoped. The spokes say
+        // "Every APM drill" / "Every AFM drill" and stay correct: a spoke describes its own
+        // paper, and neither claims the free tier stops there.
+        //
+        // ⚠️ THIS COMMENT USED TO CARRY A VERIFICATION, AND THE VERIFICATION WAS OF THE WRONG
+        // ROUTE (corrected 2026-08-22). It read: "The drill serve
         // (app/api/acca/next-drill/route.ts) gates on AUTHENTICATION ONLY — 401 for a signed-out
-        // request and no entitlement check of any kind after it — and `paper` reaches it as a
-        // query param through `resolvePaper`, which lib/acca/paper.ts:15 marks explicitly as
-        // CONTENT SCOPING and NEVER an entitlement decision. So a free account can attempt all
-        // 154 drills on both papers, and the per-paper €99 buys coaching, cases, marking and the
-        // mock. The spokes say "Every APM drill" / "Every AFM drill" and stay correct: a spoke is
-        // describing its own paper, and neither claims the free tier stops there.
+        // request and no entitlement check of any kind after it … So a free account can attempt
+        // all 154 drills on both papers."
+        //
+        // Every clause about `next-drill` was true. The CONCLUSION was false, because
+        // `next-drill` is the SELECTOR — it decides which drill to show. ATTEMPTING one goes
+        // through `POST /api/acca/tutor`, which was never checked, and which returned 403
+        // `cap_hit` at §6 once a free user had spent three teach-throughs. The claim on this
+        // card was therefore false for every free user past their third, and the comment
+        // asserting otherwise is what told the next reader not to look.
+        //
+        // The route is fixed (the counter now gates COACHING, not entry — lib/acca/teach-access.ts,
+        // `npm run test:teach-access`), so the copy below is once again true. It has NOT been
+        // changed: the offer was right and the code was wrong.
+        //
+        // 📐 THE CLASS, banked as doctrine P-V1 (GENERATOR_DOCTRINE.md): A VERIFICATION RECORDED
+        // AS A JUSTIFICATION MUST NAME THE ROUTE IT ACTUALLY TESTED. A comment that says "I
+        // checked X, therefore Y" spends its credibility on Y while only ever evidencing X, and
+        // a future reader re-checking Y will read the comment and stop. Name the file, name what
+        // it proves, and name what it does NOT reach.
         tagline: 'Every drill on both papers, unlimited, plus three full teach-throughs with Ezra. No card.',
         features: ['Every drill on both papers, unlimited', '3 full teach-throughs with Ezra', 'No card, no commitment'],
         cta: { label: 'Start free', href: ACCA_AUTH_FREE, variant: 'ghost' },

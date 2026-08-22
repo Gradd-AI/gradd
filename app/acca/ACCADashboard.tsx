@@ -7,6 +7,10 @@ import AreaPicker, { type PickerArea } from './AreaPicker';
 import ACCASignOutButton from '@/components/acca/ACCASignOutButton';
 import type { ServedPaper } from '@/lib/acca/paper';
 import { paperHref } from '@/lib/acca/paper-url';
+// Imported, not redeclared (2026-08-22). This file, app/acca/page.tsx and app/acca/tutor/page.tsx
+// each carried their own literal `3` alongside the tutor route's, and the route's was the one that
+// decided what a student could actually do. One constant — see lib/acca/teach-access.ts.
+import { FREE_TEACH_THROUGHS } from '@/lib/acca/teach-access';
 
 interface ACCADashboardProps {
   areas: PickerArea[];
@@ -23,7 +27,6 @@ interface ACCADashboardProps {
   firstDrillFromResit?: boolean;
 }
 
-const FREE_TEACH_THROUGHS = 3;
 
 export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAccess, casesEnabled = false, paper, hasAttempted = false, firstDrillArea = null, firstDrillFromResit = false }: ACCADashboardProps) {
   const router = useRouter();
@@ -131,14 +134,19 @@ export default function ACCADashboard({ areas, teachThroughsUsed, hasActiveAcces
                       <span key={i} className={`apm-status-pip${i < teachThroughsUsed ? ' used' : ''}`} />
                     ))}
                   </div>
+                  {/* Says what is SPENT and what is still OPEN. It used to read "All 3 free
+                      teach-throughs used" beside a "Go unlimited" CTA, which was accurate about
+                      the counter and read as a lock — and while the tutor route 403'd the
+                      attempt it WAS one. Drilling stays open; the coached walk-through is what
+                      ran out. */}
                   <span className="apm-status-text">
                     {capHit
-                      ? 'All 3 free teach-throughs used'
+                      ? `All ${FREE_TEACH_THROUGHS} free teach-throughs used — drills stay open, Ezra still names the gap`
                       : `${teachThroughsUsed} of ${FREE_TEACH_THROUGHS} free teach-throughs used`}
                   </span>
                 </div>
                 {capHit && (
-                  <a href={subscribeHref} className="apm-status-cta">Go unlimited →</a>
+                  <a href={subscribeHref} className="apm-status-cta">Unlock full coaching →</a>
                 )}
               </div>
             )}
