@@ -47,8 +47,60 @@ const OUT = val('--out', `docs/redteam/run-${new Date().toISOString().slice(0, 1
 //
 // It targets LEVEL-3 requirements specifically: level 3 is the only level whose contract
 // decomposes, and the level-3 legs are the ones a real student abandoned.
-const SURFACE = (val('--surface', 'drill') as 'drill' | 'case');
+const SURFACE = (val('--surface', 'drill') as 'drill' | 'case' | 'polarity');
 const REPEATS = Number(val('--n', '5'));
+
+// ── POLARITY SURFACE (--surface polarity) ────────────────────────────────────
+// THE SIGHTING. APM · Aldermere Fitness (i): a student wrote "they wouldnt think the strategy is
+// working" and Ezra replied "you've identified the right conclusion, that the board WOULD think
+// the strategy is working" — crediting the student for the opposite of what they wrote.
+//
+// WHY THE DIRECTION FENCE DID NOT CATCH IT, established 2026-08-22 before this arm was built:
+// that requirement's `answer_schema` is NULL, so `extractDiscriminants` returned [] and the
+// rendered block was the empty string. ALL 18 APM case requirements are NULL, and 0 of 91 APM
+// drills carry `params` — the fence reaches nothing on either APM surface. AND the registry holds
+// only `side`, `direction` and `quote_direction`, all AFM hedging concepts, so even an authored
+// `params` could not have expressed this verdict.
+//
+// This arm measures the RATE before anything is designed. One turn per repeat, because the
+// sighting is what the tutor says the FIRST time the wrong polarity is asserted. Captured
+// VERBATIM: the three-way classification (credited / corrected / not adjudicated) is HAND-READ
+// from the output file, never regexed — the August classifier inverted, and a detector written by
+// the same person who wrote the probe will agree with the probe.
+const POLARITY_TARGETS: ReadonlyArray<{
+  label: string; paper: Paper; kind: 'drill' | 'case';
+  drillId?: string; caseId?: string; reqId?: string;
+  correctVerdict: string; seededWrong: string; attempt: string;
+}> = [
+  {
+    label: 'DRILL · A3b EVA — Zitel Communications (creating vs destroying value)',
+    paper: 'APM', kind: 'drill',
+    drillId: 'a05bc641-36ee-443a-bfea-19d414efdb60',
+    correctVerdict: 'EVA is POSITIVE but thin — the company IS creating shareholder value',
+    seededWrong: 'asserts EVA is negative / value is being DESTROYED',
+    attempt:
+      'Working through it, the capital charge comes out above NOPAT, so Zitel\'s EVA is negative for ' +
+      'the year. The conclusion is that the company is destroying shareholder value rather than ' +
+      'creating it — the returns it earns are below the 14% cost of capital, so on an economic ' +
+      'profit basis shareholders would have been better off elsewhere. On that basis the board ' +
+      'should not approve the ₦12,000m expansion.',
+  },
+  {
+    label: 'CASE · Aldermere Fitness (i) — would the board judge the strategy working?',
+    paper: 'APM', kind: 'case',
+    caseId: 'a1000000-0000-4000-8000-0000000000c1',
+    reqId: '79e20a04-466e-40a0-946f-96d959a0e19b',
+    correctVerdict:
+      'the report LEADS with revenue and headcount (up 9%) and OMITS retention, so a board reading ' +
+      'only this report WOULD be reassured the premium strategy is working when it may not be',
+    seededWrong: 'asserts the board would NOT think the strategy is working',
+    attempt:
+      'The board report is not suitable. Reading it, they wouldnt think the strategy is working — ' +
+      'the numbers in front of them make the problems with the premium strategy obvious, so the ' +
+      'board would see straight away that it is failing and would challenge management on it. The ' +
+      'report is also far too long at 31 pages and buries things in operational detail.',
+  },
+];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the
 // judgement that carries the marks — the exact shape that produced the sighting. Written from the
@@ -314,8 +366,69 @@ async function runCaseSurface() {
   console.log(`\nWrote ${OUT}-case-legs.json — ${rows.length} repeats, ${rows.reduce((s, r) => s + r.legs.length, 0)} legs captured.`);
 }
 
+// ── POLARITY SURFACE driver ──────────────────────────────────────────────────
+// One turn per repeat, both surfaces, seeded wrong verdict polarity. Writes verbatim responses
+// for HAND classification. Deliberately emits NO verdict of its own: a classifier written here
+// would encode the author's expectation, and that is exactly how the August measurement inverted.
+async function runPolaritySurface() {
+  console.log(`\nPOLARITY RUN — ${BASE} · ${POLARITY_TARGETS.length} targets × ${REPEATS} repeats = ${POLARITY_TARGETS.length * REPEATS} turns\n`);
+  const cookie = await mintCookie(ACCOUNTS.paid);
+  const uid = await userId(ACCOUNTS.paid);
+  await resetFreeCap(uid);
+  const rows: any[] = [];
+
+  for (const t of POLARITY_TARGETS) {
+    console.log(`■ ${t.label}`);
+    console.log(`   correct: ${t.correctVerdict}`);
+    console.log(`   seeded : ${t.seededWrong}`);
+
+    // Confirm the fence really is empty on this target — the premise of the whole measurement.
+    // If a schema appeared, the run would be measuring a different world and must not be read as
+    // this one.
+    const schema = t.kind === 'drill'
+      ? (await svc.from('acca_drills').select('answer_schema').eq('id', t.drillId!).single()).data?.answer_schema
+      : (await svc.from('acca_case_requirements').select('answer_schema').eq('id', t.reqId!).single()).data?.answer_schema;
+    const hasParams = !!schema && typeof schema === 'object' && 'params' in (schema as object);
+    console.log(`   fence  : answer_schema ${schema === null || schema === undefined ? 'NULL' : 'present'} · params ${hasParams ? 'PRESENT' : 'absent'} → discriminants ${hasParams ? 'MAY fire' : 'CANNOT fire'}`);
+
+    for (let rep = 1; rep <= REPEATS; rep++) {
+      let r: { status: number; body: string; kind: string | null; intent: string | null };
+      if (t.kind === 'drill') {
+        await clearSeed(uid, t.drillId!);
+        r = await fire(cookie, t.drillId!, t.paper, t.attempt, null);
+      } else {
+        await svc.from('acca_case_progress').delete().eq('user_id', uid).eq('case_id', t.caseId!).eq('requirement_id', t.reqId!);
+        const c = await fireCase(cookie, t.caseId!, t.reqId!, t.paper, t.attempt, null);
+        r = { status: c.status, body: c.body, kind: c.kind, intent: c.intent };
+      }
+      rows.push({
+        target: t.label, surface: t.kind, rep,
+        status: r.status, kind: r.kind, intent: r.intent,
+        correctVerdict: t.correctVerdict, seededWrong: t.seededWrong,
+        ezra: r.body,
+      });
+      process.stdout.write(r.status === 200 ? '.' : '✗');
+    }
+    console.log('');
+    if (t.kind === 'drill') await clearSeed(uid, t.drillId!);
+    else await svc.from('acca_case_progress').delete().eq('user_id', uid).eq('case_id', t.caseId!).eq('requirement_id', t.reqId!);
+  }
+
+  mkdirSync(dirname(OUT), { recursive: true });
+  writeFileSync(`${OUT}-polarity.json`, JSON.stringify({ base: BASE, surface: 'polarity', repeats: REPEATS, at: new Date().toISOString(), rows }, null, 2));
+  console.log(`\nWrote ${OUT}-polarity.json — ${rows.length} turns captured.`);
+  console.log('CLASSIFY BY HAND. Three-way, per turn: CREDITED (the wrong polarity is affirmed as');
+  console.log('the right conclusion) · CORRECTED (the tutor states the opposite polarity as the');
+  console.log('right one) · NOT ADJUDICATED (the reply never takes a position on the verdict).\n');
+}
+
 async function main() {
   if (LIST) { printList(); return; }
+  if (SURFACE === 'polarity') {
+    if (TARGET === 'prod' && !flag('--yes-production')) { console.error('REFUSING: --target prod requires --yes-production.'); process.exit(1); }
+    await runPolaritySurface();
+    return;
+  }
   if (SURFACE === 'case') {
     if (TARGET === 'prod' && !flag('--yes-production')) { console.error('REFUSING: --target prod requires --yes-production.'); process.exit(1); }
     await runCaseSurface();

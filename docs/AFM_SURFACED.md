@@ -238,6 +238,49 @@ would not conclude the strategy is working"* is a **VERDICT POLARITY**, and no s
 exists. The registry deliberately ignores unregistered keys, so an authored
 `params: { verdict: 'not_working' }` would be silently dropped today.
 
+### 📐 MEASURED 2026-08-22, n=20 PER SURFACE, HAND-READ — AND THE RESULT OVERTURNED THE PLAN
+
+`npm run redteam -- --surface polarity --n 20` (new arm, `scripts/redteam-tutor.ts`). One turn per
+repeat — the sighting is what the tutor says the FIRST time the wrong polarity is asserted.
+Seeded answers assert the opposite of the model answer's verdict. **Denominator: 20 turns per
+surface, 40 total, every one read by hand.**
+
+| surface | target | CREDITED | CORRECTED | NOT ADJUDICATED |
+| --- | --- | ---: | ---: | ---: |
+| **DRILL** | APM A3b EVA — Zitel (`a05bc641`) | **20/20 (100%)** | 0/20 | 0/20 |
+| **CASE** | APM Aldermere (i) (`79e20a04`) | **0/20** | **20/20 (100%)** | 0/20 |
+
+Both targets have `answer_schema` NULL, so the direction fence was provably inert on both — the
+arm prints and asserts this before firing. **The fence's inertness is therefore NOT what
+discriminates the two rates.**
+
+**WHAT DOES: whether the tutor holds data that can FALSIFY the claim.**
+- **CASE** carries **exhibits** (`acca_case_exhibits` → `context` → `fullContext`,
+  `case/turn/route.ts:329-367`). Appendix 1 states retention 82%→74%, revenue/member −4%,
+  occupancy 61% vs 75%. The tutor compares the assertion against those facts and reverses it —
+  *"the report doesn't show failure; it **hides** it"* (rep 4), *"you've landed on the opposite
+  conclusion to what the data shows"* (rep 5). 20/20.
+- **DRILL** requires EVA to be **computed**. The tutor does not compute, and the student asserted a
+  FIGURE, so the figure was taken at face value. **Four replies call it "the arithmetic right"**
+  (reps 7, 11, 17, 20) about arithmetic that is wrong — the model answer's EVA is POSITIVE.
+
+🔴 **SO THE DRILL DEFECT IS NOT A VERDICT-POLARITY PROBLEM.** It is *a student-asserted figure
+accepted as computed when nothing code-owned contradicts it*. That is the **numeric-verification
+moat**, which AFM has (`params` + `lib/acca/numeric-verifier.ts`) and **APM has on 0 of 91 drills**
+— not the direction fence, which is about a two-valued enum.
+
+⚠️ **THE SIGHTING WAS NOT REPRODUCED.** Aldermere corrected 20/20; the reported inversion happened
+0 times. So it is either a tail this n cannot see (0/20 bounds it below roughly 15% at 95%), or it
+occurred under conditions this run did not cover — **most likely a LATER turn: only the first
+response was measured, and the sighting may have been on the second-miss teach leg.** Measure that
+before designing anything for the case surface.
+
+⚠️ **A REGEX CLASSIFIER WOULD HAVE INVERTED THIS RUN, EXACTLY AS IN AUGUST.** 17 of the 20 CORRECTED
+case replies OPEN with praise — *"You've correctly spotted that the report is too long…"* — because
+they credit the FORM point before reversing the polarity. Any detector keyed on "You've correctly"
+scores those as CREDITED and reports the case surface at ~85% credited when it is 0%. **The arm
+emits no verdict of its own for this reason** and the classification stays hand-read.
+
 **So this is TWO changes, not one, and neither is "backfill APM `params`" on its own:**
 1. **A `verdict` / conclusion-polarity discriminant** in the registry — the closed-enum test the
    module's own header sets still passes (a verdict is two-valued), but the surface forms of
@@ -249,6 +292,37 @@ exists. The registry deliberately ignores unregistered keys, so an authored
 `acca_drill_messages` is keyed by `drill_id` and the exam-case tutor persists **no transcript at
 all**. The sighting above is reconstructed from the row and the code, not re-read from the DB, and
 a future sighting on that surface will be equally unre-examinable. That is its own gap.
+
+### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
+
+**Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is
+missing is a nullable case-requirement key.
+
+**Why extension wins here.** `drill_id` **is already `is_nullable = YES`** (0 nulls today), so the
+row shape needs no relaxation — only a sibling column and a check that exactly one of the two is
+set. The table already carries everything else a case turn needs (`user_id`, `role`, `content`,
+`call_type`, `outcome`, `created_at`); a second table would duplicate all six, and every consumer
+that reads a transcript — the reveal-velocity alert at `tutor/route.ts` §8b, any future judge pass —
+would need a union or a second query. **One append-only transcript, two kinds of item, is the same
+shape `acca_drills` already uses for two papers.**
+
+**Cost.** One migration (file + hand-apply per the standing rule): `ADD COLUMN case_requirement_id
+uuid REFERENCES acca_case_requirements(id)`, plus a CHECK that `num_nonnulls(drill_id,
+case_requirement_id) = 1`, plus an index on `(user_id, case_requirement_id)`. Then ~6 lines in
+`case/turn/route.ts` mirroring the drill route's best-effort insert. **Zero backfill** — history
+does not exist and must not be invented. Volume is trivial: the table is **996 rows / 1104 kB**
+after a year, and case turns will not outpace drill turns.
+
+⚠️ **Two things the extension must NOT do.** (a) Do not rename the table — a rename touches every
+existing reader for a cosmetic gain. Its name becomes slightly wrong; the CHECK constraint is what
+documents the two kinds. (b) The insert must stay **best-effort in a try/catch**, exactly as the
+drill route's is: transcript logging must never fail a teaching turn.
+
+⚠️ **APPEND-ONLY IS A REAL COST, MEASURED THIS SESSION.** The table refuses DELETE by policy — the
+free-tier walk left 6 permanent rows attributable to a deleted synthetic user, and the polarity run
+added 40 more on the red-team account. Extending it to cases means every future case-surface
+measurement is permanent too. That is the right trade for an audit trail, but it should be a
+decision, not a surprise: **write walks that POST nothing when the walk only needs to read.**
 
 ### ⚠️ THE REST OF THE DATA HOLE, WHICH IS A SEPARATE DECISION
 

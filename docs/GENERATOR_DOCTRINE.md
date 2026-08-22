@@ -1017,6 +1017,32 @@ constant: `teachAccessFor` returns `attemptAllowed: true` always, and it is asse
 whole input space precisely because "we never refuse an attempt" was previously true only by
 accident. A comment saying so is not checkable; a field is.
 
+**P-V1(c) — A WIRING TICK IN A CAPABILITY COLUMN IS A FALSE GREEN (ruled 2026-08-22).**
+
+P-V1 one level down. The teaching-surface matrix marked the code-owned direction fence **✅** for
+the exam-case tutor. That was true and checkable: `case/turn` imports and calls
+`extractDiscriminants` / `detectContradictions` / `renderDiscriminants`. It was also **false about
+everything a reader uses that column for** — all 18 APM case requirements have `answer_schema`
+NULL and 0 of 91 APM drills carry `params`, so the fence returns `[]` and renders the empty string
+across the entire paper. A tick meaning *"the call exists"* sat in a column meaning *"this is
+covered"*, and the next reader budgets against the second meaning.
+
+**THE RULE.** In any coverage table, a cell answers the question the COLUMN asks, not the question
+that was easiest to check. If the column is capability, a wired-but-inert mechanism is **⚠️ with
+its reach stated**, never ✅. Where wiring and reach differ, show both — the wiring fact is real and
+worth keeping; it just is not the answer.
+
+**P-V1(d) — MEASURE THE RATE BEFORE DESIGNING THE FIX, AND HAND-READ IT.** The plan built on the
+✅→⚠️ correction was *"design a conclusion-polarity discriminant, then backfill APM schemas"*.
+Measuring first (n=20 per surface, `--surface polarity`) said the case surface **corrects the wrong
+polarity 20/20** — the discriminant would have solved a problem that surface does not have — while
+the drill surface **credits it 20/20**, and for a different reason than the fence: a student-asserted
+FIGURE is accepted as computed. That is the numeric-verification moat, not the direction fence.
+**A fix designed from the diagnosis rather than the rate would have been built in the wrong module,
+for the wrong surface.** ⚠️ And it must be HAND-read: 17 of the 20 correcting replies OPEN with
+praise for a secondary point before reversing the polarity, so a detector keyed on *"You've
+correctly"* inverts the result — which is how the August measurement inverted.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
