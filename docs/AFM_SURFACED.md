@@ -175,6 +175,75 @@ text. That arm should compare row content against the reviewed draft.
 
 </details>
 
+## 🔵 SCOPED, NOT BUILT — 2026-08-22 — CONSOLIDATE THE TWO TEACH LOOPS (P-M1, staged behind measurement)
+
+**Grant's call, 2026-08-22: wire the six mechanisms into `teach-engine.ts` and point the drill
+route at it, deleting the duplicate. Porting individually keeps the duplicate and guarantees the
+matrix regrows. NOT STARTED — this is the written plan.**
+
+### The root cause, stated once
+
+There are **two independent implementations of the same teach loop**. `app/api/acca/tutor/route.ts`
+carries its own inline §7; `lib/acca/teach-engine.ts` (`runTeachTurn`) describes itself in its own
+header as *"a faithful copy of the tutor route's §7"* and is what `app/api/acca/case/turn/route.ts`
+calls. **The drill route does not import `teach-engine` at all.** Every hole in the matrix below is
+a consequence: a fix lands in one copy and the other keeps its old behaviour, and nothing fails.
+
+### The matrix as measured (2026-08-22)
+
+**DT** drill tutor · **CT** exam-case tutor (practice) · **MS** mock sit · **MK** sit/case marking
+
+| Mechanism | DT | CT | MS | MK |
+| --- | :--: | :--: | :--: | :--: |
+| `buildGroundingPack` — checklist / facts / conventions / resolvableTopics | ✅ | ❌ | n/a | n/a |
+| code-owned **direction** (discriminants) | ✅ | ✅ | n/a | ❌ |
+| blank-answer short-circuit (`isBlankAnswer`) | ❌ | ❌ | n/a | ✅ |
+| `nextMoveContract` (level-3 next move) | ✅ | ✅ | n/a | n/a |
+| reveal offer at `missCount >= 2` | ✅ | ⚠️ | n/a | n/a |
+| taxonomy fence (`describeDemand`) | ✅ | ✅ | n/a | ❌ |
+| misconception-lead threading | ✅ | ❌ | n/a | n/a |
+
+`n/a` is literal: **the mock sit runs no teach loop by design** (`shouldRunTeachLoop(sitting)` =
+`!sitting`). The resit diagnostic and the LC/IB session (Mia) carry **none** of the six and are
+out of scope. ⚠️ on CT's reveal: `teach-engine.ts:710` is `wantsReveal && missCount >= 2` — **no
+`paid` arm and no `resolved` arm**, where DT uses the four-input `revealDecision`. Harmless only
+because `case/turn` 402s an unentitled user first; the missing `resolved` arm is wrong regardless.
+
+### ⚠️ THE DATA HOLE, WHICH IS NOT A WIRING HOLE AND NEEDS ITS OWN DECISION
+
+A mechanism can be wired and still reach nothing. Measured over the live corpus:
+
+| Mechanism | AFM drills (63) | APM drills (91) | Case reqs (38) |
+| --- | --- | --- | --- |
+| direction fence — needs `answer_schema.params` | 49 | **0** | 11 |
+| misconception lead — needs a `misconception…:` lead | 57 | **14** | 20 (all AFM) |
+
+**The direction fence is structurally INERT on all 91 published APM drills** — none carries
+`params` — and the misconception lead reaches only 14 of 91. **Anyone measuring a consolidation's
+impact on APM will conclude it did nothing, and they will be right about APM and wrong about the
+change.** Cause: AFM's generator writes structured `params` and P7-shaped reveals; APM's corpus
+predates both. The decision this needs — backfill APM `params`, backfill APM reveal leads, accept
+AFM-only coverage, or drop the mechanisms for APM — is a CONTENT decision and is **not** part of
+the consolidation. Do not let it ride along inside it.
+
+### Staging (each stage lands and is measured before the next)
+
+1. **Close the two behavioural divergences first, while the duplicate still exists.** CT's reveal
+   gains the `paid` and `resolved` arms via `revealDecision`. Cheap, isolated, and it removes a
+   difference the consolidation would otherwise have to arbitrate mid-flight.
+2. **Wire the two free wins into `teach-engine`:** the misconception lead (all 38 case requirements
+   already have `full_reveal`; **20 already carry the P7 lead shape**, so this lights up on merge)
+   and the rest of `buildGroundingPack`. Measure on the case surface, where the corpus supports it.
+3. **Add the blank-answer short-circuit to the engine** — it exists only in marking today, so both
+   teaching loops will currently run a full diagnose→teach cycle against `"asdf"`.
+4. **THEN point the drill route at `runTeachTurn` and delete §7.** This is the P-M1 step: it moves
+   the surface all **154 published drills** serve from. It needs a band/behaviour matrix over a
+   real sample before and after, not a fixture — `scripts/redteam-tutor.ts` already drives both
+   surfaces and is the harness.
+
+**Do not reorder.** Step 4 before steps 1–3 means the divergences get resolved silently by whichever
+copy survives, and nobody will be able to say which behaviour changed or why.
+
 ## 🟢 STANDING — 2026-08-22 — THE FIVE SBL ROWS ARE `approved` AND UNPUBLISHED **BY DECISION, NOT BY OMISSION**
 
 **👷 IF YOU ARE BUILDING THE SBL SURFACE, THIS IS THE ITEM ADDRESSED TO YOU. READ ALL OF IT.**
