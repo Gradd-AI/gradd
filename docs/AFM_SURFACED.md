@@ -110,16 +110,26 @@ read 5 was applied to the drafts, and the sync then carried all five rows to the
   not status, which is the doctrine read in the other direction.
 
 ### ⏳ STILL OPEN: the flip itself
-**GATE-P has NOT run.** Two things gate it and neither is done:
-1. **The tutor scoping must be DEPLOYED, not merely committed** (P-DB8(b)). It is on
-   `feat/sbl-foundation`; the flip is a DB write and ships instantly, so flipping before the guard
-   is live on `main` opens the very leak the guard closes.
-2. **There is no `docs/reviews/SBL_BATCH_A_GPT_READ_5.md`.** Reads 2, 3 and 4 each have a pack;
-   read 5's findings reached the drafts without one. GATE-P's status arm reconciles against the
-   journal's reviewed-set, and for read 5 there is nothing journalled to reconcile against.
-3. **Open question for Grant:** SBL is DECLARED but NOT SERVED. Publishing these rows makes them
-   live for a paper no surface serves — and every surface was just hardened to refuse it. Is the
-   flip meant to land now (content ready, surface later), or wait until SBL becomes served?
+**GATE-P has NOT run.** Three things gated it; **the two mechanical ones closed 2026-08-22, and the
+one that remains is a ruling, not a task.**
+1. ✅ **The tutor scoping is DEPLOYED, not merely committed** (P-DB8(b)). `feat/sbl-foundation`
+   merged to `main` at `4918b17` and confirmed from the BUILD LOG via the CLI — SHA matched on
+   `vercel ls --meta githubCommitSha=`, `PASS contract gate: 65/65`, `Build Completed in
+   /vercel/output [48s]`, `Deployment completed`, `● Ready`. `SERVED_PAPERS` scoping is live, so the
+   flip can no longer open the leak the guard closes.
+2. ✅ **`docs/reviews/SBL_BATCH_A_GPT_READ_5.md` now exists.** Reads 2, 3 and 4 are banked as GPT's
+   own text; read 5's findings reached the drafts through chat only, so the pack is a
+   **RECONSTRUCTION** from the applied diff (`179db83`), the drafts and that commit's message — the
+   substance is evidenced by the edits it produced, the attributed wording is paraphrase, and the
+   pack says so in its first paragraph. It records SHAPE 7 (fixed-premise violation, A2), the two
+   residual imports (A4 reveal, A4 c3+GOOD), all five applied edits verbatim before/after, the lint
+   re-run, and **the three items deliberately left as grinding** — A2 c2's *"credential that wins
+   senior advancement"*, A3 c4's *"would have to carry the launch"*, A3 GOOD's *"synthesised it
+   correctly"* — each with its fence and the reason it does not move a mark.
+3. 🔴 **Open question for Grant — THE ONLY THING GATE-P NOW WAITS ON.** SBL is DECLARED but NOT
+   SERVED. Publishing these rows makes them live for a paper no surface serves — and every surface
+   was just hardened to refuse it. Is the flip meant to land now (content ready, surface later), or
+   wait until SBL becomes served? Not a technical question and not Claude Code's to answer.
 
 <details><summary>Original finding, kept for the record</summary>
 
