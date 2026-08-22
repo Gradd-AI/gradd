@@ -45,19 +45,34 @@ const PREAMBLE = `# SBL Batch A — review pack
 \`scripts/authoring/export-sbl-pack.ts\`.** Spec: \`docs/SBL_BATCH_A_PLAN.md\`.
 Evidence: \`docs/evidence/SBL_FAILURE_CATALOGUE.md\`.
 
-## DB STATE — ALL FIVE INSERTED, \`candidate\` / \`published=false\`
+## DB STATE — ALL FIVE \`approved\` / \`published=false\` (GATE-P step one, 2026-08-22)
 
 {{STATE_TABLE}}
 
-**acca_drills 155 → 160.** AFM 64 · APM 91 · SBL 5. Post-insert: 5/5 \`candidate\`+unpublished,
-0 published, 0 approved, 5 distinct \`lo_code\` with no duplicate, and 0 AFM/APM rows created in the
-window — so nothing outside the batch moved. **Section A is now 5 of 12 outcomes** (A1a, A2b, A2d,
-A3a, A3d), counted as OUTCOMES, not marks.
+⚠️ **THE TABLE ABOVE IS BUILT FROM THE DRAFTS, NOT FROM THE DB.** Its \`status\` column is the
+draft's, which still reads \`candidate\` — the drafts were never rewritten after the flip, and
+rewriting them to chase a status column would put the reviewed content at risk for a cosmetic
+reason. **The live DB state is the heading: \`approved\`, \`published=false\`.** Confirm with
+\`npx tsx --env-file=.env.local scripts/authoring/approve-sbl-batch-a.ts\` (dry run, read-only).
 
-⚠️ **NO PUBLISH FLIP HAS OCCURRED, AND IT IS TWO STEPS, NOT ONE** — these rows are \`candidate\`, so
-going live means \`approved\` and then \`published\`, under GATE-P: reconcile the DB approved-set
-against the journal FIRST, flip by EXPLICIT id, demote any un-reviewed \`approved\` row in the same
-transaction, prove it with pre/post counts.
+**acca_drills 155 → 160** at insert. AFM 64 · APM 91 · SBL 5, 5 distinct \`lo_code\` with no
+duplicate and 0 AFM/APM rows created in the window — so nothing outside the batch moved.
+**Section A is now 5 of 12 outcomes** (A1a, A2b, A2d, A3a, A3d), counted as OUTCOMES, not marks.
+
+⚠️ **STEP ONE OF THE PUBLISH FLIP HAS RUN; STEP TWO HAS NOT, AND THAT IS A DECISION (doctrine
+\`P-DB9\`, Grant 2026-08-22).** \`candidate → approved\` on all five, \`published\` untouched:
+approved 154 → 159, published 154 → 154. **\`approved\` records that the content passed review,
+which is true; \`published\` records intent to serve, which is not** — SBL has no surface, no price
+and no entitlement. **These five are approved-and-unpublished BY DECISION, not by omission**, and
+every future reconcile must ALLOW-LIST them by id the way \`47c9d5ce\` is allow-listed; an
+unregistered approved-but-unpublished row still hard-stops.
+
+⚠️ **STEP TWO CARRIES A RE-READ OBLIGATION.** By the time an SBL surface exists this content will
+be months old and the reviewer's context gone, and **all three GATE-P arms go green on
+stale-but-unchanged rows** — green means the row still holds what was reviewed, never that the
+review is still right. Re-read this pack and \`SBL_BATCH_A_GPT_READ_5.md\` (which names three
+over-reaches deliberately left in place, each held by a fence in the surrounding text) before
+flipping \`published\`. See \`docs/AFM_SURFACED.md\` → the 🟢 STANDING block.
 
 ⚠️ **THE BATCH NEEDED TWO SCHEMA MIGRATIONS THAT NOBODY PREDICTED**, both found by attempting the
 insert rather than by reading code — \`20260819120000\` (paper_code) and \`20260819130000\`
@@ -185,7 +200,10 @@ function render(): string {
     const ev = a.designed_mode_evidenced ?? EVIDENCED[id];
 
     out.push(`\n---\n\n## ${id} · \`${r.lo_code}\` · ${r.professional_skill_tag} · L${r.intellectual_level} · ${r.marks_guide} marks`);
-    out.push(`\n**verb:** ${r.command_verb} · **paper_code:** ${r.paper_code} · **status:** ${r.status}, published=${r.published}`);
+    // `status (draft)`, NOT `status`. This value is the DRAFT's, and since the 2026-08-22 approve
+    // flip the DB says `approved` while the draft still says `candidate`. Labelling it plainly is
+    // the whole fix: an unlabelled `status:` in a pack reads as a claim about the live row.
+    out.push(`\n**verb:** ${r.command_verb} · **paper_code:** ${r.paper_code} · **status (draft):** ${r.status}, published=${r.published} — live DB is \`approved\`/\`published=false\``);
     out.push(`\n*Generated from \`docs/rollbacks/${path.split(/[\\/]/).pop()}\`.*`);
     out.push(`\n**Designed BAD — N4 contract:** \`[${(a.designed_bad_flags ?? []).join(', ')}]\`` +
       (ev ? `  ·  **evidenced (NOT N4-verified):** \`${ev}\`` : '  ·  *its evidenced mode is itself deterministic*'));
