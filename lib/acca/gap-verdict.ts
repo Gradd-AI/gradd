@@ -126,6 +126,27 @@ export function nothingEstablished(verdict: GapVerdict | null, rawLabel: string)
   return gapEstablishesNothingCorrect(rawLabel);
 }
 
+/**
+ * Nothing in the answer earns credit against this requirement.
+ *
+ * WIRED 2026-08-23 on 60/60 agreement with a hand-read, including a POSITIVE CONTROL that read 1
+ * on 20/20 — the arm that distinguishes a working field from one that reads 0 on everything and
+ * would suppress every opening while scoring perfectly. None of the three failed wording changes
+ * ever had that evidence.
+ *
+ * ⚠️ INDEPENDENT OF `derived`, DELIBERATELY. They answer different questions — "was the figure
+ * derived" and "is there anything here worth leading with" — and a numeric answer can show real
+ * working that earns nothing, while a discursive answer can earn credit with no arithmetic at all.
+ * Neither is computed from the other, and `derived`'s arm is unchanged by this.
+ *
+ * An ABSENT value returns false: unknown must mean "no claim", never "nothing creditable", because
+ * this arm suppresses praise and the failure it would cause is telling a student who did good work
+ * that there was nothing to lead with.
+ */
+export function nothingCreditable(verdict: GapVerdict | null): boolean {
+  return verdict?.creditable === 0;
+}
+
 /** Where the answer came from. Recorded so a measurement can tell the three apart. */
 export type DerivedSource = 'code' | 'field' | 'phrase';
 

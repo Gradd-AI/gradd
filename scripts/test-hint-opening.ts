@@ -95,6 +95,37 @@ ok('(a)+(b) together DO trigger it',
 ok('(a) alone leaves the opening at shipped (so the arms are genuinely separable)',
   hintOpeningInstruction('shipped', gapEstablishesNothingCorrect(guardLabel('unverified'))) === SHIPPED_OPENING);
 
+// ── 4b. (c) NOTHING CREDITABLE — the third state, and (b) keeps precedence ───
+// Break modes: (c) silently re-words (b), whose 10%-credited rate is the only measured opening we
+// have; or (c) reuses (b)'s numeric wording on a discursive drill, telling a candidate answering
+// an "advise the board" requirement to put arithmetic on the page.
+{
+  const c = hintOpeningInstruction('conditional', false, true);
+  ok('(c) fires when nothing is creditable and derived did NOT fire', c !== SHIPPED_OPENING);
+  ok('(c) is a DISTINCT opening, not (b) reused',
+    c !== hintOpeningInstruction('conditional', true, false));
+  ok('(c) is SHAPE-NEUTRAL — no figure/arithmetic/working language (it serves discursive drills)',
+    !/figure|arithmetic|working|checkable|compute/i.test(c), c);
+  ok('(c) contains NO prohibition (P-T2/P-M4)',
+    !/\bdo not\b|\bdon't\b|\bnever\b|\bavoid\b/i.test(c), c);
+  ok('(c) never mentions praise or what they got right',
+    !/got right|praise|well done/i.test(c), c);
+  ok('(c) gives a SATISFIABLE positive job', /Open on the first thing that would/.test(c));
+  ok('(c) still demands one gap and one next move',
+    /single sharpest gap/.test(c) && /one next move/.test(c));
+  // PRECEDENCE: (b) wins where it applies, so nothing measured changes shape.
+  ok('(b) KEEPS PRECEDENCE when both conditions hold',
+    hintOpeningInstruction('conditional', true, true) === hintOpeningInstruction('conditional', true, false));
+  ok('neither condition → shipped opening, unchanged',
+    hintOpeningInstruction('conditional', false, false) === SHIPPED_OPENING);
+  ok('the shipped VARIANT ignores (c) entirely (env rollback is total)',
+    hintOpeningInstruction('shipped', false, true) === SHIPPED_OPENING);
+  // Default parameter: every pre-existing caller keeps its exact behaviour.
+  ok('(c) defaults FALSE — an omitted argument changes nothing',
+    hintOpeningInstruction('conditional', false) === SHIPPED_OPENING
+    && hintOpeningInstruction('conditional', true) === hintOpeningInstruction('conditional', true, false));
+}
+
 // ── 5b. THE GUARD BLOCK: shipped scope pinned, rewritten scope characterised ─
 // The whole guard block moved OUT of the route and into this module so the trigger and the label
 // it emits cannot drift apart. `shipped` is transcribed here from the route's pre-move text and

@@ -73,12 +73,46 @@ export function gapEstablishesNothingCorrect(diagnosis: string): boolean {
 export function hintOpeningInstruction(
   variant: HintOpeningVariant,
   nothingEstablished: boolean,
+  /**
+   * Nothing in the answer earns credit against this requirement (`creditable === 0`).
+   *
+   * A THIRD state, not a rename of the second. `nothingEstablished` is numeric-shaped — its
+   * replacement text talks about a figure being unchecked and about putting reasoning on the page
+   * — and it is MEASURED at 10% credited, so it keeps precedence wherever it applies. This arm
+   * exists for the branch that had no opening at all: a discursive answer where `derived` cannot
+   * fire (the scope's interpretive carve-out exempts all 73 APM discursive drills, P-T3(m)) and
+   * the praise-first opening therefore has nothing legitimate to lead with — the exact condition
+   * under which it was measured inventing one (8/20 on D2a, ~19/20 once grounding gave it richer
+   * material to invent from, P-T3(o)).
+   */
+  nothingCreditable = false,
 ): string {
   const SHIPPED =
     'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
     'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
     'move. ';
-  if (variant === 'shipped' || !nothingEstablished) return SHIPPED;
+  if (variant === 'shipped') return SHIPPED;
+  // (c) NOTHING CREDITABLE — the branch that previously had no opening at all.
+  //
+  // ⚠️ PRECEDENCE: (b) WINS WHERE IT APPLIES. Its wording is numeric-shaped and it is MEASURED at
+  // 10% credited; this arm is reached only when `derived` did NOT fire, so nothing measured
+  // changes shape. Ordering it the other way would silently re-word the one opening whose rate
+  // we know.
+  //
+  // ⚠️ SAME P-T2 DISCIPLINE AS (b): purely positive, nothing named that we do not want. It does
+  // not mention praise, what they got right, or correctness — it states what the diagnosis found
+  // and hands over a different, SATISFIABLE job. It is also SHAPE-NEUTRAL: unlike (b) it says
+  // nothing about figures or arithmetic, because this arm serves discursive drills where a
+  // "put the working on the page" instruction would misdescribe the requirement entirely.
+  if (!nothingEstablished && nothingCreditable) {
+    return (
+      'First miss, and the gap diagnosis above reports that nothing in the answer yet earns ' +
+      'credit against this requirement. Open on the first thing that would: name the single ' +
+      'specific move this requirement turns on, and what they would have to put on the page to ' +
+      'make it. Then name the single sharpest gap (just one, not a list) and one next move. '
+    );
+  }
+  if (!nothingEstablished) return SHIPPED;
   // (b): the opening is REPLACED, and the replacement is PURELY POSITIVE.
   //
   // ⚠️ A FIRST DRAFT OF THIS SAID "do NOT open by naming something they got right", and that is

@@ -147,9 +147,15 @@ ok('an escaped quote inside a recovered label is unescaped',
     ok('hint grounding is DEFAULTED OFF (it was measured making fabrication worse)',
       /TUTOR_HINT_GROUNDING === 'on'/.test(src)
       && /HINT_GROUNDING \? renderAuthoredHint/.test(src));
-    ok('creditable is NOT wired to the opening condition (measurement only, until measured)',
-      !/creditable[\s\S]{0,80}hintOpeningInstruction/.test(src)
-      && !/gapNothingEstablished[^\n]*creditable/.test(src));
+    // WIRED 2026-08-23 on 60/60 agreement including a positive control. The previous version of
+    // this pin asserted the OPPOSITE ("not wired") and, when the wiring landed, kept PASSING —
+    // its two negative regexes both missed because the call spans lines. A pin that can only ever
+    // pass is a false green in the fixture suite itself, which is the thing this suite exists to
+    // catch. Both halves below are POSITIVE assertions for that reason.
+    ok('creditable IS wired to the opening as its own independent arm',
+      /const gapNothingCreditable = nothingCreditable\(gapVerdict\)/.test(src));
+    ok('the two arms are passed SEPARATELY — derived\'s arm is untouched',
+      /gapNothingEstablished && !bareGuessGuardVetoed\(attempt\),\s*\n\s*gapNothingCreditable,/.test(src));
   }
 }
 

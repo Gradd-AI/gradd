@@ -1399,6 +1399,49 @@ to the opening. `call2` never sees the hint, so the format change is the only ca
 Making a measurement field OPTIONAL in the parser prevents it breaking the wired path through a
 PARSE failure; it does nothing about prompt interference. **Re-measure the wired field whenever the
 envelope around it changes.**
+📐 **DIRECTION CONFIRMED — SIX ZEROS, SO IT IS AN IMPROVEMENT, NOT A REGRESSION.** The C1c seed
+asserts a verdict with no working and no reasoning, so ground truth is `derived = 0`; the six turns
+moved **1 → 0**, and that cell's agreement went **0% → 30%**. The rule above stands unchanged — the
+envelope is still not neutral and a wired field must still be re-measured when it changes — but
+**a regression and an improvement must not be filed as the same event**, and the first draft of
+this entry recorded only that the number "shifted".
+
+**P-T3(p) — MAKING THE OPENING SATISFIABLE IS WHAT STOPPED THE INVENTION (wired + measured
+2026-08-23, 60 turns).** `creditable` is now a second wired arm on the opening: *"is there anything
+creditable to lead with"* alongside *"was the figure verified"*, independent, neither computed from
+the other, `derived`'s arm byte-identical.
+
+| cell | opening used | fabrication (hand-read) |
+| --- | --- | ---: |
+| D2a unsubstantiated | (c) ×20, no praise | **2/20** — was **8/20** ungrounded, **~19/20** grounded |
+| C1c unsubstantiated | (b) ×7 / (c) ×13, no praise | 2/20 — off-requirement credit 20/20 → ~2/20 |
+| **C1c POSITIVE CONTROL** | **shipped praise ×20** | **0/20, credit preserved 20/20** |
+
+**THE CAUSAL CHAIN IS NOW CLOSED, and it ran the length of this thread.** The tutor invented because
+its opening demanded the ONE thing the student got right; on an answer containing nothing of the
+kind that instruction is unsatisfiable, so the leg reached for the nearest material — the scenario
+(`P-V2(b)`), and more of it once grounding supplied richer specifics (`P-T3(o)`). **Give the leg a
+satisfiable job on exactly those turns and the invention largely stops.** Not a wording change:
+three of those failed measured. A CONDITION change, decided by a field with 60/60 agreement and a
+positive control.
+⚠️ **THE CONTROL IS THE LOAD-BEARING ARM, NOT THE HEADLINE.** A field reading 0 everywhere would
+have driven every fabrication number to zero and been a pure regression — it would have stripped
+earned praise from the one answer that deserved it. The control keeping **20/20 accurate, specific
+credit** is what makes the other two columns mean anything. **Never report a suppression metric
+without the arm that can distinguish suppression from correctness.**
+📐 **AND IT IS NOT A CLEAN SWEEP.** 2/20 on each unsubstantiated cell still fabricate (*"You've
+spotted that averages can hide things"* to an answer saying nothing is misleading), and C1c's
+off-requirement credit persists at ~2/20. The praise reflex survives on a much smaller surface;
+the mechanism was reduced, not removed.
+
+**P-V2(c) — A CAPTURE MUST RECORD THE ARM, NOT A CONSTANT.** The `[GAPLABEL]` log carried
+`hintGrounded: grounding.authoredHint !== null` — whether the drill HAS an authored hint, which is
+true for 154/154 rows and therefore never varies. It read `20/20` on a run with grounding switched
+OFF. **A field that cannot differ between arms records nothing and reads as if it does**, and would
+have made the next arm unattributable from its own capture. Split into `hintOnRow` (the constant)
+and `hintArm` (the env flag actually in force). Same defect and same fix as printing the scope
+variant into the run header. **Before a comparative run, check that every logged field CAN take a
+different value in the other arm.**
 
 ## Standing rulings
 

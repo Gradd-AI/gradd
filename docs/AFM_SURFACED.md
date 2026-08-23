@@ -747,6 +747,48 @@ C1c from **0/20 to 6/20**. `call2` never sees the hint, so the format change is 
 Optional-in-the-parser stops a measurement field breaking the wired path through a PARSE failure;
 it does nothing about prompt interference. **Re-measure the wired field whenever its envelope
 changes.**
+📐 **DIRECTION CONFIRMED: SIX ZEROS — AN IMPROVEMENT.** Ground truth on that seed is `derived = 0`
+(a verdict with no working and no reasoning), so the six moved **1 → 0** and the cell's agreement
+went **0% → 30%**. The rule is unchanged; the classification is. **A regression and an improvement
+must not be recorded as the same event** — the first draft of this entry said only "shifted".
+
+### ✅ WIRED 2026-08-23 — `creditable` ON THE OPENING. FABRICATION 8/20 → 2/20 ON D2a.
+
+The opening condition is now *"is there anything creditable to lead with"* as well as *"was the
+figure verified"* — two wired judgements, independent, neither computed from the other.
+`derived`'s arm is byte-identical. Grounding stayed **OFF** for this arm, per the envelope lesson.
+Captures `docs/redteam/wired-*-20260823.json`. Parsed 60/60, zero retries.
+
+| cell | `creditable` 0 / 1 | `derived` 0 | opening used | **fabrication (hand-read)** |
+| --- | ---: | ---: | --- | ---: |
+| C1c unsubstantiated | 20 / 0 | 7 | (b) ×7, (c) ×13 — no praise | **2/20** |
+| D2a unsubstantiated | 20 / 0 | 0 | (c) ×20 — no praise | **2/20** (was 8/20) |
+| **C1c POSITIVE CONTROL** | **0 / 20** | 0 | **shipped (praise) ×20** | **0/20** |
+
+✅ **D2a fabrication 8/20 → 2/20.** With a satisfiable opening the leg no longer reaches for
+scenario material: replies now read *"You've named a position — reject the investment, keep weekly
+reporting — but you haven't shown why that position holds"*. The two residual cases are T16
+(*"you've done the floor work… noting the IT capability"*) and T20 (*"You've diagnosed the problem
+correctly — real-time data capture IS a genuine operational constraint"*, against an answer saying
+the opposite).
+✅ **THE POSITIVE CONTROL IS UNTOUCHED, 20/20** — *"You've nailed the satisfaction problem… named
+the specific distribution it hides (15 branches below 5 in one region)"*, then the two metrics the
+answer never reached. **Earned credit is preserved exactly where it is earned**, which is the check
+that separates this from a field that suppresses praise everywhere.
+📐 **C1c: the off-requirement credit collapsed from 20/20 to ~2/20** (T12, T20 still call the
+aggregates point "the floor"). ⚠️ **But 2 NEW fabrications appeared** — T5 *"You've spotted that
+averages can hide things"* and T8 *"You've identified that averages can be misleading"*, against an
+answer that says nothing in the pack is misleading. **So the wiring moved C1c from "credits a
+present-but-irrelevant point 20/20" to "clean 16/20, fabricates 2/20"** — a large net improvement
+that is not a clean sweep, and the residue is the same praise reflex operating on a much smaller
+surface.
+
+⚠️ **AN INSTRUMENT DEFECT FOUND AND FIXED IN THIS RUN.** The `[GAPLABEL]` capture logged
+`hintGrounded: grounding.authoredHint !== null` — whether the drill HAS a hint (true for 154/154,
+so it never varies), not whether the hint was INJECTED. It read `20/20` on a run with grounding
+OFF. A capture recording only that cannot tell a grounding-ON arm from a grounding-OFF one, which
+would have made step 4 unattributable from its own log. Now `hintOnRow` + **`hintArm`** (the env
+flag itself) — the same fix the scope variant needed when its arm was printed into the run header.
 
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 

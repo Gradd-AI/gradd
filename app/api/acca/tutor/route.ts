@@ -36,7 +36,7 @@ import {
 } from '@/lib/acca/hint-opening';
 import { bareGuessGuardVetoed, computationDemandedButAbsent } from '@/lib/acca/bare-guess-veto';
 import {
-  parseGapVerdict, safeLabel, resolveNothingEstablished, GAP_VERDICT_FORMAT, type GapVerdict,
+  parseGapVerdict, safeLabel, resolveNothingEstablished, nothingCreditable, GAP_VERDICT_FORMAT, type GapVerdict,
 } from '@/lib/acca/gap-verdict';
 import { withParseRetry } from '@/lib/acca/case-marking';
 // THE STEER IS A FIELD, NOT A PHRASE (P-T3(i)). 'off' restores the pre-change prompt bytes and
@@ -494,7 +494,13 @@ async function call2_diagnose(
       derived: verdict ? verdict.derived : null,
       // MEASUREMENT ONLY — recorded, wired to nothing. See GapVerdict.creditable.
       creditable: verdict && verdict.creditable !== undefined ? verdict.creditable : null,
-      hintGrounded: grounding.authoredHint !== null,
+      // ⚠️ TWO DIFFERENT FACTS, AND THE FIRST VERSION LOGGED ONLY THE USELESS ONE. `hintOnRow` is
+      // whether the drill HAS an authored hint (true for 154/154, so it never varies); `hintArm`
+      // is whether that hint was actually INJECTED into the hint leg. A capture that records only
+      // the former cannot tell a grounding-ON arm from a grounding-OFF one — the same defect the
+      // scope variant had before its arm was printed into the run header.
+      hintOnRow: grounding.authoredHint !== null,
+      hintArm: process.env.TUTOR_HINT_GROUNDING === 'on',
       calcRequired: calculationRequired,
       codeOwnsUnderived,
       // The resolved answer and WHERE it came from: code > field > phrase.
@@ -522,6 +528,9 @@ async function call3_hint(
   /** Already resolved by the caller as CODE > FIELD > PHRASE. This leg is TOLD whether anything
    *  was established; it never reads a label to work it out. */
   gapNothingEstablished: boolean,
+  /** `creditable === 0` — nothing in the answer earns credit against this requirement. An
+   *  INDEPENDENT judgement, not derived from the flag above; see lib/acca/gap-verdict.ts. */
+  gapNothingCreditable: boolean,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -595,6 +604,7 @@ async function call3_hint(
             // so this is defensive rather than load-bearing — and cheap enough to keep as a
             // second lock on the one direction that costs the tutor its credibility.
             gapNothingEstablished && !bareGuessGuardVetoed(attempt),
+            gapNothingCreditable,
           ) +
           'Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           // Was: "Work in the command verb and ACCA intellectual level from the authored values
@@ -1664,6 +1674,10 @@ export async function POST(request: Request): Promise<Response> {
         // toward not-adjudicated; there is deliberately no arm that forces "derived".
         const gapNothingEstablished =
           resolveNothingEstablished(codeOwnsUnderived, gapVerdict, diagnosis).nothingEstablished;
+        // WIRED 2026-08-23 on 60/60 agreement with a hand-read, including a positive control that
+        // read 1 on 20/20. INDEPENDENT of `derived` — different question, neither computed from
+        // the other, and `derived`'s arm above is unchanged. Absent ⇒ false ⇒ no change.
+        const gapNothingCreditable = nothingCreditable(gapVerdict);
 
         // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
         // verifies every required component was attempted. Runs ONLY when call2 says correct, so
@@ -1707,7 +1721,7 @@ export async function POST(request: Request): Promise<Response> {
             // never set `teachThroughDelivered`, so it has never charged a slot. The 2026-08-22
             // ruling did not have to carve anything out for it — it only had to stop the gate
             // above refusing the student before they could reach it.
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapNothingEstablished);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapNothingEstablished, gapNothingCreditable);
             messageKind = 'hint';
             if (!coachingAllowed) ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
           } else if (!coachingAllowed) {
@@ -1723,7 +1737,7 @@ export async function POST(request: Request): Promise<Response> {
             // `selfAssess` and the reveal offer are deliberately absent: the offer walks a free
             // student into `revealDecision`'s 'burn', and appending both a reveal nudge and an
             // upgrade prompt to one message is two asks in a row.
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapNothingEstablished);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapNothingEstablished, gapNothingCreditable);
             ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
             messageKind = 'hint_capped';
           } else {
