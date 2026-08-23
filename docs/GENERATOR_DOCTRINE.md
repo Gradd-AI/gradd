@@ -1043,6 +1043,22 @@ for the wrong surface.** ⚠️ And it must be HAND-read: 17 of the 20 correctin
 praise for a secondary point before reversing the polarity, so a detector keyed on *"You've
 correctly"* inverts the result — which is how the August measurement inverted.
 
+**P-V2 — A CELL CAN SCORE BEST ON EVERY RATE COLLECTED AND BE THE WORST CONTENT (ruled 2026-08-23,
+measured).** In the two-drill generalisation sweep the AFM B1a underived cell scored **credited 0,
+corrected 9** — the strongest outcome numbers of the five cells. Its replies say *"your arithmetic
+on those inflows is where the reasoning breaks down"* and *"you've calculated your way to a
+negative NPV"* **to a student who calculated nothing.** Right verdict, invented premise, and a next
+move (*check your working*) that cannot be acted on because there is no working. **Every rate we
+collect — credited, corrected, not-adjudicated, agreement — measures whether the VERDICT was right.
+None of them can see whether the REASONING behind it was.** A fabricated premise scores as a win.
+**THE RULE: read the replies, not the column.** A rate is a triage instrument for finding cells
+worth reading; it is never the finding. Where a report quotes an outcome rate, it must also say
+what the reasoning behind it looked like on a hand-read sample, or state plainly that nobody
+looked. ⚠️ This is the same failure mode as **P-V1**'s false DERIVED claims and the August regex
+inversion, one level up: there the measurement was wrong, here the measurement is CORRECT and
+measures the wrong thing. **The more automatable the metric, the more certain it is that something
+important is outside it.**
+
 **P-T3 — A GUARD THAT SHORT-CIRCUITS A CHECK MUST NOT EMIT A LABEL THAT READS AS THE CHECK HAVING
 PASSED (ruled 2026-08-22, measured).**
 
@@ -1234,6 +1250,34 @@ B1a has a non-null `answer_schema`, so call2 receives a grounding block and can 
 APM B1c is schema-NULL with nothing to falsify against — which is precisely why the guard is what
 protects that paper, and why **P-T3(f)** (a schema-keyed gate is inert on 91/91 APM drills) blocks
 the obvious structural fix here too.
+
+**P-T3(k) — THE SIGNAL FOR "THIS DRILL DEMANDS A COMPUTATION" ALREADY EXISTS, REACHES 100% OF BOTH
+PAPERS, AND NOTHING READS IT (inventoried 2026-08-23).** `P-T3(f)` said a schema-keyed gate is
+inert on 91/91 APM drills and that is still true — but `answer_schema` was never the only signal.
+**`acca_drills.calculation_required` is `boolean NOT NULL` with NO DEFAULT** (so every row was
+written explicitly, not defaulted) and **`mode`** is populated on every published row of both
+papers:
+
+| paper | published | calc_required TRUE | FALSE | mode | schema NULL |
+| --- | ---: | ---: | ---: | --- | ---: |
+| AFM | 63 | **49** | 14 | quantitative 48 · mixed 1 · discursive 14 | 0 |
+| APM | 91 | **18** | 73 | quantitative 18 · discursive 73 | **91** |
+
+**`mode` and `calculation_required` agree PERFECTLY — zero disagreements on 154 rows** — and both
+are corroborated by an INDEPENDENT signal that does not come from the same authoring field:
+**every one of the 49 AFM calc-true rows has schema `components`, and all 49 model answers compute;
+on APM, where the schema is useless, 18 of 18 calc-true model answers compute and 0 of 73
+discursive ones do.** Perfect separation on the paper the schema cannot reach.
+⚠️ **CORRECTION TO AN EARLIER FIGURE IN THIS DOCUMENT: "APM model_answer computes on 15 of 91" was
+a REGEX ARTEFACT** — `=\s*[0-9(]` misses `= ₦12,880m` because the currency mark sits between. The
+currency-tolerant form returns **18/91, exactly matching `calculation_required`.** Same fragility
+the arithmetic veto had to be built around; a stricter regex looked like a smaller corpus.
+**CONSEQUENCE: the numeric-drill gate is safe TODAY on BOTH papers and needs no backfill.** What is
+missing is only the READ — `drillSelect` in `app/api/acca/tutor/route.ts` does not fetch either
+column, and **no file under `app/` or `lib/` references `calculation_required` or `mode` at all.**
+This is `professional_skill_tag` again: authored by the generator, correct, and unread at serve
+time for its whole life. **Before declaring an authoring gap, inventory the ROW — the column you
+need may already be there and merely unselected.**
 
 ## Standing rulings
 

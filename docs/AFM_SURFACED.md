@@ -582,13 +582,38 @@ negative NPV"*, said to a student who calculated nothing. The implied next move 
 working) is unactionable. **A right verdict for an invented reason scores as a win on every rate we
 collect.**
 
-🔵 **THE FIX IS BLOCKED BY THE KNOWN DATA HOLE, so it is logged, not built.** Code already knows
-`!hasArithmetic(attempt)`. Forcing `derived=0` from it is NOT safe in general — 13 of 14 real
-student messages with a digit have no arithmetic and are legitimate narrative answers (`P-T3(e)`).
-It would only be safe on a drill known to DEMAND a computation, and `answer_schema` is NULL on
-**91/91 published APM drills** (`P-T3(f)`) — the same hole that made the direction fence inert.
-**Do not build a numeric-drill gate until that is closed; it would work on AFM and reach nothing on
-APM.**
+🟢 **NOT BLOCKED AFTER ALL — INVENTORIED 2026-08-23, AND THE SIGNAL WAS THERE THE WHOLE TIME.**
+Forcing `derived=0` from `!hasArithmetic(attempt)` is unsafe in general (13 of 14 real digit-bearing
+student messages have no arithmetic and are legitimate narrative — `P-T3(e)`), so it needs a drill
+known to DEMAND a computation. `answer_schema` cannot supply that on APM — but it was never the
+only candidate:
+
+| paper | published | `calculation_required` TRUE | FALSE | `mode` | schema NULL |
+| --- | ---: | ---: | ---: | --- | ---: |
+| AFM | 63 | **49** | 14 | quantitative 48 · mixed 1 · discursive 14 | 0 |
+| APM | 91 | **18** | 73 | quantitative 18 · discursive 73 | **91** |
+
+**`calculation_required` is `boolean NOT NULL` with NO DEFAULT — every row written explicitly — and
+it is populated on 100% of both papers, as is `mode`.** The two agree perfectly across all 154 rows,
+and both are corroborated by an INDEPENDENT signal: all 49 AFM calc-true rows carry schema
+`components` and all 49 model answers compute; **on APM, where the schema is useless, 18/18
+calc-true model answers compute and 0/73 discursive ones do.** All three measured drills
+(`a05bc641`, `4f981dbf`, `716f69f8`) are `quantitative` / calc-true.
+⚠️ **A FIGURE REPORTED EARLIER IN THIS FILE WAS A REGEX ARTEFACT:** *"APM `model_answer` computes on
+15 of 91"* — `=\s*[0-9(]` misses `= ₦12,880m` (the currency mark sits between). The tolerant form
+gives **18/91, exactly matching `calculation_required`.**
+
+**SO THE GATE IS SAFE TODAY ON BOTH PAPERS AND NEEDS NO BACKFILL. What is missing is only the
+READ:** `drillSelect` does not fetch either column, and **no file under `app/` or `lib/` references
+`calculation_required` or `mode` at all** — `professional_skill_tag` all over again: authored,
+correct, unread at serve time for its whole life. Banked `P-T3(k)`: **inventory the ROW before
+declaring an authoring gap.**
+🔵 **Shape of the fix (NOT built — Grant's call):** add `calculation_required` to `drillSelect`,
+and where it is TRUE and `!hasArithmetic(attempt)`, code owns `derived = 0` outright instead of
+asking the model. That removes the method-vocabulary sensitivity (`P-T3(j)`) on exactly the drills
+where absence of arithmetic is decisive, and leaves discursive drills entirely alone. ⚠️ It must be
+measured, not assumed: `P-T3(j)` was found because a field that looked structural was still a
+model judgement.
 
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
