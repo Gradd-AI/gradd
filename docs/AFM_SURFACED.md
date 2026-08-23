@@ -898,6 +898,38 @@ guard, and a numeric-only equivalence check — it needs its own build, and the 
 suggests the bar for it should be measured on the decline shape specifically, not on the
 unsubstantiated-verdict shape where both engines look mild.
 
+### ✅ STAGE 5 SHIPPED 2026-08-23 — THE CASE PERSONA IS PAPER-ROUTED
+
+`lib/acca/teach-engine.ts` contained the string `paper` **ZERO times**, and its single hardcoded
+persona — the system prompt for all four conversational legs on the case surface — opens *"You are
+Ezra, an APM tutor who knows exactly how ACCA APM is marked."* **All 20 published AFM case
+requirements were tutored by it**, carrying APM's diagnostic frame, which `EZRA_AFM_SYSTEM`'s own
+header states "does NOT transfer" and must be "replaced wholesale, never blended".
+
+**Fixed:** `caseSystemFor(paper)` — AFM routes to the shared `EZRA_AFM_SYSTEM`; **APM keeps the
+local string byte-for-byte** (renamed `EZRA_APM_CASE_SYSTEM`, value untouched). `paper` threaded
+through `runTeachTurn` (optional, defaulted `'APM'`, so any caller not passing it is byte-identical)
+and supplied by the case route. Safe to trust the request paper there: every `acca_cases` fetch is
+`.eq('paper_code', paper)`, so a case from another paper is never loaded.
+
+**Verified exactly as scoped — `npm run test:case-persona` (21), gate 69 → 70.** APM's prompt pinned
+by its pre-change head and tail and asserted **not** equal to the shared `EZRA_SYSTEM`; AFM asserted
+different, routed to the AFM persona, and free of the APM frame. Only an exact `'AFM'` routes —
+`'afm'`, `'AFM '`, `''` and `'SBL'` all stay APM, so an unknown paper can never land a case on the
+wrong persona.
+
+⚠️ **CAVEAT, RECORDED BECAUSE IT IS UNMEASURED: `EZRA_AFM_SYSTEM` WAS WRITTEN FOR THE DRILL
+SURFACE.** "Correct paper" is not "written for cases". It is unambiguously better than tutoring an
+AFM candidate as though they were sitting APM, but nothing has measured it on the case surface. If
+AFM case behaviour is ever assessed, question this first.
+
+📐 **A PIN BROKE AND WAS RIGHT TO.** `test-teach-wiring` counted `/,\s*nextMove\)/` — anchored on
+`nextMove` being the LAST argument — and reported 0 of 3 when the legs gained a trailing `paper`,
+while all three call sites still passed it correctly. Widened to allow a following argument. **A
+pin that fails when a new parameter is added is testing the signature's shape, not the wiring it
+exists to protect** — a false RED, which costs the same time as a false green and teaches the next
+reader to distrust the suite.
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

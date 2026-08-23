@@ -488,6 +488,10 @@ export async function POST(request: Request): Promise<Response> {
       lastDiagnosis,
       lastRealAttempt,
       resolved,
+      // PERSONA ROUTING (2026-08-23, stage 5). Safe to use the request paper here: every
+      // acca_cases fetch above is `.eq('paper_code', paper)`, so a case belonging to another
+      // paper is never loaded and the persona cannot be scoped to a paper the content is not from.
+      paper,
     });
   } catch {
     return NextResponse.json({ error: 'Teaching engine error' }, { status: 500 });

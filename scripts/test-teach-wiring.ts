@@ -68,9 +68,14 @@ ok('engine: BOTH teaching legs build a nextMoveLine (hint AND teach)',
 ok('engine: BOTH legs concatenate it into the prompt body',
   (engine.match(/^\s*nextMoveLine \+$/gm) ?? []).length === 2,
   `found ${(engine.match(/^\s*nextMoveLine \+$/gm) ?? []).length}, expected 2`);
+// ⚠️ WAS `/,\s*nextMove\)/` — anchored on nextMove being the LAST argument. That broke on
+// 2026-08-23 when the legs gained a trailing `paper` for persona routing, reporting 0 of 3 while
+// all three call sites still passed nextMove correctly. The intent is "every call site passes it",
+// not "it is the final parameter", so the pin now allows a following argument. A pin that fails
+// when a NEW parameter is added tests the signature's shape, not the wiring it exists to protect.
 ok('engine: all THREE runTeachTurn call sites pass it (fast-teach, hint, second-miss teach)',
-  (engine.match(/,\s*nextMove\)/g) ?? []).length === 3,
-  `found ${(engine.match(/,\s*nextMove\)/g) ?? []).length}, expected 3`);
+  (engine.match(/,\s*nextMove\s*[,)]/g) ?? []).length === 3,
+  `found ${(engine.match(/,\s*nextMove\s*[,)]/g) ?? []).length}, expected 3`);
 ok('engine: the case route hands it to runTeachTurn',
   /runTeachTurn\(\{[\s\S]*?\bnextMove,/.test(caseRoute));
 

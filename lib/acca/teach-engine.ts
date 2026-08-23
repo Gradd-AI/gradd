@@ -17,6 +17,7 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
+import { EZRA_AFM_SYSTEM } from './tutor-personas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -157,7 +158,24 @@ function isCorrectVerdict(diagnosis: string): boolean {
 
 // ── Ezra persona ──────────────────────────────────────────────────────────────
 
-const EZRA_SYSTEM =
+// ── THE CASE PERSONA WAS HARDCODED TO APM (fixed 2026-08-23, stage 5) ────────
+// This module contained the string `paper` ZERO times, and this constant — the system prompt for
+// every conversational leg on the case surface — opens "You are Ezra, an APM tutor". There are
+// **20 published AFM case requirements**, so every one of them was tutored by a persona that
+// introduces itself as an APM tutor and carries APM's diagnostic frame (describe-not-apply,
+// application-vs-evaluation), which `EZRA_AFM_SYSTEM`'s own header says "does NOT transfer" and
+// must be "replaced wholesale, never blended".
+//
+// ⚠️ RENAMED, NOT REWRITTEN. The VALUE is byte-for-byte what it was; only the name now states its
+// scope. APM's case prompt must not move in this stage — this is a correctness fix for AFM, not a
+// recalibration of APM, and mixing the two would make neither attributable.
+//
+// ⚠️ WHY NOT `systemFor(paper)` FROM tutor-personas.ts. That returns the SHARED `EZRA_SYSTEM`,
+// which is this string PLUS seven guardrail blocks the case path never received
+// (NO_INVENTED_NUMBERS, NO_COMPUTED_OUTPUTS, NO_INVENTED_REVEAL_REFUSAL, DIGNITY_ON_DISTRESS,
+// GROUNDING_DISCIPLINE, RETRACTION_PROTOCOL, METHOD_FITS_THE_GIVEN_INPUTS). Adopting it would
+// change APM's live prompt and is STAGE 6, with its own measurement — it cannot be a byte-diff.
+export const EZRA_APM_CASE_SYSTEM =
   'You are Ezra, an APM tutor who knows exactly how ACCA APM is marked. ' +
   'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +
   'fixable reasons, not through lack of knowledge. ' +
@@ -176,6 +194,25 @@ const EZRA_SYSTEM =
   'you teach explicitly, not a soft add-on. ' +
   'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
   "No generic praise. Never complete the student's answer.";
+
+/**
+ * The persona for a case turn, chosen by the case's paper.
+ *
+ * AFM routes to the SHARED `EZRA_AFM_SYSTEM` — the paper-correct register, whose own header
+ * states the APM diagnostic frame does not transfer. APM keeps the local string above, unchanged.
+ *
+ * ⚠️ CAVEAT, RECORDED BECAUSE IT IS UNMEASURED: `EZRA_AFM_SYSTEM` was written for the DRILL
+ * surface. "Correct paper" is not the same as "written for cases" — it is unambiguously better
+ * than tutoring an AFM candidate as though they were sitting APM, but nothing has measured it on
+ * the case surface. If AFM case behaviour is ever assessed, that is the first thing to question.
+ *
+ * ⚠️ `paper` is safe to trust here: `app/api/acca/case/turn/route.ts` fetches the case with
+ * `.eq('paper_code', paper)`, so a case that does not belong to the requested paper is never
+ * loaded — the persona cannot end up scoped to a paper the content is not from.
+ */
+export function caseSystemFor(paper: string): string {
+  return paper === 'AFM' ? EZRA_AFM_SYSTEM : EZRA_APM_CASE_SYSTEM;
+}
 
 // ── Anthropic client ──────────────────────────────────────────────────────────
 
@@ -291,6 +328,9 @@ async function call3_hint(
   // case path 2026-08-07. Defaulted to '' so every existing caller keeps a byte-identical prompt.
   // See the block comment on TeachTurnInput.nextMove for why this could not stay drill-only.
   nextMove = '',
+  /** Case paper, for persona routing only. Defaults to 'APM' so any caller that does not pass it
+   *  gets a byte-identical prompt to before this parameter existed. See caseSystemFor. */
+  paper = 'APM',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
@@ -305,7 +345,7 @@ async function call3_hint(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 350,
-    system: EZRA_SYSTEM,
+    system: caseSystemFor(paper),
     messages: [
       {
         role: 'user',
@@ -351,6 +391,9 @@ async function call3_teach(
   offerReveal: boolean,
   groundedFacts = '',
   nextMove = '',
+  /** Case paper, for persona routing only. Defaults to 'APM' so any caller that does not pass it
+   *  gets a byte-identical prompt to before this parameter existed. See caseSystemFor. */
+  paper = 'APM',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
@@ -364,7 +407,7 @@ async function call3_teach(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 400,
-    system: EZRA_SYSTEM,
+    system: caseSystemFor(paper),
     messages: [
       {
         role: 'user',
@@ -399,6 +442,8 @@ async function call3_confirm(
   context: string,
   attempt: string,
   verbLevel: string,
+  /** Case paper, for persona routing only. Defaults to 'APM'. See caseSystemFor. */
+  paper = 'APM',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -407,7 +452,7 @@ async function call3_confirm(
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 500,
-    system: EZRA_SYSTEM,
+    system: caseSystemFor(paper),
     messages: [
       {
         role: 'user',
@@ -572,12 +617,14 @@ async function call_warm(
   message: string,
   question: string,
   context: string,
+  /** Case paper, for persona routing only. Defaults to 'APM'. See caseSystemFor. */
+  paper = 'APM',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 250,
-    system: EZRA_SYSTEM,
+    system: caseSystemFor(paper),
     messages: [
       {
         role: 'user',
@@ -671,6 +718,17 @@ export interface TeachTurnInput {
   lastDiagnosis: string | null;
   lastRealAttempt: string | null;
   resolved: boolean;
+  /**
+   * The case's paper, used for PERSONA ROUTING ONLY (2026-08-23, stage 5).
+   *
+   * Optional and defaulted to 'APM' inside `runTeachTurn`, so a caller that does not pass it
+   * gets the exact prompt it got before this field existed.
+   *
+   * ⚠️ Until this shipped, `teach-engine.ts` contained the string `paper` ZERO times and every
+   * case turn used a persona opening "You are Ezra, an APM tutor" — including all **20 published
+   * AFM case requirements**.
+   */
+  paper?: string;
 }
 
 export interface TeachTurnResult {
@@ -689,7 +747,7 @@ export interface TeachTurnResult {
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
   const {
     question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '', nextMove = '',
-    studentMessage, lastEzraMessage,
+    studentMessage, lastEzraMessage, paper = 'APM',
     missCount, lastDiagnosis, lastRealAttempt, resolved,
   } = input;
 
@@ -721,7 +779,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind = 'teaching';
     const contextAttempt = lastRealAttempt ?? studentMessage;
     const diagnosis      = lastDiagnosis ?? 'student requested answer without re-attempting';
-    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts, nextMove);
+    ezraResponse = await call3_teach(question, context, contextAttempt, diagnosis, verbLevel, REVEAL_ENABLED && missCount >= 2, groundedFacts, nextMove, paper);
     teachThroughDelivered = true;
   } else {
     const classified: Intent = INTENT_LAYER_ENABLED
@@ -730,7 +788,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     intent = classified;
 
     if (classified !== 'attempt') {
-      ezraResponse = await call_warm(classified, studentMessage, question, context);
+      ezraResponse = await call_warm(classified, studentMessage, question, context, paper);
       messageKind = classified === 'question' ? 'answer'
                   : classified === 'confusion' ? 'coaching' : 'chat';
     } else {
@@ -744,7 +802,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
       const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
 
       if (treatCorrect) {
-        ezraResponse       = await call3_confirm(question, context, studentMessage, verbLevel);
+        ezraResponse       = await call3_confirm(question, context, studentMessage, verbLevel, paper);
         messageKind        = 'correct';
         newLastRealAttempt = studentMessage;
         passed             = true;             // completeness gate cleared → requirement complete
@@ -756,10 +814,10 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         newLastRealAttempt = studentMessage;
 
         if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove);
+          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove, paper);
           messageKind = 'hint';
         } else {
-          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove);
+          ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove, paper);
           teachThroughDelivered = true;
           messageKind = 'teaching';
         }
