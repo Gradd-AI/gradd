@@ -38,6 +38,27 @@ import { gapEstablishesNothingCorrect } from './hint-opening';
 export interface GapVerdict {
   derived: 0 | 1;
   label: string;
+  /**
+   * MEASUREMENT ONLY (2026-08-23) — NOT WIRED TO ANY BEHAVIOUR.
+   *
+   * "Did the answer contain anything this requirement credits?" The conditional opening already
+   * works, but on discursive drills it never arms: `derived` cannot fire there (the scope's
+   * interpretive carve-out exempts all 73 APM discursive drills, P-T3(m)) and nothing else sets
+   * the condition. This field is the candidate for that condition.
+   *
+   * ⚠️ OPTIONAL IN THE PARSER, ON PURPOSE. `derived` IS wired to production behaviour; a required
+   * field the model sometimes omits would fail the parse, burn four retries through
+   * withParseRetry, and degrade the live path to measure something. An absent value reads as
+   * "not stated" and changes nothing.
+   *
+   * ⚠️ THE EVIDENCE GOING IN IS AGAINST IT, which is why it is measured before it is wired. On
+   * the C1c cell all 20 replies credited a TRUE but OFF-REQUIREMENT point ("aggregates are a
+   * practical necessity for board reporting") against a requirement asking how averages
+   * MISREPRESENT; on D2a, 8 of 20 credited content not in the answer at all. So the model's prose
+   * conflates "true" with "creditable by this requirement", and P-T3(j) says the field inherits
+   * whatever the judgement does.
+   */
+  creditable?: 0 | 1;
 }
 
 /** The instruction appended to call2's system prompt. The ONLY place the output shape is stated. */
@@ -55,7 +76,15 @@ export const GAP_VERDICT_FORMAT =
   'combined. Naming a method in words is a description of working, not working. Figures the ' +
   'SCENARIO supplied and the student merely quoted back are not a derivation. ' +
   'Set "derived" to 1 when there is actual working on the page to judge. ' +
-  'The NUMBER carries the decision — the label is prose for the student-facing leg and is never ' +
+  // MEASUREMENT FIELD (2026-08-23) — asked for, recorded, WIRED TO NOTHING. Same ordinal
+  // contract: a number, never a word. The definition names the exact conflation the prose was
+  // measured making — a true statement that does not answer THIS requirement is not creditable.
+  'Also return "creditable": 0 or 1 — did the answer contain anything THIS REQUIREMENT credits? ' +
+  'Judge it against what the requirement actually asks for, not against whether a statement is ' +
+  'true in general: a correct remark that does not address the requirement scores 0, and so does ' +
+  'a conclusion with nothing behind it. Score 1 only if some part of the answer would earn credit ' +
+  'against this requirement as written. ' +
+  'The NUMBERS carry the decisions — the label is prose for the student-facing leg and is never ' +
   'parsed for meaning. The 12–15 word limit applies to "label" only. ';
 
 /**
@@ -75,7 +104,14 @@ export function parseGapVerdict(raw: string): GapVerdict | null {
   const { derived, label } = obj as Record<string, unknown>;
   if (derived !== 0 && derived !== 1) return null;
   if (typeof label !== 'string' || !label.trim()) return null;
-  return { derived, label: label.trim() };
+  // `creditable` is OPTIONAL and never fails the parse — see the field's doc comment. A malformed
+  // or absent value is dropped, not coerced: a measurement must not invent the data it measures,
+  // and it must not be able to break `derived`, which IS wired.
+  const { creditable } = obj as Record<string, unknown>;
+  const c = creditable === 0 || creditable === 1 ? creditable : undefined;
+  return c === undefined
+    ? { derived, label: label.trim() }
+    : { derived, label: label.trim(), creditable: c };
 }
 
 /**

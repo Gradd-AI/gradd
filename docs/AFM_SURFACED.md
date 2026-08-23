@@ -704,6 +704,50 @@ figure-count proxy, `P-T3(e)`). This needs designing, not patching. **The 73 dis
 are currently protected only by the tutor happening to correct — which it did 38/40 here, on a
 fabricated premise 8 times.**
 
+### ✅ MEASURED 2026-08-23 — `creditable` WORKS (60/60). HINT GROUNDING MADE THINGS WORSE (OFF).
+
+**60 turns, parsed 60/60, zero retries.** Captures `docs/redteam/cred-*-20260823.json`.
+
+| cell | hand-read | `creditable` 1 / 0 | agreement | `derived` 0 |
+| --- | --- | ---: | ---: | ---: |
+| C1c unsubstantiated | 0 | 0 / 20 | **20/20** | 6/20 |
+| D2a unsubstantiated | 0 | 0 / 20 | **20/20** | 0/20 |
+| **C1c POSITIVE CONTROL** | **1** | **20 / 0** | **20/20** | 0/20 |
+
+✅ **The positive control is what makes this a result and not a suppression** — a field reading 0 on
+everything would have scored perfectly on the two unsubstantiated cells and been worthless. It read
+**1 on 20/20** where the answer genuinely names the regional cluster the 8.1 mean hides, and the
+replies there are the best in the whole session: *"You've nailed the satisfaction diagnosis — you've
+named what the mean hides… but you've stopped at one metric."* Credit that is **earned, specific and
+accurate**, followed by the two metrics the answer never touched.
+📐 **MY SCOPING REPORT PREDICTED THIS WOULD FAIL AND WAS WRONG.** The evidence against was the PROSE
+(20/20 crediting an off-requirement point; 8/20 crediting absent content) — but that prose was
+produced under an instruction demanding praise. Asked the question directly, the same model answers
+it correctly every time. **An unsatisfiable instruction distorts what the model appears CAPABLE of,
+not just what it says.** Banked `P-T3(n)`.
+🔵 **NOT WIRED YET, per the brief** — measurement only, and a fixture pins that it is not connected
+to the opening. Wiring it is the obvious next step and now has the evidence the three failed
+wording changes never had.
+
+⛔ **HINT GROUNDING: BUILT AS RULED, MEASURED, SHIPPED `TUTOR_HINT_GROUNDING` DEFAULTED OFF.** On
+D2a, replies crediting the student with scenario content they never mentioned went **8/20 → ~19/20**.
+**Mechanism, fully exposed by the two hints:** D2a's hands over three vivid specifics (*"its
+14-person team with no data science capability, its 11-day data lag, and the THB 280 million
+commitment"*) and itself opens on a presupposed attempt state (*"You've described what big data and
+the 3Vs mean"*). The praise-first opening must name the ONE thing the student got right; the answer
+says *"I do not see any material risks worth setting out"*; so the leg reaches for the nearest
+material — which grounding had just made richer. **C1c did not degrade**, because that answer
+already had a present-if-off-requirement point to latch onto and the leg never had to reach.
+**Adding grounding to a leg whose instruction cannot be satisfied upgrades the invention rather
+than improving the output** (`P-T3(o)`). **Order of operations: wire `creditable`, disarm the
+praise-opening, THEN re-measure this.** The C1c positive-control replies show the grounding is good
+content when the opening is satisfiable.
+⚠️ **AND THE ENVELOPE MOVED A WIRED PATH:** adding `creditable` to the format shifted `derived` on
+C1c from **0/20 to 6/20**. `call2` never sees the hint, so the format change is the only candidate.
+Optional-in-the-parser stops a measurement field breaking the wired path through a PARSE failure;
+it does nothing about prompt interference. **Re-measure the wired field whenever its envelope
+changes.**
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

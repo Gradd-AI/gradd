@@ -40,6 +40,18 @@ export interface GroundingPack {
   facts: GroundingFact[];           // fullTrust — narrative scenario_facts; empty for numeric
   conventions: string[];            // Tier B — method-only, safe for hint/teach/confirm/warm
   misconceptionLead: string | null; // Tier B — the drill's OWN named failure mode, one clause
+  // ── THE AUTHORED HINT (2026-08-23) ──
+  // Tier B, method-only, and the reason it is here: `acca_drills.hint` is NOT NULL, populated on
+  // 154/154 published rows (~300 chars, none empty), linted by the prose gates as an
+  // EVALUATIVE_FIELD, quoted in every review pack — and NO serving query fetched it for the whole
+  // life of the product (P-T3(k), fourth instance). `misconceptionLead` reaches 14 of 91 APM
+  // drills; this reaches all 154, INCLUDING the 73 discursive APM drills that have no other
+  // source of drill-specific correction at all.
+  // ⚠️ SERVED AS GROUNDING, NEVER VERBATIM. The authored hints presuppose an attempt state —
+  // fb29bf4a's opens "You've calculated ROI and RI for each division, but…" — so serving one as
+  // the reply would ship the fabricated-premise failure by design, on every drill. It is method
+  // content ABOUT the drill; the live leg decides what to do with it against the actual attempt.
+  authoredHint: string | null;      // Tier B — reviewed, drill-specific, HINT LEG ONLY
   resolvableTopics: string[];       // Tier C — real published area labels, outro/close only
   // ── DIRECTION FENCE (2026-08-01) ──
   // fullTrust, and the reason this module was reopened. buildGroundingPack read only
@@ -51,7 +63,7 @@ export interface GroundingPack {
   contradictions: ContradictionFact[];   // computed in code, never inferred by the model
 }
 
-const EMPTY_PACK: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [], discriminants: [], contradictions: [] };
+const EMPTY_PACK: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, authoredHint: null, resolvableTopics: [], discriminants: [], contradictions: [] };
 
 // Small, stable AFM area-label map (B1-B5; A6 is direct-link-only, never an outro target). Kept local
 // and minimal rather than depending on the APM-only AreaPicker.tsx map (scope-debt, see AFM_SURFACED).
@@ -118,7 +130,7 @@ function numericConventions(components: { working_steps?: string[] }[]): string[
 // this paper (a cheap, cacheable query the route runs once per request; passed in rather than
 // queried here so this module stays pure / DB-free, matching the file's no-I/O convention).
 export function buildGroundingPack(
-  drill: { model_answer: string | null; full_reveal: string | null; answer_schema: unknown },
+  drill: { model_answer: string | null; full_reveal: string | null; answer_schema: unknown; hint?: string | null },
   resolvableAreas: string[],
   /** The student's current message. Optional so every pre-existing caller keeps working unchanged
    *  — omit it and `contradictions` is simply empty, which is the behaviour before this change.
@@ -126,6 +138,9 @@ export function buildGroundingPack(
   studentText = '',
 ): GroundingPack {
   const misconceptionLead = extractMisconceptionLead(drill.full_reveal ?? '');
+  // The authored hint, taken whole. No parsing: unlike full_reveal (from which ONE clause is
+  // extracted), the hint IS already a single reviewed clause written for exactly this purpose.
+  const authoredHint = (drill.hint ?? '').trim() || null;
   const resolvableTopics = resolvableAreas.map((a) => AFM_AREA_LABELS[a] ? `another ${AFM_AREA_LABELS[a]} drill` : `another drill in area ${a}`);
 
   // Read from `params`, which is where the calculator puts its settled choices. Independent of
@@ -136,7 +151,7 @@ export function buildGroundingPack(
 
   const schema = drill.answer_schema as { mode?: string; criteria?: unknown[]; scenario_facts?: unknown[]; components?: unknown[] } | null;
   if (!schema || typeof schema !== 'object') {
-    return { ...EMPTY_PACK, misconceptionLead, resolvableTopics, discriminants, contradictions };
+    return { ...EMPTY_PACK, misconceptionLead, authoredHint, resolvableTopics, discriminants, contradictions };
   }
 
   if (schema.mode === 'narrative') {
@@ -148,6 +163,7 @@ export function buildGroundingPack(
       facts: facts.map((f) => ({ id: f.id, text: f.text, key: f.key })),
       conventions: narrativeConventions(criteria),
       misconceptionLead,
+      authoredHint,
       resolvableTopics,
       discriminants,
       contradictions,
@@ -163,6 +179,7 @@ export function buildGroundingPack(
     facts: [],
     conventions: numericConventions(components),
     misconceptionLead,
+    authoredHint,
     resolvableTopics,
     discriminants,
     contradictions,
@@ -232,6 +249,32 @@ export function renderConventionsAndMisconception(pack: GroundingPack): string {
   const conv = pack.conventions.length ? `CONVENTIONS (required methods for this drill):\n${pack.conventions.map((c) => `- ${c}`).join('\n')}\n\n` : '';
   const lead = pack.misconceptionLead ? `MISCONCEPTION (this drill's designed failure pattern): ${pack.misconceptionLead}\n\n` : '';
   return conv + lead;
+}
+
+/**
+ * The authored hint, for the HINT LEG ONLY (2026-08-23).
+ *
+ * ⚠️ ITS OWN RENDERER, DELIBERATELY, AND THAT IS THE STRUCTURAL FENCE. `call2_diagnose` renders
+ * `renderChecklistAndFacts`; the hint leg renders `renderConventionsAndMisconception`. Keeping the
+ * authored hint in a THIRD function that only the hint leg calls means "never to call2" is a fact
+ * about the call graph, not an instruction anyone has to remember — appending it to either
+ * existing renderer would have made it reachable by whichever legs already call that one.
+ *
+ * ⚠️ THE FRAMING IS LOAD-BEARING. The stored hints are written TO a student who has already
+ * attempted, and several presuppose a specific attempt state ("You've calculated ROI and RI for
+ * each division, but…"). Handed over raw, that premise would be restated at a student who did
+ * nothing of the kind — the fabricated-premise failure measured repeatedly this session. So it is
+ * labelled as what it is: guidance about the DRILL, authored in advance, describing the move this
+ * requirement turns on — explicitly NOT a description of what this student did.
+ */
+export function renderAuthoredHint(pack: GroundingPack): string {
+  if (!pack.authoredHint) return '';
+  return (
+    "AUTHORED HINT (reviewed guidance about THIS DRILL, written in advance — it describes the move " +
+    "the requirement turns on. It was NOT written about this student's attempt and makes no claim " +
+    'about what they did: use it to decide what to steer toward, never to assert what they have ' +
+    `already done):\n${pack.authoredHint}\n\n`
+  );
 }
 
 export function renderResolvableTopics(pack: GroundingPack): string {

@@ -106,6 +106,7 @@ import {
   buildGroundingPack,
   renderChecklistAndFacts,
   renderConventionsAndMisconception,
+  renderAuthoredHint,
   renderResolvableTopics,
   GROUNDING_INSTRUCTION_DIAGNOSE,
   GROUNDING_INSTRUCTION_COMPLETENESS,
@@ -491,6 +492,9 @@ async function call2_diagnose(
       // What the MODEL said, kept raw even when code overrides it — otherwise the override hides
       // the very disagreement the measurement is looking for.
       derived: verdict ? verdict.derived : null,
+      // MEASUREMENT ONLY — recorded, wired to nothing. See GapVerdict.creditable.
+      creditable: verdict && verdict.creditable !== undefined ? verdict.creditable : null,
+      hintGrounded: grounding.authoredHint !== null,
       calcRequired: calculationRequired,
       codeOwnsUnderived,
       // The resolved answer and WHERE it came from: code > field > phrase.
@@ -527,7 +531,29 @@ async function call3_hint(
   // two possible conventions instead of declaring the drill's own stated one) and constraint (g)
   // (the hint should lead with the drill's DESIGNED misconception). Tier B — method/failure-pattern
   // only, never the drill's specific figure or point. Empty when no schema → identical to before.
-  const groundingText = renderConventionsAndMisconception(grounding);
+  // THE AUTHORED HINT (2026-08-23) — MISS 1, HINT LEG ONLY, method-only tier. Its own renderer,
+  // so "never call2" is a property of the call graph rather than a rule someone has to remember.
+  // `misconceptionLead` reaches 14 of 91 APM drills; this reaches 154 of 154, which is the point:
+  // the 73 discursive APM drills have no other source of drill-specific correction.
+  //
+  // ⛔ DEFAULTED **OFF**, AND THE MEASUREMENT IS WHY. Built as ruled, then measured on the two
+  // discursive cells — and it made the fabrication WORSE, not better: on D2a, replies crediting
+  // the student with scenario content they never mentioned went from **8/20 to ~19/20**. The
+  // mechanism is now clear. D2a's authored hint hands over three vivid specifics ("its 14-person
+  // team with no data science capability, its 11-day data lag, and the THB 280 million
+  // commitment"); the praise-first opening must name the ONE thing the student got right, finds
+  // nothing in an answer that says "I do not see any material risks worth setting out", and
+  // reaches for the nearest available material — which grounding just made richer and more
+  // concrete. C1c did NOT get worse, because that answer already contained a present-if-
+  // off-requirement point to latch onto, so the leg never had to reach.
+  //
+  // ⚠️ SO GROUNDING IS NOT NEUTRAL WHERE THE OPENING IS UNSATISFIABLE — it is fuel. The fix is to
+  // disarm the praise-opening first (wire `creditable`, which agreed with a hand-read 60/60 and
+  // flags exactly these turns), THEN re-measure this. Shipping it before that ships a measured
+  // regression. Reversible by env with no deploy in either direction.
+  const HINT_GROUNDING = process.env.TUTOR_HINT_GROUNDING === 'on';
+  const groundingText = renderConventionsAndMisconception(grounding)
+    + (HINT_GROUNDING ? renderAuthoredHint(grounding) : '');
   const groundingLine = groundingText ? `${GROUNDING_INSTRUCTION_HINT}\n\n${groundingText}` : '';
   // The level-aware closing contract (lib/acca/teach-demand.ts). Empty for an unknown level →
   // byte-identical to the pre-change prompt, so pre-metadata drills are unaffected.
@@ -598,7 +624,7 @@ async function call3_teach(
   selfAssess: boolean,
   paper: string,
   distressed = false,
-  grounding: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, resolvableTopics: [], discriminants: [], contradictions: [] },
+  grounding: GroundingPack = { mode: 'none', checklist: [], facts: [], conventions: [], misconceptionLead: null, authoredHint: null, resolvableTopics: [], discriminants: [], contradictions: [] },
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -1192,7 +1218,7 @@ export async function POST(request: Request): Promise<Response> {
   // hardening slot ("Rule 24 triangulation"). Read-only addition; nothing downstream required it.
   const drillSelect = () => supabase
     .from('acca_drills')
-    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal, answer_schema, calculation_required')
+    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal, answer_schema, calculation_required, hint')
     .eq('exam_board', 'ACCA')
     .eq('status', 'approved')
     .eq('published', true)
@@ -1234,7 +1260,7 @@ export async function POST(request: Request): Promise<Response> {
   // See lib/acca/tutor-grounding.ts for the trust-tier discipline this depends on.
   const resolvableAreas = paper === 'AFM' ? ['B1', 'B2', 'B3', 'B4', 'B5'] : [];
   const grounding: GroundingPack = buildGroundingPack(
-    { model_answer: storedModelAnswer, full_reveal: fullReveal, answer_schema: drill.answer_schema },
+    { model_answer: storedModelAnswer, full_reveal: fullReveal, answer_schema: drill.answer_schema, hint: (drill.hint as string | null) ?? null },
     resolvableAreas,
     // The student's message, so the contradiction against a code-owned discriminant is computed in
     // code rather than inferred by the model. See lib/acca/tutor-discriminants.ts.

@@ -24,8 +24,8 @@ console.log('\ngap verdict — the steer is a field, not a phrase\n');
 ok('format demands a NUMBER, 0 or 1', /"derived":\s*0 or 1/.test(GAP_VERDICT_FORMAT));
 ok('format never asks for a word-coded verdict',
   !/"(underived|asserted|not_derived|none)"/i.test(GAP_VERDICT_FORMAT));
-ok('format states the NUMBER carries the decision, not the prose',
-  /NUMBER carries the decision/.test(GAP_VERDICT_FORMAT));
+ok('format states the NUMBER(S) carry the decision, not the prose',
+  /NUMBERS? carr(?:y|ies) the decisions?/.test(GAP_VERDICT_FORMAT));
 // THE DANGLING-REFERENCE DEFECT, pinned. The first version defined derived as "when the guard
 // above applies" — and the arithmetic veto DELETES that guard block whenever the student showed
 // working, i.e. on exactly the turns where the answer IS derived. A definition that evaporates on
@@ -113,6 +113,45 @@ ok('unrecoverable JSON-shaped body yields EMPTY, never a blob',
   safeLabel(null, '{"derived": 0, "gap": "no working"}') === '');
 ok('an escaped quote inside a recovered label is unescaped',
   safeLabel(null, '{"label": "the \\"EVA\\" figure is unshown"') === 'the "EVA" figure is unshown');
+
+// ── 5c. `creditable` — MEASUREMENT ONLY, AND IT MUST NOT BE ABLE TO BREAK `derived` ──
+// Break mode, and it is the one that matters: a measurement field made REQUIRED, so a model that
+// omits it fails the parse, burns four retries through withParseRetry, and degrades the live
+// `derived` path in order to measure something that is wired to nothing.
+{
+  const noC = parseGapVerdict('{"derived": 0, "label": "asserts a conclusion"}');
+  ok('absent creditable still parses (it can never break the wired path)',
+    noC !== null && noC.derived === 0 && noC.creditable === undefined);
+  for (const bad of ['"1"', 'true', '2', 'null', '"yes"']) {
+    const v = parseGapVerdict(`{"derived":0,"label":"x","creditable":${bad}}`);
+    ok(`malformed creditable (${bad}) is DROPPED, not coerced, and derived survives`,
+      v !== null && v.derived === 0 && v.creditable === undefined);
+  }
+  for (const good of [0, 1] as const) {
+    const v = parseGapVerdict(`{"derived":1,"label":"x","creditable":${good}}`);
+    ok(`creditable=${good} is carried through`, v !== null && v.creditable === good);
+  }
+  // The ordinal contract holds for the second field too — a number, never a word.
+  ok('format asks creditable as a NUMBER', /"creditable": 0 or 1/.test(GAP_VERDICT_FORMAT));
+  // THE DEFINITION IS THE WHOLE EXPERIMENT: the measured failure was crediting a TRUE but
+  // OFF-REQUIREMENT point 20/20. If the format does not name that distinction it tests nothing.
+  ok('format names the true-vs-creditable conflation the prose was measured making',
+    /not against whether a statement is\s*true in general/.test(GAP_VERDICT_FORMAT.replace(/\s+/g, ' '))
+    || /true in general/.test(GAP_VERDICT_FORMAT));
+  ok('format scores an unsupported conclusion 0', /conclusion with nothing behind it/.test(GAP_VERDICT_FORMAT));
+  // ⚠️ NOT WIRED. Break mode: someone connects it to the opening before it has been measured,
+  // which is exactly what P-V1(d) and three failed wording changes exist to prevent.
+  {
+    const src = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'app', 'api', 'acca', 'tutor', 'route.ts'), 'utf8');
+    ok('hint grounding is DEFAULTED OFF (it was measured making fabrication worse)',
+      /TUTOR_HINT_GROUNDING === 'on'/.test(src)
+      && /HINT_GROUNDING \? renderAuthoredHint/.test(src));
+    ok('creditable is NOT wired to the opening condition (measurement only, until measured)',
+      !/creditable[\s\S]{0,80}hintOpeningInstruction/.test(src)
+      && !/gapNothingEstablished[^\n]*creditable/.test(src));
+  }
+}
 
 // ── 6b. PRECEDENCE: CODE > FIELD > PHRASE ────────────────────────────────────
 // Break mode: code wins only when the model happens to agree, which is no precedence at all —

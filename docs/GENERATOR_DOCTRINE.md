@@ -1354,6 +1354,52 @@ model reaches for it.** Same unsatisfiable-instruction mechanism as `P-T2`/`P-M4
 scenario rather than the descriptor as the source. **Read what the reply CREDITS against what the
 student actually WROTE — not just whether the verdict was right.**
 
+**P-T3(n) — `creditable` AGREES 60/60, INCLUDING THE POSITIVE CONTROL. MY PREDICTION WAS WRONG
+(measured 2026-08-23).** Asked NEUTRALLY as a field — *"did the answer contain anything THIS
+REQUIREMENT credits?"*, with the definition naming the conflation the prose was measured making —
+it read:
+
+| cell | hand-read | `creditable` 1 / 0 | agreement |
+| --- | --- | ---: | ---: |
+| C1c unsubstantiated | 0 | 0 / 20 | **20/20** |
+| D2a unsubstantiated | 0 | 0 / 20 | **20/20** |
+| **C1c POSITIVE CONTROL** (creditable, incomplete) | **1** | **20 / 0** | **20/20** |
+
+Parsed 60/60, zero retries, no absent values. **The positive control is what makes this a result
+rather than a suppression:** a field reading 0 on everything would score perfectly on the two
+unsubstantiated cells and be worthless.
+📐 **THE SCOPING REPORT PREDICTED FAILURE AND WAS WRONG, AND THE REASON MATTERS.** The evidence
+against was the PROSE — 20/20 crediting a true-but-off-requirement point on C1c, 8/20 crediting
+absent content on D2a. **That prose was produced under an instruction demanding praise.** Asked
+the question directly, with no such pressure, the same model answers it correctly every time.
+**So an unsatisfiable instruction does not merely distort the OUTPUT — it distorts what the model
+appears CAPABLE of, and prose produced under one is not evidence about the underlying judgement.**
+The counter-reading flagged as testable in the scoping report was the right one.
+
+**P-T3(o) — GROUNDING IS FUEL WHERE THE OPENING IS UNSATISFIABLE. SERVING THE AUTHORED HINT MADE
+FABRICATION WORSE, 8/20 → ~19/20 (measured 2026-08-23; shipped DEFAULTED OFF).** `acca_drills.hint`
+was wired as grounding per `misconceptionLead`'s precedent — request-time, method-only tier, hint
+leg only, with a framing block stating it makes no claim about what the student did. On D2a,
+replies crediting the student with scenario content they never mentioned went from **8 of 20 to
+roughly 19 of 20.**
+**MECHANISM, and it is fully exposed by the two hints.** D2a's authored hint hands over three vivid
+specifics — *"its 14-person team with no data science capability, its 11-day data lag, and the THB
+280 million commitment"* — and itself opens on a presupposed attempt state (*"You've described what
+big data and the 3Vs mean"*). The praise-first opening must name the ONE thing the student got
+right; the answer says *"I do not see any material risks worth setting out"*; so the leg reaches
+for the nearest available material, which grounding had just made richer and more concrete. C1c did
+NOT degrade, because that answer already contained a present-if-off-requirement point to latch onto
+and the leg never had to reach.
+**THE RULE: adding grounding to a leg whose instruction cannot be satisfied does not improve the
+output, it upgrades the invention.** Fix the instruction first, then re-measure the grounding —
+the reverse order makes the grounding look harmful when the instruction is the cause.
+⚠️ **AND THE ENVELOPE IS NOT NEUTRAL, AGAIN — THIS TIME IT MOVED A WIRED PATH.** Adding
+`creditable` to the format shifted `derived` on C1c from **0/20 to 6/20**, and `derived` IS wired
+to the opening. `call2` never sees the hint, so the format change is the only candidate cause.
+Making a measurement field OPTIONAL in the parser prevents it breaking the wired path through a
+PARSE failure; it does nothing about prompt interference. **Re-measure the wired field whenever the
+envelope around it changes.**
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

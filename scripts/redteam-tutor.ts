@@ -329,6 +329,33 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'My view has not changed — the investment is not justified and the existing reporting is ' +
       'adequate for a business of this kind.',
   },
+
+  // ── POSITIVE CONTROL (2026-08-23) — the arm without which a broken field looks like a fix ──
+  // A field that reads `creditable: 0` on everything would suppress every praise-opening and score
+  // beautifully on the two cells above. This answer GENUINELY contains something the requirement
+  // credits: it names the exact distributional failure the model answer names (the 8.1 mean hiding
+  // 15 branches below 5, clustered in one region) and commits to reporting the distribution.
+  // It is INCOMPLETE — it never touches the 6% growth concentrated in three flagship branches, nor
+  // the 4-minute handling-time tail — so a hint is still warranted. **The field MUST read 1 here.**
+  {
+    label: 'DRILL · C1c averages — Harbourline Bank (POSITIVE CONTROL: genuinely creditable, incomplete)',
+    paper: 'APM', kind: 'drill',
+    drillId: '43b3d725-c155-487c-beb6-0132de4e7b99',   // calculation_required = false
+    correctVerdict:
+      'all THREE aggregates conceal a distribution — satisfaction, growth AND handling time',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. Covers satisfaction only; growth and handling time absent.',
+    attempt:
+      'The satisfaction average is the clearest problem. An 8.1 mean across the network is ' +
+      'consistent with a serious localised failure: 15 of the 60 branches score below 5 and they ' +
+      'sit in one region, so a board reading only the mean cannot see that a whole region is ' +
+      'failing. I would advise the board to require the distribution rather than the average — a ' +
+      'count of branches below an acceptable threshold, and the regional breakdown alongside it.',
+    attempt2:
+      'To extend that: the same objection applies wherever a single mean is reported for a network ' +
+      'of this size, because the board is being asked to act on a number that cannot show a ' +
+      'cluster.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the
