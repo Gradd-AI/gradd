@@ -57,10 +57,33 @@ import { bareGuessGuardVetoed } from '@/lib/acca/bare-guess-veto';
 // so the historical baseline keeps describing something that still exists.
 const GUARD_LABEL_VARIANT  = (process.env.TUTOR_GUARD_LABEL  ?? 'unverified')   as GuardLabelVariant;
 const HINT_OPENING_VARIANT = (process.env.TUTOR_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
-// ⚠️ THE TRIGGER'S SCOPE STAYS 'shipped' UNTIL ITS FIRING RATE IS MEASURED. The label fix is only
-// a mitigation precisely because the last judgement-shaped assumption cost 57.5%, so this one
-// does not ship on the strength of a prediction either. Flip in a separate commit citing a rate.
-const GUARD_SCOPE_VARIANT  = (process.env.TUTOR_GUARD_SCOPE  ?? 'shipped') as GuardScopeVariant;
+// 📐 FLIPPED 2026-08-23 ON THE MEASURED RATE, n=40 per arm, every reply hand-read
+// (docs/redteam/arm{C,C2,D,D2}-*-20260823.json + the [GAPLABEL] captures beside them):
+//
+//   arm               n   canonical label ECHOED   CREDITED   NOT ADJUDICATED   CORRECTED
+//   shipped scope    40   22 (55%)                 18 (45%)   20 (50%)          2 (5%)
+//   rewritten scope  40   40 (100%)                 4 (10%)   36 (90%)          0
+//
+// Credited 45% → 10%, z = 3.51, p < 0.001. Echo 55% → 100%, p < 0.0001.
+//
+// ⚠️ WHAT THIS FIXES IS THE ECHO, NOT THE JUDGEMENT. The guard's judgement applied on 40 of 40
+// control turns — every paraphrase says the same thing in the model's own words. Credited split
+// on whether the branch was ARMED (2 of 22 = 9%) or DISARMED by a paraphrase (16 of 18 = 89%).
+// Predicted credited at 100% echo = the armed rate, 9%; observed 10%. The rewrite's entire effect
+// is making the code-selected branch REACHABLE. See P-T3(g).
+//
+// ⚠️ THE TRADE, WHICH IS NOT FREE: CORRECTED went 2 → 0. Those two corrections came from
+// free-form labels that happened to carry a correctness finding ("NOPAT actually exceeds the
+// capital charge"); the canonical label carries none. Correct by design under P-T3(c) — NOT
+// ADJUDICATED is the right terminal state for an underived answer — and the pipeline still
+// reaches correction at miss 2, at 80%. Stated, not netted out of the headline.
+//
+// 🔵 RESIDUAL THIS DOES NOT TOUCH: several NOT ADJUDICATED replies still PRESUPPOSE the student's
+// sign — "a negative EVA™ by itself doesn't settle the board's question". Never affirmed, carried
+// forward as given. A different, milder failure; no label change reaches it.
+//
+// Reversible by env with no deploy: TUTOR_GUARD_SCOPE=shipped restores the measured control arm.
+const GUARD_SCOPE_VARIANT  = (process.env.TUTOR_GUARD_SCOPE  ?? 'unsubstantiated') as GuardScopeVariant;
 import {
   isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
 } from '@/lib/acca/phrase-match';

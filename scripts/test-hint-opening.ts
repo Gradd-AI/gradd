@@ -165,10 +165,8 @@ ok('rewritten label drops "states a figure" — the harm turn states none',
   for (const [envName, expected] of [
     ['TUTOR_GUARD_LABEL', 'unverified'],
     ['TUTOR_HINT_OPENING', 'conditional'],
-    // ⚠️ The rewritten TRIGGER is deliberately NOT live. Its firing rate has not been measured,
-    // and the label fix is only a mitigation precisely because the last judgement-shaped
-    // assumption cost 57.5%. This pin is what stops it going live by accident.
-    ['TUTOR_GUARD_SCOPE', 'shipped'],
+    // Flipped 2026-08-23 on n=40 per arm: echo 55% → 100%, credited 45% → 10% (p < 0.001).
+    ['TUTOR_GUARD_SCOPE', 'unsubstantiated'],
   ] as const) {
     // Matches `process.env.<NAME>  ?? '<default>'` with any run of spaces, as the route aligns them.
     const m = src.match(new RegExp(`process\\.env\\.${envName}\\s*\\?\\?\\s*'([a-z]+)'`));

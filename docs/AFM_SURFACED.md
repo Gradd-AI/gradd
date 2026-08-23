@@ -443,8 +443,8 @@ Banked `P-T3(f)`.
 
 ### 🟠 MEASURED 2026-08-23 — IT WAS NEVER A FIRING RATE. IT IS AN **ECHO** RATE.
 
-**BUILT AND MEASURED, NOT SHIPPED.** `TUTOR_GUARD_SCOPE=unsubstantiated` exists and is
-**defaulted OFF**, pinned off by fixture. Grant's call to flip.
+**✅ SHIPPED 2026-08-23 (Grant's call, on the rate below).** `TUTOR_GUARD_SCOPE=unsubstantiated`
+is the default; the pin now asserts it. Reversible by env with no deploy.
 
 📐 **n=40 PER ARM, live local runs, drill A3b EVA `a05bc641`, every reply hand-read.** Firing was
 previously unobservable — the gap label never reaches the client and is not persisted, so 57.5%

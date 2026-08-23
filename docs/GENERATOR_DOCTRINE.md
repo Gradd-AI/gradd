@@ -1153,6 +1153,21 @@ semantically identical to the sentinel and does not match it. A "deliberately sh
 distinctive" substring is distinctive, not stable. **Never assert a matcher's robustness in a
 comment without a measurement behind it.**
 
+**P-T3(i) — DISTINCTIVE IS NOT STABLE (banked 2026-08-23).** `hint-opening.ts` asserted a DESIGN
+PROPERTY that had never been measured: *"the label is model-echoed, so an exact-string match would
+be brittle, while this phrase appears in no other label the gap-labeller can produce."* Both
+halves are true and the conclusion does not follow. **Distinctiveness answers "will this phrase
+collide with something else?" — it says nothing about "will the model emit this phrase?"**, and
+only the second question decides whether the branch arms. The counterexample is one word long:
+`entirely unverified` vs `NOT verified`. Measured, the phrase was emitted on **55% of turns**.
+**THE RULE: a cross-call contract carried in PROSE BYTES is a string match, however distinctive
+the string.** If one call's output steers another call's control flow, the steer must ride on a
+STRUCTURED field the caller validates — not on a phrase, a prefix, a sentinel or a "canonical
+wording". Where a structured field is not yet available, the code must state the echo rate it
+depends on, as a measured number, next to the match. **And never write a robustness claim into a
+comment as though it were a property of the design; a comment that tells the next reader not to
+check is worse than no comment (P-V1 / `GENERATOR_DOCTRINE` on false DERIVED claims).**
+
 **P-T3(h) — THE OPENING INSTRUCTION BEATS THE LABEL'S CONTENT.** Two control turns returned labels
 that named the error outright — `states conclusion opposite to correct EVA sign` and `Student
 reached the wrong sign for EVA™` — and the hint still opened *"Your core move was right… that's
