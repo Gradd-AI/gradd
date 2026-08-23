@@ -66,6 +66,7 @@
     "reconcile:sbl-content": "tsx --env-file=.env.local scripts/authoring/reconcile-sbl-content.ts",
     "test:resit-engine": "tsx scripts/test-resit-engine.ts",
     "test:sit-results": "tsx scripts/test-sit-results.ts",
+    "test:hint-opening": "tsx scripts/test-hint-opening.ts",
     "test:teach-access": "tsx scripts/test-teach-access.ts",
     "test:teach-demand": "tsx scripts/test-teach-demand.ts",
     "test:teach-wiring": "tsx scripts/test-teach-wiring.ts",

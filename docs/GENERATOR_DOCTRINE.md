@@ -1072,6 +1072,30 @@ read past both. **Before authoring data to fix a grounding defect, dump the prom
 data is genuinely absent** — here it would have bought 91 authored schemas for a defect that was
 never about missing data.
 
+**P-T3(b) — THE LABEL FIX IS A MITIGATION, AND THE RESIDUAL IS THE GUARD'S FIRING RATE (measured
+2026-08-23, n=40 miss-1 turns hand-read).** Shipped as the route defaults
+`TUTOR_GUARD_LABEL=unverified` + `TUTOR_HINT_OPENING=conditional`.
+**CREDITED 95% → 50%.** ⚠️ **Do not record that as the defect closed.** Split by whether the
+bare-guess guard fired: **where it fired, 17% credited; where it did not, 94% did** — i.e. the new
+wording does very nearly everything it can do, and the remaining harm is entirely carried by turns
+the guard never reached. **It fired on 57.5% of them.** Whether it applies is a model judgement
+made fresh each turn, so the ceiling on any wording change to the label is the firing rate itself,
+and no further rewording moves it. **When a fix's effect is gated by a judgement upstream of it,
+measure the two sides separately or the pooled rate will be read as the fix underperforming when
+it is the gate that is missing.** The next build is the guard, not the prompt.
+
+**P-T3(c) — `NOT ADJUDICATED` IS THE CORRECT TERMINAL STATE FOR A BARE GUESS, NOT A SHORTFALL.**
+The mitigated arm corrects 1 of 40 on the first miss, and reading that as a 1/40 correction rate
+misstates what is owed. **A student who states a figure and shows no working has not given the
+tutor anything to adjudicate** — announcing "that is wrong" against an unshown method teaches
+nothing and risks being wrong about which step failed. *"I cannot tell whether this is sound;
+put the working on the page"* is the honest reply and the pedagogically correct one, and the
+architecture already delivers the correction one turn later: **once working exists the guard does
+not fire, the equivalence check runs, and miss 2 corrects at 80%** (16/20, P-T3). **So the target
+state for miss 1 is NOT ADJUDICATED, not CORRECTED** — the defect was ever only that the turn was
+scored as CREDITED. Read every future polarity table against that: `CREDITED` is the harm column;
+`NOT ADJUDICATED` on a working-free answer is a pass.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
