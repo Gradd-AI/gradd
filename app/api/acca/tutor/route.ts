@@ -34,6 +34,7 @@ import {
   guardLabel, hintOpeningInstruction, gapEstablishesNothingCorrect,
   type GuardLabelVariant, type HintOpeningVariant,
 } from '@/lib/acca/hint-opening';
+import { bareGuessGuardVetoed } from '@/lib/acca/bare-guess-veto';
 
 // ── MEASUREMENT SEAM (2026-08-22) ────────────────────────────────────────────
 // Two independent prompt changes, each selectable, so the harness can measure (a) alone and
@@ -349,6 +350,32 @@ async function call2_diagnose(
   // larger stable chunk that trails the attempt is not independently cacheable without
   // reordering. Flagged, not restructured (PROMPT CACHING task, step 3).
   const stablePrefix = `${contextLine}Question: ${question}\n\n`;
+  // ── THE ARITHMETIC VETO (2026-08-23) ────────────────────────────────────────
+  // STRUCTURAL, NOT INSTRUCTED. When code can see the student showed arithmetic, the bare-guess
+  // guard is not described to the model AT ALL — its absence is architected rather than fenced
+  // with a "do not apply it here", which is the house rule (TEACHING_ARCHITECTURE.md, P-T2) and
+  // the thing that stops a prohibition priming the behaviour it forbids.
+  //
+  // Only this ONE half is code-decided. "Arithmetic present → not a bare guess" is certain;
+  // "no arithmetic → IS a bare guess" is not, and is left with the model. See the module header
+  // for the 13-of-14 measurement that killed a "contains a figure" trigger arm.
+  const guardVetoed = bareGuessGuardVetoed(attempt);
+  const bareGuessGuardBlock = guardVetoed
+    ? ''
+    : 'BARE-GUESS GUARD (do this before the equivalence check) — NUMERIC drills only: if the message ' +
+      'states ONLY a final answer VALUE or asks whether a value is right ("is it about 51 million?", ' +
+      '"the answer is X, yes?", a lone number) with NO working, method, or reasoning shown, it is NOT ' +
+      'a markable correct answer even if the value matches. This guard does NOT apply to a narrative/ ' +
+      'discursive claim — a short but substantively correct interpretive statement (e.g. "VaR is a ' +
+      'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
+      'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
+      'fires (a numeric value-only guess), output the gap label: ' +
+      // P-T3 (2026-08-22): this label used to read "states a figure but shows no working — cannot
+      // be credited" and was SILENT about the figure. The guard runs BEFORE the equivalence check,
+      // so when it fires, correctness is never assessed — and call3_hint, whose only quality signal
+      // is this string, read the silence as the figure being fine and credited a wrong verdict in
+      // 38 of 40 measured turns. The label now states the dimension the guard skipped.
+      `"${guardLabel(GUARD_LABEL_VARIANT)}" (NEVER the correct sentinel). `;
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 40,
@@ -365,20 +392,10 @@ async function call2_diagnose(
       'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention or wording. ' +
       'A correct answer in a different format or phrasing is NOT an error and must NOT be flagged. ' +
       "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
-      'BARE-GUESS GUARD (do this before the equivalence check) — NUMERIC drills only: if the message ' +
-      'states ONLY a final answer VALUE or asks whether a value is right ("is it about 51 million?", ' +
-      '"the answer is X, yes?", a lone number) with NO working, method, or reasoning shown, it is NOT ' +
-      'a markable correct answer even if the value matches. This guard does NOT apply to a narrative/ ' +
-      'discursive claim — a short but substantively correct interpretive statement (e.g. "VaR is a ' +
-      'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
-      'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
-      'fires (a numeric value-only guess), output the gap label: ' +
-      // P-T3 (2026-08-22): this label used to read "states a figure but shows no working — cannot
-      // be credited" and was SILENT about the figure. The guard runs BEFORE the equivalence check,
-      // so when it fires, correctness is never assessed — and call3_hint, whose only quality signal
-      // is this string, read the silence as the figure being fine and credited a wrong verdict in
-      // 38 of 40 measured turns. The label now states the dimension the guard skipped.
-      `"${guardLabel(GUARD_LABEL_VARIANT)}" (NEVER the correct sentinel). ` +
+      // Built above. EMPTY when the arithmetic veto fires, so on those turns the guard is not
+      // described to the model at all and cannot be applied — the prompt reads as though it never
+      // existed. One definition, one place: never re-inline this block.
+      bareGuessGuardBlock +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
@@ -451,7 +468,17 @@ async function call3_hint(
           // anything correct. Code-selected, not model-judged — `gapEstablishesNothingCorrect`
           // matches the guard's own sentinel, so this leg is TOLD which opening to use rather than
           // asked to decide. On the ordinary branch the string is byte-identical to before.
-          hintOpeningInstruction(HINT_OPENING_VARIANT, gapEstablishesNothingCorrect(diagnosis)) +
+          // THE VETO APPLIES HERE TOO, and this arm is not redundant with the prompt-side one.
+          // Removing the guard's description makes the label very unlikely, not impossible — the
+          // model could still emit that wording of its own accord, and then a student who showed
+          // arithmetic would be told to put their reasoning on the page. Code has the certain
+          // answer, so code decides: arithmetic present → the ordinary opening, whatever came
+          // back. The fallback is the shipped string, so a veto here can only ever restore the
+          // pre-2026-08-22 behaviour, never invent a third one.
+          hintOpeningInstruction(
+            HINT_OPENING_VARIANT,
+            gapEstablishesNothingCorrect(diagnosis) && !bareGuessGuardVetoed(attempt),
+          ) +
           'Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           // Was: "Work in the command verb and ACCA intellectual level from the authored values
           // above (do not infer them when given)." The 2026-08-01 fence removed those values from
