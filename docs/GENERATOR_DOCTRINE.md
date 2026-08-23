@@ -1135,6 +1135,33 @@ signal available on APM is `model_answer` SHAPE, and it reaches **15 of 91** —
 target drill is one of the 15, so a pilot on it would have looked general and been anything but.
 **Before building any tutor-side gate, state which papers it can reach and prove the count.**
 
+**P-T3(g) — A CODE BRANCH KEYED ON A MODEL-ECHOED STRING IS A CONTRACT THE MODEL DID NOT SIGN
+(measured 2026-08-23, n=40 per arm, p < 0.001).** `gapEstablishesNothingCorrect` matches the
+sentinel `NOT verified` in the gap label. Measured over 40 control turns, **the guard's JUDGEMENT
+applied on 40 of 40** — every paraphrase says *"states a conclusion without computing figures"*,
+*"omits all numerical working"*, *"mere assertion not analysis"* — but the model reproduced the
+canonical string only **22 of 40 (55%)**. Credited splits almost perfectly on the echo, not on the
+judgement: **branch armed 2 of 22 (9%); branch disarmed 16 of 18 (89%).**
+**So the "57.5% firing rate" was never a firing rate — it was an ECHO rate**, and every rate
+reported about a guard whose only observable is a paraphrasable label is measuring the echo.
+**Before attributing an LLM-pipeline rate to a model's JUDGEMENT, check whether what you actually
+measured was its OUTPUT FORMAT.** The structural fix is to stop depending on the bytes: return a
+STRUCTURED flag beside the prose (`extractJsonBlock` + `withParseRetry`, as `case-marking.ts`
+already does) per the ORDINAL CONTRACT in **P-M1** — echo a number, never a string code.
+⚠️ **AND THE COMMENT CLAIMING THE MATCH WAS ROBUST WAS ITSELF WRONG**: `entirely unverified` is
+semantically identical to the sentinel and does not match it. A "deliberately short and
+distinctive" substring is distinctive, not stable. **Never assert a matcher's robustness in a
+comment without a measurement behind it.**
+
+**P-T3(h) — THE OPENING INSTRUCTION BEATS THE LABEL'S CONTENT.** Two control turns returned labels
+that named the error outright — `states conclusion opposite to correct EVA sign` and `Student
+reached the wrong sign for EVA™` — and the hint still opened *"Your core move was right… that's
+the correct computational direction and conclusion"*. **A label that states the answer is wrong
+does not survive an instruction that demands praise.** Supplying better information to a leg does
+not fix a leg whose instruction is unsatisfiable without inventing something; only replacing the
+instruction does (P-T2). This is the same mechanism as **P-M4** measured in a second, independent
+place, which upgrades it from a marking-prompt finding to a general one about this pipeline.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

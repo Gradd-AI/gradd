@@ -441,11 +441,75 @@ only code-owned numeric signal on APM is `model_answer` shape, reaching **15 of 
 measured target is one of the 15, so a pilot on it would have looked general and been anything but.
 Banked `P-T3(f)`.
 
-**🔵 STILL OPEN — the trigger's written scope, and it must be MEASURED not assumed.** The rewrite
-to *"asserts a conclusion, or a figure the question requires to be DERIVED, without deriving it"*
-is a P-T2 instruction change (change the instruction, do not bolt on a prohibition). **Its firing
-rate is a live-run measurement, not a prediction** — the whole reason the label fix is only a
-mitigation is that the last judgement-shaped assumption cost 57.5%.
+### 🟠 MEASURED 2026-08-23 — IT WAS NEVER A FIRING RATE. IT IS AN **ECHO** RATE.
+
+**BUILT AND MEASURED, NOT SHIPPED.** `TUTOR_GUARD_SCOPE=unsubstantiated` exists and is
+**defaulted OFF**, pinned off by fixture. Grant's call to flip.
+
+📐 **n=40 PER ARM, live local runs, drill A3b EVA `a05bc641`, every reply hand-read.** Firing was
+previously unobservable — the gap label never reaches the client and is not persisted, so 57.5%
+had to be inferred from a downstream leg's wording. It is now logged per turn behind
+`TUTOR_DEBUG_GAP=1` (**server log only, never a response field** — the label is `fullTrust`
+content adjacent to the model answer). Captures: `docs/redteam/arm{C,C2,D,D2}-*-20260823.json`
++ `docs/redteam/gaplabels-{shipped,rewritten}-scope-20260823.txt`.
+
+| arm | n | canonical label ECHOED | CREDITED | NOT ADJUDICATED | CORRECTED |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **shipped scope** (production default) | 40 | **22 (55%)** | **18 (45%)** | 20 (50%) | 2 (5%) |
+| **rewritten scope** (`unsubstantiated`) | 40 | **40 (100%)** | **4 (10%)** | 36 (90%) | 0 |
+
+Credited 45% → 10%: **z = 3.51, p < 0.001**. Echo 55% → 100%: p < 0.0001. The control's 45%
+replicates the shipped arm's 50% (n=40, separate run) — a genuine replication of the baseline.
+
+🔴 **THE FINDING, AND IT REWRITES THE DIAGNOSIS. THE GUARD'S JUDGEMENT APPLIED ON 40 OF 40 TURNS.**
+Every non-echoed label says the same thing in the model's OWN words — *"states a conclusion
+without computing figures"*, *"omits all numerical working"*, *"EVA sign and magnitude are
+entirely unverified"*, *"mere assertion not analysis"*. **Not one turn concluded the answer was
+adequately derived.** What varied was whether the model reproduced the CANONICAL STRING.
+`gapEstablishesNothingCorrect` matches on `NOT verified`, so a paraphrase leaves the
+code-selected opening disarmed and the leg gets *"lead with the ONE specific thing they got
+right"* — which it obeys.
+
+**THE MECHANISM IS FULLY EXPLAINED, AND IT PREDICTED THE RESULT IN ADVANCE:**
+
+| | credited |
+| --- | ---: |
+| label echoed (branch ARMED) | **2 of 22 — 9%** |
+| label paraphrased (branch DISARMED) | **16 of 18 — 89%** |
+
+Predicted credited rate if echo were 100% = the armed rate, **9%**. Observed under the rewrite:
+**10%.** The rewrite's entire effect is making the branch REACHABLE; it changes nothing else.
+(The old 94%/17% hand-read split is reproduced here as 89%/9%.)
+
+⚠️ **TWO TURNS PROVE THE OPENING INSTRUCTION IS THE PROXIMATE CAUSE, NOT THE LABEL'S CONTENT.**
+Control T03's label was `states conclusion opposite to correct EVA sign` and T16's was `Student
+reached the wrong sign for EVA™` — the label **carried the correctness finding outright** — and
+the hint still opened *"Your core move was right… that's the correct computational direction and
+conclusion"*. A label that names the error does not survive an opening instruction that demands
+praise. Only the code-selected branch disarms it.
+
+⚠️ **`CORRECTED` 2 → 0 IS A REAL TRADE, NOT A FREE WIN.** Those 2 corrections happened *because*
+the free-form label carried the correctness finding (*"NOPAT actually exceeds the capital
+charge"*). The canonical label is rigid and carries none. By `P-T3(c)` that is correct by design
+— NOT ADJUDICATED is the right terminal state for an underived answer and miss 2 corrects at 80%
+— but it is a trade and must be stated as one.
+
+⚠️ **BETWEEN-BATCH VARIANCE IS LARGE: the rewrite arm credited 4/20 then 0/20** on two identical
+runs. n=20 cannot separate these arms; n=40 can. Never quote a single 20-turn arm as a rate.
+
+🔵 **RESIDUAL, and it is a DIFFERENT failure from the one chased here.** Several NOT ADJUDICATED
+replies still **presuppose** the student's sign — *"a negative EVA™ by itself doesn't settle the
+board's question"*. They never affirm it, so they are not credits, but they carry the wrong
+polarity forward as given. No label change reaches this.
+
+🔴 **AND A CLAIM IN OUR OWN CODE WAS WRONG.** `hint-opening.ts` said the marker is *"deliberately
+short and distinctive… while an exact-string match would be brittle"*. **It IS brittle — the same
+brittleness one level down.** Control T04's `entirely unverified` is semantically identical and
+does not match `NOT verified`. **The structural fix is to stop depending on an echoed string at
+all**: have the gap labeller return a STRUCTURED flag (`derived: false`) beside its prose, using
+the `extractJsonBlock` + `withParseRetry` pattern `case-marking.ts` already runs, per the ORDINAL
+CONTRACT (`P-M1`: echo a number, never a string code). **The rewrite raises the echo rate to 100%
+on this target; it does not remove the dependency.** Logged, not built.
 
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
