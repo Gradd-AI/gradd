@@ -390,6 +390,63 @@ equivalence check runs, and miss 2 corrects at 80%** (16/20). The defect was onl
 scored **CREDITED**. `CREDITED` is the harm column; `NOT ADJUDICATED` on a working-free answer is a
 pass, not a miss. Banked as `P-T3(c)`.
 
+### 🟢 SHIPPED 2026-08-23 — THE ARITHMETIC VETO, AND THE REFRAME THAT CHANGED THE DESIGN
+
+**🔴 THE REFRAME FIRST, BECAUSE IT INVERTS THE OBVIOUS FIX. The defect is an UNSUBSTANTIATED
+VERDICT, not a bare guess.** The guard's written scope is *"states ONLY a final answer VALUE … a
+lone number"*. The turn that produced the 95% is **72 words of reasoned prose stating no numeric
+answer at all** — it asserts a polarity, carries a method sentence, and its two figures (14% WACC,
+₦12,000m) are the scenario's own. By the guard's text it should fire ~0% here; **it fired 57.5%**.
+The instability is a model applying a rule outside the rule's text. **So mechanising the guard AS
+WRITTEN would have fired on almost none of the harm turns and sent the rate back toward 94% — a
+faithful pre-check would have been worse than the drifting judgement.** Banked `P-T3(d)`.
+
+**WHAT SHIPPED — the decidable half only.** `lib/acca/bare-guess-veto.ts` (pure): arithmetic
+present (`number · operator · number`, tolerant of currency marks, thousands separators, unicode
+minus/en-dash, and a standalone `x`) means the guard **MUST NOT fire**. Wired at TWO points in
+`app/api/acca/tutor/route.ts`, both non-redundant: the guard block is **omitted from the system
+prompt entirely** when vetoed (architected absence, not a "do not apply it here" — P-T2), and the
+conditional opening is independently vetoed, because removing the description makes the label
+unlikely, not impossible. Fixtures `npm run test:bare-guess-veto` (31), gate **67 → 68**.
+
+**⛔ NO "CONTAINS A FIGURE" TRIGGER ARM — designed, measured, killed by its own numbers.** 14 real
+student messages contain a digit and **13 of those 14 contain no arithmetic**, all substantial
+prose quoting SCENARIO figures back. Banked `P-T3(e)`. The veto can only ever STOP the guard.
+
+**📐 DRY-RUN BEFORE SHIPPING — all 621 stored user messages, every fire hand-read. Real and
+synthetic reported separately and never pooled** (`npm run audit:bare-guess-veto`, read-only):
+
+| set | messages | with a digit | VETO FIRES | fires that were NOT arithmetic | missed arithmetic |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **REAL STUDENTS** (4 accounts) | **91** | 14 | **1 (1.1%)** | **0 of 1** | **0** |
+| red-team / test account (mine) | 530 | 287 | 44 (8.3%) | **0 of 44** | **0** |
+| arm-B seeded harm turn | 40 turns, **1 distinct string** | — | **does not fire ✅** | — | — |
+
+**False-positive rate 0 of 45 fires, hand-read.** Recall checked two ways so a miss could not hide
+behind a 170-char preview: an operator-window scan over every digit-bearing non-fire (all windows
+were punctuation or notation — `+90m`, `analysis-investment`, `d1/d2`), and a deliberately looser
+arithmetic regex, which surfaced **3 messages / 1 distinct** — a JSON fuzzing probe, correctly not
+arithmetic. **The seeded harm turn is not vetoed, which is required**: the veto must not swallow the
+guard on the case it exists for.
+⚠️ **HONEST LIMIT ON THE VALUE, NOT THE SAFETY:** only 1 of 91 real messages shows arithmetic at
+all, so the veto's protective effect on today's real traffic is **rare**. It removes a
+false-positive class rather than moving the credited rate, and must not be reported as doing the
+latter. The 91-message denominator is too thin to ship a TRIGGER on — which is the other reason
+only the veto shipped.
+
+**⚠️ AND THE PAPER-INERTNESS TRAP, AGAIN.** All 91 published APM drills have `answer_schema` NULL
+and **APM is the paper this was measured on** — the direction fence's exact failure. The veto reads
+**the student's own message and nothing else**, so it works on both papers with no backfill. The
+only code-owned numeric signal on APM is `model_answer` shape, reaching **15 of 91** — and the
+measured target is one of the 15, so a pilot on it would have looked general and been anything but.
+Banked `P-T3(f)`.
+
+**🔵 STILL OPEN — the trigger's written scope, and it must be MEASURED not assumed.** The rewrite
+to *"asserts a conclusion, or a figure the question requires to be DERIVED, without deriving it"*
+is a P-T2 instruction change (change the instruction, do not bolt on a prohibition). **Its firing
+rate is a live-run measurement, not a prediction** — the whole reason the label fix is only a
+mitigation is that the last judgement-shaped assumption cost 57.5%.
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

@@ -1096,6 +1096,45 @@ state for miss 1 is NOT ADJUDICATED, not CORRECTED** — the defect was ever onl
 scored as CREDITED. Read every future polarity table against that: `CREDITED` is the harm column;
 `NOT ADJUDICATED` on a working-free answer is a pass.
 
+**P-T3(d) — THE DEFECT IS AN UNSUBSTANTIATED VERDICT, NOT A BARE GUESS (reframed 2026-08-23).**
+The guard's written scope is *"states ONLY a final answer VALUE … ('is it about 51 million?', a
+lone number) with NO working, method, or reasoning shown"*. The turn that produced the 95%,
+verbatim, is **72 words of reasoned prose that states no numeric answer at all**: *"Working
+through it, the capital charge comes out above NOPAT, so Zitel's EVA is negative … the returns it
+earns are below the 14% cost of capital … the board should not approve the ₦12,000m expansion."*
+It asserts a POLARITY, carries a method sentence, and its two figures are the scenario's own given
+WACC and given cost. **By the guard's own text it should fire ~0% of the time here. It fired
+57.5%.** So the instability is not a guard performing unreliably — it is a model applying a rule
+well outside the rule's written scope, which is exactly what a judgement with no matching
+predicate does.
+**THE CONSEQUENCE, AND IT INVERTS THE OBVIOUS FIX:** mechanising the guard AS WRITTEN would fire
+on almost none of the measured harm turns and send the credited rate back toward 94%. **A faithful
+pre-check would have been worse than the drifting judgement.** The predicate that matches the harm
+is *asserts a conclusion, or a figure the question requires to be DERIVED, without deriving it* —
+number present or not. **Before mechanising any model judgement, check that its written scope
+describes the turns it is actually firing on; a rule being applied outside its text is evidence the
+text is wrong, not that the model is.**
+
+**P-T3(e) — THE "CONTAINS A FIGURE" TRIGGER WAS DESIGNED, MEASURED, AND KILLED BY ITS OWN NUMBERS.**
+Of the real-student messages in `acca_drill_messages`, **14 contain a digit and 13 of those 14
+contain no arithmetic** — all substantial prose whose digits are SCENARIO figures quoted back (a
+given 14% WACC, a given NZD120M cost, *"the 3 further contracts"*, *"1 measure"*). AFM/APM
+scenarios are saturated with figures and students quote them, so "contains a figure" is a far
+weaker signal than it sounds. **What code CAN decide is the veto half only** — arithmetic present
+means it is not a bare guess — and `lib/acca/bare-guess-veto.ts` deliberately has no trigger arm.
+**The error directions are not symmetric and the detector is tuned accordingly:** under-vetoing
+tells a student who wrote 340 words of working to put their reasoning on the page, which reads as
+the tutor not having read the answer and is unrecoverable; over-vetoing costs ONE turn, because
+miss 2 corrects at 80%. **When in doubt, veto.**
+
+**P-T3(f) — A GATE KEYED ON `answer_schema` IS INERT ON 91/91 APM DRILLS. AGAIN.** Every published
+APM drill has `answer_schema` NULL, and APM is the paper this defect was MEASURED on. The direction
+fence already learned this (`P-V1(c)`); the veto avoided it by reading **the student's own message
+and nothing else**, so it works on both papers today with no backfill. The only code-owned numeric
+signal available on APM is `model_answer` SHAPE, and it reaches **15 of 91** — and the measured
+target drill is one of the 15, so a pilot on it would have looked general and been anything but.
+**Before building any tutor-side gate, state which papers it can reach and prove the count.**
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
