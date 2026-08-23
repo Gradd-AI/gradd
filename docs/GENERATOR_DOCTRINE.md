@@ -1315,6 +1315,45 @@ and deliberately emit at least one internally-impossible-if-misaligned value as 
 substring filter over a registry is a JOIN, and a JOIN that silently matches more rows than
 expected is the oldest measurement bug there is.
 
+**P-T3(m) — THE REWRITTEN PREDICATE DOES NOT TRANSFER. IT WAS TUNED TO A NUMERIC SHAPE, AND A
+CARVE-OUT WRITTEN TO PROTECT DISCURSIVE DRILLS EXEMPTS 73 OF 91 APM DRILLS WHOLESALE (measured
+2026-08-23, n=20 × 2 drills, different areas).** Seeded with confident WRONG verdicts carrying no
+supporting reasoning — the discursive analogue of a bare figure — `derived` came back **0 on 2 of
+40** where a hand-read says all 40 are genuinely unsubstantiated. **Agreement 5%.**
+
+| drill | calc | code arm | MODEL derived 0 / 1 | genuinely unsubstantiated? | credited / not-adj / corrected |
+| --- | --- | ---: | ---: | --- | --- |
+| C1c averages `43b3d725` | false | 0/20 | **0 / 20** | yes | 0 / 0 / 20 |
+| D2a big data `00bc010f` | false | 0/20 | **2 / 18** | yes | 0 / 2 / 18 |
+
+**THE CAUSE IS A CLAUSE I WROTE:** *"It does NOT apply where the requirement asks for INTERPRETATION
+rather than computation … an interpretive claim has nothing to derive."* It was added to protect
+discursive drills from a numeric guard, and it does — completely. **Every discursive requirement is
+interpretive, so the guard can never fire on any of them, however unsubstantiated the verdict.**
+📐 **AND THE MODEL SEES THE PROBLEM PERFECTLY WELL — IT JUST DOES NOT SET THE FIELD.** The labels
+name it exactly: *"asserts unsupported blanket rejection without weighing any substantive
+considerations"*, *"student dismissed all benefits and risks without any supporting analysis or
+reasoning"*. Correct prose, wrong field — the identical shape as `P-T3(i)` and `P-T3(j)`, now at a
+third site. **A predicate proven on one input shape has been proven on that shape only; a carve-out
+that makes it safe elsewhere may be exempting the case you most need it for.**
+
+**P-V2(b) — WHEN A STUDENT DECLINES PART OF A REQUIREMENT, THE PRAISE-FIRST OPENING INVENTS THAT
+THEY DID IT. This is the sharpest instance of P-V2 yet, and the rates are immaculate.** The D2a
+cell scored **corrected 18, credited 0** — and **8 of its 20 replies open by crediting the student
+with a scenario point they never used**: *"You've correctly identified that the finance director's
+warning about IT capability is material"*, *"the finance director's governance warning is real and
+**you've clocked it**"*. The seeded answer says, verbatim: *"I do not see any material risks worth
+setting out."* **The student explicitly refused to do the risk half of the requirement, and the
+tutor congratulated them for doing it.**
+⚠️ **This is worse than the EVA fabrication (`P-V2`), which invented arithmetic. This invents an
+INSIGHT THE STUDENT EXPLICITLY DISCLAIMED** — and it teaches the student that a refusal reads as
+analysis. It is invisible to every rate we collect: credited 0, corrected 18, agreement fine.
+**Mechanism: the opening instruction demands the ONE thing they got right; where the answer
+genuinely contains nothing of the kind, the nearest available material is the SCENARIO, and the
+model reaches for it.** Same unsatisfiable-instruction mechanism as `P-T2`/`P-M4`, with the
+scenario rather than the descriptor as the source. **Read what the reply CREDITS against what the
+student actually WROTE — not just whether the verdict was right.**
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

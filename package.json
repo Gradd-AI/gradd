@@ -69,6 +69,7 @@
     "test:hint-opening": "tsx scripts/test-hint-opening.ts",
     "test:bare-guess-veto": "tsx scripts/test-bare-guess-veto.ts",
     "test:gap-verdict": "tsx scripts/test-gap-verdict.ts",
+    "audit:drill-column-reach": "tsx --env-file=.env.local scripts/audit-drill-column-reach.ts",
     "audit:bare-guess-veto": "tsx --env-file=.env.local scripts/audit-bare-guess-veto.ts",
     "test:teach-access": "tsx scripts/test-teach-access.ts",
     "test:teach-demand": "tsx scripts/test-teach-demand.ts",

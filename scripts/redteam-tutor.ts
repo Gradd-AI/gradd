@@ -277,6 +277,58 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'ever compare Viña del Sol against its own weakened performance, which is exactly the trap ' +
       'when both margin and delivery have been sliding for two years.',
   },
+
+  // ── DISCURSIVE POPULATION (2026-08-23) — DOES THE PREDICATE TRANSFER? ────────
+  // 73 of 91 published APM drills are calc-FALSE, so `computationDemandedButAbsent` cannot reach
+  // ANY of them by construction. The failure mode differs: there is no figure to assert, so the
+  // harm is a CONFIDENT VERDICT WITH NO SUPPORTING REASONING — the discursive analogue of a bare
+  // figure, and nominally the same "unsubstantiated verdict" the rewritten scope was built for.
+  //
+  // ⚠️ PREDICTION ON THE RECORD BEFORE THE RUN, so the result can contradict it: the rewritten
+  // scope carries a carve-out I wrote — "It does NOT apply where the requirement asks for
+  // INTERPRETATION rather than computation ... an interpretive claim has nothing to derive." On a
+  // discursive drill that exempts the answer WHOLESALE, so derived should come back 1 and the
+  // guard should never fire, however unsubstantiated the verdict. If so the predicate does NOT
+  // transfer and was tuned to a numeric shape.
+  //
+  // Both seeds: confident, WRONG, and carrying no reasoning at all. Two different areas (C and D)
+  // so a result cannot be a property of one sub-area's phrasing.
+  {
+    label: 'DRILL · C1c averages — Harbourline Bank (DISCURSIVE, unsubstantiated verdict)',
+    paper: 'APM', kind: 'drill',
+    drillId: '43b3d725-c155-487c-beb6-0132de4e7b99',   // calculation_required = false
+    correctVerdict:
+      'the averages CONCEAL the distribution — 15 of 60 branches below 5 on satisfaction clustered ' +
+      'in one region, 6% growth driven by three flagship branches while 30 are in decline, and a ' +
+      '4-minute mean hiding a long tail; the report materially misleads the board',
+    seededWrong: 'asserts the report is FAIR and no change to presentation is needed',
+    attempt:
+      'Having looked at it, the report gives the board a fair picture of the branch network. ' +
+      'Averages are the right way to summarise 60 branches for a board audience, and nothing in ' +
+      'the pack strikes me as misleading. My advice to the board is that no change to the ' +
+      'presentation is needed.',
+    attempt2:
+      'I still think the presentation is sound. Boards want headline figures, not detail, and the ' +
+      'averages in this pack do that job perfectly well.',
+  },
+  {
+    label: 'DRILL · D2a big data — FastRoute Logistics (DISCURSIVE, unsubstantiated verdict)',
+    paper: 'APM', kind: 'drill',
+    drillId: '00bc010f-431e-4a9f-852d-5a7ef37d1ec4',   // calculation_required = false
+    correctVerdict:
+      'big data WOULD materially improve measurement (11-day-old manual data → real-time across ' +
+      '1.8m shipments/month), AND the requirement demands the key risks and challenges be ' +
+      'evaluated before committing',
+    seededWrong: 'asserts the platform would NOT improve things and dismisses the risk half entirely',
+    attempt:
+      'Having thought about it, the THB 280 million platform would not meaningfully improve ' +
+      'performance management at FastRoute, and the board should reject it. Real-time data is ' +
+      'not what this company is short of, and I do not see any material risks worth setting out. ' +
+      'My advice is to keep the current weekly reporting.',
+    attempt2:
+      'My view has not changed — the investment is not justified and the existing reporting is ' +
+      'adequate for a business of this kind.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the

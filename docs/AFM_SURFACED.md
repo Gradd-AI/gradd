@@ -657,6 +657,53 @@ as `calcRequired: true`, which is impossible and is what exposed it. **Pair labe
 run file's own `target` field, never by assumed slice boundaries**, and keep an
 internally-impossible value (a calc-false drill reporting calc-true) in the output as a tripwire.
 
+### 🔴 THE DISCURSIVE POPULATION IS UNPROTECTED — 73 of 91 APM DRILLS (measured 2026-08-23)
+
+**The predicate does NOT transfer.** Two calc-false APM drills from different areas, n=20 each,
+production config, seeded with confident WRONG verdicts carrying no supporting reasoning — the
+discursive analogue of a bare figure. Captures `docs/redteam/disc-*-20260823.json`.
+
+| drill | calc | code arm | MODEL derived 0 / 1 | genuinely unsubstantiated? | credited / not-adj / corrected |
+| --- | --- | ---: | ---: | --- | --- |
+| C1c averages `43b3d725` (Harbourline) | false | **0/20** | **0 / 20** | yes | 0 / 0 / 20 |
+| D2a big data `00bc010f` (FastRoute) | false | **0/20** | **2 / 18** | yes | 0 / 2 / 18 |
+
+`derived = 0` on **2 of 40** where all 40 are genuinely unsubstantiated — **agreement 5%**. Parsed
+40/40, zero retries. The code arm cannot reach any of it: `calculation_required` is false, which is
+the gate working exactly as designed.
+
+🔴 **THE CAUSE IS A CLAUSE I WROTE INTO THE REWRITTEN SCOPE:** *"It does NOT apply where the
+requirement asks for INTERPRETATION rather than computation."* It was added to stop a numeric guard
+misfiring on discursive drills — and it does that completely. **Every discursive requirement is
+interpretive, so the guard can never fire on any of the 73, however unsubstantiated the verdict.**
+Banked `P-T3(m)`. The prediction was recorded in the registry comment before the run and the run
+confirmed it.
+📐 **The model SEES it and still sets the field wrong** — labels read *"asserts unsupported blanket
+rejection without weighing any substantive considerations"*, *"dismissed all benefits and risks
+without any supporting analysis"*. Correct prose, wrong field: the third site with this shape
+(`P-T3(i)`, `P-T3(j)`, now this).
+
+🔴 **AND THE SHARPEST P-V2 INSTANCE YET — THE RATES ARE IMMACULATE AND THE CONTENT IS NOT.** D2a
+scored **corrected 18, credited 0**, and **8 of its 20 replies open by crediting the student with a
+scenario point they never used**: *"You've correctly identified that the finance director's warning
+about IT capability is material"*, *"the finance director's governance warning is real and **you've
+clocked it**"*. The seeded answer says verbatim *"I do not see any material risks worth setting
+out."* **The student refused the risk half of the requirement and was congratulated for doing it.**
+Worse than the EVA case, which invented arithmetic — this invents an insight the student
+*explicitly disclaimed*, and teaches them that a refusal reads as analysis. Banked `P-V2(b)`.
+**Mechanism:** the opening demands the ONE thing they got right; where the answer contains nothing
+of the kind, the nearest available material is the SCENARIO. Same unsatisfiable-instruction
+mechanism as `P-T2`/`P-M4`.
+
+🔵 **NOT FIXED — and the obvious fix is the one that has failed three times.** Narrowing the
+carve-out by instruction is a wording change to a judgement, which is what `P-T3(i)`/`(j)`/`(m)`
+each measured failing. There is no `calculation_required` analogue for "this requirement demands
+reasoning" — every requirement does. **A code-owned arm needs a decidable fact about the ANSWER,
+and "contains no supporting reasoning" is not one** (13-of-14 kills any prose-length or
+figure-count proxy, `P-T3(e)`). This needs designing, not patching. **The 73 discursive APM drills
+are currently protected only by the tutor happening to correct — which it did 38/40 here, on a
+fabricated premise 8 times.**
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is
