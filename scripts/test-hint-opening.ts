@@ -7,6 +7,7 @@
 
 import {
   guardLabel, hintOpeningInstruction, gapEstablishesNothingCorrect, UNVERIFIED_MARKER,
+  guardBlock, unsubstantiatedLabel,
 } from '../lib/acca/hint-opening';
 
 let pass = 0, fail = 0;
@@ -94,6 +95,59 @@ ok('(a)+(b) together DO trigger it',
 ok('(a) alone leaves the opening at shipped (so the arms are genuinely separable)',
   hintOpeningInstruction('shipped', gapEstablishesNothingCorrect(guardLabel('unverified'))) === SHIPPED_OPENING);
 
+// ── 5b. THE GUARD BLOCK: shipped scope pinned, rewritten scope characterised ─
+// The whole guard block moved OUT of the route and into this module so the trigger and the label
+// it emits cannot drift apart. `shipped` is transcribed here from the route's pre-move text and
+// asserted byte-identical — that is what makes the move a refactor rather than a silent reword of
+// a prompt whose behaviour is measured at 50%.
+const SHIPPED_GUARD_HEAD =
+  'BARE-GUESS GUARD (do this before the equivalence check) — NUMERIC drills only: if the message ' +
+  'states ONLY a final answer VALUE or asks whether a value is right ("is it about 51 million?", ' +
+  '"the answer is X, yes?", a lone number) with NO working, method, or reasoning shown, it is NOT ' +
+  'a markable correct answer even if the value matches. This guard does NOT apply to a narrative/ ' +
+  'discursive claim — a short but substantively correct interpretive statement (e.g. "VaR is a ' +
+  'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
+  'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
+  'fires (a numeric value-only guess), output the gap label: ';
+ok('shipped guard block is byte-identical to the route\'s pre-move text',
+  guardBlock('shipped', 'unverified') ===
+    `${SHIPPED_GUARD_HEAD}"${guardLabel('unverified')}" (NEVER the correct sentinel). `);
+ok('shipped guard block still carries the shipped LABEL variant when asked for it',
+  guardBlock('shipped', 'shipped').includes(guardLabel('shipped')));
+
+// The rewritten trigger. Break mode: the rewrite quietly keeps the old predicate, or bolts the new
+// one on beside it (P-T2 — an added instruction primes what it names; measured at z = −3.65).
+{
+  const g = guardBlock('unsubstantiated', 'unverified');
+  ok('rewrite REPLACES the old scope — "a lone number" is gone, not fenced',
+    !g.includes('a lone number') && !g.includes('states ONLY a final answer VALUE'));
+  ok('rewrite names the predicate that matches the harm (assert without deriving)',
+    /asserts a CONCLUSION/.test(g) && /without deriving it/.test(g));
+  ok('rewrite names DESCRIBING a method as not working — the harm turn\'s exact move',
+    /DESCRIPTION of working, not working/.test(g));
+  ok('rewrite names scenario-supplied figures as not a derivation',
+    /SCENARIO supplied/.test(g));
+  ok('rewrite re-cuts the carve-out on REQUIREMENT kind, not on register',
+    /REQUIREMENT\s*kind, not to the register/.test(g));
+  ok('rewrite keeps the interpretive carve-out (it protects the discursive drills)',
+    /INTERPRETATION rather than computation/.test(g) && /threshold, not a ceiling/.test(g));
+  ok('rewrite emits the generalised label, not the figure-shaped one',
+    g.includes(unsubstantiatedLabel('unverified')) && !g.includes(guardLabel('unverified')));
+  ok('the two scopes differ', g !== guardBlock('shipped', 'unverified'));
+}
+
+// THE MARKER SURVIVES THE REWRITE. Break mode, and it is silent: the label generalises off
+// "states a figure", the sentinel goes with it, `gapEstablishesNothingCorrect` stops matching, and
+// the conditional opening becomes dead code that still reports as wired.
+ok('rewritten label preserves UNVERIFIED_MARKER (the code-selected branch keeps working)',
+  gapEstablishesNothingCorrect(unsubstantiatedLabel('unverified')));
+ok('rewritten label at the SHIPPED label variant does NOT carry the marker (arms stay separable)',
+  !gapEstablishesNothingCorrect(unsubstantiatedLabel('shipped')));
+ok('rewritten label states no correct answer (the moat holds through the rewrite)',
+  !/positive|negative|actually|correct answer/i.test(unsubstantiatedLabel('unverified')));
+ok('rewritten label drops "states a figure" — the harm turn states none',
+  !unsubstantiatedLabel('unverified').includes('states a figure'));
+
 // ── 6. THE LIVE ARM IS PINNED, AND SO IS ITS REVERSIBILITY ───────────────────
 // A STATIC SWEEP of the route, not a behavioural test — the unit checks above prove the two
 // variants are RIGHT and cannot prove WHICH ONE IS SERVED, which is the only thing a reader of
@@ -111,11 +165,15 @@ ok('(a) alone leaves the opening at shipped (so the arms are genuinely separable
   for (const [envName, expected] of [
     ['TUTOR_GUARD_LABEL', 'unverified'],
     ['TUTOR_HINT_OPENING', 'conditional'],
+    // ⚠️ The rewritten TRIGGER is deliberately NOT live. Its firing rate has not been measured,
+    // and the label fix is only a mitigation precisely because the last judgement-shaped
+    // assumption cost 57.5%. This pin is what stops it going live by accident.
+    ['TUTOR_GUARD_SCOPE', 'shipped'],
   ] as const) {
     // Matches `process.env.<NAME>  ?? '<default>'` with any run of spaces, as the route aligns them.
     const m = src.match(new RegExp(`process\\.env\\.${envName}\\s*\\?\\?\\s*'([a-z]+)'`));
     ok(`route reads ${envName} from the env (rollback needs no deploy)`, m !== null);
-    ok(`route's ${envName} default is the MEASURED arm '${expected}'`,
+    ok(`route's ${envName} default is the decided arm '${expected}'`,
       m?.[1] === expected, `found ${JSON.stringify(m?.[1])}`);
   }
 }

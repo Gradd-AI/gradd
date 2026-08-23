@@ -93,3 +93,85 @@ export function hintOpeningInstruction(
     'and one next move. '
   );
 }
+
+// ── THE TRIGGER'S WRITTEN SCOPE (2026-08-23) ─────────────────────────────────
+//
+// ⚠️ THE SCOPE DOES NOT DESCRIBE THE HARM, AND THAT IS THE REMAINING DEFECT.
+// The shipped guard says it fires when the message `states ONLY a final answer VALUE ... a lone
+// number`. The turn that produced the 95% baseline is 72 words of reasoned prose that states no
+// numeric answer at all: it asserts a POLARITY ("Zitel's EVA is negative"), carries a method
+// sentence ("the capital charge comes out above NOPAT"), and its only two figures are the
+// scenario's OWN given 14% WACC and given ₦12,000m cost.
+//
+// By the shipped text the guard should fire ~0% of the time on it. **It fired 57.5%.** So the
+// 57.5% is not a guard performing unreliably — it is a model applying a rule well outside the
+// rule's written scope, which is what a judgement with no matching predicate does. That is why
+// mechanising the guard AS WRITTEN would have been WORSE than leaving it (P-T3(d)): a faithful
+// pre-check fires on almost none of the harm turns.
+//
+// P-T2 — CHANGE THE INSTRUCTION, DO NOT BOLT ON A PROHIBITION. The scope sentence is REPLACED
+// with the predicate that matches the harm. Nothing is added alongside the old one.
+//
+// ⚠️ THE CARVE-OUT HAD TO MOVE TOO, and this is the load-bearing part. The shipped carve-out
+// exempts "a narrative/discursive claim ... even when terse", on the reasoning that narrative
+// claims carry no numeric working to show. Under the NEW predicate that exemption would swallow
+// the harm turn whole — it is discursive prose. So the carve-out is re-cut along the axis that
+// actually matters: whether the REQUIREMENT asks for something to be DERIVED. An interpretive
+// requirement has no derivation to withhold; a computational one does, whatever prose it is
+// dressed in.
+//
+// ⚠️ DECLARED CONFOUND: this variant moves the trigger AND its label together. They cannot be
+// separated — the label is the trigger's output, and the shipped label ("states a figure but
+// shows no working") would misdescribe a figure-less assertion the moment the trigger starts
+// catching one. The firing rate is the measurement; the label change rides with it and is stated
+// rather than hidden. `UNVERIFIED_MARKER` is preserved verbatim so the code-selected opening
+// branch keeps working unchanged.
+
+/** Which wording of the guard's TRIGGER (its scope sentence + label) call2 is given. */
+export type GuardScopeVariant = 'shipped' | 'unsubstantiated';
+
+/**
+ * The full bare-guess / unsubstantiated-verdict guard block for call2_diagnose's system prompt.
+ *
+ * Returned as ONE string so the trigger and the label it emits cannot drift apart in the route.
+ * `shipped` is BYTE-IDENTICAL to the pre-2026-08-23 inline text (with the label variant applied
+ * exactly as it was) and is pinned as such by the fixtures.
+ */
+export function guardBlock(scope: GuardScopeVariant, label: GuardLabelVariant): string {
+  if (scope === 'shipped') {
+    return 'BARE-GUESS GUARD (do this before the equivalence check) — NUMERIC drills only: if the message ' +
+      'states ONLY a final answer VALUE or asks whether a value is right ("is it about 51 million?", ' +
+      '"the answer is X, yes?", a lone number) with NO working, method, or reasoning shown, it is NOT ' +
+      'a markable correct answer even if the value matches. This guard does NOT apply to a narrative/ ' +
+      'discursive claim — a short but substantively correct interpretive statement (e.g. "VaR is a ' +
+      'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
+      'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
+      'fires (a numeric value-only guess), output the gap label: ' +
+      `"${guardLabel(label)}" (NEVER the correct sentinel). `;
+  }
+  return 'UNSUBSTANTIATED-VERDICT GUARD (do this before the equivalence check) — NUMERIC drills only: ' +
+    'if the message asserts a CONCLUSION, or states a FIGURE, that this requirement asks the ' +
+    'candidate to DERIVE, without deriving it — no calculation performed, no quantities combined, ' +
+    'nothing a reader could check the assertion against — then it is NOT a markable correct answer ' +
+    'even if the assertion happens to match. Naming the method in words ("I discounted the flows", ' +
+    '"the capital charge comes out above NOPAT") is a DESCRIPTION of working, not working: if no ' +
+    'quantities are actually combined, the claim is underived. Figures the SCENARIO supplied and the ' +
+    'candidate merely quoted back are not a derivation either. This guard applies to the REQUIREMENT ' +
+    'kind, not to the register the answer is written in — discursive prose on a computational ' +
+    'requirement is squarely in scope. It does NOT apply where the requirement asks for ' +
+    'INTERPRETATION rather than computation (e.g. "VaR is a threshold, not a ceiling"): an ' +
+    'interpretive claim has nothing to derive, and is a genuine claim to equivalence-check. When ' +
+    'this guard genuinely fires, output the gap label: ' +
+    `"${unsubstantiatedLabel(label)}" (NEVER the correct sentinel). `;
+}
+
+/**
+ * The label the rewritten trigger emits. Generalised off "states a figure" — the harm turn states
+ * no figure — while preserving UNVERIFIED_MARKER verbatim so `gapEstablishesNothingCorrect`, and
+ * therefore the code-selected opening, behave identically.
+ */
+export function unsubstantiatedLabel(label: GuardLabelVariant): string {
+  return label === 'unverified'
+    ? 'asserts a conclusion without deriving it — the claim itself is NOT verified, so it cannot be credited'
+    : 'asserts a conclusion without deriving it — cannot be credited';
+}

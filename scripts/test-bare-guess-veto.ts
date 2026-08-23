@@ -121,8 +121,13 @@ ok('hasArithmetic and bareGuessGuardVetoed agree (one is the evidence, one the d
   ok('WIRING 1 — the guard block is built conditionally on the veto (prompt-side absence)',
     /const guardVetoed = bareGuessGuardVetoed\(attempt\)/.test(src)
     && /bareGuessGuardBlock\s*=\s*guardVetoed[\s\S]{0,40}\?\s*''/.test(src));
-  ok('WIRING 1 — the guard text appears ONCE, not re-inlined beside the conditional',
-    (src.match(/BARE-GUESS GUARD \(do this before the equivalence check\)/g) ?? []).length === 1);
+  // The guard's TEXT lives in lib/acca/hint-opening.ts (guardBlock), so the trigger and the label
+  // it emits are one definition. Break mode: someone re-inlines the prompt text here "to see it in
+  // context", the module copy stops being the only one, and a scope rewrite lands in a string the
+  // route no longer reads.
+  ok('WIRING 1 — the route composes guardBlock() and does NOT inline the guard prose',
+    /guardBlock\(GUARD_SCOPE_VARIANT, GUARD_LABEL_VARIANT\)/.test(src)
+    && !/BARE-GUESS GUARD \(do this before the equivalence check\)/.test(src));
   ok('WIRING 2 — the conditional opening is vetoed too',
     /gapEstablishesNothingCorrect\(diagnosis\)\s*&&\s*!bareGuessGuardVetoed\(attempt\)/.test(src));
 }

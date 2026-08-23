@@ -31,8 +31,8 @@ import { hasPaperAccess } from '@/lib/acca/access';
 // DELIVERED and must never gate the ATTEMPT — see the module header and §6.
 import { teachAccessFor, upgradeAfterDiagnosisLine, FREE_TEACH_THROUGHS } from '@/lib/acca/teach-access';
 import {
-  guardLabel, hintOpeningInstruction, gapEstablishesNothingCorrect,
-  type GuardLabelVariant, type HintOpeningVariant,
+  guardLabel, guardBlock, hintOpeningInstruction, gapEstablishesNothingCorrect,
+  type GuardLabelVariant, type HintOpeningVariant, type GuardScopeVariant,
 } from '@/lib/acca/hint-opening';
 import { bareGuessGuardVetoed } from '@/lib/acca/bare-guess-veto';
 
@@ -57,6 +57,10 @@ import { bareGuessGuardVetoed } from '@/lib/acca/bare-guess-veto';
 // so the historical baseline keeps describing something that still exists.
 const GUARD_LABEL_VARIANT  = (process.env.TUTOR_GUARD_LABEL  ?? 'unverified')   as GuardLabelVariant;
 const HINT_OPENING_VARIANT = (process.env.TUTOR_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
+// ⚠️ THE TRIGGER'S SCOPE STAYS 'shipped' UNTIL ITS FIRING RATE IS MEASURED. The label fix is only
+// a mitigation precisely because the last judgement-shaped assumption cost 57.5%, so this one
+// does not ship on the strength of a prediction either. Flip in a separate commit citing a rate.
+const GUARD_SCOPE_VARIANT  = (process.env.TUTOR_GUARD_SCOPE  ?? 'shipped') as GuardScopeVariant;
 import {
   isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
 } from '@/lib/acca/phrase-match';
@@ -362,20 +366,7 @@ async function call2_diagnose(
   const guardVetoed = bareGuessGuardVetoed(attempt);
   const bareGuessGuardBlock = guardVetoed
     ? ''
-    : 'BARE-GUESS GUARD (do this before the equivalence check) — NUMERIC drills only: if the message ' +
-      'states ONLY a final answer VALUE or asks whether a value is right ("is it about 51 million?", ' +
-      '"the answer is X, yes?", a lone number) with NO working, method, or reasoning shown, it is NOT ' +
-      'a markable correct answer even if the value matches. This guard does NOT apply to a narrative/ ' +
-      'discursive claim — a short but substantively correct interpretive statement (e.g. "VaR is a ' +
-      'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
-      'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
-      'fires (a numeric value-only guess), output the gap label: ' +
-      // P-T3 (2026-08-22): this label used to read "states a figure but shows no working — cannot
-      // be credited" and was SILENT about the figure. The guard runs BEFORE the equivalence check,
-      // so when it fires, correctness is never assessed — and call3_hint, whose only quality signal
-      // is this string, read the silence as the figure being fine and credited a wrong verdict in
-      // 38 of 40 measured turns. The label now states the dimension the guard skipped.
-      `"${guardLabel(GUARD_LABEL_VARIANT)}" (NEVER the correct sentinel). `;
+    : guardBlock(GUARD_SCOPE_VARIANT, GUARD_LABEL_VARIANT);
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 40,
@@ -417,7 +408,25 @@ async function call2_diagnose(
       },
     ],
   });
-  return extractText(res);
+  const label = extractText(res);
+  // ── FIRING IS OTHERWISE UNOBSERVABLE, WHICH IS WHY 57.5% HAD TO BE HAND-READ ──
+  // The gap label never reaches the client and is not persisted, so "did the guard fire on this
+  // turn?" could only be INFERRED from the shape of the hint two calls later. A rate inferred from
+  // a downstream leg's wording is exactly the kind of measurement that inverted in August.
+  //
+  // ⚠️ SERVER LOG ONLY, NEVER A RESPONSE FIELD. The label is tier-`fullTrust` content adjacent to
+  // the model answer; putting it in the JSON would ship a diagnosis to the browser the moment the
+  // flag was ever set in the wrong environment. A log line cannot leak to a student.
+  // Off unless TUTOR_DEBUG_GAP=1, which is never set in production.
+  if (process.env.TUTOR_DEBUG_GAP === '1') {
+    console.log('[GAPLABEL]', JSON.stringify({
+      vetoed: guardVetoed,
+      scope: GUARD_SCOPE_VARIANT,
+      fired: gapEstablishesNothingCorrect(label),
+      label,
+    }));
+  }
+  return label;
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
