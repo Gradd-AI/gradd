@@ -128,8 +128,11 @@ ok('hasArithmetic and bareGuessGuardVetoed agree (one is the evidence, one the d
   ok('WIRING 1 — the route composes guardBlock() and does NOT inline the guard prose',
     /guardBlock\(GUARD_SCOPE_VARIANT, GUARD_LABEL_VARIANT\)/.test(src)
     && !/BARE-GUESS GUARD \(do this before the equivalence check\)/.test(src));
+  // The FIRST source of "was anything established" moved from a substring match to call2's
+  // structured verdict (P-T3(i)); the veto is unchanged and still ANDed onto it. Both halves are
+  // pinned separately so removing either fails here rather than silently widening the branch.
   ok('WIRING 2 — the conditional opening is vetoed too',
-    /gapEstablishesNothingCorrect\(diagnosis\)\s*&&\s*!bareGuessGuardVetoed\(attempt\)/.test(src));
+    /nothingEstablished\(gapVerdict, diagnosis\)\s*&&\s*!bareGuessGuardVetoed\(attempt\)/.test(src));
 }
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} bare-guess veto: ${pass} passed, ${fail} failed\n`);

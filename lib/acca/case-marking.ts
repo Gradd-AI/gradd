@@ -274,8 +274,18 @@ interface AnthropicMessage { content: Array<{ type: string } | TextBlock> }
 // CAPTURE IS THE POINT AS MUCH AS THE RETRY. Every parse failure is recorded — raw text,
 // stop_reason, token counts, ceiling — before the retry, so the next occurrence is diagnosable
 // instead of merely survivable. Retrying a fault we still cannot see would just hide it better.
+/** Callers of the shared parse-retry wrapper. WIDENED 2026-08-23 for the tutor's gap verdict:
+ *  the retry + capture machinery is generic, only the CHANNEL below is caller-specific, and a
+ *  second hand-rolled retry loop beside this one would drift from it.
+ *  ⚠️ Widening this type touches NO prompt bytes — `test:paper-vocabulary`'s PIN1 still holds. */
+export type ParseRetryFn = 'judgeCaseMarking' | 'judgeTechnicalOnce' | 'diagnoseGapVerdict';
+/** Which log channel a caller's parse failures belong to. A tutor failure tagged
+ *  `[marking:parse-failure]` would send the next reader to the wrong subsystem entirely. */
+const PARSE_CHANNEL: Record<ParseRetryFn, string> = {
+  judgeCaseMarking: 'marking', judgeTechnicalOnce: 'marking', diagnoseGapVerdict: 'tutor',
+};
 export interface MarkingParseFailure {
-  fn: 'judgeCaseMarking' | 'judgeTechnicalOnce';
+  fn: ParseRetryFn;
   attempt: number;             // 1-based; attempt 1 is the initial call
   stop_reason: string | null;
   input_tokens: number | null;
@@ -295,7 +305,7 @@ function captureParseFailure(f: MarkingParseFailure): void {
   if (MARKING_PARSE_FAILURES.length >= MAX_CAPTURED) MARKING_PARSE_FAILURES.shift();
   MARKING_PARSE_FAILURES.push(f);
   // Structured server log — this is what makes the NEXT occurrence diagnosable.
-  console.error('[marking:parse-failure]', JSON.stringify({
+  console.error(`[${PARSE_CHANNEL[f.fn]}:parse-failure]`, JSON.stringify({
     fn: f.fn, attempt: f.attempt, stop_reason: f.stop_reason,
     input_tokens: f.input_tokens, output_tokens: f.output_tokens, max_tokens: f.max_tokens,
     reason: f.reason, raw_len: f.raw.length, raw: f.raw,
@@ -309,7 +319,7 @@ function captureParseFailure(f: MarkingParseFailure): void {
 const MARKING_MAX_ATTEMPTS = 4;
 const MARKING_BACKOFF_MS = [400, 900, 2000];
 
-async function withParseRetry<T>(fn: 'judgeCaseMarking' | 'judgeTechnicalOnce', once: (attempt: number) => Promise<T>): Promise<T> {
+export async function withParseRetry<T>(fn: ParseRetryFn, once: (attempt: number) => Promise<T>): Promise<T> {
   let last: unknown;
   for (let attempt = 1; attempt <= MARKING_MAX_ATTEMPTS; attempt++) {
     try {
@@ -321,7 +331,7 @@ async function withParseRetry<T>(fn: 'judgeCaseMarking' | 'judgeTechnicalOnce', 
       await new Promise((r) => setTimeout(r, MARKING_BACKOFF_MS[attempt - 1] ?? 2000));
     }
   }
-  console.error(`[marking:parse-failure] ${fn} exhausted ${MARKING_MAX_ATTEMPTS} attempts — throwing`);
+  console.error(`[${PARSE_CHANNEL[fn]}:parse-failure] ${fn} exhausted ${MARKING_MAX_ATTEMPTS} attempts — throwing`);
   throw last;
 }
 

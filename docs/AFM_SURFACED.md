@@ -461,14 +461,15 @@ content adjacent to the model answer). Captures: `docs/redteam/arm{C,C2,D,D2}-*-
 Credited 45% → 10%: **z = 3.51, p < 0.001**. Echo 55% → 100%: p < 0.0001. The control's 45%
 replicates the shipped arm's 50% (n=40, separate run) — a genuine replication of the baseline.
 
-🔴 **THE FINDING, AND IT REWRITES THE DIAGNOSIS. THE GUARD'S JUDGEMENT APPLIED ON 40 OF 40 TURNS.**
-Every non-echoed label says the same thing in the model's OWN words — *"states a conclusion
-without computing figures"*, *"omits all numerical working"*, *"EVA sign and magnitude are
-entirely unverified"*, *"mere assertion not analysis"*. **Not one turn concluded the answer was
-adequately derived.** What varied was whether the model reproduced the CANONICAL STRING.
-`gapEstablishesNothingCorrect` matches on `NOT verified`, so a paraphrase leaves the
-code-selected opening disarmed and the leg gets *"lead with the ONE specific thing they got
-right"* — which it obeys.
+🔴 **A CLAIM MADE HERE WAS OVERTURNED THE SAME DAY BY THE FLAG BUILT NEXT — see the correction
+block below before quoting any of this.** The original reading was: *"the guard's judgement applied
+on 40 of 40 turns; only the CANONICAL STRING varied."* Every non-echoed label does say the same
+thing in the model's own words (*"states a conclusion without computing figures"*, *"omits all
+numerical working"*, *"mere assertion not analysis"*) — but that is the model **NAMING THE ERROR**,
+which is what `call2_diagnose` asks of it, and **not** a verdict that the guard fired. What is
+certain and unchanged: `gapEstablishesNothingCorrect` matches on `NOT verified`, a paraphrase
+leaves the code-selected opening disarmed, and the leg then gets *"lead with the ONE specific
+thing they got right"* — which it obeys.
 
 **THE MECHANISM IS FULLY EXPLAINED, AND IT PREDICTED THE RESULT IN ADVANCE:**
 
@@ -478,8 +479,39 @@ right"* — which it obeys.
 | label paraphrased (branch DISARMED) | **16 of 18 — 89%** |
 
 Predicted credited rate if echo were 100% = the armed rate, **9%**. Observed under the rewrite:
-**10%.** The rewrite's entire effect is making the branch REACHABLE; it changes nothing else.
-(The old 94%/17% hand-read split is reproduced here as 89%/9%.)
+**10%.** (The old 94%/17% hand-read split is reproduced here as 89%/9%.) ⚠️ **The numeric
+prediction held; the CAUSAL story attached to it — "the rewrite's entire effect is making the
+branch reachable" — did NOT. See the correction below.**
+
+### 🔴 CORRECTED SAME DAY — THE STRUCTURED FLAG REFUTED THE CLAIM THAT MOTIVATED IT
+
+`lib/acca/gap-verdict.ts` was built to remove the byte dependency before generalising. Run on the
+**shipped** scope with `derived` asked for explicitly, n=20: **the model returns `derived=1` — there
+IS working to judge — on 18 of 20.** Not 0 of 20, which the "judgement applied 40/40" reading
+required.
+
+**What the free-form labels actually were:** the model NAMING THE ERROR, which is exactly what
+`call2_diagnose` instructs (*"Name the error pattern"*). Naming *"no working shown"* as the gap is
+not the same act as ruling that the bare-guess guard fired. **Reading the first as the second was
+an inference from prose, and it was wrong.** The shipped predicate genuinely does not match a
+72-word reasoned assertion — which is what `P-T3(d)` said before any of this was built.
+
+**So the rewrite works by CHANGING THE PREDICATE to match the harm, not by fixing an echo.** That
+makes the scope rewrite the load-bearing change and strengthens the case for the flip, not weakens
+it — but the mechanism recorded above was wrong and would have misled the next reader.
+
+⚠️ **AND THE INSTRUMENT IS NOT NEUTRAL.** Adding the JSON format changed labelling under the
+shipped scope as well — armed **55% (unstructured) → 10% (structured)**. **Never compare a rate
+measured with the field against one measured without it as though only the field had changed.**
+
+📐 **PRODUCTION CONFIG RE-MEASURED (rewritten scope + structured, n=20):** parsed **20/20**, zero
+retries, `derived=0` **20/20**, credited **2/20 (10%)** — matching the rewrite arm's 4/40. No
+regression from the flag.
+📐 **DIVERGENCE (field armed where the phrase would not have) = 0 in BOTH arms.** On this target
+the flag never changes the branch decision: under the rewritten scope echo is already 100%, and
+under the shipped scope the field and the phrase agree. **Its value here is removing the
+dependency and giving an honest instrument — not a behaviour change**, and it must not be reported
+as one.
 
 ⚠️ **TWO TURNS PROVE THE OPENING INSTRUCTION IS THE PROXIMATE CAUSE, NOT THE LABEL'S CONTENT.**
 Control T03's label was `states conclusion opposite to correct EVA sign` and T16's was `Student

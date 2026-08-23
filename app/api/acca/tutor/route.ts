@@ -35,6 +35,13 @@ import {
   type GuardLabelVariant, type HintOpeningVariant, type GuardScopeVariant,
 } from '@/lib/acca/hint-opening';
 import { bareGuessGuardVetoed } from '@/lib/acca/bare-guess-veto';
+import {
+  parseGapVerdict, nothingEstablished, safeLabel, GAP_VERDICT_FORMAT, type GapVerdict,
+} from '@/lib/acca/gap-verdict';
+import { withParseRetry } from '@/lib/acca/case-marking';
+// THE STEER IS A FIELD, NOT A PHRASE (P-T3(i)). 'off' restores the pre-change prompt bytes and
+// the substring-match path exactly, with no deploy.
+const GAP_STRUCTURED = (process.env.TUTOR_GAP_STRUCTURED ?? 'on') !== 'off';
 
 // ── MEASUREMENT SEAM (2026-08-22) ────────────────────────────────────────────
 // Two independent prompt changes, each selectable, so the harness can measure (a) alone and
@@ -66,11 +73,19 @@ const HINT_OPENING_VARIANT = (process.env.TUTOR_HINT_OPENING ?? 'conditional') a
 //
 // Credited 45% → 10%, z = 3.51, p < 0.001. Echo 55% → 100%, p < 0.0001.
 //
-// ⚠️ WHAT THIS FIXES IS THE ECHO, NOT THE JUDGEMENT. The guard's judgement applied on 40 of 40
-// control turns — every paraphrase says the same thing in the model's own words. Credited split
-// on whether the branch was ARMED (2 of 22 = 9%) or DISARMED by a paraphrase (16 of 18 = 89%).
-// Predicted credited at 100% echo = the armed rate, 9%; observed 10%. The rewrite's entire effect
-// is making the code-selected branch REACHABLE. See P-T3(g).
+// 📐 WHAT MOVED: credited splits on whether the code-selected branch was ARMED (2 of 22 = 9%) or
+// DISARMED (16 of 18 = 89%) — a direct measurement, and the production config re-measures at 10%.
+//
+// ⚠️ CORRECTED 2026-08-23, SAME DAY. An earlier version of this comment said "the guard's
+// JUDGEMENT applied on 40 of 40 turns, only the ECHO varied, the rewrite's entire effect is
+// making the branch reachable." **That was an over-reading of prose and the structured field
+// refuted it.** Under the SHIPPED scope with `derived` asked for explicitly, the model returns
+// derived=1 — there IS working to judge — on 18 of 20. The free-form labels ("states a conclusion
+// without computing figures") were the model NAMING THE ERROR, which is exactly what this call
+// asks of it; they were never a verdict that the guard had fired. The shipped predicate genuinely
+// does not match a 72-word reasoned assertion, which is what P-T3(d) said from the start.
+// **So the rewrite works by CHANGING THE PREDICATE to match the harm, not by fixing an echo.**
+// See P-T3(g), rewritten.
 //
 // ⚠️ THE TRADE, WHICH IS NOT FREE: CORRECTED went 2 → 0. Those two corrections came from
 // free-form labels that happened to carry a correctness finding ("NOPAT actually exceeds the
@@ -356,7 +371,7 @@ async function call2_diagnose(
   modelAnswer: string,
   markScheme: string,
   grounding: GroundingPack,
-): Promise<string> {
+): Promise<{ label: string; verdict: GapVerdict | null }> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const msLine = markScheme
     ? `Authored mark scheme (use to identify WHICH criterion/level the student missed; do NOT quote it or state the answer):\n${markScheme}\n\n`
@@ -392,7 +407,11 @@ async function call2_diagnose(
     : guardBlock(GUARD_SCOPE_VARIANT, GUARD_LABEL_VARIANT);
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 40,
+    // ⚠️ 40 FITS A BARE 12–15 WORD LABEL AND NOT THE JSON WRAPPER AROUND ONE. A truncated body
+    // does not parse, and a parse failure costs FOUR calls through withParseRetry — so an
+    // under-set ceiling here is a 4× bill, not a degraded label. 200 leaves clear headroom; the
+    // `off` variant keeps the original 40 so its bytes and its cost are unchanged.
+    max_tokens: GAP_STRUCTURED ? 200 : 40,
     system: cacheBlock(
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
@@ -414,7 +433,10 @@ async function call2_diagnose(
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
       '(3) Output ONLY the label — no prose, no prefix, no explanation. ' +
-      'BAD (forbidden): any phrase that states the correct answer.',
+      'BAD (forbidden): any phrase that states the correct answer.' +
+      // THE STEER MOVES OFF THE PROSE (P-T3(i)). Appended, never interleaved with the rules above,
+      // so the `off` variant is the pre-change bytes exactly.
+      (GAP_STRUCTURED ? ' ' + GAP_VERDICT_FORMAT : ''),
     ),
     messages: [
       {
@@ -426,12 +448,20 @@ async function call2_diagnose(
           msLine +
           groundingLine +
           `Model answer (reference only — do NOT restate or correct in output):\n${modelAnswer}\n\n` +
-          'Output the gap label only. Name the error pattern. Do not state what is correct.',
+          (GAP_STRUCTURED
+            ? 'Return the JSON object only. Name the error pattern in "label". Do not state what is correct.'
+            : 'Output the gap label only. Name the error pattern. Do not state what is correct.'),
         ),
       },
     ],
   });
-  const label = extractText(res);
+  const raw = extractText(res);
+  // STRUCTURED FIRST, PROSE SECOND. A parsed verdict makes the downstream branch a field read;
+  // a parse failure falls back to the substring match that is in production today, whose rate is
+  // measured — so this can be no worse than the shipped arm whatever the model returns.
+  const verdict = GAP_STRUCTURED ? parseGapVerdict(raw) : null;
+  if (GAP_STRUCTURED && !verdict) throw new Error('parse');   // withParseRetry retries this
+  const label = GAP_STRUCTURED ? safeLabel(verdict, raw) : raw;
   // ── FIRING IS OTHERWISE UNOBSERVABLE, WHICH IS WHY 57.5% HAD TO BE HAND-READ ──
   // The gap label never reaches the client and is not persisted, so "did the guard fire on this
   // turn?" could only be INFERRED from the shape of the hint two calls later. A rate inferred from
@@ -445,11 +475,16 @@ async function call2_diagnose(
     console.log('[GAPLABEL]', JSON.stringify({
       vetoed: guardVetoed,
       scope: GUARD_SCOPE_VARIANT,
-      fired: gapEstablishesNothingCorrect(label),
+      structured: GAP_STRUCTURED,
+      parsed: verdict !== null,
+      derived: verdict ? verdict.derived : null,
+      // Kept alongside `derived` on purpose: it is the ECHO rate, and the whole point of the
+      // structured field is that these two can now be compared instead of conflated.
+      echoed: gapEstablishesNothingCorrect(label),
       label,
     }));
   }
-  return label;
+  return { label, verdict };
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
@@ -463,6 +498,9 @@ async function call3_hint(
   nextMove: string,
   paper: string,
   grounding: GroundingPack,
+  /** call2's STRUCTURED verdict. Null when unparsed or when TUTOR_GAP_STRUCTURED=off, in which
+   *  case the opening branch degrades to the substring match that is in production today. */
+  gapVerdict: GapVerdict | null,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -509,7 +547,10 @@ async function call3_hint(
           // pre-2026-08-22 behaviour, never invent a third one.
           hintOpeningInstruction(
             HINT_OPENING_VARIANT,
-            gapEstablishesNothingCorrect(diagnosis) && !bareGuessGuardVetoed(attempt),
+            // STRUCTURED FIRST (P-T3(i)): with a parsed verdict this is a field read and no
+            // phrasing matters. Without one it degrades to the substring match that is in
+            // production today — the measured floor, never a new behaviour.
+            nothingEstablished(gapVerdict, diagnosis) && !bareGuessGuardVetoed(attempt),
           ) +
           'Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           // Was: "Work in the command verb and ACCA intellectual level from the authored values
@@ -1561,7 +1602,12 @@ export async function POST(request: Request): Promise<Response> {
         // had been submitted at all. buildStudentAnswerBlock collapses to the old single-block
         // form on turn 1 (lastRealAttempt is null) or an unchanged re-send — byte-identical to
         // before this fix in both of those cases.
-        const diagnosis  = await call2_diagnose(question, context, student_message, lastRealAttempt, modelAnswer, markScheme, grounding);
+        // withParseRetry: 1 + 3 attempts, PARSE failures only — a call fault propagates
+        // immediately (an API error must not be retried as though the model had merely
+        // misformatted). Pass-through when TUTOR_GAP_STRUCTURED=off, since nothing throws 'parse'.
+        const { label: diagnosis, verdict: gapVerdict } =
+          await withParseRetry('diagnoseGapVerdict', () =>
+            call2_diagnose(question, context, student_message, lastRealAttempt, modelAnswer, markScheme, grounding));
 
         // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
         // verifies every required component was attempted. Runs ONLY when call2 says correct, so
@@ -1605,7 +1651,7 @@ export async function POST(request: Request): Promise<Response> {
             // never set `teachThroughDelivered`, so it has never charged a slot. The 2026-08-22
             // ruling did not have to carve anything out for it — it only had to stop the gate
             // above refusing the student before they could reach it.
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapVerdict);
             messageKind = 'hint';
             if (!coachingAllowed) ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
           } else if (!coachingAllowed) {
@@ -1621,7 +1667,7 @@ export async function POST(request: Request): Promise<Response> {
             // `selfAssess` and the reveal offer are deliberately absent: the offer walks a free
             // student into `revealDecision`'s 'burn', and appending both a reveal nudge and an
             // upgrade prompt to one message is two asks in a row.
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapVerdict);
             ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
             messageKind = 'hint_capped';
           } else {

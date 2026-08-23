@@ -1137,17 +1137,33 @@ target drill is one of the 15, so a pilot on it would have looked general and be
 
 **P-T3(g) — A CODE BRANCH KEYED ON A MODEL-ECHOED STRING IS A CONTRACT THE MODEL DID NOT SIGN
 (measured 2026-08-23, n=40 per arm, p < 0.001).** `gapEstablishesNothingCorrect` matches the
-sentinel `NOT verified` in the gap label. Measured over 40 control turns, **the guard's JUDGEMENT
-applied on 40 of 40** — every paraphrase says *"states a conclusion without computing figures"*,
-*"omits all numerical working"*, *"mere assertion not analysis"* — but the model reproduced the
-canonical string only **22 of 40 (55%)**. Credited splits almost perfectly on the echo, not on the
-judgement: **branch armed 2 of 22 (9%); branch disarmed 16 of 18 (89%).**
-**So the "57.5% firing rate" was never a firing rate — it was an ECHO rate**, and every rate
-reported about a guard whose only observable is a paraphrasable label is measuring the echo.
-**Before attributing an LLM-pipeline rate to a model's JUDGEMENT, check whether what you actually
-measured was its OUTPUT FORMAT.** The structural fix is to stop depending on the bytes: return a
-STRUCTURED flag beside the prose (`extractJsonBlock` + `withParseRetry`, as `case-marking.ts`
-already does) per the ORDINAL CONTRACT in **P-M1** — echo a number, never a string code.
+sentinel `NOT verified` in the gap label. Over 40 control turns the model reproduced the canonical
+string **22 of 40 (55%)**, and credited splits almost perfectly on whether that match ARMED the
+downstream branch: **armed 2 of 22 (9%); disarmed 16 of 18 (89%).** Those are direct measurements
+and they stand. The structural fix is to stop depending on the bytes: return a STRUCTURED flag
+beside the prose (`extractJsonBlock` + `withParseRetry`, as `case-marking.ts` already does) per the
+ORDINAL CONTRACT in **P-M1** — echo a number, never a string code.
+
+🔴 **CORRECTED THE SAME DAY, AND THE CORRECTION IS THE MORE USEFUL HALF. The first version of this
+ruling said "the guard's JUDGEMENT applied on 40 of 40 turns; only the ECHO varied; the rewrite's
+entire effect is making the branch reachable." THE STRUCTURED FLAG REFUTED IT WITHIN HOURS.** Asked
+for `derived` explicitly under the SAME shipped scope, the model returns **derived=1 — there IS
+working to judge — on 18 of 20**. The free-form labels (*"states a conclusion without computing
+figures"*) were the model **NAMING THE ERROR**, which is precisely what `call2_diagnose` asks of
+it; they were never a verdict that the guard had fired. **Reading them as one was an inference from
+prose, and it was wrong.** The shipped predicate genuinely does not match a 72-word reasoned
+assertion — exactly what **P-T3(d)** said before any of this was built. **So the rewrite works by
+CHANGING THE PREDICATE to match the harm, not by fixing an echo.**
+⚠️ **AND THE INSTRUMENT IS NOT NEUTRAL, WHICH BOUNDS THE COMPARISON:** adding the JSON format
+changed labelling under the shipped scope too — armed **55% unstructured → 10% structured**. Never
+compare a rate measured with the field against one measured without it as though only the field
+had changed.
+**THE GENERAL RULE, which the earlier draft of this very entry violated: a description of a gap is
+not a verdict about a guard. When a leg is asked to NAME something, its prose is an answer to that
+question and to no other — do not read a second decision out of it. If you need the second
+decision, ask for it as a FIELD.** The measurement that overturns a claim built on hand-read prose
+is the one worth building first (P-V1(d) is the same lesson at one remove: hand-reading beats a
+regex, and a structured field beats both).
 ⚠️ **AND THE COMMENT CLAIMING THE MATCH WAS ROBUST WAS ITSELF WRONG**: `entirely unverified` is
 semantically identical to the sentinel and does not match it. A "deliberately short and
 distinctive" substring is distinctive, not stable. **Never assert a matcher's robustness in a
