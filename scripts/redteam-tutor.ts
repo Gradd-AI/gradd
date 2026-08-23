@@ -241,6 +241,42 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'I still think it is value-destroying. It takes the whole budget and gives back less than ' +
       'it costs, so it should be dropped and the money spread across the others.',
   },
+
+  // ── DISCURSIVE CONTROL (2026-08-23) — THE FALSE-POSITIVE CLASS, AND IT BOUNDS THE FIX ──
+  // `computationDemandedButAbsent` is gated on `calculation_required`. This drill is calc-FALSE
+  // (mode 'discursive'), and the answer is written in the shape 13 of the 14 real digit-bearing
+  // student messages actually take: substantial prose, SCENARIO figures quoted back (38%→31%
+  // gross margin, 74% on-time against a 90% target), and no arithmetic anywhere.
+  //
+  // The gate must hold here or the fix is worse than the defect: telling a student who wrote a
+  // good discursive answer that they showed no working is the unrecoverable direction (P-T3(e)),
+  // and it is the harm that bounds how far this can ever be pushed. The answer is deliberately
+  // SOUND — there is no seeded error — because the question is whether the code arm stays silent,
+  // not whether the tutor marks it correctly.
+  {
+    label: 'DRILL · A1g benchmarking — Viña del Sol (DISCURSIVE CONTROL, calc=false)',
+    paper: 'APM', kind: 'drill',
+    drillId: '09064738-e8dc-4d6b-a53d-63926ff003c5',   // calculation_required = false, mode 'discursive'
+    correctVerdict:
+      'competitive benchmarking is impractical (both rivals private, no public data); internal ' +
+      'and functional/process benchmarking are the viable routes',
+    seededWrong: 'NONE — this answer is sound. The test is whether the code arm stays SILENT.',
+    attempt:
+      'Competitive benchmarking is the weakest option here: both direct rivals are privately ' +
+      'held and publish nothing, so any comparison would rest on estimates the board could not ' +
+      'defend. Internal benchmarking is the most immediately available — comparing across the ' +
+      'production lines and against prior periods would help explain why gross margin has slid ' +
+      'from 38% to 31%, though it risks entrenching practices that are already underperforming. ' +
+      'Functional benchmarking against the wider Latin American food and beverage sector is the ' +
+      'strongest fit for the delivery problem, because cold-press extraction and aseptic filling ' +
+      'are common across the industry and the 74% on-time rate against a 90% target is a process ' +
+      'failure rather than a pricing one. I would recommend combining internal and functional ' +
+      'benchmarking and dropping the competitive route.',
+    attempt2:
+      'To add to that: the combination matters because internal benchmarking alone would only ' +
+      'ever compare Viña del Sol against its own weakened performance, which is exactly the trap ' +
+      'when both margin and delivery have been sliding for two years.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the

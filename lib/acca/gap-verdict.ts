@@ -90,6 +90,40 @@ export function nothingEstablished(verdict: GapVerdict | null, rawLabel: string)
   return gapEstablishesNothingCorrect(rawLabel);
 }
 
+/** Where the answer came from. Recorded so a measurement can tell the three apart. */
+export type DerivedSource = 'code' | 'field' | 'phrase';
+
+export interface DerivedResolution {
+  /** True when nothing about correctness was established on this turn. */
+  nothingEstablished: boolean;
+  source: DerivedSource;
+}
+
+/**
+ * THE PRECEDENCE, in one place: CODE > FIELD > PHRASE.
+ *
+ * `codeOwnsUnderived` comes from `computationDemandedButAbsent` — a drill that demands a
+ * computation, and no arithmetic on the page. On those turns the model is NOT consulted about
+ * `derived` at all: it was measured getting this wrong 9 times in 10 when the answer merely named
+ * method components (P-T3(j)), and code can see the thing the model was talked out of seeing.
+ * Its label is still used — that is prose for the student-facing leg, which the model is good at.
+ *
+ * ⚠️ CODE ONLY EVER FORCES **UNDERIVED**, NEVER **DERIVED**. There is no symmetric arm, and there
+ * must not be: "arithmetic present" is decidable, so it already suppresses the guard through the
+ * veto, but "arithmetic present therefore something correct was established" is a different and
+ * false claim. This function can only ever move a turn TOWARD not-adjudicated, which is the
+ * direction that withholds credit rather than granting it.
+ */
+export function resolveNothingEstablished(
+  codeOwnsUnderived: boolean,
+  verdict: GapVerdict | null,
+  rawLabel: string,
+): DerivedResolution {
+  if (codeOwnsUnderived) return { nothingEstablished: true, source: 'code' };
+  if (verdict) return { nothingEstablished: verdict.derived === 0, source: 'field' };
+  return { nothingEstablished: gapEstablishesNothingCorrect(rawLabel), source: 'phrase' };
+}
+
 /**
  * The label to show downstream: the parsed one when present, else the raw text.
  *

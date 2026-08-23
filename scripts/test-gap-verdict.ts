@@ -6,6 +6,7 @@
 
 import {
   parseGapVerdict, nothingEstablished, safeLabel, GAP_VERDICT_FORMAT,
+  resolveNothingEstablished,
 } from '../lib/acca/gap-verdict';
 import { guardLabel, unsubstantiatedLabel } from '../lib/acca/hint-opening';
 
@@ -113,6 +114,32 @@ ok('unrecoverable JSON-shaped body yields EMPTY, never a blob',
 ok('an escaped quote inside a recovered label is unescaped',
   safeLabel(null, '{"label": "the \\"EVA\\" figure is unshown"') === 'the "EVA" figure is unshown');
 
+// ── 6b. PRECEDENCE: CODE > FIELD > PHRASE ────────────────────────────────────
+// Break mode: code wins only when the model happens to agree, which is no precedence at all —
+// the measured defect is precisely that the model says derived=1 on an underived answer.
+{
+  const disagree = { derived: 1 as const, label: 'computed NPV as negative when it is positive' };
+  const r = resolveNothingEstablished(true, disagree, disagree.label);
+  ok('CODE beats a FIELD that disagrees (the 9-of-10 case, overridden)',
+    r.nothingEstablished === true && r.source === 'code');
+  ok('CODE beats an unparsed response too',
+    resolveNothingEstablished(true, null, 'anything at all').source === 'code');
+  const f = resolveNothingEstablished(false, { derived: 0, label: 'x' }, 'x');
+  ok('FIELD is used when code has no claim', f.nothingEstablished && f.source === 'field');
+  ok('FIELD=1 with no code claim means something WAS established',
+    !resolveNothingEstablished(false, { derived: 1, label: 'x' }, 'x').nothingEstablished);
+  const p = resolveNothingEstablished(false, null, guardLabel('unverified'));
+  ok('PHRASE is the last resort, unchanged from production', p.nothingEstablished && p.source === 'phrase');
+  ok('PHRASE on a paraphrase → false, the measured floor',
+    !resolveNothingEstablished(false, null, 'states a conclusion without computing figures').nothingEstablished);
+  // ⚠️ THE ASYMMETRY IS THE SAFETY PROPERTY: code can only ever force UNDERIVED. There is no arm
+  // that forces DERIVED, because "arithmetic present therefore something correct was established"
+  // is a different and false claim. Asserted so nobody adds the symmetric arm for tidiness.
+  ok('there is NO code arm that forces DERIVED — code only withholds credit, never grants it',
+    resolveNothingEstablished(false, { derived: 0, label: 'x' }, 'x').nothingEstablished === true
+    && resolveNothingEstablished(true, { derived: 1, label: 'x' }, 'x').nothingEstablished === true);
+}
+
 // ── 7. THE WIRING, PINNED ────────────────────────────────────────────────────
 // The unit tests prove the rule is right and cannot prove it is REACHED — the defect class this
 // whole thread has been about. Same static sweep as test:paper-link-sweep.
@@ -124,8 +151,14 @@ ok('an escaped quote inside a recovered label is unescaped',
     /if \(GAP_STRUCTURED && !verdict\) throw new Error\('parse'\)/.test(src));
   ok('the call site wraps call2 in withParseRetry',
     /withParseRetry\('diagnoseGapVerdict'/.test(src));
-  ok('the opening branch reads the VERDICT, not the substring, as its first source',
-    /nothingEstablished\(gapVerdict, diagnosis\)/.test(src));
+  // The resolution moved OUT of the hint leg to the call site, so the leg is told the answer
+  // rather than deriving it from a label. Break mode: a future edit puts a label read back into
+  // call3_hint and the precedence quietly stops applying there.
+  ok('the branch is resolved CODE > FIELD > PHRASE at the call site',
+    /resolveNothingEstablished\(codeOwnsUnderived, gapVerdict, diagnosis\)/.test(src));
+  ok('call3_hint is TOLD the answer, it does not read a label to decide',
+    /gapNothingEstablished: boolean,/.test(src)
+    && !/nothingEstablished\(gapVerdict, diagnosis\)/.test(src));
   ok('the substring matcher is no longer the branch\'s decision point',
     !/gapEstablishesNothingCorrect\(diagnosis\) &&/.test(src));
   ok('max_tokens is raised when structured (a truncated body costs 4 calls, not a worse label)',

@@ -6,7 +6,9 @@
 // must-not-veto set from real narrative answers and from the seeded harm turn that produced the
 // 95% baseline. A detector tested only on strings its author invented tests the author.
 
-import { hasArithmetic, bareGuessGuardVetoed } from '../lib/acca/bare-guess-veto';
+import {
+  hasArithmetic, bareGuessGuardVetoed, computationDemandedButAbsent,
+} from '../lib/acca/bare-guess-veto';
 
 let pass = 0, fail = 0;
 function ok(name: string, cond: boolean, detail?: string) {
@@ -106,6 +108,46 @@ ok('empty message does not veto', !bareGuessGuardVetoed(''));
 ok('hasArithmetic and bareGuessGuardVetoed agree (one is the evidence, one the decision)',
   MUST_VETO.every(([, m]) => hasArithmetic(m) === bareGuessGuardVetoed(m)));
 
+// ── 5b. THE MIRROR — and calculationRequired is the ENTIRE safety argument ───
+// Break mode, and it is the expensive one measured at 13-of-14: the mirror fires on a discursive
+// drill and a student who wrote a good narrative answer is told they showed no working.
+{
+  const NARRATIVE = [
+    'ignoring the tax timing, the NPV is clearly positive and the IRR is well above 14%, so accept',
+    'investment of the NZD120M seems to be misplaced because the division is destroying value',
+    'The board should reconsider accepting the 3 further contracts.',
+    'I will just do for 1 measure to check.',
+  ];
+  // THE GATE CLOSED: on a discursive drill NOTHING may fire, whatever the answer looks like.
+  for (const m of NARRATIVE) {
+    ok(`calc=FALSE never fires, however the answer reads: "${m.slice(0, 46)}…"`,
+      !computationDemandedButAbsent(false, m));
+  }
+  ok('calc=FALSE never fires even on a bare guess', !computationDemandedButAbsent(false, '60m'));
+  ok('calc=FALSE never fires even on an empty answer', !computationDemandedButAbsent(false, ''));
+
+  // THE GATE OPEN: a computation is demanded, so absence of arithmetic IS decidable.
+  ok('calc=TRUE + no arithmetic → code owns UNDERIVED',
+    computationDemandedButAbsent(true, HARM_TURN));
+  ok('calc=TRUE + a bare guess → code owns UNDERIVED',
+    computationDemandedButAbsent(true, 'is it about 51 million?'));
+  // ⚠️ THE MEASURED CASE (P-T3(j)): an assertion that merely NAMES method components was scored
+  // derived=1 by the model on 9 of 10 turns. Code sees what the model was talked out of seeing.
+  ok('calc=TRUE + method NAMED but nothing computed → code owns UNDERIVED (the 9-of-10 defect)',
+    computationDemandedButAbsent(true,
+      'once the one-year tax lag and the reducing-balance allowances are taken into account the ' +
+      'discounted inflows fall short of the CAD 18.0m outlay, so the NPV is negative and the ' +
+      'profitability index is below 1'));
+  ok('calc=TRUE + real arithmetic → does NOT fire (there is working to judge)',
+    !computationDemandedButAbsent(true, 'EVA=312M-(0.14*1,800M) EVA=60M'));
+  // The two arms are mutually exclusive by construction — asserted, not assumed, because the
+  // route ANDs them and a future edit to either regex could overlap them silently.
+  for (const m of [HARM_TURN, '60m', 'EVA=312M-252M', '1,800 x 0.14', ...NARRATIVE]) {
+    ok(`veto and mirror never both fire: "${m.slice(0, 34)}…"`,
+      !(bareGuessGuardVetoed(m) && computationDemandedButAbsent(true, m)));
+  }
+}
+
 // ── 6. THE WIRING, PINNED — the unit tests cannot prove the veto is USED ─────
 // A static sweep of the route, same reasoning as test:paper-link-sweep: everything above proves
 // the rule is RIGHT, and every defect in this class was the rule being right and not reached.
@@ -132,7 +174,18 @@ ok('hasArithmetic and bareGuessGuardVetoed agree (one is the evidence, one the d
   // structured verdict (P-T3(i)); the veto is unchanged and still ANDed onto it. Both halves are
   // pinned separately so removing either fails here rather than silently widening the branch.
   ok('WIRING 2 — the conditional opening is vetoed too',
-    /nothingEstablished\(gapVerdict, diagnosis\)\s*&&\s*!bareGuessGuardVetoed\(attempt\)/.test(src));
+    /gapNothingEstablished\s*&&\s*!bareGuessGuardVetoed\(attempt\)/.test(src));
+  // WIRING 3 — the mirror. Break modes: the column is never fetched (the gate reads undefined and
+  // defaults false, so the arm is silently dead); the flag is not threaded into call2; or the
+  // resolution is not what the hint leg is handed.
+  ok('WIRING 3 — drillSelect actually FETCHES calculation_required',
+    /\.select\('[^']*calculation_required[^']*'\)/.test(src));
+  ok('WIRING 3 — it defaults FALSE, never true (unknown must mean discursive)',
+    /drill\.calculation_required as boolean \| null\) \?\? false/.test(src));
+  ok('WIRING 3 — call2 computes the code-owned arm from it',
+    /computationDemandedButAbsent\(calculationRequired, attempt\)/.test(src));
+  ok('WIRING 3 — the resolution is CODE > FIELD > PHRASE and is what the hint leg gets',
+    /resolveNothingEstablished\(codeOwnsUnderived, gapVerdict, diagnosis\)/.test(src));
 }
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} bare-guess veto: ${pass} passed, ${fail} failed\n`);

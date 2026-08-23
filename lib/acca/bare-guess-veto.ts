@@ -101,3 +101,35 @@ export function hasArithmetic(message: string): boolean {
 export function bareGuessGuardVetoed(message: string): boolean {
   return hasArithmetic(message);
 }
+
+/**
+ * THE MIRROR (2026-08-23) — the other half, and it is only safe with the gate.
+ *
+ * `bareGuessGuardVetoed` says "arithmetic present → NOT a bare guess", which is decidable
+ * everywhere. The mirror — "arithmetic absent → the claim was not derived" — is NOT decidable
+ * everywhere: 13 of 14 real digit-bearing student messages contain no arithmetic and are
+ * legitimate narrative answers (P-T3(e)). It becomes decidable only on a drill that DEMANDS a
+ * computation, because there "no arithmetic on the page" cannot be a complete answer.
+ *
+ * ⚠️ `calculationRequired` IS THE WHOLE SAFETY ARGUMENT. It comes from
+ * `acca_drills.calculation_required` — `boolean NOT NULL`, no default, so every row was written
+ * explicitly — populated on 100% of published rows of BOTH papers (AFM 49/63 true, APM 18/91),
+ * agreeing perfectly with `mode` across all 154 rows, and corroborated independently: all 49 AFM
+ * calc-true rows carry schema components and compute, and on APM — where `answer_schema` is NULL
+ * on all 91 — 18 of 18 calc-true model answers compute and 0 of 73 discursive ones do (P-T3(k)).
+ * **Called with `false`, this must return false for every input.** A caller that cannot supply the
+ * flag must pass `false`, never a guess: the failure it would cause is telling a student who wrote
+ * a good discursive answer that they showed no working, which is the expensive direction (P-T3(e)).
+ *
+ * WHY THIS EXISTS: with the model asked to judge `derived`, an UNDERIVED assertion that merely
+ * NAMED method components ("one-year tax lag", "reducing-balance allowances") was scored
+ * derived=1 on 9 of 10 turns — the field tracked the answer's method VOCABULARY, not whether
+ * anything was derived (P-T3(j)). Code can see what the model was talked out of seeing.
+ */
+export function computationDemandedButAbsent(
+  calculationRequired: boolean,
+  message: string,
+): boolean {
+  if (!calculationRequired) return false;
+  return !hasArithmetic(message);
+}

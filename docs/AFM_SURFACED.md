@@ -608,12 +608,54 @@ READ:** `drillSelect` does not fetch either column, and **no file under `app/` o
 `calculation_required` or `mode` at all** — `professional_skill_tag` all over again: authored,
 correct, unread at serve time for its whole life. Banked `P-T3(k)`: **inventory the ROW before
 declaring an authoring gap.**
-🔵 **Shape of the fix (NOT built — Grant's call):** add `calculation_required` to `drillSelect`,
-and where it is TRUE and `!hasArithmetic(attempt)`, code owns `derived = 0` outright instead of
-asking the model. That removes the method-vocabulary sensitivity (`P-T3(j)`) on exactly the drills
-where absence of arithmetic is decisive, and leaves discursive drills entirely alone. ⚠️ It must be
-measured, not assumed: `P-T3(j)` was found because a field that looked structural was still a
-model judgement.
+### ✅ BUILT AND MEASURED 2026-08-23 — CODE OWNS THE DECISION. IT DOES NOT OWN THE PROSE.
+
+`computationDemandedButAbsent(calculationRequired, message)` (`bare-guess-veto.ts`) + precedence
+**CODE > FIELD > PHRASE** in `resolveNothingEstablished` (`gap-verdict.ts`). `drillSelect` now
+fetches `calculation_required`, defaulting **FALSE** when absent — an unknown flag must mean
+discursive, the arm that changes nothing. Fixtures: `test:bare-guess-veto` **53**,
+`test:gap-verdict` **55**; gate 69/69. Captures `docs/redteam/codeowned-*-20260823.json`.
+
+**40 turns, parsed 40/40, zero retries.**
+
+| cell | MODEL `derived` 1 / 0 | code owns | RESOLVED underived | source | replies |
+| --- | ---: | ---: | ---: | --- | --- |
+| **AFM B1a A** (underived, method words) | **8 / 2** | **10/10** | **10/10** | code | 0 credited · 10 not-adj · 0 corrected |
+| AFM B1a A-LOW (words stripped) | 0 / 10 | 10/10 | 10/10 | code | 0 · 10 · 0 |
+| AFM B1a B (arithmetic shown) | 10 / 0 | **0/10** | 0/10 | field | correction on real working |
+| **APM A1g DISCURSIVE CONTROL** (calc=FALSE) | 10 / 0 | **0/10** | **0/10** | field | **10/10 credit the sound answer** |
+
+✅ **A flipped and A-LOW held.** A now resolves underived 10/10 where it read derived on 9/10
+before. A-LOW stayed 0 — so the veto IS owning the decision and nothing upstream is overriding it.
+✅ **THE FALSE-POSITIVE CLASS IS UNTOUCHED.** The discursive control (calc-false, a SOUND
+digit-bearing narrative answer in the 13-of-14 shape) never fires the code arm, and all ten replies
+open *"You've correctly identified that competitive benchmarking is a dead end here"*. **Not one
+tells a student who wrote prose that they showed no working** — the harm that bounds this fix.
+✅ **The mirror stays silent where working exists** (cell B, 0/10) — it can only ever move a turn
+toward not-adjudicated, never toward credit.
+
+⚠️ **THE MODEL'S ERROR IS UNCHANGED — CODE OVERRIDES IT, IT DOES NOT FIX IT.** On cell A the model
+still returns `derived=1` on **8 of 10**. The defect (`P-T3(j)`) is fully intact in the judgement;
+what changed is that the judgement no longer reaches the student. Never report this as the model
+having improved.
+
+📐 **AND THE SALIENCE EFFECT SURVIVES IN THE REPLY TEXT — the fix does not reach it.** The
+invented-arithmetic CORRECTIONS are gone (*"your arithmetic on those inflows is where the reasoning
+breaks down"* — absent from all 10). But **3 of 10 A-cell replies still ATTRIBUTE a calculation** —
+*"you've computed the NPV direction and stopped there"*, *"you've run the numbers, found a negative
+figure"* — against **1 of 10** on A-LOW. Same method-vocabulary sensitivity, one site further
+downstream. ⚠️ **Its source is DIFFERENT and this matters for any fix:** those three all come from
+the **`ABANDONED-AFTER-CALC` misconception lead**, whose catalogue wording literally describes a
+candidate who *calculates and stops*. The lead is grounding-pack content (`misconceptionLead`), not
+the `derived` decision — so **code owning `derived` cannot reach it, and a fourth attempt to fix it
+there would be aimed at the wrong module.** Logged, not built.
+
+⚠️ **MEASUREMENT HYGIENE, learned the hard way in this run:** `--polarity-only "northstar"` matched
+**three** registry targets, not two, so the first cut of this analysis sliced the log by assumed
+10-row boundaries and mislabelled every cell — it reported A-LOW as broken and the discursive drill
+as `calcRequired: true`, which is impossible and is what exposed it. **Pair labels to turns by the
+run file's own `target` field, never by assumed slice boundaries**, and keep an
+internally-impossible value (a calc-false drill reporting calc-true) in the output as a tripwire.
 
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 

@@ -34,9 +34,9 @@ import {
   guardLabel, guardBlock, hintOpeningInstruction, gapEstablishesNothingCorrect,
   type GuardLabelVariant, type HintOpeningVariant, type GuardScopeVariant,
 } from '@/lib/acca/hint-opening';
-import { bareGuessGuardVetoed } from '@/lib/acca/bare-guess-veto';
+import { bareGuessGuardVetoed, computationDemandedButAbsent } from '@/lib/acca/bare-guess-veto';
 import {
-  parseGapVerdict, nothingEstablished, safeLabel, GAP_VERDICT_FORMAT, type GapVerdict,
+  parseGapVerdict, safeLabel, resolveNothingEstablished, GAP_VERDICT_FORMAT, type GapVerdict,
 } from '@/lib/acca/gap-verdict';
 import { withParseRetry } from '@/lib/acca/case-marking';
 // THE STEER IS A FIELD, NOT A PHRASE (P-T3(i)). 'off' restores the pre-change prompt bytes and
@@ -371,7 +371,10 @@ async function call2_diagnose(
   modelAnswer: string,
   markScheme: string,
   grounding: GroundingPack,
-): Promise<{ label: string; verdict: GapVerdict | null }> {
+  /** `acca_drills.calculation_required` for THIS drill. False for anything discursive, and false
+   *  when unknown — the arm that changes nothing. See computationDemandedButAbsent. */
+  calculationRequired: boolean,
+): Promise<{ label: string; verdict: GapVerdict | null; codeOwnsUnderived: boolean }> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const msLine = markScheme
     ? `Authored mark scheme (use to identify WHICH criterion/level the student missed; do NOT quote it or state the answer):\n${markScheme}\n\n`
@@ -456,6 +459,14 @@ async function call2_diagnose(
     ],
   });
   const raw = extractText(res);
+  // ── CODE OWNS `derived` WHERE IT CAN (2026-08-23) ────────────────────────────
+  // Measured: asked to judge `derived`, the model scored an UNDERIVED assertion as derived=1 on
+  // 9 of 10 turns when the answer merely NAMED method components ("one-year tax lag",
+  // "reducing-balance allowances") — the field tracked the answer's method VOCABULARY, not
+  // whether anything was derived (P-T3(j)). Stripping those four phrases flipped it 9/10 → 0/10.
+  // On a drill that DEMANDS a computation, absence of arithmetic is a fact code can read, so the
+  // model is not asked. Its LABEL is still used — prose is what it is good at.
+  const codeOwnsUnderived = computationDemandedButAbsent(calculationRequired, attempt);
   // STRUCTURED FIRST, PROSE SECOND. A parsed verdict makes the downstream branch a field read;
   // a parse failure falls back to the substring match that is in production today, whose rate is
   // measured — so this can be no worse than the shipped arm whatever the model returns.
@@ -477,14 +488,20 @@ async function call2_diagnose(
       scope: GUARD_SCOPE_VARIANT,
       structured: GAP_STRUCTURED,
       parsed: verdict !== null,
+      // What the MODEL said, kept raw even when code overrides it — otherwise the override hides
+      // the very disagreement the measurement is looking for.
       derived: verdict ? verdict.derived : null,
+      calcRequired: calculationRequired,
+      codeOwnsUnderived,
+      // The resolved answer and WHERE it came from: code > field > phrase.
+      resolved: resolveNothingEstablished(codeOwnsUnderived, verdict, label),
       // Kept alongside `derived` on purpose: it is the ECHO rate, and the whole point of the
       // structured field is that these two can now be compared instead of conflated.
       echoed: gapEstablishesNothingCorrect(label),
       label,
     }));
   }
-  return { label, verdict };
+  return { label, verdict, codeOwnsUnderived };
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
@@ -498,9 +515,9 @@ async function call3_hint(
   nextMove: string,
   paper: string,
   grounding: GroundingPack,
-  /** call2's STRUCTURED verdict. Null when unparsed or when TUTOR_GAP_STRUCTURED=off, in which
-   *  case the opening branch degrades to the substring match that is in production today. */
-  gapVerdict: GapVerdict | null,
+  /** Already resolved by the caller as CODE > FIELD > PHRASE. This leg is TOLD whether anything
+   *  was established; it never reads a label to work it out. */
+  gapNothingEstablished: boolean,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const vlLine = verbLevel
@@ -547,10 +564,11 @@ async function call3_hint(
           // pre-2026-08-22 behaviour, never invent a third one.
           hintOpeningInstruction(
             HINT_OPENING_VARIANT,
-            // STRUCTURED FIRST (P-T3(i)): with a parsed verdict this is a field read and no
-            // phrasing matters. Without one it degrades to the substring match that is in
-            // production today — the measured floor, never a new behaviour.
-            nothingEstablished(gapVerdict, diagnosis) && !bareGuessGuardVetoed(attempt),
+            // Resolved by the caller (CODE > FIELD > PHRASE). The veto is still ANDed on: it and
+            // the code arm are mutually exclusive by construction (arithmetic present vs absent),
+            // so this is defensive rather than load-bearing — and cheap enough to keep as a
+            // second lock on the one direction that costs the tutor its credibility.
+            gapNothingEstablished && !bareGuessGuardVetoed(attempt),
           ) +
           'Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           // Was: "Work in the command verb and ACCA intellectual level from the authored values
@@ -1174,7 +1192,7 @@ export async function POST(request: Request): Promise<Response> {
   // hardening slot ("Rule 24 triangulation"). Read-only addition; nothing downstream required it.
   const drillSelect = () => supabase
     .from('acca_drills')
-    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal, answer_schema')
+    .select('question, context_text, model_answer, marks_guide, command_verb, intellectual_level, lo_code, paper_code, full_reveal, answer_schema, calculation_required')
     .eq('exam_board', 'ACCA')
     .eq('status', 'approved')
     .eq('published', true)
@@ -1202,6 +1220,13 @@ export async function POST(request: Request): Promise<Response> {
   const paper             = (drill.paper_code as string | null) ?? 'APM';
   // AFM full_reveal (pre-baked misconception reframe); null for APM drills → '' → omitted.
   const fullReveal        = (drill.full_reveal as string | null) ?? '';
+  // Does this drill DEMAND a computation? `boolean NOT NULL` with no default, so every published
+  // row carries an explicit authored value on BOTH papers (AFM 49/63 true, APM 18/91) — unlike
+  // `answer_schema`, which is NULL on all 91 APM rows. It is the gate that makes the
+  // arithmetic-absence rule safe; see computationDemandedButAbsent + P-T3(k).
+  // ⚠️ Defaults to FALSE, never true: a missing flag must fall back to "discursive", the arm that
+  // changes nothing, rather than to the arm that can tell a student they showed no working.
+  const calcRequired      = (drill.calculation_required as boolean | null) ?? false;
 
   // PERSONA-HARDENING (2026-07-21): the GroundingPack — narrative criteria/scenario_facts, or numeric
   // step-headers/working_steps, or (no schema / unrecognised shape) an empty pack that changes NOTHING
@@ -1605,9 +1630,14 @@ export async function POST(request: Request): Promise<Response> {
         // withParseRetry: 1 + 3 attempts, PARSE failures only — a call fault propagates
         // immediately (an API error must not be retried as though the model had merely
         // misformatted). Pass-through when TUTOR_GAP_STRUCTURED=off, since nothing throws 'parse'.
-        const { label: diagnosis, verdict: gapVerdict } =
+        const { label: diagnosis, verdict: gapVerdict, codeOwnsUnderived } =
           await withParseRetry('diagnoseGapVerdict', () =>
-            call2_diagnose(question, context, student_message, lastRealAttempt, modelAnswer, markScheme, grounding));
+            call2_diagnose(question, context, student_message, lastRealAttempt, modelAnswer, markScheme, grounding, calcRequired));
+        // CODE > FIELD > PHRASE, resolved once here so the hint leg is TOLD the answer rather
+        // than deciding it from a label. `resolveNothingEstablished` can only ever move a turn
+        // toward not-adjudicated; there is deliberately no arm that forces "derived".
+        const gapNothingEstablished =
+          resolveNothingEstablished(codeOwnsUnderived, gapVerdict, diagnosis).nothingEstablished;
 
         // Completeness gate (behind APM_COMPLETENESS_GATE): call2 verified the NUMBERS; this
         // verifies every required component was attempted. Runs ONLY when call2 says correct, so
@@ -1651,7 +1681,7 @@ export async function POST(request: Request): Promise<Response> {
             // never set `teachThroughDelivered`, so it has never charged a slot. The 2026-08-22
             // ruling did not have to carve anything out for it — it only had to stop the gate
             // above refusing the student before they could reach it.
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapVerdict);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapNothingEstablished);
             messageKind = 'hint';
             if (!coachingAllowed) ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
           } else if (!coachingAllowed) {
@@ -1667,7 +1697,7 @@ export async function POST(request: Request): Promise<Response> {
             // `selfAssess` and the reveal offer are deliberately absent: the offer walks a free
             // student into `revealDecision`'s 'burn', and appending both a reveal nudge and an
             // upgrade prompt to one message is two asks in a row.
-            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapVerdict);
+            ezraResponse = await call3_hint(question, context, student_message, gap, verbLevel, nextMove, paper, grounding, gapNothingEstablished);
             ezraResponse += upgradeAfterDiagnosisLine(subscribeHref);
             messageKind = 'hint_capped';
           } else {

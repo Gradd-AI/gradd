@@ -1278,6 +1278,42 @@ column, and **no file under `app/` or `lib/` references `calculation_required` o
 This is `professional_skill_tag` again: authored by the generator, correct, and unread at serve
 time for its whole life. **Before declaring an authoring gap, inventory the ROW — the column you
 need may already be there and merely unselected.**
+📐 **THREE CONFIRMED INSTANCES NOW, WHICH MAKES IT A PATTERN AND NOT A COINCIDENCE:**
+`professional_skill_tag` (written by the generator since day one, read by NOTHING at serve time
+until PS steering shipped 2026-07-31), `calculation_required` and `mode` (both NOT NULL, both
+populated on 154/154 published rows, both referenced by **zero** files under `app/` or `lib/` until
+2026-08-23). The generator's authoring discipline has consistently run ahead of the serve path's
+appetite. **OPEN — worth its own sweep:** enumerate every `acca_drills` column against the select
+lists of every serving query and list what is authored-but-never-fetched. `intellectual_level`,
+`topic` and `marks_guide` are the obvious next candidates to check. The cost of the gap is not a
+bug but an invisible ceiling — capability that exists, is correct, and cannot influence a serve.
+
+**P-T3(l) — CODE CAN OWN A DECISION WITHOUT OWNING THE PROSE THAT SURROUNDS IT (measured
+2026-08-23, 40 turns).** With `calculation_required` fetched and
+`computationDemandedButAbsent` gating it, code owns `derived` on drills that demand a computation:
+the AFM B1a underived cell resolves not-adjudicated **10/10** where it read derived on 9/10 before,
+the stripped-vocabulary control holds at 10/10, the arithmetic-shown cell stays untouched (code arm
+0/10), and the **calc-FALSE discursive control never fires it (0/10) with all ten replies crediting
+a sound narrative answer** — the false-positive class that bounds the whole fix.
+⚠️ **BUT THE MODEL'S ERROR RATE IS UNCHANGED: it still returns `derived=1` on 8 of 10** underived
+turns. Code OVERRIDES the judgement; it does not repair it. **Never report an override as the model
+having improved** — the defect is intact and will resurface anywhere the override does not reach.
+📐 **AND IT DOES NOT REACH THE PROSE.** The invented-arithmetic corrections are gone, but **3 of 10
+replies still attribute a calculation** the student never performed (*"you've run the numbers,
+found a negative figure"*) versus 1 of 10 on the stripped control — the same method-vocabulary
+salience (`P-T3(j)`), one site downstream. **Its source is the `ABANDONED-AFTER-CALC` misconception
+lead, whose catalogue wording describes a candidate who calculates and stops** — grounding-pack
+content, not the `derived` decision. **A structural fix owns exactly the decision it is wired to and
+nothing else; before aiming a further fix, find which module actually emits the sentence.**
+
+**P-V2(a) — PAIR MEASUREMENTS BY THE RUN'S OWN KEY, NEVER BY ASSUMED SLICE BOUNDARIES.** In this
+run `--polarity-only "northstar"` matched **three** registry targets rather than the two assumed,
+so slicing the log into 10-row blocks mislabelled every cell: it reported the stripped-vocabulary
+control as broken and a calc-FALSE drill as `calcRequired: true`. **The impossible value is what
+exposed it** — a discursive drill cannot report calc-true. **Pair by the captured `target` field,
+and deliberately emit at least one internally-impossible-if-misaligned value as a tripwire.** A
+substring filter over a registry is a JOIN, and a JOIN that silently matches more rows than
+expected is the oldest measurement bug there is.
 
 ## Standing rulings
 
