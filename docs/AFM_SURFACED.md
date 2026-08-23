@@ -930,6 +930,31 @@ pin that fails when a new parameter is added is testing the signature's shape, n
 exists to protect** — a false RED, which costs the same time as a false green and teaches the next
 reader to distrust the suite.
 
+### ✅ DIGNITY_ON_DISTRESS SHIPPED ALONE 2026-08-23 — WELLBEING, NOT FABRICATION
+
+**One block, both papers, no envelope work, ahead of stage 6.** A student in real distress on the
+case path had **no handling at all** — `teach-engine.ts` carried no dignity clause anywhere — so
+the leg could answer *"I give up, I am failing"* with a reveal offer, a subscription nudge, or a
+wall.
+
+**AFM already had it** from stage 5 (it composes into `EZRA_AFM_SYSTEM`), so this closed the **APM**
+half. Imported from `tutor-personas.ts`, never transcribed — one definition, so the two surfaces
+cannot drift about what counts as distress or what is forbidden on that turn.
+
+⚠️ **HELD OUT OF STAGE 6 DELIBERATELY.** The other six blocks bear on invention and grounding and
+are barred on a fabrication measurement. This one is a **wellbeing** gap: there is no plausible
+mechanism by which instructing the model to be kind to a panicking student makes it invent more,
+and holding it behind a measurement it has nothing to do with would be the wrong trade.
+
+📐 **THE FIXTURE MOVED EXACTLY TWO PINS AND NO OTHERS** — *"APM ends with the pre-change tail"* and
+*"APM lacks a block containing distress"* — which is the fixture doing its job: it caught precisely
+the intended change and nothing else. Both updated deliberately: the pre-change tail is now
+asserted **present** rather than final (so a later edit cannot drop it while the ends-with check
+still passes), `distress` left the stage-6 exclusion list with a comment saying why, and new checks
+assert **both** papers carry the block and that each forbids a reveal offer and a subscription
+nudge to a distressed student. A further check asserts the engine **imports** the block rather than
+transcribing its text. `test:case-persona` 21 → 28, gate 70/70.
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

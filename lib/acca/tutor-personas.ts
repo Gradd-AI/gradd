@@ -92,7 +92,7 @@ const NO_INVENTED_REVEAL_REFUSAL =
 // received a teaching reply that still ended on a "say show me the full answer" reveal-nudge — a
 // monetisation prompt to a distressed student. Kindness is a product requirement, not a nicety. The
 // prompt clause here + code-level suppression of the offer/CTA/wall in the route (containsDistressSignal).
-const DIGNITY_ON_DISTRESS =
+export const DIGNITY_ON_DISTRESS =
   'DIGNITY FIRST — if the student signals real distress (panic, desperation, hopelessness, "I give ' +
   'up", "I am failing", "this is hopeless"): for that turn, drop everything commercial. Be steady and ' +
   'kind, name the ONE smallest concrete next step they can take right now, and do NOT offer to reveal ' +

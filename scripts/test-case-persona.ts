@@ -16,7 +16,7 @@
 // measurement. This file's job is to prove stage 5 did not touch APM.
 
 import { caseSystemFor, EZRA_APM_CASE_SYSTEM } from '../lib/acca/teach-engine';
-import { EZRA_AFM_SYSTEM, EZRA_SYSTEM } from '../lib/acca/tutor-personas';
+import { EZRA_AFM_SYSTEM, EZRA_SYSTEM, DIGNITY_ON_DISTRESS } from '../lib/acca/tutor-personas';
 
 let pass = 0, fail = 0;
 function ok(name: string, cond: boolean, detail?: string) {
@@ -39,8 +39,14 @@ const APM_TAIL =
 
 ok('APM case prompt is UNCHANGED — starts with the pre-change head',
   caseSystemFor('APM').startsWith(APM_HEAD));
-ok('APM case prompt is UNCHANGED — ends with the pre-change tail',
-  caseSystemFor('APM').endsWith(APM_TAIL));
+// ⚠️ UPDATED 2026-08-23 when DIGNITY_ON_DISTRESS shipped to APM on its own. The pre-change tail
+// must still be PRESENT — nothing was rewritten — but it is no longer FINAL, because the dignity
+// block is appended after it. Both halves are asserted so a future edit cannot quietly drop the
+// original tail while the "ends with dignity" check still passes.
+ok('APM case prompt still CONTAINS the pre-change tail (nothing was rewritten)',
+  caseSystemFor('APM').includes(APM_TAIL));
+ok('APM case prompt now ENDS with the dignity block',
+  caseSystemFor('APM').endsWith(DIGNITY_ON_DISTRESS));
 ok('APM routes to the LOCAL constant, byte-for-byte',
   caseSystemFor('APM') === EZRA_APM_CASE_SYSTEM);
 
@@ -49,11 +55,35 @@ ok('APM routes to the LOCAL constant, byte-for-byte',
 // blocks. That is a real change and it must not arrive inside this stage.
 ok('APM does NOT silently adopt the shared EZRA_SYSTEM (that is stage 6, and it is measured)',
   caseSystemFor('APM') !== EZRA_SYSTEM);
+// `distress` is DELIBERATELY NOT in this list any more — DIGNITY_ON_DISTRESS shipped alone on
+// 2026-08-23, ahead of stage 6, because it is a WELLBEING gap and does not belong in a
+// fabrication measurement. The remaining six blocks are still stage 6.
 for (const block of [
-  'never invent', 'retract', 'concede', 'distress',
+  'never invent', 'retract', 'concede',
 ] as const) {
   ok(`APM case prompt still lacks the shared block containing "${block}" (stage 6 territory)`,
     !caseSystemFor('APM').toLowerCase().includes(block));
+}
+
+// ── 1b. THE DIGNITY BLOCK IS LIVE ON BOTH PAPERS ─────────────────────────────
+// Break mode: it lands on one paper only and a distressed student on the other still gets a
+// commercial nudge — which is exactly the state APM was in until this shipped.
+for (const p of ['APM', 'AFM'] as const) {
+  ok(`${p} case prompt carries the dignity block`,
+    caseSystemFor(p).includes(DIGNITY_ON_DISTRESS));
+  ok(`${p} forbids a reveal offer to a distressed student`,
+    /do NOT offer to reveal/.test(caseSystemFor(p)));
+  ok(`${p} forbids a subscription nudge to a distressed student`,
+    /do NOT nudge a subscription/.test(caseSystemFor(p)));
+}
+// One definition, imported — not transcribed into the engine, so the two surfaces cannot drift
+// about what counts as distress or what is forbidden on that turn.
+{
+  const eng = require('fs').readFileSync(
+    require('path').join(__dirname, '..', 'lib', 'acca', 'teach-engine.ts'), 'utf8');
+  ok('the engine IMPORTS the block rather than transcribing it',
+    /import \{[^}]*DIGNITY_ON_DISTRESS[^}]*\} from '\.\/tutor-personas'/.test(eng)
+    && !/DIGNITY FIRST — if the student signals/.test(eng));
 }
 
 // ── 2. AFM NOW DIFFERS, AND ROUTES TO THE PAPER-CORRECT PERSONA ──────────────

@@ -17,7 +17,7 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
-import { EZRA_AFM_SYSTEM } from './tutor-personas';
+import { EZRA_AFM_SYSTEM, DIGNITY_ON_DISTRESS } from './tutor-personas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -193,7 +193,22 @@ export const EZRA_APM_CASE_SYSTEM =
   'identifying constraints the model surfaces — is a substantive analytical move ' +
   'you teach explicitly, not a soft add-on. ' +
   'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
-  "No generic praise. Never complete the student's answer.";
+  "No generic praise. Never complete the student's answer. " +
+  // ── DIGNITY_ON_DISTRESS, SHIPPED ALONE (2026-08-23), AHEAD OF STAGE 6 ───────
+  // ⚠️ THIS IS A WELLBEING GAP, NOT A FABRICATION ONE, AND IT IS DELIBERATELY NOT WAITING.
+  // A student in real distress on the case path had NO handling at all: no dignity clause, so
+  // the leg could answer "I give up, I'm failing" with a commercial nudge, a reveal offer, or a
+  // wall. The other six shared blocks bear on invention and grounding and are barred on a
+  // fabrication measurement (stage 6); holding this one behind a measurement it has nothing to
+  // do with would be the wrong trade — there is no plausible mechanism by which telling the
+  // model to be kind to a panicking student makes it invent more.
+  //
+  // AFM already had it from stage 5 (EZRA_AFM_SYSTEM composes it), so this closes the APM half
+  // and the block is now live on BOTH papers of the case surface.
+  //
+  // Imported, never transcribed: one definition, so the two surfaces cannot drift in what
+  // "distress" means or what is forbidden on that turn.
+  DIGNITY_ON_DISTRESS;
 
 /**
  * The persona for a case turn, chosen by the case's paper.
