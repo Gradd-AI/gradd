@@ -356,6 +356,59 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'of this size, because the board is being asked to act on a number that cannot show a ' +
       'cluster.',
   },
+
+  // ── THE EXAM-CASE TUTOR (2026-08-23) — A SEPARATE ENGINE, NONE OF THIS WEEK'S FIXES ──
+  // `lib/acca/teach-engine.ts` is a parallel implementation of the same pipeline. It imports
+  // node:crypto and the Anthropic SDK and NOTHING ELSE — no hint-opening, no gap-verdict, no
+  // bare-guess-veto. It has its own call2_diagnose (with NO bare-guess guard of any kind) and its
+  // own call3_hint carrying the praise-first opening VERBATIM.
+  //
+  // Its ONE conditional arm is gated on `groundedFacts.includes('CONTRADICTION FOUND')`, which
+  // needs a registered discriminant in `answer_schema.params`. Measured live: **4 of 38 published
+  // case requirements carry one** (APM 0 of 18 — every schema is NULL; AFM 4 of 20). So on 34 of
+  // 38 the praise instruction is UNCONDITIONAL. Both targets below are APM, where it is
+  // guaranteed unconditional.
+  //
+  // The two seeds are the SAME SHAPES the drill path was measured on, so the numbers are
+  // comparable: a confident wrong verdict with no supporting reasoning, and an answer that
+  // EXPLICITLY DECLINES half the requirement.
+  {
+    label: 'CASE · Orlen Cinemas (i) — charts (CASE ENGINE: unsubstantiated wrong verdict)',
+    paper: 'APM', kind: 'case',
+    caseId: 'a4000000-0000-4000-8000-0000000000c2',
+    reqId: '7314bd33-42d2-492b-94c5-8af03e44a4bc',
+    correctVerdict:
+      'the charts DO mislead — Chart 1 truncates the revenue axis at EUR 91.5m, exaggerating growth ' +
+      'ahead of a bonus vote on a pack prepared by the executives themselves',
+    seededWrong: 'asserts the charts are fair and the bonus vote can proceed on the pack',
+    attempt:
+      'Having looked at the pack, the four charts present the numbers fairly and I do not see ' +
+      'anything in them that would mislead the board. The presentation is clear and the trends ' +
+      'are easy to read. My advice to the audit committee is that the pack is sound and the bonus ' +
+      'vote can proceed on it.',
+    attempt2:
+      'I still think the charts are fine. Boards look at charts like these every month and would ' +
+      'read them correctly, so I would not hold up the vote over the presentation.',
+  },
+  {
+    label: 'CASE · Keldan Foods (i) — report (CASE ENGINE: explicitly declines half the requirement)',
+    paper: 'APM', kind: 'case',
+    caseId: 'a5000000-0000-4000-8000-0000000000a1',
+    reqId: '9e167905-5626-426a-adad-226e0e836193',
+    correctVerdict:
+      'the requirement is explicitly split — 4 marks for the Appendix 1 CALCULATIONS and 12 for the ' +
+      'evaluation; the report does NOT let the board judge performance against the mission',
+    seededWrong:
+      'DECLINES the calculation half outright and asserts the report is adequate with no reasoning',
+    attempt:
+      'I am not going to work through the Appendix 1 calculations — the numbers are not really the ' +
+      'point here, and the board can get those from the finance team. On the evaluation: the ' +
+      'report is broadly adequate for judging performance against the mission. My advice is that ' +
+      'no redesign is needed.',
+    attempt2:
+      'My view stands. The calculations would not change anything and the existing report gives ' +
+      'the board what it needs.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the

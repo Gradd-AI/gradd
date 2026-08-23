@@ -1474,6 +1474,39 @@ caused by grounding would have been a pure artefact, since `call2` never receive
 **Before attributing a moved count to a change, confirm the changed component is even upstream of
 the number.**
 
+**P-T3(r) — THE CASE TUTOR IS A SECOND COPY OF THE PIPELINE, AND A FIX TO ONE REACHES THE OTHER
+NEVER (diagnosed 2026-08-23).** `lib/acca/teach-engine.ts` imports `node:crypto` and the Anthropic
+SDK and nothing else. It carries its own `call2_diagnose` (with **no bare-guess guard at all**) and
+its own `call3_hint` (with the praise-first opening **byte-identical** to the drill route's). All
+three of this week's fixes are **ABSENT, not inert** — there is no wiring tick to misread, which is
+the one mercy here. Its equivalence check is also **numeric-only**, so on a discursive requirement
+it asks a question the answer cannot satisfy.
+**Before porting any tutor fix, check whether the surface runs the same engine. Two copies of a
+pipeline means every measured fix must be measured twice or it is only half shipped.**
+
+**P-T3(s) — A DECLINED REQUIREMENT MAKES THE PRAISE OPENING INVERT THE STUDENT'S POSITION, NOT
+MERELY INVENT (measured 2026-08-23, n=20 per shape, APM cases where the conditional arm is
+guaranteed unconditional).**
+
+| seed shape | result |
+| --- | --- |
+| unsubstantiated wrong verdict (Orlen) | **1/20** invents; ~19/20 credit a true-but-off-requirement observation |
+| **explicitly declines half the requirement (Keldan)** | **14/20 INVERT the student's stated position**; 5/20 endorse the refusal; **0/20 clean** |
+
+The Keldan seed says *"the report is broadly adequate… no redesign is needed"*, and fourteen replies
+open crediting the student with the OPPOSITE — *"You've correctly identified that the report is
+inadequate"*. **This is a category beyond `P-V2(b)`'s invention-from-scenario: the leg does not
+reach for nearby material, it reverses what the student wrote and returns it as their insight.**
+Five more credit the refusal itself (*"You're right that the calculations aren't the point"*) to a
+candidate who skipped four explicitly marked calculation marks — **teaching that the refusal was
+correct.**
+📐 **THE DECLINE SHAPE IS THE DISCRIMINATOR ON BOTH ENGINES, AND IT IS THE ONE TO MEASURE.** The
+unsubstantiated-verdict shape looks mild everywhere (drill C1c 2/20, case Orlen 1/20) because the
+answer contains SOMETHING present to credit; the decline shape has nothing, and the failure scales
+with how far the leg must travel to find something — 8/20 on the drill engine, **14/20 inverting on
+the case engine**. **Bar any future fix against the DECLINE shape; the other shape will pass and
+prove nothing.**
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
