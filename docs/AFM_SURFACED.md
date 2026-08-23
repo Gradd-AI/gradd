@@ -790,6 +790,46 @@ OFF. A capture recording only that cannot tell a grounding-ON arm from a groundi
 would have made step 4 unattributable from its own log. Now `hintOnRow` + **`hintArm`** (the env
 flag itself) — the same fix the scope variant needed when its arm was printed into the run header.
 
+### 🟡 STEP 4 (2026-08-23) — GROUNDING ON TOP OF A SATISFIABLE OPENING: NO DETECTABLE CHANGE
+
+Own arm, `creditable` wired, nothing else altered. **`hintArm: [true]` on all 60 turns, read from
+the log**, not from the command line. Parsed 60/60, zero retries. Captures
+`docs/redteam/s4-*-20260823.json`.
+
+| cell | fabrication, grounding **OFF** | fabrication, grounding **ON** | bar |
+| --- | ---: | ---: | --- |
+| D2a unsubstantiated | 2/20 | **1/20** | ✅ ≤ 2/20 |
+| C1c unsubstantiated | 2/20 | **4/20** | — (no bar set) |
+| **C1c POSITIVE CONTROL** | 0/20, credit 20/20 | **0/20, credit 20/20** | ✅ |
+| **pooled discursive** | **4/40 (10%)** | **5/40 (12.5%)** | — |
+
+✅ **BOTH STATED BARS MET.** D2a fell to 1/20; the control kept 20/20 accurate, specific earned
+credit (*"you've identified the specific distribution being hidden (15 branches below 5, clustered
+regionally)"*).
+🔴 **BUT THE HYPOTHESIS IS NOT CONFIRMED — AND THE CELLS MOVED IN OPPOSITE DIRECTIONS.** D2a 2→1,
+C1c 2→4. At n=20 per cell neither move is significant (Fisher p ≈ 0.66 and ≈ 1.0), and pooled the
+rate is **flat, 4/40 → 5/40**. **Grounding neither sharpened the correction nor upgraded the
+invention once the opening was satisfiable.** The step-3 reading — that the content is good once
+the leg has a satisfiable job — is **not supported and not refuted**; it is unmeasured at this n.
+📐 **THE C1c MECHANISM IS VISIBLE IN THE FOUR CASES AND IT IS THE SAME ONE.** Its hint says *"Ask
+what distribution each mean is hiding"* — i.e. it contains the proposition *averages conceal
+distributions*. The four fabrications are all that proposition handed back to the student: *"You've
+correctly spotted that averages can hide problems"*, *"You've named the right principle — 'averages
+can mislead'"*, against an answer stating nothing in the pack is misleading. **The surviving praise
+reflex attaches whatever proposition is nearest, and grounding is what puts one there.** Reduced by
+the opening fix, not removed — so grounding still has something to feed it.
+🔵 **RULING UNCHANGED: `TUTOR_HINT_GROUNDING` STAYS OFF.** The bar was met, but a flat pooled rate
+is not a reason to ship — it adds ~300 prompt chars per turn and keeps a live surface for the
+residual reflex, for no measured gain. **To settle it properly: n≥60 per cell, and split by hint
+SHAPE** — C1c's names a METHOD, D2a's names three SCENARIO FACTS and opens on a presupposed attempt
+state. Two drills cannot separate "grounding helps when the opening is satisfiable" from
+"method-shaped hints help and fact-shaped hints do not", which was flagged before this run and is
+still the open question.
+⚠️ **`derived` ON C1c IS UNSTABLE ACROSS RUNS: 0 → 6 → 7 → 2 of 20** (envelope without
+`creditable`, then three runs with it). The prompt for `call2` was identical in the last three. It
+is run-to-run variance in a judgement, not a response to anything we changed — **do not read a
+single 20-turn `derived` count on a discursive cell as a rate.**
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

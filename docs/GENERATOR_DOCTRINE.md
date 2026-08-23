@@ -1443,6 +1443,37 @@ and `hintArm` (the env flag actually in force). Same defect and same fix as prin
 variant into the run header. **Before a comparative run, check that every logged field CAN take a
 different value in the other arm.**
 
+**P-T3(q) — THE PRAISE REFLEX SURVIVES THE OPENING FIX, AND GROUNDING FEEDS WHATEVER IS NEAREST
+(measured 2026-08-23, grounding as its own arm on top of a wired `creditable`).** Pooled
+discursive fabrication was **flat: 4/40 OFF → 5/40 ON**, the two cells moving in opposite
+directions (D2a 2→1, C1c 2→4), neither significant at n=20. **Grounding neither sharpened the
+correction nor upgraded the invention once the opening was satisfiable** — the step-3 reading is
+unmeasured at this n, not confirmed.
+📐 **THE FOUR C1c CASES SHOW THE SURVIVING MECHANISM EXACTLY.** That drill's hint carries the
+proposition *averages conceal distributions* (*"Ask what distribution each mean is hiding"*), and
+all four fabrications are that proposition handed back as the student's own: *"You've correctly
+spotted that averages can hide problems"*, against an answer saying nothing in the pack is
+misleading. **The residual praise reflex attaches whatever proposition is nearest; grounding is
+what puts one within reach.** So `P-T3(o)`'s rule survives in weakened form: grounding is fuel
+whenever ANY praise reflex remains, not only when the opening is wholly unsatisfiable — the fix
+reduced the reflex's surface without removing it.
+⚠️ **A MET BAR IS NOT A REASON TO SHIP.** Both stated bars passed (D2a ≤2/20; control 20/20) and
+the ruling still stands that grounding stays OFF, because a FLAT pooled rate buys nothing for ~300
+prompt chars a turn and a live surface for the residual. **"Did not get worse" is not evidence of
+benefit**, and a pre-registered bar answers whether a change is SAFE, never whether it is WORTH IT.
+⚠️ **TWO DRILLS CANNOT SEPARATE THE TWO HYPOTHESES:** C1c's hint names a METHOD, D2a's names three
+SCENARIO FACTS and opens on a presupposed attempt state. "Grounding helps when the opening is
+satisfiable" and "method-shaped hints help, fact-shaped hints do not" both fit this data. Flagged
+before the run, unresolved by it; settling it needs n≥60 per cell split by hint SHAPE.
+
+**P-V2(d) — `derived` ON A DISCURSIVE CELL IS RUN-TO-RUN UNSTABLE: 0 → 6 → 7 → 2 of 20.** The
+`call2` prompt was byte-identical across the last three of those runs. **A single 20-turn count of
+a model judgement on a discursive cell is not a rate** — the earlier 0→6 move was correctly read as
+a direction (toward ground truth) but its MAGNITUDE meant nothing, and reading 7→2 as a regression
+caused by grounding would have been a pure artefact, since `call2` never receives the hint.
+**Before attributing a moved count to a change, confirm the changed component is even upstream of
+the number.**
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)
