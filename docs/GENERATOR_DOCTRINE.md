@@ -1193,6 +1193,48 @@ not fix a leg whose instruction is unsatisfiable without inventing something; on
 instruction does (P-T2). This is the same mechanism as **P-M4** measured in a second, independent
 place, which upgrades it from a marking-prompt finding to a general one about this pipeline.
 
+**P-T3(j) — `derived` TRACKS THE ANSWER'S METHOD VOCABULARY, NOT WHETHER ANYTHING WAS DERIVED
+(measured 2026-08-23, 50 turns, production config only).** Two drills, each seeded twice — an
+UNDERIVED assertion and a DERIVED answer showing real arithmetic, 10 reps each. The pairing is the
+design: a single underived seed repeated N times makes the hand-read ONE determination, and
+`derived=0` every turn is equally consistent with "tracks the predicate" and "says 0 on this drill
+regardless".
+
+| cell | derived 0 / 1 | genuinely underived? | agreement |
+| --- | ---: | --- | ---: |
+| APM B1c `4f981dbf` A (underived) | 10 / 0 | yes | **10/10** |
+| APM B1c B (arithmetic shown) | 0 / 10 | no | **10/10** |
+| **AFM B1a `716f69f8` A (underived)** | **1 / 9** | **yes — no arithmetic at all** | **1/10** |
+| AFM B1a B (arithmetic shown) | 0 / 10 | no | **10/10** |
+| **AFM B1a A-LOW — same drill, same claim, method words stripped** | **10 / 0** | yes | **10/10** |
+
+**THE DISCRIMINATOR IS THE RULING.** The diverging seed named four method components — *"one-year
+tax lag"*, *"reducing-balance allowances"*, *"discounted inflows"*, *"profitability index"*.
+Removing that vocabulary and changing nothing else — same drill, same wrong claim, same grounding
+block, same `answer_schema` — flips the field **9/10 → 0/10** (Fisher exact p ≈ 0.0001). **So it is
+the ANSWER'S PROSE, not the drill, not the presence of grounding.** A student who names the right
+method and computes nothing is scored as having computed.
+
+⚠️ **AND THE FORMAT INSTRUCTION ALREADY FORBADE EXACTLY THIS, IN TERMS:** *"Naming a method in
+words is a description of working, not working."* It was present, explicit, and lost to the
+salience of four noun phrases. **A field is only as stable as the model's reading of the input;
+moving a steer off prose BYTES (P-T3(i)) does not move it off prose SALIENCE.** Do not treat a
+structured field as a code-owned fact — it is still a model judgement, and it must be measured per
+input SHAPE, not per drill.
+
+⚠️ **THE OUTCOME COLUMN HIDES IT, WHICH IS WHY THIS WAS NEARLY MISSED.** The failing cell scored
+**credited 0, corrected 9** — the best-looking numbers in the sweep. But the corrections rest on a
+FABRICATED PREMISE: *"your arithmetic on those inflows is where the reasoning breaks down"*,
+*"you've calculated your way to a negative NPV"* — said to a student who calculated nothing, whose
+implied next move (check your working) is unactionable. **A right verdict for an invented reason
+scores as a win on every rate we collect. Read the reasoning, not only the outcome.**
+
+📐 **WHY THAT CELL CORRECTS AT ALL** is consistent with the original case-vs-drill finding: AFM
+B1a has a non-null `answer_schema`, so call2 receives a grounding block and can falsify the claim.
+APM B1c is schema-NULL with nothing to falsify against — which is precisely why the guard is what
+protects that paper, and why **P-T3(f)** (a schema-keyed gate is inert on 91/91 APM drills) blocks
+the obvious structural fix here too.
+
 ## Standing rulings
 
 ### ⚠ HOUSE CONVENTIONS — house-authored, NOT examiner-sourced (read this before citing any of them)

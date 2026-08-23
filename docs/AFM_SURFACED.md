@@ -543,6 +543,53 @@ the `extractJsonBlock` + `withParseRetry` pattern `case-marking.ts` already runs
 CONTRACT (`P-M1`: echo a number, never a string code). **The rewrite raises the echo rate to 100%
 on this target; it does not remove the dependency.** Logged, not built.
 
+### 🔴 GENERALISED 2026-08-23 — `derived` TRACKS THE ANSWER'S METHOD VOCABULARY, NOT DERIVATION
+
+**50 turns, production config only** (rewritten scope + structured flag; no unstructured arms — the
+instrument is not neutral and the rates are not comparable). Two drills, each seeded TWICE:
+an UNDERIVED assertion and a DERIVED answer showing real arithmetic, 10 reps each. **The pairing is
+the design** — one underived seed repeated N times makes the hand-read a single determination, and
+`derived=0` on every turn would be equally consistent with "tracks the predicate" and "says 0 here
+regardless". Captures: `docs/redteam/gen-*-20260823.json` + `gaplabels-generalisation-20260823.txt`.
+
+| cell | parsed | retries | derived 0 / 1 | genuinely underived? | agreement | credited / not-adj / corrected |
+| --- | ---: | ---: | ---: | --- | ---: | --- |
+| APM B1c `4f981dbf` A | 10/10 | 0 | 10 / 0 | yes | **10/10** | 0 / 10 / 0 |
+| APM B1c B | 10/10 | 0 | 0 / 10 | no | **10/10** | 0 / 0 / 10 |
+| **AFM B1a `716f69f8` A** | 10/10 | 0 | **1 / 9** | **yes** | **1/10** | 0 / 1 / 9 |
+| AFM B1a B | 10/10 | 0 | 0 / 10 | no | **10/10** | 0 / 0 / 10 |
+| **AFM B1a A-LOW** (method words stripped) | 10/10 | 0 | **10 / 0** | yes | **10/10** | 0 / 10 / 0 |
+
+Parsing **50/50, zero retries** across every cell. Agreement **41/50 (82%)**, with all nine
+disagreements in ONE cell.
+
+🔴 **THE DISCRIMINATOR SETTLES IT — IT IS THE ANSWER'S PROSE, NOT THE DRILL.** The diverging seed
+named four method components (*"one-year tax lag"*, *"reducing-balance allowances"*, *"discounted
+inflows"*, *"profitability index"*). Stripping that vocabulary and changing **nothing else** — same
+drill, same wrong claim, same grounding block, same `answer_schema` — flips the field **9/10 →
+0/10** (Fisher exact p ≈ 0.0001). **A student who names the right method and computes nothing is
+scored as having computed.**
+
+⚠️ **THE FORMAT INSTRUCTION ALREADY FORBADE THIS IN TERMS** — *"Naming a method in words is a
+description of working, not working"* — and lost to the salience of four noun phrases. **Moving a
+steer off prose BYTES (`P-T3(i)`) does not move it off prose SALIENCE.** A structured field is
+still a model judgement; it must be measured per input SHAPE, not per drill. Banked `P-T3(j)`.
+
+⚠️ **THE OUTCOME COLUMN HIDES THE DEFECT.** The failing cell scored **credited 0, corrected 9** —
+the best-looking numbers in the sweep — but the corrections rest on a FABRICATED PREMISE: *"your
+arithmetic on those inflows is where the reasoning breaks down"*, *"you've calculated your way to a
+negative NPV"*, said to a student who calculated nothing. The implied next move (check your
+working) is unactionable. **A right verdict for an invented reason scores as a win on every rate we
+collect.**
+
+🔵 **THE FIX IS BLOCKED BY THE KNOWN DATA HOLE, so it is logged, not built.** Code already knows
+`!hasArithmetic(attempt)`. Forcing `derived=0` from it is NOT safe in general — 13 of 14 real
+student messages with a digit have no arithmetic and are legitimate narrative answers (`P-T3(e)`).
+It would only be safe on a drill known to DEMAND a computation, and `answer_schema` is NULL on
+**91/91 published APM drills** (`P-T3(f)`) — the same hole that made the direction fence inert.
+**Do not build a numeric-drill gate until that is closed; it would work on AFM and reach nothing on
+APM.**
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

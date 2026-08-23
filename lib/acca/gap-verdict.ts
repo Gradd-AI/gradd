@@ -44,10 +44,19 @@ export interface GapVerdict {
 export const GAP_VERDICT_FORMAT =
   'OUTPUT FORMAT — return ONLY a JSON object, no prose before or after, no code fence: ' +
   '{"derived": 0 or 1, "label": "<the gap label>"}. ' +
-  'Set "derived" to 0 when the guard above applies (a conclusion or figure asserted without being ' +
-  'derived); set it to 1 when there is actual working to judge. The NUMBER carries the decision — ' +
-  'the label is prose for the student-facing leg and is never parsed for meaning. ' +
-  'The 12–15 word limit applies to "label" only. ';
+  // ⚠️ SELF-CONTAINED ON PURPOSE — corrected 2026-08-23 before the two-drill sweep.
+  // The first version read "set derived to 0 when THE GUARD ABOVE applies". The arithmetic veto
+  // DELETES that guard block from the prompt whenever the student showed working, so on exactly
+  // the turns where the answer IS derived the instruction pointed at nothing and the model had to
+  // infer the field's meaning from its name. A definition that evaporates on half the inputs is
+  // not a definition; it is the string-dependency defect again, wearing a field's clothes.
+  'Set "derived" to 0 when the student ASSERTS a conclusion, or states a figure, that this ' +
+  'requirement asks them to DERIVE, without deriving it — no calculation performed, no quantities ' +
+  'combined. Naming a method in words is a description of working, not working. Figures the ' +
+  'SCENARIO supplied and the student merely quoted back are not a derivation. ' +
+  'Set "derived" to 1 when there is actual working on the page to judge. ' +
+  'The NUMBER carries the decision — the label is prose for the student-facing leg and is never ' +
+  'parsed for meaning. The 12–15 word limit applies to "label" only. ';
 
 /**
  * Parse a gap-verdict response. Returns null when the payload is absent or malformed, which the

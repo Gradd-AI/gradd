@@ -25,6 +25,19 @@ ok('format never asks for a word-coded verdict',
   !/"(underived|asserted|not_derived|none)"/i.test(GAP_VERDICT_FORMAT));
 ok('format states the NUMBER carries the decision, not the prose',
   /NUMBER carries the decision/.test(GAP_VERDICT_FORMAT));
+// THE DANGLING-REFERENCE DEFECT, pinned. The first version defined derived as "when the guard
+// above applies" — and the arithmetic veto DELETES that guard block whenever the student showed
+// working, i.e. on exactly the turns where the answer IS derived. A definition that evaporates on
+// half the inputs is the string-dependency defect wearing a field's clothes.
+ok('format does NOT define derived by pointing at the guard block (which the veto can delete)',
+  !/guard above/i.test(GAP_VERDICT_FORMAT), GAP_VERDICT_FORMAT);
+ok('format defines derived=0 self-containedly (asserts without deriving)',
+  /ASSERTS a conclusion/.test(GAP_VERDICT_FORMAT) && /without deriving it/.test(GAP_VERDICT_FORMAT));
+ok('format defines derived=1 self-containedly (working on the page)',
+  /Set "derived" to 1 when there is actual working/.test(GAP_VERDICT_FORMAT));
+ok('format carries the two disqualifiers the predicate turns on',
+  /description of working, not working/.test(GAP_VERDICT_FORMAT)
+  && /SCENARIO supplied/.test(GAP_VERDICT_FORMAT));
 
 // ── 2. PARSING — happy paths ─────────────────────────────────────────────────
 for (const [name, raw, derived, label] of [

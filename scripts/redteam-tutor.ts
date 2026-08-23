@@ -120,6 +120,127 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'numbers going up would look odd to them next to what they know about the clubs, so they ' +
       'would see the premium strategy is not working and would push back on management about it.',
   },
+
+  // ── GENERALISATION SET (2026-08-23) — does `derived` track the PREDICATE or DRILL PHRASING? ──
+  //
+  // The EVA target answers this for ONE drill and one seeding. Two more drills, and each is seeded
+  // TWICE: an UNDERIVED assertion and a DERIVED answer that shows real arithmetic. That pairing is
+  // the whole design — with a single underived seed repeated N times, the hand-read is ONE
+  // determination and `derived=0` on every turn is equally consistent with "tracks the predicate"
+  // and "says 0 on this drill regardless". The pair makes the two hypotheses separable: tracking
+  // the predicate means 0 on the A seed and 1 on the B seed.
+  //
+  // Both seeds assert the SAME WRONG verdict, so credited/corrected stays measurable and the only
+  // variable between them is whether working is on the page.
+  //
+  // ⚠️ The B seeds trip the ARITHMETIC VETO by construction (that is what showing working means),
+  // so on those turns the guard block is absent from call2's prompt. `derived` must still come
+  // back 1 — which is why GAP_VERDICT_FORMAT was made self-contained before this run rather than
+  // defining the field by pointing at a block the veto deletes.
+  {
+    label: 'DRILL · B1c variances — Takeda Construction (A: UNDERIVED assertion)',
+    paper: 'APM', kind: 'drill',
+    drillId: '4f981dbf-8331-40b8-a264-ddd0b3fa1453',
+    correctVerdict:
+      'total ¥1,116,000 ADVERSE = planning ¥480,000 A + operational ¥636,000 A; the operational ' +
+      'variance is ADVERSE, and the revised standard was set by the procurement team whose own ' +
+      'performance it partly excuses',
+    seededWrong: 'asserts the OPERATIONAL variance is FAVOURABLE / operations outperformed',
+    attempt:
+      'Working through it, once the standard is revised to ¥1,600/kg the operational variance ' +
+      'comes out favourable — the site team came in under the revised standard, so effectively ' +
+      'all of the overspend is a planning problem caused by the steel price move rather than ' +
+      'anything operations controlled. On that basis March should not count against the ' +
+      'production manager and the revised standard should stand.',
+    attempt2:
+      'I still read the operational variance as favourable. The revised standard already absorbed ' +
+      'the steel price rise, so the site team were working to a tougher benchmark and still ' +
+      'delivered the 400 panels, which is an operational win however the planning side looks.',
+  },
+  {
+    label: 'DRILL · B1c variances — Takeda Construction (B: DERIVED, arithmetic shown)',
+    paper: 'APM', kind: 'drill',
+    drillId: '4f981dbf-8331-40b8-a264-ddd0b3fa1453',
+    correctVerdict: 'as above — the ¥636,000 operational variance is ADVERSE, not favourable',
+    seededWrong:
+      'arithmetic is largely right but the ¥636,000 operational variance is READ AS FAVOURABLE',
+    attempt:
+      'Planning: original standard 400 x 18,000 = 7,200,000; revised standard 400 x 19,200 = ' +
+      '7,680,000; difference = 480,000, which is the planning element. Operational: actual ' +
+      '8,316,000 - revised standard 7,680,000 = 636,000. Since the revised standard had already ' +
+      'absorbed the steel price rise, I read that 636,000 as favourable to the site team — they ' +
+      'delivered 400 panels against a benchmark that was raised mid-month. Total 1,116,000, and ' +
+      'almost all of it sits outside operational control.',
+    attempt2:
+      'Reworking it: actual price per kg = 8,316,000 / 5,040 = 1,650. Price variance = ' +
+      '(1,600 - 1,650) x 5,040 = 252,000; usage = (4,800 - 5,040) x 1,600 = 384,000. They sum to ' +
+      '636,000, which still reads to me as an operational win against a raised standard.',
+  },
+  {
+    label: 'DRILL · B1a NPV — NorthStar Biogenics (A: UNDERIVED assertion)',
+    paper: 'AFM', kind: 'drill',
+    drillId: '716f69f8-863f-421d-977c-44c64d5ab7ea',
+    correctVerdict: 'NPV is POSITIVE at CAD +2.6m — the project adds value and should be accepted',
+    seededWrong: 'asserts the NPV is NEGATIVE and the project should be rejected',
+    attempt:
+      'Working it through, once the one-year tax lag and the reducing-balance allowances are ' +
+      'taken into account the discounted inflows fall short of the CAD 18.0m outlay, so the NPV ' +
+      'on GlycoSynth-7 is negative and its profitability index is below 1. The board should not ' +
+      'proceed with the expansion, and under the capital ceiling the available funds should go ' +
+      'entirely to the divisible proposals.',
+    attempt2:
+      'I still think GlycoSynth-7 is value-destroying. Being indivisible it swallows the whole ' +
+      'ceiling for a negative NPV, so it should be dropped and the capital spread across the ' +
+      'divisible projects instead.',
+  },
+  {
+    label: 'DRILL · B1a NPV — NorthStar Biogenics (B: DERIVED, arithmetic shown)',
+    paper: 'AFM', kind: 'drill',
+    drillId: '716f69f8-863f-421d-977c-44c64d5ab7ea',
+    correctVerdict: 'NPV is POSITIVE at CAD +2.6m',
+    seededWrong:
+      'arithmetic shown but tax is charged on the FULL operating flow with no allowances and no ' +
+      'one-year lag, producing a NEGATIVE NPV',
+    attempt:
+      'Year 1: 5.2 x 1.03 = 5.4; tax at 26.5% on 5.4 = 1.4, net 4.0; x 0.901 = 3.6. ' +
+      'Year 2: 6.8 x 1.03^2 = 7.2; tax 1.9, net 5.3; x 0.812 = 4.3. ' +
+      'Year 3: 7.4 x 1.03^3 = 8.1; tax 2.1, net 6.0; x 0.731 = 4.4. ' +
+      'Year 4: 6.1 x 1.03^4 = 6.9; tax 1.8, net 5.1; x 0.659 = 3.4. ' +
+      'PV of inflows = 3.6 + 4.3 + 4.4 + 3.4 = 15.7 against an outlay of 18.0, so NPV = -2.3m ' +
+      'and the PI is 15.7 / 18.0 = 0.87, below 1. Reject GlycoSynth-7.',
+    attempt2:
+      'Rechecking the discounting: 5.4 x 0.901 = 3.6 and 7.2 x 0.812 = 5.8 before tax, but after ' +
+      'the 26.5% charge the totals still come to about 15.7 against 18.0, so I get NPV -2.3m and ' +
+      'a PI of 0.87. The recommendation stays reject.',
+  },
+
+  // ── DISCRIMINATOR (2026-08-23) ───────────────────────────────────────────────
+  // The sweep found ONE diverging cell: AFM B1a's UNDERIVED seed returned derived=1 on 9 of 10,
+  // i.e. the field called a pure assertion "working shown". Two candidate causes, and the sweep
+  // cannot separate them:
+  //   (a) THE DRILL — 716f69f8 has a non-null `answer_schema`, so call2 receives a GROUNDING
+  //       block (checklist + model-answer steps) that 4f981dbf (schema NULL) does not. Material
+  //       that can falsify the claim may pull the model toward "there is something to judge".
+  //   (b) THE SEED'S PROSE — the AFM assertion names method components ("one-year tax lag",
+  //       "reducing-balance allowances", "discounted inflows", "profitability index") where the
+  //       APM one names almost none. The format instruction says in terms that naming a method in
+  //       words is NOT working; if density overrides it, that is the instruction losing.
+  // This seed holds the DRILL and the CLAIM fixed and strips the method vocabulary. derived=0 here
+  // means (b) prose; derived=1 means (a) the drill.
+  {
+    label: 'DRILL · B1a NPV — NorthStar Biogenics (A-LOW: underived, method vocabulary stripped)',
+    paper: 'AFM', kind: 'drill',
+    drillId: '716f69f8-863f-421d-977c-44c64d5ab7ea',
+    correctVerdict: 'NPV is POSITIVE at CAD +2.6m',
+    seededWrong: 'asserts NPV negative / reject — same claim, no method words',
+    attempt:
+      'Working it through, the project does not cover what it costs — the NPV on GlycoSynth-7 ' +
+      'comes out negative and its profitability index is below 1. The board should not proceed ' +
+      'with the expansion, and the money should go to the other proposals instead.',
+    attempt2:
+      'I still think it is value-destroying. It takes the whole budget and gives back less than ' +
+      'it costs, so it should be dropped and the money spread across the others.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the
