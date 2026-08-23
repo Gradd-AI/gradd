@@ -31,6 +31,32 @@ import { hasPaperAccess } from '@/lib/acca/access';
 // DELIVERED and must never gate the ATTEMPT — see the module header and §6.
 import { teachAccessFor, upgradeAfterDiagnosisLine, FREE_TEACH_THROUGHS } from '@/lib/acca/teach-access';
 import {
+  guardLabel, hintOpeningInstruction, gapEstablishesNothingCorrect,
+  type GuardLabelVariant, type HintOpeningVariant,
+} from '@/lib/acca/hint-opening';
+
+// ── MEASUREMENT SEAM (2026-08-22) ────────────────────────────────────────────
+// Two independent prompt changes, each selectable, so the harness can measure (a) alone and
+// (a)+(b) against the same pooled baseline rather than shipping both and inferring. Env-gated
+// exactly like REVEAL_ENABLED / INTENT_LAYER_ENABLED / APM_INTERLEAVE already are on this route.
+// ⚠️ DEFAULTS WERE `shipped` UNTIL THE MEASUREMENT DECIDED. Committing a default of "the change I
+// expect to win" would ship it on the strength of the prediction, which is the thing P-DB8(a) and
+// P-V1(d) both exist to stop.
+//
+// 📐 FLIPPED 2026-08-23 ON THE MEASURED RATE, n=40 miss-1 turns hand-read against the same
+// pooled baseline (docs/redteam/armB-20260822-polarity.json; baseline 38/40 = 95% in
+// docs/AFM_SURFACED.md). **CREDITED 95% → 50%.** This is a MITIGATION, not a fix — the residual
+// is not the prompt's wording but the guard's FIRING RATE: the bare-guess guard is a model
+// judgement made fresh each turn, and it fired on 57.5% of them. Where it fired, 17% credited;
+// where it did not, 94% did. The wording change does everything it can do and the ceiling is
+// upstream of it. The GUARD itself is the next build.
+//
+// Reversible by env with no deploy: TUTOR_GUARD_LABEL=shipped TUTOR_HINT_OPENING=shipped
+// restores the pre-change route byte-for-byte, and the fixtures pin those strings byte-identical
+// so the historical baseline keeps describing something that still exists.
+const GUARD_LABEL_VARIANT  = (process.env.TUTOR_GUARD_LABEL  ?? 'unverified')   as GuardLabelVariant;
+const HINT_OPENING_VARIANT = (process.env.TUTOR_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
+import {
   isTeachRequest, isRevealRequest, isPlainAnswerRequest, revealOfferLine,
 } from '@/lib/acca/phrase-match';
 import {
@@ -347,7 +373,12 @@ async function call2_diagnose(
       'threshold, not a ceiling") is a genuine claim to equivalence-check, not a bare guess, even when ' +
       'terse; narrative claims carry no numeric "working" to show. When the bare-guess guard genuinely ' +
       'fires (a numeric value-only guess), output the gap label: ' +
-      '"states a figure but shows no working — cannot be credited" (NEVER the correct sentinel). ' +
+      // P-T3 (2026-08-22): this label used to read "states a figure but shows no working — cannot
+      // be credited" and was SILENT about the figure. The guard runs BEFORE the equivalence check,
+      // so when it fires, correctness is never assessed — and call3_hint, whose only quality signal
+      // is this string, read the silence as the figure being fine and credited a wrong verdict in
+      // 38 of 40 measured turns. The label now states the dimension the guard skipped.
+      `"${guardLabel(GUARD_LABEL_VARIANT)}" (NEVER the correct sentinel). ` +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
@@ -416,9 +447,12 @@ async function call3_hint(
           vlLine +
           groundingLine +
           nextMoveLine +
-          'First miss. Lead with the ONE specific thing they got right — name the real move, not ' +
-          'vague praise — then name the single sharpest gap (just one, not a list) and one next ' +
-          'move. Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
+          // P-T2 (2026-08-22): the opening is now CONDITIONAL on whether the gap label established
+          // anything correct. Code-selected, not model-judged — `gapEstablishesNothingCorrect`
+          // matches the guard's own sentinel, so this leg is TOLD which opening to use rather than
+          // asked to decide. On the ordinary branch the string is byte-identical to before.
+          hintOpeningInstruction(HINT_OPENING_VARIANT, gapEstablishesNothingCorrect(diagnosis)) +
+          'Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           // Was: "Work in the command verb and ACCA intellectual level from the authored values
           // above (do not infer them when given)." The 2026-08-01 fence removed those values from
           // the prompt but left this sentence, so the only way to satisfy it was to INFER a level

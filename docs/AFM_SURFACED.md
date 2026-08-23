@@ -345,6 +345,51 @@ emits no verdict of its own for this reason** and the classification stays hand-
 all**. The sighting above is reconstructed from the row and the code, not re-read from the DB, and
 a future sighting on that surface will be equally unre-examinable. That is its own gap.
 
+### 🟡 SHIPPED 2026-08-23 — A MITIGATION, 95% → 50%. THE RESIDUAL IS THE GUARD, NOT THE WORDING
+
+Two prompt changes, built behind an env seam so each could be measured against the same pooled
+baseline, now **DEFAULTED ON**: `TUTOR_GUARD_LABEL=unverified` (P-T3 — the guard's label states the
+dimension it skipped) + `TUTOR_HINT_OPENING=conditional` (P-T2 — the opening instruction is
+REPLACED, not fenced, on the branch where nothing was established). Code
+`lib/acca/hint-opening.ts`, wired in `app/api/acca/tutor/route.ts`, fixtures
+`npm run test:hint-opening` (27). **Reversible by env with no deploy** — setting both back to
+`shipped` restores the pre-change route byte-for-byte, and the fixtures pin those two strings
+byte-identical so the 38/40 baseline keeps describing something that still exists. The live default
+is itself pinned by a static sweep of the route, so a silent revert fails the gate rather than
+quietly orphaning the number below.
+
+**MEASURED — n=40 miss-1 turns, drill A3b EVA `a05bc641`, hand-read, same target and seeding as the
+baseline** (`docs/redteam/armB-20260822-polarity.json`):
+
+| arm | n | CREDITED | notes |
+| --- | ---: | ---: | --- |
+| baseline (`shipped` + `shipped`) | 40 | **38 (95%)** | pooled, two runs |
+| (a)+(b) shipped | 40 | **20 (50%)** | this flip |
+
+🔴 **THIS IS A MITIGATION, NOT A FIX, AND THE SPLIT IS THE WHOLE STORY.** Broken out by whether the
+bare-guess guard actually fired on the turn:
+
+| guard | share of turns | CREDITED |
+| --- | ---: | ---: |
+| **fired** | 23/40 (**57.5%**) | **17%** |
+| did not fire | 17/40 (42.5%) | **94%** |
+
+**Where the guard fires, the new wording does very nearly everything a wording change can do.**
+The residual 50% is not the prompt being weak — it is the 42.5% of turns the fix never reached,
+sitting at the untouched baseline rate. **Whether the guard applies is a model judgement made fresh
+each turn**, and that judgement is the ceiling on every further rewording of the label. Banked as
+`P-T3(b)`. **The next build is the guard itself, not the prompt.**
+
+📐 **AND THE TARGET STATE IS `NOT ADJUDICATED`, NOT `CORRECTED` — read the table accordingly.**
+The mitigated arm corrects 1 of 40 on the first miss. **That is not a shortfall.** A student who
+states a figure and shows no working has given the tutor nothing to adjudicate; asserting "that is
+wrong" against an unshown method teaches nothing and risks naming the wrong failed step. *"I cannot
+tell whether this is sound — put the working on the page"* is the honest reply, and the architecture
+already delivers the correction one turn later: **once working exists the guard does not fire, the
+equivalence check runs, and miss 2 corrects at 80%** (16/20). The defect was only ever that miss 1
+scored **CREDITED**. `CREDITED` is the harm column; `NOT ADJUDICATED` on a working-free answer is a
+pass, not a miss. Banked as `P-T3(c)`.
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is

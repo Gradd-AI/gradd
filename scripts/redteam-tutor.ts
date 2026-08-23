@@ -49,6 +49,14 @@ const OUT = val('--out', `docs/redteam/run-${new Date().toISOString().slice(0, 1
 // decomposes, and the level-3 legs are the ones a real student abandoned.
 const SURFACE = (val('--surface', 'drill') as 'drill' | 'case' | 'polarity');
 const REPEATS = Number(val('--n', '5'));
+// How many misses to fire per repeat. `--legs 1` measures the FIRST miss only, which is where the
+// polarity defect lives (95% credited on miss 1, 5% on miss 2) — and halves the spend when the
+// second leg is not the thing under test.
+const LEGS = Number(val('--legs', '2'));
+// Restrict the polarity run to targets whose label contains this substring (case-insensitive).
+// `--probes` does NOT filter this surface — it only filters PROBES — and assuming it did cost a
+// wasted 40-turn arm on 2026-08-22.
+const POLARITY_ONLY = (val('--polarity-only') ?? '').toLowerCase();
 
 // ── POLARITY SURFACE (--surface polarity) ────────────────────────────────────
 // THE SIGHTING. APM · Aldermere Fitness (i): a student wrote "they wouldnt think the strategy is
@@ -383,13 +391,20 @@ async function runCaseSurface() {
 // for HAND classification. Deliberately emits NO verdict of its own: a classifier written here
 // would encode the author's expectation, and that is exactly how the August measurement inverted.
 async function runPolaritySurface() {
-  console.log(`\nPOLARITY RUN — ${BASE} · ${POLARITY_TARGETS.length} targets × ${REPEATS} repeats = ${POLARITY_TARGETS.length * REPEATS} turns\n`);
+  console.log(`\nPOLARITY RUN — ${BASE} · ${POLARITY_TARGETS.length} targets × ${REPEATS} repeats × ${LEGS} leg(s) = ${POLARITY_TARGETS.length * REPEATS * LEGS} turns`);
+  // The ARM under test. Printed so a captured file can never be read against the wrong arm — the
+  // variants are env-selected on the SERVER, so the run itself cannot otherwise record which
+  // prompt produced it.
+  console.log(`ARM — TUTOR_GUARD_LABEL=${process.env.TUTOR_GUARD_LABEL ?? '(server default)'} · TUTOR_HINT_OPENING=${process.env.TUTOR_HINT_OPENING ?? '(server default)'}`);
+  console.log('⚠️  these are read by the SERVER, not this script — set them on the dev server process.\n');
   const cookie = await mintCookie(ACCOUNTS.paid);
   const uid = await userId(ACCOUNTS.paid);
   await resetFreeCap(uid);
   const rows: any[] = [];
 
-  for (const t of POLARITY_TARGETS) {
+  const targets = POLARITY_TARGETS.filter((t) => !POLARITY_ONLY || t.label.toLowerCase().includes(POLARITY_ONLY));
+  if (!targets.length) throw new Error(`--polarity-only "${POLARITY_ONLY}" matched no target. Known: ${POLARITY_TARGETS.map((t) => t.label).join(' | ')}`);
+  for (const t of targets) {
     console.log(`■ ${t.label}`);
     console.log(`   correct: ${t.correctVerdict}`);
     console.log(`   seeded : ${t.seededWrong}`);
@@ -411,7 +426,7 @@ async function runPolaritySurface() {
 
       let session: any = null;
       const legs: any[] = [];
-      for (const [i, msg] of [t.attempt, t.attempt2].entries()) {
+      for (const [i, msg] of [t.attempt, t.attempt2].slice(0, LEGS).entries()) {
         let r: { status: number; body: string; kind: string | null; intent: string | null; session: any };
         if (t.kind === 'drill') {
           const d = await fire(cookie, t.drillId!, t.paper, msg, session);
