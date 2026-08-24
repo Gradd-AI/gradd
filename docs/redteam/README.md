@@ -15,6 +15,13 @@ npm run redteam:judge -- docs/redteam/run-XXXX-transcripts.json   # judge a capt
 npm run redteam:judge -- --prod-sample 7          # WEEKLY HABIT: judge the last 7 days of real transcripts
 ```
 
+## Captures do not travel — SUMMARIES DO
+
+`docs/redteam/*.json` is gitignored and stays that way. **`docs/redteam/summaries/` is tracked.**
+Any measurement cited in `GENERATOR_DOCTRINE.md`, or used as a baseline in `AFM_SURFACED.md`, MUST
+have a summary there — counts, the rubric verbatim, target ids, n, and the arm's SHA. Skipping one
+cost a full 40-leg BEFORE re-run on 2026-08-24. See `summaries/README.md`.
+
 ## Standing rules (GENERATOR_DOCTRINE)
 - **Regression:** re-run the battery after ANY change to a tutor prompt / persona / leg.
 - **Weekly habit:** run `--prod-sample` weekly over `acca_drill_messages` — real student behaviour is the probe source no matrix invents.
