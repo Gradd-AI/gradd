@@ -619,6 +619,61 @@ rule" with "praised then corrected in one sentence", and that distinction IS the
 inverse-rule affirmation **4/20 → 0/20** · direction corrected **~6/20 → 17/20** · never adjudicated
 **~10/20 → 3/20** · taxonomy leak **1 sighting → 0/20**.
 
+## P-T4 — A GUARDRAIL CHANGES THE SHAPE OF A FABRICATION; ONLY THE ENVELOPE CHANGES WHETHER ONE IS DEMANDED (ruled 2026-08-24)
+
+**THE RULE.** When a prompt DEMANDS an output the input cannot satisfy, adding prohibitions does
+not reduce the fabrication rate — it redirects it. The model still owes the demanded output, so it
+manufactures the nearest thing the remaining rules permit. **Count the manufactured outputs, not
+the ones you forbade**: a guardrail that closes one route looks like a win on the category it
+closed and leaves the total flat. Only removing or conditioning the DEMAND moves the total.
+
+**MEASURED — stage 6, paired arm, 80 legs, one machine, one sitting, hand-read, dev server
+rebooted between arms.** Six guardrail blocks adopted onto the exam-case tutor's conversational
+legs at once (`NO_INVENTED_NUMBERS`, `NO_COMPUTED_OUTPUTS`, `NO_INVENTED_REVEAL_REFUSAL`,
+`GROUNDING_DISCIPLINE`, `RETRACTION_PROTOCOL`, `METHOD_FITS_THE_GIVEN_INPUTS`). The demand left
+untouched: `call3_hint`'s praise-first opening, *"First miss. Lead with the ONE specific thing they
+got right"*, **unconditional** on both targets.
+
+| Keldan (student explicitly declines half the requirement) | BEFORE | AFTER |
+| --- | ---: | ---: |
+| inverts the student's stated position | 12 | **7** |
+| endorses the refusal | 8 | **13** |
+| **CLEAN (primary endpoint)** | **0** | **0** |
+
+**The inversions did not stop; they became refusal-endorsements, one for one. All 40 AFTER
+openings across both targets still manufacture a credit** (20/20 Keldan, 20/20 Orlen). Control
+target Orlen: clean 1/20 → 0/20, inventions 5 → 8 (p ≈ 0.31, no move).
+
+⚠️ **NEITHER SHIFT IS SIGNIFICANT AT n=20** (both z ≈ 1.58, p ≈ 0.11). The migration is the
+reading; the 12 → 7 is not on its own a result. **The robust finding is the flat total** — 0 clean
+events in 40 legs, rule-of-three upper bound ~9%.
+
+**Corollary — a block whose ANTECEDENT is false contributes nothing, and must be excluded from the
+attribution before the run, not after.** `GROUNDING_DISCIPLINE` binds on *"a CHECKLIST, FACTS, or
+CONVENTIONS block"*; the case path's `groundedFacts` is `renderDiscriminants(...)`, which emits
+"CODE-OWNED CHOICES" / "CONTRADICTION FOUND" and returns the **empty string** on the 34 of 38
+published requirements carrying no registered discriminant. Verified in code BEFORE the arm ran, so
+no result could be attributed to it afterwards.
+
+**Corollary — shipping N blocks at once buys N-way unattributability.** No movement here can be
+assigned to a single block; "rule 3 of `NO_COMPUTED_OUTPUTS` did it" is a hypothesis this bundle
+cannot test. Bundle when the question is *"do guardrails move this at all"*; split when the
+question is *"which one"*.
+
+**Relation to P-M4.** P-M4 ruled that adding an instruction naming a referent RAISES the leak
+because it primes what it discusses, and that the fix is to remove the need for the word. P-T4 is
+the same law on a different output: there the demand was a band definition, here a praise-first
+opening, and in both the downstream rule inherits a demand it cannot repeal. **P-M4: find where the
+prompt makes it NEED the word. P-T4: find where the prompt makes it OWE the output.**
+
+**Relation to P-T2.** P-T2 says change the instruction rather than add a prohibition. Six
+prohibitions were added here and the total did not move — P-T2's prediction, confirmed on a
+fabrication rather than a leak.
+
+**The corresponding claim ceiling.** Stage 6 is still worth shipping: one definition, no drill/case
+drift, six blocks AFM's case path never had. **It is simply not the fabrication fix, and the merge
+commit says so.** Never let a real structural gain stand in for the measured outcome.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.
