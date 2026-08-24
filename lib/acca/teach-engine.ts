@@ -21,6 +21,13 @@ import Anthropic from '@anthropic-ai/sdk';
 // definition of each paper's persona — importing it is what makes it structurally impossible for
 // the drill and case surfaces to drift about what they forbid. See `caseSystemFor` below.
 import { systemFor } from './tutor-personas';
+// DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
+// the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
+// opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
+import {
+  GAP_VERDICT_FORMAT, parseGapVerdict, safeLabel, nothingCreditable, type GapVerdict,
+} from './gap-verdict';
+import { hintOpeningInstruction, type HintOpeningVariant } from './hint-opening';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -129,6 +136,20 @@ function isTeachRequest(input: string): boolean {
 // ── Earned reveal (redesign item 3) ───────────────────────────────────────────
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
 const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
+
+// ── DIVERGENCE #2 — the CASE hint opening's arm, env-selected ────────────────
+// `conditional` (default) = the `creditable` arm is live. `shipped` = the praise-first opening
+// unconditionally, i.e. today's behaviour.
+//
+// ⚠️ SEPARATE FROM THE DRILL ROUTE'S `TUTOR_HINT_OPENING`, DELIBERATELY. One variable per switch:
+// sharing the env var would move BOTH surfaces whenever either is measured, and a case arm that
+// silently re-words the drill prompt confounds the drill's own baseline.
+//
+// ⚠️ THIS EXISTS SO BOTH ARMS RUN ON ONE SERVER FROM ONE BUILD. The stage-6 measurement had to
+// check out two SHAs and reboot between arms; the redteam driver already PRINTS the opening
+// variant it ran under, so an env-selected arm is recorded in the capture and a run can never be
+// read against the wrong prompt.
+const CASE_HINT_OPENING = (process.env.TUTOR_CASE_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
 
 const REVEAL_PHRASES = [
   'show me the full answer',
@@ -277,7 +298,7 @@ async function call2_diagnose(
   // and exactly wrong for a direction contradiction — the one finding the student MUST be told.
   // Carried in its own channel so the suppression does not apply to it.
   groundedFacts = '',
-): Promise<string> {
+): Promise<{ label: string; verdict: GapVerdict | null }> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
   const msLine = markScheme
@@ -285,7 +306,11 @@ async function call2_diagnose(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 40,
+    // 40 → 160 FOR THE ENVELOPE. The old cap fitted a bare 12–15 word label with nothing to spare;
+    // a JSON object carrying the same label plus two integer fields does not fit in it, and a
+    // truncated body fails `parseGapVerdict` on every turn — the arm would measure a parser that
+    // never parses. The LABEL's own 12–15 word limit is unchanged and still stated in the format.
+    max_tokens: 160,
     system:
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
@@ -300,7 +325,13 @@ async function call2_diagnose(
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
       '(3) Output ONLY the label — no prose, no prefix, no explanation. ' +
-      'BAD (forbidden): any phrase that states the correct answer.',
+      'BAD (forbidden): any phrase that states the correct answer. ' +
+      // THE ENVELOPE. Rule (3) above says "output ONLY the label", which the format block now
+      // overrides — it is stated LAST so the most-recently-read instruction is the one that
+      // describes the actual output shape. The "answer correct — convention differs from model
+      // only" sentence above becomes the LABEL inside the object; `isCorrectVerdict` therefore
+      // runs on `safeLabel(...)`, never on the raw body, or a correct answer reads as a miss.
+      GAP_VERDICT_FORMAT,
     messages: [
       {
         role: 'user',
@@ -318,10 +349,70 @@ async function call2_diagnose(
       },
     ],
   });
-  return extractText(res);
+  const raw = extractText(res);
+  const verdict = parseGapVerdict(raw);
+  // NO RETRY, DELIBERATELY — unlike the drill route, which wraps this call in `withParseRetry`
+  // because `derived` is wired to production behaviour there and a parse failure would drop a
+  // live guard. Here the ONLY wired field is `creditable`, and an absent value reads as "no
+  // claim" → the shipped opening → today's behaviour exactly. Retrying would spend four calls to
+  // recover a field whose failure is already safe.
+  //
+  // ⚠️ BUT THE PARSE RATE IS THE ARM'S VALIDITY CONDITION, so it is observable rather than
+  // silent: a run in which nothing parses would show "no effect" and be indistinguishable from a
+  // measured null result. Count these lines in the server log when reading any measurement.
+  console.log(JSON.stringify({
+    at: 'case_gap_verdict',
+    parsed: verdict !== null,
+    creditable: verdict?.creditable ?? null,
+    derived: verdict?.derived ?? null,
+  }));
+  return { label: safeLabel(verdict, raw), verdict };
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
+
+/**
+ * The case hint leg's OPENING instruction. Pure, exported so the assembled bytes are pinnable —
+ * the claim this whole divergence rests on is "the non-creditable path is byte-identical to what
+ * ships today", and a claim about a string that only exists inside an async model call cannot be
+ * tested.
+ *
+ * PRECEDENCE: CONTRADICTION → NOTHING-CREDITABLE → SHIPPED.
+ *
+ * ⚠️ THE CONTRADICTION ARM STAYS FIRST AND BYTE-IDENTICAL. It is the only arm on this surface with
+ * a measured baseline (4/20 → 12/20 with the fence on diagnose alone) and it fires on a CODE-OWNED
+ * finding, which outranks a model-reported field. Reordering would silently re-word the one
+ * opening whose rate is known — the same precedence rule `hint-opening.ts` applies between its own
+ * (b) and (c) arms.
+ *
+ * ⚠️ `nothingEstablished` IS PASSED HARD-FALSE, BY DESIGN, NOT OVERSIGHT. `derived` is parsed off
+ * the envelope and deliberately NOT wired here: its (b) arm is numeric-shaped ("the figure is
+ * unchecked", "put their reasoning on the page") and would misdescribe a discursive case
+ * requirement entirely. Wiring both fields at once would also buy exactly the N-way
+ * unattributability P-T4 warns about — this moves ONE variable, `creditable`.
+ *
+ * ⚠️ `.trimEnd()` IS LOAD-BEARING. Every `hintOpeningInstruction` arm ends with a trailing space
+ * and the caller's tail already begins with one; without the trim every case turn gains a double
+ * space — a silent one-character edit to a live prompt, made while measuring that prompt.
+ */
+export function caseHintOpening(
+  variant: HintOpeningVariant,
+  hasContradiction: boolean,
+  nothingCreditableNow: boolean,
+): string {
+  if (hasContradiction) {
+    return (
+      'First miss, and the answer is on the WRONG SIDE of a settled choice stated above. ' +
+      'Do NOT open by crediting them with that choice — they did not make it. Say plainly ' +
+      'which way round it actually goes and why, then give one next move. If something ' +
+      'else in their work is genuinely right you may say so, but never the thing the ' +
+      'contradiction names.'
+    );
+  }
+  // IMPORTED, never transcribed: `hint-opening.ts` is the one place the opening is stated, so the
+  // drill and case surfaces cannot drift about what it asks for.
+  return hintOpeningInstruction(variant, false, nothingCreditableNow).trimEnd();
+}
 
 async function call3_hint(
   question: string,
@@ -343,6 +434,16 @@ async function call3_hint(
   /** Case paper, for persona routing only. Defaults to 'APM' so any caller that does not pass it
    *  gets a byte-identical prompt to before this parameter existed. See caseSystemFor. */
   paper = 'APM',
+  /**
+   * DIVERGENCE #2 — nothing in the answer earns credit against THIS requirement
+   * (`creditable === 0` on the parsed envelope).
+   *
+   * Defaulted FALSE so every existing caller, and every turn whose envelope did not parse, gets
+   * the shipped opening and a byte-identical prompt. Absent must mean "no claim", never "nothing
+   * creditable": this arm SUPPRESSES the praise demand, and the failure it would cause is telling
+   * a student who did good work that there was nothing worth leading with.
+   */
+  nothingCreditableNow = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
@@ -375,15 +476,7 @@ async function call3_hint(
           // from. It was not ignoring the fence; it was obeying a stronger instruction. Where code
           // has established a contradiction there is no opening credit to give on that axis, so
           // the prompt stops asking for it.
-          (groundedFacts.includes('CONTRADICTION FOUND')
-            ? 'First miss, and the answer is on the WRONG SIDE of a settled choice stated above. ' +
-              'Do NOT open by crediting them with that choice — they did not make it. Say plainly ' +
-              'which way round it actually goes and why, then give one next move. If something ' +
-              'else in their work is genuinely right you may say so, but never the thing the ' +
-              'contradiction names.'
-            : 'First miss. Lead with the ONE specific thing they got right — name the real move, ' +
-              'not vague praise — then name the single sharpest gap (just one, not a list) and ' +
-              'one next move.') +
+          caseHintOpening(CASE_HINT_OPENING, groundedFacts.includes('CONTRADICTION FOUND'), nothingCreditableNow) +
           ' Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           "structured breakdown. Don't state the answer.",
       },
@@ -805,7 +898,15 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
                   : classified === 'confusion' ? 'coaching' : 'chat';
     } else {
       // ── THE MOAT — existing withholding pipeline, unchanged ──
-      const diagnosis  = await call2_diagnose(question, context, studentMessage, modelAnswer, markScheme, groundedFacts);
+      // DIVERGENCE #2: call2 now returns the parsed ENVELOPE alongside the label. `label` is what
+      // every downstream consumer sees and is byte-equivalent to the old return value whenever the
+      // envelope parses; when it does not, `safeLabel` recovers the label or yields '' rather than
+      // letting a raw JSON blob reach `call3_hint` or the stored transcript.
+      const { label: diagnosis, verdict: gapVerdict } = await call2_diagnose(
+        question, context, studentMessage, modelAnswer, markScheme, groundedFacts);
+      // Absent ⇒ false ⇒ shipped opening ⇒ today's behaviour. Never inferred from `derived`, which
+      // is parsed but deliberately NOT wired on this surface — see call3_hint's parameter doc.
+      const gapNothingCreditable = nothingCreditable(gapVerdict);
 
       let completenessGap: string | null = null;
       if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
@@ -826,7 +927,14 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         newLastRealAttempt = studentMessage;
 
         if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove, paper);
+          // ⚠️ THE `creditable` ARM IS SUPPRESSED WHEN THE COMPLETENESS GATE SUPPLIED THE GAP.
+          // `completenessGap` means call2 said CORRECT and a separate check demoted it for a
+          // missing component — so the envelope's `creditable` describes an answer the turn is no
+          // longer about, and it was computed before the demotion. Leading with "nothing here
+          // earns credit" on an answer just judged correct is the one failure this arm must never
+          // produce. Falls back to the shipped opening, which is what ships today.
+          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove, paper,
+            completenessGap ? false : gapNothingCreditable);
           messageKind = 'hint';
         } else {
           ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove, paper);
