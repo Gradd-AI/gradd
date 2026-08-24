@@ -955,6 +955,88 @@ assert **both** papers carry the block and that each forbids a reveal offer and 
 nudge to a distressed student. A further check asserts the engine **imports** the block rather than
 transcribing its text. `test:case-persona` 21 → 28, gate 70/70.
 
+### 🟡 STAGE 6 SHIPPED + MEASURED 2026-08-24 — THE GUARDRAILS ARE NOT THE LEVER
+
+**Built:** `EZRA_APM_CASE_SYSTEM` DELETED; `caseSystemFor` delegates to `systemFor`. The case
+surface now gets the shared persona by IMPORT through one definition, so drill and case cannot
+drift about what they forbid. Measured before building: the deleted constant was `EZRA_SYSTEM`'s
+first **979 characters byte-identical**, then the GUARDRAIL line, then dignity — the whole
+remaining difference was the six blocks. APM's case prompt **1,638 → 7,787 chars**; AFM byte-
+identical before and after. Ordering is now `EZRA_SYSTEM`'s, so **dignity moves from last to
+mid-block** and `METHOD_FITS_THE_GIVEN_INPUTS` holds the anchor. `test:case-persona` 28 → 52,
+gate 70/70.
+
+**PAIRED ARM, run on ONE machine in ONE sitting, 80 legs, hand-read.** `docs/redteam/*` is
+gitignored, so the 2026-08-23 baseline transcripts were **not on the work machine** and could not
+be re-read under one classifier — the recorded 14/5/0 could only have been compared against a
+rubric applied to different prose. So BEFORE was **re-run** at `f261b48` and AFTER at `0cd203c`,
+`--surface polarity --polarity-only keldan|orlen --n 20 --legs 1`, dev server **killed and
+rebooted between arms** rather than trusting hot-reload. Captures `docs/redteam/stage6-{BEFORE,
+AFTER}-{keldan,orlen}-polarity.json` (gitignored — they do not travel).
+
+**BASELINE REPRODUCED, which is what makes the rest readable:** re-run BEFORE Keldan scored
+**12 inversion / 8 endorse-refusal / 0 clean** against the recorded **14 / 5 / 0**. Clean matched
+exactly; the A/B boundary moved by two.
+
+| | Keldan BEFORE | Keldan AFTER | Orlen BEFORE | Orlen AFTER |
+| --- | ---: | ---: | ---: | ---: |
+| inverts / invents | 12 | **7** | 5 | 8 |
+| endorses refusal / off-requirement credit | 8 | **13** | 14 | 12 |
+| **CLEAN (primary endpoint)** | **0** | **0** | **1** | **0** |
+
+🔴 **THE PRIMARY ENDPOINT DID NOT MOVE. Every one of the 40 AFTER openings still opens on a
+manufactured credit** — 20/20 on Keldan, 20/20 on Orlen. With 0 clean events in 40 legs the
+rule-of-three upper bound on the true clean rate is ~9%.
+📐 **WHAT DID CHANGE IS WHICH FABRICATION APPEARS.** Keldan's inversions fell 12 → 7 and were
+**replaced one-for-one by refusal-endorsements**, 8 → 13. Neither shift reaches significance at
+n=20 (both z ≈ 1.58, p ≈ 0.11), so this is suggestive, **not established**.
+📐 **THAT MIGRATION IS THE FINDING, AND IT CONFIRMS THE UNSATISFIABLE-OPENING MECHANISM RATHER
+THAN EITHER PREDICTION.** The praise-first opening demands a credit; the guardrails removed one
+route to manufacturing it (inverting the student's position) and the model switched to the other
+route still available (ratifying the refusal's rationale). **The demand is unchanged, so the rate
+is unchanged.** Guardrails change the SHAPE of the fabrication; only the envelope can change
+whether one is demanded.
+⚠️ **`GROUNDING_DISCIPLINE` WAS INERT ON BOTH TARGETS BY CONSTRUCTION, verified in code before the
+run** — it binds on "a CHECKLIST, FACTS, or CONVENTIONS block", the case path's `groundedFacts` is
+`renderDiscriminants(...)` (which emits "CODE-OWNED CHOICES" / "CONTRADICTION FOUND"), and
+`renderDiscriminants([], [])` returns the **empty string** on both APM targets. It cannot have
+contributed, and no result should be attributed to it.
+⚠️ **SIX BLOCKS SHIPPED AT ONCE, SO NO MOVEMENT IS ATTRIBUTABLE TO ONE.** "Rule 3 of
+`NO_COMPUTED_OUTPUTS` caused the inversion drop" is a hypothesis this bundle cannot test.
+Disambiguating needs per-block arms.
+⚠️ **ORLEN'S A/B SPLIT IS NOT COMPARABLE TO THE 2026-08-23 FIGURES** — the re-run counts vacuous
+task-identification credits ("you correctly identified that your job is to evaluate…") as
+inventions, which the original classifier evidently did not (1/20 vs 5/20). **The CLEAN counts are
+comparable and both are ~0.** Orlen 5 → 8 is within noise (p ≈ 0.31); the control did not move.
+🔵 **NOT REVERTED.** Stage 6 stands on its own merits — one definition, no drift, and AFM's case
+path gains six blocks it never had. It is simply **not the fabrication fix**, and the envelope work
+is confirmed as the real one.
+
+### 🔴 OPEN — `call4_reveal` IS THE SIXTH SIBLING-SURFACE INSTANCE, LIVE ON BOTH PAPERS
+
+**Not in scope for stage 6; logged so it is not rediscovered.** `REVEAL_SYSTEM`
+(`lib/acca/teach-engine.ts:664`) is the system prompt for the case surface's earned reveal, and
+`call4_reveal(question, context, attempt, diagnosis, modelAnswer)` **does not take `paper` at
+all** — there is no routing to bypass. Three defects in one string:
+
+1. **Hardcoded APM** — *"You are Ezra, an APM tutor."* Stage 5 paper-routed the four
+   CONVERSATIONAL legs and left this one, so the exact defect stage 5 fixed is still live for
+   every AFM case reveal.
+2. **Says "this drill"** — *"The student has genuinely attempted this drill"* — on a surface where
+   the unit is a case REQUIREMENT.
+3. **Carries the unconditional praise-first opening** — *"first credit, specifically, what they
+   already had right"* — the same instruction shape measured above producing 20/20 manufactured
+   credits, with no `creditable` gate and no conditional arm.
+
+⚠️ **(3) IS THE ONE THAT MATTERS AND IT IS WORSE HERE THAN ON THE HINT LEG.** The reveal fires
+after a student has missed twice; the population reaching it is disproportionately the population
+with nothing creditable to name. Unmeasured — the arm above fires `--legs 1` and never reaches a
+reveal.
+📐 **Counted as the sixth instance of the sibling-surface pattern (Grant's count, 2026-08-24):**
+one behaviour implemented twice, fixed on the surface someone was looking at, left standing on its
+sibling. The stage-5 comment block, the stage-6 finding above, and this item are all the same
+shape.
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is
