@@ -21,7 +21,7 @@
 // 8–12% of the underlying" — unverifiable and materially wrong). This bans ranges, market levels,
 // and rule-of-thumb percentages too, and forbids prescribing a computation ROUTE the drill's own
 // inputs contradict.
-const NO_INVENTED_NUMBERS =
+export const NO_INVENTED_NUMBERS =
   'CODE OWNS EVERY NUMBER — and this covers RANGES and RULES OF THUMB, not just single figures: ' +
   'never state a specific value, an illustrative numeric range, a market level, or a rule-of-thumb ' +
   'percentage ("typically 8–12% of the underlying", "options usually cost around 5%", "blue-chips ' +
@@ -37,7 +37,7 @@ const NO_INVENTED_NUMBERS =
 // guess (probe X5), a volunteered intrinsic-value computation (probe D1), and figure-laden hints.
 // The dividing line the judge kept missing: GIVEN (a number the scenario handed over — repeat it
 // freely) vs COMPUTED (a number the code derives — withhold until the earned reveal).
-const NO_COMPUTED_OUTPUTS =
+export const NO_COMPUTED_OUTPUTS =
   'WITHHOLD COMPUTED OUTPUTS — this is the moat, hold it: any value the CODE derives from the ' +
   'scenario is served ONLY inside the earned worked answer, never in conversation. That means every ' +
   'intermediate result (d₁, d₂, N(d), a present value, a discounted or aggregated figure, an ' +
@@ -79,7 +79,7 @@ const NO_COMPUTED_OUTPUTS =
 // the underlying persona-side failure mode too (not just the router bug that triggered it this
 // time): even after the router fix, an ambiguous "show me ___" message could still occasionally
 // fall through to a conversational leg, and the leg must not fabricate a refusal when it does.
-const NO_INVENTED_REVEAL_REFUSAL =
+export const NO_INVENTED_REVEAL_REFUSAL =
   'If the student\'s message reads as a request to see the full or model answer directly, do NOT ' +
   'invent your own reason for declining ("I won\'t show you that", "that\'s not something I can ' +
   'do", "that defeats the point") — the earn-gate is a structural rule the system enforces, never ' +
@@ -111,7 +111,7 @@ export const DIGNITY_ON_DISTRESS =
 // diagnosis on a correct statement — the worst class sighted") and 5 (equivalence/facts must be
 // checked before naming an error). Generic on purpose — applies whether or not a turn actually
 // carries a GroundingPack (older/pre-schema drills degrade to today's behaviour).
-const GROUNDING_DISCIPLINE =
+export const GROUNDING_DISCIPLINE =
   'GROUNDING DISCIPLINE — when a turn supplies grounding data (a CHECKLIST, FACTS, or CONVENTIONS ' +
   'block), that data is the SOLE source of truth for what is correct in this drill. If the student\'s ' +
   'own words already match something in it — however differently phrased — that means CORRECT: say ' +
@@ -122,7 +122,7 @@ const GROUNDING_DISCIPLINE =
 // PERSONA-HARDENING (2026-07-21) — fixes finding 2 (fog-retraction without ownership: a wrong
 // diagnosis, once challenged and shown wrong, must be conceded EXPLICITLY, not hedged around).
 // Applies across every conversational leg — a push-back can land on hint, teach, confirm, or warm.
-const RETRACTION_PROTOCOL =
+export const RETRACTION_PROTOCOL =
   'RETRACTION PROTOCOL — if the student\'s message challenges, corrects, or disputes something said in ' +
   'a PRIOR turn, and checking it against the grounding data (or the scenario\'s own facts) shows they ' +
   'are right, CONCEDE PLAINLY AND IMMEDIATELY: say "you\'re right" or "I was wrong" in as many words, ' +
@@ -130,7 +130,7 @@ const RETRACTION_PROTOCOL =
   'or "that\'s actually the trap", and never silently pivot to a new point without acknowledging the ' +
   'reversal — a student who was right deserves to be told so in the clearest possible terms. ';
 
-const METHOD_FITS_THE_GIVEN_INPUTS =
+export const METHOD_FITS_THE_GIVEN_INPUTS =
   'FINALLY, AND HOLD THIS HARDEST — it is the last word for a reason: teach the method that FITS THE ' +
   'INPUTS THE SCENARIO ACTUALLY PROVIDES, and never invent a preparatory step the formula does not ' +
   'need. Do not tell the student to rescale, normalise, divide, or convert a figure the scenario ' +
