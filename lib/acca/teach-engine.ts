@@ -17,7 +17,10 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
-import { EZRA_AFM_SYSTEM, DIGNITY_ON_DISTRESS } from './tutor-personas';
+// STAGE 6 (2026-08-24): the case surface uses the SHARED persona selector. `systemFor` is the one
+// definition of each paper's persona — importing it is what makes it structurally impossible for
+// the drill and case surfaces to drift about what they forbid. See `caseSystemFor` below.
+import { systemFor } from './tutor-personas';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -158,75 +161,69 @@ function isCorrectVerdict(diagnosis: string): boolean {
 
 // ── Ezra persona ──────────────────────────────────────────────────────────────
 
-// ── THE CASE PERSONA WAS HARDCODED TO APM (fixed 2026-08-23, stage 5) ────────
-// This module contained the string `paper` ZERO times, and this constant — the system prompt for
-// every conversational leg on the case surface — opens "You are Ezra, an APM tutor". There are
-// **20 published AFM case requirements**, so every one of them was tutored by a persona that
-// introduces itself as an APM tutor and carries APM's diagnostic frame (describe-not-apply,
-// application-vs-evaluation), which `EZRA_AFM_SYSTEM`'s own header says "does NOT transfer" and
-// must be "replaced wholesale, never blended".
+// ── STAGE 6 (2026-08-24): THE CASE SURFACE ADOPTS THE SHARED PERSONA ─────────
+// `EZRA_APM_CASE_SYSTEM` IS DELETED. It was the stage-5 rename of the module's one hardcoded
+// persona, held byte-for-byte while AFM was routed away from it. It is gone because there is no
+// longer anything case-specific in it to hold: it was `EZRA_SYSTEM`'s first 979 characters —
+// header, register, diagnostic frame, requirement-demands line, scepticism line, all
+// byte-identical — followed by the GUARDRAIL line and (since 2026-08-23) DIGNITY_ON_DISTRESS.
+// The entire remaining difference was the six guardrail blocks this stage adopts, so keeping a
+// separate constant would mean maintaining a second copy of a string with zero divergence.
 //
-// ⚠️ RENAMED, NOT REWRITTEN. The VALUE is byte-for-byte what it was; only the name now states its
-// scope. APM's case prompt must not move in this stage — this is a correctness fix for AFM, not a
-// recalibration of APM, and mixing the two would make neither attributable.
+// WHAT THE CASE PATH GAINS — the six blocks it never received:
+//   NO_INVENTED_NUMBERS · NO_COMPUTED_OUTPUTS · NO_INVENTED_REVEAL_REFUSAL
+//   GROUNDING_DISCIPLINE · RETRACTION_PROTOCOL · METHOD_FITS_THE_GIVEN_INPUTS
+// (DIGNITY_ON_DISTRESS shipped alone on 2026-08-23 and is already live on both papers.)
 //
-// ⚠️ WHY NOT `systemFor(paper)` FROM tutor-personas.ts. That returns the SHARED `EZRA_SYSTEM`,
-// which is this string PLUS seven guardrail blocks the case path never received
-// (NO_INVENTED_NUMBERS, NO_COMPUTED_OUTPUTS, NO_INVENTED_REVEAL_REFUSAL, DIGNITY_ON_DISTRESS,
-// GROUNDING_DISCIPLINE, RETRACTION_PROTOCOL, METHOD_FITS_THE_GIVEN_INPUTS). Adopting it would
-// change APM's live prompt and is STAGE 6, with its own measurement — it cannot be a byte-diff.
-export const EZRA_APM_CASE_SYSTEM =
-  'You are Ezra, an APM tutor who knows exactly how ACCA APM is marked. ' +
-  'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +
-  'fixable reasons, not through lack of knowledge. ' +
-  'Diagnostic frame: APM candidates know the models. They lose marks on APPLICATION ' +
-  '(failing to deploy the model on the specific scenario facts) and EVALUATION ' +
-  '(failing to give a supported professional judgement when the verb demands one), ' +
-  'and by stopping at description when the requirement demanded judgement. ' +
-  // The persona itself used to name the taxonomy. Removed 2026-08-01 with the rest of the fence —
-  // an instruction elsewhere not to say "intellectual level 3" loses to a persona that says the
-  // model should reason in those terms.
-  'Use what the requirement demands (supplied per turn) to orient the student on what the ' +
-  'question is really asking — not to deliver a verdict on them. Never name an internal grading ' +
-  'taxonomy to the student: no intellectual levels, no AO framing, no command-verb labels. ' +
-  'Professional scepticism — questioning assumptions, naming commercial risks, ' +
-  'identifying constraints the model surfaces — is a substantive analytical move ' +
-  'you teach explicitly, not a soft add-on. ' +
-  'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
-  "No generic praise. Never complete the student's answer. " +
-  // ── DIGNITY_ON_DISTRESS, SHIPPED ALONE (2026-08-23), AHEAD OF STAGE 6 ───────
-  // ⚠️ THIS IS A WELLBEING GAP, NOT A FABRICATION ONE, AND IT IS DELIBERATELY NOT WAITING.
-  // A student in real distress on the case path had NO handling at all: no dignity clause, so
-  // the leg could answer "I give up, I'm failing" with a commercial nudge, a reveal offer, or a
-  // wall. The other six shared blocks bear on invention and grounding and are barred on a
-  // fabrication measurement (stage 6); holding this one behind a measurement it has nothing to
-  // do with would be the wrong trade — there is no plausible mechanism by which telling the
-  // model to be kind to a panicking student makes it invent more.
-  //
-  // AFM already had it from stage 5 (EZRA_AFM_SYSTEM composes it), so this closes the APM half
-  // and the block is now live on BOTH papers of the case surface.
-  //
-  // Imported, never transcribed: one definition, so the two surfaces cannot drift in what
-  // "distress" means or what is forbidden on that turn.
-  DIGNITY_ON_DISTRESS;
+// ⚠️ THIS MOVES APM'S LIVE CASE PROMPT. It is NOT a byte-diff and stage 5 refused to do it for
+// that reason. AFM does not move: `caseSystemFor('AFM')` returned `EZRA_AFM_SYSTEM` before this
+// change and returns it after, so only the APM half is under measurement.
+//
+// ⚠️ ORDERING CHANGED, AND IT IS THE DESIGNED ORDER. The blocks compose in `EZRA_SYSTEM`'s
+// sequence, which ends on METHOD_FITS_THE_GIVEN_INPUTS — deliberately the ANCHOR position
+// (most-recently-read wins; see its comment in tutor-personas.ts). DIGNITY_ON_DISTRESS therefore
+// moves from LAST on the APM case prompt to mid-block. That is the shipped drill configuration,
+// so case now matches drill rather than diverging from it, but it is a real change to a clause
+// that shipped one day ago and it is recorded here rather than left to be discovered.
+//
+// ⚠️ THE ADOPTED BLOCKS CARRY DRILL VOCABULARY, AND IT IS NOT FIXED HERE. NO_INVENTED_NUMBERS
+// says "the drill did not supply" and "the drill's OWN inputs"; METHOD_FITS_THE_GIVEN_INPUTS
+// and NO_COMPUTED_OUTPUTS illustrate with Black-Scholes specifics (d₁/d₂/N(d), "divide the share
+// price and strike by the number of options") that no APM case requirement involves. Rewording
+// them to be surface-neutral would move the DRILL prompt too and invalidate every drill
+// measurement they were tuned on — so the words stay as they are and the cost is recorded.
+// ⚠️ GROUNDING_DISCIPLINE NAMES A BLOCK SHAPE THE CASE PATH NEVER EMITS. It binds on "a
+// CHECKLIST, FACTS, or CONVENTIONS block"; the case path's `groundedFacts` is
+// `renderDiscriminants(...)`, which emits "CODE-OWNED CHOICES" / "CONTRADICTION FOUND" — and on
+// the 34 of 38 published requirements with no registered discriminant it returns the EMPTY
+// STRING, so the block's antecedent is false and it cannot bind at all.
 
 /**
  * The persona for a case turn, chosen by the case's paper.
  *
- * AFM routes to the SHARED `EZRA_AFM_SYSTEM` — the paper-correct register, whose own header
- * states the APM diagnostic frame does not transfer. APM keeps the local string above, unchanged.
+ * ⚠️ THIS NOW DELEGATES TO `systemFor` AND HAS ZERO DIVERGENCE FROM IT. Both papers return the
+ * shared persona from tutor-personas.ts — the blocks are IMPORTED THROUGH ONE DEFINITION, never
+ * transcribed, so the drill and case surfaces cannot drift about what they forbid.
+ * `scripts/test-case-persona.ts` pins the equality for both papers, so a divergence cannot be
+ * introduced silently.
  *
- * ⚠️ CAVEAT, RECORDED BECAUSE IT IS UNMEASURED: `EZRA_AFM_SYSTEM` was written for the DRILL
- * surface. "Correct paper" is not the same as "written for cases" — it is unambiguously better
- * than tutoring an AFM candidate as though they were sitting APM, but nothing has measured it on
- * the case surface. If AFM case behaviour is ever assessed, that is the first thing to question.
+ * KEPT AS A NAMED SEAM RATHER THAN DELETED, for one reason: the case surface has two open,
+ * recorded caveats that the drill surface does not (below), and a case-specific persona fix — if
+ * either is ever acted on — lands here as a one-line change instead of a re-architecture. The
+ * fixture is what stops the seam becoming an accidental fork.
+ *
+ * ⚠️ CAVEAT, RECORDED BECAUSE IT IS UNMEASURED: BOTH personas were written for the DRILL surface.
+ * For AFM this has been true since stage 5; as of stage 6 it is true for APM as well, since APM's
+ * case prompt is now the drill persona verbatim. "Correct paper" is not "written for cases", and
+ * the drill vocabulary noted above is the visible edge of that. Nothing has measured either
+ * persona on the case surface beyond the stage-6 arm.
  *
  * ⚠️ `paper` is safe to trust here: `app/api/acca/case/turn/route.ts` fetches the case with
  * `.eq('paper_code', paper)`, so a case that does not belong to the requested paper is never
  * loaded — the persona cannot end up scoped to a paper the content is not from.
  */
 export function caseSystemFor(paper: string): string {
-  return paper === 'AFM' ? EZRA_AFM_SYSTEM : EZRA_APM_CASE_SYSTEM;
+  return systemFor(paper);
 }
 
 // ── Anthropic client ──────────────────────────────────────────────────────────
