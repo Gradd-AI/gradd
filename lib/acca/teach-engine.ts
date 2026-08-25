@@ -20,7 +20,7 @@ import Anthropic from '@anthropic-ai/sdk';
 // STAGE 6 (2026-08-24): the case surface uses the SHARED persona selector. `systemFor` is the one
 // definition of each paper's persona — importing it is what makes it structurally impossible for
 // the drill and case surfaces to drift about what they forbid. See `caseSystemFor` below.
-import { systemFor } from './tutor-personas';
+import { systemFor, caseRevealSystemFor } from './tutor-personas';
 // DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
 // the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
 // opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
@@ -856,7 +856,17 @@ async function call_warm(
 
 // ── CALL 4: Earned reveal (redesign item 3) ───────────────────────────────────
 // ⚠️ THIS IS THE ONLY PLACE THE STORED model_answer IS SHOWN TO THE STUDENT. ⚠️
-const REVEAL_SYSTEM =
+//
+// THE LOCAL `REVEAL_SYSTEM` LITERAL IS DELETED (2026-08-25). It was a byte-identical copy of
+// `tutor-personas.ts`'s export, hardcoded "You are Ezra, an APM tutor", used for BOTH papers — so
+// every AFM case reveal addressed the student as the wrong paper's persona, the same defect stage 5
+// fixed for the conversational legs and left standing here. `caseRevealSystemFor` is now the ONE
+// definition; see its comment for why this is NOT `caseSystemFor(paper)` and which guardrail blocks
+// are taken.
+//
+// `shipped` reproduces the deleted literal BYTE-FOR-BYTE (fixture-pinned), so the arm's baseline is
+// the string that actually shipped and not a reconstruction of it.
+const SHIPPED_CASE_REVEAL_SYSTEM =
   'You are Ezra, an APM tutor. The student has genuinely attempted this drill and worked ' +
   'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
   'top-band answer is built: first credit, specifically, what they already had right, then ' +
@@ -864,18 +874,29 @@ const REVEAL_SYSTEM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
+export type CaseRevealVariant = 'routed' | 'shipped';
+const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed') as CaseRevealVariant;
+
+/** Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim. */
+export function caseRevealSystem(variant: CaseRevealVariant, paper: string): string {
+  return variant === 'shipped' ? SHIPPED_CASE_REVEAL_SYSTEM : caseRevealSystemFor(paper);
+}
+
 async function call4_reveal(
   question: string,
   context: string,
   attempt: string,
   diagnosis: string,
   modelAnswer: string,
+  /** Defaulted 'APM' so any caller that does not pass it is byte-identical to before the parameter
+   *  existed — the same convention `call3_hint` uses. The orchestrator now passes the real paper. */
+  paper = 'APM',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 700,
-    system: REVEAL_SYSTEM,
+    system: caseRevealSystem(CASE_REVEAL, paper),
     messages: [
       {
         role: 'user',
@@ -984,7 +1005,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   if (wantsReveal && missCount >= 2) {
     intent = 'reveal';
     messageKind = 'reveal';
-    ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? studentMessage, lastDiagnosis ?? '', modelAnswer);
+    ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? studentMessage, lastDiagnosis ?? '', modelAnswer, paper);
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';

@@ -333,6 +333,78 @@ export const REVEAL_SYSTEM_SOLVED =
   'sharp tutor laying it out, not a marked script. End by pointing them to apply the key move on a ' +
   'FRESH question. No empty praise.';
 
+// ── Earned reveal — the CASE surface, paper-routed (2026-08-25) ───────────────
+// `teach-engine.ts` held a LOCAL, non-exported byte-identical copy of REVEAL_SYSTEM and used it
+// for every case reveal on BOTH papers, so an AFM student was addressed as "an APM tutor". This
+// is the one definition; the local copy is deleted.
+//
+// ⚠️ THIS IS **NOT** `caseSystemFor(paper)`, AND THAT IS DELIBERATE — the naive routing fix would
+// break the leg. The conversational persona ends with **"Never complete the student's answer."**
+// (`EZRA_SYSTEM`, `EZRA_AFM_SYSTEM`) and carries `NO_COMPUTED_OUTPUTS` — *"WITHHOLD COMPUTED
+// OUTPUTS — this is the moat, hold it … never STATE such a computed figure yourself"*, a block
+// whose own header scopes it to *"the CONVERSATIONAL legs (warm/hint/teach/confirm)"*. The reveal
+// says the opposite in the same breath: *"INCLUDING the figures and the conclusion (withholding is
+// over)"*. `route.ts`'s call4_reveal comment states the rule outright: it *"uses its OWN system
+// prompt — NOT the conversational persona, whose 'never complete the student's answer' guardrail
+// is exactly what the student has earned past here."* Injecting it would put a refusal instruction
+// on the one leg that must reveal — the X1 invented-refusal failure, prompted rather than
+// accidental.
+//
+// SO THE GUARDRAILS ARE TAKEN SELECTIVELY, four of the seven, each checked against this leg:
+//   ✅ NO_INVENTED_NUMBERS       — its own last clause AUTHORISES this leg ("verified figures live
+//                                  only in the earned worked answer"); the rest bans invented
+//                                  ranges and rules of thumb, which a walkthrough should not have.
+//   ✅ NO_INVENTED_REVEAL_REFUSAL — directly on point, and already reveal-aware ("or say plainly
+//                                  that it's already available to them, if it is").
+//   ✅ RETRACTION_PROTOCOL       — paper-neutral, applies on any leg a push-back can land on.
+//   ✅ METHOD_FITS_THE_GIVEN_INPUTS — a teaching-method rule; kept LAST because its own text says
+//                                  it is the last word for a reason (anchor position).
+//   ⛔ NO_COMPUTED_OUTPUTS       — direct contradiction, see above.
+//   ⛔ DIGNITY_ON_DISTRESS       — contains "The moat still holds (you never hand over the answer)"
+//                                  and "do NOT offer to reveal the answer". Antecedent-gated on
+//                                  distress, but on THIS leg the gated text is false.
+//   ⛔ GROUNDING_DISCIPLINE      — binds on "a CHECKLIST, FACTS, or CONVENTIONS block"; the case
+//                                  `call4_reveal` receives NO grounding data at all, so its
+//                                  antecedent is ALWAYS false here. An always-false block is pure
+//                                  token cost and unattributable movement (P-T4 corollary).
+//
+// ⚠️ AFM DELIBERATELY DOES **NOT** ADOPT THE DRILL ROUTE'S DESIGN "B" (wrapper + `assembleAfmReveal`
+// appending the worked answer verbatim). That is a different CONTENT design needing its own
+// measurement, and the case engine has no `assembleAfmReveal` call. AFM here is the SAME
+// walkthrough shape in the AFM voice — the paper defect fixed, nothing else.
+const CASE_REVEAL_GUARDRAILS =
+  ' ' + NO_INVENTED_NUMBERS + NO_INVENTED_REVEAL_REFUSAL + RETRACTION_PROTOCOL + METHOD_FITS_THE_GIVEN_INPUTS;
+
+// The AFM voice of the reveal core. Mirrors REVEAL_SYSTEM clause for clause; the ONLY differences
+// are the opening register (matching REVEAL_AFM_WRAPPER_SYSTEM's, which is the established AFM
+// reveal voice) and the unit noun.
+export const CASE_REVEAL_CORE_AFM =
+  'You are Ezra, an ACCA AFM tutor and the board\'s senior financial adviser. The student has ' +
+  'genuinely attempted this requirement and worked through hints and a teach-through — they have ' +
+  'EARNED the full model now. Show them how a ' +
+  'top-band answer is built: first credit, specifically, what they already had right, then ' +
+  'walk the moves they were missing, INCLUDING the figures and the conclusion (withholding is ' +
+  'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
+  'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
+
+// The APM voice. Identical to REVEAL_SYSTEM except "this drill" → "this requirement" — the case
+// surface's unit is a case REQUIREMENT, and "drill" was the second defect on the logged item.
+// ⚠️ BUNDLED WORDING CHANGE: this moves the APM bytes too, so the arm changes TWO things (paper
+// routing AND the unit noun). Neither endpoint under measurement — clean openings, and the
+// "an APM board" leak — turns on the unit noun, but the arm cannot ATTRIBUTE to one or the other
+// and that is stated rather than glossed.
+export const CASE_REVEAL_CORE_APM =
+  'You are Ezra, an APM tutor. The student has genuinely attempted this requirement and worked ' +
+  'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
+  'top-band answer is built: first credit, specifically, what they already had right, then ' +
+  'walk the moves they were missing, INCLUDING the figures and the conclusion (withholding is ' +
+  'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
+  'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
+
+export function caseRevealSystemFor(paper: string): string {
+  return (paper === 'AFM' ? CASE_REVEAL_CORE_AFM : CASE_REVEAL_CORE_APM) + CASE_REVEAL_GUARDRAILS;
+}
+
 // ── Earned reveal — AFM (design "B": verbatim worked answer + framing wrapper) ─
 // The model writes ONLY the wrapper (credit + misconception + next step) — never the
 // figures. The authored, code-verified model_answer is appended verbatim by
