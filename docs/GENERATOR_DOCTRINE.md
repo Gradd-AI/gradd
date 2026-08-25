@@ -674,6 +674,37 @@ fabrication rather than a leak.
 drift, six blocks AFM's case path never had. **It is simply not the fabrication fix, and the merge
 commit says so.** Never let a real structural gain stand in for the measured outcome.
 
+### ✅ THE SECOND CLAUSE, CONFIRMED — divergence #2 (measured 2026-08-25)
+
+P-T4 predicted that conditioning the DEMAND would move what six prohibitions could not. It did,
+on the same two targets, same rubric, same n, same classifier — and this time from ONE build with
+the arm env-selected, so no SHA checkout separates the arms.
+
+`creditable === 0` (gap-verdict envelope) replaces `call3_hint`'s praise-first opening with
+`hint-opening.ts`'s (c) arm, which **names no prohibition** and hands over a satisfiable job.
+
+| CLEAN openings (primary endpoint) | BEFORE | AFTER | Fisher |
+| --- | ---: | ---: | ---: |
+| Keldan (declines half the requirement) | 0/20 | **18/20** | p = 3.4e-9 |
+| Orlen (off-requirement remark) | 0/20 | **20/20** | p = 1.5e-11 |
+| pooled | 0/40 | **38/40** | p = 1.6e-20 |
+
+**The migration did NOT recur, and that is the load-bearing observation.** At stage 6 the
+categories traded one-for-one (inversions 12→7, endorsements 8→13, total flat). Here both
+collapse together — Keldan 5→0 and 15→2, Orlen 12→0 and 8→0. **A rerouted fabrication is the
+signature of a demand still standing; a collapse in every category at once is the signature of
+the demand being gone.** Read the categories against each other, not just the total.
+
+⚠️ **VALIDITY CONDITIONS ARE PART OF THE RESULT, reported before the counts:** 80/80 envelopes
+parsed and 80/80 read `creditable === 0`. Without both, "no effect" is indistinguishable from a
+parser that never parsed — which is why the engine logs `case_gap_verdict` per turn.
+
+⚠️ **CEILING.** `creditable` is MODEL-REPORTED, not code-owned, and both targets were seeded to
+deserve a 0. **Its behaviour on a genuinely PARTIAL answer is unmeasured** — that is where a wrong
+0 tells a student who did good work there was nothing worth leading with. Prompt conditioning at
+38/40, never a deterministic gate. Full record:
+`docs/redteam/summaries/2026-08-25-case-envelope-divergence-2.md`.
+
 ## THE 5-FIELD SWEEP RULE (operationalised)
 
 A correction that touches one claim must be applied across **all five drill fields** (`question`, `context_text`, `model_answer`, `hint`, `full_reveal`) — a residual in one field once slipped past an adversarial reviewer. **Operationalised the cheap way: any drill edit re-runs ALL gates on ALL fields before the DB write. The gates are the enforcement** — a claim fixed in only some fields fails figure-integrity or a prose lint, so the write is blocked. No edit reaches the DB without a full re-gate.
