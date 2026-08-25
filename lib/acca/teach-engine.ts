@@ -874,12 +874,17 @@ const SHIPPED_CASE_REVEAL_SYSTEM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
-export type CaseRevealVariant = 'routed' | 'shipped';
+// `routed_2p` = the routed build with the four injected blocks recast so they no longer refer to
+// the student in the third person. Tests whether guardrail prose written ABOUT the student primes
+// output written about the student (the 0/20 → 2/20 register regression the routed arm found).
+// Default stays `routed` until that arm reports — flipping it is its own commit.
+export type CaseRevealVariant = 'routed' | 'routed_2p' | 'shipped';
 const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed') as CaseRevealVariant;
 
 /** Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim. */
 export function caseRevealSystem(variant: CaseRevealVariant, paper: string): string {
-  return variant === 'shipped' ? SHIPPED_CASE_REVEAL_SYSTEM : caseRevealSystemFor(paper);
+  if (variant === 'shipped') return SHIPPED_CASE_REVEAL_SYSTEM;
+  return caseRevealSystemFor(paper, variant === 'routed_2p');
 }
 
 async function call4_reveal(

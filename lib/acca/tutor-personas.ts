@@ -375,6 +375,70 @@ export const REVEAL_SYSTEM_SOLVED =
 const CASE_REVEAL_GUARDRAILS =
   ' ' + NO_INVENTED_NUMBERS + NO_INVENTED_REVEAL_REFUSAL + RETRACTION_PROTOCOL + METHOD_FITS_THE_GIVEN_INPUTS;
 
+// ── SECOND-PERSON COPIES, REVEAL LEG ONLY (2026-08-25) ───────────────────────
+// HYPOTHESIS UNDER TEST: guardrail prose written ABOUT the student primes output written about
+// the student. The routed arm introduced 2/20 third-person register breaks on AFM — reveals that
+// addressed a third party about the candidate ("you've identified the core problem with THEIR last
+// attempt: THEY concluded without doing the work") — where the baseline had 0/20. The four blocks
+// injected there are the only new prose, and they are dense in "the student": "If THE STUDENT'S
+// message reads as…", "if THE STUDENT'S message challenges…", "tell THE STUDENT to rescale…".
+// That is P-M4's shape on a register rather than a leak: naming it primes it.
+//
+// ⚠️ THE CONVERSATIONAL COPIES ABOVE ARE UNTOUCHED AND FIXTURE-PINNED BYTE-IDENTICAL. Four legs
+// and both papers still send the originals; only the reveal sees these.
+//
+// ⚠️ ONE VARIABLE, AND "drill" IS DELIBERATELY LEFT ALONE. These are the routed arm's own blocks
+// with student-references recast and NOTHING else — same "drill" wording, same anchors, same
+// examples, same capitalisation, same severity markers, same trailing spaces. The paired arm's
+// sole delta against `83291d6` is the referent register.
+//
+// ⚠️ NO INSTRUCTION ABOUT REGISTER IS ADDED. A clause like "write to them directly, never about
+// them" would NAME the unwanted output and prime it — the exact failure P-M4 measured. Where a
+// second-person recast would make "you" ambiguous between the model and the student, the reference
+// is REMOVED rather than clarified.
+//
+// ⚠️ KNOWN CONFOUND: "you" already means the MODEL in an imperative system prompt. If the model
+// reads a recast "you" as itself, the arm measures confusion rather than register. Checked in the
+// read by looking for the model discussing its OWN answer.
+// ⚠️ A SILENT NO-OP HERE WOULD MAKE THE ARM MEASURE NOTHING. `String.replace` with an anchor that
+// does not match returns the input unchanged, so a single typo would ship a "second-person" variant
+// byte-identical to the third-person one and the paired arm would report a null that means "the
+// edit never happened". Every substitution must fire, and must actually change the string (P-G1:
+// fail loudly rather than degrade).
+function mustRecast(src: string, pairs: ReadonlyArray<readonly [string, string]>): string {
+  return pairs.reduce((s, [from, to]) => {
+    if (!s.includes(from)) throw new Error(`2P recast anchor not found: ${JSON.stringify(from.slice(0, 60))}`);
+    const out = s.split(from).join(to);
+    if (out === s) throw new Error(`2P recast was a no-op: ${JSON.stringify(from.slice(0, 60))}`);
+    return out;
+  }, src);
+}
+
+const NO_INVENTED_NUMBERS_2P = mustRecast(NO_INVENTED_NUMBERS, [
+  ["point the student at the drill's OWN inputs and their own workings",
+   "point back to the drill's OWN inputs and to the workings already on the page"],
+]);
+const NO_INVENTED_REVEAL_REFUSAL_2P = mustRecast(NO_INVENTED_REVEAL_REFUSAL, [
+  ["If the student's message reads as a request", 'If the message you are answering reads as a request'],
+  ["once they've engaged with the feedback", 'once the feedback has been engaged with'],
+  ["say plainly that it's already available to them, if it is", "say plainly that it's already available, if it is"],
+]);
+const RETRACTION_PROTOCOL_2P = mustRecast(RETRACTION_PROTOCOL, [
+  ["if the student's message challenges", 'if the message you are answering challenges'],
+  ['shows they are right', 'shows it is right'],
+  ['a student who was right deserves to be told so in the clearest possible terms',
+   'being right deserves to be acknowledged in the clearest possible terms'],
+]);
+const METHOD_FITS_THE_GIVEN_INPUTS_2P = mustRecast(METHOD_FITS_THE_GIVEN_INPUTS, [
+  ['Do not tell the student to rescale, normalise, divide, or convert a figure',
+   'Do not instruct a rescale, normalisation, division, or conversion of a figure'],
+  ['so do NOT tell the student to "rescale to per-share"',
+   'so do NOT instruct a "rescale to per-share"'],
+]);
+
+const CASE_REVEAL_GUARDRAILS_2P =
+  ' ' + NO_INVENTED_NUMBERS_2P + NO_INVENTED_REVEAL_REFUSAL_2P + RETRACTION_PROTOCOL_2P + METHOD_FITS_THE_GIVEN_INPUTS_2P;
+
 // The AFM voice of the reveal core. Mirrors REVEAL_SYSTEM clause for clause; the ONLY differences
 // are the opening register (matching REVEAL_AFM_WRAPPER_SYSTEM's, which is the established AFM
 // reveal voice) and the unit noun.
@@ -401,9 +465,14 @@ export const CASE_REVEAL_CORE_APM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
-export function caseRevealSystemFor(paper: string): string {
-  return (paper === 'AFM' ? CASE_REVEAL_CORE_AFM : CASE_REVEAL_CORE_APM) + CASE_REVEAL_GUARDRAILS;
+export function caseRevealSystemFor(paper: string, secondPerson = false): string {
+  return (paper === 'AFM' ? CASE_REVEAL_CORE_AFM : CASE_REVEAL_CORE_APM)
+    + (secondPerson ? CASE_REVEAL_GUARDRAILS_2P : CASE_REVEAL_GUARDRAILS);
 }
+
+/** Exported for fixtures only — the arm's whole claim is that these two differ ONLY in referent. */
+export const CASE_REVEAL_GUARDRAILS_3P_FOR_TEST = CASE_REVEAL_GUARDRAILS;
+export const CASE_REVEAL_GUARDRAILS_2P_FOR_TEST = CASE_REVEAL_GUARDRAILS_2P;
 
 // ── Earned reveal — AFM (design "B": verbatim worked answer + framing wrapper) ─
 // The model writes ONLY the wrapper (credit + misconception + next step) — never the

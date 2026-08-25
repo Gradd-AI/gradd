@@ -132,5 +132,77 @@ ok('APM and AFM cores are identical from "Show them how a" onward', tailApm === 
 ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instruction)',
   !/appends it, VERBATIM/.test(CASE_REVEAL_CORE_AFM));
 
-console.log(`\n${fail ? 'FAIL' : 'PASS'} case reveal routing: ${pass} passed, ${fail} failed\n`);
+
+// ── 8. THE SECOND-PERSON ARM (2026-08-25) ────────────────────────────────────
+// Tests the register hypothesis: guardrail prose written ABOUT the student primes output written
+// about the student. The claim these fixtures defend is that the two block sets differ ONLY in
+// referent — if anything else moved, the arm is measuring two things.
+{
+  const {
+    CASE_REVEAL_GUARDRAILS_3P_FOR_TEST: G3,
+    CASE_REVEAL_GUARDRAILS_2P_FOR_TEST: G2,
+  } = require('../lib/acca/tutor-personas');
+
+  ok('2P block set differs from 3P — the recast actually fired', G3 !== G2);
+
+  // THE POINT OF THE ARM: no third-person student reference survives.
+  const STUDENT_NOUN = /\bthe student\b|\ba student\b|\bstudent's\b/i;
+  ok('3P set DOES refer to "the student" (positive control — else the next check is vacuous)',
+    STUDENT_NOUN.test(G3), `3P hits: ${(G3.match(/student/gi) || []).length}`);
+  ok('2P set contains NO student-noun reference at all',
+    !STUDENT_NOUN.test(G2), (G2.match(/[^.]*student[^.]*/i) || [''])[0].slice(0, 120));
+
+  // NO INSTRUCTION ABOUT REGISTER WAS ADDED — that would name the unwanted output and prime it
+  // (P-M4), and would confound the arm with a second change.
+  ok('2P set adds no instruction about register/person',
+    !/third person|second person|address them directly|write to them/i.test(G2));
+  ok('2P set is not merely LONGER — no clause was appended',
+    G2.length < G3.length + 40);
+
+  // EVERY ANCHOR PRESERVED. If a severity marker or example was lost, the arm is measuring a
+  // weakened guardrail rather than a register change.
+  for (const anchor of [
+    'CODE OWNS EVERY NUMBER', 'RANGES and RULES OF THUMB', 'typically 8–12% of the underlying',
+    'more volatility → more', 'Verified figures live only in the earned worked answer',
+    'the earn-gate is a structural rule the system enforces', 'never\n', 'RETRACTION PROTOCOL',
+    'CONCEDE PLAINLY AND IMMEDIATELY', 'well, technically',
+    'FINALLY, AND HOLD THIS HARDEST', 'FITS THE', 'divide the share price and strike',
+    'Pick ONE consistent basis',
+  ]) {
+    const a = anchor.replace('\n', '');
+    if (!G3.includes(a)) continue; // skip anchors that were never there
+    ok(`2P preserves anchor: ${JSON.stringify(a.slice(0, 44))}`, G2.includes(a));
+  }
+
+  // The recast must not have touched the model's own imperatives — those are what make "you"
+  // unambiguous. A confound check, since "you" already means the MODEL in a system prompt.
+  ok('2P keeps "never a figure you supply" (model-directed "you" intact)',
+    G2.includes('never a figure you supply'));
+  ok('2P keeps "do NOT invent your own reason for declining"',
+    G2.includes('invent your own reason for declining'));
+
+  // The conversational copies must be UNTOUCHED — four legs and both papers still send them.
+  const { systemFor: sysFor } = require('../lib/acca/tutor-personas');
+  for (const paper of ['APM', 'AFM']) {
+    ok(`${paper}: the CONVERSATIONAL persona still carries the third-person blocks`,
+      STUDENT_NOUN.test(sysFor(paper)));
+  }
+  // And the reveal must still be a reveal under the new variant.
+  const r2apm = caseRevealSystem('routed_2p', 'APM');
+  const r2afm = caseRevealSystem('routed_2p', 'AFM');
+  for (const [label, s] of [['APM', r2apm], ['AFM', r2afm]] as const) {
+    ok(`routed_2p ${label}: withholding still OVER`,
+      /withholding is\s+over — this is the earned reveal/.test(s.replace(/\s+/g, ' ')));
+    ok(`routed_2p ${label}: no "Never complete the student's answer"`,
+      !/Never complete the student's answer/.test(s));
+    ok(`routed_2p ${label}: no WITHHOLD COMPUTED OUTPUTS`, !/WITHHOLD COMPUTED OUTPUTS/.test(s));
+  }
+  ok('routed_2p AFM still names AFM and not APM', /ACCA AFM tutor/.test(r2afm) && !/\bAPM\b/.test(r2afm));
+  ok('routed and routed_2p differ ONLY in the guardrail block set',
+    caseRevealSystem('routed', 'APM').replace(G3, '') === r2apm.replace(G2, ''));
+}
+
+console.log(`
+${fail ? 'FAIL' : 'PASS'} case reveal routing: ${pass} passed, ${fail} failed
+`);
 if (fail) process.exitCode = 1;
