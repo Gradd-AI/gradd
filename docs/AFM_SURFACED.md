@@ -1014,8 +1014,12 @@ is confirmed as the real one.
 
 ### 🔴 OPEN — `call4_reveal` IS THE SIXTH SIBLING-SURFACE INSTANCE, LIVE ON BOTH PAPERS
 
+**📐 MEASURED 2026-08-25 — baseline, single arm, both papers, 120 turns. See
+`docs/redteam/summaries/2026-08-25-case-reveal-baseline.md`. Headline: 9/40 clean openings, and
+the leg is NOT the worst one — see the cross-leg table there.**
+
 **Not in scope for stage 6; logged so it is not rediscovered.** `REVEAL_SYSTEM`
-(`lib/acca/teach-engine.ts:664`) is the system prompt for the case surface's earned reveal, and
+(`lib/acca/teach-engine.ts:859` — was cited as :664, corrected 2026-08-25) is the system prompt for the case surface's earned reveal, and
 `call4_reveal(question, context, attempt, diagnosis, modelAnswer)` **does not take `paper` at
 all** — there is no routing to bypass. Three defects in one string:
 
@@ -1032,10 +1036,45 @@ all** — there is no routing to bypass. Three defects in one string:
 after a student has missed twice; the population reaching it is disproportionately the population
 with nothing creditable to name. Unmeasured — the arm above fires `--legs 1` and never reaches a
 reveal.
+4. **NO SOLVED ARM — found 2026-08-25, recorded as FOUND, not asserted.** The case
+   `call4_reveal` passes `lastDiagnosis ?? ''` unconditionally into *"The gap they kept missing:"*.
+   The drill route added `REVEAL_SYSTEM_SOLVED` for exactly this — a student who solved it should
+   not be handed a stale diagnosis asserting an error they never made — and carries `reachedFrom`
+   to select it (**9 references to that machinery in the route, 0 in the engine**). ⚠️ **WHETHER A
+   SOLVED STUDENT CAN REACH `missCount >= 2` IS UNTRACED.** The structural asymmetry is verified;
+   the reachability is not. Do not cite this as a live harm until someone traces it.
+
 📐 **Counted as the sixth instance of the sibling-surface pattern (Grant's count, 2026-08-24):**
 one behaviour implemented twice, fixed on the surface someone was looking at, left standing on its
 sibling. The stage-5 comment block, the stage-6 finding above, and this item are all the same
 shape.
+
+### 📐 WHAT THE COMPOSITION SURVEY ADDED (2026-08-25)
+
+- **TWO BYTE-IDENTICAL COPIES**, verified equal at 542 chars: `tutor-personas.ts:315` (exported,
+  drill route) and `teach-engine.ts:859` (local, case). **Fixing one leaves the other.**
+- **THE REVEAL LEG WAS EXCLUDED FROM STAGE 6 ENTIRELY.** Every other output leg in the engine calls
+  `caseSystemFor(paper)` (571 confirm, 625 hint, 670 teach, 843 warm); line 878 is the local
+  literal. **None of the six guardrail blocks reach the one leg that shows the model answer.**
+- **THE DRILL ROUTE IS NOT BROKEN — the defect is CASE-ONLY.** `route.ts:1049` takes `paper` and
+  branches AFM (wrapper + verbatim append) / APM (walkthrough), with SOLVED variants and grounding
+  outro. "Live on both papers" means the CASE surface serves both from one APM string.
+- **EXPOSURE IS 12 AFM REQUIREMENTS, NOT 20** — 8 of the 20 are `mock_only` and mock content does
+  not run the teach loop.
+- ⚠️ **THE PAPER DEFECT IS A 100% WRONG INPUT WITH A MEASURED 5% SURFACING.** 1 of 20 AFM reveals
+  said *"an APM board"*; `"this drill"` surfaced 0/40. **Never report it as a 100% harm.**
+
+### 🔵 PROPOSAL — ROUTE THE REVEAL THROUGH `caseSystemFor(paper)` (not yet built)
+
+One move that gets the paper, the six guardrail blocks, and collapses the duplicate. **Prediction,
+on the record before building: it fixes the paper defect and does NOT fix the manufactured
+credit.** Stage 6 measured those six blocks as changing the SHAPE of a fabrication and not its
+rate (P-T4); the thing that moved manufactured credit was conditioning the DEMAND via `creditable`,
+and that conditioning does not exist on this leg. Expected: the `"an APM board"` class goes to
+zero, and 9/40 clean moves little. **Measure against that prediction — a large move in clean
+openings would refute P-T4's second clause, which is the interesting outcome.**
+⚠️ The praise-first clause is ALSO in `REVEAL_AFM_WRAPPER_SYSTEM`, so extending `creditable` to the
+reveal is a separate change on a separate surface, not a rider on this one.
 
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
