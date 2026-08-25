@@ -120,8 +120,10 @@ ok('call4_reveal takes paper and defaults it to APM (byte-identical for legacy c
   /paper = 'APM',/.test(engine));
 ok('the orchestrator passes the real paper to call4_reveal',
   /call4_reveal\(question, context, lastRealAttempt \?\? studentMessage, lastDiagnosis \?\? '', modelAnswer, paper\)/.test(engine));
-ok('the arm has its OWN env var, defaulting to routed',
-  /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed'/.test(engine));
+// Default flipped to routed_2p 2026-08-25 after the register arm. Pinned so the shipped default
+// cannot drift back silently — the whole reveal leg's behaviour hangs on this one literal.
+ok('the arm has its OWN env var, defaulting to routed_2p (measured 2026-08-25)',
+  /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p'/.test(engine));
 
 // ── 7. THE CORES ARE SIBLINGS, NOT DIVERGENT REWRITES ───────────────────────
 // Everything after the opening register must match clause for clause, or "AFM voice" has quietly

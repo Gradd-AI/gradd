@@ -877,9 +877,12 @@ const SHIPPED_CASE_REVEAL_SYSTEM =
 // `routed_2p` = the routed build with the four injected blocks recast so they no longer refer to
 // the student in the third person. Tests whether guardrail prose written ABOUT the student primes
 // output written about the student (the 0/20 → 2/20 register regression the routed arm found).
-// Default stays `routed` until that arm reports — flipping it is its own commit.
+// MEASURED 2026-08-25: register breaks 2/20 -> 0/20 on AFM, clean openings unmoved, no confound,
+// reveal integrity intact. Default flipped to routed_2p. The 2/20 -> 0/20 is DIRECTIONALLY
+// consistent and UNDERPOWERED (p = 0.49) — see the summary; the flip does not rest on it, because
+// the recast is neutral-to-better on every measured axis either way.
 export type CaseRevealVariant = 'routed' | 'routed_2p' | 'shipped';
-const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed') as CaseRevealVariant;
+const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p') as CaseRevealVariant;
 
 /** Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim. */
 export function caseRevealSystem(variant: CaseRevealVariant, paper: string): string {
