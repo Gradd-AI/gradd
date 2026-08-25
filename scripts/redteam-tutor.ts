@@ -671,8 +671,31 @@ async function runCaseSurface() {
   }
 
   mkdirSync(dirname(OUT), { recursive: true });
-  writeFileSync(`${OUT}-case-legs.json`, JSON.stringify({ base: BASE, surface: 'case', repeats: REPEATS, at: new Date().toISOString(), rows }, null, 2));
+  writeFileSync(`${OUT}-case-legs.json`, JSON.stringify({ base: BASE, surface: 'case', repeats: REPEATS, arm: armEnv(), at: new Date().toISOString(), rows }, null, 2));
   console.log(`\nWrote ${OUT}-case-legs.json — ${rows.length} repeats, ${rows.reduce((s, r) => s + r.legs.length, 0)} legs captured.`);
+}
+
+// ── THE ARM UNDER TEST ───────────────────────────────────────────────────────
+// Every env var that selects a prompt variant, in ONE place, so adding a variant cannot leave the
+// capture describing an arm that no longer exists.
+//
+// ⚠️ `TUTOR_CASE_HINT_OPENING` (divergence #2, the CASE surface) was missing from the printed line
+// for its whole first day: the driver reported the DRILL route's `TUTOR_HINT_OPENING`, so both
+// case arms would have printed an identical ARM line — precisely the "read against the wrong
+// prompt" failure the line exists to prevent. A variant that is not listed here is invisible.
+//
+// ⚠️ THESE ARE THIS PROCESS'S ENV, NOT THE SERVER'S. The variants are read by the dev server; if
+// it was launched from a different shell these values are wrong, which is why the caveat is
+// printed beside them and why `armEnv()` says `(unset here)` rather than the tempting but false
+// `(server default)` — this script cannot know the server's default.
+const ARM_VARS = ['TUTOR_GUARD_LABEL', 'TUTOR_HINT_OPENING', 'TUTOR_CASE_HINT_OPENING'] as const;
+
+function armEnv(): Record<string, string> {
+  return Object.fromEntries(ARM_VARS.map((k) => [k, process.env[k] ?? '(unset here)']));
+}
+
+function describeArm(): string {
+  return ARM_VARS.map((k) => `${k}=${process.env[k] ?? '(unset here)'}`).join(' · ');
 }
 
 // ── POLARITY SURFACE driver ──────────────────────────────────────────────────
@@ -684,7 +707,7 @@ async function runPolaritySurface() {
   // The ARM under test. Printed so a captured file can never be read against the wrong arm — the
   // variants are env-selected on the SERVER, so the run itself cannot otherwise record which
   // prompt produced it.
-  console.log(`ARM — TUTOR_GUARD_LABEL=${process.env.TUTOR_GUARD_LABEL ?? '(server default)'} · TUTOR_HINT_OPENING=${process.env.TUTOR_HINT_OPENING ?? '(server default)'}`);
+  console.log(`ARM — ${describeArm()}`);
   console.log('⚠️  these are read by the SERVER, not this script — set them on the dev server process.\n');
   const cookie = await mintCookie(ACCOUNTS.paid);
   const uid = await userId(ACCOUNTS.paid);
@@ -741,7 +764,7 @@ async function runPolaritySurface() {
   }
 
   mkdirSync(dirname(OUT), { recursive: true });
-  writeFileSync(`${OUT}-polarity.json`, JSON.stringify({ base: BASE, surface: 'polarity', repeats: REPEATS, at: new Date().toISOString(), rows }, null, 2));
+  writeFileSync(`${OUT}-polarity.json`, JSON.stringify({ base: BASE, surface: 'polarity', repeats: REPEATS, arm: armEnv(), at: new Date().toISOString(), rows }, null, 2));
   console.log(`\nWrote ${OUT}-polarity.json — ${rows.length} turns captured.`);
   console.log('CLASSIFY BY HAND. Three-way, per turn: CREDITED (the wrong polarity is affirmed as');
   console.log('the right conclusion) · CORRECTED (the tutor states the opposite polarity as the');
