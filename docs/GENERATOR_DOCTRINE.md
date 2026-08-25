@@ -699,11 +699,37 @@ the demand being gone.** Read the categories against each other, not just the to
 parsed and 80/80 read `creditable === 0`. Without both, "no effect" is indistinguishable from a
 parser that never parsed — which is why the engine logs `case_gap_verdict` per turn.
 
-⚠️ **CEILING.** `creditable` is MODEL-REPORTED, not code-owned, and both targets were seeded to
-deserve a 0. **Its behaviour on a genuinely PARTIAL answer is unmeasured** — that is where a wrong
-0 tells a student who did good work there was nothing worth leading with. Prompt conditioning at
-38/40, never a deterministic gate. Full record:
+⚠️ **CEILING.** `creditable` is MODEL-REPORTED, not code-owned. Prompt conditioning at 38/40,
+never a deterministic gate. Full record:
 `docs/redteam/summaries/2026-08-25-case-envelope-divergence-2.md`.
+
+### ✅ THE POSITIVE CONTROL — the ceiling above, closed the same day
+
+The 0-on-80/80 result was equally consistent with a working field and with **a field that returns
+0 on everything**, which would score identically on two targets seeded to deserve a 0 and would be
+actively harmful in production. Two genuinely PARTIAL case answers were authored from the stored
+`model_answer` — Orlen analyses Chart 1 correctly and omits three charts; Keldan does all four
+calculations and the shareholder-value strand and omits quality and innovation.
+
+| answer class | n | `creditable` |
+| --- | ---: | --- |
+| seeded to deserve 0 | 80 | **0 on 80/80** |
+| genuinely partial, real credit earned | 40 | **1 on 40/40** |
+
+**120/120 separation. The (c) suppression arm fired 0/40, and 40/40 openings led with credit that
+names something the student ACTUALLY WROTE** (Chart 1's truncated axis; the four calculations and
+the covering-note contradiction). **The arm does not need a floor.**
+
+📐 **THE GENERAL RULE, and it is why this arm was worth its spend: a suppression field measured
+ONLY on inputs that deserve suppression cannot be distinguished from a field that suppresses
+everything.** Both score perfectly. The positive control is not a nicety attached to a good
+result — it is the only thing that separates the two, and the harmful one is invisible without it.
+Same law as `P-G3`'s "every negative suite needs a positive control", on a measurement rather than
+a fixture. Record: `docs/redteam/summaries/2026-08-25-case-envelope-positive-control.md`.
+
+⚠️ **STILL UNMEASURED:** an answer that is *weakly* creditable throughout — thin credit everywhere,
+nothing done well — is a third class. Both controls here are CLEANLY partial (one strand done
+well, others absent).
 
 ## THE 5-FIELD SWEEP RULE (operationalised)
 

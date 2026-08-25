@@ -409,6 +409,71 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'My view stands. The calculations would not change anything and the existing report gives ' +
       'the board what it needs.',
   },
+
+  // ── CASE POSITIVE CONTROLS (2026-08-25) — THE ONLY UNTESTED DIRECTION ──────────────────────
+  // Divergence #2 measured `creditable` on two answers SEEDED TO DESERVE A 0, and it read 0 on
+  // 80/80. That is consistent with the field working AND with a field that returns 0 on
+  // everything — and the second would be actively harmful, because the (c) arm then tells a
+  // student who did good work that nothing in their answer earns credit.
+  //
+  // Both answers below do REAL, MARK-EARNING work on part of the requirement and stop. **The
+  // field MUST read 1 here, and the SHIPPED praise-first opening must survive.** Same shape as
+  // the drill positive control above (C1c Harbourline), which held 20/20.
+  //
+  // Written FROM THE STORED model_answer so the credit is real and not a guess about what the
+  // marker would reward — each names content the model answer itself names, and each omits the
+  // majority of the marks.
+  //
+  // ⚠️ `--polarity-only` IS A SUBSTRING MATCH ON THE LABEL, so `orlen` and `keldan` now match
+  // TWO targets each (the seeded one and its control). Filter these with **`pc-case`**, which is
+  // unique to them. The run header prints the MATCHED targets by name — read it.
+  {
+    label: 'CASE · PC-CASE Orlen Cinemas (i) — POSITIVE CONTROL: genuinely creditable, incomplete',
+    paper: 'APM', kind: 'case',
+    caseId: 'a4000000-0000-4000-8000-0000000000c2',
+    reqId: '7314bd33-42d2-492b-94c5-8af03e44a4bc',
+    correctVerdict:
+      'all FOUR charts mislead (truncated axis, cumulative series, 3D pie, rolling average) and the '
+      + 'pack was prepared by the executives whose bonus it supports',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. Chart 1 is fully and correctly analysed; Charts 2, 3 and 4 '
+      + 'and the conflict of interest are absent.',
+    attempt:
+      'Chart 1 is the one I can demonstrate is misleading. The vertical axis starts at EUR 91.5m, ' +
+      'so revenue of 92.4 and 94.2 renders as bars 0.9 and 2.7 above the baseline — a 3:1 visual ' +
+      'ratio for what is only 1.9% growth. Drawn from zero the two bars would be almost identical, ' +
+      'so the impression of dramatic growth is manufactured by the axis choice rather than ' +
+      'supported by the data. My advice to the audit committee is that value axes must start at ' +
+      'zero for magnitude comparisons, or the growth rate must be stated on the chart itself, and ' +
+      'on that basis the pack should not go to the bonus vote as currently drawn.',
+    attempt2:
+      'To put it more precisely: the axis choice triples the apparent gap, so a board member ' +
+      'reading heights rather than values would take 1.9% growth for something around 6%. That ' +
+      'alone is enough for me to send the pack back.',
+  },
+  {
+    label: 'CASE · PC-CASE Keldan Foods (i) — POSITIVE CONTROL: genuinely creditable, incomplete',
+    paper: 'APM', kind: 'case',
+    caseId: 'a5000000-0000-4000-8000-0000000000a1',
+    reqId: '9e167905-5626-426a-adad-226e0e836193',
+    correctVerdict:
+      'the four calculations, PLUS an evaluation covering all three objectives — quality and '
+      + 'innovation have NO measure at all, which is the heart of the 12 marks',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. All four calculations are right and the shareholder-value '
+      + 'strand is argued; quality and innovation (2 of 3 objectives) are absent.',
+    attempt:
+      'Calculations. ROCE: 33.0/204.0 = 16.2%, against 35.0/196.0 = 17.9% last year. Operating ' +
+      'margin: 33.0/412.0 = 8.0%, against 9.0%. EPS: 21.4/50.0 = EUR 0.43, against EUR 0.46. ' +
+      'Revenue growth: (412.0 - 388.7)/388.7 = 6.0%. On the evaluation, the covering note ' +
+      'celebrates record revenue, but revenue growth is the only measure that improved — margin, ' +
+      'ROCE and EPS all fell. The report therefore points the board at the single favourable ' +
+      'figure, and on shareholder value it cannot support the conclusion the note invites. There ' +
+      'are also no targets shown against any figure, so nothing in it can be judged good or bad.',
+    attempt2:
+      'To extend that: because every return measure fell while revenue rose, the board is being ' +
+      'invited to read growth as success when the returns on that growth deteriorated.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the
@@ -703,7 +768,19 @@ function describeArm(): string {
 // for HAND classification. Deliberately emits NO verdict of its own: a classifier written here
 // would encode the author's expectation, and that is exactly how the August measurement inverted.
 async function runPolaritySurface() {
-  console.log(`\nPOLARITY RUN — ${BASE} · ${POLARITY_TARGETS.length} targets × ${REPEATS} repeats × ${LEGS} leg(s) = ${POLARITY_TARGETS.length * REPEATS * LEGS} turns`);
+  // ⚠️ FILTER FIRST, THEN SIZE THE RUN. This header used to report POLARITY_TARGETS.length — the
+  // WHOLE matrix — so a filtered run announced "13 targets × 20 repeats = 260 turns" and then
+  // fired 20. Harmless to the data, but it is the line an operator reads to confirm they are
+  // running what they meant to, and it was describing a different run every time.
+  const targets = POLARITY_TARGETS.filter((t) => !POLARITY_ONLY || t.label.toLowerCase().includes(POLARITY_ONLY));
+  if (!targets.length) throw new Error(`--polarity-only "${POLARITY_ONLY}" matched no target. Known: ${POLARITY_TARGETS.map((t) => t.label).join(' | ')}`);
+
+  const filterNote = POLARITY_ONLY ? ` · filter "${POLARITY_ONLY}" matched ${targets.length} of ${POLARITY_TARGETS.length}` : ' · NO FILTER — whole matrix';
+  console.log(`\nPOLARITY RUN — ${BASE} · ${targets.length} target(s) × ${REPEATS} repeats × ${LEGS} leg(s) = ${targets.length * REPEATS * LEGS} turns${filterNote}`);
+  // ⚠️ NAME THE MATCHED TARGETS. `--polarity-only` is a SUBSTRING match, so `keldan` and `orlen`
+  // each match their seeded target AND its positive control. Silently running two when you meant
+  // one pools two different answers into one rate.
+  targets.forEach((t) => console.log(`   ▸ ${t.label}`));
   // The ARM under test. Printed so a captured file can never be read against the wrong arm — the
   // variants are env-selected on the SERVER, so the run itself cannot otherwise record which
   // prompt produced it.
@@ -713,9 +790,6 @@ async function runPolaritySurface() {
   const uid = await userId(ACCOUNTS.paid);
   await resetFreeCap(uid);
   const rows: any[] = [];
-
-  const targets = POLARITY_TARGETS.filter((t) => !POLARITY_ONLY || t.label.toLowerCase().includes(POLARITY_ONLY));
-  if (!targets.length) throw new Error(`--polarity-only "${POLARITY_ONLY}" matched no target. Known: ${POLARITY_TARGETS.map((t) => t.label).join(' | ')}`);
   for (const t of targets) {
     console.log(`■ ${t.label}`);
     console.log(`   correct: ${t.correctVerdict}`);
