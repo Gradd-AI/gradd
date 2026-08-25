@@ -161,9 +161,15 @@ ok('#4 has its OWN env var', /process\.env\.TUTOR_CASE_CONFIRM/.test(engine));
 ok('#3 and #4 do not share an env var',
   !/TUTOR_CASE_EQUIV_CONFIRM/.test(engine) &&
   /TUTOR_CASE_EQUIV \?\? 'narrative'/.test(engine) &&
-  /TUTOR_CASE_CONFIRM \?\? 'conditioned'/.test(engine));
-ok('#3 defaults to narrative', /TUTOR_CASE_EQUIV \?\? 'narrative'/.test(engine));
-ok('#4 defaults to conditioned', /TUTOR_CASE_CONFIRM \?\? 'conditioned'/.test(engine));
+  /TUTOR_CASE_CONFIRM \?\? 'shipped'/.test(engine));
+// #3 ships ON: measured 2026-08-25, null and non-inferior over 80 legs, so it is a convergence
+// that changes nothing observable.
+ok('#3 defaults to narrative (measured non-inferior)', /TUTOR_CASE_EQUIV \?\? 'narrative'/.test(engine));
+// ⚠️ #4 ships INERT. It was PARKED before measurement — its endpoint lives on the confirm leg,
+// which the polarity surface cannot reach. Pinned so merging the branch cannot silently ship an
+// unmeasured prompt change to a live teaching surface just because it rode along.
+ok('#4 defaults to shipped — built, unmeasured, deliberately INERT',
+  /TUTOR_CASE_CONFIRM \?\? 'shipped'/.test(engine));
 
 console.log(`\n${fail ? 'FAIL' : 'PASS'} case divergences: ${pass} passed, ${fail} failed\n`);
 if (fail) process.exitCode = 1;

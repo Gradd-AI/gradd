@@ -191,8 +191,13 @@ const CASE_EQUIV = (process.env.TUTOR_CASE_EQUIV ?? 'narrative') as CaseEquivVar
 // unconditionally. So the DEMAND is conditioned instead: the endorsement is owed for presentation,
 // and where a different figure or method is claimed the leg is asked to do something else it CAN
 // do. Nothing is forbidden, so there is no unwanted output being named and primed.
+// ⚠️ DEFAULT IS `shipped` — DIVERGENCE #4 IS BUILT AND DELIBERATELY INERT (2026-08-25).
+// It was PARKED before measurement: its endpoint lives on the confirm leg, which the polarity
+// surface cannot reach, so it is a harness build before it is a measurement. Merging the branch
+// must not ship an unmeasured prompt change to a live teaching surface just because it rode along.
+// Flip to `conditioned` when the confirm-leg harness and its arm exist.
 export type CaseConfirmVariant = 'conditioned' | 'shipped';
-const CASE_CONFIRM = (process.env.TUTOR_CASE_CONFIRM ?? 'conditioned') as CaseConfirmVariant;
+const CASE_CONFIRM = (process.env.TUTOR_CASE_CONFIRM ?? 'shipped') as CaseConfirmVariant;
 
 const REVEAL_PHRASES = [
   'show me the full answer',
