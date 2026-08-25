@@ -20,7 +20,7 @@ import Anthropic from '@anthropic-ai/sdk';
 // STAGE 6 (2026-08-24): the case surface uses the SHARED persona selector. `systemFor` is the one
 // definition of each paper's persona — importing it is what makes it structurally impossible for
 // the drill and case surfaces to drift about what they forbid. See `caseSystemFor` below.
-import { systemFor } from './tutor-personas';
+import { systemFor, caseRevealSystemFor } from './tutor-personas';
 // DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
 // the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
 // opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
@@ -150,6 +150,54 @@ const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
 // variant it ran under, so an env-selected arm is recorded in the capture and a run can never be
 // read against the wrong prompt.
 const CASE_HINT_OPENING = (process.env.TUTOR_CASE_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
+
+// ── DIVERGENCE #3 — the EQUIVALENCE CHECK's scope, env-selected ──────────────
+// `narrative` (default) = the check asks whether the claim is SUBSTANTIVELY equivalent, numerical
+// OR narrative. `shipped` = the numeric-only form, i.e. today's behaviour.
+//
+// The shipped form asks whether "the student's NUMERICAL RESULT is MATHEMATICALLY equivalent to
+// the model's" on a surface whose requirements are overwhelmingly discursive; the drill route has
+// asked about "the student's claim (numerical OR narrative)" since the grounding work. This
+// variant closes that divergence.
+//
+// 📐 **MEASURED 2026-08-25 — NULL, AND THE PREDICTION THAT MOTIVATED IT WAS WRONG.** The theory
+// was P-T4's: a narrative answer has no numerical result, so the check cannot return equivalent
+// and the only branch left open is "name an error". **It does not happen.** 80 legs on two
+// requirements whose model answers contain ZERO DIGITS — the strongest form of the trap — and
+// BOTH arms emitted the correct-sentinel on 40/40, the only distinct label observed either side.
+// The model reads the check's intent ("only name an error if the answer is genuinely WRONG")
+// rather than being trapped by its numeric framing.
+//
+// ⚠️ SO THIS IS A CONVERGENCE, NOT A FIX. It is safe — measured non-inferior on every cell — and
+// it must NOT be described as fixing false-positive diagnosis, because no false positive was
+// found for it to fix. ⚠️ CEILING: the BEFORE arm was already saturated at 40/40, so a benefit
+// could not have been detected had one existed. Untested region: an answer that is correct but
+// THIN, or worded so unusually that equivalence is genuinely arguable. On a partial answer a
+// named gap is CORRECT, so the false-positive endpoint only has meaning on a fully correct one —
+// which is exactly where the ceiling sits.
+// Record: docs/redteam/summaries/2026-08-25-case-divergence-3-equivalence-scope.md
+export type CaseEquivVariant = 'narrative' | 'shipped';
+const CASE_EQUIV = (process.env.TUTOR_CASE_EQUIV ?? 'narrative') as CaseEquivVariant;
+
+// ── DIVERGENCE #4 — the CONFIRM leg's "equally valid" endorsement, env-selected ──
+// `conditioned` (default) = the endorsement is demanded for PRESENTATION differences and a
+// different job is demanded where an alternative FIGURE or METHOD is asserted. `shipped` =
+// today's unconditional "if their convention differs, say it's equally valid".
+//
+// ⚠️ NOT A PORT OF THE DRILL ROUTE'S WORDING, DELIBERATELY. That arm is written as a PROHIBITION
+// ("never call a wrong or unscaled form 'equally valid' to protect their mood"), and P-T2/P-T4
+// both say a prohibition layered over a standing demand redirects the output rather than removing
+// it — the demand here being "say it's equally valid", which the shipped string issues
+// unconditionally. So the DEMAND is conditioned instead: the endorsement is owed for presentation,
+// and where a different figure or method is claimed the leg is asked to do something else it CAN
+// do. Nothing is forbidden, so there is no unwanted output being named and primed.
+// ⚠️ DEFAULT IS `shipped` — DIVERGENCE #4 IS BUILT AND DELIBERATELY INERT (2026-08-25).
+// It was PARKED before measurement: its endpoint lives on the confirm leg, which the polarity
+// surface cannot reach, so it is a harness build before it is a measurement. Merging the branch
+// must not ship an unmeasured prompt change to a live teaching surface just because it rode along.
+// Flip to `conditioned` when the confirm-leg harness and its arm exist.
+export type CaseConfirmVariant = 'conditioned' | 'shipped';
+const CASE_CONFIRM = (process.env.TUTOR_CASE_CONFIRM ?? 'shipped') as CaseConfirmVariant;
 
 const REVEAL_PHRASES = [
   'show me the full answer',
@@ -314,12 +362,7 @@ async function call2_diagnose(
     system:
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
-      'EQUIVALENCE CHECK — do this before naming any error: ' +
-      'The model answer and student answer may use different but equivalent sign conventions ' +
-      '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ' +
-      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
-      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
-      'A correct answer in a different format is NOT an error and must NOT be flagged. ' +
+      caseEquivalenceCheck(CASE_EQUIV) +
       "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
@@ -360,13 +403,85 @@ async function call2_diagnose(
   // ⚠️ BUT THE PARSE RATE IS THE ARM'S VALIDITY CONDITION, so it is observable rather than
   // silent: a run in which nothing parses would show "no effect" and be indistinguishable from a
   // measured null result. Count these lines in the server log when reading any measurement.
+  // ⚠️ OBSERVATIONAL ONLY — nothing here is read by any branch. `label` and `correct` were added
+  // for divergence #3's arm (2026-08-25): its endpoint is whether this call returns the
+  // correct-sentinel or manufactures a gap on an answer that is genuinely right, and without the
+  // label a "no effect" reading cannot be told from the sentinel never being reachable. Truncated
+  // because a gap label is capped at 12–15 words and a runaway body would flood the log.
   console.log(JSON.stringify({
     at: 'case_gap_verdict',
     parsed: verdict !== null,
     creditable: verdict?.creditable ?? null,
     derived: verdict?.derived ?? null,
+    correct: isCorrectVerdict(safeLabel(verdict, raw)),
+    label: safeLabel(verdict, raw).slice(0, 160),
   }));
   return { label: safeLabel(verdict, raw), verdict };
+}
+
+/**
+ * DIVERGENCE #3 — the equivalence check that call2_diagnose runs before it will name any error.
+ *
+ * Pure and exported so the assembled bytes are pinnable: the claim is that `shipped` is
+ * byte-identical to what this engine sent before the variant existed, so anything the arm measures
+ * is attributable to the narrative clause alone.
+ *
+ * ⚠️ THE GROUNDING CLAUSE IS DELIBERATELY NOT PORTED. The drill route's version also says "AND
+ * (when a GROUNDING block is supplied below) a narrative claim may use different WORDING than a
+ * checklist point or fact". This engine's grounding channel is `renderDiscriminants`, which is
+ * EMPTY on 34 of 38 published requirements — so that clause would be inert on almost every turn
+ * while adding a second moving part to the arm. One variable: numeric-only → numeric-or-narrative.
+ */
+export function caseEquivalenceCheck(variant: CaseEquivVariant): string {
+  const HEAD =
+    'EQUIVALENCE CHECK — do this before naming any error: ' +
+    'The model answer and student answer may use different but equivalent sign conventions ' +
+    '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ';
+  if (variant === 'shipped') {
+    return (
+      HEAD +
+      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
+      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
+      'A correct answer in a different format is NOT an error and must NOT be flagged. '
+    );
+  }
+  return (
+    HEAD +
+    "Check whether the student's claim — numerical OR narrative — is substantively equivalent to " +
+    "the model's, before concluding it is wrong. " +
+    'Only name an error if the answer is genuinely WRONG — not merely presented in a different ' +
+    'convention or wording. ' +
+    'A correct answer in a different format or phrasing is NOT an error and must NOT be flagged. '
+  );
+}
+
+/**
+ * DIVERGENCE #4 — the confirm leg's treatment of a convention that differs from the model.
+ *
+ * `shipped` demands the "equally valid" endorsement UNCONDITIONALLY, so a student who reached the
+ * right conclusion by a method the requirement does not support is told their method is equally
+ * valid — the leg has no other branch available to it.
+ *
+ * `conditioned` narrows the endorsement to PRESENTATION (layout, labelling, ordering) and, where
+ * the answer asserts an alternative FIGURE or METHOD, demands a different and satisfiable job:
+ * say plainly whether it holds against what the requirement demanded.
+ *
+ * ⚠️ DEMAND-FORM, NOT PROHIBITION-FORM — see `CASE_CONFIRM`. The drill route's equivalent arm ends
+ * with "never call a wrong or unscaled form 'equally valid' to protect their mood". That sentence
+ * NAMES the unwanted output, which P-M4 measured as priming it, and it sits downstream of a demand
+ * it cannot repeal. Here the demand itself is split, so on the alternative-method branch the
+ * "equally valid" instruction is never issued in the first place and there is nothing to forbid.
+ */
+export function caseConfirmConvention(variant: CaseConfirmVariant): string {
+  if (variant === 'shipped') {
+    return "If their convention differs from the usual model, say it's equally valid. ";
+  }
+  return (
+    'If their PRESENTATION differs from the usual model — layout, labelling, ordering, the shape ' +
+    "of the working — say it's equally valid, because it is. If instead they have used a " +
+    'different FIGURE or a different METHOD from the one the requirement demanded, say plainly ' +
+    'whether that alternative holds and what it turns on. '
+  );
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
@@ -576,8 +691,9 @@ async function call3_confirm(
           // taxonomy to the student"), 240 lines apart. The values are no longer in the prompt,
           // so the only way to obey it was to invent one.
           'Say briefly which part of what the requirement demanded the answer actually hit, and ' +
-          'why it holds / what puts it in the top band. If their convention ' +
-          "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
+          'why it holds / what puts it in the top band. ' +
+          caseConfirmConvention(CASE_CONFIRM) +
+          'Do NOT restate, re-derive, or ' +
           'quote back their figures or workings — they already wrote them; refer to what they did ' +
           "in words, not numbers. Don't mark it as if it fell short.",
       },
@@ -745,7 +861,17 @@ async function call_warm(
 
 // ── CALL 4: Earned reveal (redesign item 3) ───────────────────────────────────
 // ⚠️ THIS IS THE ONLY PLACE THE STORED model_answer IS SHOWN TO THE STUDENT. ⚠️
-const REVEAL_SYSTEM =
+//
+// THE LOCAL `REVEAL_SYSTEM` LITERAL IS DELETED (2026-08-25). It was a byte-identical copy of
+// `tutor-personas.ts`'s export, hardcoded "You are Ezra, an APM tutor", used for BOTH papers — so
+// every AFM case reveal addressed the student as the wrong paper's persona, the same defect stage 5
+// fixed for the conversational legs and left standing here. `caseRevealSystemFor` is now the ONE
+// definition; see its comment for why this is NOT `caseSystemFor(paper)` and which guardrail blocks
+// are taken.
+//
+// `shipped` reproduces the deleted literal BYTE-FOR-BYTE (fixture-pinned), so the arm's baseline is
+// the string that actually shipped and not a reconstruction of it.
+const SHIPPED_CASE_REVEAL_SYSTEM =
   'You are Ezra, an APM tutor. The student has genuinely attempted this drill and worked ' +
   'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
   'top-band answer is built: first credit, specifically, what they already had right, then ' +
@@ -753,18 +879,37 @@ const REVEAL_SYSTEM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
+// `routed_2p` = the routed build with the four injected blocks recast so they no longer refer to
+// the student in the third person. Tests whether guardrail prose written ABOUT the student primes
+// output written about the student (the 0/20 → 2/20 register regression the routed arm found).
+// MEASURED 2026-08-25: register breaks 2/20 -> 0/20 on AFM, clean openings unmoved, no confound,
+// reveal integrity intact. Default flipped to routed_2p. The 2/20 -> 0/20 is DIRECTIONALLY
+// consistent and UNDERPOWERED (p = 0.49) — see the summary; the flip does not rest on it, because
+// the recast is neutral-to-better on every measured axis either way.
+export type CaseRevealVariant = 'routed' | 'routed_2p' | 'shipped';
+const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p') as CaseRevealVariant;
+
+/** Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim. */
+export function caseRevealSystem(variant: CaseRevealVariant, paper: string): string {
+  if (variant === 'shipped') return SHIPPED_CASE_REVEAL_SYSTEM;
+  return caseRevealSystemFor(paper, variant === 'routed_2p');
+}
+
 async function call4_reveal(
   question: string,
   context: string,
   attempt: string,
   diagnosis: string,
   modelAnswer: string,
+  /** Defaulted 'APM' so any caller that does not pass it is byte-identical to before the parameter
+   *  existed — the same convention `call3_hint` uses. The orchestrator now passes the real paper. */
+  paper = 'APM',
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 700,
-    system: REVEAL_SYSTEM,
+    system: caseRevealSystem(CASE_REVEAL, paper),
     messages: [
       {
         role: 'user',
@@ -873,7 +1018,7 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   if (wantsReveal && missCount >= 2) {
     intent = 'reveal';
     messageKind = 'reveal';
-    ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? studentMessage, lastDiagnosis ?? '', modelAnswer);
+    ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? studentMessage, lastDiagnosis ?? '', modelAnswer, paper);
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';

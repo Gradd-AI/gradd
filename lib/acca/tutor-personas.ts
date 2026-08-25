@@ -333,6 +333,147 @@ export const REVEAL_SYSTEM_SOLVED =
   'sharp tutor laying it out, not a marked script. End by pointing them to apply the key move on a ' +
   'FRESH question. No empty praise.';
 
+// ── Earned reveal — the CASE surface, paper-routed (2026-08-25) ───────────────
+// `teach-engine.ts` held a LOCAL, non-exported byte-identical copy of REVEAL_SYSTEM and used it
+// for every case reveal on BOTH papers, so an AFM student was addressed as "an APM tutor". This
+// is the one definition; the local copy is deleted.
+//
+// ⚠️ THIS IS **NOT** `caseSystemFor(paper)`, AND THAT IS DELIBERATE — the naive routing fix would
+// break the leg. The conversational persona ends with **"Never complete the student's answer."**
+// (`EZRA_SYSTEM`, `EZRA_AFM_SYSTEM`) and carries `NO_COMPUTED_OUTPUTS` — *"WITHHOLD COMPUTED
+// OUTPUTS — this is the moat, hold it … never STATE such a computed figure yourself"*, a block
+// whose own header scopes it to *"the CONVERSATIONAL legs (warm/hint/teach/confirm)"*. The reveal
+// says the opposite in the same breath: *"INCLUDING the figures and the conclusion (withholding is
+// over)"*. `route.ts`'s call4_reveal comment states the rule outright: it *"uses its OWN system
+// prompt — NOT the conversational persona, whose 'never complete the student's answer' guardrail
+// is exactly what the student has earned past here."* Injecting it would put a refusal instruction
+// on the one leg that must reveal — the X1 invented-refusal failure, prompted rather than
+// accidental.
+//
+// SO THE GUARDRAILS ARE TAKEN SELECTIVELY, four of the seven, each checked against this leg:
+//   ✅ NO_INVENTED_NUMBERS       — its own last clause AUTHORISES this leg ("verified figures live
+//                                  only in the earned worked answer"); the rest bans invented
+//                                  ranges and rules of thumb, which a walkthrough should not have.
+//   ✅ NO_INVENTED_REVEAL_REFUSAL — directly on point, and already reveal-aware ("or say plainly
+//                                  that it's already available to them, if it is").
+//   ✅ RETRACTION_PROTOCOL       — paper-neutral, applies on any leg a push-back can land on.
+//   ✅ METHOD_FITS_THE_GIVEN_INPUTS — a teaching-method rule; kept LAST because its own text says
+//                                  it is the last word for a reason (anchor position).
+//   ⛔ NO_COMPUTED_OUTPUTS       — direct contradiction, see above.
+//   ⛔ DIGNITY_ON_DISTRESS       — contains "The moat still holds (you never hand over the answer)"
+//                                  and "do NOT offer to reveal the answer". Antecedent-gated on
+//                                  distress, but on THIS leg the gated text is false.
+//   ⛔ GROUNDING_DISCIPLINE      — binds on "a CHECKLIST, FACTS, or CONVENTIONS block"; the case
+//                                  `call4_reveal` receives NO grounding data at all, so its
+//                                  antecedent is ALWAYS false here. An always-false block is pure
+//                                  token cost and unattributable movement (P-T4 corollary).
+//
+// ⚠️ AFM DELIBERATELY DOES **NOT** ADOPT THE DRILL ROUTE'S DESIGN "B" (wrapper + `assembleAfmReveal`
+// appending the worked answer verbatim). That is a different CONTENT design needing its own
+// measurement, and the case engine has no `assembleAfmReveal` call. AFM here is the SAME
+// walkthrough shape in the AFM voice — the paper defect fixed, nothing else.
+const CASE_REVEAL_GUARDRAILS =
+  ' ' + NO_INVENTED_NUMBERS + NO_INVENTED_REVEAL_REFUSAL + RETRACTION_PROTOCOL + METHOD_FITS_THE_GIVEN_INPUTS;
+
+// ── SECOND-PERSON COPIES, REVEAL LEG ONLY (2026-08-25) ───────────────────────
+// HYPOTHESIS UNDER TEST: guardrail prose written ABOUT the student primes output written about
+// the student. The routed arm introduced 2/20 third-person register breaks on AFM — reveals that
+// addressed a third party about the candidate ("you've identified the core problem with THEIR last
+// attempt: THEY concluded without doing the work") — where the baseline had 0/20. The four blocks
+// injected there are the only new prose, and they are dense in "the student": "If THE STUDENT'S
+// message reads as…", "if THE STUDENT'S message challenges…", "tell THE STUDENT to rescale…".
+// That is P-M4's shape on a register rather than a leak: naming it primes it.
+//
+// ⚠️ THE CONVERSATIONAL COPIES ABOVE ARE UNTOUCHED AND FIXTURE-PINNED BYTE-IDENTICAL. Four legs
+// and both papers still send the originals; only the reveal sees these.
+//
+// ⚠️ ONE VARIABLE, AND "drill" IS DELIBERATELY LEFT ALONE. These are the routed arm's own blocks
+// with student-references recast and NOTHING else — same "drill" wording, same anchors, same
+// examples, same capitalisation, same severity markers, same trailing spaces. The paired arm's
+// sole delta against `83291d6` is the referent register.
+//
+// ⚠️ NO INSTRUCTION ABOUT REGISTER IS ADDED. A clause like "write to them directly, never about
+// them" would NAME the unwanted output and prime it — the exact failure P-M4 measured. Where a
+// second-person recast would make "you" ambiguous between the model and the student, the reference
+// is REMOVED rather than clarified.
+//
+// ⚠️ KNOWN CONFOUND: "you" already means the MODEL in an imperative system prompt. If the model
+// reads a recast "you" as itself, the arm measures confusion rather than register. Checked in the
+// read by looking for the model discussing its OWN answer.
+// ⚠️ A SILENT NO-OP HERE WOULD MAKE THE ARM MEASURE NOTHING. `String.replace` with an anchor that
+// does not match returns the input unchanged, so a single typo would ship a "second-person" variant
+// byte-identical to the third-person one and the paired arm would report a null that means "the
+// edit never happened". Every substitution must fire, and must actually change the string (P-G1:
+// fail loudly rather than degrade).
+function mustRecast(src: string, pairs: ReadonlyArray<readonly [string, string]>): string {
+  return pairs.reduce((s, [from, to]) => {
+    if (!s.includes(from)) throw new Error(`2P recast anchor not found: ${JSON.stringify(from.slice(0, 60))}`);
+    const out = s.split(from).join(to);
+    if (out === s) throw new Error(`2P recast was a no-op: ${JSON.stringify(from.slice(0, 60))}`);
+    return out;
+  }, src);
+}
+
+const NO_INVENTED_NUMBERS_2P = mustRecast(NO_INVENTED_NUMBERS, [
+  ["point the student at the drill's OWN inputs and their own workings",
+   "point back to the drill's OWN inputs and to the workings already on the page"],
+]);
+const NO_INVENTED_REVEAL_REFUSAL_2P = mustRecast(NO_INVENTED_REVEAL_REFUSAL, [
+  ["If the student's message reads as a request", 'If the message you are answering reads as a request'],
+  ["once they've engaged with the feedback", 'once the feedback has been engaged with'],
+  ["say plainly that it's already available to them, if it is", "say plainly that it's already available, if it is"],
+]);
+const RETRACTION_PROTOCOL_2P = mustRecast(RETRACTION_PROTOCOL, [
+  ["if the student's message challenges", 'if the message you are answering challenges'],
+  ['shows they are right', 'shows it is right'],
+  ['a student who was right deserves to be told so in the clearest possible terms',
+   'being right deserves to be acknowledged in the clearest possible terms'],
+]);
+const METHOD_FITS_THE_GIVEN_INPUTS_2P = mustRecast(METHOD_FITS_THE_GIVEN_INPUTS, [
+  ['Do not tell the student to rescale, normalise, divide, or convert a figure',
+   'Do not instruct a rescale, normalisation, division, or conversion of a figure'],
+  ['so do NOT tell the student to "rescale to per-share"',
+   'so do NOT instruct a "rescale to per-share"'],
+]);
+
+const CASE_REVEAL_GUARDRAILS_2P =
+  ' ' + NO_INVENTED_NUMBERS_2P + NO_INVENTED_REVEAL_REFUSAL_2P + RETRACTION_PROTOCOL_2P + METHOD_FITS_THE_GIVEN_INPUTS_2P;
+
+// The AFM voice of the reveal core. Mirrors REVEAL_SYSTEM clause for clause; the ONLY differences
+// are the opening register (matching REVEAL_AFM_WRAPPER_SYSTEM's, which is the established AFM
+// reveal voice) and the unit noun.
+export const CASE_REVEAL_CORE_AFM =
+  'You are Ezra, an ACCA AFM tutor and the board\'s senior financial adviser. The student has ' +
+  'genuinely attempted this requirement and worked through hints and a teach-through — they have ' +
+  'EARNED the full model now. Show them how a ' +
+  'top-band answer is built: first credit, specifically, what they already had right, then ' +
+  'walk the moves they were missing, INCLUDING the figures and the conclusion (withholding is ' +
+  'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
+  'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
+
+// The APM voice. Identical to REVEAL_SYSTEM except "this drill" → "this requirement" — the case
+// surface's unit is a case REQUIREMENT, and "drill" was the second defect on the logged item.
+// ⚠️ BUNDLED WORDING CHANGE: this moves the APM bytes too, so the arm changes TWO things (paper
+// routing AND the unit noun). Neither endpoint under measurement — clean openings, and the
+// "an APM board" leak — turns on the unit noun, but the arm cannot ATTRIBUTE to one or the other
+// and that is stated rather than glossed.
+export const CASE_REVEAL_CORE_APM =
+  'You are Ezra, an APM tutor. The student has genuinely attempted this requirement and worked ' +
+  'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
+  'top-band answer is built: first credit, specifically, what they already had right, then ' +
+  'walk the moves they were missing, INCLUDING the figures and the conclusion (withholding is ' +
+  'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
+  'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
+
+export function caseRevealSystemFor(paper: string, secondPerson = false): string {
+  return (paper === 'AFM' ? CASE_REVEAL_CORE_AFM : CASE_REVEAL_CORE_APM)
+    + (secondPerson ? CASE_REVEAL_GUARDRAILS_2P : CASE_REVEAL_GUARDRAILS);
+}
+
+/** Exported for fixtures only — the arm's whole claim is that these two differ ONLY in referent. */
+export const CASE_REVEAL_GUARDRAILS_3P_FOR_TEST = CASE_REVEAL_GUARDRAILS;
+export const CASE_REVEAL_GUARDRAILS_2P_FOR_TEST = CASE_REVEAL_GUARDRAILS_2P;
+
 // ── Earned reveal — AFM (design "B": verbatim worked answer + framing wrapper) ─
 // The model writes ONLY the wrapper (credit + misconception + next step) — never the
 // figures. The authored, code-verified model_answer is appended verbatim by
