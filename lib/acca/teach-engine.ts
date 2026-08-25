@@ -384,11 +384,18 @@ async function call2_diagnose(
   // ⚠️ BUT THE PARSE RATE IS THE ARM'S VALIDITY CONDITION, so it is observable rather than
   // silent: a run in which nothing parses would show "no effect" and be indistinguishable from a
   // measured null result. Count these lines in the server log when reading any measurement.
+  // ⚠️ OBSERVATIONAL ONLY — nothing here is read by any branch. `label` and `correct` were added
+  // for divergence #3's arm (2026-08-25): its endpoint is whether this call returns the
+  // correct-sentinel or manufactures a gap on an answer that is genuinely right, and without the
+  // label a "no effect" reading cannot be told from the sentinel never being reachable. Truncated
+  // because a gap label is capped at 12–15 words and a runaway body would flood the log.
   console.log(JSON.stringify({
     at: 'case_gap_verdict',
     parsed: verdict !== null,
     creditable: verdict?.creditable ?? null,
     derived: verdict?.derived ?? null,
+    correct: isCorrectVerdict(safeLabel(verdict, raw)),
+    label: safeLabel(verdict, raw).slice(0, 160),
   }));
   return { label: safeLabel(verdict, raw), verdict };
 }

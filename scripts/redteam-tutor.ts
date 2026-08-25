@@ -474,6 +474,123 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'To extend that: because every return measure fell while revenue rose, the board is being ' +
       'invited to read growth as success when the returns on that growth deteriorated.',
   },
+
+  // ── DIVERGENCE #3 SEED CLASS (2026-08-25) — A CORRECT DISCURSIVE ANSWER ────────────────────
+  // call2_diagnose's shipped EQUIVALENCE CHECK asks whether the student's "NUMERICAL RESULT is
+  // MATHEMATICALLY equivalent to the model's". Both requirements below have **ZERO DIGITS in the
+  // model answer** — chosen by digit density over all 23 published non-mock case requirements, so
+  // there is no numerical result for that check to bind to at all. The check therefore cannot
+  // return equivalent, and the only branch left open to the call is "name an error".
+  //
+  // **THE ANSWERS BELOW ARE CORRECT.** Each covers every substantive point of its stored
+  // model_answer — and each is deliberately WORDED DIFFERENTLY throughout, because substantive
+  // equivalence under different wording is exactly what the narrative arm protects and what the
+  // numeric-only arm has no way to see. A gap named here is a FALSE POSITIVE.
+  //
+  // ⚠️ ENDPOINT IS MACHINE-READABLE, not hand-classified: `messageKind` is 'correct' when
+  // isCorrectVerdict(label) holds and 'hint' when the call manufactures a gap. The capture stores
+  // it as `kind`. Filter these with **`dc-case`**, unique to them.
+  //
+  // ⚠️ Run with APM_COMPLETENESS_GATE UNSET. That gate can demote a correct verdict for a missing
+  // component, which would score as a gap and confound call2's own behaviour with a second check.
+  {
+    label: 'CASE · DC-CASE Torfin Build Supplies (i) — CORRECT DISCURSIVE (D1b, 13 marks, 0 digits)',
+    paper: 'APM', kind: 'case',
+    caseId: 'a3000000-0000-4000-8000-0000000000d2',
+    reqId: '0374e966-ff7c-4368-93a7-b1efcecb849b',
+    correctVerdict:
+      'the silos impair all three board objectives and consume finance capacity; the ERPS/CRM does '
+      + 'address the specific gaps and should proceed subject to a payback case, data cleansing and '
+      + 'a phased rollout that answers the adoption risk in the objection',
+    seededWrong:
+      'NOT wrong — CORRECT and substantially complete, worded differently from the model throughout.',
+    attempt:
+      'The silo problem is really four problems. Nobody can say which stock number is true — the ' +
+      'fourteen branch systems, the website and the ledger each report something different, so the ' +
+      'board cannot see availability of core lines, and that is one of the three things it says it ' +
+      'is trying to achieve. Next, because product codes were never standardised and the same ' +
+      'customer exists several times over, any question asked at group level — total spend by this ' +
+      'account, total credit we have out to them — can only be answered by someone building a ' +
+      'spreadsheet by hand. That hurts the key-account objective and it leaves credit control ' +
+      'carrying exposure it cannot actually see. Third, the website takes its stock position ' +
+      'overnight from a count done weekly, so what a customer sees may simply be wrong in either ' +
+      'direction: orders taken for goods that are gone, or sales lost on goods sitting in a branch. ' +
+      'Fourth, three weeks of reconciliation and six more days assembling the pack means the finance ' +
+      'team spends its month agreeing figures instead of interrogating them, and the numbers land ' +
+      'too late to act on.\n\n' +
+      'Does the proposed system meet those? Largely yes, and specifically rather than generically. ' +
+      'One database with a single product file and a single customer record removes the coding and ' +
+      'duplication at source. Live branch-level stock fixes both the availability objective and the ' +
+      'website feed. Posting to the ledger automatically attacks the reconciliation problem at its ' +
+      'cause instead of speeding up the cure. And a CRM that shows purchases, contacts and credit ' +
+      'position across the whole group is exactly the missing capability behind the key-account and ' +
+      'credit gaps.\n\n' +
+      'That is not the same as approving it. The benefits all sit downstream of an implementation ' +
+      'the paper has not costed. Merging fourteen inconsistent product files and de-duplicating the ' +
+      'customer base is serious cleansing work, and done badly it is worse than today — one wrong ' +
+      'version of the truth carries an authority that three arguing reports never had. A year and ' +
+      'most of the capital budget is a concentrated bet for a business on thin margins, so I would ' +
+      'make the FD build the payback on the items we can actually measure — reconciliation and pack ' +
+      'time released, credit losses avoided once exposure is visible, e-commerce sales protected by ' +
+      'accurate stock — and then net off transition disruption, training, and the dip in branch ' +
+      'productivity that always comes with rollout. Not on the vendor\'s numbers.\n\n' +
+      'On the operations director: the point deserves an answer rather than a brush-off. Local ' +
+      'knowledge in the branches is real and worth keeping. But the objection treats local knowledge ' +
+      'and shared data as if you had to choose one — a branch manager who can also see what that ' +
+      'customer buys online and at other branches is better equipped, not worse. The real risk ' +
+      'hiding in the objection is adoption: if the branches read the system as head office watching ' +
+      'them, they will work around it and the single database rots. The answer to that is to put ' +
+      'branch managers into the design and pilot it in a few branches first — not to keep the silos.\n\n' +
+      'Overall I would proceed, conditional on that payback case, a real cleansing plan, and a ' +
+      'phased rollout that brings the branches with it.',
+    attempt2:
+      'To add to that: the adoption risk is the one I would watch hardest, because it is the only ' +
+      'one that can quietly undo the whole investment after it has been paid for.',
+  },
+  {
+    label: 'CASE · DC-CASE Vesla Retail (ii) — CORRECT DISCURSIVE (D1d, 7 marks, 0 digits)',
+    paper: 'APM', kind: 'case',
+    caseId: 'a2000000-0000-4000-8000-0000000000d1',
+    reqId: '04d353dd-cece-43df-8c52-c43b878ee730',
+    correctVerdict:
+      'four risks — local exports of customer files, the shared login, the free external tool, and '
+      + 'stale access including a live leaver account — each with a proportionate control, and the '
+      + 'exposure is large relative to the cost of fixing it',
+    seededWrong:
+      'NOT wrong — CORRECT and substantially complete, worded differently from the model throughout.',
+    attempt:
+      'There are four exposures here and each has a fix that is not expensive.\n\n' +
+      'Whole customer records — names, contact details, what people bought, the marketing profiles ' +
+      '— are sitting as spreadsheets on individual laptops. One machine lost, stolen or infected ' +
+      'and personal data goes out at scale, which brings the data-protection regulator in every ' +
+      'market Vesla trades in, plus the damage of being the retailer that leaked its customers. The ' +
+      'fix is to stop the data leaving: analysts should work on the platform against the database. ' +
+      'Where an extract genuinely cannot be avoided, pull only the fields the work needs, strip or ' +
+      'mask identifiers where the analysis still works without them, and encrypt the laptops.\n\n' +
+      'Everyone signing in with one shared account means nobody is accountable. Vesla cannot say ' +
+      'who looked at a record or who exported it, cannot take access away from one person without ' +
+      'shutting out the whole team, and one leaked password hands over everything. Give each person ' +
+      'their own account with permissions matched to their role, and log the activity. If that costs ' +
+      'more in licences, weigh it against a breach nobody can attribute.\n\n' +
+      'Loading customer extracts into a free visualisation site puts personal data outside the ' +
+      'company entirely, under terms nobody has read and quite possibly stored somewhere Vesla has ' +
+      'never assessed against its data-protection obligations. Charts should be built in tooling ' +
+      'that has been approved. If an outside tool is genuinely needed, procure it properly — ' +
+      'contract, processing terms, where the data physically sits — and only ever send it ' +
+      'aggregated or anonymised data.\n\n' +
+      'Finally, access has never been reviewed since the team was set up, and someone who left ' +
+      'months ago still has a working account — so people who no longer need the customer database, ' +
+      'including someone no longer employed here, can still reach it. Close that account today, make ' +
+      'account closure part of the leaver process so it is not left to memory, and review ' +
+      'entitlements on a schedule — quarterly is enough — so access follows the job.\n\n' +
+      'None of these are exotic controls. What they are protecting against — a regulatory penalty, ' +
+      'the cost of a breach, and customers deciding they do not trust us with their details — is ' +
+      'out of all proportion to what the fixes cost, and I would treat the live leaver account and ' +
+      'the external uploads as things to do this week rather than next quarter.',
+    attempt2:
+      'To extend that: the leaver account is the one I would move on first, because it is the ' +
+      'cheapest to close and the hardest to defend if anything happened through it.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the
