@@ -870,7 +870,19 @@ async function runCaseSurface() {
 // it was launched from a different shell these values are wrong, which is why the caveat is
 // printed beside them and why `armEnv()` says `(unset here)` rather than the tempting but false
 // `(server default)` — this script cannot know the server's default.
-const ARM_VARS = ['TUTOR_GUARD_LABEL', 'TUTOR_HINT_OPENING', 'TUTOR_CASE_HINT_OPENING'] as const;
+// ⚠️ IT HAPPENED AGAIN, ONE DAY LATER. `TUTOR_CASE_EQUIV` (divergence #3) was added to the engine
+// and NOT to this list, so the first #3 arm printed and stored an ARM line that did not mention
+// the variable under test — the identical failure this list was created to end, and it recurs
+// because the list lives here while the variable is declared in teach-engine.ts. **Adding a
+// prompt variant means adding it HERE in the same commit.** A variant absent from this list is
+// invisible to every capture, and a capture that cannot name its own arm is not evidence.
+const ARM_VARS = [
+  'TUTOR_GUARD_LABEL',
+  'TUTOR_HINT_OPENING',
+  'TUTOR_CASE_HINT_OPENING',
+  'TUTOR_CASE_EQUIV',
+  'TUTOR_CASE_CONFIRM',
+] as const;
 
 function armEnv(): Record<string, string> {
   return Object.fromEntries(ARM_VARS.map((k) => [k, process.env[k] ?? '(unset here)']));

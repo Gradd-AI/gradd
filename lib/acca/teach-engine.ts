@@ -155,13 +155,27 @@ const CASE_HINT_OPENING = (process.env.TUTOR_CASE_HINT_OPENING ?? 'conditional')
 // `narrative` (default) = the check asks whether the claim is SUBSTANTIVELY equivalent, numerical
 // OR narrative. `shipped` = the numeric-only form, i.e. today's behaviour.
 //
-// ⚠️ THE SHIPPED FORM ASKS A QUESTION THIS SURFACE CANNOT ANSWER. The drill route has asked about
-// "the student's claim (numerical OR narrative)" since the grounding work; this engine still asks
-// whether "the student's NUMERICAL RESULT is MATHEMATICALLY equivalent to the model's" — on a
-// surface whose requirements are overwhelmingly discursive. A narrative answer has no numerical
-// result, so the check cannot return equivalent, and the only branch left open is "name an error".
-// That is the P-T4 shape exactly: a demand the input cannot satisfy does not go unanswered, it
-// gets satisfied with the nearest thing the remaining rules permit.
+// The shipped form asks whether "the student's NUMERICAL RESULT is MATHEMATICALLY equivalent to
+// the model's" on a surface whose requirements are overwhelmingly discursive; the drill route has
+// asked about "the student's claim (numerical OR narrative)" since the grounding work. This
+// variant closes that divergence.
+//
+// 📐 **MEASURED 2026-08-25 — NULL, AND THE PREDICTION THAT MOTIVATED IT WAS WRONG.** The theory
+// was P-T4's: a narrative answer has no numerical result, so the check cannot return equivalent
+// and the only branch left open is "name an error". **It does not happen.** 80 legs on two
+// requirements whose model answers contain ZERO DIGITS — the strongest form of the trap — and
+// BOTH arms emitted the correct-sentinel on 40/40, the only distinct label observed either side.
+// The model reads the check's intent ("only name an error if the answer is genuinely WRONG")
+// rather than being trapped by its numeric framing.
+//
+// ⚠️ SO THIS IS A CONVERGENCE, NOT A FIX. It is safe — measured non-inferior on every cell — and
+// it must NOT be described as fixing false-positive diagnosis, because no false positive was
+// found for it to fix. ⚠️ CEILING: the BEFORE arm was already saturated at 40/40, so a benefit
+// could not have been detected had one existed. Untested region: an answer that is correct but
+// THIN, or worded so unusually that equivalence is genuinely arguable. On a partial answer a
+// named gap is CORRECT, so the false-positive endpoint only has meaning on a fully correct one —
+// which is exactly where the ceiling sits.
+// Record: docs/redteam/summaries/2026-08-25-case-divergence-3-equivalence-scope.md
 export type CaseEquivVariant = 'narrative' | 'shipped';
 const CASE_EQUIV = (process.env.TUTOR_CASE_EQUIV ?? 'narrative') as CaseEquivVariant;
 

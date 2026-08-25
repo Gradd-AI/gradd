@@ -7,8 +7,11 @@
 // has the shape today's doctrine names as the failure mode:
 //
 //   #3 asks whether the student's NUMERICAL RESULT is MATHEMATICALLY equivalent — on a surface
-//      whose requirements are overwhelmingly discursive. A narrative answer cannot satisfy it, so
-//      the only branch left open is "name an error" (P-T4).
+//      whose requirements are overwhelmingly discursive.
+//      📐 MEASURED 2026-08-25: the predicted false-positive does NOT occur. 80 legs on two
+//      zero-digit requirements, both arms emitted the correct-sentinel 40/40. #3 is a
+//      CONVERGENCE, measured non-inferior — NOT a fix. These fixtures pin its SHAPE and its
+//      byte-compatibility; they assert nothing about a benefit, because none was measured.
 //   #4 demands the "equally valid" endorsement UNCONDITIONALLY, so an answer that reached the
 //      right conclusion by an unsupported method is told the method is equally valid.
 //
