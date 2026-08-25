@@ -107,7 +107,8 @@
     "verify": "tsx scripts/verify.ts",
     "test:warning-drift": "tsx scripts/test-warning-drift.ts",
     "lint:sbl-drift": "tsx scripts/authoring/lint-sbl-warning-drift.ts",
-    "test:case-envelope": "tsx scripts/test-case-envelope.ts"
+    "test:case-envelope": "tsx scripts/test-case-envelope.ts",
+    "test:case-divergences": "tsx scripts/test-case-divergences.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "0.90.0",

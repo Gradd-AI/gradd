@@ -151,6 +151,35 @@ const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
 // read against the wrong prompt.
 const CASE_HINT_OPENING = (process.env.TUTOR_CASE_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
 
+// ── DIVERGENCE #3 — the EQUIVALENCE CHECK's scope, env-selected ──────────────
+// `narrative` (default) = the check asks whether the claim is SUBSTANTIVELY equivalent, numerical
+// OR narrative. `shipped` = the numeric-only form, i.e. today's behaviour.
+//
+// ⚠️ THE SHIPPED FORM ASKS A QUESTION THIS SURFACE CANNOT ANSWER. The drill route has asked about
+// "the student's claim (numerical OR narrative)" since the grounding work; this engine still asks
+// whether "the student's NUMERICAL RESULT is MATHEMATICALLY equivalent to the model's" — on a
+// surface whose requirements are overwhelmingly discursive. A narrative answer has no numerical
+// result, so the check cannot return equivalent, and the only branch left open is "name an error".
+// That is the P-T4 shape exactly: a demand the input cannot satisfy does not go unanswered, it
+// gets satisfied with the nearest thing the remaining rules permit.
+export type CaseEquivVariant = 'narrative' | 'shipped';
+const CASE_EQUIV = (process.env.TUTOR_CASE_EQUIV ?? 'narrative') as CaseEquivVariant;
+
+// ── DIVERGENCE #4 — the CONFIRM leg's "equally valid" endorsement, env-selected ──
+// `conditioned` (default) = the endorsement is demanded for PRESENTATION differences and a
+// different job is demanded where an alternative FIGURE or METHOD is asserted. `shipped` =
+// today's unconditional "if their convention differs, say it's equally valid".
+//
+// ⚠️ NOT A PORT OF THE DRILL ROUTE'S WORDING, DELIBERATELY. That arm is written as a PROHIBITION
+// ("never call a wrong or unscaled form 'equally valid' to protect their mood"), and P-T2/P-T4
+// both say a prohibition layered over a standing demand redirects the output rather than removing
+// it — the demand here being "say it's equally valid", which the shipped string issues
+// unconditionally. So the DEMAND is conditioned instead: the endorsement is owed for presentation,
+// and where a different figure or method is claimed the leg is asked to do something else it CAN
+// do. Nothing is forbidden, so there is no unwanted output being named and primed.
+export type CaseConfirmVariant = 'conditioned' | 'shipped';
+const CASE_CONFIRM = (process.env.TUTOR_CASE_CONFIRM ?? 'conditioned') as CaseConfirmVariant;
+
 const REVEAL_PHRASES = [
   'show me the full answer',
   'show me the answer',
@@ -314,12 +343,7 @@ async function call2_diagnose(
     system:
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
-      'EQUIVALENCE CHECK — do this before naming any error: ' +
-      'The model answer and student answer may use different but equivalent sign conventions ' +
-      '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ' +
-      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
-      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
-      'A correct answer in a different format is NOT an error and must NOT be flagged. ' +
+      caseEquivalenceCheck(CASE_EQUIV) +
       "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
@@ -367,6 +391,71 @@ async function call2_diagnose(
     derived: verdict?.derived ?? null,
   }));
   return { label: safeLabel(verdict, raw), verdict };
+}
+
+/**
+ * DIVERGENCE #3 — the equivalence check that call2_diagnose runs before it will name any error.
+ *
+ * Pure and exported so the assembled bytes are pinnable: the claim is that `shipped` is
+ * byte-identical to what this engine sent before the variant existed, so anything the arm measures
+ * is attributable to the narrative clause alone.
+ *
+ * ⚠️ THE GROUNDING CLAUSE IS DELIBERATELY NOT PORTED. The drill route's version also says "AND
+ * (when a GROUNDING block is supplied below) a narrative claim may use different WORDING than a
+ * checklist point or fact". This engine's grounding channel is `renderDiscriminants`, which is
+ * EMPTY on 34 of 38 published requirements — so that clause would be inert on almost every turn
+ * while adding a second moving part to the arm. One variable: numeric-only → numeric-or-narrative.
+ */
+export function caseEquivalenceCheck(variant: CaseEquivVariant): string {
+  const HEAD =
+    'EQUIVALENCE CHECK — do this before naming any error: ' +
+    'The model answer and student answer may use different but equivalent sign conventions ' +
+    '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ';
+  if (variant === 'shipped') {
+    return (
+      HEAD +
+      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
+      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
+      'A correct answer in a different format is NOT an error and must NOT be flagged. '
+    );
+  }
+  return (
+    HEAD +
+    "Check whether the student's claim — numerical OR narrative — is substantively equivalent to " +
+    "the model's, before concluding it is wrong. " +
+    'Only name an error if the answer is genuinely WRONG — not merely presented in a different ' +
+    'convention or wording. ' +
+    'A correct answer in a different format or phrasing is NOT an error and must NOT be flagged. '
+  );
+}
+
+/**
+ * DIVERGENCE #4 — the confirm leg's treatment of a convention that differs from the model.
+ *
+ * `shipped` demands the "equally valid" endorsement UNCONDITIONALLY, so a student who reached the
+ * right conclusion by a method the requirement does not support is told their method is equally
+ * valid — the leg has no other branch available to it.
+ *
+ * `conditioned` narrows the endorsement to PRESENTATION (layout, labelling, ordering) and, where
+ * the answer asserts an alternative FIGURE or METHOD, demands a different and satisfiable job:
+ * say plainly whether it holds against what the requirement demanded.
+ *
+ * ⚠️ DEMAND-FORM, NOT PROHIBITION-FORM — see `CASE_CONFIRM`. The drill route's equivalent arm ends
+ * with "never call a wrong or unscaled form 'equally valid' to protect their mood". That sentence
+ * NAMES the unwanted output, which P-M4 measured as priming it, and it sits downstream of a demand
+ * it cannot repeal. Here the demand itself is split, so on the alternative-method branch the
+ * "equally valid" instruction is never issued in the first place and there is nothing to forbid.
+ */
+export function caseConfirmConvention(variant: CaseConfirmVariant): string {
+  if (variant === 'shipped') {
+    return "If their convention differs from the usual model, say it's equally valid. ";
+  }
+  return (
+    'If their PRESENTATION differs from the usual model — layout, labelling, ordering, the shape ' +
+    "of the working — say it's equally valid, because it is. If instead they have used a " +
+    'different FIGURE or a different METHOD from the one the requirement demanded, say plainly ' +
+    'whether that alternative holds and what it turns on. '
+  );
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
@@ -576,8 +665,9 @@ async function call3_confirm(
           // taxonomy to the student"), 240 lines apart. The values are no longer in the prompt,
           // so the only way to obey it was to invent one.
           'Say briefly which part of what the requirement demanded the answer actually hit, and ' +
-          'why it holds / what puts it in the top band. If their convention ' +
-          "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
+          'why it holds / what puts it in the top band. ' +
+          caseConfirmConvention(CASE_CONFIRM) +
+          'Do NOT restate, re-derive, or ' +
           'quote back their figures or workings — they already wrote them; refer to what they did ' +
           "in words, not numbers. Don't mark it as if it fell short.",
       },
