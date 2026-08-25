@@ -57,6 +57,18 @@ const LEGS = Number(val('--legs', '2'));
 // `--probes` does NOT filter this surface — it only filters PROBES — and assuming it did cost a
 // wasted 40-turn arm on 2026-08-22.
 const POLARITY_ONLY = (val('--polarity-only') ?? '').toLowerCase();
+// ── `--reveal-leg` (2026-08-25) — fire a THIRD turn that REQUESTS the earned reveal ──────────
+// The polarity surface could not reach `call4_reveal` at all: it fires the two seeded attempts and
+// stops, while the reveal needs `REVEAL_ENABLED && isRevealRequest(msg) && missCount >= 2`. That is
+// why the reveal leg has never been measured on the case surface despite being live.
+//
+// ⚠️ REQUIRES `--legs 2`. With one leg the student has missed once, the earn gate correctly returns
+// `reveal_locked`, and the run would measure the gate rather than the reveal. Refused loudly rather
+// than silently producing a capture full of redirects (P-G1).
+const REVEAL_LEG = flag('--reveal-leg');
+// The literal must be a member of the engine's own REVEAL_PHRASES or the request is not recognised
+// as one. First entry of that list, kept verbatim.
+const REVEAL_REQUEST = 'show me the full answer';
 
 // ── POLARITY SURFACE (--surface polarity) ────────────────────────────────────
 // THE SIGHTING. APM · Aldermere Fitness (i): a student wrote "they wouldnt think the strategy is
@@ -475,6 +487,44 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'invited to read growth as success when the returns on that growth deteriorated.',
   },
 
+  // ── REVEAL BASELINE (2026-08-25) — THE AFM HALF ───────────────────────────────────────────
+  // `call4_reveal` on the case surface takes NO `paper` and hardcodes "You are Ezra, an APM
+  // tutor." Pairing this AFM requirement with the APM Keldan seed makes the persona mismatch
+  // OBSERVABLE rather than inferred: same decline shape, same leg, different paper.
+  //
+  // Run with `--reveal-leg --legs 2`. Filter with **`kestrel`**; pair it with the APM half using
+  // the long substring `keldan foods (i) — report`, which excludes the positive control.
+  //
+  // ⚠️ `answer_schema` is PRESENT here but carries NO `params`, verified — so discriminants cannot
+  // fire and the fence matches the APM targets. In any case `call4_reveal` receives no
+  // groundedFacts at all, so the contradiction arm cannot reach the reveal leg on either paper.
+  //
+  // Decline shape, deliberately the SAME shape as Keldan: refuses the evaluation half outright and
+  // asserts adequacy with no reasoning. The correct answer separates THREE exposures and holds
+  // that the finance director's forward proposal answers only the first.
+  {
+    label: 'CASE · RV-CASE Kestrel Foods plc (ii) — AFM decline shape (E2a, 7 marks, 0 digits)',
+    paper: 'AFM', kind: 'case',
+    caseId: 'ac000000-0000-4000-8000-00000000b501',
+    reqId: 'e861173b-56c9-46d9-99c6-cf17dc1b6b5d',
+    correctVerdict:
+      'THREE distinct exposures — transaction (hedge remittances with forwards/MMH), translation '
+      + '(a balance-sheet/covenant matter, not a hedging one) and economic (no forward fixes a '
+      + 'competitive position; the responses are operational) — and the finance director\'s '
+      + 'proposal answers only the first',
+    seededWrong:
+      'DECLINES the exposure-by-exposure evaluation outright and asserts the forward proposal '
+      + 'covers it, with no reasoning',
+    attempt:
+      'I am not going to work through each exposure type separately — currency risk is currency ' +
+      'risk, and the treasury team handles the hedging anyway. The finance director\'s forward ' +
+      'contract proposal covers the exposure the Monterrey investment creates. My advice to the ' +
+      'board is that no further action is needed beyond adopting it.',
+    attempt2:
+      'My view stands. Forwards deal with the currency risk and the board does not need a ' +
+      'breakdown by exposure type to approve the proposal.',
+  },
+
   // ── DIVERGENCE #3 SEED CLASS (2026-08-25) — A CORRECT DISCURSIVE ANSWER ────────────────────
   // call2_diagnose's shipped EQUIVALENCE CHECK asks whether the student's "NUMERICAL RESULT is
   // MATHEMATICALLY equivalent to the model's". Both requirements below have **ZERO DIGITS in the
@@ -882,6 +932,11 @@ const ARM_VARS = [
   'TUTOR_CASE_HINT_OPENING',
   'TUTOR_CASE_EQUIV',
   'TUTOR_CASE_CONFIRM',
+  // Listed BEFORE any variant exists, deliberately. The baseline reveal arm (2026-08-25) is
+  // single-arm — there is nothing to toggle yet — so this reads "(unset here)" and that is the
+  // honest record: no reveal variant was in play. Listing it now also pre-empts a third
+  // recurrence of the miss that cost a re-run twice already.
+  'TUTOR_CASE_REVEAL',
 ] as const;
 
 function armEnv(): Record<string, string> {
@@ -904,8 +959,17 @@ async function runPolaritySurface() {
   const targets = POLARITY_TARGETS.filter((t) => !POLARITY_ONLY || t.label.toLowerCase().includes(POLARITY_ONLY));
   if (!targets.length) throw new Error(`--polarity-only "${POLARITY_ONLY}" matched no target. Known: ${POLARITY_TARGETS.map((t) => t.label).join(' | ')}`);
 
+  // ⚠️ REFUSE rather than capture redirects. `missCount >= 2` is what earns the reveal; with one
+  // leg every reveal request comes back `reveal_locked` and the capture would look like a measured
+  // null when it is a misconfigured run.
+  if (REVEAL_LEG && LEGS < 2) {
+    throw new Error('--reveal-leg requires --legs 2: the earned reveal needs missCount >= 2, and with one leg every request returns reveal_locked.');
+  }
+
   const filterNote = POLARITY_ONLY ? ` · filter "${POLARITY_ONLY}" matched ${targets.length} of ${POLARITY_TARGETS.length}` : ' · NO FILTER — whole matrix';
-  console.log(`\nPOLARITY RUN — ${BASE} · ${targets.length} target(s) × ${REPEATS} repeats × ${LEGS} leg(s) = ${targets.length * REPEATS * LEGS} turns${filterNote}`);
+  const perRepeat = LEGS + (REVEAL_LEG ? 1 : 0);
+  console.log(`\nPOLARITY RUN — ${BASE} · ${targets.length} target(s) × ${REPEATS} repeats × ${perRepeat} turn(s) = ${targets.length * REPEATS * perRepeat} turns${filterNote}`);
+  if (REVEAL_LEG) console.log('   + REVEAL LEG — a third turn requesting the earned reveal after both misses.');
   // ⚠️ NAME THE MATCHED TARGETS. `--polarity-only` is a SUBSTRING match, so `keldan` and `orlen`
   // each match their seeded target AND its positive control. Silently running two when you meant
   // one pools two different answers into one rate.
@@ -953,6 +1017,16 @@ async function runPolaritySurface() {
         session = r.session ?? session;
         legs.push({ leg: i === 0 ? 'miss 1 (hint)' : 'miss 2 (teach)', status: r.status, kind: r.kind, intent: r.intent, ezra: r.body });
         if (r.status !== 200) break;
+      }
+      // ── THE REVEAL LEG. Fires only after both misses have landed, which is what earns it.
+      // `kind` is the validity signal and must be read before any count: 'reveal' means
+      // call4_reveal actually ran; 'reveal_locked' means the earn gate refused and the turn is
+      // NOT a reveal; anything else means the request was not recognised as one.
+      if (REVEAL_LEG && legs.length === 2 && legs.every((l) => l.status === 200)) {
+        const rv = t.kind === 'drill'
+          ? await fire(cookie, t.drillId!, t.paper, REVEAL_REQUEST, session)
+          : await fireCase(cookie, t.caseId!, t.reqId!, t.paper, REVEAL_REQUEST, session);
+        legs.push({ leg: 'reveal request', status: rv.status, kind: rv.kind, intent: rv.intent, ezra: rv.body });
       }
       rows.push({
         target: t.label, surface: t.kind, rep,
