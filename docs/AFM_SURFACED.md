@@ -1094,6 +1094,52 @@ should not. Budget one.**
 The unit noun leaks 4/120 (*"the drill"* where the core says *"this requirement"*) against 0/40 in
 the routing arm — logged, not fixed, not an endpoint.
 
+### ✅ CLOSED 2026-08-28 — THE CASE **HINT** LEG'S POSITIVE CONTROL, BOTH PAPERS. NO DEFECT.
+
+Records: `docs/redteam/summaries/2026-08-25-case-envelope-positive-control.md` (APM — Orlen (i) +
+Keldan (i), n = 20/cell) and `docs/redteam/summaries/2026-08-28-case-hint-positive-control-afm.md`
+(AFM Kestrel (ii) + APM Keldan (i), n = 60/cell). **The demand-side arm on this surface is measured
+in BOTH directions on BOTH papers. Nothing is open on it.**
+
+| direction | seed class | n | result |
+| --- | --- | ---: | --- |
+| the arm FIRES where it should | decline / off-requirement (divergence #2) | 80 | `creditable` 0 on 80/80; opening 0/40 → 38/40 clean |
+| the arm does NOT fire where it should not | genuinely creditable but PARTIAL, authored from the requirement's own criteria | **122** | **`creditable` 1 on 122/122, (c) fired 0/120** |
+
+**THE 0/120 IS DETERMINISTIC, NOT AN OUTPUT SCAN.** `caseHintOpening` passes
+`nothingEstablished = false`, so `hint-opening.ts`'s (c) arm fires **iff** `nothingCreditable`,
+which is `verdict?.creditable === 0`. `creditable === 1` on every turn therefore *entails* no fire.
+The suppression-string scan (0/120 across both captures) is corroboration only and would test the
+weaker claim — whether the model ECHOED an instruction.
+
+**Secondary — the credit is SPECIFIC on 120/120**, naming a move the student actually made rather
+than generic praise.
+
+⚠️ **"BLIND" IS NOT CLAIMED, and the reason is structural rather than an omission.** One arm makes
+blinding-to-arm vacuous, and cell must stay visible because judging specificity requires knowing
+what the student wrote; what was done is a seeded shuffle with classifications recorded before any
+tally. **Re-running this leg as a blind arm would buy nothing on the primary**, which is entailed by
+a logged field rather than judged by a reader.
+
+📐 **RE-VERIFIED 2026-08-28 FROM A SOURCE THE SUMMARY DID NOT COMMIT, and that is the process
+finding.** The captures (`docs/redteam/pc2-{AFM,APM}-polarity.json`, gitignored) carry **no
+`creditable` field** — the primary was read from the `at: 'case_gap_verdict'` server log.
+Recomputed independently from `.next/dev/logs/next-development.log`: **122 lines, `parsed` true
+122/122, `creditable` 1 on 122/122, `correct` false on 122/122** — the last being the validity
+condition, since a `correct` verdict routes to `call3_confirm` and never exercises this leg. The
+captures separately confirm 60/60 HTTP 200, `kind = hint` 60/60, and `TUTOR_CASE_HINT_OPENING:
+conditional` recorded in both. Gate 73/73. **An endpoint that lives only in a dev-server log is one
+`rm -rf .next` away from being unverifiable — route `creditable` into the polarity capture before
+the next arm on this field.**
+
+🔸 **STILL OPEN, AND IT IS NOT THIS LEG'S DEMAND:** the AFM overstatement mode — credit claiming
+more coverage than the student showed — **5/60 against APM 0/60, Fisher p = 0.057**, on a rubric
+written during the read. Verified present in the capture at reps 16, 17, 27, 47, 60 (rep 16 invents
+a fourth exposure; rep 17 says *"you've identified the right three types"* to a student who
+identified one). **A candidate to PRE-REGISTER, not a result** — and the second sighting of the same
+AFM/APM direction as the reveal cell below, on a different leg with a different seed shape. The
+confound is unchanged: one requirement per paper, so it is not attributable to the paper.
+
 ### 🔴 OPEN — THE AFM REVEAL CELL IS A **CONTENT** PROBLEM. DO NOT RUN ANOTHER DEMAND ARM AT IT.
 
 **10/30 clean after conditioning** (1/30 before). The remaining 20 are dominated by **(A) inverts
