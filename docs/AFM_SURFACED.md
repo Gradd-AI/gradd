@@ -1091,11 +1091,41 @@ states, `undefined ≠ false`. **Generalises: when a flag SUPPRESSES a demand, t
 whether it helps where it fires, and only a positive control measures whether it fires where it
 should not. Budget one.**
 
-**Still open on this leg, and stated so it is not read as solved:** inversion survives at 12/60 and
-endorses-the-refusal at 7/60 — failures of CONTENT, not of a demand for content, and this was never
-the lever for them. The AFM cell stays far worse than APM (10/30 vs 26/30), confounded by
-requirement in every arm so far. The unit noun leaks 4/120 (*"the drill"* where the core says *"this
-requirement"*) against 0/40 in the routing arm — logged, not fixed.
+The unit noun leaks 4/120 (*"the drill"* where the core says *"this requirement"*) against 0/40 in
+the routing arm — logged, not fixed, not an endpoint.
+
+### 🔴 OPEN — THE AFM REVEAL CELL IS A **CONTENT** PROBLEM. DO NOT RUN ANOTHER DEMAND ARM AT IT.
+
+**10/30 clean after conditioning** (1/30 before). The remaining 20 are dominated by **(A) inverts
+the student's stated position — 9** and **(B) endorses the refusal — 6**, with (A′) vacuous at 5.
+APM's remaining 4 are a different, smaller residue.
+
+⚠️ **NAME IT CORRECTLY, BECAUSE THE NAME DECIDES THE NEXT ARM.** Conditioning the opening works on
+a DEMAND failure: the praise-first clause asks for something the answer cannot supply, and the model
+invents it — which is why (A′) collapsed 17 → 5 (p=0.008) and why that mode was the one that moved.
+**(A) and (B) are not that.** The leg is being asked to walk moves the student DECLINED to make, and
+it reaches for the student's own declining proposition as the thing to build from — on Kestrel,
+*"forwards are part of the answer"*, the exact sentence used to refuse the evaluation. That is a
+failure about WHAT THE REVEAL IS BUILDING FROM, not about what its opening was told to demand.
+**No conditioning of the opening reaches it**, and the arm shows exactly that: (A) 21 → 12 and (B)
+15 → 7, neither significant, while the demand-driven mode fell off a cliff.
+
+**Therefore: do NOT run another demand arm at this cell.** A third re-wording of the opening clause
+would re-measure the mode that is already fixed and leave the two that are not. P-T4's second clause
+is not the live question here — the live question is what the reveal is handed.
+
+**What a content arm would have to change** (none of this is built, and none of it is a prompt
+tweak to the opening):
+- `call4_reveal` receives `attempt` (the last message) + `diagnosis` (a 12–15 word label) +
+  `model_answer`. On a decline it is handed a refusal and a label and told to build a top-band
+  answer — the student's proposition is the most concrete thing in the prompt, so it gets used.
+- The decline shape has no creditable content by construction, so *"first credit what they had
+  right"* was never satisfiable **and neither is any reconstruction from their answer.** The
+  conditioned opening solved the first half of that; the second half is still open.
+- ⚠️ **The AFM/APM gap is CONFOUNDED BY REQUIREMENT in every arm so far** — different case, marks,
+  content, and AFM's Kestrel seed names a specific tool the student can hide behind. It must NOT be
+  read as a paper effect, and a content arm needs a second AFM requirement before the gap itself is
+  attributable.
 ⚠️ **`REVEAL_AFM_WRAPPER_SYSTEM` on the DRILL route still carries the unconditioned praise-first
 clause.** Deliberately untouched — same clause, different surface, its own measurement. Fixture-
 pinned present and unconditioned so a later edit cannot widen this arm to two surfaces silently.
