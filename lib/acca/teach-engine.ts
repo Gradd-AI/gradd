@@ -63,15 +63,29 @@ export interface EncPayload {
    * "nothing creditable" on someone else's reveal and suppress the praise demand at will. Same
    * reasoning the module already gives for keeping `counted` inside `enc`.
    *
-   * ⚠️ DESCRIBES `lastRealAttempt`, NOT THE SESSION. Written on every attempt turn (last-write,
-   * never latched), so it always describes the SAME text `call4_reveal` receives as `attempt`.
-   * A latched "was anything ever creditable" would decouple the two and could demand praise for
-   * work that is not in the answer the reveal is looking at.
+   * ⚠️ STICKY ACROSS THE SESSION, AND THE FIRST BUILD GOT THIS BACKWARDS — the positive control
+   * caught it and the 120-turn arm could not have. It was last-write, on the argument that the
+   * flag must describe the same text `call4_reveal` receives as `attempt`. That argument is
+   * wrong, because it scopes the flag to a FRAGMENT: `lastRealAttempt` is the student's most
+   * recent MESSAGE, and on the positive-control target that message is a two-line extension of a
+   * complete, correct answer. `call2_diagnose` sees only that turn's message, so it read
+   * `creditable: 1` on miss 1 and `creditable: 0` on miss 2 — 10/10 — and the reveal would have
+   * opened "nothing here earns credit" at a student who had just produced all four correct
+   * calculations. The REVEAL'S REFERENT IS THE REQUIREMENT, not the last message.
    *
-   * Absent ⇒ false ⇒ the praise-first core ⇒ today's behaviour, for every session sealed before
-   * this shipped.
+   * THREE STATES, and `undefined` is NOT `false`:
+   *   undefined — no attempt turn has been adjudicated in this session (legacy blob, or a reveal
+   *               reached without one). Does NOT fire the conditioned opening.
+   *   false     — attempts were adjudicated and none earned credit. Fires it.
+   *   true      — some attempt earned credit. Never fires it, for the rest of the session.
+   *
+   * ⚠️ STICKY IN ONE DIRECTION ONLY, and the direction is chosen by which error is survivable.
+   * `resolveNothingEstablished` can only ever move a turn toward NOT-adjudicated, because there
+   * the unsafe direction is granting credit. Here the consequence is inverted — this flag
+   * SUPPRESSES a praise demand — so the safe direction is the opposite one: once credit is seen
+   * it latches on, and the worst a false `true` can do is leave today's behaviour in place.
    */
-  nothingCreditable?: boolean;
+  everCreditable?: boolean;
 }
 
 // ── Encryption ────────────────────────────────────────────────────────────────
@@ -82,10 +96,13 @@ function getKey(): Buffer {
   return createHash('sha256').update(secret).digest();
 }
 
-export function sealPayload(answer: string, counted: boolean, nothingCreditable = false): string {
+export function sealPayload(answer: string, counted: boolean, everCreditable?: boolean): string {
   const key  = getKey();
   const iv   = randomBytes(12);
-  const body = JSON.stringify({ answer, counted, nothingCreditable } satisfies EncPayload);
+  // ⚠️ THE KEY IS OMITTED WHEN THE STATE IS "NO CLAIM", never written as `false`. undefined and
+  // false are DIFFERENT states here (see EncPayload.everCreditable), and JSON.stringify drops an
+  // undefined value — which is exactly the encoding wanted.
+  const body = JSON.stringify({ answer, counted, everCreditable } satisfies EncPayload);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const enc  = Buffer.concat([cipher.update(body, 'utf8'), cipher.final()]);
   const tag  = cipher.getAuthTag();
@@ -111,11 +128,14 @@ export function openPayload(ciphertext: string): EncPayload {
     return {
       answer:  typeof o.answer === 'string' ? o.answer : plain,
       counted: o.counted === true,
-      nothingCreditable: o.nothingCreditable === true,
+      // ⚠️ THREE STATES PRESERVED. Anything that is not a real boolean becomes undefined ("no
+      // claim") rather than false — collapsing them would make a legacy or malformed blob assert
+      // that nothing the student wrote earned credit.
+      everCreditable: typeof o.everCreditable === 'boolean' ? o.everCreditable : undefined,
     };
   } catch {
     // Backward compat: sessions sealed before this deploy encrypted a raw string.
-    return { answer: plain, counted: false, nothingCreditable: false };
+    return { answer: plain, counted: false };
   }
 }
 
@@ -969,8 +989,8 @@ async function call4_reveal(
   /** Defaulted 'APM' so any caller that does not pass it is byte-identical to before the parameter
    *  existed — the same convention `call3_hint` uses. The orchestrator now passes the real paper. */
   paper = 'APM',
-  /** DIVERGENCE #5 — the carried `creditable === 0` verdict for `attempt`. Defaulted FALSE, so a
-   *  caller that does not pass it assembles the byte-identical praise-first core. */
+  /** DIVERGENCE #5 — resolved by the caller from the session-sticky `everCreditable`. Defaulted
+   *  FALSE, so a caller that does not pass it assembles the byte-identical praise-first core. */
   nothingCreditableNow = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
@@ -1049,13 +1069,14 @@ export interface TeachTurnInput {
   lastDiagnosis: string | null;
   lastRealAttempt: string | null;
   /**
-   * DIVERGENCE #5 — the `creditable === 0` verdict recorded on the turn that produced
-   * `lastRealAttempt`, carried in the sealed session blob (`EncPayload.nothingCreditable`).
+   * DIVERGENCE #5 — whether ANY adjudicated attempt in this session earned credit, carried in the
+   * sealed session blob (`EncPayload.everCreditable`). Three states; `undefined` means no attempt
+   * has been adjudicated and is NOT the same as `false`.
    *
-   * Optional and defaulted false inside `runTeachTurn`, so a caller that does not pass it gets the
-   * exact prompt it got before this field existed. Read ONLY on the reveal branch.
+   * Optional, and an absent value never fires the conditioned opening, so a caller that does not
+   * pass it gets the exact prompt it got before this field existed. Read ONLY on the reveal branch.
    */
-  lastNothingCreditable?: boolean;
+  lastEverCreditable?: boolean;
   resolved: boolean;
   /**
    * The case's paper, used for PERSONA ROUTING ONLY (2026-08-23, stage 5).
@@ -1082,13 +1103,11 @@ export interface TeachTurnResult {
   passed: boolean;                 // completeness gate cleared — requirement complete
   acceptedAnswer: string | null;   // student message when passed, for final_answer
   /**
-   * DIVERGENCE #5 — the verdict to re-seal, describing `newLastRealAttempt`.
-   *
-   * Carried through unchanged on every turn that does not produce a fresh attempt verdict (reveal,
-   * redirect, teach-request, warm), so a session's carried value always describes whatever
-   * `lastRealAttempt` currently holds rather than being cleared by an off-path turn.
+   * DIVERGENCE #5 — the session-sticky credit flag to re-seal. Three states (see
+   * `EncPayload.everCreditable`); carried through unchanged on every turn that does not produce a
+   * fresh attempt verdict (reveal, redirect, teach-request, warm).
    */
-  newNothingCreditable: boolean;
+  newEverCreditable?: boolean;
 }
 
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
@@ -1096,16 +1115,16 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '', nextMove = '',
     studentMessage, lastEzraMessage, paper = 'APM',
     missCount, lastDiagnosis, lastRealAttempt, resolved,
-    lastNothingCreditable = false,
+    lastEverCreditable,
   } = input;
 
   let ezraResponse:        string;
   let newMissCount       = missCount;
   let newLastDiagnosis   = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
-  // DIVERGENCE #5 — carried through by default. Only an attempt turn recomputes it, and it must
-  // stay paired with `newLastRealAttempt`: the two move together or neither moves.
-  let newNothingCreditable = lastNothingCreditable;
+  // DIVERGENCE #5 — carried through by default; only an attempt turn updates it, and once credit
+  // has been seen it never goes back (see EncPayload.everCreditable).
+  let newEverCreditable = lastEverCreditable;
   let teachThroughDelivered = false;
   let newResolved        = resolved;
   let intent: string     = 'attempt';
@@ -1119,13 +1138,13 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   if (wantsReveal && missCount >= 2) {
     intent = 'reveal';
     messageKind = 'reveal';
-    // ⚠️ THE VERDICT IS PASSED ONLY WHERE IT DESCRIBES THE TEXT BEING REVEALED. `attempt` falls
-    // back to `studentMessage` when there is no stored attempt — and on that fallback the carried
-    // verdict describes a DIFFERENT message, so it is not passed. Suppressing the praise demand
-    // against an attempt nobody adjudicated is exactly the failure this arm must never produce.
+    // ⚠️ TWO CONDITIONS, AND BOTH EXIST TO AVOID SUPPRESSING PRAISE SOMEONE EARNED. `attempt`
+    // falls back to `studentMessage` when there is no stored attempt, and on that fallback nothing
+    // has been adjudicated, so the flag must not be used. `=== false` is deliberate and is NOT
+    // `!lastEverCreditable`: undefined means "no attempt adjudicated" and must not fire.
     const revealAttempt = lastRealAttempt ?? studentMessage;
     ezraResponse = await call4_reveal(question, context, revealAttempt, lastDiagnosis ?? '', modelAnswer, paper,
-      lastRealAttempt != null && lastNothingCreditable);
+      lastRealAttempt != null && lastEverCreditable === false);
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';
@@ -1166,18 +1185,18 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
       }
       const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
 
-      // ── DIVERGENCE #5 — record the verdict for the reveal leg ────────────────
-      // Written on every attempt turn, describing `studentMessage` — which is what
-      // `newLastRealAttempt` becomes on BOTH branches below, so the pair can never drift.
+      // ── DIVERGENCE #5 — update the session-sticky credit flag ────────────────
+      // ⚠️ STICKY: once ANY attempt has earned credit the flag stays true for the rest of the
+      // session. The reveal's referent is the REQUIREMENT, not the student's most recent message,
+      // and a last-write flag reads a two-line follow-up as though it were the whole answer —
+      // measured 10/10 on the positive control, where miss 1 read creditable:1 and miss 2 read 0.
       //
-      // ⚠️ THE SAME TWO CARVE-OUTS THE HINT LEG APPLIES, FOR THE SAME REASONS, AND THE REVEAL IS
-      // WHERE THEY MATTER MORE. `completenessGap` means call2 said CORRECT and a separate check
-      // demoted it for a missing component, so the envelope describes an answer the turn is no
-      // longer about and was computed before the demotion; `treatCorrect` means the answer stood.
-      // In both cases there IS credit to lead with, and storing 0 would carry "nothing here earns
-      // credit" forward to an earned reveal — the one failure this arm must never produce, and it
-      // would arrive two turns after the judgement that caused it, where nothing else can catch it.
-      newNothingCreditable = !treatCorrect && !completenessGap && gapNothingCreditable;
+      // ⚠️ THE SAME TWO CARVE-OUTS THE HINT LEG APPLIES, FOR THE SAME REASONS. `completenessGap`
+      // means call2 said CORRECT and a separate check demoted it for a missing component, so the
+      // envelope describes an answer the turn is no longer about and was computed before the
+      // demotion; `treatCorrect` means the answer stood. In both cases there IS credit.
+      const thisTurnCreditable = treatCorrect || !!completenessGap || !gapNothingCreditable;
+      newEverCreditable = lastEverCreditable === true ? true : thisTurnCreditable;
 
       if (treatCorrect) {
         ezraResponse       = await call3_confirm(question, context, studentMessage, verbLevel, paper);
@@ -1221,6 +1240,6 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind,
     passed,
     acceptedAnswer,
-    newNothingCreditable,
+    newEverCreditable,
   };
 }

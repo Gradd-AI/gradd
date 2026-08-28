@@ -302,14 +302,32 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
     /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p'/.test(engine) &&
     !/\?\? 'routed_2p_conditioned'/.test(engine));
   ok('#5 the verdict is carried in the SEALED payload, not the plaintext session state',
-    /nothingCreditable\?: boolean/.test(engine) &&
-    /JSON\.stringify\(\{ answer, counted, nothingCreditable \}/.test(engine));
+    /everCreditable\?: boolean/.test(engine) &&
+    /JSON\.stringify\(\{ answer, counted, everCreditable \}/.test(engine));
   ok('#5 call4_reveal receives the carried verdict',
     /caseRevealSystem\(CASE_REVEAL, paper, nothingCreditableNow\)/.test(engine));
-  ok('#5 the reveal does NOT pass the verdict when the attempt is the fallback message',
-    /lastRealAttempt != null && lastNothingCreditable/.test(engine));
-  ok('#5 the verdict is suppressed on a completeness demotion AND on a correct answer',
-    /newNothingCreditable = !treatCorrect && !completenessGap && gapNothingCreditable/.test(engine));
+  ok('#5 the reveal does NOT fire when the attempt is the fallback message',
+    /lastRealAttempt != null && lastEverCreditable === false/.test(engine));
+  ok('#5 the credit flag is STICKY, not last-write',
+    /newEverCreditable = lastEverCreditable === true \? true : thisTurnCreditable/.test(engine));
+  ok('#5 a correct answer and a completeness demotion both COUNT AS CREDIT',
+    /const thisTurnCreditable = treatCorrect \|\| !!completenessGap \|\| !gapNothingCreditable/.test(engine));
+
+  // ── THE POSITIVE CONTROL'S FINDING, PINNED (2026-08-28) ─────────────────────
+  // The first build was LAST-WRITE and the 120-turn arm could not see the defect: every one of
+  // its 246 attempt turns read `creditable: 0`, so sticky and last-write are indistinguishable
+  // on that data. The positive-control target — a complete, correct answer followed by a
+  // two-line EXTENSION — read `creditable: 1` then `0`, 10/10, and last-write would have opened
+  // the earned reveal with "nothing here earns credit" at a student who had just produced all
+  // four correct calculations. `call2_diagnose` sees ONE message, so the flag it produces is
+  // scoped to a fragment; the reveal's referent is the REQUIREMENT.
+  ok('#5 MUST-FAIL: the shipped-first LAST-WRITE form is gone from the engine',
+    !/newNothingCreditable = !treatCorrect/.test(engine) &&
+    !/lastRealAttempt != null && lastNothingCreditable\b/.test(engine));
+  ok('#5 undefined is NOT collapsed to false when reading the blob',
+    /typeof o\.everCreditable === 'boolean' \? o\.everCreditable : undefined/.test(engine));
+  ok('#5 the reveal tests `=== false`, never a bare falsy check',
+    !/lastRealAttempt != null && !lastEverCreditable\b/.test(engine));
 
   // (i) CASE SURFACE ONLY. The identical praise clause sits in THREE drill-route strings, and
   //     `REVEAL_AFM_WRAPPER_SYSTEM` is a live teaching surface with its own measurement owed.
@@ -346,15 +364,24 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   {
     process.env.TUTOR_SESSION_SECRET ||= 'fixture-only-secret-not-a-real-key';
     const { sealPayload, openPayload } = require('../lib/acca/teach-engine');
-    ok('#5 carrier round-trips true',  openPayload(sealPayload('a', true,  true)).nothingCreditable === true);
-    ok('#5 carrier round-trips false', openPayload(sealPayload('a', false, false)).nothingCreditable === false);
-    ok('#5 an omitted third argument defaults to false',
-      openPayload(sealPayload('a', false)).nothingCreditable === false);
+    ok('#5 carrier round-trips true',  openPayload(sealPayload('a', true,  true)).everCreditable === true);
+    ok('#5 carrier round-trips false', openPayload(sealPayload('a', false, false)).everCreditable === false);
     ok('#5 answer/counted survive the added field',
       openPayload(sealPayload('the answer', true, true)).answer === 'the answer' &&
       openPayload(sealPayload('the answer', true, true)).counted === true);
-    ok('#5 a LEGACY blob reads nothingCreditable === false, never undefined-as-truthy',
-      openPayload(sealPayload('x', true)).nothingCreditable === false);
+    // THE THREE-STATE PROPERTY, which is the whole safety argument. undefined must survive the
+    // round trip as undefined — if it collapsed to false, every legacy session would assert that
+    // nothing the student wrote earned credit, and the conditioned opening would fire on all of
+    // them. `in` is checked as well as the value: a key present with value undefined would
+    // serialise differently and is not the state being claimed.
+    ok('#5 an omitted third argument stays UNDEFINED, not false',
+      openPayload(sealPayload('a', false)).everCreditable === undefined);
+    ok('#5 a LEGACY blob (sealed before the field existed) reads UNDEFINED, not false',
+      openPayload(sealPayload('x', true)).everCreditable === undefined);
+    ok('#5 undefined is not written into the sealed JSON at all',
+      !JSON.stringify({ answer: 'a', counted: true, everCreditable: undefined }).includes('everCreditable'));
+    ok('#5 false IS written, so "adjudicated, nothing creditable" survives the round trip',
+      JSON.stringify({ answer: 'a', counted: true, everCreditable: false }).includes('"everCreditable":false'));
   }
 }
 
