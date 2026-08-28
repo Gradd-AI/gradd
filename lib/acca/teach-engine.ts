@@ -956,10 +956,19 @@ const SHIPPED_CASE_REVEAL_SYSTEM =
 // condition) and would need its own ARM_VARS entry to be recorded in a capture. Four mutually
 // exclusive values, one knob, already listed in ARM_VARS since the baseline commit.
 //
-// Default stays `routed_2p` — the measured, shipping arm. Flipping it is its own commit, after
-// the arm reports.
+// ⚠️ DEFAULT FLIPPED TO `routed_2p_conditioned` (2026-08-28) AFTER the arm reported: CLEAN reveal
+// openings 7/60 -> 36/60, Fisher p = 4.0e-8, both cells significant, against a SAME-SESSION
+// `routed_2p` control and a blind classification. Pinned by fixture so it cannot drift back.
+// Record: docs/redteam/summaries/2026-08-28-case-reveal-creditable.md
+//
+// ⚠️ THE FLIP RESTS ON THE POSITIVE CONTROL AS MUCH AS ON THE PRIMARY. This variant SUPPRESSES a
+// praise demand, so the question that gates shipping is not only "does it help when it fires" but
+// "does it fire when it should not". On a genuinely creditable answer it fires 0/10, and the
+// carrier is sticky in the one safe direction (see EncPayload.everCreditable). Where the flag is
+// absent or true the assembled prompt is BYTE-IDENTICAL to `routed_2p`, fixture-pinned — so on
+// every turn this arm does not fire, nothing about today's behaviour changes.
 export type CaseRevealVariant = 'routed' | 'routed_2p' | 'routed_2p_conditioned' | 'shipped';
-const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p') as CaseRevealVariant;
+const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p_conditioned') as CaseRevealVariant;
 
 /**
  * Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim.

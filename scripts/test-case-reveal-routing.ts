@@ -132,10 +132,17 @@ ok('the orchestrator passes the real paper to call4_reveal',
   /call4_reveal\(question, context, revealAttempt, lastDiagnosis \?\? '', modelAnswer, paper,/.test(engine));
 ok('the reveal attempt still falls back to studentMessage when no attempt is stored',
   /const revealAttempt = lastRealAttempt \?\? studentMessage;/.test(engine));
-// Default flipped to routed_2p 2026-08-25 after the register arm. Pinned so the shipped default
-// cannot drift back silently — the whole reveal leg's behaviour hangs on this one literal.
-ok('the arm has its OWN env var, defaulting to routed_2p (measured 2026-08-25)',
-  /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p'/.test(engine));
+// Default flipped to routed_2p 2026-08-25 after the register arm, and SUPERSEDED 2026-08-28 by
+// divergence #5's flip to routed_2p_conditioned. This check keeps its original job — the arm has
+// its OWN env var, and the default cannot drift silently — while §5(g) pins the current value.
+// ⚠️ THE 2P RECAST IS NOT UNDONE BY THE SUPERSESSION, which is the part worth asserting: the
+// conditioned variant selects the SAME second-person guardrail set, so the register arm's bytes
+// still ship. A flip that quietly reverted them would pass a bare "the default changed" check.
+ok('the arm has its OWN env var, and the default names a 2P-carrying variant',
+  /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p(_conditioned)?'/.test(engine));
+ok('the shipped default still carries the SECOND-PERSON guardrail set (2026-08-25 survives)',
+  caseRevealSystem('routed_2p_conditioned', 'APM').endsWith(CASE_REVEAL_GUARDRAILS_2P_FOR_TEST) &&
+  caseRevealSystem('routed_2p_conditioned', 'AFM', true).endsWith(CASE_REVEAL_GUARDRAILS_2P_FOR_TEST));
 
 // ── 7. THE CORES ARE SIBLINGS, NOT DIVERGENT REWRITES ───────────────────────
 // Everything after the opening register must match clause for clause, or "AFM voice" has quietly
@@ -298,9 +305,11 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
     /an APM tutor/.test(caseRevealSystem('routed_2p_conditioned', 'APM', true)));
 
   // (g) WIRING — the default must NOT move, and the carrier must be sealed, not plaintext.
-  ok('#5 the default is STILL routed_2p — the conditioned arm is unmeasured and must not ship',
-    /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p'/.test(engine) &&
-    !/\?\? 'routed_2p_conditioned'/.test(engine));
+  // Default flipped 2026-08-28 after the arm reported (7/60 -> 36/60, p = 4.0e-8, blind-classified,
+  // same-session control, positive control 0/10). Pinned so it cannot drift back silently — the
+  // whole reveal leg's opening hangs on this one literal.
+  ok('#5 the default is routed_2p_conditioned (measured 2026-08-28)',
+    /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p_conditioned'/.test(engine));
   ok('#5 the verdict is carried in the SEALED payload, not the plaintext session state',
     /everCreditable\?: boolean/.test(engine) &&
     /JSON\.stringify\(\{ answer, counted, everCreditable \}/.test(engine));
