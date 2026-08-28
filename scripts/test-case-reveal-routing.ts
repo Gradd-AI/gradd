@@ -16,8 +16,14 @@ import {
   systemFor, NO_INVENTED_NUMBERS, NO_INVENTED_REVEAL_REFUSAL,
   RETRACTION_PROTOCOL, METHOD_FITS_THE_GIVEN_INPUTS,
   NO_COMPUTED_OUTPUTS, DIGNITY_ON_DISTRESS, GROUNDING_DISCIPLINE,
+  CASE_REVEAL_GUARDRAILS_2P_FOR_TEST,
+  CASE_REVEAL_CREDIT_CLAUSE_FOR_TEST, CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST,
 } from '../lib/acca/tutor-personas';
 import { caseRevealSystem } from '../lib/acca/teach-engine';
+// Imported, never transcribed: divergence #5's whole design argument is that the hint leg's (c)
+// arm CANNOT be copied here, and a transcription of (c) would let it drift out of agreement with
+// the string this fixture claims is wrong for the reveal.
+import { hintOpeningInstruction } from '../lib/acca/hint-opening';
 
 let pass = 0, fail = 0;
 function ok(name: string, cond: boolean, detail?: string) {
@@ -118,8 +124,14 @@ ok('exactly ONE literal remains in the engine, and it is the pinned baseline',
   /SHIPPED_CASE_REVEAL_SYSTEM/.test(engine));
 ok('call4_reveal takes paper and defaults it to APM (byte-identical for legacy callers)',
   /paper = 'APM',/.test(engine));
+// ⚠️ RE-ANCHORED 2026-08-28, NOT WEAKENED. Divergence #5 extracted `lastRealAttempt ??
+// studentMessage` into `revealAttempt` so the fallback could be tested for null before the carried
+// verdict is passed. The claim is unchanged — the real paper still reaches the leg — and the
+// extracted expression is pinned on the next line so the fallback itself cannot drift.
 ok('the orchestrator passes the real paper to call4_reveal',
-  /call4_reveal\(question, context, lastRealAttempt \?\? studentMessage, lastDiagnosis \?\? '', modelAnswer, paper\)/.test(engine));
+  /call4_reveal\(question, context, revealAttempt, lastDiagnosis \?\? '', modelAnswer, paper,/.test(engine));
+ok('the reveal attempt still falls back to studentMessage when no attempt is stored',
+  /const revealAttempt = lastRealAttempt \?\? studentMessage;/.test(engine));
 // Default flipped to routed_2p 2026-08-25 after the register arm. Pinned so the shipped default
 // cannot drift back silently — the whole reveal leg's behaviour hangs on this one literal.
 ok('the arm has its OWN env var, defaulting to routed_2p (measured 2026-08-25)',
@@ -202,6 +214,148 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
   ok('routed_2p AFM still names AFM and not APM', /ACCA AFM tutor/.test(r2afm) && !/\bAPM\b/.test(r2afm));
   ok('routed and routed_2p differ ONLY in the guardrail block set',
     caseRevealSystem('routed', 'APM').replace(G3, '') === r2apm.replace(G2, ''));
+}
+
+// ── 5. DIVERGENCE #5 — THE CONDITIONED OPENING (2026-08-28) ──────────────────
+// The arm is `routed_2p_conditioned` against the SHIPPING `routed_2p`, so the control is
+// production and the comparison is paired. The whole claim is that the only byte that moves is
+// the opening clause, and only where the carried verdict says nothing earns credit.
+{
+  const CLAUSE = CASE_REVEAL_CREDIT_CLAUSE_FOR_TEST;
+  const COND   = CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST;
+
+  // (a) THE CONTROL IS UNTOUCHED. With no verdict the conditioned variant must be byte-identical
+  //     to routed_2p; and every OTHER variant must ignore the verdict outright, so merely wiring
+  //     the carrier cannot move the arm it is measured against.
+  for (const paper of ['APM', 'AFM'] as const) {
+    ok(`#5 ${paper}: conditioned with NO verdict === routed_2p, byte-identical`,
+      caseRevealSystem('routed_2p_conditioned', paper, false) === caseRevealSystem('routed_2p', paper));
+    ok(`#5 ${paper}: every other variant IGNORES the verdict — the control cannot be moved by it`,
+      caseRevealSystem('routed_2p', paper, true) === caseRevealSystem('routed_2p', paper) &&
+      caseRevealSystem('routed', paper, true)    === caseRevealSystem('routed', paper) &&
+      caseRevealSystem('shipped', paper, true)   === caseRevealSystem('shipped', paper));
+  }
+
+  // (b) THE SWAP HAPPENS, AND IT IS THE ONLY THING THAT HAPPENS.
+  for (const paper of ['APM', 'AFM'] as const) {
+    const ctl = caseRevealSystem('routed_2p', paper);
+    const trt = caseRevealSystem('routed_2p_conditioned', paper, true);
+    ok(`#5 ${paper}: the praise clause is GONE from the conditioned core`, !trt.includes(CLAUSE));
+    ok(`#5 ${paper}: the praise clause IS present in the control`, ctl.includes(CLAUSE));
+    ok(`#5 ${paper}: the conditioned clause is present`, trt.includes(COND));
+    ok(`#5 ${paper}: ONE clause moved — the control with that clause swapped IS the treatment`,
+      ctl.split(CLAUSE).join(COND) === trt);
+  }
+
+  // (c) NOTHING IS WITHHELD. This is the difference from the hint leg's (c) arm, and the reason
+  //     (c) could not be copied: the reveal must still hand over the figures and the conclusion.
+  for (const paper of ['APM', 'AFM'] as const) {
+    const trt = caseRevealSystem('routed_2p_conditioned', paper, true);
+    ok(`#5 ${paper}: withholding still OVER under the conditioned opening`,
+      /INCLUDING the figures and the conclusion \(withholding is\s+over — this is the earned reveal\)/
+        .test(trt.replace(/\s+/g, ' ')));
+    ok(`#5 ${paper}: no "Never complete the student's answer"`,
+      !/Never complete the student's answer/.test(trt));
+    ok(`#5 ${paper}: no WITHHOLD COMPUTED OUTPUTS`, !/WITHHOLD COMPUTED OUTPUTS/.test(trt));
+    ok(`#5 ${paper}: still closes on a FRESH question`, /FRESH question/.test(trt));
+    ok(`#5 ${paper}: the 2P guardrail set is unchanged and still last`,
+      trt.endsWith(CASE_REVEAL_GUARDRAILS_2P_FOR_TEST));
+  }
+
+  // (d) MUST-FAIL (P-G3) — the naive build is the hint leg's (c) text copied across. Each of
+  //     these three clauses is FALSE on the reveal leg; pinning them proves this fixture would
+  //     have caught the copy rather than blessing it.
+  const HINT_C = hintOpeningInstruction('conditional', false, true);
+  for (const paper of ['APM', 'AFM'] as const) {
+    const trt = caseRevealSystem('routed_2p_conditioned', paper, true);
+    ok(`#5 ${paper}: MUST-FAIL — (c) says "First miss"; the reveal fires at missCount >= 2`,
+      /First miss/.test(HINT_C) && !/First miss/.test(trt));
+    ok(`#5 ${paper}: MUST-FAIL — (c) hands the job to the STUDENT ("put on the page")`,
+      /put on the page/.test(HINT_C) && !/put on the page/.test(trt));
+    ok(`#5 ${paper}: MUST-FAIL — (c) demands ONE gap; the reveal walks every move`,
+      /just one, not a list/.test(HINT_C) && !/just one, not a list/.test(trt));
+  }
+
+  // (e) PURELY POSITIVE (P-T2/P-M4). The replacement must not name the output it displaces — a
+  //     "do not praise" clause is the measured way to get more of it, not less.
+  ok('#5 the conditioned clause adds no prohibition',
+    !/\bdo not\b/i.test(COND) && !/\bnever\b/i.test(COND) && !/\bdon't\b/i.test(COND));
+  ok('#5 the conditioned clause names no credit/praise/correctness',
+    !/credit|praise|correct/i.test(COND));
+  for (const paper of ['APM', 'AFM'] as const) {
+    // "No empty praise." survives at the tail of BOTH arms — a constant, not a delta. Stated here
+    // rather than silently kept: it is the one praise-referring token left in the treatment core.
+    ok(`#5 ${paper}: "No empty praise." is in BOTH arms, so it is not part of the delta`,
+      caseRevealSystem('routed_2p_conditioned', paper, true).includes('No empty praise.') &&
+      caseRevealSystem('routed_2p', paper).includes('No empty praise.'));
+  }
+
+  // (f) PAPER ROUTING SURVIVES THE CONDITIONING — the defect 8157a7a closed must not reopen.
+  ok('#5 conditioned AFM still names AFM and not APM',
+    /ACCA AFM tutor/.test(caseRevealSystem('routed_2p_conditioned', 'AFM', true)) &&
+    !/\bAPM\b/.test(caseRevealSystem('routed_2p_conditioned', 'AFM', true)));
+  ok('#5 conditioned APM still names APM',
+    /an APM tutor/.test(caseRevealSystem('routed_2p_conditioned', 'APM', true)));
+
+  // (g) WIRING — the default must NOT move, and the carrier must be sealed, not plaintext.
+  ok('#5 the default is STILL routed_2p — the conditioned arm is unmeasured and must not ship',
+    /process\.env\.TUTOR_CASE_REVEAL \?\? 'routed_2p'/.test(engine) &&
+    !/\?\? 'routed_2p_conditioned'/.test(engine));
+  ok('#5 the verdict is carried in the SEALED payload, not the plaintext session state',
+    /nothingCreditable\?: boolean/.test(engine) &&
+    /JSON\.stringify\(\{ answer, counted, nothingCreditable \}/.test(engine));
+  ok('#5 call4_reveal receives the carried verdict',
+    /caseRevealSystem\(CASE_REVEAL, paper, nothingCreditableNow\)/.test(engine));
+  ok('#5 the reveal does NOT pass the verdict when the attempt is the fallback message',
+    /lastRealAttempt != null && lastNothingCreditable/.test(engine));
+  ok('#5 the verdict is suppressed on a completeness demotion AND on a correct answer',
+    /newNothingCreditable = !treatCorrect && !completenessGap && gapNothingCreditable/.test(engine));
+
+  // (i) CASE SURFACE ONLY. The identical praise clause sits in THREE drill-route strings, and
+  //     `REVEAL_AFM_WRAPPER_SYSTEM` is a live teaching surface with its own measurement owed.
+  //     A future edit that "helpfully" conditioned them too would silently widen this arm from one
+  //     surface to two and make the case measurement uninterpretable. Pinned present, unchanged.
+  {
+    const {
+      REVEAL_SYSTEM, REVEAL_SYSTEM_SOLVED, REVEAL_AFM_WRAPPER_SYSTEM,
+    } = require('../lib/acca/tutor-personas');
+    ok('#5 drill route: REVEAL_SYSTEM still carries the praise clause (NOT conditioned)',
+      REVEAL_SYSTEM.includes(CLAUSE) && !REVEAL_SYSTEM.includes(COND));
+    ok('#5 drill route: REVEAL_AFM_WRAPPER_SYSTEM still opens on credit (NOT conditioned)',
+      /first credit, specifically, what they already had right;/.test(REVEAL_AFM_WRAPPER_SYSTEM) &&
+      !REVEAL_AFM_WRAPPER_SYSTEM.includes(COND));
+    ok('#5 drill route: the SOLVED reveal is untouched',
+      /first credit, specifically, what they did well/.test(REVEAL_SYSTEM_SOLVED) &&
+      !REVEAL_SYSTEM_SOLVED.includes(COND));
+    // The conditioned clause must exist in EXACTLY the two case cores and nowhere else.
+    const personas = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'lib', 'acca', 'tutor-personas.ts'), 'utf8');
+    const code = personas
+      .replace(/\/\*[\s\S]*?\*\//g, (m: string) => m.replace(/[^\n]/g, ' '))
+      .replace(/^([^\n]*?)\/\/[^\n]*$/gm, (_m: string, keep: string) => keep);
+    ok('#5 the conditioned clause is defined ONCE and applied to the two case cores only',
+      (code.match(/open on the first move the answer turns on/g) || []).length === 1 &&
+      (code.match(/CASE_REVEAL_CORE_(AFM|APM)_NC = mustRecast/g) || []).length === 2);
+    // POSITIVE CONTROL (P-G3): prove the comment-blanking did not simply erase the file.
+    ok('#5 POSITIVE CONTROL: blanking preserved the code it is scanning',
+      code.length > personas.length * 0.5 && /mustRecast/.test(code));
+  }
+
+  // (h) THE CARRIER ROUND-TRIPS, and an absent field reads as false — every session sealed before
+  //     this shipped is in that state, and reading absent as true would suppress their praise.
+  {
+    process.env.TUTOR_SESSION_SECRET ||= 'fixture-only-secret-not-a-real-key';
+    const { sealPayload, openPayload } = require('../lib/acca/teach-engine');
+    ok('#5 carrier round-trips true',  openPayload(sealPayload('a', true,  true)).nothingCreditable === true);
+    ok('#5 carrier round-trips false', openPayload(sealPayload('a', false, false)).nothingCreditable === false);
+    ok('#5 an omitted third argument defaults to false',
+      openPayload(sealPayload('a', false)).nothingCreditable === false);
+    ok('#5 answer/counted survive the added field',
+      openPayload(sealPayload('the answer', true, true)).answer === 'the answer' &&
+      openPayload(sealPayload('the answer', true, true)).counted === true);
+    ok('#5 a LEGACY blob reads nothingCreditable === false, never undefined-as-truthy',
+      openPayload(sealPayload('x', true)).nothingCreditable === false);
+  }
 }
 
 console.log(`

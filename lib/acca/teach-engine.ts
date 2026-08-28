@@ -40,10 +40,38 @@ export interface ClientSessionState {
   // enc so the client cannot manipulate it to skip the cap increment.
 }
 
-// The decrypted payload — both fields are tamper-proof inside AES-256-GCM.
+// The decrypted payload — every field is tamper-proof inside AES-256-GCM.
 export interface EncPayload {
   answer: string;
   counted: boolean; // true once the DB increment for this item has been applied
+  /**
+   * DIVERGENCE #5 (2026-08-28) — `creditable === 0` carried forward to the REVEAL leg.
+   *
+   * ⚠️ WHY A CARRIER IS NEEDED AT ALL, AND WHY IT IS THIS ONE. The reveal branch of
+   * `runTeachTurn` does NOT call `call2_diagnose` — it fires on `wantsReveal && missCount >= 2`
+   * and reads `lastDiagnosis` from prior state. So there is NO envelope on a reveal turn and
+   * `creditable` cannot be recomputed there without a second model call on the one leg whose
+   * latency the student is already waiting on.
+   *
+   * The value is produced on the ATTEMPT turn and must survive to the reveal turn. It rides the
+   * sealed blob rather than `acca_case_progress` because that is a column, and a column is a
+   * hand-applied migration to production for a measurement field. Direct precedent: the DRILL
+   * route's own `EncPayload.plainAsked` is a sticky per-session flag carried exactly this way.
+   *
+   * ⚠️ SEALED, NOT PLAINTEXT, AND THAT IS NOT DECORATION. `ClientSessionState`'s other fields are
+   * plaintext and the client round-trips them; a plaintext flag here would let a caller set
+   * "nothing creditable" on someone else's reveal and suppress the praise demand at will. Same
+   * reasoning the module already gives for keeping `counted` inside `enc`.
+   *
+   * ⚠️ DESCRIBES `lastRealAttempt`, NOT THE SESSION. Written on every attempt turn (last-write,
+   * never latched), so it always describes the SAME text `call4_reveal` receives as `attempt`.
+   * A latched "was anything ever creditable" would decouple the two and could demand praise for
+   * work that is not in the answer the reveal is looking at.
+   *
+   * Absent ⇒ false ⇒ the praise-first core ⇒ today's behaviour, for every session sealed before
+   * this shipped.
+   */
+  nothingCreditable?: boolean;
 }
 
 // ── Encryption ────────────────────────────────────────────────────────────────
@@ -54,10 +82,10 @@ function getKey(): Buffer {
   return createHash('sha256').update(secret).digest();
 }
 
-export function sealPayload(answer: string, counted: boolean): string {
+export function sealPayload(answer: string, counted: boolean, nothingCreditable = false): string {
   const key  = getKey();
   const iv   = randomBytes(12);
-  const body = JSON.stringify({ answer, counted } satisfies EncPayload);
+  const body = JSON.stringify({ answer, counted, nothingCreditable } satisfies EncPayload);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const enc  = Buffer.concat([cipher.update(body, 'utf8'), cipher.final()]);
   const tag  = cipher.getAuthTag();
@@ -74,10 +102,20 @@ export function openPayload(ciphertext: string): EncPayload {
   decipher.setAuthTag(tag);
   const plain = decipher.update(dat).toString('utf8') + decipher.final('utf8');
   try {
-    return JSON.parse(plain) as EncPayload;
+    // ⚠️ NORMALISED, NOT SPREAD. A blob sealed before `nothingCreditable` existed has no such key,
+    // and an older one may carry a value of any shape. `=== true` is the only reading that makes
+    // absent and malformed BOTH mean "no claim" — the safe direction, since the flag suppresses a
+    // praise demand and the failure it would cause is opening an earned reveal as though the
+    // student's work had been worthless.
+    const o = JSON.parse(plain) as Record<string, unknown>;
+    return {
+      answer:  typeof o.answer === 'string' ? o.answer : plain,
+      counted: o.counted === true,
+      nothingCreditable: o.nothingCreditable === true,
+    };
   } catch {
     // Backward compat: sessions sealed before this deploy encrypted a raw string.
-    return { answer: plain, counted: false };
+    return { answer: plain, counted: false, nothingCreditable: false };
   }
 }
 
@@ -886,13 +924,40 @@ const SHIPPED_CASE_REVEAL_SYSTEM =
 // reveal integrity intact. Default flipped to routed_2p. The 2/20 -> 0/20 is DIRECTIONALLY
 // consistent and UNDERPOWERED (p = 0.49) — see the summary; the flip does not rest on it, because
 // the recast is neutral-to-better on every measured axis either way.
-export type CaseRevealVariant = 'routed' | 'routed_2p' | 'shipped';
+// ── DIVERGENCE #5 — `creditable` reaches the REVEAL leg (2026-08-28) ─────────
+// `routed_2p_conditioned` = `routed_2p` PLUS the conditioned opening: where the carried verdict
+// says nothing in the attempt earns credit, the praise-first clause is REPLACED (see
+// `caseRevealSystemFor`). Where it does not, the core is BYTE-IDENTICAL to `routed_2p` — which is
+// what makes `routed_2p` the paired control and keeps this to ONE variable.
+//
+// ⚠️ A VALUE OF THE EXISTING KNOB, NOT A NEW ENV VAR, DELIBERATELY. `TUTOR_CASE_REVEAL` already
+// selects WHICH reveal system prompt is assembled; a second variable beside it would admit
+// incoherent combinations (`shipped` + conditioned selects a core that has no praise clause to
+// condition) and would need its own ARM_VARS entry to be recorded in a capture. Four mutually
+// exclusive values, one knob, already listed in ARM_VARS since the baseline commit.
+//
+// Default stays `routed_2p` — the measured, shipping arm. Flipping it is its own commit, after
+// the arm reports.
+export type CaseRevealVariant = 'routed' | 'routed_2p' | 'routed_2p_conditioned' | 'shipped';
 const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p') as CaseRevealVariant;
 
-/** Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim. */
-export function caseRevealSystem(variant: CaseRevealVariant, paper: string): string {
+/**
+ * Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim.
+ *
+ * `nothingCreditable` is read ONLY by `routed_2p_conditioned`; every other variant ignores it, so
+ * the control arm cannot be moved by the carrier being wired.
+ */
+export function caseRevealSystem(
+  variant: CaseRevealVariant,
+  paper: string,
+  nothingCreditable = false,
+): string {
   if (variant === 'shipped') return SHIPPED_CASE_REVEAL_SYSTEM;
-  return caseRevealSystemFor(paper, variant === 'routed_2p');
+  return caseRevealSystemFor(
+    paper,
+    variant === 'routed_2p' || variant === 'routed_2p_conditioned',
+    variant === 'routed_2p_conditioned' && nothingCreditable,
+  );
 }
 
 async function call4_reveal(
@@ -904,12 +969,28 @@ async function call4_reveal(
   /** Defaulted 'APM' so any caller that does not pass it is byte-identical to before the parameter
    *  existed — the same convention `call3_hint` uses. The orchestrator now passes the real paper. */
   paper = 'APM',
+  /** DIVERGENCE #5 — the carried `creditable === 0` verdict for `attempt`. Defaulted FALSE, so a
+   *  caller that does not pass it assembles the byte-identical praise-first core. */
+  nothingCreditableNow = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // ⚠️ SERVER LOG ONLY, NEVER A RESPONSE FIELD — the rule `[GAPLABEL]` already sets on the drill
+  // route. This one carries no content at all (a variant name and a boolean), but a conditional
+  // response field is a habit, not a value judgement, and the flag would ship the habit. It is the
+  // arm's FIRST validity condition: if the conditioned opening never fires, a null result means
+  // "the condition was never met", not "conditioning does not work".
+  if (process.env.TUTOR_DEBUG_GAP === '1') {
+    console.log('[CASEREVEAL]', JSON.stringify({
+      variant: CASE_REVEAL,
+      paper,
+      nothingCreditable: nothingCreditableNow,
+      conditioned: CASE_REVEAL === 'routed_2p_conditioned' && nothingCreditableNow,
+    }));
+  }
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 700,
-    system: caseRevealSystem(CASE_REVEAL, paper),
+    system: caseRevealSystem(CASE_REVEAL, paper, nothingCreditableNow),
     messages: [
       {
         role: 'user',
@@ -967,6 +1048,14 @@ export interface TeachTurnInput {
   missCount: number;
   lastDiagnosis: string | null;
   lastRealAttempt: string | null;
+  /**
+   * DIVERGENCE #5 — the `creditable === 0` verdict recorded on the turn that produced
+   * `lastRealAttempt`, carried in the sealed session blob (`EncPayload.nothingCreditable`).
+   *
+   * Optional and defaulted false inside `runTeachTurn`, so a caller that does not pass it gets the
+   * exact prompt it got before this field existed. Read ONLY on the reveal branch.
+   */
+  lastNothingCreditable?: boolean;
   resolved: boolean;
   /**
    * The case's paper, used for PERSONA ROUTING ONLY (2026-08-23, stage 5).
@@ -992,6 +1081,14 @@ export interface TeachTurnResult {
   messageKind: string;
   passed: boolean;                 // completeness gate cleared — requirement complete
   acceptedAnswer: string | null;   // student message when passed, for final_answer
+  /**
+   * DIVERGENCE #5 — the verdict to re-seal, describing `newLastRealAttempt`.
+   *
+   * Carried through unchanged on every turn that does not produce a fresh attempt verdict (reveal,
+   * redirect, teach-request, warm), so a session's carried value always describes whatever
+   * `lastRealAttempt` currently holds rather than being cleared by an off-path turn.
+   */
+  newNothingCreditable: boolean;
 }
 
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
@@ -999,12 +1096,16 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '', nextMove = '',
     studentMessage, lastEzraMessage, paper = 'APM',
     missCount, lastDiagnosis, lastRealAttempt, resolved,
+    lastNothingCreditable = false,
   } = input;
 
   let ezraResponse:        string;
   let newMissCount       = missCount;
   let newLastDiagnosis   = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
+  // DIVERGENCE #5 — carried through by default. Only an attempt turn recomputes it, and it must
+  // stay paired with `newLastRealAttempt`: the two move together or neither moves.
+  let newNothingCreditable = lastNothingCreditable;
   let teachThroughDelivered = false;
   let newResolved        = resolved;
   let intent: string     = 'attempt';
@@ -1018,7 +1119,13 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   if (wantsReveal && missCount >= 2) {
     intent = 'reveal';
     messageKind = 'reveal';
-    ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? studentMessage, lastDiagnosis ?? '', modelAnswer, paper);
+    // ⚠️ THE VERDICT IS PASSED ONLY WHERE IT DESCRIBES THE TEXT BEING REVEALED. `attempt` falls
+    // back to `studentMessage` when there is no stored attempt — and on that fallback the carried
+    // verdict describes a DIFFERENT message, so it is not passed. Suppressing the praise demand
+    // against an attempt nobody adjudicated is exactly the failure this arm must never produce.
+    const revealAttempt = lastRealAttempt ?? studentMessage;
+    ezraResponse = await call4_reveal(question, context, revealAttempt, lastDiagnosis ?? '', modelAnswer, paper,
+      lastRealAttempt != null && lastNothingCreditable);
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';
@@ -1058,6 +1165,19 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         completenessGap = await completenessCheck(question, context, modelAnswer, studentMessage, verbLevel);
       }
       const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
+
+      // ── DIVERGENCE #5 — record the verdict for the reveal leg ────────────────
+      // Written on every attempt turn, describing `studentMessage` — which is what
+      // `newLastRealAttempt` becomes on BOTH branches below, so the pair can never drift.
+      //
+      // ⚠️ THE SAME TWO CARVE-OUTS THE HINT LEG APPLIES, FOR THE SAME REASONS, AND THE REVEAL IS
+      // WHERE THEY MATTER MORE. `completenessGap` means call2 said CORRECT and a separate check
+      // demoted it for a missing component, so the envelope describes an answer the turn is no
+      // longer about and was computed before the demotion; `treatCorrect` means the answer stood.
+      // In both cases there IS credit to lead with, and storing 0 would carry "nothing here earns
+      // credit" forward to an earned reveal — the one failure this arm must never produce, and it
+      // would arrive two turns after the judgement that caused it, where nothing else can catch it.
+      newNothingCreditable = !treatCorrect && !completenessGap && gapNothingCreditable;
 
       if (treatCorrect) {
         ezraResponse       = await call3_confirm(question, context, studentMessage, verbLevel, paper);
@@ -1101,5 +1221,6 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind,
     passed,
     acceptedAnswer,
+    newNothingCreditable,
   };
 }

@@ -417,6 +417,11 @@ export async function POST(request: Request): Promise<Response> {
   // ── 5. Establish model answer + seal continuity (per-requirement seal) ──
   let modelAnswer: string;
   let teachThroughCounted = false;
+  // DIVERGENCE #5 (2026-08-28) — the reveal leg's carried `creditable === 0`, carried in the
+  // SEALED blob rather than `acca_case_progress`: a column is a hand-applied production migration
+  // for a measurement field, and the DRILL route already carries `plainAsked` exactly this way.
+  // Defaults false on a first turn, which is also every session sealed before this shipped.
+  let carriedNothingCreditable = false;
 
   if (!session_state) {
     if (storedModelAnswer) {
@@ -437,6 +442,8 @@ export async function POST(request: Request): Promise<Response> {
       const payload       = openPayload(s.enc);
       modelAnswer         = payload.answer;
       teachThroughCounted = payload.counted;
+      // Sealed, so a client cannot set it; absent on any pre-existing blob, which reads as false.
+      carriedNothingCreditable = payload.nothingCreditable === true;
     } catch {
       return NextResponse.json({ error: 'Session state corrupted' }, { status: 400 });
     }
@@ -487,6 +494,7 @@ export async function POST(request: Request): Promise<Response> {
       missCount,
       lastDiagnosis,
       lastRealAttempt,
+      lastNothingCreditable: carriedNothingCreditable,
       resolved,
       // PERSONA ROUTING (2026-08-23, stage 5). Safe to use the request paper here: every
       // acca_cases fetch above is `.eq('paper_code', paper)`, so a case belonging to another
@@ -513,7 +521,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── 9. Seal updated session state (this requirement's own blob) ──
   const updatedSessionState: ClientSessionState = {
-    enc:               sealPayload(modelAnswer, newTeachThroughCounted),
+    enc:               sealPayload(modelAnswer, newTeachThroughCounted, result.newNothingCreditable),
     miss_count:        result.newMissCount,
     last_diagnosis:    result.newLastDiagnosis,
     last_real_attempt: result.newLastRealAttempt,
