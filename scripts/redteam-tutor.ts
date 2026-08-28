@@ -932,10 +932,13 @@ const ARM_VARS = [
   'TUTOR_CASE_HINT_OPENING',
   'TUTOR_CASE_EQUIV',
   'TUTOR_CASE_CONFIRM',
-  // Listed BEFORE any variant exists, deliberately. The baseline reveal arm (2026-08-25) is
-  // single-arm — there is nothing to toggle yet — so this reads "(unset here)" and that is the
-  // honest record: no reveal variant was in play. Listing it now also pre-empts a third
-  // recurrence of the miss that cost a re-run twice already.
+  // Listed BEFORE any variant existed, deliberately — on the 2026-08-25 baseline it read
+  // "(unset here)", which was the honest record that no reveal variant was in play, and listing
+  // it early pre-empted a third recurrence of the miss that cost a re-run twice.
+  // It now carries FOUR values and selects the arm for divergence #5 (2026-08-28): the control is
+  // `routed_2p` (the production default) and the treatment `routed_2p_conditioned`. Both arms of
+  // that run are therefore recorded in the capture's `arm` object with no further change here —
+  // which is the point of having listed it in advance.
   'TUTOR_CASE_REVEAL',
 ] as const;
 

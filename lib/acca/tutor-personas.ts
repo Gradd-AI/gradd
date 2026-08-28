@@ -465,14 +465,70 @@ export const CASE_REVEAL_CORE_APM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
-export function caseRevealSystemFor(paper: string, secondPerson = false): string {
-  return (paper === 'AFM' ? CASE_REVEAL_CORE_AFM : CASE_REVEAL_CORE_APM)
-    + (secondPerson ? CASE_REVEAL_GUARDRAILS_2P : CASE_REVEAL_GUARDRAILS);
+// ── THE CONDITIONED OPENING, REVEAL LEG ONLY (2026-08-28) ────────────────────
+// `creditable === 0` extended from the case HINT leg (divergence #2) to the case REVEAL leg.
+//
+// ⚠️ WHY THE HINT LEG'S (c) ARM CANNOT BE COPIED ACROSS, CLAUSE BY CLAUSE. `hint-opening.ts`'s
+// (c) text is written for a leg that is still WITHHOLDING and still has misses ahead of it:
+//   • "First miss" — factually false here; the reveal fires only at `missCount >= 2`.
+//   • "what they would have to put on the page to make it" — hands the job to the STUDENT. The
+//     reveal is the moment that stops: the tutor builds it, now, in this message.
+//   • "the single sharpest gap (just one, not a list) and one next move" — the reveal walks
+//     EVERY move, so a one-gap instruction contradicts the core it would sit inside.
+// Copying it would put a withholding instruction on the one leg that must reveal — the same
+// class of error as injecting NO_COMPUTED_OUTPUTS here, which is why four of seven guardrail
+// blocks were excluded above.
+//
+// ⚠️ THE DEMAND IS REPLACED AT ITS SOURCE, NOT FENCED FROM OUTSIDE (P-T2/P-T4). The praise
+// clause lives INSIDE the system core, so that is where it is swapped. Appending a contrary
+// instruction to the user prompt would leave "first credit what they already had right" standing
+// and add a second demand beside it — the layered-prohibition shape P-M4 measured making things
+// worse, and the shape divergence #4 was deliberately built to avoid.
+//
+// ⚠️ PURELY POSITIVE, AND NOTHING IS WITHHELD. The replacement mentions no praise, no credit, no
+// correctness — it hands over a different, SATISFIABLE job (the model answer is in the prompt, so
+// naming the move it turns on is always possible). "INCLUDING the figures and the conclusion
+// (withholding is over — this is the earned reveal)" survives BYTE-IDENTICAL: this arm changes
+// what the reveal OPENS on, never what it hands over.
+//
+// ⚠️ "No empty praise." AT THE TAIL IS LEFT ALONE, deliberately. It is the one praise-referring
+// token still in the conditioned core, and removing it would move a second variable in an arm
+// built to move one. Stated rather than silently kept; a candidate for a follow-up arm only if
+// the conditioning under-delivers.
+const CREDIT_CLAUSE =
+  'first credit, specifically, what they already had right, then walk the moves they were missing, ';
+const CONDITIONED_CLAUSE =
+  'open on the first move the answer turns on and build from there, walking every move it takes, ';
+
+// `mustRecast` reused for the same reason it exists: a silent no-op would ship a "conditioned"
+// variant byte-identical to the control, and the arm would report a null meaning "the edit never
+// happened" rather than "the change did nothing" (P-G1).
+const CASE_REVEAL_CORE_AFM_NC = mustRecast(CASE_REVEAL_CORE_AFM, [[CREDIT_CLAUSE, CONDITIONED_CLAUSE]]);
+const CASE_REVEAL_CORE_APM_NC = mustRecast(CASE_REVEAL_CORE_APM, [[CREDIT_CLAUSE, CONDITIONED_CLAUSE]]);
+
+/**
+ * The case reveal's system prompt.
+ *
+ * `nothingCreditable` — nothing in the attempt this reveal is looking at earns credit against the
+ * requirement (`creditable === 0`, carried forward from the attempt turn that produced
+ * `lastRealAttempt`). Defaulted FALSE so every existing caller, and every turn with no carried
+ * verdict, gets the byte-identical praise-first core. Absent must mean "no claim", never "nothing
+ * creditable": this arm suppresses a praise demand, and the failure it would cause is opening a
+ * student's earned reveal as though their work had been worthless.
+ */
+export function caseRevealSystemFor(paper: string, secondPerson = false, nothingCreditable = false): string {
+  const core = paper === 'AFM'
+    ? (nothingCreditable ? CASE_REVEAL_CORE_AFM_NC : CASE_REVEAL_CORE_AFM)
+    : (nothingCreditable ? CASE_REVEAL_CORE_APM_NC : CASE_REVEAL_CORE_APM);
+  return core + (secondPerson ? CASE_REVEAL_GUARDRAILS_2P : CASE_REVEAL_GUARDRAILS);
 }
 
 /** Exported for fixtures only — the arm's whole claim is that these two differ ONLY in referent. */
 export const CASE_REVEAL_GUARDRAILS_3P_FOR_TEST = CASE_REVEAL_GUARDRAILS;
 export const CASE_REVEAL_GUARDRAILS_2P_FOR_TEST = CASE_REVEAL_GUARDRAILS_2P;
+/** Exported for fixtures only — the conditioned arm's claim is that ONLY this clause moves. */
+export const CASE_REVEAL_CREDIT_CLAUSE_FOR_TEST = CREDIT_CLAUSE;
+export const CASE_REVEAL_CONDITIONED_CLAUSE_FOR_TEST = CONDITIONED_CLAUSE;
 
 // ── Earned reveal — AFM (design "B": verbatim worked answer + framing wrapper) ─
 // The model writes ONLY the wrapper (credit + misconception + next step) — never the

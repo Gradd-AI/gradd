@@ -417,6 +417,13 @@ export async function POST(request: Request): Promise<Response> {
   // ── 5. Establish model answer + seal continuity (per-requirement seal) ──
   let modelAnswer: string;
   let teachThroughCounted = false;
+  // DIVERGENCE #5 (2026-08-28) — whether any adjudicated attempt in this session earned credit,
+  // carried in the SEALED blob rather than `acca_case_progress`: a column is a hand-applied
+  // production migration for a measurement field, and the DRILL route already carries
+  // `plainAsked` exactly this way.
+  // ⚠️ `undefined`, NOT `false` — three states, and "no attempt adjudicated" must never be read as
+  // "nothing earned credit". Every session sealed before this shipped is in the undefined state.
+  let carriedEverCreditable: boolean | undefined;
 
   if (!session_state) {
     if (storedModelAnswer) {
@@ -437,6 +444,8 @@ export async function POST(request: Request): Promise<Response> {
       const payload       = openPayload(s.enc);
       modelAnswer         = payload.answer;
       teachThroughCounted = payload.counted;
+      // Sealed, so a client cannot set it; absent on any pre-existing blob, which stays undefined.
+      carriedEverCreditable = payload.everCreditable;
     } catch {
       return NextResponse.json({ error: 'Session state corrupted' }, { status: 400 });
     }
@@ -487,6 +496,7 @@ export async function POST(request: Request): Promise<Response> {
       missCount,
       lastDiagnosis,
       lastRealAttempt,
+      lastEverCreditable: carriedEverCreditable,
       resolved,
       // PERSONA ROUTING (2026-08-23, stage 5). Safe to use the request paper here: every
       // acca_cases fetch above is `.eq('paper_code', paper)`, so a case belonging to another
@@ -513,7 +523,7 @@ export async function POST(request: Request): Promise<Response> {
 
   // ── 9. Seal updated session state (this requirement's own blob) ──
   const updatedSessionState: ClientSessionState = {
-    enc:               sealPayload(modelAnswer, newTeachThroughCounted),
+    enc:               sealPayload(modelAnswer, newTeachThroughCounted, result.newEverCreditable),
     miss_count:        result.newMissCount,
     last_diagnosis:    result.newLastDiagnosis,
     last_real_attempt: result.newLastRealAttempt,

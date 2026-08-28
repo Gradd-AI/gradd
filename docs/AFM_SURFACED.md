@@ -1064,7 +1064,43 @@ shape.
 - ⚠️ **THE PAPER DEFECT IS A 100% WRONG INPUT WITH A MEASURED 5% SURFACING.** 1 of 20 AFM reveals
   said *"an APM board"*; `"this drill"` surfaced 0/40. **Never report it as a 100% harm.**
 
-### 🔵 PROPOSAL — ROUTE THE REVEAL THROUGH `caseSystemFor(paper)` (not yet built)
+### ✅ CLOSED 2026-08-28 — `creditable` EXTENDED TO THE CASE REVEAL (divergence #5)
+
+Record: `docs/redteam/summaries/2026-08-28-case-reveal-creditable.md`. Branch
+`feat/case-divergence-5-reveal-creditable`. **CLEAN reveal openings 7/60 → 36/60 (11.7% → 60.0%),
+Fisher p = 4.0 × 10⁻⁸**; APM 6/30 → 26/30, AFM 1/30 → 10/30. Default flipped to
+`routed_2p_conditioned`. The lever the three prior arms predicted was the one that worked.
+
+**Three method changes, each retiring a standing ceiling on this leg:**
+- **Power computed BEFORE the run** (n=30/cell for 0.90 at +30pp; n=20 would have been 0.73) — the
+  process finding `61e7915` owed.
+- **A same-session control**, retiring the cross-SHA confound all three prior arms carried. It also
+  corrected the comparator: the stored `10/40` was the `routed` arm; the shipping default is `7/40`.
+- **Blind classification** — arm hidden, cell shown, seeded shuffle, key opened after both cells
+  were recorded. Retires *"one classifier who knew the arm"*.
+
+🔴 **THE FINDING WORTH CARRYING FORWARD IS THE POSITIVE CONTROL'S, NOT THE PRIMARY'S.** The first
+build paired the flag to `lastRealAttempt` on an argument that read well and was wrong:
+`call2_diagnose` sees ONE message, so `creditable` is scoped to a FRAGMENT, and so is
+`lastRealAttempt` — while the reveal's referent is the REQUIREMENT. On a complete correct answer
+followed by a two-line extension it read `1` then `0`, and the earned reveal would have opened
+*"nothing here earns credit"* at a student who had just produced every calculation correctly.
+**All 246 attempt turns in the 360-turn arm read `creditable: 0`, so the arm could not have seen
+it: a decline-shape corpus cannot falsify a rule about mixed sessions.** Fixed sticky, three
+states, `undefined ≠ false`. **Generalises: when a flag SUPPRESSES a demand, the arm measures
+whether it helps where it fires, and only a positive control measures whether it fires where it
+should not. Budget one.**
+
+**Still open on this leg, and stated so it is not read as solved:** inversion survives at 12/60 and
+endorses-the-refusal at 7/60 — failures of CONTENT, not of a demand for content, and this was never
+the lever for them. The AFM cell stays far worse than APM (10/30 vs 26/30), confounded by
+requirement in every arm so far. The unit noun leaks 4/120 (*"the drill"* where the core says *"this
+requirement"*) against 0/40 in the routing arm — logged, not fixed.
+⚠️ **`REVEAL_AFM_WRAPPER_SYSTEM` on the DRILL route still carries the unconditioned praise-first
+clause.** Deliberately untouched — same clause, different surface, its own measurement. Fixture-
+pinned present and unconditioned so a later edit cannot widen this arm to two surfaces silently.
+
+### ✅ SUPERSEDED — PROPOSAL: ROUTE THE REVEAL THROUGH `caseSystemFor(paper)` (built 2026-08-25)
 
 One move that gets the paper, the six guardrail blocks, and collapses the duplicate. **Prediction,
 on the record before building: it fixes the paper defect and does NOT fix the manufactured
