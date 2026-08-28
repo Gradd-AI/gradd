@@ -525,6 +525,58 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'breakdown by exposure type to approve the proposal.',
   },
 
+  // ── AFM POSITIVE CONTROL (2026-08-28) — THE CELL THE CASE HINT LEG NEVER HAD ───────────────
+  // ⚠️ THE CASE HINT LEG'S POSITIVE CONTROL ALREADY EXISTS AND IS APM-ONLY. `8e3646d` ran it on
+  // Orlen (i) and Keldan (i) — BOTH APM — and read `creditable === 1` on 40/40 with the (c)
+  // suppression arm firing 0/40. So the untested direction is not the LEG, it is the PAPER:
+  // Kestrel is the only AFM case target on this whole surface and it is a DECLINE shape, so no
+  // AFM case leg has ever been shown a genuinely creditable answer.
+  //
+  // That gap matters more than a symmetry argument would suggest: divergence #5 measured the AFM
+  // reveal cell at 10/30 clean against APM's 26/30, so "APM held, therefore AFM holds" is exactly
+  // the inference this surface has already falsified once.
+  //
+  // AUTHORED FROM THE REQUIREMENT'S OWN `answer_schema`, not a template. E2a carries four
+  // criteria; this answer earns **c_transaction** (2 of 7 marks) in full and on its own terms —
+  // it names transaction exposure, anchors it on the peso remittances (`f_remit`), states the
+  // cash-flow-not-accounting distinction the criterion demands, and gives the forward/MMH
+  // management — then stops and says so. c_translation, c_economic and the recommendation (5 of
+  // 7 marks) are absent, so a hint is still warranted and a CORRECT verdict would be wrong.
+  //
+  // ⚠️ `development_required: true` on that criterion is why the mechanism is spelled out rather
+  // than named: a bare "there is transaction exposure" would be F2 (named-but-not-described) and
+  // would NOT be creditable, which would make this control measure the wrong thing.
+  //
+  // Filter with **`pc-case kestrel`** — `pc-case` alone now matches THREE targets.
+  {
+    label: 'CASE · PC-CASE Kestrel Foods plc (ii) — POSITIVE CONTROL: genuinely creditable, incomplete (AFM, E2a)',
+    paper: 'AFM', kind: 'case',
+    caseId: 'ac000000-0000-4000-8000-00000000b501',
+    reqId: 'e861173b-56c9-46d9-99c6-cf17dc1b6b5d',
+    correctVerdict:
+      'THREE distinct exposures — transaction, translation and economic — each separated, '
+      + 'evaluated and given its own management response, with a committed recommendation',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. Transaction exposure is identified, described and '
+      + 'correctly managed (c_transaction, 2 of 7 marks); translation, economic and the '
+      + 'recommendation are absent.',
+    attempt:
+      'Taking the exposures one at a time, the first is transaction exposure. Monterrey will earn ' +
+      'peso profits and remit them to the UK parent, so each remittance is a known future amount ' +
+      'denominated in pesos. Between the date the board commits to it and the date it settles, a ' +
+      'movement in the peso changes the sterling Kestrel actually banks — that is a cash-flow ' +
+      'exposure, not an accounting one. It is properly managed by fixing the sterling value of ' +
+      'each remittance as it is committed: either a forward contract, or a money-market hedge ' +
+      'built by borrowing pesos against the expected receipt, converting at spot and holding ' +
+      'sterling on deposit to the remittance date. That is the exposure the finance director\'s ' +
+      'forward proposal actually addresses, and for that exposure the proposal is sound. I have ' +
+      'not worked through the other exposure types.',
+    attempt2:
+      'To add to that: the hedge should follow the remittance schedule as each dividend is ' +
+      'committed rather than run as a rolling programme, because it is the committed amount that ' +
+      'carries the exposure.',
+  },
+
   // ── DIVERGENCE #3 SEED CLASS (2026-08-25) — A CORRECT DISCURSIVE ANSWER ────────────────────
   // call2_diagnose's shipped EQUIVALENCE CHECK asks whether the student's "NUMERICAL RESULT is
   // MATHEMATICALLY equivalent to the model's". Both requirements below have **ZERO DIGITS in the
