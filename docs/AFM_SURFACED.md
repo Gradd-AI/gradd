@@ -1350,6 +1350,79 @@ write** when a demotion is required and prints the exact `BEGIN`/`COMMIT` block 
 instead. Today's run needed none. A sequenced pair of writes dressed up as a transaction would have
 been the worse answer.
 
+### 📐 AUDITED 2026-08-28 — BATCH A THROUGH THE TUTOR HARNESS: **REACHABLE ≠ MEASURABLE AS SBL**
+
+Read-only audit, Grant-ruled to stop here (option 3): **nothing built, nothing spent, the serving
+route untouched.** Recorded so the next reader has the design rather than re-deriving it.
+
+**① THE STRUCTURAL RESULT IS GREEN, 5/5 — and it needed no reachability and no model calls.**
+A census of batch A, not a sample:
+
+| check | result |
+| --- | ---: |
+| `answer_schema.mode === 'narrative'` → grounding pack takes the narrative branch | **5/5** |
+| `criteria` present (5–6 each) and `scenario_facts` present (6–12 each) | **5/5** |
+| `full_reveal` parses under `extractMisconceptionLead` (the P7 lead shape) | **5/5** |
+| an F4 disqualifier present → `narrativeConventions` fires the committed-verdict rule | **5/5** |
+| `calculation_required` false — wholly discursive, as the paper is | **5/5** |
+
+**The authoring pipeline produced rows the hardened tutor's grounding machinery can actually
+read.** ⚠️ **CLAIM CEILING:** this is a STATIC property check on five rows. It says the shapes the
+machinery reads are present; it says **nothing** about how the tutor behaves on them. Do not report
+it as a measurement.
+
+**② REACHABLE ≠ MEASURABLE AS SBL — the reason an arm was NOT run.** Three paper-keyed branches
+fall through to APM, and no `n` fixes any of them:
+
+- **`systemFor(paper)`** (`tutor-personas.ts:308`) = `paper === 'AFM' ? EZRA_AFM_SYSTEM :
+  EZRA_SYSTEM`. SBL gets `EZRA_SYSTEM`: *"You are Ezra, an APM tutor who knows exactly how ACCA APM
+  is marked"* — teaching a governance/ethics briefing note.
+- **`call4_reveal`'s `if (paper === 'AFM')`** (`route.ts:1069`) → the else branch uses
+  `REVEAL_SYSTEM` (also *"an APM tutor"*) and `buildApmRevealUserPrompt`, which never injects the
+  AFM branch's `reframeLine`. ⚠️ **PRECISELY:** `full_reveal` is not wholly dead — ONE clause
+  reaches the grounding pack as `misconceptionLead` on every paper — but the full authored reframe
+  block is AFM-only, and all five SBL rows carry one.
+- **`capColumn`** (`route.ts:1327`) = `paper === 'AFM' ? 'afm_…' : 'apm_teach_throughs_used'`. An
+  SBL turn **decrements the APM free counter on a real profile row** — a write, not a read.
+
+**An arm today measures the APM persona on SBL content.** That is a legitimate question
+(*"did the hardening generalise to content it has never seen?"*) but it is NOT a question about
+SBL, and it must never be reported as one.
+
+**③ THE GATE IS `drillSelect()`, NOT `servedPaper()` — 404, not 403.** `servedPaper()` appears
+ONCE in the tutor route (`route.ts:1445`) and only builds `subscribeHref`; it gates nothing. The
+refusal is `{ error: 'Drill not found' }, { status: 404 }` at `route.ts:1246`, in §3 — **before §4
+entitlement (`hasPaperAccess`, 1341) and before §7 the engine (1447), so a probe costs ZERO
+Anthropic tokens.** Verified by replicating the predicate against `46e10662` in the live DB:
+
+| filter | rows |
+| --- | ---: |
+| row exists / `exam_board='ACCA'` / `status='approved'` | 1 / 1 / **1 — passes** |
+| `.eq('published', true)` | **0 — blocks** |
+| `.in('paper_code', SERVED_PAPERS)` | **0 — blocks** |
+
+⚠️ **`SERVED_PAPERS` IS NOT THE BINDING BLOCKER — `published=false` IS, and it is the deliberate
+P-DB9 state.** There is ONE Supabase, so flipping it is a production content write that ships the
+instant it runs (P-DB1). That route is closed; do not reach for it. A third blocker sits in the
+harness itself: `redteam-probes.ts:13` declares `type Paper = 'APM' | 'AFM'`, so SBL is not
+nameable in the probe matrix.
+
+**④ THE MEASUREMENT ALLOW — DESIGNED, DELIBERATELY NOT BUILT.** Recorded so it is not re-derived:
+
+- **Rejected — an uncommitted local edit.** Invisible and uncommittable, and
+  `memory/feedback_apm_test_protocol` banks that the false trails on this stack are always the
+  environment, never the code.
+- **Rejected — a harness bypass calling the engine directly.** The drill route's §7 is **inline in
+  `route.ts`**; only the CASE engine is extracted (`runTeachTurn`, `teach-engine.ts:1122`). A
+  bypass therefore transcribes the orchestration under test — the anti-pattern that forced the
+  byte-identical `shipped` pin in the PS-prompt-variant round.
+- **The design, if it is ever wanted:** ONE env const read at module scope that relaxes
+  `published` **and** the paper set **together** (either alone still 404s), and that **refuses
+  whenever `process.env.VERCEL` is set** — impossible in any Vercel environment rather than merely
+  unset, so a `--target prod` run fails safe to the existing 404. Structural beats instructed.
+  Fixture-pin the default predicate byte-identical to today's, and widen `Paper` to `AccaPaper` in
+  the probe file only. **Do NOT widen `SERVED_PAPERS`.**
+
 ## 🔵 SCOPED, NOT BUILT — 2026-08-21 — THE EVIDENCE-STATUS LEDGER (doctrine P-N4)
 
 Scope requested, build deferred. The fix for CLAIM → FACT LAUNDERING is **generation-side**; a third
