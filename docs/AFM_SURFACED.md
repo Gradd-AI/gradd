@@ -2,6 +2,34 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+> ## 🔷 TWO LIVE WORKSTREAMS, BOTH CURRENT AS AT 2026-08-29 — READ BOTH BEFORE ASSUMING STATE
+>
+> **Added 2026-08-29. This header is ADDITIVE — the `Last refreshed` block below it is unchanged
+> and remains the authority on everything it covers.** It exists because the two streams run on
+> two machines and neither one's refresh line mentions the other, so whichever was written last
+> read as *the* current state.
+>
+> **A current-state header that omits a live workstream is the `P-G1` failure wearing a different
+> mask:** the instrument reports success while measuring less than it claims. A gate that cannot
+> evaluate must say so; a state header that covers half the work must say which half.
+>
+> | stream | where it lives in this file | state as at 2026-08-29 |
+> |---|---|---|
+> | **The tutor / case red-team stream** (the other machine) | the `creditable` and divergence blocks from **§ line ~890** onward, plus `docs/redteam/summaries/` | Divergences **#2–#5** closed; `creditable` wired to the case hint AND the case reveal opening, both **conditioned and shipped**; the case persona paper-routed; positive controls closed on both papers. Doctrine: **`P-T4`**. |
+> | **The marker-figure / technical-marking arm** (this machine) | **§ PRE-REGISTRATION**, **§ ARM C RULED**, **§ STANDING UNDER-COUNT REGISTER**, and the `⛔ CLOSED-BY-RULING 2026-08-29` block above | Arm C **RULED NULL — rule 3 does not ship.** `answer_schema` threading closed by ruling (**`P-M5`**). The 2026-08-01 figure register **recovered from a stash** and committed (**`P-V3`**). Five known instrument under-counts open, listed and unfixed. |
+>
+> **They do not overlap and neither supersedes the other.** The red-team stream changes the
+> **tutor** (`teach-engine.ts`, `tutor-personas.ts`, the case legs); the marker-figure arm measures
+> the **marker** (`case-marking.ts`, `judgeTechnicalMarking`) and has shipped **no product-code
+> change at all** — its `owned_figure` variant is a recorded null and production still defaults to
+> `shipped`. The one place they touch is `package.json`, where both added fixture entries in
+> different regions of the `scripts` block.
+>
+> ⚠️ **The `Last refreshed: 2026-08-22` line below predates BOTH streams' latest work** and is
+> retained verbatim rather than edited, because it is the other machine's wording and rewriting
+> someone else's summary is how a merge loses work quietly. Treat it as the SBL/batch-A record it
+> is, not as the current state of the repo.
+
 *Last refreshed: 2026-08-22 (**SBL BATCH A IS CLOSED. GATE-P STEP ONE ONLY: all five rows
 `candidate → approved`, `published` UNTOUCHED — approved 154 → 159, published 154 → 154.** Grant's
 ruling, and the two columns are not the same claim: `approved` says the content passed review, which
@@ -110,6 +138,86 @@ sign test on P1 is **not** the decision rule for this prediction.
 is the decision whatever P1 does (P-M1). No change to the statistical test: the sign test on P1
 stays exactly as pre-registered, and stays descriptive (five clusters; p = 0.0625 at best —
 P-M5(b)).
+
+### ⛔ ARM C RULED — NULL. RULE 3 DOES NOT SHIP. (Grant, 2026-08-29)
+
+**20 runs × 2 arms × 3 calls = 120 model calls, 0 failures, 160 feedback strings per arm.**
+Artefacts: `docs/rollbacks/marker_figure_arm_20260829.json` (986 hit entries) + `arm_output.txt`.
+Read-only against the database: `judgeTechnicalMarking` called directly, never the mark route —
+no `acca_case_marking` row, no `technical_feedback`, no weakness row, no funnel event.
+
+**WHAT WAS PREDICTED**, verbatim from the pre-registration above:
+
+> PREDICTION: removing rule 3's demand for a figure the marker cannot own reduces the ABSOLUTE
+> COUNT of asserted figures (G1 denominator falls). The unowned RATE may be flat or may rise,
+> because a smaller denominator with a similar proportion unowned reports the same rate. So P1
+> alone cannot decide this — G1 is co-equal, not a guard.
+> Band drift is the real risk and the reason P-M1 applies.
+> If the count falls and bands hold, the rewrite ships. If bands move, that is the decision
+> regardless of P1.
+
+**WHAT CAME BACK:**
+
+| | shipped (control) | owned_figure (arm C) |
+|---|---|---|
+| feedback strings | 160 | 160 |
+| **asserted figures (G1)** | **1681** | **1565** — ↓ 116, −6.9% |
+| **figures per feedback (G1)** | **10.51** | **9.78** |
+| unowned (P1, pooled) | 47 (2.8%) | 34 (2.2%) |
+| precision leaks (P2) | 170 | 172 |
+| student-attributed | 298 | 265 |
+| rule-2 leak strings (G3) | 4/160 (2.5%) | 1/160 (0.6%) |
+| **requirements whose band distribution moved** | — | **2 of 8** |
+
+**Pre-registered sign test on P1, five clusters:** four ties (B3e, B5b, E2b, B1a all 0.0% in both
+arms) and one reduction (E3a 6.9% → 6.1%, −0.8pp). **n = 1, two-sided p = 1.00000, not
+significant.** No pooled z was substituted, per P-M5(b).
+
+📐 **THE PREDICTION'S MECHANISM WAS RIGHT AND ITS CONCLUSION STILL DOES NOT SHIP.** The count
+fell exactly as predicted — G1 is the only metric that moved cleanly — and P1 was flat exactly as
+predicted, on four of five clusters by being **0.0% in both arms**, which is a stronger flatness
+than "similar proportion of a smaller denominator". The decision rule was *"if the count falls and
+bands hold, the rewrite ships"*, and **the count fell.** It does not ship because the second half
+of the rule did not hold, and because a 6.9% reduction in figures asserted is not by itself a
+benefit: **P1 measures exposure, not error (the arm's own claim ceiling), so fewer asserted figures
+is only good if the ones removed were the unowned ones — and 4 of 5 clusters had none to remove.**
+
+🔴 **THE BAND-MOVE RULE FIRED, AND IT WAS NOT INVOKED. THAT IS THE DEFECT, NOT THE RESULT.**
+
+The pre-registration said *"If bands move, that is the decision regardless of P1."* **Bands moved.**
+Read literally, arm C was decided against the moment `bandDriftRequirements: 2` printed. It was not
+decided that way, and the reason is that the movement is inside noise:
+
+| requirement | shipped | arm C | moved | Fisher exact, two-sided |
+|---|---|---|---|---|
+| (iv) E1a — 6 marks | 19 exemplary / 1 strong | 18 / 2 | 1 script of 20 | **p = 1.0000** |
+| (ii) B1b — 8 marks | 20 exemplary / 0 strong | 18 / 2 | 2 scripts of 20 | **p = 0.4872** |
+
+**2 moved cells of 40** (8 requirements × 5 bands), **3 moved scripts of 320**, and neither
+requirement's shift is distinguishable from sampling. The other six requirements are
+**byte-identical distributions** across arms, including E3a's 20/20 `competent` — the one cluster
+carrying every unowned figure in the paper.
+
+**THE RULE HAD NO THRESHOLD, AND THAT IS THE THING TO FIX.** *"If bands move"* is a predicate on a
+**count of differences**, and a count of differences between two samples of a stochastic marker is
+never zero. Written that way the rule fires on every arm that will ever be run, which means it
+decides nothing and is instead overridden by judgement each time — the exact failure it was
+written to prevent. **A band-drift rule must state a threshold and a test before the run**: which
+cells, what magnitude, at what p, and whether a one-notch move on a narrative row with no numeric
+content counts at all. Ruling by eye afterwards is P-M2's error in a new place — treating an
+unvalidated comparator as though it settled something.
+
+⚠️ **Both moved requirements are NARRATIVE rows** (E1a and B1b carry rubric-shaped schemas with
+zero `expected_value`) — they are outside the sign test's five clusters by construction, and rule 3
+governs how the marker states a **corrected figure**, which is an act neither row calls for. A
+mechanism by which this rewrite moves those two rows and no numeric row is not obvious, which is
+itself weak evidence for sampling rather than effect.
+
+**Recorded as the outcome, not as a failure of the arm.** The arm answered its question at the
+precision the paper allows (P-M5(b): five clusters, descriptive by construction), the instrument's
+known under-counts are in the register above, and the null is the finding. `owned_figure` stays in
+`buildTechnicalSystemPrompt` as a **recorded null**, the way `ladder_p_t2` is retained as a
+recorded loser — not as an option, and never as the production default.
 
 ### 📋 STANDING UNDER-COUNT REGISTER — every known direction the marker-figure instrument mis-counts (opened 2026-08-29)
 
