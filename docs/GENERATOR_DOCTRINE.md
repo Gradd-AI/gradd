@@ -556,6 +556,101 @@ string the measurement is about at the centre of the measurement. The prompt is 
 (`buildPsSystemPrompt(paper, variant)`) taking a `promptVariant`, with the historical control pinned
 BYTE-IDENTICAL by fixture, so the refactor cannot silently reword the live prompt.
 
+## P-M5 — BEFORE THREADING A FACT AT A DEFECT, CHECK THE FACT CONTAINS THE THING (ruled 2026-08-29)
+
+**The question.** Does passing `answer_schema` to `judgeTechnicalMarking` reduce the rate at which
+the marker's candidate-facing `feedback` asserts figures no schema component owns? `answer_schema`
+is not a field of `TechnicalRequirementInput`, so the marker cannot cite a component — while rule 3
+demands *"the figure THEIR working produced AND the correct figure"*. Supplying the schema is the
+obvious move.
+
+**IT WAS ANSWERED BY MEASUREMENT, BEFORE ANYTHING WAS BUILT, AND THE ANSWER IS NO.** On all three
+documented sightings the schema does not contain the figure:
+
+- **E2b** — the *"EUR 0.4m"* margin the marker restates as `0.438m`. The four components are
+  `31.7137…`, `174.2718…`, `31.1199…`, `31.2755…`; the margin is the **DIFFERENCE of two of them**
+  and is not a component. GATE 27's own header already names this row.
+- **B1a** — the discount factors. Not in any component. `AFM_SURFACED.md` records the measurement
+  verbatim: *"Mock (i) B1a scores 0 unowned yet the marker still invented four discount factors from
+  the prose phrase 'discounted at 10.00%'"*.
+- **E3a** — the fall-scenario leg the sighted €216,000 fell through. A genuine schema hole, and
+  **DEFERRED with a named trigger** (the next `irhedge` authoring batch), for reasons unchanged.
+
+**And the route that would put them there is CLOSED.** `AFM_SURFACED.md` ⛔ 2026-07-30: omitted
+presentational intermediates — per-year discount factors, per-year present values, restated input
+rates — *"need no component and never did"*; 43% is *"not a defect count"*; *"the ONLY in-scope
+defect shape is a whole missing LEG"*. So the schema cannot be widened to cover the sightings, and
+as it stands it does not contain them.
+
+**What passing it would actually supply, measured.** 138 numeric leaves across the paper's 8
+requirements, of which only **28 are `components[].expected_value`**; 37 are tolerance machinery,
+26 are rubric marks, ~47 are params the marker already sees in the scenario. For the **three**
+narrative requirements it supplies a RUBRIC, not figures — into a call whose rule 2 carries a class
+ban on naming any scheme.
+
+**THE STANDING RULE.** *Before threading a fact to a call to close a defect, verify the fact
+CONTAINS the thing the defect is made of.* A schema that holds the OPERANDS is not a schema that
+holds the ANSWER, and the difference is invisible until you open the row. Supplying material at an
+instruction the material cannot satisfy is the `P-T2` / `P-T4` / `P-M4` configuration — the model
+keeps the instruction and now has more to invent from.
+
+**So the lever is the instruction.** Rule 3 asked for a number the marker frequently cannot own,
+and rule 2 then forbade it saying where any number came from. The arm rewrites rule 3 to name a
+SATISFIABLE act — quote a figure written in the standard, or characterise the error in words — and
+replaces the demand rather than appending a prohibition, because an appended prohibition leaves the
+original demand standing (fixture-pinned as MUST-FAIL in `test:technical-prompt-variants`).
+
+**Corollary — same as P-M4's, now applied to the technical pass.** The technical system prompt is a
+pure builder, `buildTechnicalSystemPrompt(paper, variant)`, with `shipped` pinned BYTE-IDENTICAL by
+fixture and **`shipped` as the production default**. The variant differs in the rule-3 slot and
+nowhere else — prefix and suffix are asserted byte-identical — so an arm cannot be confounded by a
+second change riding along, and the refactor cannot silently reword the live prompt.
+
+### P-M5(a) — A MEASUREMENT'S INSTRUMENT AND ITS CORPUS BOTH EXPIRE; SAY WHEN
+
+Three things about the 114/1,518 baseline that must be stated wherever it is quoted (five documents
+do):
+
+1. **IT IS NOT RE-DERIVABLE.** It was measured 2026-07-30, **before `69cf5ad` and `3093ae3`** (both
+   2026-08-01) — the second being the judgement/feedback split now in production, which means the
+   marker then emitted ONE prose field where it now emits a private `judgement` and a derived
+   `feedback`. Both of those commits' own subjects record that **bands moved**. A control must be
+   re-derived in-session; the stored number is a historical sighting, not a comparator.
+2. **ITS EVIDENCE FILE IS GONE — TRUE OF THE 114, AND CORRECTED 2026-08-29 AS A CLAIM ABOUT THIS
+   WORKSTREAM.** The scan wrote `scan_figures_<label>.txt` to the repo ROOT, which the `scripts/_*`
+   ignore does not cover. **The 114/1,518 file is genuinely gone** — not on disk, not in any ref,
+   not in the dangling set, and not in a stash; its aggregate survived in prose and its per-figure
+   hit list did not. ✏️ **But this entry also said the per-figure hit list did not survive, full
+   stop, and that was WRONG.** A SIBLING scan did: `scan_figures_register.txt`, 31,270 bytes, blob
+   `f4504a6e`, the 2026-08-01 `register` run — **same instrument, same paper, same blind candidate
+   script, same 8 requirements**, 10 runs, 80 feedback strings, 126 per-figure instances with
+   identifiers and excerpts — survived inside **`stash@{0}`**, where `git stash` had snapshotted it
+   as an untracked file. Recovered and written out to **`docs/AFM_FIGURE_REGISTER_20260801.txt`**
+   (byte-exact; `git hash-object` re-derives `f4504a6e`). It is NOT a comparator for the 114 — the
+   two aggregates disagree, 12.7% vs 7.5% — but it is a hand-readable hit list on the same corpus,
+   and it was recoverable the whole time this entry said none was. See **P-V3**.
+   **Every arm's hit list now goes to `docs/rollbacks/` and is COMMITTED.**
+3. **THE INSTRUMENT UNDER-COUNTED AND OVER-COUNTED AT ONCE.** Its support set was
+   `model_answer` prose ∪ **every numeric leaf** of `answer_schema`, so `tolerance.pct = 0.5`
+   supported a marker writing *"0.5%"* (under-count); and it had **no scenario tier at all**, so a
+   legitimately restated exhibit figure was a defect (over-count). Both directions are live and
+   neither was known when the number was banked.
+
+### P-M5(b) — THE PAPER CAPS THE ARM AT FIVE CLUSTERS, AND FIVE CANNOT REACH 0.05
+
+Figures cluster hard inside a requirement, and runs are REPEATED MEASURES of the same requirements —
+they buy precision within a cluster and add no clusters. AFM Mock Paper 1 has 8 requirements, and
+**three of them (E1a, B1b, E2a) are narrative with a rubric-shaped `answer_schema` carrying ZERO
+`expected_value`**, so they have no figure to own and cannot enter the test. **Five clusters.**
+
+A paired sign test at n=5 gives **p = 0.0625 even when the result is UNANIMOUS**. The
+pre-registered test therefore **cannot reach 0.05 in its best case**, and a pooled two-proportion z
+is not available either: at ~190 figures per cluster even ICC 0.05 gives a design effect near 10.5,
+and cluster-robust SEs need roughly 40 clusters. **This arm is DESCRIPTIVE BY CONSTRUCTION.** Say so
+in the result; do not substitute a pooled test when the pre-registered one fails to clear.
+
+**The cheapest way to buy clusters is more candidate scripts or more cases, never more runs.**
+
 ## P-T1 — A FACT THREADED TO A CALL THAT DOES NOT SPEAK IS NOT A FIX (ruled 2026-08-01)
 
 **The instance, measured.** The tutor was affirming the inverse rule on a seeded wrong-direction
@@ -1058,6 +1153,43 @@ looked. ⚠️ This is the same failure mode as **P-V1**'s false DERIVED claims 
 inversion, one level up: there the measurement was wrong, here the measurement is CORRECT and
 measures the wrong thing. **The more automatable the metric, the more certain it is that something
 important is outside it.**
+
+**P-V3 — CHECK THE STASHES BEFORE DECLARING AN ARTEFACT UNRECOVERABLE (ruled 2026-08-29, measured).**
+
+**`git stash` snapshots UNTRACKED files into a THIRD PARENT of the stash commit.** So a file that
+is absent from the working tree, absent from every ref, and absent from the dangling-object set
+**may still be fully intact in a stash** — and the usual searches all miss it, because
+`git log --all`, `git rev-list --all` without the stash refs, and `git fsck --lost-found` are not
+where it lives. The reflog entry looks like *"untracked files on \<branch\>: \<sha\> \<subject\>"*,
+which reads as noise.
+
+**The instance.** `P-M5(a)` item 2 recorded that the marker-figure baseline's per-figure evidence
+file was gone: the scan wrote `scan_figures_<label>.txt` to the repo ROOT, which the `scripts/_*`
+ignore does not cover, and nothing was on disk. That was true of the **114/1,518** file and it is
+still true. But **`scan_figures_register.txt` — 31,270 bytes, blob `f4504a6e`, the 2026-08-01
+`register` scan — survived inside `stash@{0}`** (*"untracked files on fix/marker-feedback-register:
+647936d Merge main"*) and nobody knew for four weeks. **Same instrument, same paper, same blind
+candidate script, same 8 requirements**, 10 runs, 80 feedback strings, and it carries the full
+per-figure hit list with identifiers: `run · requirement · band · lost · token · value · ±90-char
+excerpt`, **126 instances**. It is not the 114 — different run count, different label, and the two
+aggregates disagree (12.7% vs 7.5%) — but it is the only per-figure hit list this workstream has,
+and it was recoverable the whole time the doctrine said none was.
+
+**The rule.** Before recording an artefact as lost, search `git stash list` and each stash's third
+parent (`git ls-tree -r stash@{N}^3`), and search `git rev-list --all --objects` — which DOES reach
+stash refs — by filename, not only by commit. A blob found this way is byte-exact: verify it with
+`git hash-object` against the blob sha, not by eyeballing a byte count.
+
+**And then GET IT OUT OF THE STASH.** A stash is one `git stash drop` from gone and has no
+reflog protection worth relying on. The register was written out to
+`docs/AFM_FIGURE_REGISTER_20260801.txt` the moment it was found — 31,270 bytes, `git hash-object`
+re-deriving `f4504a6e` exactly — and committed. **Finding it does not preserve it.**
+
+⚠️ **The generalisation that matters is not about git.** The doctrine asserted an artefact was
+unrecoverable on the strength of a search that had a hole in it, and that assertion then told every
+later reader not to look. That is the **P-G2** failure — an unstated denominator reading as full
+coverage — applied to a search rather than a detector. **State what you searched.** "Not on disk,
+not in any ref, not dangling" is a description of four places; "gone" is a claim about all of them.
 
 **P-T3 — A GUARD THAT SHORT-CIRCUITS A CHECK MUST NOT EMIT A LABEL THAT READS AS THE CHECK HAVING
 PASSED (ruled 2026-08-22, measured).**
