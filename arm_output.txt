@@ -1,0 +1,87 @@
+
+corpus: docs/reviews/AFM_MOCK1_BLIND_CANDIDATE_SCRIPT.md
+paper : AFM Mock Paper 1 — 3 cases, 8 requirements
+clusters for the sign test: 5 numeric — (i) B3e — 10 marks · (ii) B5b — 16 marks · (iii) E2b — 8 marks · (i) B1a — 12 marks · (i) E3a — 12 marks
+narrative (excluded from the test, no component to own): (iv) E1a — 6 marks · (ii) B1b — 8 marks · (ii) E2a — 8 marks
+plan  : 20 runs × 2 arms × 3 calls = 120 model calls
+
+  run 1/20 done  run 2/20 done  run 3/20 done  run 4/20 done  run 5/20 done  run 6/20 done  run 7/20 done  run 8/20 done  run 9/20 done  run 10/20 done  run 11/20 done  run 12/20 done  run 13/20 done  run 14/20 done  run 15/20 done  run 16/20 done  run 17/20 done  run 18/20 done  run 19/20 done  run 20/20 done
+
+════ P1 — UNOWNED ASSERTED FIGURES, per requirement, per arm ════
+requirement                  arm            feedbacks  asserted  unowned    rate   leaks  student  givensOnly
+(i) B3e — 10 marks           shipped              20       170        0    0.0%      41       22          0
+(i) B3e — 10 marks           owned_figure         20       168        0    0.0%      31       18          0
+(ii) B5b — 16 marks          shipped              20       312        0    0.0%      30       32          9
+(ii) B5b — 16 marks          owned_figure         20       305        0    0.0%      42       22          6
+(iii) E2b — 8 marks          shipped              20       187        0    0.0%      89       42          0
+(iii) E2b — 8 marks          owned_figure         20       179        0    0.0%      84       40          0
+(iv) E1a — 6 marks           shipped              20         0        0     n/a       0        0          0
+(iv) E1a — 6 marks           owned_figure         20         0        0     n/a       0        0          0
+(i) B1a — 12 marks           shipped              20       151        0    0.0%       8        0          0
+(i) B1a — 12 marks           owned_figure         20       159        0    0.0%      13        0          0
+(ii) B1b — 8 marks           shipped              20       155        0    0.0%       0       27          4
+(ii) B1b — 8 marks           owned_figure         20       177        0    0.0%       0       22          3
+(i) E3a — 12 marks           shipped              20       684       47    6.9%       2      175          9
+(i) E3a — 12 marks           owned_figure         20       559       34    6.1%       2      163         13
+(ii) E2a — 8 marks           shipped              20        22        0    0.0%       0        0          0
+(ii) E2a — 8 marks           owned_figure         20        18        0    0.0%       0        0          0
+
+════ POOLED (descriptive only — the clustered test is below) ════
+shipped       feedbacks  160 · asserted  1681 · unowned   47 (2.8%) · precision leaks 170 · student-attributed 298 · givens-only 22
+owned_figure  feedbacks  160 · asserted  1565 · unowned   34 (2.2%) · precision leaks 172 · student-attributed 265 · givens-only 22
+
+════ RECONCILIATION WITH THE 2026-07-30 BASELINE (114/1,518 = 7.5%) ════
+That instrument had NO givens tier and classified student figures by a backward keyword
+window. Adding back the classes it could not see approximates what it would have counted.
+  shipped       this instrument 47/1681 (2.8%) · + givens-only 22 + student 298 = 367/1681 (21.8%)
+  owned_figure  this instrument 34/1565 (2.2%) · + givens-only 22 + student 265 = 321/1565 (20.5%)
+⚠️  The upper figure is an APPROXIMATION of the old instrument, not a re-run of it: the old
+    support set also admitted tolerance and rubric leaves, which pushed its count DOWN.
+
+════ G1 — DENOMINATOR DRIFT (asserted figures per feedback string) ════
+A fix that halves the rate by doubling assertions is not a fix. Absolute counts govern.
+  shipped       10.51 figures per feedback  (1681 over 160)
+  owned_figure  9.78 figures per feedback  (1565 over 160)
+
+════ G2 — BAND DRIFT (P-M1: a changed marking input owes a band matrix) ════
+requirement                  arm             exemplary    strong competent      weak   nothing
+(i) B3e — 10 marks           shipped               20         0         0         0         0
+(i) B3e — 10 marks           owned_figure          20         0         0         0         0
+(ii) B5b — 16 marks          shipped               20         0         0         0         0
+(ii) B5b — 16 marks          owned_figure          20         0         0         0         0
+(iii) E2b — 8 marks          shipped               20         0         0         0         0
+(iii) E2b — 8 marks          owned_figure          20         0         0         0         0
+(iv) E1a — 6 marks           shipped               19         1         0         0         0
+(iv) E1a — 6 marks           owned_figure          18         2         0         0         0
+(i) B1a — 12 marks           shipped               20         0         0         0         0
+(i) B1a — 12 marks           owned_figure          20         0         0         0         0
+(ii) B1b — 8 marks           shipped               20         0         0         0         0
+(ii) B1b — 8 marks           owned_figure          18         2         0         0         0
+(i) E3a — 12 marks           shipped                0         0        20         0         0
+(i) E3a — 12 marks           owned_figure           0         0        20         0         0
+(ii) E2a — 8 marks           shipped               20         0         0         0         0
+(ii) E2a — 8 marks           owned_figure          20         0         0         0         0
+  requirements whose band distribution MOVED between arms: 2/8
+
+════ G3 — RULE-2 CLASS-BAN LEAK (n-gram only; blind to paraphrase) ════
+  shipped       4/160 feedback strings name a banned referent (2.5%)
+  owned_figure  1/160 feedback strings name a banned referent (0.6%)
+    · shipped (ii) B5b — 16 marks: the correct answer
+    · shipped (ii) E2a — 8 marks: the solution
+    · shipped (i) E3a — 12 marks: the correct answer
+    · shipped (ii) B5b — 16 marks: the correct treatment
+    · owned_figure (i) E3a — 12 marks: the correct answer
+
+════ PRE-REGISTERED PAIRED SIGN TEST — 6 clusters, only 6/6 clears 0.05 ════
+requirement                  control     armC      diff
+(i) B3e — 10 marks              0.0%     0.0%  +0.0pp
+(ii) B5b — 16 marks             0.0%     0.0%  +0.0pp
+(iii) E2b — 8 marks             0.0%     0.0%  +0.0pp
+(i) B1a — 12 marks              0.0%     0.0%  +0.0pp
+(i) E3a — 12 marks              6.9%     6.1%  -0.8pp
+
+  n (non-tied) 1 · reductions 1 · increases 0 · ties 4
+  direction reduction · two-sided p = 1.00000 · significant at 0.05: NO
+  ⚠️  NOT significant. Report descriptively. Do NOT substitute a pooled two-proportion z.
+
+hit list (986 entries) written to docs/rollbacks/marker_figure_arm_20260829.json — COMMIT IT.
