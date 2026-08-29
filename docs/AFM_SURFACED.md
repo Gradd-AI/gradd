@@ -16,7 +16,7 @@
 > | stream | where it lives in this file | state as at 2026-08-29 |
 > |---|---|---|
 > | **The tutor / case red-team stream** (the other machine) | the `creditable` and divergence blocks from **§ line ~890** onward, plus `docs/redteam/summaries/` | Divergences **#2–#5** closed; `creditable` wired to the case hint AND the case reveal opening, both **conditioned and shipped**; the case persona paper-routed; positive controls closed on both papers. Doctrine: **`P-T4`**. |
-> | **The marker-figure / technical-marking arm** (this machine) | **§ PRE-REGISTRATION**, **§ ARM C RULED**, **§ STANDING UNDER-COUNT REGISTER**, and the `⛔ CLOSED-BY-RULING 2026-08-29` block above | Arm C **RULED NULL — rule 3 does not ship.** `answer_schema` threading closed by ruling (**`P-M5`**). The 2026-08-01 figure register **recovered from a stash** and committed (**`P-V3`**). Five known instrument under-counts open, listed and unfixed. |
+> | **The marker-figure / technical-marking arm** (this machine) | **§ PRE-REGISTRATION**, **§ ARM C RULED**, **§ STANDING UNDER-COUNT REGISTER**, and the `⛔ CLOSED-BY-RULING 2026-08-29` block above | Arm C **RULED NULL — rule 3 does not ship.** `answer_schema` threading closed by ruling (**`P-M5`**). The 2026-08-01 figure register **recovered from a stash** and committed (**`P-V3`**). Six known instrument mis-counts open (five under, one over), listed and unfixed. |
 >
 > **They do not overlap and neither supersedes the other.** The red-team stream changes the
 > **tutor** (`teach-engine.ts`, `tutor-personas.ts`, the case legs); the marker-figure arm measures
@@ -226,7 +226,9 @@ This exists because the instrument's output is quoted as a rate, and every entry
 rate in a knowable direction that the rate itself cannot show. **A number from this instrument
 should not be quoted without a pointer to this register.** Sources: `P-M5(a)` (entries 1–2, banked
 2026-08-29) and the hand measurement over `docs/AFM_FIGURE_REGISTER_20260801.txt` (entries 3–5,
-same day).
+same day). Entry 6 is a **code read of the detector, not a measurement** — the ceiling is stated
+in `scripts/measure-marker-figures.ts:40–45` by the detector's own header, and is registered here
+because a ceiling written beside the code is not a ceiling attached to the number.
 
 | # | direction | mechanism | measured extent |
 |---|---|---|---|
@@ -235,14 +237,17 @@ same day).
 | 3 | **UNDER-counts** | `E3_DATE_CONTEXT` — `/(?:\d\s*\/\s*$)|(?:^\s*\/\s*\d)/`, a **date-component** rule — fires on any ratio the marker writes with a slash, dropping it from BOTH the numerator and the denominator, silently. | **17 of 17** exclusions in the recovered register are this rule, **all in B5b**, all the PPP inflation ratio `S0 × (1.045/1.020)^t`. No other exclusion rule fired at all. |
 | 4 | **UNDER-counts** | **T4 exempts on PRESENCE, not on attribution.** A figure in the candidate's answer text is attributed to the candidate even when the marker's own sentence asserts it flatly, with no cue — *"The comparison is clear … a difference of €0.438m in favour of the forward."* T4 is exact where the old keyword window was a guess, but *"the student also wrote this number"* and *"the marker is attributing it to the student"* are different claims, and they come apart. | **11 of 88** hand-read exemptions are endorsements (**12.5%**; upper bound 20/88 = 22.7% if every AMBIGUOUS is one). ⚠️ **NOT 11 sites** — 9 are E2b's `€0.438m` in one recurring sentence shape; three distinct (figure, requirement) shapes in the whole class. Corrected P1 on that corpus: **11/900 = 1.22%**, or 14/900 = 1.56% including the 3 already unowned. |
 | 5 | **UNDER-counts** | T4 cannot reach the **`X (not Y)`** shape where Y is the candidate's figure written in a form their own text does not contain — the marker renders their value differently from how they wrote it, so presence-matching misses it and the figure leaves the denominator as neither student-attributed nor asserted. | **2 instances, both E3a**: *"the futures price move in scenario 1 is only 0.55 (not 0.70)"* and *"in scenario 2 the move is 1.25 (not 1.10)"*. These are the ONLY 2 of the 126 that survive as unowned besides one self-computed quotient. |
+| 6 | **UNDER-counts** | **G3 is a 13-string literal n-gram, and it is the only reading of rule 2 the arm has.** `rule2Leaks` (`scripts/measure-marker-figures.ts:46–54`) lowercases the feedback and runs `includes()` over a fixed list (*"the model answer"*, *"the mark scheme"*, *"the reference"*, …). It detects **naming**, never **referring**: a marker that points the candidate at a document they do not hold *in its own words* — the PS pass's open Class C shape, *"nothing here to assess against the requirement to investigate information…"* — matches no string and scores clean. The detector's header states this ceiling; the reported rate does not carry the header with it. | **Not measured on this arm — direction known, extent unknown.** The quoted **4/160 (2.5%) shipped** and **1/160 (0.6%) arm C** are LITERAL hits only; no hand read of the 320 technical feedback strings has been done. The one place the same class WAS hand-read is the PS pass, where the paraphrase form ran **control 4/16 → ladder 9/16** while an n-gram detector reported it at zero — so the gap between the literal rate and the true rate is known to be capable of exceeding the literal rate itself. |
 
 **⚠️ The two directions do not cancel and must never be netted.** Entries 1, 3, 4 and 5 push the
 count DOWN; entry 2 pushes it UP. They act on different figures in different requirements, so a
 single reported rate is not "roughly right on average" — it is wrong in five specific,
 enumerable ways, and the register is what lets a reader say which.
+**Entry 6 is not in that netting at all** — it moves G3's leak rate, not the figure count, and the
+two metrics share no denominator. Do not add it to the five.
 
 **⚠️ Entry 4 is the one that bites a LIVE metric.** Entries 1 and 2 describe the retired 2026-07-30
-instrument. Entry 3 and entries 4–5 describe **the instrument the arm is running now**. P1 currently
+instrument. Entries 3, 4–5 and 6 describe **the instrument the arm is running now**. P1 currently
 reports the endorsement class as clean.
 
 **What would close each, recorded so nobody has to re-derive it — NOT proposed, NOT scheduled:**
@@ -250,7 +255,9 @@ reports the endorsement class as clean.
 owes GATE 27's own fixtures. 4 needs T4 to read the marker's SENTENCE for an attribution cue rather
 than the student's text for the value — a semantic test, and P-DB5/P-V2 both say a phrase table
 written from the same intuition will reproduce the error and report it as agreement, so the honest
-version is a hand-read sample per arm, not a detector. 5 is downstream of 4.
+version is a hand-read sample per arm, not a detector. 5 is downstream of 4. 6 has the SAME closure
+as 4 and the same trap: lengthening `RULE2_NGRAMS` is a phrase table (P-DB5), so it would raise the
+literal rate and still report the paraphrase class as zero.
 
 ### 🔴 OPEN — THREE THINGS THAT OUTLIVE THIS ARM
 
