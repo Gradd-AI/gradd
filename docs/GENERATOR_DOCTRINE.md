@@ -556,6 +556,55 @@ string the measurement is about at the centre of the measurement. The prompt is 
 (`buildPsSystemPrompt(paper, variant)`) taking a `promptVariant`, with the historical control pinned
 BYTE-IDENTICAL by fixture, so the refactor cannot silently reword the live prompt.
 
+### P-M4 — ONE OBSERVATION IN THE OPPOSITE DIRECTION, LOGGED NOT ACTED ON (2026-08-29)
+
+**P-M4's rule predicts that any instruction added to the feedback rules which itself names the
+referent RAISES the leak rate, because it primes what it discusses.** The marker-figure arm's
+`owned_figure` rule 3 (`buildTechnicalSystemPrompt`) adds **exactly one** mention of the referent
+to the feedback rules — *"a corrected figure you state must be one you can point to in the marking
+standard"* — and it was carried as a **guard metric** for precisely this reason, with the risk
+written into `case-marking.ts` before the run.
+
+**It went the other way.**
+
+| arm | feedback strings naming a banned referent (n-gram, G3) |
+|---|---|
+| `shipped` (control) | **4 / 160 — 2.5%** |
+| `owned_figure` (one added mention) | **1 / 160 — 0.6%** |
+
+**Fisher exact, two-sided: p = 0.3711. NOT SIGNIFICANT, and NOT A REFUTATION of P-M4.** Recorded
+because a result pointing the wrong way is worth more logged than discarded (P-T1's corollary),
+and because the next arm should test it deliberately rather than rediscover it.
+
+**Four reasons this is one observation and not evidence yet:**
+
+1. **DIFFERENT PASS, DIFFERENT REFERENT.** P-M4 was measured on the **PS** pass
+   (`judgeCaseMarking`), where the leaked referent is *"the descriptor"* and the demand for the
+   word sits in the BAND DEFINITIONS. Arm C is the **TECHNICAL** pass
+   (`judgeTechnicalMarking`), where the referent is *"the marking standard"* and the band
+   definitions do not name it. **P-M4's mechanism — the definitions above the rules create the
+   need — has no analogue here**, so the two are not the same experiment with a different sign.
+2. **DOSE, AND DIRECTION OF THE EDIT.** P-M4's failing arms *appended*: the judgement/feedback
+   split took `descriptor` 9 → 22 mentions and doubled the leak; the P-T2 half restated rule 2
+   AND added a carve-out and hit z = −3.65. Arm C **REPLACES** rule 3's demand rather than
+   appending to it — the P-T2-compliant shape — and adds one mention, not thirteen. **A result
+   consistent with P-T2 is not a result against P-M4.**
+3. **THE MECHANISM MAY BE SUBTRACTIVE, NOT ADDITIVE.** Old rule 3 demanded *"the correct figure"*
+   — a number the marker frequently cannot own — so it had to invent one and then, under rule
+   2's class ban, could not say where it came from. Naming a satisfiable act may have removed the
+   *pressure* to gesture at the source. If that is the mechanism, the arm did not add a priming
+   mention so much as remove a reason to reach for one, and P-M4 is untouched.
+4. ⚠️ **THE DETECTOR CANNOT SUPPORT THE CLAIM ANYWAY.** G3 is **n-gram only** — thirteen literal
+   phrases — and the PS pass's still-open **Class C** defect is a *paraphrase* the same class of
+   detector cannot see. **A fall in LITERAL naming is not a fall in leaking**, and 4 → 1 on a
+   thirteen-phrase list is four events against one. Do not quote 2.5% → 0.6% as a leak
+   improvement.
+
+**What the next arm should do:** if the referent-priming question is worth settling on the
+technical pass, run it as its own arm with a **paraphrase-tolerant detector** and a
+**pre-registered direction**, not as a guard metric on an arm about something else. The dose
+(one mention, replacing vs appending) is the variable to hold or vary deliberately.
+
 ## P-M5 — BEFORE THREADING A FACT AT A DEFECT, CHECK THE FACT CONTAINS THE THING (ruled 2026-08-29)
 
 **The question.** Does passing `answer_schema` to `judgeTechnicalMarking` reduce the rate at which
