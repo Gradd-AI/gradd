@@ -66,6 +66,13 @@ ClaudeSend*.txt
 # tutor red-team run artifacts (scripts + README committed; transcripts/verdicts are not)
 docs/redteam/*
 !docs/redteam/README.md
+# CLASSIFIED SUMMARIES DO travel. The raw transcripts are large, prose-heavy and paper-specific, so
+# they stay out — but that cost a full BEFORE re-run on 2026-08-24, because the 2026-08-23 baseline
+# lived only on the machine that produced it and could not be re-read under one rubric. The summary
+# is small, is what a later comparison actually needs (counts + rubric + target ids + n), and is the
+# thing doctrine cites. See docs/redteam/summaries/README.md.
+!docs/redteam/summaries/
+!docs/redteam/summaries/**
 
 # ACCA official PDFs — re-fetchable evidence, never redistributed in-repo (copyright/brand)
 official_acca_pdfs/

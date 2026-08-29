@@ -17,7 +17,17 @@
 
 import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
-import { EZRA_AFM_SYSTEM, DIGNITY_ON_DISTRESS } from './tutor-personas';
+// STAGE 6 (2026-08-24): the case surface uses the SHARED persona selector. `systemFor` is the one
+// definition of each paper's persona — importing it is what makes it structurally impossible for
+// the drill and case surfaces to drift about what they forbid. See `caseSystemFor` below.
+import { systemFor, caseRevealSystemFor } from './tutor-personas';
+// DIVERGENCE #2 (2026-08-24): the ENVELOPE. Imported, never transcribed — `GAP_VERDICT_FORMAT` is
+// the ONLY place the output shape is stated and `hintOpeningInstruction` the only place the
+// opening is, so the drill and case surfaces cannot drift about either. See `CASE_HINT_OPENING`.
+import {
+  GAP_VERDICT_FORMAT, parseGapVerdict, safeLabel, nothingCreditable, type GapVerdict,
+} from './gap-verdict';
+import { hintOpeningInstruction, type HintOpeningVariant } from './hint-opening';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,10 +40,52 @@ export interface ClientSessionState {
   // enc so the client cannot manipulate it to skip the cap increment.
 }
 
-// The decrypted payload — both fields are tamper-proof inside AES-256-GCM.
+// The decrypted payload — every field is tamper-proof inside AES-256-GCM.
 export interface EncPayload {
   answer: string;
   counted: boolean; // true once the DB increment for this item has been applied
+  /**
+   * DIVERGENCE #5 (2026-08-28) — `creditable === 0` carried forward to the REVEAL leg.
+   *
+   * ⚠️ WHY A CARRIER IS NEEDED AT ALL, AND WHY IT IS THIS ONE. The reveal branch of
+   * `runTeachTurn` does NOT call `call2_diagnose` — it fires on `wantsReveal && missCount >= 2`
+   * and reads `lastDiagnosis` from prior state. So there is NO envelope on a reveal turn and
+   * `creditable` cannot be recomputed there without a second model call on the one leg whose
+   * latency the student is already waiting on.
+   *
+   * The value is produced on the ATTEMPT turn and must survive to the reveal turn. It rides the
+   * sealed blob rather than `acca_case_progress` because that is a column, and a column is a
+   * hand-applied migration to production for a measurement field. Direct precedent: the DRILL
+   * route's own `EncPayload.plainAsked` is a sticky per-session flag carried exactly this way.
+   *
+   * ⚠️ SEALED, NOT PLAINTEXT, AND THAT IS NOT DECORATION. `ClientSessionState`'s other fields are
+   * plaintext and the client round-trips them; a plaintext flag here would let a caller set
+   * "nothing creditable" on someone else's reveal and suppress the praise demand at will. Same
+   * reasoning the module already gives for keeping `counted` inside `enc`.
+   *
+   * ⚠️ STICKY ACROSS THE SESSION, AND THE FIRST BUILD GOT THIS BACKWARDS — the positive control
+   * caught it and the 120-turn arm could not have. It was last-write, on the argument that the
+   * flag must describe the same text `call4_reveal` receives as `attempt`. That argument is
+   * wrong, because it scopes the flag to a FRAGMENT: `lastRealAttempt` is the student's most
+   * recent MESSAGE, and on the positive-control target that message is a two-line extension of a
+   * complete, correct answer. `call2_diagnose` sees only that turn's message, so it read
+   * `creditable: 1` on miss 1 and `creditable: 0` on miss 2 — 10/10 — and the reveal would have
+   * opened "nothing here earns credit" at a student who had just produced all four correct
+   * calculations. The REVEAL'S REFERENT IS THE REQUIREMENT, not the last message.
+   *
+   * THREE STATES, and `undefined` is NOT `false`:
+   *   undefined — no attempt turn has been adjudicated in this session (legacy blob, or a reveal
+   *               reached without one). Does NOT fire the conditioned opening.
+   *   false     — attempts were adjudicated and none earned credit. Fires it.
+   *   true      — some attempt earned credit. Never fires it, for the rest of the session.
+   *
+   * ⚠️ STICKY IN ONE DIRECTION ONLY, and the direction is chosen by which error is survivable.
+   * `resolveNothingEstablished` can only ever move a turn toward NOT-adjudicated, because there
+   * the unsafe direction is granting credit. Here the consequence is inverted — this flag
+   * SUPPRESSES a praise demand — so the safe direction is the opposite one: once credit is seen
+   * it latches on, and the worst a false `true` can do is leave today's behaviour in place.
+   */
+  everCreditable?: boolean;
 }
 
 // ── Encryption ────────────────────────────────────────────────────────────────
@@ -44,10 +96,13 @@ function getKey(): Buffer {
   return createHash('sha256').update(secret).digest();
 }
 
-export function sealPayload(answer: string, counted: boolean): string {
+export function sealPayload(answer: string, counted: boolean, everCreditable?: boolean): string {
   const key  = getKey();
   const iv   = randomBytes(12);
-  const body = JSON.stringify({ answer, counted } satisfies EncPayload);
+  // ⚠️ THE KEY IS OMITTED WHEN THE STATE IS "NO CLAIM", never written as `false`. undefined and
+  // false are DIFFERENT states here (see EncPayload.everCreditable), and JSON.stringify drops an
+  // undefined value — which is exactly the encoding wanted.
+  const body = JSON.stringify({ answer, counted, everCreditable } satisfies EncPayload);
   const cipher = createCipheriv('aes-256-gcm', key, iv);
   const enc  = Buffer.concat([cipher.update(body, 'utf8'), cipher.final()]);
   const tag  = cipher.getAuthTag();
@@ -64,7 +119,20 @@ export function openPayload(ciphertext: string): EncPayload {
   decipher.setAuthTag(tag);
   const plain = decipher.update(dat).toString('utf8') + decipher.final('utf8');
   try {
-    return JSON.parse(plain) as EncPayload;
+    // ⚠️ NORMALISED, NOT SPREAD. A blob sealed before `nothingCreditable` existed has no such key,
+    // and an older one may carry a value of any shape. `=== true` is the only reading that makes
+    // absent and malformed BOTH mean "no claim" — the safe direction, since the flag suppresses a
+    // praise demand and the failure it would cause is opening an earned reveal as though the
+    // student's work had been worthless.
+    const o = JSON.parse(plain) as Record<string, unknown>;
+    return {
+      answer:  typeof o.answer === 'string' ? o.answer : plain,
+      counted: o.counted === true,
+      // ⚠️ THREE STATES PRESERVED. Anything that is not a real boolean becomes undefined ("no
+      // claim") rather than false — collapsing them would make a legacy or malformed blob assert
+      // that nothing the student wrote earned credit.
+      everCreditable: typeof o.everCreditable === 'boolean' ? o.everCreditable : undefined,
+    };
   } catch {
     // Backward compat: sessions sealed before this deploy encrypted a raw string.
     return { answer: plain, counted: false };
@@ -127,6 +195,68 @@ function isTeachRequest(input: string): boolean {
 const REVEAL_ENABLED = process.env.APM_EARNED_REVEAL === '1';
 const COMPLETENESS_GATE_ENABLED = process.env.APM_COMPLETENESS_GATE === '1';
 
+// ── DIVERGENCE #2 — the CASE hint opening's arm, env-selected ────────────────
+// `conditional` (default) = the `creditable` arm is live. `shipped` = the praise-first opening
+// unconditionally, i.e. today's behaviour.
+//
+// ⚠️ SEPARATE FROM THE DRILL ROUTE'S `TUTOR_HINT_OPENING`, DELIBERATELY. One variable per switch:
+// sharing the env var would move BOTH surfaces whenever either is measured, and a case arm that
+// silently re-words the drill prompt confounds the drill's own baseline.
+//
+// ⚠️ THIS EXISTS SO BOTH ARMS RUN ON ONE SERVER FROM ONE BUILD. The stage-6 measurement had to
+// check out two SHAs and reboot between arms; the redteam driver already PRINTS the opening
+// variant it ran under, so an env-selected arm is recorded in the capture and a run can never be
+// read against the wrong prompt.
+const CASE_HINT_OPENING = (process.env.TUTOR_CASE_HINT_OPENING ?? 'conditional') as HintOpeningVariant;
+
+// ── DIVERGENCE #3 — the EQUIVALENCE CHECK's scope, env-selected ──────────────
+// `narrative` (default) = the check asks whether the claim is SUBSTANTIVELY equivalent, numerical
+// OR narrative. `shipped` = the numeric-only form, i.e. today's behaviour.
+//
+// The shipped form asks whether "the student's NUMERICAL RESULT is MATHEMATICALLY equivalent to
+// the model's" on a surface whose requirements are overwhelmingly discursive; the drill route has
+// asked about "the student's claim (numerical OR narrative)" since the grounding work. This
+// variant closes that divergence.
+//
+// 📐 **MEASURED 2026-08-25 — NULL, AND THE PREDICTION THAT MOTIVATED IT WAS WRONG.** The theory
+// was P-T4's: a narrative answer has no numerical result, so the check cannot return equivalent
+// and the only branch left open is "name an error". **It does not happen.** 80 legs on two
+// requirements whose model answers contain ZERO DIGITS — the strongest form of the trap — and
+// BOTH arms emitted the correct-sentinel on 40/40, the only distinct label observed either side.
+// The model reads the check's intent ("only name an error if the answer is genuinely WRONG")
+// rather than being trapped by its numeric framing.
+//
+// ⚠️ SO THIS IS A CONVERGENCE, NOT A FIX. It is safe — measured non-inferior on every cell — and
+// it must NOT be described as fixing false-positive diagnosis, because no false positive was
+// found for it to fix. ⚠️ CEILING: the BEFORE arm was already saturated at 40/40, so a benefit
+// could not have been detected had one existed. Untested region: an answer that is correct but
+// THIN, or worded so unusually that equivalence is genuinely arguable. On a partial answer a
+// named gap is CORRECT, so the false-positive endpoint only has meaning on a fully correct one —
+// which is exactly where the ceiling sits.
+// Record: docs/redteam/summaries/2026-08-25-case-divergence-3-equivalence-scope.md
+export type CaseEquivVariant = 'narrative' | 'shipped';
+const CASE_EQUIV = (process.env.TUTOR_CASE_EQUIV ?? 'narrative') as CaseEquivVariant;
+
+// ── DIVERGENCE #4 — the CONFIRM leg's "equally valid" endorsement, env-selected ──
+// `conditioned` (default) = the endorsement is demanded for PRESENTATION differences and a
+// different job is demanded where an alternative FIGURE or METHOD is asserted. `shipped` =
+// today's unconditional "if their convention differs, say it's equally valid".
+//
+// ⚠️ NOT A PORT OF THE DRILL ROUTE'S WORDING, DELIBERATELY. That arm is written as a PROHIBITION
+// ("never call a wrong or unscaled form 'equally valid' to protect their mood"), and P-T2/P-T4
+// both say a prohibition layered over a standing demand redirects the output rather than removing
+// it — the demand here being "say it's equally valid", which the shipped string issues
+// unconditionally. So the DEMAND is conditioned instead: the endorsement is owed for presentation,
+// and where a different figure or method is claimed the leg is asked to do something else it CAN
+// do. Nothing is forbidden, so there is no unwanted output being named and primed.
+// ⚠️ DEFAULT IS `shipped` — DIVERGENCE #4 IS BUILT AND DELIBERATELY INERT (2026-08-25).
+// It was PARKED before measurement: its endpoint lives on the confirm leg, which the polarity
+// surface cannot reach, so it is a harness build before it is a measurement. Merging the branch
+// must not ship an unmeasured prompt change to a live teaching surface just because it rode along.
+// Flip to `conditioned` when the confirm-leg harness and its arm exist.
+export type CaseConfirmVariant = 'conditioned' | 'shipped';
+const CASE_CONFIRM = (process.env.TUTOR_CASE_CONFIRM ?? 'shipped') as CaseConfirmVariant;
+
 const REVEAL_PHRASES = [
   'show me the full answer',
   'show me the answer',
@@ -158,75 +288,69 @@ function isCorrectVerdict(diagnosis: string): boolean {
 
 // ── Ezra persona ──────────────────────────────────────────────────────────────
 
-// ── THE CASE PERSONA WAS HARDCODED TO APM (fixed 2026-08-23, stage 5) ────────
-// This module contained the string `paper` ZERO times, and this constant — the system prompt for
-// every conversational leg on the case surface — opens "You are Ezra, an APM tutor". There are
-// **20 published AFM case requirements**, so every one of them was tutored by a persona that
-// introduces itself as an APM tutor and carries APM's diagnostic frame (describe-not-apply,
-// application-vs-evaluation), which `EZRA_AFM_SYSTEM`'s own header says "does NOT transfer" and
-// must be "replaced wholesale, never blended".
+// ── STAGE 6 (2026-08-24): THE CASE SURFACE ADOPTS THE SHARED PERSONA ─────────
+// `EZRA_APM_CASE_SYSTEM` IS DELETED. It was the stage-5 rename of the module's one hardcoded
+// persona, held byte-for-byte while AFM was routed away from it. It is gone because there is no
+// longer anything case-specific in it to hold: it was `EZRA_SYSTEM`'s first 979 characters —
+// header, register, diagnostic frame, requirement-demands line, scepticism line, all
+// byte-identical — followed by the GUARDRAIL line and (since 2026-08-23) DIGNITY_ON_DISTRESS.
+// The entire remaining difference was the six guardrail blocks this stage adopts, so keeping a
+// separate constant would mean maintaining a second copy of a string with zero divergence.
 //
-// ⚠️ RENAMED, NOT REWRITTEN. The VALUE is byte-for-byte what it was; only the name now states its
-// scope. APM's case prompt must not move in this stage — this is a correctness fix for AFM, not a
-// recalibration of APM, and mixing the two would make neither attributable.
+// WHAT THE CASE PATH GAINS — the six blocks it never received:
+//   NO_INVENTED_NUMBERS · NO_COMPUTED_OUTPUTS · NO_INVENTED_REVEAL_REFUSAL
+//   GROUNDING_DISCIPLINE · RETRACTION_PROTOCOL · METHOD_FITS_THE_GIVEN_INPUTS
+// (DIGNITY_ON_DISTRESS shipped alone on 2026-08-23 and is already live on both papers.)
 //
-// ⚠️ WHY NOT `systemFor(paper)` FROM tutor-personas.ts. That returns the SHARED `EZRA_SYSTEM`,
-// which is this string PLUS seven guardrail blocks the case path never received
-// (NO_INVENTED_NUMBERS, NO_COMPUTED_OUTPUTS, NO_INVENTED_REVEAL_REFUSAL, DIGNITY_ON_DISTRESS,
-// GROUNDING_DISCIPLINE, RETRACTION_PROTOCOL, METHOD_FITS_THE_GIVEN_INPUTS). Adopting it would
-// change APM's live prompt and is STAGE 6, with its own measurement — it cannot be a byte-diff.
-export const EZRA_APM_CASE_SYSTEM =
-  'You are Ezra, an APM tutor who knows exactly how ACCA APM is marked. ' +
-  'Register: peer-to-peer — the student is a competent professional failing for diagnosable, ' +
-  'fixable reasons, not through lack of knowledge. ' +
-  'Diagnostic frame: APM candidates know the models. They lose marks on APPLICATION ' +
-  '(failing to deploy the model on the specific scenario facts) and EVALUATION ' +
-  '(failing to give a supported professional judgement when the verb demands one), ' +
-  'and by stopping at description when the requirement demanded judgement. ' +
-  // The persona itself used to name the taxonomy. Removed 2026-08-01 with the rest of the fence —
-  // an instruction elsewhere not to say "intellectual level 3" loses to a persona that says the
-  // model should reason in those terms.
-  'Use what the requirement demands (supplied per turn) to orient the student on what the ' +
-  'question is really asking — not to deliver a verdict on them. Never name an internal grading ' +
-  'taxonomy to the student: no intellectual levels, no AO framing, no command-verb labels. ' +
-  'Professional scepticism — questioning assumptions, naming commercial risks, ' +
-  'identifying constraints the model surfaces — is a substantive analytical move ' +
-  'you teach explicitly, not a soft add-on. ' +
-  'GUARDRAIL: sharp about the work, never about the person. Never demoralising. ' +
-  "No generic praise. Never complete the student's answer. " +
-  // ── DIGNITY_ON_DISTRESS, SHIPPED ALONE (2026-08-23), AHEAD OF STAGE 6 ───────
-  // ⚠️ THIS IS A WELLBEING GAP, NOT A FABRICATION ONE, AND IT IS DELIBERATELY NOT WAITING.
-  // A student in real distress on the case path had NO handling at all: no dignity clause, so
-  // the leg could answer "I give up, I'm failing" with a commercial nudge, a reveal offer, or a
-  // wall. The other six shared blocks bear on invention and grounding and are barred on a
-  // fabrication measurement (stage 6); holding this one behind a measurement it has nothing to
-  // do with would be the wrong trade — there is no plausible mechanism by which telling the
-  // model to be kind to a panicking student makes it invent more.
-  //
-  // AFM already had it from stage 5 (EZRA_AFM_SYSTEM composes it), so this closes the APM half
-  // and the block is now live on BOTH papers of the case surface.
-  //
-  // Imported, never transcribed: one definition, so the two surfaces cannot drift in what
-  // "distress" means or what is forbidden on that turn.
-  DIGNITY_ON_DISTRESS;
+// ⚠️ THIS MOVES APM'S LIVE CASE PROMPT. It is NOT a byte-diff and stage 5 refused to do it for
+// that reason. AFM does not move: `caseSystemFor('AFM')` returned `EZRA_AFM_SYSTEM` before this
+// change and returns it after, so only the APM half is under measurement.
+//
+// ⚠️ ORDERING CHANGED, AND IT IS THE DESIGNED ORDER. The blocks compose in `EZRA_SYSTEM`'s
+// sequence, which ends on METHOD_FITS_THE_GIVEN_INPUTS — deliberately the ANCHOR position
+// (most-recently-read wins; see its comment in tutor-personas.ts). DIGNITY_ON_DISTRESS therefore
+// moves from LAST on the APM case prompt to mid-block. That is the shipped drill configuration,
+// so case now matches drill rather than diverging from it, but it is a real change to a clause
+// that shipped one day ago and it is recorded here rather than left to be discovered.
+//
+// ⚠️ THE ADOPTED BLOCKS CARRY DRILL VOCABULARY, AND IT IS NOT FIXED HERE. NO_INVENTED_NUMBERS
+// says "the drill did not supply" and "the drill's OWN inputs"; METHOD_FITS_THE_GIVEN_INPUTS
+// and NO_COMPUTED_OUTPUTS illustrate with Black-Scholes specifics (d₁/d₂/N(d), "divide the share
+// price and strike by the number of options") that no APM case requirement involves. Rewording
+// them to be surface-neutral would move the DRILL prompt too and invalidate every drill
+// measurement they were tuned on — so the words stay as they are and the cost is recorded.
+// ⚠️ GROUNDING_DISCIPLINE NAMES A BLOCK SHAPE THE CASE PATH NEVER EMITS. It binds on "a
+// CHECKLIST, FACTS, or CONVENTIONS block"; the case path's `groundedFacts` is
+// `renderDiscriminants(...)`, which emits "CODE-OWNED CHOICES" / "CONTRADICTION FOUND" — and on
+// the 34 of 38 published requirements with no registered discriminant it returns the EMPTY
+// STRING, so the block's antecedent is false and it cannot bind at all.
 
 /**
  * The persona for a case turn, chosen by the case's paper.
  *
- * AFM routes to the SHARED `EZRA_AFM_SYSTEM` — the paper-correct register, whose own header
- * states the APM diagnostic frame does not transfer. APM keeps the local string above, unchanged.
+ * ⚠️ THIS NOW DELEGATES TO `systemFor` AND HAS ZERO DIVERGENCE FROM IT. Both papers return the
+ * shared persona from tutor-personas.ts — the blocks are IMPORTED THROUGH ONE DEFINITION, never
+ * transcribed, so the drill and case surfaces cannot drift about what they forbid.
+ * `scripts/test-case-persona.ts` pins the equality for both papers, so a divergence cannot be
+ * introduced silently.
  *
- * ⚠️ CAVEAT, RECORDED BECAUSE IT IS UNMEASURED: `EZRA_AFM_SYSTEM` was written for the DRILL
- * surface. "Correct paper" is not the same as "written for cases" — it is unambiguously better
- * than tutoring an AFM candidate as though they were sitting APM, but nothing has measured it on
- * the case surface. If AFM case behaviour is ever assessed, that is the first thing to question.
+ * KEPT AS A NAMED SEAM RATHER THAN DELETED, for one reason: the case surface has two open,
+ * recorded caveats that the drill surface does not (below), and a case-specific persona fix — if
+ * either is ever acted on — lands here as a one-line change instead of a re-architecture. The
+ * fixture is what stops the seam becoming an accidental fork.
+ *
+ * ⚠️ CAVEAT, RECORDED BECAUSE IT IS UNMEASURED: BOTH personas were written for the DRILL surface.
+ * For AFM this has been true since stage 5; as of stage 6 it is true for APM as well, since APM's
+ * case prompt is now the drill persona verbatim. "Correct paper" is not "written for cases", and
+ * the drill vocabulary noted above is the visible edge of that. Nothing has measured either
+ * persona on the case surface beyond the stage-6 arm.
  *
  * ⚠️ `paper` is safe to trust here: `app/api/acca/case/turn/route.ts` fetches the case with
  * `.eq('paper_code', paper)`, so a case that does not belong to the requested paper is never
  * loaded — the persona cannot end up scoped to a paper the content is not from.
  */
 export function caseSystemFor(paper: string): string {
-  return paper === 'AFM' ? EZRA_AFM_SYSTEM : EZRA_APM_CASE_SYSTEM;
+  return systemFor(paper);
 }
 
 // ── Anthropic client ──────────────────────────────────────────────────────────
@@ -280,7 +404,7 @@ async function call2_diagnose(
   // and exactly wrong for a direction contradiction — the one finding the student MUST be told.
   // Carried in its own channel so the suppression does not apply to it.
   groundedFacts = '',
-): Promise<string> {
+): Promise<{ label: string; verdict: GapVerdict | null }> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
   const msLine = markScheme
@@ -288,22 +412,27 @@ async function call2_diagnose(
     : '';
   const res = await anthropic.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 40,
+    // 40 → 160 FOR THE ENVELOPE. The old cap fitted a bare 12–15 word label with nothing to spare;
+    // a JSON object carrying the same label plus two integer fields does not fit in it, and a
+    // truncated body fails `parseGapVerdict` on every turn — the arm would measure a parser that
+    // never parses. The LABEL's own 12–15 word limit is unchanged and still stated in the format.
+    max_tokens: 160,
     system:
       'You are a precision gap-labeller. Output ONE short label — hard limit 12–15 words, count them — ' +
       "that names what the student did wrong, using the student's error as the referent. " +
-      'EQUIVALENCE CHECK — do this before naming any error: ' +
-      'The model answer and student answer may use different but equivalent sign conventions ' +
-      '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ' +
-      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
-      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
-      'A correct answer in a different format is NOT an error and must NOT be flagged. ' +
+      caseEquivalenceCheck(CASE_EQUIV) +
       "If the student's answer is correct, output: \"answer correct — convention differs from model only\" " +
       'ABSOLUTE RULES: ' +
       '(1) NEVER state the correct answer or any corrected fact, even implicitly. ' +
       '(2) Name the faulty mental model or wrong operation the student applied. ' +
       '(3) Output ONLY the label — no prose, no prefix, no explanation. ' +
-      'BAD (forbidden): any phrase that states the correct answer.',
+      'BAD (forbidden): any phrase that states the correct answer. ' +
+      // THE ENVELOPE. Rule (3) above says "output ONLY the label", which the format block now
+      // overrides — it is stated LAST so the most-recently-read instruction is the one that
+      // describes the actual output shape. The "answer correct — convention differs from model
+      // only" sentence above becomes the LABEL inside the object; `isCorrectVerdict` therefore
+      // runs on `safeLabel(...)`, never on the raw body, or a correct answer reads as a miss.
+      GAP_VERDICT_FORMAT,
     messages: [
       {
         role: 'user',
@@ -321,10 +450,142 @@ async function call2_diagnose(
       },
     ],
   });
-  return extractText(res);
+  const raw = extractText(res);
+  const verdict = parseGapVerdict(raw);
+  // NO RETRY, DELIBERATELY — unlike the drill route, which wraps this call in `withParseRetry`
+  // because `derived` is wired to production behaviour there and a parse failure would drop a
+  // live guard. Here the ONLY wired field is `creditable`, and an absent value reads as "no
+  // claim" → the shipped opening → today's behaviour exactly. Retrying would spend four calls to
+  // recover a field whose failure is already safe.
+  //
+  // ⚠️ BUT THE PARSE RATE IS THE ARM'S VALIDITY CONDITION, so it is observable rather than
+  // silent: a run in which nothing parses would show "no effect" and be indistinguishable from a
+  // measured null result. Count these lines in the server log when reading any measurement.
+  // ⚠️ OBSERVATIONAL ONLY — nothing here is read by any branch. `label` and `correct` were added
+  // for divergence #3's arm (2026-08-25): its endpoint is whether this call returns the
+  // correct-sentinel or manufactures a gap on an answer that is genuinely right, and without the
+  // label a "no effect" reading cannot be told from the sentinel never being reachable. Truncated
+  // because a gap label is capped at 12–15 words and a runaway body would flood the log.
+  console.log(JSON.stringify({
+    at: 'case_gap_verdict',
+    parsed: verdict !== null,
+    creditable: verdict?.creditable ?? null,
+    derived: verdict?.derived ?? null,
+    correct: isCorrectVerdict(safeLabel(verdict, raw)),
+    label: safeLabel(verdict, raw).slice(0, 160),
+  }));
+  return { label: safeLabel(verdict, raw), verdict };
+}
+
+/**
+ * DIVERGENCE #3 — the equivalence check that call2_diagnose runs before it will name any error.
+ *
+ * Pure and exported so the assembled bytes are pinnable: the claim is that `shipped` is
+ * byte-identical to what this engine sent before the variant existed, so anything the arm measures
+ * is attributable to the narrative clause alone.
+ *
+ * ⚠️ THE GROUNDING CLAUSE IS DELIBERATELY NOT PORTED. The drill route's version also says "AND
+ * (when a GROUNDING block is supplied below) a narrative claim may use different WORDING than a
+ * checklist point or fact". This engine's grounding channel is `renderDiscriminants`, which is
+ * EMPTY on 34 of 38 published requirements — so that clause would be inert on almost every turn
+ * while adding a second moving part to the arm. One variable: numeric-only → numeric-or-narrative.
+ */
+export function caseEquivalenceCheck(variant: CaseEquivVariant): string {
+  const HEAD =
+    'EQUIVALENCE CHECK — do this before naming any error: ' +
+    'The model answer and student answer may use different but equivalent sign conventions ' +
+    '(standard−actual vs actual−standard), A/F labelling, table layouts, or arithmetic orderings. ';
+  if (variant === 'shipped') {
+    return (
+      HEAD +
+      "Check whether the student's numerical result is mathematically equivalent to the model's. " +
+      'Only name an error if the answer is genuinely WRONG — not merely presented in a different convention. ' +
+      'A correct answer in a different format is NOT an error and must NOT be flagged. '
+    );
+  }
+  return (
+    HEAD +
+    "Check whether the student's claim — numerical OR narrative — is substantively equivalent to " +
+    "the model's, before concluding it is wrong. " +
+    'Only name an error if the answer is genuinely WRONG — not merely presented in a different ' +
+    'convention or wording. ' +
+    'A correct answer in a different format or phrasing is NOT an error and must NOT be flagged. '
+  );
+}
+
+/**
+ * DIVERGENCE #4 — the confirm leg's treatment of a convention that differs from the model.
+ *
+ * `shipped` demands the "equally valid" endorsement UNCONDITIONALLY, so a student who reached the
+ * right conclusion by a method the requirement does not support is told their method is equally
+ * valid — the leg has no other branch available to it.
+ *
+ * `conditioned` narrows the endorsement to PRESENTATION (layout, labelling, ordering) and, where
+ * the answer asserts an alternative FIGURE or METHOD, demands a different and satisfiable job:
+ * say plainly whether it holds against what the requirement demanded.
+ *
+ * ⚠️ DEMAND-FORM, NOT PROHIBITION-FORM — see `CASE_CONFIRM`. The drill route's equivalent arm ends
+ * with "never call a wrong or unscaled form 'equally valid' to protect their mood". That sentence
+ * NAMES the unwanted output, which P-M4 measured as priming it, and it sits downstream of a demand
+ * it cannot repeal. Here the demand itself is split, so on the alternative-method branch the
+ * "equally valid" instruction is never issued in the first place and there is nothing to forbid.
+ */
+export function caseConfirmConvention(variant: CaseConfirmVariant): string {
+  if (variant === 'shipped') {
+    return "If their convention differs from the usual model, say it's equally valid. ";
+  }
+  return (
+    'If their PRESENTATION differs from the usual model — layout, labelling, ordering, the shape ' +
+    "of the working — say it's equally valid, because it is. If instead they have used a " +
+    'different FIGURE or a different METHOD from the one the requirement demanded, say plainly ' +
+    'whether that alternative holds and what it turns on. '
+  );
 }
 
 // ── CALL 3: Hint (first miss) ─────────────────────────────────────────────────
+
+/**
+ * The case hint leg's OPENING instruction. Pure, exported so the assembled bytes are pinnable —
+ * the claim this whole divergence rests on is "the non-creditable path is byte-identical to what
+ * ships today", and a claim about a string that only exists inside an async model call cannot be
+ * tested.
+ *
+ * PRECEDENCE: CONTRADICTION → NOTHING-CREDITABLE → SHIPPED.
+ *
+ * ⚠️ THE CONTRADICTION ARM STAYS FIRST AND BYTE-IDENTICAL. It is the only arm on this surface with
+ * a measured baseline (4/20 → 12/20 with the fence on diagnose alone) and it fires on a CODE-OWNED
+ * finding, which outranks a model-reported field. Reordering would silently re-word the one
+ * opening whose rate is known — the same precedence rule `hint-opening.ts` applies between its own
+ * (b) and (c) arms.
+ *
+ * ⚠️ `nothingEstablished` IS PASSED HARD-FALSE, BY DESIGN, NOT OVERSIGHT. `derived` is parsed off
+ * the envelope and deliberately NOT wired here: its (b) arm is numeric-shaped ("the figure is
+ * unchecked", "put their reasoning on the page") and would misdescribe a discursive case
+ * requirement entirely. Wiring both fields at once would also buy exactly the N-way
+ * unattributability P-T4 warns about — this moves ONE variable, `creditable`.
+ *
+ * ⚠️ `.trimEnd()` IS LOAD-BEARING. Every `hintOpeningInstruction` arm ends with a trailing space
+ * and the caller's tail already begins with one; without the trim every case turn gains a double
+ * space — a silent one-character edit to a live prompt, made while measuring that prompt.
+ */
+export function caseHintOpening(
+  variant: HintOpeningVariant,
+  hasContradiction: boolean,
+  nothingCreditableNow: boolean,
+): string {
+  if (hasContradiction) {
+    return (
+      'First miss, and the answer is on the WRONG SIDE of a settled choice stated above. ' +
+      'Do NOT open by crediting them with that choice — they did not make it. Say plainly ' +
+      'which way round it actually goes and why, then give one next move. If something ' +
+      'else in their work is genuinely right you may say so, but never the thing the ' +
+      'contradiction names.'
+    );
+  }
+  // IMPORTED, never transcribed: `hint-opening.ts` is the one place the opening is stated, so the
+  // drill and case surfaces cannot drift about what it asks for.
+  return hintOpeningInstruction(variant, false, nothingCreditableNow).trimEnd();
+}
 
 async function call3_hint(
   question: string,
@@ -346,6 +607,16 @@ async function call3_hint(
   /** Case paper, for persona routing only. Defaults to 'APM' so any caller that does not pass it
    *  gets a byte-identical prompt to before this parameter existed. See caseSystemFor. */
   paper = 'APM',
+  /**
+   * DIVERGENCE #2 — nothing in the answer earns credit against THIS requirement
+   * (`creditable === 0` on the parsed envelope).
+   *
+   * Defaulted FALSE so every existing caller, and every turn whose envelope did not parse, gets
+   * the shipped opening and a byte-identical prompt. Absent must mean "no claim", never "nothing
+   * creditable": this arm SUPPRESSES the praise demand, and the failure it would cause is telling
+   * a student who did good work that there was nothing worth leading with.
+   */
+  nothingCreditableNow = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   const gfLine = groundedFacts ? `${groundedFacts}\n` : '';
@@ -378,15 +649,7 @@ async function call3_hint(
           // from. It was not ignoring the fence; it was obeying a stronger instruction. Where code
           // has established a contradiction there is no opening credit to give on that axis, so
           // the prompt stops asking for it.
-          (groundedFacts.includes('CONTRADICTION FOUND')
-            ? 'First miss, and the answer is on the WRONG SIDE of a settled choice stated above. ' +
-              'Do NOT open by crediting them with that choice — they did not make it. Say plainly ' +
-              'which way round it actually goes and why, then give one next move. If something ' +
-              'else in their work is genuinely right you may say so, but never the thing the ' +
-              'contradiction names.'
-            : 'First miss. Lead with the ONE specific thing they got right — name the real move, ' +
-              'not vague praise — then name the single sharpest gap (just one, not a list) and ' +
-              'one next move.') +
+          caseHintOpening(CASE_HINT_OPENING, groundedFacts.includes('CONTRADICTION FOUND'), nothingCreditableNow) +
           ' Punchy and conversational, 2 sentences, like a tutor in their corner, not a ' +
           "structured breakdown. Don't state the answer.",
       },
@@ -486,8 +749,9 @@ async function call3_confirm(
           // taxonomy to the student"), 240 lines apart. The values are no longer in the prompt,
           // so the only way to obey it was to invent one.
           'Say briefly which part of what the requirement demanded the answer actually hit, and ' +
-          'why it holds / what puts it in the top band. If their convention ' +
-          "differs from the usual model, say it's equally valid. Do NOT restate, re-derive, or " +
+          'why it holds / what puts it in the top band. ' +
+          caseConfirmConvention(CASE_CONFIRM) +
+          'Do NOT restate, re-derive, or ' +
           'quote back their figures or workings — they already wrote them; refer to what they did ' +
           "in words, not numbers. Don't mark it as if it fell short.",
       },
@@ -655,7 +919,17 @@ async function call_warm(
 
 // ── CALL 4: Earned reveal (redesign item 3) ───────────────────────────────────
 // ⚠️ THIS IS THE ONLY PLACE THE STORED model_answer IS SHOWN TO THE STUDENT. ⚠️
-const REVEAL_SYSTEM =
+//
+// THE LOCAL `REVEAL_SYSTEM` LITERAL IS DELETED (2026-08-25). It was a byte-identical copy of
+// `tutor-personas.ts`'s export, hardcoded "You are Ezra, an APM tutor", used for BOTH papers — so
+// every AFM case reveal addressed the student as the wrong paper's persona, the same defect stage 5
+// fixed for the conversational legs and left standing here. `caseRevealSystemFor` is now the ONE
+// definition; see its comment for why this is NOT `caseSystemFor(paper)` and which guardrail blocks
+// are taken.
+//
+// `shipped` reproduces the deleted literal BYTE-FOR-BYTE (fixture-pinned), so the arm's baseline is
+// the string that actually shipped and not a reconstruction of it.
+const SHIPPED_CASE_REVEAL_SYSTEM =
   'You are Ezra, an APM tutor. The student has genuinely attempted this drill and worked ' +
   'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
   'top-band answer is built: first credit, specifically, what they already had right, then ' +
@@ -663,18 +937,89 @@ const REVEAL_SYSTEM =
   'over — this is the earned reveal). Warm and peer-to-peer, a sharp tutor laying it out, not a ' +
   'marked script. End by pointing them to apply the key move on a FRESH question. No empty praise.';
 
+// `routed_2p` = the routed build with the four injected blocks recast so they no longer refer to
+// the student in the third person. Tests whether guardrail prose written ABOUT the student primes
+// output written about the student (the 0/20 → 2/20 register regression the routed arm found).
+// MEASURED 2026-08-25: register breaks 2/20 -> 0/20 on AFM, clean openings unmoved, no confound,
+// reveal integrity intact. Default flipped to routed_2p. The 2/20 -> 0/20 is DIRECTIONALLY
+// consistent and UNDERPOWERED (p = 0.49) — see the summary; the flip does not rest on it, because
+// the recast is neutral-to-better on every measured axis either way.
+// ── DIVERGENCE #5 — `creditable` reaches the REVEAL leg (2026-08-28) ─────────
+// `routed_2p_conditioned` = `routed_2p` PLUS the conditioned opening: where the carried verdict
+// says nothing in the attempt earns credit, the praise-first clause is REPLACED (see
+// `caseRevealSystemFor`). Where it does not, the core is BYTE-IDENTICAL to `routed_2p` — which is
+// what makes `routed_2p` the paired control and keeps this to ONE variable.
+//
+// ⚠️ A VALUE OF THE EXISTING KNOB, NOT A NEW ENV VAR, DELIBERATELY. `TUTOR_CASE_REVEAL` already
+// selects WHICH reveal system prompt is assembled; a second variable beside it would admit
+// incoherent combinations (`shipped` + conditioned selects a core that has no praise clause to
+// condition) and would need its own ARM_VARS entry to be recorded in a capture. Four mutually
+// exclusive values, one knob, already listed in ARM_VARS since the baseline commit.
+//
+// ⚠️ DEFAULT FLIPPED TO `routed_2p_conditioned` (2026-08-28) AFTER the arm reported: CLEAN reveal
+// openings 7/60 -> 36/60, Fisher p = 4.0e-8, both cells significant, against a SAME-SESSION
+// `routed_2p` control and a blind classification. Pinned by fixture so it cannot drift back.
+// Record: docs/redteam/summaries/2026-08-28-case-reveal-creditable.md
+//
+// ⚠️ THE FLIP RESTS ON THE POSITIVE CONTROL AS MUCH AS ON THE PRIMARY. This variant SUPPRESSES a
+// praise demand, so the question that gates shipping is not only "does it help when it fires" but
+// "does it fire when it should not". On a genuinely creditable answer it fires 0/10, and the
+// carrier is sticky in the one safe direction (see EncPayload.everCreditable). Where the flag is
+// absent or true the assembled prompt is BYTE-IDENTICAL to `routed_2p`, fixture-pinned — so on
+// every turn this arm does not fire, nothing about today's behaviour changes.
+export type CaseRevealVariant = 'routed' | 'routed_2p' | 'routed_2p_conditioned' | 'shipped';
+const CASE_REVEAL = (process.env.TUTOR_CASE_REVEAL ?? 'routed_2p_conditioned') as CaseRevealVariant;
+
+/**
+ * Pure, exported so the assembled bytes are pinnable — the baseline claim is a BYTE claim.
+ *
+ * `nothingCreditable` is read ONLY by `routed_2p_conditioned`; every other variant ignores it, so
+ * the control arm cannot be moved by the carrier being wired.
+ */
+export function caseRevealSystem(
+  variant: CaseRevealVariant,
+  paper: string,
+  nothingCreditable = false,
+): string {
+  if (variant === 'shipped') return SHIPPED_CASE_REVEAL_SYSTEM;
+  return caseRevealSystemFor(
+    paper,
+    variant === 'routed_2p' || variant === 'routed_2p_conditioned',
+    variant === 'routed_2p_conditioned' && nothingCreditable,
+  );
+}
+
 async function call4_reveal(
   question: string,
   context: string,
   attempt: string,
   diagnosis: string,
   modelAnswer: string,
+  /** Defaulted 'APM' so any caller that does not pass it is byte-identical to before the parameter
+   *  existed — the same convention `call3_hint` uses. The orchestrator now passes the real paper. */
+  paper = 'APM',
+  /** DIVERGENCE #5 — resolved by the caller from the session-sticky `everCreditable`. Defaulted
+   *  FALSE, so a caller that does not pass it assembles the byte-identical praise-first core. */
+  nothingCreditableNow = false,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
+  // ⚠️ SERVER LOG ONLY, NEVER A RESPONSE FIELD — the rule `[GAPLABEL]` already sets on the drill
+  // route. This one carries no content at all (a variant name and a boolean), but a conditional
+  // response field is a habit, not a value judgement, and the flag would ship the habit. It is the
+  // arm's FIRST validity condition: if the conditioned opening never fires, a null result means
+  // "the condition was never met", not "conditioning does not work".
+  if (process.env.TUTOR_DEBUG_GAP === '1') {
+    console.log('[CASEREVEAL]', JSON.stringify({
+      variant: CASE_REVEAL,
+      paper,
+      nothingCreditable: nothingCreditableNow,
+      conditioned: CASE_REVEAL === 'routed_2p_conditioned' && nothingCreditableNow,
+    }));
+  }
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 700,
-    system: REVEAL_SYSTEM,
+    system: caseRevealSystem(CASE_REVEAL, paper, nothingCreditableNow),
     messages: [
       {
         role: 'user',
@@ -732,6 +1077,15 @@ export interface TeachTurnInput {
   missCount: number;
   lastDiagnosis: string | null;
   lastRealAttempt: string | null;
+  /**
+   * DIVERGENCE #5 — whether ANY adjudicated attempt in this session earned credit, carried in the
+   * sealed session blob (`EncPayload.everCreditable`). Three states; `undefined` means no attempt
+   * has been adjudicated and is NOT the same as `false`.
+   *
+   * Optional, and an absent value never fires the conditioned opening, so a caller that does not
+   * pass it gets the exact prompt it got before this field existed. Read ONLY on the reveal branch.
+   */
+  lastEverCreditable?: boolean;
   resolved: boolean;
   /**
    * The case's paper, used for PERSONA ROUTING ONLY (2026-08-23, stage 5).
@@ -757,6 +1111,12 @@ export interface TeachTurnResult {
   messageKind: string;
   passed: boolean;                 // completeness gate cleared — requirement complete
   acceptedAnswer: string | null;   // student message when passed, for final_answer
+  /**
+   * DIVERGENCE #5 — the session-sticky credit flag to re-seal. Three states (see
+   * `EncPayload.everCreditable`); carried through unchanged on every turn that does not produce a
+   * fresh attempt verdict (reveal, redirect, teach-request, warm).
+   */
+  newEverCreditable?: boolean;
 }
 
 export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResult> {
@@ -764,12 +1124,16 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     question, context, modelAnswer, verbLevel, markScheme, groundedFacts = '', nextMove = '',
     studentMessage, lastEzraMessage, paper = 'APM',
     missCount, lastDiagnosis, lastRealAttempt, resolved,
+    lastEverCreditable,
   } = input;
 
   let ezraResponse:        string;
   let newMissCount       = missCount;
   let newLastDiagnosis   = lastDiagnosis;
   let newLastRealAttempt = lastRealAttempt;
+  // DIVERGENCE #5 — carried through by default; only an attempt turn updates it, and once credit
+  // has been seen it never goes back (see EncPayload.everCreditable).
+  let newEverCreditable = lastEverCreditable;
   let teachThroughDelivered = false;
   let newResolved        = resolved;
   let intent: string     = 'attempt';
@@ -783,7 +1147,13 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
   if (wantsReveal && missCount >= 2) {
     intent = 'reveal';
     messageKind = 'reveal';
-    ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? studentMessage, lastDiagnosis ?? '', modelAnswer);
+    // ⚠️ TWO CONDITIONS, AND BOTH EXIST TO AVOID SUPPRESSING PRAISE SOMEONE EARNED. `attempt`
+    // falls back to `studentMessage` when there is no stored attempt, and on that fallback nothing
+    // has been adjudicated, so the flag must not be used. `=== false` is deliberate and is NOT
+    // `!lastEverCreditable`: undefined means "no attempt adjudicated" and must not fire.
+    const revealAttempt = lastRealAttempt ?? studentMessage;
+    ezraResponse = await call4_reveal(question, context, revealAttempt, lastDiagnosis ?? '', modelAnswer, paper,
+      lastRealAttempt != null && lastEverCreditable === false);
     newResolved = true;
   } else if (wantsReveal) {
     intent = 'reveal_redirect';
@@ -808,13 +1178,34 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
                   : classified === 'confusion' ? 'coaching' : 'chat';
     } else {
       // ── THE MOAT — existing withholding pipeline, unchanged ──
-      const diagnosis  = await call2_diagnose(question, context, studentMessage, modelAnswer, markScheme, groundedFacts);
+      // DIVERGENCE #2: call2 now returns the parsed ENVELOPE alongside the label. `label` is what
+      // every downstream consumer sees and is byte-equivalent to the old return value whenever the
+      // envelope parses; when it does not, `safeLabel` recovers the label or yields '' rather than
+      // letting a raw JSON blob reach `call3_hint` or the stored transcript.
+      const { label: diagnosis, verdict: gapVerdict } = await call2_diagnose(
+        question, context, studentMessage, modelAnswer, markScheme, groundedFacts);
+      // Absent ⇒ false ⇒ shipped opening ⇒ today's behaviour. Never inferred from `derived`, which
+      // is parsed but deliberately NOT wired on this surface — see call3_hint's parameter doc.
+      const gapNothingCreditable = nothingCreditable(gapVerdict);
 
       let completenessGap: string | null = null;
       if (COMPLETENESS_GATE_ENABLED && isCorrectVerdict(diagnosis)) {
         completenessGap = await completenessCheck(question, context, modelAnswer, studentMessage, verbLevel);
       }
       const treatCorrect = isCorrectVerdict(diagnosis) && !completenessGap;
+
+      // ── DIVERGENCE #5 — update the session-sticky credit flag ────────────────
+      // ⚠️ STICKY: once ANY attempt has earned credit the flag stays true for the rest of the
+      // session. The reveal's referent is the REQUIREMENT, not the student's most recent message,
+      // and a last-write flag reads a two-line follow-up as though it were the whole answer —
+      // measured 10/10 on the positive control, where miss 1 read creditable:1 and miss 2 read 0.
+      //
+      // ⚠️ THE SAME TWO CARVE-OUTS THE HINT LEG APPLIES, FOR THE SAME REASONS. `completenessGap`
+      // means call2 said CORRECT and a separate check demoted it for a missing component, so the
+      // envelope describes an answer the turn is no longer about and was computed before the
+      // demotion; `treatCorrect` means the answer stood. In both cases there IS credit.
+      const thisTurnCreditable = treatCorrect || !!completenessGap || !gapNothingCreditable;
+      newEverCreditable = lastEverCreditable === true ? true : thisTurnCreditable;
 
       if (treatCorrect) {
         ezraResponse       = await call3_confirm(question, context, studentMessage, verbLevel, paper);
@@ -829,7 +1220,14 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
         newLastRealAttempt = studentMessage;
 
         if (newMissCount === 1) {
-          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove, paper);
+          // ⚠️ THE `creditable` ARM IS SUPPRESSED WHEN THE COMPLETENESS GATE SUPPLIED THE GAP.
+          // `completenessGap` means call2 said CORRECT and a separate check demoted it for a
+          // missing component — so the envelope's `creditable` describes an answer the turn is no
+          // longer about, and it was computed before the demotion. Leading with "nothing here
+          // earns credit" on an answer just judged correct is the one failure this arm must never
+          // produce. Falls back to the shipped opening, which is what ships today.
+          ezraResponse = await call3_hint(question, context, studentMessage, gap, verbLevel, groundedFacts, nextMove, paper,
+            completenessGap ? false : gapNothingCreditable);
           messageKind = 'hint';
         } else {
           ezraResponse = await call3_teach(question, context, studentMessage, gap, verbLevel, REVEAL_ENABLED && newMissCount >= 2, groundedFacts, nextMove, paper);
@@ -851,5 +1249,6 @@ export async function runTeachTurn(input: TeachTurnInput): Promise<TeachTurnResu
     messageKind,
     passed,
     acceptedAnswer,
+    newEverCreditable,
   };
 }

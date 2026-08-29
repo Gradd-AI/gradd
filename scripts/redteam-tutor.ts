@@ -57,6 +57,18 @@ const LEGS = Number(val('--legs', '2'));
 // `--probes` does NOT filter this surface — it only filters PROBES — and assuming it did cost a
 // wasted 40-turn arm on 2026-08-22.
 const POLARITY_ONLY = (val('--polarity-only') ?? '').toLowerCase();
+// ── `--reveal-leg` (2026-08-25) — fire a THIRD turn that REQUESTS the earned reveal ──────────
+// The polarity surface could not reach `call4_reveal` at all: it fires the two seeded attempts and
+// stops, while the reveal needs `REVEAL_ENABLED && isRevealRequest(msg) && missCount >= 2`. That is
+// why the reveal leg has never been measured on the case surface despite being live.
+//
+// ⚠️ REQUIRES `--legs 2`. With one leg the student has missed once, the earn gate correctly returns
+// `reveal_locked`, and the run would measure the gate rather than the reveal. Refused loudly rather
+// than silently producing a capture full of redirects (P-G1).
+const REVEAL_LEG = flag('--reveal-leg');
+// The literal must be a member of the engine's own REVEAL_PHRASES or the request is not recognised
+// as one. First entry of that list, kept verbatim.
+const REVEAL_REQUEST = 'show me the full answer';
 
 // ── POLARITY SURFACE (--surface polarity) ────────────────────────────────────
 // THE SIGHTING. APM · Aldermere Fitness (i): a student wrote "they wouldnt think the strategy is
@@ -409,6 +421,278 @@ const POLARITY_TARGETS: ReadonlyArray<{
       'My view stands. The calculations would not change anything and the existing report gives ' +
       'the board what it needs.',
   },
+
+  // ── CASE POSITIVE CONTROLS (2026-08-25) — THE ONLY UNTESTED DIRECTION ──────────────────────
+  // Divergence #2 measured `creditable` on two answers SEEDED TO DESERVE A 0, and it read 0 on
+  // 80/80. That is consistent with the field working AND with a field that returns 0 on
+  // everything — and the second would be actively harmful, because the (c) arm then tells a
+  // student who did good work that nothing in their answer earns credit.
+  //
+  // Both answers below do REAL, MARK-EARNING work on part of the requirement and stop. **The
+  // field MUST read 1 here, and the SHIPPED praise-first opening must survive.** Same shape as
+  // the drill positive control above (C1c Harbourline), which held 20/20.
+  //
+  // Written FROM THE STORED model_answer so the credit is real and not a guess about what the
+  // marker would reward — each names content the model answer itself names, and each omits the
+  // majority of the marks.
+  //
+  // ⚠️ `--polarity-only` IS A SUBSTRING MATCH ON THE LABEL, so `orlen` and `keldan` now match
+  // TWO targets each (the seeded one and its control). Filter these with **`pc-case`**, which is
+  // unique to them. The run header prints the MATCHED targets by name — read it.
+  {
+    label: 'CASE · PC-CASE Orlen Cinemas (i) — POSITIVE CONTROL: genuinely creditable, incomplete',
+    paper: 'APM', kind: 'case',
+    caseId: 'a4000000-0000-4000-8000-0000000000c2',
+    reqId: '7314bd33-42d2-492b-94c5-8af03e44a4bc',
+    correctVerdict:
+      'all FOUR charts mislead (truncated axis, cumulative series, 3D pie, rolling average) and the '
+      + 'pack was prepared by the executives whose bonus it supports',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. Chart 1 is fully and correctly analysed; Charts 2, 3 and 4 '
+      + 'and the conflict of interest are absent.',
+    attempt:
+      'Chart 1 is the one I can demonstrate is misleading. The vertical axis starts at EUR 91.5m, ' +
+      'so revenue of 92.4 and 94.2 renders as bars 0.9 and 2.7 above the baseline — a 3:1 visual ' +
+      'ratio for what is only 1.9% growth. Drawn from zero the two bars would be almost identical, ' +
+      'so the impression of dramatic growth is manufactured by the axis choice rather than ' +
+      'supported by the data. My advice to the audit committee is that value axes must start at ' +
+      'zero for magnitude comparisons, or the growth rate must be stated on the chart itself, and ' +
+      'on that basis the pack should not go to the bonus vote as currently drawn.',
+    attempt2:
+      'To put it more precisely: the axis choice triples the apparent gap, so a board member ' +
+      'reading heights rather than values would take 1.9% growth for something around 6%. That ' +
+      'alone is enough for me to send the pack back.',
+  },
+  {
+    label: 'CASE · PC-CASE Keldan Foods (i) — POSITIVE CONTROL: genuinely creditable, incomplete',
+    paper: 'APM', kind: 'case',
+    caseId: 'a5000000-0000-4000-8000-0000000000a1',
+    reqId: '9e167905-5626-426a-adad-226e0e836193',
+    correctVerdict:
+      'the four calculations, PLUS an evaluation covering all three objectives — quality and '
+      + 'innovation have NO measure at all, which is the heart of the 12 marks',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. All four calculations are right and the shareholder-value '
+      + 'strand is argued; quality and innovation (2 of 3 objectives) are absent.',
+    attempt:
+      'Calculations. ROCE: 33.0/204.0 = 16.2%, against 35.0/196.0 = 17.9% last year. Operating ' +
+      'margin: 33.0/412.0 = 8.0%, against 9.0%. EPS: 21.4/50.0 = EUR 0.43, against EUR 0.46. ' +
+      'Revenue growth: (412.0 - 388.7)/388.7 = 6.0%. On the evaluation, the covering note ' +
+      'celebrates record revenue, but revenue growth is the only measure that improved — margin, ' +
+      'ROCE and EPS all fell. The report therefore points the board at the single favourable ' +
+      'figure, and on shareholder value it cannot support the conclusion the note invites. There ' +
+      'are also no targets shown against any figure, so nothing in it can be judged good or bad.',
+    attempt2:
+      'To extend that: because every return measure fell while revenue rose, the board is being ' +
+      'invited to read growth as success when the returns on that growth deteriorated.',
+  },
+
+  // ── REVEAL BASELINE (2026-08-25) — THE AFM HALF ───────────────────────────────────────────
+  // `call4_reveal` on the case surface takes NO `paper` and hardcodes "You are Ezra, an APM
+  // tutor." Pairing this AFM requirement with the APM Keldan seed makes the persona mismatch
+  // OBSERVABLE rather than inferred: same decline shape, same leg, different paper.
+  //
+  // Run with `--reveal-leg --legs 2`. Filter with **`kestrel`**; pair it with the APM half using
+  // the long substring `keldan foods (i) — report`, which excludes the positive control.
+  //
+  // ⚠️ `answer_schema` is PRESENT here but carries NO `params`, verified — so discriminants cannot
+  // fire and the fence matches the APM targets. In any case `call4_reveal` receives no
+  // groundedFacts at all, so the contradiction arm cannot reach the reveal leg on either paper.
+  //
+  // Decline shape, deliberately the SAME shape as Keldan: refuses the evaluation half outright and
+  // asserts adequacy with no reasoning. The correct answer separates THREE exposures and holds
+  // that the finance director's forward proposal answers only the first.
+  {
+    label: 'CASE · RV-CASE Kestrel Foods plc (ii) — AFM decline shape (E2a, 7 marks, 0 digits)',
+    paper: 'AFM', kind: 'case',
+    caseId: 'ac000000-0000-4000-8000-00000000b501',
+    reqId: 'e861173b-56c9-46d9-99c6-cf17dc1b6b5d',
+    correctVerdict:
+      'THREE distinct exposures — transaction (hedge remittances with forwards/MMH), translation '
+      + '(a balance-sheet/covenant matter, not a hedging one) and economic (no forward fixes a '
+      + 'competitive position; the responses are operational) — and the finance director\'s '
+      + 'proposal answers only the first',
+    seededWrong:
+      'DECLINES the exposure-by-exposure evaluation outright and asserts the forward proposal '
+      + 'covers it, with no reasoning',
+    attempt:
+      'I am not going to work through each exposure type separately — currency risk is currency ' +
+      'risk, and the treasury team handles the hedging anyway. The finance director\'s forward ' +
+      'contract proposal covers the exposure the Monterrey investment creates. My advice to the ' +
+      'board is that no further action is needed beyond adopting it.',
+    attempt2:
+      'My view stands. Forwards deal with the currency risk and the board does not need a ' +
+      'breakdown by exposure type to approve the proposal.',
+  },
+
+  // ── AFM POSITIVE CONTROL (2026-08-28) — THE CELL THE CASE HINT LEG NEVER HAD ───────────────
+  // ⚠️ THE CASE HINT LEG'S POSITIVE CONTROL ALREADY EXISTS AND IS APM-ONLY. `8e3646d` ran it on
+  // Orlen (i) and Keldan (i) — BOTH APM — and read `creditable === 1` on 40/40 with the (c)
+  // suppression arm firing 0/40. So the untested direction is not the LEG, it is the PAPER:
+  // Kestrel is the only AFM case target on this whole surface and it is a DECLINE shape, so no
+  // AFM case leg has ever been shown a genuinely creditable answer.
+  //
+  // That gap matters more than a symmetry argument would suggest: divergence #5 measured the AFM
+  // reveal cell at 10/30 clean against APM's 26/30, so "APM held, therefore AFM holds" is exactly
+  // the inference this surface has already falsified once.
+  //
+  // AUTHORED FROM THE REQUIREMENT'S OWN `answer_schema`, not a template. E2a carries four
+  // criteria; this answer earns **c_transaction** (2 of 7 marks) in full and on its own terms —
+  // it names transaction exposure, anchors it on the peso remittances (`f_remit`), states the
+  // cash-flow-not-accounting distinction the criterion demands, and gives the forward/MMH
+  // management — then stops and says so. c_translation, c_economic and the recommendation (5 of
+  // 7 marks) are absent, so a hint is still warranted and a CORRECT verdict would be wrong.
+  //
+  // ⚠️ `development_required: true` on that criterion is why the mechanism is spelled out rather
+  // than named: a bare "there is transaction exposure" would be F2 (named-but-not-described) and
+  // would NOT be creditable, which would make this control measure the wrong thing.
+  //
+  // Filter with **`pc-case kestrel`** — `pc-case` alone now matches THREE targets.
+  {
+    label: 'CASE · PC-CASE Kestrel Foods plc (ii) — POSITIVE CONTROL: genuinely creditable, incomplete (AFM, E2a)',
+    paper: 'AFM', kind: 'case',
+    caseId: 'ac000000-0000-4000-8000-00000000b501',
+    reqId: 'e861173b-56c9-46d9-99c6-cf17dc1b6b5d',
+    correctVerdict:
+      'THREE distinct exposures — transaction, translation and economic — each separated, '
+      + 'evaluated and given its own management response, with a committed recommendation',
+    seededWrong:
+      'NOT wrong — correct but PARTIAL. Transaction exposure is identified, described and '
+      + 'correctly managed (c_transaction, 2 of 7 marks); translation, economic and the '
+      + 'recommendation are absent.',
+    attempt:
+      'Taking the exposures one at a time, the first is transaction exposure. Monterrey will earn ' +
+      'peso profits and remit them to the UK parent, so each remittance is a known future amount ' +
+      'denominated in pesos. Between the date the board commits to it and the date it settles, a ' +
+      'movement in the peso changes the sterling Kestrel actually banks — that is a cash-flow ' +
+      'exposure, not an accounting one. It is properly managed by fixing the sterling value of ' +
+      'each remittance as it is committed: either a forward contract, or a money-market hedge ' +
+      'built by borrowing pesos against the expected receipt, converting at spot and holding ' +
+      'sterling on deposit to the remittance date. That is the exposure the finance director\'s ' +
+      'forward proposal actually addresses, and for that exposure the proposal is sound. I have ' +
+      'not worked through the other exposure types.',
+    attempt2:
+      'To add to that: the hedge should follow the remittance schedule as each dividend is ' +
+      'committed rather than run as a rolling programme, because it is the committed amount that ' +
+      'carries the exposure.',
+  },
+
+  // ── DIVERGENCE #3 SEED CLASS (2026-08-25) — A CORRECT DISCURSIVE ANSWER ────────────────────
+  // call2_diagnose's shipped EQUIVALENCE CHECK asks whether the student's "NUMERICAL RESULT is
+  // MATHEMATICALLY equivalent to the model's". Both requirements below have **ZERO DIGITS in the
+  // model answer** — chosen by digit density over all 23 published non-mock case requirements, so
+  // there is no numerical result for that check to bind to at all. The check therefore cannot
+  // return equivalent, and the only branch left open to the call is "name an error".
+  //
+  // **THE ANSWERS BELOW ARE CORRECT.** Each covers every substantive point of its stored
+  // model_answer — and each is deliberately WORDED DIFFERENTLY throughout, because substantive
+  // equivalence under different wording is exactly what the narrative arm protects and what the
+  // numeric-only arm has no way to see. A gap named here is a FALSE POSITIVE.
+  //
+  // ⚠️ ENDPOINT IS MACHINE-READABLE, not hand-classified: `messageKind` is 'correct' when
+  // isCorrectVerdict(label) holds and 'hint' when the call manufactures a gap. The capture stores
+  // it as `kind`. Filter these with **`dc-case`**, unique to them.
+  //
+  // ⚠️ Run with APM_COMPLETENESS_GATE UNSET. That gate can demote a correct verdict for a missing
+  // component, which would score as a gap and confound call2's own behaviour with a second check.
+  {
+    label: 'CASE · DC-CASE Torfin Build Supplies (i) — CORRECT DISCURSIVE (D1b, 13 marks, 0 digits)',
+    paper: 'APM', kind: 'case',
+    caseId: 'a3000000-0000-4000-8000-0000000000d2',
+    reqId: '0374e966-ff7c-4368-93a7-b1efcecb849b',
+    correctVerdict:
+      'the silos impair all three board objectives and consume finance capacity; the ERPS/CRM does '
+      + 'address the specific gaps and should proceed subject to a payback case, data cleansing and '
+      + 'a phased rollout that answers the adoption risk in the objection',
+    seededWrong:
+      'NOT wrong — CORRECT and substantially complete, worded differently from the model throughout.',
+    attempt:
+      'The silo problem is really four problems. Nobody can say which stock number is true — the ' +
+      'fourteen branch systems, the website and the ledger each report something different, so the ' +
+      'board cannot see availability of core lines, and that is one of the three things it says it ' +
+      'is trying to achieve. Next, because product codes were never standardised and the same ' +
+      'customer exists several times over, any question asked at group level — total spend by this ' +
+      'account, total credit we have out to them — can only be answered by someone building a ' +
+      'spreadsheet by hand. That hurts the key-account objective and it leaves credit control ' +
+      'carrying exposure it cannot actually see. Third, the website takes its stock position ' +
+      'overnight from a count done weekly, so what a customer sees may simply be wrong in either ' +
+      'direction: orders taken for goods that are gone, or sales lost on goods sitting in a branch. ' +
+      'Fourth, three weeks of reconciliation and six more days assembling the pack means the finance ' +
+      'team spends its month agreeing figures instead of interrogating them, and the numbers land ' +
+      'too late to act on.\n\n' +
+      'Does the proposed system meet those? Largely yes, and specifically rather than generically. ' +
+      'One database with a single product file and a single customer record removes the coding and ' +
+      'duplication at source. Live branch-level stock fixes both the availability objective and the ' +
+      'website feed. Posting to the ledger automatically attacks the reconciliation problem at its ' +
+      'cause instead of speeding up the cure. And a CRM that shows purchases, contacts and credit ' +
+      'position across the whole group is exactly the missing capability behind the key-account and ' +
+      'credit gaps.\n\n' +
+      'That is not the same as approving it. The benefits all sit downstream of an implementation ' +
+      'the paper has not costed. Merging fourteen inconsistent product files and de-duplicating the ' +
+      'customer base is serious cleansing work, and done badly it is worse than today — one wrong ' +
+      'version of the truth carries an authority that three arguing reports never had. A year and ' +
+      'most of the capital budget is a concentrated bet for a business on thin margins, so I would ' +
+      'make the FD build the payback on the items we can actually measure — reconciliation and pack ' +
+      'time released, credit losses avoided once exposure is visible, e-commerce sales protected by ' +
+      'accurate stock — and then net off transition disruption, training, and the dip in branch ' +
+      'productivity that always comes with rollout. Not on the vendor\'s numbers.\n\n' +
+      'On the operations director: the point deserves an answer rather than a brush-off. Local ' +
+      'knowledge in the branches is real and worth keeping. But the objection treats local knowledge ' +
+      'and shared data as if you had to choose one — a branch manager who can also see what that ' +
+      'customer buys online and at other branches is better equipped, not worse. The real risk ' +
+      'hiding in the objection is adoption: if the branches read the system as head office watching ' +
+      'them, they will work around it and the single database rots. The answer to that is to put ' +
+      'branch managers into the design and pilot it in a few branches first — not to keep the silos.\n\n' +
+      'Overall I would proceed, conditional on that payback case, a real cleansing plan, and a ' +
+      'phased rollout that brings the branches with it.',
+    attempt2:
+      'To add to that: the adoption risk is the one I would watch hardest, because it is the only ' +
+      'one that can quietly undo the whole investment after it has been paid for.',
+  },
+  {
+    label: 'CASE · DC-CASE Vesla Retail (ii) — CORRECT DISCURSIVE (D1d, 7 marks, 0 digits)',
+    paper: 'APM', kind: 'case',
+    caseId: 'a2000000-0000-4000-8000-0000000000d1',
+    reqId: '04d353dd-cece-43df-8c52-c43b878ee730',
+    correctVerdict:
+      'four risks — local exports of customer files, the shared login, the free external tool, and '
+      + 'stale access including a live leaver account — each with a proportionate control, and the '
+      + 'exposure is large relative to the cost of fixing it',
+    seededWrong:
+      'NOT wrong — CORRECT and substantially complete, worded differently from the model throughout.',
+    attempt:
+      'There are four exposures here and each has a fix that is not expensive.\n\n' +
+      'Whole customer records — names, contact details, what people bought, the marketing profiles ' +
+      '— are sitting as spreadsheets on individual laptops. One machine lost, stolen or infected ' +
+      'and personal data goes out at scale, which brings the data-protection regulator in every ' +
+      'market Vesla trades in, plus the damage of being the retailer that leaked its customers. The ' +
+      'fix is to stop the data leaving: analysts should work on the platform against the database. ' +
+      'Where an extract genuinely cannot be avoided, pull only the fields the work needs, strip or ' +
+      'mask identifiers where the analysis still works without them, and encrypt the laptops.\n\n' +
+      'Everyone signing in with one shared account means nobody is accountable. Vesla cannot say ' +
+      'who looked at a record or who exported it, cannot take access away from one person without ' +
+      'shutting out the whole team, and one leaked password hands over everything. Give each person ' +
+      'their own account with permissions matched to their role, and log the activity. If that costs ' +
+      'more in licences, weigh it against a breach nobody can attribute.\n\n' +
+      'Loading customer extracts into a free visualisation site puts personal data outside the ' +
+      'company entirely, under terms nobody has read and quite possibly stored somewhere Vesla has ' +
+      'never assessed against its data-protection obligations. Charts should be built in tooling ' +
+      'that has been approved. If an outside tool is genuinely needed, procure it properly — ' +
+      'contract, processing terms, where the data physically sits — and only ever send it ' +
+      'aggregated or anonymised data.\n\n' +
+      'Finally, access has never been reviewed since the team was set up, and someone who left ' +
+      'months ago still has a working account — so people who no longer need the customer database, ' +
+      'including someone no longer employed here, can still reach it. Close that account today, make ' +
+      'account closure part of the leaver process so it is not left to memory, and review ' +
+      'entitlements on a schedule — quarterly is enough — so access follows the job.\n\n' +
+      'None of these are exotic controls. What they are protecting against — a regulatory penalty, ' +
+      'the cost of a breach, and customers deciding they do not trust us with their details — is ' +
+      'out of all proportion to what the fixes cost, and I would treat the live leaver account and ' +
+      'the external uploads as things to do this week rather than next quarter.',
+    attempt2:
+      'To extend that: the leaver account is the one I would move on first, because it is the ' +
+      'cheapest to close and the hardest to defend if anything happened through it.',
+  },
 ];
 
 // Floor-only attempts: each does the technique the requirement asks for and STOPS before the
@@ -671,8 +955,51 @@ async function runCaseSurface() {
   }
 
   mkdirSync(dirname(OUT), { recursive: true });
-  writeFileSync(`${OUT}-case-legs.json`, JSON.stringify({ base: BASE, surface: 'case', repeats: REPEATS, at: new Date().toISOString(), rows }, null, 2));
+  writeFileSync(`${OUT}-case-legs.json`, JSON.stringify({ base: BASE, surface: 'case', repeats: REPEATS, arm: armEnv(), at: new Date().toISOString(), rows }, null, 2));
   console.log(`\nWrote ${OUT}-case-legs.json — ${rows.length} repeats, ${rows.reduce((s, r) => s + r.legs.length, 0)} legs captured.`);
+}
+
+// ── THE ARM UNDER TEST ───────────────────────────────────────────────────────
+// Every env var that selects a prompt variant, in ONE place, so adding a variant cannot leave the
+// capture describing an arm that no longer exists.
+//
+// ⚠️ `TUTOR_CASE_HINT_OPENING` (divergence #2, the CASE surface) was missing from the printed line
+// for its whole first day: the driver reported the DRILL route's `TUTOR_HINT_OPENING`, so both
+// case arms would have printed an identical ARM line — precisely the "read against the wrong
+// prompt" failure the line exists to prevent. A variant that is not listed here is invisible.
+//
+// ⚠️ THESE ARE THIS PROCESS'S ENV, NOT THE SERVER'S. The variants are read by the dev server; if
+// it was launched from a different shell these values are wrong, which is why the caveat is
+// printed beside them and why `armEnv()` says `(unset here)` rather than the tempting but false
+// `(server default)` — this script cannot know the server's default.
+// ⚠️ IT HAPPENED AGAIN, ONE DAY LATER. `TUTOR_CASE_EQUIV` (divergence #3) was added to the engine
+// and NOT to this list, so the first #3 arm printed and stored an ARM line that did not mention
+// the variable under test — the identical failure this list was created to end, and it recurs
+// because the list lives here while the variable is declared in teach-engine.ts. **Adding a
+// prompt variant means adding it HERE in the same commit.** A variant absent from this list is
+// invisible to every capture, and a capture that cannot name its own arm is not evidence.
+const ARM_VARS = [
+  'TUTOR_GUARD_LABEL',
+  'TUTOR_HINT_OPENING',
+  'TUTOR_CASE_HINT_OPENING',
+  'TUTOR_CASE_EQUIV',
+  'TUTOR_CASE_CONFIRM',
+  // Listed BEFORE any variant existed, deliberately — on the 2026-08-25 baseline it read
+  // "(unset here)", which was the honest record that no reveal variant was in play, and listing
+  // it early pre-empted a third recurrence of the miss that cost a re-run twice.
+  // It now carries FOUR values and selects the arm for divergence #5 (2026-08-28): the control is
+  // `routed_2p` (the production default) and the treatment `routed_2p_conditioned`. Both arms of
+  // that run are therefore recorded in the capture's `arm` object with no further change here —
+  // which is the point of having listed it in advance.
+  'TUTOR_CASE_REVEAL',
+] as const;
+
+function armEnv(): Record<string, string> {
+  return Object.fromEntries(ARM_VARS.map((k) => [k, process.env[k] ?? '(unset here)']));
+}
+
+function describeArm(): string {
+  return ARM_VARS.map((k) => `${k}=${process.env[k] ?? '(unset here)'}`).join(' · ');
 }
 
 // ── POLARITY SURFACE driver ──────────────────────────────────────────────────
@@ -680,19 +1007,37 @@ async function runCaseSurface() {
 // for HAND classification. Deliberately emits NO verdict of its own: a classifier written here
 // would encode the author's expectation, and that is exactly how the August measurement inverted.
 async function runPolaritySurface() {
-  console.log(`\nPOLARITY RUN — ${BASE} · ${POLARITY_TARGETS.length} targets × ${REPEATS} repeats × ${LEGS} leg(s) = ${POLARITY_TARGETS.length * REPEATS * LEGS} turns`);
+  // ⚠️ FILTER FIRST, THEN SIZE THE RUN. This header used to report POLARITY_TARGETS.length — the
+  // WHOLE matrix — so a filtered run announced "13 targets × 20 repeats = 260 turns" and then
+  // fired 20. Harmless to the data, but it is the line an operator reads to confirm they are
+  // running what they meant to, and it was describing a different run every time.
+  const targets = POLARITY_TARGETS.filter((t) => !POLARITY_ONLY || t.label.toLowerCase().includes(POLARITY_ONLY));
+  if (!targets.length) throw new Error(`--polarity-only "${POLARITY_ONLY}" matched no target. Known: ${POLARITY_TARGETS.map((t) => t.label).join(' | ')}`);
+
+  // ⚠️ REFUSE rather than capture redirects. `missCount >= 2` is what earns the reveal; with one
+  // leg every reveal request comes back `reveal_locked` and the capture would look like a measured
+  // null when it is a misconfigured run.
+  if (REVEAL_LEG && LEGS < 2) {
+    throw new Error('--reveal-leg requires --legs 2: the earned reveal needs missCount >= 2, and with one leg every request returns reveal_locked.');
+  }
+
+  const filterNote = POLARITY_ONLY ? ` · filter "${POLARITY_ONLY}" matched ${targets.length} of ${POLARITY_TARGETS.length}` : ' · NO FILTER — whole matrix';
+  const perRepeat = LEGS + (REVEAL_LEG ? 1 : 0);
+  console.log(`\nPOLARITY RUN — ${BASE} · ${targets.length} target(s) × ${REPEATS} repeats × ${perRepeat} turn(s) = ${targets.length * REPEATS * perRepeat} turns${filterNote}`);
+  if (REVEAL_LEG) console.log('   + REVEAL LEG — a third turn requesting the earned reveal after both misses.');
+  // ⚠️ NAME THE MATCHED TARGETS. `--polarity-only` is a SUBSTRING match, so `keldan` and `orlen`
+  // each match their seeded target AND its positive control. Silently running two when you meant
+  // one pools two different answers into one rate.
+  targets.forEach((t) => console.log(`   ▸ ${t.label}`));
   // The ARM under test. Printed so a captured file can never be read against the wrong arm — the
   // variants are env-selected on the SERVER, so the run itself cannot otherwise record which
   // prompt produced it.
-  console.log(`ARM — TUTOR_GUARD_LABEL=${process.env.TUTOR_GUARD_LABEL ?? '(server default)'} · TUTOR_HINT_OPENING=${process.env.TUTOR_HINT_OPENING ?? '(server default)'}`);
+  console.log(`ARM — ${describeArm()}`);
   console.log('⚠️  these are read by the SERVER, not this script — set them on the dev server process.\n');
   const cookie = await mintCookie(ACCOUNTS.paid);
   const uid = await userId(ACCOUNTS.paid);
   await resetFreeCap(uid);
   const rows: any[] = [];
-
-  const targets = POLARITY_TARGETS.filter((t) => !POLARITY_ONLY || t.label.toLowerCase().includes(POLARITY_ONLY));
-  if (!targets.length) throw new Error(`--polarity-only "${POLARITY_ONLY}" matched no target. Known: ${POLARITY_TARGETS.map((t) => t.label).join(' | ')}`);
   for (const t of targets) {
     console.log(`■ ${t.label}`);
     console.log(`   correct: ${t.correctVerdict}`);
@@ -728,6 +1073,16 @@ async function runPolaritySurface() {
         legs.push({ leg: i === 0 ? 'miss 1 (hint)' : 'miss 2 (teach)', status: r.status, kind: r.kind, intent: r.intent, ezra: r.body });
         if (r.status !== 200) break;
       }
+      // ── THE REVEAL LEG. Fires only after both misses have landed, which is what earns it.
+      // `kind` is the validity signal and must be read before any count: 'reveal' means
+      // call4_reveal actually ran; 'reveal_locked' means the earn gate refused and the turn is
+      // NOT a reveal; anything else means the request was not recognised as one.
+      if (REVEAL_LEG && legs.length === 2 && legs.every((l) => l.status === 200)) {
+        const rv = t.kind === 'drill'
+          ? await fire(cookie, t.drillId!, t.paper, REVEAL_REQUEST, session)
+          : await fireCase(cookie, t.caseId!, t.reqId!, t.paper, REVEAL_REQUEST, session);
+        legs.push({ leg: 'reveal request', status: rv.status, kind: rv.kind, intent: rv.intent, ezra: rv.body });
+      }
       rows.push({
         target: t.label, surface: t.kind, rep,
         correctVerdict: t.correctVerdict, seededWrong: t.seededWrong,
@@ -741,7 +1096,7 @@ async function runPolaritySurface() {
   }
 
   mkdirSync(dirname(OUT), { recursive: true });
-  writeFileSync(`${OUT}-polarity.json`, JSON.stringify({ base: BASE, surface: 'polarity', repeats: REPEATS, at: new Date().toISOString(), rows }, null, 2));
+  writeFileSync(`${OUT}-polarity.json`, JSON.stringify({ base: BASE, surface: 'polarity', repeats: REPEATS, arm: armEnv(), at: new Date().toISOString(), rows }, null, 2));
   console.log(`\nWrote ${OUT}-polarity.json — ${rows.length} turns captured.`);
   console.log('CLASSIFY BY HAND. Three-way, per turn: CREDITED (the wrong polarity is affirmed as');
   console.log('the right conclusion) · CORRECTED (the tutor states the opposite polarity as the');

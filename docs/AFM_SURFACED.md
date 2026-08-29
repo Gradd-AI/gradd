@@ -1058,6 +1058,239 @@ assert **both** papers carry the block and that each forbids a reveal offer and 
 nudge to a distressed student. A further check asserts the engine **imports** the block rather than
 transcribing its text. `test:case-persona` 21 → 28, gate 70/70.
 
+### 🟡 STAGE 6 SHIPPED + MEASURED 2026-08-24 — THE GUARDRAILS ARE NOT THE LEVER
+
+**Built:** `EZRA_APM_CASE_SYSTEM` DELETED; `caseSystemFor` delegates to `systemFor`. The case
+surface now gets the shared persona by IMPORT through one definition, so drill and case cannot
+drift about what they forbid. Measured before building: the deleted constant was `EZRA_SYSTEM`'s
+first **979 characters byte-identical**, then the GUARDRAIL line, then dignity — the whole
+remaining difference was the six blocks. APM's case prompt **1,638 → 7,787 chars**; AFM byte-
+identical before and after. Ordering is now `EZRA_SYSTEM`'s, so **dignity moves from last to
+mid-block** and `METHOD_FITS_THE_GIVEN_INPUTS` holds the anchor. `test:case-persona` 28 → 52,
+gate 70/70.
+
+**PAIRED ARM, run on ONE machine in ONE sitting, 80 legs, hand-read.** `docs/redteam/*` is
+gitignored, so the 2026-08-23 baseline transcripts were **not on the work machine** and could not
+be re-read under one classifier — the recorded 14/5/0 could only have been compared against a
+rubric applied to different prose. So BEFORE was **re-run** at `f261b48` and AFTER at `0cd203c`,
+`--surface polarity --polarity-only keldan|orlen --n 20 --legs 1`, dev server **killed and
+rebooted between arms** rather than trusting hot-reload. Captures `docs/redteam/stage6-{BEFORE,
+AFTER}-{keldan,orlen}-polarity.json` (gitignored — they do not travel).
+
+**BASELINE REPRODUCED, which is what makes the rest readable:** re-run BEFORE Keldan scored
+**12 inversion / 8 endorse-refusal / 0 clean** against the recorded **14 / 5 / 0**. Clean matched
+exactly; the A/B boundary moved by two.
+
+| | Keldan BEFORE | Keldan AFTER | Orlen BEFORE | Orlen AFTER |
+| --- | ---: | ---: | ---: | ---: |
+| inverts / invents | 12 | **7** | 5 | 8 |
+| endorses refusal / off-requirement credit | 8 | **13** | 14 | 12 |
+| **CLEAN (primary endpoint)** | **0** | **0** | **1** | **0** |
+
+🔴 **THE PRIMARY ENDPOINT DID NOT MOVE. Every one of the 40 AFTER openings still opens on a
+manufactured credit** — 20/20 on Keldan, 20/20 on Orlen. With 0 clean events in 40 legs the
+rule-of-three upper bound on the true clean rate is ~9%.
+📐 **WHAT DID CHANGE IS WHICH FABRICATION APPEARS.** Keldan's inversions fell 12 → 7 and were
+**replaced one-for-one by refusal-endorsements**, 8 → 13. Neither shift reaches significance at
+n=20 (both z ≈ 1.58, p ≈ 0.11), so this is suggestive, **not established**.
+📐 **THAT MIGRATION IS THE FINDING, AND IT CONFIRMS THE UNSATISFIABLE-OPENING MECHANISM RATHER
+THAN EITHER PREDICTION.** The praise-first opening demands a credit; the guardrails removed one
+route to manufacturing it (inverting the student's position) and the model switched to the other
+route still available (ratifying the refusal's rationale). **The demand is unchanged, so the rate
+is unchanged.** Guardrails change the SHAPE of the fabrication; only the envelope can change
+whether one is demanded.
+⚠️ **`GROUNDING_DISCIPLINE` WAS INERT ON BOTH TARGETS BY CONSTRUCTION, verified in code before the
+run** — it binds on "a CHECKLIST, FACTS, or CONVENTIONS block", the case path's `groundedFacts` is
+`renderDiscriminants(...)` (which emits "CODE-OWNED CHOICES" / "CONTRADICTION FOUND"), and
+`renderDiscriminants([], [])` returns the **empty string** on both APM targets. It cannot have
+contributed, and no result should be attributed to it.
+⚠️ **SIX BLOCKS SHIPPED AT ONCE, SO NO MOVEMENT IS ATTRIBUTABLE TO ONE.** "Rule 3 of
+`NO_COMPUTED_OUTPUTS` caused the inversion drop" is a hypothesis this bundle cannot test.
+Disambiguating needs per-block arms.
+⚠️ **ORLEN'S A/B SPLIT IS NOT COMPARABLE TO THE 2026-08-23 FIGURES** — the re-run counts vacuous
+task-identification credits ("you correctly identified that your job is to evaluate…") as
+inventions, which the original classifier evidently did not (1/20 vs 5/20). **The CLEAN counts are
+comparable and both are ~0.** Orlen 5 → 8 is within noise (p ≈ 0.31); the control did not move.
+🔵 **NOT REVERTED.** Stage 6 stands on its own merits — one definition, no drift, and AFM's case
+path gains six blocks it never had. It is simply **not the fabrication fix**, and the envelope work
+is confirmed as the real one.
+
+### 🔴 OPEN — `call4_reveal` IS THE SIXTH SIBLING-SURFACE INSTANCE, LIVE ON BOTH PAPERS
+
+**📐 MEASURED 2026-08-25 — baseline, single arm, both papers, 120 turns. See
+`docs/redteam/summaries/2026-08-25-case-reveal-baseline.md`. Headline: 9/40 clean openings, and
+the leg is NOT the worst one — see the cross-leg table there.**
+
+**Not in scope for stage 6; logged so it is not rediscovered.** `REVEAL_SYSTEM`
+(`lib/acca/teach-engine.ts:859` — was cited as :664, corrected 2026-08-25) is the system prompt for the case surface's earned reveal, and
+`call4_reveal(question, context, attempt, diagnosis, modelAnswer)` **does not take `paper` at
+all** — there is no routing to bypass. Three defects in one string:
+
+1. **Hardcoded APM** — *"You are Ezra, an APM tutor."* Stage 5 paper-routed the four
+   CONVERSATIONAL legs and left this one, so the exact defect stage 5 fixed is still live for
+   every AFM case reveal.
+2. **Says "this drill"** — *"The student has genuinely attempted this drill"* — on a surface where
+   the unit is a case REQUIREMENT.
+3. **Carries the unconditional praise-first opening** — *"first credit, specifically, what they
+   already had right"* — the same instruction shape measured above producing 20/20 manufactured
+   credits, with no `creditable` gate and no conditional arm.
+
+⚠️ **(3) IS THE ONE THAT MATTERS AND IT IS WORSE HERE THAN ON THE HINT LEG.** The reveal fires
+after a student has missed twice; the population reaching it is disproportionately the population
+with nothing creditable to name. Unmeasured — the arm above fires `--legs 1` and never reaches a
+reveal.
+4. **NO SOLVED ARM — found 2026-08-25, recorded as FOUND, not asserted.** The case
+   `call4_reveal` passes `lastDiagnosis ?? ''` unconditionally into *"The gap they kept missing:"*.
+   The drill route added `REVEAL_SYSTEM_SOLVED` for exactly this — a student who solved it should
+   not be handed a stale diagnosis asserting an error they never made — and carries `reachedFrom`
+   to select it (**9 references to that machinery in the route, 0 in the engine**). ⚠️ **WHETHER A
+   SOLVED STUDENT CAN REACH `missCount >= 2` IS UNTRACED.** The structural asymmetry is verified;
+   the reachability is not. Do not cite this as a live harm until someone traces it.
+
+📐 **Counted as the sixth instance of the sibling-surface pattern (Grant's count, 2026-08-24):**
+one behaviour implemented twice, fixed on the surface someone was looking at, left standing on its
+sibling. The stage-5 comment block, the stage-6 finding above, and this item are all the same
+shape.
+
+### 📐 WHAT THE COMPOSITION SURVEY ADDED (2026-08-25)
+
+- **TWO BYTE-IDENTICAL COPIES**, verified equal at 542 chars: `tutor-personas.ts:315` (exported,
+  drill route) and `teach-engine.ts:859` (local, case). **Fixing one leaves the other.**
+- **THE REVEAL LEG WAS EXCLUDED FROM STAGE 6 ENTIRELY.** Every other output leg in the engine calls
+  `caseSystemFor(paper)` (571 confirm, 625 hint, 670 teach, 843 warm); line 878 is the local
+  literal. **None of the six guardrail blocks reach the one leg that shows the model answer.**
+- **THE DRILL ROUTE IS NOT BROKEN — the defect is CASE-ONLY.** `route.ts:1049` takes `paper` and
+  branches AFM (wrapper + verbatim append) / APM (walkthrough), with SOLVED variants and grounding
+  outro. "Live on both papers" means the CASE surface serves both from one APM string.
+- **EXPOSURE IS 12 AFM REQUIREMENTS, NOT 20** — 8 of the 20 are `mock_only` and mock content does
+  not run the teach loop.
+- ⚠️ **THE PAPER DEFECT IS A 100% WRONG INPUT WITH A MEASURED 5% SURFACING.** 1 of 20 AFM reveals
+  said *"an APM board"*; `"this drill"` surfaced 0/40. **Never report it as a 100% harm.**
+
+### ✅ CLOSED 2026-08-28 — `creditable` EXTENDED TO THE CASE REVEAL (divergence #5)
+
+Record: `docs/redteam/summaries/2026-08-28-case-reveal-creditable.md`. Branch
+`feat/case-divergence-5-reveal-creditable`. **CLEAN reveal openings 7/60 → 36/60 (11.7% → 60.0%),
+Fisher p = 4.0 × 10⁻⁸**; APM 6/30 → 26/30, AFM 1/30 → 10/30. Default flipped to
+`routed_2p_conditioned`. The lever the three prior arms predicted was the one that worked.
+
+**Three method changes, each retiring a standing ceiling on this leg:**
+- **Power computed BEFORE the run** (n=30/cell for 0.90 at +30pp; n=20 would have been 0.73) — the
+  process finding `61e7915` owed.
+- **A same-session control**, retiring the cross-SHA confound all three prior arms carried. It also
+  corrected the comparator: the stored `10/40` was the `routed` arm; the shipping default is `7/40`.
+- **Blind classification** — arm hidden, cell shown, seeded shuffle, key opened after both cells
+  were recorded. Retires *"one classifier who knew the arm"*.
+
+🔴 **THE FINDING WORTH CARRYING FORWARD IS THE POSITIVE CONTROL'S, NOT THE PRIMARY'S.** The first
+build paired the flag to `lastRealAttempt` on an argument that read well and was wrong:
+`call2_diagnose` sees ONE message, so `creditable` is scoped to a FRAGMENT, and so is
+`lastRealAttempt` — while the reveal's referent is the REQUIREMENT. On a complete correct answer
+followed by a two-line extension it read `1` then `0`, and the earned reveal would have opened
+*"nothing here earns credit"* at a student who had just produced every calculation correctly.
+**All 246 attempt turns in the 360-turn arm read `creditable: 0`, so the arm could not have seen
+it: a decline-shape corpus cannot falsify a rule about mixed sessions.** Fixed sticky, three
+states, `undefined ≠ false`. **Generalises: when a flag SUPPRESSES a demand, the arm measures
+whether it helps where it fires, and only a positive control measures whether it fires where it
+should not. Budget one.**
+
+The unit noun leaks 4/120 (*"the drill"* where the core says *"this requirement"*) against 0/40 in
+the routing arm — logged, not fixed, not an endpoint.
+
+### ✅ CLOSED 2026-08-28 — THE CASE **HINT** LEG'S POSITIVE CONTROL, BOTH PAPERS. NO DEFECT.
+
+Records: `docs/redteam/summaries/2026-08-25-case-envelope-positive-control.md` (APM — Orlen (i) +
+Keldan (i), n = 20/cell) and `docs/redteam/summaries/2026-08-28-case-hint-positive-control-afm.md`
+(AFM Kestrel (ii) + APM Keldan (i), n = 60/cell). **The demand-side arm on this surface is measured
+in BOTH directions on BOTH papers. Nothing is open on it.**
+
+| direction | seed class | n | result |
+| --- | --- | ---: | --- |
+| the arm FIRES where it should | decline / off-requirement (divergence #2) | 80 | `creditable` 0 on 80/80; opening 0/40 → 38/40 clean |
+| the arm does NOT fire where it should not | genuinely creditable but PARTIAL, authored from the requirement's own criteria | **122** | **`creditable` 1 on 122/122, (c) fired 0/120** |
+
+**THE 0/120 IS DETERMINISTIC, NOT AN OUTPUT SCAN.** `caseHintOpening` passes
+`nothingEstablished = false`, so `hint-opening.ts`'s (c) arm fires **iff** `nothingCreditable`,
+which is `verdict?.creditable === 0`. `creditable === 1` on every turn therefore *entails* no fire.
+The suppression-string scan (0/120 across both captures) is corroboration only and would test the
+weaker claim — whether the model ECHOED an instruction.
+
+**Secondary — the credit is SPECIFIC on 120/120**, naming a move the student actually made rather
+than generic praise.
+
+⚠️ **"BLIND" IS NOT CLAIMED, and the reason is structural rather than an omission.** One arm makes
+blinding-to-arm vacuous, and cell must stay visible because judging specificity requires knowing
+what the student wrote; what was done is a seeded shuffle with classifications recorded before any
+tally. **Re-running this leg as a blind arm would buy nothing on the primary**, which is entailed by
+a logged field rather than judged by a reader.
+
+📐 **RE-VERIFIED 2026-08-28 FROM A SOURCE THE SUMMARY DID NOT COMMIT, and that is the process
+finding.** The captures (`docs/redteam/pc2-{AFM,APM}-polarity.json`, gitignored) carry **no
+`creditable` field** — the primary was read from the `at: 'case_gap_verdict'` server log.
+Recomputed independently from `.next/dev/logs/next-development.log`: **122 lines, `parsed` true
+122/122, `creditable` 1 on 122/122, `correct` false on 122/122** — the last being the validity
+condition, since a `correct` verdict routes to `call3_confirm` and never exercises this leg. The
+captures separately confirm 60/60 HTTP 200, `kind = hint` 60/60, and `TUTOR_CASE_HINT_OPENING:
+conditional` recorded in both. Gate 73/73. **An endpoint that lives only in a dev-server log is one
+`rm -rf .next` away from being unverifiable — route `creditable` into the polarity capture before
+the next arm on this field.**
+
+🔸 **STILL OPEN, AND IT IS NOT THIS LEG'S DEMAND:** the AFM overstatement mode — credit claiming
+more coverage than the student showed — **5/60 against APM 0/60, Fisher p = 0.057**, on a rubric
+written during the read. Verified present in the capture at reps 16, 17, 27, 47, 60 (rep 16 invents
+a fourth exposure; rep 17 says *"you've identified the right three types"* to a student who
+identified one). **A candidate to PRE-REGISTER, not a result** — and the second sighting of the same
+AFM/APM direction as the reveal cell below, on a different leg with a different seed shape. The
+confound is unchanged: one requirement per paper, so it is not attributable to the paper.
+
+### 🔴 OPEN — THE AFM REVEAL CELL IS A **CONTENT** PROBLEM. DO NOT RUN ANOTHER DEMAND ARM AT IT.
+
+**10/30 clean after conditioning** (1/30 before). The remaining 20 are dominated by **(A) inverts
+the student's stated position — 9** and **(B) endorses the refusal — 6**, with (A′) vacuous at 5.
+APM's remaining 4 are a different, smaller residue.
+
+⚠️ **NAME IT CORRECTLY, BECAUSE THE NAME DECIDES THE NEXT ARM.** Conditioning the opening works on
+a DEMAND failure: the praise-first clause asks for something the answer cannot supply, and the model
+invents it — which is why (A′) collapsed 17 → 5 (p=0.008) and why that mode was the one that moved.
+**(A) and (B) are not that.** The leg is being asked to walk moves the student DECLINED to make, and
+it reaches for the student's own declining proposition as the thing to build from — on Kestrel,
+*"forwards are part of the answer"*, the exact sentence used to refuse the evaluation. That is a
+failure about WHAT THE REVEAL IS BUILDING FROM, not about what its opening was told to demand.
+**No conditioning of the opening reaches it**, and the arm shows exactly that: (A) 21 → 12 and (B)
+15 → 7, neither significant, while the demand-driven mode fell off a cliff.
+
+**Therefore: do NOT run another demand arm at this cell.** A third re-wording of the opening clause
+would re-measure the mode that is already fixed and leave the two that are not. P-T4's second clause
+is not the live question here — the live question is what the reveal is handed.
+
+**What a content arm would have to change** (none of this is built, and none of it is a prompt
+tweak to the opening):
+- `call4_reveal` receives `attempt` (the last message) + `diagnosis` (a 12–15 word label) +
+  `model_answer`. On a decline it is handed a refusal and a label and told to build a top-band
+  answer — the student's proposition is the most concrete thing in the prompt, so it gets used.
+- The decline shape has no creditable content by construction, so *"first credit what they had
+  right"* was never satisfiable **and neither is any reconstruction from their answer.** The
+  conditioned opening solved the first half of that; the second half is still open.
+- ⚠️ **The AFM/APM gap is CONFOUNDED BY REQUIREMENT in every arm so far** — different case, marks,
+  content, and AFM's Kestrel seed names a specific tool the student can hide behind. It must NOT be
+  read as a paper effect, and a content arm needs a second AFM requirement before the gap itself is
+  attributable.
+⚠️ **`REVEAL_AFM_WRAPPER_SYSTEM` on the DRILL route still carries the unconditioned praise-first
+clause.** Deliberately untouched — same clause, different surface, its own measurement. Fixture-
+pinned present and unconditioned so a later edit cannot widen this arm to two surfaces silently.
+
+### ✅ SUPERSEDED — PROPOSAL: ROUTE THE REVEAL THROUGH `caseSystemFor(paper)` (built 2026-08-25)
+
+One move that gets the paper, the six guardrail blocks, and collapses the duplicate. **Prediction,
+on the record before building: it fixes the paper defect and does NOT fix the manufactured
+credit.** Stage 6 measured those six blocks as changing the SHAPE of a fabrication and not its
+rate (P-T4); the thing that moved manufactured credit was conditioning the DEMAND via `creditable`,
+and that conditioning does not exist on this leg. Expected: the `"an APM board"` class goes to
+zero, and 9/40 clean moves little. **Measure against that prediction — a large move in clean
+openings would refute P-T4's second clause, which is the interesting outcome.**
+⚠️ The praise-first clause is ALSO in `REVEAL_AFM_WRAPPER_SYSTEM`, so extending `creditable` to the
+reveal is a separate change on a separate surface, not a rider on this one.
+
 ### 🔵 SCOPED — THE CASE-TURN TRANSCRIPT (does not block anything above)
 
 **Recommendation: EXTEND `acca_drill_messages`, do not add a second table.** The column it is
@@ -1219,6 +1452,79 @@ SAME transaction as the flip. supabase-js has no transaction wrapper, so the scr
 write** when a demotion is required and prints the exact `BEGIN`/`COMMIT` block for the SQL editor
 instead. Today's run needed none. A sequenced pair of writes dressed up as a transaction would have
 been the worse answer.
+
+### 📐 AUDITED 2026-08-28 — BATCH A THROUGH THE TUTOR HARNESS: **REACHABLE ≠ MEASURABLE AS SBL**
+
+Read-only audit, Grant-ruled to stop here (option 3): **nothing built, nothing spent, the serving
+route untouched.** Recorded so the next reader has the design rather than re-deriving it.
+
+**① THE STRUCTURAL RESULT IS GREEN, 5/5 — and it needed no reachability and no model calls.**
+A census of batch A, not a sample:
+
+| check | result |
+| --- | ---: |
+| `answer_schema.mode === 'narrative'` → grounding pack takes the narrative branch | **5/5** |
+| `criteria` present (5–6 each) and `scenario_facts` present (6–12 each) | **5/5** |
+| `full_reveal` parses under `extractMisconceptionLead` (the P7 lead shape) | **5/5** |
+| an F4 disqualifier present → `narrativeConventions` fires the committed-verdict rule | **5/5** |
+| `calculation_required` false — wholly discursive, as the paper is | **5/5** |
+
+**The authoring pipeline produced rows the hardened tutor's grounding machinery can actually
+read.** ⚠️ **CLAIM CEILING:** this is a STATIC property check on five rows. It says the shapes the
+machinery reads are present; it says **nothing** about how the tutor behaves on them. Do not report
+it as a measurement.
+
+**② REACHABLE ≠ MEASURABLE AS SBL — the reason an arm was NOT run.** Three paper-keyed branches
+fall through to APM, and no `n` fixes any of them:
+
+- **`systemFor(paper)`** (`tutor-personas.ts:308`) = `paper === 'AFM' ? EZRA_AFM_SYSTEM :
+  EZRA_SYSTEM`. SBL gets `EZRA_SYSTEM`: *"You are Ezra, an APM tutor who knows exactly how ACCA APM
+  is marked"* — teaching a governance/ethics briefing note.
+- **`call4_reveal`'s `if (paper === 'AFM')`** (`route.ts:1069`) → the else branch uses
+  `REVEAL_SYSTEM` (also *"an APM tutor"*) and `buildApmRevealUserPrompt`, which never injects the
+  AFM branch's `reframeLine`. ⚠️ **PRECISELY:** `full_reveal` is not wholly dead — ONE clause
+  reaches the grounding pack as `misconceptionLead` on every paper — but the full authored reframe
+  block is AFM-only, and all five SBL rows carry one.
+- **`capColumn`** (`route.ts:1327`) = `paper === 'AFM' ? 'afm_…' : 'apm_teach_throughs_used'`. An
+  SBL turn **decrements the APM free counter on a real profile row** — a write, not a read.
+
+**An arm today measures the APM persona on SBL content.** That is a legitimate question
+(*"did the hardening generalise to content it has never seen?"*) but it is NOT a question about
+SBL, and it must never be reported as one.
+
+**③ THE GATE IS `drillSelect()`, NOT `servedPaper()` — 404, not 403.** `servedPaper()` appears
+ONCE in the tutor route (`route.ts:1445`) and only builds `subscribeHref`; it gates nothing. The
+refusal is `{ error: 'Drill not found' }, { status: 404 }` at `route.ts:1246`, in §3 — **before §4
+entitlement (`hasPaperAccess`, 1341) and before §7 the engine (1447), so a probe costs ZERO
+Anthropic tokens.** Verified by replicating the predicate against `46e10662` in the live DB:
+
+| filter | rows |
+| --- | ---: |
+| row exists / `exam_board='ACCA'` / `status='approved'` | 1 / 1 / **1 — passes** |
+| `.eq('published', true)` | **0 — blocks** |
+| `.in('paper_code', SERVED_PAPERS)` | **0 — blocks** |
+
+⚠️ **`SERVED_PAPERS` IS NOT THE BINDING BLOCKER — `published=false` IS, and it is the deliberate
+P-DB9 state.** There is ONE Supabase, so flipping it is a production content write that ships the
+instant it runs (P-DB1). That route is closed; do not reach for it. A third blocker sits in the
+harness itself: `redteam-probes.ts:13` declares `type Paper = 'APM' | 'AFM'`, so SBL is not
+nameable in the probe matrix.
+
+**④ THE MEASUREMENT ALLOW — DESIGNED, DELIBERATELY NOT BUILT.** Recorded so it is not re-derived:
+
+- **Rejected — an uncommitted local edit.** Invisible and uncommittable, and
+  `memory/feedback_apm_test_protocol` banks that the false trails on this stack are always the
+  environment, never the code.
+- **Rejected — a harness bypass calling the engine directly.** The drill route's §7 is **inline in
+  `route.ts`**; only the CASE engine is extracted (`runTeachTurn`, `teach-engine.ts:1122`). A
+  bypass therefore transcribes the orchestration under test — the anti-pattern that forced the
+  byte-identical `shipped` pin in the PS-prompt-variant round.
+- **The design, if it is ever wanted:** ONE env const read at module scope that relaxes
+  `published` **and** the paper set **together** (either alone still 404s), and that **refuses
+  whenever `process.env.VERCEL` is set** — impossible in any Vercel environment rather than merely
+  unset, so a `--target prod` run fails safe to the existing 404. Structural beats instructed.
+  Fixture-pin the default predicate byte-identical to today's, and widen `Paper` to `AccaPaper` in
+  the probe file only. **Do NOT widen `SERVED_PAPERS`.**
 
 ## 🔵 SCOPED, NOT BUILT — 2026-08-21 — THE EVIDENCE-STATUS LEDGER (doctrine P-N4)
 
