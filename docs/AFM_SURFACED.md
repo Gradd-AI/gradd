@@ -62,6 +62,109 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## ⛔ CLOSED-BY-RULING 2026-08-29 — passing `answer_schema` to the technical marker is NOT the fix (P-M5)
+
+**Scoped, ruled, and the measurement re-run in-session.** The question was whether handing
+`judgeTechnicalMarking` the `answer_schema` would reduce the rate at which candidate-facing
+`feedback` asserts figures no component owns. **Answered by opening the rows, before building
+anything: no — the schema does not contain the sighted figures.** E2b's `0.438m` margin is the
+DIFFERENCE of two components; B1a's discount factors are in no component (this file already records
+the marker inventing four of them from the prose phrase *"discounted at 10.00%"*); E3a's fall leg is
+a genuine hole, DEFERRED with a named trigger. And the ⛔ 2026-07-30 ruling below closes the
+schema-widening route permanently. Full reasoning: **`GENERATOR_DOCTRINE.md` P-M5**.
+
+**What shipped instead** — the instruction, not the material (P-T2/P-T4):
+`buildTechnicalSystemPrompt(paper, variant)`, a pure builder with `shipped` pinned BYTE-IDENTICAL
+and production defaulting to it; a candidate `owned_figure` rule 3 that names a satisfiable act;
+`lib/acca/marker-figure-audit.ts` (pure, built on GATE 27's tokeniser) and its arm runner. Fixtures
+`test:technical-prompt-variants` (25) + `test:marker-figure-audit` (73); contract gate 70 → 72.
+
+### 📌 PRE-REGISTRATION — ARM C's DIRECTION, RECORDED 2026-08-29 10:35Z (Grant, verbatim)
+
+**Recorded before any arm C RESULT was observable, and after a 1-run smoke run existed** —
+`docs/rollbacks/marker_figure_arm_20260829.json`, `at` = 2026-08-29T09:55:26.737Z, 6 model calls,
+`runs: 1`. The 20-run arm was in flight at 9/20 when this was written; its stdout carries progress
+markers only and its JSON is written at the end, so no per-arm rate, count or band had been seen.
+Stated this way rather than implied, because a prediction recorded after any output exists is a
+weaker record than one recorded before, and nothing is gained by blurring which this is. Nothing
+had been banked for arm C's direction until now — the only banked prediction was the schema arms'
+null (P-M5), which is a different arm.
+
+> PREDICTION: removing rule 3's demand for a figure the marker cannot own reduces the ABSOLUTE
+> COUNT of asserted figures (G1 denominator falls). The unowned RATE may be flat or may rise,
+> because a smaller denominator with a similar proportion unowned reports the same rate. So P1
+> alone cannot decide this — G1 is co-equal, not a guard.
+> Band drift is the real risk and the reason P-M1 applies.
+> If the count falls and bands hold, the rewrite ships. If bands move, that is the decision
+> regardless of P1.
+
+**This PROMOTES G1, and that is a change of role, not of emphasis.** The scoping report (§4)
+registered G1 DENOMINATOR DRIFT as a *guard* — *"a fix that doubles assertions and halves the rate
+is not a fix"* — i.e. protection against a rate improvement bought by inflating the base. The
+prediction inverts it: the absolute count is the outcome the rewrite is expected to MOVE, and a
+flat-or-rising P1 is a PREDICTED result, not a null. Read the arm accordingly — the raw `asserted`
+total and `asserted` per feedback string are decision-relevant on their own, and the pre-registered
+sign test on P1 is **not** the decision rule for this prediction.
+
+**The decision rule as stated:** count falls AND bands hold → the rewrite ships. Bands move → that
+is the decision whatever P1 does (P-M1). No change to the statistical test: the sign test on P1
+stays exactly as pre-registered, and stays descriptive (five clusters; p = 0.0625 at best —
+P-M5(b)).
+
+### 📋 STANDING UNDER-COUNT REGISTER — every known direction the marker-figure instrument mis-counts (opened 2026-08-29)
+
+**LIST ONLY. Nothing here is fixed, and nothing here should be fixed without its own measurement.**
+This exists because the instrument's output is quoted as a rate, and every entry below moves that
+rate in a knowable direction that the rate itself cannot show. **A number from this instrument
+should not be quoted without a pointer to this register.** Sources: `P-M5(a)` (entries 1–2, banked
+2026-08-29) and the hand measurement over `docs/AFM_FIGURE_REGISTER_20260801.txt` (entries 3–5,
+same day).
+
+| # | direction | mechanism | measured extent |
+|---|---|---|---|
+| 1 | **UNDER-counts** | The 2026-07-30 support set walked **every numeric leaf** of `answer_schema`, so `tolerance.pct = 0.5` supported a marker writing *"0.5%"* and a stray param supported *"20%"*. Machinery scored as an answer. | 138 leaves across the 8 requirements, only **28** are `components[].expected_value`; 37 tolerance, 26 rubric marks, ~47 params. Stripped in the current instrument; the extent in the 114 is unrecoverable. |
+| 2 | **OVER-counts** | The 2026-07-30 instrument had **no scenario tier at all**, so a legitimately restated exhibit figure was a defect. | **18 of the 126** recovered register instances are supported by the givens tier alone — 14.3%, all of them correct restatements. |
+| 3 | **UNDER-counts** | `E3_DATE_CONTEXT` — `/(?:\d\s*\/\s*$)|(?:^\s*\/\s*\d)/`, a **date-component** rule — fires on any ratio the marker writes with a slash, dropping it from BOTH the numerator and the denominator, silently. | **17 of 17** exclusions in the recovered register are this rule, **all in B5b**, all the PPP inflation ratio `S0 × (1.045/1.020)^t`. No other exclusion rule fired at all. |
+| 4 | **UNDER-counts** | **T4 exempts on PRESENCE, not on attribution.** A figure in the candidate's answer text is attributed to the candidate even when the marker's own sentence asserts it flatly, with no cue — *"The comparison is clear … a difference of €0.438m in favour of the forward."* T4 is exact where the old keyword window was a guess, but *"the student also wrote this number"* and *"the marker is attributing it to the student"* are different claims, and they come apart. | **11 of 88** hand-read exemptions are endorsements (**12.5%**; upper bound 20/88 = 22.7% if every AMBIGUOUS is one). ⚠️ **NOT 11 sites** — 9 are E2b's `€0.438m` in one recurring sentence shape; three distinct (figure, requirement) shapes in the whole class. Corrected P1 on that corpus: **11/900 = 1.22%**, or 14/900 = 1.56% including the 3 already unowned. |
+| 5 | **UNDER-counts** | T4 cannot reach the **`X (not Y)`** shape where Y is the candidate's figure written in a form their own text does not contain — the marker renders their value differently from how they wrote it, so presence-matching misses it and the figure leaves the denominator as neither student-attributed nor asserted. | **2 instances, both E3a**: *"the futures price move in scenario 1 is only 0.55 (not 0.70)"* and *"in scenario 2 the move is 1.25 (not 1.10)"*. These are the ONLY 2 of the 126 that survive as unowned besides one self-computed quotient. |
+
+**⚠️ The two directions do not cancel and must never be netted.** Entries 1, 3, 4 and 5 push the
+count DOWN; entry 2 pushes it UP. They act on different figures in different requirements, so a
+single reported rate is not "roughly right on average" — it is wrong in five specific,
+enumerable ways, and the register is what lets a reader say which.
+
+**⚠️ Entry 4 is the one that bites a LIVE metric.** Entries 1 and 2 describe the retired 2026-07-30
+instrument. Entry 3 and entries 4–5 describe **the instrument the arm is running now**. P1 currently
+reports the endorsement class as clean.
+
+**What would close each, recorded so nobody has to re-derive it — NOT proposed, NOT scheduled:**
+3 needs the slash rule narrowed to date shapes (`dd/mm`), which is a GATE 27 change and therefore
+owes GATE 27's own fixtures. 4 needs T4 to read the marker's SENTENCE for an attribution cue rather
+than the student's text for the value — a semantic test, and P-DB5/P-V2 both say a phrase table
+written from the same intuition will reproduce the error and report it as agreement, so the honest
+version is a hand-read sample per arm, not a detector. 5 is downstream of 4.
+
+### 🔴 OPEN — THREE THINGS THAT OUTLIVE THIS ARM
+
+1. **THE 114/1,518 BASELINE IS QUOTED IN FIVE DOCUMENTS AND IS NOT RE-DERIVABLE.** It predates
+   `69cf5ad` and `3093ae3` (both 2026-08-01, the second being the judgement/feedback split now in
+   production, and both commits' own subjects record that BANDS MOVED), and its evidence file —
+   `scan_figures_*.txt`, written to the repo ROOT, which `scripts/_*` does not cover — no longer
+   exists. Its support set also admitted tolerance and rubric leaves (under-count) while having NO
+   scenario tier (over-count). **Every place it is quoted should carry the in-session control
+   instead**: `CLAUDE.md`, `AFM_COVERAGE_CONTRACT.md:62`, `PRODUCT_STRENGTH_STANDARD.md:15`,
+   `APM_MARKETING_POSITIONING.md:168`, `research/FAE_ADVISORY_CROSSWALK.md:369`. Not done in this
+   session — the arm's own numbers are one corpus and one script, and swapping a stale number for a
+   narrow one without saying so would repeat the original mistake.
+2. **THE ARM IS DESCRIPTIVE BY CONSTRUCTION — FIVE CLUSTERS, NOT SIX.** Three of the paper's eight
+   requirements (E1a, B1b, E2a) carry a rubric-shaped `answer_schema` with ZERO `expected_value`, so
+   they have no figure to own. A paired sign test at n=5 gives **p = 0.0625 even when unanimous**,
+   so the pre-registered test cannot clear 0.05 in its best case, and no pooled test is available
+   (design effect ~10.5; cluster-robust SEs need ~40 clusters). **More runs cannot fix this — only
+   more candidate scripts or more cases can.** See P-M5(b).
+3. **THE TECHNICAL PASS READS THE RAW LABEL** (`case-marking.ts`) — pre-existing, unchanged here,
+   still open from 2026-08-13.
+
 ## ✅ CLOSED 2026-08-19 — SBL BATCH A IS IN THE TABLE (`feat/sbl-foundation`)
 
 **`acca_drills` 155 → 160**, all five `candidate` / `published=false`. **Section A 0 → 5 of 12
