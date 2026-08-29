@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Evidence artefacts: never line-ending-normalise. The byte count IS the verification.
+docs/AFM_FIGURE_REGISTER_20260801.txt -text
