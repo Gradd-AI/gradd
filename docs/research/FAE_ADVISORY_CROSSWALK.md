@@ -159,8 +159,8 @@ partly built already, under an APM label nobody thought to search.
 | **2.8** | Practical issues of implementing change internationally — legal, cultural, logistical, HR | **M** | content absent | ✏️ **CORRECTED from "No asset."** SBL **A1a** `46e10662` marks *"the leadership contribution to: (i) the formulation … and (ii) the **implementation** of the PayHarvest strategy"*, comparing the two phases — implementation is its explicit object. SBL **A2d** marks culture as a constraint on a strategic aim. The act transfers; the legal/HR content does not exist. One of only two competencies demanded at level **A** outside area 3. |
 | **2.9** | Evaluate strategic options — Johnson & Scholes SFA, Porter's Generic Competitive Strategies | **T** | **Johnson & Scholes SFA absent** | ✏️ **CORRECTED from "neither named framework appears."** One of the two does. APM **A1e** `70d1c7b5` names **Porter's generic strategies** in its `question` and its `model_answer` works them (*"Porter's generic strategies would force a choice — cost leadership vs differentiation"*). ⚠️ Johnson & Scholes' **SFA** is genuinely absent: every *"Scholes"* hit in the corpus is **Black-Scholes** (AFM B2a/B2c/B4d), a false friend (§3.5), and *"Johnson"* returns **0**. |
 
-**Area 2: 3 C · 5 R · 1 M.** Still the strongest area, and the strength is still concentrated in
-the numeric competencies — but 2.9 moves out of NEW on a verified named-framework match, and 2.8
+**Area 2: 1 T · 3 C · 1 M · 4 R.** Still the strongest area, and the strength is still concentrated
+in the numeric competencies — but 2.9 moves out of NEW on a verified named-framework match, and 2.8
 gains a marking structure from a corpus that did not exist at the first pass.
 
 ### 2.3 Area 3 — International Treasury Management
