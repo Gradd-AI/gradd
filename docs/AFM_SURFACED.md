@@ -6055,3 +6055,62 @@ student-facing debrief is not. Do that with the first real sit before any wiring
 **Wiring is NOT started** and remains Grant's call. The marketing block stands: the rehearsal
 loop is not student-reachable, and `docs/APM_MARKETING_POSITIONING.md`'s inventory needs
 re-dating when it moves.
+
+---
+
+## 🇮🇪 FAE ADVISORY RESEARCH — open items as at 2026-08-30
+
+Docs-only stream (`docs/research/FAE_ADVISORY_CROSSWALK.md`, `docs/research/FAE_REUSE_APPENDIX.md`).
+**No product code is involved and none should be written against this yet.** Four new sources
+registered this session in `docs/evidence/sources.json` → `fae_research_sources`.
+
+### ⏳ 1. TIME-BOUND — the Information Scheme window closes **11 September 2026**
+
+Crosswalk **§5.1**. CAI's Information Scheme is the highest-value indicator-level calibration route
+identified so far, and it is purchasable **only for seven days after results publication, current
+session only**. FAE Summer 2026 results publish **4 September 2026** → the window is **4–11
+September 2026**. Miss it and the next is the Autumn session, results **29 January 2027**.
+
+**It is a decision, not a task, and it is Grant's** — it needs a real trainee who *failed*, their
+explicit informed consent, and a purchase on their student portal. ⚠️ **It does NOT yield the
+script** (separate subject-access request to CAI's privacy manager); it yields the **marks
+breakdown** and the **examiner comments**. Only failing candidates are eligible, so the sample can
+never contain a strong script.
+
+### 🔍 2. NOT RUN — the CASSI 2025 indicator roster has never been checked against the crosswalk labels
+
+**FAE-CASSI25** §6.3 names the **actual eight indicators of the real 2025 Advisory sitting**: Cash
+Flow/Working Capital · Foreign Exchange · Macro Environment · Leadership & change management
+(Kotter) · Valuation · Acquisition (**P/E and DCF**) · Operating Leverage · Performance Measurement
+(Balanced Scorecard). This is the **first real-sitting evidence** available against §2's
+competency-level labels, and **the crosswalk does not yet cite it anywhere in §2 or §3.**
+
+**Deliberately NOT adjudicated this session** — mapping indicators onto competencies is a judgement
+call and doing it silently inside a source registration would be exactly the P-G2 error the document
+already corrects twice. Flagged as an open cross-check, not performed.
+
+Two things a reader should expect it to bear on, stated as hypotheses to test rather than findings:
+the sitting's valuation indicator asked for **P/E and DCF** and appears not to have asked for
+**asset-based** valuation, which is the one gap 2.6 records *"flagged not demoted"*; and **three of
+the eight** indicators (macro, leadership/change, operating leverage) sit in the areas the appendix
+records as served by **zero engines and zero structures**. ⚠️ It is **one sitting** — a sample of
+one, and the crosswalk's own §5 warns that calibration is a property of the sitting being marked.
+
+### 🔴 3. STILL OPEN — the crosswalk contradicts itself on `international.ts` and 4.1
+
+Carried from `FAE_REUSE_APPENDIX.md` table A and **not fixed this session**. **§3.3's calculator
+table still reads *"`international.ts` … 4.1 (dividend/transfer-pricing kind)"* while §2.4's 4.1 row
+concludes *"There is no transfer-pricing asset."*** The appendix follows §2.4 (the row that was
+re-read) and flags the discrepancy rather than resolving it.
+
+**§3.3 is the line to correct**, and it is a **re-adjudication, not a re-labelling** — whether A6a
+(`2b0513a0`, group **dividend capacity**, no transfer-pricing content) should be credited to 4.1 at
+all. **This is KPMG-facing** and a reader landing on §3.3 first gets the superseded reading.
+
+### 📌 4. STANDING — the crosswalk is pinned to 2025/26 and that is a release blocker
+
+§0 / §0.1, **re-checked 2026-08-30 and unchanged**: CAI's public FAE downloads still stop at
+2025/26 (four documents, no 2026/27 statement, no 2026/27 change summary). **Re-running the
+crosswalk against 2026/27 remains a hard prerequisite to commercial release** — 2026/27 is the
+cycle a product would sell into, and the delta cannot be inferred from anything published. Needs
+legitimate CAI Learning Hub access.
