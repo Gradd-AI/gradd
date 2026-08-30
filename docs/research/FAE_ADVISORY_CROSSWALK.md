@@ -33,6 +33,17 @@ summary of changes.**
 That is itself a finding: obtaining Learning Hub access legitimately is a prerequisite to a
 commercial release, because the delta cannot be inferred from anything published.
 
+> **↻ RE-CHECKED 2026-08-30 — unchanged, and the pin therefore stands.** The FAE recommended-downloads
+> page was re-enumerated on the date this document's sources were registered. It still returns
+> **exactly the same four documents**, still stopping at **2025/26**:
+> `fae-competency-statement-2024_25`, `fae-competency-statement-2025_26`, and the two matching
+> `summary-of-changes` files. **No 2026/27 statement and no 2026/27 change summary has appeared.**
+>
+> So the §0 header stands verbatim and is current, not inherited: **this crosswalk remains pinned
+> to 2025/26, and re-running it against 2026/27 remains a hard prerequisite to commercial release.**
+> Recorded as a dated re-check rather than restated as a fresh finding — the claim is only worth
+> anything with the date it was last tested attached to it.
+
 ### 0.2 IP handling
 
 CAI requires **written permission** before any part of the competency statement is stored in a
@@ -574,6 +585,52 @@ has **no calibration target** for FAE.
 **Also unestablished:** the 2026/27 competency population itself (§0), and therefore whether the
 counts in §3 describe the cycle a product would sell into.
 
+### 5.1 ⏳ The highest-value calibration route identified so far — and it closes on 11 September 2026
+
+Everything above says the gap is an **access** problem. This is the access route, and it is the
+best one found: **CAI's Information Scheme** (`docs/evidence/sources.json` → `fae_research_sources`
+→ **FAE-INFOSCHEME**). It is the only located way to obtain **real CAI marks and real examiner
+comments on a real FAE script**, which is exactly the indicator-level calibration the table above
+says nothing published supplies.
+
+What it sells, in CAI's own words: **Option A** — *"marks per paper, broken down into mark per
+question, per section"*. **Option B**, the tutorial report — *"comments for each question they
+answered and a summary of how they performed during their exam"*, with the breakdown included.
+
+> ### ⏳ IT IS TIME-BOUND, AND THE WINDOW IS SHORT
+>
+> *"The above reports can only be purchased through the student portal for **seven days after the
+> results are published** and for the **current session only**."* FAE Summer 2026 results are
+> published **4 September 2026**, so the window **closes 11 September 2026**. The next one is the
+> Autumn 2026 session — results **29 January 2027**. (Both dates from CAI's own timetable page,
+> verified 2026-08-30.) There is no retrospective route: a session missed cannot be bought later.
+
+**Four limits, and none of them is small. State them whenever this route is proposed:**
+
+1. ⚠️ **IT DOES NOT YIELD THE SCRIPT.** *"Students are not provided with a copy of their script as
+   part of the tutorial report. Students wishing to apply for a copy of their script need to submit
+   an access request to the privacy manager."* So *"real script, real marks, real examiner
+   comments"* is **two routes, not one**: the Information Scheme buys the marks and the comments;
+   the script is a separate subject-access request, unbounded by the seven days and not immediate.
+2. ⚠️ **ONLY A FAILING CANDIDATE IS ELIGIBLE** — it is offered *"to candidates who have received a
+   result of 'fail'"* and is *"not available to students who have received a 'pass'"*. So the
+   calibration sample is **structurally skewed to the bottom of the distribution and can never
+   contain a strong script.** For calibrating where a point *starts* scoring that is arguably the
+   informative end; for calibrating what full marks look like it is the wrong end entirely.
+3. ⚠️ **IT DEPENDS ENTIRELY ON A TRAINEE'S CONSENT** — this is a third party's personal exam data
+   and a failed result. Explicit, informed consent before it is read, quoted or used, and none of
+   it enters a retrieval corpus.
+4. ⚠️ **ONE SCRIPT IS ONE MARKER'S APPLICATION ON ONE SITTING.** It is a sample of one against the
+   drift named in the table above; it narrows the gap, and does not close it.
+
+**Why it is still the best route:** every other named source describes the standard from the
+outside. Sample marking, FAEC reports and the moderation material (**FAE-MARKING**) describe the
+**process** — and the distinction matters, because *"CAI publishes its marking process"* is true
+and *"CAI publishes its marking scheme"* is false. The CASSI 2025 report (**FAE-CASSI25**) records
+candidates themselves *"strongly recommend[ing] that the Institute should provide a marking scheme
+for sample papers"* — candidate-side confirmation that the scheme is not published. The Information
+Scheme is the only route that returns CAI's judgement **applied to an actual answer**.
+
 ---
 
 ## 6. Provenance
@@ -586,6 +643,8 @@ counts in §3 describe the cycle a product would sell into.
 | SHA-256 | `6C89744A0735613C3A7FFFC6A0632C9B37D6F545CE302CEDAC3F4C82E27ACBB9` (1,346,063 bytes) — the local copy is byte-identical to the public one |
 | Storage | **Fetched, not stored.** `docs/FAE/` is git-ignored; never committed, never indexed |
 | Registered | `docs/evidence/sources.json` → `syllabus_sources` → **E7** |
+| **Additional research registered 2026-08-30** | `docs/evidence/sources.json` → **`fae_research_sources`** — **FAE-CASSI25** (CASSI FAE Education Report 2025; §6.3 names the actual eight indicators of the real 2025 Advisory sitting) · **FAE-MARKING** (CAI *Marking checks and processes*; the page behind §5's correction — sample marking, test-mark alignment, moderation, and *"At FAE, all scripts are independently double marked"*) · **FAE-BARDEN23** (CAI/Barden *FAE Exam Guide 2023*; the *"up to three or four pieces of work per Indicator"* design evidence behind §4.4) · **FAE-INFOSCHEME** (CAI Information Scheme; the calibration route in §5.1). All public, all fetched-not-stored, all outside `fetch_acca_sources.ps1`'s loop — two are HTML and that script throws on anything without a `%PDF` magic number. |
+| **Authority is NOT uniform across those four** | **FAE-MARKING** and **FAE-INFOSCHEME** are CAI describing its own process and its own product terms — authoritative. **FAE-CASSI25** is a **student survey** (352 respondents, 42 of them ADV): authoritative for the *indicator roster it reports*, and **perception only** on difficulty, fairness and syllabus coverage. **FAE-BARDEN23** is a 2023 examiner interview and is **design evidence, not current marking authority** — and its quote is from the **FAE Core** Q&A, not the Advisory elective. |
 | Corpus snapshot (first pass) | 154 published drills (AFM 63 / 27 LOs; APM 91 / 63 LOs); 16 cases (APM 5 practice + 3 mock, AFM 5 practice + 3 mock); 12 calculator modules; 28 schema builders; 28 model-answer builders |
 | **Corpus snapshot (re-run, 2026-08-29)** | **160 `acca_drills` rows: 154 published** (AFM 63, APM 91) **+ 5 SBL `approved`/`published=false`** (A1a, A2b, A2d, A3a, A3d) **+ 1 AFM permanent candidate** (`47c9d5ce`). **38 published case requirements** (APM 11 practice + 7 mock; AFM 12 practice + 8 mock) across 16 published cases. Calculators, builders and model-answer builders unchanged at 12 / 28 / 28. |
 | Re-run method | Every named framework in the 24 competencies swept across all 5 content fields of all 160 rows, **then every hit opened and read** (P-DB5). Eight false friends found and excluded — see §3.5. |
