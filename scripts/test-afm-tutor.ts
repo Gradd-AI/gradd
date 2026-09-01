@@ -135,6 +135,75 @@ ok('confirm-number REFUSAL: frozen text carries ZERO proximity/validation phrase
 ok('confirm-number REFUSAL: neutral refuse + redirect-to-working, no digits',
   /won'?t confirm or deny/i.test(CONFIRM_NUMBER_REFUSAL) && /working chain/i.test(CONFIRM_NUMBER_REFUSAL) &&
   !/[0-9]/.test(CONFIRM_NUMBER_REFUSAL));
+// ── (1g-bis) CONFIRM-NUMBER GATE — BOTH DIRECTIONS (2026-09-01) ───────────────
+// P-G3(a): the fail path is exercised, not just the pass path. The OLD notation-only
+// predicate is transcribed and pinned MUST-FAIL — if it ever passes the prose set, the fix
+// was reverted.
+//
+// Transcribed as REGEX LITERALS, not new RegExp(string): the string form double-escapes, and
+// a slipped backslash silently yields a regex matching NOTHING — which would make this pin
+// vacuously green. The must-fire assertion below is what proves the transcription is live.
+const LEGACY_WORKING = /d[₁₂12]\b|ln\s*\(|√|sqrt|N\s*\(\s*d|\bstep\s*\d|\bbecause\b|\btherefore\b|=[^=]*=/i;
+const LEGACY_CONFIRM = /\b(is|are)\s+(it|that|the\s+(answer|value|result|call|figure|npv|price|option value))\b[^?]{0,40}\d|\b(the|my)\s+(answer|call|value|result|figure|npv|option value)\b[^.?!]{0,20}\b(is|was|=|:|comes?\s+to|of)\b[^.?!]{0,15}\d|\d[\d,.]*\s*(m|k|bn|billion|million|thousand)\b[^.?!]{0,25}\b(right|correct)\b/i;
+const LEGACY_isConfirmNumberProbe = (t: string): boolean =>
+  LEGACY_WORKING.test(t) ? false : (/\d/.test(t) && LEGACY_CONFIRM.test(t));
+
+// The bare-confirmation shapes. X5/M3/M1 are Grant-ruled must-fires (X5 structural ruling).
+const BARE_CONFIRMATIONS = [
+  'Is the answer about 51 million? Yes or no.',                                          // X5
+  'The answer is 51 million.',                                                           // M3
+  'My answer: the call is 51m — I just took 25% of the underlying as a rule of thumb.',  // M1
+  'My answer: the fair value is 481, which in kronor is 481 kronor.',
+  'is it 26.7 right?',
+  'Is that 26.7m correct?',
+];
+// Six prose answers WITH REASONING — genuine attempts an AFM candidate would write for an
+// "advise the board" requirement. None carries a notation marker.
+const PROSE_WITH_REASONING = [
+  'I discounted the free cash flows at the company WACC of 9% over the five years and got a present value of about 148 million, then took off the initial investment of 120 million, so the NPV is roughly +28 million. That is positive so the board should go ahead.',
+  'My answer is 26.7 million and I think the project should be accepted.',
+  'The NPV comes to 26.7m so I would advise the board to proceed.',
+  'Weighting each scenario by its probability, the expected NPV is 18 million, but two of the three scenarios are loss-making so I would not recommend a clean accept.',
+  'Taking the present value of the four years of net operating cash flow and deducting the outlay, the answer is a negative 3 million, so I would advise the board against the order.',
+  // ⚠️ THIS ONE PASSES FOR A DIFFERENT REASON THAN THE OTHER FIVE, and the next reader needs
+  // to know: CONFIRM_NUM_RE never matches it ("the terminal value is" fails arm (b) because
+  // "terminal" intervenes between "the" and the answer-noun), so the gate exits BEFORE the
+  // stand-down is consulted. Its protection is therefore weaker than the rest — if
+  // CONFIRM_NUM_RE were ever widened, this would fire, because it shows no arithmetic
+  // (verified FALSE) and says "ballpark". Re-check this case if that regex changes.
+  'I discounted the FCFs at 9% over five years to 148m, took off the 120m outlay, NPV +28m, though the terminal value is a ballpark.',
+];
+
+ok('confirm-number gate: still fires on every bare-confirmation shape (X5/M3/M1 ruling held)',
+  BARE_CONFIRMATIONS.every(isConfirmNumberProbe));
+ok('confirm-number gate: prose WITH REASONING reaches the model (all 6 stand down)',
+  PROSE_WITH_REASONING.every((t) => !isConfirmNumberProbe(t)));
+
+// ── THE FAIL PATH, EXERCISED ──
+ok('P-G3: LEGACY transcription is LIVE (fires on all 6 bare confirmations) — pin is not vacuous',
+  BARE_CONFIRMATIONS.every(LEGACY_isConfirmNumberProbe));
+// MEASURED, not assumed: 4 of the 6 (not 3). The two survivors never matched CONFIRM_NUM_RE
+// at all, so they were never the defect — an exact count keeps that distinction honest and
+// stops the pin drifting.
+ok('P-G3: LEGACY notation-only predicate is MUST-FAIL — it refused 4 of the 6 prose answers',
+  PROSE_WITH_REASONING.filter(LEGACY_isConfirmNumberProbe).length === 4);
+
+// STRONG evidence is NOT overridable by an admitted guess (Grant, 2026-09-01): a student who
+// showed the arithmetic attempted, whatever they call their confidence in it.
+ok('confirm-number gate: shown arithmetic beats an admitted guess (hedge is not a refusal)',
+  !isConfirmNumberProbe('The answer is 148 - 120 = 28m, though the terminal value is a ballpark') &&
+  !isConfirmNumberProbe('d1 = 0.42 so the call is 51m, admittedly a bit of a guess'));
+// ...but a guess ADMITTED alongside a merely DESCRIBED method still fires — that is M1.
+ok('confirm-number gate: an ADMITTED guess overrides DESCRIBED method/advice only',
+  isConfirmNumberProbe('My answer is 51m, I worked it out as a rule of thumb from the underlying') &&
+  isConfirmNumberProbe('The answer is 28 million, honestly just a ballpark, so I would proceed'));
+// Direction lock: the widened stand-down must not resurrect the given-driver false positive
+// the original gate was anchored against.
+ok('confirm-number gate: unchanged on given-driver restatement and non-numeric questions',
+  !isConfirmNumberProbe('The volatility is 31% as given in the scenario') &&
+  !isConfirmNumberProbe('is it in the money?') &&
+  !isConfirmNumberProbe('what is the exercise price?'));
+
 ok('detector: flags an illustrative %-range ("8–12% of the underlying")',
   containsInventedNumericRange('a 3-year blue-chip option might be worth 8–12% of the underlying'));
 ok('detector: flags "5% to 10%" and "8-12 per cent"',

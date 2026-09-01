@@ -15,6 +15,10 @@
 //    token-cap truncation of the worked answer.
 
 // ── Ezra persona — APM ────────────────────────────────────────────────────────
+// The confirm-number gate's STRONG stand-down reuses this rather than restating it — see
+// showsWorking() below. bare-guess-veto.ts has no imports of its own, so this adds no cycle.
+import { hasArithmetic } from './bare-guess-veto';
+
 // Shared code-owns-numbers guardrail for the CONVERSATIONAL legs (warm/hint/teach/confirm) of
 // EVERY paper. Strengthened 2026-07-15: the old clause banned a "specific figure" but a persona
 // still invented illustrative RANGES and rules-of-thumb ("a 3-year blue-chip option might be worth
@@ -195,9 +199,66 @@ export const CONFIRM_NUMBER_REFUSAL =
   "I won't confirm or deny a destination figure — that's not how the marks work, and it wouldn't help " +
   "you in the hall. Show me your working chain and I'll mark the method step by step.";
 
-// Working-shown markers: if the message actually SHOWS a calculation, it is a genuine attempt for the
-// pipeline to diagnose — NOT a bare guess — so the gate must stand down.
-const WORKING_MARKERS_RE = /d[₁₂12]\b|ln\s*\(|√|sqrt|N\s*\(\s*d|\bstep\s*\d|\bbecause\b|\btherefore\b|=[^=]*=/i;
+// ── ATTEMPT EVIDENCE — the stand-down. WIDENED FROM NOTATION TO PROSE (2026-09-01) ──
+// ⚠️ THE OLD STAND-DOWN WAS NOTATION-ONLY AND THAT WAS THE DEFECT. It required d1/ln(/√/
+// N(d/step N/because/therefore or TWO `=` signs. AFM candidates write advice in PROSE, so a
+// genuine worked answer — "I discounted the FCFs at the 9% WACC, took off the 900m outlay, so
+// the NPV is +18m" — carried none of them, matched CONFIRM_NUM_RE on its closing figure, and
+// was served the frozen refusal WITHOUT EVER REACHING A MODEL. Reproduced 5/5 live.
+//
+// MEASURED BEFORE CHANGING IT: over 733 digit-bearing student messages in acca_drill_messages
+// the old stand-down saved ZERO — 20 fire with it on, 20 with it off (each marker neutralised
+// in turn, re-running the shipped function). It was a live-untested branch.
+//
+// ⚠️ THE BIAS IS DELIBERATE, and it is the asymmetry bare-guess-veto.ts already banks. An
+// OVER-veto costs ONE turn: the message reaches call2, whose bare-guess guard is the documented
+// backstop for this gate. An UNDER-veto tells a student who wrote 300 words of method to "show
+// me your working chain", which reads as the tutor not having read the answer — unrecoverable.
+// WHEN IN DOUBT, VETO.
+//
+// ⚠️ CEILING: this is WIDER, not SOUND. Separating a bare assertion from a prose derivation is
+// a SEMANTIC judgement — bare-guess-veto.ts designed that arm, measured it (13 of 14
+// digit-bearing messages are prose whose digits are SCENARIO figures) and killed it. A prose
+// derivation using none of the verbs below is still refused. That residual is call2's.
+//
+// ── STRONG vs WEAK, and why the split is load-bearing ────────────────────────
+// STRONG = the student SHOWED the derivation (arithmetic on the page, or BSOP notation).
+// WEAK   = the student DESCRIBED a method, or committed to advice. That is a CLAIM about
+//          method, not the method itself — which is exactly what M1 exploits.
+// Only WEAK is overridable by an admitted guess. See ADMITS_GUESS_RE.
+const NOTATION_RE = /d[₁₂12]\b|ln\s*\(|√|sqrt|N\s*\(\s*d|\bstep\s*\d|\bbecause\b|\btherefore\b|=[^=]*=/i;
+// Verbs of DERIVATION applied to scenario quantities. Deliberately NOT bare "took" or "so":
+// "I just took 25% as a rule of thumb" must not read as method (M1).
+const METHOD_RE = /\bdiscount(ed|ing)\b|\btook (off|away)\b|\bdeduct(ed|ing)?\b|\bsubtract(ed|ing)?\b|\badd(ed)? back\b|\bmultipl(y|ied|ying)\b|\bdivid(e|ed|ing)\b|\bweight(ed|ing)\b|\bnet of\b|\bless the\b|\bpresent value of\b/i;
+// A COMMITTED RECOMMENDATION is markable AFM content ("advise the board"), not a request to
+// confirm a figure. Bare "I would" is excluded on purpose — too broad, and it would rescue
+// "I would say the answer is 51 million", which is a guess.
+const ADVICE_RE = /\badvis(e|ing)\b|\brecommend(ing|ation)?\b|\bshould (proceed|accept|reject|go ahead|be accepted|be rejected)\b/i;
+
+// ── ADMISSION OF GUESSING — overrides WEAK evidence ONLY ─────────────────────
+// M1 ("the call is 51m — I just took 25% of the underlying as a rule of thumb") is a
+// Grant-ruled MUST-FIRE (APM_BUILD_CONTRACT.md, X5 structural ruling 2026-07-16). It NAMES a
+// method, so a METHOD_RE stand-down alone would wrongly rescue it.
+//
+// ⚠️ BUT THIS ARM MUST NEVER OVERRIDE hasArithmetic OR NOTATION_RE (Grant, 2026-09-01):
+// a student who SHOWED the arithmetic attempted, whatever they call their confidence in it.
+// "148 - 120 = 28, though the terminal value is a ballpark" is a worked answer with an honest
+// hedge, and refusing it would punish exactly the calibration the paper wants.
+// VERIFIED WHEN THIS SHIPPED: hasArithmetic is FALSE on M1 (its em-dash normalises to `-`, but
+// the next token is `I`, not a digit), so the ordering below leaves the X5 ruling untouched —
+// M1 reaches the admission arm and still fires.
+const ADMITS_GUESS_RE = /\brule[- ]of[- ]thumb\b|\bballpark\b|\bgut feel\b|\bguess(ed|ing)?\b|\bstab in the dark\b|\boff the top of my head\b/i;
+
+/** STRONG evidence: the derivation is ON THE PAGE. Never overridable.
+ *  `hasArithmetic` is REUSED from bare-guess-veto.ts rather than restated — it is the same
+ *  question, already tuned to over-veto, and two copies would drift. */
+function showsWorking(text: string): boolean {
+  return hasArithmetic(text) || NOTATION_RE.test(text);
+}
+/** WEAK evidence: a method DESCRIBED, or advice committed to. Overridable by an admitted guess. */
+function describesAttempt(text: string): boolean {
+  return METHOD_RE.test(text) || ADVICE_RE.test(text);
+}
 // Bare confirm-a-number / assert-a-figure patterns (no working): "is the answer ~51m?", "is it about
 // 51 million, yes or no?", "the answer is 51 million", "my answer: the call is 51m". Anchored on
 // answer/result/value/call nouns so restating a GIVEN driver ("the volatility is 31%") does NOT match.
@@ -211,8 +272,13 @@ const CONFIRM_NUM_RE = new RegExp(
 // Fires on a bare figure-confirmation/assertion with no working shown; the call2 guard remains the
 // backstop for phrasings this narrow detector misses.
 export function isConfirmNumberProbe(text: string): boolean {
-  if (WORKING_MARKERS_RE.test(text)) return false;
-  return /\d/.test(text) && CONFIRM_NUM_RE.test(text);
+  if (!/\d/.test(text)) return false;
+  if (!CONFIRM_NUM_RE.test(text)) return false;
+  // STRONG evidence wins outright — an admitted guess cannot override a shown derivation.
+  if (showsWorking(text)) return false;
+  // An admitted guess beats a merely DESCRIBED method or a bare recommendation.
+  if (ADMITS_GUESS_RE.test(text)) return true;
+  return !describesAttempt(text);
 }
 
 export const EZRA_SYSTEM =
