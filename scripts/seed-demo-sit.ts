@@ -10,7 +10,7 @@
 // SERVER-set (app/api/acca/sit/route.ts). Neither reads a client value, so a pacing
 // profile cannot be authored — it can only be PERFORMED. The intervals the pacing view
 // reports are the real wall-clock gaps between HTTP requests, so this script produces them
-// by actually waiting. That is why it takes 2h53m.
+// by actually waiting. That is why it takes 2h47m.
 //
 // ⚠️ IT WRITES NO TIMESTAMP. Not `submitted_at`, not `started_at`, not `ends_at`, not
 // `completed_at`. Every one of those is written by a route, from the server's own clock.
@@ -58,7 +58,7 @@ const EMAIL = val('--email', 'afm-demo-sit@gradd.ai')!;
 const MARK_AFTER = has('--mark');
 const LOG_PATH = val('--log');
 // ⚠️ ANYTHING BUT 1 PRODUCES UNUSABLE PACING. It exists ONLY to smoke-test the mechanics
-// end to end in ~2 minutes before committing to the real 2h53m run. A scaled run must be
+// end to end in ~2 minutes before committing to the real 2h47m run. A scaled run must be
 // thrown away (different account) — never demoed.
 const SCALE = Number(val('--scale', '1'));
 
@@ -69,8 +69,20 @@ const PAPER = 'AFM';
 // interval the pacing view will report between R(n-1) and Rn (and for R1, between the start
 // of the attempt and R1 — which pacing reports as "reading + first requirement", ratio null).
 //
-// 173 minutes against a 195-minute clock: bled time on case 1, recovered on case 2, rushed
+// 167 minutes against a 195-minute clock: bled time on case 1, recovered on case 2, rushed
 // case 3. Budgets are marks x 1.95 (lib/acca/pacing.ts MINUTES_PER_MARK).
+//
+// ── WHY R7=12 AND R8=6, NOT 16 AND 8 (revised 2026-09-01) ────────────────────
+// The first schedule totalled 173 and produced two `under` flags but NO collapse headline,
+// which is a threshold fact worth writing down rather than rediscovering:
+// `detectCollapse` takes the SHORTEST SUFFIX (excluding R1) whose combined budget is at
+// least 20% of the paper's requirement budget — here R7+R8, budget 39.0 min = 25% of 156 —
+// and fires only when the ACTUAL is under 50% of that, i.e. below 19.5 min. 16+8 = 24 misses
+// it; 12+6 = 18 clears it. So the debrief now STATES the end-of-paper collapse instead of
+// leaving a reader to infer it from two ratios.
+//
+// Expected flags: R1 no_ratio (reading + first requirement) · R2 1.35 over · R3 1.35 over ·
+// R4 1.11, R5 1.03, R6 0.96 on budget · R7 0.51 under · R8 0.38 under · collapse FIRES.
 const PLAN = [
   { key: 'R1', case_id: 'aa000000-0000-4000-8000-00000000a001', order: 1, wait: 34, marks: 10, label: 'Solenne (i) B3e' },
   { key: 'R2', case_id: 'aa000000-0000-4000-8000-00000000a001', order: 2, wait: 42, marks: 16, label: 'Solenne (ii) B5b' },
@@ -78,8 +90,8 @@ const PLAN = [
   { key: 'R4', case_id: 'aa000000-0000-4000-8000-00000000a001', order: 4, wait: 13, marks: 6,  label: 'Solenne (iv) E1a' },
   { key: 'R5', case_id: 'aa000000-0000-4000-8000-00000000b101', order: 1, wait: 24, marks: 12, label: 'Brecon (i) B1a' },
   { key: 'R6', case_id: 'aa000000-0000-4000-8000-00000000b101', order: 2, wait: 15, marks: 8,  label: 'Brecon (ii) B1b' },
-  { key: 'R7', case_id: 'aa000000-0000-4000-8000-00000000b201', order: 1, wait: 16, marks: 12, label: 'Aldebrino (i) E3a' },
-  { key: 'R8', case_id: 'aa000000-0000-4000-8000-00000000b201', order: 2, wait: 8,  marks: 8,  label: 'Aldebrino (ii) E2a' },
+  { key: 'R7', case_id: 'aa000000-0000-4000-8000-00000000b201', order: 1, wait: 12, marks: 12, label: 'Aldebrino (i) E3a' },
+  { key: 'R8', case_id: 'aa000000-0000-4000-8000-00000000b201', order: 2, wait: 6,  marks: 8,  label: 'Aldebrino (ii) E2a' },
 ] as const;
 
 const CASE_IDS = Array.from(new Set(PLAN.map((p) => p.case_id)));
@@ -166,7 +178,7 @@ async function findUser(email: string): Promise<string | null> {
 }
 
 // ── preflight ────────────────────────────────────────────────────────────────
-// Every check that can refuse the run happens BEFORE the clock starts. A 2h53m run that
+// Every check that can refuse the run happens BEFORE the clock starts. A 2h47m run that
 // dies at minute 170 on something knowable at minute 0 is the failure this exists to stop.
 async function preflight(): Promise<{ userId: string; cookie: string; reqIds: Map<string, string> }> {
   // 1. answers file present and complete
