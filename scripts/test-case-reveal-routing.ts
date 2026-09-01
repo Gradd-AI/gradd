@@ -364,8 +364,21 @@ ok('AFM does NOT adopt the drill route design "B" (no verbatim-append instructio
       (code.match(/open on the first move the answer turns on/g) || []).length === 1 &&
       (code.match(/CASE_REVEAL_CORE_(AFM|APM)_NC = mustRecast/g) || []).length === 2);
     // POSITIVE CONTROL (P-G3): prove the comment-blanking did not simply erase the file.
+    //
+    // ⚠️ NOT A LENGTH RATIO ANY MORE (corrected 2026-09-01). It was
+    // `code.length > personas.length * 0.5`, and it sat at 0.508 on a file whose house style is
+    // deliberately comment-heavy — 0.008 of headroom. A documentation-only edit to
+    // tutor-personas.ts pushed it to 0.490 and went red while the blanking was working
+    // perfectly. A control that fires on PROSE changes is measuring the wrong thing, and the
+    // repair a red build invites is deleting comments, which is the opposite of what this
+    // file wants. It now asserts what it actually means: real code SURVIVED the blanking, and
+    // comment text DID NOT.
     ok('#5 POSITIVE CONTROL: blanking preserved the code it is scanning',
-      code.length > personas.length * 0.5 && /mustRecast/.test(code));
+      /mustRecast/.test(code) &&
+      /CASE_REVEAL_CORE_AFM_NC = mustRecast/.test(code) &&
+      /export function isConfirmNumberProbe/.test(code) &&
+      // ...and blanking genuinely removed comment prose (this phrase is comment-only).
+      /FROZEN TEXT/.test(personas) && !/FROZEN TEXT/.test(code));
   }
 
   // (h) THE CARRIER ROUND-TRIPS, and an absent field reads as false — every session sealed before
