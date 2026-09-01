@@ -1352,6 +1352,37 @@ later reader not to look. That is the **P-G2** failure — an unstated denominat
 coverage — applied to a search rather than a detector. **State what you searched.** "Not on disk,
 not in any ref, not dangling" is a description of four places; "gone" is a claim about all of them.
 
+**P-V4 — A PROXY IS NOT THE QUESTION (ruled 2026-09-01, four instances measured 2026-08-29/09-01).**
+
+Every one of these is a check that stands in for a judgement it cannot make, where the proxy was
+sound enough to pass review and the substitution was never written down. They were found
+separately, within four days, in four different parts of the codebase.
+
+| | The check keys on… | …but the question is | How they come apart |
+|---|---|---|---|
+| **T4** (marker-figure arm) | a figure being PRESENT in the candidate's answer text | is the MARKER ATTRIBUTING it to the candidate | the marker asserts the figure flatly with no cue — *"a difference of €0.438m in favour of the forward"* — and presence-matching exempts it. **11 of 88 hand-read exemptions are endorsements (12.5%)** |
+| **`isConfirmNumberProbe`** | NOTATION (`d1`/`ln(`/`√`/`step N`/two `=`) | did the student ATTEMPT | AFM candidates write advice in PROSE. A worked answer carrying none of those markers was served the frozen refusal **without ever reaching a model**, 5/5 live |
+| **case-reveal positive control** | `code.length > personas.length * 0.5` | did comment-blanking preserve the CODE | the file's house style is comment-heavy. The ratio sat at **0.508**; a documentation-only edit took it to **0.490** and it went red while the blanking worked perfectly |
+| **marker-figure claim** | `answer_schema` as the code-owned reference | is the MARKER READING one | `TechnicalRequirementInput` has no schema field and `case-mark-run.ts` never selects it. The proxy was inert — **the marker sees `model_answer` prose only** |
+
+**The rule. When a check stands in for a judgement, name the PROXY and the QUESTION separately in
+the comment, and state what would make them come apart.** Not "this detects an attempt" — *"this
+detects notation, which stands in for an attempt; they diverge on prose derivations."* The comment
+is where the substitution becomes visible, because the code cannot show it: a proxy and its question
+agree on every input anyone thought to try, which is exactly why the gap survives review.
+
+⚠️ **A PROXY THAT CANNOT BE SHOWN TO DIVERGE FROM ITS QUESTION HAS NOT BEEN TESTED.** This is
+`P-G3(a)` with a sharper edge: it is not enough to exercise the fail path with inputs the proxy
+was built for. Construct the input where proxy and question **disagree**, and assert on it. Two of
+the four above had green fixtures throughout — `isConfirmNumberProbe` had four assertions and none
+used prose; the reveal control asserted a ratio and never asserted that code survived.
+
+📐 **AND MEASURE THE PROXY'S REACH BEFORE TRUSTING IT.** The confirm-number stand-down was measured
+over **733 digit-bearing student messages** by neutralising each marker in turn and re-running the
+shipped function: it saved **ZERO** — 20 fire with it on, 20 with it off. It had never once done
+its job in production, and nothing said so. A branch with no observed firings is a claim, not a
+guard; the reach is a number, and it is usually cheap to get.
+
 **P-T3 — A GUARD THAT SHORT-CIRCUITS A CHECK MUST NOT EMIT A LABEL THAT READS AS THE CHECK HAVING
 PASSED (ruled 2026-08-22, measured).**
 
