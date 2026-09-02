@@ -90,6 +90,83 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🟠 LOGGED 2026-09-02 — THE ONE REAL STUDENT IS IN THE COORDINATOR VIEW, AND HE RENDERS **RED** AT 0.384
+
+**Production DB write, recorded here because `cohorts` / `cohort_memberships` / `org_memberships`
+have no journal of their own and a membership written with no record is indistinguishable from a
+seeding accident.** Grant-instructed, 2026-09-02, after the `lib/org/queries.ts` join fix was merged
+(`fea319e`) and its contract gate confirmed on the deploy — **P-DB8(b)**: what the coordinator
+renders is gated on that code, so the code went first.
+
+| row | id | value |
+|---|---|---|
+| `cohorts` | `48b0b9db-cad8-4c61-ae0d-32984af40b03` | org `e2256bfa` (demo-advisory), label **`Sept-26 APM — live`**, paper `APM`, subject `ACCA APM`, target_sitting `Sept-26` |
+| `cohort_memberships` | `b350ac60-9361-42de-a1d6-692971632664` | cohort ↑ · user `dd786100-7d5d-4e1b-a0af-62f5ac8686e1` |
+| `org_memberships` | `cda7576e-19be-4cfd-adbf-b11652cb13d3` | org ↑ · `maphosaan@gmail.com` · role `member` · status **`active`** |
+
+**A NEW cohort, deliberately — he is in neither seeded cohort.** The `org_memberships` row was
+required as well, not optional: `emailsForOrg` reads the email from that table and
+`displayNameFromEmail(null)` renders **"Unknown trainee"** without it. ⚠️ It also increments the
+org's `active` utilisation count from the demo's seeded figure — a real membership now sits inside
+a demo org's numbers.
+
+### What the coordinator renders for him
+
+`computeReadiness` run on his real post-fix inputs: **score `0.38375`, band `red`, no override.**
+
+| component | weight | score | inputs |
+|---|---|---|---|
+| recency | 0.30 | **1.00** | 0 days — last active `2026-09-02T02:11:04Z` |
+| **coverage** | **0.30** | **0.00** | **0 of 12 sub-areas** |
+| missRate | 0.25 | 0.125 | recent 2/2 missed, prior 2/2 missed, `usedSlope: true` |
+| assessment | 0.15 | 0.35 | mock `paper-1` PS aggregate 7/20; no standalone case marks |
+
+**AMBER_AT is 0.40. He is 0.017 short.** He is the most engaged human on the platform — active
+today, six drill days across five weeks, a complete 3h15m sit finished on the clock — and he reads
+red.
+
+### 📐 THE TWO ITEMS IN THIS SESSION MEET HERE, AND THIS IS THE FINDING
+
+**His coverage is 0/12 because coverage is defined as `>= 1 attempt with `outcome='correct'`
+(`buildInput`), and the correct-gate has NEVER fired for a real student** — see the P-V4 block
+above. All 14 of his attempts survive the join (servable, published, APM: 6 drills, 5 sub-areas) and
+all 14 are `miss`. So a 0.30-weight component is pinned at zero by a gate whose real-student pass
+rate is 0 for 15 across the product's entire history.
+
+**Counterfactual, labelled as one and NOT a claim about what he deserves:** credit the 5 sub-areas
+he has actually attempted and the score is `0.38375 + 0.30 × (5/12) = 0.50875` → **amber**.
+Coverage alone is the whole distance between red and amber for him. Nothing here says 5/12 is the
+right number — it says the band is being decided by the one input the correct-gate controls.
+
+⚠️ **`lastActiveAt` is not purely a student signal.** `buildInput` touches `acca_case_marking.marked_at`,
+which is OUR marker's write, not his action. Immaterial here (02:11 marking vs 02:07 submit) but it
+means a paper marked days after it was sat would report recency from the marking.
+
+### Heatmap row (5 cells, all `covered: false`)
+
+| sub-area | attempts | misses | missRate |
+|---|---|---|---|
+| A1 | 7 | 7 | 1.000 |
+| A3 | 2 | 2 | 1.000 |
+| B1 | 1 | 1 | 1.000 |
+| B3 | 2 | 2 | 1.000 |
+| C1 | 2 | 2 | 1.000 |
+
+**Every cell in the only real row of the heatmap is a 100% miss rate with no coverage.** Seven of
+the twelve APM sub-areas render as never touched.
+
+### Weakness ledger — 9 open rows, none resolved
+
+`A1b` weak ×6 (drill) · `A1g` competent (sit) · `B1a` weak (sit) · `B3b` competent (drill) ·
+`B4b` competent (sit) · `C1a` competent (sit) · `C1e` competent (drill) · `D2a` competent (sit) ·
+`D2i` weak (sit). The drill rows and the sit rows are independent by unique key, as designed.
+
+### Rollback
+
+Delete `cohort_memberships` `b350ac60…`, `cohorts` `48b0b9db…`, `org_memberships` `cda7576e…`.
+No other table was written. ⚠️ Deleting the `org_memberships` row is safe; deleting the AUTH user
+would silently null his `acca_funnel_events.user_id` (`ON DELETE SET NULL`) — do not.
+
 ## 🔴 OPEN 2026-09-02 — THE CORRECT-OUTCOME GATE IS A REGEX ON A MODEL-AUTHORED SENTENCE, AND NO REAL STUDENT DRILL HAS EVER PASSED IT (**P-V4**, fifth instance)
 
 **NOTHING IN THE CORRECTNESS PATH WAS CHANGED. This is a report, logged before any fix, at Grant's
