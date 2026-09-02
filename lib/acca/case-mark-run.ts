@@ -31,7 +31,7 @@ import {
   type PerSkillMark,
   type TechnicalMarkingResult,
 } from '@/lib/acca/case-marking';
-import { caseMarkReady } from '@/lib/acca/case-sit';
+import { caseMarkReady, progressModeFilter } from '@/lib/acca/case-sit';
 import { markerLabel } from '@/lib/acca/requirement-label';
 import { ledgerActionsFor } from '@/lib/acca/weak-areas';
 // The open/close implementation MOVED to lib/acca/weak-area-store.ts (2026-08-12) when the
@@ -150,7 +150,11 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
     .select('requirement_id, passed, final_answer, submitted_at')
     .eq('user_id', userId)
     .eq('case_id', caseId);
-  progressQuery = sitting ? progressQuery.eq('attempt_id', attemptId) : progressQuery.is('attempt_id', null);
+  // The mode's attempt scoping, from the ONE definition the write below also uses.
+  const modeFilter = progressModeFilter(sitting, attemptId);
+  progressQuery = modeFilter.op === 'eq'
+    ? progressQuery.eq(modeFilter.column, modeFilter.value)
+    : progressQuery.is(modeFilter.column, modeFilter.value);
   const { data: progressRaw } = await progressQuery;
 
   const progressByReq = new Map<string, { passed: boolean; final_answer: string | null; submitted_at: string | null }>();
@@ -341,7 +345,12 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
     // `false`, not null.
     if (technical) {
       for (const pr of technical.per_requirement) {
-        await supabase
+        // ⚠️ SCOPED TO THE MODE'S OWN ROW. Without the attempt filter this update matched
+        // (user, case, requirement) — which is a SET, not a row, because the table's
+        // UNIQUE is NULLS NOT DISTINCT over four columns — and a sit's marking wrote these
+        // four columns onto the PRACTICE row too. Same `modeFilter` the read used, so the
+        // rows marked are exactly the rows read.
+        const write = supabase
           .from('acca_case_progress')
           .update({
             band: pr.band,
@@ -356,6 +365,9 @@ export async function runCaseMarking(input: CaseMarkRunInput): Promise<CaseMarkR
           .eq('user_id', userId)
           .eq('case_id', caseId)
           .eq('requirement_id', pr.requirement_id);
+        await (modeFilter.op === 'eq'
+          ? write.eq(modeFilter.column, modeFilter.value)
+          : write.is(modeFilter.column, modeFilter.value));
       }
     }
   } catch {

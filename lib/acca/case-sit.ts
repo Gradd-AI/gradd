@@ -85,3 +85,48 @@ export function caseMarkReady(
   const unpassed = reqs.filter((r) => r.passed !== true).length;
   return unpassed === 0 ? { ready: true } : { ready: false, reason: 'case not complete' };
 }
+
+// ── WHICH acca_case_progress ROW DOES THIS MODE OWN? ──────────────────────────
+// `acca_case_progress` carries `UNIQUE NULLS NOT DISTINCT (user_id, case_id,
+// requirement_id, attempt_id)` (migration 20260801120000), so ONE (user, case,
+// requirement) legitimately holds BOTH a practice row (attempt_id NULL) and one row per
+// sitting. `(user_id, case_id, requirement_id)` alone therefore does NOT identify a row —
+// it identifies a SET — and any statement using only those three touches every mode's row
+// at once.
+//
+// ⚠️ THE BUG THIS CLOSES. `case-mark-run.ts` scoped its progress READ by mode but its
+// per-requirement WRITE did not: the update filtered on user/case/requirement only, so a
+// sit's technical marking wrote `band` / `technical_marks_awarded` /
+// `technical_marks_available` / `technical_feedback` onto the PRACTICE row for the same
+// requirement as well as its own. Invisible today only because practice never sets those
+// columns and nothing reads them on a practice row — a latent overwrite waiting for the
+// first path that does.
+//
+// The rule is expressed ONCE, here, and consumed by the read and the write, so they cannot
+// drift again. It is a DESCRIPTOR rather than a query-builder helper on purpose: both call
+// sites apply it in one line, and a pure descriptor is testable against real row shapes
+// without a DB or a mock client.
+export type ProgressModeFilter =
+  | { column: 'attempt_id'; op: 'eq'; value: string }
+  | { column: 'attempt_id'; op: 'is'; value: null };
+
+/**
+ * The attempt scoping for a mode. A SIT owns exactly its own attempt's row; PRACTICE owns
+ * the NULL row. `attemptId` is required in sit mode — `runCaseMarking` already refuses a
+ * sit without one (409 'sit marking requires an attempt_id'), so this throws rather than
+ * silently widening to every row if that guard is ever bypassed.
+ */
+export function progressModeFilter(sitting: boolean, attemptId: string | null): ProgressModeFilter {
+  if (!sitting) return { column: 'attempt_id', op: 'is', value: null };
+  if (!attemptId) throw new Error('progressModeFilter: sit mode requires an attempt_id');
+  return { column: 'attempt_id', op: 'eq', value: attemptId };
+}
+
+/** Does this row fall inside the filter? The predicate the DB applies, in code, so a
+ *  fixture can assert which of two real rows a statement would touch. */
+export function progressRowMatches(
+  row: { attempt_id: string | null },
+  f: ProgressModeFilter,
+): boolean {
+  return f.op === 'eq' ? row.attempt_id === f.value : row.attempt_id === null;
+}
