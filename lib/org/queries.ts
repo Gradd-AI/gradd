@@ -11,7 +11,7 @@
 
 import { createServiceClient } from '@/lib/supabase/server';
 import { getMockPaper, MOCK_PAPERS } from '@/lib/acca/mocks';
-import { type AccaPaper } from '@/lib/acca/paper';
+import { ACCA_PAPERS, type AccaPaper } from '@/lib/acca/paper';
 import { computeReadiness, mockScoreFromMarks, DAY_MS, type ReadinessInput, type ReadinessResult } from './readiness';
 
 const WINDOW_MS = 14 * DAY_MS; // recent = last 14d; prior = 14–28d ago
@@ -148,17 +148,65 @@ async function totalSubAreas(paper: AccaPaper = 'APM'): Promise<number> {
   return (await allSubAreas(paper)).length;
 }
 
-/** Map attempted/progressed drill ids → their paper_code, so a per-paper student view can
- *  scope drill-based rows (acca_drill_attempts / acca_tutor_progress carry no paper column).
- *  JOIN-based (no migration): id is globally unique, so no status/published filter — an
- *  attempt implies the drill existed; an unresolved id is simply left unclassified. */
-async function drillPapers(drillIds: string[]): Promise<Map<string, string>> {
+// ── THE DRILL JOIN, AND WHY EVERY DRILL-BASED READ MUST GO THROUGH IT ─────────
+// `acca_drill_attempts` and `acca_tutor_progress` carry a `drill_id` and NO paper column,
+// and NOTHING constrains that id to a drill that exists. Three row classes therefore reach
+// an unjoined read, and all three are wrong for a coverage/readiness number:
+//
+//   1. SEEDED rows — scripts/seed-demo-org.ts writes fabricated `drill_id`s. Measured
+//      2026-09-02: 311 of 1,222 attempt rows, carrying 191 of the 216 `correct` outcomes
+//      (a 61.4% correct rate against 2.7% on real drills). An unjoined coordinator view
+//      reported demo fiction as product performance.
+//   2. UNPUBLISHED / unapproved drills — the coverage DENOMINATOR (`allSubAreas`) filters
+//      `status='approved' AND published=true`, so a numerator that does not is counting
+//      into a denominator that excludes it. That is what produced 13 covered sub-areas
+//      against a total of 12, which `computeReadiness` then CLAMPED to 1.0 rather than
+//      rejecting — a saturated 0.30-weight component built out of rows nobody can serve.
+//   3. THE OTHER PAPER — AFM and APM lo_code prefixes collide exactly (both use A1/B1/…),
+//      so an AFM attempt buckets into an APM sub-area silently. `subAreaOf`'s own comment
+//      has said "scope its rows to one paper BEFORE bucketing" since it was written.
+//
+// The map is therefore SERVABLE drills only, and the filter is an EQUALITY on paper_code:
+// an unresolved id (seeded, deleted, unpublished, other paper) is absent from the map, and
+// `undefined === paper` is false, so it drops. Failure direction is exclusion, never
+// silent inclusion.
+//
+// ⚠️ TRADE-OFF, ACCEPTED AND FLAGGED: unpublishing a drill retroactively removes a genuine
+// past attempt from these numbers. That is the correct direction while the denominator is
+// published-only — a covered sub-area a student can no longer be served is not coverage —
+// but it does mean a coverage figure is a statement about the CURRENT pool, not a
+// historical record. Do not describe it as "what they have done".
+async function servableDrills(drillIds: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
   if (drillIds.length === 0) return map;
   const sb = createServiceClient();
-  const { data } = await sb.from('acca_drills').select('id, paper_code').in('id', drillIds);
+  const { data } = await sb
+    .from('acca_drills')
+    .select('id, paper_code')
+    .in('id', drillIds)
+    .eq('exam_board', 'ACCA')
+    .eq('status', 'approved')
+    .eq('published', true);
   for (const r of (data as { id: string; paper_code: string }[] | null) ?? []) map.set(r.id, r.paper_code);
   return map;
+}
+
+/** Keep only rows whose drill resolves, through `servable`, to THIS paper. PURE — the map is
+ *  supplied, so the rule is fixtured without a DB (scripts/test-org-readiness.ts T15–T19). */
+export function scopeDrillRows<T extends { drill_id: string }>(
+  rows: readonly T[],
+  servable: ReadonlyMap<string, string>,
+  paper: AccaPaper,
+): T[] {
+  return rows.filter((r) => servable.get(r.drill_id) === paper);
+}
+
+/** A cohort's paper, resolved for bucketing. `cohorts.paper` is free text (`string | null`),
+ *  so an unrecognised or absent value falls back to 'APM' — DELIBERATELY the same default as
+ *  `totalSubAreas()`/`allSubAreas()`, because the numerator and the denominator must agree on
+ *  which paper they are counting or the ratio is meaningless. */
+export function cohortPaper(paper: string | null | undefined): AccaPaper {
+  return (ACCA_PAPERS as readonly string[]).includes(paper ?? '') ? (paper as AccaPaper) : 'APM';
 }
 
 // ── Raw per-user rows, batched ────────────────────────────────────────────────
@@ -170,7 +218,11 @@ interface RawRows {
   mocks: { user_id: string; mock_id: string; completed: boolean; started_at: string }[];
 }
 
-async function rawRowsForUsers(userIds: string[]): Promise<RawRows> {
+/** Raw rows for a set of users, drill-based rows SCOPED to `paper` through the servable-drill
+ *  join. `paper` is required at every call site rather than defaulted here: the caller always
+ *  knows which paper its denominator is for, and a default would silently hand an AFM view
+ *  APM-scoped rows. */
+async function rawRowsForUsers(userIds: string[], paper: AccaPaper): Promise<RawRows> {
   if (userIds.length === 0) return { attempts: [], progress: [], marks: [], mocks: [] };
   const sb = createServiceClient();
   const [a, p, m, k] = await Promise.all([
@@ -179,9 +231,22 @@ async function rawRowsForUsers(userIds: string[]): Promise<RawRows> {
     sb.from('acca_case_marking').select('user_id, case_id, professional_marks_awarded, professional_marks_available, marked_at').in('user_id', userIds),
     sb.from('acca_mock_attempts').select('user_id, mock_id, completed, started_at').in('user_id', userIds),
   ]);
+  const attempts = (a.data as RawRows['attempts'] | null) ?? [];
+  const progress = (p.data as RawRows['progress'] | null) ?? [];
+
+  // ONE join for both drill-based tables — see servableDrills' header for the three row
+  // classes this excludes and why an unjoined read is wrong.
+  const servable = await servableDrills(
+    [...new Set([...attempts.map((r) => r.drill_id), ...progress.map((r) => r.drill_id)])].filter(Boolean),
+  );
+
+  // marks/mocks are CASE-based (acca_case_marking / acca_mock_attempts): they carry their own
+  // real foreign keys and no drill_id, so the join does not apply to them. `mocks` is already
+  // paper-resolved downstream via getMockPaper(mock_id); `marks` stays unscoped exactly as
+  // before, which is unchanged behaviour and a separate open item.
   return {
-    attempts: (a.data as RawRows['attempts'] | null) ?? [],
-    progress: (p.data as RawRows['progress'] | null) ?? [],
+    attempts: scopeDrillRows(attempts, servable, paper),
+    progress: scopeDrillRows(progress, servable, paper),
     marks: (m.data as RawRows['marks'] | null) ?? [],
     mocks: (k.data as RawRows['mocks'] | null) ?? [],
   };
@@ -286,8 +351,9 @@ export function buildInput(
 export async function getCohortReadiness(cohortId: string, now: number): Promise<TraineeReadiness[]> {
   const cohort = await getCohort(cohortId);
   if (!cohort) return [];
-  const [userIds, total] = await Promise.all([cohortUserIds(cohortId), totalSubAreas()]);
-  const [rows, emails] = await Promise.all([rawRowsForUsers(userIds), emailsForOrg(cohort.org_id)]);
+  const paper = cohortPaper(cohort.paper);
+  const [userIds, total] = await Promise.all([cohortUserIds(cohortId), totalSubAreas(paper)]);
+  const [rows, emails] = await Promise.all([rawRowsForUsers(userIds, paper), emailsForOrg(cohort.org_id)]);
 
   const byUserA = groupBy(rows.attempts, (r) => r.user_id);
   const byUserP = groupBy(rows.progress, (r) => r.user_id);
@@ -312,8 +378,9 @@ export async function getCohortReadiness(cohortId: string, now: number): Promise
 export async function getCohortHeatmap(cohortId: string): Promise<CohortHeatmap> {
   const cohort = await getCohort(cohortId);
   if (!cohort) return { subAreas: [], rows: [] };
+  const paper = cohortPaper(cohort.paper);
   const userIds = await cohortUserIds(cohortId);
-  const [rows, emails] = await Promise.all([rawRowsForUsers(userIds), emailsForOrg(cohort.org_id)]);
+  const [rows, emails] = await Promise.all([rawRowsForUsers(userIds, paper), emailsForOrg(cohort.org_id)]);
 
   const byUserA = groupBy(rows.attempts, (r) => r.user_id);
   const subAreaSet = new Set<string>();
@@ -480,20 +547,18 @@ const TREND_MIN_ATTEMPTS = 2;  // per window, before we'll call a direction
 const TREND_EPS = 0.15;        // miss-rate delta below this reads as flat (noise guard)
 
 export async function getMyProgress(userId: string, now: number, paper: AccaPaper = 'APM'): Promise<MyProgress> {
-  const [subAreas, rows] = await Promise.all([allSubAreas(paper), rawRowsForUsers([userId])]);
+  const [subAreas, rows] = await Promise.all([allSubAreas(paper), rawRowsForUsers([userId], paper)]);
   const total = subAreas.length;
 
-  // Scope drill-based rows to the active paper via a drill_id → paper_code join (the attempt
-  // and progress tables carry no paper column). AFM and APM LO prefixes collide, so this
-  // scoping MUST happen before any subAreaOf bucketing. marks/mocks are APM-only artefacts
-  // today (no AFM cases/mocks exist), so a non-APM view shows none rather than APM's.
-  const drillIds = [...new Set([
-    ...rows.attempts.map((a) => a.drill_id),
-    ...rows.progress.map((p) => p.drill_id),
-  ])].filter(Boolean);
-  const paperByDrill = await drillPapers(drillIds);
-  const attempts = rows.attempts.filter((a) => paperByDrill.get(a.drill_id) === paper);
-  const progress = rows.progress.filter((p) => paperByDrill.get(p.drill_id) === paper);
+  // Drill-based rows arrive ALREADY scoped to `paper` (rawRowsForUsers → servableDrills), which is
+  // where the local drill_id → paper_code filter that used to live here has moved. That is a
+  // behaviour change, deliberate, and in the SAME class as the coordinator fix: the old filter
+  // tested EXISTENCE only, so this page's numerator counted attempts on unpublished drills into a
+  // denominator (allSubAreas) that already filtered `approved`+`published`. Same bug, same file,
+  // 300 lines apart. marks/mocks are APM-only artefacts today (no AFM cases/mocks exist), so a
+  // non-APM view shows none rather than APM's.
+  const attempts = rows.attempts;
+  const progress = rows.progress;
   const marks = paper === 'APM' ? rows.marks : [];
   const mocks = paper === 'APM' ? rows.mocks : [];
 
@@ -599,7 +664,11 @@ export async function getMyProgress(userId: string, now: number, paper: AccaPape
 }
 
 export async function getTraineeDetail(orgId: string, userId: string, now: number): Promise<TraineeDetail | null> {
-  const [total, rows, emails] = await Promise.all([totalSubAreas(), rawRowsForUsers([userId]), emailsForOrg(orgId)]);
+  // No cohort is in scope on this route, so the paper is STATED rather than defaulted inside the
+  // helper — and it is the same 'APM' that totalSubAreas() already assumed here, so numerator and
+  // denominator agree. A per-paper trainee drill-down is an open item, not a silent default.
+  const paper: AccaPaper = 'APM';
+  const [total, rows, emails] = await Promise.all([totalSubAreas(paper), rawRowsForUsers([userId], paper), emailsForOrg(orgId)]);
   const input = buildInput(now, total, rows.attempts, rows.progress, rows.marks, rows.mocks);
   const readiness = computeReadiness(input);
 
