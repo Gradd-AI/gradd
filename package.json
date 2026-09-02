@@ -50,6 +50,7 @@
     "measure:marker-figures": "tsx --env-file=.env.local scripts/measure-marker-figures.ts",
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
+    "test:demo-seed": "tsx scripts/test-demo-seed.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts",
     "redteam": "tsx scripts/redteam-tutor.ts",
     "redteam:judge": "tsx scripts/redteam-judge.ts",
