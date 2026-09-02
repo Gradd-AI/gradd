@@ -90,6 +90,136 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🔴 OPEN 2026-09-02 — THE SIT DEBRIEF HEADLINED THE BIGGEST QUESTION, NOT THE WORST ANSWER
+
+**Read-only, no writes, no model calls.** `computePacing` + `buildDebrief` run over the stored rows
+of attempt `36d290de-4905-4660-9ceb-ad91eb954aaf` (APM Mock Paper 1, `dd786100`, sat
+2026-09-01 22:52 → 2026-09-02 02:07), through the real assembly path — `orderPaper` →
+`toPacingInputs`/`toDebriefRequirements`/`toDebriefCases` → the two pure modules, exactly as
+`app/api/acca/sit/results/route.ts` `buildResponse` does it. **Nothing here is built or changed.**
+
+### What the debrief produced, verbatim
+
+```json
+headline = {
+ "code": "largest_single_loss",
+ "statement": "The largest single loss was 8 of 16 marks on Q1 (i).",
+ "source": "computed_marks",
+ "evidence": { "paper_order": 1, "marks_lost": 8, "marks_available": 16, "band": "competent" }
+}
+secondary   = []          // ZERO entries
+limitations = []          // ZERO entries
+totals      = { technical_awarded: 38, technical_available: 80,
+                professional_awarded: 7, professional_available: 20 }
+not_evaluated = null
+```
+
+Five pacing findings, in rank order: `requirement_over_budget` (#1, Q1(ii), ratio 1.48) ·
+`requirement_over_budget` (#2, Q2(ii), ratio 1.78) · `requirement_under_budget` (#3, Q3(i),
+ratio 0.72) · `requirement_under_budget` (#4, Q3(ii), ratio 0.24) · `ran_to_the_wire` (#5, info).
+
+---
+
+### 1. `largest_single_loss` is NEAR-TAUTOLOGICAL, not wrong
+
+The statement is TRUE — 8 marks is genuinely the largest absolute loss on the paper. The problem is
+what winning that selector requires.
+
+| # | requirement | marks | awarded | **lost** | **loss rate** |
+|---|---|---|---|---|---|
+| 1 | Halworth (i) benchmarking | 16 | 8 | **8** ← headline | **50.0%** |
+| 2 | Halworth (ii) head-office | 14 | 7 | 7 | 50.0% |
+| 3 | Halworth (iii) budgeting | 10 | 3 | 7 | **70.0%** |
+| 4 | Rivenor (i) board report | 13 | 7 | 6 | 46.2% |
+| 5 | Rivenor (ii) dashboard | 7 | 5 | 2 | 28.6% |
+| 6 | Bexley (i) big data | 13 | 6 | 7 | **53.8%** |
+| 7 | Bexley (ii) ethics | 7 | 2 | 5 | **71.4%** |
+
+📐 **CORRECTION TO THE FRAMING THIS WAS OPENED WITH, because this file is the record:** it is
+**THREE** requirements that lost a strictly higher proportion (ethics 71.4%, budgeting 70.0%, big
+data 53.8%), plus **one TIED** at 50.0% (head-office, 7/14). **Board report is 46.2% — LOWER than
+the headlined requirement, not higher.** The finding stands and is arguably sharper at three-plus-a-
+tie: the headlined requirement is at the paper's MEDIAN loss rate.
+
+**The tautology, stated concretely.** The selector ranks `marks_lost` in absolute terms, so a
+requirement can only headline if its own mark allocation exceeds the winning loss. Here the winning
+loss was 8, which means **the four 7-mark requirements were STRUCTURALLY INELIGIBLE for this
+headline no matter how badly they went** — a 7-mark requirement cannot lose 8 marks. Ethics scored
+2/7 and would still not have headlined at 0/7. Only the five requirements of ≥9 marks were ever in
+contention, and among those the largest tends to win because absolute loss is `marks × rate` and the
+16-mark requirement is 2.3× the size of the smallest eligible one. **A `competent` band on the
+biggest question will win this selector on most mid-band papers.** The headline is therefore a fact
+about the MARK SCHEME'S SHAPE more than about the candidate.
+
+⚠️ **NOT A BUG, and the selector is NOT to be changed here.** "Largest single loss" is a defensible
+thing to lead with, it is honestly labelled `source: "computed_marks"`, and a proportion-ranked
+selector has its own failure (it would headline a 2-mark requirement lost entirely). Logged as a
+CHARACTERISATION of what the current lead does and does not tell a reader.
+
+### 2. `secondary[]` AND `limitations[]` WERE BOTH EMPTY — on a paper with five pacing findings
+
+`secondary` is empty because `end_of_paper_collapse` never fired: the candidate ANSWERED ALL SEVEN
+requirements, so the detector's suffix-share thresholds are not met, and with no collapse to rank
+against, `largest_single_loss` had an open field. The collapse is plainly present in the RATIOS
+(0.72 then 0.24 across the last two requirements) and invisible to a detector keyed on unanswered
+work.
+
+`limitations` being empty is the more serious half, because it is what the reader is not warned
+about. **`pacing.ts` documents two caveats at length in its own header and NEITHER reaches the
+screen:**
+
+* *"Every interval is SUBMISSION-TO-SUBMISSION… It is NOT time-on-task: reading, re-reading an
+  exhibit, thinking, idling and a closed laptop all sit inside the interval."* A student reading
+  "3 minutes elapsed" against a "13-minute budget" has no way to know that is not a measure of how
+  long they wrote for.
+* *"REQUIREMENT 1 CARRIES NO RATIO. Its interval contains reading the whole Section A scenario and
+  its exhibits."* Requirement 1 here is **61.4 minutes** — 31% of the whole paper — reported with
+  `ratio: null` and flag `no_ratio`, and nothing on screen says why.
+
+So the module states its own limits correctly and the debrief ships none of them. A caveat that
+lives only in a source comment is a caveat the reader does not have.
+
+### 3. THE OBSERVATION THE DEBRIEF DOES NOT MAKE, AND SHOULD
+
+**Two requirements of IDENTICAL weight, 7 marks each:**
+
+| | interval | budget | ratio | band | marks |
+|---|---|---|---|---|---|
+| Rivenor (ii) dashboard | **24.3 min** | 13.7 | 1.78 | **strong** | **5/7** |
+| Bexley (ii) ethics | **3.2 min** | 13.7 | 0.24 | **weak** | **2/7** |
+
+**7.6× the time, on questions worth exactly the same, with opposite outcomes.** Both halves are
+already COMPUTED and both are already STORED — the minutes in `pacing.findings[#2]` and
+`[#4]`, the marks in `debrief.requirements[]` — and they sit in **separate structures with nothing
+joining them**. No finding in either module expresses the pair. It is the most actionable thing this
+paper contains and it reaches the student nowhere.
+
+⚠️ **THE SEPARATION IS DELIBERATE AND THE RULE IS RIGHT — DO NOT RELAX IT.** `pacing.ts`:
+*"rushed-and-lost-marks and rushed-and-fine are different findings, and a single number would hide
+which one happened"*, and *"NO CAUSAL CLAIMS… 'You over-ran A(ii), which cost you B2(ii)' is an
+inference for a reader to draw, not a finding to assert."* That rule is what stops the product
+telling a candidate their time caused their mark, which it cannot know.
+
+**But stating the pair is DESCRIPTION, not inference.** "Two 7-mark requirements; 24 minutes and 5/7;
+3 minutes and 2/7" asserts no cause. It is four stored numbers and one true statement that the two
+requirements carry equal marks. **So the fix is a NEW FINDING TYPE that reports equal-weight
+requirements with divergent time and divergent outcome — not a loosening of the marks/pacing
+separation.** A finding type is where the constraint can be encoded (report the pair, never the
+arrow); a relaxed separation is where it would be lost.
+
+🔴 **NEEDS A COHORT BEHIND IT, NOT ONE PAPER.** `pacing.ts`'s own header says it: *"with one sit
+there is no distribution to compare against."* Everything above is `n = 1`, from the only real
+student who has sat a mock. Before a finding type is designed, the questions are: how often do
+equal-weight pairs with divergent ratios occur; what is the ratio threshold worth flagging; and does
+the divergence carry any relationship to marks across a set of papers, or is this one paper's
+coincidence. **There is no such corpus** — this is the only completed sit by a real student in the
+product's history. Building a finding type on it would be fitting a rule to a single observation.
+
+### Not changed
+
+The selector, `pacing.ts`, and every existing finding type are untouched. `computeReadiness`, the
+coverage definition and the correctness path are untouched. This entry is a log.
+
 ## 🟠 LOGGED 2026-09-02 — THE DEMO IS RE-SEEDED FROM REAL DRILLS, AND THE HEATMAP HIDES AN UNTOUCHED SUB-AREA
 
 **Production DB write.** `npm run seed-demo-org` re-run against `demo-advisory` after the join fix
