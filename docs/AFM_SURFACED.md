@@ -90,6 +90,76 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🟠 LOGGED 2026-09-02 — THE DEMO IS RE-SEEDED FROM REAL DRILLS, AND THE HEATMAP HIDES AN UNTOUCHED SUB-AREA
+
+**Production DB write.** `npm run seed-demo-org` re-run against `demo-advisory` after the join fix
+(`fea319e`): teardown + 316 attempts, 79 progress, 12 markings, 4 mocks across the two seeded
+cohorts. Cohort `48b0b9db` ("Sept-26 APM — live", the real student) was **left alone** — teardown no
+longer deletes the org, so nothing cascaded into it. Verified after the write: `48b0b9db` present,
+`dd786100` still holds 1 cohort membership, 1 org membership and 14 attempts.
+
+**`acca_drill_attempts` now has ZERO orphan `drill_id`s table-wide** (was 311). All 316 seeded
+attempts and all 79 progress rows join to a servable published APM drill.
+
+### What the three cohorts render
+
+| cohort | members | G / A / R | last active |
+|---|---|---|---|
+| **Sept-26 APM** | 13 | **3 / 7 / 3** | 1 day |
+| **Dec-26 APM** | 12 | **4 / 7 / 1** | 1 day |
+| **Sept-26 APM — live** | 1 | **0 / 0 / 1** | 13 days |
+
+Org utilisation **29 active / 4 invited**. The 29 includes two memberships this seeder does not own
+and correctly did not remove: `grant@live.ie` (coordinator) and `erasmoose@outlook.ie` (the red-team
+harness). ⚠️ **The harness is an org member in NO cohort now** — the Sept-26 cohort it used to sit in
+was replaced, and it is not in `TRAINEES`. That is the right outcome (864 machine-paced attempts no
+longer distort a cohort screen) but it happened as a side-effect of the cohort being recreated, not
+by an explicit rule. If the seeder is ever changed to reuse cohorts rather than recreate them, the
+harness returns to the Sept-26 screen.
+
+### 📐 THE REDS ARRIVE BY THREE ROUTES, ON PURPOSE
+
+An override-only red set cannot show a trainee who is **active today and still failing**, which is
+the single most useful card on the screen — and is the shape of the real student in the third
+cohort. The new `struggling` persona is red **on score** (recency 1.0, coverage 0/12, every attempt
+a miss, a badly-scored mock): Kwame Mensah 0.361, Carlos Mendes 0.390 against `AMBER_AT` 0.40.
+The other two routes are `never-started` (Priya Nair, 0.147) and `disengaged-21d` (Tom Fitzgerald,
+0.414 — **above the amber cut and red anyway**, which is the override doing its job and worth
+pointing at in a demo). Fixture `test-demo-seed` T7 asserts all three routes are present.
+
+### 🔴 OPEN — THE HEATMAP'S COLUMNS AND READINESS'S DENOMINATOR DISAGREE
+
+`getCohortHeatmap` (`lib/org/queries.ts`) builds its column list from the sub-areas **present in the
+attempts**:
+
+```ts
+for (const at of rows.attempts) subAreaSet.add(subAreaOf(at.lo_code));
+const subAreas = [...subAreaSet].sort();
+```
+
+`getCohortReadiness` divides by `totalSubAreas()` — the count of sub-areas in the **published pool**
+(12). So a sub-area **no one in the cohort has touched does not render as an empty column; it does
+not render at all**, while still counting against every trainee's coverage score.
+
+**Sighted, not theorised:** the first re-seed touched 11 sub-areas (D1 was never selected — the
+`green` persona used `SUBS.slice(0, 10)` plus D2, skipping index 10). The heatmap showed 11 columns
+against coverage figures out of 12, and *the missing column was the one carrying the information* —
+nobody has started D1. A coordinator screen whose whole job is to show where a cohort is weak was
+structurally incapable of showing the weakest possible state: untouched.
+
+**NOT FIXED — the seed was changed instead**, so the demo exercises all 12 (fixture T9 asserts it).
+That is a workaround for the demo, not a fix for the surface: **any real cohort with an untouched
+sub-area still gets a column silently dropped.** The fix is to derive the columns from
+`allSubAreas(paper)` — the same source as the denominator — and render an untouched sub-area as an
+empty cell. One line, but it changes a rendered surface and is owed a look at how the UI handles a
+column where every cell is absent, so it is logged rather than slipped in here.
+
+### Rollback
+
+`npm run seed-demo-org -- --down` removes the seeded rows, the two seeded cohorts and the
+placeholder memberships. It leaves the org, `48b0b9db`, and the `grant@live.ie` /
+`erasmoose@outlook.ie` memberships in place.
+
 ## 🟠 LOGGED 2026-09-02 — THE ONE REAL STUDENT IS IN THE COORDINATOR VIEW, AND HE RENDERS **RED** AT 0.384
 
 **Production DB write, recorded here because `cohorts` / `cohort_memberships` / `org_memberships`
