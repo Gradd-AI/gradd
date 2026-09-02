@@ -64,6 +64,39 @@ const INVITED_EMAILS = [ // 4 invited-never-active seats (utilisation view: invi
   'omar.rashid@demo-advisory.example',
 ];
 
+// ── KNOWN NON-TRAINEE ACCOUNTS — NEVER PUT THESE IN A COHORT ─────────────────
+// `ee07f08c` (erasmoose@outlook.ie) is the RED-TEAM HARNESS: 864 attempts at a median 6.7
+// seconds apart, driven by scripts/redteam-tutor.ts replaying canned probe text. It is a
+// legitimate org MEMBER (it needs entitlement to exercise the routes) and must keep that
+// membership — but a cohort screen that includes it reports machine traffic as a trainee,
+// and at 864 attempts it is the largest "trainee" on the board by an order of magnitude.
+// `f321935f` (bedewa5090@ezimb.com) is an adversarial PROBE account: 32 real-drill attempts,
+// prompt-injection turns, and the only `correct` outcome in the product's non-harness
+// history — a false positive on a truncated non-answer.
+//
+// ⚠️ THIS GUARD EXISTS BECAUSE THE EXCLUSION USED TO BE AN ACCIDENT. The harness left the
+// Sept-26 cohort only because teardown DELETED that cohort and seed recreated it with a
+// fresh id, so its old cohort_membership cascaded away. Correct outcome, no rule behind it:
+// the day this seeder is changed to REUSE cohorts instead of recreating them — which is the
+// obvious next refactor, since recreating them churns ids on every run — the harness
+// silently returns to the coordinator screen. An exclusion that depends on a delete is not
+// an exclusion.
+const EXCLUDED_ACCOUNTS = new Set<string>([
+  'ee07f08c-9f24-4d77-af28-bbc894635f83', // red-team harness (erasmoose@outlook.ie)
+  'f321935f-83a5-4e1c-9dd9-72ce5cbab16a', // adversarial probe account (bedewa5090@ezimb.com)
+]);
+
+/** Cohort membership rows, with known non-trainee accounts refused. Applied to the rows this
+ *  seeder is ABOUT TO WRITE — it cannot police a membership added by hand, which is why the
+ *  post-seed check in `summary()` reports any excluded account it finds in a cohort. */
+export function cohortMembershipRows(
+  rows: readonly { cohort_id: string; user_id: string }[],
+): { cohort_id: string; user_id: string }[] {
+  return rows.filter((r) => !EXCLUDED_ACCOUNTS.has(r.user_id));
+}
+
+export { EXCLUDED_ACCOUNTS };
+
 // The two cohorts this seeder OWNS. Anything else under the org is somebody else's and
 // teardown must not touch it — see the teardown note in the header.
 const SEEDED_COHORTS = [
@@ -398,7 +431,10 @@ async function seed(pool: DrillPool) {
     ...INVITED_EMAILS.map((email) => ({ org_id: orgId, user_id: null, email, role: 'member', status: 'invited' })),
   ];
   await insertChunked('org_memberships', memberships);
-  await insertChunked('cohort_memberships', TRAINEES.map((t) => ({ cohort_id: ids[t.cohort], user_id: uid(t.idx) })));
+  // The guard is applied HERE, at the write, not left to the fact that teardown happens to
+  // delete the cohorts first — see EXCLUDED_ACCOUNTS.
+  await insertChunked('cohort_memberships',
+    cohortMembershipRows(TRAINEES.map((t) => ({ cohort_id: ids[t.cohort], user_id: uid(t.idx) }))));
 
   const all: Rows = { attempts: [], progress: [], marks: [], mocks: [] };
   for (const t of TRAINEES) {
@@ -418,7 +454,14 @@ async function seed(pool: DrillPool) {
  *  join), not through predictBands. If these two disagree, the seeded rows did not
  *  survive the join and the seed is wrong. */
 async function summary(septId: string, decId: string) {
+  // The write-side guard cannot see a membership added by hand, so the post-seed read reports
+  // one instead of assuming none exists.
   for (const [label, id] of [['Sept-26 APM', septId], ['Dec-26 APM', decId]] as const) {
+    const { data: cm } = await db().from('cohort_memberships').select('user_id').eq('cohort_id', id);
+    const intruders = ((cm as { user_id: string }[] | null) ?? []).filter((r) => EXCLUDED_ACCOUNTS.has(r.user_id));
+    if (intruders.length > 0) {
+      console.warn(`⚠️  ${label}: ${intruders.length} EXCLUDED account(s) in this cohort — ${intruders.map((i) => i.user_id).join(', ')}`);
+    }
     const rag = await getCohortReadiness(id, NOW);
     const tally = { green: 0, amber: 0, red: 0 };
     console.log(`\n── ${label} (${rag.length} trainees) ──`);
