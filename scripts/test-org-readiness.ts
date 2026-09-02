@@ -16,6 +16,9 @@ import {
   GREEN_AT,
   AMBER_AT,
 } from '../lib/org/readiness';
+// Pure exports only. queries.ts imports createServiceClient, but that is a FUNCTION — no client
+// is constructed and no env is read at module load, so this stays a pure, env-free fixture.
+import { scopeDrillRows, cohortPaper } from '../lib/org/queries';
 
 let failures = 0;
 const T = 1_700_000_000_000; // fixed "now" (arbitrary fixed epoch — determinism, not date-sensitive)
@@ -193,5 +196,73 @@ function base(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
     res.components.assessment.caseAvg === 0.6 && res.components.assessment.mockAvg === 0.8);
 }
 
-console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILURE(S)`}`);
+
+// ── T15–T19: the servable-drill scope (lib/org/queries.ts) ────────────────────
+// PURE half of the join fix. `scopeDrillRows` is what stops seeded, unpublished and
+// other-paper rows reaching the readiness signal, the heatmap, the trainee drill-down and
+// the org cards. The map is supplied here, so no DB is touched.
+//
+// P-G3: the SHIPPED pre-fix behaviour is pinned as a MUST-FAIL. Before this, the coordinator
+// path applied no filter at all and the student path filtered on EXISTENCE only.
+
+const SERVABLE = new Map<string, string>([
+  ['d-apm-1', 'APM'],
+  ['d-apm-2', 'APM'],
+  ['d-afm-1', 'AFM'],
+]);
+
+const ROWS = [
+  { drill_id: 'd-apm-1', lo_code: 'A1a' },   // servable APM
+  { drill_id: 'd-apm-2', lo_code: 'B2c' },   // servable APM
+  { drill_id: 'd-afm-1', lo_code: 'A1a' },   // OTHER PAPER — prefixes collide with APM's A1
+  { drill_id: 'd-unpub', lo_code: 'C1a' },   // exists but not approved/published → absent from map
+  { drill_id: 'seed-99', lo_code: 'D2a' },   // fabricated by seed-demo-org.ts → absent from map
+  { drill_id: '',        lo_code: 'E1a' },   // empty id
+];
+
+{
+  const kept = scopeDrillRows(ROWS, SERVABLE, 'APM');
+  check('T15: APM scope keeps only servable APM rows',
+    kept.length === 2 && kept.every((r) => r.drill_id.startsWith('d-apm')),
+    `got ${JSON.stringify(kept.map((r) => r.drill_id))}`);
+}
+{
+  const kept = scopeDrillRows(ROWS, SERVABLE, 'AFM');
+  check('T16: AFM scope keeps the AFM row and NOT the colliding APM A1a',
+    kept.length === 1 && kept[0].drill_id === 'd-afm-1',
+    `got ${JSON.stringify(kept.map((r) => r.drill_id))}`);
+}
+{
+  // The three excluded classes, named individually so a regression says WHICH one came back.
+  const ids = new Set(scopeDrillRows(ROWS, SERVABLE, 'APM').map((r) => r.drill_id));
+  check('T17a: seeded drill_id excluded', !ids.has('seed-99'));
+  check('T17b: unpublished drill_id excluded', !ids.has('d-unpub'));
+  check('T17c: empty drill_id excluded', !ids.has(''));
+}
+{
+  // MUST-FAIL: the shipped coordinator behaviour — no filter whatsoever.
+  const LEGACY_coordinator = (rows: typeof ROWS) => rows;
+  check('T18: pre-fix coordinator read (no join) is pinned WRONG',
+    LEGACY_coordinator(ROWS).length !== scopeDrillRows(ROWS, SERVABLE, 'APM').length,
+    'an unjoined read must not equal the scoped read');
+}
+{
+  // MUST-FAIL: the shipped STUDENT behaviour — existence-only, no approved/published filter.
+  // Modelled by a map that also resolves the unpublished drill.
+  const EXISTS_ONLY = new Map(SERVABLE);
+  EXISTS_ONLY.set('d-unpub', 'APM');
+  const legacy = scopeDrillRows(ROWS, EXISTS_ONLY, 'APM');
+  check('T19: pre-fix student read (existence only) is pinned WRONG',
+    legacy.length === 3 && legacy.length !== scopeDrillRows(ROWS, SERVABLE, 'APM').length,
+    `existence-only kept ${legacy.length}, servable kept ${scopeDrillRows(ROWS, SERVABLE, 'APM').length}`);
+}
+{
+  // cohortPaper: free-text column → a paper that AGREES with the coverage denominator.
+  check('T20a: recognised paper passes through', cohortPaper('AFM') === 'AFM');
+  check('T20b: null falls back to APM (= totalSubAreas default)', cohortPaper(null) === 'APM');
+  check('T20c: unrecognised free text falls back to APM', cohortPaper('apm ') === 'APM');
+}
+
+console.log(`
+${failures === 0 ? 'ALL PASS' : `${failures} FAILURE(S)`}`);
 process.exit(failures === 0 ? 0 : 1);
