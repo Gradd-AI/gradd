@@ -380,12 +380,31 @@ export async function getCohortHeatmap(cohortId: string): Promise<CohortHeatmap>
   if (!cohort) return { subAreas: [], rows: [] };
   const paper = cohortPaper(cohort.paper);
   const userIds = await cohortUserIds(cohortId);
-  const [rows, emails] = await Promise.all([rawRowsForUsers(userIds, paper), emailsForOrg(cohort.org_id)]);
+  const [rows, emails, subAreas] = await Promise.all([
+    rawRowsForUsers(userIds, paper), emailsForOrg(cohort.org_id), allSubAreas(paper),
+  ]);
 
   const byUserA = groupBy(rows.attempts, (r) => r.user_id);
-  const subAreaSet = new Set<string>();
-  for (const at of rows.attempts) subAreaSet.add(subAreaOf(at.lo_code));
-  const subAreas = [...subAreaSet].sort();
+  // ── COLUMNS COME FROM THE PUBLISHED POOL, NOT FROM THE ATTEMPTS ─────────────
+  // This used to be `for (const at of rows.attempts) subAreaSet.add(subAreaOf(at.lo_code))`,
+  // which meant a sub-area NOBODY IN THE COHORT HAD TOUCHED did not render as an empty
+  // column — it did not render at all. Meanwhile `getCohortReadiness` divides coverage by
+  // `totalSubAreas(paper)`, the published pool, so the two halves of one screen disagreed
+  // about how many sub-areas exist.
+  //
+  // ⚠️ SIGHTED, NOT THEORISED (2026-09-02). The first re-seed of demo-advisory touched 11 of
+  // the 12 published APM sub-areas — D1 was never selected — and the heatmap rendered 11
+  // columns beside coverage figures reading "/12". THE DROPPED COLUMN WAS THE ONE CARRYING
+  // THE INFORMATION: nobody has started D1. A screen whose entire job is to show a
+  // coordinator where a cohort is weak was structurally incapable of showing the weakest
+  // state a sub-area can be in — untouched. A cohort that has genuinely not begun an area is
+  // the normal early-prep case, not an edge case.
+  //
+  // `cells` stays SPARSE on purpose: an untouched sub-area has no key, and both render sites
+  // already read it as "no data" (`r.cells[sa]` → `cellTone(null)`; the roll-up filters on
+  // `!= null` and shows null when no trainee has data). Writing a zero-filled cell instead
+  // would make "0 attempts" indistinguishable from "0% miss rate", which is the opposite
+  // reading. Nothing in computeReadiness or the coverage definition is touched.
 
   const outRows = userIds.map((userId) => {
     const cells: Record<string, HeatmapCell> = {};

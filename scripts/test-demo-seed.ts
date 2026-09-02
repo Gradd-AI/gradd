@@ -17,6 +17,7 @@
 
 import {
   TRAINEES, buildRows, predictBands, assertPool, offlinePool, SUBS,
+  cohortMembershipRows, EXCLUDED_ACCOUNTS,
   type DrillPool, type DrillRef,
 } from './seed-demo-org';
 
@@ -167,6 +168,109 @@ const poolByLo = new Map([...POOL.values()].flat().map((d) => [d.id, d.lo_code] 
   check('T9: all 12 sub-areas appear in seeded activity (heatmap renders 12 columns)',
     untouched.length === 0, `untouched: ${untouched.join(', ')}`);
 }
+
+// ── T10: heatmap columns come from the POOL, not from the attempts ────────────
+// P-G3(a) POSITIVE CONTROL. A test that only asserted "12 columns appear" would pass on an
+// implementation that returned the 12 column headers and dropped every count — so it asserts
+// BOTH halves: the untouched sub-areas appear AS EMPTY COLUMNS, and the touched ones still
+// carry their real numbers. One without the other is not the fix.
+//
+// SIGHTED INSTANCE: the first re-seed of demo-advisory touched 11 of 12 sub-areas and D1 —
+// the only one carrying "nobody has started this" — did not render at all.
+//
+// Pure re-implementation of getCohortHeatmap's cell arithmetic. It is NOT the live function
+// (that one needs a DB), so this pins the RULE; the live column source is a one-line read of
+// allSubAreas(paper) verified against cohort 48b0b9db in the same session.
+{
+  type Cell = { attempts: number; misses: number; missRate: number; covered: boolean };
+  const buildCells = (rows: { lo_code: string; outcome: string }[]): Record<string, Cell> => {
+    const cells: Record<string, Cell> = {};
+    for (const at of rows) {
+      const sa = at.lo_code.slice(0, 2);
+      const c = (cells[sa] ??= { attempts: 0, misses: 0, missRate: 0, covered: false });
+      c.attempts++;
+      if (at.outcome === 'miss') c.misses++;
+      if (at.outcome === 'correct') c.covered = true;
+    }
+    for (const sa of Object.keys(cells)) cells[sa].missRate = cells[sa].attempts > 0 ? cells[sa].misses / cells[sa].attempts : 0;
+    return cells;
+  };
+
+  // A cohort that has touched only 5 of the 12 published sub-areas — the real shape of
+  // cohort 48b0b9db, and of any cohort early in its prep.
+  const attempts = [
+    ...Array.from({ length: 7 }, () => ({ lo_code: 'A1b', outcome: 'miss' })),
+    ...Array.from({ length: 2 }, () => ({ lo_code: 'A3c', outcome: 'miss' })),
+    { lo_code: 'B1a', outcome: 'miss' },
+    ...Array.from({ length: 2 }, () => ({ lo_code: 'B3b', outcome: 'miss' })),
+    { lo_code: 'C1e', outcome: 'miss' }, { lo_code: 'C1e', outcome: 'correct' },
+  ];
+  const cells = buildCells(attempts);
+  const TOUCHED = ['A1', 'A3', 'B1', 'B3', 'C1'];
+  const UNTOUCHED = SUBS.filter((s) => !TOUCHED.includes(s));
+
+  // FIXED: columns are the published pool.
+  const columns = [...SUBS].sort();
+  check('T10a: all 12 published sub-areas render as columns', columns.length === 12, `${columns.length}`);
+  check('T10b: the 7 untouched sub-areas are AMONG the columns',
+    UNTOUCHED.every((s) => columns.includes(s)), UNTOUCHED.join(','));
+  check('T10c: an untouched column has NO cell (renders empty, not zero-filled)',
+    UNTOUCHED.every((s) => cells[s] === undefined),
+    'a zero-filled cell would read as a 0% miss rate, the opposite of "no data"');
+
+  // The other half of the control: the touched columns must still carry real counts.
+  check('T10d: A1 keeps its 7 attempts at a 1.0 miss rate',
+    cells.A1?.attempts === 7 && cells.A1?.missRate === 1 && cells.A1?.covered === false,
+    JSON.stringify(cells.A1));
+  check('T10e: C1 keeps 2 attempts, 0.5 miss rate, covered',
+    cells.C1?.attempts === 2 && cells.C1?.missRate === 0.5 && cells.C1?.covered === true,
+    JSON.stringify(cells.C1));
+  check('T10f: every touched sub-area carries a cell',
+    TOUCHED.every((s) => cells[s] !== undefined && cells[s].attempts > 0), TOUCHED.join(','));
+  check('T10g: attempts across the cells sum to the input',
+    TOUCHED.reduce((a, s) => a + (cells[s]?.attempts ?? 0), 0) === attempts.length);
+
+  // MUST-FAIL: the SHIPPED behaviour — columns derived from the attempts present.
+  const LEGACY_columns = [...new Set(attempts.map((a) => a.lo_code.slice(0, 2)))].sort();
+  check('T10h: shipped column derivation is pinned WRONG (5 columns, not 12)',
+    LEGACY_columns.length === 5 && LEGACY_columns.length !== columns.length,
+    `legacy=${LEGACY_columns.join(',')}`);
+  check('T10i: the shipped derivation DROPS D1 specifically — the sighted instance',
+    !LEGACY_columns.includes('D1') && columns.includes('D1'));
+}
+
+
+
+// ── T11: the harness exclusion is a GUARD, not a side-effect ──────────────────
+// It used to hold only because teardown deleted the cohort and seed recreated it with a
+// fresh id, cascading the old membership away. The day the seeder reuses cohorts instead of
+// recreating them, that accident stops working — so the rule is asserted at the write.
+{
+  const rows = [
+    { cohort_id: 'c1', user_id: 'de5e0000-0000-4000-8000-000000000001' },
+    { cohort_id: 'c1', user_id: 'ee07f08c-9f24-4d77-af28-bbc894635f83' }, // red-team harness
+    { cohort_id: 'c1', user_id: 'f321935f-83a5-4e1c-9dd9-72ce5cbab16a' }, // adversarial probe
+    { cohort_id: 'c2', user_id: 'de5e0000-0000-4000-8000-000000000002' },
+  ];
+  const kept = cohortMembershipRows(rows);
+  check('T11a: the harness is refused a cohort membership',
+    !kept.some((r) => r.user_id === 'ee07f08c-9f24-4d77-af28-bbc894635f83'));
+  check('T11b: the probe account is refused too',
+    !kept.some((r) => r.user_id === 'f321935f-83a5-4e1c-9dd9-72ce5cbab16a'));
+  check('T11c: real seeded trainees are untouched', kept.length === 2, String(kept.length));
+  // The guard must not eat a real persona: no synthetic trainee uid may collide with an
+  // excluded account. Vacuous-pass check first — a set that is empty, or a uid builder that
+  // returns undefined, would make the assertion below true while proving nothing (P-G1).
+  const seededUids = TRAINEES.map((t) => `de5e0000-0000-4000-8000-${t.idx.toString(16).padStart(12, '0')}`);
+  check('T11d(pre): the control has something to check',
+    EXCLUDED_ACCOUNTS.size === 2 && seededUids.length === TRAINEES.length && seededUids.every((u) => /^de5e0000-/.test(u)),
+    `excluded=${EXCLUDED_ACCOUNTS.size} uids=${seededUids.length}`);
+  check('T11d: no seeded trainee uid is in the exclusion set',
+    seededUids.every((u) => !EXCLUDED_ACCOUNTS.has(u)));
+  // MUST-FAIL: the shipped behaviour was no filter at all.
+  check('T11e: the unguarded write is pinned WRONG', rows.length !== kept.length);
+}
+
 
 console.log(`\n${failures === 0 ? 'ALL PASS' : `${failures} FAILURE(S)`}`);
 process.exit(failures === 0 ? 0 : 1);
