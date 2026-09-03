@@ -103,24 +103,41 @@ export function fmtDate(iso: string): string {
 // Scoped stylesheet. Rendered once per page via <style>{ORG_CSS}</style>.
 export const ORG_CSS = `
 .org { max-width: 1040px; margin: 0 auto; padding: 0 20px 64px; }
+/* THE BAR IS THE ACCA BAR. Values copied from the four /acca headers (.et-header /
+   .ec-header / .apm-dash-header / .apm-cl-header), which are identical to each other:
+   light --bg, a --border-light hairline, 56px, the same blur. It was a dark --brand band
+   until 2026-09-03, which is why every colour below moved with it.
+   THE FULL-BLEED MARGIN IS NOT COPIED AND MUST NOT BE. The /acca headers are viewport-wide
+   bars with an inner max-width container; this one lives INSIDE .org (max-width 1040px) and
+   bleeds to that container's edge via the negative margin. Same treatment, different box. */
 .org-header {
-  position: sticky; top: 0; z-index: 10; background: var(--brand);
-  margin: 0 -20px 28px; padding: 14px 20px;
+  position: sticky; top: 0; z-index: 50; background: var(--bg);
+  border-bottom: 1px solid var(--border-light);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  margin: 0 -20px 28px; padding: 0 20px; height: 56px;
   display: flex; align-items: center; gap: 12px;
 }
-.org-header .wordmark { display: inline-flex; align-items: center; text-decoration: none; }
-.org-header .wordmark img { height: 24px; width: auto; display: block; filter: brightness(0) invert(1); }
-.org-crumb { color: #b9cabf; font-size: 13px; display: flex; gap: 8px; align-items: center; }
-/* org-header's --brand background is dark; ACCASignOutButton's base rule (app/globals.css)
-   is a --text-muted/--text pair meant for the light --bg the other five ACCA headers use.
-   Overridden here, not in the shared component, because org-header is the one dark
-   exception — pushed to the far edge too, since .org-header has no space-between of its
-   own (unlike the other five headers, wordmark/crumb/signout would otherwise just cluster
-   left with the header's 12px gap). */
-.org-header .acca-signout-btn { color: #b9cabf; margin-left: auto; }
-.org-header .acca-signout-btn:hover { color: #fff; }
-.org-crumb a { color: #b9cabf; text-decoration: none; }
-.org-crumb a:hover { color: #fff; }
+/* No img rule. The height/width/display sit in an inline style on the <img>, exactly as all
+   four /acca headers write them — the point is that the mark is the SAME mark, so its
+   sizing is not allowed to live somewhere /acca's does not. The brightness(0) invert(1)
+   that used to be here is GONE: the asset is a dark-green wordmark with a rust ".ai", and
+   the filter existed only to make it legible on the dark band. It flattened the rust. */
+.org-header .wordmark { display: flex; align-items: center; text-decoration: none; }
+/* Crumb colours are /acca's three crumb tokens, mapped onto this trail's parts:
+   --text-muted for the trail (.et-breadcrumb), --text 600 for a link (.et-breadcrumb-paper,
+   the segment that names the context), --border for the separator (.et-breadcrumb-sep).
+   The separator selector is "> span" because these crumbs are hand-built spans with no
+   class of their own — structure unchanged, per the brief; only the colours moved. */
+.org-crumb { color: var(--text-muted); font-size: 12px; display: flex; gap: 8px; align-items: center; }
+.org-crumb > span { color: var(--border); }
+.org-crumb a { color: var(--text); font-weight: 600; text-decoration: none; }
+.org-crumb a:hover { color: var(--brand); text-decoration: underline; }
+/* ACCASignOutButton's base rule (app/globals.css) is a --text-muted/--text pair meant for a
+   light --bg, which this bar now is — so the colour override is DELETED and the base rule
+   applies, the same as on the other ACCA headers. "margin-left: auto" STAYS: .org-header has
+   no space-between of its own, so without it wordmark/crumb/signout cluster left on the
+   header's 12px gap. (Only /acca/progress renders a signout in this header.) */
+.org-header .acca-signout-btn { margin-left: auto; }
 
 .org h1 { font-family: var(--font-display); font-size: 34px; color: var(--brand); margin: 8px 0 6px; font-weight: 600; letter-spacing: -0.4px; line-height: 1.15; }
 .org h2 { font-family: var(--font-display); font-size: 21px; color: var(--brand); margin: 32px 0 14px; font-weight: 600; }

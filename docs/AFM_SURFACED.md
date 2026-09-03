@@ -90,6 +90,53 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🟠 LOGGED 2026-09-03 — THE /acca BRAND MARK IS DUPLICATED FIVE WAYS AND NOTHING OWNS IT (**LIST ONLY**)
+
+**Surfaced while matching the /org header to /acca** (this session). Not fixed, and deliberately
+not fixed — see the blocker below.
+
+**There is no ACCA header component.** The brand mark is written out separately in five files, and
+in four of them the CSS rule is copied into that file's own `CSS` template literal:
+
+| file | markup | its own copy of the rule |
+|---|---|---|
+| `app/acca/ACCADashboard.tsx` | `:68-70` | `.apm-dash-logo` `:284` |
+| `app/acca/cases/CaseList.tsx` | `:85-87` | `.apm-cl-logo` `:215` |
+| `app/acca/cases/[id]/CaseSession.tsx` | `:460-462` | `.ec-logo` `:800` |
+| `app/acca/tutor/TutorChat.tsx` | `:273-275` | `.et-logo` `:655` |
+| `components/acca/ResitRunner.tsx` | `:150-154` | `.resit-logo` `:416` (centred, no bar — public page) |
+
+The four bar rules are **byte-identical** — `display: flex; align-items: center; text-decoration:
+none;` — and the `<img>` is byte-identical in all four (`height: 20, width: 'auto', display:
+'block'`, `alt="Gradd.ai"`). The surrounding `*-header` / `*-header-inner` blocks are duplicated the
+same way and differ only in `max-width` on the inner. **This is the same class of defect as the
+~17 hand-built paper links `paperHref` replaced** (2026-08-11): a rule restated at every call site,
+where every copy typechecks whether or not it is right, so a drift is silent and a fix does not
+generalise.
+
+**⛔ EXTRACTION IS BLOCKED, AND THE BLOCKER IS REAL, NOT EFFORT.** Grant-ruled 2026-09-03: *do not
+extract a shared header component*. The four are not the same header wearing different names —
+
+- **the inner max-width differs per surface**: 720px (dashboard) · 860px (case list) · full-bleed
+  `.ec-wrap` (case session) · `.et-wrap` (tutor);
+- **the right-hand payload differs per surface**: paper switcher + Progress link + crumb + signout
+  (dashboard) · crumb + signout, no wrapper (case list) · crumb + signout inside an
+  `*-header-right` div (case session, tutor).
+
+So the extraction is a refactor of four LIVE student surfaces with a props surface wide enough to
+re-encode both axes, not a lift-and-share. It is logged as a known duplication, not queued.
+
+**⚠️ THE COUNT IS NOW FIVE, NOT SIX — and two comments still say six.** `app/globals.css:190-192`
+(above `.acca-signout-btn`) says the button is *"neutral enough to sit in any of the six header
+backgrounds unstyled"*, and `components/org/orgTheme.ts` used to name *"the other five ACCA
+headers"* from the org side. Both were counting `.org-header` as the sixth, dark, exception. **That
+exception no longer exists**: as of this session `.org-header` is the ACCA bar (light `--bg`,
+`--border-light` hairline, 56px, same blur) and the signout override that prose justified is
+deleted. The globals.css comment is now stale in its arithmetic while remaining true in its
+conclusion — the button IS unstyled everywhere now, which is *more* true than when it was written.
+Left alone rather than re-numbered by a session that did not own that file; noted here so the next
+reader does not go hunting for a sixth header that is no longer distinct.
+
 ## 🟠 LOGGED 2026-09-03 — AN ABANDONED SIT IS NOW INVISIBLE ON THE TRAINEE PAGE (**LIST ONLY, NOT FIXED**)
 
 **Cost of removing the "Assessment records" panel** (`app/org/[slug]/[cohortId]/[userId]/page.tsx`,
