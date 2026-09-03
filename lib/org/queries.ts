@@ -489,9 +489,11 @@ export interface TraineeDetail {
   stuckDrills: number;
   daysSinceActive: number | null;
   recentAttempts: RecentAttempt[];
-  marks: { case_id: string; awarded: number; available: number; marked_at: string }[];
-  mocks: { mock_id: string; completed: boolean; started_at: string }[];
 }
+// No `marks`/`mocks` here BY DECISION: the raw case-marking and mock-attempt rows still feed
+// readiness via buildInput(), but the trainee page renders the sat mock in full through
+// getTraineeSitResults() — with real case titles. Re-exposing them invites a second, thinner
+// rendering of the same facts keyed by truncated UUIDs, which is what was removed.
 
 // ── Student self-view (student-facing /acca/progress) ─────────────────────────
 // A session-scoped variant of getTraineeDetail: the SAME readiness machinery, but
@@ -707,7 +709,5 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
     coveredSubAreas: [...covered].sort(), totalSubAreas: total,
     stuckDrills, daysSinceActive: readiness.components.recency.daysSinceActive,
     recentAttempts,
-    marks: rows.marks.map((m) => ({ case_id: m.case_id, awarded: m.professional_marks_awarded, available: m.professional_marks_available, marked_at: m.marked_at })),
-    mocks: rows.mocks.map((m) => ({ mock_id: m.mock_id, completed: m.completed, started_at: m.started_at })),
   };
 }

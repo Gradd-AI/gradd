@@ -90,6 +90,33 @@ bare. Also closed: `?paper=APM%20subscribe` sold AFM to anyone arriving from an 
 and `/acca/drill` dropped `?paper=` entirely, so with AFM/APM LO codes colliding exactly no AFM
 drill was reachable through that route at all.)*
 
+## 🟠 LOGGED 2026-09-03 — AN ABANDONED SIT IS NOW INVISIBLE ON THE TRAINEE PAGE (**LIST ONLY, NOT FIXED**)
+
+**Cost of removing the "Assessment records" panel** (`app/org/[slug]/[cohortId]/[userId]/page.tsx`,
+this session). The panel was superseded on every fact it rendered — the sit-results section above it
+shows the mock, the sat date, the completion state and the per-case PS marks with **real case
+titles**, where the panel showed truncated case UUIDs — with **one exception**, recorded here rather
+than quietly absorbed.
+
+**The panel listed `acca_mock_attempts` rows regardless of `completed`**, so a started-and-abandoned
+sit appeared as `completed: no`. The sit-results section cannot show one: `getTraineeSitResults`
+returns `null` for anything not completed and marked, and the empty state then reads *"No completed
+mock on this cohort's paper. Nothing to show yet…"* — **which is the same sentence a trainee who
+never started a paper gets.** The two states are now indistinguishable on the surface.
+
+**Why it matters more than the panel did:** a trainee who opens a 3h15m paper and walks away is
+precisely the signal a coordinator view exists to surface, and it is a stronger one than a low mark.
+The old rendering was a `mock_id` and a `no` in a table of truncated UUIDs — technically present, and
+not something anyone would read as *abandoned*. So the gap PRE-DATES the deletion and was never
+really served; the deletion removed its last trace, which is what makes it worth listing.
+
+**Not fixed by decision (Grant, 2026-09-03): list only.** The honest fix is not to restore the
+panel — it is for the empty state to distinguish *never started* from *started, never finished*, and
+for the second case to name the date and how far the trainee got. That reads on `acca_mock_attempts`
+(`started_at` / `ends_at` / `completed`) plus the count of answered requirements on that attempt,
+none of which `getTraineeSitResults` currently returns. It changes a rendered coordinator surface and
+needs its own copy, so it is logged, not slipped in.
+
 ## 🔴 OPEN 2026-09-02 — THE SIT DEBRIEF HEADLINED THE BIGGEST QUESTION, NOT THE WORST ANSWER
 
 **Read-only, no writes, no model calls.** `computePacing` + `buildDebrief` run over the stored rows
