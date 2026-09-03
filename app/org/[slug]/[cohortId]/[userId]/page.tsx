@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { requireCoordinator } from '@/lib/org/guard';
-import { getOrgBySlug, getCohortById, getTraineeDetail, type RecentAttempt } from '@/lib/org/queries';
+import { requireCoordinator, cohortMemberDecision } from '@/lib/org/guard';
+import { getOrgBySlug, getCohortById, getTraineeDetail, cohortUserIds, type RecentAttempt } from '@/lib/org/queries';
 import { ORG_CSS, bandTone, fmtDays, fmtDate, SUB_AREA_NAME } from '@/components/org/orgTheme';
 
 export const dynamic = 'force-dynamic';
@@ -48,12 +48,20 @@ function Sparkline({ attempts, now }: { attempts: RecentAttempt[]; now: number }
 
 export default async function TraineePage({ params }: { params: Promise<{ slug: string; cohortId: string; userId: string }> }) {
   const { slug, cohortId, userId } = await params;
-  await requireCoordinator(`/org/${slug}/${cohortId}/${userId}`);
+  await requireCoordinator(`/org/${slug}/${cohortId}/${userId}`, slug);
 
   const org = await getOrgBySlug(slug);
   if (!org) notFound();
   const cohort = await getCohortById(cohortId);
   if (!cohort || cohort.org_id !== org.id) notFound();
+
+  // IS THIS TRAINEE IN THIS COHORT? The check above proves the COHORT belongs to the ORG —
+  // a consistency check about two rows that says nothing about the user id in the URL.
+  // Without this, ANY user id rendered under any cohort of any viewable org, and the page
+  // reported that stranger's readiness, coverage, attempt history and assessment records.
+  // notFound(), not a redirect: to a viewer entitled to this cohort, a trainee who is not in
+  // it does not exist here, and a 404 says that without confirming the id is real.
+  if (!cohortMemberDecision(await cohortUserIds(cohortId), userId)) notFound();
 
   const now = Date.now();
   const d = await getTraineeDetail(org.id, userId, now);
