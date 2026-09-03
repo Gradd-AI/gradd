@@ -229,4 +229,37 @@ table.org-list td.num { text-align: right; font-variant-numeric: tabular-nums; }
 .org-note { font-size: 12px; color: var(--text-light); margin-top: 6px; }
 .org-back { display: inline-block; margin-bottom: 14px; font-size: 13px; color: var(--brand); text-decoration: none; }
 .org-back:hover { text-decoration: underline; }
+
+/* ── Sit debrief (coordinator view of a trainee sat mock) ─────────────── */
+.sitx-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:10px 16px; margin-bottom:4px; }
+.sitx-totals { display:flex; flex-wrap:wrap; gap:22px; margin:14px 0 4px; }
+.sitx-total { display:flex; flex-direction:column; gap:2px; }
+.sitx-total-k { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-light); }
+.sitx-total-v { font-family:var(--font-display); font-size:26px; font-weight:600; letter-spacing:-.5px; line-height:1; color:var(--text); }
+.sitx-total-v small { font-size:14px; font-weight:500; color:var(--text-muted); }
+/* The STUDENT s debrief line, quoted. Bordered and labelled so it never reads as the
+   coordinator s own verdict — see the open finding on the headline selector. */
+.sitx-quote { border-left:3px solid var(--border); padding:8px 0 8px 14px; margin:12px 0 0; }
+.sitx-quote-k { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--text-light); display:block; margin-bottom:4px; }
+.sitx-quote-v { font-size:14px; color:var(--text); margin:0; }
+.sitx-band { display:inline-block; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:5px; text-transform:uppercase; letter-spacing:.05em; }
+.sitx-band.exemplary { background:#d6e6da; color:#1e5a38; }
+.sitx-band.strong    { background:#dce8dd; color:#1e5a38; }
+.sitx-band.competent { background:#efe4cd; color:#8a6320; }
+.sitx-band.weak      { background:#ecd0c8; color:#a4402e; }
+.sitx-band.nothing   { background:#e6e1d6; color:#6b6355; }
+.sitx-flag { font-size:11px; font-variant-numeric:tabular-nums; }
+.sitx-flag.over  { color:#a4402e; font-weight:700; }
+.sitx-flag.under { color:#8a6320; font-weight:700; }
+.sitx-req { border-top:1px solid var(--border-light); padding:14px 0 2px; }
+.sitx-req:first-of-type { border-top:none; }
+.sitx-req-top { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }
+.sitx-req-name { font-weight:700; font-size:14px; }
+.sitx-req-marks { font-variant-numeric:tabular-nums; color:var(--text-muted); font-size:13px; }
+.sitx-why { font-size:13px; line-height:1.55; color:var(--text); white-space:pre-wrap; margin:8px 0 0; }
+.sitx-sub { font-size:12px; color:var(--text-light); margin:6px 0 0; }
+.sitx-answer { margin:10px 0 0; }
+.sitx-answer summary { cursor:pointer; font-size:12px; font-weight:700; color:var(--brand); letter-spacing:.01em; }
+.sitx-answer pre { white-space:pre-wrap; font-family:inherit; font-size:13px; line-height:1.55; background:var(--bg); border:1px solid var(--border-light); border-radius:8px; padding:12px 14px; margin:8px 0 0; color:var(--text); }
+.sitx-empty { font-size:13px; color:var(--text-light); }
 `;
