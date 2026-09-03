@@ -10,7 +10,7 @@ export const metadata: Metadata = { title: 'Cohort readiness — Coordinator | G
 
 export default async function OrgPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  await requireCoordinator(`/org/${slug}`);
+  await requireCoordinator(`/org/${slug}`, slug);
   const overview = await getOrgOverview(slug, Date.now());
   if (!overview) notFound();
 

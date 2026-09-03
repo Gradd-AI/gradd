@@ -15,7 +15,7 @@ const SEVERITY: Record<Band, number> = { red: 0, amber: 1, green: 2 };
 
 export default async function CohortHeatmapPage({ params }: { params: Promise<{ slug: string; cohortId: string }> }) {
   const { slug, cohortId } = await params;
-  await requireCoordinator(`/org/${slug}/${cohortId}`);
+  await requireCoordinator(`/org/${slug}/${cohortId}`, slug);
 
   const org = await getOrgBySlug(slug);
   if (!org) notFound();

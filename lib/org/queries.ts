@@ -105,7 +105,9 @@ export async function getCohortById(cohortId: string): Promise<Cohort | null> {
 }
 const getCohort = getCohortById; // internal alias
 
-async function cohortUserIds(cohortId: string): Promise<string[]> {
+// EXPORTED (2026-09-03) so the trainee drill-down can check that the user id in the URL is
+// actually in the cohort it is being viewed under. It was private, and the page never asked.
+export async function cohortUserIds(cohortId: string): Promise<string[]> {
   const sb = createServiceClient();
   const { data } = await sb
     .from('cohort_memberships')
