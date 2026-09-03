@@ -145,7 +145,9 @@ export default async function ProgressPage({
             point at the SAME destination — ACCA home — so an AFM student clicking the logo
             landed on APM while the crumb beside it said "ACCA AFM". Not a cross-surface
             drift; a drift between two adjacent lines of one header. */}
-        <Link className="wordmark" href={accaHomeHref}><img src="/gradd-ai-logo.png" alt="Gradd" /></Link>
+        <Link className="wordmark" href={accaHomeHref} aria-label="Gradd ACCA home">
+          <img src="/gradd-ai-logo.png" alt="Gradd.ai" style={{ height: 20, width: 'auto', display: 'block' }} />
+        </Link>
         <span className="org-crumb">
           <Link href={accaHomeHref}>ACCA {paper}</Link><span>›</span> Your progress
         </span>
