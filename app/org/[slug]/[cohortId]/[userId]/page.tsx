@@ -189,9 +189,9 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
 
       {/* ── The sat mock, in full ────────────────────────────────────────────
           Everything below is the SAME debrief the student read: getTraineeSitResults runs
-          computePacing and buildDebrief over that attempt's rows. It is placed above the
-          older "Assessment records" block because it is the substantive record; that block
-          stays as the raw index of what exists. */}
+          computePacing and buildDebrief over that attempt's rows. It is the ONLY rendering of
+          the sit on this page — the old "Assessment records" index it superseded (mock id, sat
+          date, completion, per-case PS marks against truncated case UUIDs) is deleted. */}
       <div className="org-panel">
         {!sit ? (
           <>
@@ -379,28 +379,6 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
         )}
       </div>
 
-      {/* Marks + mocks where present */}
-      {(d.marks.length > 0 || d.mocks.length > 0) && (
-        <div className="org-panel">
-          <h2 style={{ margin: '0 0 10px' }}>Assessment records</h2>
-          {d.mocks.length > 0 && (
-            <table className="org-list" style={{ marginBottom: d.marks.length ? 16 : 0 }}>
-              <thead><tr><th>Mock</th><th>Started</th><th>Completed</th></tr></thead>
-              <tbody>{d.mocks.map((m, i) => (
-                <tr key={i}><td>{m.mock_id}</td><td>{fmtDate(m.started_at)}</td><td>{m.completed ? 'yes' : 'no'}</td></tr>
-              ))}</tbody>
-            </table>
-          )}
-          {d.marks.length > 0 && (
-            <table className="org-list">
-              <thead><tr><th>Case (professional-skills)</th><th className="num">Awarded</th><th className="num">Available</th><th>Marked</th></tr></thead>
-              <tbody>{d.marks.map((m, i) => (
-                <tr key={i}><td>{m.case_id.slice(0, 8)}…</td><td className="num">{m.awarded}</td><td className="num">{m.available}</td><td>{fmtDate(m.marked_at)}</td></tr>
-              ))}</tbody>
-            </table>
-          )}
-        </div>
-      )}
     </div>
   );
 }
