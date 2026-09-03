@@ -155,7 +155,7 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
         </div>
         <p className="org-note">
           Score = weighted mean of the four components{k.assessment.score == null ? ' (assessment absent → its weight redistributed across the other three)' : ''}.
-          Stuck drills (miss_count ≥ 2, unresolved): <b>{d.stuckDrills}</b>.
+          {' '}<b>{d.stuckDrills}</b> {d.stuckDrills === 1 ? 'drill' : 'drills'} attempted twice or more without success.
         </p>
       </div>
 
