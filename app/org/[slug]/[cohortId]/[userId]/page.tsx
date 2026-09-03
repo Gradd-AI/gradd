@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requireCoordinator, cohortMemberDecision } from '@/lib/org/guard';
 import { getOrgBySlug, getCohortById, getTraineeDetail, cohortUserIds, type RecentAttempt } from '@/lib/org/queries';
+import { getTraineeSitResults } from '@/lib/org/trainee-sit';
 import { ORG_CSS, bandTone, fmtDays, fmtDate, SUB_AREA_NAME } from '@/components/org/orgTheme';
 
 export const dynamic = 'force-dynamic';
@@ -64,8 +65,20 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
   if (!cohortMemberDecision(await cohortUserIds(cohortId), userId)) notFound();
 
   const now = Date.now();
-  const d = await getTraineeDetail(org.id, userId, now);
+  const [d, sit] = await Promise.all([
+    getTraineeDetail(org.id, userId, now),
+    // The cross-user sit read. Null is an EMPTY STATE, never an error — a trainee who has
+    // not sat a mock is the ordinary case, and it re-checks the org/cohort link itself.
+    getTraineeSitResults(org.id, cohortId, userId),
+  ]);
   if (!d) notFound();
+
+  // Requirement id → "Q1 (i)", so the pacing table names requirements the same way the
+  // debrief does. `display_name` is the only safe reference; the stored label carries the
+  // internal LO code the sit route strips at its own serve boundary.
+  const nameByReq = new Map(
+    (sit?.debrief.cases ?? []).flatMap((g) => g.requirements.map((l) => [l.requirement_id, l.display_name] as const)),
+  );
 
   const { readiness: r } = d;
   const k = r.components;
@@ -172,6 +185,198 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
             </tbody>
           </table>
         ) : <p className="org-note" style={{ marginTop: 0 }}>No attempts recorded.</p>}
+      </div>
+
+      {/* ── The sat mock, in full ────────────────────────────────────────────
+          Everything below is the SAME debrief the student read: getTraineeSitResults runs
+          computePacing and buildDebrief over that attempt's rows. It is placed above the
+          older "Assessment records" block because it is the substantive record; that block
+          stays as the raw index of what exists. */}
+      <div className="org-panel">
+        {!sit ? (
+          <>
+            <h2 style={{ margin: '0 0 8px' }}>Mock paper</h2>
+            {/* An ordinary fact about a cohort, not an error. Distinguishes "never sat" from
+                "sat and unmarked" only as far as the data honestly can. */}
+            <p className="sitx-empty">
+              No completed mock on this cohort&rsquo;s paper. Nothing to show yet — a debrief
+              appears here once {d.name.split(' ')[0]} finishes a timed paper and it is marked.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="sitx-head">
+              <h2 style={{ margin: 0 }}>{sit.paper.title}</h2>
+              <span className="org-note" style={{ marginTop: 0 }}>
+                sat {fmtDate(sit.attempt.started_at)}
+                {sit.pacing.total_elapsed_minutes != null
+                  ? ` · ${Math.floor(Math.max(0, sit.pacing.total_elapsed_minutes))} min of ${sit.paper.duration_minutes}`
+                  : ''}
+              </span>
+            </div>
+
+            {/* TOTALS — facts, not a grade. The debrief predicts no pass mark and neither
+                does this: technical and professional are shown as they were marked. */}
+            <div className="sitx-totals">
+              <div className="sitx-total">
+                <span className="sitx-total-k">Technical</span>
+                <span className="sitx-total-v">
+                  {sit.debrief.totals.technical_awarded ?? '—'}
+                  <small>/{sit.debrief.totals.technical_available}</small>
+                </span>
+              </div>
+              <div className="sitx-total">
+                <span className="sitx-total-k">Professional skills</span>
+                <span className="sitx-total-v">
+                  {sit.debrief.totals.professional_awarded ?? '—'}
+                  <small>/{sit.debrief.totals.professional_available ?? '—'}</small>
+                </span>
+              </div>
+              <div className="sitx-total">
+                <span className="sitx-total-k">Paper</span>
+                <span className="sitx-total-v">
+                  {sit.debrief.totals.technical_awarded != null && sit.debrief.totals.professional_awarded != null
+                    ? sit.debrief.totals.technical_awarded + sit.debrief.totals.professional_awarded
+                    : '—'}
+                  <small>/{sit.debrief.totals.technical_available + (sit.debrief.totals.professional_available ?? 0)}</small>
+                </span>
+              </div>
+            </div>
+
+            {/* ⚠️ THE HEADLINE IS QUOTED, NOT ADOPTED.
+                `largest_single_loss` ranks ABSOLUTE marks lost, so it tends to name the
+                biggest requirement on the paper rather than the worst answer — on this very
+                attempt it named a requirement sitting at the paper's MEDIAN loss rate while
+                three others lost a higher proportion (open finding, docs/AFM_SURFACED.md
+                2026-09-02). Presenting it as the coordinator's verdict would launder a known
+                selector weakness into a judgement about a trainee. It is shown because the
+                student saw it and the coordinator should know what they were told — labelled
+                as theirs, in their words, and nothing more. */}
+            {sit.debrief.headline.code !== 'none' && (
+              <div className="sitx-quote">
+                <span className="sitx-quote-k">What the student&rsquo;s debrief led with</span>
+                <p className="sitx-quote-v">{sit.debrief.headline.statement}</p>
+              </div>
+            )}
+            {sit.debrief.secondary.map((s, i) => (
+              <div className="sitx-quote" key={i}>
+                <span className="sitx-quote-k">Also reported to the student</span>
+                <p className="sitx-quote-v">{s.statement}</p>
+              </div>
+            ))}
+
+            {sit.other_completed_attempts > 0 && (
+              <p className="org-note">
+                ⚠️ This trainee has {sit.other_completed_attempts + 1} completed sits on this paper.
+                Per-requirement marks below are this attempt&rsquo;s; the case totals and
+                professional-skills feedback come from the most recent marking of those cases.
+              </p>
+            )}
+            {sit.pacing.not_evaluated && <p className="org-note">{sit.pacing.not_evaluated}</p>}
+            {sit.debrief.limitations.map((l, i) => <p className="org-note" key={i}>{l}</p>)}
+
+            {/* PACING — budgets and flags, marks alongside and never merged into them.
+                Requirement 1 carries no ratio: its interval contains reading the whole
+                Section A scenario, which is why pacing.ts flags it `no_ratio`. */}
+            <h3 style={{ margin: '20px 0 8px', fontSize: 14 }}>Pacing</h3>
+            <table className="org-list">
+              <thead>
+                <tr>
+                  <th>Requirement</th><th className="num">Marks</th><th className="num">Elapsed</th>
+                  <th className="num">Budget</th><th className="num">Ratio</th><th>Flag</th><th className="num">Awarded</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sit.pacing.rows.map((p) => (
+                  <tr key={p.requirement_id}>
+                    <td>{nameByReq.get(p.requirement_id) ?? `#${p.paper_order}`}</td>
+                    <td className="num">{p.marks_available}</td>
+                    <td className="num">{p.interval_minutes == null ? '—' : `${Math.floor(p.interval_minutes)}m`}</td>
+                    <td className="num">{Math.floor(p.budget_minutes)}m</td>
+                    <td className="num">{p.ratio == null ? '—' : p.ratio.toFixed(2)}</td>
+                    <td>
+                      <span className={`sitx-flag ${p.flag}`}>
+                        {p.flag === 'no_ratio' ? 'reading + Q1' : p.flag.replace('_', ' ')}
+                      </span>
+                    </td>
+                    <td className="num">{p.marks_awarded ?? '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {/* PER REQUIREMENT — band, marks, the marker's own words VERBATIM, and the
+                student's script behind an explicit expand. */}
+            {sit.debrief.cases.map((g) => (
+              <div key={g.case_id} style={{ marginTop: 22 }}>
+                <h3 style={{ margin: '0 0 2px', fontSize: 14 }}>
+                  {g.display_name} — {g.title ?? 'Untitled case'}{' '}
+                  <span className="sitx-req-marks">
+                    {g.technical_awarded ?? '—'}/{g.technical_available}
+                  </span>
+                </h3>
+                {g.requirements.map((l) => {
+                  const answer = sit.answers[l.requirement_id];
+                  return (
+                    <div className="sitx-req" key={l.requirement_id}>
+                      <div className="sitx-req-top">
+                        <span className="sitx-req-name">{l.display_name}</span>
+                        {l.band && <span className={`sitx-band ${l.band}`}>{l.band}</span>}
+                        <span className="sitx-req-marks">
+                          {l.marks_awarded ?? '—'}/{l.marks_available}
+                        </span>
+                        {l.pacing_note && <span className="sitx-sub" style={{ margin: 0 }}>{l.pacing_note}</span>}
+                      </div>
+                      {/* The technical marker's reasoning, exactly as written. debrief.ts is
+                          built around never paraphrasing this, so neither does the render. */}
+                      {l.why
+                        ? <p className="sitx-why">{l.why}</p>
+                        : <p className="sitx-sub">No marker reasoning recorded for this requirement.</p>}
+                      {/* READING SOMEONE'S SCRIPT IS AN ACTION, NOT A SIDE EFFECT OF OPENING
+                          A PAGE. Collapsed by default, always — there is no state in which
+                          this renders expanded without a click. */}
+                      {answer != null && (
+                        <details className="sitx-answer">
+                          <summary>
+                            Show {d.name.split(' ')[0]}&rsquo;s answer
+                            {answer.length > 0 ? ` (${answer.length.toLocaleString()} characters)` : ' (submitted blank)'}
+                          </summary>
+                          {answer.length > 0
+                            ? <pre>{answer}</pre>
+                            : <p className="sitx-sub">Submitted blank.</p>}
+                        </details>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+
+            {/* PROFESSIONAL SKILLS — band + the marker's feedback per skill. The apportioned
+                per-skill MARK is deliberately not shown: it is a largest-remainder artefact,
+                not a score for that skill (same reason app/api/acca/case/mark withholds it). */}
+            <h3 style={{ margin: '24px 0 8px', fontSize: 14 }}>Professional skills</h3>
+            {sit.debrief.professional.map((c) => (
+              <div key={c.case_id} style={{ marginBottom: 14 }}>
+                <div className="sitx-req-top">
+                  <span className="sitx-req-name">{c.title ?? 'Untitled case'}</span>
+                  <span className="sitx-req-marks">{c.awarded ?? '—'}/{c.available ?? '—'}</span>
+                </div>
+                {c.skills.length === 0
+                  ? <p className="sitx-sub">No per-skill detail recorded.</p>
+                  : c.skills.map((s, i) => (
+                    <div className="sitx-req" key={i}>
+                      <div className="sitx-req-top">
+                        <span className="sitx-req-name">{s.skill.replace(/_/g, ' ')}</span>
+                        <span className={`sitx-band ${s.band}`}>{s.band}</span>
+                      </div>
+                      {s.why && <p className="sitx-why">{s.why}</p>}
+                    </div>
+                  ))}
+              </div>
+            ))}
+          </>
+        )}
       </div>
 
       {/* Marks + mocks where present */}
