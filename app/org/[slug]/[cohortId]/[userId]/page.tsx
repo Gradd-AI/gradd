@@ -141,7 +141,28 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
           <div className="c">
             <div className="c-top"><span className="c-name">Miss-rate</span><span className="c-w">weight {pct(w.missRate)}</span></div>
             <div className="v">{k.missRate.score.toFixed(2)}</div>
-            <div className="d">{k.missRate.usedSlope ? `slope: prior ${k.missRate.priorMissRate.toFixed(2)} → recent ${k.missRate.recentMissRate.toFixed(2)}` : 'proxy: resolved/(resolved+stuck)'}</div>
+            {/* ── THE SUB-LINE NAMES THE BRANCH **AND ITS INPUTS** (2026-09-04) ──────
+                The branch label was already honest — it says `proxy` when the proxy ran. What
+                it did not do was show a single number, so the score above it could not be
+                reconciled with anything on screen: a coordinator saw `0.67` over the words
+                "resolved/(resolved+stuck)" and had no way to learn that the 0.67 was 2 over 3.
+                The slope branch has always printed its two inputs; this is the proxy branch
+                catching up, and nothing about either calculation changed.
+
+                ⚠️ `resolved` IS NOT "ANSWERED CORRECTLY", and the word does not say so. It is
+                `acca_tutor_progress.resolved`, which app/api/acca/tutor/route.ts writes true at
+                BOTH :1704 (a correct answer) and :1576 (call4_reveal — the earned reveal). So a
+                student who missed twice and was shown the answer counts in this numerator
+                exactly like one who solved it. Logged as a P-V4 instance in docs/AFM_SURFACED.md
+                with the live case; naming it on screen is a copy decision, not a label fix, and
+                is deliberately NOT made here. */}
+            <div className="d">
+              {k.missRate.usedSlope
+                ? `slope: prior ${k.missRate.priorMissRate.toFixed(2)} → recent ${k.missRate.recentMissRate.toFixed(2)}`
+                : d.resolvedDrills + d.stuckDrills > 0
+                  ? `proxy: ${d.resolvedDrills} resolved, ${d.stuckDrills} stuck — too few recent attempts for a miss-rate`
+                  : 'proxy: nothing to judge yet — held neutral'}
+            </div>
           </div>
           <div className="c">
             <div className="c-top"><span className="c-name">Assessment</span><span className="c-w">weight {pct(w.assessment)}</span></div>

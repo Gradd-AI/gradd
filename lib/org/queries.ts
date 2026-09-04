@@ -539,6 +539,13 @@ export interface TraineeDetail {
   coveredSubAreas: string[];
   totalSubAreas: number;
   stuckDrills: number;
+  /** Progress rows flagged `resolved`. DISPLAY ONLY — it is the miss-rate proxy's numerator,
+   *  exposed so the trainee page can print the inputs the proxy branch actually used instead
+   *  of naming a formula with no numbers in it. Counted by the SAME rule `buildInput` applies
+   *  (resolved wins; only an unresolved row with miss_count >= 2 is stuck), from the SAME
+   *  paper-scoped rows, so the two can never quote different figures for one screen.
+   *  ⚠️ It does NOT mean "answered correctly" — see the P-V4 entry in docs/AFM_SURFACED.md. */
+  resolvedDrills: number;
   daysSinceActive: number | null;
   recentAttempts: RecentAttempt[];
 }
@@ -777,7 +784,11 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
 
   const covered = new Set<string>();
   for (const a of rows.attempts) if (a.outcome === 'correct') covered.add(subAreaOf(a.lo_code));
+  // Both counted by buildInput's rule, in buildInput's order: `resolved` wins outright, and
+  // only an UNRESOLVED row with miss_count >= 2 is stuck. Together they are the miss-rate
+  // proxy's two inputs, and the page prints them on the proxy branch.
   const stuckDrills = rows.progress.filter((p) => !p.resolved && (p.miss_count ?? 0) >= 2).length;
+  const resolvedDrills = rows.progress.filter((p) => p.resolved).length;
   const recentAttempts = [...rows.attempts]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 15)
@@ -787,7 +798,7 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
   return {
     userId, email, name: displayNameFromEmail(email), readiness,
     coveredSubAreas: [...covered].sort(), totalSubAreas: total,
-    stuckDrills, daysSinceActive: readiness.components.recency.daysSinceActive,
+    stuckDrills, resolvedDrills, daysSinceActive: readiness.components.recency.daysSinceActive,
     recentAttempts,
   };
 }

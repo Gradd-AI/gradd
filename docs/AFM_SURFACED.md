@@ -49,6 +49,36 @@ second one — it is a read, with no marking code in reach. The mock surface kee
 the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
 `npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
 
+## 🔴 OPEN 2026-09-04 — THE MISS-RATE PROXY COUNTS "WAS SHOWN THE ANSWER" AS A SUCCESS (**P-V4**, sixth instance)
+
+Found while explaining why `dd786100` moved red → amber with no commit responsible: the component
+crossed `MIN_ATTEMPTS_FOR_SLOPE` as his attempts aged past the 28-day window. **List only — nothing
+here is fixed, and `readiness.ts` was not touched.** The trainee page's sub-line now prints the
+proxy's two inputs (label only, `resolvedDrills` exposed for display); the semantics below are
+untouched and are the open item.
+
+| The check keys on… | …but the question is | How they come apart |
+|---|---|---|
+| `acca_tutor_progress.resolved` | did the student GET IT RIGHT | `app/api/acca/tutor/route.ts` writes it true at **:1704** (a correct answer) **and :1576** (`call4_reveal` — the earned reveal). Asking for the answer after two misses scores identically to solving it |
+
+- **The numerator counts reveals.** `dd786100` scores **0.6667** on it — `resolved 2 / (resolved 2 +
+  stuck 1)` — with **14 attempts, 14 misses, zero `correct` outcomes**, and **both `resolved` rows at
+  `miss_count: 2`**. Site :1704 writes `attemptOutcome='correct'` to the attempt log, and his log has
+  none, so both resolutions came from the reveal path. It carried him from `red 0.38375` to
+  `amber 0.51917`.
+- **The component changes MEANING at a threshold rather than degrading.** Below
+  `MIN_ATTEMPTS_FOR_SLOPE` (4 windowed attempts) it silently measures a different thing under the
+  same name — on the proxy branch `recentMissRate`/`priorMissRate` are both `0` because there is no
+  miss rate in it at all — and the composite averages it against **coverage, which disagrees**:
+  coverage reads the `outcome === 'correct'` gate and reports **0.00 on 0/12** for the same student
+  in the same render. Nothing reconciles the two.
+- **BANKED, from the org paper-scoping measurement the same day: a positive control aimed at
+  `caseAvg` would have reported the cross-paper mark leak ABSENT on the one account carrying it.**
+  `MOCK_CASE_IDS` already excludes mock cases from `caseMarkRatios`, so the contamination arrived
+  through **`mockScores`** instead — `ee07f08c`'s `caseAvg` held at `0.75` across the fix while
+  `mockAvg` moved `0.8125 → 1.0`. The instrument was pointed at the wrong half of the thing it was
+  checking, and would have returned a clean bill.
+
 > ## 🔷 TWO LIVE WORKSTREAMS, BOTH CURRENT AS AT 2026-08-29 — READ BOTH BEFORE ASSUMING STATE
 >
 > **Added 2026-08-29. This header is ADDITIVE — the `Last refreshed` block below it is unchanged
