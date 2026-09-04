@@ -203,6 +203,40 @@ export function scopeDrillRows<T extends { drill_id: string }>(
   return rows.filter((r) => servable.get(r.drill_id) === paper);
 }
 
+// ── THE CASE-BASED ROWS NEED THEIR OWN SCOPING, AND IT IS NOT THE DRILL RULE ──
+// `acca_case_marking` and `acca_mock_attempts` carry no `drill_id`, so `scopeDrillRows` does
+// not reach them. That is why they went unscoped for as long as they did, and the cost was a
+// trainee's AFM case marks and AFM mock sittings feeding an APM cohort's readiness — through
+// `caseMarkRatios` and `mockScores` in `buildInput`.
+//
+// Both are PURE and both take their resolution as an argument, so the rules are fixtured
+// without a DB (scripts/test-org-readiness.ts T20–T29) — the same discipline `scopeDrillRows`
+// carries, for the same reason: a `.filter()` can be tested and a query builder cannot.
+//
+// Failure direction is EXCLUSION in both, matching the drill rule. A row that does not resolve
+// is dropped rather than counted into a paper it may not belong to: a readiness score built
+// from a mark nobody can attribute is worse than one built from fewer marks.
+
+/** Keep only markings whose CASE resolves, through `casePapers`, to THIS paper. */
+export function scopeMarkRows<T extends { case_id: string }>(
+  rows: readonly T[],
+  casePapers: ReadonlyMap<string, string>,
+  paper: AccaPaper,
+): T[] {
+  return rows.filter((r) => casePapers.get(r.case_id) === paper);
+}
+
+/** Keep only attempts whose MOCK belongs to THIS paper. Resolved through the code registry
+ *  rather than a lookup map: `mock_id`s are unique across both papers by construction (asserted
+ *  at MOCK_PAPERS load), which is the same fact `mockPaperCaseIds` relies on to stop an open APM
+ *  attempt unlocking AFM content. An unregistered `mock_id` resolves to nothing and drops. */
+export function scopeMockRows<T extends { mock_id: string }>(
+  rows: readonly T[],
+  paper: AccaPaper,
+): T[] {
+  return rows.filter((r) => getMockPaper(r.mock_id)?.paper === paper);
+}
+
 /** A cohort's paper, resolved for bucketing. `cohorts.paper` is free text (`string | null`),
  *  so an unrecognised or absent value falls back to 'APM' — DELIBERATELY the same default as
  *  `totalSubAreas()`/`allSubAreas()`, because the numerator and the denominator must agree on
@@ -235,6 +269,8 @@ async function rawRowsForUsers(userIds: string[], paper: AccaPaper): Promise<Raw
   ]);
   const attempts = (a.data as RawRows['attempts'] | null) ?? [];
   const progress = (p.data as RawRows['progress'] | null) ?? [];
+  const rawMarks = (m.data as RawRows['marks'] | null) ?? [];
+  const rawMocks = (k.data as RawRows['mocks'] | null) ?? [];
 
   // ONE join for both drill-based tables — see servableDrills' header for the three row
   // classes this excludes and why an unjoined read is wrong.
@@ -242,15 +278,31 @@ async function rawRowsForUsers(userIds: string[], paper: AccaPaper): Promise<Raw
     [...new Set([...attempts.map((r) => r.drill_id), ...progress.map((r) => r.drill_id)])].filter(Boolean),
   );
 
-  // marks/mocks are CASE-based (acca_case_marking / acca_mock_attempts): they carry their own
-  // real foreign keys and no drill_id, so the join does not apply to them. `mocks` is already
-  // paper-resolved downstream via getMockPaper(mock_id); `marks` stays unscoped exactly as
-  // before, which is unchanged behaviour and a separate open item.
+  // ── marks/mocks ARE PAPER-SCOPED HERE TOO (2026-09-04) ──────────────────────
+  // They are CASE-based (acca_case_marking / acca_mock_attempts): they carry their own real
+  // foreign keys and no drill_id, so the DRILL join above does not apply — which is why they
+  // were left unscoped when it was written, and why they stayed unscoped when `getMyProgress`
+  // was fixed. That left the same defect in two org readers: a trainee's AFM case marks fed
+  // an APM cohort's readiness, through `caseMarkRatios` and `mockScores`.
+  //
+  // Scoped in THIS function rather than in each caller, so there is one site and no caller can
+  // forget. Two different resolutions because the two tables answer the question differently:
+  //   • mocks — the REGISTRY, pure. `mock_id`s are unique across both papers by construction,
+  //     the same fact `mockPaperCaseIds` relies on to keep an open APM attempt from unlocking
+  //     AFM content. No query, no failure mode.
+  //   • marks — the case's own `paper_code`, one id-addressed lookup. Mock cases could have
+  //     come from the registry, but STANDALONE practice cases are not in it, and a rule that
+  //     covers half the rows is how the next reader concludes the other half do not exist.
+  //
+  // Failure direction is EXCLUSION, matching the drill join: a mark whose case does not
+  // resolve is dropped rather than counted into a paper it may not belong to.
+  const casePapers = await casePaperCodes([...new Set(rawMarks.map((r) => r.case_id))]);
+
   return {
     attempts: scopeDrillRows(attempts, servable, paper),
     progress: scopeDrillRows(progress, servable, paper),
-    marks: (m.data as RawRows['marks'] | null) ?? [],
-    mocks: (k.data as RawRows['mocks'] | null) ?? [],
+    marks: scopeMarkRows(rawMarks, casePapers, paper),
+    mocks: scopeMockRows(rawMocks, paper),
   };
 }
 
@@ -487,6 +539,13 @@ export interface TraineeDetail {
   coveredSubAreas: string[];
   totalSubAreas: number;
   stuckDrills: number;
+  /** Progress rows flagged `resolved`. DISPLAY ONLY — it is the miss-rate proxy's numerator,
+   *  exposed so the trainee page can print the inputs the proxy branch actually used instead
+   *  of naming a formula with no numbers in it. Counted by the SAME rule `buildInput` applies
+   *  (resolved wins; only an unresolved row with miss_count >= 2 is stuck), from the SAME
+   *  paper-scoped rows, so the two can never quote different figures for one screen.
+   *  ⚠️ It does NOT mean "answered correctly" — see the P-V4 entry in docs/AFM_SURFACED.md. */
+  resolvedDrills: number;
   daysSinceActive: number | null;
   recentAttempts: RecentAttempt[];
 }
@@ -541,7 +600,26 @@ export interface MyProgress {
   stuckDrills: StuckDrill[];   // resumable stalled drills, most-missed first
   recentAttempts: RecentAttempt[];
   marks: { case_id: string; awarded: number; available: number; marked_at: string }[];
+  /** Attempt rows for the readiness inputs and the "has this student sat anything" test.
+   *  NOT the list the student's results index is built from — that is `listSitAttempts`
+   *  (lib/acca/sit-report.ts), which is the one definition of an OPENABLE sitting and
+   *  refuses the many completed-but-empty attempts these rows include. */
   mocks: { mock_id: string; completed: boolean; started_at: string }[];
+}
+
+/** Which paper each case belongs to. id-addressed, so no paper predicate — the point of the
+ *  lookup is to LEARN the paper, and constraining it to one would answer the question by
+ *  assuming it. Returns only the ids that resolve; a mark on a deleted case drops out, which
+ *  is the safe direction (an unattributable mark is not silently counted into a paper). */
+async function casePaperCodes(caseIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (caseIds.length === 0) return map;
+  const sb = createServiceClient();
+  const { data } = await sb.from('acca_cases').select('id, paper_code').in('id', caseIds);
+  for (const r of ((data ?? []) as Array<{ id: string; paper_code: string | null }>)) {
+    if (r.paper_code) map.set(r.id, r.paper_code);
+  }
+  return map;
 }
 
 /** Topic (and lo_code) for a set of drill ids — used to label stuck drills by title
@@ -578,12 +656,21 @@ export async function getMyProgress(userId: string, now: number, paper: AccaPape
   // behaviour change, deliberate, and in the SAME class as the coordinator fix: the old filter
   // tested EXISTENCE only, so this page's numerator counted attempts on unpublished drills into a
   // denominator (allSubAreas) that already filtered `approved`+`published`. Same bug, same file,
-  // 300 lines apart. marks/mocks are APM-only artefacts today (no AFM cases/mocks exist), so a
-  // non-APM view shows none rather than APM's.
+  // 300 lines apart.
   const attempts = rows.attempts;
   const progress = rows.progress;
-  const marks = paper === 'APM' ? rows.marks : [];
-  const mocks = paper === 'APM' ? rows.mocks : [];
+
+  // ── 🔴 FIXED 2026-09-04 — THIS WAS `paper === 'APM' ? rows.marks : []` ──────
+  // The comment that justified it read "marks/mocks are APM-only artefacts today (no AFM
+  // cases/mocks exist)". That was true when written and FALSE from 2026-07-29, the day AFM
+  // Mock 1 was published — so for five weeks every AFM student's progress page showed no
+  // mock and no case marks at all, and the one account holding real banded sit data is the
+  // AFM one. A stale premise in a comment kept a live surface empty.
+  //
+  // Both are now scoped in `rawRowsForUsers`, alongside the drill join and for the same
+  // reason: one site, so no caller can forget. This function does nothing special with them.
+  const marks = rows.marks;
+  const mocks = rows.mocks;
 
   const input = buildInput(now, total, attempts, progress, marks, mocks);
   const readiness = computeReadiness(input);
@@ -697,7 +784,11 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
 
   const covered = new Set<string>();
   for (const a of rows.attempts) if (a.outcome === 'correct') covered.add(subAreaOf(a.lo_code));
+  // Both counted by buildInput's rule, in buildInput's order: `resolved` wins outright, and
+  // only an UNRESOLVED row with miss_count >= 2 is stuck. Together they are the miss-rate
+  // proxy's two inputs, and the page prints them on the proxy branch.
   const stuckDrills = rows.progress.filter((p) => !p.resolved && (p.miss_count ?? 0) >= 2).length;
+  const resolvedDrills = rows.progress.filter((p) => p.resolved).length;
   const recentAttempts = [...rows.attempts]
     .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
     .slice(0, 15)
@@ -707,7 +798,7 @@ export async function getTraineeDetail(orgId: string, userId: string, now: numbe
   return {
     userId, email, name: displayNameFromEmail(email), readiness,
     coveredSubAreas: [...covered].sort(), totalSubAreas: total,
-    stuckDrills, daysSinceActive: readiness.components.recency.daysSinceActive,
+    stuckDrills, resolvedDrills, daysSinceActive: readiness.components.recency.daysSinceActive,
     recentAttempts,
   };
 }

@@ -27,6 +27,7 @@ import {
   caseListViewed,
   caseOpened,
   mockIntroViewed,
+  mockResultsViewed,
   parseSurfaceEvent,
   type SurfaceEvent,
 } from '../lib/acca/surface-events';
@@ -46,6 +47,9 @@ const parse = (body: unknown) => parseSurfaceEvent(body, getMockPaper);
 const A_CASE_ID = 'a5000000-0000-4000-8000-0000000000a1';   // a real published APM practice case
 const APM_MOCK = 'paper-1';
 const AFM_MOCK = 'afm-paper-1';
+// A real attempt id shape. It is NOT checked against acca_mock_attempts — this module is
+// pure and has no database; see the claim-ceiling note beside the parse arm.
+const AN_ATTEMPT = '47df6a20-d4c7-4084-88ac-a3a7902eee14';
 
 console.log('\nsurface-events — a view event must be attributable, canonical, and mean exactly what its name says\n');
 
@@ -91,11 +95,12 @@ ok('MUST-FAIL: an echoing parser would carry an extra key into the stored metada
 
 // ── THE VOCABULARY IS CLOSED, AND THE TWO SINKS REFUSE EACH OTHER ────────────
 console.log('\n  the closed vocabulary');
-ok('exactly three surface events, and no more crept in',
-  SURFACE_EVENTS.length === 3
+ok('exactly four surface events, and no more crept in',
+  SURFACE_EVENTS.length === 4
   && SURFACE_EVENTS.includes('case_list_viewed')
   && SURFACE_EVENTS.includes('case_opened')
-  && SURFACE_EVENTS.includes('mock_intro_viewed'));
+  && SURFACE_EVENTS.includes('mock_intro_viewed')
+  && SURFACE_EVENTS.includes('mock_results_viewed'));
 
 // The drill funnel's live vocabulary, from app/api/acca/event/route.ts. None of these may be
 // accepted here — that is the reciprocal half of the guard the drill sink now applies.
@@ -137,6 +142,33 @@ for (const m of MOCK_PAPERS) {
 }
 ok('every registered mock paper is therefore reportable — no paper is unreachable by the sink',
   MOCK_PAPERS.every((m) => parse(overTheWire(mockIntroViewed(m.id, m.paper))).ok));
+for (const m of MOCK_PAPERS) {
+  const r = parse(overTheWire(mockResultsViewed(AN_ATTEMPT, m.id, m.paper)));
+  ok(`mock_results_viewed round-trips for ${m.id} (${m.paper}), carrying the attempt`,
+    r.ok && r.event.metadata.attempt_id === AN_ATTEMPT && r.event.metadata.mock_id === m.id
+    && r.event.metadata.paper === m.paper);
+}
+{
+  // The canonical key set, asserted rather than assumed: this is the one event with three
+  // keys, and a builder that quietly dropped the attempt would still round-trip as a valid
+  // mock event under every other check here.
+  const r = parse(overTheWire(mockResultsViewed(AN_ATTEMPT, AFM_MOCK, 'AFM')));
+  ok('mock_results_viewed stores exactly attempt_id + mock_id + paper',
+    r.ok && JSON.stringify(Object.keys(r.event.metadata).sort())
+      === JSON.stringify(['attempt_id', 'mock_id', 'paper']));
+}
+{
+  // THE TWO MOCK EVENTS ARE NOT INTERCHANGEABLE. They share the registry cross-check, so the
+  // risk is that one collapses into the other and a re-read is counted as a start (or the
+  // reverse) — which would make the one number this event exists to produce meaningless.
+  const intro = parse(overTheWire(mockIntroViewed(AFM_MOCK, 'AFM')));
+  const results = parse(overTheWire(mockResultsViewed(AN_ATTEMPT, AFM_MOCK, 'AFM')));
+  ok('an intro view and a results view of the same paper stay distinct event types',
+    intro.ok && results.ok && intro.event.event_type !== results.event.event_type);
+  ok('...and only the results event carries an attempt',
+    intro.ok && results.ok
+    && !('attempt_id' in intro.event.metadata) && 'attempt_id' in results.event.metadata);
+}
 
 // ── EVERY REFUSAL PATH ───────────────────────────────────────────────────────
 console.log('\n  refusals — each one is a row that would have read as fine');
@@ -162,6 +194,18 @@ const refusals: Array<[string, unknown]> = [
   ['an unknown mock_id',                 { event_type: 'mock_intro_viewed', metadata: { paper: 'APM', mock_id: 'paper-9' } }],
   ['an APM mock declared as AFM',        { event_type: 'mock_intro_viewed', metadata: { paper: 'AFM', mock_id: APM_MOCK } }],
   ['an AFM mock declared as APM',        { event_type: 'mock_intro_viewed', metadata: { paper: 'APM', mock_id: AFM_MOCK } }],
+  ['mock_intro_viewed carrying an attempt_id', { event_type: 'mock_intro_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK, attempt_id: AN_ATTEMPT } }],
+  ['mock_results_viewed with no attempt_id', { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK } }],
+  ['mock_results_viewed with no mock_id',    { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', attempt_id: AN_ATTEMPT } }],
+  ['a non-uuid attempt_id',                  { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK, attempt_id: 'afm-paper-1' } }],
+  ['a truncated attempt_id',                 { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK, attempt_id: '47df6a20-d4c7-4084-88ac-a3a7902eee1' } }],
+  ['an empty attempt_id',                    { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK, attempt_id: '' } }],
+  // The cross-check applies to BOTH mock events. Pinned separately because it is implemented
+  // once and shared, and a refactor that moved it under mock_intro_viewed alone would leave
+  // this arm silently unguarded.
+  ['a results view of an APM mock declared as AFM', { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: APM_MOCK, attempt_id: AN_ATTEMPT } }],
+  ['a results view naming an unknown mock',  { event_type: 'mock_results_viewed', metadata: { paper: 'APM', mock_id: 'paper-9', attempt_id: AN_ATTEMPT } }],
+  ['a results view carrying a case_id',      { event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK, attempt_id: AN_ATTEMPT, case_id: A_CASE_ID } }],
   // The identity fields are not part of this type at all. A caller copying the older
   // `fireEvent` helper would send one, and it must be refused rather than silently ignored —
   // silently ignoring it is how someone concludes client-supplied identity is honoured here.
@@ -187,15 +231,20 @@ ok('every refusal carries a non-empty reason a 400 can return',
   const r = parse({ event_type: 'mock_intro_viewed', metadata: { paper: 'AFM', mock_id: ` ${AFM_MOCK} ` } });
   ok('a padded mock_id is accepted and stored trimmed', r.ok && r.event.metadata.mock_id === AFM_MOCK);
 }
+{
+  const r = parse({ event_type: 'mock_results_viewed', metadata: { paper: 'AFM', mock_id: AFM_MOCK, attempt_id: `\n${AN_ATTEMPT} ` } });
+  ok('a padded attempt_id is accepted and stored trimmed', r.ok && r.event.metadata.attempt_id === AN_ATTEMPT);
+}
 
 // ── NO EVENT CAN BE BUILT WITHOUT A PAPER ────────────────────────────────────
 // Not a style point: AFM and APM LO codes collide exactly, every other ACCA query is
 // paper-scoped, and a funnel that cannot be split by paper cannot be read.
-console.log('\n  the paper is mandatory on all three');
-ok('all three builders emit a paper',
-  [caseListViewed('APM'), caseOpened(A_CASE_ID, 'AFM'), mockIntroViewed(AFM_MOCK, 'AFM')]
+console.log('\n  the paper is mandatory on all four');
+ok('all four builders emit a paper',
+  [caseListViewed('APM'), caseOpened(A_CASE_ID, 'AFM'), mockIntroViewed(AFM_MOCK, 'AFM'),
+   mockResultsViewed(AN_ATTEMPT, AFM_MOCK, 'AFM')]
     .every((e) => (ACCA_PAPERS as readonly string[]).includes(e.metadata.paper)));
-ok('and every one of the three is refused without it',
+ok('and every one of the four is refused without it',
   SURFACE_EVENTS.every((t) => parse({ event_type: t, metadata: {} }).ok === false));
 
 console.log(`\n${fail === 0 ? 'PASS' : 'FAIL'} surface-events: ${pass}/${pass + fail} checks\n`);

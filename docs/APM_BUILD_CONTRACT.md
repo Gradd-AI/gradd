@@ -1056,9 +1056,9 @@ Re-gated (10 green), `test:bsop` + `next build` GREEN, full pack regenerated. **
 Commissioned adversarial regression suite for `/api/acca/tutor` (all papers). **Built, tsc-green, NOT fired at prod** (per the STOP instruction).
 - **`scripts/redteam-probes.ts`** — 45-probe matrix × 14 classes (concept/invented-figures [probe C1 = today's defect], wrong-drill, partial/one-part, gibberish/noise, answer-extraction incl. "verify this: <pasted model answer>", prompt-injection ×4, regurgitation, right-num-wrong-method / wrong-num-right-method, currency-scale, hint-fishing/salami, emotional/anxious, persona-boundary, free-cap/burn edges, long-conversation drift) + the judge rubric (8 violation codes). Each probe flags AUTO-scannable checks (figure-leak / invented-range / cutoff / CTA / call_type / unearned-reveal / system-leak) vs 👁 needs-human-eye (41 of 45).
 - **`scripts/redteam-tutor.ts`** — driver: minted free+paid sessions, fires the matrix at the REAL route, seeds the teach-loop state per probe, captures full transcripts + logged call_types, runs the machine auto-checks → `run-*-transcripts.json` + `run-*-autoscan.md`. **Prod guarded:** `--target prod` REQUIRES `--yes-production`; default target is local; `--list` prints the matrix + cost and fires nothing.
-- **`scripts/redteam-judge.ts`** — reviewer-model (sonnet) pass against the rubric → FLAGGED-ONLY (`*-flagged.md` + `*-verdicts.json`). **`--prod-sample <days>` = the STANDING WEEKLY HABIT:** judges real (student → Ezra) pairs from `acca_drill_messages`.
+- **`scripts/redteam-judge.ts`** — reviewer-model (sonnet) pass against the rubric → FLAGGED-ONLY (`*-flagged.md` + `*-verdicts.json`). **`--prod-sample <days>`** judges genuine (student → Ezra) pairs from `acca_drill_messages`. **RE-SCOPED 2026-09-04: the trigger is 25 GENUINE STUDENT TURNS since the last run, not a calendar week** — and the mode had produced NO artefact in the ~7 weeks since the table was created, with pairing that was broken before first use. See GENERATOR_DOCTRINE (rule 2) for the correction in full.
 - **npm:** `redteam`, `redteam:judge`. Run artifacts gitignored; scripts + `docs/redteam/README.md` committed.
-- **DOCTRINE (banked in GENERATOR_DOCTRINE):** (1) re-run the battery after ANY tutor prompt/persona/leg change (regression gate); (2) run `--prod-sample` WEEKLY over production transcripts (real behaviour is the probe source no matrix invents).
+- **DOCTRINE (banked in GENERATOR_DOCTRINE):** (1) re-run the battery after ANY tutor prompt/persona/leg change (regression gate); (2) run `--prod-sample` **at 25 genuine student turns since the last run** over production transcripts (real behaviour is the probe source no matrix invents) — **was "WEEKLY"; corrected 2026-09-04, see GENERATOR_DOCTRINE rule 2**.
 - **COST ESTIMATE:** driver ≈ 63–189 internal Anthropic legs (63 route-calls; route is haiku-heavy, sonnet on generate/reveal); judge ≈ 63 reviewer calls. Whole-battery ≈ **USD 2–6 per full prod run**.
 - **STOP — awaiting Grant's review of the probe list before ANY firing at production.** Recommend a first run against a LOCAL dev server (`--target local`) as a smoke test before the guarded prod run.
 
@@ -1469,7 +1469,7 @@ D5 compressed) → batch CLOSED. **B-SECTION-LIVE TIER: CONTENT COMPLETE — bot
 **Persona-hardening BUILT** (`93b3d43`): the `GroundingPack` mechanism, 3-location triangulation (system
 block / delivery-protocol instructions / per-turn anchor). 7-probe red-green battery (PH1–PH7) banked
 into the standing red-team suite — claimed honestly as ~80–90% behavioral (LLM-prompted, not a
-deterministic code gate); a weekly `--prod-sample` judge run is the intended monitor of the residual.
+deterministic code gate); a `--prod-sample` judge run is the intended monitor of the residual. **⚠️ 2026-09-04: that monitor had never run — no artefact exists in the ~7 weeks since the table was created — and its pairing was undefined before first use, skewed toward FALSE flags. The residual was therefore UNMONITORED, not monitored-and-clean.**
 X1/X2 pre-existing suite fails carried forward, unrelated to this session (confirmed via `git stash`) —
 diagnose next session.
 

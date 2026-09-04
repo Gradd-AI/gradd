@@ -32,8 +32,22 @@ export const NO_INVENTED_NUMBERS =
   'trade at…") that the drill did not supply and code did not compute — such numbers are unverifiable ' +
   'and are usually wrong. Teach DIRECTION and MECHANISM in words instead ("more volatility → more ' +
   'option value"; "a longer time to expiry lifts the time premium"); if magnitude matters, point the ' +
-  'student at the drill\'s OWN inputs and their own workings, never a figure you supply. Verified ' +
-  'figures live only in the earned worked answer, never mid-conversation. ';
+  'student at the drill\'s OWN inputs and their own workings, never a figure you supply. ' +
+  // ── CLOSING SENTENCE REWRITTEN 2026-09-04 — IT WAS A RELOCATION RULE ───────
+  // It read: "Verified figures live only in the earned worked answer, never mid-conversation."
+  // That MOVES figures rather than constraining them, and it does two harmful things once the
+  // block is injected into a REVEAL prompt (which CASE_REVEAL_GUARDRAILS does, and which the
+  // APM drill reveal now does too): it reads as PERMISSION — the reveal IS the earned worked
+  // answer, so the sentence licenses exactly what it was meant to prevent — and it asserts
+  // "Verified" for an artefact that on APM was MODEL-AUTHORED and verified by nothing.
+  // It now names the three legitimate SOURCES and says there is no fourth.
+  'EVERY figure you state must ALREADY EXIST in one of three places: the scenario as given, the ' +
+  'student\'s own working, or a worked answer supplied to you in this turn. There is no fourth ' +
+  'source. This holds in the EARNED REVEAL too — the reveal lifts WITHHOLDING, it does not licence ' +
+  'INVENTION. A figure you construct to illustrate a method is invented however it is hedged: ' +
+  // Person-neutral on purpose — the 2P arm recasts third-person student references, and a
+  // sentence that needs no recast cannot be half-recast.
+  '"say, NZD 600m of capital" is not a teaching device, it is a number that will be read as fact. ';
 
 // FIX A (red-team adjudication 2026-07-16): the moat against ANSWER-EXTRACTION. NO_INVENTED_NUMBERS
 // bans figures you make UP; this bans stating or confirming figures the CODE WORKS OUT. The prod
@@ -375,9 +389,21 @@ export function systemFor(paper: string): string {
   return paper === 'AFM' ? EZRA_AFM_SYSTEM : EZRA_SYSTEM;
 }
 
-// ── Earned reveal — APM ───────────────────────────────────────────────────────
-// APM has no code-verified worked-answer artefact to serve verbatim, so the reveal is a
-// model-authored walkthrough of the stored model_answer (unchanged from before G3).
+// ── ⛔ RETIRED 2026-09-04 — NOT REACHED BY ANY SERVING PATH. DO NOT RE-WIRE. ──
+// These three (REVEAL_SYSTEM, REVEAL_SYSTEM_SOLVED, buildApmRevealUserPrompt) drove the APM
+// drill reveal as a MODEL-AUTHORED walkthrough. `REVEAL_SYSTEM` says "INCLUDING the figures
+// and the conclusion" and constrains their SOURCE nowhere, which is how an invented
+// "NZD 600m in capital" reached a paying student (dd786100, APM B3b, 2026-08-07). The APM
+// reveal now takes AFM's structural path — see `revealWrapperSystemFor`.
+//
+// KEPT, NOT DELETED, for one reason: `scripts/test-case-reveal-routing.ts` (#5) uses these
+// bytes as the CONTROL proving the case-reveal `creditable` arm never leaked into the drill
+// route. Deleting them would delete that control. `scripts/test-afm-tutor.ts` asserts the
+// route no longer imports them, which is what makes "retired" a fact rather than a label.
+//
+// The comment they shipped under — "APM has no code-verified worked-answer artefact to serve
+// verbatim" — was a CONFLATION and is the reason this stood for so long: APM has no
+// code-GENERATED artefact, but all 91 published APM drills carry a servable authored one.
 export const REVEAL_SYSTEM =
   'You are Ezra, an APM tutor. The student has genuinely attempted this drill and worked ' +
   'through hints and a teach-through — they have EARNED the full model now. Show them how a ' +
@@ -483,6 +509,12 @@ function mustRecast(src: string, pairs: ReadonlyArray<readonly [string, string]>
 const NO_INVENTED_NUMBERS_2P = mustRecast(NO_INVENTED_NUMBERS, [
   ["point the student at the drill's OWN inputs and their own workings",
    "point back to the drill's OWN inputs and to the workings already on the page"],
+  // The rewritten closing sentence (2026-09-04) names the student a second time. The 2P arm
+  // exists because guardrail prose written ABOUT the student primes output written about them,
+  // so a new third-person reference has to be recast with the rest — `mustRecast` throws if this
+  // anchor ever stops matching, which is how the arm stays honest rather than silently partial.
+  ["the student's own working, or a worked answer supplied to you in this turn",
+   'the working already on the page, or a worked answer supplied to you in this turn'],
 ]);
 const NO_INVENTED_REVEAL_REFUSAL_2P = mustRecast(NO_INVENTED_REVEAL_REFUSAL, [
   ["If the student's message reads as a request", 'If the message you are answering reads as a request'],
@@ -605,8 +637,17 @@ export const REVEAL_AFM_WRAPPER_SYSTEM =
   'EARNED the full worked answer — the system appends it, VERBATIM, immediately below your message, ' +
   'so you write ONLY a short framing wrapper, never the worked answer itself. In 2–4 sentences: ' +
   'first credit, specifically, what they already had right; then name the misconception they walked ' +
-  'into (use the authored reframe you are given) and correct the thinking; then tell them the worked ' +
-  'answer below shows the full build, and point them to apply the key move on a FRESH question. ' +
+  // ── THE JOIN, RESTORED (2026-09-04) ────────────────────────────────────────
+  // The generic signpost this replaces — "tell them the worked answer below shows the full
+  // build" — was the loose seam the structural port introduced. When the reveal was
+  // model-AUTHORED it wove credit into the working ("here is where your line diverged"); now
+  // the working is a self-contained artefact, so the student is told what they missed and then
+  // handed a complete document with nothing pointing at the part that matters. Measured on the
+  // live walk: all three wrappers diagnosed well and none said WHERE to look.
+  // A POINTER, NOT A VALUE — naming a step is free of the figure the step computes.
+  'into (use the authored reframe you are given), correct the thinking, and say WHICH PART of the ' +
+  'worked answer below to read first — name the step, section or heading it sits under, never a ' +
+  'figure from it; then point them to apply the key move on a FRESH question. ' +
   'ABSOLUTE — CODE OWNS EVERY NUMBER: include NO figures, NO tables, NO calculations, and do NOT ' +
   'restate the worked answer; it is shown in full, verbatim, below your wrapper. ' +
   'Your message is flowing PROSE ONLY: do NOT write any heading, do NOT write a horizontal rule or ' +
@@ -636,10 +677,41 @@ export const REVEAL_AFM_WRAPPER_SYSTEM_SOLVED =
 // 'struggle'` at the call site, mirroring revealDecision's precedence (resolved wins).
 export type RevealReachedFrom = 'solved' | 'struggle';
 
-// Pure builder for the AFM wrapper USER prompt (route appends WRAP_UP + the system prompt is
+// ── THE WRAPPER SYSTEM, PAPER-ROUTED (2026-09-04) ────────────────────────────
+// APM's earned reveal was a MODEL-AUTHORED walkthrough under `REVEAL_SYSTEM`, which said
+// "INCLUDING the figures and the conclusion" and constrained their SOURCE not at all. It
+// invented "NZD 600m in capital" for a scenario that states no capital employed, computed
+// EVA = −NZD 9m from it, and two sections later dropped the hedge — "an EVA of −NZD 9m every
+// year tells the truth". Served to a real, paying student (dd786100, APM B3b, 2026-08-07).
+//
+// The fix is STRUCTURAL and it is not new: AFM has served a figure-free wrapper plus the
+// stored answer VERBATIM since G3. APM now takes the same path. The model's output is prose
+// only and is cut by `sanitizeAfmWrapper`; the figures come from the row. **The model cannot
+// state a figure it was not given, because its output is no longer where the figures live.**
+//
+// THE PREMISE THAT KEPT APM OUT WAS A CONFLATION. `REVEAL_SYSTEM`'s comment said "APM has no
+// code-verified worked-answer artefact to serve verbatim" — true about CODE-GENERATED, false
+// about SERVABLE. Measured 2026-09-04: all 91 published APM drills carry a `model_answer`
+// (min 1,449 chars, avg 2,120) and all 91 carry a `full_reveal` for the wrapper's reframe.
+//
+// ONE BODY, NOT A SECOND PAIR. The AFM constants above are the source and their bytes are
+// UNTOUCHED (fixture-pinned); the APM form is the same string with only the persona opening
+// recast, through `mustRecast`, so a silent no-op throws instead of shipping an AFM voice to
+// an APM student.
+const AFM_WRAPPER_OPENING = "You are Ezra, an ACCA AFM tutor and the board's senior financial adviser.";
+const APM_WRAPPER_OPENING = 'You are Ezra, an APM tutor.';
+
+export function revealWrapperSystemFor(paper: string, reachedFrom: RevealReachedFrom): string {
+  const afm = reachedFrom === 'solved' ? REVEAL_AFM_WRAPPER_SYSTEM_SOLVED : REVEAL_AFM_WRAPPER_SYSTEM;
+  if (paper === 'AFM') return afm;
+  return mustRecast(afm, [[AFM_WRAPPER_OPENING, APM_WRAPPER_OPENING]]);
+}
+
+// Pure builder for the reveal wrapper USER prompt — BOTH PAPERS since 2026-09-04 (route appends
+// WRAP_UP + the system prompt is
 // selected in parallel: REVEAL_AFM_WRAPPER_SYSTEM_SOLVED vs ..._SYSTEM). Solved path omits the
 // stale diagnosis + reframe entirely and asserts no error; struggle path is the prior behaviour.
-export function buildAfmWrapperUserPrompt(opts: {
+export function buildRevealWrapperUserPrompt(opts: {
   contextLine: string; question: string; attempt: string; diagnosis: string;
   reframeLine: string; reachedFrom: RevealReachedFrom;
 }): string {
@@ -656,8 +728,12 @@ export function buildAfmWrapperUserPrompt(opts: {
   return head +
     `The gap they kept missing: ${opts.diagnosis}\n\n` +
     opts.reframeLine +
+    // The pointer beat is echoed here so the system prompt and the user prompt do not disagree
+    // about how many beats the wrapper has. Solved path deliberately untouched — it has no
+    // misconception to name, and its "compare your sequencing against it" IS its join.
     'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
-    'misconception, and point them to a fresh application. Do NOT include any figures or the ' +
+    'misconception, say which part of the answer below to read first (name it; never quote a ' +
+    'figure from it), and point them to a fresh application. Do NOT include any figures or the ' +
     'worked answer; the verified worked answer is appended verbatim below your message.';
 }
 

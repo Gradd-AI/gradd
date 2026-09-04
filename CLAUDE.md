@@ -600,6 +600,76 @@ when the session ends on a branch.
   **RETIRED**: it existed only because the APM mock loaded through the practice routes, which no
   longer happens. Refusal is the routes' existing 404, so it leaks no existence. Fixtures
   `scripts/test-mock-access.ts` (`npm run test:mock-access`, pure).
+- **THE PERMANENT RESULTS PAGE — `/acca/results` + `/acca/results/[attemptId]`, and ONE assembly
+  behind every reader of a sat paper (built 2026-09-04).** `lib/acca/sit-report.ts` holds the
+  chain — `orderPaper → toPacingInputs → computePacing` + `toDebriefRequirements +
+  toDebriefCases → buildDebrief` — and `lib/org/trainee-sit.ts` is now AUTHORISATION ONLY
+  (org/cohort re-check → pick the attempt → `assembleSitReport`). It was a second copy of that
+  chain with a header explaining why a second copy was acceptable; that held at two, and the
+  student's own page would have been a **third**, at which point the question stops being *do
+  these agree* and becomes *which is right*. `buildSitReport(sb, userId, attemptId)` applies
+  `.eq('user_id', …)` to the attempt lookup **and re-checks the returned row** — a fact about the
+  row, not a promise about the query, the same discipline `rowsForAttempt` applies one level down.
+  **IT CANNOT MARK, STRUCTURALLY:** a server component importing a module that imports no
+  `runCaseMarking`, no `claimCase`, no model. It also carries **no `paperFullySubmitted ||
+  attemptIsClosed` gate** — that gate protects MARKING, and a read has nothing to protect, so an
+  unmarked paper renders `technical_awarded: null` rather than being marked by whoever opens the
+  link. Marking keeps its single trigger (the client POSTing `sit/results` from the `done` phase),
+  and **revisiting `/acca/afm/mock` on a completed attempt still POSTs** — that is unchanged and
+  deliberate; the mock surface owns first-marking and the retry, this page owns the revisit.
+  **ID-ADDRESSED, NO `?paper=`** on the detail route (the attempt owns the paper via `mock_id`);
+  the LIST is paper-parameterised. Same split as `/acca/cases` vs `/acca/cases/<id>`, and both new
+  files joined `test-paper-link-sweep`'s population with an ID-ADDRESSED exemption.
+  ⚠️ **`model_answer` IS NOT SELECTED AND MUST NOT BE.** Four sites now state this (`case`, `sit`,
+  `sit/results`, and these two). Grant ruled it 2026-09-04: a mock case is `mock_only` reserved
+  content, there is exactly ONE mock per paper, disclosure is per-student irreversible, and a
+  re-sit cannot be marked anyway — a paper whose model answers have been read is SPENT. The
+  withhold is also ARCHITECTURAL (`TEACHING_ARCHITECTURE.md`, LOCKED), and most case
+  `model_answer`s are hand-typed literals never code-verified (`answer_schema` NULL). **What ships
+  instead is `full_reveal`** — the teaching field, same one the drill loop's earned reveal serves —
+  plus `question`, which is not a disclosure at all (the student read it during the paper) and
+  without which an answer is not revisable. Both are a SIBLING map (`study`), never threaded
+  through `buildDebrief`: that function produces a marking artefact and must not become the
+  carrier of a disclosure decision.
+  ⚠️ **`listSitAttempts` DOES NOT LIST ON `completed`, and the gap is enormous.** Measured live:
+  **13 of 15 completed attempts hold NO progress rows** (pre-`attempt_id` APM sittings whose work
+  went through the practice path, so those rows carry a NULL `attempt_id` and by doctrine can
+  never reach a sit debrief). One real account has 5 completed attempts, 1 with content — listing
+  on `completed` would offer it four blank papers. The rule is pure (`summariseSittings`) and
+  fixtured for exactly that reason: an `.eq()` cannot be tested and this can.
+  **HELD DECISION, NOT SETTLED (Grant, 2026-09-04): a LAPSED subscription hides a paper the student
+  sat while paying.** The gate matches `sit/results` (`hasPaperAccess`, per paper, SERVICE client
+  per the 2026-08-09 lesson) and renders SitRunner's locked copy. The reversible direction; the
+  policy question is open. The `/acca/progress` index panel is deliberately **NOT** behind the paid
+  lock — it names papers and dates them, and every mark lives one click away behind the gate.
+  Fixtures `npm run test:sit-report` (18, gate 76 → 77) + `test-surface-events` 52 → **67**
+  (`mock_results_viewed`). **VERIFIED LIVE, read-only:** 8/8 requirements, answers, questions and
+  reveals assembled; `model_answer` absent from the serialised report; a cross-user read and a
+  bogus attempt id both refused; APM's 4 completed-but-empty attempts correctly listed as 0.
+  🔴 **AND IT FIXED A FIVE-WEEK LIVE BUG ON THE WAY IN.** `getMyProgress` read
+  `paper === 'APM' ? rows.marks : []` for BOTH marks and mocks, justified by a comment saying
+  *"no AFM cases/mocks exist"* — true when written, **false from 2026-07-29** when AFM Mock 1 was
+  published. Every AFM student's progress page showed no mock and no case marks, and the one
+  account with real banded sit data is the AFM one. Now scoped properly: mocks through the
+  registry (pure), marks through `casePaperCodes` (one id-addressed lookup — mock cases could have
+  come from the registry, but standalone cases are not in it, and a rule covering half the rows is
+  how the next reader concludes the other half do not exist). **Measured before/after: AFM 0 mocks
+  + 0 marks → 1 + 3; and APM 8 marks → 5, because three AFM case marks had been showing on the APM
+  page.** **The ORG readers were scoped the same day, after measuring** — the rule now lives in
+  `rawRowsForUsers` beside the drill join (ONE site, so no caller can forget; `getMyProgress`
+  keeps nothing of its own), as pure `scopeMarkRows` / `scopeMockRows`, fixtured both directions
+  in `test-org-readiness` (T21–T29) with the unscoped reader pinned WRONG.
+  📐 **MEASURED BEFORE APPLYING, real readers, fixed clock, all 26 demo-advisory trainees across
+  all three cohorts: every cohort row BYTE-IDENTICAL.** Only 5 of 26 hold any marks or mocks and
+  all five are APM-only. ⚠️ Exactly one account moved and it is **in no cohort** — `ee07f08c`,
+  assessment 0.792 → 0.900, mockAvg 0.8125 → 1.0, mocksCompleted 4 → 3, composite 0.240 → 0.256
+  (band `red` either way): a near-blank **AFM** sitting had been dragging an **APM** readiness
+  score down. The trainee page 404s for it (`cohortMemberDecision` — org member, no cohort
+  membership, verified), so nothing a coordinator can open changed.
+  📐 **`caseAvg` did not move, and that is the trap:** the leak reached readiness through
+  `mockScores`, NOT `caseMarkRatios` — `buildInput` already excludes mock cases from the case
+  average via `MOCK_CASE_IDS`, so a check looking only at `caseAvg` would have called the bug
+  absent.
 - **THE WEAKNESS LEDGER — `acca_weak_areas` + `lib/acca/weak-areas.ts` (pure).** Table per migration
   `20260730120000` — SEPARATE from LC/IB `weak_areas`, which `app/dashboard/page.tsx:141` and
   `app/api/cron/weekly-email/route.ts:159` both read WITHOUT a product filter, so ACCA rows there

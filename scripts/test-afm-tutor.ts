@@ -7,6 +7,11 @@
 //  (2) REVEAL BYTE-EQUALITY — the served AFM reveal body ends with the authored
 //      model_answer VERBATIM, so a refactor cannot reintroduce model-emitted tables
 //      (the truncation/drift failure mode design "B" exists to prevent).
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
 import {
   EZRA_SYSTEM,
   EZRA_AFM_SYSTEM,
@@ -23,7 +28,8 @@ import {
   REVEAL_AFM_WRAPPER_SYSTEM,
   REVEAL_AFM_WRAPPER_SYSTEM_SOLVED,
   REVEAL_SYSTEM_SOLVED,
-  buildAfmWrapperUserPrompt,
+  buildRevealWrapperUserPrompt,
+  revealWrapperSystemFor,
   buildApmRevealUserPrompt,
   containsInventedNumericRange,
   containsDistressSignal,
@@ -223,8 +229,56 @@ ok('AFM persona: ABANDONED-AFTER-CALC',     EZRA_AFM_SYSTEM.includes('ABANDONED-
 // ── (1) Conversational "code owns every number" guardrail is present in AFM persona ──
 ok('AFM persona: code-owns-numbers guardrail present',
   EZRA_AFM_SYSTEM.includes('CODE OWNS EVERY NUMBER'));
-ok('AFM persona: forbids inventing a figure mid-conversation',
-  EZRA_AFM_SYSTEM.includes('never mid-conversation') && EZRA_AFM_SYSTEM.includes('never state a specific value'));
+ok('AFM persona: forbids inventing a figure',
+  EZRA_AFM_SYSTEM.includes('never state a specific value'));
+
+// ── THE CLOSING SENTENCE CONSTRAINS THE SOURCE, IT DOES NOT RELOCATE (2026-09-04) ──
+// It used to read "Verified figures live only in the earned worked answer, never
+// mid-conversation" — a RELOCATION rule. Injected into a reveal prompt (CASE_REVEAL_GUARDRAILS
+// does this, and the ported APM drill reveal now does too) it reads as PERMISSION: the reveal
+// IS the earned worked answer. It also asserted "Verified" for an APM artefact that was
+// model-authored and verified by nothing. Both halves are pinned here.
+ok('the relocation wording is GONE (it read as permission inside a reveal)',
+  !EZRA_AFM_SYSTEM.includes('never mid-conversation')
+  && !EZRA_AFM_SYSTEM.includes('Verified figures live only in the earned worked answer'));
+ok('...replaced by a SOURCE constraint naming the three legitimate places',
+  EZRA_AFM_SYSTEM.includes('must ALREADY EXIST in one of three places')
+  && EZRA_AFM_SYSTEM.includes('There is no fourth source'));
+ok('...and it explicitly binds the earned reveal too',
+  EZRA_AFM_SYSTEM.includes('the reveal lifts WITHHOLDING, it does not licence INVENTION'));
+
+// ── THE APM REVEAL IS STRUCTURAL: THE RETIRED PROMPT IS UNREACHABLE ──────────
+// `REVEAL_SYSTEM` authorised "the figures" and named no source, and it invented one for a
+// paying student (dd786100, APM B3b, 2026-08-07). It is retained ONLY as the control in
+// test-case-reveal-routing; the serving path must not import it. A static sweep, because a
+// unit test can prove the prompt is retired and cannot prove nobody wired it back.
+{
+  const route = readFileSync(join(__dirname, '..', 'app/api/acca/tutor/route.ts'), 'utf8');
+  ok('the tutor route no longer imports REVEAL_SYSTEM / REVEAL_SYSTEM_SOLVED',
+    !/^\s*REVEAL_SYSTEM(_SOLVED)?,\s*$/m.test(route));
+  ok('the tutor route no longer imports buildApmRevealUserPrompt',
+    !route.includes('buildApmRevealUserPrompt'));
+  ok('the reveal is assembled by code, verbatim (assembleAfmReveal), on the ONE remaining path',
+    (route.match(/assembleAfmReveal\(/g) ?? []).length === 1);
+  ok('the wrapper system is paper-routed rather than branched at the call site',
+    route.includes('revealWrapperSystemFor(paper, reachedFrom)'));
+  ok('the served reveal is audited for unsourced figures',
+    route.includes('auditRevealFigures('));
+}
+
+// Both papers get their own voice out of ONE body — the AFM bytes must not have moved.
+ok('revealWrapperSystemFor returns the AFM constants byte-identical',
+  revealWrapperSystemFor('AFM', 'struggle') === REVEAL_AFM_WRAPPER_SYSTEM
+  && revealWrapperSystemFor('AFM', 'solved') === REVEAL_AFM_WRAPPER_SYSTEM_SOLVED);
+ok('APM gets the APM persona, not the AFM adviser voice',
+  revealWrapperSystemFor('APM', 'struggle').startsWith('You are Ezra, an APM tutor.')
+  && !revealWrapperSystemFor('APM', 'struggle').includes('ACCA AFM tutor'));
+ok('APM keeps the figure-free wrapper contract — only the opening differs',
+  revealWrapperSystemFor('APM', 'struggle').includes('include NO figures, NO tables, NO calculations')
+  && revealWrapperSystemFor('AFM', 'struggle').replace(
+       "You are Ezra, an ACCA AFM tutor and the board's senior financial adviser.",
+       'You are Ezra, an APM tutor.',
+     ) === revealWrapperSystemFor('APM', 'struggle'));
 
 // ── (1) AFM persona does NOT adopt the APM diagnostic frame ──────────────────
 // (bare "APM" appears once, as the negation "never use APM describe-not-apply framing",
@@ -339,11 +393,11 @@ ok('reveal footer: assembled reveal STILL ends with model_answer verbatim (foote
 // figures-slip they didn't. reachedFrom='solved' → credit-not-correct; 'struggle' → prior behaviour.
 // "Error-assertion language" = the correction vocabulary a solved student must never see.
 const ERR_ASSERT = /misconception|gap they kept missing|name and correct|walked into|\bmistake\b|\berror\b|\bslip\b|got it wrong|correct the thinking/i;
-const afmSolved = REVEAL_AFM_WRAPPER_SYSTEM_SOLVED + '\n' + buildAfmWrapperUserPrompt({
+const afmSolved = REVEAL_AFM_WRAPPER_SYSTEM_SOLVED + '\n' + buildRevealWrapperUserPrompt({
   contextLine: 'Context: X\n\n', question: 'Q', attempt: 'my attempt', diagnosis: 'STALE DIAGNOSIS — should be ignored',
   reframeLine: 'Authored misconception reframe (name this and correct the thinking):\nR\n\n', reachedFrom: 'solved',
 });
-const afmStruggle = REVEAL_AFM_WRAPPER_SYSTEM + '\n' + buildAfmWrapperUserPrompt({
+const afmStruggle = REVEAL_AFM_WRAPPER_SYSTEM + '\n' + buildRevealWrapperUserPrompt({
   contextLine: 'Context: X\n\n', question: 'Q', attempt: 'my attempt', diagnosis: 'You inverted the sign',
   reframeLine: 'Authored misconception reframe (name this and correct the thinking):\nR\n\n', reachedFrom: 'struggle',
 });

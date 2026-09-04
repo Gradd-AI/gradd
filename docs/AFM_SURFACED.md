@@ -2,6 +2,226 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🟢 NEW 2026-09-04 — THE PERMANENT RESULTS PAGE SHIPPED, AND THREE THINGS ARE LEFT OPEN
+
+`/acca/results` + `/acca/results/[attemptId]`, one shared assembly (`lib/acca/sit-report.ts`) behind
+the student's page and the coordinator's trainee view. Full record in `CLAUDE.md`'s code map.
+Closed on the way in: **open item #3 below** (`debrief_viewed` on a re-visit) and a **five-week live
+bug** — `getMyProgress` scoped marks and mocks with `paper === 'APM' ? … : []`, so every AFM
+student's progress page showed neither, and three AFM case marks were showing on the APM page.
+Measured before/after: AFM `0 mocks + 0 marks → 1 + 3`, APM `8 marks → 5`.
+
+**Open, deliberately:**
+
+1. 🟡 **A LAPSED SUBSCRIPTION HIDES A PAPER THE STUDENT SAT WHILE PAYING.** The gate matches
+   `sit/results` (`hasPaperAccess`, per paper) and renders the locked copy. **Grant ruled it this
+   way to keep ONE rule on one surface family, not to settle the policy** — whether a permanent
+   record of already-purchased work should survive a lapse is genuinely open, and this is the
+   reversible direction. Flip it by deleting the `!paid` branch in
+   `app/acca/results/[attemptId]/page.tsx`; the file says so at its own head.
+2. ✅ **CLOSED 2026-09-04 — the org readers are scoped too, and it was MEASURED FIRST.** The
+   scoping moved out of `getMyProgress` and into `rawRowsForUsers`, beside the drill join, so
+   there is ONE site and no caller can forget; `getCohortReadiness` and `getTraineeDetail` get it
+   for free. Pure rules `scopeMarkRows` / `scopeMockRows` (T21–T29, both directions, pre-fix
+   reader pinned wrong).
+   **THE MEASUREMENT, before/after through the real readers at a fixed clock, all 26 demo-advisory
+   trainees across all three cohorts: every cohort row byte-identical. Trainee 04 (`dd786100`) did
+   not move.** Only 5 of 26 hold any marks or mocks and all five are APM-only.
+   ⚠️ **ONE account DID move, and it is not in any cohort:** `ee07f08c` (Erasmoose, a test
+   account) — assessment **0.792 → 0.900**, mockAvg **0.8125 → 1.0**, mocksCompleted **4 → 3**,
+   composite **0.240 → 0.256**, band `red` either way. Its near-blank **AFM** sitting had been
+   dragging down an **APM** readiness score. It reaches `getTraineeDetail` only because the
+   measurement harness swept every user holding marks or mocks; on screen the trainee page
+   404s for it (`cohortMemberDecision`) — it holds an `org_membership` on demo-advisory and **no
+   cohort membership**, verified, not assumed. So nothing a coordinator can currently open changed.
+   📐 **`caseAvg` did NOT move on that account and the reason is worth keeping:** its AFM marks are
+   all on MOCK cases, which `buildInput` already excludes from `caseMarkRatios` via
+   `MOCK_CASE_IDS`. The leak reached readiness through `mockScores`, not through the case average
+   — so a check that had looked only at `caseAvg` would have reported the bug as absent.
+3. 🟡 **NO DASHBOARD ENTRY.** `/acca` shows three cards and results exist only after a sit, so a
+   permanently-visible fourth card is a dead link for most accounts. Reached today from
+   `/acca/progress` (one click from the dashboard) and from the debrief's own foot. A conditional
+   line on the *Timed mock* card is the candidate if it is ever wanted.
+
+⚠️ **UNCHANGED AND DELIBERATE: revisiting `/acca/afm/mock` on a completed attempt still POSTs
+`sit/results`.** That is the only trigger that can mark a paper, and the new page must not become a
+second one — it is a read, with no marking code in reach. The mock surface keeps first-marking and
+the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
+`npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
+
+## ✅ CLOSED 2026-09-04 — X6 / NO_INVENTED_NUMBERS: THE APM REVEAL INVENTED A FIGURE AND SERVED IT TO A PAYING STUDENT
+
+**X6 was found TWICE in red-team (2026-07-23, `AFM_SURFACED:6640`), correctly diagnosed, named the
+right prompt and the right fix — and was filed as "worth a NO_INVENTED_NUMBERS-style tightening pass
+on `REVEAL_SYSTEM`/`REVEAL_SYSTEM_SOLVED` **when convenient**". It then reached a real student.**
+The deferral is the lesson: a defect red-team reproduces twice is not a convenience item, and "when
+convenient" is how a known leak acquires a victim.
+
+**The sighting:** account `dd786100`, APM B3b (Aotea Energy), 2026-08-07 02:12. Paid, reveal
+correctly earned. It wrote *"If the gas-peaker division has, **say, NZD 600m in capital** and
+generates NOPAT of NZD 42m … EVA = 42 − 51 = **−NZD 9m**"* — the scenario states **no capital
+employed** — then two sections later dropped the hedge: *"an EVA of **−NZD 9m every year** tells the
+truth."* Found by hand-reading every genuine student turn; the fixed `--prod-sample` judge
+independently flagged the same reveal.
+
+**Why nothing held.** `REVEAL_SYSTEM` said *"INCLUDING the figures and the conclusion"* and
+constrained their SOURCE nowhere — **no figure guardrail at all**. `NO_INVENTED_NUMBERS` was never
+injected into it, and its own closing sentence was a RELOCATION rule — *"Verified figures live only
+in the earned worked answer, never mid-conversation"* — which inside a reveal prompt reads as
+**permission**, and which asserted *"Verified"* for an APM artefact that was model-authored and
+verified by nothing. The premise that kept APM out of AFM's structural fix was a **conflation**:
+*"APM has no code-verified worked-answer artefact to serve verbatim"* is true about CODE-GENERATED
+and false about SERVABLE — measured, **all 91 published APM drills carry a `model_answer` (min 1,449
+chars, avg 2,120) and all 91 carry a `full_reveal`**.
+
+**The fix is STRUCTURAL, and it is not new — AFM has had it since G3.** APM's reveal is now a
+figure-free model-authored wrapper plus the stored `model_answer` appended VERBATIM by
+`assembleAfmReveal`, cut by `sanitizeAfmWrapper`. One path, both papers; the persona voice is routed
+by `revealWrapperSystemFor` out of ONE body, AFM bytes fixture-pinned unchanged. **The model cannot
+state a figure it was not given, because its output is no longer where the figures live.**
+`REVEAL_SYSTEM` / `REVEAL_SYSTEM_SOLVED` / `buildApmRevealUserPrompt` are RETIRED — kept only as
+`test-case-reveal-routing`'s control, with a static sweep asserting the route no longer imports them.
+
+`NO_INVENTED_NUMBERS`' closing sentence now constrains the SOURCE ("no fourth source"; "the reveal
+lifts WITHHOLDING, it does not licence INVENTION") instead of relocating figures. That reaches
+`CASE_REVEAL_GUARDRAILS` too, where the old wording self-neutralised the same way.
+
+**Backstop: `lib/acca/reveal-figure-audit.ts` (pure) + `npm run test:reveal-figure-audit` (18, gate
+78 → 79).** Every number in a served reveal must appear in `context_text ∪ model_answer ∪ attempt`.
+**Flag-for-review, never a blocker** — a swallowed `console.warn` on the reveal path.
+📐 **THE TOLERANCE WIDTH WAS MEASURED, NOT GUESSED.** A one-step rule flags legitimate working
+(Aotea's sound −1.8m incremental EVA is 10.2 − 8.4 and neither operand is sourced); a transitive
+CLOSURE over the same sources was measured **reaching 600 and excusing the invention itself**. What
+holds is a READING-ORDER CHAIN — the sources plus what the reveal has already legitimately
+established — and an unsourced figure is never added to that set, so contamination cannot launder
+itself.
+⚠️ **Ceilings, stated in the file:** it cannot catch a correctly-sourced figure used WRONGLY; a
+coincidence passes (Aotea's invented "−NZD 9m" is NOT flagged — the scenario states a 9% ROCE target
+and this compares magnitudes); it is blind to a fabricated non-number ("several adjustments").
+**COUNTS are held to the stricter rule** — no arithmetic tolerance — because Marmara's fabricated
+*"the scenario specifies THREE adjustments"* was nearly excused by 180 ÷ 60 = 3.
+
+📐 **The Marmara "three adjustments" is NEITHER PROMPT NOR CONTENT.** Measured: "three" appears in NO
+field of drill `6c0694e5` — not `context_text`, `model_answer`, `hint` or `full_reveal`;
+`answer_schema` is NULL; the scenario states TWO. A live fabrication in a `teaching` leg that WAS
+running under `NO_INVENTED_NUMBERS`, slipping because a COUNT is not "a specific value, an
+illustrative numeric range, a market level, or a rule-of-thumb percentage". **No bad row to fix.**
+
+### 🟡 OPEN, MONITORED — THE REVEAL IS STRUCTURAL FOR THE **ARTEFACT** AND INSTRUCTED FOR THE **WRAPPER**
+
+**Found on the first live walk of the ported reveal (2026-09-04, three real APM drills, real
+route, paid controlled account).** The port guarantees the artefact and only the artefact: `tail
+=== model_answer` byte-for-byte on 3/3, separator clean, `sanitizeAfmWrapper` had nothing to cut on
+any of them. **The wrapper is still model-authored prose**, and its *"ABSOLUTE — CODE OWNS EVERY
+NUMBER: include NO figures"* is an INSTRUCTION, not a structure.
+
+On B3b Aotea the wrapper broke it: *"imagine Aotea's board proposes a hydro refurbishment project
+that costs **NZD 50 million**, will sustain current output for another **15 years**"* — neither
+figure is in any source. The re-walk after the pointer beat landed did it again with *"run it at
+minimum efficient scale for **ten years**"*.
+
+**This is a DIFFERENT AND LESSER THING than the 2026-08-07 defect, and the distinction is the whole
+point of the port.** Those figures are a **marked hypothetical** — "imagine" — in the
+fresh-application beat, inventing a practice scenario. The defect that started this was an invented
+input used to COMPUTE a figure then ASSERTED as fact about the case (*"an EVA of −NZD 9m every year
+tells the truth"*). Nothing in the new wrapper asserts anything about Aotea that Aotea's scenario
+does not say, and the worked answer beneath it cannot.
+
+📐 **THE RULE IS ACHIEVABLE, NOT MIS-SPECIFIED — 2 of 3 drills did the same beat with NO figures.**
+Marmara's close (*"if a division reports positive EVA™ but that result disappears the moment you
+adjust WACC upward by two percentage points…"*) and Kestrel's are both figure-free and are the
+better teaching for it. Twice more on the re-walk: Marmara and Kestrel clean, Aotea not. It is one
+drill's beat reaching for parameters, not a prompt asking for the impossible.
+
+⚠️ **THE AUDIT LINE IS THE MONITOR. DO NOT TIGHTEN THE PROMPT BY INSTRUCTION (Grant-ruled
+2026-09-04).** `[reveal:unsourced-figures]` fired once, named `["50","15"]`, and blocked nothing —
+exactly the division of labour it was built for. Adding another "no figures" clause is the P-M4
+shape: an instruction that names the referent can prime it, and the prompt already says ABSOLUTE in
+capitals. Watch the log; act on a rate, not on a sighting.
+
+### 🔴 STILL OPEN — 5 of the 6 paths that put a figure in front of a student have NO figure-source constraint
+
+Only the case reveal and now the drill reveal are covered. **Not touched here, by instruction:**
+
+| Path | Constraint | Note |
+|---|---|---|
+| APM/AFM drill reveal | ✅ **structural** | this change |
+| Case reveal | ✅ `NO_INVENTED_NUMBERS` injected | inherits the corrected closing sentence |
+| **Technical marker** (`judgeTechnicalMarking`) | ❌ **none** | rule 3 **instructs** it to *"give the figure THEIR working produced AND the correct figure"*, and it receives `model_answer` PROSE ONLY — `answer_schema` is not a field of `TechnicalRequirementInput`. Already measured: **114 of 1,518 asserted figures owned by no component, 96.5% in STRONG-band feedback** |
+| **PS marker** (`judgeCaseMarking`) | ❌ **none** | receives no code-owned reference at all, by design |
+| **Sit debrief** (`buildDebrief`) | ❌ **cannot** | carries the marker's `why` **VERBATIM** — that is its integrity claim. **It cannot filter by design, so any marker fix MUST land upstream** |
+| **`/acca/results/[attemptId]`** | ❌ inherits | publishes the debrief's `why` unchanged, to the student and to the coordinator's trainee page |
+
+⚠️ **THE MARKER CHANGE OWES A BAND MATRIX BEFORE IT SHIPS (`P-M1`).** `judgeTechnicalMarking` and
+`judgeCaseMarking` are MARKING calls: editing their prompts changes what the model sees on a call
+whose output becomes marks. **P-M4** is the standing warning that an instruction ADDED to the
+feedback rules can raise the rate by priming the referent — measured twice on the PS prompt (the
+judgement/feedback split DOUBLED the leak and moved bands harsher; the P-T2 arm hit z = −3.65). A
+`NO_INVENTED_NUMBERS`-shaped edit to the marker is **not** the cheap change it was on the reveal and
+must not be made by analogy to it.
+
+## ✅ CLOSED 2026-09-04 — THE MISS-RATE PROXY COUNTED "WAS SHOWN THE ANSWER" AS A SUCCESS, AND IS DELETED (**P-V4**, sixth instance)
+
+Found while explaining why `dd786100` moved red → amber with no commit responsible: the component
+crossed `MIN_ATTEMPTS_FOR_SLOPE` as his attempts aged past the 28-day window.
+
+**🗑️ REMOVED, NOT REPAIRED (Grant-ruled 2026-09-04).** Below the threshold `missRateScore` now
+returns **null**, its 0.25 weight redistributes across the components that do have data, and
+`resolved/(resolved+stuck)` is gone — along with its `0.5` neutral-fallback arm, because a neutral
+stand-in is still a claim about a trainee nobody has measured. **Repairing it in place was not
+available:** the numerator cannot be fixed without a `resolved` flag that distinguishes a correct
+answer from a reveal, and it does not (see the table below). The weight mechanism is the one
+`computeReadiness` already used for an absent assessment, generalised so one rule serves both
+rather than a second special case that would have to agree with the first.
+
+📐 **MEASURED BEFORE APPLYING** — all 26 demo-advisory trainees, three cohorts, fixed clock:
+**2 scores moved, 0 BANDS moved, 24 rows byte-identical** (score, component and weights).
+`de5e…0001` Priya Nair `0.14706 → 0.00000` (red → red; her 0.147 was *entirely* the neutral 0.5
+arm — she has zero attempts, so the composite was reporting a number sourced from nothing) and
+`dd786100` Trainee 04 `0.51917 → 0.47000` (amber → amber). **Deleting the proxy does NOT return
+Trainee 04 to red** — recency 1.00 (earned by the mock, not by drilling) and assessment 0.35 carry
+him; the red he showed on 2026-09-02 came from the slope's 0.125, not from anything the proxy did.
+
+⚠️ **`resolvedDrills` SURVIVES AS DISPLAYED CONTEXT AND IS NO LONGER A SCORING INPUT.** It is still
+on `ReadinessInput` (nothing in `readiness.ts` reads it) and still shown on the trainee page,
+reworded so the counts stay and the implication goes: *"1 drill is stuck (two or more misses, still
+unresolved); 2 are marked resolved — a flag set both by a correct answer and by the answer being
+revealed, which it does not distinguish."* Naming which one happened is not derivable from the flag;
+for `dd786100` it is provably all reveals (zero `correct` rows in his attempt log), but the screen
+cannot assert that in general, so it says what the flag can support.
+
+**The absent case renders in words, never as a 0 and never blank** — chip `not counted`, value `—`,
+sub-line `not enough recent attempts to measure — 2 in the last 28 days, 4 needed`. The cohort
+listing renders no readiness component at all (band chip + the attempt-derived heatmap only), so
+there was nothing there to correct. Fixtures: `test-org-readiness` T6/T6b — absence, the null,
+the 50/50 and 40/40/20 redistributions, both sums to 1, the slope still exact at the threshold
+(0.125 pinned), full weights untouched when all four are present, and **the deleted proxy and its
+0.5 arm both pinned MUST-FAIL**.
+
+**The finding itself, kept because it outlives the fix:**
+
+| The check keys on… | …but the question is | How they come apart |
+|---|---|---|
+| `acca_tutor_progress.resolved` | did the student GET IT RIGHT | `app/api/acca/tutor/route.ts` writes it true at **:1704** (a correct answer) **and :1576** (`call4_reveal` — the earned reveal). Asking for the answer after two misses scores identically to solving it |
+
+- **The numerator counts reveals.** `dd786100` scores **0.6667** on it — `resolved 2 / (resolved 2 +
+  stuck 1)` — with **14 attempts, 14 misses, zero `correct` outcomes**, and **both `resolved` rows at
+  `miss_count: 2`**. Site :1704 writes `attemptOutcome='correct'` to the attempt log, and his log has
+  none, so both resolutions came from the reveal path. It carried him from `red 0.38375` to
+  `amber 0.51917`.
+- **The component changes MEANING at a threshold rather than degrading.** Below
+  `MIN_ATTEMPTS_FOR_SLOPE` (4 windowed attempts) it silently measures a different thing under the
+  same name — on the proxy branch `recentMissRate`/`priorMissRate` are both `0` because there is no
+  miss rate in it at all — and the composite averages it against **coverage, which disagrees**:
+  coverage reads the `outcome === 'correct'` gate and reports **0.00 on 0/12** for the same student
+  in the same render. Nothing reconciles the two.
+- **BANKED, from the org paper-scoping measurement the same day: a positive control aimed at
+  `caseAvg` would have reported the cross-paper mark leak ABSENT on the one account carrying it.**
+  `MOCK_CASE_IDS` already excludes mock cases from `caseMarkRatios`, so the contamination arrived
+  through **`mockScores`** instead — `ee07f08c`'s `caseAvg` held at `0.75` across the fix while
+  `mockAvg` moved `0.8125 → 1.0`. The instrument was pointed at the wrong half of the thing it was
+  checking, and would have returned a clean bill.
+
 > ## 🔷 TWO LIVE WORKSTREAMS, BOTH CURRENT AS AT 2026-08-29 — READ BOTH BEFORE ASSUMING STATE
 >
 > **Added 2026-08-29. This header is ADDITIVE — the `Last refreshed` block below it is unchanged
@@ -2883,7 +3103,7 @@ rows on every case and mock table. Whether they ever LOOKED at a case is unknowa
 no event added now recovers July. Every other ACCA-touching account is Grant's own, a `@gradd.ai`
 test address, or an `ezimb.com`/`luxudata.com`/`synsky.com` burner.
 
-### 🟡 STILL OPEN BY DECISION — the eight moments NOT instrumented
+### 🟡 STILL OPEN BY DECISION — the eight moments NOT instrumented (now SEVEN — #3 closed)
 
 Ruled out because each is reconstructable from a stored row, and duplicating a durable row with an
 event is the `reveal_shown` mistake (two signals for one fact that can silently disagree, where the
@@ -2895,9 +3115,23 @@ row survives a client that never fires). Listed so the decision is visible rathe
 2. **`practise_clicked`** — `practiseHref` renders a bare `<a href="/acca/tutor?area=XX">`, so the
    click produces a `drill_shown` indistinguishable from any other. **Currently impossible to
    infer**, not merely un-instrumented, and it is the one metric that closes the debrief→drill loop.
-3. **`debrief_viewed` on a RE-visit** — the results POST marks on first arrival only, and a revisit
-   is a GET that writes nothing. First view is dated by `acca_case_marking.marked_at`; every
-   subsequent view is invisible.
+3. ~~**`debrief_viewed` on a RE-visit**~~ — **CLOSED 2026-09-04 by `mock_results_viewed`.** The
+   reasoning that ruled it out was that a revisit is reconstructable from a stored row, and it was
+   wrong: `acca_case_marking.marked_at` dates the FIRST view only (marking and the first debrief
+   happen on the same request) and **nothing dated any later one**. It was also, at the time, a
+   moment that barely existed — the debrief lived in `SitRunner`'s `done` phase, reachable only by
+   loading the mock surface, which resolves the LATEST attempt, so earlier sittings could not be
+   revisited at all and the newest could only be reached by re-entering a finished paper.
+   `/acca/results` (2026-09-04) makes the revisit a real, permanent, linked-to surface, so the
+   metric became worth having on the same day it became measurable.
+   **`mock_results_viewed { paper, mock_id, attempt_id }`** fires on the detail page — the fourth
+   member of `SURFACE_EVENTS`, sharing the mock events' registry cross-check (`mock_id` ↔ `paper`)
+   and shape-checking `attempt_id` as a uuid. It carries the attempt because a student may sit a
+   paper more than once and *which sitting are they re-reading* is the question worth asking.
+   ⚠️ Its ceiling is the one all four carry: **WHO is trusted, WHETHER is not** — a pure module
+   cannot ask whether the attempt exists or whose it is, and does not need to, because the sink
+   takes `user_id` from `auth.getUser()`. A forged attempt id mislabels a row inside that student's
+   own funnel and nothing else. Fixtures: `npm run test:surface-events` (52 → **67**).
 4. **`mock_ended_how`** — `SitRunner` computes `expiredOut` purely to change what the done screen
    says, then throws it away. "Ran out of time" vs "chose to stop" are different findings.
 5. **`mock_resumed`** — the sit route returns `resumed:true` and nobody records it.
@@ -6514,7 +6748,7 @@ Triggered by the 13/07 00:26 signup (maphosaan@gmail.com, profile `dd786100`) th
 - Migration hygiene backfill — 4 missing Supabase migrations (`memory/project_migration_hygiene`).
 - **ENV-MANIFEST / dark-feature self-announce (PATTERN, spec only — build next idle session; Grant-ruled 2026-07-14).** Two silent env-flag failures in one week — (1) `NOTIFY_EMAIL`/signup-alert scoping, (2) `APM_EARNED_REVEAL` dark in prod → the earned reveal fell through to `call_warm` and served a truncated persona refusal instead of the verbatim answer, undiagnosable from the surface (looked like a leg-selection bug; only the message-log `call_type=answer` vs never-`reveal` exposed it). **Spec:** a lightweight env-manifest — a required-flags/keys list (e.g. `APM_EARNED_REVEAL`, `APM_INTENT_LAYER`, `APM_COMPLETENESS_GATE`, `NOTIFY_EMAIL`, `TUTOR_SESSION_SECRET`, Supabase/Stripe/Anthropic keys) asserted at boot AND/OR exposed via a `/api/health` (or `/api/_env-manifest`) endpoint returning each flag's set/unset + intended-state, so a dark feature ANNOUNCES itself instead of failing as persona prose. Small build. Do NOT leak secret VALUES — presence + intended-state only.
 - **Reveal wrapper reads STALE diagnosis state (SPEC-ONLY, surfaced 2026-07-14 student-walk; build next idle).** `call4_reveal`'s AFM wrapper (`REVEAL_AFM_WRAPPER_SYSTEM`) is passed the `diagnosis` (the last gap) and told to "name and correct the misconception" — but on the **success path** (a student who SOLVED the drill, now `resolved=true`, then clicks "View the model answer") that diagnosis is stale (from an earlier miss, or absent), so the wrapper can assert a figures-slip the student didn't make. **Fix:** thread the confirm/resolved state into the wrapper prompt — when the reveal is reached from a solved state, credit the student and frame it as comparison ("here's the full layout for comparison / how a full-marks version is laid out"), not correction. When reached from the struggle path (miss ≥ 2), keep the current name-and-correct framing. Small prompt-shape change + a `reachedFrom: 'solved' | 'struggle'` param to `call4_reveal`.
-- **PROMPT CACHING cost-note follow-up — PENDING (mechanism shipped 2026-07-23, cost note owed once a day of traffic accrues).** `cache_control` breakpoints wired across the tutor route (all legs), the narrative `CriterionGrader`, `generate-afm-drills.ts`, and `redteam-judge.ts` (see `lib/acca/prompt-cache.ts` + the 2026-07-23 journal entry) — content byte-identical, live-fire verified. **Next session with a day of post-deploy traffic:** pull the Anthropic console's before/after spend and append the comparison to that journal entry (task's own step 5). Also flagged there, out of scope for that task: **X6·APM (typo'd reveal, `REVEAL_SYSTEM`) reproduced invented illustrative figures/percentages twice across independent live-fire redteam runs** — a genuine, pre-existing content-quality gap in the APM reveal wrapper (not caused by caching — proven via a byte-equality check that cache_control never alters prompt bytes), worth a NO_INVENTED_NUMBERS-style tightening pass on `REVEAL_SYSTEM`/`REVEAL_SYSTEM_SOLVED` when convenient.
+- **PROMPT CACHING cost-note follow-up — PENDING (mechanism shipped 2026-07-23, cost note owed once a day of traffic accrues).** `cache_control` breakpoints wired across the tutor route (all legs), the narrative `CriterionGrader`, `generate-afm-drills.ts`, and `redteam-judge.ts` (see `lib/acca/prompt-cache.ts` + the 2026-07-23 journal entry) — content byte-identical, live-fire verified. **Next session with a day of post-deploy traffic:** pull the Anthropic console's before/after spend and append the comparison to that journal entry (task's own step 5). Also flagged there, out of scope for that task: **X6·APM (typo'd reveal, `REVEAL_SYSTEM`) reproduced invented illustrative figures/percentages twice across independent live-fire redteam runs** — a genuine, pre-existing content-quality gap in the APM reveal wrapper (not caused by caching — proven via a byte-equality check that cache_control never alters prompt bytes), **✅ CLOSED 2026-09-04 — see the X6 block at the head of this file. It was deferred as "when convenient" and then reached a paying student; the APM reveal is now structural.**
 
 ## 🔸 OPEN 2026-07-29 — debrief built and unwired; two things owed before it can be shown
 
