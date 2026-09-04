@@ -243,9 +243,11 @@ async function rawRowsForUsers(userIds: string[], paper: AccaPaper): Promise<Raw
   );
 
   // marks/mocks are CASE-based (acca_case_marking / acca_mock_attempts): they carry their own
-  // real foreign keys and no drill_id, so the join does not apply to them. `mocks` is already
-  // paper-resolved downstream via getMockPaper(mock_id); `marks` stays unscoped exactly as
-  // before, which is unchanged behaviour and a separate open item.
+  // real foreign keys and no drill_id, so the join does not apply to them. Both are returned
+  // UNSCOPED here and each caller scopes them — `getMyProgress` resolves mocks through the
+  // registry and marks through `casePaperCodes` (2026-09-04). The ORG readers still take them
+  // unscoped, which is unchanged behaviour and remains a separate open item: scoping them
+  // there moves live coordinator readiness scores and is not a change to make in passing.
   return {
     attempts: scopeDrillRows(attempts, servable, paper),
     progress: scopeDrillRows(progress, servable, paper),
@@ -541,7 +543,26 @@ export interface MyProgress {
   stuckDrills: StuckDrill[];   // resumable stalled drills, most-missed first
   recentAttempts: RecentAttempt[];
   marks: { case_id: string; awarded: number; available: number; marked_at: string }[];
+  /** Attempt rows for the readiness inputs and the "has this student sat anything" test.
+   *  NOT the list the student's results index is built from — that is `listSitAttempts`
+   *  (lib/acca/sit-report.ts), which is the one definition of an OPENABLE sitting and
+   *  refuses the many completed-but-empty attempts these rows include. */
   mocks: { mock_id: string; completed: boolean; started_at: string }[];
+}
+
+/** Which paper each case belongs to. id-addressed, so no paper predicate — the point of the
+ *  lookup is to LEARN the paper, and constraining it to one would answer the question by
+ *  assuming it. Returns only the ids that resolve; a mark on a deleted case drops out, which
+ *  is the safe direction (an unattributable mark is not silently counted into a paper). */
+async function casePaperCodes(caseIds: string[]): Promise<Map<string, string>> {
+  const map = new Map<string, string>();
+  if (caseIds.length === 0) return map;
+  const sb = createServiceClient();
+  const { data } = await sb.from('acca_cases').select('id, paper_code').in('id', caseIds);
+  for (const r of ((data ?? []) as Array<{ id: string; paper_code: string | null }>)) {
+    if (r.paper_code) map.set(r.id, r.paper_code);
+  }
+  return map;
 }
 
 /** Topic (and lo_code) for a set of drill ids — used to label stuck drills by title
@@ -578,12 +599,28 @@ export async function getMyProgress(userId: string, now: number, paper: AccaPape
   // behaviour change, deliberate, and in the SAME class as the coordinator fix: the old filter
   // tested EXISTENCE only, so this page's numerator counted attempts on unpublished drills into a
   // denominator (allSubAreas) that already filtered `approved`+`published`. Same bug, same file,
-  // 300 lines apart. marks/mocks are APM-only artefacts today (no AFM cases/mocks exist), so a
-  // non-APM view shows none rather than APM's.
+  // 300 lines apart.
   const attempts = rows.attempts;
   const progress = rows.progress;
-  const marks = paper === 'APM' ? rows.marks : [];
-  const mocks = paper === 'APM' ? rows.mocks : [];
+
+  // ── 🔴 FIXED 2026-09-04 — THIS WAS `paper === 'APM' ? rows.mocks : []` ──────
+  // The comment that justified it read "marks/mocks are APM-only artefacts today (no AFM
+  // cases/mocks exist)". That was true when written and FALSE from 2026-07-29, the day AFM
+  // Mock 1 was published — so for five weeks every AFM student's progress page showed no
+  // mock and no case marks at all, and the one account holding real banded sit data is the
+  // AFM one. A stale premise in a comment kept a live surface empty.
+  //
+  // Scoped properly now rather than re-defaulted. A mock resolves to its paper through the
+  // registry, which is exact and pure — `mock_id`s are unique across both papers by
+  // construction, which is the same fact `mockPaperCaseIds` relies on.
+  const mocks = rows.mocks.filter((m) => getMockPaper(m.mock_id)?.paper === paper);
+
+  // Case marks resolve through the case's own `paper_code`. Mock cases could have come from
+  // the registry, but standalone practice cases are not in it, and a rule that covers half
+  // the rows is how the next reader concludes the other half do not exist. One id-addressed
+  // lookup, scoped to the ids actually present.
+  const casePapers = await casePaperCodes([...new Set(rows.marks.map((m) => m.case_id))]);
+  const marks = rows.marks.filter((m) => casePapers.get(m.case_id) === paper);
 
   const input = buildInput(now, total, attempts, progress, marks, mocks);
   const readiness = computeReadiness(input);
