@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, createHash, randomUUID } from 'node:crypto';
 import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import {
@@ -1333,6 +1333,42 @@ export async function POST(request: Request): Promise<Response> {
       : '',
   ].filter(Boolean).join('\n');
 
+  // ── 3b. THE STUDENT'S ROW, WRITTEN BEFORE THE MODEL RUNS ───────────────────
+  // Until 2026-09-04 both rows of a turn were inserted together in §10b, AFTER every model
+  // call. So a failed turn wrote NOTHING — the student's message included. A student who
+  // typed four hundred words and hit a 500 had them restored to the composer and nowhere
+  // else; a reload lost them, and the product had no record the turn ever happened.
+  //
+  // The user's row is now written HERE, before anything can fail. A failed turn leaves a
+  // durable user row with no reply, which is a finding rather than an absence.
+  //
+  // ⚠️ THIS IS DELIBERATELY NOT ATOMIC ANY MORE. The pair used to be one statement,
+  // all-or-nothing; that is exactly what is being given up. `turn_id` is what replaces it:
+  // both rows carry the same value, so the pair is explicit rather than inferred from a
+  // shared timestamp — and the split makes the user row EARLIER than its reply, which
+  // destroys timestamp identity (see lib/acca/turn-pairing.ts).
+  //
+  // ⚠️ AND IT IS SWALLOWED, LIKE EVERY OTHER LOG ON THIS PATH. A transcript write must never
+  // 500 a turn it was only logging. If THIS insert fails and §10b succeeds, the turn_id ends
+  // up with an assistant row and no user row — the student got their reply and only the
+  // logging is holed. `classifyTurn` reports that as `reply_only`, never as a failed turn.
+  //
+  // PLACED AFTER THE DRILL FETCH so `drill_id` is known and the 404 is already past, and
+  // BEFORE §4 so every model call is downstream of it. Checked when this was written: the
+  // four early returns between here and §10b (1374 model-answer 500, 1380/1388 session-state
+  // 400s, 1772 teaching-engine 500) are ALL turns where the student spoke and got no reply,
+  // so an orphan at each is correct; and the handler's ONLY 200 return is after §10b, so a
+  // successful turn can never skip the assistant row.
+  const turnId = randomUUID();
+  try {
+    await supabase.from('acca_drill_messages').insert({
+      user_id: user.id, drill_id: drillId, turn_id: turnId,
+      role: 'user', content: student_message, call_type: null, outcome: null,
+    });
+  } catch {
+    // non-fatal: transcript logging is best-effort, never blocks the response
+  }
+
   // ── 4. Read profile (cap counter + subscription state) ────────────────────
   // Per-paper free counter (G5b, bundle billing): APM and AFM meter independently —
   // 3 free teach-throughs per paper, NOT shared. capColumn selects the paper's counter.
@@ -1922,18 +1958,25 @@ export async function POST(request: Request): Promise<Response> {
     }
   }
 
-  // ── 10b. Transcript persistence (append-only, best-effort) ──────────────────
-  // One row per message (user + assistant) → acca_drill_messages. Logs EVERY
-  // response-producing leg (attempt / hint / teach / correct / warm / reveal); the
-  // assistant row carries call_type (= messageKind), outcome, drill_id. drill_id may be
-  // null (legacy client — schema allows it), so this is NOT gated on drillId. Swallowed
-  // exactly like the attempt-log above — a write failure must never block or 500 the
-  // teach path, and a CHECK never rejects an unlisted call_type (column is unconstrained).
+  // ── 10b. THE REPLY'S ROW (append-only, best-effort) ─────────────────────────
+  // The ASSISTANT row only — the student's went in at §3b, before the model ran, and both
+  // carry the same `turnId`. Logs EVERY response-producing leg (attempt / hint / teach /
+  // correct / warm / reveal); the assistant row carries call_type (= messageKind), outcome,
+  // drill_id. drill_id may be null (legacy client — schema allows it), so this is NOT gated
+  // on drillId. Swallowed exactly like the attempt-log above — a write failure must never
+  // block or 500 the teach path, and a CHECK never rejects an unlisted call_type (column is
+  // unconstrained).
+  //
+  // Reaching this line means a reply was produced. If THIS insert fails the turn_id keeps a
+  // lone user row and is reported FAILED, which is then wrong — the student did get their
+  // answer. That is the one direction the split can misreport, it is strictly rarer than the
+  // case it fixes (this write is a single insert with no model call in front of it), and it
+  // is stated here rather than discovered later.
   try {
-    await supabase.from('acca_drill_messages').insert([
-      { user_id: user.id, drill_id: drillId, role: 'user',      content: student_message, call_type: null,        outcome: null },
-      { user_id: user.id, drill_id: drillId, role: 'assistant', content: ezraResponse,    call_type: messageKind, outcome: attemptOutcome },
-    ]);
+    await supabase.from('acca_drill_messages').insert({
+      user_id: user.id, drill_id: drillId, turn_id: turnId,
+      role: 'assistant', content: ezraResponse, call_type: messageKind, outcome: attemptOutcome,
+    });
   } catch {
     // non-fatal: transcript logging is best-effort, never blocks the response
   }

@@ -6,6 +6,7 @@ import { resolvePaperConfig, hintUrl, type AttemptRow } from '@/lib/acca/sit-att
 import type { AccaPaper } from '@/lib/acca/paper';
 import type { MockPaper } from '@/lib/acca/mocks';
 import { runCaseMarking } from '@/lib/acca/case-mark-run';
+import { CLAIM_STALE_MS } from '@/lib/acca/in-flight';
 import { computePacing } from '@/lib/acca/pacing';
 import { buildDebrief } from '@/lib/acca/debrief';
 import {
@@ -220,7 +221,8 @@ function buildResponse(
 /** How long a marking claim may be held before another request may take it over. Marking a
  *  case is two model calls — measured 15–25s — so a claim older than this is a crashed or
  *  cancelled run, not one still working. */
-const CLAIM_STALE_MS = 5 * 60_000;
+// Imported, not declared: the tutor-turn classifier makes the same judgement about the same
+// kind of operation, and two copies of this number would drift. See lib/acca/in-flight.ts.
 
 /**
  * Take a case for marking, atomically. Returns false if another request holds it.
