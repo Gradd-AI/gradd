@@ -46,6 +46,11 @@ const SURFACES = [
   // understate the denominator the moment they were the thing worth checking (P-G2).
   'app/acca/cases/page.tsx',
   'app/acca/cases/[id]/page.tsx',
+  // The permanent results surface (2026-09-04). Same two-part shape as the case surface —
+  // a paper-parameterised LIST and an ID-ADDRESSED detail page — so it joins the population
+  // for the same reason those two did: both build paper-bearing links of their own.
+  'app/acca/results/page.tsx',
+  'app/acca/results/[attemptId]/page.tsx',
   'components/acca/SitRunner.tsx',
   'components/acca/ResitRunner.tsx',
 ];
@@ -56,6 +61,7 @@ const SURFACES = [
 const EXEMPT: { pattern: RegExp; why: string }[] = [
   { pattern: /^\/acca\/auth(\?|$)/,        why: 'AUTH — the paper rides inside the encoded next=' },
   { pattern: /^\/acca\/cases\/\$\{/,       why: 'ID-ADDRESSED — a case id is globally unique' },
+  { pattern: /^\/acca\/results\/\$\{/,     why: 'ID-ADDRESSED — an attempt row owns its own paper via mock_id' },
   { pattern: /\?drill_id=/,                why: 'ID-ADDRESSED — a drill id is globally unique' },
   { pattern: /^\/acca\/(afm\/)?mock$/,     why: 'PER-PAPER SURFACE — a distinct path, not a param' },
 ];
