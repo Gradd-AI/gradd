@@ -40,8 +40,19 @@
 //   case_list_viewed    { paper }
 //   case_opened         { paper, case_id }
 //   mock_intro_viewed   { paper, mock_id }
-// `paper` is on all three because AFM and APM LO codes collide exactly and every other
+//   mock_results_viewed { paper, mock_id, attempt_id }
+// `paper` is on all four because AFM and APM LO codes collide exactly and every other
 // ACCA query is paper-scoped; a funnel that cannot be split by paper cannot be read.
+//
+// ── THE FOURTH EVENT (2026-09-04) AND WHY IT IS NOT A DUPLICATED ROW ─────────
+// `mock_results_viewed` fires on /acca/results/<attempt_id>, the permanent results page. It
+// looks like it duplicates a durable row and does not: `acca_case_marking.marked_at` dates
+// the FIRST view (marking and first debrief happen on the same request) and nothing dates
+// any later one. Coming back to your own marked paper a week before the exam is exactly the
+// behaviour the page exists to create, and it was the one moment on these surfaces that was
+// unrecoverable from stored state — logged as open item #3 in docs/AFM_SURFACED.md until
+// this event closed it. It carries `attempt_id` because a student may sit a paper more than
+// once and "which sitting are they re-reading" is the question worth asking.
 
 // SERVED, not declared: these events describe a surface a student reached. A declared-but-
 // unserved paper (SBL) has no case list and no mock, so an event naming it is a mis-wired
@@ -64,7 +75,9 @@ export type MockPaperLookup = (id: string) => { paper: ServedPaper } | null;
 /** The closed vocabulary. A closed list is what makes the sink refuse an unknown event
  *  instead of storing a typo forever — `acca_funnel_events.event_type` is a free string at
  *  the DB level, and two of the eight strings already in that table are dead. */
-export const SURFACE_EVENTS = ['case_list_viewed', 'case_opened', 'mock_intro_viewed'] as const;
+export const SURFACE_EVENTS = [
+  'case_list_viewed', 'case_opened', 'mock_intro_viewed', 'mock_results_viewed',
+] as const;
 export type SurfaceEventType = (typeof SURFACE_EVENTS)[number];
 
 export function isSurfaceEventType(v: unknown): v is SurfaceEventType {
@@ -84,6 +97,7 @@ const KEYS: Record<SurfaceEventType, readonly string[]> = {
   case_list_viewed: ['paper'],
   case_opened: ['paper', 'case_id'],
   mock_intro_viewed: ['paper', 'mock_id'],
+  mock_results_viewed: ['paper', 'mock_id', 'attempt_id'],
 };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -103,6 +117,17 @@ export function caseOpened(caseId: string, paper: ServedPaper): SurfaceEvent {
 
 export function mockIntroViewed(mockId: string, paper: ServedPaper): SurfaceEvent {
   return { event_type: 'mock_intro_viewed', metadata: { paper, mock_id: mockId } };
+}
+
+export function mockResultsViewed(
+  attemptId: string,
+  mockId: string,
+  paper: ServedPaper,
+): SurfaceEvent {
+  return {
+    event_type: 'mock_results_viewed',
+    metadata: { paper, mock_id: mockId, attempt_id: attemptId },
+  };
 }
 
 export type ParseResult =
@@ -171,9 +196,10 @@ export function parseSurfaceEvent(body: unknown, lookupMock: MockPaperLookup): P
     return { ok: true, event: caseOpened(caseId, paper as ServedPaper) };
   }
 
-  // mock_intro_viewed — validated against the REAL registry, not a regex. `mock_id` is a
-  // hand-written text id ('paper-1', 'afm-paper-1'), so the only meaningful check is whether
-  // it names a paper that exists.
+  // The two mock events share this resolution, so they cannot come to different conclusions
+  // about the same `mock_id`. Validated against the REAL registry, not a regex: `mock_id` is
+  // a hand-written text id ('paper-1', 'afm-paper-1'), so the only meaningful check is
+  // whether it names a paper that exists.
   const mockId = (md.mock_id as string).trim();
   const mock = lookupMock(mockId);
   if (!mock) return { ok: false, reason: `metadata.mock_id "${mockId}" is not a known mock paper` };
@@ -185,5 +211,23 @@ export function parseSurfaceEvent(body: unknown, lookupMock: MockPaperLookup): P
   if (mock.paper !== paper) {
     return { ok: false, reason: `metadata.mock_id "${mockId}" is ${mock.paper}, not ${paper}` };
   }
-  return { ok: true, event: mockIntroViewed(mockId, mock.paper) };
+
+  if (type === 'mock_intro_viewed') {
+    return { ok: true, event: mockIntroViewed(mockId, mock.paper) };
+  }
+
+  // mock_results_viewed — the attempt is shape-checked and nothing more.
+  //
+  // ⚠️ CLAIM CEILING, and it is narrower than the `mock_id` check above. This module is
+  // PURE, so it cannot ask whether the attempt exists or whose it is; `acca_mock_attempts`
+  // is a table and this file touches no database. It does not need to: the sink takes
+  // `user_id` from `auth.getUser()` and never from the body, so the worst a forged
+  // attempt_id achieves is a mislabelled row inside that student's OWN funnel — the same
+  // "WHO is trusted, WHETHER is not" ceiling all four of these carry, and affordable for the
+  // same reason (nothing reads them at serve time). The uuid test keeps a junk string out of
+  // a column that will be joined against acca_mock_attempts, so a row that joins to nothing
+  // means "that attempt was deleted" rather than "a client sent rubbish".
+  const attemptId = (md.attempt_id as string).trim();
+  if (!UUID.test(attemptId)) return { ok: false, reason: 'metadata.attempt_id must be a uuid' };
+  return { ok: true, event: mockResultsViewed(attemptId, mockId, mock.paper) };
 }
