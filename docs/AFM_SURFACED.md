@@ -2,6 +2,38 @@
 
 **This is the ONE place current open items live.** It is rewritten each session (edited in place, not appended). As of 2026-07-11 the `APM_BUILD_CONTRACT.md` journal is **append-only pure chronology** — do not scatter new "STILL OPEN" blocks through per-session banks; update THIS file instead. Standing rulings → `GENERATOR_DOCTRINE.md`; incident rules → `GRADD_BUILD_HARDENING.md`.
 
+## 🟢 NEW 2026-09-04 — THE PERMANENT RESULTS PAGE SHIPPED, AND THREE THINGS ARE LEFT OPEN
+
+`/acca/results` + `/acca/results/[attemptId]`, one shared assembly (`lib/acca/sit-report.ts`) behind
+the student's page and the coordinator's trainee view. Full record in `CLAUDE.md`'s code map.
+Closed on the way in: **open item #3 below** (`debrief_viewed` on a re-visit) and a **five-week live
+bug** — `getMyProgress` scoped marks and mocks with `paper === 'APM' ? … : []`, so every AFM
+student's progress page showed neither, and three AFM case marks were showing on the APM page.
+Measured before/after: AFM `0 mocks + 0 marks → 1 + 3`, APM `8 marks → 5`.
+
+**Open, deliberately:**
+
+1. 🟡 **A LAPSED SUBSCRIPTION HIDES A PAPER THE STUDENT SAT WHILE PAYING.** The gate matches
+   `sit/results` (`hasPaperAccess`, per paper) and renders the locked copy. **Grant ruled it this
+   way to keep ONE rule on one surface family, not to settle the policy** — whether a permanent
+   record of already-purchased work should survive a lapse is genuinely open, and this is the
+   reversible direction. Flip it by deleting the `!paid` branch in
+   `app/acca/results/[attemptId]/page.tsx`; the file says so at its own head.
+2. 🟡 **THE ORG READERS STILL TAKE `marks`/`mocks` UNSCOPED.** `getMyProgress` now scopes both;
+   `getCohortReadiness` / `getTraineeDetail` do not, so a trainee's AFM case marks still feed an
+   APM readiness score. **NOT fixed in passing on purpose: it moves live coordinator numbers**, and
+   that is a change with a reader who should be told, not a tidy-up.
+3. 🟡 **NO DASHBOARD ENTRY.** `/acca` shows three cards and results exist only after a sit, so a
+   permanently-visible fourth card is a dead link for most accounts. Reached today from
+   `/acca/progress` (one click from the dashboard) and from the debrief's own foot. A conditional
+   line on the *Timed mock* card is the candidate if it is ever wanted.
+
+⚠️ **UNCHANGED AND DELIBERATE: revisiting `/acca/afm/mock` on a completed attempt still POSTs
+`sit/results`.** That is the only trigger that can mark a paper, and the new page must not become a
+second one — it is a read, with no marking code in reach. The mock surface keeps first-marking and
+the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
+`npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
+
 > ## 🔷 TWO LIVE WORKSTREAMS, BOTH CURRENT AS AT 2026-08-29 — READ BOTH BEFORE ASSUMING STATE
 >
 > **Added 2026-08-29. This header is ADDITIVE — the `Last refreshed` block below it is unchanged
@@ -2883,7 +2915,7 @@ rows on every case and mock table. Whether they ever LOOKED at a case is unknowa
 no event added now recovers July. Every other ACCA-touching account is Grant's own, a `@gradd.ai`
 test address, or an `ezimb.com`/`luxudata.com`/`synsky.com` burner.
 
-### 🟡 STILL OPEN BY DECISION — the eight moments NOT instrumented
+### 🟡 STILL OPEN BY DECISION — the eight moments NOT instrumented (now SEVEN — #3 closed)
 
 Ruled out because each is reconstructable from a stored row, and duplicating a durable row with an
 event is the `reveal_shown` mistake (two signals for one fact that can silently disagree, where the
@@ -2895,9 +2927,23 @@ row survives a client that never fires). Listed so the decision is visible rathe
 2. **`practise_clicked`** — `practiseHref` renders a bare `<a href="/acca/tutor?area=XX">`, so the
    click produces a `drill_shown` indistinguishable from any other. **Currently impossible to
    infer**, not merely un-instrumented, and it is the one metric that closes the debrief→drill loop.
-3. **`debrief_viewed` on a RE-visit** — the results POST marks on first arrival only, and a revisit
-   is a GET that writes nothing. First view is dated by `acca_case_marking.marked_at`; every
-   subsequent view is invisible.
+3. ~~**`debrief_viewed` on a RE-visit**~~ — **CLOSED 2026-09-04 by `mock_results_viewed`.** The
+   reasoning that ruled it out was that a revisit is reconstructable from a stored row, and it was
+   wrong: `acca_case_marking.marked_at` dates the FIRST view only (marking and the first debrief
+   happen on the same request) and **nothing dated any later one**. It was also, at the time, a
+   moment that barely existed — the debrief lived in `SitRunner`'s `done` phase, reachable only by
+   loading the mock surface, which resolves the LATEST attempt, so earlier sittings could not be
+   revisited at all and the newest could only be reached by re-entering a finished paper.
+   `/acca/results` (2026-09-04) makes the revisit a real, permanent, linked-to surface, so the
+   metric became worth having on the same day it became measurable.
+   **`mock_results_viewed { paper, mock_id, attempt_id }`** fires on the detail page — the fourth
+   member of `SURFACE_EVENTS`, sharing the mock events' registry cross-check (`mock_id` ↔ `paper`)
+   and shape-checking `attempt_id` as a uuid. It carries the attempt because a student may sit a
+   paper more than once and *which sitting are they re-reading* is the question worth asking.
+   ⚠️ Its ceiling is the one all four carry: **WHO is trusted, WHETHER is not** — a pure module
+   cannot ask whether the attempt exists or whose it is, and does not need to, because the sink
+   takes `user_id` from `auth.getUser()`. A forged attempt id mislabels a row inside that student's
+   own funnel and nothing else. Fixtures: `npm run test:surface-events` (52 → **67**).
 4. **`mock_ended_how`** — `SitRunner` computes `expiredOut` purely to change what the done screen
    says, then throws it away. "Ran out of time" vs "chose to stop" are different findings.
 5. **`mock_resumed`** — the sit route returns `resumed:true` and nobody records it.
