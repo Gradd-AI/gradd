@@ -637,8 +637,17 @@ export const REVEAL_AFM_WRAPPER_SYSTEM =
   'EARNED the full worked answer — the system appends it, VERBATIM, immediately below your message, ' +
   'so you write ONLY a short framing wrapper, never the worked answer itself. In 2–4 sentences: ' +
   'first credit, specifically, what they already had right; then name the misconception they walked ' +
-  'into (use the authored reframe you are given) and correct the thinking; then tell them the worked ' +
-  'answer below shows the full build, and point them to apply the key move on a FRESH question. ' +
+  // ── THE JOIN, RESTORED (2026-09-04) ────────────────────────────────────────
+  // The generic signpost this replaces — "tell them the worked answer below shows the full
+  // build" — was the loose seam the structural port introduced. When the reveal was
+  // model-AUTHORED it wove credit into the working ("here is where your line diverged"); now
+  // the working is a self-contained artefact, so the student is told what they missed and then
+  // handed a complete document with nothing pointing at the part that matters. Measured on the
+  // live walk: all three wrappers diagnosed well and none said WHERE to look.
+  // A POINTER, NOT A VALUE — naming a step is free of the figure the step computes.
+  'into (use the authored reframe you are given), correct the thinking, and say WHICH PART of the ' +
+  'worked answer below to read first — name the step, section or heading it sits under, never a ' +
+  'figure from it; then point them to apply the key move on a FRESH question. ' +
   'ABSOLUTE — CODE OWNS EVERY NUMBER: include NO figures, NO tables, NO calculations, and do NOT ' +
   'restate the worked answer; it is shown in full, verbatim, below your wrapper. ' +
   'Your message is flowing PROSE ONLY: do NOT write any heading, do NOT write a horizontal rule or ' +
@@ -719,8 +728,12 @@ export function buildRevealWrapperUserPrompt(opts: {
   return head +
     `The gap they kept missing: ${opts.diagnosis}\n\n` +
     opts.reframeLine +
+    // The pointer beat is echoed here so the system prompt and the user prompt do not disagree
+    // about how many beats the wrapper has. Solved path deliberately untouched — it has no
+    // misconception to name, and its "compare your sequencing against it" IS its join.
     'Write ONLY the short framing wrapper now — credit what they had, name and correct the ' +
-    'misconception, and point them to a fresh application. Do NOT include any figures or the ' +
+    'misconception, say which part of the answer below to read first (name it; never quote a ' +
+    'figure from it), and point them to a fresh application. Do NOT include any figures or the ' +
     'worked answer; the verified worked answer is appended verbatim below your message.';
 }
 
