@@ -655,8 +655,21 @@ when the session ends on a branch.
   come from the registry, but standalone cases are not in it, and a rule covering half the rows is
   how the next reader concludes the other half do not exist). **Measured before/after: AFM 0 mocks
   + 0 marks → 1 + 3; and APM 8 marks → 5, because three AFM case marks had been showing on the APM
-  page.** The ORG readers still take both unscoped — unchanged, still an open item, and not a
-  change to make in passing because it moves live coordinator readiness scores.
+  page.** **The ORG readers were scoped the same day, after measuring** — the rule now lives in
+  `rawRowsForUsers` beside the drill join (ONE site, so no caller can forget; `getMyProgress`
+  keeps nothing of its own), as pure `scopeMarkRows` / `scopeMockRows`, fixtured both directions
+  in `test-org-readiness` (T21–T29) with the unscoped reader pinned WRONG.
+  📐 **MEASURED BEFORE APPLYING, real readers, fixed clock, all 26 demo-advisory trainees across
+  all three cohorts: every cohort row BYTE-IDENTICAL.** Only 5 of 26 hold any marks or mocks and
+  all five are APM-only. ⚠️ Exactly one account moved and it is **in no cohort** — `ee07f08c`,
+  assessment 0.792 → 0.900, mockAvg 0.8125 → 1.0, mocksCompleted 4 → 3, composite 0.240 → 0.256
+  (band `red` either way): a near-blank **AFM** sitting had been dragging an **APM** readiness
+  score down. The trainee page 404s for it (`cohortMemberDecision` — org member, no cohort
+  membership, verified), so nothing a coordinator can open changed.
+  📐 **`caseAvg` did not move, and that is the trap:** the leak reached readiness through
+  `mockScores`, NOT `caseMarkRatios` — `buildInput` already excludes mock cases from the case
+  average via `MOCK_CASE_IDS`, so a check looking only at `caseAvg` would have called the bug
+  absent.
 - **THE WEAKNESS LEDGER — `acca_weak_areas` + `lib/acca/weak-areas.ts` (pure).** Table per migration
   `20260730120000` — SEPARATE from LC/IB `weak_areas`, which `app/dashboard/page.tsx:141` and
   `app/api/cron/weekly-email/route.ts:159` both read WITHOUT a product filter, so ACCA rows there

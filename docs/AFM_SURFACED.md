@@ -19,10 +19,25 @@ Measured before/after: AFM `0 mocks + 0 marks → 1 + 3`, APM `8 marks → 5`.
    record of already-purchased work should survive a lapse is genuinely open, and this is the
    reversible direction. Flip it by deleting the `!paid` branch in
    `app/acca/results/[attemptId]/page.tsx`; the file says so at its own head.
-2. 🟡 **THE ORG READERS STILL TAKE `marks`/`mocks` UNSCOPED.** `getMyProgress` now scopes both;
-   `getCohortReadiness` / `getTraineeDetail` do not, so a trainee's AFM case marks still feed an
-   APM readiness score. **NOT fixed in passing on purpose: it moves live coordinator numbers**, and
-   that is a change with a reader who should be told, not a tidy-up.
+2. ✅ **CLOSED 2026-09-04 — the org readers are scoped too, and it was MEASURED FIRST.** The
+   scoping moved out of `getMyProgress` and into `rawRowsForUsers`, beside the drill join, so
+   there is ONE site and no caller can forget; `getCohortReadiness` and `getTraineeDetail` get it
+   for free. Pure rules `scopeMarkRows` / `scopeMockRows` (T21–T29, both directions, pre-fix
+   reader pinned wrong).
+   **THE MEASUREMENT, before/after through the real readers at a fixed clock, all 26 demo-advisory
+   trainees across all three cohorts: every cohort row byte-identical. Trainee 04 (`dd786100`) did
+   not move.** Only 5 of 26 hold any marks or mocks and all five are APM-only.
+   ⚠️ **ONE account DID move, and it is not in any cohort:** `ee07f08c` (Erasmoose, a test
+   account) — assessment **0.792 → 0.900**, mockAvg **0.8125 → 1.0**, mocksCompleted **4 → 3**,
+   composite **0.240 → 0.256**, band `red` either way. Its near-blank **AFM** sitting had been
+   dragging down an **APM** readiness score. It reaches `getTraineeDetail` only because the
+   measurement harness swept every user holding marks or mocks; on screen the trainee page
+   404s for it (`cohortMemberDecision`) — it holds an `org_membership` on demo-advisory and **no
+   cohort membership**, verified, not assumed. So nothing a coordinator can currently open changed.
+   📐 **`caseAvg` did NOT move on that account and the reason is worth keeping:** its AFM marks are
+   all on MOCK cases, which `buildInput` already excludes from `caseMarkRatios` via
+   `MOCK_CASE_IDS`. The leak reached readiness through `mockScores`, not through the case average
+   — so a check that had looked only at `caseAvg` would have reported the bug as absent.
 3. 🟡 **NO DASHBOARD ENTRY.** `/acca` shows three cards and results exist only after a sit, so a
    permanently-visible fourth card is a dead link for most accounts. Reached today from
    `/acca/progress` (one click from the dashboard) and from the debrief's own foot. A conditional
