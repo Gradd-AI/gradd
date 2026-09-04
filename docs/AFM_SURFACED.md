@@ -107,6 +107,38 @@ field of drill `6c0694e5` — not `context_text`, `model_answer`, `hint` or `ful
 running under `NO_INVENTED_NUMBERS`, slipping because a COUNT is not "a specific value, an
 illustrative numeric range, a market level, or a rule-of-thumb percentage". **No bad row to fix.**
 
+### 🟡 OPEN, MONITORED — THE REVEAL IS STRUCTURAL FOR THE **ARTEFACT** AND INSTRUCTED FOR THE **WRAPPER**
+
+**Found on the first live walk of the ported reveal (2026-09-04, three real APM drills, real
+route, paid controlled account).** The port guarantees the artefact and only the artefact: `tail
+=== model_answer` byte-for-byte on 3/3, separator clean, `sanitizeAfmWrapper` had nothing to cut on
+any of them. **The wrapper is still model-authored prose**, and its *"ABSOLUTE — CODE OWNS EVERY
+NUMBER: include NO figures"* is an INSTRUCTION, not a structure.
+
+On B3b Aotea the wrapper broke it: *"imagine Aotea's board proposes a hydro refurbishment project
+that costs **NZD 50 million**, will sustain current output for another **15 years**"* — neither
+figure is in any source. The re-walk after the pointer beat landed did it again with *"run it at
+minimum efficient scale for **ten years**"*.
+
+**This is a DIFFERENT AND LESSER THING than the 2026-08-07 defect, and the distinction is the whole
+point of the port.** Those figures are a **marked hypothetical** — "imagine" — in the
+fresh-application beat, inventing a practice scenario. The defect that started this was an invented
+input used to COMPUTE a figure then ASSERTED as fact about the case (*"an EVA of −NZD 9m every year
+tells the truth"*). Nothing in the new wrapper asserts anything about Aotea that Aotea's scenario
+does not say, and the worked answer beneath it cannot.
+
+📐 **THE RULE IS ACHIEVABLE, NOT MIS-SPECIFIED — 2 of 3 drills did the same beat with NO figures.**
+Marmara's close (*"if a division reports positive EVA™ but that result disappears the moment you
+adjust WACC upward by two percentage points…"*) and Kestrel's are both figure-free and are the
+better teaching for it. Twice more on the re-walk: Marmara and Kestrel clean, Aotea not. It is one
+drill's beat reaching for parameters, not a prompt asking for the impossible.
+
+⚠️ **THE AUDIT LINE IS THE MONITOR. DO NOT TIGHTEN THE PROMPT BY INSTRUCTION (Grant-ruled
+2026-09-04).** `[reveal:unsourced-figures]` fired once, named `["50","15"]`, and blocked nothing —
+exactly the division of labour it was built for. Adding another "no figures" clause is the P-M4
+shape: an instruction that names the referent can prime it, and the prompt already says ABSOLUTE in
+capitals. Watch the log; act on a rate, not on a sighting.
+
 ### 🔴 STILL OPEN — 5 of the 6 paths that put a figure in front of a student have NO figure-source constraint
 
 Only the case reveal and now the drill reveal are covered. **Not touched here, by instruction:**
