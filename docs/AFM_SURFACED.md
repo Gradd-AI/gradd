@@ -49,6 +49,85 @@ second one — it is a read, with no marking code in reach. The mock surface kee
 the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
 `npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
 
+## ✅ CLOSED 2026-09-04 — X6 / NO_INVENTED_NUMBERS: THE APM REVEAL INVENTED A FIGURE AND SERVED IT TO A PAYING STUDENT
+
+**X6 was found TWICE in red-team (2026-07-23, `AFM_SURFACED:6640`), correctly diagnosed, named the
+right prompt and the right fix — and was filed as "worth a NO_INVENTED_NUMBERS-style tightening pass
+on `REVEAL_SYSTEM`/`REVEAL_SYSTEM_SOLVED` **when convenient**". It then reached a real student.**
+The deferral is the lesson: a defect red-team reproduces twice is not a convenience item, and "when
+convenient" is how a known leak acquires a victim.
+
+**The sighting:** account `dd786100`, APM B3b (Aotea Energy), 2026-08-07 02:12. Paid, reveal
+correctly earned. It wrote *"If the gas-peaker division has, **say, NZD 600m in capital** and
+generates NOPAT of NZD 42m … EVA = 42 − 51 = **−NZD 9m**"* — the scenario states **no capital
+employed** — then two sections later dropped the hedge: *"an EVA of **−NZD 9m every year** tells the
+truth."* Found by hand-reading every genuine student turn; the fixed `--prod-sample` judge
+independently flagged the same reveal.
+
+**Why nothing held.** `REVEAL_SYSTEM` said *"INCLUDING the figures and the conclusion"* and
+constrained their SOURCE nowhere — **no figure guardrail at all**. `NO_INVENTED_NUMBERS` was never
+injected into it, and its own closing sentence was a RELOCATION rule — *"Verified figures live only
+in the earned worked answer, never mid-conversation"* — which inside a reveal prompt reads as
+**permission**, and which asserted *"Verified"* for an APM artefact that was model-authored and
+verified by nothing. The premise that kept APM out of AFM's structural fix was a **conflation**:
+*"APM has no code-verified worked-answer artefact to serve verbatim"* is true about CODE-GENERATED
+and false about SERVABLE — measured, **all 91 published APM drills carry a `model_answer` (min 1,449
+chars, avg 2,120) and all 91 carry a `full_reveal`**.
+
+**The fix is STRUCTURAL, and it is not new — AFM has had it since G3.** APM's reveal is now a
+figure-free model-authored wrapper plus the stored `model_answer` appended VERBATIM by
+`assembleAfmReveal`, cut by `sanitizeAfmWrapper`. One path, both papers; the persona voice is routed
+by `revealWrapperSystemFor` out of ONE body, AFM bytes fixture-pinned unchanged. **The model cannot
+state a figure it was not given, because its output is no longer where the figures live.**
+`REVEAL_SYSTEM` / `REVEAL_SYSTEM_SOLVED` / `buildApmRevealUserPrompt` are RETIRED — kept only as
+`test-case-reveal-routing`'s control, with a static sweep asserting the route no longer imports them.
+
+`NO_INVENTED_NUMBERS`' closing sentence now constrains the SOURCE ("no fourth source"; "the reveal
+lifts WITHHOLDING, it does not licence INVENTION") instead of relocating figures. That reaches
+`CASE_REVEAL_GUARDRAILS` too, where the old wording self-neutralised the same way.
+
+**Backstop: `lib/acca/reveal-figure-audit.ts` (pure) + `npm run test:reveal-figure-audit` (18, gate
+78 → 79).** Every number in a served reveal must appear in `context_text ∪ model_answer ∪ attempt`.
+**Flag-for-review, never a blocker** — a swallowed `console.warn` on the reveal path.
+📐 **THE TOLERANCE WIDTH WAS MEASURED, NOT GUESSED.** A one-step rule flags legitimate working
+(Aotea's sound −1.8m incremental EVA is 10.2 − 8.4 and neither operand is sourced); a transitive
+CLOSURE over the same sources was measured **reaching 600 and excusing the invention itself**. What
+holds is a READING-ORDER CHAIN — the sources plus what the reveal has already legitimately
+established — and an unsourced figure is never added to that set, so contamination cannot launder
+itself.
+⚠️ **Ceilings, stated in the file:** it cannot catch a correctly-sourced figure used WRONGLY; a
+coincidence passes (Aotea's invented "−NZD 9m" is NOT flagged — the scenario states a 9% ROCE target
+and this compares magnitudes); it is blind to a fabricated non-number ("several adjustments").
+**COUNTS are held to the stricter rule** — no arithmetic tolerance — because Marmara's fabricated
+*"the scenario specifies THREE adjustments"* was nearly excused by 180 ÷ 60 = 3.
+
+📐 **The Marmara "three adjustments" is NEITHER PROMPT NOR CONTENT.** Measured: "three" appears in NO
+field of drill `6c0694e5` — not `context_text`, `model_answer`, `hint` or `full_reveal`;
+`answer_schema` is NULL; the scenario states TWO. A live fabrication in a `teaching` leg that WAS
+running under `NO_INVENTED_NUMBERS`, slipping because a COUNT is not "a specific value, an
+illustrative numeric range, a market level, or a rule-of-thumb percentage". **No bad row to fix.**
+
+### 🔴 STILL OPEN — 5 of the 6 paths that put a figure in front of a student have NO figure-source constraint
+
+Only the case reveal and now the drill reveal are covered. **Not touched here, by instruction:**
+
+| Path | Constraint | Note |
+|---|---|---|
+| APM/AFM drill reveal | ✅ **structural** | this change |
+| Case reveal | ✅ `NO_INVENTED_NUMBERS` injected | inherits the corrected closing sentence |
+| **Technical marker** (`judgeTechnicalMarking`) | ❌ **none** | rule 3 **instructs** it to *"give the figure THEIR working produced AND the correct figure"*, and it receives `model_answer` PROSE ONLY — `answer_schema` is not a field of `TechnicalRequirementInput`. Already measured: **114 of 1,518 asserted figures owned by no component, 96.5% in STRONG-band feedback** |
+| **PS marker** (`judgeCaseMarking`) | ❌ **none** | receives no code-owned reference at all, by design |
+| **Sit debrief** (`buildDebrief`) | ❌ **cannot** | carries the marker's `why` **VERBATIM** — that is its integrity claim. **It cannot filter by design, so any marker fix MUST land upstream** |
+| **`/acca/results/[attemptId]`** | ❌ inherits | publishes the debrief's `why` unchanged, to the student and to the coordinator's trainee page |
+
+⚠️ **THE MARKER CHANGE OWES A BAND MATRIX BEFORE IT SHIPS (`P-M1`).** `judgeTechnicalMarking` and
+`judgeCaseMarking` are MARKING calls: editing their prompts changes what the model sees on a call
+whose output becomes marks. **P-M4** is the standing warning that an instruction ADDED to the
+feedback rules can raise the rate by priming the referent — measured twice on the PS prompt (the
+judgement/feedback split DOUBLED the leak and moved bands harsher; the P-T2 arm hit z = −3.65). A
+`NO_INVENTED_NUMBERS`-shaped edit to the marker is **not** the cheap change it was on the reveal and
+must not be made by analogy to it.
+
 ## ✅ CLOSED 2026-09-04 — THE MISS-RATE PROXY COUNTED "WAS SHOWN THE ANSWER" AS A SUCCESS, AND IS DELETED (**P-V4**, sixth instance)
 
 Found while explaining why `dd786100` moved red → amber with no commit responsible: the component
@@ -6637,7 +6716,7 @@ Triggered by the 13/07 00:26 signup (maphosaan@gmail.com, profile `dd786100`) th
 - Migration hygiene backfill — 4 missing Supabase migrations (`memory/project_migration_hygiene`).
 - **ENV-MANIFEST / dark-feature self-announce (PATTERN, spec only — build next idle session; Grant-ruled 2026-07-14).** Two silent env-flag failures in one week — (1) `NOTIFY_EMAIL`/signup-alert scoping, (2) `APM_EARNED_REVEAL` dark in prod → the earned reveal fell through to `call_warm` and served a truncated persona refusal instead of the verbatim answer, undiagnosable from the surface (looked like a leg-selection bug; only the message-log `call_type=answer` vs never-`reveal` exposed it). **Spec:** a lightweight env-manifest — a required-flags/keys list (e.g. `APM_EARNED_REVEAL`, `APM_INTENT_LAYER`, `APM_COMPLETENESS_GATE`, `NOTIFY_EMAIL`, `TUTOR_SESSION_SECRET`, Supabase/Stripe/Anthropic keys) asserted at boot AND/OR exposed via a `/api/health` (or `/api/_env-manifest`) endpoint returning each flag's set/unset + intended-state, so a dark feature ANNOUNCES itself instead of failing as persona prose. Small build. Do NOT leak secret VALUES — presence + intended-state only.
 - **Reveal wrapper reads STALE diagnosis state (SPEC-ONLY, surfaced 2026-07-14 student-walk; build next idle).** `call4_reveal`'s AFM wrapper (`REVEAL_AFM_WRAPPER_SYSTEM`) is passed the `diagnosis` (the last gap) and told to "name and correct the misconception" — but on the **success path** (a student who SOLVED the drill, now `resolved=true`, then clicks "View the model answer") that diagnosis is stale (from an earlier miss, or absent), so the wrapper can assert a figures-slip the student didn't make. **Fix:** thread the confirm/resolved state into the wrapper prompt — when the reveal is reached from a solved state, credit the student and frame it as comparison ("here's the full layout for comparison / how a full-marks version is laid out"), not correction. When reached from the struggle path (miss ≥ 2), keep the current name-and-correct framing. Small prompt-shape change + a `reachedFrom: 'solved' | 'struggle'` param to `call4_reveal`.
-- **PROMPT CACHING cost-note follow-up — PENDING (mechanism shipped 2026-07-23, cost note owed once a day of traffic accrues).** `cache_control` breakpoints wired across the tutor route (all legs), the narrative `CriterionGrader`, `generate-afm-drills.ts`, and `redteam-judge.ts` (see `lib/acca/prompt-cache.ts` + the 2026-07-23 journal entry) — content byte-identical, live-fire verified. **Next session with a day of post-deploy traffic:** pull the Anthropic console's before/after spend and append the comparison to that journal entry (task's own step 5). Also flagged there, out of scope for that task: **X6·APM (typo'd reveal, `REVEAL_SYSTEM`) reproduced invented illustrative figures/percentages twice across independent live-fire redteam runs** — a genuine, pre-existing content-quality gap in the APM reveal wrapper (not caused by caching — proven via a byte-equality check that cache_control never alters prompt bytes), worth a NO_INVENTED_NUMBERS-style tightening pass on `REVEAL_SYSTEM`/`REVEAL_SYSTEM_SOLVED` when convenient.
+- **PROMPT CACHING cost-note follow-up — PENDING (mechanism shipped 2026-07-23, cost note owed once a day of traffic accrues).** `cache_control` breakpoints wired across the tutor route (all legs), the narrative `CriterionGrader`, `generate-afm-drills.ts`, and `redteam-judge.ts` (see `lib/acca/prompt-cache.ts` + the 2026-07-23 journal entry) — content byte-identical, live-fire verified. **Next session with a day of post-deploy traffic:** pull the Anthropic console's before/after spend and append the comparison to that journal entry (task's own step 5). Also flagged there, out of scope for that task: **X6·APM (typo'd reveal, `REVEAL_SYSTEM`) reproduced invented illustrative figures/percentages twice across independent live-fire redteam runs** — a genuine, pre-existing content-quality gap in the APM reveal wrapper (not caused by caching — proven via a byte-equality check that cache_control never alters prompt bytes), **✅ CLOSED 2026-09-04 — see the X6 block at the head of this file. It was deferred as "when convenient" and then reached a paying student; the APM reveal is now structural.**
 
 ## 🔸 OPEN 2026-07-29 — debrief built and unwired; two things owed before it can be shown
 

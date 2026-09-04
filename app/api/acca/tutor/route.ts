@@ -4,12 +4,8 @@ import Anthropic from '@anthropic-ai/sdk';
 import { createServerClient, createServiceClient } from '@/lib/supabase/server';
 import {
   systemFor,
-  REVEAL_SYSTEM,
-  REVEAL_SYSTEM_SOLVED,
-  REVEAL_AFM_WRAPPER_SYSTEM,
-  REVEAL_AFM_WRAPPER_SYSTEM_SOLVED,
-  buildAfmWrapperUserPrompt,
-  buildApmRevealUserPrompt,
+  buildRevealWrapperUserPrompt,
+  revealWrapperSystemFor,
   assembleAfmReveal,
   revealDecision,
   trimToLastSentence,
@@ -121,6 +117,7 @@ import {
 import { drillLedgerAction } from '@/lib/acca/weak-areas';
 import { openWeakness, closeWeakness } from '@/lib/acca/weak-area-store';
 import { cacheBlock, cachePrefix } from '@/lib/acca/prompt-cache';
+import { auditRevealFigures } from '@/lib/acca/reveal-figure-audit';
 import { describeDemand, nextMoveContract } from '@/lib/acca/teach-demand';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -1040,12 +1037,16 @@ async function call_warm(
 // the conversational persona, whose "never complete the student's answer" guardrail is
 // exactly what the student has earned past here.
 //
-// TWO paper-scoped designs:
-//  • APM  → model-authored walkthrough of model_answer (REVEAL_SYSTEM), as before.
-//  • AFM  → design "B" (ruled 2026-07-12): the model writes ONLY a short framing wrapper
-//    (REVEAL_AFM_WRAPPER_SYSTEM — no figures), and assembleAfmReveal appends the
-//    code-verified model_answer VERBATIM. Figure integrity is structural (byte-equality,
-//    fixture-enforced), and the multi-table worked answer is never truncated by a token cap.
+// ONE design, BOTH papers (APM ported 2026-09-04) — design "B", ruled 2026-07-12 for AFM:
+// the model writes ONLY a short framing wrapper (no figures), and `assembleAfmReveal` appends
+// the stored model_answer VERBATIM. Figure integrity is STRUCTURAL — byte-equality,
+// fixture-enforced — and the multi-table worked answer is never truncated by a token cap.
+// The persona voice is paper-routed by `revealWrapperSystemFor`; everything else is shared.
+//
+// APM previously ran a model-AUTHORED walkthrough under `REVEAL_SYSTEM`, which authorised
+// "the figures" and named no source for them. It invented one and served it to a paying
+// student. That prompt is RETIRED (tutor-personas.ts) and this route no longer imports it —
+// `scripts/test-afm-tutor.ts` asserts the absence, so the retirement is a checked fact.
 async function call4_reveal(
   question: string,
   context: string,
@@ -1056,6 +1057,9 @@ async function call4_reveal(
   fullReveal: string,
   reachedFrom: RevealReachedFrom,
   grounding: GroundingPack,
+  /** For the figure-audit log line only — never reaches the prompt. Defaulted so any caller
+   *  that predates the audit is unchanged. */
+  drillId: string | null = null,
 ): Promise<string> {
   const contextLine = context ? `Context: ${context}\n\n` : '';
   // SOLVED → credit (no invented error; the struggle diagnosis is stale for a solved student).
@@ -1066,55 +1070,63 @@ async function call4_reveal(
   // Appended to BOTH reveal prompts below; empty for APM (resolvableAreas is AFM-only for now).
   const outroLine = renderResolvableTopics(grounding) ? `${GROUNDING_INSTRUCTION_OUTRO}\n\n${renderResolvableTopics(grounding)}` : '';
 
-  if (paper === 'AFM') {
-    // Authored misconception reframe (AFM full_reveal — pre-baked, 3–5 sentences). Anchors the
-    // struggle wrapper's "name the misconception" beat; the solved builder ignores it. Empty
-    // when the column is null → omitted.
-    const reframeLine = fullReveal
-      ? `Authored misconception reframe (name this and correct the thinking):\n${fullReveal}\n\n`
-      : '';
-    // buildAfmWrapperUserPrompt's own `head` literal is `${contextLine}Question: ${question}\n\n` +
-    // `Their last attempt: ${attempt}\n\n` — i.e. context+question ALWAYS leads, attempt follows
-    // immediately, so that same leading substring is the clean stable prefix here too (tutor-
-    // personas.ts is untouched — the split is done at the call site by re-deriving the identical
-    // leading literal, verified by cachePrefix's own runtime startsWith check).
-    const afmStablePrefix = `${contextLine}Question: ${question}\n\n`;
-    const res = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
-      system: cacheBlock(solved ? REVEAL_AFM_WRAPPER_SYSTEM_SOLVED : REVEAL_AFM_WRAPPER_SYSTEM),
-      messages: [
-        {
-          role: 'user',
-          content: cachePrefix(
-            afmStablePrefix,
-            buildAfmWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + '\n\n' + outroLine + WRAP_UP,
-          ),
-        },
-      ],
-    });
-    return assembleAfmReveal(finishClean(res), modelAnswer);
-  }
-
-  // APM — model-authored walkthrough of the stored model_answer (unchanged pre-G3 behaviour).
-  // Same leading-literal technique as the AFM branch above; buildApmRevealUserPrompt's `head` is
-  // identical in shape (context+question, then attempt) — see comment there.
-  const apmStablePrefix = `${contextLine}Question: ${question}\n\n`;
+  // ── ONE PATH, BOTH PAPERS (2026-09-04) ──────────────────────────────────────
+  // The APM branch that used to sit below this is GONE. It asked the model to "build the worked
+  // walkthrough", under a system prompt that authorised "the figures" and named no source for
+  // them, and it invented one: "say, NZD 600m in capital" → EVA = −NZD 9m → "an EVA of −NZD 9m
+  // every year tells the truth", on a scenario that states no capital employed, served to a
+  // paying student (dd786100, APM B3b, 2026-08-07). See docs/AFM_SURFACED.md (X6, CLOSED).
+  //
+  // Both papers now do what AFM has done since G3: the model writes a FIGURE-FREE wrapper and
+  // code appends the stored `model_answer` VERBATIM beneath it. That is structural, not
+  // instructed — `sanitizeAfmWrapper` cuts the wrapper at the first rule or build heading, so
+  // the model's output is prose only and the figures come from the row. It cannot state a
+  // figure it was not given because its output is not where the figures live.
+  //
+  // Authored misconception reframe (`full_reveal` — pre-baked, 3–5 sentences). Anchors the
+  // struggle wrapper's "name the misconception" beat; the solved builder ignores it. Empty when
+  // the column is null → omitted. Present on all 91 APM and all 63 AFM published drills.
+  const reframeLine = fullReveal
+    ? `Authored misconception reframe (name this and correct the thinking):\n${fullReveal}\n\n`
+    : '';
+  // buildRevealWrapperUserPrompt's own `head` literal is `${contextLine}Question: ${question}\n\n` +
+  // `Their last attempt: ${attempt}\n\n` — i.e. context+question ALWAYS leads, attempt follows
+  // immediately, so that same leading substring is the clean stable prefix here too (tutor-
+  // personas.ts is untouched — the split is done at the call site by re-deriving the identical
+  // leading literal, verified by cachePrefix's own runtime startsWith check).
+  const stablePrefix = `${contextLine}Question: ${question}\n\n`;
   const res = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 1200,
-    system: cacheBlock(solved ? REVEAL_SYSTEM_SOLVED : REVEAL_SYSTEM),
+    max_tokens: 500, // wrapper only — the worked answer is appended verbatim, not generated
+    system: cacheBlock(revealWrapperSystemFor(paper, reachedFrom)),
     messages: [
       {
         role: 'user',
         content: cachePrefix(
-          apmStablePrefix,
-          buildApmRevealUserPrompt({ contextLine, question, attempt, diagnosis, modelAnswer, reachedFrom }) + '\n\n' + outroLine,
+          stablePrefix,
+          buildRevealWrapperUserPrompt({ contextLine, question, attempt, diagnosis, reframeLine, reachedFrom }) + '\n\n' + outroLine + WRAP_UP,
         ),
       },
     ],
   });
-  return finishClean(res) + REVEAL_FOOTER;
+  const served = assembleAfmReveal(finishClean(res), modelAnswer);
+
+  // ── POST-HOC FIGURE AUDIT — FLAG FOR REVIEW, NEVER A BLOCKER ───────────────
+  // Deterministic backstop to the structural fix: every number in the served reveal must appear
+  // in context_text ∪ model_answer ∪ the student's attempt. It is best-effort and swallowed —
+  // a reveal the student EARNED must never fail to serve because an audit threw. Read the
+  // module header for what it cannot see.
+  try {
+    const audit = auditRevealFigures(served, { context, modelAnswer, attempt });
+    if (audit.unsourced.length > 0) {
+      console.warn('[reveal:unsourced-figures]', JSON.stringify({
+        paper, drill_id: drillId, reached_from: reachedFrom,
+        unsourced: audit.unsourced.slice(0, 12), checked: audit.checked,
+      }));
+    }
+  } catch { /* an audit must never break a reveal */ }
+
+  return served;
 }
 
 // ── CALL 4b: Burn (FREE user, struggle path) ──────────────────────────────────
@@ -1572,7 +1584,7 @@ export async function POST(request: Request): Promise<Response> {
       // reachedFrom mirrors revealDecision's precedence: resolved (solved) wins over struggle.
       // SOLVED → credit-not-correct wrapper (no invented figures-slip); STRUGGLE (paid) → diagnose.
       const reachedFrom: RevealReachedFrom = resolved ? 'solved' : 'struggle';
-      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal, reachedFrom, grounding);
+      ezraResponse = await call4_reveal(question, context, lastRealAttempt ?? student_message, lastDiagnosis ?? '', modelAnswer, paper, fullReveal, reachedFrom, grounding, drillId);
       newResolved = true;
     } else if (revealGate === 'burn') {
       if (distressed) {
