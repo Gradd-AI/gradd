@@ -86,3 +86,29 @@ SELECT
   (SELECT count(*) FROM pg_policies WHERE tablename='acca_drill_messages')      AS policies;
 -- EXPECT: rows_total 2144 · turn_id_type uuid · is_nullable YES · must_be_null NULL
 --         legacy_rows_still_null 2144 · indexes 4 · triggers 1 · rls_enabled true · policies 1
+
+-- =============================================================================
+-- ⚠️ THE LEGACY BACKFILL IS SEPARATE, NOT RUN, AND ITS CONSTANTS ARE ALREADY STALE
+-- =============================================================================
+-- A backfill exists for the pre-split rows: drop trg_acca_drill_messages_immutable inside one
+-- transaction, assign one gen_random_uuid() per (user_id, drill_id, created_at) group, recreate
+-- the trigger, and assert the post-conditions before COMMIT. It has NOT been run.
+--
+-- ⛔ ITS EXPECTED COUNTS MUST BE RE-DERIVED FROM ITS OWN "VERIFY BEFORE" BLOCK EVERY TIME IT IS
+-- RUN. They cannot be copied forward, because the route now writes turn_id on every NEW row:
+--
+--   • `to_backfill` (rows with a NULL turn_id) only ever SHRINKS as a share of the table, and
+--     is already below the 2144 this migration recorded.
+--   • `perfect_pairs` / the expected turn count only ever GROW, because every new turn adds one.
+--   • So the backfill's assertion `groups <> 1072 -> RAISE` will abort on any run after the
+--     split shipped. That is the tripwire working, NOT a bug to be silenced.
+--
+-- WHEN IT ABORTS: re-read the BEFORE block's actual numbers and use those. DO NOT simply bump
+-- the constant to make the DO block pass — the assertion is the only thing standing between a
+-- deliberate backfill and a half-applied one on an append-only table.
+--
+-- The backfill also gets STRICTLY SAFER over time and never less safe: it touches only rows
+-- where `turn_id IS NULL`, which is exactly the legacy set, and that set is frozen — nothing
+-- can add to it. The pre-split rows were verified as a PERFECT PARTITION under
+-- (user_id, drill_id, created_at); if the BEFORE block ever reports imperfect_groups > 0, the
+-- premise has changed and it is no longer a backfill but a guess. STOP there.

@@ -49,6 +49,30 @@ second one — it is a read, with no marking code in reach. The mock surface kee
 the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
 `npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
 
+## 🔴 OPEN 2026-09-04 — `audit-bare-guess-veto`'s DENOMINATOR NOW DOUBLE-COUNTS RETRIES
+
+**Caused by the tutor split (shipped `e7bf608`), knowingly.** The student's row is written
+BEFORE the model calls, so a failed turn leaves a durable user row — and a retry of that same
+message writes a SECOND user row with the same `content`, its own `turn_id` and its own
+`created_at`. Nothing on `acca_drill_messages` can be updated or deleted (`tgf_append_only`), so
+both rows stand permanently. One student, one message, two rows.
+
+**`audit-bare-guess-veto` selects `role='user'` and counts ROWS.** It reports veto-fire
+*percentages*, so the RATE barely moves — a duplicate inflates numerator and denominator
+together. The **counts** drift upward, and the counts are what get quoted.
+
+✅ **THE FIX IS RULED (Grant, 2026-09-04): count DISTINCT `turn_id`, not rows.** Not "one of two
+candidates" — this is the decided fix. It is also the only one that survives the two-era table:
+legacy rows have a NULL `turn_id` and must fall back to `(user_id, drill_id, created_at)`
+identity, which is a perfect partition over them, exactly as `pairTurns` already does. Not yet
+implemented.
+
+⚠️ **`lib/acca/tutor-personas.ts:209`'s "733 digit-bearing student messages in
+acca_drill_messages" WAS MEASURED BEFORE THE SPLIT** and is a row count. It is not wrong for the
+period it covers, and it must be re-read on that basis: any re-measurement after `e7bf608`
+counts retries twice unless it counts distinct turns. The same applies to any figure derived
+from that audit's output.
+
 ## 🟡 OPEN 2026-09-04 — `check:env-flags` READS ITS OWN FIXTURE STRINGS AS FLAGS. List only.
 
 - The scanner walks `scripts/`, so it reads `scripts/test-env-flags.ts`'s own test data and
