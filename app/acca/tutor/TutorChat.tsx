@@ -87,6 +87,31 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── THE UNSENT DRAFT SURVIVES A RELOAD (2026-09-04) ────────────────────────
+  // A failed turn already restored the text to the composer (`setInput(trimmed)` in the catch
+  // below), so it was never lost ON SCREEN. It was lost the moment the student reloaded,
+  // navigated, or hit "Try another" — and a student whose turn just 500'd is exactly the
+  // student who reloads. There was no client persistence of any kind.
+  //
+  // sessionStorage, not localStorage: a half-typed exam answer is not something to leave on a
+  // shared machine indefinitely, and the tab's lifetime is the right scope for "I was in the
+  // middle of this".
+  //
+  // KEYED PER DRILL. One key would restore drill A's answer into drill B's box after a "Try
+  // another" — worse than losing it, because it looks like the student wrote it.
+  //
+  // Wrapped in try/catch on BOTH sides: storage throws in private mode and under
+  // block-all-cookies settings, and a draft-restore must never break the surface it is
+  // helping. The server row (§3b) is the durable record; this is only convenience.
+  const draftKey = `gradd:acca:draft:${currentDrill.id}`;
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(draftKey);
+      if (saved) setInput(saved);
+    } catch { /* storage unavailable — the composer just starts empty */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftKey]);
+
   const missCount  = sessionState?.miss_count ?? 0;
   const hasAttempt = messages.some(m => m.role === 'student');
 
@@ -101,6 +126,11 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
     const studentMessage: Message = { role: 'student', content: trimmed };
     setMessages(prev => [...prev, studentMessage]);
     setInput('');
+    // Cleared OPTIMISTICALLY, alongside the composer, and re-written by the catch if the send
+    // fails. Clearing only on success would leave a stale draft to be restored on top of a
+    // turn that actually landed — the student would reload and find their sent message sitting
+    // in the box as if it had never gone.
+    try { sessionStorage.removeItem(draftKey); } catch { /* storage unavailable */ }
     setLoading(true);
     setError(null);
 
@@ -171,7 +201,11 @@ export default function TutorChat({ drill, initialCapHit, userId, paper }: { dri
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to reach Ezra — please try again.');
       setMessages(prev => prev.slice(0, -1));
+      // The composer restore STAYS — it is what keeps the text in front of the student right
+      // now. The write below is what keeps it across a reload, which is the half that was
+      // missing. Both, not either.
       setInput(trimmed);
+      try { sessionStorage.setItem(draftKey, trimmed); } catch { /* storage unavailable */ }
     } finally {
       setLoading(false);
     }

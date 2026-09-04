@@ -49,6 +49,17 @@ second one — it is a read, with no marking code in reach. The mock surface kee
 the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
 `npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
 
+## 🟡 OPEN 2026-09-04 — `check:env-flags` READS ITS OWN FIXTURE STRINGS AS FLAGS. List only.
+
+- The scanner walks `scripts/`, so it reads `scripts/test-env-flags.ts`'s own test data and
+  reports **`W`, `X`, `Y`, `Z`** as real feature flags. 4 of the 11 names it prints are fabricated
+  by its own fixture.
+- **Noise, not wrong answers.** The seven real flags are correct, and both flags that matter —
+  `APM_CASES` and `APM_EARNED_REVEAL` — are found and correctly marked SET IN PRODUCTION.
+- ⚠️ It is the tool's own failure mode, though: it exists so the one line worth reading is not
+  buried, and it is burying it at a 36% rate. A fixture-file exclusion, or scanning only
+  `app/` + `lib/` + `components/`, would close it.
+
 ## ✅ CLOSED 2026-09-04 — X6 / NO_INVENTED_NUMBERS: THE APM REVEAL INVENTED A FIGURE AND SERVED IT TO A PAYING STUDENT
 
 **X6 was found TWICE in red-team (2026-07-23, `AFM_SURFACED:6640`), correctly diagnosed, named the

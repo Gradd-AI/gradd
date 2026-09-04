@@ -11,6 +11,68 @@
 // not judge-specific: it is the answer to "which student message does this reply belong to",
 // which is a fact about acca_drill_messages, not about any one consumer.
 
+import { CLAIM_STALE_MS } from './in-flight';
+
+/**
+ * What a turn's rows say happened.
+ *
+ *   complete    — one user row, one reply. The ordinary turn.
+ *   failed      — a user row with NO reply, old enough that no reply is coming. The student
+ *                 typed something and the turn died before the model answered. THE FINDING
+ *                 the split exists to create: before 2026-09-04 this left no row at all.
+ *   in_flight   — a user row with no reply YET, younger than the threshold. NOT a failure;
+ *                 reporting it as one would libel a turn that is simply still running.
+ *   reply_only  — a reply with no user row. The §3b insert failed and §10b succeeded: the
+ *                 student got their answer and only the logging is holed. Emphatically not a
+ *                 failed turn, and kept as its own state so it can never be counted as one.
+ *   malformed   — anything else. Never guessed at.
+ */
+export type TurnState = 'complete' | 'failed' | 'in_flight' | 'reply_only' | 'malformed';
+
+/**
+ * PURE. Classify ONE turn's rows.
+ *
+ * ── THE THRESHOLD IS BORROWED, NOT INVENTED ─────────────────────────────────
+ * `CLAIM_STALE_MS` (lib/acca/in-flight.ts) is the number the marking claim already uses to
+ * decide that an operation cannot still be running. Same question, same kind of operation,
+ * same provider — so a second constant here would be a second answer to one question, and
+ * the two would drift with nothing to notice. The tutor's slowest leg is a single Haiku call;
+ * five minutes is far beyond it, which is the safe direction: calling a live turn dead is
+ * worse than waiting for it.
+ *
+ * `nowMs` is INJECTED. This module reads no clock, so the boundary is testable at all.
+ */
+export function classifyTurn(rows: readonly RawMsg[], nowMs: number): TurnState {
+  const user = rows.filter((r) => r.role === 'user');
+  const asst = rows.filter((r) => r.role === 'assistant');
+  if (user.length === 1 && asst.length === 1) return 'complete';
+  if (user.length === 0 && asst.length === 1) return 'reply_only';
+  if (user.length === 1 && asst.length === 0) {
+    const age = nowMs - Date.parse(user[0].created_at);
+    // A NaN age (an unparseable timestamp) must not read as "old enough to be failed" —
+    // Number.isFinite guards that, and the unknown case falls to in_flight, which claims less.
+    return Number.isFinite(age) && age >= CLAIM_STALE_MS ? 'failed' : 'in_flight';
+  }
+  return 'malformed';
+}
+
+/** PURE. Classify a whole window, grouped the way `pairTurns` groups it. */
+export function classifyTurns(
+  rows: readonly RawMsg[],
+  nowMs: number,
+): Map<string, { state: TurnState; rows: RawMsg[] }> {
+  const groups = new Map<string, RawMsg[]>();
+  for (const r of rows) {
+    const key = r.turn_id
+      ? `t:${r.turn_id}`
+      : `ts:${r.user_id}|${r.drill_id ?? 'no-drill'}|${r.created_at}`;
+    (groups.get(key) ?? groups.set(key, []).get(key)!).push(r);
+  }
+  const out = new Map<string, { state: TurnState; rows: RawMsg[] }>();
+  for (const [k, g] of groups) out.set(k, { state: classifyTurn(g, nowMs), rows: g });
+  return out;
+}
+
 export interface RawMsg {
   user_id: string; drill_id: string | null; role: string;
   content: string; call_type: string | null; created_at: string; turn_id?: string | null;
