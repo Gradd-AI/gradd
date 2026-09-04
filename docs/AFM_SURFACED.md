@@ -49,13 +49,45 @@ second one — it is a read, with no marking code in reach. The mock surface kee
 the *"I've subscribed — mark my paper"* retry; `/acca/results` keeps the revisit. This does NOT fix
 `npm run audit:unmarked-sits` (nothing retries a failed sit marking), which stays open.
 
-## 🔴 OPEN 2026-09-04 — THE MISS-RATE PROXY COUNTS "WAS SHOWN THE ANSWER" AS A SUCCESS (**P-V4**, sixth instance)
+## ✅ CLOSED 2026-09-04 — THE MISS-RATE PROXY COUNTED "WAS SHOWN THE ANSWER" AS A SUCCESS, AND IS DELETED (**P-V4**, sixth instance)
 
 Found while explaining why `dd786100` moved red → amber with no commit responsible: the component
-crossed `MIN_ATTEMPTS_FOR_SLOPE` as his attempts aged past the 28-day window. **List only — nothing
-here is fixed, and `readiness.ts` was not touched.** The trainee page's sub-line now prints the
-proxy's two inputs (label only, `resolvedDrills` exposed for display); the semantics below are
-untouched and are the open item.
+crossed `MIN_ATTEMPTS_FOR_SLOPE` as his attempts aged past the 28-day window.
+
+**🗑️ REMOVED, NOT REPAIRED (Grant-ruled 2026-09-04).** Below the threshold `missRateScore` now
+returns **null**, its 0.25 weight redistributes across the components that do have data, and
+`resolved/(resolved+stuck)` is gone — along with its `0.5` neutral-fallback arm, because a neutral
+stand-in is still a claim about a trainee nobody has measured. **Repairing it in place was not
+available:** the numerator cannot be fixed without a `resolved` flag that distinguishes a correct
+answer from a reveal, and it does not (see the table below). The weight mechanism is the one
+`computeReadiness` already used for an absent assessment, generalised so one rule serves both
+rather than a second special case that would have to agree with the first.
+
+📐 **MEASURED BEFORE APPLYING** — all 26 demo-advisory trainees, three cohorts, fixed clock:
+**2 scores moved, 0 BANDS moved, 24 rows byte-identical** (score, component and weights).
+`de5e…0001` Priya Nair `0.14706 → 0.00000` (red → red; her 0.147 was *entirely* the neutral 0.5
+arm — she has zero attempts, so the composite was reporting a number sourced from nothing) and
+`dd786100` Trainee 04 `0.51917 → 0.47000` (amber → amber). **Deleting the proxy does NOT return
+Trainee 04 to red** — recency 1.00 (earned by the mock, not by drilling) and assessment 0.35 carry
+him; the red he showed on 2026-09-02 came from the slope's 0.125, not from anything the proxy did.
+
+⚠️ **`resolvedDrills` SURVIVES AS DISPLAYED CONTEXT AND IS NO LONGER A SCORING INPUT.** It is still
+on `ReadinessInput` (nothing in `readiness.ts` reads it) and still shown on the trainee page,
+reworded so the counts stay and the implication goes: *"1 drill is stuck (two or more misses, still
+unresolved); 2 are marked resolved — a flag set both by a correct answer and by the answer being
+revealed, which it does not distinguish."* Naming which one happened is not derivable from the flag;
+for `dd786100` it is provably all reveals (zero `correct` rows in his attempt log), but the screen
+cannot assert that in general, so it says what the flag can support.
+
+**The absent case renders in words, never as a 0 and never blank** — chip `not counted`, value `—`,
+sub-line `not enough recent attempts to measure — 2 in the last 28 days, 4 needed`. The cohort
+listing renders no readiness component at all (band chip + the attempt-derived heatmap only), so
+there was nothing there to correct. Fixtures: `test-org-readiness` T6/T6b — absence, the null,
+the 50/50 and 40/40/20 redistributions, both sums to 1, the slope still exact at the threshold
+(0.125 pinned), full weights untouched when all four are present, and **the deleted proxy and its
+0.5 arm both pinned MUST-FAIL**.
+
+**The finding itself, kept because it outlives the fix:**
 
 | The check keys on… | …but the question is | How they come apart |
 |---|---|---|

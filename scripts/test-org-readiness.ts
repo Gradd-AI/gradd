@@ -118,15 +118,117 @@ function base(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
   check('T5 improving composite > flat composite', improving.score > flat.score);
 }
 
-// ── T6: proxy fallback when windowed attempts < MIN_ATTEMPTS_FOR_SLOPE ─────────
-// windowed = 2 (<4) → usedSlope false; M = resolved/(resolved+stuck) = 3/4 = 0.75.
+// ── T6: BELOW THE THRESHOLD, MISS-RATE IS ABSENT — NOT PROXIED, NOT ZEROED ────
+// This test used to assert the proxy: windowed = 2 (<4) → M = resolved/(resolved+stuck)
+// = 3/4 = 0.75. The proxy is DELETED (2026-09-04), so the same input now yields NULL and the
+// 0.25 weight redistributes. The old expectation is kept below as a MUST-FAIL pin — it is the
+// exact number the deleted branch produced, and it must never be reachable again.
+//
+// P-G3(a) BOTH DIRECTIONS: absence is asserted here, PRESENCE at/above the threshold in T6b,
+// and T1/T5 still pin the slope arithmetic unchanged. A suite that only proved "M is null
+// when sparse" passes against a component that is always null, which silently deletes 25% of
+// the composite for everyone.
 {
-  const res = computeReadiness(base({
+  const sparse = base({
     recentAttempts: 1, recentMisses: 0, priorAttempts: 1, priorMisses: 1,
     resolvedDrills: 3, stuckDrills: 1,
+  });
+  const res = computeReadiness(sparse);
+  check('T6 usedSlope false below the threshold', res.components.missRate.usedSlope === false);
+  check('T6 M is NULL, not a number', res.components.missRate.score === null,
+    `got ${res.components.missRate.score}`);
+  check('T6 M is not zeroed (a 0 would read as "all misses")',
+    res.components.missRate.score !== 0);
+  check('T6 windowedAttempts explains the null', res.components.missRate.windowedAttempts === 2);
+  check('T6 miss-rate weight drops to 0', res.weightsUsed.missRate === 0);
+
+  // THE REDISTRIBUTION IS THE POINT: the kept weights must still sum to 1, or the composite is
+  // silently scaled down and every sparse trainee reads worse than they are.
+  const sum = res.weightsUsed.recency + res.weightsUsed.coverage
+            + res.weightsUsed.missRate + res.weightsUsed.assessment;
+  check('T6 remaining weights renormalise to 1', approx(sum, 1), `sum=${sum}`);
+  // `base()` carries no assessment either, so BOTH are absent here and the two survivors split
+  // it evenly. That is the double-absent case, and it is worth pinning on its own: the
+  // renormalisation has to compose, not special-case one component.
+  check('T6 both absent → recency and coverage split it 50/50',
+    approx(res.weightsUsed.recency, 0.50) && approx(res.weightsUsed.coverage, 0.50)
+    && res.weightsUsed.assessment === 0,
+    JSON.stringify(res.weightsUsed));
+
+  // THE SHAPE dd786100 ACTUALLY HAS: miss-rate absent, assessment PRESENT. 0.25 redistributes
+  // across three, not two — 0.30/0.75, 0.30/0.75, 0.15/0.75.
+  const withAssessment = computeReadiness(base({
+    recentAttempts: 1, recentMisses: 1, priorAttempts: 1, priorMisses: 1,
+    resolvedDrills: 2, stuckDrills: 1, mockScores: [0.35], mocksCompleted: 1,
   }));
-  check('T6 usedSlope false', res.components.missRate.usedSlope === false);
-  check('T6 proxy M = 0.75', approx(res.components.missRate.score, 0.75), `got ${res.components.missRate.score}`);
+  check('T6 miss-rate absent + assessment present → 0.40/0.40/0.20',
+    approx(withAssessment.weightsUsed.recency, 0.40)
+    && approx(withAssessment.weightsUsed.coverage, 0.40)
+    && approx(withAssessment.weightsUsed.assessment, 0.20)
+    && withAssessment.weightsUsed.missRate === 0,
+    JSON.stringify(withAssessment.weightsUsed));
+  const sum2 = withAssessment.weightsUsed.recency + withAssessment.weightsUsed.coverage
+             + withAssessment.weightsUsed.missRate + withAssessment.weightsUsed.assessment;
+  check('T6 ...and those renormalise to 1 too', approx(sum2, 1), `sum=${sum2}`);
+
+  // MUST-FAIL: the deleted proxy, transcribed exactly as it was. If this ever matches again,
+  // resolved/(resolved+stuck) is back — and with it a metric that scores a student for asking
+  // to be told the answer (P-V4, docs/AFM_SURFACED.md).
+  const DELETED_PROXY = sparse.resolvedDrills / (sparse.resolvedDrills + sparse.stuckDrills);
+  check('T6 MUST-FAIL: the deleted proxy no longer produces the score',
+    DELETED_PROXY === 0.75 && res.components.missRate.score !== DELETED_PROXY);
+
+  // The other deleted arm: with nothing to judge the proxy returned a NEUTRAL 0.5. A neutral
+  // stand-in is still a claim about an unmeasured trainee, so it is gone too.
+  const nothing = computeReadiness(base({
+    recentAttempts: 0, recentMisses: 0, priorAttempts: 0, priorMisses: 0,
+    resolvedDrills: 0, stuckDrills: 0,
+  }));
+  check('T6 MUST-FAIL: the neutral 0.5 fallback is gone',
+    nothing.components.missRate.score === null && nothing.components.missRate.score !== 0.5);
+  check('T6 zero windowed attempts is reported as 0, not hidden',
+    nothing.components.missRate.windowedAttempts === 0);
+}
+
+// ── T6b: AT the threshold the slope still computes — the other direction ──────
+// windowed === MIN_ATTEMPTS_FOR_SLOPE exactly. This is the boundary dd786100 sat on, and it
+// is where an off-by-one would silently delete the component for a measured trainee.
+{
+  const atThreshold = computeReadiness(base({
+    recentAttempts: 2, recentMisses: 2, priorAttempts: 2, priorMisses: 2,
+    resolvedDrills: 2, stuckDrills: 1,
+  }));
+  check('T6b at exactly MIN_ATTEMPTS_FOR_SLOPE the slope runs',
+    atThreshold.components.missRate.usedSlope === true);
+  check('T6b M is a number at the threshold', typeof atThreshold.components.missRate.score === 'number');
+  // All-miss on both windows: level 0, trend 0.5 → 0.75*0 + 0.25*0.5 = 0.125. The exact value
+  // dd786100 carried on 2026-09-02, pinned so the slope arithmetic cannot drift with this change.
+  check('T6b all-miss flat slope is still 0.125', approx(atThreshold.components.missRate.score!, 0.125),
+    `got ${atThreshold.components.missRate.score}`);
+  // `base()` has no assessment, so the full 0.30/0.30/0.25 shape is not what this input yields
+  // — miss-rate is PRESENT and takes its renormalised share of the three. The claim being
+  // pinned is that it takes a share at all, i.e. that it did not fall out.
+  check('T6b miss-rate carries weight at the threshold',
+    atThreshold.weightsUsed.missRate > 0 && approx(atThreshold.weightsUsed.missRate, 0.25 / 0.85),
+    JSON.stringify(atThreshold.weightsUsed));
+  // With EVERY component present the authored weights must survive untouched — kept === 1, so
+  // the renormalisation is a no-op and a fully-measured trainee's arithmetic is byte-identical
+  // to before this change.
+  const complete = computeReadiness(base({
+    recentAttempts: 2, recentMisses: 1, priorAttempts: 2, priorMisses: 1,
+    mockScores: [0.5], mocksCompleted: 1,
+  }));
+  check('T6b all four present → the authored weights are untouched',
+    complete.weightsUsed.recency === 0.30 && complete.weightsUsed.coverage === 0.30
+    && complete.weightsUsed.missRate === 0.25 && complete.weightsUsed.assessment === 0.15,
+    JSON.stringify(complete.weightsUsed));
+  // And the resolved/stuck inputs are IGNORED: same counts as T6, different result, because
+  // nothing reads them any more.
+  check('T6b resolvedDrills does not influence the score',
+    approx(computeReadiness(base({
+      recentAttempts: 2, recentMisses: 2, priorAttempts: 2, priorMisses: 2,
+      resolvedDrills: 99, stuckDrills: 0,
+    })).components.missRate.score!, 0.125));
 }
 
 // ── T7: present-only assessment + weight renormalisation ──────────────────────
@@ -139,7 +241,13 @@ function base(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
 
   const mockOnly = computeReadiness(base({ caseMarkRatios: [], mocksCompleted: 1 }));
   check('T7 mock-only assessment = 0.5 floor', mockOnly.components.assessment.score === 0.5);
-  check('T7 mock-only assessment weight restored', mockOnly.weightsUsed.assessment === 0.15);
+  // ⚠️ WAS `=== 0.15`. `base()` carries NO attempts, so since the miss-rate proxy was deleted
+  // (2026-09-04) this input has miss-rate ABSENT too — 0.25 redistributes and assessment lands
+  // at 0.15/0.75 = 0.20. The old constant encoded an assumption that miss-rate is always
+  // present, which stopped being true the day absence became expressible. The CLAIM is
+  // unchanged: an assessment that exists carries weight.
+  check('T7 mock-only assessment carries weight (0.15 renormalised over the 3 present)',
+    approx(mockOnly.weightsUsed.assessment, 0.15 / 0.75), `got ${mockOnly.weightsUsed.assessment}`);
 }
 
 // ── T8: coverage clamp (covered > total must not exceed 1) ─────────────────────
@@ -178,7 +286,10 @@ function base(overrides: Partial<ReadinessInput> = {}): ReadinessInput {
   check('T12 assessment = real mock score 0.9', res.components.assessment.score === 0.9,
     `got ${res.components.assessment.score}`);
   check('T12 mockAvg exposed', res.components.assessment.mockAvg === 0.9);
-  check('T12 assessment weight present (0.15)', res.weightsUsed.assessment === 0.15);
+  // Same correction as T7: this fixture has no windowed attempts, so miss-rate is absent and
+  // the 0.15 renormalises to 0.20. The claim under test is 'present assessment is weighted'.
+  check('T12 assessment carries weight', res.weightsUsed.assessment > 0
+    && approx(res.weightsUsed.assessment, 0.15 / 0.75), `got ${res.weightsUsed.assessment}`);
 }
 
 // ── T13: floor survives ONLY for "sat a mock but nothing markable" ────────────

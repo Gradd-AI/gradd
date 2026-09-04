@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { requireCoordinator, cohortMemberDecision } from '@/lib/org/guard';
 import { getOrgBySlug, getCohortById, getTraineeDetail, cohortUserIds, type RecentAttempt } from '@/lib/org/queries';
 import { getTraineeSitResults } from '@/lib/org/trainee-sit';
+import { MIN_ATTEMPTS_FOR_SLOPE } from '@/lib/org/readiness';
 import { ORG_CSS, bandTone, fmtDays, fmtDate, SUB_AREA_NAME } from '@/components/org/orgTheme';
 
 export const dynamic = 'force-dynamic';
@@ -139,29 +140,23 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
             <div className="d">{k.coverage.covered}/{k.coverage.total} sub-areas</div>
           </div>
           <div className="c">
-            <div className="c-top"><span className="c-name">Miss-rate</span><span className="c-w">weight {pct(w.missRate)}</span></div>
-            <div className="v">{k.missRate.score.toFixed(2)}</div>
-            {/* ── THE SUB-LINE NAMES THE BRANCH **AND ITS INPUTS** (2026-09-04) ──────
-                The branch label was already honest — it says `proxy` when the proxy ran. What
-                it did not do was show a single number, so the score above it could not be
-                reconciled with anything on screen: a coordinator saw `0.67` over the words
-                "resolved/(resolved+stuck)" and had no way to learn that the 0.67 was 2 over 3.
-                The slope branch has always printed its two inputs; this is the proxy branch
-                catching up, and nothing about either calculation changed.
-
-                ⚠️ `resolved` IS NOT "ANSWERED CORRECTLY", and the word does not say so. It is
-                `acca_tutor_progress.resolved`, which app/api/acca/tutor/route.ts writes true at
-                BOTH :1704 (a correct answer) and :1576 (call4_reveal — the earned reveal). So a
-                student who missed twice and was shown the answer counts in this numerator
-                exactly like one who solved it. Logged as a P-V4 instance in docs/AFM_SURFACED.md
-                with the live case; naming it on screen is a copy decision, not a label fix, and
-                is deliberately NOT made here. */}
+            <div className="c-top">
+              <span className="c-name">Miss-rate</span>
+              {/* "weight 0%" is arithmetically true and reads as a scoring decision about the
+                  trainee. "not counted" says what actually happened: the component has no data,
+                  so its weight went to the other three. */}
+              <span className="c-w">{k.missRate.score == null ? 'not counted' : `weight ${pct(w.missRate)}`}</span>
+            </div>
+            <div className="v">{k.missRate.score == null ? '—' : k.missRate.score.toFixed(2)}</div>
+            {/* ── THE ABSENT CASE SAYS SO, IN WORDS (2026-09-04) ────────────────────
+                The proxy that used to fill this slot is DELETED (lib/org/readiness.ts). What
+                replaces it is not a smaller number — it is a sentence saying the component was
+                not measured, and the count that explains why. Never a 0 (which reads as "all
+                misses") and never a blank (which reads as a rendering fault). */}
             <div className="d">
-              {k.missRate.usedSlope
+              {k.missRate.score != null
                 ? `slope: prior ${k.missRate.priorMissRate.toFixed(2)} → recent ${k.missRate.recentMissRate.toFixed(2)}`
-                : d.resolvedDrills + d.stuckDrills > 0
-                  ? `proxy: ${d.resolvedDrills} resolved, ${d.stuckDrills} stuck — too few recent attempts for a miss-rate`
-                  : 'proxy: nothing to judge yet — held neutral'}
+                : `not enough recent attempts to measure — ${k.missRate.windowedAttempts} in the last 28 days, ${MIN_ATTEMPTS_FOR_SLOPE} needed`}
             </div>
           </div>
           <div className="c">
@@ -177,8 +172,36 @@ export default async function TraineePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
         <p className="org-note">
-          Score = weighted mean of the four components{k.assessment.score == null ? ' (assessment absent → its weight redistributed across the other three)' : ''}.
-          {' '}<b>{d.stuckDrills}</b> {d.stuckDrills === 1 ? 'drill' : 'drills'} attempted twice or more without success.
+          {/* Names every absent component, so a reader can see WHY the weights are what the
+              cards above say they are. Both arms use the same wording because it is the same
+              mechanism — an absent component takes no weight and the rest renormalise. */}
+          Score = weighted mean of the components that could be measured
+          {[
+            k.missRate.score == null ? 'miss-rate' : null,
+            k.assessment.score == null ? 'assessment' : null,
+          ].filter(Boolean).length > 0
+            ? ` (${[k.missRate.score == null ? 'miss-rate' : null, k.assessment.score == null ? 'assessment' : null]
+                .filter(Boolean).join(' and ')} absent → weight redistributed across the rest)`
+            : ''}.
+          {' '}
+          {/* ⚠️ THE COUNTS STAY, THE IMPLICATION GOES. `resolved` is
+              acca_tutor_progress.resolved, written true BOTH by a correct answer
+              (app/api/acca/tutor/route.ts:1704) AND by the earned reveal (:1576) — so
+              "2 resolved" reads as "solved two" and may be neither. For dd786100 it is
+              provably all reveals: 14 attempts, 14 misses, zero `correct` rows in the
+              attempt log. The flag itself cannot tell the two apart, so the sentence says
+              that rather than guessing which happened. P-V4, docs/AFM_SURFACED.md. */}
+          {d.stuckDrills === 0
+            ? <>No drills are stuck</>
+            : <><b>{d.stuckDrills}</b> {d.stuckDrills === 1 ? 'drill is' : 'drills are'} stuck</>}
+          {' '}(two or more misses, still unresolved){d.resolvedDrills > 0 ? '; ' : '. '}
+          {d.resolvedDrills > 0 && (
+            <>
+              <b>{d.resolvedDrills}</b> {d.resolvedDrills === 1 ? 'is' : 'are'} marked resolved —
+              a flag set both by a correct answer and by the answer being revealed, which it does
+              not distinguish.
+            </>
+          )}
         </p>
       </div>
 
