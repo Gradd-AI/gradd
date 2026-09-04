@@ -51,6 +51,7 @@
     "test:notify": "tsx scripts/test-notify.ts",
     "test:org-guard": "tsx scripts/test-org-guard.ts",
     "test:trainee-sit": "tsx scripts/test-trainee-sit.ts",
+    "test:sit-report": "tsx scripts/test-sit-report.ts",
     "test:org-readiness": "tsx scripts/test-org-readiness.ts",
     "test:demo-seed": "tsx scripts/test-demo-seed.ts",
     "seed-demo-org": "tsx --env-file=.env.local scripts/seed-demo-org.ts",
